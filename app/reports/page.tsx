@@ -2,6 +2,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
+import Link from 'next/link';
+import { ChartBarIcon, ClockIcon, DocumentTextIcon, ArrowTopRightOnSquareIcon } from '@heroicons/react/24/outline';
 
 interface ProductSummary {
   total_products: number;
@@ -153,6 +155,49 @@ export default function ReportsPage() {
   return (
     <div className="p-6">
       <h1 className="text-2xl font-bold text-gray-800 mb-6">庫存報表</h1>
+      
+      {/* 報表類型卡片 */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+        <Link href="/reports/inventory-history" className="bg-white rounded-xl shadow-md hover:shadow-lg transition-shadow p-6 flex items-start space-x-4 border border-gray-100">
+          <div className="rounded-full bg-indigo-50 p-3">
+            <ClockIcon className="h-8 w-8 text-indigo-600" />
+          </div>
+          <div>
+            <h2 className="text-lg font-semibold text-gray-800 mb-1">庫存變動歷史</h2>
+            <p className="text-gray-600 text-sm">查看所有入庫、出庫和轉移記錄</p>
+            <div className="mt-3 flex items-center text-sm text-indigo-500">
+              <span>查看詳情</span>
+              <ArrowTopRightOnSquareIcon className="h-3.5 w-3.5 ml-1.5" />
+            </div>
+          </div>
+        </Link>
+        
+        <div className="bg-white rounded-xl shadow-md hover:shadow-lg transition-shadow p-6 flex items-start space-x-4 border border-gray-100">
+          <div className="rounded-full bg-amber-50 p-3">
+            <DocumentTextIcon className="h-8 w-8 text-amber-600" />
+          </div>
+          <div>
+            <h2 className="text-lg font-semibold text-gray-800 mb-1">月度報表</h2>
+            <p className="text-gray-600 text-sm">查看按月匯總的庫存報表</p>
+            <div className="mt-3 flex items-center text-sm text-amber-500">
+              <span>即將推出</span>
+            </div>
+          </div>
+        </div>
+        
+        <div className="bg-white rounded-xl shadow-md hover:shadow-lg transition-shadow p-6 flex items-start space-x-4 border border-gray-100">
+          <div className="rounded-full bg-emerald-50 p-3">
+            <ChartBarIcon className="h-8 w-8 text-emerald-600" />
+          </div>
+          <div>
+            <h2 className="text-lg font-semibold text-gray-800 mb-1">庫存分析</h2>
+            <p className="text-gray-600 text-sm">庫存周轉率和其他高級分析</p>
+            <div className="mt-3 flex items-center text-sm text-emerald-500">
+              <span>即將推出</span>
+            </div>
+          </div>
+        </div>
+      </div>
       
       {/* 庫存概覽卡片 */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">

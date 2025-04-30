@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { 
@@ -40,8 +40,12 @@ export default function Navigation() {
   const [user, setUser] = useState<UserData | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [initialized, setInitialized] = useState(false);
 
   useEffect(() => {
+    // 防止重複執行
+    if (initialized) return;
+    
     // 在客戶端渲染時獲取用戶信息
     if (typeof window !== 'undefined') {
       const userStr = localStorage.getItem('user');
@@ -53,15 +57,17 @@ export default function Navigation() {
           console.error('無法解析用戶數據', e);
         }
       }
+      setInitialized(true);
     }
-  }, []);
+  }, [initialized]);
 
   // 如果在登入或更改密碼頁面，不顯示導航
   if (pathname === '/login' || pathname === '/change-password') {
     return null;
   }
 
-  const handleLogout = () => {
+  // 使用 useCallback 記憶化 handleLogout 函數
+  const handleLogout = useCallback(() => {
     if (typeof window !== 'undefined') {
       localStorage.removeItem('user');
       localStorage.removeItem('firstLogin');
@@ -69,7 +75,7 @@ export default function Navigation() {
       deleteCookie('user');
       window.location.href = '/login';
     }
-  };
+  }, []);
 
   const navLinks = [
     { name: '首頁', href: '/', icon: HomeIcon },
@@ -80,9 +86,9 @@ export default function Navigation() {
   ];
 
   // 如果有管理員權限，添加用戶管理頁面
-  if (user?.permissions?.qc) {
-    navLinks.push({ name: '用戶管理', href: '/users', icon: UserGroupIcon });
-  }
+  const displayLinks = user?.permissions?.qc 
+    ? [...navLinks, { name: '用戶管理', href: '/users', icon: UserGroupIcon }] 
+    : navLinks;
 
   return (
     <>
@@ -95,7 +101,7 @@ export default function Navigation() {
                 <Link href="/" className="font-bold text-xl text-blue-600">Pennine</Link>
               </div>
               <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
-                {navLinks.map((link) => {
+                {displayLinks.map((link) => {
                   const isActive = pathname === link.href;
                   return (
                     <Link
@@ -178,7 +184,7 @@ export default function Navigation() {
               </button>
             </div>
             <div className="px-2 pt-2 pb-3 space-y-1">
-              {navLinks.map((link) => {
+              {displayLinks.map((link) => {
                 const isActive = pathname === link.href;
                 return (
                   <Link
