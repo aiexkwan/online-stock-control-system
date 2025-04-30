@@ -33,25 +33,31 @@ export default function LoginPage() {
       try {
         console.log('登入頁: 檢查用戶登入狀態');
         const userStr = localStorage.getItem('user');
-        if (userStr) {
+        const userCookie = document.cookie.split(';').find(c => c.trim().startsWith('user='));
+        
+        if (userStr && userCookie) {
           const userData = JSON.parse(userStr);
           if (userData?.id) {
             console.log('用戶已登入，重定向到首頁');
-            isNavigating.current = true;
-            window.location.href = '/';
+            router.push('/dashboard');
             return;
           }
+        } else {
+          // 清除不一致的狀態
+          localStorage.removeItem('user');
+          document.cookie = 'user=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
         }
       } catch (e) {
         console.error('解析用戶數據錯誤', e);
         localStorage.removeItem('user');
+        document.cookie = 'user=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
       } finally {
         setAuthChecked(true);
       }
     };
     
     checkAuthStatus();
-  }, []);
+  }, [router]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();

@@ -3,13 +3,12 @@ import type { NextRequest } from 'next/server';
 
 // 受保護的路徑列表
 const protectedPaths = [
-  '/',
+  '/dashboard',
   '/products',
   '/inventory',
   '/reports',
   '/users',
-  '/tables',
-  '/dashboard'
+  '/tables'
 ];
 
 // 無需身份驗證的路徑列表
@@ -39,6 +38,11 @@ export async function middleware(request: NextRequest) {
     pathname.includes('.js')
   ) {
     return NextResponse.next();
+  }
+
+  // 處理根路徑重定向
+  if (pathname === '/') {
+    return NextResponse.redirect(new URL('/login', request.url));
   }
 
   // 檢查是否是公共路徑
@@ -73,6 +77,7 @@ export async function middleware(request: NextRequest) {
       // 設置重定向計數
       response.headers.set('x-redirect-count', (redirectCount + 1).toString());
       
+      response.cookies.delete('user'); // 清除可能存在的無效 cookie
       return response;
     } else {
       console.log(`Middleware: 授權訪問: ${pathname} (Cookie: ${authCookie.value})`);
