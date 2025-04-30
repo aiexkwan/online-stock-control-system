@@ -6,7 +6,7 @@ import { supabase } from '../../lib/supabase';
 
 export default function LoginPage() {
   const router = useRouter();
-  const [email, setEmail] = useState('');
+  const [clockNumber, setClockNumber] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -15,6 +15,10 @@ export default function LoginPage() {
     e.preventDefault();
     setLoading(true);
     setError(null);
+
+    // 這裡假設您的 Supabase 將 clockNumber 用作電子郵件的前綴
+    // 例如：如果時鐘號碼是 "12345"，則電子郵件可能是 "12345@yourdomain.com"
+    const email = `${clockNumber}@pennine.com`;
 
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
@@ -36,12 +40,12 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex">
       {/* Left side - Illustration */}
-      <div className="hidden lg:flex lg:w-1/2 bg-blue-50 items-center justify-center">
-        <div className="w-full max-w-lg px-12 py-16 flex flex-col items-center justify-center">
+      <div className="hidden lg:flex lg:w-5/12 bg-blue-50 items-center justify-center">
+        <div className="w-full max-w-md px-8 py-12 flex flex-col items-center justify-center">
           {/* Simple card illustration */}
-          <div className="w-64 h-80 mx-auto relative">
+          <div className="w-48 h-64 mx-auto relative">
             {/* Background circle */}
-            <div className="absolute -inset-10 rounded-full bg-blue-100/50"></div>
+            <div className="absolute -inset-8 rounded-full bg-blue-100/50"></div>
             
             {/* Card */}
             <div className="absolute inset-0 bg-white rounded-xl border-2 border-blue-600 shadow-lg flex flex-col items-center justify-center p-6">
@@ -55,7 +59,7 @@ export default function LoginPage() {
             </div>
           </div>
           
-          <div className="mt-12 text-center">
+          <div className="mt-8 text-center">
             <h2 className="text-2xl font-bold text-gray-800">Pennine Stock Control</h2>
             <p className="mt-2 text-gray-600">Manage your inventory efficiently and securely</p>
           </div>
@@ -63,7 +67,7 @@ export default function LoginPage() {
       </div>
 
       {/* Right side - Login form */}
-      <div className="w-full lg:w-1/2 flex items-center justify-center p-8">
+      <div className="w-full lg:w-7/12 flex items-center justify-center p-8">
         <div className="w-full max-w-md space-y-8">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Welcome!</h1>
@@ -73,18 +77,18 @@ export default function LoginPage() {
           <form onSubmit={handleLogin} className="mt-8 space-y-6">
             <div className="space-y-4">
               <div>
-                <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                  Email
+                <label htmlFor="clockNumber" className="block text-sm font-medium text-gray-700">
+                  Clock Number
                 </label>
                 <div className="mt-1">
                   <input
-                    id="email"
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    id="clockNumber"
+                    type="text"
+                    value={clockNumber}
+                    onChange={(e) => setClockNumber(e.target.value)}
                     required
                     className="w-full px-4 py-2.5 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
-                    placeholder="Enter your email"
+                    placeholder="Enter your clock number"
                   />
                 </div>
               </div>
