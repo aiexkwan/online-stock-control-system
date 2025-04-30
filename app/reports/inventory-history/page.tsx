@@ -134,7 +134,7 @@ export default function InventoryHistoryPage() {
       if (error) throw error;
       
       // 格式化數據
-      const formattedData: InventoryMovement[] = (data as RawInventoryMovement[] || []).map(item => ({
+      const formattedData: InventoryMovement[] = (data as unknown as any[] || []).map(item => ({
         id: item.id,
         product_id: item.product_id,
         product_name: item.products ? item.products.name : 'Unknown',
