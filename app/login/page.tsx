@@ -22,6 +22,7 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [authChecked, setAuthChecked] = useState(false);
+  const isNavigating = useRef(false);
 
   // 檢查用戶是否已登入 - 只執行一次
   useEffect(() => {
@@ -33,7 +34,11 @@ export default function LoginPage() {
       if (userStr) {
         const userData = JSON.parse(userStr);
         if (userData?.id) {
-          router.push('/');
+          console.log('用戶已登入，重定向到首頁');
+          isNavigating.current = true;
+          setTimeout(() => {
+            router.push('/');
+          }, 100);
           return;
         }
       }
@@ -133,10 +138,19 @@ export default function LoginPage() {
       if (isFirstLogin) {
         console.log('首次登入，跳轉到修改密碼頁面');
         localStorage.setItem('firstLogin', 'true');
-        router.push('/change-password');
+        
+        // 防止可能的導航問題
+        isNavigating.current = true;
+        setTimeout(() => {
+          window.location.href = '/change-password';
+        }, 100);
       } else {
         // 否則，重定向到主頁
-        router.push('/');
+        console.log('登入成功，跳轉到首頁');
+        isNavigating.current = true;
+        setTimeout(() => {
+          window.location.href = '/';
+        }, 100);
       }
     } catch (error) {
       console.error('登入錯誤:', error);
@@ -147,12 +161,24 @@ export default function LoginPage() {
   };
 
   // 如果還在檢查認證狀態，可以選擇顯示一個載入狀態
-  if (!authChecked && typeof window !== 'undefined') {
+  if (!authChecked && typeof window !== 'undefined' && !isNavigating.current) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-blue-50/30">
         <div className="text-center">
           <div className="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-600"></div>
           <p className="mt-2 text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // 如果正在導航，避免顯示登入表單
+  if (isNavigating.current) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-blue-50/30">
+        <div className="text-center">
+          <div className="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-600"></div>
+          <p className="mt-2 text-gray-600">正在跳轉...</p>
         </div>
       </div>
     );

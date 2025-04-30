@@ -40,30 +40,38 @@ export async function middleware(request: NextRequest) {
 
   // 檢查是否是公共路徑
   if (publicPaths.some(path => pathname.startsWith(path))) {
+    console.log(`Middleware: 允許訪問公共路徑: ${pathname}`);
     return NextResponse.next();
   }
 
   // 如果是受保護的路徑，檢查 Cookie 中是否有登入標記
   if (protectedPaths.some(path => pathname === path || pathname.startsWith(`${path}/`))) {
+    console.log(`Middleware: 檢查受保護路徑: ${pathname}`);
+    
     // 查看請求是否包含 Cookie
     const authCookie = request.cookies.get('user');
+    
+    console.log(`Middleware: 檢查Cookie: ${authCookie ? `存在 (${authCookie.value})` : '不存在'}`);
+    
     if (!authCookie || !authCookie.value) {
       // 避免可能的重定向循環
       const redirectedFrom = request.headers.get('x-redirected-from');
       if (redirectedFrom === pathname) {
-        console.log(`檢測到重定向循環: ${pathname} -> /login -> ${pathname}`);
+        console.log(`Middleware: 檢測到重定向循環: ${pathname} -> /login -> ${pathname}, 允許訪問`);
         return NextResponse.next();
       }
       
-      console.log(`重定向: ${pathname} -> /login (無有效Cookie)`);
+      console.log(`Middleware: 重定向 ${pathname} -> /login (無有效Cookie)`);
       const redirectUrl = new URL('/login', request.url);
       const response = NextResponse.redirect(redirectUrl);
       // 設置標記以識別該請求來自重定向
       response.headers.set('x-redirected-from', pathname);
       return response;
     } else {
-      console.log(`授權訪問: ${pathname} (Cookie: ${authCookie.value})`);
+      console.log(`Middleware: 授權訪問: ${pathname} (Cookie: ${authCookie.value})`);
     }
+  } else {
+    console.log(`Middleware: 非保護路徑也非公共路徑: ${pathname}, 默認允許訪問`);
   }
 
   return NextResponse.next();
