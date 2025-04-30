@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { supabase } from '../../lib/supabase';
 
 interface Product {
@@ -11,50 +11,43 @@ interface Product {
   location: string;
 }
 
-interface InventoryRecord {
-  id: number;
-  product_id: number;
-  product_name: string;
-  product_sku: string;
-  quantity: number;
-  type: string;
-  from_location: string;
-  to_location: string;
-  created_by: string;
-  created_at: string;
-  notes: string;
-}
+type OperationType = 'receive' | 'issue' | 'transfer';
 
 export default function InventoryPage() {
   const [products, setProducts] = useState<Product[]>([]);
-  const [inventoryRecords, setInventoryRecords] = useState<InventoryRecord[]>([]);
   const [loading, setLoading] = useState(true);
-  const [recordsLoading, setRecordsLoading] = useState(true);
-  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
-  const [operationType, setOperationType] = useState<'in' | 'out' | 'transfer'>('in');
-  const [quantity, setQuantity] = useState<number>(1);
-  const [fromLocation, setFromLocation] = useState<string>('');
-  const [toLocation, setToLocation] = useState<string>('');
-  const [notes, setNotes] = useState<string>('');
-  const [searchTerm, setSearchTerm] = useState<string>('');
+  const [loadingAction, setLoadingAction] = useState(false);
   const [user, setUser] = useState<any>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [operationType, setOperationType] = useState<OperationType>('receive');
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
   
+  const [formData, setFormData] = useState({
+    productId: 0,
+    quantity: 1,
+    fromLocation: '',
+    toLocation: '',
+    notes: ''
+  });
+
   useEffect(() => {
-    // 從本地存儲獲取用戶信息
-    const userStr = localStorage.getItem('user');
-    if (userStr) {
-      try {
-        const userData = JSON.parse(userStr);
-        setUser(userData);
-      } catch (e) {
-        console.error('Failed to parse user data', e);
+    // 載入用戶數據
+    if (typeof window !== 'undefined') {
+      const userStr = localStorage.getItem('user');
+      if (userStr) {
+        try {
+          const userData = JSON.parse(userStr);
+          setUser(userData);
+        } catch (e) {
+          console.error('無法解析用戶數據', e);
+        }
       }
     }
-    
     fetchProducts();
-    fetchInventoryRecords();
   }, []);
-  
+
   async function fetchProducts() {
     try {
       setLoading(true);
@@ -62,7 +55,7 @@ export default function InventoryPage() {
         .from('products')
         .select('*')
         .order('name', { ascending: true });
-        
+      
       if (error) throw error;
       setProducts(data || []);
     } catch (error) {
@@ -71,238 +64,238 @@ export default function InventoryPage() {
       setLoading(false);
     }
   }
-  
-  async function fetchInventoryRecords() {
-    try {
-      setRecordsLoading(true);
-      const { data, error } = await supabase
-        .from('inventory_movements')
-        .select('*, products(name, sku)')
-        .order('created_at', { ascending: false })
-        .limit(50);
-        
-      if (error) throw error;
-      
-      // 轉換數據結構以匹配 InventoryRecord 介面
-      const formattedRecords = data?.map(record => ({
-        id: record.id,
-        product_id: record.product_id,
-        product_name: record.products?.name || '',
-        product_sku: record.products?.sku || '',
-        quantity: record.quantity,
-        type: record.type,
-        from_location: record.from_location || '',
-        to_location: record.to_location || '',
-        created_by: record.created_by,
-        created_at: record.created_at,
-        notes: record.notes || ''
-      })) || [];
-      
-      setInventoryRecords(formattedRecords);
-    } catch (error) {
-      console.error('Error fetching inventory records:', error);
-    } finally {
-      setRecordsLoading(false);
+
+  // 當選擇產品時更新表單數據
+  function handleProductSelection(e: React.ChangeEvent<HTMLSelectElement>) {
+    const productId = parseInt(e.target.value);
+    const selectedProduct = products.find(p => p.id === productId);
+    
+    if (selectedProduct) {
+      setFormData({
+        ...formData,
+        productId,
+        fromLocation: selectedProduct.location,
+        toLocation: selectedProduct.location
+      });
     }
   }
-  
-  async function handleInventorySubmit(e: React.FormEvent) {
+
+  // 處理表單提交
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    setErrorMessage('');
+    setSuccessMessage('');
     
-    if (!selectedProduct) {
-      alert('請選擇產品');
+    // 基本驗證
+    if (!formData.productId) {
+      setErrorMessage('請選擇產品');
       return;
     }
     
-    if (quantity <= 0) {
-      alert('數量必須大於 0');
+    if (formData.quantity <= 0) {
+      setErrorMessage('數量必須大於零');
       return;
     }
     
-    if (operationType === 'transfer' && (!fromLocation || !toLocation)) {
-      alert('轉移操作需要指定來源和目標位置');
+    if (operationType === 'issue' || operationType === 'transfer') {
+      const selectedProduct = products.find(p => p.id === formData.productId);
+      if (selectedProduct && formData.quantity > selectedProduct.quantity) {
+        setErrorMessage('出庫數量不能大於當前庫存量');
+        return;
+      }
+    }
+    
+    if (operationType === 'transfer' && formData.fromLocation === formData.toLocation) {
+      setErrorMessage('轉移的目標位置不能與當前位置相同');
       return;
     }
     
-    if (operationType === 'in' && !toLocation) {
-      alert('入庫操作需要指定目標位置');
-      return;
-    }
-    
-    if (operationType === 'out' && !fromLocation) {
-      alert('出庫操作需要指定來源位置');
-      return;
-    }
-    
+    // 顯示確認對話框
+    setShowConfirmModal(true);
+  }
+  
+  // 確認並執行庫存操作
+  async function confirmOperation() {
     try {
+      setLoadingAction(true);
+      setShowConfirmModal(false);
+      
+      const selectedProduct = products.find(p => p.id === formData.productId);
+      if (!selectedProduct) throw new Error('找不到選定的產品');
+      
       // 創建庫存移動記錄
+      const movementData = {
+        product_id: formData.productId,
+        quantity: formData.quantity,
+        type: operationType,
+        from_location: operationType === 'receive' ? '' : formData.fromLocation,
+        to_location: operationType === 'issue' ? '' : (operationType === 'transfer' ? formData.toLocation : formData.fromLocation),
+        created_by: user?.id,
+        notes: formData.notes
+      };
+      
       const { error: movementError } = await supabase
         .from('inventory_movements')
-        .insert([{
-          product_id: selectedProduct.id,
-          quantity: quantity,
-          type: operationType,
-          from_location: operationType === 'in' ? null : fromLocation,
-          to_location: operationType === 'out' ? null : toLocation,
-          created_by: user?.id || 'unknown',
-          notes: notes
-        }]);
-        
+        .insert([movementData]);
+      
       if (movementError) throw movementError;
       
       // 更新產品數量和位置
       let newQuantity = selectedProduct.quantity;
       let newLocation = selectedProduct.location;
       
-      if (operationType === 'in') {
-        newQuantity += quantity;
-        if (!selectedProduct.location) {
-          newLocation = toLocation;
-        }
-      } else if (operationType === 'out') {
-        newQuantity -= quantity;
-        if (newQuantity < 0) newQuantity = 0;
+      if (operationType === 'receive') {
+        newQuantity += formData.quantity;
+      } else if (operationType === 'issue') {
+        newQuantity -= formData.quantity;
       } else if (operationType === 'transfer') {
-        newLocation = toLocation;
+        newLocation = formData.toLocation;
       }
       
-      const { error: productError } = await supabase
+      const { error: updateError } = await supabase
         .from('products')
         .update({
           quantity: newQuantity,
           location: newLocation,
           last_updated: new Date().toISOString()
         })
-        .eq('id', selectedProduct.id);
-        
-      if (productError) throw productError;
+        .eq('id', formData.productId);
+      
+      if (updateError) throw updateError;
+      
+      // 操作成功
+      await fetchProducts(); // 刷新產品列表
+      
+      // 根據操作類型顯示成功訊息
+      if (operationType === 'receive') {
+        setSuccessMessage(`成功入庫 ${formData.quantity} 件 ${selectedProduct.name}`);
+      } else if (operationType === 'issue') {
+        setSuccessMessage(`成功出庫 ${formData.quantity} 件 ${selectedProduct.name}`);
+      } else if (operationType === 'transfer') {
+        setSuccessMessage(`成功將 ${selectedProduct.name} 從 ${formData.fromLocation} 轉移到 ${formData.toLocation}`);
+      }
       
       // 重置表單
-      setSelectedProduct(null);
-      setQuantity(1);
-      setFromLocation('');
-      setToLocation('');
-      setNotes('');
+      setFormData({
+        productId: 0,
+        quantity: 1,
+        fromLocation: '',
+        toLocation: '',
+        notes: ''
+      });
       
-      // 重新獲取數據
-      fetchProducts();
-      fetchInventoryRecords();
-      
-      alert('庫存操作已成功記錄');
     } catch (error) {
-      console.error('Error processing inventory movement:', error);
-      alert('處理庫存移動時出錯');
+      console.error('操作失敗', error);
+      setErrorMessage('操作失敗: ' + (error instanceof Error ? error.message : '未知錯誤'));
+    } finally {
+      setLoadingAction(false);
     }
   }
-  
+
   // 過濾產品列表
-  const filteredProducts = searchTerm 
-    ? products.filter(p => 
-        p.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-        p.sku.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        p.location.toLowerCase().includes(searchTerm.toLowerCase())
-      )
-    : products;
-  
+  const filteredProducts = products.filter((product) => 
+    product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    product.sku.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   return (
     <div className="p-6">
-      <h1 className="text-2xl font-bold text-gray-800 mb-6">庫存管理</h1>
+      <h1 className="text-2xl font-bold text-gray-800 mb-6">庫存操作</h1>
       
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* 左側：庫存操作表單 */}
-        <div className="lg:col-span-1">
+      {/* 操作選擇按鈕 */}
+      <div className="mb-6">
+        <div className="flex flex-wrap gap-2">
+          <button
+            onClick={() => setOperationType('receive')}
+            className={`px-4 py-2 rounded-lg transition-colors ${
+              operationType === 'receive'
+                ? 'bg-green-600 text-white'
+                : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+            }`}
+          >
+            入庫
+          </button>
+          <button
+            onClick={() => setOperationType('issue')}
+            className={`px-4 py-2 rounded-lg transition-colors ${
+              operationType === 'issue'
+                ? 'bg-red-600 text-white'
+                : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+            }`}
+          >
+            出庫
+          </button>
+          <button
+            onClick={() => setOperationType('transfer')}
+            className={`px-4 py-2 rounded-lg transition-colors ${
+              operationType === 'transfer'
+                ? 'bg-blue-600 text-white'
+                : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+            }`}
+          >
+            轉移
+          </button>
+        </div>
+      </div>
+      
+      {loading ? (
+        <div className="flex justify-center items-center h-64">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* 左側表單 */}
           <div className="bg-white p-6 rounded-lg shadow-md">
-            <h2 className="text-xl font-semibold mb-4">庫存操作</h2>
+            <h2 className="text-lg font-semibold mb-4">
+              {operationType === 'receive' && '入庫操作'}
+              {operationType === 'issue' && '出庫操作'}
+              {operationType === 'transfer' && '庫存轉移'}
+            </h2>
             
-            <form onSubmit={handleInventorySubmit} className="space-y-4">
+            {successMessage && (
+              <div className="mb-4 p-3 bg-green-50 text-green-700 rounded-md">
+                {successMessage}
+              </div>
+            )}
+            
+            {errorMessage && (
+              <div className="mb-4 p-3 bg-red-50 text-red-700 rounded-md">
+                {errorMessage}
+              </div>
+            )}
+            
+            <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  操作類型
+                  搜尋產品
                 </label>
-                <div className="flex space-x-4">
-                  <label className="inline-flex items-center">
-                    <input
-                      type="radio"
-                      className="form-radio"
-                      name="operationType"
-                      value="in"
-                      checked={operationType === 'in'}
-                      onChange={() => setOperationType('in')}
-                    />
-                    <span className="ml-2">入庫</span>
-                  </label>
-                  <label className="inline-flex items-center">
-                    <input
-                      type="radio"
-                      className="form-radio"
-                      name="operationType"
-                      value="out"
-                      checked={operationType === 'out'}
-                      onChange={() => setOperationType('out')}
-                    />
-                    <span className="ml-2">出庫</span>
-                  </label>
-                  <label className="inline-flex items-center">
-                    <input
-                      type="radio"
-                      className="form-radio"
-                      name="operationType"
-                      value="transfer"
-                      checked={operationType === 'transfer'}
-                      onChange={() => setOperationType('transfer')}
-                    />
-                    <span className="ml-2">轉移</span>
-                  </label>
-                </div>
+                <input
+                  type="text"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  placeholder="輸入產品名稱或編號"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                />
               </div>
               
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   選擇產品
                 </label>
-                <div className="relative">
-                  <input 
-                    type="text"
-                    placeholder="搜尋產品..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                  />
-                </div>
-                
-                <div className="mt-2 max-h-40 overflow-y-auto border border-gray-200 rounded-md">
-                  {loading ? (
-                    <div className="p-3 text-center text-sm text-gray-500">載入中...</div>
-                  ) : filteredProducts.length > 0 ? (
-                    <ul className="divide-y divide-gray-200">
-                      {filteredProducts.map(product => (
-                        <li 
-                          key={product.id}
-                          className={`p-2 cursor-pointer hover:bg-gray-50 ${selectedProduct?.id === product.id ? 'bg-blue-50 border-l-4 border-blue-500' : ''}`}
-                          onClick={() => setSelectedProduct(product)}
-                        >
-                          <div className="font-medium">{product.name}</div>
-                          <div className="text-sm text-gray-500">
-                            SKU: {product.sku} | 數量: {product.quantity} | 位置: {product.location || '-'}
-                          </div>
-                        </li>
-                      ))}
-                    </ul>
-                  ) : (
-                    <div className="p-3 text-center text-sm text-gray-500">
-                      沒有找到產品
-                    </div>
-                  )}
-                </div>
+                <select
+                  value={formData.productId || ''}
+                  onChange={handleProductSelection}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                  required
+                >
+                  <option value="">-- 選擇產品 --</option>
+                  {filteredProducts.map((product) => (
+                    <option key={product.id} value={product.id}>
+                      {product.name} ({product.sku}) - 庫存: {product.quantity}
+                    </option>
+                  ))}
+                </select>
               </div>
-              
-              {selectedProduct && (
-                <div className="p-3 bg-blue-50 rounded-md">
-                  <p className="font-medium">{selectedProduct.name}</p>
-                  <p className="text-sm">目前數量: {selectedProduct.quantity}</p>
-                  <p className="text-sm">目前位置: {selectedProduct.location || '-'}</p>
-                </div>
-              )}
               
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -311,37 +304,39 @@ export default function InventoryPage() {
                 <input
                   type="number"
                   min="1"
-                  value={quantity}
-                  onChange={(e) => setQuantity(parseInt(e.target.value) || 0)}
+                  value={formData.quantity}
+                  onChange={(e) => setFormData({...formData, quantity: parseInt(e.target.value) || 0})}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                  required
                 />
               </div>
               
-              {(operationType === 'out' || operationType === 'transfer') && (
+              {(operationType === 'issue' || operationType === 'transfer') && (
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    來源位置
+                    當前位置
                   </label>
                   <input
                     type="text"
-                    value={fromLocation}
-                    onChange={(e) => setFromLocation(e.target.value)}
-                    placeholder={selectedProduct?.location || '請輸入位置'}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                    value={formData.fromLocation}
+                    onChange={(e) => setFormData({...formData, fromLocation: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50"
+                    readOnly
                   />
                 </div>
               )}
               
-              {(operationType === 'in' || operationType === 'transfer') && (
+              {(operationType === 'receive' || operationType === 'transfer') && (
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    目標位置
+                    {operationType === 'receive' ? '入庫位置' : '目標位置'}
                   </label>
                   <input
                     type="text"
-                    value={toLocation}
-                    onChange={(e) => setToLocation(e.target.value)}
+                    value={formData.toLocation}
+                    onChange={(e) => setFormData({...formData, toLocation: e.target.value})}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                    required
                   />
                 </div>
               )}
@@ -351,99 +346,110 @@ export default function InventoryPage() {
                   備註
                 </label>
                 <textarea
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
+                  value={formData.notes}
+                  onChange={(e) => setFormData({...formData, notes: e.target.value})}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md"
                   rows={3}
-                ></textarea>
+                />
               </div>
               
-              <div>
-                <button
-                  type="submit"
-                  className="w-full py-2 px-4 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                  disabled={!selectedProduct}
-                >
-                  提交庫存操作
-                </button>
-              </div>
+              <button
+                type="submit"
+                disabled={loadingAction}
+                className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                {loadingAction ? (
+                  <span className="flex items-center justify-center">
+                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    處理中...
+                  </span>
+                ) : (
+                  <>確認操作</>
+                )}
+              </button>
             </form>
           </div>
-        </div>
-        
-        {/* 右側：近期庫存記錄 */}
-        <div className="lg:col-span-2">
+          
+          {/* 右側產品列表 */}
           <div className="bg-white p-6 rounded-lg shadow-md">
-            <h2 className="text-xl font-semibold mb-4">近期庫存記錄</h2>
-            
-            {recordsLoading ? (
-              <div className="flex justify-center items-center h-64">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
-              </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">日期</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">產品</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">操作</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">數量</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">位置</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">操作者</th>
+            <h2 className="text-lg font-semibold mb-4">庫存列表</h2>
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">產品</th>
+                    <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">編號</th>
+                    <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">數量</th>
+                    <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">位置</th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {filteredProducts.map((product) => (
+                    <tr key={product.id} className="hover:bg-gray-50">
+                      <td className="px-3 py-2 whitespace-nowrap">
+                        <div className="text-sm font-medium text-gray-900">{product.name}</div>
+                      </td>
+                      <td className="px-3 py-2 whitespace-nowrap">
+                        <div className="text-sm text-gray-500">{product.sku}</div>
+                      </td>
+                      <td className="px-3 py-2 whitespace-nowrap">
+                        <div className={`text-sm font-medium ${
+                          product.quantity <= 0 ? 'text-red-600' : 'text-gray-900'
+                        }`}>{product.quantity}</div>
+                      </td>
+                      <td className="px-3 py-2 whitespace-nowrap">
+                        <div className="text-sm text-gray-500">{product.location}</div>
+                      </td>
                     </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {inventoryRecords.length > 0 ? (
-                      inventoryRecords.map((record) => (
-                        <tr key={record.id} className="hover:bg-gray-50">
-                          <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
-                            {new Date(record.created_at).toLocaleString()}
-                          </td>
-                          <td className="px-4 py-3 whitespace-nowrap">
-                            <div className="text-sm font-medium text-gray-900">{record.product_name}</div>
-                            <div className="text-sm text-gray-500">{record.product_sku}</div>
-                          </td>
-                          <td className="px-4 py-3 whitespace-nowrap">
-                            <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                              record.type === 'in' 
-                                ? 'bg-green-100 text-green-800' 
-                                : record.type === 'out' 
-                                  ? 'bg-red-100 text-red-800' 
-                                  : 'bg-yellow-100 text-yellow-800'
-                            }`}>
-                              {record.type === 'in' ? '入庫' : record.type === 'out' ? '出庫' : '轉移'}
-                            </span>
-                          </td>
-                          <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
-                            {record.quantity}
-                          </td>
-                          <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
-                            {record.type === 'in' 
-                              ? `→ ${record.to_location}` 
-                              : record.type === 'out' 
-                                ? `${record.from_location} →` 
-                                : `${record.from_location} → ${record.to_location}`}
-                          </td>
-                          <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
-                            {record.created_by}
-                          </td>
-                        </tr>
-                      ))
-                    ) : (
-                      <tr>
-                        <td colSpan={6} className="px-4 py-3 text-center text-sm text-gray-500">
-                          沒有庫存記錄
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            )}
+                  ))}
+                  {filteredProducts.length === 0 && (
+                    <tr>
+                      <td colSpan={4} className="px-3 py-4 text-center text-sm text-gray-500">
+                        沒有找到產品
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
-      </div>
+      )}
+      
+      {/* 確認操作對話框 */}
+      {showConfirmModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-md">
+            <h2 className="text-xl font-bold mb-4">確認操作</h2>
+            <p className="mb-6">
+              {operationType === 'receive' && `您確定要入庫 ${formData.quantity} 件產品到位置 ${formData.toLocation} 嗎？`}
+              {operationType === 'issue' && `您確定要從位置 ${formData.fromLocation} 出庫 ${formData.quantity} 件產品嗎？`}
+              {operationType === 'transfer' && `您確定要將產品從位置 ${formData.fromLocation} 轉移到位置 ${formData.toLocation} 嗎？`}
+            </p>
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={() => setShowConfirmModal(false)}
+                className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300"
+              >
+                取消
+              </button>
+              <button
+                onClick={confirmOperation}
+                className={`px-4 py-2 text-white rounded-md ${
+                  operationType === 'receive' ? 'bg-green-600 hover:bg-green-700' :
+                  operationType === 'issue' ? 'bg-red-600 hover:bg-red-700' :
+                  'bg-blue-600 hover:bg-blue-700'
+                }`}
+              >
+                確認
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 } 

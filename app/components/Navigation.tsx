@@ -30,6 +30,11 @@ interface UserData {
   };
 }
 
+// 刪除 Cookie 函數
+function deleteCookie(name: string) {
+  document.cookie = name + '=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+}
+
 export default function Navigation() {
   const pathname = usePathname();
   const [user, setUser] = useState<UserData | null>(null);
@@ -60,6 +65,8 @@ export default function Navigation() {
     if (typeof window !== 'undefined') {
       localStorage.removeItem('user');
       localStorage.removeItem('firstLogin');
+      // 清除驗證 Cookie
+      deleteCookie('user');
       window.location.href = '/login';
     }
   };
