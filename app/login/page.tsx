@@ -6,7 +6,7 @@ import { supabase } from '../../lib/supabase';
 
 export default function LoginPage() {
   const router = useRouter();
-  const [clockNumber, setClockNumber] = useState('');
+  const [userId, setUserId] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -16,22 +16,37 @@ export default function LoginPage() {
     setLoading(true);
     setError(null);
 
-    // 這裡假設您的 Supabase 將 clockNumber 用作電子郵件的前綴
-    // 例如：如果時鐘號碼是 "12345"，則電子郵件可能是 "12345@yourdomain.com"
-    const email = `${clockNumber}@pennine.com`;
-
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
+      // 第一步：檢查用戶是否存在於 data_id 表中
+      const { data: userData, error: userError } = await supabase
+        .from('data_id')
+        .select('id, email, password_hash')
+        .eq('user_id', userId)
+        .single();
+
+      // 如果用戶不存在於 data_id 表中
+      if (userError || !userData) {
+        throw new Error('User ID not found. Access denied.');
+      }
+
+      // 使用 Supabase Auth 進行登入
+      // 注意：這裡假設您的 data_id 表中有一個關聯的電子郵件和密碼雜湊
+      // 如果您的系統不是這樣設置的，您可能需要調整此邏輯
+      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+        email: userData.email || `${userId}@pennine.com`, // 使用 data_id 表中的電子郵件或生成一個
+        password: password, // 使用用戶輸入的密碼
       });
 
-      if (error) throw error;
-      if (data?.user) {
+      if (authError) {
+        throw new Error('Invalid credentials. Please check your password and try again.');
+      }
+
+      if (authData?.user) {
+        // 登入成功，將用戶重定向到主頁
         router.push('/');
       }
     } catch (error) {
-      setError(error instanceof Error ? error.message : '登入失敗');
+      setError(error instanceof Error ? error.message : 'Login failed');
     } finally {
       setLoading(false);
     }
@@ -77,18 +92,18 @@ export default function LoginPage() {
           <form onSubmit={handleLogin} className="mt-8 space-y-6">
             <div className="space-y-4">
               <div>
-                <label htmlFor="clockNumber" className="block text-sm font-medium text-gray-700">
-                  Clock Number
+                <label htmlFor="userId" className="block text-sm font-medium text-gray-700">
+                  User ID
                 </label>
                 <div className="mt-1">
                   <input
-                    id="clockNumber"
+                    id="userId"
                     type="text"
-                    value={clockNumber}
-                    onChange={(e) => setClockNumber(e.target.value)}
+                    value={userId}
+                    onChange={(e) => setUserId(e.target.value)}
                     required
                     className="w-full px-4 py-2.5 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
-                    placeholder="Enter your clock number"
+                    placeholder="Enter your user ID"
                   />
                 </div>
               </div>
