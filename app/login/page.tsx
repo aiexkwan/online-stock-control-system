@@ -50,7 +50,7 @@ export default function LoginPage() {
       localStorage.removeItem('firstLogin');
 
       // 登入成功，將用戶資訊存儲在 localStorage 中
-      localStorage.setItem('user', JSON.stringify({
+      const userInfo = {
         id: userData.id,
         name: userData.name,
         department: userData.department,
@@ -62,20 +62,20 @@ export default function LoginPage() {
           resume: userData.resume,
           report: userData.report
         }
-      }));
+      };
+      
+      localStorage.setItem('user', JSON.stringify(userInfo));
 
       // 如果是首次登入，設置標記並重定向到更改密碼頁面
       if (isFirstLogin) {
         console.log('First login detected, redirecting to change password page');
         localStorage.setItem('firstLogin', 'true');
         
-        // 等待一下確保 localStorage 更新完成
-        setTimeout(() => {
-          router.push('/change-password');
-        }, 100);
+        // 改用直接導航而不是使用 router API
+        window.location.href = '/change-password';
       } else {
         // 否則，重定向到主頁
-        router.push('/');
+        window.location.href = '/';
       }
     } catch (error) {
       setError(error instanceof Error ? error.message : 'Login failed');

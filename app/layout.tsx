@@ -1,8 +1,13 @@
 import './globals.css';
+import type { Metadata } from 'next'
+import { Inter } from 'next/font/google'
+import Navigation from './components/Navigation'
 
-export const metadata = {
-  title: 'Pennine Stock Control',
-  description: 'Online warehouse stock control system',
+const inter = Inter({ subsets: ['latin'] })
+
+export const metadata: Metadata = {
+  title: 'Pennine庫存控制系統',
+  description: '用於管理倉庫庫存的完整在線系統',
 }
 
 export default function RootLayout({
@@ -12,7 +17,12 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className="min-h-screen bg-slate-50">{children}</body>
+      <body className={inter.className}>
+        <Navigation />
+        <main className="pt-16"> {/* 為導航欄保留空間 */}
+          {children}
+        </main>
+      </body>
     </html>
   )
 }

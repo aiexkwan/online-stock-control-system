@@ -1,11 +1,9 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
 import { supabase } from '../../lib/supabase';
 
 export default function ChangePasswordPage() {
-  const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [newPassword, setNewPassword] = useState('');
@@ -25,7 +23,7 @@ export default function ChangePasswordPage() {
     
     if (!userStr || !firstLogin) {
       // 如果沒有用戶資訊或不是首次登入，重定向到登入頁面
-      router.push('/login');
+      window.location.href = '/login';
       return;
     }
     
@@ -33,9 +31,9 @@ export default function ChangePasswordPage() {
       const user = JSON.parse(userStr);
       setUserData(user);
     } catch (e) {
-      router.push('/login');
+      window.location.href = '/login';
     }
-  }, [router]);
+  }, []);
 
   const handlePasswordChange = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -72,8 +70,9 @@ export default function ChangePasswordPage() {
       // 清除首次登入標記
       localStorage.removeItem('firstLogin');
       
-      // 重定向到主頁
-      router.push('/');
+      // 提示並重定向到主頁
+      alert('Password updated successfully! You will now be redirected to the main page.');
+      window.location.href = '/';
     } catch (error) {
       setError(error instanceof Error ? error.message : 'Failed to update password');
     } finally {
@@ -129,6 +128,7 @@ export default function ChangePasswordPage() {
                   required
                   className="w-full px-4 py-2.5 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
                   placeholder="Enter new password"
+                  autoFocus
                 />
               </div>
             </div>
