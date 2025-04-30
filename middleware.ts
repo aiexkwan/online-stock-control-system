@@ -21,6 +21,9 @@ const publicPaths = [
   '/favicon.ico'
 ];
 
+// 追踪重定向的最大次數
+const MAX_REDIRECTS = 3;
+
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   
@@ -51,21 +54,25 @@ export async function middleware(request: NextRequest) {
     // 查看請求是否包含 Cookie
     const authCookie = request.cookies.get('user');
     
+    // 檢查是否有 localStorage 中的用戶數據（由客戶端腳本設置）
     console.log(`Middleware: 檢查Cookie: ${authCookie ? `存在 (${authCookie.value})` : '不存在'}`);
     
     if (!authCookie || !authCookie.value) {
       // 避免可能的重定向循環
-      const redirectedFrom = request.headers.get('x-redirected-from');
-      if (redirectedFrom === pathname) {
-        console.log(`Middleware: 檢測到重定向循環: ${pathname} -> /login -> ${pathname}, 允許訪問`);
+      const redirectCount = parseInt(request.headers.get('x-redirect-count') || '0');
+      
+      if (redirectCount >= MAX_REDIRECTS) {
+        console.log(`Middleware: 重定向次數超過限制 (${redirectCount}/${MAX_REDIRECTS}), 允許訪問`);
         return NextResponse.next();
       }
       
       console.log(`Middleware: 重定向 ${pathname} -> /login (無有效Cookie)`);
       const redirectUrl = new URL('/login', request.url);
       const response = NextResponse.redirect(redirectUrl);
-      // 設置標記以識別該請求來自重定向
-      response.headers.set('x-redirected-from', pathname);
+      
+      // 設置重定向計數
+      response.headers.set('x-redirect-count', (redirectCount + 1).toString());
+      
       return response;
     } else {
       console.log(`Middleware: 授權訪問: ${pathname} (Cookie: ${authCookie.value})`);

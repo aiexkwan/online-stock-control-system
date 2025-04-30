@@ -29,26 +29,29 @@ export default function LoginPage() {
     // 避免在服務器端執行
     if (typeof window === 'undefined') return;
     
-    try {
-      const userStr = localStorage.getItem('user');
-      if (userStr) {
-        const userData = JSON.parse(userStr);
-        if (userData?.id) {
-          console.log('用戶已登入，重定向到首頁');
-          isNavigating.current = true;
-          setTimeout(() => {
-            router.push('/');
-          }, 100);
-          return;
+    const checkAuthStatus = async () => {
+      try {
+        console.log('登入頁: 檢查用戶登入狀態');
+        const userStr = localStorage.getItem('user');
+        if (userStr) {
+          const userData = JSON.parse(userStr);
+          if (userData?.id) {
+            console.log('用戶已登入，重定向到首頁');
+            isNavigating.current = true;
+            window.location.href = '/';
+            return;
+          }
         }
+      } catch (e) {
+        console.error('解析用戶數據錯誤', e);
+        localStorage.removeItem('user');
+      } finally {
+        setAuthChecked(true);
       }
-    } catch (e) {
-      console.error('解析用戶數據錯誤', e);
-      localStorage.removeItem('user');
-    } finally {
-      setAuthChecked(true);
-    }
-  }, [router]);
+    };
+    
+    checkAuthStatus();
+  }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -141,16 +144,12 @@ export default function LoginPage() {
         
         // 防止可能的導航問題
         isNavigating.current = true;
-        setTimeout(() => {
-          window.location.href = '/change-password';
-        }, 100);
+        window.location.href = '/change-password';
       } else {
         // 否則，重定向到主頁
         console.log('登入成功，跳轉到首頁');
         isNavigating.current = true;
-        setTimeout(() => {
-          window.location.href = '/';
-        }, 100);
+        window.location.href = '/';
       }
     } catch (error) {
       console.error('登入錯誤:', error);

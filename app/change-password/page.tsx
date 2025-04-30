@@ -23,34 +23,41 @@ export default function ChangePasswordPage() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [userData, setUserData] = useState<any>(null);
   const [initialized, setInitialized] = useState(false);
+  const isNavigating = useRef(false);
 
   useEffect(() => {
     // 防止 SSR 渲染問題
     if (typeof window === 'undefined') return;
     
-    // 檢查是否有用戶資訊
-    const userStr = localStorage.getItem('user');
-    const firstLogin = localStorage.getItem('firstLogin');
+    const checkAuth = () => {
+      // 檢查是否有用戶資訊
+      const userStr = localStorage.getItem('user');
+      const firstLogin = localStorage.getItem('firstLogin');
+      
+      if (!userStr || !firstLogin) {
+        // 如果沒有用戶資訊或不是首次登入，重定向到登入頁面
+        console.log('修改密碼頁: 用戶未登入或非首次登入，重定向到登入頁面');
+        isNavigating.current = true;
+        window.location.href = '/login';
+        return;
+      }
+      
+      try {
+        const user = JSON.parse(userStr);
+        setUserData(user);
+        console.log('修改密碼頁: 已載入用戶數據:', user);
+      } catch (e) {
+        console.error('修改密碼頁: 解析用戶數據錯誤:', e);
+        isNavigating.current = true;
+        window.location.href = '/login';
+        return;
+      } finally {
+        setInitialized(true);
+      }
+    };
     
-    if (!userStr || !firstLogin) {
-      // 如果沒有用戶資訊或不是首次登入，重定向到登入頁面
-      console.log('用戶未登入或非首次登入，重定向到登入頁面');
-      router.push('/login');
-      return;
-    }
-    
-    try {
-      const user = JSON.parse(userStr);
-      setUserData(user);
-      console.log('已載入用戶數據:', user);
-    } catch (e) {
-      console.error('解析用戶數據錯誤:', e);
-      router.push('/login');
-      return;
-    } finally {
-      setInitialized(true);
-    }
-  }, [router]);
+    checkAuth();
+  }, []);
 
   const handlePasswordChange = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -95,7 +102,8 @@ export default function ChangePasswordPage() {
       
       // 提示並重定向到主頁
       alert('密碼更新成功！即將跳轉到主頁。');
-      router.push('/');
+      isNavigating.current = true;
+      window.location.href = '/';
     } catch (error) {
       console.error('更新密碼失敗:', error);
       
@@ -107,7 +115,8 @@ export default function ChangePasswordPage() {
         // 設置 Cookie
         setCookie('user', 'admin', 7);
         alert('管理員帳戶已確認，即將跳轉到主頁。');
-        router.push('/');
+        isNavigating.current = true;
+        window.location.href = '/';
         return;
       }
       
@@ -117,11 +126,14 @@ export default function ChangePasswordPage() {
     }
   };
 
-  // 如果還未初始化，顯示載入中
-  if (!initialized) {
+  // 如果還未初始化或正在導航，顯示載入中
+  if (!initialized || isNavigating.current) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-blue-50/30">
-        <div className="animate-spin h-10 w-10 border-4 border-blue-500 rounded-full border-t-transparent"></div>
+        <div className="text-center">
+          <div className="animate-spin h-10 w-10 border-4 border-blue-500 rounded-full border-t-transparent"></div>
+          <p className="mt-3 text-gray-600">{isNavigating.current ? '正在跳轉...' : '載入中...'}</p>
+        </div>
       </div>
     );
   }
