@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { 
   HomeIcon, 
   CubeIcon, 
@@ -37,6 +37,7 @@ function deleteCookie(name: string) {
 
 export default function Navigation() {
   const pathname = usePathname();
+  const router = useRouter();
   const [user, setUser] = useState<UserData | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
@@ -48,37 +49,72 @@ export default function Navigation() {
     
     // 在客戶端渲染時獲取用戶信息
     if (typeof window !== 'undefined') {
-      const userStr = localStorage.getItem('user');
-      if (userStr) {
-        try {
+      try {
+        const userStr = localStorage.getItem('user');
+        const userCookie = document.cookie.split(';').find(c => c.trim().startsWith('user='));
+        
+        if (userStr && userCookie) {
           const userData = JSON.parse(userStr);
-          setUser(userData);
-        } catch (e) {
-          console.error('無法解析用戶數據', e);
+          if (userData?.id) {
+            setUser(userData);
+          } else {
+            throw new Error('無效的用戶數據');
+          }
+        } else {
+          // 如果沒有用戶數據或 cookie，重定向到登入頁面
+          if (pathname !== '/login' && pathname !== '/change-password') {
+            router.push('/login');
+          }
         }
+      } catch (e) {
+        console.error('無法解析用戶數據', e);
+        // 清除無效的數據
+        localStorage.removeItem('user');
+        deleteCookie('user');
+        if (pathname !== '/login' && pathname !== '/change-password') {
+          router.push('/login');
+        }
+      } finally {
+        setInitialized(true);
       }
-      setInitialized(true);
     }
-  }, [initialized]);
+  }, [initialized, pathname, router]);
 
   // 如果在登入或更改密碼頁面，不顯示導航
   if (pathname === '/login' || pathname === '/change-password') {
     return null;
   }
 
+  // 如果還沒有初始化完成，顯示加載狀態
+  if (!initialized) {
+    return (
+      <div className="fixed top-0 left-0 right-0 bg-white shadow-sm z-10">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="flex h-16 justify-between items-center">
+            <div className="flex-shrink-0">
+              <span className="font-bold text-xl text-blue-600">Pennine</span>
+            </div>
+            <div className="animate-pulse bg-gray-200 h-4 w-24 rounded"></div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   // 使用 useCallback 記憶化 handleLogout 函數
   const handleLogout = useCallback(() => {
-    if (typeof window !== 'undefined') {
+    try {
       localStorage.removeItem('user');
       localStorage.removeItem('firstLogin');
-      // 清除驗證 Cookie
       deleteCookie('user');
-      window.location.href = '/login';
+      router.push('/login');
+    } catch (error) {
+      console.error('登出錯誤:', error);
     }
-  }, []);
+  }, [router]);
 
   const navLinks = [
-    { name: '首頁', href: '/', icon: HomeIcon },
+    { name: '首頁', href: '/dashboard', icon: HomeIcon },
     { name: '產品管理', href: '/products', icon: CubeIcon },
     { name: '庫存操作', href: '/inventory', icon: ArrowPathIcon },
     { name: '報表', href: '/reports', icon: ChartBarIcon },
@@ -98,7 +134,7 @@ export default function Navigation() {
           <div className="flex h-16 justify-between">
             <div className="flex">
               <div className="flex flex-shrink-0 items-center">
-                <Link href="/" className="font-bold text-xl text-blue-600">Pennine</Link>
+                <Link href="/dashboard" className="font-bold text-xl text-blue-600">Pennine</Link>
               </div>
               <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
                 {displayLinks.map((link) => {
@@ -174,7 +210,7 @@ export default function Navigation() {
         <div className="fixed inset-0 z-40 bg-black bg-opacity-25" onClick={() => setMobileMenuOpen(false)}>
           <div className="fixed inset-y-0 left-0 w-64 bg-white shadow-lg" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between h-16 px-4 border-b border-gray-200">
-              <Link href="/" className="font-bold text-xl text-blue-600">Pennine</Link>
+              <Link href="/dashboard" className="font-bold text-xl text-blue-600">Pennine</Link>
               <button
                 type="button"
                 className="inline-flex items-center justify-center rounded-md p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500"
@@ -202,23 +238,22 @@ export default function Navigation() {
                   </Link>
                 );
               })}
-            </div>
-            <div className="border-t border-gray-200 pt-4 pb-3">
-              <div className="px-4 flex items-center">
-                <UserCircleIcon className="h-10 w-10 text-gray-400" />
-                <div className="ml-3">
+              <div className="border-t border-gray-200 pt-4 pb-3">
+                <div className="px-2">
                   <div className="text-base font-medium text-gray-800">{user?.name}</div>
-                  <div className="text-sm font-medium text-gray-500">{user?.department}</div>
+                  <div className="text-sm text-gray-500">{user?.department}</div>
                 </div>
-              </div>
-              <div className="mt-3 px-2 space-y-1">
-                <button
-                  onClick={handleLogout}
-                  className="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:bg-gray-50 hover:text-gray-900 flex items-center"
-                >
-                  <ArrowRightOnRectangleIcon className="h-5 w-5 mr-2" />
-                  登出
-                </button>
+                <div className="mt-3 space-y-1">
+                  <button
+                    onClick={handleLogout}
+                    className="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:bg-gray-50 hover:text-gray-900"
+                  >
+                    <div className="flex items-center">
+                      <ArrowRightOnRectangleIcon className="h-5 w-5 mr-2" />
+                      登出
+                    </div>
+                  </button>
+                </div>
               </div>
             </div>
           </div>
