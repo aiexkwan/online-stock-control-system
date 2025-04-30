@@ -44,77 +44,76 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-500 via-blue-600 to-purple-600">
-      <div className="w-full max-w-md p-8 rounded-lg bg-white/10 backdrop-blur-md shadow-xl">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-blue-50 to-blue-100">
+      <div className="w-full max-w-sm p-8">
         <div className="flex justify-center mb-8">
-          <div className="w-20 h-20 bg-white/20 rounded-full flex items-center justify-center shadow-2xl">
-            <svg
-              className="w-10 h-10 text-white"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-              />
-            </svg>
-          </div>
+          <svg 
+            className="w-16 h-16 text-blue-500" 
+            viewBox="0 0 24 24" 
+            fill="currentColor"
+          >
+            <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+          </svg>
         </div>
-        
-        <h2 className="text-3xl font-bold text-center text-white mb-8">
-          Member Login
-        </h2>
 
-        <form onSubmit={handleLogin} className="space-y-6">
-          <div>
-            <label className="block text-sm font-medium text-white mb-2">
-              Email *
-            </label>
+        <form onSubmit={handleLogin} className="space-y-4">
+          <div className="relative">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <svg className="h-5 w-5 text-gray-400" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+              </svg>
+            </div>
             <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-white/50 transition-all duration-200"
-              placeholder="Enter your email"
+              className="block w-full pl-10 pr-3 py-2 border border-gray-200 rounded-full bg-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder="USERNAME"
               required
               autoComplete="email"
             />
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-white mb-2">
-              Password *
-            </label>
+          <div className="relative">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <svg className="h-5 w-5 text-gray-400" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/>
+              </svg>
+            </div>
             <input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-white/50 transition-all duration-200"
-              placeholder="Enter your password"
+              className="block w-full pl-10 pr-3 py-2 border border-gray-200 rounded-full bg-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder="••••••••••"
               required
               autoComplete="current-password"
             />
           </div>
 
-          <div className="flex items-center">
-            <input
-              type="checkbox"
-              id="remember"
-              checked={rememberMe}
-              onChange={(e) => setRememberMe(e.target.checked)}
-              className="h-4 w-4 text-emerald-500 focus:ring-emerald-500 border-white/20 rounded transition-colors duration-200"
-            />
-            <label htmlFor="remember" className="ml-2 block text-sm text-white">
-              Remember me
-            </label>
+          <div className="flex items-center justify-between text-sm">
+            <div className="flex items-center">
+              <input
+                type="checkbox"
+                id="remember"
+                checked={rememberMe}
+                onChange={(e) => setRememberMe(e.target.checked)}
+                className="h-4 w-4 text-blue-500 focus:ring-blue-500 border-gray-300 rounded"
+              />
+              <label htmlFor="remember" className="ml-2 block text-gray-600">
+                Remember me
+              </label>
+            </div>
+            <a
+              href="/forgot-password"
+              className="text-blue-500 hover:text-blue-600"
+            >
+              Forgot password?
+            </a>
           </div>
 
           {error && (
-            <div className="bg-red-500/10 text-red-200 text-sm p-3 rounded-lg text-center">
+            <div className="text-red-500 text-sm text-center">
               {error}
             </div>
           )}
@@ -122,7 +121,7 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-emerald-500 hover:bg-emerald-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed relative"
+            className="w-full py-2 px-4 border border-transparent rounded-full text-white bg-blue-500 hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading ? (
               <div className="flex items-center justify-center">
@@ -136,21 +135,6 @@ export default function LoginPage() {
               'LOGIN'
             )}
           </button>
-
-          <div className="flex items-center justify-between mt-6 text-sm">
-            <a
-              href="/register"
-              className="text-white/80 hover:text-white transition-colors duration-200 hover:underline"
-            >
-              Don't have an account?
-            </a>
-            <a
-              href="/forgot-password"
-              className="text-white/80 hover:text-white transition-colors duration-200 hover:underline"
-            >
-              Forgot password?
-            </a>
-          </div>
         </form>
       </div>
     </div>
