@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '../../lib/supabase';
 
@@ -21,26 +21,29 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [authChecked, setAuthChecked] = useState(false);
 
-  // 檢查用戶是否已登入
+  // 檢查用戶是否已登入 - 只執行一次
   useEffect(() => {
-    const checkUser = () => {
+    // 避免在服務器端執行
+    if (typeof window === 'undefined') return;
+    
+    try {
       const userStr = localStorage.getItem('user');
       if (userStr) {
-        try {
-          const userData = JSON.parse(userStr);
-          if (userData?.id) {
-            window.location.href = '/';
-          }
-        } catch (e) {
-          console.error('解析用戶數據錯誤', e);
-          localStorage.removeItem('user');
+        const userData = JSON.parse(userStr);
+        if (userData?.id) {
+          router.push('/');
+          return;
         }
       }
-    };
-    
-    checkUser();
-  }, []);
+    } catch (e) {
+      console.error('解析用戶數據錯誤', e);
+      localStorage.removeItem('user');
+    } finally {
+      setAuthChecked(true);
+    }
+  }, [router]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -130,12 +133,10 @@ export default function LoginPage() {
       if (isFirstLogin) {
         console.log('首次登入，跳轉到修改密碼頁面');
         localStorage.setItem('firstLogin', 'true');
-        
-        // 改用直接導航而不是使用 router API
-        window.location.href = '/change-password';
+        router.push('/change-password');
       } else {
         // 否則，重定向到主頁
-        window.location.href = '/';
+        router.push('/');
       }
     } catch (error) {
       console.error('登入錯誤:', error);
@@ -144,6 +145,18 @@ export default function LoginPage() {
       setLoading(false);
     }
   };
+
+  // 如果還在檢查認證狀態，可以選擇顯示一個載入狀態
+  if (!authChecked && typeof window !== 'undefined') {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-blue-50/30">
+        <div className="text-center">
+          <div className="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-600"></div>
+          <p className="mt-2 text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-blue-50/30">

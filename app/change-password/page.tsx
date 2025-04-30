@@ -1,9 +1,22 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import { supabase } from '../../lib/supabase';
 
+// 設置 Cookie 函數
+function setCookie(name: string, value: string, days: number) {
+  let expires = "";
+  if (days) {
+    const date = new Date();
+    date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
+    expires = "; expires=" + date.toUTCString();
+  }
+  document.cookie = name + "=" + (value || "") + expires + "; path=/";
+}
+
 export default function ChangePasswordPage() {
+  const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [newPassword, setNewPassword] = useState('');
@@ -19,11 +32,10 @@ export default function ChangePasswordPage() {
     const userStr = localStorage.getItem('user');
     const firstLogin = localStorage.getItem('firstLogin');
     
-    setInitialized(true);
-    
     if (!userStr || !firstLogin) {
       // 如果沒有用戶資訊或不是首次登入，重定向到登入頁面
-      window.location.href = '/login';
+      console.log('用戶未登入或非首次登入，重定向到登入頁面');
+      router.push('/login');
       return;
     }
     
@@ -33,9 +45,12 @@ export default function ChangePasswordPage() {
       console.log('已載入用戶數據:', user);
     } catch (e) {
       console.error('解析用戶數據錯誤:', e);
-      window.location.href = '/login';
+      router.push('/login');
+      return;
+    } finally {
+      setInitialized(true);
     }
-  }, []);
+  }, [router]);
 
   const handlePasswordChange = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -80,7 +95,7 @@ export default function ChangePasswordPage() {
       
       // 提示並重定向到主頁
       alert('密碼更新成功！即將跳轉到主頁。');
-      window.location.href = '/';
+      router.push('/');
     } catch (error) {
       console.error('更新密碼失敗:', error);
       
@@ -92,7 +107,7 @@ export default function ChangePasswordPage() {
         // 設置 Cookie
         setCookie('user', 'admin', 7);
         alert('管理員帳戶已確認，即將跳轉到主頁。');
-        window.location.href = '/';
+        router.push('/');
         return;
       }
       
@@ -101,17 +116,6 @@ export default function ChangePasswordPage() {
       setLoading(false);
     }
   };
-
-  // 設置 Cookie 函數
-  function setCookie(name: string, value: string, days: number) {
-    let expires = "";
-    if (days) {
-      const date = new Date();
-      date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
-      expires = "; expires=" + date.toUTCString();
-    }
-    document.cookie = name + "=" + (value || "") + expires + "; path=/";
-  }
 
   // 如果還未初始化，顯示載入中
   if (!initialized) {
