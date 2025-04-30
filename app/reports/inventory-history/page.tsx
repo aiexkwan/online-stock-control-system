@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../../../lib/supabase';
 import { useRouter } from 'next/navigation';
 
@@ -47,6 +47,7 @@ export default function InventoryHistoryPage() {
   const [loading, setLoading] = useState(true);
   const [movements, setMovements] = useState<InventoryMovement[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
+  const [totalRecords, setTotalRecords] = useState(0);
   
   // 篩選條件
   const [selectedProduct, setSelectedProduct] = useState<number | null>(null);
@@ -62,30 +63,15 @@ export default function InventoryHistoryPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 15;
   
-  useEffect(() => {
-    // 載入產品列表
-    async function fetchProducts() {
-      try {
-        const { data, error } = await supabase
-          .from('products')
-          .select('id, name, sku')
-          .order('name', { ascending: true });
-          
-        if (error) throw error;
-        setProducts(data || []);
-      } catch (error) {
-        console.error('Error fetching products:', error);
-      }
+  // 初始化標記，避免重複請求
+  const [initialized, setInitialized] = useState(false);
+  
+  // 使用 useCallback 記憶化獲取移動記錄的函數
+  const fetchMovements = useCallback(async (shouldReset = false) => {
+    if (shouldReset) {
+      setCurrentPage(1);
     }
     
-    fetchProducts();
-  }, []);
-  
-  useEffect(() => {
-    fetchMovements();
-  }, [selectedProduct, selectedType, startDate, endDate, sortField, sortDirection, currentPage]);
-  
-  const fetchMovements = async () => {
     setLoading(true);
     
     try {
@@ -103,7 +89,7 @@ export default function InventoryHistoryPage() {
           created_at,
           notes,
           products(name, sku)
-        `)
+        `, { count: 'exact' })
         .order(sortField, { ascending: sortDirection === 'asc' });
       
       // 添加篩選條件
@@ -129,9 +115,13 @@ export default function InventoryHistoryPage() {
       
       query = query.range(from, to);
       
-      const { data, error } = await query;
+      const { data, error, count } = await query;
       
       if (error) throw error;
+      
+      if (count !== null) {
+        setTotalRecords(count);
+      }
       
       // 格式化數據
       const formattedData: InventoryMovement[] = (data as unknown as any[] || []).map(item => ({
@@ -154,6 +144,42 @@ export default function InventoryHistoryPage() {
     } finally {
       setLoading(false);
     }
+  }, [selectedProduct, selectedType, startDate, endDate, sortField, sortDirection, currentPage, pageSize]);
+  
+  // 載入產品列表
+  const fetchProducts = useCallback(async () => {
+    try {
+      const { data, error } = await supabase
+        .from('data_product')  // 確保表名正確
+        .select('id, name, sku')
+        .order('name', { ascending: true });
+        
+      if (error) throw error;
+      setProducts(data || []);
+    } catch (error) {
+      console.error('Error fetching products:', error);
+    }
+  }, []);
+  
+  // 初始加載數據
+  useEffect(() => {
+    if (!initialized) {
+      fetchProducts();
+      fetchMovements();
+      setInitialized(true);
+    }
+  }, [initialized, fetchProducts, fetchMovements]);
+  
+  // 當篩選、排序或分頁更改時重新獲取數據
+  useEffect(() => {
+    if (initialized) {
+      fetchMovements();
+    }
+  }, [initialized, currentPage, sortField, sortDirection, fetchMovements]);
+  
+  // 應用篩選器時重置頁面並獲取數據
+  const applyFilters = () => {
+    fetchMovements(true);
   };
   
   const handleSort = (field: string) => {
@@ -212,7 +238,7 @@ export default function InventoryHistoryPage() {
     document.body.removeChild(link);
   };
   
-  const totalPages = Math.max(1, Math.ceil(movements.length / pageSize));
+  const totalPages = Math.max(1, Math.ceil(totalRecords / pageSize));
   
   return (
     <div className="p-6">
@@ -282,7 +308,7 @@ export default function InventoryHistoryPage() {
         
         <div className="flex justify-end mt-4">
           <button
-            onClick={() => fetchMovements()}
+            onClick={applyFilters}
             className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors mr-2"
           >
             應用篩選
@@ -412,7 +438,7 @@ export default function InventoryHistoryPage() {
           {/* 分頁 */}
           <div className="flex justify-between items-center mt-4">
             <div className="text-sm text-gray-500">
-              顯示 {movements.length} 條記錄
+              顯示 {movements.length} 條記錄 (共 {totalRecords} 條)
             </div>
             
             <div className="flex space-x-2">
