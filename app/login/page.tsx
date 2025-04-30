@@ -29,14 +29,23 @@ export default function LoginPage() {
         throw new Error('User ID not found. Access denied.');
       }
 
-      // 檢查密碼 (這裡假設密碼欄位存儲的是明文密碼)
-      // 在生產環境中，應該使用適當的密碼雜湊和比較方法
-      if (userData.password !== password && password !== 'admin123') {
-        throw new Error('Invalid password. Please try again.');
+      // 檢查是否是首次登入（密碼欄位為null或與ID相同）
+      const isFirstLogin = !userData.password || userData.password === userId || userData.password === "";
+      
+      // 檢查密碼
+      if (isFirstLogin) {
+        // 首次登入：密碼應該與用戶ID相同
+        if (password !== userId && password !== 'admin123') {
+          throw new Error('For first login, please use your ID number as the password.');
+        }
+      } else {
+        // 後續登入：密碼應該是用戶設置的密碼
+        if (userData.password !== password && password !== 'admin123') {
+          throw new Error('Invalid password. Please try again.');
+        }
       }
 
       // 登入成功，將用戶資訊存儲在 localStorage 中
-      // 注意：在實際應用中，應該使用更安全的會話管理方法
       localStorage.setItem('user', JSON.stringify({
         id: userData.id,
         name: userData.name,
@@ -51,8 +60,14 @@ export default function LoginPage() {
         }
       }));
 
-      // 重定向到主頁
-      router.push('/');
+      // 如果是首次登入，設置標記並重定向到更改密碼頁面
+      if (isFirstLogin) {
+        localStorage.setItem('firstLogin', 'true');
+        router.push('/change-password');
+      } else {
+        // 否則，重定向到主頁
+        router.push('/');
+      }
     } catch (error) {
       setError(error instanceof Error ? error.message : 'Login failed');
     } finally {
@@ -130,6 +145,9 @@ export default function LoginPage() {
                     className="w-full px-4 py-2.5 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
                     placeholder="••••••••"
                   />
+                  <p className="mt-1 text-xs text-gray-500">
+                    First time login? Use your ID number as password.
+                  </p>
                 </div>
               </div>
             </div>
