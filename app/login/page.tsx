@@ -45,6 +45,10 @@ export default function LoginPage() {
         }
       }
 
+      // 清除之前可能存在的狀態
+      localStorage.removeItem('user');
+      localStorage.removeItem('firstLogin');
+
       // 登入成功，將用戶資訊存儲在 localStorage 中
       localStorage.setItem('user', JSON.stringify({
         id: userData.id,
@@ -62,8 +66,13 @@ export default function LoginPage() {
 
       // 如果是首次登入，設置標記並重定向到更改密碼頁面
       if (isFirstLogin) {
+        console.log('First login detected, redirecting to change password page');
         localStorage.setItem('firstLogin', 'true');
-        router.push('/change-password');
+        
+        // 等待一下確保 localStorage 更新完成
+        setTimeout(() => {
+          router.push('/change-password');
+        }, 100);
       } else {
         // 否則，重定向到主頁
         router.push('/');

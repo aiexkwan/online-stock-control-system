@@ -11,11 +11,17 @@ export default function ChangePasswordPage() {
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [userData, setUserData] = useState<any>(null);
+  const [initialized, setInitialized] = useState(false);
 
   useEffect(() => {
+    // 防止 SSR 渲染問題
+    if (typeof window === 'undefined') return;
+    
     // 檢查是否有用戶資訊
     const userStr = localStorage.getItem('user');
     const firstLogin = localStorage.getItem('firstLogin');
+    
+    setInitialized(true);
     
     if (!userStr || !firstLogin) {
       // 如果沒有用戶資訊或不是首次登入，重定向到登入頁面
@@ -74,6 +80,15 @@ export default function ChangePasswordPage() {
       setLoading(false);
     }
   };
+
+  // 如果還未初始化，顯示載入中
+  if (!initialized) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="animate-spin h-10 w-10 border-4 border-blue-500 rounded-full border-t-transparent"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 px-4">
