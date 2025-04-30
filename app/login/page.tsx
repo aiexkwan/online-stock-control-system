@@ -38,13 +38,31 @@ export default function LoginPage() {
       {/* Left side - Illustration */}
       <div className="hidden lg:flex lg:w-1/2 bg-blue-50 items-center justify-center p-12">
         <div className="max-w-md">
-          <svg className="w-full" viewBox="0 0 400 300" fill="none">
-            <path d="M50,150 Q150,50 250,150" stroke="#2563EB" strokeWidth="2" fill="none" opacity="0.2"/>
-            <circle cx="200" cy="150" r="80" fill="#2563EB" fillOpacity="0.1"/>
-            <path d="M170,120 Q200,80 230,120" stroke="#2563EB" strokeWidth="2" fill="none"/>
-            <rect x="160" y="140" width="80" height="100" rx="8" fill="#2563EB" fillOpacity="0.2"/>
-            <circle cx="200" cy="180" r="8" fill="#2563EB"/>
-          </svg>
+          <div className="relative w-full aspect-square max-w-[400px] mx-auto">
+            {/* Background circle */}
+            <div className="absolute inset-0 bg-blue-100/30 rounded-full"></div>
+            
+            {/* Illustration */}
+            <svg className="w-full h-full" viewBox="0 0 400 400" fill="none" xmlns="http://www.w3.org/2000/svg">
+              {/* Background Elements */}
+              <circle cx="200" cy="200" r="160" fill="#EBF5FF" />
+              
+              {/* Main Rectangle */}
+              <rect x="120" y="100" width="160" height="200" rx="12" fill="#FFFFFF" stroke="#2563EB" strokeWidth="2"/>
+              
+              {/* Decorative Lines */}
+              <path d="M140 140H260" stroke="#2563EB" strokeWidth="2" strokeLinecap="round" opacity="0.3"/>
+              <path d="M140 180H260" stroke="#2563EB" strokeWidth="2" strokeLinecap="round" opacity="0.3"/>
+              <path d="M140 220H260" stroke="#2563EB" strokeWidth="2" strokeLinecap="round" opacity="0.3"/>
+              
+              {/* Decorative Circles */}
+              <circle cx="200" cy="260" r="8" fill="#2563EB"/>
+              
+              {/* Arc */}
+              <path d="M100 200C100 150 150 100 200 100" stroke="#2563EB" strokeWidth="2" opacity="0.2"/>
+              <path d="M200 100C250 100 300 150 300 200" stroke="#2563EB" strokeWidth="2"/>
+            </svg>
+          </div>
           <div className="mt-8 text-center">
             <h2 className="text-2xl font-bold text-gray-800">Pennine Stock Control</h2>
             <p className="mt-2 text-gray-600">Manage your inventory efficiently and securely</p>
