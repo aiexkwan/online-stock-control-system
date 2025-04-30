@@ -41,52 +41,49 @@ export default function Navigation() {
   const [user, setUser] = useState<UserData | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
-  const [initialized, setInitialized] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // 防止重複執行
-    if (initialized) return;
-    
-    // 在客戶端渲染時獲取用戶信息
-    if (typeof window !== 'undefined') {
+    const checkUser = () => {
       try {
         const userStr = localStorage.getItem('user');
-        const userCookie = document.cookie.split(';').find(c => c.trim().startsWith('user='));
-        
-        if (userStr && userCookie) {
+        if (userStr) {
           const userData = JSON.parse(userStr);
-          if (userData?.id) {
-            setUser(userData);
-          } else {
-            throw new Error('無效的用戶數據');
-          }
-        } else {
-          // 如果沒有用戶數據或 cookie，重定向到登入頁面
-          if (pathname !== '/login' && pathname !== '/change-password') {
-            router.push('/login');
-          }
+          setUser(userData);
+        } else if (pathname !== '/login' && pathname !== '/change-password') {
+          router.push('/login');
         }
-      } catch (e) {
-        console.error('無法解析用戶數據', e);
-        // 清除無效的數據
-        localStorage.removeItem('user');
-        deleteCookie('user');
+      } catch (error) {
+        console.error('Error parsing user data:', error);
         if (pathname !== '/login' && pathname !== '/change-password') {
           router.push('/login');
         }
       } finally {
-        setInitialized(true);
+        setIsLoading(false);
       }
+    };
+
+    checkUser();
+  }, [pathname, router]);
+
+  const handleLogout = useCallback(() => {
+    try {
+      localStorage.removeItem('user');
+      localStorage.removeItem('firstLogin');
+      deleteCookie('user');
+      router.push('/login');
+    } catch (error) {
+      console.error('Logout error:', error);
     }
-  }, [initialized, pathname, router]);
+  }, [router]);
 
   // 如果在登入或更改密碼頁面，不顯示導航
   if (pathname === '/login' || pathname === '/change-password') {
     return null;
   }
 
-  // 如果還沒有初始化完成，顯示加載狀態
-  if (!initialized) {
+  // 如果正在加載，顯示占位導航
+  if (isLoading) {
     return (
       <div className="fixed top-0 left-0 right-0 bg-white shadow-sm z-10">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -100,18 +97,6 @@ export default function Navigation() {
       </div>
     );
   }
-
-  // 使用 useCallback 記憶化 handleLogout 函數
-  const handleLogout = useCallback(() => {
-    try {
-      localStorage.removeItem('user');
-      localStorage.removeItem('firstLogin');
-      deleteCookie('user');
-      router.push('/login');
-    } catch (error) {
-      console.error('登出錯誤:', error);
-    }
-  }, [router]);
 
   const navLinks = [
     { name: '首頁', href: '/dashboard', icon: HomeIcon },

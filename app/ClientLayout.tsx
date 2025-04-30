@@ -19,23 +19,24 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    try {
-      setMounted(true);
-    } catch (error) {
-      console.error('ClientLayout mounting error:', error);
-    }
+    setMounted(true);
+    return () => setMounted(false);
   }, []);
 
-  // 如果還沒有掛載完成，顯示加載狀態
   if (!mounted) {
-    return <LoadingSpinner />;
+    return (
+      <div className="min-h-screen flex flex-col">
+        <div className="h-16 bg-white shadow-sm" /> {/* 導航欄佔位符 */}
+        <LoadingSpinner />
+      </div>
+    );
   }
 
   return (
     <ErrorBoundary>
       <div className="min-h-screen flex flex-col">
         <Navigation />
-        <main className="flex-grow pt-16"> {/* 為導航欄保留空間 */}
+        <main className="flex-grow pt-16">
           {children}
         </main>
       </div>
