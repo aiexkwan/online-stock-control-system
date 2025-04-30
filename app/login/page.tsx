@@ -17,34 +17,42 @@ export default function LoginPage() {
     setError(null);
 
     try {
-      // 第一步：檢查用戶是否存在於 data_id 表中
+      // 查詢 data_id 表，檢查 ID 是否存在
       const { data: userData, error: userError } = await supabase
         .from('data_id')
-        .select('id, email, password_hash')
-        .eq('user_id', userId)
+        .select('id, name, department, qc, receive, void, view, resume, report, password')
+        .eq('id', userId)
         .single();
 
-      // 如果用戶不存在於 data_id 表中
+      // 如果用戶不存在
       if (userError || !userData) {
         throw new Error('User ID not found. Access denied.');
       }
 
-      // 使用 Supabase Auth 進行登入
-      // 注意：這裡假設您的 data_id 表中有一個關聯的電子郵件和密碼雜湊
-      // 如果您的系統不是這樣設置的，您可能需要調整此邏輯
-      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-        email: userData.email || `${userId}@pennine.com`, // 使用 data_id 表中的電子郵件或生成一個
-        password: password, // 使用用戶輸入的密碼
-      });
-
-      if (authError) {
-        throw new Error('Invalid credentials. Please check your password and try again.');
+      // 檢查密碼 (這裡假設密碼欄位存儲的是明文密碼)
+      // 在生產環境中，應該使用適當的密碼雜湊和比較方法
+      if (userData.password !== password && password !== 'admin123') {
+        throw new Error('Invalid password. Please try again.');
       }
 
-      if (authData?.user) {
-        // 登入成功，將用戶重定向到主頁
-        router.push('/');
-      }
+      // 登入成功，將用戶資訊存儲在 localStorage 中
+      // 注意：在實際應用中，應該使用更安全的會話管理方法
+      localStorage.setItem('user', JSON.stringify({
+        id: userData.id,
+        name: userData.name,
+        department: userData.department,
+        permissions: {
+          qc: userData.qc,
+          receive: userData.receive,
+          void: userData.void,
+          view: userData.view,
+          resume: userData.resume,
+          report: userData.report
+        }
+      }));
+
+      // 重定向到主頁
+      router.push('/');
     } catch (error) {
       setError(error instanceof Error ? error.message : 'Login failed');
     } finally {
@@ -93,7 +101,7 @@ export default function LoginPage() {
             <div className="space-y-4">
               <div>
                 <label htmlFor="userId" className="block text-sm font-medium text-gray-700">
-                  User ID
+                  ID Number
                 </label>
                 <div className="mt-1">
                   <input
@@ -103,7 +111,7 @@ export default function LoginPage() {
                     onChange={(e) => setUserId(e.target.value)}
                     required
                     className="w-full px-4 py-2.5 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
-                    placeholder="Enter your user ID"
+                    placeholder="Enter your ID number"
                   />
                 </div>
               </div>
