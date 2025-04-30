@@ -26,5 +26,9 @@
     "autoprefixer": "^10.4.16",
     "postcss": "^8.4.32",
     "typescript": "latest"
+  },
+  "optionalDependencies": {
+    "bufferutil": "^4.0.9",
+    "utf-8-validate": "^6.0.5"
   }
 }
