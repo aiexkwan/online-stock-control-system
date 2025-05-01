@@ -18,13 +18,20 @@ const nextConfig = {
     ];
   },
   webpack: (config) => {
+    // 使用內存緩存，避免磁盤讀寫問題
+    config.cache = {
+      type: 'memory',
+      buildDependencies: {
+        // 確保在 next.config.js 更改時重新構建
+        config: [__filename]
+      }
+    };
     config.resolve.alias = {
       ...config.resolve.alias,
-      '@': '.',
-    }
-    // 添加 WebSocket 相關配置
+      '@': '.'
+    };
     config.externals = [...(config.externals || []), { 'utf-8-validate': 'commonjs utf-8-validate', 'bufferutil': 'commonjs bufferutil' }];
-    return config
+    return config;
   },
   // 添加 Supabase WebSocket 域名到允許列表
   async headers() {

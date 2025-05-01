@@ -310,14 +310,14 @@ export default function LoginPage() {
               <div className="mt-4 text-center">
                 <p className="text-sm text-gray-600 mb-2">如果頁面無法顯示，請嘗試以下連結：</p>
                 <div className="flex flex-wrap justify-center space-x-2 space-y-2">
-                  <a href="/dashboard.tsx" className="text-xs text-blue-600 hover:underline">
-                    儀表板 (替代)
+                  <a href="/dashboard" className="text-xs text-blue-600 hover:underline">
+                    儀表板
                   </a>
-                  <a href="/pass-change" className="text-xs text-blue-600 hover:underline">
-                    密碼頁面 (替代)
+                  <a href="/new-password" className="text-xs text-blue-600 hover:underline">
+                    密碼修改頁面
                   </a>
                   <a href="/direct-dashboard" className="text-xs font-bold text-red-600 hover:underline">
-                    直接儀表板 (無需驗證)
+                    直接儀表板（測試）
                   </a>
                 </div>
               </div>
