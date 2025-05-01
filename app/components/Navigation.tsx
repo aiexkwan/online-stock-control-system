@@ -60,7 +60,7 @@ export default function Navigation() {
           <Link
             key="Home"
             href="/dashboard"
-            className={`flex items-center px-4 py-2 text-sm font-medium rounded-md mb-4 text-gray-300 hover:bg-gray-700 hover:text-white`}
+            className={`flex items-center px-4 py-2 text-base font-medium rounded-md mb-4 text-gray-300 hover:bg-gray-700 hover:text-white`}
           >
             <HomeIcon className="mr-3 h-6 w-6" />
             Home
@@ -69,7 +69,7 @@ export default function Navigation() {
             <Link
               key={item.name}
               href={item.href}
-              className={`flex items-center px-4 py-2 text-sm font-medium rounded-md mb-2 ${
+              className={`flex items-center px-4 py-2 text-base font-medium rounded-md mb-2 ${
                 pathname === item.href
                   ? 'bg-gray-800 text-white'
                   : 'text-gray-300 hover:bg-gray-700 hover:text-white'
@@ -82,13 +82,13 @@ export default function Navigation() {
         </nav>
         {/* 新增底部三個按鈕 */}
         <div className="px-2 pb-6 flex flex-col gap-2">
-          <Link href="/products/update" className="flex items-center px-4 py-2 text-sm font-medium rounded-md text-gray-300 hover:bg-gray-700 hover:text-white">
+          <Link href="/products/update" className="flex items-center px-4 py-2 text-base font-medium rounded-md text-gray-300 hover:bg-gray-700 hover:text-white">
             <span className="mr-3">🛠️</span> Product Update
           </Link>
-          <Link href="/access/update" className="flex items-center px-4 py-2 text-sm font-medium rounded-md text-gray-300 hover:bg-gray-700 hover:text-white">
+          <Link href="/access/update" className="flex items-center px-4 py-2 text-base font-medium rounded-md text-gray-300 hover:bg-gray-700 hover:text-white">
             <span className="mr-3">🔑</span> Access Update
           </Link>
-          <button onClick={() => { localStorage.removeItem('user'); router.push('/login'); }} className="flex items-center px-4 py-2 text-sm font-medium rounded-md text-gray-300 hover:bg-gray-700 hover:text-white">
+          <button onClick={() => { localStorage.removeItem('user'); router.push('/login'); }} className="flex items-center px-4 py-2 text-base font-medium rounded-md text-gray-300 hover:bg-gray-700 hover:text-white">
             <span className="mr-3">🚪</span> LogOut
           </button>
         </div>
