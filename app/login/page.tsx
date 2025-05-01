@@ -65,11 +65,6 @@ export default function LoginPage() {
       if (userError) throw new Error('用戶不存在');
       if (!userData) throw new Error('找不到用戶');
 
-      // 驗證密碼
-      if (userData.password !== password && password !== userData.id) {
-        throw new Error('密碼錯誤');
-      }
-
       // 使用 Supabase Auth 登入
       const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
         email: `${userId}@pennine.com`,
