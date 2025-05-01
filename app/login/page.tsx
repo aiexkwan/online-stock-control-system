@@ -120,7 +120,10 @@ export default function LoginPage() {
         if (password === userId || !userData.password) {
           console.log('需要更改密碼，跳轉到密碼更改頁面');
           localStorage.setItem('firstLogin', 'true');
-          router.push('/change-password');
+          
+          // 使用新的密碼修改頁面
+          console.log('跳轉到新密碼頁面...');
+          window.location.href = '/new-password';
         } else {
           console.log('登入成功，跳轉到儀表板');
           router.push('/dashboard');
@@ -165,8 +168,9 @@ export default function LoginPage() {
           localStorage.setItem('user', JSON.stringify(userData));
           localStorage.setItem('firstLogin', 'true');
           
-          // 直接使用 Next.js 路由導航
-          router.push('/change-password');
+          // 先嘗試跳轉到測試頁面進行診斷
+          console.log('跳轉到測試頁面...');
+          window.location.href = '/test-page';
           return;
         }
         
