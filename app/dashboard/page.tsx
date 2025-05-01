@@ -5,6 +5,7 @@ import { MagnifyingGlassIcon } from '@heroicons/react/24/outline';
 import { motion } from 'framer-motion';
 import { getLatestPalletInfo, type PalletInfo } from '../services/palletInfo';
 import PrintHistory from '../components/PrintHistory';
+import GrnHistory from '../components/GrnHistory';
 
 const fadeInUp = {
   initial: { opacity: 0, y: 20 },
@@ -27,6 +28,20 @@ export default function DashboardPage() {
   const [palletData, setPalletData] = useState<PalletInfo[]>([]);
   const [palletLoading, setPalletLoading] = useState(true);
   const [palletError, setPalletError] = useState<string>();
+  const [grnData, setGrnData] = useState([
+    { grn: 'GRN#1001', code: 'CODE-A1', count: 5 },
+    { grn: 'GRN#1002', code: 'CODE-B2', count: 3 },
+    { grn: 'GRN#1003', code: 'CODE-C3', count: 7 },
+    { grn: 'GRN#1004', code: 'CODE-D4', count: 4 },
+    { grn: 'GRN#1005', code: 'CODE-E5', count: 6 },
+    { grn: 'GRN#1006', code: 'CODE-F6', count: 2 },
+    { grn: 'GRN#1007', code: 'CODE-G7', count: 8 },
+    { grn: 'GRN#1008', code: 'CODE-H8', count: 3 },
+    { grn: 'GRN#1009', code: 'CODE-I9', count: 5 },
+    { grn: 'GRN#1010', code: 'CODE-J10', count: 4 }
+  ]);
+  const [grnLoading, setGrnLoading] = useState(false);
+  const [grnError, setGrnError] = useState<string>();
   const [stats, setStats] = useState({
     totalItems: 0,
     recentActivities: 0,
@@ -247,12 +262,12 @@ export default function DashboardPage() {
           variants={staggerContainer}
           initial="initial"
           animate="animate"
-          className="grid grid-cols-12 gap-6"
+          className="grid grid-cols-2 gap-6"
         >
           {/* Print History Section */}
           <motion.div 
             variants={fadeInUp}
-            className="col-span-8"
+            className="col-span-1"
           >
             <PrintHistory
               data={palletData}
@@ -261,49 +276,16 @@ export default function DashboardPage() {
             />
           </motion.div>
 
-          {/* GRN Received Today */}
+          {/* GRN History */}
           <motion.div 
             variants={fadeInUp}
-            className="col-span-4 bg-white p-4 rounded-lg shadow hover:shadow-lg transition-shadow"
+            className="col-span-1"
           >
-            <h3 className="text-lg font-semibold mb-4">GRN Received Today</h3>
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead>
-                  <tr>
-                    <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">GRN Number</th>
-                    <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Code</th>
-                    <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Count of pallet</th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-100">
-                  {[
-                    { grn: 'GRN#1001', code: 'CODE-A1', count: 5 },
-                    { grn: 'GRN#1002', code: 'CODE-B2', count: 3 },
-                    { grn: 'GRN#1003', code: 'CODE-C3', count: 7 },
-                    { grn: 'GRN#1004', code: 'CODE-D4', count: 4 },
-                    { grn: 'GRN#1005', code: 'CODE-E5', count: 6 },
-                    { grn: 'GRN#1006', code: 'CODE-F6', count: 2 },
-                    { grn: 'GRN#1007', code: 'CODE-G7', count: 8 },
-                    { grn: 'GRN#1008', code: 'CODE-H8', count: 3 },
-                    { grn: 'GRN#1009', code: 'CODE-I9', count: 5 },
-                    { grn: 'GRN#1010', code: 'CODE-J10', count: 4 }
-                  ].map((item, idx) => (
-                    <motion.tr 
-                      key={idx}
-                      initial={{ opacity: 0, x: 20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: idx * 0.05 }}
-                      className="hover:bg-gray-50"
-                    >
-                      <td className="px-3 py-2 text-sm text-gray-700">{item.grn}</td>
-                      <td className="px-3 py-2 text-sm text-gray-700">{item.code}</td>
-                      <td className="px-3 py-2 text-sm text-gray-700">{item.count}</td>
-                    </motion.tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <GrnHistory
+              data={grnData}
+              isLoading={grnLoading}
+              error={grnError}
+            />
           </motion.div>
         </motion.div>
       </div>
