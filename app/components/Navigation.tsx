@@ -55,7 +55,7 @@ export default function Navigation() {
         </div>
       </div>
       {/* 左側功能選單（無任何中文標題） */}
-      <div className="fixed left-0 top-16 bottom-0 w-1/5 min-w-[180px] max-w-xs bg-[#23263a] text-white z-10 flex flex-col justify-between">
+      <div className="fixed left-0 top-16 bottom-0 w-1/4 min-w-[220px] max-w-sm bg-[#23263a] text-white z-10 flex flex-col justify-between">
         <nav className="mt-5 px-2">
           <Link
             key="Home"
