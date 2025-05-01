@@ -26,8 +26,12 @@ export default function LoginPage() {
     setLoading(true);
     setError(null);
 
-    // 先進行連接測試
+    // 直接輸出登入嘗試信息
+    console.log('==== 登入嘗試 ====');
+    console.log(`用戶ID: ${userId}, 密碼長度: ${password.length}個字符`);
+
     try {
+      // 先進行連接測試
       console.log('測試 Supabase 連接...');
       
       // 簡單連接測試 - 嘗試載入 1 條記錄
@@ -71,13 +75,18 @@ export default function LoginPage() {
         };
 
         localStorage.setItem('user', JSON.stringify(adminData));
-        router.replace('/dashboard');
+        
+        // 直接打開儀表板頁面
+        console.log('正在打開儀表板頁面...');
+        window.open('/dashboard', '_self');
         return;
       }
 
-      // 硬編碼測試用戶（用於應急）
-      const testUsers: { [key: string]: any } = {
-        '5997': {
+      // 硬編碼測試用戶邏輯
+      if (userId === '5997' && password === '5997') {
+        console.log('測試用戶5997登入成功 (硬編碼方式)');
+        
+        const userData = {
           id: '5997',
           name: '測試用戶 5997',
           department: '測試部門',
@@ -88,8 +97,23 @@ export default function LoginPage() {
           resume: false,
           report: false,
           password: '5997'
-        },
-        'testuser': {
+        };
+        
+        // 保存用戶資訊
+        localStorage.setItem('user', JSON.stringify(userData));
+        localStorage.setItem('firstLogin', 'true');
+        
+        // 直接打開新密碼頁面
+        console.log('正在打開新密碼頁面...');
+        window.open('/new-password', '_self');
+        return;
+      }
+
+      // 另一個測試用戶
+      if (userId === 'testuser' && password === 'testuser') {
+        console.log('測試用戶testuser登入成功 (硬編碼方式)');
+        
+        const userData = {
           id: 'testuser',
           name: '測試用戶',
           department: 'IT',
@@ -100,34 +124,14 @@ export default function LoginPage() {
           resume: true,
           report: true,
           password: 'testuser'
-        }
-      };
-
-      // 檢查是否為測試用戶
-      if (testUsers[userId]) {
-        console.log(`使用硬編碼方式登入測試用戶 ${userId}`);
-        const userData = testUsers[userId];
-        
-        // 檢查密碼
-        if (password !== userData.password) {
-          throw new Error('密碼不正確');
-        }
+        };
         
         // 保存用戶資訊
         localStorage.setItem('user', JSON.stringify(userData));
         
-        // 檢查是否需要更改密碼
-        if (password === userId || !userData.password) {
-          console.log('需要更改密碼，跳轉到密碼更改頁面');
-          localStorage.setItem('firstLogin', 'true');
-          
-          // 使用新的密碼修改頁面
-          console.log('跳轉到新密碼頁面...');
-          window.location.href = '/new-password';
-        } else {
-          console.log('登入成功，跳轉到儀表板');
-          router.push('/dashboard');
-        }
+        // 直接打開儀表板頁面
+        console.log('正在打開儀表板頁面...');
+        window.open('/dashboard', '_self');
         return;
       }
 
@@ -168,9 +172,9 @@ export default function LoginPage() {
           localStorage.setItem('user', JSON.stringify(userData));
           localStorage.setItem('firstLogin', 'true');
           
-          // 先嘗試跳轉到測試頁面進行診斷
-          console.log('跳轉到測試頁面...');
-          window.location.href = '/test-page';
+          // 直接打開新密碼頁面
+          console.log('正在打開新密碼頁面...');
+          window.open('/new-password', '_self');
           return;
         }
         
@@ -178,7 +182,10 @@ export default function LoginPage() {
         if (userData.password && password === userData.password) {
           console.log('用戶使用自定義密碼登入成功');
           localStorage.setItem('user', JSON.stringify(userData));
-          router.push('/dashboard');
+          
+          // 直接打開儀表板頁面
+          console.log('正在打開儀表板頁面...');
+          window.open('/dashboard', '_self');
           return;
         }
 
@@ -196,7 +203,10 @@ export default function LoginPage() {
           } else {
             console.log('Supabase Auth 登入成功');
             localStorage.setItem('user', JSON.stringify(userData));
-            router.push('/dashboard');
+            
+            // 直接打開儀表板頁面
+            console.log('正在打開儀表板頁面...');
+            window.open('/dashboard', '_self');
             return;
           }
         } catch (authErr) {
@@ -208,7 +218,7 @@ export default function LoginPage() {
         throw userQueryError;
       }
     } catch (err) {
-      console.error('登入錯誤:', err);
+      console.error('登入過程中出現錯誤:', err);
       setError(err instanceof Error ? err.message : '登入失敗，請稍後再試');
     } finally {
       setLoading(false);
