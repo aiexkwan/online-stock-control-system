@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../../lib/supabase';
+import { DocumentIcon, ArrowsRightLeftIcon } from '@heroicons/react/24/outline';
 
 interface PalletStats {
   palletsDone: number;
@@ -10,31 +11,31 @@ interface PalletStats {
 
 export default function PalletRatio() {
   const [stats, setStats] = useState<PalletStats>({
-    palletsDone: 0,
-    palletsTransferred: 0
+    palletsDone: 3256,  // 設置默認值
+    palletsTransferred: 123  // 設置默認值
   });
 
   useEffect(() => {
     async function fetchPalletStats() {
       try {
         // 獲取已完成的 pallets
-        const { data: donePallets, error: doneError } = await supabase
+        const { count: donePallets, error: doneError } = await supabase
           .from('record_palletinfo')
-          .select('count', { count: 'exact' });
+          .select('*', { count: 'exact', head: true });
 
         if (doneError) throw doneError;
 
         // 獲取已轉移的 pallets
-        const { data: transferredPallets, error: transferError } = await supabase
+        const { count: transferredPallets, error: transferError } = await supabase
           .from('inventory_movements')
-          .select('count', { count: 'exact' })
+          .select('*', { count: 'exact', head: true })
           .eq('type', 'transfer');
 
         if (transferError) throw transferError;
 
         setStats({
-          palletsDone: donePallets.length || 0,
-          palletsTransferred: transferredPallets.length || 0
+          palletsDone: donePallets || 0,
+          palletsTransferred: transferredPallets || 0
         });
       } catch (error) {
         console.error('Error fetching pallet stats:', error);
@@ -44,38 +45,32 @@ export default function PalletRatio() {
     fetchPalletStats();
   }, []);
 
-  const percentage = stats.palletsTransferred > 0
-    ? Math.round((stats.palletsDone / stats.palletsTransferred) * 100)
-    : 0;
-
   return (
-    <div className="relative w-32 h-32">
-      {/* 背景圓圈 */}
-      <svg className="w-full h-full transform -rotate-90">
-        <circle
-          cx="64"
-          cy="64"
-          r="60"
-          className="stroke-current text-gray-200"
-          strokeWidth="8"
-          fill="none"
-        />
-        {/* 進度圓圈 */}
-        <circle
-          cx="64"
-          cy="64"
-          r="60"
-          className="stroke-current text-blue-500"
-          strokeWidth="8"
-          fill="none"
-          strokeLinecap="round"
-          strokeDasharray={`${percentage * 3.77} 377`}
-        />
-      </svg>
-      {/* 百分比文字 */}
-      <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center">
-        <span className="text-2xl font-bold text-gray-700">{percentage}%</span>
-        <span className="block text-xs text-gray-500">完成率</span>
+    <div className="grid grid-cols-2 gap-6 w-full">
+      {/* Pallets Done Card */}
+      <div className="bg-gray-800 rounded-lg p-6">
+        <div className="flex items-center">
+          <div className="bg-blue-500 bg-opacity-20 rounded-full p-3">
+            <DocumentIcon className="h-8 w-8 text-blue-500" />
+          </div>
+          <div className="ml-4">
+            <h2 className="text-sm font-medium text-gray-400">Pallets Done</h2>
+            <p className="text-2xl font-semibold text-white">{stats.palletsDone}</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Pallets Transferred Card */}
+      <div className="bg-gray-800 rounded-lg p-6">
+        <div className="flex items-center">
+          <div className="bg-purple-500 bg-opacity-20 rounded-full p-3">
+            <ArrowsRightLeftIcon className="h-8 w-8 text-purple-500" />
+          </div>
+          <div className="ml-4">
+            <h2 className="text-sm font-medium text-gray-400">Pallets Transferred</h2>
+            <p className="text-2xl font-semibold text-white">{stats.palletsTransferred}</p>
+          </div>
+        </div>
       </div>
     </div>
   );
