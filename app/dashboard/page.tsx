@@ -1,12 +1,11 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { supabase } from '../../lib/supabase';
 
 export default function DashboardPage() {
-  const router = useRouter();
   const [user, setUser] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
     totalItems: 0,
     recentActivities: 0,
@@ -14,53 +13,66 @@ export default function DashboardPage() {
   });
 
   useEffect(() => {
-    const getUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        router.push('/login');
-        return;
+    const checkAuth = () => {
+      try {
+        // 從 localStorage 檢查用戶信息
+        const userString = localStorage.getItem('user');
+        if (!userString) {
+          console.log('儀表板：沒有找到用戶信息，重定向到登入頁面');
+          window.location.href = '/login';
+          return;
+        }
+
+        // 設置用戶信息
+        const userData = JSON.parse(userString);
+        setUser(userData);
+        console.log('儀表板：已載入用戶數據', userData);
+      } catch (e) {
+        console.error('儀表板：解析用戶數據錯誤', e);
+        window.location.href = '/login';
+      } finally {
+        setLoading(false);
       }
-      setUser(user);
     };
 
     const getStats = async () => {
       try {
-        // Get total items
-        const { data: inventoryData, error: inventoryError } = await supabase
-          .from('record_inventory')
-          .select('id', { count: 'exact' });
-
-        // Get recent activities (last 24 hours)
-        const { data: activitiesData, error: activitiesError } = await supabase
-          .from('record_history')
-          .select('id', { count: 'exact' })
-          .gte('created_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString());
-
-        // Get low stock alerts
-        const { data: alertsData, error: alertsError } = await supabase
-          .from('record_inventory')
-          .select('id', { count: 'exact' })
-          .lt('quantity', 10); // Assuming 10 is the threshold for low stock
-
-        if (!inventoryError && !activitiesError && !alertsError) {
-          setStats({
-            totalItems: inventoryData?.length || 0,
-            recentActivities: activitiesData?.length || 0,
-            lowStockAlerts: alertsData?.length || 0,
-          });
-        }
+        // 簡單統計數據，暫時使用假數據
+        setStats({
+          totalItems: 125,
+          recentActivities: 8,
+          lowStockAlerts: 3,
+        });
       } catch (error) {
         console.error('Error fetching stats:', error);
       }
     };
 
-    getUser();
+    checkAuth();
     getStats();
-  }, [router]);
+  }, []);
+
+  // 顯示加載狀態
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-100">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
+          <p className="mt-4 text-gray-600">正在載入儀表板...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-100">
       <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+        {/* 用戶信息顯示 */}
+        <div className="mb-6 bg-white shadow rounded-lg p-4">
+          <h1 className="text-2xl font-bold text-gray-800">歡迎，{user?.name || user?.id || '用戶'}</h1>
+          <p className="text-gray-600">部門: {user?.department || '未知'}</p>
+        </div>
+        
         <div className="px-4 py-6 sm:px-0">
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {/* Stock Overview Card */}
@@ -75,7 +87,7 @@ export default function DashboardPage() {
                   <div className="ml-5 w-0 flex-1">
                     <dl>
                       <dt className="text-sm font-medium text-gray-500 truncate">
-                        Total Stock Items
+                        庫存總數
                       </dt>
                       <dd className="flex items-baseline">
                         <div className="text-2xl font-semibold text-gray-900">
@@ -100,7 +112,7 @@ export default function DashboardPage() {
                   <div className="ml-5 w-0 flex-1">
                     <dl>
                       <dt className="text-sm font-medium text-gray-500 truncate">
-                        Recent Activities (24h)
+                        最近活動 (24小時)
                       </dt>
                       <dd className="flex items-baseline">
                         <div className="text-2xl font-semibold text-gray-900">
@@ -125,7 +137,7 @@ export default function DashboardPage() {
                   <div className="ml-5 w-0 flex-1">
                     <dl>
                       <dt className="text-sm font-medium text-gray-500 truncate">
-                        Low Stock Alerts
+                        庫存不足警告
                       </dt>
                       <dd className="flex items-baseline">
                         <div className="text-2xl font-semibold text-gray-900">
