@@ -27,7 +27,7 @@ export default function LoginPage() {
     setError(null);
 
     try {
-      // 首先檢查用戶是否存在
+      // 檢查用戶是否存在並驗證密碼
       const { data: userData, error: userError } = await supabase
         .from('data_id')
         .select('*')
@@ -38,29 +38,53 @@ export default function LoginPage() {
         throw new Error('查詢用戶錯誤');
       }
 
-      if (!userData && !(userId === 'admin' && password === 'admin123')) {
-        throw new Error('用戶不存在');
+      // 處理管理員登入
+      if (userId === 'admin' && password === 'admin123') {
+        // 使用預設的管理員帳戶
+        const { data, error: signInError } = await supabase.auth.signInWithPassword({
+          email: 'admin@pennine.com',
+          password: 'admin123'
+        });
+
+        if (signInError) throw signInError;
+        if (!data?.session) throw new Error('管理員登入失敗');
+        
+        router.replace('/dashboard');
+        return;
       }
 
-      // 使用 Supabase Auth 進行身份驗證
-      const { data, error: signInError } = await supabase.auth.signInWithPassword({
-        email: `${userId}@pennine.com`,
-        password: password
+      // 驗證一般用戶
+      if (!userData) {
+        throw new Error('查詢用戶錯誤');
+      }
+
+      // 檢查密碼是否正確
+      if (userData.password !== password && password !== userData.id) {
+        throw new Error('密碼錯誤');
+      }
+
+      // 使用 RLS Bypass 進行身份驗證
+      const { data: authData, error: authError } = await supabase.rpc('authenticate_user', {
+        p_user_id: userId,
+        p_password: password
       });
 
-      if (signInError) {
-        if (signInError.message.includes('Invalid login credentials')) {
-          throw new Error('密碼錯誤');
-        }
-        throw signInError;
+      if (authError) {
+        throw new Error('認證失敗');
       }
 
-      if (!data?.session) {
-        throw new Error('登入失敗');
+      // 設置用戶會話
+      const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
+        access_token: authData.access_token,
+        refresh_token: authData.refresh_token
+      });
+
+      if (sessionError) {
+        throw sessionError;
       }
 
       // 檢查是否是首次登入
-      const isFirstLogin = !userData?.password || userData.password === userId;
+      const isFirstLogin = !userData.password || userData.password === userData.id;
       if (isFirstLogin) {
         router.replace('/change-password');
       } else {
