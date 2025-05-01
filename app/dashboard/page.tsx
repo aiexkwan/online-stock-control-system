@@ -1,48 +1,13 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { MagnifyingGlassIcon } from '@heroicons/react/24/outline';
-import { motion } from 'framer-motion';
+import { useRouter } from 'next/navigation';
 import { getLatestPalletInfo, type PalletInfo } from '../services/palletInfo';
 import PrintHistory from '../components/PrintHistory';
 import GrnHistory from '../components/GrnHistory';
-import { Line } from 'react-chartjs-2';
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Title,
-  Tooltip,
-  Legend
-} from 'chart.js';
-
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Title,
-  Tooltip,
-  Legend
-);
-
-const fadeInUp = {
-  initial: { opacity: 0, y: 20 },
-  animate: { opacity: 1, y: 0 },
-  transition: { duration: 0.5 }
-};
-
-const staggerContainer = {
-  animate: {
-    transition: {
-      staggerChildren: 0.1
-    }
-  }
-};
 
 export default function DashboardPage() {
+  const router = useRouter();
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -54,127 +19,29 @@ export default function DashboardPage() {
     { grn: 'GRN#1002', code: 'CODE-B2', count: 3 },
     { grn: 'GRN#1003', code: 'CODE-C3', count: 7 },
     { grn: 'GRN#1004', code: 'CODE-D4', count: 4 },
-    { grn: 'GRN#1005', code: 'CODE-E5', count: 6 },
-    { grn: 'GRN#1006', code: 'CODE-F6', count: 2 },
-    { grn: 'GRN#1007', code: 'CODE-G7', count: 8 },
-    { grn: 'GRN#1008', code: 'CODE-H8', count: 3 },
-    { grn: 'GRN#1009', code: 'CODE-I9', count: 5 },
-    { grn: 'GRN#1010', code: 'CODE-J10', count: 4 }
+    { grn: 'GRN#1005', code: 'CODE-E5', count: 6 }
   ]);
   const [grnLoading, setGrnLoading] = useState(false);
   const [grnError, setGrnError] = useState<string>();
-  const [stats, setStats] = useState({
-    totalItems: 0,
-    recentActivities: 0,
-    lowStockAlerts: 0,
-  });
-
-  // Chart data
-  const chartData = {
-    labels: ['Aug 2018', 'Sep 2018', 'Oct 2018', 'Nov 2018', 'Dec 2018', 'Jan 2019', 'Feb 2019', 'Mar 2019', 'Apr 2019', 'May 2019'],
-    datasets: [
-      {
-        label: 'Revenue',
-        data: [1800, 2200, 1900, 2400, 2100, 2300, 2500, 2300, 2400, 2100],
-        borderColor: '#FF6B6B',
-        tension: 0.4,
-        fill: false
-      },
-      {
-        label: 'Products',
-        data: [2000, 1800, 2100, 2000, 2200, 2100, 2300, 2400, 2200, 2300],
-        borderColor: '#4ECDC4',
-        tension: 0.4,
-        fill: false
-      }
-    ]
-  };
-
-  const chartOptions = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: {
-        display: true,
-        labels: {
-          color: '#fff'
-        }
-      }
-    },
-    scales: {
-      y: {
-        grid: {
-          color: 'rgba(255, 255, 255, 0.1)'
-        },
-        ticks: {
-          color: '#fff'
-        }
-      },
-      x: {
-        grid: {
-          color: 'rgba(255, 255, 255, 0.1)'
-        },
-        ticks: {
-          color: '#fff'
-        }
-      }
-    }
-  };
 
   useEffect(() => {
-    // 嘗試從多個存儲位置獲取用戶信息
     const checkAuth = () => {
       try {
-        console.log('Dashboard page: attempting to retrieve user info');
-        
-        // 首先嘗試從 localStorage 獲取
         let userInfo = null;
-        let userString = localStorage.getItem('user');
+        const userString = localStorage.getItem('user');
         
         if (userString) {
-          console.log('Dashboard: found user data in localStorage');
           userInfo = JSON.parse(userString);
-        } else {
-          // 如果 localStorage 中沒有，嘗試從 sessionStorage 獲取
-          userString = sessionStorage.getItem('user');
-          if (userString) {
-            console.log('Dashboard: found user data in sessionStorage');
-            userInfo = JSON.parse(userString);
-          } else {
-            // 嘗試從 cookie 獲取
-            const cookies = document.cookie.split('; ');
-            const userCookie = cookies.find(cookie => cookie.startsWith('user='));
-            if (userCookie) {
-              userString = userCookie.split('=')[1];
-              console.log('Dashboard: found user data in cookies');
-              userInfo = JSON.parse(decodeURIComponent(userString));
-            }
-          }
-        }
-        
-        if (userInfo) {
           setUser(userInfo);
           setLoading(false);
-          console.log('Dashboard: successfully set user data', userInfo);
         } else {
-          setErrorMessage('Unable to find user data, please log in');
-          setLoading(false);
-          console.log('Dashboard: user data not found');
+          router.push('/login');
         }
       } catch (e) {
         console.error('Dashboard: error parsing user data', e);
         setErrorMessage('Error parsing user data');
         setLoading(false);
       }
-    };
-
-    const getStats = () => {
-      // 簡單統計數據，暫時使用假數據
-      setStats({
-        totalItems: 125,
-        recentActivities: 8,
-        lowStockAlerts: 3,
-      });
     };
 
     const fetchPalletInfo = async () => {
@@ -190,53 +57,42 @@ export default function DashboardPage() {
       }
     };
 
-    // 立即執行這些函數
     checkAuth();
-    getStats();
     fetchPalletInfo();
-    
-    // 為防止任何問題，設置一個標記表示頁面已加載
-    sessionStorage.setItem('dashboardLoaded', 'true');
-  }, []);
+  }, [router]);
 
   // 顯示加載狀態
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-100">
+      <div className="min-h-screen flex items-center justify-center bg-[#1e2533]">
         <div className="text-center">
           <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading dashboard...</p>
+          <p className="mt-4 text-gray-400">Loading dashboard...</p>
         </div>
       </div>
     );
   }
 
   // 顯示錯誤信息
-  if (errorMessage) {
+  if (errorMessage || !user) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-100">
-        <div className="max-w-md w-full bg-white rounded-lg shadow-md p-8">
-          <div className="w-16 h-16 bg-red-100 mx-auto rounded-full flex items-center justify-center">
-            <svg className="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+      <div className="min-h-screen flex items-center justify-center bg-[#1e2533]">
+        <div className="max-w-md w-full bg-[#252d3d] rounded-lg shadow-xl p-8">
+          <div className="w-16 h-16 bg-red-500/20 mx-auto rounded-full flex items-center justify-center">
+            <svg className="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
             </svg>
           </div>
-          <h2 className="mt-4 text-xl font-bold text-center text-gray-800">Unable to load dashboard</h2>
-          <p className="mt-2 text-center text-gray-600">{errorMessage}</p>
+          <h2 className="mt-4 text-xl font-bold text-center text-white">Unable to load dashboard</h2>
+          <p className="mt-2 text-center text-gray-400">{errorMessage || 'Please log in to continue'}</p>
           
-          <div className="mt-6 grid grid-cols-2 gap-3">
-            <a 
-              href="/login" 
-              className="text-center py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded"
+          <div className="mt-6">
+            <button 
+              onClick={() => router.push('/login')}
+              className="w-full py-2 px-4 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors duration-200"
             >
               Return to login
-            </a>
-            <a 
-              href="/direct-dashboard" 
-              className="text-center py-2 px-4 bg-green-600 hover:bg-green-700 text-white rounded"
-            >
-              Go to direct dashboard
-            </a>
+            </button>
           </div>
         </div>
       </div>
@@ -247,19 +103,45 @@ export default function DashboardPage() {
     <div className="min-h-screen flex bg-[#1e2533]">
       {/* Sidebar */}
       <div className="w-64 bg-[#252d3d] p-6">
-        <div className="flex items-center space-x-2 mb-8">
-          <div className="w-8 h-8 bg-gradient-to-r from-pink-500 to-purple-500 rounded-lg" />
-          <span className="text-white text-xl font-semibold">Dashboard</span>
-        </div>
-        
         <nav className="space-y-2">
-          <div className="flex items-center space-x-3 px-4 py-2 text-gray-300 bg-[#2a3446] rounded-lg">
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-            </svg>
-            <span>Home</span>
-          </div>
-          {/* Add more menu items here */}
+          {[
+            { name: 'Label Printing', icon: 'M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z' },
+            { name: 'Stock Transfer', icon: 'M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4' },
+            { name: 'Void Pallet', icon: 'M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16' },
+            { name: 'View History', icon: 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z' },
+            { name: 'User Manual', icon: 'M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253' },
+            { name: 'Ask LLM', icon: 'M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z' },
+            { name: 'Access Right Update', icon: 'M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z' },
+            { name: 'Product Update', icon: 'M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15' },
+            { name: 'Report Generator', icon: 'M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z' },
+            { name: 'Logout', icon: 'M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1' }
+          ].map((item) => (
+            <div 
+              key={item.name}
+              onClick={() => {
+                if (item.name === 'Logout') {
+                  localStorage.removeItem('user');
+                  router.push('/login');
+                }
+              }}
+              className={`flex items-center space-x-3 px-4 py-2.5 text-gray-300 hover:bg-[#2a3446] rounded-lg cursor-pointer transition-colors duration-200`}
+            >
+              <svg 
+                className="w-5 h-5" 
+                fill="none" 
+                stroke="currentColor" 
+                viewBox="0 0 24 24"
+              >
+                <path 
+                  strokeLinecap="round" 
+                  strokeLinejoin="round" 
+                  strokeWidth={2} 
+                  d={item.icon}
+                />
+              </svg>
+              <span className="font-medium">{item.name}</span>
+            </div>
+          ))}
         </nav>
       </div>
 
@@ -297,17 +179,17 @@ export default function DashboardPage() {
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-2 gap-6 mb-8">
           <div className="bg-[#252d3d] p-6 rounded-lg">
             <div className="flex items-center space-x-4">
               <div className="w-12 h-12 bg-orange-500/20 rounded-full flex items-center justify-center">
                 <svg className="w-6 h-6 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>
               </div>
               <div>
-                <p className="text-gray-400 text-sm">Total Revenue</p>
-                <p className="text-white text-2xl font-bold">$45,075</p>
+                <p className="text-gray-400 text-sm">Pallet Done</p>
+                <p className="text-white text-2xl font-bold">3,256</p>
               </div>
             </div>
           </div>
@@ -316,90 +198,37 @@ export default function DashboardPage() {
             <div className="flex items-center space-x-4">
               <div className="w-12 h-12 bg-pink-500/20 rounded-full flex items-center justify-center">
                 <svg className="w-6 h-6 text-pink-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
                 </svg>
               </div>
               <div>
-                <p className="text-gray-400 text-sm">Products Sold</p>
-                <p className="text-white text-2xl font-bold">98,756</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-[#252d3d] p-6 rounded-lg">
-            <div className="flex items-center space-x-4">
-              <div className="w-12 h-12 bg-purple-500/20 rounded-full flex items-center justify-center">
-                <svg className="w-6 h-6 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                </svg>
-              </div>
-              <div>
-                <p className="text-gray-400 text-sm">Total Earnings</p>
-                <p className="text-white text-2xl font-bold">$20,575</p>
+                <p className="text-gray-400 text-sm">Pallet Transfered</p>
+                <p className="text-white text-2xl font-bold">123</p>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Growth Chart */}
-        <div className="bg-[#252d3d] p-6 rounded-lg mb-8">
-          <div className="flex justify-between items-center mb-6">
-            <h3 className="text-white text-lg font-semibold">Growth Chart</h3>
-            <div className="flex items-center space-x-2 text-sm text-gray-400">
-              <span>From: August 2018</span>
-              <span>To: May 2019</span>
-            </div>
-          </div>
-          <div className="h-80">
-            <Line data={chartData} options={chartOptions} />
-          </div>
-        </div>
-
-        {/* Transactions */}
-        <div className="grid grid-cols-3 gap-6">
-          {/* Balance Card */}
+        {/* History Sections */}
+        <div className="grid grid-cols-2 gap-6">
+          {/* Print History */}
           <div className="bg-[#252d3d] p-6 rounded-lg">
-            <h3 className="text-white text-lg font-semibold mb-4">Balance</h3>
-            <div className="relative w-48 h-48 mx-auto mb-6">
-              {/* Add donut chart here */}
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="text-center">
-                  <p className="text-white text-2xl font-bold">$93,145</p>
-                  <p className="text-gray-400 text-sm">Current Balance</p>
-                </div>
-              </div>
-            </div>
-            
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  <img src="/visa.png" alt="Visa" className="w-8 h-6" />
-                  <span className="text-gray-400">**** 5008</span>
-                </div>
-                <span className="text-white">$ 454,540</span>
-              </div>
-              {/* Add more cards here */}
-            </div>
+            <h3 className="text-white text-lg font-semibold mb-4">Print History</h3>
+            <PrintHistory
+              data={palletData}
+              isLoading={palletLoading}
+              error={palletError}
+            />
           </div>
 
-          {/* Transactions List */}
-          <div className="col-span-2 bg-[#252d3d] p-6 rounded-lg">
-            <h3 className="text-white text-lg font-semibold mb-4">Transactions</h3>
-            <div className="space-y-4">
-              {grnData.map((transaction) => (
-                <div key={transaction.grn} className="flex items-center justify-between p-4 hover:bg-[#2a3446] rounded-lg transition-colors">
-                  <div className="flex items-center space-x-4">
-                    <div>
-                      <p className="text-white">{transaction.grn}</p>
-                      <p className="text-gray-400 text-sm">Amount: ${transaction.count}</p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-gray-400 text-sm">Completed</p>
-                  </div>
-                </div>
-              ))}
-            </div>
+          {/* GRN History */}
+          <div className="bg-[#252d3d] p-6 rounded-lg">
+            <h3 className="text-white text-lg font-semibold mb-4">GRN History</h3>
+            <GrnHistory
+              data={grnData}
+              isLoading={grnLoading}
+              error={grnError}
+            />
           </div>
         </div>
       </div>
