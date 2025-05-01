@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../../lib/supabase';
 import { DocumentIcon, ArrowsRightLeftIcon } from '@heroicons/react/24/outline';
+import PalletDonutChart from './PalletDonutChart';
 
 interface PalletStats {
   palletsDone: number;
@@ -90,8 +91,8 @@ export default function PalletRatio() {
         </div>
       </div>
 
-      {/* Pallets Transferred Card */}
-      <div className="bg-gray-800 rounded-lg p-6">
+      {/* Pallets Transferred Card + 百分比冬甩圖 */}
+      <div className="bg-gray-800 rounded-lg p-6 flex flex-col items-center">
         <div className="flex items-center">
           <div className="bg-purple-500 bg-opacity-20 rounded-full p-3">
             <ArrowsRightLeftIcon className="h-8 w-8 text-purple-500" />
@@ -101,6 +102,8 @@ export default function PalletRatio() {
             <p className="text-2xl font-semibold text-white">{stats.palletsTransferred}</p>
           </div>
         </div>
+        {/* 百分比冬甩圖 */}
+        <PalletDonutChart done={stats.palletsDone} transferred={stats.palletsTransferred} />
       </div>
     </div>
   );
