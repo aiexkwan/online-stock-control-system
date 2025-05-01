@@ -119,7 +119,12 @@ export default function LoginPage() {
         // 檢查是否需要更改密碼
         if (password === userId || !userData.password) {
           console.log('需要更改密碼，跳轉到密碼更改頁面');
-          router.replace('/change-password');
+          // 顯式設置首次登入標記
+          localStorage.setItem('firstLogin', 'true');
+          // 延遲導航以確保localStorage設置完成
+          setTimeout(() => {
+            router.push('/change-password');
+          }, 100);
         } else {
           console.log('登入成功，跳轉到儀表板');
           router.replace('/dashboard');
@@ -211,7 +216,12 @@ export default function LoginPage() {
         // 檢查是否需要更改密碼
         if (password === userId || !userData.password) {
           console.log('需要更改密碼，跳轉到密碼更改頁面');
-          router.replace('/change-password');
+          // 顯式設置首次登入標記
+          localStorage.setItem('firstLogin', 'true');
+          // 延遲導航以確保localStorage設置完成
+          setTimeout(() => {
+            router.push('/change-password');
+          }, 100);
         } else {
           console.log('登入成功，跳轉到儀表板');
           router.replace('/dashboard');
