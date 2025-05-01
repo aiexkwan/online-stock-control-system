@@ -162,12 +162,7 @@ export default function DashboardPage() {
             />
           </div>
           <div className="flex items-center space-x-4">
-            <img
-              src="/avatar.jpg"
-              alt="User Avatar"
-              className="w-8 h-8 rounded-full"
-            />
-            <span className="text-gray-700">Emma Kwan</span>
+            <span className="text-gray-700">{user?.name}</span>
           </div>
         </div>
 
