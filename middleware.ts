@@ -65,21 +65,41 @@ export async function middleware(request: NextRequest) {
   );
 
   if (isProtectedPath) {
-    const token = request.cookies.get('sb-access-token')?.value;
-    const refreshToken = request.cookies.get('sb-refresh-token')?.value;
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false
+        }
+      }
+    );
 
-    if (!token && !refreshToken) {
-      console.log(`Middleware: 重定向 ${pathname} -> /login (無有效Token)`);
+    try {
+      // 從請求頭獲取訪問令牌
+      const authHeader = request.headers.get('authorization');
+      if (!authHeader) {
+        throw new Error('No authorization header');
+      }
+
+      // 驗證會話
+      const { data: { user }, error } = await supabase.auth.getUser(
+        authHeader.replace('Bearer ', '')
+      );
+
+      if (error || !user) {
+        throw error || new Error('Unauthorized');
+      }
+
+      // 允許訪問
+      return NextResponse.next();
+    } catch (error) {
+      // 重定向到登入頁面
       const response = NextResponse.redirect(new URL('/login', request.url));
-      
-      // 設置重定向計數
-      response.headers.set('x-redirect-count', (redirectCount + 1).toString());
-      
       response.cookies.delete('sb-access-token');
       response.cookies.delete('sb-refresh-token');
       return response;
-    } else {
-      console.log(`Middleware: 授權訪問: ${pathname} (Token: ${token})`);
     }
   } else {
     console.log(`Middleware: 非保護路徑也非公共路徑: ${pathname}, 默認允許訪問`);

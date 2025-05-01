@@ -17,6 +17,7 @@ declare
   v_user record;
   v_role text;
   v_token auth.jwt_token;
+  v_secret text := '0vfTy8+U+P/VUnn4WkL8nCiuUL/kTM0i0NlnIFkTMRw=';  -- JWT 密鑰
 begin
   -- 檢查用戶是否存在
   select * into v_user
@@ -39,22 +40,32 @@ begin
   end;
 
   -- 生成 JWT token
-  v_token.access_token := sign(
-    json_build_object(
-      'role', v_role,
-      'user_id', v_user.id,
-      'exp', extract(epoch from now() + interval '1 day')::integer
+  v_token.access_token := encode(
+    crypto.sign(
+      'HS256',
+      json_build_object(
+        'role', v_role,
+        'user_id', v_user.id,
+        'exp', extract(epoch from now() + interval '1 day')::integer,
+        'iat', extract(epoch from now())::integer
+      )::text::bytea,
+      v_secret::bytea
     ),
-    current_setting('app.jwt_secret')
+    'base64'
   );
 
   -- 生成 refresh token
-  v_token.refresh_token := sign(
-    json_build_object(
-      'user_id', v_user.id,
-      'exp', extract(epoch from now() + interval '7 days')::integer
+  v_token.refresh_token := encode(
+    crypto.sign(
+      'HS256',
+      json_build_object(
+        'user_id', v_user.id,
+        'exp', extract(epoch from now() + interval '7 days')::integer,
+        'iat', extract(epoch from now())::integer
+      )::text::bytea,
+      v_secret::bytea
     ),
-    current_setting('app.jwt_secret')
+    'base64'
   );
 
   return v_token;
@@ -65,13 +76,23 @@ $$ language plpgsql security definer;
 create policy "Users can view their own data"
   on data_id for select
   using (
-    auth.uid()::text = id or
-    auth.jwt_claim('role')::text = 'admin'
+    current_user = id or
+    current_user = 'authenticated'
   );
 
 -- Create policy for admin access
 create policy "Admin can manage all data"
   on data_id for all
   using (
-    auth.jwt_claim('role')::text = 'admin'
-  ); 
+    current_user = 'authenticated' and
+    exists (
+      select 1
+      from data_id
+      where id = current_user
+      and id = 'admin'
+    )
+  );
+
+-- Grant necessary permissions
+grant usage on schema auth to authenticated, anon;
+grant execute on function authenticate_user to authenticated, anon; 

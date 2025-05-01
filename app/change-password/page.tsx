@@ -62,7 +62,6 @@ export default function ChangePasswordPage() {
   const handlePasswordChange = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // 基本驗證
     if (newPassword.length < 6) {
       setError('密碼長度必須至少為6個字符');
       return;
@@ -80,46 +79,41 @@ export default function ChangePasswordPage() {
       if (!userData || !userData.id) {
         throw new Error('找不到用戶數據');
       }
-      
-      console.log('正在更新用戶密碼:', userData.id);
-      
-      // 更新 Supabase 中的密碼
+
+      // 管理員帳戶特殊處理
+      if (userData.id === 'admin') {
+        localStorage.removeItem('firstLogin');
+        router.replace('/dashboard');
+        return;
+      }
+
+      // 更新 Supabase Auth 密碼
+      const { error: authError } = await supabase.auth.updateUser({
+        password: newPassword
+      });
+
+      if (authError) {
+        throw authError;
+      }
+
+      // 更新數據庫中的密碼
       const { error: updateError } = await supabase
         .from('data_id')
         .update({ password: newPassword })
         .eq('id', userData.id);
       
       if (updateError) {
-        console.error('更新密碼錯誤:', updateError);
         throw updateError;
       }
       
       // 清除首次登入標記
       localStorage.removeItem('firstLogin');
       
-      // 設置或更新 Cookie，7天有效期
-      setCookie('user', userData.id, 7);
-      
-      // 提示並重定向到主頁
-      alert('密碼更新成功！即將跳轉到主頁。');
-      isNavigating.current = true;
-      window.location.href = '/';
+      // 提示成功並重定向
+      alert('密碼更新成功！');
+      router.replace('/dashboard');
     } catch (error) {
       console.error('更新密碼失敗:', error);
-      
-      // 是否處理管理員帳戶 (admin)
-      if (userData?.id === 'admin') {
-        console.log('發現管理員帳戶，繞過密碼更新流程');
-        // 清除首次登入標記
-        localStorage.removeItem('firstLogin');
-        // 設置 Cookie
-        setCookie('user', 'admin', 7);
-        alert('管理員帳戶已確認，即將跳轉到主頁。');
-        isNavigating.current = true;
-        window.location.href = '/';
-        return;
-      }
-      
       setError(error instanceof Error ? error.message : '無法更新密碼');
     } finally {
       setLoading(false);

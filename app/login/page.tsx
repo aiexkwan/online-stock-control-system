@@ -27,65 +27,75 @@ export default function LoginPage() {
     setError(null);
 
     try {
-      // 檢查用戶是否存在並驗證密碼
-      const { data: userData, error: userError } = await supabase
-        .from('data_id')
-        .select('*')
-        .eq('id', userId)
-        .maybeSingle();
-
-      if (userError) {
-        throw new Error('查詢用戶錯誤');
-      }
-
-      // 處理管理員登入
+      // 管理員登入邏輯
       if (userId === 'admin' && password === 'admin123') {
-        // 使用預設的管理員帳戶
         const { data, error: signInError } = await supabase.auth.signInWithPassword({
           email: 'admin@pennine.com',
           password: 'admin123'
         });
 
         if (signInError) throw signInError;
-        if (!data?.session) throw new Error('管理員登入失敗');
         
+        const adminData = {
+          id: 'admin',
+          name: 'Administrator',
+          department: 'IT',
+          permissions: {
+            qc: true,
+            receive: true,
+            void: true,
+            view: true,
+            resume: true,
+            report: true
+          }
+        };
+
+        localStorage.setItem('user', JSON.stringify(adminData));
         router.replace('/dashboard');
         return;
       }
 
-      // 驗證一般用戶
-      if (!userData) {
-        throw new Error('查詢用戶錯誤');
-      }
+      // 一般用戶登入
+      const { data: userData, error: userError } = await supabase
+        .from('data_id')
+        .select('*')
+        .eq('id', userId)
+        .single();
 
-      // 檢查密碼是否正確
+      if (userError) throw new Error('用戶不存在');
+      if (!userData) throw new Error('找不到用戶');
+
+      // 驗證密碼
       if (userData.password !== password && password !== userData.id) {
         throw new Error('密碼錯誤');
       }
 
-      // 使用 RLS Bypass 進行身份驗證
-      const { data: authData, error: authError } = await supabase.rpc('authenticate_user', {
-        p_user_id: userId,
-        p_password: password
+      // 使用 Supabase Auth 登入
+      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+        email: `${userId}@pennine.com`,
+        password: password
       });
 
       if (authError) {
-        throw new Error('認證失敗');
+        // 如果是首次登入，使用 ID 作為密碼
+        if (password === userId) {
+          const { data: firstLoginData, error: firstLoginError } = await supabase.auth.signInWithPassword({
+            email: `${userId}@pennine.com`,
+            password: userId
+          });
+
+          if (firstLoginError) throw firstLoginError;
+          localStorage.setItem('firstLogin', 'true');
+        } else {
+          throw authError;
+        }
       }
 
-      // 設置用戶會話
-      const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
-        access_token: authData.access_token,
-        refresh_token: authData.refresh_token
-      });
-
-      if (sessionError) {
-        throw sessionError;
-      }
-
-      // 檢查是否是首次登入
-      const isFirstLogin = !userData.password || userData.password === userData.id;
-      if (isFirstLogin) {
+      // 保存用戶資訊
+      localStorage.setItem('user', JSON.stringify(userData));
+      
+      // 檢查是否需要更改密碼
+      if (password === userId || !userData.password) {
         router.replace('/change-password');
       } else {
         router.replace('/dashboard');
