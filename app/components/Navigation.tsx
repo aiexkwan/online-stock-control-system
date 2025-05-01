@@ -45,16 +45,16 @@ export default function Navigation() {
 
   return (
     <>
-      {/* 頂部 Pennine 標誌 */}
-      <div className="fixed top-0 left-0 right-0 bg-white shadow-sm z-20">
+      {/* 頂部 Pennine 標誌，深色底 */}
+      <div className="fixed top-0 left-0 right-0 bg-[#181c2f] shadow-sm z-20">
         <div className="mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex h-16 items-center">
-            <span className="font-bold text-xl text-blue-600">Pennine</span>
+            <span className="font-bold text-xl text-blue-400">Pennine</span>
           </div>
         </div>
       </div>
       {/* 左側功能選單（無任何中文標題） */}
-      <div className="fixed left-0 top-16 bottom-0 w-64 bg-gray-900 text-white z-10">
+      <div className="fixed left-0 top-16 bottom-0 w-1/5 min-w-[180px] max-w-xs bg-[#23263a] text-white z-10">
         <nav className="mt-5 px-2">
           {menuItems.map((item) => (
             <Link
