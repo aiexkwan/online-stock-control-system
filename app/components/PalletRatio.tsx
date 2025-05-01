@@ -11,39 +11,69 @@ interface PalletStats {
 
 export default function PalletRatio() {
   const [stats, setStats] = useState<PalletStats>({
-    palletsDone: 3256,  // 設置默認值
-    palletsTransferred: 123  // 設置默認值
+    palletsDone: 3256,  // 默認值
+    palletsTransferred: 123  // 默認值
   });
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     async function fetchPalletStats() {
       try {
-        // 獲取已完成的 pallets
-        const { count: donePallets, error: doneError } = await supabase
-          .from('record_palletinfo')
-          .select('*', { count: 'exact', head: true });
+        console.log('開始獲取 pallet 統計數據...');
 
-        if (doneError) throw doneError;
+        // 獲取已完成的 pallets
+        const { data: donePallets, error: doneError, count: doneCount } = await supabase
+          .from('record_palletinfo')
+          .select('*', { count: 'exact' });
+
+        console.log('已完成 pallets 查詢結果:', { donePallets, doneError, doneCount });
+
+        if (doneError) {
+          console.error('獲取已完成 pallets 時出錯:', doneError);
+          setError(doneError.message);
+          return;
+        }
 
         // 獲取已轉移的 pallets
-        const { count: transferredPallets, error: transferError } = await supabase
+        const { data: transferredPallets, error: transferError, count: transferCount } = await supabase
           .from('inventory_movements')
-          .select('*', { count: 'exact', head: true })
+          .select('*', { count: 'exact' })
           .eq('type', 'transfer');
 
-        if (transferError) throw transferError;
+        console.log('已轉移 pallets 查詢結果:', { transferredPallets, transferError, transferCount });
+
+        if (transferError) {
+          console.error('獲取已轉移 pallets 時出錯:', transferError);
+          setError(transferError.message);
+          return;
+        }
+
+        const doneCount2 = donePallets?.length || 0;
+        const transferCount2 = transferredPallets?.length || 0;
+
+        console.log('設置新的統計數據:', { doneCount2, transferCount2 });
 
         setStats({
-          palletsDone: donePallets || 0,
-          palletsTransferred: transferredPallets || 0
+          palletsDone: doneCount2,
+          palletsTransferred: transferCount2
         });
       } catch (error) {
-        console.error('Error fetching pallet stats:', error);
+        console.error('獲取 pallet 統計數據時發生錯誤:', error);
+        setError(error instanceof Error ? error.message : '未知錯誤');
       }
     }
 
     fetchPalletStats();
   }, []);
+
+  // 如果有錯誤，顯示錯誤信息
+  if (error) {
+    return (
+      <div className="w-full p-4 bg-red-500 bg-opacity-10 rounded-lg">
+        <p className="text-red-500">Error: {error}</p>
+      </div>
+    );
+  }
 
   return (
     <div className="grid grid-cols-2 gap-6 w-full">
