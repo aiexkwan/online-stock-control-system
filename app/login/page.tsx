@@ -119,18 +119,11 @@ export default function LoginPage() {
         // 檢查是否需要更改密碼
         if (password === userId || !userData.password) {
           console.log('需要更改密碼，跳轉到密碼更改頁面');
-          // 同時使用 localStorage 和 sessionStorage
           localStorage.setItem('firstLogin', 'true');
-          sessionStorage.setItem('firstLogin', 'true');
-          // 延遲導航以確保存儲設置完成
-          setTimeout(() => {
-            console.log('正在跳轉到密碼修改頁面...');
-            // 使用 window.location 而不是 router 確保完整頁面載入
-            window.location.href = '/change-password';
-          }, 200);
+          router.push('/change-password');
         } else {
           console.log('登入成功，跳轉到儀表板');
-          router.replace('/dashboard');
+          router.push('/dashboard');
         }
         return;
       }
@@ -169,17 +162,11 @@ export default function LoginPage() {
         // 情況 1: 用戶使用初始密碼登入（ID 與密碼相同）
         if (password === userId) {
           console.log('用戶使用初始密碼登入');
-          // 同時使用 localStorage 和 sessionStorage
           localStorage.setItem('user', JSON.stringify(userData));
           localStorage.setItem('firstLogin', 'true');
-          sessionStorage.setItem('firstLogin', 'true');
           
-          // 延遲導航以確保存儲設置完成
-          setTimeout(() => {
-            console.log('正在跳轉到密碼修改頁面...');
-            // 使用 window.location 而不是 router 確保完整頁面載入
-            window.location.href = '/change-password';
-          }, 200);
+          // 直接使用 Next.js 路由導航
+          router.push('/change-password');
           return;
         }
         
@@ -187,7 +174,7 @@ export default function LoginPage() {
         if (userData.password && password === userData.password) {
           console.log('用戶使用自定義密碼登入成功');
           localStorage.setItem('user', JSON.stringify(userData));
-          router.replace('/dashboard');
+          router.push('/dashboard');
           return;
         }
 
@@ -205,7 +192,7 @@ export default function LoginPage() {
           } else {
             console.log('Supabase Auth 登入成功');
             localStorage.setItem('user', JSON.stringify(userData));
-            router.replace('/dashboard');
+            router.push('/dashboard');
             return;
           }
         } catch (authErr) {

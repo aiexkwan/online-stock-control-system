@@ -30,28 +30,15 @@ export default function ChangePasswordPage() {
     if (typeof window === 'undefined') return;
     
     const checkAuth = () => {
-      // 增加調試輸出，顯示初始狀態
       console.log('修改密碼頁: 開始檢查用戶狀態');
-      console.log('localStorage 內容:', {
-        user: localStorage.getItem('user'),
-        firstLogin: localStorage.getItem('firstLogin'),
-        sessionFirstLogin: sessionStorage.getItem('firstLogin')
-      });
       
-      // 檢查是否有用戶資訊
+      // 只檢查是否有用戶資訊，不做其他複雜檢查
       const userStr = localStorage.getItem('user');
       
-      // 使用 sessionStorage 改善跨頁面狀態保存
-      if (!sessionStorage.getItem('firstLogin')) {
-        console.log('設置 sessionStorage firstLogin 標記');
-        sessionStorage.setItem('firstLogin', 'true');
-      }
-      
       if (!userStr) {
-        // 只有在用戶資訊完全不存在時才跳轉
-        console.error('修改密碼頁: 找不到用戶資訊，但不自動跳轉');
-        // 不自動跳轉，顯示錯誤信息
-        setError('用戶資訊不存在，請先登入');
+        // 如果沒有用戶資訊，顯示錯誤提示
+        console.log('修改密碼頁: 用戶未登入');
+        setError('請先登入系統');
         setInitialized(true);
         return;
       }
@@ -60,13 +47,6 @@ export default function ChangePasswordPage() {
         const user = JSON.parse(userStr);
         setUserData(user);
         console.log('修改密碼頁: 已載入用戶數據:', user);
-
-        // 確保有 firstLogin 標記
-        if (!localStorage.getItem('firstLogin')) {
-          console.log('修改密碼頁: 設置 localStorage firstLogin 標記');
-          localStorage.setItem('firstLogin', 'true');
-        }
-        
         setInitialized(true);
       } catch (e) {
         console.error('修改密碼頁: 解析用戶數據錯誤:', e);
@@ -128,11 +108,10 @@ export default function ChangePasswordPage() {
       
       // 清除首次登入標記
       localStorage.removeItem('firstLogin');
-      sessionStorage.removeItem('firstLogin');
       
       // 提示成功並重定向
       alert('密碼更新成功！');
-      router.replace('/dashboard');
+      router.push('/dashboard');
     } catch (error) {
       console.error('更新密碼失敗:', error);
       setError(error instanceof Error ? error.message : '無法更新密碼');
