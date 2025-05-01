@@ -6,15 +6,16 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "init-auth": "ts-node --project tsconfig.json scripts/init-auth.ts"
   },
   "dependencies": {
     "@headlessui/react": "^2.2.2",
     "@heroicons/react": "^2.2.0",
-    "@supabase/auth-helpers-nextjs": "^0.10.0",
+    "@supabase/auth-helpers-nextjs": "latest",
     "@supabase/supabase-js": "^2.49.4",
     "dotenv": "^16.5.0",
-    "next": "^15.3.1",
+    "next": "^13.5.6",
     "react": "latest",
     "react-dom": "latest",
     "tailwindcss": "^3.4.0"
@@ -25,6 +26,7 @@
     "@types/react-dom": "latest",
     "autoprefixer": "^10.4.16",
     "postcss": "^8.4.32",
+    "ts-node": "^10.9.2",
     "typescript": "latest"
   },
   "optionalDependencies": {
