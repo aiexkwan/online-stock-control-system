@@ -6,6 +6,27 @@ import { motion } from 'framer-motion';
 import { getLatestPalletInfo, type PalletInfo } from '../services/palletInfo';
 import PrintHistory from '../components/PrintHistory';
 import GrnHistory from '../components/GrnHistory';
+import { Line } from 'react-chartjs-2';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend
+} from 'chart.js';
+
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend
+);
 
 const fadeInUp = {
   initial: { opacity: 0, y: 20 },
@@ -47,6 +68,58 @@ export default function DashboardPage() {
     recentActivities: 0,
     lowStockAlerts: 0,
   });
+
+  // Chart data
+  const chartData = {
+    labels: ['Aug 2018', 'Sep 2018', 'Oct 2018', 'Nov 2018', 'Dec 2018', 'Jan 2019', 'Feb 2019', 'Mar 2019', 'Apr 2019', 'May 2019'],
+    datasets: [
+      {
+        label: 'Revenue',
+        data: [1800, 2200, 1900, 2400, 2100, 2300, 2500, 2300, 2400, 2100],
+        borderColor: '#FF6B6B',
+        tension: 0.4,
+        fill: false
+      },
+      {
+        label: 'Products',
+        data: [2000, 1800, 2100, 2000, 2200, 2100, 2300, 2400, 2200, 2300],
+        borderColor: '#4ECDC4',
+        tension: 0.4,
+        fill: false
+      }
+    ]
+  };
+
+  const chartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        display: true,
+        labels: {
+          color: '#fff'
+        }
+      }
+    },
+    scales: {
+      y: {
+        grid: {
+          color: 'rgba(255, 255, 255, 0.1)'
+        },
+        ticks: {
+          color: '#fff'
+        }
+      },
+      x: {
+        grid: {
+          color: 'rgba(255, 255, 255, 0.1)'
+        },
+        ticks: {
+          color: '#fff'
+        }
+      }
+    }
+  };
 
   useEffect(() => {
     // 嘗試從多個存儲位置獲取用戶信息
@@ -171,123 +244,164 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="flex min-h-screen bg-gray-100">
+    <div className="min-h-screen flex bg-[#1e2533]">
       {/* Sidebar */}
-      <motion.aside 
-        initial={{ x: -50, opacity: 0 }}
-        animate={{ x: 0, opacity: 1 }}
-        transition={{ duration: 0.5 }}
-        className="w-64 bg-white p-6 shadow-md"
-      >
-        <nav className="space-y-4">
-          {[
-            'Label Printing',
-            'Stock Transfer',
-            'Void Pallet',
-            'View History',
-            'User Manual',
-            'Ask LLM',
-            'Access Right Update',
-            'Product Update',
-            'Report Generator',
-            'Logout'
-          ].map((item, index) => (
-            <motion.a
-              key={item}
-              initial={{ x: -20, opacity: 0 }}
-              animate={{ x: 0, opacity: 1 }}
-              transition={{ delay: index * 0.1 }}
-              href="#"
-              className="block text-gray-700 hover:text-purple-600 transition-colors"
-            >
-              {item}
-            </motion.a>
-          ))}
+      <div className="w-64 bg-[#252d3d] p-6">
+        <div className="flex items-center space-x-2 mb-8">
+          <div className="w-8 h-8 bg-gradient-to-r from-pink-500 to-purple-500 rounded-lg" />
+          <span className="text-white text-xl font-semibold">Dashboard</span>
+        </div>
+        
+        <nav className="space-y-2">
+          <div className="flex items-center space-x-3 px-4 py-2 text-gray-300 bg-[#2a3446] rounded-lg">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+            </svg>
+            <span>Home</span>
+          </div>
+          {/* Add more menu items here */}
         </nav>
-      </motion.aside>
+      </div>
 
       {/* Main Content */}
-      <div className="flex-1 p-6">
-        {/* Top Bar */}
-        <motion.div 
-          initial={{ y: -20, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ duration: 0.5 }}
-          className="flex items-center justify-between mb-6"
-        >
-          <div className="relative w-1/3">
-            <MagnifyingGlassIcon className="absolute left-3 top-2.5 w-5 h-5 text-gray-400" />
+      <div className="flex-1 p-8">
+        {/* Header */}
+        <div className="flex justify-between items-center mb-8">
+          <div className="relative">
             <input
               type="text"
-              placeholder="Search..."
-              className="w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+              placeholder="Search here..."
+              className="w-96 px-4 py-2 bg-[#252d3d] text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
+            <svg className="w-5 h-5 text-gray-400 absolute right-3 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
           </div>
+          
           <div className="flex items-center space-x-4">
-            <motion.span 
-              initial={{ scale: 0.8, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              className="text-gray-700"
-            >
-              {user?.name}
-            </motion.span>
+            <button className="text-gray-400 hover:text-white">
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+              </svg>
+            </button>
+            
+            <div className="flex items-center space-x-2">
+              <span className="text-white font-medium">{user?.name || 'Guest'}</span>
+              <button className="text-gray-400 hover:text-white">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+            </div>
           </div>
-        </motion.div>
+        </div>
 
-        {/* Summary Cards */}
-        <motion.div 
-          variants={staggerContainer}
-          initial="initial"
-          animate="animate"
-          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6"
-        >
-          <motion.div 
-            variants={fadeInUp}
-            className="bg-white p-4 rounded-lg shadow hover:shadow-lg transition-shadow"
-          >
-            <p className="text-sm text-gray-500">Pallet Done</p>
-            <h2 className="text-2xl font-bold">3,256</h2>
-          </motion.div>
-          <motion.div 
-            variants={fadeInUp}
-            className="bg-white p-4 rounded-lg shadow hover:shadow-lg transition-shadow"
-          >
-            <p className="text-sm text-gray-500">Pallet Been Transfer</p>
-            <h2 className="text-2xl font-bold">123</h2>
-          </motion.div>
-        </motion.div>
+        {/* Stats Cards */}
+        <div className="grid grid-cols-3 gap-6 mb-8">
+          <div className="bg-[#252d3d] p-6 rounded-lg">
+            <div className="flex items-center space-x-4">
+              <div className="w-12 h-12 bg-orange-500/20 rounded-full flex items-center justify-center">
+                <svg className="w-6 h-6 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <div>
+                <p className="text-gray-400 text-sm">Total Revenue</p>
+                <p className="text-white text-2xl font-bold">$45,075</p>
+              </div>
+            </div>
+          </div>
 
-        {/* Main Content Section */}
-        <motion.div 
-          variants={staggerContainer}
-          initial="initial"
-          animate="animate"
-          className="grid grid-cols-2 gap-6"
-        >
-          {/* Print History Section */}
-          <motion.div 
-            variants={fadeInUp}
-            className="col-span-1"
-          >
-            <PrintHistory
-              data={palletData}
-              isLoading={palletLoading}
-              error={palletError}
-            />
-          </motion.div>
+          <div className="bg-[#252d3d] p-6 rounded-lg">
+            <div className="flex items-center space-x-4">
+              <div className="w-12 h-12 bg-pink-500/20 rounded-full flex items-center justify-center">
+                <svg className="w-6 h-6 text-pink-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+                </svg>
+              </div>
+              <div>
+                <p className="text-gray-400 text-sm">Products Sold</p>
+                <p className="text-white text-2xl font-bold">98,756</p>
+              </div>
+            </div>
+          </div>
 
-          {/* GRN History */}
-          <motion.div 
-            variants={fadeInUp}
-            className="col-span-1"
-          >
-            <GrnHistory
-              data={grnData}
-              isLoading={grnLoading}
-              error={grnError}
-            />
-          </motion.div>
-        </motion.div>
+          <div className="bg-[#252d3d] p-6 rounded-lg">
+            <div className="flex items-center space-x-4">
+              <div className="w-12 h-12 bg-purple-500/20 rounded-full flex items-center justify-center">
+                <svg className="w-6 h-6 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                </svg>
+              </div>
+              <div>
+                <p className="text-gray-400 text-sm">Total Earnings</p>
+                <p className="text-white text-2xl font-bold">$20,575</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Growth Chart */}
+        <div className="bg-[#252d3d] p-6 rounded-lg mb-8">
+          <div className="flex justify-between items-center mb-6">
+            <h3 className="text-white text-lg font-semibold">Growth Chart</h3>
+            <div className="flex items-center space-x-2 text-sm text-gray-400">
+              <span>From: August 2018</span>
+              <span>To: May 2019</span>
+            </div>
+          </div>
+          <div className="h-80">
+            <Line data={chartData} options={chartOptions} />
+          </div>
+        </div>
+
+        {/* Transactions */}
+        <div className="grid grid-cols-3 gap-6">
+          {/* Balance Card */}
+          <div className="bg-[#252d3d] p-6 rounded-lg">
+            <h3 className="text-white text-lg font-semibold mb-4">Balance</h3>
+            <div className="relative w-48 h-48 mx-auto mb-6">
+              {/* Add donut chart here */}
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="text-center">
+                  <p className="text-white text-2xl font-bold">$93,145</p>
+                  <p className="text-gray-400 text-sm">Current Balance</p>
+                </div>
+              </div>
+            </div>
+            
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <img src="/visa.png" alt="Visa" className="w-8 h-6" />
+                  <span className="text-gray-400">**** 5008</span>
+                </div>
+                <span className="text-white">$ 454,540</span>
+              </div>
+              {/* Add more cards here */}
+            </div>
+          </div>
+
+          {/* Transactions List */}
+          <div className="col-span-2 bg-[#252d3d] p-6 rounded-lg">
+            <h3 className="text-white text-lg font-semibold mb-4">Transactions</h3>
+            <div className="space-y-4">
+              {grnData.map((transaction) => (
+                <div key={transaction.grn} className="flex items-center justify-between p-4 hover:bg-[#2a3446] rounded-lg transition-colors">
+                  <div className="flex items-center space-x-4">
+                    <div>
+                      <p className="text-white">{transaction.grn}</p>
+                      <p className="text-gray-400 text-sm">Amount: ${transaction.count}</p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-gray-400 text-sm">Completed</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
