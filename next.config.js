@@ -8,6 +8,26 @@ const nextConfig = {
   experimental: {
     serverActions: true,
   },
+  // 添加瀏覽器兼容性配置
+  future: {
+    strictPostcssConfiguration: true,
+  },
+  // 優化 Safari 的 CSS 兼容性
+  postcss: {
+    plugins: {
+      'postcss-flexbugs-fixes': {},
+      'postcss-preset-env': {
+        autoprefixer: {
+          flexbox: 'no-2009',
+          grid: 'autoplace',
+        },
+        stage: 3,
+        features: {
+          'custom-properties': false,
+        },
+      },
+    },
+  },
   async redirects() {
     return [
       {
@@ -34,6 +54,10 @@ const nextConfig = {
           { key: 'Access-Control-Allow-Origin', value: '*' },
           { key: 'Access-Control-Allow-Methods', value: 'GET,OPTIONS,PATCH,DELETE,POST,PUT' },
           { key: 'Access-Control-Allow-Headers', value: 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version' },
+          // 添加 Safari 特定的安全頭
+          { key: 'X-Content-Type-Options', value: 'nosniff' },
+          { key: 'X-Frame-Options', value: 'SAMEORIGIN' },
+          { key: 'X-XSS-Protection', value: '1; mode=block' },
         ],
       },
     ];

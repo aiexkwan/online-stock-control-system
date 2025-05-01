@@ -47,6 +47,8 @@
     "@types/react-dom": "latest",
     "autoprefixer": "^10.4.16",
     "postcss": "^8.4.32",
+    "postcss-flexbugs-fixes": "^5.0.2",
+    "postcss-preset-env": "^10.1.6",
     "ts-node": "^10.9.2",
     "typescript": "latest"
   },
