@@ -125,21 +125,18 @@ export default function DashboardPage() {
     <div className="flex min-h-screen bg-gray-100">
       {/* Sidebar */}
       <aside className="w-64 bg-white p-6 shadow-md">
-        <button className="w-full mb-8 px-4 py-2 bg-purple-600 text-white rounded-lg">
-          Register Patient  // 如有需要可保留英文
-        </button>
         <nav className="space-y-4">
           {[
             'Label Printing',
             'Stock Transfer',
             'Void Pallet',
             'View History',
-            'User manual',
+            'User Manual',
             'Ask LLM',
-            'G acces right update',
-            'Product detail update',
-            'report generator',
-            'logout'
+            'Access Right Update',
+            'Product Update',
+            'Report Generator',
+            'Logout'
           ].map((item) => (
             <a
               key={item}
