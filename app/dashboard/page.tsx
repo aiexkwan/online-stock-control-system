@@ -178,50 +178,44 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Charts Section */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Pallet Done Today */}
-          <div className="bg-white p-4 rounded-lg shadow">
-            <h3 className="text-lg font-semibold mb-2">Pallet Done Today</h3>
-            <div className="flex items-center justify-center h-48 text-4xl font-bold text-blue-600">
-              45
+        {/* Main Content Section */}
+        <div className="grid grid-cols-12 gap-6">
+          {/* Print History Section */}
+          <div className="col-span-8 bg-white p-4 rounded-lg shadow">
+            <h3 className="text-lg font-semibold mb-4">Print History</h3>
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead>
+                  <tr>
+                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Time</th>
+                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Pallet Num</th>
+                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Product Code</th>
+                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Qty</th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-100">
+                  {Array.from({ length: 10 }).map((_, idx) => (
+                    <tr key={idx}>
+                      <td className="px-4 py-2 text-sm text-gray-700">{new Date().toLocaleTimeString()}</td>
+                      <td className="px-4 py-2 text-sm text-gray-700">PLT{1000 + idx}</td>
+                      <td className="px-4 py-2 text-sm text-gray-700">P{200 + idx}</td>
+                      <td className="px-4 py-2 text-sm text-gray-700">{Math.floor(Math.random() * 50) + 1}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </div>
 
           {/* GRN Received Today */}
-          <div className="bg-white p-4 rounded-lg shadow">
-            <h3 className="text-lg font-semibold mb-2">GRN Received Today</h3>
-            <ul className="list-disc list-inside h-48 overflow-auto text-sm text-gray-700">
-              <li>GRN#1001 - 20 items</li>
-              <li>GRN#1002 - 15 items</li>
-              <li>GRN#1003 - 10 items</li>
+          <div className="col-span-4 bg-white p-4 rounded-lg shadow">
+            <h3 className="text-lg font-semibold mb-4">GRN Received Today</h3>
+            <ul className="list-disc list-inside space-y-2">
+              <li className="text-sm text-gray-700">GRN#1001 - 20 items</li>
+              <li className="text-sm text-gray-700">GRN#1002 - 15 items</li>
+              <li className="text-sm text-gray-700">GRN#1003 - 10 items</li>
             </ul>
           </div>
-        </div>
-
-        {/* Print History Section */}
-        <div className="bg-white p-4 rounded-lg shadow mt-6 overflow-auto">
-          <h3 className="text-lg font-semibold mb-4">Print History</h3>
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead>
-              <tr>
-                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Time</th>
-                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Pallet Num</th>
-                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Product Code</th>
-                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Qty</th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-100">
-              {Array.from({ length: 10 }).map((_, idx) => (
-                <tr key={idx}>
-                  <td className="px-4 py-2 text-sm text-gray-700">{new Date().toLocaleTimeString()}</td>
-                  <td className="px-4 py-2 text-sm text-gray-700">PLT{1000 + idx}</td>
-                  <td className="px-4 py-2 text-sm text-gray-700">P{200 + idx}</td>
-                  <td className="px-4 py-2 text-sm text-gray-700">{Math.floor(Math.random() * 50) + 1}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
         </div>
       </div>
     </div>
