@@ -59,7 +59,7 @@ export default function Navigation() {
         <nav className="mt-5 px-2">
           <Link
             key="Home"
-            href="/"
+            href="/dashboard"
             className={`flex items-center px-4 py-2 text-sm font-medium rounded-md mb-4 text-gray-300 hover:bg-gray-700 hover:text-white`}
           >
             <HomeIcon className="mr-3 h-6 w-6" />
