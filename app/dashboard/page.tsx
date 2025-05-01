@@ -5,7 +5,7 @@ import { DocumentIcon, ArrowsRightLeftIcon } from '@heroicons/react/24/outline';
 
 export default function DashboardPage() {
   return (
-    <div className="pl-64 pt-16">
+    <div>
       <div className="p-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
           <div className="bg-gray-800 rounded-lg p-6">
@@ -33,8 +33,8 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="bg-gray-800 rounded-lg p-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="bg-gray-800 rounded-lg p-6 lg:col-span-2">
             <h2 className="text-lg font-semibold text-white mb-4">Print History</h2>
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-700">
@@ -48,19 +48,19 @@ export default function DashboardPage() {
                 </thead>
                 <tbody className="divide-y divide-gray-700">
                   <tr>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-300">20:01:00</td>
+                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-300">12:01:00</td>
                     <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-300">P001</td>
                     <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-300">CODE-A</td>
                     <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-300">100</td>
                   </tr>
                   <tr>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-300">19:01:00</td>
+                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-300">11:01:00</td>
                     <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-300">P002</td>
                     <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-300">CODE-B</td>
                     <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-300">50</td>
                   </tr>
                   <tr>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-300">18:01:00</td>
+                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-300">10:01:00</td>
                     <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-300">P003</td>
                     <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-300">CODE-C</td>
                     <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-300">75</td>
@@ -69,7 +69,6 @@ export default function DashboardPage() {
               </table>
             </div>
           </div>
-
           <div className="bg-gray-800 rounded-lg p-6">
             <h2 className="text-lg font-semibold text-white mb-4">GRN History</h2>
             <div className="overflow-x-auto">
