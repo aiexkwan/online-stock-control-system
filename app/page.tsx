@@ -22,6 +22,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { supabase } from '../lib/supabase';
 import PalletRatio from './components/PalletRatio';
+import PalletDonutChart from './components/PalletDonutChart';
 
 const features = [
   {
@@ -241,6 +242,10 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-gray-900">
+      {/* 測試冬甩圖顯示 */}
+      <div className="flex justify-center items-center py-8">
+        <PalletDonutChart done={3256} transferred={123} />
+      </div>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* 頂部統計卡片區域 */}
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-8">
