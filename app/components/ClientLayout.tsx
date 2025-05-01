@@ -2,8 +2,20 @@
 
 import React from 'react';
 import Navigation from './Navigation';
+import { usePathname } from 'next/navigation';
 
 export default function ClientLayout({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
+  const hideSidebar = pathname === '/login' || pathname === '/change-password';
+
+  if (hideSidebar) {
+    return (
+      <div className="min-h-screen bg-gray-900 flex flex-col">
+        {children}
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen flex bg-gray-100">
       {/* 側邊選單 2/10 */}
