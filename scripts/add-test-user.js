@@ -28,18 +28,6 @@ async function addTestUsers() {
       resume: true,       // 編輯權限
       report: true,       // 報表權限
       password: 'testuser'  // 初始密碼與 ID 相同
-    },
-    {
-      id: '5997',  // 添加圖片中顯示的用戶 ID
-      name: '測試用戶 5997',
-      department: '測試部門',
-      qc: false,
-      receive: true,
-      void: true,
-      view: true,
-      resume: false,
-      report: false,
-      password: '5997'  // 初始密碼與 ID 相同
     }
   ];
 

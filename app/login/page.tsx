@@ -83,33 +83,6 @@ export default function LoginPage() {
       }
 
       // Hardcoded test user logic
-      if (userId === '5997' && password === '5997') {
-        console.log('Test user 5997 login successful (hardcoded)');
-        
-        const userData = {
-          id: '5997',
-          name: '測試用戶 5997',
-          department: '測試部門',
-          qc: false,
-          receive: true,
-          void: true,
-          view: true,
-          resume: false,
-          report: false,
-          password: '5997'
-        };
-        
-        // 保存用戶資訊
-        localStorage.setItem('user', JSON.stringify(userData));
-        localStorage.setItem('firstLogin', 'true');
-        
-        // Opening new password page...
-        console.log('Opening new password page...');
-        window.open('/new-password', '_self');
-        return;
-      }
-
-      // Another test user
       if (userId === 'testuser' && password === 'testuser') {
         console.log('Test user testuser login successful (hardcoded)');
         
