@@ -63,10 +63,40 @@ const menuItems = [
   }
 ];
 
-// Delete cookie function
+// Delete cookie function with error handling
 function deleteCookie(name: string) {
-  document.cookie = name + '=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+  try {
+    document.cookie = name + '=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+  } catch (error) {
+    console.error('Error deleting cookie:', error);
+  }
 }
+
+// Safe localStorage operations
+const safeStorage = {
+  getItem: (key: string): string | null => {
+    try {
+      return localStorage.getItem(key);
+    } catch (error) {
+      console.error('Error reading from localStorage:', error);
+      return null;
+    }
+  },
+  setItem: (key: string, value: string): void => {
+    try {
+      localStorage.setItem(key, value);
+    } catch (error) {
+      console.error('Error writing to localStorage:', error);
+    }
+  },
+  removeItem: (key: string): void => {
+    try {
+      localStorage.removeItem(key);
+    } catch (error) {
+      console.error('Error removing from localStorage:', error);
+    }
+  }
+};
 
 export default function Navigation() {
   const pathname = usePathname();
@@ -75,11 +105,19 @@ export default function Navigation() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
+    return () => setMounted(false);
+  }, []);
+
+  useEffect(() => {
+    if (!mounted) return;
+
     const checkUser = () => {
       try {
-        const userStr = localStorage.getItem('user');
+        const userStr = safeStorage.getItem('user');
         if (userStr) {
           const userData = JSON.parse(userStr);
           setUser(userData);
@@ -97,12 +135,12 @@ export default function Navigation() {
     };
 
     checkUser();
-  }, [pathname, router]);
+  }, [pathname, router, mounted]);
 
   const handleLogout = useCallback(() => {
     try {
-      localStorage.removeItem('user');
-      localStorage.removeItem('firstLogin');
+      safeStorage.removeItem('user');
+      safeStorage.removeItem('firstLogin');
       deleteCookie('user');
       router.push('/login');
     } catch (error) {
@@ -110,8 +148,8 @@ export default function Navigation() {
     }
   }, [router]);
 
-  // 如果在登入或更改密碼頁面，不顯示導航
-  if (pathname === '/login' || pathname === '/change-password') {
+  // 如果未掛載或在登入/更改密碼頁面，不顯示導航
+  if (!mounted || pathname === '/login' || pathname === '/change-password') {
     return null;
   }
 
