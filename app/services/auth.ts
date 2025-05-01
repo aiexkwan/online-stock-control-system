@@ -35,7 +35,7 @@ export async function authenticateUser(userId: string, password: string): Promis
     }
 
     if (!userData) {
-      throw new Error(`用戶 ${userId} 不存在`);
+      throw new Error(`User ${userId} does not exist`);
     }
 
     // 2. 檢查密碼邏輯
@@ -43,7 +43,7 @@ export async function authenticateUser(userId: string, password: string): Promis
     if (!userData.password) {
       // 只能使用用戶ID作為密碼
       if (password !== userId) {
-        throw new Error('首次登錄請使用用戶ID作為密碼');
+        throw new Error('For first login, please use your Clock Number as password');
       }
       return {
         success: true,
@@ -54,11 +54,11 @@ export async function authenticateUser(userId: string, password: string): Promis
 
     // 2.2 如果用戶已有自定義密碼
     if (password === userId) {
-      throw new Error('請使用您的自定義密碼登錄');
+      throw new Error('Please Login With Your Custom Password');
     }
 
     if (password !== userData.password) {
-      throw new Error('密碼錯誤');
+      throw new Error('Incorrect password');
     }
 
     return {
@@ -71,7 +71,7 @@ export async function authenticateUser(userId: string, password: string): Promis
     console.error('Authentication error:', error);
     return {
       success: false,
-      error: error instanceof Error ? error.message : '登錄失敗，請稍後再試'
+      error: error instanceof Error ? error.message : 'Login failed, please try again later'
     };
   }
 } 

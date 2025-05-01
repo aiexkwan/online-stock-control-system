@@ -42,7 +42,7 @@ export default function LoginPage() {
       const result = await authenticateUser(userId, password);
 
       if (!result.success || !result.user) {
-        setError(result.error || '登錄失敗');
+        setError(result.error || 'Login failed');
         return;
       }
 
@@ -59,7 +59,7 @@ export default function LoginPage() {
 
     } catch (err) {
       console.error('Login error:', err);
-      setError(err instanceof Error ? err.message : '登錄失敗，請稍後再試');
+      setError(err instanceof Error ? err.message : 'Login failed, please try again later');
     } finally {
       setLoading(false);
     }
@@ -68,12 +68,12 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100">
       <div className="max-w-md w-full bg-white rounded-lg shadow-md p-8">
-        <h2 className="text-2xl font-bold text-center text-gray-800 mb-8">登錄系統</h2>
+        <h2 className="text-2xl font-bold text-center text-gray-800 mb-8">Pennine Stock Control System</h2>
         
         <form onSubmit={handleLogin} className="space-y-6">
           <div>
             <label htmlFor="userId" className="block text-sm font-medium text-gray-700">
-              用戶ID
+              Clock Number
             </label>
             <input
               id="userId"
@@ -87,7 +87,7 @@ export default function LoginPage() {
 
           <div>
             <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-              密碼
+              Password
             </label>
             <input
               id="password"
@@ -112,7 +112,7 @@ export default function LoginPage() {
               loading ? 'bg-indigo-400' : 'bg-indigo-600 hover:bg-indigo-700'
             } focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500`}
           >
-            {loading ? '登錄中...' : '登錄'}
+            {loading ? 'Logging in...' : 'LogIn'}
           </button>
         </form>
       </div>
