@@ -34,20 +34,25 @@ export default function ChangePasswordPage() {
       console.log('修改密碼頁: 開始檢查用戶狀態');
       console.log('localStorage 內容:', {
         user: localStorage.getItem('user'),
-        firstLogin: localStorage.getItem('firstLogin')
+        firstLogin: localStorage.getItem('firstLogin'),
+        sessionFirstLogin: sessionStorage.getItem('firstLogin')
       });
       
       // 檢查是否有用戶資訊
       const userStr = localStorage.getItem('user');
-      const firstLogin = localStorage.getItem('firstLogin');
+      
+      // 使用 sessionStorage 改善跨頁面狀態保存
+      if (!sessionStorage.getItem('firstLogin')) {
+        console.log('設置 sessionStorage firstLogin 標記');
+        sessionStorage.setItem('firstLogin', 'true');
+      }
       
       if (!userStr) {
-        // 只檢查用戶信息是否存在，不檢查 firstLogin 標記
-        console.log('修改密碼頁: 找不到用戶資訊，需要重新登入');
-        isNavigating.current = true;
-        setTimeout(() => {
-          window.location.href = '/login';
-        }, 500);
+        // 只有在用戶資訊完全不存在時才跳轉
+        console.error('修改密碼頁: 找不到用戶資訊，但不自動跳轉');
+        // 不自動跳轉，顯示錯誤信息
+        setError('用戶資訊不存在，請先登入');
+        setInitialized(true);
         return;
       }
       
@@ -56,19 +61,16 @@ export default function ChangePasswordPage() {
         setUserData(user);
         console.log('修改密碼頁: 已載入用戶數據:', user);
 
-        // 如果沒有 firstLogin 標記但有用戶數據，自動設置該標記
-        if (!firstLogin) {
-          console.log('修改密碼頁: 沒有首次登入標記，但用戶數據存在，自動設置標記');
+        // 確保有 firstLogin 標記
+        if (!localStorage.getItem('firstLogin')) {
+          console.log('修改密碼頁: 設置 localStorage firstLogin 標記');
           localStorage.setItem('firstLogin', 'true');
         }
+        
+        setInitialized(true);
       } catch (e) {
         console.error('修改密碼頁: 解析用戶數據錯誤:', e);
-        isNavigating.current = true;
-        setTimeout(() => {
-          window.location.href = '/login';
-        }, 500);
-        return;
-      } finally {
+        setError('用戶資料格式錯誤');
         setInitialized(true);
       }
     };
@@ -126,6 +128,7 @@ export default function ChangePasswordPage() {
       
       // 清除首次登入標記
       localStorage.removeItem('firstLogin');
+      sessionStorage.removeItem('firstLogin');
       
       // 提示成功並重定向
       alert('密碼更新成功！');

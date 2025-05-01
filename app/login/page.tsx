@@ -119,12 +119,15 @@ export default function LoginPage() {
         // 檢查是否需要更改密碼
         if (password === userId || !userData.password) {
           console.log('需要更改密碼，跳轉到密碼更改頁面');
-          // 顯式設置首次登入標記
+          // 同時使用 localStorage 和 sessionStorage
           localStorage.setItem('firstLogin', 'true');
-          // 延遲導航以確保localStorage設置完成
+          sessionStorage.setItem('firstLogin', 'true');
+          // 延遲導航以確保存儲設置完成
           setTimeout(() => {
-            router.push('/change-password');
-          }, 100);
+            console.log('正在跳轉到密碼修改頁面...');
+            // 使用 window.location 而不是 router 確保完整頁面載入
+            window.location.href = '/change-password';
+          }, 200);
         } else {
           console.log('登入成功，跳轉到儀表板');
           router.replace('/dashboard');
@@ -166,13 +169,17 @@ export default function LoginPage() {
         // 情況 1: 用戶使用初始密碼登入（ID 與密碼相同）
         if (password === userId) {
           console.log('用戶使用初始密碼登入');
+          // 同時使用 localStorage 和 sessionStorage
           localStorage.setItem('user', JSON.stringify(userData));
           localStorage.setItem('firstLogin', 'true');
+          sessionStorage.setItem('firstLogin', 'true');
           
-          // 延遲導航以確保 localStorage 設置完成
+          // 延遲導航以確保存儲設置完成
           setTimeout(() => {
-            router.push('/change-password');
-          }, 100);
+            console.log('正在跳轉到密碼修改頁面...');
+            // 使用 window.location 而不是 router 確保完整頁面載入
+            window.location.href = '/change-password';
+          }, 200);
           return;
         }
         
