@@ -14,9 +14,46 @@ import {
   ClockIcon,
   TagIcon,
   ArrowUpCircleIcon,
-  ArrowDownCircleIcon
+  ArrowDownCircleIcon,
+  PrinterIcon,
+  ArrowsRightLeftIcon,
+  NoSymbolIcon,
+  ChatBubbleLeftRightIcon
 } from '@heroicons/react/24/outline';
 import { supabase } from '../lib/supabase';
+
+const features = [
+  {
+    label: 'Print Label',
+    icon: PrinterIcon,
+    href: '/print-label',
+    color: 'bg-blue-500',
+  },
+  {
+    label: 'Stock Transfer',
+    icon: ArrowsRightLeftIcon,
+    href: '/stock-transfer',
+    color: 'bg-green-500',
+  },
+  {
+    label: 'Void Pallet',
+    icon: NoSymbolIcon,
+    href: '/void-pallet',
+    color: 'bg-red-500',
+  },
+  {
+    label: 'View History',
+    icon: ClockIcon,
+    href: '/history',
+    color: 'bg-yellow-500',
+  },
+  {
+    label: 'Ask Database',
+    icon: ChatBubbleLeftRightIcon,
+    href: '/ask-database',
+    color: 'bg-purple-500',
+  },
+];
 
 export default function HomePage() {
   const router = useRouter();
@@ -429,6 +466,21 @@ export default function HomePage() {
               </div>
             </Link>
           )}
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8 w-full max-w-3xl px-4 mt-8">
+          {features.map((f) => (
+            <button
+              key={f.label}
+              onClick={() => router.push(f.href)}
+              className="flex flex-col items-center justify-center rounded-2xl shadow-lg p-8 bg-gray-800 hover:bg-gray-700 transition group focus:outline-none"
+            >
+              <div className={`w-16 h-16 flex items-center justify-center rounded-full mb-4 ${f.color} group-hover:scale-105 transition-transform`}>
+                <f.icon className="w-8 h-8 text-white" />
+              </div>
+              <span className="text-lg font-semibold text-white tracking-wide">{f.label}</span>
+            </button>
+          ))}
         </div>
       </div>
     </div>
