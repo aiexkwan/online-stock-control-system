@@ -309,19 +309,47 @@ export default function LoginPage() {
               {/* 替代頁面連結 */}
               <div className="mt-4 text-center">
                 <p className="text-sm text-gray-600 mb-2">如果頁面無法顯示，請嘗試以下連結：</p>
-                <div className="flex justify-center space-x-4">
+                <div className="flex flex-wrap justify-center space-x-2 space-y-2">
                   <a href="/dashboard.tsx" className="text-xs text-blue-600 hover:underline">
-                    儀表板 (原始)
-                  </a>
-                  <a href="/dashboard" className="text-xs text-blue-600 hover:underline">
-                    儀表板
-                  </a>
-                  <a href="/new-password" className="text-xs text-blue-600 hover:underline">
-                    密碼頁面
+                    儀表板 (替代)
                   </a>
                   <a href="/pass-change" className="text-xs text-blue-600 hover:underline">
                     密碼頁面 (替代)
                   </a>
+                  <a href="/direct-dashboard" className="text-xs font-bold text-red-600 hover:underline">
+                    直接儀表板 (無需驗證)
+                  </a>
+                </div>
+              </div>
+
+              {/* 調試按鈕 */}
+              <div className="mt-6 border-t border-gray-200 pt-4">
+                <p className="text-xs text-gray-500 mb-2">調試工具：</p>
+                <div className="flex flex-wrap gap-2 justify-center">
+                  <button 
+                    type="button"
+                    onClick={() => {
+                      const stored = localStorage.getItem('user');
+                      alert(`LocalStorage 用戶數據: ${stored ? '存在' : '不存在'}\n${stored || ''}`);
+                    }}
+                    className="px-2 py-1 text-xs bg-gray-200 rounded hover:bg-gray-300"
+                  >
+                    檢查 localStorage
+                  </button>
+                  <button 
+                    type="button"
+                    onClick={() => {
+                      localStorage.clear();
+                      sessionStorage.clear();
+                      document.cookie.split(";").forEach(function(c) { 
+                        document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/"); 
+                      });
+                      alert('所有存儲已清除');
+                    }}
+                    className="px-2 py-1 text-xs bg-gray-200 rounded hover:bg-gray-300"
+                  >
+                    清除所有存儲
+                  </button>
                 </div>
               </div>
             </form>
