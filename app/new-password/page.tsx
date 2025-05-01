@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabase';
 
 export default function NewPasswordPage() {
   const [loading, setLoading] = useState(false);
@@ -62,24 +61,6 @@ export default function NewPasswordPage() {
     try {
       console.log('嘗試更新用戶密碼...');
       
-      // 嘗試更新數據庫中的密碼
-      try {
-        const { error: updateError } = await supabase
-          .from('data_id')
-          .update({ password: newPassword })
-          .eq('id', userData.id);
-        
-        if (updateError) {
-          console.error('Supabase更新錯誤:', updateError);
-          throw updateError;
-        } else {
-          console.log('密碼更新成功');
-        }
-      } catch (dbErr) {
-        console.error('無法更新數據庫密碼:', dbErr);
-        // 即使發生錯誤，仍然繼續流程，因為我們將使用localStorage
-      }
-      
       // 更新用戶對象中的密碼
       userData.password = newPassword;
       localStorage.setItem('user', JSON.stringify(userData));
@@ -92,7 +73,7 @@ export default function NewPasswordPage() {
       
       // 3秒後跳轉到儀表板
       setTimeout(() => {
-        window.open('/dashboard', '_self');
+        window.location.href = '/dashboard';
       }, 3000);
     } catch (error) {
       console.error('更新密碼失敗:', error);

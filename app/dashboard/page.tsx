@@ -20,9 +20,7 @@ export default function DashboardPage() {
         
         if (!userString) {
           console.log('儀表板：沒有找到用戶信息，重定向到登入頁面');
-          setTimeout(() => {
-            window.location.href = '/login';
-          }, 500);
+          window.location.href = '/login';
           return;
         }
 
@@ -35,9 +33,7 @@ export default function DashboardPage() {
         setLoading(false);
       } catch (e) {
         console.error('儀表板：解析用戶數據錯誤', e);
-        setTimeout(() => {
-          window.location.href = '/login';
-        }, 500);
+        window.location.href = '/login';
       }
     };
 
