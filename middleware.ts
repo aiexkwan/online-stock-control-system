@@ -30,19 +30,23 @@ export async function middleware(request: NextRequest) {
   if (
     pathname.startsWith('/_next') || 
     pathname.startsWith('/api') || 
-    pathname.includes('favicon.ico') ||
-    pathname.includes('.png') ||
-    pathname.includes('.jpg') ||
-    pathname.includes('.svg') ||
-    pathname.includes('.css') ||
-    pathname.includes('.js')
+    pathname.includes('.') // 處理所有靜態文件
   ) {
+    return NextResponse.next();
+  }
+
+  // 檢查重定向次數
+  const redirectCount = parseInt(request.headers.get('x-redirect-count') || '0');
+  if (redirectCount >= MAX_REDIRECTS) {
+    console.error(`重定向次數過多: ${pathname}`);
     return NextResponse.next();
   }
 
   // 處理根路徑重定向
   if (pathname === '/') {
-    return NextResponse.redirect(new URL('/login', request.url));
+    const response = NextResponse.redirect(new URL('/login', request.url));
+    response.headers.set('x-redirect-count', '1');
+    return response;
   }
 
   // 檢查是否是公共路徑
@@ -63,16 +67,8 @@ export async function middleware(request: NextRequest) {
     
     if (!authCookie || !authCookie.value) {
       // 避免可能的重定向循環
-      const redirectCount = parseInt(request.headers.get('x-redirect-count') || '0');
-      
-      if (redirectCount >= MAX_REDIRECTS) {
-        console.log(`Middleware: 重定向次數超過限制 (${redirectCount}/${MAX_REDIRECTS}), 允許訪問`);
-        return NextResponse.next();
-      }
-      
       console.log(`Middleware: 重定向 ${pathname} -> /login (無有效Cookie)`);
-      const redirectUrl = new URL('/login', request.url);
-      const response = NextResponse.redirect(redirectUrl);
+      const response = NextResponse.redirect(new URL('/login', request.url));
       
       // 設置重定向計數
       response.headers.set('x-redirect-count', (redirectCount + 1).toString());
