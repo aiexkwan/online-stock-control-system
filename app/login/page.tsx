@@ -305,53 +305,6 @@ export default function LoginPage() {
                   'Sign in'
                 )}
               </button>
-
-              {/* Alternative page links */}
-              <div className="mt-4 text-center">
-                <p className="text-sm text-gray-600 mb-2">If the page fails to load, try the following links:</p>
-                <div className="flex flex-wrap justify-center space-x-2 space-y-2">
-                  <a href="/dashboard" className="text-xs text-blue-600 hover:underline">
-                    Dashboard
-                  </a>
-                  <a href="/new-password" className="text-xs text-blue-600 hover:underline">
-                    Change Password Page
-                  </a>
-                  <a href="/direct-dashboard" className="text-xs font-bold text-red-600 hover:underline">
-                    Direct Dashboard (Test)
-                  </a>
-                </div>
-              </div>
-
-              {/* Debug tools */}
-              <div className="mt-6 border-t border-gray-200 pt-4">
-                <p className="text-xs text-gray-500 mb-2">Debug tools:</p>
-                <div className="flex flex-wrap gap-2 justify-center">
-                  <button 
-                    type="button"
-                    onClick={() => {
-                      const stored = localStorage.getItem('user');
-                      alert(`LocalStorage user data: ${stored ? 'exists' : 'does not exist'}\n${stored || ''}`);
-                    }}
-                    className="px-2 py-1 text-xs bg-gray-200 rounded hover:bg-gray-300"
-                  >
-                    Check localStorage
-                  </button>
-                  <button 
-                    type="button"
-                    onClick={() => {
-                      localStorage.clear();
-                      sessionStorage.clear();
-                      document.cookie.split(";").forEach(function(c) { 
-                        document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/"); 
-                      });
-                      alert('All storage cleared');
-                    }}
-                    className="px-2 py-1 text-xs bg-gray-200 rounded hover:bg-gray-300"
-                  >
-                    Clear all storage
-                  </button>
-                </div>
-              </div>
             </form>
           </div>
         </div>
