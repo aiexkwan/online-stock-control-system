@@ -3,6 +3,8 @@
 import React, { useEffect, useState } from 'react';
 import { MagnifyingGlassIcon } from '@heroicons/react/24/outline';
 import { motion } from 'framer-motion';
+import { getLatestPalletInfo, type PalletInfo } from '../services/palletInfo';
+import PrintHistory from '../components/PrintHistory';
 
 const fadeInUp = {
   initial: { opacity: 0, y: 20 },
@@ -22,6 +24,9 @@ export default function DashboardPage() {
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [palletData, setPalletData] = useState<PalletInfo[]>([]);
+  const [palletLoading, setPalletLoading] = useState(true);
+  const [palletError, setPalletError] = useState<string>();
   const [stats, setStats] = useState({
     totalItems: 0,
     recentActivities: 0,
@@ -84,9 +89,23 @@ export default function DashboardPage() {
       });
     };
 
+    const fetchPalletInfo = async () => {
+      try {
+        setPalletLoading(true);
+        const data = await getLatestPalletInfo();
+        setPalletData(data);
+      } catch (error) {
+        console.error('Error fetching pallet info:', error);
+        setPalletError('Failed to load print history');
+      } finally {
+        setPalletLoading(false);
+      }
+    };
+
     // 立即執行這些函數
     checkAuth();
     getStats();
+    fetchPalletInfo();
     
     // 為防止任何問題，設置一個標記表示頁面已加載
     sessionStorage.setItem('dashboardLoaded', 'true');
@@ -311,6 +330,13 @@ export default function DashboardPage() {
             </div>
           </motion.div>
         </motion.div>
+
+        {/* Print History Table */}
+        <PrintHistory
+          data={palletData}
+          isLoading={palletLoading}
+          error={palletError}
+        />
       </div>
     </div>
   );
