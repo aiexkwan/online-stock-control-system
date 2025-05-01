@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
-// 中間件已完全禁用 - 不執行任何代碼，只直接返回 NextResponse.next()
+// Middleware is fully disabled - no code executed, directly return NextResponse.next()
 export async function middleware(request: NextRequest) {
   return NextResponse.next();
 }

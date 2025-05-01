@@ -30,7 +30,7 @@ interface UserData {
   };
 }
 
-// 刪除 Cookie 函數
+// Delete cookie function
 function deleteCookie(name: string) {
   document.cookie = name + '=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;';
 }
@@ -77,12 +77,12 @@ export default function Navigation() {
     }
   }, [router]);
 
-  // 如果在登入或更改密碼頁面，不顯示導航
+  // Don't show navigation on login or change-password pages
   if (pathname === '/login' || pathname === '/change-password') {
     return null;
   }
 
-  // 如果正在加載，顯示占位導航
+  // Show placeholder navigation during loading
   if (isLoading) {
     return (
       <div className="fixed top-0 left-0 right-0 bg-white shadow-sm z-10">
@@ -99,21 +99,19 @@ export default function Navigation() {
   }
 
   const navLinks = [
-    { name: '首頁', href: '/dashboard', icon: HomeIcon },
-    { name: '產品管理', href: '/products', icon: CubeIcon },
-    { name: '庫存操作', href: '/inventory', icon: ArrowPathIcon },
-    { name: '報表', href: '/reports', icon: ChartBarIcon },
-    { name: '數據表格', href: '/tables', icon: ClipboardDocumentListIcon },
+    { name: 'Home', href: '/dashboard', icon: HomeIcon },
+    { name: 'Products', href: '/products', icon: CubeIcon },
+    { name: 'Inventory', href: '/inventory', icon: ArrowPathIcon },
+    { name: 'Reports', href: '/reports', icon: ChartBarIcon },
+    { name: 'Data Table', href: '/tables', icon: ClipboardDocumentListIcon },
   ];
 
-  // 如果有管理員權限，添加用戶管理頁面
-  const displayLinks = user?.permissions?.qc 
-    ? [...navLinks, { name: '用戶管理', href: '/users', icon: UserGroupIcon }] 
-    : navLinks;
+  // Add user management page if admin permission is granted
+  const displayLinks = user?.permissions?.qc ? [...navLinks, { name: 'User Management', href: '/users', icon: UserGroupIcon }] : navLinks;
 
   return (
     <>
-      {/* 桌面導航 */}
+      {/* Desktop navigation */}
       <div className="fixed top-0 left-0 right-0 bg-white shadow-sm z-10">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="flex h-16 justify-between">
@@ -150,7 +148,7 @@ export default function Navigation() {
                 >
                   <span className="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-700 hover:text-gray-900">
                     <UserCircleIcon className="h-6 w-6 text-gray-400 mr-1" />
-                    {user?.name || '用戶'}
+                    {user?.name || 'User'}
                   </span>
                 </button>
                 {userMenuOpen && (
@@ -165,7 +163,7 @@ export default function Navigation() {
                     >
                       <div className="flex items-center">
                         <ArrowRightOnRectangleIcon className="h-4 w-4 mr-2" />
-                        登出
+                        Logout
                       </div>
                     </button>
                   </div>
@@ -178,7 +176,7 @@ export default function Navigation() {
                 className="inline-flex items-center justify-center rounded-md p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500"
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               >
-                <span className="sr-only">開啟主菜單</span>
+                <span className="sr-only">Open main menu</span>
                 {mobileMenuOpen ? (
                   <XMarkIcon className="block h-6 w-6" aria-hidden="true" />
                 ) : (
@@ -190,7 +188,7 @@ export default function Navigation() {
         </div>
       </div>
 
-      {/* 移動端菜單 */}
+      {/* Mobile menu */}
       {mobileMenuOpen && (
         <div className="fixed inset-0 z-40 bg-black bg-opacity-25" onClick={() => setMobileMenuOpen(false)}>
           <div className="fixed inset-y-0 left-0 w-64 bg-white shadow-lg" onClick={(e) => e.stopPropagation()}>
@@ -235,7 +233,7 @@ export default function Navigation() {
                   >
                     <div className="flex items-center">
                       <ArrowRightOnRectangleIcon className="h-5 w-5 mr-2" />
-                      登出
+                      Logout
                     </div>
                   </button>
                 </div>

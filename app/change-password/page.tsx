@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '../../lib/supabase';
 
-// 設置 Cookie 函數
+// Cookie setter function
 function setCookie(name: string, value: string, days: number) {
   let expires = "";
   if (days) {
@@ -26,48 +26,48 @@ export default function ChangePasswordPage() {
   const isNavigating = useRef(false);
 
   useEffect(() => {
-    // 防止 SSR 渲染問題
+    // Prevent SSR rendering issues
     if (typeof window === 'undefined') return;
     
-    console.log('==== 密碼修改頁面加載 ====');
-    console.log('頁面 URL:', window.location.href);
-    console.log('localStorage 內容:', {
+    console.log('==== Change Password Page Loaded ====');
+    console.log('Page URL:', window.location.href);
+    console.log('localStorage contents:', {
       user: localStorage.getItem('user'),
       firstLogin: localStorage.getItem('firstLogin')
     });
     
-    // 直接設置已初始化，確保頁面能夠渲染
+    // Set initialized flag to ensure the page can render
     setInitialized(true);
     
     const checkAuth = () => {
-      console.log('修改密碼頁: 開始檢查用戶狀態');
+      console.log('Change Password Page: starting user status check');
       
-      // 只檢查是否有用戶資訊，不做其他複雜檢查
+      // Only check if user info exists without further validation
       const userStr = localStorage.getItem('user');
       
       if (!userStr) {
-        // 如果沒有用戶資訊，顯示錯誤提示
-        console.log('修改密碼頁: 用戶未登入，但不跳轉');
-        setError('請先登入系統');
+        // If no user info, display an error message
+        console.log('Change Password Page: user not logged in, no redirect');
+        setError('Please log in to the system first');
         return;
       }
       
       try {
         const user = JSON.parse(userStr);
         setUserData(user);
-        console.log('修改密碼頁: 已載入用戶數據:', user);
+        console.log('Change Password Page: loaded user data:', user);
       } catch (e) {
-        console.error('修改密碼頁: 解析用戶數據錯誤:', e);
-        setError('用戶資料格式錯誤');
+        console.error('Change Password Page: error parsing user data:', e);
+        setError('User data format error');
       }
     };
     
-    // 延遲檢查，確保頁面先渲染
+    // Delay auth check to ensure the page has rendered first
     setTimeout(checkAuth, 100);
     
-    // 在窗口卸載前記錄日誌
+    // Log event before window unload
     const handleBeforeUnload = () => {
-      console.log('==== 密碼修改頁面即將卸載 ====');
+      console.log('==== Change Password Page Will Unload ====');
     };
     
     window.addEventListener('beforeunload', handleBeforeUnload);
@@ -80,12 +80,12 @@ export default function ChangePasswordPage() {
     e.preventDefault();
     
     if (newPassword.length < 6) {
-      setError('密碼長度必須至少為6個字符');
+      setError('Password must be at least 6 characters');
       return;
     }
     
     if (newPassword !== confirmPassword) {
-      setError('兩次輸入的密碼不一致');
+      setError('Passwords do not match');
       return;
     }
     
@@ -94,27 +94,27 @@ export default function ChangePasswordPage() {
     
     try {
       if (!userData || !userData.id) {
-        throw new Error('找不到用戶數據');
+        throw new Error('User data not found');
       }
 
-      // 管理員帳戶特殊處理
+      // Special handling for admin account
       if (userData.id === 'admin') {
         localStorage.removeItem('firstLogin');
         router.replace('/dashboard');
         return;
       }
 
-      // 更新 Supabase Auth 密碼
+      // Update Supabase Auth password
       const { error: authError } = await supabase.auth.updateUser({
         password: newPassword
       });
 
       if (authError) {
-        console.warn('Supabase Auth 密碼更新失敗，繼續更新數據庫密碼:', authError);
-        // 即使 Auth 更新失敗也繼續更新數據庫密碼，因為登入邏輯已修改為可以使用自定義密碼
+        console.warn('Supabase Auth password update failed, continue updating database:', authError);
+        // Continue updating database password even if Auth update fails since login logic now supports custom passwords
       }
 
-      // 更新數據庫中的密碼
+      // Update password in database
       const { error: updateError } = await supabase
         .from('data_id')
         .update({ password: newPassword })
@@ -124,15 +124,15 @@ export default function ChangePasswordPage() {
         throw updateError;
       }
       
-      // 清除首次登入標記
+      // Remove first login flag
       localStorage.removeItem('firstLogin');
       
-      // 提示成功並重定向
-      alert('密碼更新成功！');
+      // Notify success and redirect
+      alert('Password updated successfully!');
       router.push('/dashboard');
     } catch (error) {
-      console.error('更新密碼失敗:', error);
-      setError(error instanceof Error ? error.message : '無法更新密碼');
+      console.error('Update password failed:', error);
+      setError(error instanceof Error ? error.message : 'Unable to update password');
     } finally {
       setLoading(false);
     }
@@ -144,7 +144,7 @@ export default function ChangePasswordPage() {
       <div className="min-h-screen flex items-center justify-center bg-blue-50/30">
         <div className="text-center">
           <div className="animate-spin h-10 w-10 border-4 border-blue-500 rounded-full border-t-transparent"></div>
-          <p className="mt-3 text-gray-600">{isNavigating.current ? '正在跳轉...' : '載入中...'}</p>
+          <p className="mt-3 text-gray-600">{isNavigating.current ? 'Redirecting...' : 'Loading...'}</p>
         </div>
       </div>
     );
@@ -169,16 +169,16 @@ export default function ChangePasswordPage() {
                 </svg>
               </div>
             </div>
-            <h1 className="text-2xl font-bold text-gray-900">更改密碼</h1>
+            <h1 className="text-2xl font-bold text-gray-900">Change Password</h1>
             <p className="mt-2 text-gray-600">
-              歡迎使用 Pennine 庫存系統！請為您的帳戶設置新密碼。
+              Welcome to Pennine Stock Control! Please set a new password for your account.
             </p>
           </div>
 
           <form onSubmit={handlePasswordChange} className="space-y-6">
             <div>
               <label htmlFor="newPassword" className="block text-sm font-medium text-gray-700">
-                新密碼
+                New Password
               </label>
               <div className="mt-1">
                 <input
@@ -188,7 +188,7 @@ export default function ChangePasswordPage() {
                   onChange={(e) => setNewPassword(e.target.value)}
                   required
                   className="w-full px-4 py-2.5 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
-                  placeholder="輸入新密碼"
+                  placeholder="Enter new password"
                   autoFocus
                 />
               </div>
@@ -196,7 +196,7 @@ export default function ChangePasswordPage() {
 
             <div>
               <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700">
-                確認密碼
+                Confirm Password
               </label>
               <div className="mt-1">
                 <input
@@ -206,11 +206,11 @@ export default function ChangePasswordPage() {
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   required
                   className="w-full px-4 py-2.5 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
-                  placeholder="再次輸入新密碼"
+                  placeholder="Enter password again"
                 />
               </div>
               <p className="mt-1 text-xs text-gray-500">
-                密碼長度必須至少為6個字符。
+                Password must be at least 6 characters.
               </p>
             </div>
 
@@ -232,10 +232,10 @@ export default function ChangePasswordPage() {
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"/>
                     </svg>
-                    更新中...
+                    Updating...
                   </div>
                 ) : (
-                  '設置新密碼'
+                  'Change Password'
                 )}
               </button>
             </div>

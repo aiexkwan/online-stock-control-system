@@ -11,7 +11,7 @@ export default function NewPasswordPage() {
   const [userData, setUserData] = useState<any>(null);
 
   useEffect(() => {
-    console.log('新密碼頁面：頁面已加載');
+    console.log('NewPasswordPage: page loaded');
     
     // 檢查localStorage中的用戶資訊
     try {
@@ -19,18 +19,18 @@ export default function NewPasswordPage() {
       if (userStr) {
         const user = JSON.parse(userStr);
         setUserData(user);
-        console.log('新密碼頁面：已載入用戶數據', user);
+        console.log('NewPasswordPage: user data loaded', user);
         
         // 保存一個標記表示已加載
         sessionStorage.setItem('newPasswordLoaded', 'true');
       } else {
-        console.log('新密碼頁面：未找到用戶數據，重定向到登入頁面');
+        console.log('NewPasswordPage: user data not found, redirecting to login page');
         setTimeout(() => {
           window.location.href = '/login';
         }, 500);
       }
     } catch (e) {
-      console.error('新密碼頁面：解析用戶資訊失敗', e);
+      console.error('NewPasswordPage: failed to parse user info', e);
       setTimeout(() => {
         window.location.href = '/login';
       }, 500);
@@ -41,17 +41,17 @@ export default function NewPasswordPage() {
     e.preventDefault();
     
     if (!userData || !userData.id) {
-      setError('找不到用戶資訊，請重新登入');
+      setError('User information not found, please log in again');
       return;
     }
     
     if (newPassword.length < 6) {
-      setError('密碼長度必須至少為6個字符');
+      setError('Password must be at least 6 characters');
       return;
     }
     
     if (newPassword !== confirmPassword) {
-      setError('兩次輸入的密碼不一致');
+      setError('Passwords do not match');
       return;
     }
     
@@ -76,8 +76,8 @@ export default function NewPasswordPage() {
         window.location.href = '/dashboard';
       }, 3000);
     } catch (error) {
-      console.error('更新密碼失敗:', error);
-      setError(error instanceof Error ? error.message : '無法更新密碼');
+      console.error('Failed to update password:', error);
+      setError(error instanceof Error ? error.message : 'Unable to update password');
     } finally {
       setLoading(false);
     }
@@ -92,8 +92,8 @@ export default function NewPasswordPage() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
             </svg>
           </div>
-          <h1 className="text-2xl font-bold text-green-600 mb-2">密碼更新成功！</h1>
-          <p className="text-gray-600 mb-8">您的密碼已成功更新，正在跳轉到儀表板...</p>
+          <h1 className="text-2xl font-bold text-green-600 mb-2">Password updated successfully!</h1>
+          <p className="text-gray-600 mb-8">Your password has been successfully updated. Redirecting to dashboard...</p>
           <div className="w-full bg-gray-200 h-1 rounded-full overflow-hidden">
             <div className="bg-green-500 h-1 animate-pulse rounded-full"></div>
           </div>
@@ -105,19 +105,19 @@ export default function NewPasswordPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-blue-50/30">
       <div className="bg-white p-8 rounded-lg shadow-lg max-w-md w-full">
-        <h1 className="text-2xl font-bold mb-4">設置新密碼</h1>
-        <p className="mb-6">請為您的帳戶設置一個新密碼，密碼長度必須至少為6個字符。</p>
+        <h1 className="text-2xl font-bold mb-4">Set New Password</h1>
+        <p className="mb-6">Please set a new password for your account; password must be at least 6 characters long.</p>
         
         {userData ? (
           <div className="mb-6 p-3 bg-blue-50 rounded-lg">
             <p className="text-sm text-blue-800">
-              為用戶 <span className="font-bold">{userData.name || userData.id}</span> 更新密碼
+              Updating password for user <span className="font-bold">{userData.name || userData.id}</span>
             </p>
           </div>
         ) : (
           <div className="mb-6 p-3 bg-yellow-50 rounded-lg">
             <p className="text-sm text-yellow-800">
-              未找到用戶資訊，請返回登入頁面重試
+              User information not found, please return to login page and try again
             </p>
           </div>
         )}
@@ -125,28 +125,28 @@ export default function NewPasswordPage() {
         <form onSubmit={handlePasswordChange}>
           <div className="mb-4">
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              新密碼
+              New Password
             </label>
             <input
               type="password"
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-md"
-              placeholder="輸入新密碼"
+              placeholder="Enter new password"
               required
             />
           </div>
           
           <div className="mb-6">
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              確認密碼
+              Confirm Password
             </label>
             <input
               type="password"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-md"
-              placeholder="再次輸入新密碼"
+              placeholder="Enter password again"
               required
             />
           </div>
@@ -170,7 +170,7 @@ export default function NewPasswordPage() {
               disabled={loading || !userData}
               className={`px-4 py-2 bg-blue-600 text-white rounded-md ${loading || !userData ? 'opacity-50 cursor-not-allowed' : 'hover:bg-blue-700'}`}
             >
-              {loading ? '處理中...' : '更新密碼'}
+              {loading ? 'Processing...' : 'Update Password'}
             </button>
           </div>
         </form>

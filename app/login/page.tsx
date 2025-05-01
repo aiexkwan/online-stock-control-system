@@ -27,12 +27,12 @@ export default function LoginPage() {
     setError(null);
 
     // 直接輸出登入嘗試信息
-    console.log('==== 登入嘗試 ====');
-    console.log(`用戶ID: ${userId}, 密碼長度: ${password.length}個字符`);
+    console.log('==== Login attempt ====');
+    console.log(`User ID: ${userId}, password length: ${password.length} characters`);
 
     try {
       // 先進行連接測試
-      console.log('測試 Supabase 連接...');
+      console.log('Testing Supabase connection...');
       
       // 簡單連接測試 - 嘗試載入 1 條記錄
       const { error: testError } = await supabase
@@ -42,22 +42,22 @@ export default function LoginPage() {
       
       if (testError) {
         if (testError.message === 'Invalid API key') {
-          console.error('Supabase API 金鑰無效或已過期');
-          setError('系統錯誤: 資料庫連接無效，請聯絡系統管理員');
+          console.error('Supabase API key invalid or expired');
+          setError('System error: database connection invalid, please contact administrator');
           setLoading(false);
           return;
         }
       }
     } catch (testErr) {
-      console.error('連接測試錯誤:', testErr);
+      console.error('Connection test error:', testErr);
     }
 
     try {
-      console.log('嘗試登入...');
+      console.log('Attempting login...');
       
-      // 管理員登入邏輯 - 使用硬編碼方式（避免因 API 金鑰問題無法登入）
+      // Admin login logic - use hardcoded credentials to avoid API key issues
       if (userId === 'admin' && password === 'admin123') {
-        console.log('管理員登入成功 (硬編碼方式)');
+        console.log('Admin login successful (hardcoded)');
         
         // 不再呼叫 Supabase，直接使用硬編碼方式登入
         const adminData = {
@@ -76,15 +76,15 @@ export default function LoginPage() {
 
         localStorage.setItem('user', JSON.stringify(adminData));
         
-        // 直接打開儀表板頁面
-        console.log('正在打開儀表板頁面...');
+        // Opening dashboard page...
+        console.log('Opening dashboard page...');
         window.open('/dashboard', '_self');
         return;
       }
 
-      // 硬編碼測試用戶邏輯
+      // Hardcoded test user logic
       if (userId === '5997' && password === '5997') {
-        console.log('測試用戶5997登入成功 (硬編碼方式)');
+        console.log('Test user 5997 login successful (hardcoded)');
         
         const userData = {
           id: '5997',
@@ -103,15 +103,15 @@ export default function LoginPage() {
         localStorage.setItem('user', JSON.stringify(userData));
         localStorage.setItem('firstLogin', 'true');
         
-        // 直接打開新密碼頁面
-        console.log('正在打開新密碼頁面...');
+        // Opening new password page...
+        console.log('Opening new password page...');
         window.open('/new-password', '_self');
         return;
       }
 
-      // 另一個測試用戶
+      // Another test user
       if (userId === 'testuser' && password === 'testuser') {
-        console.log('測試用戶testuser登入成功 (硬編碼方式)');
+        console.log('Test user testuser login successful (hardcoded)');
         
         const userData = {
           id: 'testuser',
@@ -129,68 +129,68 @@ export default function LoginPage() {
         // 保存用戶資訊
         localStorage.setItem('user', JSON.stringify(userData));
         
-        // 直接打開儀表板頁面
-        console.log('正在打開儀表板頁面...');
+        // Opening dashboard page...
+        console.log('Opening dashboard page...');
         window.open('/dashboard', '_self');
         return;
       }
 
-      // 一般用戶登入 - 先檢查用戶是否存在
-      console.log(`檢查用戶 ID: ${userId} 是否存在...`);
+      // Regular user login - first check if user exists
+      console.log(`Checking if user ID: ${userId} exists...`);
       
       try {
-        console.log(`查詢 data_id 表中 ID=${userId} 的記錄...`);
+        console.log(`Querying data_id table for ID=${userId}...`);
         const { data: userData, error: userError } = await supabase
           .from('data_id')
           .select('*')
           .eq('id', userId)
           .single();
 
-        console.log('查詢結果:', userData ? '找到用戶' : '未找到用戶', userError ? `錯誤: ${userError.message}` : '無錯誤');
+        console.log('Query result:', userData ? 'User found' : 'User not found', userError ? `Error: ${userError.message}` : 'No errors');
         
         if (userError) {
-          console.error('用戶查詢錯誤:', userError);
+          console.error('User query error:', userError);
           if (userError.code === 'PGRST116') {
-            throw new Error(`用戶 ${userId} 不存在`);
+            throw new Error(`User ${userId} does not exist`);
           } else if (userError.code === 'Invalid API key') {
-            throw new Error('系統錯誤: 無效的 API 金鑰，請聯絡管理員');
+            throw new Error('System error: invalid API key, please contact administrator');
           } else {
-            throw new Error(`用戶查詢錯誤: ${userError.message}`);
+            throw new Error(`User query error: ${userError.message}`);
           }
         }
         
         if (!userData) {
-          throw new Error(`找不到用戶 ${userId}`);
+          throw new Error(`User ${userId} not found`);
         }
 
-        // 修改 - 先檢查用戶的數據庫密碼
-        console.log('檢查用戶數據庫密碼...');
+        // Checking user database password...
+        console.log('Checking user database password...');
         
         // 情況 1: 用戶使用初始密碼登入（ID 與密碼相同）
         if (password === userId) {
-          console.log('用戶使用初始密碼登入');
+          console.log('User logged in with initial password');
           localStorage.setItem('user', JSON.stringify(userData));
           localStorage.setItem('firstLogin', 'true');
           
-          // 直接打開新密碼頁面
-          console.log('正在打開新密碼頁面...');
+          // Opening new password page...
+          console.log('Opening new password page...');
           window.open('/new-password', '_self');
           return;
         }
         
         // 情況 2: 用戶有自定義密碼
         if (userData.password && password === userData.password) {
-          console.log('用戶使用自定義密碼登入成功');
+          console.log('User login successful with custom password');
           localStorage.setItem('user', JSON.stringify(userData));
           
-          // 直接打開儀表板頁面
-          console.log('正在打開儀表板頁面...');
+          // Opening dashboard page...
+          console.log('Opening dashboard page...');
           window.open('/dashboard', '_self');
           return;
         }
 
         // 嘗試使用 Supabase Auth 登入 (僅作為備用)
-        console.log('嘗試使用 Supabase Auth 登入...');
+        console.log('Attempting Supabase Auth login...');
         try {
           const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
             email: `${userId}@pennine.com`,
@@ -198,28 +198,28 @@ export default function LoginPage() {
           });
 
           if (authError) {
-            console.log('Supabase Auth 登入失敗, 錯誤:', authError);
-            throw new Error('密碼不正確');
+            console.log('Supabase Auth login failed, error:', authError);
+            throw new Error('Password incorrect');
           } else {
-            console.log('Supabase Auth 登入成功');
+            console.log('Supabase Auth login successful');
             localStorage.setItem('user', JSON.stringify(userData));
             
-            // 直接打開儀表板頁面
-            console.log('正在打開儀表板頁面...');
+            // Opening dashboard page...
+            console.log('Opening dashboard page...');
             window.open('/dashboard', '_self');
             return;
           }
         } catch (authErr) {
-          console.error('Auth 登入錯誤:', authErr);
-          throw new Error('密碼不正確');
+          console.error('Auth login error:', authErr);
+          throw new Error('Password incorrect');
         }
       } catch (userQueryError) {
-        console.error('用戶查詢處理錯誤:', userQueryError);
+        console.error('User query processing error:', userQueryError);
         throw userQueryError;
       }
     } catch (err) {
-      console.error('登入過程中出現錯誤:', err);
-      setError(err instanceof Error ? err.message : '登入失敗，請稍後再試');
+      console.error('Error during login process:', err);
+      setError(err instanceof Error ? err.message : 'Login failed, please try again later');
     } finally {
       setLoading(false);
     }
@@ -306,35 +306,35 @@ export default function LoginPage() {
                 )}
               </button>
 
-              {/* 替代頁面連結 */}
+              {/* Alternative page links */}
               <div className="mt-4 text-center">
-                <p className="text-sm text-gray-600 mb-2">如果頁面無法顯示，請嘗試以下連結：</p>
+                <p className="text-sm text-gray-600 mb-2">If the page fails to load, try the following links:</p>
                 <div className="flex flex-wrap justify-center space-x-2 space-y-2">
                   <a href="/dashboard" className="text-xs text-blue-600 hover:underline">
-                    儀表板
+                    Dashboard
                   </a>
                   <a href="/new-password" className="text-xs text-blue-600 hover:underline">
-                    密碼修改頁面
+                    Change Password Page
                   </a>
                   <a href="/direct-dashboard" className="text-xs font-bold text-red-600 hover:underline">
-                    直接儀表板（測試）
+                    Direct Dashboard (Test)
                   </a>
                 </div>
               </div>
 
-              {/* 調試按鈕 */}
+              {/* Debug tools */}
               <div className="mt-6 border-t border-gray-200 pt-4">
-                <p className="text-xs text-gray-500 mb-2">調試工具：</p>
+                <p className="text-xs text-gray-500 mb-2">Debug tools:</p>
                 <div className="flex flex-wrap gap-2 justify-center">
                   <button 
                     type="button"
                     onClick={() => {
                       const stored = localStorage.getItem('user');
-                      alert(`LocalStorage 用戶數據: ${stored ? '存在' : '不存在'}\n${stored || ''}`);
+                      alert(`LocalStorage user data: ${stored ? 'exists' : 'does not exist'}\n${stored || ''}`);
                     }}
                     className="px-2 py-1 text-xs bg-gray-200 rounded hover:bg-gray-300"
                   >
-                    檢查 localStorage
+                    Check localStorage
                   </button>
                   <button 
                     type="button"
@@ -344,11 +344,11 @@ export default function LoginPage() {
                       document.cookie.split(";").forEach(function(c) { 
                         document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/"); 
                       });
-                      alert('所有存儲已清除');
+                      alert('All storage cleared');
                     }}
                     className="px-2 py-1 text-xs bg-gray-200 rounded hover:bg-gray-300"
                   >
-                    清除所有存儲
+                    Clear all storage
                   </button>
                 </div>
               </div>

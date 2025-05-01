@@ -6,8 +6,8 @@ import ClientLayout from './ClientLayout'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'Pennine庫存控制系統',
-  description: '用於管理倉庫庫存的完整在線系統',
+  title: 'Pennine Stock Control System',
+  description: 'A complete online system for managing warehouse inventory',
 }
 
 export default function RootLayout({

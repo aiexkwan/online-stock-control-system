@@ -22,7 +22,7 @@ class ErrorBoundary extends Component<Props, State> {
   }
 
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.error('錯誤邊界捕獲到錯誤:', error, errorInfo);
+    console.error('Error boundary caught an error:', error, errorInfo);
   }
 
   public render() {
@@ -32,10 +32,10 @@ class ErrorBoundary extends Component<Props, State> {
           <div className="max-w-md w-full space-y-8">
             <div>
               <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-                出現了一些問題
+                Something went wrong
               </h2>
               <p className="mt-2 text-center text-sm text-gray-600">
-                我們正在努力修復這個問題。請稍後再試。
+                We're working to fix this issue. Please try again later.
               </p>
               {this.state.error && (
                 <pre className="mt-4 p-4 bg-red-50 rounded-md text-sm text-red-600 overflow-auto">
@@ -47,7 +47,7 @@ class ErrorBoundary extends Component<Props, State> {
                   onClick={() => window.location.reload()}
                   className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                 >
-                  重新載入頁面
+                  Reload page
                 </button>
               </div>
             </div>

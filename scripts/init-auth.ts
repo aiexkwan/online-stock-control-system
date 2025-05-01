@@ -27,9 +27,9 @@ const supabase = createClient(supabaseUrl, supabaseServiceKey, {
 
 async function initializeAuth() {
   try {
-    console.log('開始初始化認證系統...');
+    console.log('Starting authentication system initialization...');
 
-    // 從 data_id 表獲取所有用戶
+    // Fetch all users from data_id table
     const { data: users, error: usersError } = await supabase
       .from('data_id')
       .select('*');
@@ -38,26 +38,26 @@ async function initializeAuth() {
       throw usersError;
     }
 
-    console.log(`找到 ${users.length} 個用戶需要處理`);
+    console.log(`Found ${users.length} users to process`);
 
-    // 為每個用戶創建或更新 auth 帳戶
+    // Create or update auth account for each user
     for (const user of users) {
       const email = `${user.id}@pennine.com`;
       const password = user.password || user.id;
 
       try {
-        // 檢查用戶是否已存在
+        // Check if user already exists
         const { data: { users: existingUsers }, error: listError } = await supabase.auth.admin.listUsers();
 
         if (listError) {
-          console.error(`列出用戶時出錯:`, listError);
+          console.error(`Error listing users:`, listError);
           continue;
         }
 
         const existingUser = existingUsers.find(u => u.email === email);
 
         if (!existingUser) {
-          // 創建新用戶
+          // Create new user
           const { data, error: createError } = await supabase.auth.admin.createUser({
             email,
             password,
@@ -78,12 +78,12 @@ async function initializeAuth() {
           });
 
           if (createError) {
-            console.error(`創建用戶 ${user.id} 時出錯:`, createError);
+            console.error(`Error creating user ${user.id}:`, createError);
           } else {
-            console.log(`已為用戶 ${user.id} 創建認證帳戶`);
+            console.log(`Created auth account for user ${user.id}`);
           }
         } else {
-          // 更新現有用戶
+          // Update existing user
           const { data, error: updateError } = await supabase.auth.admin.updateUserById(
             existingUser.id,
             {
@@ -105,19 +105,19 @@ async function initializeAuth() {
           );
 
           if (updateError) {
-            console.error(`更新用戶 ${user.id} 時出錯:`, updateError);
+            console.error(`Error updating user ${user.id}:`, updateError);
           } else {
-            console.log(`已更新用戶 ${user.id} 的認證帳戶`);
+            console.log(`Updated auth account for user ${user.id}`);
           }
         }
       } catch (err) {
-        console.error(`處理用戶 ${user.id} 時發生錯誤:`, err);
+        console.error(`Error processing user ${user.id}:`, err);
       }
     }
 
-    console.log('認證系統初始化完成');
+    console.log('Authentication system initialization completed');
   } catch (err) {
-    console.error('初始化認證系統失敗:', err);
+    console.error('Authentication system initialization failed:', err);
   }
 }
 
