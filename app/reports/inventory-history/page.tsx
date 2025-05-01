@@ -102,35 +102,35 @@ export default function InventoryHistoryPage() {
       </div>
       
       {/* 空白數據表格（靜態展示） */}
-      <div className="bg-white rounded-xl shadow-md overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
+          <div className="bg-white rounded-xl shadow-md overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   ID
-                </th>
+                    </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   產品
-                </th>
+                    </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   數量
-                </th>
+                    </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   操作類型
-                </th>
+                    </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  位置
-                </th>
+                      位置
+                    </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   時間
-                </th>
+                    </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   操作人
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
               <tr>
                 <td colSpan={7} className="px-6 py-12 text-center text-sm text-gray-500">
                   {loading ? (
@@ -143,12 +143,12 @@ export default function InventoryHistoryPage() {
                       <p className="text-gray-400">功能更新中，請稍後再試</p>
                     </div>
                   )}
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
+                      </td>
+                    </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
     </div>
   );
 } 

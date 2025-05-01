@@ -228,8 +228,10 @@ export default function Navigation() {
               功能選單
             </h3>
             <div className="mt-4 space-y-1">
-              {menuItems.map((item) => (
-                user?.permissions[item.permission as keyof typeof user.permissions] && (
+              {menuItems.map((item) => {
+                if (!user || !user.permissions) return null;
+                if (!user.permissions[item.permission as keyof typeof user.permissions]) return null;
+                return (
                   <Link
                     key={item.name}
                     href={item.href}
@@ -242,8 +244,8 @@ export default function Navigation() {
                     <item.icon className="mr-3 h-6 w-6" />
                     {item.name}
                   </Link>
-                )
-              ))}
+                );
+              })}
             </div>
           </div>
         </nav>
