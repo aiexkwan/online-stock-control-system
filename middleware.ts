@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
+import { createClient } from '@supabase/supabase-js';
 
 // 受保護的路徑列表
 const protectedPaths = [
@@ -17,7 +18,8 @@ const publicPaths = [
   '/change-password',
   '/api',
   '/_next',
-  '/favicon.ico'
+  '/favicon.ico',
+  '/static'
 ];
 
 // 追踪重定向的最大次數
@@ -30,7 +32,8 @@ export async function middleware(request: NextRequest) {
   if (
     pathname.startsWith('/_next') || 
     pathname.startsWith('/api') || 
-    pathname.includes('.') // 處理所有靜態文件
+    pathname.includes('.') ||
+    pathname.startsWith('/static')
   ) {
     return NextResponse.next();
   }
@@ -50,33 +53,33 @@ export async function middleware(request: NextRequest) {
   }
 
   // 檢查是否是公共路徑
-  if (publicPaths.some(path => pathname.startsWith(path))) {
+  const isPublicPath = publicPaths.some(path => pathname.startsWith(path));
+  if (isPublicPath) {
     console.log(`Middleware: 允許訪問公共路徑: ${pathname}`);
     return NextResponse.next();
   }
 
-  // 如果是受保護的路徑，檢查 Cookie 中是否有登入標記
-  if (protectedPaths.some(path => pathname === path || pathname.startsWith(`${path}/`))) {
-    console.log(`Middleware: 檢查受保護路徑: ${pathname}`);
-    
-    // 查看請求是否包含 Cookie
-    const authCookie = request.cookies.get('user');
-    
-    // 檢查是否有 localStorage 中的用戶數據（由客戶端腳本設置）
-    console.log(`Middleware: 檢查Cookie: ${authCookie ? `存在 (${authCookie.value})` : '不存在'}`);
-    
-    if (!authCookie || !authCookie.value) {
-      // 避免可能的重定向循環
-      console.log(`Middleware: 重定向 ${pathname} -> /login (無有效Cookie)`);
+  // 檢查是否是受保護的路徑
+  const isProtectedPath = protectedPaths.some(path => 
+    pathname === path || pathname.startsWith(`${path}/`)
+  );
+
+  if (isProtectedPath) {
+    const token = request.cookies.get('sb-access-token')?.value;
+    const refreshToken = request.cookies.get('sb-refresh-token')?.value;
+
+    if (!token && !refreshToken) {
+      console.log(`Middleware: 重定向 ${pathname} -> /login (無有效Token)`);
       const response = NextResponse.redirect(new URL('/login', request.url));
       
       // 設置重定向計數
       response.headers.set('x-redirect-count', (redirectCount + 1).toString());
       
-      response.cookies.delete('user'); // 清除可能存在的無效 cookie
+      response.cookies.delete('sb-access-token');
+      response.cookies.delete('sb-refresh-token');
       return response;
     } else {
-      console.log(`Middleware: 授權訪問: ${pathname} (Cookie: ${authCookie.value})`);
+      console.log(`Middleware: 授權訪問: ${pathname} (Token: ${token})`);
     }
   } else {
     console.log(`Middleware: 非保護路徑也非公共路徑: ${pathname}, 默認允許訪問`);

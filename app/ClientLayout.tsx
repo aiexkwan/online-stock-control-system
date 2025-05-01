@@ -24,31 +24,56 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
   const pathname = usePathname();
 
   useEffect(() => {
+    let ignore = false;
+
     const initializeAuth = async () => {
       try {
-        const { data: { session } } = await supabase.auth.getSession();
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
         
-        // 如果在登入頁面但已經有會話，重定向到儀表板
-        if (session && pathname === '/login') {
-          router.push('/dashboard');
-          return;
+        if (sessionError) {
+          throw sessionError;
         }
-        
-        // 如果在其他頁面但沒有會話，重定向到登入頁面
-        if (!session && pathname !== '/login' && !pathname.startsWith('/auth')) {
-          router.push('/login');
-          return;
+
+        if (!ignore) {
+          // 如果在登入頁面但已經有會話，重定向到儀表板
+          if (session && pathname === '/login') {
+            router.replace('/dashboard');
+            return;
+          }
+          
+          // 如果在其他頁面但沒有會話，重定向到登入頁面
+          if (!session && pathname !== '/login' && !pathname.startsWith('/auth')) {
+            router.replace('/login');
+            return;
+          }
+          
+          setMounted(true);
         }
-        
-        setMounted(true);
       } catch (err) {
         console.error('初始化錯誤:', err);
-        setError(err instanceof Error ? err : new Error('初始化失敗'));
+        if (!ignore) {
+          setError(err instanceof Error ? err : new Error('初始化失敗'));
+        }
       }
     };
 
     initializeAuth();
-    return () => setMounted(false);
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === 'SIGNED_IN') {
+        router.replace('/dashboard');
+      }
+      if (event === 'SIGNED_OUT') {
+        router.replace('/login');
+      }
+    });
+
+    return () => {
+      ignore = true;
+      subscription.unsubscribe();
+    };
   }, [pathname, router]);
 
   if (error) {
