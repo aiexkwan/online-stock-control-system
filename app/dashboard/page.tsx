@@ -2,6 +2,21 @@
 
 import React, { useEffect, useState } from 'react';
 import { MagnifyingGlassIcon } from '@heroicons/react/24/outline';
+import { motion } from 'framer-motion';
+
+const fadeInUp = {
+  initial: { opacity: 0, y: 20 },
+  animate: { opacity: 1, y: 0 },
+  transition: { duration: 0.5 }
+};
+
+const staggerContainer = {
+  animate: {
+    transition: {
+      staggerChildren: 0.1
+    }
+  }
+};
 
 export default function DashboardPage() {
   const [user, setUser] = useState<any>(null);
@@ -124,7 +139,12 @@ export default function DashboardPage() {
   return (
     <div className="flex min-h-screen bg-gray-100">
       {/* Sidebar */}
-      <aside className="w-64 bg-white p-6 shadow-md">
+      <motion.aside 
+        initial={{ x: -50, opacity: 0 }}
+        animate={{ x: 0, opacity: 1 }}
+        transition={{ duration: 0.5 }}
+        className="w-64 bg-white p-6 shadow-md"
+      >
         <nav className="space-y-4">
           {[
             'Label Printing',
@@ -137,22 +157,30 @@ export default function DashboardPage() {
             'Product Update',
             'Report Generator',
             'Logout'
-          ].map((item) => (
-            <a
+          ].map((item, index) => (
+            <motion.a
               key={item}
+              initial={{ x: -20, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              transition={{ delay: index * 0.1 }}
               href="#"
-              className="block text-gray-700 hover:text-purple-600"
+              className="block text-gray-700 hover:text-purple-600 transition-colors"
             >
               {item}
-            </a>
+            </motion.a>
           ))}
         </nav>
-      </aside>
+      </motion.aside>
 
       {/* Main Content */}
       <div className="flex-1 p-6">
         {/* Top Bar */}
-        <div className="flex items-center justify-between mb-6">
+        <motion.div 
+          initial={{ y: -20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ duration: 0.5 }}
+          className="flex items-center justify-between mb-6"
+        >
           <div className="relative w-1/3">
             <MagnifyingGlassIcon className="absolute left-3 top-2.5 w-5 h-5 text-gray-400" />
             <input
@@ -162,26 +190,51 @@ export default function DashboardPage() {
             />
           </div>
           <div className="flex items-center space-x-4">
-            <span className="text-gray-700">{user?.name}</span>
+            <motion.span 
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              className="text-gray-700"
+            >
+              {user?.name}
+            </motion.span>
           </div>
-        </div>
+        </motion.div>
 
         {/* Summary Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
-          <div className="bg-white p-4 rounded-lg shadow">
+        <motion.div 
+          variants={staggerContainer}
+          initial="initial"
+          animate="animate"
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6"
+        >
+          <motion.div 
+            variants={fadeInUp}
+            className="bg-white p-4 rounded-lg shadow hover:shadow-lg transition-shadow"
+          >
             <p className="text-sm text-gray-500">Pallet Done</p>
             <h2 className="text-2xl font-bold">3,256</h2>
-          </div>
-          <div className="bg-white p-4 rounded-lg shadow">
+          </motion.div>
+          <motion.div 
+            variants={fadeInUp}
+            className="bg-white p-4 rounded-lg shadow hover:shadow-lg transition-shadow"
+          >
             <p className="text-sm text-gray-500">Pallet Been Transfer</p>
             <h2 className="text-2xl font-bold">123</h2>
-          </div>
-        </div>
+          </motion.div>
+        </motion.div>
 
         {/* Main Content Section */}
-        <div className="grid grid-cols-12 gap-6">
+        <motion.div 
+          variants={staggerContainer}
+          initial="initial"
+          animate="animate"
+          className="grid grid-cols-12 gap-6"
+        >
           {/* Print History Section */}
-          <div className="col-span-8 bg-white p-4 rounded-lg shadow">
+          <motion.div 
+            variants={fadeInUp}
+            className="col-span-8 bg-white p-4 rounded-lg shadow hover:shadow-lg transition-shadow"
+          >
             <h3 className="text-lg font-semibold mb-4">Print History</h3>
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200">
@@ -195,20 +248,29 @@ export default function DashboardPage() {
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-100">
                   {Array.from({ length: 10 }).map((_, idx) => (
-                    <tr key={idx}>
+                    <motion.tr 
+                      key={idx}
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: idx * 0.05 }}
+                      className="hover:bg-gray-50"
+                    >
                       <td className="px-4 py-2 text-sm text-gray-700">{new Date().toLocaleTimeString()}</td>
                       <td className="px-4 py-2 text-sm text-gray-700">PLT{1000 + idx}</td>
                       <td className="px-4 py-2 text-sm text-gray-700">P{200 + idx}</td>
                       <td className="px-4 py-2 text-sm text-gray-700">{Math.floor(Math.random() * 50) + 1}</td>
-                    </tr>
+                    </motion.tr>
                   ))}
                 </tbody>
               </table>
             </div>
-          </div>
+          </motion.div>
 
           {/* GRN Received Today */}
-          <div className="col-span-4 bg-white p-4 rounded-lg shadow">
+          <motion.div 
+            variants={fadeInUp}
+            className="col-span-4 bg-white p-4 rounded-lg shadow hover:shadow-lg transition-shadow"
+          >
             <h3 className="text-lg font-semibold mb-4">GRN Received Today</h3>
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200">
@@ -232,17 +294,23 @@ export default function DashboardPage() {
                     { grn: 'GRN#1009', code: 'CODE-I9', count: 5 },
                     { grn: 'GRN#1010', code: 'CODE-J10', count: 4 }
                   ].map((item, idx) => (
-                    <tr key={idx} className="hover:bg-gray-50">
+                    <motion.tr 
+                      key={idx}
+                      initial={{ opacity: 0, x: 20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: idx * 0.05 }}
+                      className="hover:bg-gray-50"
+                    >
                       <td className="px-3 py-2 text-sm text-gray-700">{item.grn}</td>
                       <td className="px-3 py-2 text-sm text-gray-700">{item.code}</td>
                       <td className="px-3 py-2 text-sm text-gray-700">{item.count}</td>
-                    </tr>
+                    </motion.tr>
                   ))}
                 </tbody>
               </table>
             </div>
-          </div>
-        </div>
+          </motion.div>
+        </motion.div>
       </div>
     </div>
   );
