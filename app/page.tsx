@@ -50,13 +50,17 @@ export default function HomePage() {
             console.log('首頁: 未發現用戶數據，準備重定向到登入頁');
             setAuthChecked(true);
             isNavigating.current = true;
-            window.location.href = '/login';
+            setTimeout(() => {
+              window.open('/login', '_self');
+            }, 500);
           }
         } catch (e) {
           console.error('首頁: 無法解析用戶數據', e);
           setAuthChecked(true);
           isNavigating.current = true;
-          window.location.href = '/login';
+          setTimeout(() => {
+            window.open('/login', '_self');
+          }, 500);
         } finally {
           setLoading(false);
         }
@@ -143,10 +147,16 @@ export default function HomePage() {
   // 如果正在導航到其他頁面，顯示載入狀態
   if (isNavigating.current) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen flex items-center justify-center bg-gray-100">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
-          <p className="mt-3 text-gray-600">正在跳轉...</p>
+          <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
+          <p className="mt-4 text-gray-600">正在載入系統...</p>
+          
+          {/* 測試連結，以防用戶被卡在此頁面 */}
+          <div className="mt-10 flex space-x-4 justify-center">
+            <a href="/login" className="text-blue-500 hover:underline">前往登入頁面</a>
+            <a href="/test-page" className="text-green-500 hover:underline">頁面測試工具</a>
+          </div>
         </div>
       </div>
     );

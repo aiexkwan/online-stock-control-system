@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { supabase } from '../../lib/supabase';
 
 export default function DashboardPage() {
   const [user, setUser] = useState<any>(null);
@@ -16,26 +15,33 @@ export default function DashboardPage() {
     const checkAuth = () => {
       try {
         // 從 localStorage 檢查用戶信息
+        console.log('儀表板：正在檢查用戶認證...');
         const userString = localStorage.getItem('user');
+        
         if (!userString) {
           console.log('儀表板：沒有找到用戶信息，重定向到登入頁面');
-          window.location.href = '/login';
+          setTimeout(() => {
+            window.location.href = '/login';
+          }, 500);
           return;
         }
 
         // 設置用戶信息
         const userData = JSON.parse(userString);
-        setUser(userData);
         console.log('儀表板：已載入用戶數據', userData);
+        
+        // 直接設置用戶狀態
+        setUser(userData);
+        setLoading(false);
       } catch (e) {
         console.error('儀表板：解析用戶數據錯誤', e);
-        window.location.href = '/login';
-      } finally {
-        setLoading(false);
+        setTimeout(() => {
+          window.location.href = '/login';
+        }, 500);
       }
     };
 
-    const getStats = async () => {
+    const getStats = () => {
       try {
         // 簡單統計數據，暫時使用假數據
         setStats({
@@ -48,8 +54,12 @@ export default function DashboardPage() {
       }
     };
 
+    // 立即執行這些函數
     checkAuth();
     getStats();
+    
+    // 為防止任何問題，設置一個標記表示頁面已加載
+    sessionStorage.setItem('dashboardLoaded', 'true');
   }, []);
 
   // 顯示加載狀態

@@ -3,47 +3,76 @@
 import React, { useState, useEffect } from 'react';
 
 export default function TestPage() {
-  const [userInfo, setUserInfo] = useState<any>(null);
-  
+  const [logs, setLogs] = useState<string[]>([]);
+
   useEffect(() => {
-    console.log('測試頁面已載入');
+    // 收集調試信息
+    const debugInfo = [
+      `頁面載入時間: ${new Date().toLocaleString()}`,
+      `用戶資訊存在: ${Boolean(localStorage.getItem('user'))}`,
+      `首次登入標記: ${localStorage.getItem('firstLogin') || '不存在'}`,
+      `儀表板已載入標記: ${sessionStorage.getItem('dashboardLoaded') || '不存在'}`,
+      `新密碼頁面已載入標記: ${sessionStorage.getItem('newPasswordLoaded') || '不存在'}`
+    ];
     
-    // 檢查localStorage中的用戶資訊
-    try {
-      const userStr = localStorage.getItem('user');
-      if (userStr) {
-        const user = JSON.parse(userStr);
-        setUserInfo(user);
-      }
-    } catch (e) {
-      console.error('解析用戶資訊失敗', e);
-    }
+    setLogs(debugInfo);
+    
+    // 添加一條記錄，表示測試頁面已經成功加載
+    console.log('測試頁面：頁面已成功加載');
   }, []);
-  
+
+  // 測試跳轉到其他頁面的函數
+  const navigateTo = (path: string) => {
+    console.log(`測試頁面：正在跳轉到 ${path}`);
+    window.open(path, '_self');
+  };
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-blue-50/30">
-      <div className="bg-white p-8 rounded-lg shadow-lg max-w-md w-full">
-        <h1 className="text-2xl font-bold mb-4">測試頁面</h1>
-        <p className="mb-4">這是一個測試頁面，用於排查路由問題。</p>
+    <div className="min-h-screen bg-gray-100 p-8">
+      <div className="max-w-md mx-auto bg-white rounded-xl shadow-md overflow-hidden p-6">
+        <h1 className="text-2xl font-bold mb-4 text-blue-600">頁面導航測試</h1>
         
-        <div className="mt-4 p-4 bg-gray-50 rounded-lg">
-          <h2 className="font-bold mb-2">用戶資訊</h2>
-          {userInfo ? (
-            <pre className="text-xs overflow-auto bg-gray-100 p-2 rounded">
-              {JSON.stringify(userInfo, null, 2)}
-            </pre>
-          ) : (
-            <p>未找到用戶資訊</p>
-          )}
+        <div className="mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
+          <h2 className="text-lg font-semibold mb-2">調試信息:</h2>
+          <ul className="space-y-1 text-sm font-mono">
+            {logs.map((log, index) => (
+              <li key={index} className="text-gray-700">{log}</li>
+            ))}
+          </ul>
         </div>
         
-        <div className="mt-4 flex space-x-2">
-          <a href="/login" className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
-            回到登入頁面
-          </a>
-          <a href="/dashboard" className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600">
-            前往儀表板
-          </a>
+        <div className="space-y-3">
+          <h2 className="text-lg font-semibold">測試導航按鈕:</h2>
+          <div className="grid grid-cols-2 gap-2">
+            <button 
+              onClick={() => navigateTo('/login')} 
+              className="bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded"
+            >
+              登入頁面
+            </button>
+            <button 
+              onClick={() => navigateTo('/dashboard')} 
+              className="bg-green-500 hover:bg-green-600 text-white py-2 px-4 rounded"
+            >
+              儀表板
+            </button>
+            <button 
+              onClick={() => navigateTo('/new-password')} 
+              className="bg-purple-500 hover:bg-purple-600 text-white py-2 px-4 rounded"
+            >
+              新密碼頁面
+            </button>
+            <button 
+              onClick={() => {
+                localStorage.clear();
+                sessionStorage.clear();
+                navigateTo('/login');
+              }} 
+              className="bg-red-500 hover:bg-red-600 text-white py-2 px-4 rounded"
+            >
+              清除存儲並登出
+            </button>
+          </div>
         </div>
       </div>
     </div>

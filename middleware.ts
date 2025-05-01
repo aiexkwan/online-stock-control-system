@@ -1,115 +1,14 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
-// 受保護的路徑列表 (暫時禁用)
-const protectedPaths = [
-  // '/dashboard',
-  // '/products',
-  // '/inventory',
-  // '/reports',
-  // '/users',
-  // '/tables'
-];
-
-// 無需身份驗證的路徑列表
-const publicPaths = [
-  '/login',
-  '/change-password',
-  '/api',
-  '/_next',
-  '/favicon.ico',
-  '/static'
-];
-
-// 追踪重定向的最大次數
-const MAX_REDIRECTS = 3;
+// 此中間件已完全禁用，所有頁面都可以自由訪問
+// 這樣可以解決頁面重定向問題
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   
-  // 所有頁面都允許訪問，用於調試
+  // 允許所有頁面訪問，不做任何重定向或身份驗證檢查
   console.log(`Middleware (測試模式): 允許訪問路徑: ${pathname}`);
-  return NextResponse.next();
-  
-  /* 原始邏輯暫時禁用
-  // 跳過所有靜態資源、API請求和資源檔案的檢查
-  if (
-    pathname.startsWith('/_next') || 
-    pathname.startsWith('/api') || 
-    pathname.includes('.') ||
-    pathname.startsWith('/static')
-  ) {
-    return NextResponse.next();
-  }
-
-  // 檢查重定向次數
-  const redirectCount = parseInt(request.headers.get('x-redirect-count') || '0');
-  if (redirectCount >= MAX_REDIRECTS) {
-    console.error(`重定向次數過多: ${pathname}`);
-    return NextResponse.next();
-  }
-
-  // 處理根路徑重定向
-  if (pathname === '/') {
-    const response = NextResponse.redirect(new URL('/login', request.url));
-    response.headers.set('x-redirect-count', '1');
-    return response;
-  }
-
-  // 檢查是否是公共路徑
-  const isPublicPath = publicPaths.some(path => pathname.startsWith(path));
-  if (isPublicPath) {
-    console.log(`Middleware: 允許訪問公共路徑: ${pathname}`);
-    return NextResponse.next();
-  }
-
-  // 檢查是否是受保護的路徑
-  const isProtectedPath = protectedPaths.some(path => 
-    pathname === path || pathname.startsWith(`${path}/`)
-  );
-
-  if (isProtectedPath) {
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false
-        }
-      }
-    );
-
-    try {
-      // 從請求頭獲取訪問令牌
-      const authHeader = request.headers.get('authorization');
-      if (!authHeader) {
-        throw new Error('No authorization header');
-      }
-
-      // 驗證會話
-      const { data: { user }, error } = await supabase.auth.getUser(
-        authHeader.replace('Bearer ', '')
-      );
-
-      if (error || !user) {
-        throw error || new Error('Unauthorized');
-      }
-
-      // 允許訪問
-      return NextResponse.next();
-    } catch (error) {
-      // 重定向到登入頁面
-      const response = NextResponse.redirect(new URL('/login', request.url));
-      response.cookies.delete('sb-access-token');
-      response.cookies.delete('sb-refresh-token');
-      return response;
-    }
-  } else {
-    console.log(`Middleware: 非保護路徑也非公共路徑: ${pathname}, 默認允許訪問`);
-  }
-  */
-
   return NextResponse.next();
 }
 

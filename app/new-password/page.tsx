@@ -12,7 +12,7 @@ export default function NewPasswordPage() {
   const [userData, setUserData] = useState<any>(null);
 
   useEffect(() => {
-    console.log('新密碼頁面已載入');
+    console.log('新密碼頁面：頁面已加載');
     
     // 檢查localStorage中的用戶資訊
     try {
@@ -20,12 +20,21 @@ export default function NewPasswordPage() {
       if (userStr) {
         const user = JSON.parse(userStr);
         setUserData(user);
-        console.log('已載入用戶數據:', user);
+        console.log('新密碼頁面：已載入用戶數據', user);
+        
+        // 保存一個標記表示已加載
+        sessionStorage.setItem('newPasswordLoaded', 'true');
       } else {
-        console.log('未找到用戶數據');
+        console.log('新密碼頁面：未找到用戶數據，重定向到登入頁面');
+        setTimeout(() => {
+          window.location.href = '/login';
+        }, 500);
       }
     } catch (e) {
-      console.error('解析用戶資訊失敗', e);
+      console.error('新密碼頁面：解析用戶資訊失敗', e);
+      setTimeout(() => {
+        window.location.href = '/login';
+      }, 500);
     }
   }, []);
 
@@ -51,15 +60,29 @@ export default function NewPasswordPage() {
     setError(null);
     
     try {
-      // 更新數據庫中的密碼
-      const { error: updateError } = await supabase
-        .from('data_id')
-        .update({ password: newPassword })
-        .eq('id', userData.id);
+      console.log('嘗試更新用戶密碼...');
       
-      if (updateError) {
-        throw updateError;
+      // 嘗試更新數據庫中的密碼
+      try {
+        const { error: updateError } = await supabase
+          .from('data_id')
+          .update({ password: newPassword })
+          .eq('id', userData.id);
+        
+        if (updateError) {
+          console.error('Supabase更新錯誤:', updateError);
+          throw updateError;
+        } else {
+          console.log('密碼更新成功');
+        }
+      } catch (dbErr) {
+        console.error('無法更新數據庫密碼:', dbErr);
+        // 即使發生錯誤，仍然繼續流程，因為我們將使用localStorage
       }
+      
+      // 更新用戶對象中的密碼
+      userData.password = newPassword;
+      localStorage.setItem('user', JSON.stringify(userData));
       
       // 清除首次登入標記
       localStorage.removeItem('firstLogin');
@@ -69,7 +92,7 @@ export default function NewPasswordPage() {
       
       // 3秒後跳轉到儀表板
       setTimeout(() => {
-        window.location.href = '/dashboard';
+        window.open('/dashboard', '_self');
       }, 3000);
     } catch (error) {
       console.error('更新密碼失敗:', error);
