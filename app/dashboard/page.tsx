@@ -173,8 +173,8 @@ export default function DashboardPage() {
             <h2 className="text-2xl font-bold">3,256</h2>
           </div>
           <div className="bg-white p-4 rounded-lg shadow">
-            <p className="text-sm text-gray-500">GRN Received</p>
-            <h2 className="text-2xl font-bold">394</h2>
+            <p className="text-sm text-gray-500">Pallet Been Transfer</p>
+            <h2 className="text-2xl font-bold">123</h2>
           </div>
         </div>
 
