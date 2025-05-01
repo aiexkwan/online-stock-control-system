@@ -30,15 +30,24 @@ export default function ChangePasswordPage() {
     if (typeof window === 'undefined') return;
     
     const checkAuth = () => {
+      // 增加調試輸出，顯示初始狀態
+      console.log('修改密碼頁: 開始檢查用戶狀態');
+      console.log('localStorage 內容:', {
+        user: localStorage.getItem('user'),
+        firstLogin: localStorage.getItem('firstLogin')
+      });
+      
       // 檢查是否有用戶資訊
       const userStr = localStorage.getItem('user');
       const firstLogin = localStorage.getItem('firstLogin');
       
-      if (!userStr || !firstLogin) {
-        // 如果沒有用戶資訊或不是首次登入，重定向到登入頁面
-        console.log('修改密碼頁: 用戶未登入或非首次登入，重定向到登入頁面');
+      if (!userStr) {
+        // 只檢查用戶信息是否存在，不檢查 firstLogin 標記
+        console.log('修改密碼頁: 找不到用戶資訊，需要重新登入');
         isNavigating.current = true;
-        window.location.href = '/login';
+        setTimeout(() => {
+          window.location.href = '/login';
+        }, 500);
         return;
       }
       
@@ -46,10 +55,18 @@ export default function ChangePasswordPage() {
         const user = JSON.parse(userStr);
         setUserData(user);
         console.log('修改密碼頁: 已載入用戶數據:', user);
+
+        // 如果沒有 firstLogin 標記但有用戶數據，自動設置該標記
+        if (!firstLogin) {
+          console.log('修改密碼頁: 沒有首次登入標記，但用戶數據存在，自動設置標記');
+          localStorage.setItem('firstLogin', 'true');
+        }
       } catch (e) {
         console.error('修改密碼頁: 解析用戶數據錯誤:', e);
         isNavigating.current = true;
-        window.location.href = '/login';
+        setTimeout(() => {
+          window.location.href = '/login';
+        }, 500);
         return;
       } finally {
         setInitialized(true);
