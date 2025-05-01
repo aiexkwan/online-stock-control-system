@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
-import Navigation from './components/Navigation';
 import ErrorBoundary from './components/ErrorBoundary';
 
 function LoadingSpinner() {
@@ -31,8 +30,7 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
   return (
     <ErrorBoundary>
       <div className="min-h-screen flex flex-col">
-        <Navigation />
-        <main className="flex-grow pt-16">
+        <main className="flex-grow">
           {children}
         </main>
       </div>
