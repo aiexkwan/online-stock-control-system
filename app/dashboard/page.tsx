@@ -199,7 +199,30 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* More Sections... */}
+        {/* Print History Section */}
+        <div className="bg-white p-4 rounded-lg shadow mt-6 overflow-auto">
+          <h3 className="text-lg font-semibold mb-4">Print History</h3>
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead>
+              <tr>
+                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Time</th>
+                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Pallet Num</th>
+                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Product Code</th>
+                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Qty</th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-100">
+              {Array.from({ length: 10 }).map((_, idx) => (
+                <tr key={idx}>
+                  <td className="px-4 py-2 text-sm text-gray-700">{new Date().toLocaleTimeString()}</td>
+                  <td className="px-4 py-2 text-sm text-gray-700">PLT{1000 + idx}</td>
+                  <td className="px-4 py-2 text-sm text-gray-700">P{200 + idx}</td>
+                  <td className="px-4 py-2 text-sm text-gray-700">{Math.floor(Math.random() * 50) + 1}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );
