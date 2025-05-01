@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import PalletDonutChart from './PalletDonutChart';
 
 interface Props {
   done: number;
