@@ -210,11 +210,37 @@ export default function DashboardPage() {
           {/* GRN Received Today */}
           <div className="col-span-4 bg-white p-4 rounded-lg shadow">
             <h3 className="text-lg font-semibold mb-4">GRN Received Today</h3>
-            <ul className="list-disc list-inside space-y-2">
-              <li className="text-sm text-gray-700">GRN#1001 - 20 items</li>
-              <li className="text-sm text-gray-700">GRN#1002 - 15 items</li>
-              <li className="text-sm text-gray-700">GRN#1003 - 10 items</li>
-            </ul>
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead>
+                  <tr>
+                    <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">GRN Number</th>
+                    <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Code</th>
+                    <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Count of pallet</th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-100">
+                  {[
+                    { grn: 'GRN#1001', code: 'CODE-A1', count: 5 },
+                    { grn: 'GRN#1002', code: 'CODE-B2', count: 3 },
+                    { grn: 'GRN#1003', code: 'CODE-C3', count: 7 },
+                    { grn: 'GRN#1004', code: 'CODE-D4', count: 4 },
+                    { grn: 'GRN#1005', code: 'CODE-E5', count: 6 },
+                    { grn: 'GRN#1006', code: 'CODE-F6', count: 2 },
+                    { grn: 'GRN#1007', code: 'CODE-G7', count: 8 },
+                    { grn: 'GRN#1008', code: 'CODE-H8', count: 3 },
+                    { grn: 'GRN#1009', code: 'CODE-I9', count: 5 },
+                    { grn: 'GRN#1010', code: 'CODE-J10', count: 4 }
+                  ].map((item, idx) => (
+                    <tr key={idx} className="hover:bg-gray-50">
+                      <td className="px-3 py-2 text-sm text-gray-700">{item.grn}</td>
+                      <td className="px-3 py-2 text-sm text-gray-700">{item.code}</td>
+                      <td className="px-3 py-2 text-sm text-gray-700">{item.count}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       </div>
