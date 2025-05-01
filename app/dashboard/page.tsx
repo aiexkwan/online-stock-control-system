@@ -6,7 +6,7 @@ import { DocumentIcon, ArrowsRightLeftIcon } from '@heroicons/react/24/outline';
 export default function DashboardPage() {
   return (
     <div>
-      <div className="p-6">
+      <div className="pt-6 pr-6 pb-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
           <div className="bg-gray-800 rounded-lg p-6">
             <div className="flex items-center">
