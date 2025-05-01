@@ -60,7 +60,13 @@ npm run dev
 
 ### 登入問題排查
 
-如果您在登入時遇到問題，請參考 [登入指南](docs/login-guide.md)。
+如果您在登入時遇到問題，請參考：
+
+1. **用戶不存在錯誤**：請參閱 [Supabase 疑難排解指南](docs/supabase-troubleshooting.md)
+2. **可用的測試用戶**：
+   - 用戶 ID: `5997`, 密碼: `5997`
+   - 用戶 ID: `testuser`, 密碼: `testuser`
+   - 用戶 ID: `admin`, 密碼: `admin123`
 
 ## 部署
 

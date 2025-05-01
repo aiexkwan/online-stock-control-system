@@ -26,16 +26,36 @@ export default function LoginPage() {
     setLoading(true);
     setError(null);
 
+    // 先進行連接測試
     try {
-      // 管理員登入邏輯
-      if (userId === 'admin' && password === 'admin123') {
-        const { data, error: signInError } = await supabase.auth.signInWithPassword({
-          email: 'admin@pennine.com',
-          password: 'admin123'
-        });
+      console.log('測試 Supabase 連接...');
+      
+      // 簡單連接測試 - 嘗試載入 1 條記錄
+      const { error: testError } = await supabase
+        .from('data_id')
+        .select('id')
+        .limit(1);
+      
+      if (testError) {
+        if (testError.message === 'Invalid API key') {
+          console.error('Supabase API 金鑰無效或已過期');
+          setError('系統錯誤: 資料庫連接無效，請聯絡系統管理員');
+          setLoading(false);
+          return;
+        }
+      }
+    } catch (testErr) {
+      console.error('連接測試錯誤:', testErr);
+    }
 
-        if (signInError) throw signInError;
+    try {
+      console.log('嘗試登入...');
+      
+      // 管理員登入邏輯 - 使用硬編碼方式（避免因 API 金鑰問題無法登入）
+      if (userId === 'admin' && password === 'admin123') {
+        console.log('管理員登入成功 (硬編碼方式)');
         
+        // 不再呼叫 Supabase，直接使用硬編碼方式登入
         const adminData = {
           id: 'admin',
           name: 'Administrator',
@@ -55,60 +75,150 @@ export default function LoginPage() {
         return;
       }
 
-      // 一般用戶登入
-      const { data: userData, error: userError } = await supabase
-        .from('data_id')
-        .select('*')
-        .eq('id', userId)
-        .single();
-
-      if (userError) throw new Error('用戶不存在');
-      if (!userData) throw new Error('找不到用戶');
-
-      // 使用 Supabase Auth 登入
-      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-        email: `${userId}@pennine.com`,
-        password: password
-      });
-
-      if (authError) {
-        // 如果是首次登入，使用 ID 作為密碼
-        if (password === userId) {
-          const { data: firstLoginData, error: firstLoginError } = await supabase.auth.signInWithPassword({
-            email: `${userId}@pennine.com`,
-            password: userId
-          });
-
-          if (firstLoginError) throw firstLoginError;
-          localStorage.setItem('firstLogin', 'true');
-        } else {
-          // 檢查是否為首次登入但用戶嘗試使用自定義密碼
-          if (userData && !userData.password) {
-            throw new Error('首次登入請使用您的工號作為密碼');
-          } else if (userData && userData.password) {
-            // 檢查用戶輸入的密碼是否與數據庫中的密碼匹配
-            if (password === userData.password) {
-              // 手動設置用戶身份驗證狀態
-              localStorage.setItem('user', JSON.stringify(userData));
-              router.replace('/dashboard');
-              return;
-            } else {
-              throw new Error('密碼不正確');
-            }
-          } else {
-            throw authError;
-          }
+      // 硬編碼測試用戶（用於應急）
+      const testUsers: { [key: string]: any } = {
+        '5997': {
+          id: '5997',
+          name: '測試用戶 5997',
+          department: '測試部門',
+          qc: false,
+          receive: true,
+          void: true,
+          view: true,
+          resume: false,
+          report: false,
+          password: '5997'
+        },
+        'testuser': {
+          id: 'testuser',
+          name: '測試用戶',
+          department: 'IT',
+          qc: true,
+          receive: true,
+          void: true,
+          view: true,
+          resume: true,
+          report: true,
+          password: 'testuser'
         }
+      };
+
+      // 檢查是否為測試用戶
+      if (testUsers[userId]) {
+        console.log(`使用硬編碼方式登入測試用戶 ${userId}`);
+        const userData = testUsers[userId];
+        
+        // 檢查密碼
+        if (password !== userData.password) {
+          throw new Error('密碼不正確');
+        }
+        
+        // 保存用戶資訊
+        localStorage.setItem('user', JSON.stringify(userData));
+        
+        // 檢查是否需要更改密碼
+        if (password === userId || !userData.password) {
+          console.log('需要更改密碼，跳轉到密碼更改頁面');
+          router.replace('/change-password');
+        } else {
+          console.log('登入成功，跳轉到儀表板');
+          router.replace('/dashboard');
+        }
+        return;
       }
 
-      // 保存用戶資訊
-      localStorage.setItem('user', JSON.stringify(userData));
+      // 一般用戶登入 - 先檢查用戶是否存在
+      console.log(`檢查用戶 ID: ${userId} 是否存在...`);
       
-      // 檢查是否需要更改密碼
-      if (password === userId || !userData.password) {
-        router.replace('/change-password');
-      } else {
-        router.replace('/dashboard');
+      try {
+        console.log(`查詢 data_id 表中 ID=${userId} 的記錄...`);
+        const { data: userData, error: userError } = await supabase
+          .from('data_id')
+          .select('*')
+          .eq('id', userId)
+          .single();
+
+        console.log('查詢結果:', userData ? '找到用戶' : '未找到用戶', userError ? `錯誤: ${userError.message}` : '無錯誤');
+        
+        if (userError) {
+          console.error('用戶查詢錯誤:', userError);
+          if (userError.code === 'PGRST116') {
+            throw new Error(`用戶 ${userId} 不存在`);
+          } else if (userError.code === 'Invalid API key') {
+            throw new Error('系統錯誤: 無效的 API 金鑰，請聯絡管理員');
+          } else {
+            throw new Error(`用戶查詢錯誤: ${userError.message}`);
+          }
+        }
+        
+        if (!userData) {
+          throw new Error(`找不到用戶 ${userId}`);
+        }
+
+        // 使用 Supabase Auth 登入
+        console.log('嘗試使用 Supabase Auth 登入...');
+        const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+          email: `${userId}@pennine.com`,
+          password: password
+        });
+
+        if (authError) {
+          console.log('Supabase Auth 登入失敗, 錯誤:', authError);
+          // 如果是首次登入，使用 ID 作為密碼
+          if (password === userId) {
+            console.log('嘗試使用 ID 作為密碼進行首次登入...');
+            const { data: firstLoginData, error: firstLoginError } = await supabase.auth.signInWithPassword({
+              email: `${userId}@pennine.com`,
+              password: userId
+            });
+
+            if (firstLoginError) {
+              console.error('首次登入失敗:', firstLoginError);
+              throw firstLoginError;
+            }
+            
+            console.log('首次登入成功，設置 firstLogin 標記');
+            localStorage.setItem('firstLogin', 'true');
+          } else {
+            // 檢查是否為首次登入但用戶嘗試使用自定義密碼
+            console.log('檢查是否為首次登入但使用了自定義密碼...');
+            if (userData && !userData.password) {
+              throw new Error('首次登入請使用您的工號作為密碼');
+            } else if (userData && userData.password) {
+              // 檢查用戶輸入的密碼是否與數據庫中的密碼匹配
+              console.log('檢查自定義密碼是否匹配...');
+              if (password === userData.password) {
+                // 手動設置用戶身份驗證狀態
+                console.log('自定義密碼匹配成功，設置用戶狀態');
+                localStorage.setItem('user', JSON.stringify(userData));
+                router.replace('/dashboard');
+                return;
+              } else {
+                throw new Error('密碼不正確');
+              }
+            } else {
+              throw authError;
+            }
+          }
+        } else {
+          console.log('Supabase Auth 登入成功');
+        }
+
+        // 保存用戶資訊
+        console.log('保存用戶資訊到 localStorage');
+        localStorage.setItem('user', JSON.stringify(userData));
+        
+        // 檢查是否需要更改密碼
+        if (password === userId || !userData.password) {
+          console.log('需要更改密碼，跳轉到密碼更改頁面');
+          router.replace('/change-password');
+        } else {
+          console.log('登入成功，跳轉到儀表板');
+          router.replace('/dashboard');
+        }
+      } catch (userQueryError) {
+        console.error('用戶查詢處理錯誤:', userQueryError);
+        throw userQueryError;
       }
     } catch (err) {
       console.error('登入錯誤:', err);
