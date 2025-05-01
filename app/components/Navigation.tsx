@@ -55,7 +55,7 @@ export default function Navigation() {
         </div>
       </div>
       {/* 左側功能選單（無任何中文標題） */}
-      <div className="fixed left-0 top-16 bottom-0 w-1/5 min-w-[180px] max-w-xs bg-[#23263a] text-white z-10">
+      <div className="fixed left-0 top-16 bottom-0 w-1/5 min-w-[180px] max-w-xs bg-[#23263a] text-white z-10 flex flex-col justify-between">
         <nav className="mt-5 px-2">
           <Link
             key="Home"
@@ -80,6 +80,18 @@ export default function Navigation() {
             </Link>
           ))}
         </nav>
+        {/* 新增底部三個按鈕 */}
+        <div className="px-2 pb-6 flex flex-col gap-2">
+          <Link href="/products/update" className="flex items-center px-4 py-2 text-sm font-medium rounded-md text-gray-300 hover:bg-gray-700 hover:text-white">
+            <span className="mr-3">🛠️</span> Product Update
+          </Link>
+          <Link href="/access/update" className="flex items-center px-4 py-2 text-sm font-medium rounded-md text-gray-300 hover:bg-gray-700 hover:text-white">
+            <span className="mr-3">🔑</span> Access Update
+          </Link>
+          <button onClick={() => { localStorage.removeItem('user'); router.push('/login'); }} className="flex items-center px-4 py-2 text-sm font-medium rounded-md text-gray-300 hover:bg-gray-700 hover:text-white">
+            <span className="mr-3">🚪</span> LogOut
+          </button>
+        </div>
       </div>
     </>
   );
