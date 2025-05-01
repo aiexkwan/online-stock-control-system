@@ -29,6 +29,16 @@ export default function ChangePasswordPage() {
     // 防止 SSR 渲染問題
     if (typeof window === 'undefined') return;
     
+    console.log('==== 密碼修改頁面加載 ====');
+    console.log('頁面 URL:', window.location.href);
+    console.log('localStorage 內容:', {
+      user: localStorage.getItem('user'),
+      firstLogin: localStorage.getItem('firstLogin')
+    });
+    
+    // 直接設置已初始化，確保頁面能夠渲染
+    setInitialized(true);
+    
     const checkAuth = () => {
       console.log('修改密碼頁: 開始檢查用戶狀態');
       
@@ -37,9 +47,8 @@ export default function ChangePasswordPage() {
       
       if (!userStr) {
         // 如果沒有用戶資訊，顯示錯誤提示
-        console.log('修改密碼頁: 用戶未登入');
+        console.log('修改密碼頁: 用戶未登入，但不跳轉');
         setError('請先登入系統');
-        setInitialized(true);
         return;
       }
       
@@ -47,15 +56,24 @@ export default function ChangePasswordPage() {
         const user = JSON.parse(userStr);
         setUserData(user);
         console.log('修改密碼頁: 已載入用戶數據:', user);
-        setInitialized(true);
       } catch (e) {
         console.error('修改密碼頁: 解析用戶數據錯誤:', e);
         setError('用戶資料格式錯誤');
-        setInitialized(true);
       }
     };
     
-    checkAuth();
+    // 延遲檢查，確保頁面先渲染
+    setTimeout(checkAuth, 100);
+    
+    // 在窗口卸載前記錄日誌
+    const handleBeforeUnload = () => {
+      console.log('==== 密碼修改頁面即將卸載 ====');
+    };
+    
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
   }, []);
 
   const handlePasswordChange = async (e: React.FormEvent) => {

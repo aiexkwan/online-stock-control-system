@@ -1,15 +1,14 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
 
-// 受保護的路徑列表
+// 受保護的路徑列表 (暫時禁用)
 const protectedPaths = [
-  '/dashboard',
-  '/products',
-  '/inventory',
-  '/reports',
-  '/users',
-  '/tables'
+  // '/dashboard',
+  // '/products',
+  // '/inventory',
+  // '/reports',
+  // '/users',
+  // '/tables'
 ];
 
 // 無需身份驗證的路徑列表
@@ -28,6 +27,11 @@ const MAX_REDIRECTS = 3;
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   
+  // 所有頁面都允許訪問，用於調試
+  console.log(`Middleware (測試模式): 允許訪問路徑: ${pathname}`);
+  return NextResponse.next();
+  
+  /* 原始邏輯暫時禁用
   // 跳過所有靜態資源、API請求和資源檔案的檢查
   if (
     pathname.startsWith('/_next') || 
@@ -104,6 +108,7 @@ export async function middleware(request: NextRequest) {
   } else {
     console.log(`Middleware: 非保護路徑也非公共路徑: ${pathname}, 默認允許訪問`);
   }
+  */
 
   return NextResponse.next();
 }
