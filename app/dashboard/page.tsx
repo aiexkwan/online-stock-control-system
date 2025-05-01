@@ -174,20 +174,12 @@ export default function DashboardPage() {
         {/* Summary Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
           <div className="bg-white p-4 rounded-lg shadow">
-            <p className="text-sm text-gray-500">Total Patients</p>
+            <p className="text-sm text-gray-500">Pallet Done</p>
             <h2 className="text-2xl font-bold">3,256</h2>
           </div>
           <div className="bg-white p-4 rounded-lg shadow">
-            <p className="text-sm text-gray-500">Available Staff</p>
+            <p className="text-sm text-gray-500">GRN Received</p>
             <h2 className="text-2xl font-bold">394</h2>
-          </div>
-          <div className="bg-white p-4 rounded-lg shadow">
-            <p className="text-sm text-gray-500">Avg. Treatment Costs</p>
-            <h2 className="text-2xl font-bold">$2,536</h2>
-          </div>
-          <div className="bg-white p-4 rounded-lg shadow">
-            <p className="text-sm text-gray-500">Available Cars</p>
-            <h2 className="text-2xl font-bold">38</h2>
           </div>
         </div>
 
