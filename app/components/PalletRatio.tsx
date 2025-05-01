@@ -86,7 +86,7 @@ export default function PalletRatio() {
           </div>
           <div className="ml-4">
             <h2 className="text-sm font-medium text-gray-400">Pallets Done</h2>
-            <p className="text-2xl font-semibold text-white">{stats.palletsDone}</p>
+            <p className="text-2xl font-semibold text-white">3256</p>
           </div>
         </div>
       </div>
@@ -99,11 +99,11 @@ export default function PalletRatio() {
           </div>
           <div className="ml-4">
             <h2 className="text-sm font-medium text-gray-400">Pallets Transferred</h2>
-            <p className="text-2xl font-semibold text-white">{stats.palletsTransferred}</p>
+            <p className="text-2xl font-semibold text-white">123</p>
           </div>
         </div>
-        {/* 百分比冬甩圖 */}
-        <PalletDonutChart done={stats.palletsDone} transferred={stats.palletsTransferred} />
+        {/* 百分比冬甩圖（寫死假數據） */}
+        <PalletDonutChart done={3256} transferred={123} />
       </div>
     </div>
   );
