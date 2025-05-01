@@ -18,14 +18,6 @@ const nextConfig = {
     ];
   },
   webpack: (config) => {
-    // 使用內存緩存，避免磁盤讀寫問題
-    config.cache = {
-      type: 'memory',
-      buildDependencies: {
-        // 確保在 next.config.js 更改時重新構建
-        config: [__filename]
-      }
-    };
     config.resolve.alias = {
       ...config.resolve.alias,
       '@': '.'
