@@ -82,7 +82,22 @@ export default function LoginPage() {
           if (firstLoginError) throw firstLoginError;
           localStorage.setItem('firstLogin', 'true');
         } else {
-          throw authError;
+          // 檢查是否為首次登入但用戶嘗試使用自定義密碼
+          if (userData && !userData.password) {
+            throw new Error('首次登入請使用您的工號作為密碼');
+          } else if (userData && userData.password) {
+            // 檢查用戶輸入的密碼是否與數據庫中的密碼匹配
+            if (password === userData.password) {
+              // 手動設置用戶身份驗證狀態
+              localStorage.setItem('user', JSON.stringify(userData));
+              router.replace('/dashboard');
+              return;
+            } else {
+              throw new Error('密碼不正確');
+            }
+          } else {
+            throw authError;
+          }
         }
       }
 

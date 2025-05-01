@@ -93,7 +93,8 @@ export default function ChangePasswordPage() {
       });
 
       if (authError) {
-        throw authError;
+        console.warn('Supabase Auth 密碼更新失敗，繼續更新數據庫密碼:', authError);
+        // 即使 Auth 更新失敗也繼續更新數據庫密碼，因為登入邏輯已修改為可以使用自定義密碼
       }
 
       // 更新數據庫中的密碼

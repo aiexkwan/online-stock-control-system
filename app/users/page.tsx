@@ -106,6 +106,18 @@ export default function UsersPage() {
         return;
       }
       
+      // 首先檢查用戶 ID 是否已存在
+      const { data: existingUser, error: checkError } = await supabase
+        .from('data_id')
+        .select('id')
+        .eq('id', newUser.id)
+        .single();
+        
+      if (existingUser) {
+        setError(`工號 ${newUser.id} 已存在`);
+        return;
+      }
+      
       const { error } = await supabase
         .from('data_id')
         .insert([{

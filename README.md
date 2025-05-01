@@ -69,6 +69,39 @@ npm run dev
 1. 代碼推送到 GitHub 存儲庫
 2. Vercel 自動部署應用程序
 
+### 自動代碼推送功能
+
+系統配置了自動代碼推送功能，可以監控檔案變更並自動提交至 GitHub：
+
+#### 開啟自動推送（Windows）：
+
+```powershell
+# 使用 PowerShell 腳本啟動
+.\scripts\start-auto-push.ps1
+```
+
+#### 開啟自動推送（Linux/MacOS）：
+
+```bash
+# 給予執行權限
+chmod +x scripts/start-auto-push.sh
+
+# 啟動自動推送
+./scripts/start-auto-push.sh
+```
+
+自動推送功能會：
+- 監控所有檔案變更（新增、修改、刪除）
+- 每 5 分鐘檢查是否有變更，如有則自動提交並推送到 GitHub
+- 忽略 .git、node_modules 等目錄的變更
+- 提交訊息格式為「自動提交: YYYY-MM-DD HH:MM:SS」
+
+如需手動推送，可使用：
+
+```bash
+./push.sh "您的提交訊息"
+```
+
 ## 技術堆棧
 
 - **前端框架**：Next.js 13 (App Router)

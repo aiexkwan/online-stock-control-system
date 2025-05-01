@@ -13,6 +13,6 @@ git add .
 git commit -m "$1"
 
 # 推送到 GitHub
-git push origin main
+git push origin main || git push origin master
 
 echo "✅ 已成功推送更改到 GitHub!" 
