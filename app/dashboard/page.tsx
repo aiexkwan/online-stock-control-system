@@ -252,37 +252,13 @@ export default function DashboardPage() {
           {/* Print History Section */}
           <motion.div 
             variants={fadeInUp}
-            className="col-span-8 bg-white p-4 rounded-lg shadow hover:shadow-lg transition-shadow"
+            className="col-span-8"
           >
-            <h3 className="text-lg font-semibold mb-4">Print History</h3>
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead>
-                  <tr>
-                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Time</th>
-                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Pallet Num</th>
-                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Product Code</th>
-                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Qty</th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-100">
-                  {Array.from({ length: 10 }).map((_, idx) => (
-                    <motion.tr 
-                      key={idx}
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: idx * 0.05 }}
-                      className="hover:bg-gray-50"
-                    >
-                      <td className="px-4 py-2 text-sm text-gray-700">{new Date().toLocaleTimeString()}</td>
-                      <td className="px-4 py-2 text-sm text-gray-700">PLT{1000 + idx}</td>
-                      <td className="px-4 py-2 text-sm text-gray-700">P{200 + idx}</td>
-                      <td className="px-4 py-2 text-sm text-gray-700">{Math.floor(Math.random() * 50) + 1}</td>
-                    </motion.tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <PrintHistory
+              data={palletData}
+              isLoading={palletLoading}
+              error={palletError}
+            />
           </motion.div>
 
           {/* GRN Received Today */}
@@ -330,13 +306,6 @@ export default function DashboardPage() {
             </div>
           </motion.div>
         </motion.div>
-
-        {/* Print History Table */}
-        <PrintHistory
-          data={palletData}
-          isLoading={palletLoading}
-          error={palletError}
-        />
       </div>
     </div>
   );
