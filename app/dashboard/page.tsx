@@ -184,19 +184,23 @@ export default function DashboardPage() {
         </div>
 
         {/* Charts Section */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Trend Chart */}
-          <div className="col-span-2 bg-white p-4 rounded-lg shadow">
-            <h3 className="text-lg font-semibold mb-2">
-              Outpatients vs Inpatients Trend
-            </h3>
-            <div className="h-48 bg-gray-200 rounded"></div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Pallet Done Today */}
+          <div className="bg-white p-4 rounded-lg shadow">
+            <h3 className="text-lg font-semibold mb-2">Pallet Done Today</h3>
+            <div className="flex items-center justify-center h-48 text-4xl font-bold text-blue-600">
+              45
+            </div>
           </div>
 
-          {/* Doughnut Chart */}
+          {/* GRN Received Today */}
           <div className="bg-white p-4 rounded-lg shadow">
-            <h3 className="text-lg font-semibold mb-2">Patients by Gender</h3>
-            <div className="h-48 bg-gray-200 rounded"></div>
+            <h3 className="text-lg font-semibold mb-2">GRN Received Today</h3>
+            <ul className="list-disc list-inside h-48 overflow-auto text-sm text-gray-700">
+              <li>GRN#1001 - 20 items</li>
+              <li>GRN#1002 - 15 items</li>
+              <li>GRN#1003 - 10 items</li>
+            </ul>
           </div>
         </div>
 
