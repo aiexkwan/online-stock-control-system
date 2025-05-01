@@ -50,7 +50,7 @@ if (typeof window !== 'undefined') {
 }
 
 const supabaseUrl = 'https://bbmkuiplnzvpudszrend.supabase.co';
-const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJibWt1aXBsbnp2cHVkc3pyZW5kIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MDc4MjM1NzAsImV4cCI6MjAyMzM5OTU3MH0.0aqZm9Hs0YNYyGV0X2-Zs_9OVIhE2QrDjvPJFJ6_ZXo';
+const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJibWt1aXBsbnp2cHVkc3pyZW5kIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDU3MTU2MDQsImV4cCI6MjA2MTI5MTYwNH0._xBzFK-3gOqyztwpvR6xfMbLd3ynTubEg5Z1iLYj92Q';
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
