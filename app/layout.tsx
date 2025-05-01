@@ -1,13 +1,13 @@
 import './globals.css';
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
-import ClientLayout from './ClientLayout'
+import Navigation from './components/Navigation'
 
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
   title: 'Pennine Stock Control System',
-  description: 'A complete online system for managing warehouse inventory',
+  description: 'Online warehouse stock control system',
 }
 
 export default function RootLayout({
@@ -18,7 +18,10 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
-        <ClientLayout>{children}</ClientLayout>
+        <div className="min-h-screen bg-gray-900">
+          <Navigation />
+          {children}
+        </div>
       </body>
     </html>
   )

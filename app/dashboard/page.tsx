@@ -1,112 +1,106 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { Card } from "../../components/ui/card";
-import PrintHistory from '../components/PrintHistory';
-import GrnHistory from '../components/GrnHistory';
-
-interface DashboardData {
-  palletsDone: number;
-  palletsTransferred: number;
-}
+import React from 'react';
+import { DocumentIcon, ArrowsRightLeftIcon } from '@heroicons/react/24/outline';
 
 export default function DashboardPage() {
-  const router = useRouter();
-  const [loading, setLoading] = useState(true);
-  const [data, setData] = useState<DashboardData>({
-    palletsDone: 0,
-    palletsTransferred: 0
-  });
-
-  useEffect(() => {
-    const checkAuth = () => {
-      const userStr = localStorage.getItem('user');
-      if (!userStr) {
-        router.push('/login');
-        return;
-      }
-    };
-
-    const fetchDashboardData = async () => {
-      try {
-        // 這裡應該從 API 獲取實際數據
-        const mockData = {
-          palletsDone: 3256,
-          palletsTransferred: 123
-        };
-        setData(mockData);
-      } catch (error) {
-        console.error('Error fetching dashboard data:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    checkAuth();
-    fetchDashboardData();
-  }, [router]);
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-[#1e2533]">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
-          <p className="mt-3 text-gray-400">Loading dashboard...</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="min-h-screen bg-[#1e2533] p-6">
-      <div className="max-w-7xl mx-auto space-y-6">
-        {/* Statistics Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <Card className="bg-[#252d3d] p-6 rounded-lg">
-            <div className="flex items-center space-x-4">
-              <div className="w-12 h-12 bg-blue-500/20 rounded-full flex items-center justify-center">
-                <svg className="w-6 h-6 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
+    <div className="pl-64 pt-16">
+      <div className="p-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+          <div className="bg-gray-800 rounded-lg p-6">
+            <div className="flex items-center">
+              <div className="bg-blue-500 bg-opacity-20 rounded-full p-3">
+                <DocumentIcon className="h-8 w-8 text-blue-500" />
               </div>
-              <div>
-                <p className="text-gray-400 text-sm">Pallets Done</p>
-                <p className="text-white text-2xl font-bold">{data.palletsDone}</p>
+              <div className="ml-4">
+                <h2 className="text-sm font-medium text-gray-400">Pallets Done</h2>
+                <p className="text-2xl font-semibold text-white">3256</p>
               </div>
             </div>
-          </Card>
-
-          <Card className="bg-[#252d3d] p-6 rounded-lg">
-            <div className="flex items-center space-x-4">
-              <div className="w-12 h-12 bg-pink-500/20 rounded-full flex items-center justify-center">
-                <svg className="w-6 h-6 text-pink-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
-                </svg>
+          </div>
+          
+          <div className="bg-gray-800 rounded-lg p-6">
+            <div className="flex items-center">
+              <div className="bg-purple-500 bg-opacity-20 rounded-full p-3">
+                <ArrowsRightLeftIcon className="h-8 w-8 text-purple-500" />
               </div>
-              <div>
-                <p className="text-gray-400 text-sm">Pallets Transferred</p>
-                <p className="text-white text-2xl font-bold">{data.palletsTransferred}</p>
+              <div className="ml-4">
+                <h2 className="text-sm font-medium text-gray-400">Pallets Transferred</h2>
+                <p className="text-2xl font-semibold text-white">123</p>
               </div>
             </div>
-          </Card>
+          </div>
         </div>
 
-        {/* History Sections */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <Card className="bg-[#252d3d] rounded-lg overflow-hidden">
-            <div className="p-6">
-              <h2 className="text-lg font-semibold text-white mb-4">Print History</h2>
-              <PrintHistory />
+          <div className="bg-gray-800 rounded-lg p-6">
+            <h2 className="text-lg font-semibold text-white mb-4">Print History</h2>
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-700">
+                <thead>
+                  <tr>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">Time</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">Pallet Num</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">Product Code</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">Qty</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-700">
+                  <tr>
+                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-300">20:01:00</td>
+                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-300">P001</td>
+                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-300">CODE-A</td>
+                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-300">100</td>
+                  </tr>
+                  <tr>
+                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-300">19:01:00</td>
+                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-300">P002</td>
+                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-300">CODE-B</td>
+                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-300">50</td>
+                  </tr>
+                  <tr>
+                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-300">18:01:00</td>
+                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-300">P003</td>
+                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-300">CODE-C</td>
+                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-300">75</td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
-          </Card>
+          </div>
 
-          <Card className="bg-[#252d3d] rounded-lg overflow-hidden">
-            <div className="p-6">
-              <h2 className="text-lg font-semibold text-white mb-4">GRN History</h2>
-              <GrnHistory />
+          <div className="bg-gray-800 rounded-lg p-6">
+            <h2 className="text-lg font-semibold text-white mb-4">GRN History</h2>
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-700">
+                <thead>
+                  <tr>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">GRN Number</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">Code</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">TTL Pallet</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-700">
+                  <tr>
+                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-300">GRN/2024/001</td>
+                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-300">PROD-A</td>
+                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-300">10</td>
+                  </tr>
+                  <tr>
+                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-300">GRN/2024/002</td>
+                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-300">PROD-B</td>
+                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-300">5</td>
+                  </tr>
+                  <tr>
+                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-300">GRN/2024/003</td>
+                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-300">PROD-C</td>
+                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-300">7</td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
-          </Card>
+          </div>
         </div>
       </div>
     </div>
