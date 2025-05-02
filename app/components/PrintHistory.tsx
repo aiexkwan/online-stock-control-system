@@ -5,7 +5,6 @@ import { supabase } from '../../lib/supabase';
 import { format } from 'date-fns';
 
 interface PrintRecord {
-  id: string;
   generate_time: string;
   plt_num: string;
   product_code: string;
@@ -54,7 +53,7 @@ export default function PrintHistory() {
     console.log('PrintHistory fetchRecords: querying supabase', { from, to });
     const { data, error } = await supabase
       .from('record_palletinfo')
-      .select('id, generate_time, plt_num, product_code, product_qty')
+      .select('generate_time, plt_num, product_code, product_qty')
       .order('generate_time', { ascending: false })
       .range(from, to);
     setDebug(d => [...d, `supabase result: error=${!!error}, data.length=${data?.length}`]);
@@ -81,9 +80,9 @@ export default function PrintHistory() {
         </thead>
         <tbody className="divide-y divide-gray-700">
           {records.map((record) => (
-            <tr key={record.id} className="hover:bg-gray-700">
+            <tr key={record.generate_time + record.plt_num} className="hover:bg-gray-700">
               <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-300">
-                {format(new Date(record.generate_time), 'HH:mm:ss')}
+                {format(new Date(record.generate_time), 'dd-MMM-yy HH:mm')}
               </td>
               <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-300">{record.plt_num}</td>
               <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-300">{record.product_code}</td>
