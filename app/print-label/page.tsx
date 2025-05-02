@@ -28,7 +28,7 @@ export default function PrintLabelPage() {
     const fetchProduct = async () => {
       const { data, error } = await supabase
         .from('data_code')
-        .select('description, standard_qty, type')
+        .select('code, description, standard_qty, type')
         .ilike('code', productCode.trim())
         .single();
       if (error || !data) {
@@ -37,6 +37,9 @@ export default function PrintLabelPage() {
       } else {
         setProductInfo(data);
         setProductError(null);
+        if (data.code && data.code !== productCode) {
+          setProductCode(data.code);
+        }
         if (data.standard_qty !== '-') {
           setQuantity(data.standard_qty);
         }
@@ -145,7 +148,7 @@ export default function PrintLabelPage() {
                 type="text"
                 className="w-full rounded-md bg-gray-900 border border-gray-700 text-white px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 value={productCode}
-                onChange={e => setProductCode(e.target.value)}
+                onChange={e => setProductCode(e.target.value.toUpperCase())}
                 required
                 placeholder="Required"
               />
