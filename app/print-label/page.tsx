@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { format } from 'date-fns';
 
@@ -9,6 +9,7 @@ export default function PrintLabelPage() {
   const [quantity, setQuantity] = useState('');
   const [count, setCount] = useState('');
   const [operator, setOperator] = useState('');
+  const [userId, setUserId] = useState<string>('');
 
   const [productInfo, setProductInfo] = useState<{
     description: string;
@@ -48,6 +49,19 @@ export default function PrintLabelPage() {
     fetchProduct();
   }, [productCode]);
 
+  // 取得登入用戶 id
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const userStr = localStorage.getItem('user');
+      if (userStr) {
+        try {
+          const userData = JSON.parse(userStr);
+          setUserId(userData.id || '');
+        } catch {}
+      }
+    }
+  }, []);
+
   const isFormValid = productCode.trim() && quantity.trim() && count.trim();
 
   const handlePrintLabel = async (e: React.FormEvent) => {
@@ -57,7 +71,7 @@ export default function PrintLabelPage() {
     const today = new Date();
     const dateStr = format(today, 'ddMMyy');
     const generateTime = format(today, 'dd-MMM-yyyy HH:mm:ss');
-    const countNum = parseInt(count);
+    const countNum = Math.max(1, parseInt(count, 10) || 1);
 
     // 查詢所有今日 plt_num，取最大流水號
     const { data: todayPlts, error: todayPltsError } = await supabase
@@ -111,6 +125,7 @@ export default function PrintLabelPage() {
       return data;
     });
 
+    // Debug: 顯示所有要插入的 pallet
     setDebugMsg(
       `Will insert to Supabase (${countNum} records):\n` +
       insertDataArr.map(d =>
@@ -122,11 +137,25 @@ export default function PrintLabelPage() {
         (d.plt_remark ? `plt_remark: ${d.plt_remark}\n` : '')
       ).join('\n---\n')
     );
+    console.log('insertDataArr', insertDataArr);
 
     // 批量上傳至 Supabase
     const { error: insertError } = await supabase
       .from('record_palletinfo')
       .insert(insertDataArr);
+
+    // 新增 record_history
+    const now = new Date();
+    const historyTime = format(now, 'dd-MMM-yyyy HH:mm:ss');
+    const historyArr = insertDataArr.map((d) => ({
+      time: historyTime,
+      id: userId,
+      remark: operator.trim() ? 'QC Done (Product Finished And Ready)' : 'Pre-Booking (Print Before Product Is Ready)',
+      plt_num: d.plt_num,
+      loc: d.product_code.startsWith('U') ? 'PipeLine' : 'Production',
+      action: 'Production Finished Q.C.'
+    }));
+    await supabase.from('record_history').insert(historyArr);
 
     if (insertError) {
       setDebugMsg(prev => prev + `\nInsert Error: ${insertError.message}`);
