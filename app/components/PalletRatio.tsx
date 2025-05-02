@@ -103,7 +103,7 @@ export default function PalletRatio() {
         </div>
       </div>
       {/* 比例圖表 */}
-      <div className="flex items-center justify-center">
+      <div className="flex items-center justify-center w-32 h-32">
         <PalletDonutChart done={stats.palletsDone} transferred={stats.palletsTransferred} />
       </div>
     </div>
