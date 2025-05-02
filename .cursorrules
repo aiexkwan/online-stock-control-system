@@ -1,45 +1,98 @@
 
-  You are an expert in TypeScript, Node.js, Next.js App Router, React, Shadcn UI, Radix UI and Tailwind.
-  
-  Code Style and Structure
-  - Write concise, technical TypeScript code with accurate examples.
-  - Use functional and declarative programming patterns; avoid classes.
-  - Prefer iteration and modularization over code duplication.
-  - Use descriptive variable names with auxiliary verbs (e.g., isLoading, hasError).
-  - Structure files: exported component, subcomponents, helpers, static content, types.
-  
-  Naming Conventions
-  - Use lowercase with dashes for directories (e.g., components/auth-wizard).
-  - Favor named exports for components.
-  
-  TypeScript Usage
-  - Use TypeScript for all code; prefer interfaces over types.
-  - Avoid enums; use maps instead.
-  - Use functional components with TypeScript interfaces.
-  
-  Syntax and Formatting
-  - Use the "function" keyword for pure functions.
-  - Avoid unnecessary curly braces in conditionals; use concise syntax for simple statements.
-  - Use declarative JSX.
-  
-  UI and Styling
-  - Use Shadcn UI, Radix, and Tailwind for components and styling.
-  - Implement responsive design with Tailwind CSS; use a mobile-first approach.
-  
-  Performance Optimization
-  - Minimize 'use client', 'useEffect', and 'setState'; favor React Server Components (RSC).
-  - Wrap client components in Suspense with fallback.
-  - Use dynamic loading for non-critical components.
-  - Optimize images: use WebP format, include size data, implement lazy loading.
-  
-  Key Conventions
-  - Use 'nuqs' for URL search parameter state management.
-  - Optimize Web Vitals (LCP, CLS, FID).
-  - Limit 'use client':
-    - Favor server components and Next.js SSR.
-    - Use only for Web API access in small components.
-    - Avoid for data fetching or state management.
-  
-  Follow Next.js docs for Data Fetching, Rendering, and Routing.
-  
-  
+  # 🧠 AI Coding Rules for Supabase + Next.js WMS Project
+
+## 📌 Project Background
+
+This project is a migration from a legacy VBA + MS Access-based WMS (Warehouse Management System) to a modern, web-based application using:
+- Next.js (App Router)
+- React
+- Supabase (PostgreSQL)
+- Tailwind CSS
+- Shadcn UI / Radix UI
+- Deployed via GitHub + Vercel
+
+The system covers stock tracking, pallet movement, GRN records, QR code generation, reporting, and access control.
+
+---
+
+## ⚠️ Mandatory Instructions
+
+1. ✅ **Use only existing Supabase tables and columns**  
+   DO NOT create new tables or columns. Check Supabase if needed.  
+   If column names differ from legacy MS Access schema, **ask the user instead of assuming or renaming.**
+
+2. ✅ **Code only in English**  
+   All variables, UI text, comments, and prompts must be in English. The system is used by native English speakers.
+
+3. ✅ **Respect given instructions only**  
+   DO NOT run or generate code for tasks not explicitly instructed by the user.
+
+4. ✅ **Web UI must support all major browsers**  
+   Ensure full compatibility with Chrome, Safari, Edge, and Firefox (desktop and mobile).
+
+---
+
+## 📁 Project Structure & Naming
+
+- Use lowercase-with-dashes for folders (e.g., `components/stock-summary`)
+- Each module should contain:
+  - Main component (named export)
+  - Subcomponents
+  - Helpers
+  - Constants
+  - Types (interfaces only)
+
+---
+
+## 🧾 TypeScript Style
+
+- Use TypeScript in all files
+- Prefer `interface` over `type`; avoid `enum` (use maps instead)
+- Use descriptive variable names (e.g., `isLoading`, `hasError`, `palletInfo`)
+- Functional components only; avoid classes
+
+---
+
+## ⚛️ React / Next.js Guidelines
+
+- Use **App Router** only (no Pages Router)
+- Prefer **Server Components** and **Server Actions**
+- Avoid `use client` unless DOM manipulation is required
+- Wrap client components in `<Suspense fallback={...} />`
+- Manage URL state with [`nuqs`](https://nuqs.vercel.app/)
+
+---
+
+## 🎨 UI and Styling
+
+- Use Shadcn UI for components
+- Use Tailwind CSS (mobile-first responsive design)
+- Use Radix UI for behavior (dropdowns, dialogs, etc.)
+- Validate forms with `zod`
+
+---
+
+## 🔄 Legacy VBA Migration Notes
+
+| VBA Feature | Web Implementation |
+|-------------|---------------------|
+| Insert/update record | Server Action + Supabase SQL |
+| UserForms | Shadcn Form + Tailwind |
+| QR Code print | `qrcode.react` or custom Canvas QR |
+| Void Pallet / GRN | Server Action logic |
+| Reports | Tailwind table + Server-side rendering |
+
+---
+
+## 🚀 Performance & Optimization
+
+- Minimize `useEffect`, `useState`, `use client`
+- Use `dynamic()` import for non-critical components
+- Optimize images: use WebP, set width/height, lazy load
+- Use Server Components for data-heavy modules
+
+---
+
+## 🧷 Final Reminder
+
+> This project is an enterprise-grade inventory control system. Follow all instructions exactly. Do not guess field mappings or generate unrequested logic. Use clean, declarative, modular TypeScript code optimized for clarity, performance, and multi-browser compatibility.
