@@ -75,11 +75,26 @@ export default function PrintLabelPage() {
     }
     const newPalletNum = `${dateStr}/${lastPalletNum + 1}`;
 
-    // 4. 隨機 12 位 series
-    const randomSeries = Array.from({length: 12}, () => {
+    // 4. 隨機 12 位 series，並驗證唯一性
+    async function generateUniqueSeries() {
       const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-      return chars.charAt(Math.floor(Math.random() * chars.length));
-    }).join('');
+      let unique = false;
+      let series = '';
+      while (!unique) {
+        series = Array.from({length: 12}, () => chars.charAt(Math.floor(Math.random() * chars.length))).join('');
+        // 查詢是否已存在
+        const { data: exist, error: existError } = await supabase
+          .from('record_palletinfo')
+          .select('series')
+          .eq('series', series)
+          .limit(1);
+        if (!existError && (!exist || exist.length === 0)) {
+          unique = true;
+        }
+      }
+      return series;
+    }
+    const randomSeries = await generateUniqueSeries();
 
     // 5. 準備要寫入的資料
     const insertData: any = {
