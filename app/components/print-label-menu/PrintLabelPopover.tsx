@@ -2,10 +2,11 @@ import React from 'react';
 import * as Tabs from '@radix-ui/react-tabs';
 import QcLabelForm from './QcLabelForm';
 import GrnLabelForm from './GrnLabelForm';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 
 export default function PrintLabelPopover() {
   const router = useRouter();
+  const pathname = usePathname();
 
   return (
     <Tabs.Root defaultValue="qc" className="flex w-[340px] min-h-[420px]">
@@ -26,7 +27,11 @@ export default function PrintLabelPopover() {
       </Tabs.List>
       <div className="flex-1">
         <Tabs.Content value="qc">
-          <QcLabelForm />
+          {pathname === '/print-label' ? (
+            <div className="p-4 text-gray-400 text-sm">QC Label is opened in the main view.</div>
+          ) : (
+            <QcLabelForm />
+          )}
         </Tabs.Content>
         <Tabs.Content value="grn">
           <GrnLabelForm />
