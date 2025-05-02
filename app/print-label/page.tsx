@@ -27,7 +27,7 @@ export default function PrintLabelPage() {
       const { data, error } = await supabase
         .from('data_code')
         .select('description, standard_qty, type')
-        .eq('code', productCode.trim())
+        .ilike('code', productCode.trim())
         .single();
       if (error || !data) {
         setProductInfo(null);
