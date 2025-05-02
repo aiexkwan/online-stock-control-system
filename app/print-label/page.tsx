@@ -58,22 +58,22 @@ export default function PrintLabelPage() {
     // 2. generate_time 格式 dd-mmm-yyyy hh:mm:ss
     const generateTime = format(today, 'dd-MMM-yyyy HH:mm:ss');
 
-    // 3. 查詢最新流水號
-    const { data: palletData, error: palletError } = await supabase
+    // 3. 查詢所有今日 plt_num，取最大流水號
+    const { data: todayPlts, error: todayPltsError } = await supabase
       .from('record_palletinfo')
       .select('plt_num')
-      .order('generate_time', { ascending: false })
-      .limit(1)
-      .single();
+      .like('plt_num', `${dateStr}/%`);
 
-    let lastPalletNum = 0;
-    if (palletData && palletData.plt_num) {
-      const parts = palletData.plt_num.split('/');
-      if (parts.length === 2 && !isNaN(Number(parts[1]))) {
-        lastPalletNum = parseInt(parts[1]);
-      }
+    let maxNum = 0;
+    if (todayPlts && todayPlts.length > 0) {
+      todayPlts.forEach(row => {
+        const parts = row.plt_num.split('/');
+        if (parts.length === 2 && !isNaN(Number(parts[1]))) {
+          maxNum = Math.max(maxNum, parseInt(parts[1]));
+        }
+      });
     }
-    const newPalletNum = `${dateStr}/${lastPalletNum + 1}`;
+    const newPalletNum = `${dateStr}/${maxNum + 1}`;
 
     // 4. 隨機 12 位 series，並驗證唯一性
     async function generateUniqueSeries() {
