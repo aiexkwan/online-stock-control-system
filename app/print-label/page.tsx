@@ -146,16 +146,19 @@ export default function PrintLabelPage() {
 
     // 新增 record_history
     const now = new Date();
-    const historyTime = format(now, 'dd-MMM-yyyy HH:mm:ss');
     const historyArr = insertDataArr.map((d) => ({
-      time: historyTime,
-      id: userId,
+      time: now.toISOString(),
+      id: userId ? parseInt(userId, 10) : null,
       remark: operator.trim() ? 'QC Done (Product Finished And Ready)' : 'Pre-Booking (Print Before Product Is Ready)',
       plt_num: d.plt_num,
       loc: d.product_code.startsWith('U') ? 'PipeLine' : 'Production',
       action: 'Production Finished Q.C.'
     }));
-    await supabase.from('record_history').insert(historyArr);
+    const { error: historyError } = await supabase.from('record_history').insert(historyArr);
+    if (historyError) {
+      setDebugMsg(prev => prev + `\nHistory Insert Error: ${historyError.message}`);
+      console.error('Error inserting record_history:', historyError);
+    }
 
     if (insertError) {
       setDebugMsg(prev => prev + `\nInsert Error: ${insertError.message}`);
