@@ -5,17 +5,19 @@ import GrnLabelForm from './GrnLabelForm';
 
 export default function PrintLabelPopover() {
   return (
-    <Tabs.Root defaultValue="qc" className="w-[340px]">
-      <Tabs.List className="flex border-b border-gray-700">
-        <Tabs.Trigger value="qc" className="flex-1 px-4 py-2 text-base font-semibold text-white data-[state=active]:border-b-2 data-[state=active]:border-blue-500">QC Label</Tabs.Trigger>
-        <Tabs.Trigger value="grn" className="flex-1 px-4 py-2 text-base font-semibold text-white data-[state=active]:border-b-2 data-[state=active]:border-blue-500">GRN Label</Tabs.Trigger>
+    <Tabs.Root defaultValue="qc" className="flex w-[340px] min-h-[420px]">
+      <Tabs.List className="flex flex-col w-32 border-r border-gray-700 bg-[#23263a]">
+        <Tabs.Trigger value="qc" className="px-4 py-3 text-base font-semibold text-white text-left data-[state=active]:bg-gray-800 data-[state=active]:border-l-4 data-[state=active]:border-blue-500">QC Label</Tabs.Trigger>
+        <Tabs.Trigger value="grn" className="px-4 py-3 text-base font-semibold text-white text-left data-[state=active]:bg-gray-800 data-[state=active]:border-l-4 data-[state=active]:border-blue-500">GRN Label</Tabs.Trigger>
       </Tabs.List>
-      <Tabs.Content value="qc">
-        <QcLabelForm />
-      </Tabs.Content>
-      <Tabs.Content value="grn">
-        <GrnLabelForm />
-      </Tabs.Content>
+      <div className="flex-1">
+        <Tabs.Content value="qc">
+          <QcLabelForm />
+        </Tabs.Content>
+        <Tabs.Content value="grn">
+          <GrnLabelForm />
+        </Tabs.Content>
+      </div>
     </Tabs.Root>
   );
 } 

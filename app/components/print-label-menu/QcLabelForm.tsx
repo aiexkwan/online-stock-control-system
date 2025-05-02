@@ -251,9 +251,10 @@ export default function QcLabelForm() {
       <div className="bg-gray-800 rounded-lg p-8 flex-1 min-w-[320px] max-w-md shadow-lg">
         <h2 className="text-xl font-semibold text-white mb-6">Instruction</h2>
         <ul className="text-gray-300 text-sm list-disc pl-5 space-y-2">
-          <li>Fill in all required pallet details.</li>
-          <li>Operator Clock Number is optional.</li>
-          <li>Click <b>Print Label</b> to print the label.</li>
+          <li>Enter all required pallet details.</li>
+          <li>If Operator Clock Number is empty, the label is for pre-booking.</li>
+          <li>If Operator Clock Number is filled, the label is for QC done.</li>
+          <li>Click <b>Print Label</b> to generate and save the label(s).</li>
         </ul>
         {/* Debug message */}
         {debugMsg && (
