@@ -77,7 +77,7 @@ export default function PalletRatio() {
   }
 
   return (
-    <div className="grid grid-cols-3 gap-4 w-full items-center">
+    <div className="grid grid-cols-[minmax(0,180px)_minmax(0,180px)_minmax(0,140px)] gap-4 w-full items-center">
       {/* Pallets Done Card */}
       <div className="bg-gray-800 rounded-lg p-4 flex items-center justify-center">
         <div className="flex items-center">

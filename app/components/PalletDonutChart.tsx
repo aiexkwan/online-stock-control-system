@@ -17,7 +17,7 @@ export default function PalletDonutChart({ done, transferred }: Props) {
   const offset = circumference * (1 - progress);
 
   return (
-    <div className="relative flex flex-col items-center justify-center mt-4" style={{ width: radius * 2, height: radius * 2 }}>
+    <div className="relative flex flex-col items-center justify-center mt-4 overflow-visible" style={{ width: radius * 2, height: radius * 2 }}>
       <svg height={radius * 2} width={radius * 2}>
         <circle
           stroke="#334155" // slate-800
