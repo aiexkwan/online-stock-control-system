@@ -55,13 +55,11 @@ export default function PrintLabelPage() {
     if (!isFormValid) return;
 
     const today = new Date();
-    // 1. Pallet number 格式 ddmmyy/流水號
     const dateStr = format(today, 'ddMMyy');
-
-    // 2. generate_time 格式 dd-mmm-yyyy hh:mm:ss
     const generateTime = format(today, 'dd-MMM-yyyy HH:mm:ss');
+    const countNum = parseInt(count);
 
-    // 3. 查詢所有今日 plt_num，取最大流水號
+    // 查詢所有今日 plt_num，取最大流水號
     const { data: todayPlts, error: todayPltsError } = await supabase
       .from('record_palletinfo')
       .select('plt_num')
@@ -76,62 +74,66 @@ export default function PrintLabelPage() {
         }
       });
     }
-    const newPalletNum = `${dateStr}/${maxNum + 1}`;
 
-    // 4. 隨機 12 位 series，並驗證唯一性
-    async function generateUniqueSeries() {
+    // 生成多個唯一 series
+    async function generateUniqueSeriesArr(n: number) {
       const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-      let unique = false;
-      let series = '';
-      while (!unique) {
-        series = Array.from({length: 12}, () => chars.charAt(Math.floor(Math.random() * chars.length))).join('');
+      const result: string[] = [];
+      while (result.length < n) {
+        const series = Array.from({length: 12}, () => chars.charAt(Math.floor(Math.random() * chars.length))).join('');
         // 查詢是否已存在
         const { data: exist, error: existError } = await supabase
           .from('record_palletinfo')
           .select('series')
           .eq('series', series)
           .limit(1);
-        if (!existError && (!exist || exist.length === 0)) {
-          unique = true;
+        if (!existError && (!exist || exist.length === 0) && !result.includes(series)) {
+          result.push(series);
         }
       }
-      return series;
+      return result;
     }
-    const randomSeries = await generateUniqueSeries();
+    const seriesArr = await generateUniqueSeriesArr(countNum);
 
-    // 5. 準備要寫入的資料
-    const insertData: any = {
-      plt_num: newPalletNum,
-      generate_time: generateTime,
-      product_code: productCode,
-      product_qty: quantity,
-      series: randomSeries,
-    };
-    if (operator.trim()) {
-      insertData.plt_remark = operator;
-    }
+    // 準備多筆 insert 資料
+    const insertDataArr = Array.from({length: countNum}).map((_, i) => {
+      const palletNum = `${dateStr}/${maxNum + 1 + i}`;
+      const data: any = {
+        plt_num: palletNum,
+        generate_time: generateTime,
+        product_code: productCode,
+        product_qty: quantity,
+        series: seriesArr[i],
+      };
+      if (operator.trim()) {
+        data.plt_remark = operator;
+      }
+      return data;
+    });
 
     setDebugMsg(
-      `Will insert to Supabase:\n` +
-      `plt_num: ${insertData.plt_num}\n` +
-      `generate_time: ${insertData.generate_time}\n` +
-      `product_code: ${insertData.product_code}\n` +
-      `product_qty: ${insertData.product_qty}\n` +
-      `series: ${insertData.series}\n` +
-      (insertData.plt_remark ? `plt_remark: ${insertData.plt_remark}\n` : '')
+      `Will insert to Supabase (${countNum} records):\n` +
+      insertDataArr.map(d =>
+        `plt_num: ${d.plt_num}\n` +
+        `generate_time: ${d.generate_time}\n` +
+        `product_code: ${d.product_code}\n` +
+        `product_qty: ${d.product_qty}\n` +
+        `series: ${d.series}\n` +
+        (d.plt_remark ? `plt_remark: ${d.plt_remark}\n` : '')
+      ).join('\n---\n')
     );
 
-    // 6. 上傳至 Supabase
+    // 批量上傳至 Supabase
     const { error: insertError } = await supabase
       .from('record_palletinfo')
-      .insert(insertData);
+      .insert(insertDataArr);
 
     if (insertError) {
       setDebugMsg(prev => prev + `\nInsert Error: ${insertError.message}`);
       console.error('Error inserting new pallet info:', insertError);
     } else {
       setDebugMsg(prev => prev + '\nInsert Success!');
-      console.log('New pallet number generated:', newPalletNum);
+      console.log('New pallet numbers generated:', insertDataArr.map(d => d.plt_num));
     }
   };
 
