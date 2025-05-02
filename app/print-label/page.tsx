@@ -76,24 +76,24 @@ export default function PrintLabelPage() {
             <div>
               <label className="block text-sm text-gray-300 mb-1">Quantity Of Pallet</label>
               <input
-                type="number"
-                min="1"
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
                 className="w-full rounded-md bg-gray-900 border border-gray-700 text-white px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 value={quantity}
                 onChange={e => setQuantity(e.target.value)}
-                required
                 placeholder="Required"
               />
             </div>
             <div>
               <label className="block text-sm text-gray-300 mb-1">Count of Pallet</label>
               <input
-                type="number"
-                min="1"
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
                 className="w-full rounded-md bg-gray-900 border border-gray-700 text-white px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 value={count}
                 onChange={e => setCount(e.target.value)}
-                required
                 placeholder="Required"
               />
             </div>
