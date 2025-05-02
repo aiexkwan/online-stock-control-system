@@ -83,51 +83,20 @@ export default function Navigation() {
             <HomeIcon className="mr-3 h-6 w-6" />
             Home
           </Link>
-          {menuItems.map((item) =>
-            item.name === 'Print Label' ? (
-              <Popover.Root open={printLabelOpen} onOpenChange={setPrintLabelOpen} key={item.name}>
-                <Popover.Trigger asChild>
-                  <button
-                    type="button"
-                    className={`flex items-center px-4 py-2 text-base font-medium rounded-md mb-2 w-full text-left ${
-                      pathname === item.href
-                        ? 'bg-gray-800 text-white'
-                        : 'text-gray-300 hover:bg-gray-700 hover:text-white'
-                    }`}
-                    onMouseEnter={handlePopoverEnter}
-                    onMouseLeave={handlePopoverLeave}
-                  >
-                    <item.icon className="mr-3 h-6 w-6" />
-                    {item.name}
-                  </button>
-                </Popover.Trigger>
-                <Popover.Portal>
-                  <Popover.Content
-                    side="right"
-                    align="start"
-                    className="z-50 bg-[#23263a] rounded-lg shadow-lg p-0 min-w-[340px]"
-                    onMouseEnter={handlePopoverEnter}
-                    onMouseLeave={handlePopoverLeave}
-                  >
-                    <PrintLabelPopover />
-                  </Popover.Content>
-                </Popover.Portal>
-              </Popover.Root>
-            ) : (
-              <Link
-                key={item.name}
-                href={item.href}
-                className={`flex items-center px-4 py-2 text-base font-medium rounded-md mb-2 ${
-                  pathname === item.href
-                    ? 'bg-gray-800 text-white'
-                    : 'text-gray-300 hover:bg-gray-700 hover:text-white'
-                }`}
-              >
-                <item.icon className="mr-3 h-6 w-6" />
-                {item.name}
-              </Link>
-            )
-          )}
+          {menuItems.map((item) => (
+            <Link
+              key={item.name}
+              href={item.href}
+              className={`flex items-center px-4 py-2 text-base font-medium rounded-md mb-2 ${
+                pathname === item.href
+                  ? 'bg-gray-800 text-white'
+                  : 'text-gray-300 hover:bg-gray-700 hover:text-white'
+              }`}
+            >
+              <item.icon className="mr-3 h-6 w-6" />
+              {item.name}
+            </Link>
+          ))}
         </nav>
         {/* 新增底部三個按鈕 */}
         <div className="px-2 pb-6 flex flex-col gap-2">
