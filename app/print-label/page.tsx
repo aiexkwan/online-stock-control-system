@@ -149,7 +149,7 @@ export default function PrintLabelPage() {
     const historyArr = insertDataArr.map((d) => ({
       time: now.toISOString(),
       id: userId ? parseInt(userId, 10) : null,
-      remark: operator.trim() ? 'QC Done (Product Finished And Ready)' : 'Pre-Booking (Print Before Product Is Ready)',
+      remark: operator.trim() ? 'Pre-Booking (Print Before Product Is Ready)' : 'QC Done (Product Finished And Ready)',
       plt_num: d.plt_num,
       loc: d.product_code.startsWith('U') ? 'PipeLine' : 'Production',
       action: 'Production Finished Q.C.'
