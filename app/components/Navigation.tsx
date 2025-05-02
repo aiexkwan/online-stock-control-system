@@ -83,8 +83,21 @@ export default function Navigation() {
             <HomeIcon className="mr-3 h-6 w-6" />
             Home
           </Link>
-          {/* Print Label 懸停彈出小選單 */}
-          {pathname !== '/print-label' && (
+          {/* Print Label menu item 永遠顯示 */}
+          {pathname === '/print-label' ? (
+            <Link
+              key="Print Label"
+              href="/print-label"
+              className={`flex items-center px-4 py-2 text-base font-medium rounded-md mb-2 ${
+                pathname === '/print-label'
+                  ? 'bg-gray-800 text-white'
+                  : 'text-gray-300 hover:bg-gray-700 hover:text-white'
+              }`}
+            >
+              <DocumentIcon className="mr-3 h-6 w-6" />
+              Print Label
+            </Link>
+          ) : (
             <div
               onMouseEnter={handlePopoverEnter}
               onMouseLeave={handlePopoverLeave}
