@@ -35,6 +35,9 @@ export default function PrintLabelPage() {
       } else {
         setProductInfo(data);
         setProductError(null);
+        if (data.standard_qty !== '-') {
+          setQuantity(data.standard_qty);
+        }
       }
     };
     fetchProduct();
@@ -42,13 +45,46 @@ export default function PrintLabelPage() {
 
   const isFormValid = productCode.trim() && quantity.trim() && count.trim();
 
+  const handlePrintLabel = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!isFormValid) return;
+
+    const today = new Date();
+    const dateStr = today.toLocaleDateString('en-GB').replace(/\//g, '');
+
+    const { data: palletData, error: palletError } = await supabase
+      .from('record_palletinfo')
+      .select('plt_num')
+      .order('generate_time', { ascending: false })
+      .limit(1)
+      .single();
+
+    if (palletError) {
+      console.error('Error fetching pallet info:', palletError);
+      return;
+    }
+
+    const lastPalletNum = palletData ? parseInt(palletData.plt_num.split('/')[1]) : 0;
+    const newPalletNum = `${dateStr}/${lastPalletNum + 1}`;
+
+    const { error: insertError } = await supabase
+      .from('record_palletinfo')
+      .insert({ plt_num: newPalletNum, generate_time: today.toISOString() });
+
+    if (insertError) {
+      console.error('Error inserting new pallet info:', insertError);
+    } else {
+      console.log('New pallet number generated:', newPalletNum);
+    }
+  };
+
   return (
     <div className="pl-64 pt-16 min-h-screen flex flex-col items-center justify-center">
       <div className="flex flex-row gap-12 items-start justify-center w-full max-w-4xl">
         {/* Pallet Detail 區塊 */}
         <div className="bg-gray-800 rounded-lg p-8 flex-1 min-w-[320px] max-w-md shadow-lg">
           <h2 className="text-xl font-semibold text-white mb-6">Pallet Detail</h2>
-          <form className="flex flex-col gap-4">
+          <form className="flex flex-col gap-4" onSubmit={handlePrintLabel}>
             <div>
               <label className="block text-sm text-gray-300 mb-1">Product Code</label>
               <input
