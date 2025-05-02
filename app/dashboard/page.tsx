@@ -3,6 +3,7 @@
 import React from 'react';
 import { DocumentIcon, ArrowsRightLeftIcon } from '@heroicons/react/24/outline';
 import PrintHistory from '../components/PrintHistory';
+import GrnHistory from '../components/GrnHistory';
 
 export default function DashboardPage() {
   return (
@@ -41,34 +42,7 @@ export default function DashboardPage() {
           </div>
           <div className="bg-gray-800 rounded-lg p-6">
             <h2 className="text-lg font-semibold text-white mb-4">GRN History</h2>
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-700">
-                <thead>
-                  <tr>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">GRN Number</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">Code</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">TTL Pallet</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-700">
-                  <tr>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-300">GRN/2024/001</td>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-300">PROD-A</td>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-300">10</td>
-                  </tr>
-                  <tr>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-300">GRN/2024/002</td>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-300">PROD-B</td>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-300">5</td>
-                  </tr>
-                  <tr>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-300">GRN/2024/003</td>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-300">PROD-C</td>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-300">7</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
+            <GrnHistory />
           </div>
         </div>
       </div>

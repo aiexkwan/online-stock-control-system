@@ -68,7 +68,6 @@ export default function PrintHistory() {
 
   return (
     <div ref={tableRef} className="overflow-x-auto max-h-96" style={{ minHeight: 220 }}>
-      <div className="text-xs text-yellow-400 mb-2">DEBUG: {debug.map((d, i) => <span key={i}>{d} | </span>)}</div>
       <table className="min-w-full divide-y divide-gray-700">
         <thead>
           <tr>
