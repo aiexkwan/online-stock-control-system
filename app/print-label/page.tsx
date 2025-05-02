@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { supabase } from '../../lib/supabase';
+import { format } from 'date-fns';
 
 export default function PrintLabelPage() {
   const [productCode, setProductCode] = useState('');
@@ -15,6 +16,7 @@ export default function PrintLabelPage() {
     type: string;
   } | null>(null);
   const [productError, setProductError] = useState<string | null>(null);
+  const [debugMsg, setDebugMsg] = useState<string>('');
 
   // 查詢 Product Code
   React.useEffect(() => {
@@ -50,8 +52,13 @@ export default function PrintLabelPage() {
     if (!isFormValid) return;
 
     const today = new Date();
-    const dateStr = today.toLocaleDateString('en-GB').replace(/\//g, '');
+    // 1. Pallet number 格式 ddmmyy/流水號
+    const dateStr = format(today, 'ddMMyy');
 
+    // 2. generate_time 格式 dd-mmm-yyyy hh:mm:ss
+    const generateTime = format(today, 'dd-MMM-yyyy HH:mm:ss');
+
+    // 3. 查詢最新流水號
     const { data: palletData, error: palletError } = await supabase
       .from('record_palletinfo')
       .select('plt_num')
@@ -59,21 +66,53 @@ export default function PrintLabelPage() {
       .limit(1)
       .single();
 
-    if (palletError) {
-      console.error('Error fetching pallet info:', palletError);
-      return;
+    let lastPalletNum = 0;
+    if (palletData && palletData.plt_num) {
+      const parts = palletData.plt_num.split('/');
+      if (parts.length === 2 && !isNaN(Number(parts[1]))) {
+        lastPalletNum = parseInt(parts[1]);
+      }
     }
-
-    const lastPalletNum = palletData ? parseInt(palletData.plt_num.split('/')[1]) : 0;
     const newPalletNum = `${dateStr}/${lastPalletNum + 1}`;
 
+    // 4. 隨機 12 位 series
+    const randomSeries = Array.from({length: 12}, () => {
+      const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+      return chars.charAt(Math.floor(Math.random() * chars.length));
+    }).join('');
+
+    // 5. 準備要寫入的資料
+    const insertData: any = {
+      plt_num: newPalletNum,
+      generate_time: generateTime,
+      product_code: productCode,
+      product_qty: quantity,
+      series: randomSeries,
+    };
+    if (operator.trim()) {
+      insertData.plt_remark = operator;
+    }
+
+    setDebugMsg(
+      `Will insert to Supabase:\n` +
+      `plt_num: ${insertData.plt_num}\n` +
+      `generate_time: ${insertData.generate_time}\n` +
+      `product_code: ${insertData.product_code}\n` +
+      `product_qty: ${insertData.product_qty}\n` +
+      `series: ${insertData.series}\n` +
+      (insertData.plt_remark ? `plt_remark: ${insertData.plt_remark}\n` : '')
+    );
+
+    // 6. 上傳至 Supabase
     const { error: insertError } = await supabase
       .from('record_palletinfo')
-      .insert({ plt_num: newPalletNum, generate_time: today.toISOString() });
+      .insert(insertData);
 
     if (insertError) {
+      setDebugMsg(prev => prev + `\nInsert Error: ${insertError.message}`);
       console.error('Error inserting new pallet info:', insertError);
     } else {
+      setDebugMsg(prev => prev + '\nInsert Success!');
       console.log('New pallet number generated:', newPalletNum);
     }
   };
@@ -160,6 +199,10 @@ export default function PrintLabelPage() {
             <li>Operator Clock Number is optional.</li>
             <li>Click <b>Print Label</b> to print the label.</li>
           </ul>
+          {/* Debug message */}
+          {debugMsg && (
+            <pre className="mt-6 text-xs text-yellow-300 whitespace-pre-wrap bg-gray-900 rounded p-3">{debugMsg}</pre>
+          )}
         </div>
       </div>
     </div>
