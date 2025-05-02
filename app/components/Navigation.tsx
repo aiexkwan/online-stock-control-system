@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
@@ -46,6 +46,21 @@ export default function Navigation() {
   const pathname = usePathname();
   const router = useRouter();
   const [printLabelOpen, setPrintLabelOpen] = useState(false);
+  const hoverRef = useRef(false);
+  const closeTimeout = useRef<NodeJS.Timeout | null>(null);
+
+  const handlePopoverEnter = () => {
+    hoverRef.current = true;
+    if (closeTimeout.current) clearTimeout(closeTimeout.current);
+    setPrintLabelOpen(true);
+  };
+
+  const handlePopoverLeave = () => {
+    hoverRef.current = false;
+    closeTimeout.current = setTimeout(() => {
+      if (!hoverRef.current) setPrintLabelOpen(false);
+    }, 200);
+  };
 
   return (
     <>
@@ -79,15 +94,21 @@ export default function Navigation() {
                         ? 'bg-gray-800 text-white'
                         : 'text-gray-300 hover:bg-gray-700 hover:text-white'
                     }`}
-                    onMouseEnter={() => setPrintLabelOpen(true)}
-                    onMouseLeave={() => setTimeout(() => setPrintLabelOpen(false), 200)}
+                    onMouseEnter={handlePopoverEnter}
+                    onMouseLeave={handlePopoverLeave}
                   >
                     <item.icon className="mr-3 h-6 w-6" />
                     {item.name}
                   </button>
                 </Popover.Trigger>
                 <Popover.Portal>
-                  <Popover.Content side="right" align="start" className="z-50 bg-[#23263a] rounded-lg shadow-lg p-0 min-w-[340px]">
+                  <Popover.Content
+                    side="right"
+                    align="start"
+                    className="z-50 bg-[#23263a] rounded-lg shadow-lg p-0 min-w-[340px]"
+                    onMouseEnter={handlePopoverEnter}
+                    onMouseLeave={handlePopoverLeave}
+                  >
                     <PrintLabelPopover />
                   </Popover.Content>
                 </Popover.Portal>
