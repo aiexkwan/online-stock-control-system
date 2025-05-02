@@ -23,6 +23,7 @@ import {
 import { supabase } from '../lib/supabase';
 import PalletRatio from './components/PalletRatio';
 import PalletDonutChart from './components/PalletDonutChart';
+import PrintHistory from './components/PrintHistory';
 
 const features = [
   {
@@ -273,38 +274,7 @@ export default function HomePage() {
           {/* Print History */}
           <div className="bg-gray-800 rounded-lg p-6">
             <h2 className="text-lg font-semibold text-white mb-4">Print History</h2>
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-700">
-                <thead>
-                  <tr>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">Time</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">Pallet Num</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">Product Code</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">Qty</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-700">
-                  <tr>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-300">12:01:00</td>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-300">P001</td>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-300">CODE-A</td>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-300">100</td>
-                  </tr>
-                  <tr>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-300">11:01:00</td>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-300">P002</td>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-300">CODE-B</td>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-300">50</td>
-                  </tr>
-                  <tr>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-300">10:01:00</td>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-300">P003</td>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-300">CODE-C</td>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-300">75</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
+            <PrintHistory />
           </div>
 
           {/* GRN History */}
