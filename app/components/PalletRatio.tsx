@@ -77,9 +77,9 @@ export default function PalletRatio() {
   }
 
   return (
-    <div className="grid grid-cols-[minmax(0,180px)_minmax(0,180px)_minmax(0,140px)] gap-4 w-full items-center">
+    <div className="flex flex-row gap-4 w-full items-center">
       {/* Pallets Done Card */}
-      <div className="bg-gray-800 rounded-lg p-4 flex items-center justify-center">
+      <div className="bg-gray-800 rounded-lg p-4 flex-1 flex items-center justify-center min-w-[140px]">
         <div className="flex items-center">
           <div className="bg-blue-500 bg-opacity-20 rounded-full p-2">
             <DocumentIcon className="h-6 w-6 text-blue-500" />
@@ -91,7 +91,7 @@ export default function PalletRatio() {
         </div>
       </div>
       {/* Pallets Transferred Card */}
-      <div className="bg-gray-800 rounded-lg p-4 flex items-center justify-center">
+      <div className="bg-gray-800 rounded-lg p-4 flex-1 flex items-center justify-center min-w-[140px]">
         <div className="flex items-center">
           <div className="bg-purple-500 bg-opacity-20 rounded-full p-2">
             <ArrowsRightLeftIcon className="h-6 w-6 text-purple-500" />
@@ -102,8 +102,8 @@ export default function PalletRatio() {
           </div>
         </div>
       </div>
-      {/* 比例圖表 */}
-      <div className="flex items-center justify-center w-32 h-32">
+      {/* Donut 圖表 Section */}
+      <div className="flex items-center justify-center min-w-[140px] w-40 h-40 bg-gray-800 rounded-lg">
         <PalletDonutChart done={stats.palletsDone} transferred={stats.palletsTransferred} />
       </div>
     </div>
