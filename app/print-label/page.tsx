@@ -166,6 +166,11 @@ export default function PrintLabelPage() {
     } else {
       setDebugMsg(prev => prev + '\nInsert Success!');
       console.log('New pallet numbers generated:', insertDataArr.map(d => d.plt_num));
+      // 清空所有 input 狀態
+      setProductCode('');
+      setQuantity('');
+      setCount('');
+      setOperator('');
     }
   };
 
