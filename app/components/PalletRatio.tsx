@@ -77,33 +77,34 @@ export default function PalletRatio() {
   }
 
   return (
-    <div className="grid grid-cols-2 gap-6 w-full">
+    <div className="grid grid-cols-3 gap-4 w-full items-center">
       {/* Pallets Done Card */}
-      <div className="bg-gray-800 rounded-lg p-6">
+      <div className="bg-gray-800 rounded-lg p-4 flex items-center justify-center">
         <div className="flex items-center">
-          <div className="bg-blue-500 bg-opacity-20 rounded-full p-3">
-            <DocumentIcon className="h-8 w-8 text-blue-500" />
+          <div className="bg-blue-500 bg-opacity-20 rounded-full p-2">
+            <DocumentIcon className="h-6 w-6 text-blue-500" />
           </div>
-          <div className="ml-4">
+          <div className="ml-3">
             <h2 className="text-sm font-medium text-gray-400">Pallets Done</h2>
-            <p className="text-2xl font-semibold text-white">3256</p>
+            <p className="text-xl font-semibold text-white">{stats.palletsDone}</p>
           </div>
         </div>
       </div>
-
-      {/* Pallets Transferred Card + 百分比冬甩圖 */}
-      <div className="bg-gray-800 rounded-lg p-6 flex flex-col items-center">
+      {/* Pallets Transferred Card */}
+      <div className="bg-gray-800 rounded-lg p-4 flex items-center justify-center">
         <div className="flex items-center">
-          <div className="bg-purple-500 bg-opacity-20 rounded-full p-3">
-            <ArrowsRightLeftIcon className="h-8 w-8 text-purple-500" />
+          <div className="bg-purple-500 bg-opacity-20 rounded-full p-2">
+            <ArrowsRightLeftIcon className="h-6 w-6 text-purple-500" />
           </div>
-          <div className="ml-4">
+          <div className="ml-3">
             <h2 className="text-sm font-medium text-gray-400">Pallets Transferred</h2>
-            <p className="text-2xl font-semibold text-white">123</p>
+            <p className="text-xl font-semibold text-white">{stats.palletsTransferred}</p>
           </div>
         </div>
-        {/* 百分比冬甩圖（寫死假數據） */}
-        <PalletDonutChart done={3256} transferred={123} />
+      </div>
+      {/* 比例圖表 */}
+      <div className="flex items-center justify-center">
+        <PalletDonutChart done={stats.palletsDone} transferred={stats.palletsTransferred} />
       </div>
     </div>
   );
