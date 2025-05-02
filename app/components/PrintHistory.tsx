@@ -20,9 +20,12 @@ export default function PrintHistory() {
   const [loading, setLoading] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const [page, setPage] = useState(0);
+  const [debug, setDebug] = useState<string[]>([]);
   const tableRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    setDebug(d => [...d, 'useEffect: fetchRecords(0, true)']);
+    console.log('PrintHistory useEffect: fetchRecords(0, true)');
     fetchRecords(0, true);
     // eslint-disable-next-line
   }, []);
@@ -33,6 +36,7 @@ export default function PrintHistory() {
       if (!tableRef.current || loading || !hasMore) return;
       const { scrollTop, scrollHeight, clientHeight } = tableRef.current;
       if (scrollTop + clientHeight >= scrollHeight - 10) {
+        setDebug(d => [...d, `handleScroll: fetchRecords(${page + 1})`]);
         fetchRecords(page + 1);
       }
     };
@@ -42,14 +46,19 @@ export default function PrintHistory() {
   }, [loading, hasMore, page]);
 
   async function fetchRecords(pageNum: number, reset = false) {
+    setDebug(d => [...d, `fetchRecords called: pageNum=${pageNum}, reset=${reset}`]);
     setLoading(true);
     const from = pageNum * PAGE_SIZE;
     const to = Math.min(from + PAGE_SIZE - 1, MAX_RECORDS - 1);
+    setDebug(d => [...d, `supabase query: from=${from}, to=${to}`]);
+    console.log('PrintHistory fetchRecords: querying supabase', { from, to });
     const { data, error } = await supabase
       .from('record_palletinfo')
       .select('id, generate_time, plt_num, product_code, product_qty')
       .order('generate_time', { ascending: false })
       .range(from, to);
+    setDebug(d => [...d, `supabase result: error=${!!error}, data.length=${data?.length}`]);
+    console.log('PrintHistory fetchRecords: result', { error, data });
     if (!error && data) {
       setRecords(prev => reset ? data : [...prev, ...data]);
       setPage(pageNum);
@@ -60,6 +69,7 @@ export default function PrintHistory() {
 
   return (
     <div ref={tableRef} className="overflow-x-auto max-h-96" style={{ minHeight: 220 }}>
+      <div className="text-xs text-yellow-400 mb-2">DEBUG: {debug.map((d, i) => <span key={i}>{d} | </span>)}</div>
       <table className="min-w-full divide-y divide-gray-700">
         <thead>
           <tr>
