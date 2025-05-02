@@ -69,7 +69,7 @@ export default function PrintHistory() {
   return (
     <div ref={tableRef} className="overflow-x-auto max-h-96" style={{ minHeight: 220 }}>
       <table className="min-w-full divide-y divide-gray-700">
-        <thead>
+        <thead className="sticky top-0 bg-gray-800 z-10">
           <tr>
             <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Time</th>
             <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Pallet Num</th>
