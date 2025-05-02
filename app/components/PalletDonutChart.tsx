@@ -8,12 +8,13 @@ interface Props {
 }
 
 export default function PalletDonutChart({ done, transferred }: Props) {
-  const percent = transferred > 0 ? Math.round((done / transferred) * 100) : 0;
+  const total = done + transferred;
+  const percent = total > 0 ? Math.round((done / total) * 100) : 0;
   const radius = 40;
   const stroke = 10;
   const normalizedRadius = radius - stroke / 2;
   const circumference = normalizedRadius * 2 * Math.PI;
-  const progress = Math.min(done / (transferred || 1), 1);
+  const progress = total > 0 ? done / total : 0;
   const offset = circumference * (1 - progress);
 
   return (
