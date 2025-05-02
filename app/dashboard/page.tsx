@@ -10,7 +10,7 @@ export default function DashboardPage() {
     <div>
       <div className="pt-6 pr-6 pb-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-          <div className="bg-gray-800 rounded-lg p-6">
+          <div className="bg-gray-800 rounded-lg p-6 shadow-md">
             <div className="flex items-center">
               <div className="bg-blue-500 bg-opacity-20 rounded-full p-3">
                 <DocumentIcon className="h-8 w-8 text-blue-500" />
@@ -37,11 +37,11 @@ export default function DashboardPage() {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="bg-gray-800 rounded-lg p-6 lg:col-span-2">
-            <h2 className="text-lg font-semibold text-white mb-4">Print History</h2>
+            <h2 className="text-lg font-bold text-white mb-4">Print History</h2>
             <PrintHistory />
           </div>
           <div className="bg-gray-800 rounded-lg p-6">
-            <h2 className="text-lg font-semibold text-white mb-4">GRN History</h2>
+            <h2 className="text-lg font-bold text-white mb-4">GRN History</h2>
             <GrnHistory />
           </div>
         </div>

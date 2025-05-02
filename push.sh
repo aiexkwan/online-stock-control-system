@@ -12,6 +12,9 @@ git add .
 # 提交更改
 git commit -m "$1"
 
+# 先拉取遠端最新（rebase）
+git pull --rebase origin main
+
 # 推送到 GitHub
 git push origin main || git push origin master
 
