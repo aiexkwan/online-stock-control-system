@@ -1,6 +1,6 @@
-# 🧠 AI Coding Rules for Supabase + Next.js WMS Project
+# AI Coding Rules for Supabase + Next.js WMS Project
 
-## 📌 Project Background
+##  Project Background
 
 This project is a migration from a legacy VBA + MS Access-based WMS (Warehouse Management System) to a modern, web-based application using:
 - Next.js (App Router)
@@ -14,24 +14,24 @@ The system covers stock tracking, pallet movement, GRN records, QR code generati
 
 ---
 
-## ⚠️ Mandatory Instructions
+##  Mandatory Instructions
 
-1. ✅ **Use only existing Supabase tables and columns**  
+1.  **Use only existing Supabase tables and columns**  
    DO NOT create new tables or columns. Check Supabase if needed.  
    If column names differ from legacy MS Access schema, **ask the user instead of assuming or renaming.**
 
-2. ✅ **Code only in English**  
+2.  **Code only in English**  
    All variables, UI text, comments, and prompts must be in English. The system is used by native English speakers.
 
-3. ✅ **Respect given instructions only**  
+3.  **Respect given instructions only**  
    DO NOT run or generate code for tasks not explicitly instructed by the user.
 
-4. ✅ **Web UI must support all major browsers**  
+4.  **Web UI must support all major browsers**  
    Ensure full compatibility with Chrome, Safari, Edge, and Firefox (desktop and mobile).
 
 ---
 
-## 📁 Project Structure & Naming
+## Project Structure & Naming
 
 - Use lowercase-with-dashes for folders (e.g., `components/stock-summary`)
 - Each module should contain:
@@ -52,7 +52,7 @@ The system covers stock tracking, pallet movement, GRN records, QR code generati
 
 ---
 
-## ⚛️ React / Next.js Guidelines
+## ⚛ React / Next.js Guidelines
 
 - Use **App Router** only (no Pages Router)
 - Prefer **Server Components** and **Server Actions**
@@ -62,7 +62,7 @@ The system covers stock tracking, pallet movement, GRN records, QR code generati
 
 ---
 
-## 🎨 UI and Styling
+##  UI and Styling
 
 - Use Shadcn UI for components
 - Use Tailwind CSS (mobile-first responsive design)
@@ -71,7 +71,7 @@ The system covers stock tracking, pallet movement, GRN records, QR code generati
 
 ---
 
-## 🔄 Legacy VBA Migration Notes
+##  Legacy VBA Migration Notes
 
 | VBA Feature | Web Implementation |
 |-------------|---------------------|
@@ -83,7 +83,7 @@ The system covers stock tracking, pallet movement, GRN records, QR code generati
 
 ---
 
-## 🚀 Performance & Optimization
+##  Performance & Optimization
 
 - Minimize `useEffect`, `useState`, `use client`
 - Use `dynamic()` import for non-critical components
@@ -92,6 +92,6 @@ The system covers stock tracking, pallet movement, GRN records, QR code generati
 
 ---
 
-## 🧷 Final Reminder
+##  Final Reminder
 
 > This project is an enterprise-grade inventory control system. Follow all instructions exactly. Do not guess field mappings or generate unrequested logic. Use clean, declarative, modular TypeScript code optimized for clarity, performance, and multi-browser compatibility.
