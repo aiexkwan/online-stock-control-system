@@ -84,31 +84,33 @@ export default function Navigation() {
             Home
           </Link>
           {/* Print Label 懸停彈出小選單 */}
-          <div
-            onMouseEnter={handlePopoverEnter}
-            onMouseLeave={handlePopoverLeave}
-            className="relative"
-          >
+          {pathname !== '/print-label' && (
             <div
-              className={`flex items-center px-4 py-2 text-base font-medium rounded-md mb-2 cursor-pointer ${
-                pathname === '/print-label'
-                  ? 'bg-gray-800 text-white'
-                  : 'text-gray-300 hover:bg-gray-700 hover:text-white'
-              }`}
+              onMouseEnter={handlePopoverEnter}
+              onMouseLeave={handlePopoverLeave}
+              className="relative"
             >
-              <DocumentIcon className="mr-3 h-6 w-6" />
-              Print Label
-            </div>
-            {printLabelOpen && (
               <div
-                onMouseEnter={handlePopoverEnter}
-                onMouseLeave={handlePopoverLeave}
-                className="absolute left-full top-0 z-50 shadow-xl"
+                className={`flex items-center px-4 py-2 text-base font-medium rounded-md mb-2 cursor-pointer ${
+                  pathname === '/print-label'
+                    ? 'bg-gray-800 text-white'
+                    : 'text-gray-300 hover:bg-gray-700 hover:text-white'
+                }`}
               >
-                <PrintLabelPopover />
+                <DocumentIcon className="mr-3 h-6 w-6" />
+                Print Label
               </div>
-            )}
-          </div>
+              {printLabelOpen && (
+                <div
+                  onMouseEnter={handlePopoverEnter}
+                  onMouseLeave={handlePopoverLeave}
+                  className="absolute left-full top-0 z-50 shadow-xl"
+                >
+                  <PrintLabelPopover />
+                </div>
+              )}
+            </div>
+          )}
           {/* 其他 menu item 保持不變 */}
           {menuItems.filter(item => item.name !== 'Print Label').map((item) => (
             <Link
