@@ -145,6 +145,29 @@ export default function QcLabelForm() {
       .from('record_palletinfo')
       .insert(insertDataArr);
 
+    // === 新增：同步更新 record_inventory await 欄位 ===
+    for (const d of insertDataArr) {
+      const qty = Number(d.product_qty);
+      const { data: inv, error: invError } = await supabase
+        .from('record_inventory')
+        .select('id, await')
+        .eq('product_code', d.product_code)
+        .maybeSingle();
+      if (inv && inv.id) {
+        // 有該 product_code，更新 await
+        await supabase
+          .from('record_inventory')
+          .update({ await: (Number(inv.await) || 0) + qty })
+          .eq('id', inv.id);
+      } else {
+        // 無該 product_code，新增
+        await supabase
+          .from('record_inventory')
+          .insert({ product_code: d.product_code, await: qty });
+      }
+    }
+    // === END ===
+
     // 新增 record_history
     const now = new Date();
     const historyArr = insertDataArr.map((d) => ({
@@ -206,7 +229,7 @@ export default function QcLabelForm() {
             )}
           </div>
           <div>
-            <label className="block text-sm text-gray-300 mb-1">Quantity Of Pallet</label>
+            <label className="block text-sm text-gray-300 mb-1">Quantity of Pallet</label>
             <input
               type="text"
               inputMode="numeric"
@@ -253,8 +276,6 @@ export default function QcLabelForm() {
         <h2 className="text-xl font-semibold text-white mb-6">Instruction</h2>
         <ul className="text-gray-300 text-sm list-disc pl-5 space-y-2">
           <li>Enter all required pallet details.</li>
-          <li>If Operator Clock Number is empty, the label is for pre-booking.</li>
-          <li>If Operator Clock Number is filled, the label is for QC done.</li>
           <li>Click <b>Print Label</b> to generate and save the label(s).</li>
         </ul>
         {/* Debug message */}
