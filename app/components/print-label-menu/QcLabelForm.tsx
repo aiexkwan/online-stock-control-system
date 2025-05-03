@@ -150,7 +150,7 @@ export default function QcLabelForm() {
       const qty = Number(d.product_qty);
       const { data: inv, error: invError } = await supabase
         .from('record_inventory')
-        .select('id, await')
+        .select('uuid, await')
         .eq('product_code', d.product_code)
         .maybeSingle();
 
@@ -159,13 +159,13 @@ export default function QcLabelForm() {
         continue;
       }
 
-      if (inv && inv.id) {
+      if (inv && inv.uuid) {
         const oldAwait = Number(inv.await) || 0;
         const newAwait = oldAwait + qty;
         const { error: updateError } = await supabase
           .from('record_inventory')
           .update({ await: newAwait })
-          .eq('id', inv.id);
+          .eq('uuid', inv.uuid);
         if (updateError) {
           setDebugMsg(prev => prev + `\nInventory Update Error: ${updateError.message}`);
         } else {
