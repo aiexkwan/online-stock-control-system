@@ -145,7 +145,7 @@ export default function QcLabelForm() {
       .from('record_palletinfo')
       .insert(insertDataArr);
 
-    // === 新增：同步更新 record_inventory await 欄位 ===
+    // === 新增：同步更新 record_inventory await 欄位（加強 debug） ===
     for (const d of insertDataArr) {
       const qty = Number(d.product_qty);
       const { data: inv, error: invError } = await supabase
@@ -153,17 +153,33 @@ export default function QcLabelForm() {
         .select('id, await')
         .eq('product_code', d.product_code)
         .maybeSingle();
+
+      if (invError) {
+        setDebugMsg(prev => prev + `\nInventory Query Error: ${invError.message}`);
+        continue;
+      }
+
       if (inv && inv.id) {
-        // 有該 product_code，更新 await
-        await supabase
+        const oldAwait = Number(inv.await) || 0;
+        const newAwait = oldAwait + qty;
+        const { error: updateError } = await supabase
           .from('record_inventory')
-          .update({ await: (Number(inv.await) || 0) + qty })
+          .update({ await: newAwait })
           .eq('id', inv.id);
+        if (updateError) {
+          setDebugMsg(prev => prev + `\nInventory Update Error: ${updateError.message}`);
+        } else {
+          setDebugMsg(prev => prev + `\nInventory Updated: ${d.product_code} await ${oldAwait} -> ${newAwait}`);
+        }
       } else {
-        // 無該 product_code，新增
-        await supabase
+        const { error: insertInvError } = await supabase
           .from('record_inventory')
           .insert({ product_code: d.product_code, await: qty });
+        if (insertInvError) {
+          setDebugMsg(prev => prev + `\nInventory Insert Error: ${insertInvError.message}`);
+        } else {
+          setDebugMsg(prev => prev + `\nInventory Inserted: ${d.product_code} await ${qty}`);
+        }
       }
     }
     // === END ===
