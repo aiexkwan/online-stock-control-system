@@ -11,11 +11,11 @@ export default function ProductsPage() {
       </Suspense>
     </div>
   );
-}
+  }
 
 function ProductListSkeleton() {
   return (
-    <div className="space-y-4">
+            <div className="space-y-4">
       {Array.from({ length: 5 }).map((_, i) => (
         <div key={i} className="flex items-center space-x-4">
           <Skeleton className="h-12 w-12" />

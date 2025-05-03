@@ -20,36 +20,6 @@ export default function QcLabelForm() {
   const [productError, setProductError] = useState<string | null>(null);
   const [debugMsg, setDebugMsg] = useState<string>('');
 
-  // 查詢 Product Code
-  useEffect(() => {
-    if (!productCode.trim()) {
-      setProductInfo(null);
-      setProductError(null);
-      return;
-    }
-    const fetchProduct = async () => {
-      const { data, error } = await supabase
-        .from('data_code')
-        .select('code, description, standard_qty, type')
-        .ilike('code', productCode.trim())
-        .single();
-      if (error || !data) {
-        setProductInfo(null);
-        setProductError("Product Code Don't Exist. Please Check Again Or Update Product Code List.");
-      } else {
-        setProductInfo(data);
-        setProductError(null);
-        if (data.code && data.code !== productCode) {
-          setProductCode(data.code);
-        }
-        if (data.standard_qty !== '-') {
-          setQuantity(data.standard_qty);
-        }
-      }
-    };
-    fetchProduct();
-  }, [productCode]);
-
   // 取得登入用戶 id
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -214,6 +184,29 @@ export default function QcLabelForm() {
     }
   };
 
+  // onBlur 查詢 function
+  const handleProductCodeBlur = async (value: string) => {
+    if (!value.trim()) {
+      setProductInfo(null);
+      setProductError(null);
+      return;
+    }
+    const { data, error } = await supabase
+      .from('data_code')
+      .select('code, description, standard_qty, type')
+      .ilike('code', value.trim())
+      .single();
+    if (error || !data) {
+      setProductInfo(null);
+      setProductError("Product Code Don't Exist. Please Check Again Or Update Product Code List.");
+    } else {
+      setProductInfo(data);
+      setProductError(null);
+      setProductCode(data.code);
+      // 不自動 setQuantity
+    }
+  };
+
   return (
     <div className="flex flex-row gap-12 items-start justify-center w-full max-w-4xl">
       {/* Pallet Detail 區塊 */}
@@ -226,7 +219,8 @@ export default function QcLabelForm() {
               type="text"
               className="w-full rounded-md bg-gray-900 border border-gray-700 text-white px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
               value={productCode}
-              onChange={e => setProductCode(e.target.value.toUpperCase())}
+              onChange={e => setProductCode(e.target.value)}
+              onBlur={e => handleProductCodeBlur(e.target.value)}
               required
               placeholder="Required"
             />
@@ -236,8 +230,8 @@ export default function QcLabelForm() {
             {productError && (
               <div className="text-red-500 text-sm font-semibold mb-2">{productError}</div>
             )}
-            {productInfo && (
-              <div className="text-red-500 text-sm font-semibold mb-2 space-y-1">
+            {productInfo && !productError && (
+              <div className="text-white text-sm font-semibold mb-2 space-y-1">
                 <div>Product Description: {productInfo.description}</div>
                 <div>Product Standard Qty: {productInfo.standard_qty}</div>
                 <div>Product Type: {productInfo.type}</div>

@@ -21,6 +21,7 @@
     "@radix-ui/react-slot": "^1.2.0",
     "@radix-ui/react-tabs": "^1.1.9",
     "@radix-ui/react-toast": "^1.2.11",
+    "@react-pdf/renderer": "^4.3.0",
     "@supabase/auth-helpers-nextjs": "latest",
     "@supabase/supabase-js": "^2.49.4",
     "@tanstack/react-table": "^8.21.3",
@@ -31,6 +32,7 @@
     "date-fns": "^4.1.0",
     "dotenv": "^16.5.0",
     "framer-motion": "^12.9.4",
+    "lodash": "^4.17.21",
     "lucide-react": "^0.503.0",
     "next": "^13.5.6",
     "react": "latest",
@@ -42,6 +44,7 @@
     "zod": "^3.24.3"
   },
   "devDependencies": {
+    "@types/lodash": "^4.17.16",
     "@types/node": "latest",
     "@types/react": "latest",
     "@types/react-dom": "latest",
