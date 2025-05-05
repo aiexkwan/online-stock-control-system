@@ -2,15 +2,15 @@
 
 import React from 'react';
 
-export default function StockTransferPage() {
+export default function ViewHistoryPage() {
   return (
     <div className="pl-12 pt-16 min-h-screen bg-[#232532]">
       <div className="flex flex-col w-full max-w-6xl ml-0 px-0">
         {/* 橙色區域：標題靠左上 */}
         <div className="flex items-center mb-12 mt-2">
-          <h1 className="text-3xl font-bold text-orange-400" style={{letterSpacing: 1}}>Stock Movement</h1>
+          <h1 className="text-3xl font-bold text-orange-400" style={{letterSpacing: 1}}>View History</h1>
         </div>
-        {/* 綠色區域：兩個 inputbox 水平排列 */}
+        {/* 兩個 inputbox 水平排列 */}
         <div className="flex flex-row gap-12 w-full">
           {/* 左側 Series input */}
           <div className="flex items-center w-1/2 max-w-xl">

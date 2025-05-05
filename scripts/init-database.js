@@ -28,7 +28,7 @@ async function executeSql(sql) {
         sql_statement: sql
       })
     });
-
+    
     if (!response.ok) {
       const error = await response.text();
       throw new Error(`SQL 執行失敗: ${error}`);

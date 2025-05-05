@@ -1,3 +1,4 @@
+'use client';
 import React, { useState } from 'react';
 import * as Tabs from '@radix-ui/react-tabs';
 import QcLabelForm from './QcLabelForm';
@@ -17,7 +18,7 @@ export default function PrintLabelPopover({ onClose }: { onClose?: () => void })
 
   return (
     <Tabs.Root defaultValue="qc" className="flex w-[340px] min-h-[120px]">
-      <Tabs.List className="flex flex-col w-32 border-r border-gray-700 bg-[#23263a]">
+      <Tabs.List className="flex flex-col w-32 border-r border-gray-700 bg-[#23263a] shadow-md">
         <div className="relative">
           <Tabs.Trigger
             value="qc"

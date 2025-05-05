@@ -20,6 +20,40 @@ export default function QcLabelForm() {
   const [productError, setProductError] = useState<string | null>(null);
   const [debugMsg, setDebugMsg] = useState<string>('');
 
+  // 新增 ACO/Slate 動態欄位
+  const [acoOrderRef, setAcoOrderRef] = useState('');
+  const [slateDetail, setSlateDetail] = useState({
+    firstOffDate: '',
+    batchNumber: '',
+    setterName: '',
+    material: '',
+    weight: '',
+    topThickness: '',
+    bottomThickness: '',
+    length: '',
+    width: '',
+    lengthMiddleHoleToBottom: '',
+    colour: '',
+    shapes: '',
+    flameTest: '',
+    remark: ''
+  });
+
+  const [acoRemain, setAcoRemain] = useState<string | null>(null);
+  const [acoSearchLoading, setAcoSearchLoading] = useState(false);
+  const canSearchAco = acoOrderRef.trim().length >= 5;
+
+  // 新增 New ACO Ref Detected 相關變數
+  const [acoNewRef, setAcoNewRef] = useState(false);
+  const [acoNewProductCode, setAcoNewProductCode] = useState('');
+  const [acoNewOrderQty, setAcoNewOrderQty] = useState('');
+
+  // 動態 ACO Order Detail 多組 input 狀態
+  const [acoOrderDetails, setAcoOrderDetails] = useState([{ code: '', qty: '' }]);
+
+  // 新增：ACO Order Detail 欄位驗證錯誤狀態
+  const [acoOrderDetailErrors, setAcoOrderDetailErrors] = useState<string[]>([]);
+
   // 取得登入用戶 id
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -33,7 +67,10 @@ export default function QcLabelForm() {
     }
   }, []);
 
-  const isFormValid = productCode.trim() && quantity.trim() && count.trim();
+  // 驗證條件
+  const isAcoValid = productInfo?.type === 'ACO' ? acoOrderRef.trim() !== '' : true;
+  const isSlateValid = productInfo?.type === 'Slate' ? Object.values(slateDetail).every(v => v.trim() !== '') : true;
+  const isFormValid = productCode.trim() && quantity.trim() && count.trim() && isAcoValid && isSlateValid;
 
   const handlePrintLabel = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -90,32 +127,29 @@ export default function QcLabelForm() {
         product_qty: quantity,
         series: seriesArr[i],
       };
-      if (operator.trim()) {
+      if (productInfo?.type === 'ACO' && acoOrderRef.trim()) {
+        data.plt_remark = `ACO Ref : ${acoOrderRef.trim()}`;
+      } else if (operator.trim()) {
         data.plt_remark = operator;
       }
       return data;
     });
 
-    // Debug: 顯示所有要插入的 pallet
-    setDebugMsg(
-      `Will insert to Supabase (${countNum} records):\n` +
-      insertDataArr.map(d =>
-        `plt_num: ${d.plt_num}\n` +
-        `generate_time: ${d.generate_time}\n` +
-        `product_code: ${d.product_code}\n` +
-        `product_qty: ${d.product_qty}\n` +
-        `series: ${d.series}\n` +
-        (d.plt_remark ? `plt_remark: ${d.plt_remark}\n` : '')
-      ).join('\n---\n')
-    );
-    console.log('insertDataArr', insertDataArr);
-
-    // 批量上傳至 Supabase
+    // 先執行 Supabase 插入
     const { error: insertError } = await supabase
       .from('record_palletinfo')
       .insert(insertDataArr);
 
+    // Debug: 顯示所有要插入的 pallet
+    let debugMsg = '';
+    if (!insertError) {
+      insertDataArr.forEach(d => {
+        debugMsg += `Product Code : ${d.product_code}\nPallet Number : ${d.plt_num}\nQty : ${d.product_qty}\n\n`;
+      });
+    }
+
     // === 新增：同步更新 record_inventory await 欄位（加強 debug） ===
+    let inventoryUpdated = false;
     for (const d of insertDataArr) {
       const qty = Number(d.product_qty);
       const { data: inv, error: invError } = await supabase
@@ -123,12 +157,9 @@ export default function QcLabelForm() {
         .select('uuid, await')
         .eq('product_code', d.product_code)
         .maybeSingle();
-
       if (invError) {
-        setDebugMsg(prev => prev + `\nInventory Query Error: ${invError.message}`);
         continue;
       }
-
       if (inv && inv.uuid) {
         const oldAwait = Number(inv.await) || 0;
         const newAwait = oldAwait + qty;
@@ -136,23 +167,46 @@ export default function QcLabelForm() {
           .from('record_inventory')
           .update({ await: newAwait })
           .eq('uuid', inv.uuid);
-        if (updateError) {
-          setDebugMsg(prev => prev + `\nInventory Update Error: ${updateError.message}`);
-        } else {
-          setDebugMsg(prev => prev + `\nInventory Updated: ${d.product_code} await ${oldAwait} -> ${newAwait}`);
+        if (!updateError) {
+          inventoryUpdated = true;
         }
       } else {
         const { error: insertInvError } = await supabase
           .from('record_inventory')
           .insert({ product_code: d.product_code, await: qty });
-        if (insertInvError) {
-          setDebugMsg(prev => prev + `\nInventory Insert Error: ${insertInvError.message}`);
-        } else {
-          setDebugMsg(prev => prev + `\nInventory Inserted: ${d.product_code} await ${qty}`);
+        if (!insertInvError) {
+          inventoryUpdated = true;
         }
       }
     }
-    // === END ===
+    if (inventoryUpdated) debugMsg += 'Inventory Update Confirmed\n\n';
+
+    // === ACO ORDER EVENT ===
+    let acoUpdated = false;
+    if (productInfo?.type === 'ACO' && acoOrderRef.trim()) {
+      for (const d of insertDataArr) {
+        const { data: acoRow, error: acoError } = await supabase
+          .from('record_aco')
+          .select('uuid, remain_qty')
+          .eq('order_ref', Number(acoOrderRef.trim()))
+          .eq('code', d.product_code)
+          .maybeSingle();
+        if (!acoError && acoRow && typeof acoRow.remain_qty === 'number') {
+          const newRemain = acoRow.remain_qty - Number(d.product_qty);
+          const { error: updateAcoError } = await supabase
+            .from('record_aco')
+            .update({ remain_qty: newRemain })
+            .eq('uuid', acoRow.uuid);
+          if (!updateAcoError) {
+            acoUpdated = true;
+          }
+        }
+      }
+    }
+    if (acoUpdated) debugMsg += 'ACO Order Update Confirmed\n\n';
+
+    debugMsg += '======  END  ======';
+    setDebugMsg(debugMsg);
 
     // 新增 record_history
     const now = new Date();
@@ -171,17 +225,26 @@ export default function QcLabelForm() {
     }
 
     if (insertError) {
-      setDebugMsg(prev => prev + `\nInsert Error: ${insertError.message}`);
+      debugMsg += `Insert Error: ${insertError.message}\n`;
       console.error('Error inserting new pallet info:', insertError);
     } else {
-      setDebugMsg(prev => prev + '\nInsert Success!');
       console.log('New pallet numbers generated:', insertDataArr.map(d => d.plt_num));
       // 清空所有 input 狀態
       setProductCode('');
       setQuantity('');
       setCount('');
       setOperator('');
+      setAcoOrderRef('');
+      setSlateDetail({
+        firstOffDate: '', batchNumber: '', setterName: '', material: '', weight: '',
+        topThickness: '', bottomThickness: '', length: '', width: '', lengthMiddleHoleToBottom: '',
+        colour: '', shapes: '', flameTest: '', remark: ''
+      });
+      setProductInfo(null);
+      setAcoRemain(null);
     }
+    // 最後一定要 setDebugMsg
+    setDebugMsg(debugMsg);
   };
 
   // onBlur 查詢 function
@@ -207,8 +270,118 @@ export default function QcLabelForm() {
     }
   };
 
+  const handleAcoSearch = async () => {
+    setAcoSearchLoading(true);
+    setAcoRemain(null);
+    setAcoNewRef(false);
+    const { data, error } = await supabase
+      .from('record_aco')
+      .select('remain_qty')
+      .eq('order_ref', Number(acoOrderRef.trim()))
+      .eq('code', productCode.trim())
+      .maybeSingle();
+    if (error || !data) {
+      setAcoRemain('New Order, Please Enter Detail');
+      setAcoNewRef(true);
+    } else if (typeof data.remain_qty !== 'undefined') {
+      if (Number(data.remain_qty) === 0) {
+        setAcoRemain('Order Been Fullfilled');
+      } else {
+        setAcoRemain(String(data.remain_qty));
+      }
+    }
+    setAcoSearchLoading(false);
+  };
+
+  // 驗證 ACO Order Detail Product Code
+  const validateAcoOrderDetailCode = async (idx: number, code: string) => {
+    if (!code.trim()) {
+      setAcoOrderDetailErrors(prev => {
+        const next = [...prev];
+        next[idx] = '';
+        return next;
+      });
+      return;
+    }
+    const { data, error } = await supabase
+      .from('data_code')
+      .select('code, type')
+      .ilike('code', code.trim())
+      .maybeSingle();
+    if (error || !data) {
+      setAcoOrderDetailErrors(prev => {
+        const next = [...prev];
+        next[idx] = 'Code Not Exist';
+        return next;
+      });
+    } else if (data.type !== 'ACO') {
+      setAcoOrderDetailErrors(prev => {
+        const next = [...prev];
+        next[idx] = 'Code Not For ACO';
+        return next;
+      });
+    } else {
+      // 自動修正 input 內容為正確 code
+      setAcoOrderDetails(prev => {
+        const next = prev.map((item, i) => i === idx ? { ...item, code: data.code } : item);
+        return next;
+      });
+      setAcoOrderDetailErrors(prev => {
+        const next = [...prev];
+        next[idx] = '';
+        return next;
+      });
+    }
+  };
+
+  // 修改 handleAcoOrderDetailChange，只有當 code 驗證通過且 qty 也有值時才自動新增下一組
+  const handleAcoOrderDetailChange = (idx: number, key: 'code' | 'qty', value: string) => {
+    setAcoOrderDetails(prev => {
+      const next = prev.map((item, i) => i === idx ? { ...item, [key]: value } : item);
+      // 僅當 code 驗證通過且 code/qty 都有值時才新增
+      if (
+        idx === next.length - 1 &&
+        next.length < 10 &&
+        next[idx].code.trim() &&
+        next[idx].qty.trim() &&
+        !acoOrderDetailErrors[idx]
+      ) {
+        return [...next, { code: '', qty: '' }];
+      }
+      return next;
+    });
+  };
+
+  // 新增：ACO Order Detail 上傳功能
+  const handleAcoOrderDetailUpdate = async () => {
+    // 過濾掉沒填 code 或 qty 的行
+    const validRows = acoOrderDetails.filter(row => row.code.trim() && row.qty.trim() && !acoOrderDetailErrors[acoOrderDetails.indexOf(row)]);
+    if (!acoOrderRef.trim() || validRows.length === 0) {
+      console.error('Please enter ACO Order Ref and at least one valid Product Code/Qty.');
+      return;
+    }
+    const now = new Date();
+    const latestUpdate = format(now, 'dd-MMM-yyyy HH:mm:ss');
+    const insertArr = validRows.map(row => ({
+      order_ref: Number(acoOrderRef.trim()),
+      code: row.code.trim(),
+      required_qty: Number(row.qty.trim()),
+      remain_qty: Number(row.qty.trim()),
+      latest_update: latestUpdate
+    }));
+    const { error } = await supabase.from('record_aco').insert(insertArr);
+    if (error) {
+      console.error('Insert record_aco failed: ' + error.message);
+    } else {
+      console.log('Insert record_aco success!');
+      setAcoNewRef(false); // 隱藏區塊
+      setAcoOrderDetails([{ code: '', qty: '' }]); // 清空 input
+      handleAcoSearch(); // 重新查詢 ACO Order Ref
+    }
+  };
+
   return (
-    <div className="flex flex-row gap-12 items-start justify-center w-full max-w-4xl">
+    <div className="flex flex-row gap-8 w-full max-w-screen-lg mx-auto">
       {/* Pallet Detail 區塊 */}
       <div className="bg-gray-800 rounded-lg p-8 flex-1 min-w-[320px] max-w-md shadow-lg">
         <h2 className="text-xl font-semibold text-white mb-6">Pallet Detail</h2>
@@ -219,7 +392,7 @@ export default function QcLabelForm() {
               type="text"
               className="w-full rounded-md bg-gray-900 border border-gray-700 text-white px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
               value={productCode}
-              onChange={e => setProductCode(e.target.value)}
+              onChange={e => { setProductCode(e.target.value); setDebugMsg(''); }}
               onBlur={e => handleProductCodeBlur(e.target.value)}
               required
               placeholder="Required"
@@ -280,17 +453,60 @@ export default function QcLabelForm() {
             Print Label
           </button>
         </form>
-      </div>
-      {/* Instruction 區塊 */}
-      <div className="bg-gray-800 rounded-lg p-8 flex-1 min-w-[320px] max-w-md shadow-lg">
-        <h2 className="text-xl font-semibold text-white mb-6">Instruction</h2>
-        <ul className="text-gray-300 text-sm list-disc pl-5 space-y-2">
-          <li>Enter all required pallet details.</li>
-          <li>Click <b>Print Label</b> to generate and save the label(s).</li>
-        </ul>
-        {/* Debug message */}
+        {/* Debug Message 區塊 */}
         {debugMsg && (
-          <pre className="mt-6 text-xs text-yellow-300 whitespace-pre-wrap bg-gray-900 rounded p-3">{debugMsg}</pre>
+          <div className="mt-6">
+            <pre className="text-xs text-yellow-300 whitespace-pre-wrap bg-gray-900 rounded p-3">{debugMsg}</pre>
+          </div>
+        )}
+      </div>
+      {/* 右側：Instruction + ACO Order Detail */}
+      <div className="flex flex-col flex-1 min-w-[320px] max-w-md gap-8">
+        <div className="bg-gray-800 rounded-lg p-8 shadow-lg">
+          <h2 className="text-xl font-semibold text-white mb-6">Instruction</h2>
+          <ul className="text-gray-300 text-sm list-disc pl-5 space-y-2">
+            <li>Enter all required pallet details.</li>
+            <li>Click <b>Print Label</b> to generate and save the label(s).</li>
+          </ul>
+        </div>
+        {acoNewRef && (
+          <div className="bg-gray-800 rounded-lg p-8 shadow-lg w-[480px] mx-auto">
+            <h3 className="text-lg font-semibold text-white mb-4">Please Enter ACO Order Detail</h3>
+            <div className="flex flex-col gap-4">
+              {acoOrderDetails.map((row, idx) => (
+                <div className="flex flex-col gap-1" key={idx}>
+                  <div className="flex flex-row gap-4 items-center">
+                    <input
+                      type="text"
+                      className="w-40 rounded-md bg-transparent border border-gray-700 text-white px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="Product Code"
+                      value={row.code}
+                      onChange={e => handleAcoOrderDetailChange(idx, 'code', e.target.value)}
+                      onBlur={e => validateAcoOrderDetailCode(idx, e.target.value)}
+                    />
+                    <input
+                      type="text"
+                      className="w-44 rounded-md bg-transparent border border-gray-700 text-white px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="Order Required Qty"
+                      value={row.qty}
+                      onChange={e => handleAcoOrderDetailChange(idx, 'qty', e.target.value)}
+                      disabled={!!acoOrderDetailErrors[idx]}
+                    />
+                  </div>
+                  {acoOrderDetailErrors[idx] && (
+                    <div className="text-red-500 text-xs font-semibold mt-1 ml-1">{acoOrderDetailErrors[idx]}</div>
+                  )}
+                </div>
+              ))}
+              <button
+                type="button"
+                className="mt-4 px-4 py-2 rounded-md font-semibold text-white bg-blue-600 hover:bg-blue-700 w-full"
+                onClick={handleAcoOrderDetailUpdate}
+              >
+                Update
+              </button>
+            </div>
+          </div>
         )}
       </div>
     </div>

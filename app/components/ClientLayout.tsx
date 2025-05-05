@@ -17,14 +17,16 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
   }
 
   return (
-    <div className="min-h-screen flex bg-[#181c2f]">
-      {/* 側邊選單 2/10，深灰底 */}
-      <aside className="w-1/5 min-w-[180px] max-w-xs bg-[#23263a] border-r border-[#23263a] shadow-lg flex flex-col">
+    <div className="min-h-screen grid grid-cols-[minmax(180px,240px)_1fr] bg-[#181c2f]">
+      {/* Sidebar */}
+      <aside className="bg-[#23263a] shadow-lg flex flex-col">
         <Navigation />
       </aside>
-      {/* 主內容 8/10，卡片化分區 */}
-      <main className="flex-1 px-8 py-10 overflow-y-auto">
-        <div className="max-w-7xl mx-auto space-y-8">
+
+      {/* Main Content */}
+      <main className="w-full px-6 py-10 overflow-y-auto">
+        {/* ✅ 子元素確保唔再有 margin auto 或 max-w */}
+        <div className="w-full space-y-10">
           {children}
         </div>
       </main>
