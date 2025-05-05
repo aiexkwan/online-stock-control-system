@@ -92,9 +92,13 @@ The system covers stock tracking, pallet movement, GRN records, QR code generati
 
 ---
 
+# Changelog Policy
+- After every code update, you MUST update CHANGELOG.md to record all important changes.
+
+---
+
 ##  Final Reminder
 
 > This project is an enterprise-grade inventory control system. Follow all instructions exactly. Do not guess field mappings or generate unrequested logic. Use clean, declarative, modular TypeScript code optimized for clarity, performance, and multi-browser compatibility.
 
-# Changelog Policy
-- After every code update, you MUST update CHANGELOG.md to record all important changes.
+

@@ -26,12 +26,14 @@ export default function QcLabelForm() {
     firstOffDate: '',
     batchNumber: '',
     setterName: '',
+    machNum: '',
     material: '',
     weight: '',
     topThickness: '',
     bottomThickness: '',
     length: '',
     width: '',
+    centreHole: '',
     lengthMiddleHoleToBottom: '',
     colour: '',
     shapes: '',
@@ -69,7 +71,11 @@ export default function QcLabelForm() {
 
   // 驗證條件
   const isAcoValid = productInfo?.type === 'ACO' ? acoOrderRef.trim() !== '' : true;
-  const isSlateValid = productInfo?.type === 'Slate' ? Object.values(slateDetail).every(v => v.trim() !== '') : true;
+  const isSlateValid = productInfo?.type === 'Slate'
+    ? Object.entries(slateDetail)
+        .filter(([k]) => !['remark', 'machNum', 'material', 'colour', 'shapes'].includes(k))
+        .every(([, v]) => v.trim() !== '')
+    : true;
   const isFormValid = productCode.trim() && quantity.trim() && count.trim() && isAcoValid && isSlateValid;
 
   const handlePrintLabel = async (e: React.FormEvent) => {
@@ -205,6 +211,35 @@ export default function QcLabelForm() {
     }
     if (acoUpdated) debugMsg += 'ACO Order Update Confirmed\n\n';
 
+    if (productInfo?.type === 'Slate') {
+      const batchPrefix = slateDetail.batchNumber.slice(0,2);
+      const pltNum = insertDataArr[0]?.plt_num || '';
+      const { error: slateError } = await supabase.from('record_slate').insert({
+        code: productCode,
+        first_off: slateDetail.firstOffDate,
+        batch_num: slateDetail.batchNumber,
+        setter: slateDetail.setterName,
+        material: batchPrefix,
+        weight: parseInt(slateDetail.weight) || null,
+        t_thick: parseInt(slateDetail.topThickness) || null,
+        b_thick: parseInt(slateDetail.bottomThickness) || null,
+        length: parseInt(slateDetail.length) || null,
+        width: parseInt(slateDetail.width) || null,
+        centre_hole: parseInt(slateDetail.centreHole) || null,
+        colour: 'Black',
+        shape: 'Colonial',
+        mach_num: 'Machine No.14',
+        flame_test: parseInt(slateDetail.flameTest) || null,
+        remark: slateDetail.remark,
+        plt_num: pltNum
+      });
+      if (slateError) {
+        debugMsg += `Slate Insert Error: ${slateError.message}\n`;
+      } else {
+        debugMsg += 'Slate Record Inserted\n';
+      }
+    }
+
     debugMsg += '======  END  ======';
     setDebugMsg(debugMsg);
 
@@ -236,8 +271,8 @@ export default function QcLabelForm() {
       setOperator('');
       setAcoOrderRef('');
       setSlateDetail({
-        firstOffDate: '', batchNumber: '', setterName: '', material: '', weight: '',
-        topThickness: '', bottomThickness: '', length: '', width: '', lengthMiddleHoleToBottom: '',
+        firstOffDate: '', batchNumber: '', setterName: '', machNum: '', material: '', weight: '',
+        topThickness: '', bottomThickness: '', length: '', width: '', centreHole: '', lengthMiddleHoleToBottom: '',
         colour: '', shapes: '', flameTest: '', remark: ''
       });
       setProductInfo(null);
@@ -469,6 +504,67 @@ export default function QcLabelForm() {
             <li>Click <b>Print Label</b> to generate and save the label(s).</li>
           </ul>
         </div>
+        {/* Instruction 區塊下方：Slate 專用區塊 */}
+        {productInfo?.type === 'Slate' && (
+          <div className="bg-gray-800 rounded-lg p-8 shadow-lg mt-4">
+            <h3 className="text-lg font-semibold text-white mb-4">Enter First-Off Date</h3>
+            <div className="flex flex-row gap-4 items-center mb-4">
+              <input
+                type="text"
+                className="w-56 rounded-md bg-transparent border border-gray-700 text-white px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="Enter First-Off Date"
+                value={slateDetail.firstOffDate}
+                onChange={e => setSlateDetail({ ...slateDetail, firstOffDate: e.target.value })}
+                list="firstoffdate-list"
+              />
+              <datalist id="firstoffdate-list">
+                {/* 可根據實際需求動態生成選項 */}
+              </datalist>
+              <input
+                type="date"
+                className="w-44 rounded-md bg-transparent border border-gray-700 text-white px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                value={slateDetail.firstOffDate}
+                onChange={e => setSlateDetail({ ...slateDetail, firstOffDate: e.target.value })}
+              />
+            </div>
+            {slateDetail.firstOffDate && (
+              <div className="flex flex-col gap-2 mt-2">
+                {[
+                  { key: 'batchNumber', label: 'Batch Number' },
+                  { key: 'setterName', label: 'Setter Name' },
+                  { key: 'weight', label: 'Weight' },
+                  { key: 'topThickness', label: 'Top Thickness' },
+                  { key: 'bottomThickness', label: 'Bottom Thickness' },
+                  { key: 'length', label: 'Length' },
+                  { key: 'width', label: 'Width' },
+                  { key: 'centreHole', label: 'Centre Hole' },
+                  { key: 'lengthMiddleHoleToBottom', label: 'Length (Middle Hole To Bottom)' },
+                  { key: 'flameTest', label: 'Flame Test' },
+                  { key: 'remark', label: 'Remark' },
+                ].map(field => (
+                  <input
+                    key={field.key}
+                    type="text"
+                    className="w-full rounded-md bg-transparent border border-gray-700 text-white px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder:text-gray-400"
+                    placeholder={field.label}
+                    value={slateDetail[field.key as keyof typeof slateDetail] || ''}
+                    onChange={e => {
+                      if (field.key === 'batchNumber') {
+                        const batch = e.target.value;
+                        setSlateDetail(prev => ({
+                          ...prev,
+                          batchNumber: batch
+                        }));
+                      } else {
+                        setSlateDetail(prev => ({ ...prev, [field.key]: e.target.value }));
+                      }
+                    }}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+        )}
         {acoNewRef && (
           <div className="bg-gray-800 rounded-lg p-8 shadow-lg w-[480px] mx-auto">
             <h3 className="text-lg font-semibold text-white mb-4">Please Enter ACO Order Detail</h3>
