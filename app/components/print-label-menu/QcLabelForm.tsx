@@ -26,8 +26,6 @@ export default function QcLabelForm() {
     firstOffDate: '',
     batchNumber: '',
     setterName: '',
-    machNum: '',
-    material: '',
     weight: '',
     topThickness: '',
     bottomThickness: '',
@@ -35,8 +33,6 @@ export default function QcLabelForm() {
     width: '',
     centreHole: '',
     lengthMiddleHoleToBottom: '',
-    colour: '',
-    shapes: '',
     flameTest: '',
     remark: ''
   });
@@ -73,7 +69,7 @@ export default function QcLabelForm() {
   const isAcoValid = productInfo?.type === 'ACO' ? acoOrderRef.trim() !== '' : true;
   const isSlateValid = productInfo?.type === 'Slate'
     ? Object.entries(slateDetail)
-        .filter(([k]) => !['remark', 'machNum', 'material', 'colour', 'shapes'].includes(k))
+        .filter(([k]) => k !== 'remark')
         .every(([, v]) => v.trim() !== '')
     : true;
   const isFormValid = productCode.trim() && quantity.trim() && count.trim() && isAcoValid && isSlateValid;
@@ -124,7 +120,7 @@ export default function QcLabelForm() {
     const seriesArr = await generateUniqueSeriesArr(countNum);
 
     // 準備多筆 insert 資料
-    const insertDataArr = Array.from({length: countNum}).map((_, i) => {
+    const insertDataArr = Array.from({length: productInfo?.type === 'Slate' ? 1 : countNum}).map((_, i) => {
       const palletNum = `${dateStr}/${maxNum + 1 + i}`;
       const data: any = {
         plt_num: palletNum,
@@ -135,6 +131,8 @@ export default function QcLabelForm() {
       };
       if (productInfo?.type === 'ACO' && acoOrderRef.trim()) {
         data.plt_remark = `ACO Ref : ${acoOrderRef.trim()}`;
+      } else if (productInfo?.type === 'Slate') {
+        data.plt_remark = `Batch Number : ${slateDetail.batchNumber}`;
       } else if (operator.trim()) {
         data.plt_remark = operator;
       }
@@ -213,30 +211,31 @@ export default function QcLabelForm() {
 
     if (productInfo?.type === 'Slate') {
       const batchPrefix = slateDetail.batchNumber.slice(0,2);
-      const pltNum = insertDataArr[0]?.plt_num || '';
-      const { error: slateError } = await supabase.from('record_slate').insert({
-        code: productCode,
-        first_off: slateDetail.firstOffDate,
-        batch_num: slateDetail.batchNumber,
-        setter: slateDetail.setterName,
-        material: batchPrefix,
-        weight: parseInt(slateDetail.weight) || null,
-        t_thick: parseInt(slateDetail.topThickness) || null,
-        b_thick: parseInt(slateDetail.bottomThickness) || null,
-        length: parseInt(slateDetail.length) || null,
-        width: parseInt(slateDetail.width) || null,
-        centre_hole: parseInt(slateDetail.centreHole) || null,
-        colour: 'Black',
-        shape: 'Colonial',
-        mach_num: 'Machine No.14',
-        flame_test: parseInt(slateDetail.flameTest) || null,
-        remark: slateDetail.remark,
-        plt_num: pltNum
-      });
-      if (slateError) {
-        debugMsg += `Slate Insert Error: ${slateError.message}\n`;
-      } else {
-        debugMsg += 'Slate Record Inserted\n';
+      for (const d of insertDataArr) {
+        const { error: slateError } = await supabase.from('record_slate').insert({
+          code: productCode,
+          first_off: slateDetail.firstOffDate,
+          batch_num: slateDetail.batchNumber,
+          setter: slateDetail.setterName,
+          material: batchPrefix,
+          weight: parseInt(slateDetail.weight) || null,
+          t_thick: parseInt(slateDetail.topThickness) || null,
+          b_thick: parseInt(slateDetail.bottomThickness) || null,
+          length: parseInt(slateDetail.length) || null,
+          width: parseInt(slateDetail.width) || null,
+          centre_hole: parseInt(slateDetail.centreHole) || null,
+          colour: 'Black',
+          shape: 'Colonial',
+          flame_test: parseInt(slateDetail.flameTest) || null,
+          remark: slateDetail.remark,
+          plt_num: d.plt_num,
+          mach_num: "Machine No. 14"
+        });
+        if (slateError) {
+          debugMsg += `Slate Insert Error: ${slateError.message}\n`;
+        } else {
+          debugMsg += `Slate Record Inserted (Pallet: ${d.plt_num})\n`;
+        }
       }
     }
 
@@ -271,9 +270,8 @@ export default function QcLabelForm() {
       setOperator('');
       setAcoOrderRef('');
       setSlateDetail({
-        firstOffDate: '', batchNumber: '', setterName: '', machNum: '', material: '', weight: '',
-        topThickness: '', bottomThickness: '', length: '', width: '', centreHole: '', lengthMiddleHoleToBottom: '',
-        colour: '', shapes: '', flameTest: '', remark: ''
+        firstOffDate: '', batchNumber: '', setterName: '', weight: '',
+        topThickness: '', bottomThickness: '', length: '', width: '', centreHole: '', lengthMiddleHoleToBottom: '', flameTest: '', remark: ''
       });
       setProductInfo(null);
       setAcoRemain(null);
@@ -415,6 +413,12 @@ export default function QcLabelForm() {
     }
   };
 
+  useEffect(() => {
+    if (productInfo?.type === 'Slate') {
+      setCount('1');
+    }
+  }, [productInfo]);
+
   return (
     <div className="flex flex-row gap-8 w-full max-w-screen-lg mx-auto">
       {/* Pallet Detail 區塊 */}
@@ -465,9 +469,10 @@ export default function QcLabelForm() {
               inputMode="numeric"
               pattern="[0-9]*"
               className="w-full rounded-md bg-gray-900 border border-gray-700 text-white px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              value={count}
+              value={productInfo?.type === 'Slate' ? '1' : count}
               onChange={e => setCount(e.target.value)}
               placeholder="Required"
+              disabled={productInfo?.type === 'Slate'}
             />
           </div>
           <div>

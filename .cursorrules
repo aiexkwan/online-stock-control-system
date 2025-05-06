@@ -17,7 +17,7 @@ The system covers stock tracking, pallet movement, GRN records, QR code generati
 ##  Mandatory Instructions
 
 1.  **Use only existing Supabase tables and columns**  
-   DO NOT create new tables or columns. Check Supabase if needed.  
+   DO NOT create new tables or columns. Check Supabase table structure if needed.  
    If column names differ from legacy MS Access schema, **ask the user instead of assuming or renaming.**
 
 2.  **Code only in English**  
