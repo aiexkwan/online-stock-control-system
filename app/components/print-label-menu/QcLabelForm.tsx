@@ -143,10 +143,19 @@ export default function QcLabelForm() {
 
     // 生成多個唯一 series
     async function generateUniqueSeriesArr(n: number) {
-      const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+      function generateSmartCode() {
+        const datePart = new Date().toISOString().slice(2, 10).replace(/-/g, ''); // e.g. "240508"
+        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+        let randomPart = '';
+        for (let i = 0; i < 6; i++) {
+          const idx = window.crypto ? window.crypto.getRandomValues(new Uint32Array(1))[0] % chars.length : Math.floor(Math.random() * chars.length);
+          randomPart += chars[idx];
+        }
+        return `${datePart}-${randomPart}`;
+      }
       const result: string[] = [];
       while (result.length < n) {
-        const series = Array.from({length: 12}, () => chars.charAt(Math.floor(Math.random() * chars.length))).join('');
+        const series = generateSmartCode();
         // 查詢是否已存在
         const { data: exist } = await supabase
           .from('record_palletinfo')
@@ -280,7 +289,7 @@ export default function QcLabelForm() {
         date: dateLabel,
         operatorClockNum: operatorNum,
         qcClockNum: qcNum,
-        workOrderNumber,
+        workOrderNumber: `${workOrderLabel} : ${workOrderValueFinal}`,
         palletNum,
         qrValue,
         onSuccess: (url) => {
@@ -329,31 +338,31 @@ export default function QcLabelForm() {
     }
   };
 
-  // 即時查詢 productInfo
-  useEffect(() => {
-    if (!productCode.trim()) {
+  // --- Product Code Search Logic --- START ---
+  const handleProductCodeBlur = async () => {
+    const currentProductCode = productCode.trim();
+    if (!currentProductCode) {
       setProductInfo(null);
-      setProductError(null);
+      // Do not clear productError if it's a required field error, for example.
+      // Let form validation handle empty required fields.
       return;
     }
-    let cancelled = false;
-    supabase
+    const { data, error } = await supabase
       .from('data_code')
       .select('code, description, standard_qty, type')
-      .ilike('code', productCode.trim())
-      .single()
-      .then(({ data, error }) => {
-        if (cancelled) return;
-        if (error || !data) {
-          setProductInfo(null);
-          setProductError("Product Code Don't Exist. Please Check Again Or Update Product Code List.");
-        } else {
-          setProductInfo(data);
-          setProductError(null);
-        }
-      });
-    return () => { cancelled = true; };
-  }, [productCode]);
+      .ilike('code', currentProductCode)
+      .single();
+
+    if (error || !data) {
+      setProductInfo(null);
+      setProductError("Product Code Don't Exist. Please Check Again Or Update Product Code List.");
+    } else {
+      setProductInfo(data);
+      setProductError(null);
+      setProductCode(data.code); // Auto-correct Product Code input
+    }
+  };
+  // --- Product Code Search Logic --- END ---
 
   const handleAcoSearch = async () => {
     setAcoSearchLoading(true);
@@ -483,7 +492,16 @@ export default function QcLabelForm() {
               type="text"
               className="w-full rounded-md bg-gray-900 border border-gray-700 text-white px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
               value={productCode}
-              onChange={e => { setProductCode(e.target.value); setDebugMsg(''); }}
+              onChange={e => {
+                setProductCode(e.target.value);
+                setDebugMsg('');
+                // Clear related states on input change to avoid showing stale data
+                setProductInfo(null);
+                setProductError(null);
+                setAcoRemain(null); // Also clear ACO related state if product code changes
+                setAcoNewRef(false);
+              }}
+              onBlur={handleProductCodeBlur} // Attach onBlur event
               required
               placeholder="Required"
             />
