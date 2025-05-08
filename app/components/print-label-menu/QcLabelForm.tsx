@@ -112,11 +112,14 @@ export default function QcLabelForm() {
     const qcNum = userId || '-';
     let workOrderType = '-';
     let workOrderValue = '-';
+    let workOrderNumber = '-';
     if (productInfo?.type === 'ACO' && acoOrderRef.trim()) {
       workOrderType = 'ACO Order Ref';
       workOrderValue = acoOrderRef.trim();
+      workOrderNumber = acoOrderRef.trim();
     } else if (productInfo?.type) {
       workOrderType = productInfo.type;
+      workOrderNumber = productInfo.type;
     }
 
     // 查詢所有今日 plt_num，取最大流水號
@@ -248,83 +251,45 @@ export default function QcLabelForm() {
     debugMsg += '======  END  ======';
     setDebugMsg(debugMsg);
 
-    // 產生並上傳 PDF
-    try {
-      const isAco = productInfo?.type === 'ACO' && acoOrderRef.trim();
-      const workOrderNumber = isAco ? 'ACO Order Ref' : 'Work Order Number';
-      const workOrderValue = isAco ? acoOrderRef.trim() : '-';
-      setPdfProgress({ current: 0, total: insertDataArr.length, status: Array(insertDataArr.length).fill('Pending') });
-      for (let i = 0; i < insertDataArr.length; i++) {
-        const d = insertDataArr[i];
-        let pdfWorkOrderNumber = '-';
-        if (productInfo?.type === 'ACO' && acoOrderRef.trim()) {
-          // 查詢該ACO Ref已存在的plt_remark次數
-          const { data: existPlts } = await supabase
-            .from('record_palletinfo')
-            .select('plt_remark')
-            .like('plt_remark', `%ACO Ref : ${acoOrderRef.trim()}%`);
-          const count = existPlts ? existPlts.length : 0;
-          const nth = count + i + 1;
-          let nthStr = `${nth}th`;
-          if (nth === 1) nthStr = '1st';
-          else if (nth === 2) nthStr = '2nd';
-          else if (nth === 3) nthStr = '3rd';
-          else if (nth === 21) nthStr = '21st';
-          else if (nth === 22) nthStr = '22nd';
-          else if (nth === 23) nthStr = '23rd';
-          else if (nth === 31) nthStr = '31st';
-          else if (nth === 32) nthStr = '32nd';
-          else if (nth === 33) nthStr = '33rd';
-          else if (nth === 41) nthStr = '41st';
-          else if (nth === 42) nthStr = '42nd';
-          else if (nth === 43) nthStr = '43rd';
-          else if (nth === 51) nthStr = '51st';
-          else if (nth === 52) nthStr = '52nd';
-          else if (nth === 53) nthStr = '53rd';
-          else if (nth === 61) nthStr = '61st';
-          else if (nth === 62) nthStr = '62nd';
-          else if (nth === 63) nthStr = '63rd';
-          pdfWorkOrderNumber = `ACO Ref Order: ${acoOrderRef.trim()}   ${nthStr} PLT`;
-          console.log('產生PDF時 workOrderNumber:', pdfWorkOrderNumber);
-        }
-        setPdfProgress(prev => ({
-          ...prev,
-          current: i + 1,
-          status: prev.status.map((s, idx) => idx === i ? 'Uploading...' : s)
-        }));
-        try {
-          await generateAndUploadPdf({
-            productCode,
-            description: productInfo?.description || '',
-            quantity: Number(quantity),
-            date: dateLabel,
-            operatorClockNum: operatorNum,
-            qcClockNum: qcNum,
-            workOrderNumber: pdfWorkOrderNumber,
-            palletNum: d.plt_num,
-            qrValue: d.series,
-            onSuccess: (url) => {
-              setPdfProgress(prev => ({
-                ...prev,
-                status: prev.status.map((s, idx) => idx === i ? 'Success' : s)
-              }));
-              setDebugMsg(prev => prev + `\nPDF uploaded: ${url}`);
-            },
-            onError: (error) => {
-              setPdfProgress(prev => ({
-                ...prev,
-                status: prev.status.map((s, idx) => idx === i ? 'Failed' : s)
-              }));
-              setDebugMsg(prev => prev + `\nPDF upload error: ${error.message}`);
-            }
-          });
-        } catch (error) {
-          setPdfProgress(prev => ({
-            ...prev,
-            status: prev.status.map((s, idx) => idx === i ? 'Failed' : s)
-          }));
-        }
+    // 這裡直接用 workOrderType/workOrderValue 組裝
+    const isAco = workOrderType === 'ACO Order Ref';
+    let workOrderLabel = isAco ? 'ACO Order' : 'Work Order Number';
+    let workOrderValueFinal = workOrderValue;
+    if (isAco) {
+      // 查詢 plt_remark 出現次數
+      const { count: acoPltCount } = await supabase
+        .from('record_palletinfo')
+        .select('plt_remark', { count: 'exact', head: true })
+        .eq('plt_remark', `ACO Ref : ${acoOrderRef.trim()}`);
+      const version = (acoPltCount ?? 0) + 1;
+      function getOrdinal(n: number) {
+        if (n % 10 === 1 && n % 100 !== 11) return `${n}st`;
+        if (n % 10 === 2 && n % 100 !== 12) return `${n}nd`;
+        if (n % 10 === 3 && n % 100 !== 13) return `${n}rd`;
+        return `${n}th`;
       }
+      workOrderValueFinal = `${acoOrderRef.trim()} - ${getOrdinal(version)} PLT`;
+    }
+    const qrValue = Array.isArray(seriesArr) ? seriesArr[0] : '';
+
+    try {
+      await generateAndUploadPdf({
+        productCode,
+        description: productInfo?.description || '',
+        quantity: Number(quantity),
+        date: dateLabel,
+        operatorClockNum: operatorNum,
+        qcClockNum: qcNum,
+        workOrderNumber,
+        palletNum,
+        qrValue,
+        onSuccess: (url) => {
+          setDebugMsg(prev => prev + `\nPDF uploaded: ${url}`);
+        },
+        onError: (error) => {
+          setDebugMsg(prev => prev + `\nPDF upload error: ${error.message}`);
+        }
+      });
     } catch (error) {
       setDebugMsg(prev => prev + `\nPDF generation/upload error: ${error instanceof Error ? error.message : String(error)}`);
     }
@@ -364,28 +329,31 @@ export default function QcLabelForm() {
     }
   };
 
-  // onBlur 查詢 function
-  const handleProductCodeBlur = async (value: string) => {
-    if (!value.trim()) {
+  // 即時查詢 productInfo
+  useEffect(() => {
+    if (!productCode.trim()) {
       setProductInfo(null);
       setProductError(null);
       return;
     }
-    const { data, error } = await supabase
+    let cancelled = false;
+    supabase
       .from('data_code')
       .select('code, description, standard_qty, type')
-      .ilike('code', value.trim())
-      .single();
-    if (error || !data) {
-      setProductInfo(null);
-      setProductError("Product Code Don't Exist. Please Check Again Or Update Product Code List.");
-    } else {
-      setProductInfo(data);
-      setProductError(null);
-      setProductCode(data.code);
-      // 不自動 setQuantity
-    }
-  };
+      .ilike('code', productCode.trim())
+      .single()
+      .then(({ data, error }) => {
+        if (cancelled) return;
+        if (error || !data) {
+          setProductInfo(null);
+          setProductError("Product Code Don't Exist. Please Check Again Or Update Product Code List.");
+        } else {
+          setProductInfo(data);
+          setProductError(null);
+        }
+      });
+    return () => { cancelled = true; };
+  }, [productCode]);
 
   const handleAcoSearch = async () => {
     setAcoSearchLoading(true);
@@ -516,7 +484,6 @@ export default function QcLabelForm() {
               className="w-full rounded-md bg-gray-900 border border-gray-700 text-white px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
               value={productCode}
               onChange={e => { setProductCode(e.target.value); setDebugMsg(''); }}
-              onBlur={e => handleProductCodeBlur(e.target.value)}
               required
               placeholder="Required"
             />
