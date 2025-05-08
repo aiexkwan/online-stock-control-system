@@ -2,6 +2,9 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../../lib/supabase';
 import { format } from 'date-fns';
+import { useSearchParams } from 'next/navigation';
+import ReviewTemplate from '../../components/print-label-pdf/ReviewTemplate';
+import { generateAndUploadPdf } from '../print-label-pdf/PdfGenerator';
 
 // TODO: 將現有 Print Label 表單內容搬到這裡，並導出 QcLabelForm 組件
 
@@ -26,6 +29,8 @@ export default function QcLabelForm() {
     firstOffDate: '',
     batchNumber: '',
     setterName: '',
+    machNum: '',
+    material: '',
     weight: '',
     topThickness: '',
     bottomThickness: '',
@@ -33,6 +38,8 @@ export default function QcLabelForm() {
     width: '',
     centreHole: '',
     lengthMiddleHoleToBottom: '',
+    colour: '',
+    shapes: '',
     flameTest: '',
     remark: ''
   });
@@ -76,19 +83,31 @@ export default function QcLabelForm() {
 
   const handlePrintLabel = async (e: React.FormEvent) => {
     e.preventDefault();
+    let debugMsg = '';
+    let inventoryUpdated = false;
+    let acoUpdated = false;
     if (!isFormValid) return;
 
+    // 先組合 query string
     const today = new Date();
-    const dateStr = format(today, 'ddMMyy');
-    const generateTime = format(today, 'dd-MMM-yyyy HH:mm:ss');
-    const countNum = Math.max(1, parseInt(count, 10) || 1);
+    const dateStr = format(today, 'ddMMyy'); // 用於 palletNum/plt_num
+    const dateLabel = format(today, 'dd-MMM-yyyy'); // 只給 PDF label 顯示
+    const operatorNum = operator.trim() ? operator.trim() : '-';
+    const qcNum = userId || '-';
+    let workOrderType = '-';
+    let workOrderValue = '-';
+    if (productInfo?.type === 'ACO' && acoOrderRef.trim()) {
+      workOrderType = 'ACO Order Ref';
+      workOrderValue = acoOrderRef.trim();
+    } else if (productInfo?.type) {
+      workOrderType = productInfo.type;
+    }
 
     // 查詢所有今日 plt_num，取最大流水號
     const { data: todayPlts } = await supabase
       .from('record_palletinfo')
       .select('plt_num')
       .like('plt_num', `${dateStr}/%`);
-
     let maxNum = 0;
     if (todayPlts && todayPlts.length > 0) {
       todayPlts.forEach(row => {
@@ -98,6 +117,23 @@ export default function QcLabelForm() {
         }
       });
     }
+    const palletNum = `${dateStr}/${maxNum + 1}`;
+
+    const params = new URLSearchParams({
+      productCode,
+      description: productInfo?.description || '',
+      quantity,
+      date: dateLabel, // PDF label 顯示用
+      operatorClockNum: operatorNum,
+      qcClockNum: qcNum,
+      workOrderType,
+      workOrderValue,
+      palletNum,
+    });
+    window.open(`/print-label/pdf-review?${params.toString()}`, '_blank');
+
+    const generateTime = format(today, 'dd-MMM-yyyy HH:mm:ss');
+    const countNum = Math.max(1, parseInt(count, 10) || 1);
 
     // 生成多個唯一 series
     async function generateUniqueSeriesArr(n: number) {
@@ -121,9 +157,9 @@ export default function QcLabelForm() {
 
     // 準備多筆 insert 資料
     const insertDataArr = Array.from({length: productInfo?.type === 'Slate' ? 1 : countNum}).map((_, i) => {
-      const palletNum = `${dateStr}/${maxNum + 1 + i}`;
+      const thisPalletNum = `${dateStr}/${maxNum + 1 + i}`;
       const data: any = {
-        plt_num: palletNum,
+        plt_num: thisPalletNum,
         generate_time: generateTime,
         product_code: productCode,
         product_qty: quantity,
@@ -145,7 +181,6 @@ export default function QcLabelForm() {
       .insert(insertDataArr);
 
     // Debug: 顯示所有要插入的 pallet
-    let debugMsg = '';
     if (!insertError) {
       insertDataArr.forEach(d => {
         debugMsg += `Product Code : ${d.product_code}\nPallet Number : ${d.plt_num}\nQty : ${d.product_qty}\n\n`;
@@ -153,7 +188,6 @@ export default function QcLabelForm() {
     }
 
     // === 新增：同步更新 record_inventory await 欄位（加強 debug） ===
-    let inventoryUpdated = false;
     for (const d of insertDataArr) {
       const qty = Number(d.product_qty);
       const { data: inv, error: invError } = await supabase
@@ -186,7 +220,6 @@ export default function QcLabelForm() {
     if (inventoryUpdated) debugMsg += 'Inventory Update Confirmed\n\n';
 
     // === ACO ORDER EVENT ===
-    let acoUpdated = false;
     if (productInfo?.type === 'ACO' && acoOrderRef.trim()) {
       for (const d of insertDataArr) {
         const { data: acoRow, error: acoError } = await supabase
@@ -209,38 +242,35 @@ export default function QcLabelForm() {
     }
     if (acoUpdated) debugMsg += 'ACO Order Update Confirmed\n\n';
 
-    if (productInfo?.type === 'Slate') {
-      const batchPrefix = slateDetail.batchNumber.slice(0,2);
-      for (const d of insertDataArr) {
-        const { error: slateError } = await supabase.from('record_slate').insert({
-          code: productCode,
-          first_off: slateDetail.firstOffDate,
-          batch_num: slateDetail.batchNumber,
-          setter: slateDetail.setterName,
-          material: batchPrefix,
-          weight: parseInt(slateDetail.weight) || null,
-          t_thick: parseInt(slateDetail.topThickness) || null,
-          b_thick: parseInt(slateDetail.bottomThickness) || null,
-          length: parseInt(slateDetail.length) || null,
-          width: parseInt(slateDetail.width) || null,
-          centre_hole: parseInt(slateDetail.centreHole) || null,
-          colour: 'Black',
-          shape: 'Colonial',
-          flame_test: parseInt(slateDetail.flameTest) || null,
-          remark: slateDetail.remark,
-          plt_num: d.plt_num,
-          mach_num: "Machine No. 14"
-        });
-        if (slateError) {
-          debugMsg += `Slate Insert Error: ${slateError.message}\n`;
-        } else {
-          debugMsg += `Slate Record Inserted (Pallet: ${d.plt_num})\n`;
-        }
-      }
-    }
-
     debugMsg += '======  END  ======';
     setDebugMsg(debugMsg);
+
+    // 產生並上傳 PDF
+    try {
+      const isAco = productInfo?.type === 'ACO' && acoOrderRef.trim();
+      const workOrderNumber = isAco ? 'ACO Order Ref' : 'Work Order Number';
+      const workOrderValue = isAco ? acoOrderRef.trim() : '-';
+      const qrValue = Array.isArray(seriesArr) ? seriesArr[0] : '';
+      await generateAndUploadPdf({
+        productCode,
+        description: productInfo?.description || '',
+        quantity: Number(quantity),
+        date: dateLabel,
+        operatorClockNum: operatorNum,
+        qcClockNum: qcNum,
+        workOrderNumber: `${workOrderNumber} : ${workOrderValue}`,
+        palletNum,
+        qrValue,
+        onSuccess: (url) => {
+          setDebugMsg(prev => prev + `\nPDF uploaded: ${url}`);
+        },
+        onError: (error) => {
+          setDebugMsg(prev => prev + `\nPDF upload error: ${error.message}`);
+        }
+      });
+    } catch (error) {
+      setDebugMsg(prev => prev + `\nPDF generation/upload error: ${error instanceof Error ? error.message : String(error)}`);
+    }
 
     // 新增 record_history
     const now = new Date();
@@ -259,25 +289,22 @@ export default function QcLabelForm() {
     }
 
     if (insertError) {
-      debugMsg += `Insert Error: ${insertError.message}\n`;
+      setDebugMsg(prev => prev + `\nInsert Error: ${insertError.message}`);
       console.error('Error inserting new pallet info:', insertError);
     } else {
-      console.log('New pallet numbers generated:', insertDataArr.map(d => d.plt_num));
-      // 清空所有 input 狀態
       setProductCode('');
       setQuantity('');
       setCount('');
       setOperator('');
       setAcoOrderRef('');
       setSlateDetail({
-        firstOffDate: '', batchNumber: '', setterName: '', weight: '',
-        topThickness: '', bottomThickness: '', length: '', width: '', centreHole: '', lengthMiddleHoleToBottom: '', flameTest: '', remark: ''
+        firstOffDate: '', batchNumber: '', setterName: '', machNum: '', material: '', weight: '',
+        topThickness: '', bottomThickness: '', length: '', width: '', centreHole: '', lengthMiddleHoleToBottom: '',
+        colour: '', shapes: '', flameTest: '', remark: ''
       });
       setProductInfo(null);
       setAcoRemain(null);
     }
-    // 最後一定要 setDebugMsg
-    setDebugMsg(debugMsg);
   };
 
   // onBlur 查詢 function
@@ -390,7 +417,7 @@ export default function QcLabelForm() {
     // 過濾掉沒填 code 或 qty 的行
     const validRows = acoOrderDetails.filter(row => row.code.trim() && row.qty.trim() && !acoOrderDetailErrors[acoOrderDetails.indexOf(row)]);
     if (!acoOrderRef.trim() || validRows.length === 0) {
-      console.error('Please enter ACO Order Ref and at least one valid Product Code/Qty.');
+      setDebugMsg('Please enter ACO Order Ref and at least one valid Product Code/Qty.');
       return;
     }
     const now = new Date();
@@ -404,9 +431,9 @@ export default function QcLabelForm() {
     }));
     const { error } = await supabase.from('record_aco').insert(insertArr);
     if (error) {
-      console.error('Insert record_aco failed: ' + error.message);
+      setDebugMsg('Insert record_aco failed: ' + error.message);
     } else {
-      console.log('Insert record_aco success!');
+      setDebugMsg('Insert record_aco success!');
       setAcoNewRef(false); // 隱藏區塊
       setAcoOrderDetails([{ code: '', qty: '' }]); // 清空 input
       handleAcoSearch(); // 重新查詢 ACO Order Ref
@@ -485,6 +512,10 @@ export default function QcLabelForm() {
               placeholder="Optional"
             />
           </div>
+          <pre style={{color: 'yellow'}}>productCode: {productCode}</pre>
+          <pre style={{color: 'yellow'}}>quantity: {quantity}</pre>
+          <pre style={{color: 'yellow'}}>count: {count}</pre>
+          <pre style={{color: 'yellow'}}>productError: {String(productError)}</pre>
           <button
             type="submit"
             className={`mt-4 w-full py-2 rounded-md text-white font-semibold transition-colors ${isFormValid ? 'bg-blue-600 hover:bg-blue-700' : 'bg-gray-600 cursor-not-allowed'}`}
@@ -512,12 +543,12 @@ export default function QcLabelForm() {
         {/* Instruction 區塊下方：Slate 專用區塊 */}
         {productInfo?.type === 'Slate' && (
           <div className="bg-gray-800 rounded-lg p-8 shadow-lg mt-4">
-            <h3 className="text-lg font-semibold text-white mb-4">Enter First-Off Date</h3>
+            <h3 className="text-lg font-semibold text-white mb-4">Please Choose First-Off Date</h3>
             <div className="flex flex-row gap-4 items-center mb-4">
               <input
                 type="text"
                 className="w-56 rounded-md bg-transparent border border-gray-700 text-white px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="Enter First-Off Date"
+                placeholder="Please Enter First-Off Date"
                 value={slateDetail.firstOffDate}
                 onChange={e => setSlateDetail({ ...slateDetail, firstOffDate: e.target.value })}
                 list="firstoffdate-list"
@@ -537,13 +568,15 @@ export default function QcLabelForm() {
                 {[
                   { key: 'batchNumber', label: 'Batch Number' },
                   { key: 'setterName', label: 'Setter Name' },
+                  { key: 'material', label: 'Material' },
                   { key: 'weight', label: 'Weight' },
                   { key: 'topThickness', label: 'Top Thickness' },
                   { key: 'bottomThickness', label: 'Bottom Thickness' },
                   { key: 'length', label: 'Length' },
                   { key: 'width', label: 'Width' },
-                  { key: 'centreHole', label: 'Centre Hole' },
                   { key: 'lengthMiddleHoleToBottom', label: 'Length (Middle Hole To Bottom)' },
+                  { key: 'colour', label: 'Colour' },
+                  { key: 'shapes', label: 'Shapes' },
                   { key: 'flameTest', label: 'Flame Test' },
                   { key: 'remark', label: 'Remark' },
                 ].map(field => (
@@ -552,18 +585,8 @@ export default function QcLabelForm() {
                     type="text"
                     className="w-full rounded-md bg-transparent border border-gray-700 text-white px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder:text-gray-400"
                     placeholder={field.label}
-                    value={slateDetail[field.key as keyof typeof slateDetail] || ''}
-                    onChange={e => {
-                      if (field.key === 'batchNumber') {
-                        const batch = e.target.value;
-                        setSlateDetail(prev => ({
-                          ...prev,
-                          batchNumber: batch
-                        }));
-                      } else {
-                        setSlateDetail(prev => ({ ...prev, [field.key]: e.target.value }));
-                      }
-                    }}
+                    value={slateDetail[field.key as keyof typeof slateDetail]}
+                    onChange={e => setSlateDetail({ ...slateDetail, [field.key]: e.target.value })}
                   />
                 ))}
               </div>
@@ -610,6 +633,12 @@ export default function QcLabelForm() {
           </div>
         )}
       </div>
+      {/* Debug Message 區塊 */}
+      {debugMsg && (
+        <div className="flex-1 min-w-[320px] max-w-md">
+          <pre className="text-xs text-yellow-300 whitespace-pre-wrap bg-gray-900 rounded p-3">{debugMsg}</pre>
+        </div>
+      )}
     </div>
   );
 } 
