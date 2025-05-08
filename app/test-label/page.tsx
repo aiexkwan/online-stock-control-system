@@ -41,6 +41,10 @@ export default function TestLabelPage() {
     workOrderNumber: '',
   };
 
+  function renderDownloadText({ loading }: { loading: boolean }): React.ReactNode {
+    return loading ? <span>準備中...</span> : <span>下載測試標籤 PDF</span>;
+  }
+
   if (!isClient) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -66,9 +70,9 @@ export default function TestLabelPage() {
               fileName={`Label_${testData.palletNum.replace('/', '_')}.pdf`}
               className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
             >
-              {({ blob, url, loading, error }) =>
-                loading ? '準備中...' : '下載測試標籤 PDF'
-              }
+              {((params: { loading: boolean }) =>
+                params.loading ? <span>準備中...</span> : <span>下載測試標籤 PDF</span>
+              ) as unknown as React.ReactNode}
             </PDFDownloadLink>
           </div>
         </div>
