@@ -10,9 +10,9 @@ export default function DownloadPdfButton(props: PrintLabelPdfProps) {
       fileName={`PalletLabel_${props.palletNum}.pdf`}
       style={{ color: '#2563eb', textDecoration: 'underline', fontSize: 14 }}
     >
-      {({ loading }) =>
-        loading ? 'Generating PDF...' : 'Download Pallet Label PDF'
-      }
+      {(({ loading }: { loading: boolean }) =>
+        loading ? <span>Generating PDF...</span> : <span>Download Pallet Label PDF</span>
+      ) as unknown as React.ReactNode}
     </PDFDownloadLink>
   );
 } 
