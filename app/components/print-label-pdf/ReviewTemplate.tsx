@@ -104,10 +104,12 @@ function LabelBlock(props: ReviewTemplateProps) {
 
       {/* Work Order Table */}
       <table className="w-full border-collapse mt-[14px] mb-[10px]">
-        <tr>
-          <td className="border border-black p-[6px_10px] h-[40px] text-[24px] text-center align-middle">Work Order Number</td>
-          <td className="border border-black p-[6px_10px] h-[40px] text-[26px] text-center align-middle">{workOrderNumber}</td>
-        </tr>
+        <tbody>
+          <tr>
+            <td className="border border-black p-[6px_10px] h-[40px] text-[24px] text-center align-middle">Work Order Number</td>
+            <td className="border border-black p-[6px_10px] h-[40px] text-[26px] text-center align-middle">{workOrderNumber}</td>
+          </tr>
+        </tbody>
       </table>
 
       {/* Pallet Number */}

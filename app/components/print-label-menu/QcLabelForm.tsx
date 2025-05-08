@@ -59,6 +59,9 @@ export default function QcLabelForm() {
   // 新增：ACO Order Detail 欄位驗證錯誤狀態
   const [acoOrderDetailErrors, setAcoOrderDetailErrors] = useState<string[]>([]);
 
+  // PDF 批次進度狀態
+  const [pdfProgress, setPdfProgress] = useState<{ current: number; total: number; status: string[] }>({ current: 0, total: 0, status: [] });
+
   // 取得登入用戶 id
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -79,7 +82,20 @@ export default function QcLabelForm() {
         .filter(([k]) => k !== 'remark')
         .every(([, v]) => v.trim() !== '')
     : true;
-  const isFormValid = productCode.trim() && quantity.trim() && count.trim() && isAcoValid && isSlateValid;
+  const isAcoOrderFullfilled = acoRemain === 'Order Been Fullfilled';
+  // 新增：判斷剩餘數量不足
+  let isAcoOrderExcess = false;
+  let acoRemainQty = null;
+  if (acoRemain && acoRemain.startsWith('Order Remain Qty : ')) {
+    const match = acoRemain.match(/Order Remain Qty : (\d+)/);
+    if (match) {
+      acoRemainQty = parseInt(match[1], 10);
+      if (!isNaN(acoRemainQty) && quantity.trim() && parseInt(quantity, 10) > acoRemainQty) {
+        isAcoOrderExcess = true;
+      }
+    }
+  }
+  const isFormValid = productCode.trim() && quantity.trim() && count.trim() && isAcoValid && isSlateValid && !isAcoOrderFullfilled && !isAcoOrderExcess;
 
   const handlePrintLabel = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -118,19 +134,6 @@ export default function QcLabelForm() {
       });
     }
     const palletNum = `${dateStr}/${maxNum + 1}`;
-
-    const params = new URLSearchParams({
-      productCode,
-      description: productInfo?.description || '',
-      quantity,
-      date: dateLabel, // PDF label 顯示用
-      operatorClockNum: operatorNum,
-      qcClockNum: qcNum,
-      workOrderType,
-      workOrderValue,
-      palletNum,
-    });
-    window.open(`/print-label/pdf-review?${params.toString()}`, '_blank');
 
     const generateTime = format(today, 'dd-MMM-yyyy HH:mm:ss');
     const countNum = Math.max(1, parseInt(count, 10) || 1);
@@ -250,24 +253,78 @@ export default function QcLabelForm() {
       const isAco = productInfo?.type === 'ACO' && acoOrderRef.trim();
       const workOrderNumber = isAco ? 'ACO Order Ref' : 'Work Order Number';
       const workOrderValue = isAco ? acoOrderRef.trim() : '-';
-      const qrValue = Array.isArray(seriesArr) ? seriesArr[0] : '';
-      await generateAndUploadPdf({
-        productCode,
-        description: productInfo?.description || '',
-        quantity: Number(quantity),
-        date: dateLabel,
-        operatorClockNum: operatorNum,
-        qcClockNum: qcNum,
-        workOrderNumber: `${workOrderNumber} : ${workOrderValue}`,
-        palletNum,
-        qrValue,
-        onSuccess: (url) => {
-          setDebugMsg(prev => prev + `\nPDF uploaded: ${url}`);
-        },
-        onError: (error) => {
-          setDebugMsg(prev => prev + `\nPDF upload error: ${error.message}`);
+      setPdfProgress({ current: 0, total: insertDataArr.length, status: Array(insertDataArr.length).fill('Pending') });
+      for (let i = 0; i < insertDataArr.length; i++) {
+        const d = insertDataArr[i];
+        let pdfWorkOrderNumber = '-';
+        if (productInfo?.type === 'ACO' && acoOrderRef.trim()) {
+          // 查詢該ACO Ref已存在的plt_remark次數
+          const { data: existPlts } = await supabase
+            .from('record_palletinfo')
+            .select('plt_remark')
+            .like('plt_remark', `%ACO Ref : ${acoOrderRef.trim()}%`);
+          const count = existPlts ? existPlts.length : 0;
+          const nth = count + i + 1;
+          let nthStr = `${nth}th`;
+          if (nth === 1) nthStr = '1st';
+          else if (nth === 2) nthStr = '2nd';
+          else if (nth === 3) nthStr = '3rd';
+          else if (nth === 21) nthStr = '21st';
+          else if (nth === 22) nthStr = '22nd';
+          else if (nth === 23) nthStr = '23rd';
+          else if (nth === 31) nthStr = '31st';
+          else if (nth === 32) nthStr = '32nd';
+          else if (nth === 33) nthStr = '33rd';
+          else if (nth === 41) nthStr = '41st';
+          else if (nth === 42) nthStr = '42nd';
+          else if (nth === 43) nthStr = '43rd';
+          else if (nth === 51) nthStr = '51st';
+          else if (nth === 52) nthStr = '52nd';
+          else if (nth === 53) nthStr = '53rd';
+          else if (nth === 61) nthStr = '61st';
+          else if (nth === 62) nthStr = '62nd';
+          else if (nth === 63) nthStr = '63rd';
+          pdfWorkOrderNumber = `ACO Ref Order: ${acoOrderRef.trim()}   ${nthStr} PLT`;
+          console.log('產生PDF時 workOrderNumber:', pdfWorkOrderNumber);
         }
-      });
+        setPdfProgress(prev => ({
+          ...prev,
+          current: i + 1,
+          status: prev.status.map((s, idx) => idx === i ? 'Uploading...' : s)
+        }));
+        try {
+          await generateAndUploadPdf({
+            productCode,
+            description: productInfo?.description || '',
+            quantity: Number(quantity),
+            date: dateLabel,
+            operatorClockNum: operatorNum,
+            qcClockNum: qcNum,
+            workOrderNumber: pdfWorkOrderNumber,
+            palletNum: d.plt_num,
+            qrValue: d.series,
+            onSuccess: (url) => {
+              setPdfProgress(prev => ({
+                ...prev,
+                status: prev.status.map((s, idx) => idx === i ? 'Success' : s)
+              }));
+              setDebugMsg(prev => prev + `\nPDF uploaded: ${url}`);
+            },
+            onError: (error) => {
+              setPdfProgress(prev => ({
+                ...prev,
+                status: prev.status.map((s, idx) => idx === i ? 'Failed' : s)
+              }));
+              setDebugMsg(prev => prev + `\nPDF upload error: ${error.message}`);
+            }
+          });
+        } catch (error) {
+          setPdfProgress(prev => ({
+            ...prev,
+            status: prev.status.map((s, idx) => idx === i ? 'Failed' : s)
+          }));
+        }
+      }
     } catch (error) {
       setDebugMsg(prev => prev + `\nPDF generation/upload error: ${error instanceof Error ? error.message : String(error)}`);
     }
@@ -347,7 +404,7 @@ export default function QcLabelForm() {
       if (Number(data.remain_qty) === 0) {
         setAcoRemain('Order Been Fullfilled');
       } else {
-        setAcoRemain(String(data.remain_qty));
+        setAcoRemain(`Order Remain Qty : ${String(data.remain_qty)}`);
       }
     }
     setAcoSearchLoading(false);
@@ -512,10 +569,6 @@ export default function QcLabelForm() {
               placeholder="Optional"
             />
           </div>
-          <pre style={{color: 'yellow'}}>productCode: {productCode}</pre>
-          <pre style={{color: 'yellow'}}>quantity: {quantity}</pre>
-          <pre style={{color: 'yellow'}}>count: {count}</pre>
-          <pre style={{color: 'yellow'}}>productError: {String(productError)}</pre>
           <button
             type="submit"
             className={`mt-4 w-full py-2 rounded-md text-white font-semibold transition-colors ${isFormValid ? 'bg-blue-600 hover:bg-blue-700' : 'bg-gray-600 cursor-not-allowed'}`}
@@ -525,9 +578,35 @@ export default function QcLabelForm() {
           </button>
         </form>
         {/* Debug Message 區塊 */}
-        {debugMsg && (
-          <div className="mt-6">
-            <pre className="text-xs text-yellow-300 whitespace-pre-wrap bg-gray-900 rounded p-3">{debugMsg}</pre>
+        {pdfProgress.total > 0 && (
+          <div className="mt-4">
+            <div className="mb-2 text-xs text-gray-200">
+              PDF Upload Progress: {pdfProgress.current} / {pdfProgress.total}
+            </div>
+            {/* 進度條 */}
+            <div className="w-full bg-gray-700 rounded h-4 overflow-hidden mb-2">
+              <div
+                className="bg-blue-500 h-4 transition-all duration-300"
+                style={{
+                  width: `${(pdfProgress.current / pdfProgress.total) * 100}%`
+                }}
+              />
+            </div>
+            {/* Pallet 狀態點 */}
+            <div className="flex flex-row gap-2 mt-1">
+              {pdfProgress.status.map((s, i) => (
+                <div
+                  key={i}
+                  className={`
+                    w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold
+                    ${s === 'Success' ? 'bg-green-500 text-white' : s === 'Failed' ? 'bg-red-500 text-white' : 'bg-gray-400 text-gray-900'}
+                  `}
+                  title={`Pallet ${i + 1}: ${s}`}
+                >
+                  {i + 1}
+                </div>
+              ))}
+            </div>
           </div>
         )}
       </div>
@@ -539,6 +618,33 @@ export default function QcLabelForm() {
             <li>Enter all required pallet details.</li>
             <li>Click <b>Print Label</b> to generate and save the label(s).</li>
           </ul>
+          {/* ACO Order Ref 輸入欄位 - 移至右側 Instruction 區塊 */}
+          {productInfo?.type?.trim().toUpperCase() === 'ACO' && (
+            <div className="mt-6">
+              <label className="block text-sm text-gray-300 mb-1">ACO Order Ref</label>
+              <input
+                type="text"
+                className="w-full rounded-md bg-gray-900 border border-gray-700 text-white px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                value={acoOrderRef}
+                onChange={e => setAcoOrderRef(e.target.value)}
+                placeholder="Required"
+              />
+              <button
+                type="button"
+                className={`mt-3 w-full py-2 rounded-md font-semibold transition-colors ${canSearchAco ? 'bg-blue-600 text-white hover:bg-blue-700' : 'bg-gray-600 text-gray-300 cursor-not-allowed'}`}
+                disabled={!canSearchAco}
+                onClick={handleAcoSearch}
+              >
+                Search
+              </button>
+              {acoRemain && (
+                <div className="mt-2 text-sm font-semibold text-yellow-300 bg-gray-900 rounded px-3 py-2">{acoRemain}</div>
+              )}
+              {isAcoOrderExcess && (
+                <div className="mt-2 text-sm font-semibold text-red-400 bg-gray-900 rounded px-3 py-2">Input Quantity Excess Order Remain</div>
+              )}
+            </div>
+          )}
         </div>
         {/* Instruction 區塊下方：Slate 專用區塊 */}
         {productInfo?.type === 'Slate' && (
@@ -633,12 +739,6 @@ export default function QcLabelForm() {
           </div>
         )}
       </div>
-      {/* Debug Message 區塊 */}
-      {debugMsg && (
-        <div className="flex-1 min-w-[320px] max-w-md">
-          <pre className="text-xs text-yellow-300 whitespace-pre-wrap bg-gray-900 rounded p-3">{debugMsg}</pre>
-        </div>
-      )}
     </div>
   );
 } 

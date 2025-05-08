@@ -64,6 +64,8 @@ const styles = StyleSheet.create({
     flex: 1,
     minWidth: 0,
     maxWidth: '25%',
+    borderWidth: 1,
+    borderColor: 'black',
   },
   mainTableCell: {
     padding: '8px',
@@ -74,6 +76,8 @@ const styles = StyleSheet.create({
     maxWidth: '25%',
     borderRightWidth: 0,
     borderRightColor: 'black',
+    borderWidth: 1,
+    borderColor: 'black',
   },
   workOrderTable: {
     width: '100%',
@@ -94,6 +98,8 @@ const styles = StyleSheet.create({
     maxWidth: '50%',
     borderRightWidth: 1,
     borderRightColor: 'black',
+    borderWidth: 1,
+    borderColor: 'black',
   },
   workOrderValue: {
     padding: '6px 10px',
@@ -102,6 +108,8 @@ const styles = StyleSheet.create({
     flex: 1,
     minWidth: 0,
     maxWidth: '50%',
+    borderWidth: 1,
+    borderColor: 'black',
   },
   palletNum: {
     position: 'absolute',

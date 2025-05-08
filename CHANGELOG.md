@@ -33,4 +33,8 @@ All notable changes to this project will be documented in this file.
 - None.
 
 ### Fixed
-- None. 
+- None.
+
+## [Unreleased]
+### Fixed
+- PDF 樣板（PrintLabelPdf.tsx）Work Order Number 右側儲存格現在會正確顯示傳入的 workOrderNumber（如 ACO Ref Order: 12345 7th PLT），不再寫死顯示內容。 

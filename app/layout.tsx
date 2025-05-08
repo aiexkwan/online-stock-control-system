@@ -17,7 +17,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={inter.className}>
+      <body className="font-lato">
         <ClientLayout>{children}</ClientLayout>
       </body>
     </html>

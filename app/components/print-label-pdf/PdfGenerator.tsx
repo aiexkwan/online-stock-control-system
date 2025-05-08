@@ -28,16 +28,17 @@ export async function generateAndUploadPdf(props: PdfGeneratorProps) {
 
     // 生成 PDF blob
     const pdfData = {
-        productCode: props.productCode,
-        description: props.description,
-        quantity: props.quantity,
-        date: props.date,
-        operatorClockNum: props.operatorClockNum,
-        qcClockNum: props.qcClockNum,
-        workOrderNumber: props.workOrderNumber,
-        palletNum: props.palletNum,
-        qrValue: props.qrValue,
+        productCode: props.productCode ?? '',
+        description: props.description ?? '',
+        quantity: props.quantity ?? 0,
+        date: props.date ?? '',
+        operatorClockNum: props.operatorClockNum ?? '',
+        qcClockNum: props.qcClockNum ?? '',
+        workOrderNumber: props.workOrderNumber ?? '',
+        palletNum: props.palletNum ?? '',
+        qrValue: props.qrValue ?? '',
      };
+    console.log('PDF props:', pdfData);
 
     const blob = await pdf(<PrintLabelPdf {...pdfData} />).toBlob();
     console.log('PDF blob generated:', blob);
@@ -48,7 +49,7 @@ export async function generateAndUploadPdf(props: PdfGeneratorProps) {
     }
 
     // 上傳 PDF
-    const publicUrl = await uploadPdf(props.palletNum, blob);
+    const publicUrl = await uploadPdf(props.palletNum, props.qrValue, blob);
     console.log('PDF uploaded successfully:', publicUrl);
 
     props.onSuccess?.(publicUrl);

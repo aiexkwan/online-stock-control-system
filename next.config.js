@@ -9,25 +9,25 @@ const nextConfig = {
     serverActions: true,
   },
   // 添加瀏覽器兼容性配置
-  future: {
-    strictPostcssConfiguration: true,
-  },
+  // future: {
+  //   strictPostcssConfiguration: true,
+  // },
   // 優化 Safari 的 CSS 兼容性
-  postcss: {
-    plugins: {
-      'postcss-flexbugs-fixes': {},
-      'postcss-preset-env': {
-        autoprefixer: {
-          flexbox: 'no-2009',
-          grid: 'autoplace',
-        },
-        stage: 3,
-        features: {
-          'custom-properties': false,
-        },
-      },
-    },
-  },
+  // postcss: {
+  //   plugins: {
+  //     'postcss-flexbugs-fixes': {},
+  //     'postcss-preset-env': {
+  //       autoprefixer: {
+  //         flexbox: 'no-2009',
+  //         grid: 'autoplace',
+  //       },
+  //       stage: 3,
+  //       features: {
+  //         'custom-properties': false,
+  //       },
+  //     },
+  //   },
+  // },
   async redirects() {
     return [
       {

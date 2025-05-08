@@ -43,10 +43,12 @@ export async function setupStorage() {
   }
 }
 
-export async function uploadPdf(palletNum: string, blob: Blob) {
+export async function uploadPdf(palletNum: string, qrValue: string, blob: Blob) {
   try {
-    const fileName = `labels/${palletNum}.pdf`;
-    
+    // 將 / 換成 _
+    const safePalletNum = palletNum.replace(/\//g, '_');
+    const safeQrValue = qrValue.replace(/\//g, '_');
+    const fileName = `Label - ${safePalletNum} - ${safeQrValue}.pdf`;
     // 上傳文件
     const { data, error: uploadError } = await supabase
       .storage

@@ -3,7 +3,9 @@ import type { NextRequest } from 'next/server';
 
 // Middleware is fully disabled - no code executed, directly return NextResponse.next()
 export async function middleware(request: NextRequest) {
-  return NextResponse.next();
+  const response = NextResponse.next();
+  response.headers.set('x-content-type-options', 'nosniff');
+  return response;
 }
 
 export const config = {
