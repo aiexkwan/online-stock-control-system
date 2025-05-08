@@ -5,7 +5,7 @@ interface ConvertToPDFOptions {
   outputPath?: string;
 }
 
-export async function convertToPDF({ html, outputPath }: ConvertToPDFOptions): Promise<Buffer> {
+export async function convertToPDF({ html, outputPath }: ConvertToPDFOptions): Promise<Uint8Array> {
   const browser = await puppeteer.launch({
     headless: true,
   });
