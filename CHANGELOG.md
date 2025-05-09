@@ -36,6 +36,7 @@ All notable changes to this project will be documented in this file.
 - None.
 
 ## [Unreleased]
+
 ### Added
 - Series generation now uses smart code format: `yyMMdd-XXXXXX` (date + 6 random uppercase alphanumeric characters), ensuring uniqueness and traceability for each pallet label QR code.
 
@@ -52,4 +53,12 @@ All notable changes to this project will be documented in this file.
   - Added extensive logging in QcLabelForm and PdfGenerator.
   - Corrected Supabase storage function call parameters.
   - Verified Supabase bucket name configuration.
-  - Ongoing investigation into PDF generation silent failure. 
+  - Ongoing investigation into PDF generation silent failure.
+
+### Fixed
+- ACO Label Ordinal Numbering: Corrected the pallet ordinal numbering for ACO orders. The system now queries the `record_palletinfo` table to find the count of existing pallets for a given `ACO Order Ref` (based on `plt_remark`) and correctly assigns subsequent ordinal numbers (e.g., if 20 pallets exist, the next printed batch will start from 21st, 22nd, etc.). Previously, it only counted ordinals within the current print batch.
+- Resolved issues preventing PDF label uploads to Supabase Storage. This involved:
+  - Ensuring the `pallet-label-pdf` storage bucket exists and is configured correctly (e.g., public access, appropriate MIME type handling by Supabase).
+  - Modifying `setupStorage` in `lib/supabase-storage.ts` to be less strict about `listBuckets` results, allowing upload attempts even if bucket listing fails (as `anon` key might not have `listBuckets` permission by default).
+  - Correcting Supabase client prop drilling and usage in `PdfGenerator.tsx` and `QcLabelForm.tsx` to prevent potential multiple client instances and ensure consistent client usage.
+- Addressed type mismatches for `setPdfProgress` between `QcLabelForm.tsx` and `PdfGenerator.tsx`. 

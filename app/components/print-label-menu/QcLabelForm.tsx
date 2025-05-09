@@ -117,6 +117,13 @@ export default function QcLabelForm() {
     let acoUpdated = false;
     if (!isFormValid) return;
 
+    // Helper function to get ordinal suffix
+    function getOrdinalSuffix(n: number): string {
+      const s = ['th', 'st', 'nd', 'rd'];
+      const v = n % 100;
+      return s[(v - 20) % 10] || s[v] || s[0];
+    }
+
     // 先組合 query string
     const today = new Date();
     const dateStr = format(today, 'ddMMyy'); // 用於 palletNum/plt_num
@@ -125,14 +132,31 @@ export default function QcLabelForm() {
     const qcNum = userId || '-';
     let workOrderType = '-';
     let workOrderValue = '-';
-    let workOrderNumber = '-';
+    let workOrderNumberVariableForFallback = '-'; // Renamed to avoid confusion with prop
     if (productInfo?.type === 'ACO' && acoOrderRef.trim()) {
       workOrderType = 'ACO Order Ref';
       workOrderValue = acoOrderRef.trim();
-      workOrderNumber = acoOrderRef.trim();
+      workOrderNumberVariableForFallback = acoOrderRef.trim(); 
     } else if (productInfo?.type) {
       workOrderType = productInfo.type;
-      workOrderNumber = productInfo.type;
+      workOrderNumberVariableForFallback = productInfo.type;
+    }
+
+    let startingOrdinalForAco = 1;
+    if (productInfo?.type === 'ACO' && acoOrderRef.trim()) {
+      const remarkToSearch = `ACO Ref : ${acoOrderRef.trim()}`;
+      const { count: existingPalletCount, error: countError } = await supabase
+        .from('record_palletinfo')
+        .select('*', { count: 'exact', head: true })
+        .eq('plt_remark', remarkToSearch);
+
+      if (countError) {
+        console.error('[QcLabelForm] Error fetching existing pallet count for ACO remark:', countError);
+        setDebugMsg(prev => prev + `\nError fetching ACO pallet count: ${countError.message}`);
+      } else if (existingPalletCount !== null) {
+        startingOrdinalForAco = existingPalletCount + 1;
+        console.log(`[QcLabelForm] Existing pallets for ${remarkToSearch}: ${existingPalletCount}. Next ordinal starts at: ${startingOrdinalForAco}`);
+      }
     }
 
     // 查詢所有今日 plt_num，取最大流水號
@@ -319,10 +343,68 @@ export default function QcLabelForm() {
       console.log('PDF Progress Initialized:', { total: totalPdfs, current: 0, status: Array(totalPdfs).fill('Pending') });
       console.log('[DEBUG] Before PDF loop: countNum =', countNum, 'insertDataArr.length =', insertDataArr.length);
 
+      const newPdfUrls: { series: string; url?: string; error?: string }[] = Array(totalPdfs).fill(null);
+
       for (let i = 0; i < totalPdfs; i++) {
         console.log(`[DEBUG] Entering PDF generation loop, iteration: ${i + 1}/${totalPdfs}`);
         const palletData = insertDataArr[i];
-        // ... existing code ...
+        const pdfDocData = {
+          productCode: palletData.product_code,
+          description: productInfo?.description || '-',
+          quantity: palletData.product_qty,
+          date: dateLabel,
+          operatorClockNum: operatorNum,
+          qcClockNum: qcNum,
+          palletNum: palletData.plt_num,
+          series: palletData.series,
+          qrValue: palletData.series,
+          productType: productInfo?.type || '',
+          ...(productInfo?.type === 'Slate' && {
+            firstOffDate: slateDetail.firstOffDate || '-',
+            batchNumber: slateDetail.batchNumber || '-',
+            setterName: slateDetail.setterName || '-',
+            machNum: slateDetail.machNum || '-',
+            material: slateDetail.material || '-',
+            weight: slateDetail.weight || '-',
+            topThickness: slateDetail.topThickness || '-',
+            bottomThickness: slateDetail.bottomThickness || '-',
+            length: slateDetail.length || '-',
+            width: slateDetail.width || '-',
+            centreHole: slateDetail.centreHole || '-',
+            lengthMiddleHoleToBottom: slateDetail.lengthMiddleHoleToBottom || '-',
+            colour: slateDetail.colour || '-',
+            shapes: slateDetail.shapes || '-',
+            flameTest: slateDetail.flameTest || '-',
+          }),
+          workOrderNumber: (() => {
+            if (productInfo?.type === 'ACO' && acoOrderRef.trim()) {
+              const currentPalletOrdinal = startingOrdinalForAco + i; // i is from the surrounding map loop
+              return `${acoOrderRef.trim()} - ${currentPalletOrdinal}${getOrdinalSuffix(currentPalletOrdinal)} PLT`;
+            } else if (productInfo?.type) {
+              return productInfo.type;
+            } else {
+              return workOrderNumberVariableForFallback; 
+            }
+          })(),
+        };
+
+        console.log('[QcLabelForm] pdfData FOR PDF:', JSON.stringify(pdfDocData, null, 2));
+
+        const pdfUrl = await generateAndUploadPdf({
+          pdfData: pdfDocData,
+          fileName: `pallet-label-${palletData.series}.pdf`,
+          folderName: palletData.plt_num,
+          setPdfProgress: setPdfProgress,
+          index: i,
+          onSuccess: (url) => {
+            newPdfUrls[i] = { series: palletData.series, url };
+          },
+          onError: (error) => {
+            console.error(`Error generating/uploading PDF for pallet ${palletData.plt_num}:`, error);
+            newPdfUrls[i] = { series: palletData.series, error: error.message };
+            logErrorReport(`PDF Generation/Upload Error for ${palletData.plt_num}: ${error.message}`, JSON.stringify(pdfDocData)).catch(console.error);
+          }
+        });
       }
     } else {
       console.error('[ERROR] PDF generation loop SKIPPED due to errors:', { insertError, acoInsertError, slateInsertError });
@@ -380,6 +462,7 @@ export default function QcLabelForm() {
       setProductInfo(null);
       setProductError("Product Code Don't Exist. Please Check Again Or Update Product Code List.");
     } else {
+      console.log('[QcLabelForm] Product Info Fetched, type:', data.type);
       setProductInfo(data);
       setProductError(null);
       setProductCode(data.code); // Auto-correct Product Code input

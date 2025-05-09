@@ -11,6 +11,7 @@ export interface PrintLabelPdfProps {
   workOrderNumber: string;
   palletNum: string;
   qrValue?: string;
+  productType?: string;
 }
 
 const LOGO_URL =
@@ -162,6 +163,7 @@ function LabelBlock({
   workOrderNumber,
   palletNum,
   qrValue,
+  productType,
 }: PrintLabelPdfProps) {
   return (
     <View style={styles.label}>
@@ -213,7 +215,9 @@ function LabelBlock({
       {/* Work Order Table - 兩個儲存格 */}
       <View style={styles.workOrderTable}>
         <View style={{ flex: 1, height: 48, alignItems: 'center', justifyContent: 'center' }}>
-          <Text style={{ fontSize: 24, textAlign: 'center', width: '100%' }}>Work Order Number</Text>
+          <Text style={{ fontSize: 24, textAlign: 'center', width: '100%' }}>
+            {productType === 'ACO' ? 'ACO Order' : 'Work Order Number'}
+          </Text>
         </View>
         <View style={{ flex: 1, height: 48, alignItems: 'center', justifyContent: 'center' }}>
           <Text style={{ fontSize: 24, textAlign: 'center', width: '100%' }}>{workOrderNumber}</Text>

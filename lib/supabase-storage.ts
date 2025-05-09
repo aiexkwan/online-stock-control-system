@@ -13,27 +13,29 @@ export async function setupStorage() {
     console.log('[setupStorage] listBuckets call completed.');
 
     if (listError) {
-      console.error('[setupStorage] Error listing buckets (listError object):', listError);
-      throw new Error('Error listing buckets: ' + (listError.message || JSON.stringify(listError)));
+      console.warn('[setupStorage] Warning: Error listing buckets (listError object):', listError, 'Proceeding with assumption that bucket might exist or policies will handle it.');
+      // Not throwing an error here to allow upload attempt even if listBuckets fails
+    } else {
+      console.log('[setupStorage] All buckets raw data:', buckets);
+      if (buckets && Array.isArray(buckets)) {
+        buckets.forEach((b, i) => {
+          console.log(`[setupStorage] Bucket[${i}]: id='${b.id}', name='${b.name}'`);
+        });
+      }
+      console.log('[setupStorage] STORAGE_BUCKET (programmed):', STORAGE_BUCKET);
+
+      const bucketExists = buckets?.some(bucket => bucket.name === STORAGE_BUCKET);
+      console.log('[setupStorage] bucketExists for "', STORAGE_BUCKET, '":', bucketExists);
+
+      if (!bucketExists) {
+        console.warn(`[setupStorage] Warning: Storage bucket "${STORAGE_BUCKET}" was not found in the list or could not be verified. Buckets listed:`, buckets, 'Proceeding with upload attempt assuming it exists and is accessible.');
+        // Not throwing an error here. If the bucket truly doesn't exist or isn't accessible, the .upload() will fail.
+      } else {
+        console.log('[setupStorage] Storage bucket verified successfully.');
+      }
     }
 
-    console.log('[setupStorage] All buckets raw data:', buckets);
-    if (buckets && Array.isArray(buckets)) {
-      buckets.forEach((b, i) => {
-        console.log(`[setupStorage] Bucket[${i}]: id='${b.id}', name='${b.name}'`);
-      });
-    }
-    console.log('[setupStorage] STORAGE_BUCKET (programmed):', STORAGE_BUCKET);
-
-    const bucketExists = buckets?.some(bucket => bucket.name === STORAGE_BUCKET);
-    console.log('[setupStorage] bucketExists for "', STORAGE_BUCKET, '":', bucketExists);
-
-    if (!bucketExists) {
-      console.error(`[setupStorage] Storage bucket "${STORAGE_BUCKET}" does not exist or could not be verified. Buckets listed:`, buckets);
-      throw new Error(`Storage bucket "${STORAGE_BUCKET}" does not exist or could not be verified.`);
-    }
-
-    console.log('[setupStorage] Setup successful.');
+    console.log('[setupStorage] Setup check completed (non-critical for public buckets).');
     return true;
   } catch (error) {
     let msg = '';
@@ -44,8 +46,11 @@ export async function setupStorage() {
     } else {
       msg = String(error);
     }
-    console.error('[setupStorage] Error in setupStorage (caught exception):', msg, 'Original error object:', error);
-    throw new Error('setupStorage failed: ' + msg);
+    // This catch block might not be reached if we don't throw errors above
+    console.error('[setupStorage] Error in setupStorage (caught exception if any):', msg, 'Original error object:', error);
+    // We will let the upload function handle its own errors primarily.
+    // throw new Error('setupStorage failed: ' + msg); // Commenting out the throw
+    return false; // Indicate potential issue but don't stop the flow
   }
 }
 
