@@ -3,42 +3,48 @@ import { supabase } from './supabase';
 export const STORAGE_BUCKET = 'pallet-label-pdf';
 
 export async function setupStorage() {
+  console.log('[setupStorage] Attempting to setup storage...');
   try {
+    console.log('[setupStorage] Calling supabase.storage.listBuckets(). Supabase client and storage object should be available here.');
     const { data: buckets, error: listError } = await supabase
       .storage
       .listBuckets();
 
-    console.log('All buckets:', buckets); // Debug 輸出所有 bucket 名稱
-    if (buckets && Array.isArray(buckets)) {
-      buckets.forEach((b, i) => {
-        console.log(`Bucket[${i}]: id='${b.id}', name='${b.name}'`);
-      });
-    }
-    console.log('STORAGE_BUCKET (程式碼設定):', STORAGE_BUCKET);
+    console.log('[setupStorage] listBuckets call completed.');
 
     if (listError) {
-      console.error('Error listing buckets:', listError);
+      console.error('[setupStorage] Error listing buckets (listError object):', listError);
       throw new Error('Error listing buckets: ' + (listError.message || JSON.stringify(listError)));
     }
 
+    console.log('[setupStorage] All buckets raw data:', buckets);
+    if (buckets && Array.isArray(buckets)) {
+      buckets.forEach((b, i) => {
+        console.log(`[setupStorage] Bucket[${i}]: id='${b.id}', name='${b.name}'`);
+      });
+    }
+    console.log('[setupStorage] STORAGE_BUCKET (programmed):', STORAGE_BUCKET);
+
     const bucketExists = buckets?.some(bucket => bucket.name === STORAGE_BUCKET);
-    console.log('bucketExists:', bucketExists);
+    console.log('[setupStorage] bucketExists for "', STORAGE_BUCKET, '":', bucketExists);
 
     if (!bucketExists) {
-      throw new Error('Storage bucket does not exist. Please create it manually in Supabase console.');
+      console.error(`[setupStorage] Storage bucket "${STORAGE_BUCKET}" does not exist or could not be verified. Buckets listed:`, buckets);
+      throw new Error(`Storage bucket "${STORAGE_BUCKET}" does not exist or could not be verified.`);
     }
 
+    console.log('[setupStorage] Setup successful.');
     return true;
   } catch (error) {
     let msg = '';
     if (error instanceof Error) {
       msg = error.message;
-    } else if (typeof error === 'object') {
+    } else if (typeof error === 'object' && error !== null) {
       msg = JSON.stringify(error);
     } else {
       msg = String(error);
     }
-    console.error('Error in setupStorage:', msg);
+    console.error('[setupStorage] Error in setupStorage (caught exception):', msg, 'Original error object:', error);
     throw new Error('setupStorage failed: ' + msg);
   }
 }

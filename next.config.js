@@ -37,12 +37,21 @@ const nextConfig = {
       },
     ];
   },
-  webpack: (config) => {
+  webpack: (config, { isServer }) => {
     config.resolve.alias = {
       ...config.resolve.alias,
       '@': '.'
     };
     config.externals = [...(config.externals || []), { 'utf-8-validate': 'commonjs utf-8-validate', 'bufferutil': 'commonjs bufferutil' }];
+
+    // 新增：客戶端 fallback 配置
+    if (!isServer) {
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        'iconv-lite': false, // 嘗試將 iconv-lite 設為 false
+      };
+    }
+
     return config;
   },
   // 添加 Supabase WebSocket 域名到允許列表

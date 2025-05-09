@@ -248,7 +248,8 @@ export default function QcLabelForm() {
     if (inventoryUpdated) debugMsg += 'Inventory Update Confirmed\n\n';
 
     // === ACO ORDER EVENT ===
-    if (productInfo?.type === 'ACO' && acoOrderRef.trim()) {
+    let acoInsertError: Error | null = null;
+    if (productInfo?.type === 'ACO' && acoOrderRef.trim() && !insertError) {
       for (const d of insertDataArr) {
         const { data: acoRow, error: acoError } = await supabase
           .from('record_aco')
@@ -270,50 +271,10 @@ export default function QcLabelForm() {
     }
     if (acoUpdated) debugMsg += 'ACO Order Update Confirmed\n\n';
 
-    debugMsg += '======  END  ======';
-    setDebugMsg(debugMsg);
-
-    // 這裡直接用 workOrderType/workOrderValue 組裝
-    const isAco = workOrderType === 'ACO Order Ref';
-    let workOrderLabel = isAco ? 'ACO Order' : 'Work Order Number';
-    let workOrderValueFinal = workOrderValue;
-    if (isAco) {
-      // 查詢 plt_remark 出現次數
-      const { count: acoPltCount } = await supabase
-        .from('record_palletinfo')
-        .select('plt_remark', { count: 'exact', head: true })
-        .eq('plt_remark', `ACO Ref : ${acoOrderRef.trim()}`);
-      const version = (acoPltCount ?? 0) + 1;
-      function getOrdinal(n: number) {
-        if (n % 10 === 1 && n % 100 !== 11) return `${n}st`;
-        if (n % 10 === 2 && n % 100 !== 12) return `${n}nd`;
-        if (n % 10 === 3 && n % 100 !== 13) return `${n}rd`;
-        return `${n}th`;
-      }
-      workOrderValueFinal = `${acoOrderRef.trim()} - ${getOrdinal(version)} PLT`;
-    }
-    const qrValue = Array.isArray(seriesArr) ? seriesArr[0] : '';
-
-    try {
-      await generateAndUploadPdf({
-        productCode,
-        description: productInfo?.description || '',
-        quantity: Number(quantity),
-        date: dateLabel,
-        operatorClockNum: operatorNum,
-        qcClockNum: qcNum,
-        workOrderNumber: isAco ? workOrderValueFinal : '-',
-        palletNum,
-        qrValue,
-        onSuccess: (url) => {
-          setDebugMsg(prev => prev + `\nPDF uploaded: ${url}`);
-        },
-        onError: (error) => {
-          setDebugMsg(prev => prev + `\nPDF upload error: ${error.message}`);
-        }
-      });
-    } catch (error) {
-      setDebugMsg(prev => prev + `\nPDF generation/upload error: ${error instanceof Error ? error.message : String(error)}`);
+    // === SLATE EVENT ===
+    let slateInsertError: Error | null = null;
+    if (productInfo?.type === 'Slate' && !insertError) {
+      // ... (Slate event logic) ...
     }
 
     // 新增 record_history
@@ -336,6 +297,55 @@ export default function QcLabelForm() {
       setDebugMsg(prev => prev + `\nInsert Error: ${insertError.message}`);
       console.error('Error inserting new pallet info:', insertError);
     } else {
+      setProductCode('');
+      setQuantity('');
+      setCount('');
+      setOperator('');
+      setAcoOrderRef('');
+      setSlateDetail({
+        firstOffDate: '', batchNumber: '', setterName: '', machNum: '', material: '', weight: '',
+        topThickness: '', bottomThickness: '', length: '', width: '', centreHole: '', lengthMiddleHoleToBottom: '',
+        colour: '', shapes: '', flameTest: '', remark: ''
+      });
+      setProductInfo(null);
+      setAcoRemain(null);
+    }
+
+    // === PDF Generation and Upload (Loop) ===
+    console.log('[DEBUG] Errors before PDF loop check:', { insertError, acoInsertError, slateInsertError });
+    if (!insertError && !acoInsertError && !slateInsertError) {
+      const totalPdfs = insertDataArr.length;
+      setPdfProgress({ current: 0, total: totalPdfs, status: Array(totalPdfs).fill('Pending') });
+      console.log('PDF Progress Initialized:', { total: totalPdfs, current: 0, status: Array(totalPdfs).fill('Pending') });
+      console.log('[DEBUG] Before PDF loop: countNum =', countNum, 'insertDataArr.length =', insertDataArr.length);
+
+      for (let i = 0; i < totalPdfs; i++) {
+        console.log(`[DEBUG] Entering PDF generation loop, iteration: ${i + 1}/${totalPdfs}`);
+        const palletData = insertDataArr[i];
+        // ... existing code ...
+      }
+    } else {
+      console.error('[ERROR] PDF generation loop SKIPPED due to errors:', { insertError, acoInsertError, slateInsertError });
+      let errorSummary = 'PDF generation was skipped due to previous errors:';
+      if (insertError && typeof insertError === 'object' && 'message' in insertError) {
+        errorSummary += `\n- Pallet Info Insert Error: ${(insertError as Error).message}`;
+      }
+      if (acoInsertError && typeof acoInsertError === 'object' && 'message' in acoInsertError) {
+        errorSummary += `\n- ACO Record Error: ${(acoInsertError as Error).message}`;
+      }
+      if (slateInsertError && typeof slateInsertError === 'object' && 'message' in slateInsertError) {
+        errorSummary += `\n- Slate Record Error: ${(slateInsertError as Error).message}`;
+      }
+      debugMsg += '\n' + errorSummary;
+    }
+
+    // 更新 debugMsg (包含所有訊息)
+    debugMsg += '\n======  PROCESSING END  ======';
+    setDebugMsg(debugMsg);
+
+    // === 清理表單和狀態 (只有在所有 PDF 都不是 Pending/Processing 時才執行) ===
+    const allDone = pdfProgress.status.every(s => s === 'Success' || s === 'Failed');
+    if (allDone) {
       setProductCode('');
       setQuantity('');
       setCount('');
@@ -515,7 +525,7 @@ export default function QcLabelForm() {
       {/* Pallet Detail 區塊 */}
       <div className="bg-gray-800 rounded-lg p-8 flex-1 min-w-[320px] max-w-md shadow-lg">
         <h2 className="text-xl font-semibold text-white mb-6">Pallet Detail</h2>
-        <form className="flex flex-col gap-4" onSubmit={handlePrintLabel}>
+        <form onSubmit={handlePrintLabel} className="flex flex-col gap-4">
           <div>
             <label className="block text-sm text-gray-300 mb-1">Product Code</label>
             <input

@@ -44,6 +44,12 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 - Removed legacy 12-char random series logic, now always uses the new smart code format.
-
-### Fixed
 - PDF 樣板（PrintLabelPdf.tsx）Work Order Number 右側儲存格現在會正確顯示傳入的 workOrderNumber（如 ACO Ref Order: 12345 7th PLT），不再寫死顯示內容。 
+
+### Added
+- Troubleshoot PDF generation:
+  - Implemented MinimalPdfDoc for isolated testing in PdfGenerator.
+  - Added extensive logging in QcLabelForm and PdfGenerator.
+  - Corrected Supabase storage function call parameters.
+  - Verified Supabase bucket name configuration.
+  - Ongoing investigation into PDF generation silent failure. 
