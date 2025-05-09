@@ -24,7 +24,6 @@ const styles = StyleSheet.create({
     height: '297mm',
     flexDirection: 'column',
     alignItems: 'center',
-    borderWidth: 0,
   },
   label: {
     width: '210mm',
@@ -32,11 +31,6 @@ const styles = StyleSheet.create({
     padding: 14,
     boxSizing: 'border-box',
     position: 'relative',
-    borderWidth: 0,
-    borderRightWidth: 0,
-    borderTopWidth: 0,
-    borderBottomWidth: 0,
-    borderLeftWidth: 0,
   },
   logo: {
     position: 'absolute',
@@ -44,11 +38,6 @@ const styles = StyleSheet.create({
     left: 14,
     width: 90,
     height: 24,
-    borderWidth: 0,
-    borderRightWidth: 0,
-    borderTopWidth: 0,
-    borderBottomWidth: 0,
-    borderLeftWidth: 0,
   },
   qrCode: {
     position: 'absolute',
@@ -56,70 +45,36 @@ const styles = StyleSheet.create({
     right: 14,
     width: 60,
     height: 60,
-    borderWidth: 0,
-    borderRightWidth: 0,
-    borderTopWidth: 0,
-    borderBottomWidth: 0,
-    borderLeftWidth: 0,
   },
   centerText: {
     textAlign: 'center',
     fontSize: 16,
     marginVertical: 2,
-    borderWidth: 0,
-    borderRightWidth: 0,
-    borderTopWidth: 0,
-    borderBottomWidth: 0,
-    borderLeftWidth: 0,
   },
   line1: {
     marginTop: 18,
     marginBottom: 2,
     textDecoration: 'underline',
-    borderWidth: 0,
-    borderRightWidth: 0,
-    borderTopWidth: 0,
-    borderBottomWidth: 0,
-    borderLeftWidth: 0,
   },
   line2: {
     marginBottom: 6,
     fontSize: 24,
     fontWeight: 'bold',
-    borderWidth: 0,
-    borderRightWidth: 0,
-    borderTopWidth: 0,
-    borderBottomWidth: 0,
-    borderLeftWidth: 0,
   },
   line3: {
     marginBottom: 18,
     textDecoration: 'underline',
-    borderWidth: 0,
-    borderRightWidth: 0,
-    borderTopWidth: 0,
-    borderBottomWidth: 0,
-    borderLeftWidth: 0,
   },
   line4: {
     marginBottom: 24,
     fontWeight: 'bold',
-    borderWidth: 0,
-    borderRightWidth: 0,
-    borderTopWidth: 0,
-    borderBottomWidth: 0,
-    borderLeftWidth: 0,
   },
   mainTable: {
     width: '100%',
     marginTop: 10,
-    borderWidth: 1,
-    borderColor: '#000',
-    borderStyle: 'solid',
   },
   mainTableRow: {
     flexDirection: 'row',
-    borderBottomWidth: 0,
   },
   mainTableHeaderFirst: {
     backgroundColor: '#f0f0f0',
@@ -128,13 +83,6 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     textAlign: 'center',
     flex: 1,
-    borderWidth: 0,
-    borderLeftWidth: 0,
-    borderTopWidth: 0,
-    borderBottomWidth: 1,
-    borderBottomColor: '#000',
-    borderRightWidth: 1,
-    borderRightColor: '#000',
   },
   mainTableHeader: {
     backgroundColor: '#f0f0f0',
@@ -143,13 +91,6 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     textAlign: 'center',
     flex: 1,
-    borderWidth: 0,
-    borderLeftWidth: 0,
-    borderTopWidth: 0,
-    borderBottomWidth: 1,
-    borderBottomColor: '#000',
-    borderRightWidth: 1,
-    borderRightColor: '#000',
   },
   mainTableHeaderLast: {
     backgroundColor: '#f0f0f0',
@@ -158,60 +99,29 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     textAlign: 'center',
     flex: 1,
-    borderWidth: 0,
-    borderLeftWidth: 0,
-    borderTopWidth: 0,
-    borderBottomWidth: 1,
-    borderBottomColor: '#000',
-    borderRightWidth: 0,
-    borderColor: '#000',
   },
   mainTableCellFirst: {
     padding: 4,
     fontSize: 16,
     textAlign: 'center',
     flex: 1,
-    borderWidth: 0,
-    borderLeftWidth: 0,
-    borderTopWidth: 0,
-    borderBottomWidth: 1,
-    borderBottomColor: '#000',
-    borderRightWidth: 1,
-    borderRightColor: '#000',
   },
   mainTableCell: {
     padding: 4,
     fontSize: 16,
     textAlign: 'center',
     flex: 1,
-    borderWidth: 0,
-    borderLeftWidth: 0,
-    borderTopWidth: 0,
-    borderBottomWidth: 1,
-    borderBottomColor: '#000',
-    borderRightWidth: 1,
-    borderRightColor: '#000',
   },
   mainTableCellLast: {
     padding: 4,
     fontSize: 16,
     textAlign: 'center',
     flex: 1,
-    borderWidth: 0,
-    borderLeftWidth: 0,
-    borderTopWidth: 0,
-    borderBottomWidth: 1,
-    borderBottomColor: '#000',
-    borderRightWidth: 0,
-    borderColor: '#000',
   },
   workOrderTable: {
     width: '100%',
     marginTop: 6,
     marginBottom: 4,
-    borderWidth: 1,
-    borderColor: '#000',
-    borderStyle: 'solid',
     flexDirection: 'row',
   },
   workOrderLabel: {
@@ -220,25 +130,12 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     textAlign: 'center',
     flex: 1,
-    borderWidth: 0,
-    borderRightWidth: 1,
-    borderRightColor: '#000',
-    borderBottomWidth: 0,
-    borderTopWidth: 0,
-    borderLeftWidth: 0,
-    borderColor: '#000',
   },
   workOrderValue: {
     padding: 4,
     fontSize: 16,
     textAlign: 'center',
     flex: 1,
-    borderWidth: 0,
-    borderRightWidth: 0,
-    borderBottomWidth: 0,
-    borderTopWidth: 0,
-    borderLeftWidth: 0,
-    borderColor: '#000',
   },
   palletNum: {
     position: 'absolute',
@@ -246,21 +143,12 @@ const styles = StyleSheet.create({
     right: 14,
     fontWeight: 'bold',
     fontSize: 12,
-    borderWidth: 0,
-    borderRightWidth: 0,
-    borderTopWidth: 0,
-    borderBottomWidth: 0,
-    borderLeftWidth: 0,
   },
   dashedLine: {
     width: '100%',
-    borderTopWidth: 1,
-    borderStyle: 'dashed',
-    borderColor: '#000',
     marginVertical: 8,
-    borderRightWidth: 0,
-    borderBottomWidth: 0,
-    borderLeftWidth: 0,
+    height: 1,
+    backgroundColor: '#ccc',
   },
 });
 
@@ -290,16 +178,16 @@ function LabelBlock({
       {/* Description 內容 */}
       <Text style={{ textAlign: 'center', fontSize: 24, fontWeight: 'bold', marginTop: 20, marginBottom: 40 }}>{description}</Text>
       {/* Main Table */}
-      <View style={{ width: '100%', marginTop: 10, borderWidth: 1, borderColor: '#000', borderStyle: 'solid' }}>
+      <View style={styles.mainTable}>
         {/* Header Row */}
         <View style={{ flexDirection: 'row', backgroundColor: '#f0f0f0' }}>
-          <View style={{ flex: 1, borderRightWidth: 1, borderColor: '#000', height: 36, alignItems: 'center', justifyContent: 'center' }}>
+          <View style={{ flex: 1, height: 36, alignItems: 'center', justifyContent: 'center' }}>
             <Text style={{ fontSize: 14, fontWeight: 'bold', textAlign: 'center', width: '100%' }}>Quantity</Text>
           </View>
-          <View style={{ flex: 1, borderRightWidth: 1, borderColor: '#000', height: 36, alignItems: 'center', justifyContent: 'center' }}>
+          <View style={{ flex: 1, height: 36, alignItems: 'center', justifyContent: 'center' }}>
             <Text style={{ fontSize: 14, fontWeight: 'bold', textAlign: 'center', width: '100%' }}>Date</Text>
           </View>
-          <View style={{ flex: 1, borderRightWidth: 1, borderColor: '#000', height: 36, alignItems: 'center', justifyContent: 'center' }}>
+          <View style={{ flex: 1, height: 36, alignItems: 'center', justifyContent: 'center' }}>
             <Text style={{ fontSize: 14, fontWeight: 'bold', textAlign: 'center', width: '100%' }}>Operator Clock Num</Text>
           </View>
           <View style={{ flex: 1, height: 36, alignItems: 'center', justifyContent: 'center' }}>
@@ -308,13 +196,13 @@ function LabelBlock({
         </View>
         {/* Data Row */}
         <View style={{ flexDirection: 'row' }}>
-          <View style={{ flex: 1, borderRightWidth: 1, borderColor: '#000', height: 48, alignItems: 'center', justifyContent: 'center' }}>
+          <View style={{ flex: 1, height: 48, alignItems: 'center', justifyContent: 'center' }}>
             <Text style={{ fontSize: 22, textAlign: 'center', width: '100%' }}>{quantity}</Text>
           </View>
-          <View style={{ flex: 1, borderRightWidth: 1, borderColor: '#000', height: 48, alignItems: 'center', justifyContent: 'center' }}>
+          <View style={{ flex: 1, height: 48, alignItems: 'center', justifyContent: 'center' }}>
             <Text style={{ fontSize: 20, textAlign: 'center', width: '100%' }}>{date}</Text>
           </View>
-          <View style={{ flex: 1, borderRightWidth: 1, borderColor: '#000', height: 48, alignItems: 'center', justifyContent: 'center' }}>
+          <View style={{ flex: 1, height: 48, alignItems: 'center', justifyContent: 'center' }}>
             <Text style={{ fontSize: 22, textAlign: 'center', width: '100%' }}>{operatorClockNum}</Text>
           </View>
           <View style={{ flex: 1, height: 48, alignItems: 'center', justifyContent: 'center' }}>
@@ -323,8 +211,8 @@ function LabelBlock({
         </View>
       </View>
       {/* Work Order Table - 兩個儲存格 */}
-      <View style={{ width: '100%', borderWidth: 1, borderColor: '#000', borderStyle: 'solid', marginTop: 14, marginBottom: 10, flexDirection: 'row' }}>
-        <View style={{ flex: 1, borderRightWidth: 1, borderColor: '#000', height: 48, alignItems: 'center', justifyContent: 'center' }}>
+      <View style={styles.workOrderTable}>
+        <View style={{ flex: 1, height: 48, alignItems: 'center', justifyContent: 'center' }}>
           <Text style={{ fontSize: 24, textAlign: 'center', width: '100%' }}>Work Order Number</Text>
         </View>
         <View style={{ flex: 1, height: 48, alignItems: 'center', justifyContent: 'center' }}>

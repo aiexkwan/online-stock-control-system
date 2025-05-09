@@ -59,8 +59,9 @@ export default function QcLabelForm() {
   // 新增：ACO Order Detail 欄位驗證錯誤狀態
   const [acoOrderDetailErrors, setAcoOrderDetailErrors] = useState<string[]>([]);
 
-  // PDF 批次進度狀態
-  const [pdfProgress, setPdfProgress] = useState<{ current: number; total: number; status: string[] }>({ current: 0, total: 0, status: [] });
+  // PDF 批次進度狀態 (加入更詳細的狀態)
+  type ProgressStatus = 'Pending' | 'Processing' | 'Success' | 'Failed';
+  const [pdfProgress, setPdfProgress] = useState<{ current: number; total: number; status: ProgressStatus[] }>({ current: 0, total: 0, status: [] });
 
   // 取得登入用戶 id
   useEffect(() => {
@@ -96,6 +97,18 @@ export default function QcLabelForm() {
     }
   }
   const isFormValid = productCode.trim() && quantity.trim() && count.trim() && isAcoValid && isSlateValid && !isAcoOrderFullfilled && !isAcoOrderExcess;
+
+  // --- 加入這個 console.log ---
+  console.log('[Form Validation] isFormValid:', isFormValid, {
+    productCode: productCode.trim(),
+    quantity: quantity.trim(),
+    count: count.trim(),
+    isAcoValid,
+    isSlateValid,
+    isAcoOrderFullfilled,
+    isAcoOrderExcess
+  });
+  // --- 結束 console.log ---
 
   const handlePrintLabel = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -289,7 +302,7 @@ export default function QcLabelForm() {
         date: dateLabel,
         operatorClockNum: operatorNum,
         qcClockNum: qcNum,
-        workOrderNumber: `${workOrderLabel} : ${workOrderValueFinal}`,
+        workOrderNumber: isAco ? workOrderValueFinal : '-',
         palletNum,
         qrValue,
         onSuccess: (url) => {
@@ -363,6 +376,23 @@ export default function QcLabelForm() {
     }
   };
   // --- Product Code Search Logic --- END ---
+
+  // --- Error Logging Function --- START ---
+  const logErrorReport = async (errorPart: string, context: string) => {
+    try {
+      const { error: logError } = await supabase
+        .from('report_log')
+        .insert({ error: errorPart, context: context, state: false });
+      if (logError) {
+        console.error('Failed to log error to Supabase:', logError);
+        // Optionally update debugMsg or show a fallback error
+        setDebugMsg(prev => prev + `\nFailed to log error: ${logError.message}`);
+      }
+    } catch (err) {
+      console.error('Exception during error logging:', err);
+    }
+  };
+  // --- Error Logging Function --- END ---
 
   const handleAcoSearch = async () => {
     setAcoSearchLoading(true);
@@ -562,38 +592,42 @@ export default function QcLabelForm() {
             Print Label
           </button>
         </form>
-        {/* Debug Message 區塊 */}
+
+        {/* --- 進度條 UI 移到這裡 --- */} 
         {pdfProgress.total > 0 && (
           <div className="mt-4">
             <div className="mb-2 text-xs text-gray-200">
-              PDF Upload Progress: {pdfProgress.current} / {pdfProgress.total}
+              PDF Generation Progress: {pdfProgress.current} / {pdfProgress.total}
             </div>
             {/* 進度條 */}
             <div className="w-full bg-gray-700 rounded h-4 overflow-hidden mb-2">
               <div
                 className="bg-blue-500 h-4 transition-all duration-300"
                 style={{
-                  width: `${(pdfProgress.current / pdfProgress.total) * 100}%`
+                  width: `${(pdfProgress.current / pdfProgress.total) * 100}%`,
                 }}
               />
             </div>
             {/* Pallet 狀態點 */}
-            <div className="flex flex-row gap-2 mt-1">
+            <div className="flex flex-row gap-2 mt-1 flex-wrap">
               {pdfProgress.status.map((s, i) => (
                 <div
                   key={i}
                   className={`
-                    w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold
-                    ${s === 'Success' ? 'bg-green-500 text-white' : s === 'Failed' ? 'bg-red-500 text-white' : 'bg-gray-400 text-gray-900'}
+                    w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold
+                    ${s === 'Success' ? 'bg-green-500 text-white' : s === 'Failed' ? 'bg-red-500 text-white' : s === 'Processing' ? 'bg-yellow-500 text-gray-900' : 'bg-gray-400 text-gray-900'}
                   `}
                   title={`Pallet ${i + 1}: ${s}`}
                 >
-                  {i + 1}
+                  {/* Optionally show numbers or icons based on status */}
+                  {s === 'Success' ? '✓' : s === 'Failed' ? '✗' : i + 1}
                 </div>
               ))}
             </div>
           </div>
         )}
+        {/* --- 進度條 UI 結束 --- */}
+
       </div>
       {/* 右側：Instruction + ACO Order Detail */}
       <div className="flex flex-col flex-1 min-w-[320px] max-w-md gap-8">
