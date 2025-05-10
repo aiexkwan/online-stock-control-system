@@ -29,35 +29,35 @@ export default function ChangePasswordPage() {
     // Prevent SSR rendering issues
     if (typeof window === 'undefined') return;
     
-    console.log('==== Change Password Page Loaded ====');
-    console.log('Page URL:', window.location.href);
-    console.log('localStorage contents:', {
-      user: localStorage.getItem('user'),
-      firstLogin: localStorage.getItem('firstLogin')
-    });
+    // console.log('==== Change Password Page Loaded ====');
+    // console.log('Page URL:', window.location.href);
+    // console.log('localStorage contents:', {
+    //   user: localStorage.getItem('user'),
+    //   firstLogin: localStorage.getItem('firstLogin') // This localStorage item might be redundant if DB drives the flow
+    // });
     
     // Set initialized flag to ensure the page can render
     setInitialized(true);
     
     const checkAuth = () => {
-      console.log('Change Password Page: starting user status check');
+      // console.log('Change Password Page: starting user status check');
       
       // Only check if user info exists without further validation
       const userStr = localStorage.getItem('user');
       
       if (!userStr) {
         // If no user info, display an error message
-        console.log('Change Password Page: user not logged in, no redirect');
-        setError('Please log in to the system first');
+        // console.log('Change Password Page: user not logged in, no redirect');
+        setError('Please log in to the system first'); // It's better to redirect to login if not authenticated to change password
         return;
       }
       
       try {
         const user = JSON.parse(userStr);
         setUserData(user);
-        console.log('Change Password Page: loaded user data:', user);
+        // console.log('Change Password Page: loaded user data:', user);
       } catch (e) {
-        console.error('Change Password Page: error parsing user data:', e);
+        // console.error('Change Password Page: error parsing user data:', e);
         setError('User data format error');
       }
     };
@@ -66,14 +66,14 @@ export default function ChangePasswordPage() {
     setTimeout(checkAuth, 100);
     
     // Log event before window unload
-    const handleBeforeUnload = () => {
-      console.log('==== Change Password Page Will Unload ====');
-    };
+    // const handleBeforeUnload = () => {
+    //   console.log('==== Change Password Page Will Unload ====');
+    // };
     
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    return () => {
-      window.removeEventListener('beforeunload', handleBeforeUnload);
-    };
+    // window.addEventListener('beforeunload', handleBeforeUnload);
+    // return () => {
+    //   window.removeEventListener('beforeunload', handleBeforeUnload);
+    // };
   }, []);
 
   const handlePasswordChange = async (e: React.FormEvent) => {
@@ -94,44 +94,81 @@ export default function ChangePasswordPage() {
     
     try {
       if (!userData || !userData.id) {
-        throw new Error('User data not found');
-      }
-
-      // Special handling for admin account
-      if (userData.id === 'admin') {
-        localStorage.removeItem('firstLogin');
-        router.replace('/dashboard');
+        // This should ideally not happen if checkAuth ran and set userData
+        setError('User session data not found. Please try logging in again.');
+        setLoading(false);
         return;
       }
 
-      // Update Supabase Auth password
-      const { error: authError } = await supabase.auth.updateUser({
-        password: newPassword
-      });
+      // REMOVE: Special handling for admin account (as per new requirements)
+      // if (userData.id === 'admin') {
+      //   localStorage.removeItem('firstLogin');
+      //   router.replace('/dashboard');
+      //   return;
+      // }
 
-      if (authError) {
-        console.warn('Supabase Auth password update failed, continue updating database:', authError);
-        // Continue updating database password even if Auth update fails since login logic now supports custom passwords
-      }
+      // REMOVE: Update Supabase Auth password (as per new requirements)
+      // const { error: authError } = await supabase.auth.updateUser({
+      //   password: newPassword
+      // });
 
-      // Update password in database
-      const { error: updateError } = await supabase
+      // if (authError) {
+      //   console.warn('Supabase Auth password update failed, continue updating database:', authError);
+      // }
+
+      // 1. Update password in data_id table
+      const { error: updatePasswordError } = await supabase
         .from('data_id')
         .update({ password: newPassword })
         .eq('id', userData.id);
       
-      if (updateError) {
-        throw updateError;
+      if (updatePasswordError) {
+        console.error('Update data_id password failed:', updatePasswordError);
+        throw new Error('Failed to update password in user database.');
       }
       
-      // Remove first login flag
-      localStorage.removeItem('firstLogin');
+      // 2. Update first_login to false in data_id table
+      const { error: updateFirstLoginError } = await supabase
+        .from('data_id')
+        .update({ first_login: false })
+        .eq('id', userData.id);
+
+      if (updateFirstLoginError) {
+        // This is problematic: password updated but first_login flag not. 
+        // Should ideally be a transaction or have a rollback strategy.
+        // For now, log and inform user, but password IS changed.
+        console.error('Update data_id first_login flag failed:', updateFirstLoginError);
+        // We might not want to throw an error that stops user from proceeding if password is set
+        // but we should log this failure seriously.
+        // For now, let's allow proceeding but log it.
+        // Consider this an area for future improvement (transactional updates).
+      }
+      
+      // 3. Record to record_history
+      const { error: historyError } = await supabase
+        .from('record_history')
+        .insert({
+          time: new Date().toISOString(),
+          id: userData.id,
+          plt_num: null,
+          loc: null,
+          action: 'Password Change',
+          remark: 'Password Change'
+        });
+
+      if (historyError) {
+        console.error('Failed to record password change to history:', historyError);
+        // Non-critical error, so we don't throw, but good to log.
+      }
+      
+      // REMOVE: localStorage.removeItem('firstLogin'); as DB now controls this state.
       
       // Notify success and redirect
       alert('Password updated successfully!');
-      router.push('/dashboard');
+      router.push('/dashboard'); // Consider using router.replace for no back history to change pwd page
+
     } catch (error) {
-      console.error('Update password failed:', error);
+      console.error('Update password process failed:', error);
       setError(error instanceof Error ? error.message : 'Unable to update password');
     } finally {
       setLoading(false);

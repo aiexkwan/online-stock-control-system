@@ -20,11 +20,11 @@ import {
   NoSymbolIcon,
   ChatBubbleLeftRightIcon
 } from '@heroicons/react/24/outline';
-import { supabase } from '../lib/supabase';
-import PalletDonutChart from './components/PalletDonutChart';
-import PrintHistory from './components/PrintHistory';
-import GrnHistory from './components/GrnHistory';
-import AcoOrderStatus from './components/AcoOrderStatus';
+import { supabase } from '../../lib/supabase';
+import PalletDonutChart from '../components/PalletDonutChart';
+import PrintHistory from '../components/PrintHistory';
+import GrnHistory from '../components/GrnHistory';
+import AcoOrderStatus from '../components/AcoOrderStatus';
 
 const features = [
   {

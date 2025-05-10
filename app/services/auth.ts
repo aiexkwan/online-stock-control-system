@@ -4,7 +4,7 @@ export interface UserData {
   id: string;
   name: string;
   department: string;
-  password?: string;
+  // password?: string; // REMOVE: Password should not be part of UserData returned to client
   permissions: {
     qc: boolean;
     receive: boolean;
@@ -15,63 +15,94 @@ export interface UserData {
   };
 }
 
-export async function authenticateUser(userId: string, password: string): Promise<{
+// Define the structure of the raw user data fetched from Supabase
+interface RawUserDataFromDB {
+  id: string;
+  name: string;
+  department: string;
+  password?: string | null; 
+  first_login?: boolean | null;
+  // Individual permission fields as they are in the data_id table
+  qc?: boolean | null;
+  receive?: boolean | null;
+  void?: boolean | null;
+  view?: boolean | null;
+  resume?: boolean | null;
+  report?: boolean | null;
+}
+
+export async function authenticateUser(userId: string, passwordInput: string): Promise<{
   success: boolean;
-  user?: UserData;
+  user?: UserData; 
   isFirstLogin?: boolean;
   error?: string;
 }> {
   try {
-    // 1. 檢查用戶是否存在
-    const { data: userData, error: userError } = await supabase
+    const { data: rawUserData, error: userFetchError } = await supabase
       .from('data_id')
-      .select('*')
+      .select('id, name, department, password, first_login, qc, receive, void, view, resume, report')
       .eq('id', userId)
       .single();
 
-    if (userError) {
-      console.error('User query error:', userError);
-      throw new Error(userError.message);
-    }
-
-    if (!userData) {
-      throw new Error(`User ${userId} does not exist`);
-    }
-
-    // 2. 檢查密碼邏輯
-    // 2.1 如果用戶沒有自定義密碼（首次登錄）
-    if (!userData.password) {
-      // 只能使用用戶ID作為密碼
-      if (password !== userId) {
-        throw new Error('For first login, please use your Clock Number as password');
+    if (userFetchError) {
+      console.error('User query error:', userFetchError);
+      if (userFetchError.code === 'PGRST116') { 
+         return { success: false, error: `User ${userId} not found.` };
       }
-      return {
-        success: true,
-        user: userData,
-        isFirstLogin: true
-      };
+      return { success: false, error: 'Error fetching user data.' }; 
     }
 
-    // 2.2 如果用戶已有自定義密碼
-    if (password === userId) {
-      throw new Error('Please Login With Your Custom Password');
+    if (!rawUserData) {
+      return { success: false, error: `User ${userId} not found.` };
     }
 
-    if (password !== userData.password) {
-      throw new Error('Incorrect password');
-    }
+    const userDataFromDB = rawUserData as RawUserDataFromDB; // Now this cast should be safer
 
-    return {
-      success: true,
-      user: userData,
-      isFirstLogin: false
+    const clientUserData: UserData = {
+      id: userDataFromDB.id,
+      name: userDataFromDB.name,
+      department: userDataFromDB.department,
+      permissions: { // Construct the permissions object here
+        qc: !!userDataFromDB.qc,
+        receive: !!userDataFromDB.receive,
+        void: !!userDataFromDB.void,
+        view: !!userDataFromDB.view,
+        resume: !!userDataFromDB.resume,
+        report: !!userDataFromDB.report,
+      }
     };
 
+    if (userDataFromDB.first_login === true) {
+      if (passwordInput === userId) {
+        return {
+          success: true,
+          user: clientUserData,
+          isFirstLogin: true
+        };
+      } else {
+        return { success: false, error: 'Incorrect Clock Number for first login.' };
+      }
+    } else { // This implies first_login is false or null/undefined (treat null/undefined as not first_login for robustness)
+      if (!userDataFromDB.password) {
+        console.error(`User ${userId} has first_login=false (or null) but no password set.`);
+        return { success: false, error: 'User account configuration error. Please contact admin.' };
+      }
+      if (passwordInput === userDataFromDB.password) {
+        return {
+          success: true,
+          user: clientUserData,
+          isFirstLogin: false
+        };
+      } else {
+        return { success: false, error: 'Incorrect password.' };
+      }
+    }
+
   } catch (error) {
-    console.error('Authentication error:', error);
+    console.error('Unexpected authentication error:', error);
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Login failed, please try again later'
+      error: 'Login failed due to a system error. Please try again later.'
     };
   }
 } 

@@ -13,6 +13,7 @@ import {
 } from '@heroicons/react/24/outline';
 import PrintLabelPopover from './print-label-menu/PrintLabelPopover';
 import { motion, AnimatePresence } from 'framer-motion';
+import { supabase } from '@/lib/supabase';
 
 const menuItems = [
   { name: 'Print Label', icon: DocumentIcon, href: '/print-label' },
@@ -60,7 +61,7 @@ export default function Navigation() {
         {/* Home */}
                     <Link
           key="Home"
-          href="/"
+          href="/dashboard"
           className="flex items-center px-4 py-2 text-base font-medium rounded-md mb-4 text-gray-300 hover:bg-gray-700 hover:text-white"
                     >
           <HomeIcon className="mr-3 h-6 w-6" />
@@ -127,11 +128,37 @@ export default function Navigation() {
           <span className="mr-3">🔑</span> Access Update
                   </Link>
                 <button
-          onClick={() => {
-            localStorage.removeItem('user');
-            router.push('/login');
-          }}
-          className="flex items-center px-4 py-2 text-base font-medium rounded-md text-gray-300 hover:bg-gray-700 hover:text-white"
+                  onClick={async () => {
+                    let userIdToLog = 'unknown_user';
+                    const userStr = localStorage.getItem('user');
+                    if (userStr) {
+                      try {
+                        const userData = JSON.parse(userStr);
+                        if (userData && userData.id) {
+                          userIdToLog = userData.id;
+                        }
+                      } catch (e) {
+                        console.error('Error parsing user data from localStorage for logout log:', e);
+                      }
+                    }
+
+                    try {
+                      await supabase.from('record_history').insert({
+                        time: new Date().toISOString(),
+                        id: userIdToLog,
+                        plt_num: null,
+                        loc: null,
+                        action: 'Log Out',
+                        remark: null
+                      });
+                    } catch (historyError) {
+                      console.error('Failed to log logout event to record_history:', historyError);
+                    }
+
+                    localStorage.removeItem('user');
+                    router.push('/login');
+                  }}
+                  className="flex items-center px-4 py-2 text-base font-medium rounded-md text-gray-300 hover:bg-gray-700 hover:text-white"
                 >
           <span className="mr-3">🚪</span> LogOut
                 </button>

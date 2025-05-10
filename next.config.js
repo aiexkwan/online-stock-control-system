@@ -28,7 +28,7 @@ const nextConfig = {
   //     },
   //   },
   // },
-  /* async redirects() {
+  async redirects() {
     return [
       {
         source: '/',
@@ -36,7 +36,7 @@ const nextConfig = {
         permanent: true,
       },
     ];
-  }, */ // Commented out the redirects section
+  },
   webpack: (config, { isServer }) => {
     config.resolve.alias = {
       ...config.resolve.alias,

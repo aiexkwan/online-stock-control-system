@@ -6,6 +6,7 @@ import { authenticateUser } from '../services/auth';
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "../../components/ui/card";
+import { supabase } from '../../lib/supabase';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -17,8 +18,26 @@ export default function LoginPage() {
   useEffect(() => {
     if (typeof window !== 'undefined') {
       localStorage.removeItem('user');
+      // localStorage.removeItem('firstLogin'); // Also clear this if it exists, to ensure clean state for login page
     }
   }, []);
+
+  // Helper function to log to record_history
+  const logToHistory = async (userIdToLog: string, actionType: 'LogIn' | 'Password Change', remarkText: string) => {
+    try {
+      await supabase.from('record_history').insert({
+        time: new Date().toISOString(),
+        id: userIdToLog,
+        plt_num: null,
+        loc: null,
+        action: actionType,
+        remark: remarkText,
+      });
+    } catch (historyError) {
+      console.error('Failed to log to record_history:', historyError);
+      // Non-critical, so we don't stop the login/password change flow
+    }
+  };
 
   const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -26,45 +45,32 @@ export default function LoginPage() {
     setError(null);
 
     try {
-      if (userId === 'admin' && password === 'admin123') {
-        const adminData = {
-          id: 'admin',
-          name: 'Administrator',
-          department: 'IT',
-          permissions: {
-            qc: true,
-            receive: true,
-            void: true,
-            view: true,
-            resume: true,
-            report: true
-          }
-        };
-
-        localStorage.setItem('user', JSON.stringify(adminData));
-        router.push('/');
-        return;
-      }
-
       const result = await authenticateUser(userId, password);
 
       if (!result.success || !result.user) {
-        setError(result.error || 'Login failed');
+        const reason = result.error || 'Unknown login failure';
+        setError(reason);
+        await logToHistory(userId, 'LogIn', `LogIn Fail - ${reason}`);
+        setLoading(false); // Ensure loading is stopped
         return;
       }
 
       localStorage.setItem('user', JSON.stringify(result.user));
 
       if (result.isFirstLogin) {
-        localStorage.setItem('firstLogin', 'true');
-        router.push('/new-password');
+        await logToHistory(result.user.id, 'LogIn', 'First LogIn');
+        // localStorage.setItem('firstLogin', 'true'); // Retain for now, as change-password might use it implicitly or for UI hints
+        router.push('/change-password'); // CORRECTED PATH
       } else {
-        router.push('/');
+        await logToHistory(result.user.id, 'LogIn', 'LogIn');
+        router.push('/dashboard'); // Changed from '/' to '/dashboard'
       }
 
     } catch (err) {
       console.error('Login error:', err);
-      setError(err instanceof Error ? err.message : 'Login failed, please try again later');
+      const reason = err instanceof Error ? err.message : 'System error during login';
+      setError(reason);
+      await logToHistory(userId, 'LogIn', `LogIn Fail - ${reason}`);
     } finally {
       setLoading(false);
     }

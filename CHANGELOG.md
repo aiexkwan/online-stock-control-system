@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 ## [Unreleased]
 
 ### Added
+- **Feature (Auth & User Management):**
+  - Implemented comprehensive login logic based on `data_id.first_login` status:
+    - Users log in with their Clock Number as the password for their initial login.
+    - If `first_login` is true, users are redirected to `/change-password` to set a new password.
+    - The new password (min. 6 characters) is stored in `data_id.password`, and `first_login` is updated to `false`.
+    - Subsequent logins use the password stored in `data_id.password`.
+  - Password change process now exclusively updates `data_id.password` and `data_id.first_login`, removing previous Supabase Auth user update attempts.
+- **Feature (History Logging):**
+  - Login events (successful first login, successful subsequent login, failed login with reason) are now recorded in the `record_history` table.
+  - Password change events are recorded in `record_history`.
+  - User logout events are now recorded in `record_history`.
 - **ACO Form Validation & UI:**
   - Enhanced "Print Label" button enablement logic for ACO type:
     - Ensures ACO search is complete, order status is valid (not fulfilled, quantity not exceeded), and if it was a new order ref, its details are submitted.
@@ -28,6 +39,14 @@ All notable changes to this project will be documented in this file.
 - Added a tooltip to the main dashboard donut chart to display "Pallets Done" and "Pallets Transferred" counts when hovering over the chart.
 
 ### Changed
+- **Routing & UI:**
+  - The main dashboard/home page has been moved from the root path (`/`) to `/dashboard`.
+  - The login page (`/login`) now correctly redirects to `/dashboard` after successful non-first-time logins and to `/change-password` for first-time logins.
+  - The change password page (`/change-password`) now correctly redirects to `/dashboard` upon successful password updates.
+  - The application's root path (`/`) now automatically redirects to `/login`.
+  - The primary navigation link for "Home" in the sidebar now points to `/dashboard`.
+- **Authentication:**
+  - Removed hardcoded `admin` user login credentials and logic.
 - **ACO Search Logic:**
   - If an existing ACO Order Ref is searched but does not contain the currently entered Product Code:
     - Displays "Product Code Not Included In This Order".
