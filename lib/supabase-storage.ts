@@ -1,97 +1,85 @@
-import { supabase } from './supabase';
+import { supabase } from './supabase'; // Corrected import for the Supabase client
 
 export const STORAGE_BUCKET = 'pallet-label-pdf';
 
+/**
+ * Sets up the Supabase storage client.
+ * This function is now simplified as bucket listing is not essential for client-side upload if permissions are set.
+ */
 export async function setupStorage() {
-  console.log('[setupStorage] Attempting to setup storage...');
-  try {
-    console.log('[setupStorage] Calling supabase.storage.listBuckets(). Supabase client and storage object should be available here.');
-    const { data: buckets, error: listError } = await supabase
-      .storage
-      .listBuckets();
-
-    console.log('[setupStorage] listBuckets call completed.');
-
-    if (listError) {
-      console.warn('[setupStorage] Warning: Error listing buckets (listError object):', listError, 'Proceeding with assumption that bucket might exist or policies will handle it.');
-      // Not throwing an error here to allow upload attempt even if listBuckets fails
-    } else {
-      console.log('[setupStorage] All buckets raw data:', buckets);
-      if (buckets && Array.isArray(buckets)) {
-        buckets.forEach((b, i) => {
-          console.log(`[setupStorage] Bucket[${i}]: id='${b.id}', name='${b.name}'`);
-        });
-      }
-      console.log('[setupStorage] STORAGE_BUCKET (programmed):', STORAGE_BUCKET);
-
-      const bucketExists = buckets?.some(bucket => bucket.name === STORAGE_BUCKET);
-      console.log('[setupStorage] bucketExists for "', STORAGE_BUCKET, '":', bucketExists);
-
-      if (!bucketExists) {
-        console.warn(`[setupStorage] Warning: Storage bucket "${STORAGE_BUCKET}" was not found in the list or could not be verified. Buckets listed:`, buckets, 'Proceeding with upload attempt assuming it exists and is accessible.');
-        // Not throwing an error here. If the bucket truly doesn't exist or isn't accessible, the .upload() will fail.
-      } else {
-        console.log('[setupStorage] Storage bucket verified successfully.');
-      }
-    }
-
-    console.log('[setupStorage] Setup check completed (non-critical for public buckets).');
-    return true;
-  } catch (error) {
-    let msg = '';
-    if (error instanceof Error) {
-      msg = error.message;
-    } else if (typeof error === 'object' && error !== null) {
-      msg = JSON.stringify(error);
-    } else {
-      msg = String(error);
-    }
-    // This catch block might not be reached if we don't throw errors above
-    console.error('[setupStorage] Error in setupStorage (caught exception if any):', msg, 'Original error object:', error);
-    // We will let the upload function handle its own errors primarily.
-    // throw new Error('setupStorage failed: ' + msg); // Commenting out the throw
-    return false; // Indicate potential issue but don't stop the flow
-  }
+  console.log('[setupStorage] Storage operations will use the pre-configured client and target bucket:', STORAGE_BUCKET);
+  // The explicit bucket check (listBuckets) has been removed.
 }
 
-export async function uploadPdf(palletNum: string, qrValue: string, blob: Blob) {
+/**
+ * Uploads a PDF file to the specified Supabase storage bucket and folder.
+ *
+ * @param palletNum The pallet number, used as part of the folder/file path.
+ * @param fileName The desired name of the file in Supabase storage.
+ * @param pdfBlob The PDF content as a Blob.
+ * @returns The public URL of the uploaded PDF.
+ * @throws If the upload fails.
+ */
+export async function uploadPdf(
+  palletNum: string, 
+  fileName: string,
+  pdfBlob: Blob
+): Promise<string> {
+  console.log(`[uploadPdf] Attempting to upload ${fileName} to folder path based on ${palletNum} in bucket ${STORAGE_BUCKET}`);
+  if (!pdfBlob) {
+    console.error('[uploadPdf] pdfBlob is null or undefined.');
+    throw new Error('pdfBlob cannot be null.');
+  }
+  if (pdfBlob.size === 0) {
+    console.warn('[uploadPdf] pdfBlob has a size of 0. Uploading an empty file.');
+  }
+
+  // Constructing filePath similar to previous logic but using palletNum and fileName directly
+  // Example: Label - 090525_60 - pallet-label-250509-HFHRP6.pdf
+  const safePalletNumForPath = palletNum.replace(/\//g, '_'); 
+  const filePath = `Label - ${safePalletNumForPath} - ${fileName}`;
+  console.log('[uploadPdf] Full file path in bucket:', filePath);
+
   try {
-    // 將 / 換成 _
-    const safePalletNum = palletNum.replace(/\//g, '_');
-    const safeQrValue = qrValue.replace(/\//g, '_');
-    const fileName = `Label - ${safePalletNum} - ${safeQrValue}.pdf`;
-    // 上傳文件
-    const { data, error: uploadError } = await supabase
-      .storage
+    const { data, error } = await supabase.storage // Using the imported supabase client
       .from(STORAGE_BUCKET)
-      .upload(fileName, blob, {
+      .upload(filePath, pdfBlob, {
         cacheControl: '3600',
+        upsert: true, 
         contentType: 'application/pdf',
-        upsert: true
       });
 
-    if (uploadError) {
-      console.error('Upload error:', uploadError);
-      throw new Error(`Upload failed: ${uploadError.message}`);
+    if (error) {
+      console.error('[uploadPdf] Upload error object:', error);
+      let errorMessage = `Upload failed for ${filePath}. Supabase error: ${error.message}`;
+      // Consider checking error.name or error.code for more specific Supabase error types if available
+      if (error.message.includes('mime type application/pdf is not supported') || (error as any).error === 'mime type application/pdf is not supported') {
+        errorMessage = 'Upload failed: mime type application/pdf is not supported. Check bucket Content-Type settings or client-side Content-Type header.';
+      }
+      throw new Error(errorMessage);
     }
 
-    // 獲取公開 URL
-    const { data: { publicUrl } } = supabase
-      .storage
+    if (!data || !data.path) {
+      console.error('[uploadPdf] Upload completed but no path returned in data:', data);
+      throw new Error(`Upload for ${filePath} seemed to succeed but no path was returned.`);
+    }
+
+    console.log('[uploadPdf] File uploaded successfully. Path:', data.path);
+
+    const { data: publicUrlData } = supabase.storage
       .from(STORAGE_BUCKET)
-      .getPublicUrl(fileName);
-
-    return publicUrl;
-  } catch (error) {
-    let msg = '';
-    if (error instanceof Error) {
-      msg = error.message;
-    } else if (typeof error === 'object') {
-      msg = JSON.stringify(error);
-    } else {
-      msg = String(error);
+      .getPublicUrl(data.path);
+    
+    if (!publicUrlData || !publicUrlData.publicUrl) {
+        console.error('[uploadPdf] Could not get public URL for path:', data.path, 'PublicUrlData:', publicUrlData);
+        throw new Error(`Failed to get public URL for ${data.path}.`);
     }
-    console.error('Error in uploadPdf:', msg);
-    throw new Error('uploadPdf failed: ' + msg);
+
+    console.log('[uploadPdf] Public URL:', publicUrlData.publicUrl);
+    return publicUrlData.publicUrl;
+
+  } catch (err) {
+    console.error('[uploadPdf] Error in uploadPdf:', (err as Error).message, err);
+    throw new Error(`uploadPdf failed: ${(err as Error).message}`);
   }
 }

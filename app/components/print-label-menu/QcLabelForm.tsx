@@ -29,7 +29,6 @@ export default function QcLabelForm() {
     firstOffDate: '',
     batchNumber: '',
     setterName: '',
-    machNum: '',
     material: '',
     weight: '',
     topThickness: '',
@@ -37,7 +36,7 @@ export default function QcLabelForm() {
     length: '',
     width: '',
     centreHole: '',
-    lengthMiddleHoleToBottom: '',
+    // lengthMiddleHoleToBottom: \'\', // REMOVE THIS LINE
     colour: '',
     shapes: '',
     flameTest: '',
@@ -63,6 +62,11 @@ export default function QcLabelForm() {
   type ProgressStatus = 'Pending' | 'Processing' | 'Success' | 'Failed';
   const [pdfProgress, setPdfProgress] = useState<{ current: number; total: number; status: ProgressStatus[] }>({ current: 0, total: 0, status: [] });
 
+  // 新增：用於 Slate First-Off Date 下拉選單的狀態
+  const [availableFirstOffDates, setAvailableFirstOffDates] = useState<string[]>([]);
+  // 新增：用於 ACO Order Ref 下拉選單的狀態
+  const [availableAcoOrderRefs, setAvailableAcoOrderRefs] = useState<number[]>([]);
+
   // 取得登入用戶 id
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -76,37 +80,127 @@ export default function QcLabelForm() {
     }
   }, []);
 
+  // 新增：當 productType 為 Slate 時，獲取歷史 First-Off Dates
+  useEffect(() => {
+    if (productInfo?.type === 'Slate') {
+      const fetchFirstOffDates = async () => {
+        const { data, error } = await supabase
+          .from('record_slate')
+          .select('first_off');
+
+        if (error) {
+          console.error('[QcLabelForm] Error fetching first-off dates:', error);
+          setAvailableFirstOffDates([]);
+        } else if (data) {
+          const dates = data.map(item => item.first_off).filter(date => date) as string[];
+          const uniqueSortedDates = Array.from(new Set(dates)).sort();
+          setAvailableFirstOffDates(uniqueSortedDates);
+        }
+      };
+      fetchFirstOffDates();
+    } else {
+      setAvailableFirstOffDates([]); // 如果不是 Slate，清空列表
+    }
+  }, [productInfo?.type]);
+
+  // 新增：當 productType 為 ACO 時，獲取歷史 ACO Order Refs
+  useEffect(() => {
+    if (productInfo?.type === 'ACO') {
+      const fetchAcoOrderRefs = async () => {
+        const { data, error } = await supabase
+          .from('record_aco')
+          .select('order_ref'); // Select all order_refs
+
+        if (error) {
+          console.error('[QcLabelForm] Error fetching ACO order refs:', error);
+          setAvailableAcoOrderRefs([]);
+        } else if (data) {
+          const refs = data.map(item => item.order_ref).filter(ref => ref !== null && ref !== undefined) as number[];
+          const uniqueSortedRefs = Array.from(new Set(refs)).sort((a, b) => a - b); // Sort numerically
+          setAvailableAcoOrderRefs(uniqueSortedRefs);
+        }
+      };
+      fetchAcoOrderRefs();
+    } else {
+      setAvailableAcoOrderRefs([]); // Clear if not ACO type
+    }
+  }, [productInfo?.type]);
+
   // 驗證條件
-  const isAcoValid = productInfo?.type === 'ACO' ? acoOrderRef.trim() !== '' : true;
+  // const isAcoValid = productInfo?.type === 'ACO' ? acoOrderRef.trim() !== '' : true; // Will be replaced
+
+  // --- Debugging isSlateValid --- Start
+  let slateFieldsToCheck: Record<string, string> = {};
+  if (productInfo?.type === 'Slate') {
+    slateFieldsToCheck = Object.fromEntries(
+      Object.entries(slateDetail).filter(([k]) => !['remark', 'material', 'colour', 'shapes', 'machNum'].includes(k))
+    );
+    console.log('[Slate Validation Details] Fields being checked:', slateFieldsToCheck);
+    Object.entries(slateFieldsToCheck).forEach(([key, value]) => {
+      console.log(`[Slate Validation Details] Field: ${key}, Value: "${value}", Trimmed Value: "${value.trim()}", IsEmptyAfterTrim: ${value.trim() === ''}`);
+    });
+  }
+  // --- Debugging isSlateValid --- End
+
   const isSlateValid = productInfo?.type === 'Slate'
     ? Object.entries(slateDetail)
-        .filter(([k]) => k !== 'remark')
+        .filter(([k]) => !['remark', 'material', 'colour', 'shapes', 'machNum'].includes(k))
         .every(([, v]) => v.trim() !== '')
     : true;
   const isAcoOrderFullfilled = acoRemain === 'Order Been Fullfilled';
   // 新增：判斷剩餘數量不足
   let isAcoOrderExcess = false;
   let acoRemainQty = null;
-  if (acoRemain && acoRemain.startsWith('Order Remain Qty : ')) {
+  if (productInfo?.type === 'ACO' && acoRemain && acoRemain.startsWith('Order Remain Qty : ')) {
     const match = acoRemain.match(/Order Remain Qty : (\d+)/);
     if (match) {
       acoRemainQty = parseInt(match[1], 10);
-      if (!isNaN(acoRemainQty) && quantity.trim() && parseInt(quantity, 10) > acoRemainQty) {
-        isAcoOrderExcess = true;
+      const quantityPerPallet = parseInt(quantity.trim(), 10); // "Quantity of Pallet"
+      const palletCount = parseInt(count.trim(), 10);         // "Count of Pallet"
+
+      // Ensure all values are valid numbers before calculation
+      if (!isNaN(acoRemainQty) && !isNaN(quantityPerPallet) && !isNaN(palletCount)) {
+        if ((quantityPerPallet * palletCount) > acoRemainQty) {
+          isAcoOrderExcess = true;
+        }
       }
     }
   }
-  const isFormValid = productCode.trim() && quantity.trim() && count.trim() && isAcoValid && isSlateValid && !isAcoOrderFullfilled && !isAcoOrderExcess;
 
-  // --- 加入這個 console.log ---
+  // --- New ACO Print Readiness Validation --- START ---
+  let isAcoReadyForPrint = true; // Default to true, does not affect non-ACO types
+  if (productInfo?.type === 'ACO') {
+    const isProductIncludedInOrder = acoRemain !== 'Product Code Not Included In This Order'; // New condition
+    isAcoReadyForPrint = 
+      acoOrderRef.trim() !== '' &&
+      !acoSearchLoading &&
+      acoRemain !== null && // Ensures search has been performed and acoRemain is set
+      isProductIncludedInOrder && // Ensure product code is part of the order if order is found
+      !acoNewRef &&       // If it was a 'New Order' flow, ensures new order details have been submitted (acoNewRef becomes false)
+      !isAcoOrderFullfilled &&
+      !isAcoOrderExcess;
+  }
+  // --- New ACO Print Readiness Validation --- END ---
+
+  const isFormValid = 
+    productCode.trim() !== '' && 
+    quantity.trim() !== '' && 
+    count.trim() !== '' && // For Slate, count is set to '1' by useEffect, so this check remains valid
+    isSlateValid && 
+    isAcoReadyForPrint; // Use the new comprehensive ACO check
+
+  // --- 加入這個 console.log (更新以包含 isAcoReadyForPrint) ---
   console.log('[Form Validation] isFormValid:', isFormValid, {
     productCode: productCode.trim(),
     quantity: quantity.trim(),
     count: count.trim(),
-    isAcoValid,
+    // isAcoValid, // Old variable, removed
     isSlateValid,
-    isAcoOrderFullfilled,
-    isAcoOrderExcess
+    isAcoOrderFullfilled, // Kept for context, though part of isAcoReadyForPrint
+    isAcoOrderExcess,     // Kept for context, though part of isAcoReadyForPrint
+    acoRemain: acoRemain,     // Added for better debugging of ACO state
+    acoNewRef: acoNewRef,     // Added for better debugging of ACO state
+    isAcoReadyForPrint    // New validation state for ACO
   });
   // --- 結束 console.log ---
 
@@ -130,16 +224,96 @@ export default function QcLabelForm() {
     const dateLabel = format(today, 'dd-MMM-yyyy'); // 只給 PDF label 顯示
     const operatorNum = operator.trim() ? operator.trim() : '-';
     const qcNum = userId || '-';
-    let workOrderType = '-';
-    let workOrderValue = '-';
-    let workOrderNumberVariableForFallback = '-'; // Renamed to avoid confusion with prop
+    const generateTime = format(today, 'dd-MMM-yyyy HH:mm:ss');
+    const countNum = Math.max(1, parseInt(count, 10) || 1);
+
+    // Define workOrderNumberVariableForFallback (used for PDF, ensure Slate gets '-')
+    let workOrderNumberVariableForFallback = '-'; 
     if (productInfo?.type === 'ACO' && acoOrderRef.trim()) {
-      workOrderType = 'ACO Order Ref';
-      workOrderValue = acoOrderRef.trim();
       workOrderNumberVariableForFallback = acoOrderRef.trim(); 
-    } else if (productInfo?.type) {
-      workOrderType = productInfo.type;
+    } else if (productInfo?.type && productInfo.type !== 'Slate') { 
       workOrderNumberVariableForFallback = productInfo.type;
+    }
+    
+    // --- Step 1 Refactor: Pre-generate pallet numbers and series --- START ---
+    let maxNum = 0;
+    const { data: todayPlts, error: todayPltsError } = await supabase
+      .from('record_palletinfo')
+      .select('plt_num')
+      .like('plt_num', `${dateStr}/%`);
+
+    if (todayPltsError) {
+      setDebugMsg(`ERROR: Failed to query today's pallets for numbering: ${todayPltsError.message}`);
+      logErrorReport(`Failed to query today's pallets: ${todayPltsError.message}`, "Pallet Number Generation").catch(console.error);
+      return; // Critical error, cannot proceed
+    }
+    if (todayPlts && todayPlts.length > 0) {
+      todayPlts.forEach(row => {
+        const parts = row.plt_num.split('/');
+        if (parts.length === 2 && !isNaN(Number(parts[1]))) {
+          maxNum = Math.max(maxNum, parseInt(parts[1]));
+        }
+      });
+    }
+
+    const numberOfPalletsToGenerate = productInfo?.type === 'Slate' ? 1 : countNum;
+    const palletNumbersToUse = Array.from({ length: numberOfPalletsToGenerate }).map((_, i) => `${dateStr}/${maxNum + 1 + i}`);
+    
+    async function generateUniqueSeriesArr(n: number) {
+      function generateSmartCode() {
+        const datePart = new Date().toISOString().slice(2, 10).replace(/-/g, '');
+        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+        let randomPart = '';
+        for (let i = 0; i < 6; i++) {
+          const idx = window.crypto ? window.crypto.getRandomValues(new Uint32Array(1))[0] % chars.length : Math.floor(Math.random() * chars.length);
+          randomPart += chars[idx];
+        }
+        return `${datePart}-${randomPart}`;
+      }
+      const result: string[] = [];
+      let attempts = 0;
+      while (result.length < n && attempts < n * 3) { 
+        const series = generateSmartCode();
+        const { data: exist, error: seriesCheckError } = await supabase
+          .from('record_palletinfo')
+          .select('series')
+          .eq('series', series)
+          .limit(1);
+        if (seriesCheckError){
+            console.error('Series check error:', seriesCheckError);
+            // Log and decide if this is fatal or allow to proceed with potentially non-unique series
+            logErrorReport(`Series check error: ${seriesCheckError.message}`, `Generating series for ${n} pallets`).catch(console.error);
+            // For now, not returning, but this is a risk
+        }
+        if ((!exist || exist.length === 0) && !result.includes(series)) {
+          result.push(series);
+        }
+        attempts++;
+      }
+      if (result.length < n) {
+        const errMsg = `Could not generate enough unique series. Required: ${n}, Generated: ${result.length}`;
+        setDebugMsg(`ERROR: ${errMsg}`);
+        logErrorReport(errMsg, `Series Generation Failed - Pallets: ${palletNumbersToUse.join(',')}`).catch(console.error);
+        return null; // Indicate failure
+      }
+      return result;
+    }
+    const seriesToUse = await generateUniqueSeriesArr(numberOfPalletsToGenerate);
+
+    if (!seriesToUse) { 
+      // Debug message already set by generateUniqueSeriesArr if it returned null
+      return; // Critical error, cannot proceed
+    }
+    // --- Step 1 Refactor: Pre-generate pallet numbers and series --- END ---
+
+    // Determine the plt_remark for the entire batch
+    let plt_remark_for_batch = '-'; // Default remark
+    if (productInfo?.type === 'ACO' && acoOrderRef.trim()) {
+      plt_remark_for_batch = `ACO Ref : ${acoOrderRef.trim()}`;
+    } else if (productInfo?.type === 'Slate') {
+      plt_remark_for_batch = `Batch Number : ${slateDetail.batchNumber}`;
+    } else if (operator.trim()) {
+      plt_remark_for_batch = operator.trim();
     }
 
     let startingOrdinalForAco = 1;
@@ -153,155 +327,177 @@ export default function QcLabelForm() {
       if (countError) {
         console.error('[QcLabelForm] Error fetching existing pallet count for ACO remark:', countError);
         setDebugMsg(prev => prev + `\nError fetching ACO pallet count: ${countError.message}`);
+        logErrorReport(`Error fetching ACO pallet count for order ${acoOrderRef.trim()}: ${countError.message}`, "ACO Pallet Count Fetch").catch(console.error);
       } else if (existingPalletCount !== null) {
         startingOrdinalForAco = existingPalletCount + 1;
         console.log(`[QcLabelForm] Existing pallets for ${remarkToSearch}: ${existingPalletCount}. Next ordinal starts at: ${startingOrdinalForAco}`);
       }
     }
 
-    // 查詢所有今日 plt_num，取最大流水號
-    const { data: todayPlts } = await supabase
-      .from('record_palletinfo')
-      .select('plt_num')
-      .like('plt_num', `${dateStr}/%`);
-    let maxNum = 0;
-    if (todayPlts && todayPlts.length > 0) {
-      todayPlts.forEach(row => {
-        const parts = row.plt_num.split('/');
-        if (parts.length === 2 && !isNaN(Number(parts[1]))) {
-          maxNum = Math.max(maxNum, parseInt(parts[1]));
-        }
-      });
-    }
-    const palletNum = `${dateStr}/${maxNum + 1}`;
-
-    const generateTime = format(today, 'dd-MMM-yyyy HH:mm:ss');
-    const countNum = Math.max(1, parseInt(count, 10) || 1);
-
-    // 生成多個唯一 series
-    async function generateUniqueSeriesArr(n: number) {
-      function generateSmartCode() {
-        const datePart = new Date().toISOString().slice(2, 10).replace(/-/g, ''); // e.g. "240508"
-        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-        let randomPart = '';
-        for (let i = 0; i < 6; i++) {
-          const idx = window.crypto ? window.crypto.getRandomValues(new Uint32Array(1))[0] % chars.length : Math.floor(Math.random() * chars.length);
-          randomPart += chars[idx];
-        }
-        return `${datePart}-${randomPart}`;
-      }
-      const result: string[] = [];
-      while (result.length < n) {
-        const series = generateSmartCode();
-        // 查詢是否已存在
-        const { data: exist } = await supabase
-          .from('record_palletinfo')
-          .select('series')
-          .eq('series', series)
-          .limit(1);
-        if ((!exist || exist.length === 0) && !result.includes(series)) {
-          result.push(series);
-        }
-      }
-      return result;
-    }
-    const seriesArr = await generateUniqueSeriesArr(countNum);
-
     // 準備多筆 insert 資料
-    const insertDataArr = Array.from({length: productInfo?.type === 'Slate' ? 1 : countNum}).map((_, i) => {
-      const thisPalletNum = `${dateStr}/${maxNum + 1 + i}`;
-      const data: any = {
-        plt_num: thisPalletNum,
+    const insertDataArr = Array.from({length: numberOfPalletsToGenerate}).map((_, i) => {
+      const palletData: any = {
+        plt_num: palletNumbersToUse[i],
         generate_time: generateTime,
         product_code: productCode,
         product_qty: quantity,
-        series: seriesArr[i],
+        series: seriesToUse[i],
+        plt_remark: plt_remark_for_batch, // Use the pre-calculated batch remark
       };
-      if (productInfo?.type === 'ACO' && acoOrderRef.trim()) {
-        data.plt_remark = `ACO Ref : ${acoOrderRef.trim()}`;
-      } else if (productInfo?.type === 'Slate') {
-        data.plt_remark = `Batch Number : ${slateDetail.batchNumber}`;
-      } else if (operator.trim()) {
-        data.plt_remark = operator;
-      }
-      return data;
+      return palletData;
     });
 
-    // 先執行 Supabase 插入
     const { error: insertError } = await supabase
       .from('record_palletinfo')
       .insert(insertDataArr);
+    
+    // Capture palletInfoInsertError, to be used in later refactoring steps for conditional execution
+    let palletInfoInsertError: Error | null = insertError ? insertError : null;
 
-    // Debug: 顯示所有要插入的 pallet
-    if (!insertError) {
-      insertDataArr.forEach(d => {
-        debugMsg += `Product Code : ${d.product_code}\nPallet Number : ${d.plt_num}\nQty : ${d.product_qty}\n\n`;
-      });
+    if (palletInfoInsertError) {
+      setDebugMsg(prev => prev + `\nPallet Info Insert Error: ${palletInfoInsertError!.message}`);
+      logErrorReport(`Pallet Info Insert Error: ${palletInfoInsertError!.message}`, JSON.stringify(insertDataArr)).catch(console.error);
+      return; // Critical error, stop processing
+    } else {
+        debugMsg += `Pallet Info Insert Confirmed for ${insertDataArr.length} pallet(s).\n`;
     }
 
-    // === 新增：同步更新 record_inventory await 欄位（加強 debug） ===
-    for (const d of insertDataArr) {
-      const qty = Number(d.product_qty);
-      const { data: inv, error: invError } = await supabase
-        .from('record_inventory')
-        .select('uuid, await')
-        .eq('product_code', d.product_code)
-        .maybeSingle();
-      if (invError) {
-        continue;
+    // === SLATE EVENT ===
+    let slateInsertError: Error | null = null;
+    if (productInfo?.type === 'Slate') {
+      const palletInfoForSlate = insertDataArr[0]; // Slate type always has 1 item in insertDataArr
+      let materialValueDb = null;
+      if (slateDetail.batchNumber && slateDetail.batchNumber.length >= 2) {
+        materialValueDb = `Mix Material ${slateDetail.batchNumber.substring(0, 2)}`;
       }
-      if (inv && inv.uuid) {
-        const oldAwait = Number(inv.await) || 0;
-        const newAwait = oldAwait + qty;
-        const { error: updateError } = await supabase
-          .from('record_inventory')
-          .update({ await: newAwait })
-          .eq('uuid', inv.uuid);
-        if (!updateError) {
-          inventoryUpdated = true;
-        }
+      const slateRecord = {
+        plt_num: palletInfoForSlate.plt_num,
+        code: palletInfoForSlate.product_code,
+        first_off: slateDetail.firstOffDate || null,
+        batch_num: slateDetail.batchNumber || null,
+        setter: slateDetail.setterName || null,
+        mach_num: "Machine No. 14",
+        weight: slateDetail.weight ? parseFloat(slateDetail.weight) : null,
+        t_thick: slateDetail.topThickness ? parseFloat(slateDetail.topThickness) : null,
+        b_thick: slateDetail.bottomThickness ? parseFloat(slateDetail.bottomThickness) : null,
+        length: slateDetail.length ? parseFloat(slateDetail.length) : null,
+        width: slateDetail.width ? parseFloat(slateDetail.width) : null,
+        centre_hole: slateDetail.centreHole ? parseFloat(slateDetail.centreHole) : null,
+        flame_test: slateDetail.flameTest || null,
+        remark: slateDetail.remark || null,
+        material: materialValueDb,
+        colour: "Black",
+        shape: "Colonial",
+      };
+      const { error } = await supabase.from('record_slate').insert(slateRecord);
+      if (error) {
+        slateInsertError = error;
+        console.error('Error inserting into record_slate:', error);
+        setDebugMsg(prev => prev + `\nSlate Record Insert Error: ${error.message}`);
+        logErrorReport(`Slate Record Insert Error for ${palletInfoForSlate.plt_num}: ${error.message}`, JSON.stringify(slateRecord)).catch(console.error);
+        return; // Critical error, stop processing
       } else {
-        const { error: insertInvError } = await supabase
-          .from('record_inventory')
-          .insert({ product_code: d.product_code, await: qty });
-        if (!insertInvError) {
-          inventoryUpdated = true;
-        }
+        console.log('[QcLabelForm] Slate Record Insert Confirmed for plt_num:', palletInfoForSlate.plt_num);
+        debugMsg += 'Slate Record Insert Confirmed\n\n';
       }
     }
-    if (inventoryUpdated) debugMsg += 'Inventory Update Confirmed\n\n';
 
     // === ACO ORDER EVENT ===
-    let acoInsertError: Error | null = null;
-    if (productInfo?.type === 'ACO' && acoOrderRef.trim() && !insertError) {
+    let acoUpdateError: Error | null = null;
+    if (productInfo?.type === 'ACO' && acoOrderRef.trim()) {
       for (const d of insertDataArr) {
-        const { data: acoRow, error: acoError } = await supabase
+        const { data: acoRow, error: acoFetchError } = await supabase
           .from('record_aco')
           .select('uuid, remain_qty')
           .eq('order_ref', Number(acoOrderRef.trim()))
           .eq('code', d.product_code)
           .maybeSingle();
-        if (!acoError && acoRow && typeof acoRow.remain_qty === 'number') {
+
+        if (acoFetchError) {
+            acoUpdateError = acoFetchError;
+            setDebugMsg(prev => prev + `\nError fetching ACO details for ${d.product_code}: ${acoFetchError.message}`);
+            logErrorReport(`Error fetching ACO details for ${d.product_code} on order ${acoOrderRef.trim()}: ${acoFetchError.message}`, JSON.stringify(d)).catch(console.error);
+            break; 
+        }
+
+        if (acoRow && typeof acoRow.remain_qty === 'number') {
           const newRemain = acoRow.remain_qty - Number(d.product_qty);
-          const { error: updateAcoError } = await supabase
+          const { error: updateAcoDbError } = await supabase
             .from('record_aco')
-            .update({ remain_qty: newRemain })
+            .update({ remain_qty: newRemain, latest_update: new Date().toISOString() })
             .eq('uuid', acoRow.uuid);
-          if (!updateAcoError) {
-            acoUpdated = true;
+          if (updateAcoDbError) {
+            acoUpdateError = updateAcoDbError;
+            setDebugMsg(prev => prev + `\nACO Order Update Error for ${d.product_code}: ${updateAcoDbError.message}`);
+            logErrorReport(`ACO Order Update Error for ${d.product_code} on order ${acoOrderRef.trim()}: ${updateAcoDbError.message}`, JSON.stringify(d)).catch(console.error);
+            break; 
+          } else {
+            acoUpdated = true; // Mark as updated if at least one succeeded before potential error
           }
         }
       }
+      if (acoUpdateError) {
+        return; // Critical error, stop processing
+      }
+      if (acoUpdated) { // Only add confirmation if an update happened and no error stopped it
+         debugMsg += 'ACO Order Update Confirmed\n\n';
+      }
     }
-    if (acoUpdated) debugMsg += 'ACO Order Update Confirmed\n\n';
 
-    // === SLATE EVENT ===
-    let slateInsertError: Error | null = null;
-    if (productInfo?.type === 'Slate' && !insertError) {
-      // ... (Slate event logic) ...
+    // === Update record_inventory ===
+    let inventoryUpdateError: Error | null = null;
+    for (const d of insertDataArr) {
+        const qty = Number(d.product_qty);
+        const { data: inv, error: invFetchError } = await supabase
+            .from('record_inventory')
+            .select('uuid, await')
+            .eq('product_code', d.product_code)
+            .maybeSingle();
+
+        if (invFetchError) {
+            inventoryUpdateError = invFetchError;
+            setDebugMsg(prev => prev + `\nInventory Check Error for ${d.product_code}: ${invFetchError.message}`);
+            logErrorReport(`Inventory Check Error for ${d.product_code}: ${invFetchError.message}`, JSON.stringify(d)).catch(console.error);
+            break; 
+        }
+
+        if (inv && inv.uuid) {
+            const oldAwait = Number(inv.await) || 0;
+            const newAwait = oldAwait + qty;
+            const { error: updateError } = await supabase
+                .from('record_inventory')
+                .update({ await: newAwait, latest_update: new Date().toISOString() })
+                .eq('uuid', inv.uuid);
+            if (updateError) {
+                inventoryUpdateError = updateError;
+                setDebugMsg(prev => prev + `\nInventory Update Error for ${d.product_code}: ${updateError.message}`);
+                logErrorReport(`Inventory Update Error for ${d.product_code}: ${updateError.message}`, JSON.stringify(d)).catch(console.error);
+                break;
+            } else {
+                inventoryUpdated = true;
+            }
+        } else {
+            const { error: insertInvError } = await supabase
+                .from('record_inventory')
+                .insert({ product_code: d.product_code, await: qty, latest_update: new Date().toISOString() });
+            if (insertInvError) {
+                inventoryUpdateError = insertInvError;
+                setDebugMsg(prev => prev + `\nInventory Insert Error for ${d.product_code}: ${insertInvError.message}`);
+                logErrorReport(`Inventory Insert Error for ${d.product_code}: ${insertInvError.message}`, JSON.stringify(d)).catch(console.error);
+                break;
+            } else {
+                inventoryUpdated = true;
+            }
+        }
+    }
+    if (inventoryUpdateError) {
+        return; // Critical error, stop processing
+    }
+    if (inventoryUpdated) { // Only add confirmation if an update happened and no error stopped it
+        debugMsg += 'Inventory Update Confirmed\n\n';
     }
 
-    // 新增 record_history
+    // === Add record_history ===
     const now = new Date();
     const historyArr = insertDataArr.map((d) => ({
       time: now.toISOString(),
@@ -315,133 +511,128 @@ export default function QcLabelForm() {
     if (historyError) {
       setDebugMsg(prev => prev + `\nHistory Insert Error: ${historyError.message}`);
       console.error('Error inserting record_history:', historyError);
+      logErrorReport(`History Insert Error: ${historyError.message}`, JSON.stringify(historyArr)).catch(console.error);
+      return; // Critical error, stop processing
+    } else {
+      debugMsg += 'History Record Insert Confirmed\n\n';
     }
 
-    if (insertError) {
-      setDebugMsg(prev => prev + `\nInsert Error: ${insertError.message}`);
-      console.error('Error inserting new pallet info:', insertError);
-    } else {
-      setProductCode('');
-      setQuantity('');
-      setCount('');
-      setOperator('');
-      setAcoOrderRef('');
-      setSlateDetail({
-        firstOffDate: '', batchNumber: '', setterName: '', machNum: '', material: '', weight: '',
-        topThickness: '', bottomThickness: '', length: '', width: '', centreHole: '', lengthMiddleHoleToBottom: '',
-        colour: '', shapes: '', flameTest: '', remark: ''
-      });
-      setProductInfo(null);
-      setAcoRemain(null);
-    }
+    // If we reach here, all DB operations were successful.
+    // Clear form fields
+    setProductCode('');
+    setQuantity('');
+    setCount('');
+    setOperator('');
+    setAcoOrderRef('');
+    setSlateDetail({
+      firstOffDate: '', batchNumber: '', setterName: '', material: '', weight: '',
+      topThickness: '', bottomThickness: '', length: '', width: '', centreHole: '',
+      colour: '', shapes: '', flameTest: '', remark: ''
+    });
+    setProductInfo(null);
+    setAcoRemain(null);
+    
+    // Update debugMsg with final success summary (or it already contains error details if an error occurred before a return)
+    // The individual error messages are already added. Now add a general success indicator if no return happened.
+    debugMsg += 'All database operations completed successfully.\n';
 
     // === PDF Generation and Upload (Loop) ===
-    console.log('[DEBUG] Errors before PDF loop check:', { insertError, acoInsertError, slateInsertError });
-    if (!insertError && !acoInsertError && !slateInsertError) {
-      const totalPdfs = insertDataArr.length;
-      setPdfProgress({ current: 0, total: totalPdfs, status: Array(totalPdfs).fill('Pending') });
-      console.log('PDF Progress Initialized:', { total: totalPdfs, current: 0, status: Array(totalPdfs).fill('Pending') });
-      console.log('[DEBUG] Before PDF loop: countNum =', countNum, 'insertDataArr.length =', insertDataArr.length);
+    console.log('[DEBUG] Errors before PDF loop check:', { palletInfoInsertError, slateInsertError, acoUpdateError, inventoryUpdateError, historyError });
+    
+    const totalPdfs = insertDataArr.length;
+    setPdfProgress({ current: 0, total: totalPdfs, status: Array(totalPdfs).fill('Pending') });
+    console.log('PDF Progress Initialized:', { total: totalPdfs, current: 0, status: Array(totalPdfs).fill('Pending') });
+    console.log('[DEBUG] Before PDF loop: countNum =', countNum, 'insertDataArr.length =', insertDataArr.length);
 
-      const newPdfUrls: { series: string; url?: string; error?: string }[] = Array(totalPdfs).fill(null);
+    const newPdfUrls: { series: string; url?: string; error?: string }[] = Array(totalPdfs).fill(null);
 
-      for (let i = 0; i < totalPdfs; i++) {
-        console.log(`[DEBUG] Entering PDF generation loop, iteration: ${i + 1}/${totalPdfs}`);
-        const palletData = insertDataArr[i];
-        const pdfDocData = {
-          productCode: palletData.product_code,
-          description: productInfo?.description || '-',
-          quantity: palletData.product_qty,
-          date: dateLabel,
-          operatorClockNum: operatorNum,
-          qcClockNum: qcNum,
-          palletNum: palletData.plt_num,
-          series: palletData.series,
-          qrValue: palletData.series,
-          productType: productInfo?.type || '',
-          ...(productInfo?.type === 'Slate' && {
-            firstOffDate: slateDetail.firstOffDate || '-',
-            batchNumber: slateDetail.batchNumber || '-',
-            setterName: slateDetail.setterName || '-',
-            machNum: slateDetail.machNum || '-',
-            material: slateDetail.material || '-',
-            weight: slateDetail.weight || '-',
-            topThickness: slateDetail.topThickness || '-',
-            bottomThickness: slateDetail.bottomThickness || '-',
-            length: slateDetail.length || '-',
-            width: slateDetail.width || '-',
-            centreHole: slateDetail.centreHole || '-',
-            lengthMiddleHoleToBottom: slateDetail.lengthMiddleHoleToBottom || '-',
-            colour: slateDetail.colour || '-',
-            shapes: slateDetail.shapes || '-',
-            flameTest: slateDetail.flameTest || '-',
-          }),
-          workOrderNumber: (() => {
-            if (productInfo?.type === 'ACO' && acoOrderRef.trim()) {
-              const currentPalletOrdinal = startingOrdinalForAco + i; // i is from the surrounding map loop
-              return `${acoOrderRef.trim()} - ${currentPalletOrdinal}${getOrdinalSuffix(currentPalletOrdinal)} PLT`;
-            } else if (productInfo?.type) {
-              return productInfo.type;
-            } else {
-              return workOrderNumberVariableForFallback; 
-            }
-          })(),
-        };
-
-        console.log('[QcLabelForm] pdfData FOR PDF:', JSON.stringify(pdfDocData, null, 2));
-
-        const pdfUrl = await generateAndUploadPdf({
-          pdfData: pdfDocData,
-          fileName: `pallet-label-${palletData.series}.pdf`,
-          folderName: palletData.plt_num,
-          setPdfProgress: setPdfProgress,
-          index: i,
-          onSuccess: (url) => {
-            newPdfUrls[i] = { series: palletData.series, url };
-          },
-          onError: (error) => {
-            console.error(`Error generating/uploading PDF for pallet ${palletData.plt_num}:`, error);
-            newPdfUrls[i] = { series: palletData.series, error: error.message };
-            logErrorReport(`PDF Generation/Upload Error for ${palletData.plt_num}: ${error.message}`, JSON.stringify(pdfDocData)).catch(console.error);
+    for (let i = 0; i < totalPdfs; i++) {
+      console.log(`[DEBUG] Entering PDF generation loop, iteration: ${i + 1}/${totalPdfs}`);
+      const palletData = insertDataArr[i];
+      const pdfDocData = {
+        productCode: palletData.product_code,
+        description: productInfo?.description || '-',
+        quantity: palletData.product_qty,
+        date: dateLabel,
+        operatorClockNum: operatorNum,
+        qcClockNum: qcNum,
+        palletNum: palletData.plt_num,
+        series: palletData.series,
+        qrValue: palletData.series,
+        productType: productInfo?.type || '',
+        ...(productInfo?.type === 'Slate' && {
+          // All Slate-specific detail fields are removed as per user request for PDF
+          // firstOffDate: slateDetail.firstOffDate || '-', // Removed
+          // batchNumber: slateDetail.batchNumber || '-', // Removed
+          // setterName: slateDetail.setterName || '-', // Removed
+          // weight: slateDetail.weight || '-', // Removed
+          // topThickness: slateDetail.topThickness || '-', // Removed
+          // bottomThickness: slateDetail.bottomThickness || '-', // Removed
+          // length: slateDetail.length || '-', // Removed
+          // width: slateDetail.width || '-', // Removed
+          // centreHole: slateDetail.centreHole || '-', // Removed
+          // lengthMiddleHoleToBottom: slateDetail.lengthMiddleHoleToBottom || '-', // Removed
+          // flameTest: slateDetail.flameTest || '-', // Removed
+        }),
+        workOrderNumber: (() => {
+          if (productInfo?.type === 'ACO' && acoOrderRef.trim()) {
+            const currentPalletOrdinal = startingOrdinalForAco + i; // i is from the surrounding map loop
+            return `${acoOrderRef.trim()} - ${currentPalletOrdinal}${getOrdinalSuffix(currentPalletOrdinal)} PLT`;
+          } else if (productInfo?.type === 'Slate') {
+            return '-';
+          } else if (productInfo?.type) {
+            return productInfo.type;
+          } else {
+            return workOrderNumberVariableForFallback; 
           }
-        });
-      }
-    } else {
-      console.error('[ERROR] PDF generation loop SKIPPED due to errors:', { insertError, acoInsertError, slateInsertError });
-      let errorSummary = 'PDF generation was skipped due to previous errors:';
-      if (insertError && typeof insertError === 'object' && 'message' in insertError) {
-        errorSummary += `\n- Pallet Info Insert Error: ${(insertError as Error).message}`;
-      }
-      if (acoInsertError && typeof acoInsertError === 'object' && 'message' in acoInsertError) {
-        errorSummary += `\n- ACO Record Error: ${(acoInsertError as Error).message}`;
-      }
-      if (slateInsertError && typeof slateInsertError === 'object' && 'message' in slateInsertError) {
-        errorSummary += `\n- Slate Record Error: ${(slateInsertError as Error).message}`;
-      }
-      debugMsg += '\n' + errorSummary;
+        })(),
+      };
+
+      console.log('[QcLabelForm] pdfData FOR PDF:', JSON.stringify(pdfDocData, null, 2));
+
+      const pdfUrl = await generateAndUploadPdf({
+        pdfData: pdfDocData,
+        fileName: `pallet-label-${palletData.series}.pdf`,
+        folderName: palletData.plt_num,
+        setPdfProgress: setPdfProgress,
+        index: i,
+        onSuccess: (url) => {
+          newPdfUrls[i] = { series: palletData.series, url };
+        },
+        onError: (error) => {
+          console.error(`Error generating/uploading PDF for pallet ${palletData.plt_num}:`, error);
+          newPdfUrls[i] = { series: palletData.series, error: error.message };
+          logErrorReport(`PDF Generation/Upload Error for ${palletData.plt_num}: ${error.message}`, JSON.stringify(pdfDocData)).catch(console.error);
+        }
+      });
     }
 
-    // 更新 debugMsg (包含所有訊息)
+    // Update debugMsg (containing all messages)
     debugMsg += '\n======  PROCESSING END  ======';
     setDebugMsg(debugMsg);
 
     // === 清理表單和狀態 (只有在所有 PDF 都不是 Pending/Processing 時才執行) ===
+    // This form cleanup was originally conditional on PDF progress.
+    // However, the primary form reset (lines ~425-435 in this refactored code) happens *before* PDF generation
+    // if all DB ops are successful. This final cleanup might be for a different purpose or can be re-evaluated.
+    // For now, keeping its original logic related to pdfProgress.
     const allDone = pdfProgress.status.every(s => s === 'Success' || s === 'Failed');
     if (allDone) {
+      // Re-clearing might be redundant if already cleared, but harmless.
       setProductCode('');
       setQuantity('');
       setCount('');
       setOperator('');
       setAcoOrderRef('');
       setSlateDetail({
-        firstOffDate: '', batchNumber: '', setterName: '', machNum: '', material: '', weight: '',
-        topThickness: '', bottomThickness: '', length: '', width: '', centreHole: '', lengthMiddleHoleToBottom: '',
+        firstOffDate: '', batchNumber: '', setterName: '', material: '', weight: '',
+        topThickness: '', bottomThickness: '', length: '', width: '', centreHole: '',
         colour: '', shapes: '', flameTest: '', remark: ''
       });
       setProductInfo(null);
       setAcoRemain(null);
     }
-  };
+  }; // This is the end of handlePrintLabel
 
   // --- Product Code Search Logic --- START ---
   const handleProductCodeBlur = async () => {
@@ -497,12 +688,43 @@ export default function QcLabelForm() {
       .eq('order_ref', Number(acoOrderRef.trim()))
       .eq('code', productCode.trim())
       .maybeSingle();
-    if (error || !data) {
-      setAcoRemain('New Order, Please Enter Detail');
-      setAcoNewRef(true);
+
+    if (error) { // Handle actual errors first
+      console.error('[QcLabelForm] Error searching ACO order:', error);
+      setAcoRemain(`Error searching order: ${error.message}`);
+      // acoNewRef remains false, print label should be disabled due to acoRemain not being a valid state for printing
+    } else if (!data) { // No data found for this product_code in this order_ref
+      // Check if the order_ref itself exists with other product codes
+      const { data: orderExistsData, error: orderExistsError } = await supabase
+        .from('record_aco')
+        .select('order_ref', { count: 'exact', head: true }) // More efficient check for existence
+        .eq('order_ref', Number(acoOrderRef.trim()));
+        // No .limit(1) needed with head:true for existence check if that's the goal, 
+        // or select a single column and limit 1 if we need to see if *any* row exists for that order_ref.
+        // Let's use a simpler existence check by fetching a minimal field with limit 1.
+
+      const { data: orderRefCheck, error: orderRefCheckError } = await supabase
+        .from('record_aco')
+        .select('order_ref')
+        .eq('order_ref', Number(acoOrderRef.trim()))
+        .limit(1);
+
+      if (orderRefCheckError) {
+        console.error('[QcLabelForm] Error checking if ACO order ref exists:', orderRefCheckError);
+        setAcoRemain(`Error verifying order existence: ${orderRefCheckError.message}`);
+        // acoNewRef remains false
+      } else if (orderRefCheck && orderRefCheck.length > 0) {
+        // Order ref exists, but not with the current productCode
+        setAcoRemain('Product Code Not Included In This Order');
+        // acoNewRef remains false (as set at the beginning of the function)
+      } else {
+        // Order ref itself does not exist with any product code
+        setAcoRemain('New Order, Please Enter Detail');
+        setAcoNewRef(true); // This is a genuinely new order ref
+      }
     } else if (typeof data.remain_qty !== 'undefined') {
       if (Number(data.remain_qty) === 0) {
-        setAcoRemain('Order Been Fullfilled');
+        setAcoRemain('Order Been Fullfilled For This Product');
       } else {
         setAcoRemain(`Order Remain Qty : ${String(data.remain_qty)}`);
       }
@@ -589,6 +811,7 @@ export default function QcLabelForm() {
     const { error } = await supabase.from('record_aco').insert(insertArr);
     if (error) {
       setDebugMsg('Insert record_aco failed: ' + error.message);
+      logErrorReport(`Insert record_aco (ACO Order Detail Update) failed for order ${acoOrderRef.trim()}: ${error.message}`, JSON.stringify(insertArr)).catch(console.error);
     } else {
       setDebugMsg('Insert record_aco success!');
       setAcoNewRef(false); // 隱藏區塊
@@ -621,8 +844,10 @@ export default function QcLabelForm() {
                 // Clear related states on input change to avoid showing stale data
                 setProductInfo(null);
                 setProductError(null);
+                setAcoOrderRef(''); // Clear ACO Order Ref when Product Code changes
                 setAcoRemain(null); // Also clear ACO related state if product code changes
                 setAcoNewRef(false);
+                setPdfProgress({ current: 0, total: 0, status: [] }); // Reset PDF progress
               }}
               onBlur={handleProductCodeBlur} // Attach onBlur event
               required
@@ -732,53 +957,84 @@ export default function QcLabelForm() {
           </ul>
           {/* ACO Order Ref 輸入欄位 - 移至右側 Instruction 區塊 */}
           {productInfo?.type?.trim().toUpperCase() === 'ACO' && (
-            <div className="mt-6">
-              <label className="block text-sm text-gray-300 mb-1">ACO Order Ref</label>
-              <input
-                type="text"
-                className="w-full rounded-md bg-gray-900 border border-gray-700 text-white px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                value={acoOrderRef}
-                onChange={e => setAcoOrderRef(e.target.value)}
-                placeholder="Required"
-              />
-              <button
-                type="button"
-                className={`mt-3 w-full py-2 rounded-md font-semibold transition-colors ${canSearchAco ? 'bg-blue-600 text-white hover:bg-blue-700' : 'bg-gray-600 text-gray-300 cursor-not-allowed'}`}
-                disabled={!canSearchAco}
-                onClick={handleAcoSearch}
-              >
-                Search
-              </button>
-              {acoRemain && (
-                <div className="mt-2 text-sm font-semibold text-yellow-300 bg-gray-900 rounded px-3 py-2">{acoRemain}</div>
-              )}
-              {isAcoOrderExcess && (
-                <div className="mt-2 text-sm font-semibold text-red-400 bg-gray-900 rounded px-3 py-2">Input Quantity Excess Order Remain</div>
-              )}
-            </div>
+            <>
+              <p className="text-yellow-400 text-sm mt-3">
+                Choose From Below Or Enter New Order Ref
+              </p>
+              <div className="mt-4"> {/* Adjusted margin for the hint text*/}
+                <label className="block text-sm text-gray-300 mb-1">ACO Order Ref</label>
+                <div className="flex flex-col gap-2">
+                  <select
+                    className="w-full rounded-md bg-gray-900 border border-gray-700 text-white px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    value={acoOrderRef} 
+                    onChange={e => {
+                      setAcoOrderRef(e.target.value);
+                      setAcoRemain(null); // Clear previous search result when ref changes
+                      setAcoNewRef(false); // Reset new ref flag
+                    }}
+                  >
+                    <option value="">Select Existing Order Ref</option>
+                    {availableAcoOrderRefs.map(ref => (
+                      <option key={ref} value={String(ref)}>{ref}</option>
+                    ))}
+                  </select>
+                  <input
+                    type="text"
+                    className="w-full rounded-md bg-gray-900 border border-gray-700 text-white px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    value={acoOrderRef}
+                    onChange={e => {
+                      setAcoOrderRef(e.target.value);
+                      setAcoRemain(null); // Clear previous search result when ref changes
+                      setAcoNewRef(false); // Reset new ref flag
+                    }}
+                    placeholder="New Order Ref"
+                  />
+                </div>
+                <button
+                  type="button"
+                  className={`mt-3 w-full py-2 rounded-md font-semibold transition-colors ${canSearchAco ? 'bg-blue-600 text-white hover:bg-blue-700' : 'bg-gray-600 text-gray-300 cursor-not-allowed'}`}
+                  disabled={!canSearchAco}
+                  onClick={handleAcoSearch}
+                >
+                  Search
+                </button>
+                {acoRemain && (
+                  <div className="mt-2 text-sm font-semibold text-yellow-300 bg-gray-900 rounded px-3 py-2">{acoRemain}</div>
+                )}
+                {isAcoOrderExcess && (
+                  <div className="mt-2 text-sm font-semibold text-red-400 bg-gray-900 rounded px-3 py-2">Input Quantity Excess Order Remain</div>
+                )}
+              </div>
+            </>
           )}
         </div>
         {/* Instruction 區塊下方：Slate 專用區塊 */}
         {productInfo?.type === 'Slate' && (
           <div className="bg-gray-800 rounded-lg p-8 shadow-lg mt-4">
             <h3 className="text-lg font-semibold text-white mb-4">Please Choose First-Off Date</h3>
+            <p className="text-sm text-yellow-400 mb-3">
+              Please Choose Old First-Off Date (Left) Or<br />
+              Pick A New First-Off Date (Right)
+            </p>
             <div className="flex flex-row gap-4 items-center mb-4">
-              <input
-                type="text"
-                className="w-56 rounded-md bg-transparent border border-gray-700 text-white px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="Please Enter First-Off Date"
+              <select
+                id="slateFirstOffDateSelect"
+                name="slateFirstOffDateSelect"
                 value={slateDetail.firstOffDate}
-                onChange={e => setSlateDetail({ ...slateDetail, firstOffDate: e.target.value })}
-                list="firstoffdate-list"
-              />
-              <datalist id="firstoffdate-list">
-                {/* 可根據實際需求動態生成選項 */}
-              </datalist>
+                onChange={(e) => setSlateDetail({ ...slateDetail, firstOffDate: e.target.value })}
+                className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+              >
+                <option value="">Select existing date</option>
+                {availableFirstOffDates.map(date => (
+                  <option key={date} value={date}>{date}</option>
+                ))}
+              </select>
               <input
+                id="slateFirstOffDateInput"
                 type="date"
-                className="w-44 rounded-md bg-transparent border border-gray-700 text-white px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 value={slateDetail.firstOffDate}
-                onChange={e => setSlateDetail({ ...slateDetail, firstOffDate: e.target.value })}
+                onChange={(e) => setSlateDetail({ ...slateDetail, firstOffDate: e.target.value })}
+                className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
               />
             </div>
             {slateDetail.firstOffDate && (
@@ -786,17 +1042,13 @@ export default function QcLabelForm() {
                 {[
                   { key: 'batchNumber', label: 'Batch Number' },
                   { key: 'setterName', label: 'Setter Name' },
-                  { key: 'material', label: 'Material' },
                   { key: 'weight', label: 'Weight' },
                   { key: 'topThickness', label: 'Top Thickness' },
                   { key: 'bottomThickness', label: 'Bottom Thickness' },
                   { key: 'length', label: 'Length' },
                   { key: 'width', label: 'Width' },
-                  { key: 'lengthMiddleHoleToBottom', label: 'Length (Middle Hole To Bottom)' },
-                  { key: 'colour', label: 'Colour' },
-                  { key: 'shapes', label: 'Shapes' },
+                  { key: 'centreHole', label: 'Length (Middle Hole To Bottom)' },
                   { key: 'flameTest', label: 'Flame Test' },
-                  { key: 'remark', label: 'Remark' },
                 ].map(field => (
                   <input
                     key={field.key}
