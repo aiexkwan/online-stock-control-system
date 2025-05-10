@@ -2,7 +2,6 @@
 import React, { useState } from 'react';
 import * as Tabs from '@radix-ui/react-tabs';
 import QcLabelForm from './QcLabelForm';
-import GrnLabelForm from './GrnLabelForm';
 import { useRouter } from 'next/navigation';
 
 export default function PrintLabelPopover({ onClose }: { onClose?: () => void }) {

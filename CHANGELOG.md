@@ -19,6 +19,13 @@ All notable changes to this project will be documented in this file.
   - Expanded error logging to `report_log` table for more failure scenarios, including:
     - Failure to fetch existing ACO pallet count.
     - Failure to update ACO order details (`handleAcoOrderDetailUpdate`).
+- Implemented ACO (Assembly Component Order) status display on the dashboard, showing progress for active orders.
+  - Fetches data from `record_aco`.
+  - Groups by `order_ref` and calculates overall progress (based on `required_qty` and `remain_qty`).
+  - Displays progress using Shadcn UI `Progress` component.
+  - Shows `order_ref` as "Order Reference : [ref]".
+  - Implemented a tooltip on hover for each ACO order in the status list, showing detailed progress for each product code within that order (Completed Qty / Required Qty).
+- Added a tooltip to the main dashboard donut chart to display "Pallets Done" and "Pallets Transferred" counts when hovering over the chart.
 
 ### Changed
 - **ACO Search Logic:**
@@ -31,10 +38,27 @@ All notable changes to this project will be documented in this file.
   - When `productCode` is changed by the user:
     - `acoOrderRef` (both input value and dropdown selection) is now automatically cleared.
     - PDF generation progress bar is automatically hidden/reset.
+- **Dashboard Layout & Components:**
+  - Removed the separate "Pallets Done" and "Pallets Transferred" cards from the main dashboard view.
+  - Data for these counts is now fetched directly in `app/page.tsx` and passed to the `PalletDonutChart` component.
+  - The `PalletRatio.tsx` component no longer renders UI and its data fetching logic was moved/duplicated to `app/page.tsx`.
+  - Adjusted the main layout in `app/page.tsx` to center the `PalletDonutChart` as the primary element for these stats.
+  - Increased the size of the `PalletDonutChart`.
+- **ACO Order Ref Dropdown (Print Label Form):**
+  - Modified `QcLabelForm.tsx` to filter the "ACO Order Ref" dropdown list.
+  - The dropdown now only shows `order_ref` values for ACO orders that are not yet fully completed (i.e., where the sum of `remain_qty` for all items under an `order_ref` is greater than 0).
+- Corrected column name references in `AcoOrderStatus.tsx` from `product_code` to `code` and `original_qty` to `required_qty` to match the `record_aco` table schema.
+- Removed `customer` field logic from `AcoOrderStatus.tsx` as `order_ref` already implies customer information.
 
 ### Fixed
+- **PDF Label Content (Dynamic Headers):**
+  - Resolved an issue where PDF label headers (e.g., "Quantity" vs "Quantity / Weight", "Q.C. Done By" vs "Received By") were not consistently displaying correctly for QC and GRN label types.
+  - The root cause was identified as client-side browser caching of PDF files, which prevented updated rendering logic in `PrintLabelPdf.tsx` from taking effect immediately.
+  - After thorough debugging and cache clearing (hard refresh), the dynamic header logic now functions as intended based on the `labelType` prop.
 - **PDF Label Content:**
   - Ensured "Work Order Number" on PDF labels for 'Slate' product type correctly displays as "-".
+- Resolved an issue where `AcoOrderStatus.tsx` would show an "unknown error" by improving error message handling for non-standard error objects from Supabase queries.
+- Addressed Linter error in `AcoOrderStatus.tsx` and `PalletDonutChart.tsx` related to missing `Tooltip` (and `Progress`) component by advising user to install it via `npx shadcn-ui@latest add tooltip` (and `progress`).
 
 ## [1.0.0] - 2025-05-05
 

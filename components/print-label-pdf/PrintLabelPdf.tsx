@@ -12,6 +12,8 @@ export interface PrintLabelPdfProps {
   palletNum: string;
   qrValue?: string;
   productType?: string;
+  workOrderName?: string;
+  labelType?: string;
 }
 
 const LOGO_URL =
@@ -164,7 +166,14 @@ function LabelBlock({
   palletNum,
   qrValue,
   productType,
+  workOrderName,
+  labelType,
 }: PrintLabelPdfProps) {
+  // console.log('[PrintLabelPdf] labelType received:', labelType); // Keep this for now, might appear later
+  const isGrnLabel = labelType === 'GRN';
+  const quantityHeaderText = isGrnLabel ? 'Quantity / Weight' : 'Quantity';
+  const qcClockNumHeaderText = isGrnLabel ? 'Received By' : 'Q.C. Done By';
+
   return (
     <View style={styles.label}>
       {/* Logo */}
@@ -184,7 +193,7 @@ function LabelBlock({
         {/* Header Row */}
         <View style={{ flexDirection: 'row', backgroundColor: '#f0f0f0' }}>
           <View style={{ flex: 1, height: 36, alignItems: 'center', justifyContent: 'center' }}>
-            <Text style={{ fontSize: 14, fontWeight: 'bold', textAlign: 'center', width: '100%' }}>Quantity</Text>
+            <Text style={{ fontSize: 14, fontWeight: 'bold', textAlign: 'center', width: '100%' }}>{quantityHeaderText}</Text>
           </View>
           <View style={{ flex: 1, height: 36, alignItems: 'center', justifyContent: 'center' }}>
             <Text style={{ fontSize: 14, fontWeight: 'bold', textAlign: 'center', width: '100%' }}>Date</Text>
@@ -193,7 +202,7 @@ function LabelBlock({
             <Text style={{ fontSize: 14, fontWeight: 'bold', textAlign: 'center', width: '100%' }}>Operator Clock Num</Text>
           </View>
           <View style={{ flex: 1, height: 36, alignItems: 'center', justifyContent: 'center' }}>
-            <Text style={{ fontSize: 14, fontWeight: 'bold', textAlign: 'center', width: '100%' }}>Q.C. Clock Num</Text>
+            <Text style={{ fontSize: 14, fontWeight: 'bold', textAlign: 'center', width: '100%' }}>{qcClockNumHeaderText}</Text>
           </View>
         </View>
         {/* Data Row */}
@@ -216,7 +225,7 @@ function LabelBlock({
       <View style={styles.workOrderTable}>
         <View style={{ flex: 1, height: 48, alignItems: 'center', justifyContent: 'center' }}>
           <Text style={{ fontSize: 24, textAlign: 'center', width: '100%' }}>
-            {productType === 'ACO' ? 'ACO Order' : 'Work Order Number'}
+            {workOrderName || (productType === 'ACO' ? 'ACO Order' : 'Work Order Number')}
           </Text>
         </View>
         <View style={{ flex: 1, height: 48, alignItems: 'center', justifyContent: 'center' }}>

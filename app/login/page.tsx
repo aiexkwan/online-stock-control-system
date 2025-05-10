@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { authenticateUser } from '../services/auth';
 import { Button } from "../../components/ui/button";
@@ -13,6 +13,12 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('user');
+    }
+  }, []);
 
   const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -36,7 +42,7 @@ export default function LoginPage() {
         };
 
         localStorage.setItem('user', JSON.stringify(adminData));
-        router.push('/dashboard');
+        router.push('/');
         return;
       }
 
@@ -53,7 +59,7 @@ export default function LoginPage() {
         localStorage.setItem('firstLogin', 'true');
         router.push('/new-password');
       } else {
-        router.push('/dashboard');
+        router.push('/');
       }
 
     } catch (err) {

@@ -1,15 +1,20 @@
 "use client";
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { format } from 'date-fns';
 import debounce from 'lodash/debounce';
 import { PrintLabelPdf } from '../../components/print-label-pdf';
 import dynamic from 'next/dynamic';
+// For PDF generation and upload
+import { pdf } from '@react-pdf/renderer';
 
 const ManualPdfDownloadButton = dynamic(
   () => import('../../components/print-label-pdf/ManualPdfDownloadButton'),
   { ssr: false }
 );
+
+// Define ProgressStatus type similar to QcLabelForm
+type ProgressStatus = 'Pending' | 'Processing' | 'Success' | 'Failed';
 
 export default function PrintGrnLabelPage() {
   // 主表單狀態
@@ -36,7 +41,6 @@ export default function PrintGrnLabelPage() {
     octo: '',
     notIncluded: '',
   });
-  const [debugMsg, setDebugMsg] = useState('');
   const grossWeightRef = useRef<HTMLInputElement>(null);
   const [supplierInfo, setSupplierInfo] = useState<string | null>(null);
   const [supplierError, setSupplierError] = useState<string | null>(null);
@@ -54,6 +58,10 @@ export default function PrintGrnLabelPage() {
   }>(null);
   // 1. 新增 grossWeights 狀態
   const [grossWeights, setGrossWeights] = useState<string[]>(['']);
+  const [userId, setUserId] = useState<string>('');
+  // Update pdfProgress state to match QcLabelForm structure
+  const [pdfProgress, setPdfProgress] = useState<{ current: number; total: number; status: ProgressStatus[] }>({ current: 0, total: 0, status: [] });
+  const [pdfUploadSuccess, setPdfUploadSuccess] = useState(false); // This might be refactored or used alongside new progress
 
   // 2. 動態計算 pallet 數量（以 Pallet Type 欄位總和為主，最大 22）
   const palletCount = Math.min(22, Object.values(palletType).reduce((sum, v) => sum + (parseInt(v) || 0), 0) || 1);
@@ -69,6 +77,21 @@ export default function PrintGrnLabelPage() {
       return prev;
     });
   }, [palletCount]);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const userStr = localStorage.getItem('user');
+      if (userStr) {
+        try {
+          const userData = JSON.parse(userStr);
+          setUserId(userData.id || '');
+        } catch (e) {
+          console.error("Failed to parse user data from localStorage", e);
+          setUserId('');
+        }
+      }
+    }
+  }, []);
 
   // 4. 處理 input 變動
   const handleGrossWeightChange = (idx: number, value: string) => {
@@ -126,7 +149,7 @@ export default function PrintGrnLabelPage() {
   const isPalletTypeFilled = Object.values(palletType).some(v => v.trim() !== '');
   const isPackageTypeFilled = Object.values(packageType).some(v => v.trim() !== '');
   const isAnyGrossWeightFilled = grossWeights.some(v => v.trim() !== '');
-  const canPrint = isFormFilledWithoutGrossWeight && isPalletTypeFilled && isPackageTypeFilled && isAnyGrossWeightFilled;
+  const canPrint = isFormFilledWithoutGrossWeight && isPalletTypeFilled && isPackageTypeFilled && isAnyGrossWeightFilled && !!productInfo && !!supplierInfo;
 
   // Pallet/Package Type 對應重量
   const PALLET_WEIGHT: Record<string, number> = {
@@ -254,189 +277,166 @@ export default function PrintGrnLabelPage() {
     }
   };
 
-  // 上傳處理
-  const handlePrintLabel = async () => {
-    // 取得 Pallet Type 有值的 key/value
-    const palletKey = Object.keys(palletType).find(k => palletType[k as keyof typeof palletType].trim() !== '');
-    const palletVal = palletKey ? Number(palletType[palletKey as keyof typeof palletType]) : 0;
-    // 取得 Package Type 有值的 key/value
-    const packageKey = Object.keys(packageType).find(k => packageType[k as keyof typeof packageType].trim() !== '');
-    const packageVal = packageKey ? Number(packageType[packageKey as keyof typeof packageType]) : 0;
+  const PALLET_TYPE_DB_VAL: Record<string, string> = {
+    whiteDry: 'White_Dry',
+    whiteWet: 'White_Wet',
+    chepDry: 'Chep_Dry',
+    chepWet: 'Chep_Wet',
+    euro: 'Euro',
+    notIncluded: 'Not_Included_Pallet',
+  };
+  const PACKAGE_TYPE_DB_VAL: Record<string, string> = {
+    still: 'Still',
+    bag: 'Bag',
+    tote: 'Tote',
+    octo: 'Octo',
+    notIncluded: 'Not_Included_Package',
+  };
 
-    // 取得今天已用的 pallet number 最大值
+  // Helper function for PDF generation and upload
+  async function generateAndUploadGrnPdf(pdfDocData: any, fileName: string, supabaseClient: any) {
+    const blob = await pdf(<PrintLabelPdf {...pdfDocData} />).toBlob();
+    if (!(blob instanceof Blob)) {
+      throw new Error('PDF generation did not return a Blob.');
+    }
+    const filePath = `grn_labels/${fileName}`;
+    const { data, error } = await supabaseClient.storage
+      .from('pallet-label-pdf')
+      .upload(filePath, blob, {
+        cacheControl: '3600',
+        upsert: true,
+        contentType: 'application/pdf',
+      });
+    if (error) throw new Error(error.message || 'Failed to upload PDF to Supabase.');
+    if (!data || !data.path) throw new Error(`Upload for ${filePath} succeeded but no path was returned.`);
+    const { data: publicUrlData } = supabaseClient.storage.from('pallet-label-pdf').getPublicUrl(data.path);
+    if (!publicUrlData || !publicUrlData.publicUrl) throw new Error(`Failed to get public URL for ${data.path}.`);
+    return publicUrlData.publicUrl;
+  }
+
+  const handlePrintLabel = async () => {
+    // Initialize/reset progress state correctly
+    const validGrossWeights = grossWeights.filter(gw => gw && gw.trim() !== '');
+    const totalPdfsToProcess = validGrossWeights.length;
+    if (totalPdfsToProcess === 0) return; // Nothing to process
+
+    setPdfProgress({ current: 0, total: totalPdfsToProcess, status: Array(totalPdfsToProcess).fill('Pending') });
+    setPdfUploadSuccess(false);
+
+    const todayForSeries = new Date();
+
+    async function generateUniqueSeries() {
+      const datePart = format(todayForSeries, 'yyMMddHH');
+      const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+      while (true) {
+        const randomPart = Array.from({ length: 6 }, () => chars.charAt(Math.floor(Math.random() * chars.length))).join('');
+        const series = `${datePart}-${randomPart}`;
+        const { data: exist } = await supabase.from('record_palletinfo').select('series').eq('series', series).limit(1);
+        if (!exist || exist.length === 0) return series;
+      }
+    }
+
     const today = new Date();
     const dateStr = format(today, 'ddMMyy');
-    const { data: todayPlts } = await supabase
-      .from('record_palletinfo')
-      .select('plt_num')
-      .like('plt_num', `${dateStr}/%`);
+    const { data: todayPlts } = await supabase.from('record_palletinfo').select('plt_num').like('plt_num', `${dateStr}/%`);
     let maxNum = 0;
     if (todayPlts && todayPlts.length > 0) {
       todayPlts.forEach(row => {
         const parts = row.plt_num.split('/');
-        if (parts.length === 2 && !isNaN(Number(parts[1]))) {
-          maxNum = Math.max(maxNum, parseInt(parts[1]));
-        }
+        if (parts.length === 2 && !isNaN(Number(parts[1]))) maxNum = Math.max(maxNum, parseInt(parts[1]));
       });
     }
     let nextPalletNum = maxNum + 1;
     const generateTime = format(today, 'dd-MMM-yyyy HH:mm:ss');
+    const grnRefForRemark = form.grnNumber.trim();
 
-    // 依序處理每個有值的 grossWeights
-    for (let i = 0; i < grossWeights.length; i++) {
-      const gw = grossWeights[i];
-      if (!gw || gw.trim() === '') continue;
+    let processedDbOperations = 0;
+
+    for (let i = 0; i < totalPdfsToProcess; i++) {
+      const gw = validGrossWeights[i]; // Use item from filtered list
+      // Update status to Processing for the current item
+      setPdfProgress(prev => ({
+        ...prev,
+        status: prev.status.map((s, idx) => idx === i ? 'Processing' : s)
+      }));
+
       const grossWeight = Number(gw);
-      // 計算 net weight
-      const palletWeight = palletKey ? (PALLET_WEIGHT[palletKey] * palletVal) : 0;
-      const packageWeight = packageKey ? (PACKAGE_WEIGHT[packageKey] * packageVal) : 0;
-      const netWeight = grossWeight - palletWeight - packageWeight;
-      // 生成 pallet number
-      const palletNum = `${dateStr}/${nextPalletNum++}`;
-      // 生成唯一 series
-      async function generateUniqueSeries() {
-        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-        while (true) {
-          const series = Array.from({ length: 12 }, () => chars.charAt(Math.floor(Math.random() * chars.length))).join('');
-          const { data: exist } = await supabase
-            .from('record_palletinfo')
-            .select('series')
-            .eq('series', series)
-            .limit(1);
-          if (!exist || exist.length === 0) return series;
-        }
-      }
+      const netWeight = grossWeight - ( (PALLET_WEIGHT[Object.keys(palletType).find(k => palletType[k as keyof typeof palletType].trim() !== '') as keyof typeof PALLET_WEIGHT || 'notIncluded'] || 0) + (PACKAGE_WEIGHT[Object.keys(packageType).find(k => packageType[k as keyof typeof packageType].trim() !== '') as keyof typeof PACKAGE_WEIGHT || 'notIncluded'] || 0) );
+      const palletNum = `${dateStr}/${nextPalletNum + i}`; // Ensure palletNum is unique for this batch
       const series = await generateUniqueSeries();
-      // === 插入 palletInfo（record_palletinfo） ===
-      const palletInfoData: any = {
-        plt_num: palletNum,
-        generate_time: generateTime,
-        product_code: form.productCode,
-        product_qty: netWeight,
-        series,
-        plt_remark: 'Material GRN',
-      };
-      const { error: palletInfoError } = await supabase.from('record_palletinfo').insert([palletInfoData]);
-      if (palletInfoError) {
-        setDebugMsg(prev => prev + `\nPallet Num: ${palletNum}\nInsert palletInfo failed: ${palletInfoError.message}`);
-        setPdfData(null);
-        continue;
-      }
-      // === 組合 record_grn insert 資料 ===
-      const insertData: any = {
-        grn_ref: form.grnNumber,
-        sup_code: form.materialSupplier,
-        material_code: form.productCode,
-        gross_weight: grossWeight,
-        net_weight: netWeight,
-        plt_num: palletNum,
-      };
-      // Pallet Type 對應欄位
-      if (palletKey && palletVal) {
-        if (palletKey === 'whiteDry') insertData.white_dry = palletVal;
-        if (palletKey === 'whiteWet') insertData.white_wet = palletVal;
-        if (palletKey === 'chepDry') insertData.chep_dry = palletVal;
-        if (palletKey === 'chepWet') insertData.chep_wet = palletVal;
-        if (palletKey === 'euro') insertData.euro = palletVal;
-        if (palletKey === 'notIncluded') insertData.no_plt = palletVal;
-      }
-      // Package Type 對應欄位
-      if (packageKey && packageVal) {
-        if (packageKey === 'still') insertData.still = packageVal;
-        if (packageKey === 'bag') insertData.bag = packageVal;
-        if (packageKey === 'tote') insertData.tote = packageVal;
-        if (packageKey === 'octo') insertData.octo = packageVal;
-        if (packageKey === 'notIncluded') insertData.no_pack = packageVal;
-      }
-      // 上傳到 supabase.record_grn
-      const { error } = await supabase.from('record_grn').insert([insertData]);
-      if (error) {
-        setDebugMsg(prev => prev + `\nPallet Num: ${palletNum}\nInsert record_grn failed: ${error.message}`);
-        setPdfData(null);
-        continue;
-      } else {
-        setDebugMsg(prev => prev + `\nPallet Num: ${palletNum}\nInsert success!`);
-        // === 新增/更新 record_inventory ===
-        const { data: inv, error: invError } = await supabase
-          .from('record_inventory')
-          .select('await')
-          .eq('product_code', form.productCode)
-          .maybeSingle();
-        if (invError) {
-          setDebugMsg(prev => prev + `\nInventory Query Error: ${invError.message}`);
-        } else if (inv) {
-          // 有舊記錄，更新 await
+      const currentUserId = userId ? parseInt(userId, 10) : null;
+
+      try {
+        // DB Operations
+        const palletInfoData = { plt_num: palletNum, generate_time: generateTime, product_code: form.productCode.trim(), product_qty: netWeight, series, plt_remark: `Material GRN - ${grnRefForRemark}` };
+        const { error: palletInfoError } = await supabase.from('record_palletinfo').insert([palletInfoData]);
+        if (palletInfoError) throw new Error(`PalletInfo Insert: ${palletInfoError.message}`);
+
+        const grnRecordData = { grn_ref: parseInt(form.grnNumber.trim(), 10), sup_code: form.materialSupplier.trim(), material_code: form.productCode.trim(), gross_weight: grossWeight, net_weight: netWeight, plt_num: palletNum, pallet: PALLET_TYPE_DB_VAL[Object.keys(palletType).find(k => palletType[k as keyof typeof palletType].trim() !== '') || 'notIncluded'], package: PACKAGE_TYPE_DB_VAL[Object.keys(packageType).find(k => packageType[k as keyof typeof packageType].trim() !== '') || 'notIncluded'] };
+        const { error: grnInsertError } = await supabase.from('record_grn').insert([grnRecordData]);
+        if (grnInsertError) throw new Error(`GRN Record Insert: ${grnInsertError.message}`);
+        
+        const { data: inv, error: invError } = await supabase.from('record_inventory').select('await, uuid').eq('product_code', form.productCode.trim()).maybeSingle();
+        if (invError) throw new Error(`Inventory Query: ${invError.message}`);
+        if (inv) {
           const newAwait = (Number(inv.await) || 0) + netWeight;
-          const { error: updateError } = await supabase
-            .from('record_inventory')
-            .update({ await: newAwait })
-            .eq('product_code', form.productCode);
-          if (updateError) {
-            setDebugMsg(prev => prev + `\nInventory Update Error: ${updateError.message}`);
-          } else {
-            setDebugMsg(prev => prev + `\nInventory Updated: await = ${newAwait}`);
-          }
+          const { error: updateError } = await supabase.from('record_inventory').update({ await: newAwait, latest_update: new Date().toISOString() }).eq('uuid', inv.uuid);
+          if (updateError) throw new Error(`Inventory Update: ${updateError.message}`);
         } else {
-          // 無舊記錄，新增
-          const { error: insertInvError } = await supabase
-            .from('record_inventory')
-            .insert({ product_code: form.productCode, await: netWeight });
-          if (insertInvError) {
-            setDebugMsg(prev => prev + `\nInventory Insert Error: ${insertInvError.message}`);
-          } else {
-            setDebugMsg(prev => prev + `\nInventory Inserted: await = ${netWeight}`);
-          }
+          const { error: insertInvError } = await supabase.from('record_inventory').insert({ product_code: form.productCode.trim(), await: netWeight, latest_update: new Date().toISOString() });
+          if (insertInvError) throw new Error(`Inventory Insert: ${insertInvError.message}`);
         }
-        // === 新增 record_history ===
-        const now = new Date();
-        const historyData: {
-          action: string;
-          time: string;
-          id: number | null;
-          plt_num: string;
-          loc: string;
-          remark: string;
-        } = {
-          action: 'Material Receive',
-          time: format(now, 'dd-MMM-yyyy HH:mm:ss'),
-          id: null,
-          plt_num: palletNum,
-          loc: 'Fold Mill',
-          remark: `GRN ${form.grnNumber} - ${form.materialSupplier}`,
-        };
-        // 嘗試取得 user id
-        let userId: number | null = null;
-        if (typeof window !== 'undefined') {
-          const userStr = localStorage.getItem('user');
-          if (userStr) {
-            try {
-              const userData = JSON.parse(userStr);
-              userId = typeof userData.id === 'number' ? userData.id : Number(userData.id) || null;
-            } catch {}
-          }
-        }
-        historyData.id = userId;
+
+        const historyData = { action: 'Material Receive', time: format(new Date(), 'dd-MMM-yyyy HH:mm:ss'), id: currentUserId, plt_num: palletNum, loc: 'Fold Mill', remark: `GRN ${grnRefForRemark} - ${form.materialSupplier.trim()}` };
         const { error: historyError } = await supabase.from('record_history').insert([historyData]);
-        if (historyError) {
-          setDebugMsg(prev => prev + `\nHistory Insert Error: ${historyError.message}`);
-        } else {
-          setDebugMsg(prev => prev + `\nHistory Inserted!`);
-        }
-        // 產生 PDF label 資料（僅顯示最後一筆）
-        setPdfData({
-          productCode: form.productCode,
-          description: productInfo || '',
-          quantity: netWeight,
-          date: generateTime,
-          operatorClockNum: '',
-          qcClockNum: '',
-          series,
-          palletNum,
-        });
+        if (historyError) throw new Error(`History Insert: ${historyError.message}`);
+        
+        processedDbOperations++; // Only increment if all DB ops for this pallet succeed
+
+        // PDF Generation and Upload
+        const pdfDocData = { productCode: form.productCode.trim(), description: productInfo || '', quantity: netWeight.toString(), date: format(today, 'dd-MMM-yyyy'), operatorClockNum: '-', qcClockNum: currentUserId ? String(currentUserId) : '-', series, palletNum, workOrderName: 'GRN Receive Ref', workOrderNumber: `${form.grnNumber.trim()} (${form.materialSupplier.trim().toUpperCase()})`, labelType: 'GRN' };
+        const uploadFileName = `GRN_${palletNum.replace(/\//g, '-')}.pdf`;
+        await generateAndUploadGrnPdf(pdfDocData, uploadFileName, supabase);
+
+        setPdfProgress(prev => ({
+          current: prev.current + 1,
+          total: prev.total,
+          status: prev.status.map((s, idx) => idx === i ? 'Success' : s)
+        }));
+      } catch (error: any) {
+        console.error(`Error processing pallet ${i + 1} (Num: ${palletNum}):`, error.message);
+        setPdfProgress(prev => ({
+          ...prev, // Keep current count as is, or increment if preferred for failed attempts
+          status: prev.status.map((s, idx) => idx === i ? 'Failed' : s)
+        }));
+        // Optionally, log this error to Supabase 'report_log' table
       }
     }
-    // 清空所有 grossWeights
-    setGrossWeights(['']);
+    nextPalletNum += totalPdfsToProcess; // Adjust for next batch after loop
+
+    const allSuccessful = processedDbOperations === totalPdfsToProcess && pdfProgress.status.every(s => s === 'Success');
+
+    if (allSuccessful) {
+      setPdfUploadSuccess(true); // Maybe rename this or integrate into pdfProgress.status check
+      console.log(`Successfully processed and uploaded ${totalPdfsToProcess} PDF(s).`);
+      setTimeout(() => {
+        setPdfProgress({ current: 0, total: 0, status: [] });
+        setPdfUploadSuccess(false);
+        setForm(prevForm => ({ ...prevForm, productCode: '' }));
+        setProductInfo(null);
+        setProductError(null);
+        setPalletType({ whiteDry: '', whiteWet: '', chepDry: '', chepWet: '', euro: '', notIncluded: '' });
+        setPackageType({ still: '', bag: '', tote: '', octo: '', notIncluded: '' });
+        setGrossWeights(['']);
+      }, 3000);
+    } else {
+      console.error(`Not all operations were successful. DB ops: ${processedDbOperations}/${totalPdfsToProcess}. Check status lights.`);
+      // Keep progress bar as is to show failures. Reset after a longer timeout or manually.
+      setTimeout(() => {
+        // Optionally reset only if there were no successes, or based on other criteria
+        // setPdfProgress({ current: 0, total: 0, status: [] }); 
+      }, 7000);
+    }
   };
 
   return (
@@ -562,9 +562,39 @@ export default function PrintGrnLabelPage() {
             <button type="button" className={`w-full py-2 rounded-md text-white font-semibold transition-colors ${canPrint ? 'bg-blue-600 hover:bg-blue-700' : 'bg-gray-600 cursor-not-allowed'}`} disabled={!canPrint} onClick={handlePrintLabel}>
               Print Label
             </button>
-            {debugMsg && (
-              <div className="mt-4 text-sm text-yellow-300 whitespace-pre-wrap bg-gray-900 rounded p-3">{debugMsg}</div>
+            
+            {/* New Progress Bar UI (similar to QcLabelForm) */}
+            {pdfProgress.total > 0 && (
+            <div className="mt-4">
+                <div className="mb-2 text-xs text-gray-200">
+                PDF Generation Progress: {pdfProgress.current} / {pdfProgress.total}
+                </div>
+                <div className="w-full bg-gray-700 rounded h-4 overflow-hidden mb-2">
+                <div
+                    className="bg-blue-500 h-4 transition-all duration-300"
+                    style={{
+                    width: `${pdfProgress.total > 0 ? (pdfProgress.current / pdfProgress.total) * 100 : 0}%`,
+                    }}
+                />
+                </div>
+                <div className="flex flex-row gap-1 mt-1 flex-wrap">
+                {pdfProgress.status.map((s, i) => (
+                    <div
+                    key={i}
+                    className={`
+                        w-4 h-4 rounded-full flex items-center justify-center text-xs font-bold
+                        ${s === 'Success' ? 'bg-green-500 text-white' : s === 'Failed' ? 'bg-red-500 text-white' : s === 'Processing' ? 'bg-yellow-500 text-gray-900' : 'bg-gray-400 text-gray-900'}
+                    `}
+                    title={`Pallet ${i + 1}: ${s}`}
+                    >
+                    {/* Optionally show numbers or icons based on status */}
+                    {s === 'Success' ? '✓' : s === 'Failed' ? '✗' : ''} {/* Show pallet num only if pending, or nothing*/}
+                    </div>
+                ))}
+                </div>
+            </div>
             )}
+            {/* End New Progress Bar UI */}
           </div>
         </div>
       </div>

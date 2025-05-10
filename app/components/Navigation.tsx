@@ -60,7 +60,7 @@ export default function Navigation() {
         {/* Home */}
                     <Link
           key="Home"
-          href="/dashboard"
+          href="/"
           className="flex items-center px-4 py-2 text-base font-medium rounded-md mb-4 text-gray-300 hover:bg-gray-700 hover:text-white"
                     >
           <HomeIcon className="mr-3 h-6 w-6" />

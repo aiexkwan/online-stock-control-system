@@ -107,17 +107,35 @@ export default function QcLabelForm() {
   useEffect(() => {
     if (productInfo?.type === 'ACO') {
       const fetchAcoOrderRefs = async () => {
+        // Select order_ref and remain_qty
         const { data, error } = await supabase
           .from('record_aco')
-          .select('order_ref'); // Select all order_refs
+          .select('order_ref, remain_qty'); 
 
         if (error) {
           console.error('[QcLabelForm] Error fetching ACO order refs:', error);
           setAvailableAcoOrderRefs([]);
         } else if (data) {
-          const refs = data.map(item => item.order_ref).filter(ref => ref !== null && ref !== undefined) as number[];
-          const uniqueSortedRefs = Array.from(new Set(refs)).sort((a, b) => a - b); // Sort numerically
-          setAvailableAcoOrderRefs(uniqueSortedRefs);
+          // Group by order_ref and sum remain_qty
+          const groupedByOrderRef = data.reduce<Record<string, { totalRemainQty: number }>>((acc, record) => {
+            const orderRefStr = String(record.order_ref); // Ensure order_ref is a string for keying
+            if (record.order_ref !== null && record.order_ref !== undefined) {
+              acc[orderRefStr] = acc[orderRefStr] || { totalRemainQty: 0 };
+              acc[orderRefStr].totalRemainQty += (record.remain_qty || 0);
+            }
+            return acc;
+          }, {});
+
+          // Filter out completed orders (totalRemainQty <= 0) and get unique, sorted refs
+          const activeOrderRefs = Object.entries(groupedByOrderRef)
+            .filter(([, value]) => value.totalRemainQty > 0)
+            .map(([key]) => parseInt(key, 10)) // Convert string key back to number
+            .filter(ref => !isNaN(ref)); // Ensure only valid numbers are included
+          
+          const uniqueSortedActiveRefs = Array.from(new Set(activeOrderRefs)).sort((a, b) => a - b);
+          
+          console.log('[QcLabelForm] Filtered Active ACO Order Refs:', uniqueSortedActiveRefs);
+          setAvailableAcoOrderRefs(uniqueSortedActiveRefs);
         }
       };
       fetchAcoOrderRefs();
@@ -230,11 +248,23 @@ export default function QcLabelForm() {
     // Define workOrderNumberVariableForFallback (used for PDF, ensure Slate gets '-')
     let workOrderNumberVariableForFallback = '-'; 
     if (productInfo?.type === 'ACO' && acoOrderRef.trim()) {
-      workOrderNumberVariableForFallback = acoOrderRef.trim(); 
-    } else if (productInfo?.type && productInfo.type !== 'Slate') { 
-      workOrderNumberVariableForFallback = productInfo.type;
+      const acoRefForPDF = acoOrderRef.trim();
+      if (acoRefForPDF) {
+        let existingPalletCount = 0;
+        const { data: existingPlts, error: countError } = await supabase
+          .from('record_palletinfo')
+          .select('plt_remark', { count: 'exact' })
+          .like('plt_remark', `ACO Ref : ${acoRefForPDF}%`);
+        
+        if (countError) {
+          console.error('[handlePrintLabel] Error counting existing ACO pallets:', countError);
+        } else if (existingPlts) {
+          existingPalletCount = existingPlts.length;
+        }
+        workOrderNumberVariableForFallback = `${acoRefForPDF} - ${existingPalletCount + 1}${getOrdinalSuffix(existingPalletCount + 1)} PLT`;
+      }
     }
-    
+
     // --- Step 1 Refactor: Pre-generate pallet numbers and series --- START ---
     let maxNum = 0;
     const { data: todayPlts, error: todayPltsError } = await supabase
@@ -259,52 +289,46 @@ export default function QcLabelForm() {
     const numberOfPalletsToGenerate = productInfo?.type === 'Slate' ? 1 : countNum;
     const palletNumbersToUse = Array.from({ length: numberOfPalletsToGenerate }).map((_, i) => `${dateStr}/${maxNum + 1 + i}`);
     
-    async function generateUniqueSeriesArr(n: number) {
-      function generateSmartCode() {
-        const datePart = new Date().toISOString().slice(2, 10).replace(/-/g, '');
-        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-        let randomPart = '';
-        for (let i = 0; i < 6; i++) {
-          const idx = window.crypto ? window.crypto.getRandomValues(new Uint32Array(1))[0] % chars.length : Math.floor(Math.random() * chars.length);
-          randomPart += chars[idx];
-        }
-        return `${datePart}-${randomPart}`;
-      }
-      const result: string[] = [];
+    async function generateUniqueSeriesArr(numToGenerate: number): Promise<string[]> {
+      const generatedSeries: string[] = [];
+      const datePart = format(new Date(), 'yyMMddHH'); // Get date part once for the batch
+      const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
       let attempts = 0;
-      while (result.length < n && attempts < n * 3) { 
-        const series = generateSmartCode();
-        const { data: exist, error: seriesCheckError } = await supabase
-          .from('record_palletinfo')
-          .select('series')
-          .eq('series', series)
-          .limit(1);
-        if (seriesCheckError){
-            console.error('Series check error:', seriesCheckError);
-            // Log and decide if this is fatal or allow to proceed with potentially non-unique series
-            logErrorReport(`Series check error: ${seriesCheckError.message}`, `Generating series for ${n} pallets`).catch(console.error);
-            // For now, not returning, but this is a risk
-        }
-        if ((!exist || exist.length === 0) && !result.includes(series)) {
-          result.push(series);
-        }
-        attempts++;
-      }
-      if (result.length < n) {
-        const errMsg = `Could not generate enough unique series. Required: ${n}, Generated: ${result.length}`;
-        setDebugMsg(`ERROR: ${errMsg}`);
-        logErrorReport(errMsg, `Series Generation Failed - Pallets: ${palletNumbersToUse.join(',')}`).catch(console.error);
-        return null; // Indicate failure
-      }
-      return result;
-    }
-    const seriesToUse = await generateUniqueSeriesArr(numberOfPalletsToGenerate);
+      const maxAttempts = numToGenerate * 5; // Allow more attempts to find unique series
 
-    if (!seriesToUse) { 
-      // Debug message already set by generateUniqueSeriesArr if it returned null
-      return; // Critical error, cannot proceed
+      while (generatedSeries.length < numToGenerate && attempts < maxAttempts) {
+        const randomPart = Array.from({ length: 6 }, () => chars.charAt(Math.floor(Math.random() * chars.length))).join('');
+        const candidateSeries = `${datePart}-${randomPart}`;
+        attempts++;
+
+        if (!generatedSeries.includes(candidateSeries)) { // Check local uniqueness first
+          const { data: dbCheck, error: dbError } = await supabase
+            .from('record_palletinfo')
+            .select('series')
+            .eq('series', candidateSeries)
+            .limit(1);
+
+          if (dbError) {
+            console.error('Error checking series uniqueness in DB:', dbError);
+            // Decide if we should throw, or try again, or skip. For now, log and continue trying.
+          } else if (!dbCheck || dbCheck.length === 0) {
+            generatedSeries.push(candidateSeries);
+          }
+        }
+      }
+
+      if (generatedSeries.length < numToGenerate) {
+        // This case means we couldn't generate enough unique series.
+        // Log an error or throw, as this is a critical failure.
+        const errorMessage = `Could not generate enough unique series. Requested: ${numToGenerate}, Generated: ${generatedSeries.length}`;
+        console.error(errorMessage);
+        // await logErrorReport('UniqueSeriesGeneration', errorMessage); // If logErrorReport is available and appropriate
+        throw new Error(errorMessage);
+      }
+      return generatedSeries;
     }
-    // --- Step 1 Refactor: Pre-generate pallet numbers and series --- END ---
+
+    const seriesArr = await generateUniqueSeriesArr(countNum);
 
     // Determine the plt_remark for the entire batch
     let plt_remark_for_batch = '-'; // Default remark
@@ -341,7 +365,7 @@ export default function QcLabelForm() {
         generate_time: generateTime,
         product_code: productCode,
         product_qty: quantity,
-        series: seriesToUse[i],
+        series: seriesArr[i],
         plt_remark: plt_remark_for_batch, // Use the pre-calculated batch remark
       };
       return palletData;

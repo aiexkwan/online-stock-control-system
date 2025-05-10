@@ -21,9 +21,10 @@ import {
   ChatBubbleLeftRightIcon
 } from '@heroicons/react/24/outline';
 import { supabase } from '../lib/supabase';
-import PalletRatio from './components/PalletRatio';
 import PalletDonutChart from './components/PalletDonutChart';
 import PrintHistory from './components/PrintHistory';
+import GrnHistory from './components/GrnHistory';
+import AcoOrderStatus from './components/AcoOrderStatus';
 
 const features = [
   {
@@ -67,12 +68,15 @@ export default function HomePage() {
     totalProducts: 0,
     lowStockItems: 0,
     recentTransactions: 0,
-    pendingOrders: 0
+    pendingOrders: 0,
+    dailyDonePallets: 0,
+    dailyTransferredPallets: 0,
   });
   const [recentActivity, setRecentActivity] = useState<any[]>([]);
   const isNavigating = useRef(false);
 
   useEffect(() => {
+    // 已移除自動清除 localStorage 的邏輯
     const loadUserData = async () => {
       console.log('首頁: 開始載入用戶數據...');
       if (typeof window !== 'undefined') {
@@ -153,6 +157,32 @@ export default function HomePage() {
       if (pendingOrdersError) console.error('獲取待處理訂單錯誤:', pendingOrdersError);
       else console.log('獲取待處理訂單成功, 數量:', pendingOrdersData?.length || 0);
 
+      // 獲取當天完成的板數 (PalletDonutChart 'done' value)
+      const today = new Date();
+      const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 0, 0, 0, 0);
+      const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59, 999);
+
+      const { count: dailyDoneCount, error: dailyDoneError } = await supabase
+        .from('record_palletinfo')
+        .select('*', { count: 'exact', head: true })
+        .gte('generate_time', startOfDay.toISOString())
+        .lte('generate_time', endOfDay.toISOString());
+
+      if (dailyDoneError) console.error('獲取當天完成板數錯誤:', dailyDoneError);
+      else console.log('獲取當天完成板數成功, 數量:', dailyDoneCount || 0);
+
+      // 新增：獲取當天由 Production 轉移至 Fold Mill 的 pallets 數量
+      const { count: dailyTransferredCount, error: dailyTransferredError } = await supabase
+        .from('record_transfer')
+        .select('*', { count: 'exact', head: true })
+        .eq('f_loc', 'Production')
+        .eq('t_loc', 'Fold Mill')
+        .gte('tran_date', startOfDay.toISOString()) // Assuming tran_date is the relevant timestamp
+        .lte('tran_date', endOfDay.toISOString());
+
+      if (dailyTransferredError) console.error('獲取當天轉移板數錯誤:', dailyTransferredError);
+      else console.log('獲取當天轉移板數成功, 數量:', dailyTransferredCount || 0);
+
       // 獲取最近活動
       const { data: recentActivityData, error: recentActivityError } = await supabase
         .from('record_history')
@@ -168,7 +198,9 @@ export default function HomePage() {
         totalProducts: productsData?.length || 0,
         lowStockItems: lowStockData?.length || 0,
         recentTransactions: transactionsData?.length || 0,
-        pendingOrders: pendingOrdersData?.length || 0
+        pendingOrders: pendingOrdersData?.length || 0,
+        dailyDonePallets: dailyDoneCount || 0,
+        dailyTransferredPallets: dailyTransferredCount || 0,
       });
 
       // 更新最近活動
@@ -243,43 +275,47 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-gray-900">
-      {/* 測試冬甩圖顯示 */}
-      <div className="flex justify-center items-center py-8">
-        <PalletDonutChart done={3256} transferred={123} />
+      {/* Pallet 統計與甜甜圈圖左右排列 */}
+      <div className="flex flex-row items-center justify-center gap-8 py-8">
+        {/* 左側：原 PalletRatio 位置 - 現在移除或留空 */}
+        {/* <div className="flex flex-col gap-4">
+          <PalletRatio /> // This line will be removed 
+        </div> */}
+        
+        {/* 右側（或現在是中間）：甜甜圈圖 - 更新 props */}
+        <div>
+          <PalletDonutChart 
+            palletsDone={stats.dailyDonePallets} 
+            palletsTransferred={stats.dailyTransferredPallets} 
+          />
+        </div>
       </div>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* 頂部統計卡片區域 */}
+        {/* 
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-8">
           <div className="lg:col-span-2">
             <PalletRatio />
           </div>
         </div>
+        */}
 
-        {/* 功能按鈕區域 */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 mb-8">
-          {features.map((feature) => (
-            <button
-              key={feature.label}
-              onClick={() => router.push(feature.href)}
-              className={`${feature.color} bg-opacity-10 p-6 rounded-xl hover:bg-opacity-20 transition-all duration-200 flex flex-col items-center justify-center space-y-3 text-center`}
-            >
-              <feature.icon className={`h-8 w-8 ${feature.color.replace('bg-', 'text-')}`} />
-              <span className="text-sm font-medium text-gray-300">{feature.label}</span>
-            </button>
-          ))}
-        </div>
-
-        {/* 歷史記錄表格 */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Print History */}
-          <div className="bg-gray-800 rounded-lg p-6">
-            <h2 className="text-lg font-semibold text-white mb-4">Print History</h2>
+        {/* Added History Section */}
+        <div className="mt-8 grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="bg-gray-800 rounded-lg p-6 lg:col-span-2 shadow-lg">
+            <h2 className="text-xl font-semibold text-white mb-4">Print History</h2>
             <PrintHistory />
           </div>
+          <div className="bg-gray-800 rounded-lg p-6 shadow-lg">
+            <h2 className="text-xl font-semibold text-white mb-4">GRN History</h2>
+            <GrnHistory />
+          </div>
+        </div>
 
-          {/* GRN History */}
+        {/* Recent Activity Section (example from provided snippet, might need adjustment) */}
+        {recentActivity.length > 0 && (
           <div className="bg-gray-800 rounded-lg p-6">
-            <h2 className="text-lg font-semibold text-white mb-4">GRN History</h2>
+            <h2 className="text-lg font-semibold text-white mb-4">Recent Activity</h2>
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-700">
                 <thead>
@@ -290,25 +326,23 @@ export default function HomePage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-700">
-                  <tr>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-300">GRN/2024/001</td>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-300">PROD-A</td>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-300">10</td>
-                  </tr>
-                  <tr>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-300">GRN/2024/002</td>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-300">PROD-B</td>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-300">5</td>
-                  </tr>
-                  <tr>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-300">GRN/2024/003</td>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-300">PROD-C</td>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-300">7</td>
-                  </tr>
+                  {recentActivity.map((activity) => (
+                    <tr key={activity.id}>
+                      <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-300">{activity.grn_number}</td>
+                      <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-300">{activity.code}</td>
+                      <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-300">{activity.ttl_pallet}</td>
+                    </tr>
+                  ))}
                 </tbody>
               </table>
             </div>
           </div>
+        )}
+
+        {/* ACO Order Status Section -- 新增區塊 */}
+        <div className="mt-8 bg-gray-800 rounded-lg p-6 shadow-lg">
+          <h2 className="text-xl font-semibold text-white mb-4">ACO Order Status</h2>
+          <AcoOrderStatus />
         </div>
       </div>
     </div>
