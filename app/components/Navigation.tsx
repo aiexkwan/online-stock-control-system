@@ -33,7 +33,7 @@ const slideInVariants = {
 
 // Mobile sidebar variants
 const mobileSidebarVariants = {
-  closed: { x: '-100%', opacity: 0.8 },
+  closed: { x: '-100%', opacity: 0 },
   open: { x: '0%', opacity: 1 }
 };
 
