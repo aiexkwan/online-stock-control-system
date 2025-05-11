@@ -523,14 +523,18 @@ export default function QcLabelForm() {
 
     // === Add record_history ===
     const now = new Date();
-    const historyArr = insertDataArr.map((d) => ({
-      time: now.toISOString(),
-      id: userId ? parseInt(userId, 10) : null,
-      remark: operator.trim() ? 'Pre-Booking (Print Before Product Is Ready)' : 'QC Done (Product Finished And Ready)',
-      plt_num: d.plt_num,
-      loc: d.product_code.startsWith('U') ? 'PipeLine' : 'Production',
-      action: 'Production Finished Q.C.'
-    }));
+    const historyArr = insertDataArr.map((d) => {
+      const calculatedLoc = d.product_code.startsWith('U') ? 'PipeLine' : 'Awaiting';
+      console.log(`[DEBUG QcLabelForm record_history] Product Code: ${d.product_code}, Starts with U: ${d.product_code.startsWith('U')}, Calculated Loc: ${calculatedLoc}`);
+      return {
+        time: now.toISOString(),
+        id: userId ? parseInt(userId, 10) : null,
+        remark: operator.trim() ? 'Pre-Booking (Print Before Product Is Ready)' : 'QC Done (Product Finished And Ready)',
+        plt_num: d.plt_num,
+        loc: calculatedLoc, // 使用計算出的 loc
+        action: 'Production Finished Q.C.'
+      };
+    });
     const { error: historyError } = await supabase.from('record_history').insert(historyArr);
     if (historyError) {
       setDebugMsg(prev => prev + `\nHistory Insert Error: ${historyError.message}`);

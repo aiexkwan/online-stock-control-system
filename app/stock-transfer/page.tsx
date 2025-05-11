@@ -27,18 +27,23 @@ export default function StockTransferPage() {
   const [palletNumInput, setPalletNumInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   
+  interface ActivityLogEntry {
+    message: string;
+    type: 'success' | 'error' | 'info'; // 'info' 可以用於一般提示
+  }
+
   const [foundPallet, setFoundPallet] = useState<{
     plt_num: string;
     product_code: string;
     product_qty: number;
   } | null>(null);
-  const [activityLog, setActivityLog] = useState<string[]>([]); // New state for activity log
+  const [activityLog, setActivityLog] = useState<ActivityLogEntry[]>([]);
 
   const resetState = () => {
     setSeriesInput('');
     setPalletNumInput('');
     setFoundPallet(null);
-    setActivityLog([]); // Clear activity log on reset
+    // setActivityLog([]); //不再清除 activityLog，使其成為儲存式
   };
 
   const logHistory = async (action: string, plt_num_val: string | null, loc_val: string | null, remark_val: string | null) => {
@@ -100,14 +105,17 @@ export default function StockTransferPage() {
         setFoundPallet(palletData);
         await fetchLatestLocation(palletData.plt_num, palletData.product_code, palletData.product_qty);
       } else {
-        const palletNotFoundMsg = `Pallet [${searchedValueDisplay}] Not Found. Please Check Or Try Again`;
-        toast.error(palletNotFoundMsg);
+        const palletNotFoundMsg = `Pallet : ${searchedValueDisplay} Not Exist. Please Check Again - ${format(new Date(), 'dd-MMM-yyyy HH:mm:ss')}`;
+        const newEntry: ActivityLogEntry = { message: palletNotFoundMsg, type: 'error' };
+        setActivityLog(prevLog => [newEntry, ...prevLog].slice(0, 50));
         await logHistory("Stock Move Fail", searchedValueDisplay, null, `Pallet Not Found`);
         errorOccurred = true;
       }
     } catch (error: any) {
       console.error('Error searching pallet:', error);
-      toast.error(`Error searching pallet: ${error.message}`);
+      const searchErrorMsg = `Error searching pallet ${searchedValueDisplay}: ${error.message} - ${format(new Date(), 'dd-MMM-yyyy HH:mm:ss')}`;
+      const newEntry: ActivityLogEntry = { message: searchErrorMsg, type: 'error' };
+      setActivityLog(prevLog => [newEntry, ...prevLog].slice(0, 50)); 
       await logHistory("Stock Move Fail", searchedValueDisplay, null, `Search Error: ${error.message}`);
       errorOccurred = true;
     } finally {
@@ -138,7 +146,9 @@ export default function StockTransferPage() {
 
     } catch (error: any) {
       console.error('Error fetching latest location:', error);
-      toast.error(`Error fetching location for ${pltNum}: ${error.message}`);
+      const fetchLocErrorMsg = `Error fetching location for ${pltNum}: ${error.message} - ${format(new Date(), 'dd-MMM-yyyy HH:mm:ss')}`;
+      const newEntry: ActivityLogEntry = { message: fetchLocErrorMsg, type: 'error' };
+      setActivityLog(prevLog => [newEntry, ...prevLog].slice(0, 50));
       await logHistory("Stock Move Fail", pltNum, null, `Fetch Location Error: ${error.message}`);
       setIsLoading(false);
       setSeriesInput('');
@@ -155,7 +165,9 @@ export default function StockTransferPage() {
     setIsLoading(true);
     const userId = getUserId();
     if (!userId) {
-      toast.error('User ID not found. Cannot process movement.');
+      const userIdErrorMsg = `User ID not found. Cannot process movement. - ${format(new Date(), 'dd-MMM-yyyy HH:mm:ss')}`;
+      const newEntry: ActivityLogEntry = { message: userIdErrorMsg, type: 'error' };
+      setActivityLog(prevLog => [newEntry, ...prevLog].slice(0, 50));
       setIsLoading(false);
       return;
     }
@@ -164,7 +176,7 @@ export default function StockTransferPage() {
     const isoTime = currentTime.toISOString();
 
     try {
-      let successMessage = '';
+      let activityLogMessage = ''; // 用於替換 successMessage
       let newLoc = null; // This will be the TARGET location
       let historyAction = "Stock Transfer"; 
       let historyRemark = '';
@@ -180,7 +192,7 @@ export default function StockTransferPage() {
               p_product_code: productCode,
               p_qty_change: productQty,
               p_from_col: 'await',
-              p_to_col: 'injection', // Target 'injection' for Z type to Production
+              p_to_col: 'injection',
               p_latest_update: isoTime
             });
           console.log('[Stock Transfer] RPC Awaiting (Z type) > Production invData:', invDataZA);
@@ -192,7 +204,7 @@ export default function StockTransferPage() {
           if (invDataZA && invDataZA.status !== 'success') {
             throw new Error(`Inventory update (Awaiting Z > Prod) returned: ${invDataZA.message || 'Unknown RPC non-success status'}`);
           }
-          successMessage = `Pallet ${pltNum}: Awaiting ➤ Production (${formattedTime})`;
+          activityLogMessage = `Pallet : ${pltNum}  -  Accepted  -  ${formattedTime}`;
         } else {
           newLoc = 'Fold Mill'; 
           historyRemark = 'Awaiting > Fold Mill';
@@ -215,7 +227,7 @@ export default function StockTransferPage() {
           if (invDataAF && invDataAF.status !== 'success') {
             throw new Error(`Inventory update (Awaiting non-Z > Fold) returned: ${invDataAF.message || 'Unknown RPC non-success status'}`);
           }
-          successMessage = `Pallet ${pltNum}: Awaiting ➤ Fold Mill (${formattedTime})`;
+          activityLogMessage = `Pallet : ${pltNum}  -  Accepted  -  ${formattedTime}`;
         }
       } else if (currentLocation === 'Fold Mill') {
         newLoc = 'Production'; // Target location
@@ -240,78 +252,80 @@ export default function StockTransferPage() {
         if (invDataF && invDataF.status !== 'success') {
             throw new Error(`Inventory update (Fold > Prod) returned: ${invDataF.message || 'Unknown RPC non-success status'}`);
        }
-        successMessage = `Pallet ${pltNum}: Fold Mill ➤ Production (${formattedTime})`;
+        activityLogMessage = `Pallet : ${pltNum}  -  Accepted  -  ${formattedTime}`;
 
       } else if (currentLocation === 'Void') {
         historyAction = 'Scan Voided Pallet';
         newLoc = null; // No new location for void scan
         historyRemark = ''; 
-        toast.info(`Pallet ${pltNum} Is A Voided Pallet. No transfer action taken. (${formattedTime})`);
-        // No inventory change. We log this specific scan attempt.
+        const voidMsg = `Pallet : ${pltNum} Is A Voided Pallet. Please Check Again - ${formattedTime}`;
+        const newEntry: ActivityLogEntry = { message: voidMsg, type: 'error' };
+        setActivityLog(prevLog => [newEntry, ...prevLog].slice(0, 50));
+        
          const { error: historyInsertError } = await supabase.from('record_history').insert({
           time: isoTime,
           id: userId,
-          action: historyAction, // "Scan Voided Pallet"
+          action: historyAction,
           plt_num: pltNum,
-          loc: null, // loc is null for this action
-          remark: `Scanned voided pallet. Current reported loc: ${currentLocation}`, // Or just empty as per spec
+          loc: null,
+          remark: `Scanned voided pallet. Current reported loc: ${currentLocation}`,
         });
         if (historyInsertError) {
             console.error("Error logging void scan: ", historyInsertError.message);
-            toast.error("Failed to log void pallet scan.");
-            // Decide if we still reset state or not
+            const voidLogErrorMsg = `Failed to log void pallet scan for ${pltNum} - ${format(new Date(), 'dd-MMM-yyyy HH:mm:ss')}`;
+            const errorEntry: ActivityLogEntry = { message: voidLogErrorMsg, type: 'error' };
+            setActivityLog(prevLog => [errorEntry, ...prevLog].slice(0, 50));
         }
-        resetState();
+        resetState(); // Keep resetState here for Void to clear inputs.
         setIsLoading(false);
-        return; // Exit early for void scan
+        return; 
 
       } else if (currentLocation === null) {
-        toast.info(`Pallet ${pltNum} has no prior location history. Cannot determine transfer path.`);
+        const noHistoryMsg = `Pallet : ${pltNum} Not Exist. Please Check Again - ${formattedTime}`; // Assuming no history means not exist for this user flow.
+        const newEntry: ActivityLogEntry = { message: noHistoryMsg, type: 'error' };
+        setActivityLog(prevLog => [newEntry, ...prevLog].slice(0, 50));
         await logHistory("Stock Move Fail", pltNum, null, "No prior location history");
-        resetState();
+        resetState(); 
         setIsLoading(false);
         return;
 
-      } else { // Unhandled current location (e.g., already at "Warehouse A", "Shipped", etc.)
-        // If currentLocation is something like "Warehouse A", and the user scans it with the intent to move from Prod/Fold,
-        // this means the pallet is not where the standard Prod/Fold transfer logic expects it.
-        toast.info(`Pallet ${pltNum} is currently at "${currentLocation}". Standard Production/Fold Mill transfer is not applicable.`);
+      } else { 
+        const unhandledLocMsg = `Pallet : ${pltNum} at unhandled location "${currentLocation}". Transfer not applicable - ${formattedTime}`;
+        const newEntry: ActivityLogEntry = { message: unhandledLocMsg, type: 'error' };
+        setActivityLog(prevLog => [newEntry, ...prevLog].slice(0, 50));
         await logHistory("Scan Failure", pltNum, currentLocation, `Scan at unhandled location for transfer: ${currentLocation}`);
         resetState();
         setIsLoading(false);
         return;
       }
 
-      // If we've reached here, it implies a standard transfer (Prod <-> Fold) was attempted AND the RPC was successful.
-      // Now, insert the primary history record for the successful transfer.
-      if (newLoc) { // newLoc would be 'Fold Mill' or 'Production'
+      if (newLoc) { 
         const { error: historyInsertError } = await supabase.from('record_history').insert({
           time: isoTime,
           id: userId,
-          action: historyAction, // Should be "Stock Transfer"
+          action: historyAction, 
           plt_num: pltNum,
-          loc: newLoc, // The new location
+          loc: newLoc, 
           remark: historyRemark,
         });
 
         if (historyInsertError) {
-          // If history logging fails after successful inventory update, this is problematic.
-          // Log an error, inform user, but inventory IS updated.
           console.error(`CRITICAL: Inventory for ${pltNum} updated, but failed to log history to ${newLoc}: ${historyInsertError.message}`);
-          toast.error(`Inventory updated, but history log failed for ${pltNum} to ${newLoc}. Please notify admin.`);
-          // We still reset state as the main operation (inventory) was done.
+          const criticalHistoryErrorMsg = `CRITICAL: History log failed for ${pltNum} to ${newLoc} (Inventory WAS updated) - ${format(new Date(), 'dd-MMM-yyyy HH:mm:ss')}`;
+          const errorEntry: ActivityLogEntry = { message: criticalHistoryErrorMsg, type: 'error' };
+          setActivityLog(prevLog => [errorEntry, ...prevLog].slice(0, 50));
         } else {
-          // toast.success(successMessage); // Remove toast for success
-          setActivityLog(prevLog => [successMessage, ...prevLog.slice(0, 4)]); // Add to activity log
+          const successEntry: ActivityLogEntry = { message: activityLogMessage, type: 'success' };
+          setActivityLog(prevLog => [successEntry, ...prevLog].slice(0, 50)); 
         }
-        resetState(); // Clear inputs on successful transfer
+        resetState(); 
       }
-      // NO else if (currentLocation !== 'Void') block needed here, removed the redundant logHistory call.
-      // The 'Void' case and other early exits are handled above.
-
+    
     } catch (error: any) {
       console.error('Error processing stock movement:', error);
-      toast.error(`Movement processing error: ${error.message}`);
+      const processingErrorMsg = `Movement processing error for ${pltNum}: ${error.message} - ${format(new Date(), 'dd-MMM-yyyy HH:mm:ss')}`;
+      const errorEntry: ActivityLogEntry = { message: processingErrorMsg, type: 'error' };
+      setActivityLog(prevLog => [errorEntry, ...prevLog].slice(0, 50));
       await logHistory("Stock Move Fail", pltNum, currentLocation, `Processing Error: ${error.message}`);
       resetState(); 
     } finally {
@@ -356,7 +370,7 @@ export default function StockTransferPage() {
         <div className="space-y-6">
           <div className="flex flex-col sm:flex-row sm:items-center sm:gap-12 w-full">
             <div className="flex items-center w-full sm:w-1/2 max-w-xl">
-              <label htmlFor="series" className="text-lg font-semibold mr-4 min-w-[90px] text-right">Series/Pallet</label>
+              <label htmlFor="series" className="text-lg font-semibold mr-4 min-w-[90px] text-right">QR Code</label>
               <input
                 id="series"
                 type="text"
@@ -409,11 +423,16 @@ export default function StockTransferPage() {
 
           {/* Activity Log Display */}
           {activityLog.length > 0 && (
-            <div className="mt-6 p-4 bg-gray-700 rounded-md text-sm">
+            <div className="mt-6 p-4 bg-gray-700 rounded-md text-base md:text-4xl">
               <h3 className="text-lg font-semibold text-orange-300 mb-3">Activity Log:</h3>
               <ul className="space-y-1">
-                {activityLog.map((log, index) => (
-                  <li key={index} className="text-gray-300">{`> ${log}`}</li>
+                {activityLog.map((logEntry, index) => (
+                  <li key={index} 
+                      className={`
+                        ${logEntry.type === 'success' ? 'text-yellow-400' : 'text-red-400'}
+                      `}>
+                      {`> ${logEntry.message}`}
+                  </li>
                 ))}
               </ul>
             </div>

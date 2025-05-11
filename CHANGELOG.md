@@ -90,7 +90,7 @@ All notable changes to this project will be documented in this file.
 - QC Label: Modified `handleAcoSearch` to alert and disable printing if `acoOrderRef` doesn't contain the current `productCode`.
 - Print Label Menu: "GRN Label" button in `PrintLabelPopover.tsx` now navigates directly to `/print-grnlabel`.
 - Corrected logic in `app/stock-transfer/page.tsx` for `p_from_col` when transferring from 'Fold Mill' to 'Production'.
-- Stock Transfer page (`app/stock-transfer/page.tsx`) now clears input fields after a successful transfer or when specific errors occur.
+- Stock Transfer page (`app/stock-transfer/page.tsx`) now clears input fields after a successful transfer or when specific errors occur (excluding void/unhandled location scans where inputs might be needed for correction by user).
 - Improved success messages in Stock Transfer page.
 - Stock Transfer: Initial location for pallets after QC label printing is now consistently expected to be 'Awaiting'.
 - QC Label Form: Confirmed `app/components/print-label-menu/QcLabelForm.tsx` sets initial `record_history.loc` to 'Awaiting' (unless product code starts with 'U').
@@ -98,6 +98,9 @@ All notable changes to this project will be documented in this file.
 - Stock Transfer: When a pallet's current location is 'Awaiting', the next destination is now conditional based on `productCode` ("Z" prefix goes to 'Production', others to 'Fold Mill').
 - Stock Transfer: Success messages for pallet transfers are now displayed in an on-page "Activity Log".
 - Stock Transfer: When scanning a pallet at an unhandled location for standard transfer (e.g., already in 'Production'), the `record_history.action` is now "Scan Failure" and `remark` is "Scan at unhandled location for transfer: [currentLocation]".
+- Stock Transfer: Messages in Activity Log are now persistent (not cleared on new actions), with new logs appearing at the top (max 50).
+- Stock Transfer: Activity Log messages are color-coded: yellow for success, red for errors/alerts.
+- Stock Transfer: Activity Log text size is responsive: `text-base` on mobile, `md:text-4xl` on larger screens.
 
 ### Fixed
 - **PDF Label Content (Dynamic Headers):**
