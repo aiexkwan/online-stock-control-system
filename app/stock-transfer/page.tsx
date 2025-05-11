@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../../lib/supabase'; // Assuming supabase client is here
 import { format } from 'date-fns'; // For date formatting
 import { Toaster, toast } from 'sonner'; // Import Toaster and toast
@@ -38,12 +38,18 @@ export default function StockTransferPage() {
     product_qty: number;
   } | null>(null);
   const [activityLog, setActivityLog] = useState<ActivityLogEntry[]>([]);
+  const [lastActiveInput, setLastActiveInput] = useState<'series' | 'pallet_num' | null>('series'); // 默認第一個欄位
+
+  // Refs for input elements
+  const seriesInputRef = useRef<HTMLInputElement>(null);
+  const palletNumInputRef = useRef<HTMLInputElement>(null);
 
   const resetState = () => {
     setSeriesInput('');
     setPalletNumInput('');
     setFoundPallet(null);
     // setActivityLog([]); //不再清除 activityLog，使其成為儲存式
+    // Focus logic will be handled by useEffect based on lastActiveInput
   };
 
   const logHistory = async (action: string, plt_num_val: string | null, loc_val: string | null, remark_val: string | null) => {
@@ -340,6 +346,9 @@ export default function StockTransferPage() {
       e.preventDefault();
       if (isLoading) return;
       
+      // Set last active input before handling search
+      setLastActiveInput(inputType);
+
       if (inputType === 'series' && seriesInput.trim()) {
         // Attempt to determine if it's a series or plt_num based on format/length
         // For now, let's assume series input can be EITHER series or plt_num if palletNumInput is empty
@@ -359,6 +368,20 @@ export default function StockTransferPage() {
     }
   };
   
+  useEffect(() => {
+    // Focus on the last active input when loading stops and there's an activity log update
+    // (indicating an operation just finished)
+    if (!isLoading && activityLog.length > 0) {
+      if (lastActiveInput === 'series' && seriesInputRef.current) {
+        seriesInputRef.current.focus();
+      } else if (lastActiveInput === 'pallet_num' && palletNumInputRef.current) {
+        palletNumInputRef.current.focus();
+      }
+    }
+    // We only want this effect to run when isLoading changes or activityLog gets a new entry.
+    // Adding lastActiveInput to dependencies could cause re-focus on other state changes.
+  }, [isLoading, activityLog]);
+
   return (
     <div className="pl-12 pt-16 min-h-screen bg-[#232532] text-white">
       <Toaster richColors position="top-right" />
@@ -378,11 +401,13 @@ export default function StockTransferPage() {
                 onChange={(e) => {
                   setSeriesInput(e.target.value);
                   if (palletNumInput) setPalletNumInput(''); 
+                  setLastActiveInput('series');
                 }}
                 onKeyDown={(e) => handleKeyDown(e, 'series')}
                 placeholder="Scan QR Code To Search"
                 className="flex-1 px-4 py-3 rounded-md bg-gray-900 border border-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 text-lg text-white"
                 disabled={isLoading}
+                ref={seriesInputRef}
               />
             </div>
             
@@ -395,11 +420,13 @@ export default function StockTransferPage() {
                 onChange={(e) => {
                   setPalletNumInput(e.target.value);
                   if (seriesInput) setSeriesInput(''); 
+                  setLastActiveInput('pallet_num');
                 }}
                 onKeyDown={(e) => handleKeyDown(e, 'pallet_num')}
                 placeholder="Input Pallet Number To Search"
                 className="flex-1 px-4 py-3 rounded-md bg-gray-900 border border-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 text-lg text-white"
                 disabled={isLoading}
+                ref={palletNumInputRef}
               />
             </div>
           </div>
