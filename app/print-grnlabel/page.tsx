@@ -387,7 +387,7 @@ export default function PrintGrnLabelPage() {
           if (insertInvError) throw new Error(`Inventory Insert: ${insertInvError.message}`);
         }
 
-        const historyData = { action: 'Material Receive', time: format(new Date(), 'dd-MMM-yyyy HH:mm:ss'), id: currentUserId, plt_num: palletNum, loc: 'Fold Mill', remark: `GRN ${grnRefForRemark} - ${form.materialSupplier.trim()}` };
+        const historyData = { action: 'Material Receive', time: format(new Date(), 'dd-MMM-yyyy HH:mm:ss'), id: currentUserId, plt_num: palletNum, loc: 'Awaiting', remark: `GRN ${grnRefForRemark} - ${form.materialSupplier.trim()}` };
         const { error: historyError } = await supabase.from('record_history').insert([historyData]);
         if (historyError) throw new Error(`History Insert: ${historyError.message}`);
         

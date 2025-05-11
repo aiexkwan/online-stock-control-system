@@ -72,10 +72,10 @@ export default function HomePage() {
     dailyDonePallets: 0,
     dailyTransferredPallets: 0,
   });
-  const [recentActivity, setRecentActivity] = useState<any[]>([]);
   const isNavigating = useRef(false);
 
   useEffect(() => {
+    console.log('首頁 useEffect: 開始執行...');
     // 已移除自動清除 localStorage 的邏輯
     const loadUserData = async () => {
       console.log('首頁: 開始載入用戶數據...');
@@ -88,31 +88,27 @@ export default function HomePage() {
             const userData = JSON.parse(userStr);
             console.log('首頁: 解析用戶數據成功: ', userData.id);
             setUser(userData);
-            setAuthChecked(true);
             await fetchDashboardData(userData.id);
-          } else {
-            console.log('首頁: 未發現用戶數據，準備重定向到登入頁');
             setAuthChecked(true);
-            isNavigating.current = true;
-            setTimeout(() => {
-              window.open('/login', '_self');
-            }, 500);
+          } else {
+            console.error('首頁 useEffect 關鍵日誌: 因 localStorage 無用戶數據，準備重定向到 /login');
+            setAuthChecked(true);
+            router.push('/login');
           }
         } catch (e) {
-          console.error('首頁: 無法解析用戶數據', e);
+          console.error('首頁 useEffect 關鍵日誌: 因無法解析用戶數據，準備重定向到 /login', e);
+          localStorage.removeItem('user');
           setAuthChecked(true);
-          isNavigating.current = true;
-          setTimeout(() => {
-            window.open('/login', '_self');
-          }, 500);
+          router.push('/login');
         } finally {
           setLoading(false);
+          console.log('首頁 useEffect: loadUserData 執行完畢.');
         }
       }
     };
     
     loadUserData();
-  }, []);
+  }, [router]);
 
   // 獲取儀表板數據
   const fetchDashboardData = async (userId: string) => {
@@ -121,13 +117,14 @@ export default function HomePage() {
       
       // 獲取產品總數
       const { data: productsData, error: productsError } = await supabase
-        .from('data_product')
-        .select('id', { count: 'exact' });
+        .from('data_code')
+        .select('*', { count: 'exact', head: true });
 
       if (productsError) console.error('獲取產品數據錯誤:', productsError);
       else console.log('獲取產品數據成功, 數量:', productsData?.length || 0);
 
-      // 獲取低庫存產品數量 (庫存數量小於 10)
+      // 獲取低庫存產品數量 (庫存數量小於 10) - Temporarily commented out
+      /*
       const { data: lowStockData, error: lowStockError } = await supabase
         .from('record_inventory')
         .select('id', { count: 'exact' })
@@ -135,6 +132,8 @@ export default function HomePage() {
 
       if (lowStockError) console.error('獲取低庫存數據錯誤:', lowStockError);
       else console.log('獲取低庫存數據成功, 數量:', lowStockData?.length || 0);
+      */
+      const lowStockData = []; // Temporary placeholder
 
       // 獲取最近交易數量 (過去 7 天)
       const sevenDaysAgo = new Date();
@@ -143,12 +142,13 @@ export default function HomePage() {
       const { data: transactionsData, error: transactionsError } = await supabase
         .from('record_history')
         .select('id', { count: 'exact' })
-        .gte('created_at', sevenDaysAgo.toISOString());
+        .gte('time', sevenDaysAgo.toISOString());
 
       if (transactionsError) console.error('獲取交易數據錯誤:', transactionsError);
       else console.log('獲取交易數據成功, 數量:', transactionsData?.length || 0);
 
-      // 獲取待處理訂單數量
+      // 獲取待處理訂單數量 - Temporarily commented out due to missing 'status' field
+      /*
       const { data: pendingOrdersData, error: pendingOrdersError } = await supabase
         .from('record_history')
         .select('id', { count: 'exact' })
@@ -156,6 +156,8 @@ export default function HomePage() {
 
       if (pendingOrdersError) console.error('獲取待處理訂單錯誤:', pendingOrdersError);
       else console.log('獲取待處理訂單成功, 數量:', pendingOrdersData?.length || 0);
+      */
+      const pendingOrdersData = []; // Temporary placeholder
 
       // 獲取當天完成的板數 (PalletDonutChart 'done' value)
       const today = new Date();
@@ -183,30 +185,15 @@ export default function HomePage() {
       if (dailyTransferredError) console.error('獲取當天轉移板數錯誤:', dailyTransferredError);
       else console.log('獲取當天轉移板數成功, 數量:', dailyTransferredCount || 0);
 
-      // 獲取最近活動
-      const { data: recentActivityData, error: recentActivityError } = await supabase
-        .from('record_history')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(5);
-
-      if (recentActivityError) console.error('獲取最近活動錯誤:', recentActivityError);
-      else console.log('獲取最近活動成功, 數量:', recentActivityData?.length || 0);
-
       // 更新統計數據
       setStats({
         totalProducts: productsData?.length || 0,
-        lowStockItems: lowStockData?.length || 0,
+        lowStockItems: 0, // Set to 0 as the feature is temporarily disabled
         recentTransactions: transactionsData?.length || 0,
         pendingOrders: pendingOrdersData?.length || 0,
         dailyDonePallets: dailyDoneCount || 0,
         dailyTransferredPallets: dailyTransferredCount || 0,
       });
-
-      // 更新最近活動
-      if (recentActivityData) {
-        setRecentActivity(recentActivityData);
-      }
 
       console.log('首頁: 儀表板數據獲取完成');
     } catch (error) {
@@ -311,33 +298,6 @@ export default function HomePage() {
             <GrnHistory />
           </div>
         </div>
-
-        {/* Recent Activity Section (example from provided snippet, might need adjustment) */}
-        {recentActivity.length > 0 && (
-          <div className="bg-gray-800 rounded-lg p-6">
-            <h2 className="text-lg font-semibold text-white mb-4">Recent Activity</h2>
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-700">
-                <thead>
-                  <tr>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">GRN Number</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">Code</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">TTL Pallet</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-700">
-                  {recentActivity.map((activity) => (
-                    <tr key={activity.id}>
-                      <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-300">{activity.grn_number}</td>
-                      <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-300">{activity.code}</td>
-                      <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-300">{activity.ttl_pallet}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
 
         {/* ACO Order Status Section -- 新增區塊 */}
         <div className="mt-8 bg-gray-800 rounded-lg p-6 shadow-lg">

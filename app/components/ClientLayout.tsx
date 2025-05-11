@@ -17,11 +17,8 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
   }
 
   return (
-    <div className="min-h-screen grid grid-cols-[minmax(180px,240px)_1fr] bg-[#181c2f]">
-      {/* Sidebar */}
-      <aside className="bg-[#23263a] shadow-lg flex flex-col">
-        <Navigation />
-      </aside>
+    <div className="min-h-screen bg-[#181c2f]">
+      <Navigation /> 
 
       {/* Main Content */}
       <main className="w-full px-6 py-10 overflow-y-auto">

@@ -33,8 +33,20 @@ const slideInVariants = {
 
 // Mobile sidebar variants
 const mobileSidebarVariants = {
-  closed: { x: '-100%', opacity: 0 },
-  open: { x: '0%', opacity: 1 }
+  closed: {
+    x: '-100%',
+    opacity: 0,
+    pointerEvents: 'none' as const,
+    zIndex: -1,
+    transitionEnd: { display: 'none' as const }
+  },
+  open: {
+    x: '0%',
+    opacity: 1,
+    pointerEvents: 'auto' as const,
+    display: 'flex' as const,
+    zIndex: 50
+  }
 };
 
 const MOBILE_BREAKPOINT = 768; // md breakpoint
@@ -49,14 +61,20 @@ export default function Navigation() {
   const [isMobileView, setIsMobileView] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
+  // Refs for main sidebar hover logic on desktop
+  const sidebarHoverRef = useRef(false);
+  const sidebarCloseTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
   useEffect(() => {
     const checkScreenSize = () => {
       const newIsMobileView = window.innerWidth < MOBILE_BREAKPOINT;
       if (isMobileView !== newIsMobileView) { 
         setIsMobileView(newIsMobileView);
-        if (!newIsMobileView) { 
-          setIsMobileMenuOpen(false); 
-        }
+        // If switching to desktop view and mobile menu was open, consider closing it or not based on new design.
+        // For now, if it becomes always hamburger, this specific line might not be needed or behavior might be fine.
+        // if (!newIsMobileView) { 
+        //   setIsMobileMenuOpen(false); 
+        // }
       }
     };
     if (typeof window !== 'undefined') {
@@ -67,6 +85,29 @@ export default function Navigation() {
   }, [isMobileView]);
 
   const toggleMobileMenu = () => setIsMobileMenuOpen(!isMobileMenuOpen);
+
+  // Desktop sidebar hover open logic
+  const openDesktopSidebar = () => {
+    if (!isMobileView) {
+      sidebarHoverRef.current = true;
+      if (sidebarCloseTimeoutRef.current) {
+        clearTimeout(sidebarCloseTimeoutRef.current);
+      }
+      setIsMobileMenuOpen(true);
+    }
+  };
+
+  // Desktop sidebar hover close logic
+  const closeDesktopSidebar = () => {
+    if (!isMobileView) {
+      sidebarHoverRef.current = false;
+      sidebarCloseTimeoutRef.current = setTimeout(() => {
+        if (!sidebarHoverRef.current) {
+          setIsMobileMenuOpen(false);
+        }
+      }, 300); // 300ms delay
+    }
+  };
 
   const handlePopoverEnter = () => {
     hoverRef.current = true;
@@ -87,8 +128,8 @@ export default function Navigation() {
       {/* Home */}
       <Link
         key="Home"
-        href="/"
-        onClick={() => isMobileView && setIsMobileMenuOpen(false)} // Close mobile menu on click
+        href="/dashboard"
+        onClick={() => setIsMobileMenuOpen(false)} // Always close menu
         className="flex items-center px-4 py-2 text-base font-medium rounded-md mb-4 text-gray-300 hover:bg-gray-700 hover:text-white"
       >
         <HomeIcon className="mr-3 h-6 w-6" />
@@ -122,9 +163,9 @@ export default function Navigation() {
               transition={{ duration: 0.2, ease: 'easeOut' }}
               onMouseEnter={handlePopoverEnter}
               onMouseLeave={handlePopoverLeave}
-              className="absolute left-full top-0 z-50 shadow-md w-32" // For desktop popover
+              className="absolute left-full top-0 z-50 shadow-md w-32"
             >
-              <PrintLabelPopover onClose={() => isMobileView && setIsMobileMenuOpen(false)} />
+              <PrintLabelPopover onClose={() => setIsMobileMenuOpen(false)} />
             </motion.div>
           </AnimatePresence>
         )}
@@ -135,7 +176,7 @@ export default function Navigation() {
         <Link
           key={item.name}
           href={item.href}
-          onClick={() => isMobileView && setIsMobileMenuOpen(false)} // Close mobile menu on click
+          onClick={() => setIsMobileMenuOpen(false)} // Always close menu
           className={`flex items-center px-4 py-2 text-base font-medium rounded-md mb-2 ${
             pathname === item.href
               ? 'bg-gray-800 text-white'
@@ -153,21 +194,22 @@ export default function Navigation() {
     <div className="px-2 pb-6 flex flex-col gap-2">
       <Link 
         href="/products/update" 
-        onClick={() => isMobileView && setIsMobileMenuOpen(false)}
+        onClick={() => setIsMobileMenuOpen(false)} // Always close menu
         className="flex items-center px-4 py-2 text-base font-medium rounded-md text-gray-300 hover:bg-gray-700 hover:text-white"
       >
         <span className="mr-3">🛠️</span> Product Update
       </Link>
       <Link 
         href="/access/update" 
-        onClick={() => isMobileView && setIsMobileMenuOpen(false)}
+        onClick={() => setIsMobileMenuOpen(false)} // Always close menu
         className="flex items-center px-4 py-2 text-base font-medium rounded-md text-gray-300 hover:bg-gray-700 hover:text-white"
       >
         <span className="mr-3">🔑</span> Access Update
       </Link>
       <button
         onClick={async () => {
-          if (isMobileView) setIsMobileMenuOpen(false); // Close mobile menu first
+          console.error("CRITICAL LOG: LogOut BUTTON CLICKED!");
+          setIsMobileMenuOpen(false); // Always close menu first
           let userIdToLog = 'unknown_user'; 
           const userStr = localStorage.getItem('user');
           if (userStr) {
@@ -199,43 +241,41 @@ export default function Navigation() {
 
   return (
     <>
-      {/* Hamburger button for mobile - positioned absolutely or fixed relative to viewport/main layout */}
-      {isMobileView && (
-        <button 
-          onClick={toggleMobileMenu}
-          className="fixed top-4 left-4 z-[60] p-2 rounded-md text-gray-300 bg-gray-800 hover:bg-gray-700 transition-colors"
-          aria-label="Open menu"
-        >
-          {isMobileMenuOpen ? <XMarkIcon className="h-6 w-6" /> : <Bars3Icon className="h-6 w-6" />}
-        </button>
-      )}
+      {/* Hamburger button - always visible */}
+      <button 
+        onClick={toggleMobileMenu}
+        onMouseEnter={!isMobileView ? openDesktopSidebar : undefined}
+        onMouseLeave={!isMobileView ? closeDesktopSidebar : undefined}
+        className="fixed top-4 left-4 z-[60] p-2 rounded-md text-gray-300 bg-gray-800 hover:bg-gray-700 transition-colors"
+        aria-label="Open menu"
+      >
+        {isMobileMenuOpen ? <XMarkIcon className="h-6 w-6" /> : <Bars3Icon className="h-6 w-6" />}
+      </button>
 
-      {/* Overlay for mobile menu - shown when menu is open */}
-      {isMobileView && isMobileMenuOpen && (
+      {/* Overlay for menu - shown when menu is open, removed md:hidden */}
+      {isMobileMenuOpen && (
         <motion.div 
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           onClick={() => setIsMobileMenuOpen(false)} 
-          className="fixed inset-0 bg-black/50 z-40 md:hidden"
+          className="fixed inset-0 bg-black/50 z-40" // Removed md:hidden
         />
       )}
 
       {/* Sidebar Content */}
       <AnimatePresence>
-        {(!isMobileView || isMobileMenuOpen) && (
+        {isMobileMenuOpen && ( // Show only if isMobileMenuOpen is true
           <motion.div
             key="sidebar"
-            className={`bg-[#23263a] text-white flex flex-col justify-between 
-                        ${isMobileView 
-                          ? 'fixed top-0 left-0 h-full w-64 z-50 shadow-xl' 
-                          : 'w-full h-full' // Desktop classes - assuming it's placed in a grid cell that defines its width
-                        }`}
-            variants={isMobileView ? mobileSidebarVariants : {}}
-            initial={isMobileView ? "closed" : undefined} // No initial animation for desktop
-            animate={isMobileView ? (isMobileMenuOpen ? "open" : "closed") : "open"} // Animate for mobile, always "open" for desktop (or rely on static classes)
-            exit={isMobileView ? "closed" : undefined} // No exit animation for desktop
+            className={'fixed top-0 left-0 h-full w-64 shadow-xl bg-[#23263a] text-white flex flex-col justify-between z-50'} // Always use overlay style
+            variants={mobileSidebarVariants} // Always use these variants
+            initial="closed" // Always start closed
+            animate={isMobileMenuOpen ? "open" : "closed"} // Controlled by isMobileMenuOpen
+            exit="closed" // Exit to closed state
             transition={{ type: 'tween', duration: 0.3 }}
+            onMouseEnter={!isMobileView ? openDesktopSidebar : undefined} // Keep sidebar open if mouse enters it
+            onMouseLeave={!isMobileView ? closeDesktopSidebar : undefined} // Close sidebar if mouse leaves it
           >
             <div>
               <div className="px-4 py-4">

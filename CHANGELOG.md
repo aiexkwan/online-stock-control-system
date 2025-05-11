@@ -37,6 +37,15 @@ All notable changes to this project will be documented in this file.
   - Shows `order_ref` as "Order Reference : [ref]".
   - Implemented a tooltip on hover for each ACO order in the status list, showing detailed progress for each product code within that order (Completed Qty / Required Qty).
 - Added a tooltip to the main dashboard donut chart to display "Pallets Done" and "Pallets Transferred" counts when hovering over the chart.
+- GRN Label: Implemented GRN label printing page (`/print-grnlabel`) with PDF generation and upload.
+- GRN Label: GRN PDF content tailored with specific fields and formatting.
+- GRN Label: Integrated progress indicators (traffic lights) for GRN label printing.
+- GRN Label: Form inputs are cleared automatically after successful GRN processing.
+- Dashboard: Integrated `<GrnHistory />` component into the main dashboard.
+- Dashboard: Integrated `<AcoOrderStatus />` component into the main dashboard.
+- QC Label: Added `latest_update` field to `record_inventory` and `record_aco` updates.
+- QC Label: ACO Order Ref dropdown in `QcLabelForm` now only shows incomplete orders.
+- Integrated `sonner` for Toast notifications in Stock Transfer page for better user feedback.
 
 ### Changed
 - **Routing & UI:**
@@ -52,22 +61,43 @@ All notable changes to this project will be documented in this file.
     - Displays "Product Code Not Included In This Order".
     - Does NOT show the "Please Enter ACO Order Detail" section.
     - "Print Label" button is disabled.
-    - (Previously, this was treated as a new order ref for that product code).
 - **State Management:**
   - When `productCode` is changed by the user:
     - `acoOrderRef` (both input value and dropdown selection) is now automatically cleared.
     - PDF generation progress bar is automatically hidden/reset.
 - **Dashboard Layout & Components:**
   - Removed the separate "Pallets Done" and "Pallets Transferred" cards from the main dashboard view.
-  - Data for these counts is now fetched directly in `app/page.tsx` and passed to the `PalletDonutChart` component.
-  - The `PalletRatio.tsx` component no longer renders UI and its data fetching logic was moved/duplicated to `app/page.tsx`.
-  - Adjusted the main layout in `app/page.tsx` to center the `PalletDonutChart` as the primary element for these stats.
+  - Data for these counts is now fetched directly in `app/dashboard/page.tsx` (previously was `app/page.tsx`) and passed to the `PalletDonutChart` component.
+  - The `PalletRatio.tsx` component no longer renders UI.
+  - Adjusted the main layout in `app/dashboard/page.tsx` to center the `PalletDonutChart`.
   - Increased the size of the `PalletDonutChart`.
 - **ACO Order Ref Dropdown (Print Label Form):**
   - Modified `QcLabelForm.tsx` to filter the "ACO Order Ref" dropdown list.
-  - The dropdown now only shows `order_ref` values for ACO orders that are not yet fully completed (i.e., where the sum of `remain_qty` for all items under an `order_ref` is greater than 0).
-- Corrected column name references in `AcoOrderStatus.tsx` from `product_code` to `code` and `original_qty` to `required_qty` to match the `record_aco` table schema.
-- Removed `customer` field logic from `AcoOrderStatus.tsx` as `order_ref` already implies customer information.
+  - The dropdown now only shows `order_ref` values for ACO orders that are not yet fully completed.
+- Corrected column name references in `AcoOrderStatus.tsx` from `product_code` to `code` and `original_qty` to `required_qty`.
+- Removed `customer` field logic from `AcoOrderStatus.tsx`.
+- Refactored `PrintLabelPdf.tsx` to accept `labelType` prop (`qc` or `grn`).
+- Unified `series` generation logic for QC and GRN labels to `YYMMDDHH-XXXXXX` format.
+- Navigation: Resolved mobile sidebar overlay issue.
+- Navigation: Standardized navigation to use a hamburger-controlled hidden sidebar for all screen sizes.
+- Navigation: Implemented differentiated sidebar interaction based on device type (hover for desktop, tap for mobile).
+- Dashboard: Main dashboard page is now `app/dashboard/page.tsx`.
+- Dashboard: Login page now redirects to `/dashboard`.
+- Dashboard: `PalletRatio.tsx` data integrated into `PalletDonutChart` tooltip.
+- Dashboard: Removed old quick action buttons.
+- Dashboard: Adjusted layout for vertical card stacking and larger donut chart.
+- QC Label: `handlePrintLabel` in `QcLabelForm.tsx` refactored.
+- QC Label: Modified `handleAcoSearch` to alert and disable printing if `acoOrderRef` doesn't contain the current `productCode`.
+- Print Label Menu: "GRN Label" button in `PrintLabelPopover.tsx` now navigates directly to `/print-grnlabel`.
+- Corrected logic in `app/stock-transfer/page.tsx` for `p_from_col` when transferring from 'Fold Mill' to 'Production'.
+- Stock Transfer page (`app/stock-transfer/page.tsx`) now clears input fields after a successful transfer or when specific errors occur.
+- Improved success messages in Stock Transfer page.
+- Stock Transfer: Initial location for pallets after QC label printing is now consistently expected to be 'Awaiting'.
+- QC Label Form: Confirmed `app/components/print-label-menu/QcLabelForm.tsx` sets initial `record_history.loc` to 'Awaiting' (unless product code starts with 'U').
+- GRN Label Printing: Changed initial `record_history.loc` for new GRN pallets to 'Awaiting'.
+- Stock Transfer: When a pallet's current location is 'Awaiting', the next destination is now conditional based on `productCode` ("Z" prefix goes to 'Production', others to 'Fold Mill').
+- Stock Transfer: Success messages for pallet transfers are now displayed in an on-page "Activity Log".
+- Stock Transfer: When scanning a pallet at an unhandled location for standard transfer (e.g., already in 'Production'), the `record_history.action` is now "Scan Failure" and `remark` is "Scan at unhandled location for transfer: [currentLocation]".
 
 ### Fixed
 - **PDF Label Content (Dynamic Headers):**
@@ -78,6 +108,27 @@ All notable changes to this project will be documented in this file.
   - Ensured "Work Order Number" on PDF labels for 'Slate' product type correctly displays as "-".
 - Resolved an issue where `AcoOrderStatus.tsx` would show an "unknown error" by improving error message handling for non-standard error objects from Supabase queries.
 - Addressed Linter error in `AcoOrderStatus.tsx` and `PalletDonutChart.tsx` related to missing `Tooltip` (and `Progress`) component by advising user to install it via `npx shadcn-ui@latest add tooltip` (and `progress`).
+- Resolved `GoTrueClient` multiple instances warning in `PdfGenerator.tsx`.
+- Addressed Supabase Storage "mime type application/pdf is not supported" error for `pallet-label-pdf` bucket.
+- Corrected `record_slate` insert errors due to mismatched column names (e.g., `batch_number` vs `batch_num`).
+- Resolved `report_log` table 401 error by adding RLS policy for public insert.
+- Fixed `date-fns` version conflict by replacing Shadcn UI Date Picker with `<input type="date">` for Slate "First-Off Date".
+- Corrected `PalletRatio.tsx` to query `record_transfer` instead of non-existent `inventory_movements` table.
+- Resolved various Linter errors related to prop names and `framer-motion` props in `Navigation.tsx`.
+- Addressed Supabase query errors in `app/dashboard/page.tsx` by correcting table/column names and temporarily disabling features dependent on missing columns (e.g., low stock items from `record_inventory`, pending orders from `record_history` based on `status`).
+- Debugged and confirmed resolution of "Home" button redirecting to login page despite being logged in; refined `app/dashboard/page.tsx` authentication logic and data fetching.
+- Corrected "Home" button navigation in `Navigation.tsx` to point to `/dashboard` instead of `/`, resolving an issue where users were incorrectly redirected to the login page.
+- Addressed potential issue where `NULL` quantity columns in `record_inventory` were not correctly updated during stock transfer by implementing `COALESCE` in the `update_inventory_stock_transfer` RPC function (user applied the SQL change).
+
+### Removed
+- Deleted placeholder component `app/components/print-label-menu/GrnLabelForm.tsx`.
+- Deleted `app/dashboard/page.tsx` (old dashboard, route moved to `app/(dashboard)/page.tsx`).
+- Deleted `app/page.tsx` (was a redirect or duplicate of dashboard).
+- Removed `useEffect` in `app/login/page.tsx` that cleared `localStorage` on every page load.
+- Removed the "Recent Activity" card from the dashboard (`app/dashboard/page.tsx`) as its data source (`record_history`) did not contain the necessary fields (e.g., `grn_number`, `code`, `ttl_pallet`) and its intended functionality was largely redundant with the "GRN History" card.
+
+### Security
+- Added RLS policy to `report_log` to allow public inserts.
 
 ## [1.0.0] - 2025-05-05
 
