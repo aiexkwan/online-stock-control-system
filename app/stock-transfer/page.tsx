@@ -366,13 +366,13 @@ export default function StockTransferPage() {
       const devices = await BrowserMultiFormatReader.listVideoInputDevices();
       
       if (!devices || devices.length === 0) {
-        throw new Error('找不到相機裝置。請確認您的裝置有相機並已啟用。');
+        throw new Error('No camera devices found. Please ensure your device has a camera and it is enabled.');
       }
       
       const deviceId = devices[0]?.deviceId;
       
       if (!deviceId) {
-        throw new Error('無法存取相機裝置 ID。請確認您的裝置有相機並已啟用。');
+        throw new Error('Cannot access camera device ID. Please ensure your device has a camera and it is enabled.');
       }
       
       // 請求相機權限並開始掃描
@@ -392,7 +392,7 @@ export default function StockTransferPage() {
       } catch (cameraErr: any) {
         // 處理相機權限問題
         if (cameraErr.name === 'NotAllowedError' || cameraErr.message?.includes('Permission')) {
-          throw new Error('相機權限被拒絕。請在瀏覽器設定中允許存取相機，然後重試。');
+          throw new Error('Camera permission denied. Please allow camera access in your browser settings and try again.');
         } else {
           throw cameraErr; // 重新拋出其他錯誤
         }
@@ -400,9 +400,9 @@ export default function StockTransferPage() {
       
     } catch (err: any) {
       setShowScanner(false);
-      const errorMessage = err.message || '無法啟動相機掃描。請確認相機權限並重試。';
+      const errorMessage = err.message || 'Failed to start camera scanning. Please check camera permissions and try again.';
       toast.error(errorMessage);
-      console.error('相機掃描錯誤:', err);
+      console.error('Camera scanning error:', err);
     }
   };
 

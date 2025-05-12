@@ -4,17 +4,17 @@ All notable changes to this project will be documented in this file.
 
 ## 2025-05-12
 
-### 新增
-- 在 Stock Movement 頁面新增行動裝置相機掃描 QR code 功能
-  - 使用 @zxing/browser 實現行動裝置相機掃描
-  - 掃描結果自動填入 Series 欄位並觸發查詢
-  - 僅在行動裝置上顯示「Scan QR」按鈕
+### Added
+- Added mobile device camera QR code scanning functionality in Stock Movement page
+  - Implemented mobile camera scanning using @zxing/browser
+  - Scanning results automatically fill the Series field and trigger search
+  - "Scan QR" button only displays on mobile devices
 
-### 修復
-- 修復 QR code 掃描器的 stopContinuousDecode 方法錯誤，改用官方推薦的 controls.stop() 方法停止掃描
-- 改進相機掃描錯誤處理，提供更明確的錯誤訊息：
-  - 區分「找不到相機裝置」和「相機權限被拒絕」的情況
-  - 顯示中文錯誤訊息，提供使用者解決問題的指引
+### Fixed
+- Fixed QR code scanner's stopContinuousDecode method error, now using the officially recommended controls.stop() method
+- Improved camera scanning error handling with more specific error messages:
+  - Distinguished between "camera not found" and "camera permission denied" scenarios
+  - Display clear error messages with guidance for users to resolve issues
 
 ## [Unreleased]
 
