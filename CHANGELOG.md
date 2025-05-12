@@ -151,6 +151,7 @@ All notable changes to this project will be documented in this file.
 - Updated GRN label printing process in `app/print-grnlabel/page.tsx`.
 - Dashboard (`app/dashboard/page.tsx`) enhancements and data fetching corrections.
 - Navigation component (`app/components/Navigation.tsx`) responsive improvements.
+- **Refactor (Void Pallet Atomicity)**: Refactored the void pallet logic (`app/void-pallet/actions.ts`) to use a Supabase database function (`void_pallet_transaction` RPC). This ensures that all related database modifications (inventory, GRN, Slate, ACO adjustments, and history logging) are performed within a single atomic transaction, improving data consistency and reliability.
 
 ### Fixed
 - **PDF Label Content (Dynamic Headers):**
