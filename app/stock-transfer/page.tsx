@@ -358,7 +358,7 @@ export default function StockTransferPage() {
   const startScanner = async () => {
     if (!videoRef.current) return;
     if (scannerRef.current) {
-      scannerRef.current.reset();
+      scannerRef.current.stopContinuousDecode();
     }
     const codeReader = new BrowserMultiFormatReader();
     scannerRef.current = codeReader;
@@ -369,7 +369,7 @@ export default function StockTransferPage() {
       codeReader.decodeFromVideoDevice(deviceId, videoRef.current, (result, err) => {
         if (result) {
           setShowScanner(false);
-          codeReader.reset();
+          codeReader.stopContinuousDecode();
           setSeriesInput(result.getText());
           setLastActiveInput('series');
           handleSearch('series', result.getText());
@@ -377,7 +377,9 @@ export default function StockTransferPage() {
       });
     } catch (err) {
       setShowScanner(false);
-      scannerRef.current?.reset();
+      if (scannerRef.current) {
+        scannerRef.current.stopContinuousDecode();
+      }
       toast.error('Camera not available or permission denied.');
     }
   };
@@ -385,7 +387,9 @@ export default function StockTransferPage() {
   // 關閉掃描器
   const handleCloseScan = () => {
     setShowScanner(false);
-    scannerRef.current?.reset();
+    if (scannerRef.current) {
+      scannerRef.current.stopContinuousDecode();
+    }
   };
 
   // Handle Enter key press for inputs
