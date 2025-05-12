@@ -362,27 +362,47 @@ export default function StockTransferPage() {
       const codeReader = new BrowserMultiFormatReader();
       scannerRef.current = { codeReader, controls: null };
       
+      // 先檢查相機裝置
       const devices = await BrowserMultiFormatReader.listVideoInputDevices();
+      
+      if (!devices || devices.length === 0) {
+        throw new Error('找不到相機裝置。請確認您的裝置有相機並已啟用。');
+      }
+      
       const deviceId = devices[0]?.deviceId;
       
-      if (!deviceId) throw new Error('No camera found');
+      if (!deviceId) {
+        throw new Error('無法存取相機裝置 ID。請確認您的裝置有相機並已啟用。');
+      }
       
-      const controls = await codeReader.decodeFromVideoDevice(deviceId, videoRef.current, (result, err) => {
-        if (result) {
-          setShowScanner(false);
-          if (controls) controls.stop();
-          setSeriesInput(result.getText());
-          setLastActiveInput('series');
-          handleSearch('series', result.getText());
+      // 請求相機權限並開始掃描
+      try {
+        const controls = await codeReader.decodeFromVideoDevice(deviceId, videoRef.current, (result, err) => {
+          if (result) {
+            setShowScanner(false);
+            if (controls) controls.stop();
+            setSeriesInput(result.getText());
+            setLastActiveInput('series');
+            handleSearch('series', result.getText());
+          }
+        });
+        
+        // 保存 controls 以便稍後停止掃描
+        scannerRef.current = { codeReader, controls };
+      } catch (cameraErr: any) {
+        // 處理相機權限問題
+        if (cameraErr.name === 'NotAllowedError' || cameraErr.message?.includes('Permission')) {
+          throw new Error('相機權限被拒絕。請在瀏覽器設定中允許存取相機，然後重試。');
+        } else {
+          throw cameraErr; // 重新拋出其他錯誤
         }
-      });
+      }
       
-      // 保存 controls 以便稍後停止掃描
-      scannerRef.current = { codeReader, controls };
-      
-    } catch (err) {
+    } catch (err: any) {
       setShowScanner(false);
-      toast.error('Camera not available or permission denied.');
+      const errorMessage = err.message || '無法啟動相機掃描。請確認相機權限並重試。';
+      toast.error(errorMessage);
+      console.error('相機掃描錯誤:', err);
     }
   };
 
