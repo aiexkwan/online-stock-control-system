@@ -524,9 +524,9 @@ export default function StockTransferPage() {
 
           {showScanner && (
             <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black bg-opacity-80">
-              <div className="bg-gray-900 rounded-lg p-4 flex flex-col items-center">
-                <video ref={videoRef} className="w-[320px] h-[240px] bg-black rounded" autoPlay muted playsInline />
-                <Button className="mt-4" variant="destructive" onClick={handleCloseScan}>Close</Button>
+              <div className="bg-gray-900 rounded-2xl p-8 flex flex-col items-center shadow-2xl">
+                <video ref={videoRef} className="w-[400px] h-[300px] bg-black rounded-lg" autoPlay muted playsInline />
+                <Button className="mt-6 w-32" variant="destructive" onClick={handleCloseScan}>Close</Button>
               </div>
             </div>
           )}
