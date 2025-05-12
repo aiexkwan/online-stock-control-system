@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## 2025-05-12
+
+### 新增
+- 在 Stock Movement 頁面新增行動裝置相機掃描 QR code 功能
+  - 使用 @zxing/browser 實現行動裝置相機掃描
+  - 掃描結果自動填入 Series 欄位並觸發查詢
+  - 僅在行動裝置上顯示「Scan QR」按鈕
+
 ## [Unreleased]
 
 ### Added

@@ -28,6 +28,7 @@
     "@supabase/auth-helpers-nextjs": "latest",
     "@supabase/supabase-js": "^2.49.4",
     "@tanstack/react-table": "^8.21.3",
+    "@zxing/browser": "^0.1.5",
     "chart.js": "^4.4.9",
     "chokidar": "^3.5.3",
     "class-variance-authority": "^0.7.1",

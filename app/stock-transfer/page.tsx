@@ -4,6 +4,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../../lib/supabase'; // Assuming supabase client is here
 import { format } from 'date-fns'; // For date formatting
 import { Toaster, toast } from 'sonner'; // Import Toaster and toast
+import { Button } from '../../components/ui/button';
+import { BrowserMultiFormatReader } from '@zxing/browser';
 
 // Helper to get user from localStorage
 const getUserId = () => {
@@ -43,6 +45,13 @@ export default function StockTransferPage() {
   // Refs for input elements
   const seriesInputRef = useRef<HTMLInputElement>(null);
   const palletNumInputRef = useRef<HTMLInputElement>(null);
+
+  const [showScanner, setShowScanner] = useState(false);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const scannerRef = useRef<BrowserMultiFormatReader | null>(null);
+
+  // 行動裝置判斷
+  const isMobile = typeof window !== 'undefined' && /Mobi|Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
 
   const resetState = () => {
     setSeriesInput('');
@@ -339,6 +348,45 @@ export default function StockTransferPage() {
     }
   };
 
+  // 啟動掃描器
+  const handleStartScan = async () => {
+    setShowScanner(true);
+    setTimeout(() => startScanner(), 100); // 等待 video 元素渲染
+  };
+
+  // 啟動 @zxing/browser 掃描
+  const startScanner = async () => {
+    if (!videoRef.current) return;
+    if (scannerRef.current) {
+      scannerRef.current.reset();
+    }
+    const codeReader = new BrowserMultiFormatReader();
+    scannerRef.current = codeReader;
+    try {
+      const devices = await BrowserMultiFormatReader.listVideoInputDevices();
+      const deviceId = devices[0]?.deviceId;
+      if (!deviceId) throw new Error('No camera found');
+      codeReader.decodeFromVideoDevice(deviceId, videoRef.current, (result, err) => {
+        if (result) {
+          setShowScanner(false);
+          codeReader.reset();
+          setSeriesInput(result.getText());
+          setLastActiveInput('series');
+          handleSearch('series', result.getText());
+        }
+      });
+    } catch (err) {
+      setShowScanner(false);
+      scannerRef.current?.reset();
+      toast.error('Camera not available or permission denied.');
+    }
+  };
+
+  // 關閉掃描器
+  const handleCloseScan = () => {
+    setShowScanner(false);
+    scannerRef.current?.reset();
+  };
 
   // Handle Enter key press for inputs
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>, inputType: 'series' | 'pallet_num') => {
@@ -409,6 +457,17 @@ export default function StockTransferPage() {
                 disabled={isLoading}
                 ref={seriesInputRef}
               />
+              {isMobile && (
+                <Button
+                  type="button"
+                  variant="secondary"
+                  className="ml-2 px-3 py-2 text-xs"
+                  onClick={handleStartScan}
+                  disabled={isLoading}
+                >
+                  Scan QR
+                </Button>
+              )}
             </div>
             
             <div className="flex items-center w-full sm:w-1/2 max-w-xl mt-4 sm:mt-0">
@@ -445,6 +504,15 @@ export default function StockTransferPage() {
             <div className="text-center py-4">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-400 mx-auto"></div>
               <p className="mt-2 text-orange-300">Processing...</p>
+            </div>
+          )}
+
+          {showScanner && (
+            <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black bg-opacity-80">
+              <div className="bg-gray-900 rounded-lg p-4 flex flex-col items-center">
+                <video ref={videoRef} className="w-[320px] h-[240px] bg-black rounded" autoPlay muted playsInline />
+                <Button className="mt-4" variant="destructive" onClick={handleCloseScan}>Close</Button>
+              </div>
             </div>
           )}
 
