@@ -467,22 +467,15 @@ export default function StockTransferPage() {
                   setLastActiveInput('series');
                 }}
                 onKeyDown={(e) => handleKeyDown(e, 'series')}
-                placeholder="Scan QR Code To Search"
-                className="flex-1 px-4 py-3 rounded-md bg-gray-900 border border-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 text-lg text-white"
+                placeholder={isMobile ? "Tap To Scan" : "Scan QR Code To Search"}
+                className={
+                  `flex-1 px-4 py-3 rounded-md bg-gray-900 border border-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 text-lg text-white ` +
+                  (isMobile ? 'cursor-pointer select-none' : '')
+                }
                 disabled={isLoading}
                 ref={seriesInputRef}
+                {...(isMobile ? { readOnly: true, onClick: handleStartScan } : {})}
               />
-              {isMobile && (
-                <Button
-                  type="button"
-                  variant="secondary"
-                  className="ml-2 px-3 py-2 text-xs"
-                  onClick={handleStartScan}
-                  disabled={isLoading}
-                >
-                  Scan QR
-                </Button>
-              )}
             </div>
             
             <div className="flex items-center w-full sm:w-1/2 max-w-xl mt-4 sm:mt-0">
