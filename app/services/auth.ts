@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase';
+import bcrypt from 'bcryptjs'; // Import bcryptjs
 
 export interface UserData {
   id: string;
@@ -35,6 +36,7 @@ export async function authenticateUser(userId: string, passwordInput: string): P
   success: boolean;
   user?: UserData; 
   isFirstLogin?: boolean;
+  isTemporaryLogin?: boolean; // Add new flag for temporary login
   error?: string;
 }> {
   try {
@@ -87,14 +89,56 @@ export async function authenticateUser(userId: string, passwordInput: string): P
         console.error(`User ${userId} has first_login=false (or null) but no password set.`);
         return { success: false, error: 'User account configuration error. Please contact admin.' };
       }
-      if (passwordInput === userDataFromDB.password) {
+      
+      // --- Compare using bcrypt --- 
+      const isPasswordMatch = bcrypt.compareSync(passwordInput, userDataFromDB.password);
+
+      if (isPasswordMatch) {
         return {
           success: true,
           user: clientUserData,
           isFirstLogin: false
         };
       } else {
-        return { success: false, error: 'Incorrect password.' };
+        // --- Password INCORRECT - Check for Pending Reset Request --- 
+        console.log(`Password mismatch for ${userId}. Checking for pending reset request...`);
+        
+        // --- Explicitly parse userId to integer for query --- 
+        const userIdInt = parseInt(userId, 10);
+        if (isNaN(userIdInt)) {
+             console.error(`Invalid userId format for reset check: ${userId}`);
+             // Return generic password error if userId isn't a number somehow
+             return { success: false, error: 'Incorrect password.' }; 
+        }
+        // --- End of parsing ---
+
+        const { data: pendingRequest, error: requestCheckError } = await supabase
+          .from('password_reset_requests')
+          .select('id')
+          .eq('user_id', userIdInt) // Use the integer userId for the query
+          .eq('status', 'pending')
+          .maybeSingle(); 
+
+        if (requestCheckError) {
+          console.error('Error checking password_reset_requests:', requestCheckError);
+          // Don't expose db error, return generic password error
+          return { success: false, error: 'Incorrect password.' }; 
+        }
+
+        if (pendingRequest) {
+          // Pending request FOUND - Grant temporary access
+          console.log(`Pending reset request found for ${userId}. Granting temporary access.`);
+          return { 
+            success: true, 
+            user: clientUserData, 
+            isFirstLogin: false, // Not a first login scenario
+            isTemporaryLogin: true // Indicate temporary access
+          }; 
+        } else {
+          // No pending request - Just an incorrect password
+          console.log(`No pending reset request found for ${userId}.`);
+          return { success: false, error: 'Incorrect password.' };
+        }
       }
     }
 

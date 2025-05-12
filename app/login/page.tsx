@@ -7,6 +7,7 @@ import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "../../components/ui/card";
 import { supabase } from '../../lib/supabase';
+import { toast } from 'sonner';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -18,11 +19,10 @@ export default function LoginPage() {
   useEffect(() => {
     if (typeof window !== 'undefined') {
       localStorage.removeItem('user');
-      // localStorage.removeItem('firstLogin'); // Also clear this if it exists, to ensure clean state for login page
+      localStorage.removeItem('isTemporaryLogin');
     }
   }, []);
 
-  // Helper function to log to record_history
   const logToHistory = async (userIdToLog: string, actionType: 'LogIn' | 'Password Change', remarkText: string) => {
     try {
       await supabase.from('record_history').insert({
@@ -35,7 +35,6 @@ export default function LoginPage() {
       });
     } catch (historyError) {
       console.error('Failed to log to record_history:', historyError);
-      // Non-critical, so we don't stop the login/password change flow
     }
   };
 
@@ -51,7 +50,7 @@ export default function LoginPage() {
         const reason = result.error || 'Unknown login failure';
         setError(reason);
         await logToHistory(userId, 'LogIn', `LogIn Fail - ${reason}`);
-        setLoading(false); // Ensure loading is stopped
+        setLoading(false);
         return;
       }
 
@@ -59,11 +58,10 @@ export default function LoginPage() {
 
       if (result.isFirstLogin) {
         await logToHistory(result.user.id, 'LogIn', 'First LogIn');
-        // localStorage.setItem('firstLogin', 'true'); // Retain for now, as change-password might use it implicitly or for UI hints
-        router.push('/change-password'); // CORRECTED PATH
+        router.push('/change-password');
       } else {
         await logToHistory(result.user.id, 'LogIn', 'LogIn');
-        router.push('/dashboard'); // Changed from '/' to '/dashboard'
+        router.push('/dashboard');
       }
 
     } catch (err) {
@@ -74,6 +72,14 @@ export default function LoginPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleForgotPassword = () => {
+    if (!userId.trim()) {
+      toast.error('Please enter your Clock Number first to reset the password.');
+      return;
+    }
+    router.push(`/new-password?userId=${encodeURIComponent(userId.trim())}`);
   };
 
   return (
@@ -131,6 +137,15 @@ export default function LoginPage() {
                 placeholder="Enter your password"
                 required
               />
+            </div>
+            <div className="text-right text-sm">
+                <button 
+                  type="button" 
+                  onClick={handleForgotPassword}
+                  className="font-medium text-blue-400 hover:text-blue-300 underline underline-offset-2"
+                >
+                  Forgot Password?
+                </button>
             </div>
             {error && (
               <div className="p-3 rounded-lg bg-red-900/50 border border-red-500">

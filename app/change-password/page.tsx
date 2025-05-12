@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '../../lib/supabase';
+import bcrypt from 'bcryptjs'; // Import bcryptjs
 
 // Cookie setter function
 function setCookie(name: string, value: string, days: number) {
@@ -116,10 +117,14 @@ export default function ChangePasswordPage() {
       //   console.warn('Supabase Auth password update failed, continue updating database:', authError);
       // }
 
-      // 1. Update password in data_id table
+      // --- Hash the new password before updating --- 
+      const saltRounds = 10; // Or use an environment variable
+      const hashedPassword = bcrypt.hashSync(newPassword, saltRounds);
+
+      // 1. Update password in data_id table with the hashed password
       const { error: updatePasswordError } = await supabase
         .from('data_id')
-        .update({ password: newPassword })
+        .update({ password: hashedPassword }) // Use hashed password
         .eq('id', userData.id);
       
       if (updatePasswordError) {

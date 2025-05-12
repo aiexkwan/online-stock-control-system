@@ -1,12 +1,25 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Navigation from './Navigation';
 import { usePathname } from 'next/navigation';
 
-export default function ClientLayout({ children }: { children: React.ReactNode }) {
+interface ClientLayoutProps {
+  children: React.ReactNode;
+}
+
+const ClientLayout: React.FC<ClientLayoutProps> = ({ children }) => {
   const pathname = usePathname();
   const hideSidebar = pathname === '/login' || pathname === '/change-password';
+  const [isTemporaryLogin, setIsTemporaryLogin] = useState(false);
+
+  useEffect(() => {
+    // Check for temporary login flag on component mount
+    if (typeof window !== 'undefined') {
+      const tempLoginFlag = localStorage.getItem('isTemporaryLogin');
+      setIsTemporaryLogin(tempLoginFlag === 'true');
+    }
+  }, []);
 
   if (hideSidebar) {
     return (
@@ -17,16 +30,26 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
   }
 
   return (
-    <div className="min-h-screen bg-[#181c2f]">
-      <Navigation /> 
-
-      {/* Main Content */}
-      <main className="w-full px-6 py-10 overflow-y-auto">
-        {/* ✅ 子元素確保唔再有 margin auto 或 max-w */}
-        <div className="w-full space-y-10">
-          {children}
-        </div>
-      </main>
+    <div className="flex h-screen bg-gray-100">
+      <Navigation />
+      <div className="flex-1 flex flex-col overflow-hidden">
+        {/* Temporary Login Banner */}
+        {isTemporaryLogin && (
+          <div className="bg-yellow-500 text-black p-3 text-center text-sm font-semibold z-50 shadow">
+            You are logged in with temporary access while your password reset is pending.
+            Please log in with your Clock Number as the password after administrator confirmation to set a new permanent password.
+          </div>
+        )}
+        {/* Main Content Area */}
+        <main className="flex-1 overflow-x-hidden overflow-y-auto bg-[#232532]">
+          {/* Removed the grid layout to allow Navigation to control sidebar visibility fully */}
+          <div className="mx-auto px-0 py-0">
+             {children}
+          </div>
+        </main>
+      </div>
     </div>
   );
-} 
+};
+
+export default ClientLayout; 

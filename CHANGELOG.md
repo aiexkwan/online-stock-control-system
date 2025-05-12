@@ -21,6 +21,22 @@ All notable changes to this project will be documented in this file.
   - Display clear error messages with guidance for users to resolve issues
 - Added console logging for listed camera devices to aid troubleshooting camera access issues
 
+## [Unreleased] - 2024-07-30
+
+### Added
+- Implemented self-service password reset functionality:
+    - Login page's "Forgot Password?" link now directs to `/new-password` with `userId`.
+    - Created `app/new-password/page.tsx` for users to set a new password.
+    - Created Server Action `app/new-password/actions.ts` (`resetPasswordAction`) to:
+        - Securely hash the new password using `bcryptjs`.
+        - Update the user's password and `first_login` status in the `data_id` table using Supabase Admin Client.
+        - Log the password reset event to `record_history`.
+- Enhanced UI feedback on the new password page for loading, success, and error states.
+
+### Changed
+- Modified `app/login/page.tsx` to correctly route to the new password reset page.
+- Refactored `app/new-password/page.tsx` to remove `localStorage` dependency for user data and use URL parameters instead.
+
 ## [Unreleased]
 
 ### Added
