@@ -49,6 +49,8 @@ export default function StockTransferPage() {
   const [showScanner, setShowScanner] = useState(false);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const scannerRef = useRef<{ codeReader: BrowserMultiFormatReader, controls: any } | null>(null);
+  const [cameraDevices, setCameraDevices] = useState<MediaDeviceInfo[]>([]);
+  const [selectedDeviceId, setSelectedDeviceId] = useState<string | undefined>(undefined);
 
   // 行動裝置判斷
   const isMobile = typeof window !== 'undefined' && /Mobi|Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
@@ -351,60 +353,59 @@ export default function StockTransferPage() {
   // 啟動掃描器
   const handleStartScan = async () => {
     setShowScanner(true);
-    setTimeout(() => startScanner(), 100); // 等待 video 元素渲染
+    // 先列出所有相機
+    const devices = await BrowserMultiFormatReader.listVideoInputDevices();
+    setCameraDevices(devices);
+    // 預設選第一個
+    setSelectedDeviceId(devices[0]?.deviceId);
+    setTimeout(() => startScanner(devices[0]?.deviceId), 100); // 等待 video 元素渲染
   };
 
   // 啟動 @zxing/browser 掃描
-  const startScanner = async () => {
+  const startScanner = async (deviceIdParam?: string) => {
     if (!videoRef.current) return;
-    
     try {
       const codeReader = new BrowserMultiFormatReader();
       scannerRef.current = { codeReader, controls: null };
-      
-      // 先檢查相機裝置
+      // 取得所有相機
       const devices = await BrowserMultiFormatReader.listVideoInputDevices();
-      console.log('Camera devices listed:', devices); // Log listed devices
-      
+      setCameraDevices(devices);
+      const deviceId = deviceIdParam || selectedDeviceId || devices[0]?.deviceId;
       if (!devices || devices.length === 0) {
         throw new Error('No camera devices found. Please ensure your device has a camera and it is enabled.');
       }
-      
-      const deviceId = devices[0]?.deviceId;
-      
       if (!deviceId) {
         throw new Error('Cannot access camera device ID. Please ensure your device has a camera and it is enabled.');
       }
-      
-      // 請求相機權限並開始掃描
-      try {
-        const controls = await codeReader.decodeFromVideoDevice(deviceId, videoRef.current, (result, err) => {
-          if (result) {
-            setShowScanner(false);
-            if (controls) controls.stop();
-            setSeriesInput(result.getText());
-            setLastActiveInput('series');
-            handleSearch('series', result.getText());
-          }
-        });
-        
-        // 保存 controls 以便稍後停止掃描
-        scannerRef.current = { codeReader, controls };
-      } catch (cameraErr: any) {
-        // 處理相機權限問題
-        if (cameraErr.name === 'NotAllowedError' || cameraErr.message?.includes('Permission')) {
-          throw new Error('Camera permission denied. Please allow camera access in your browser settings and try again.');
-        } else {
-          throw cameraErr; // 重新拋出其他錯誤
+      setSelectedDeviceId(deviceId);
+      const controls = await codeReader.decodeFromVideoDevice(deviceId, videoRef.current, (result, err) => {
+        if (result) {
+          setShowScanner(false);
+          if (controls) controls.stop();
+          setSeriesInput(result.getText());
+          setLastActiveInput('series');
+          handleSearch('series', result.getText());
         }
-      }
-      
+      });
+      scannerRef.current = { codeReader, controls };
     } catch (err: any) {
       setShowScanner(false);
       const errorMessage = err.message || 'Failed to start camera scanning. Please check camera permissions and try again.';
       toast.error(errorMessage);
       console.error('Camera scanning error:', err);
     }
+  };
+
+  // 切換相機
+  const handleCameraChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const newDeviceId = e.target.value;
+    setSelectedDeviceId(newDeviceId);
+    // 先停止現有掃描
+    if (scannerRef.current?.controls) {
+      scannerRef.current.controls.stop();
+    }
+    // 重新啟動掃描
+    setTimeout(() => startScanner(newDeviceId), 200);
   };
 
   // 關閉掃描器
@@ -538,6 +539,19 @@ export default function StockTransferPage() {
             <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black bg-opacity-80">
               <div className="bg-gray-900 rounded-lg p-4 flex flex-col items-center">
                 <video ref={videoRef} className="w-[320px] h-[240px] bg-black rounded" autoPlay muted playsInline />
+                {cameraDevices.length > 1 && (
+                  <select
+                    className="mt-4 px-3 py-2 rounded bg-gray-800 text-white border border-gray-600"
+                    value={selectedDeviceId}
+                    onChange={handleCameraChange}
+                  >
+                    {cameraDevices.map((device) => (
+                      <option key={device.deviceId} value={device.deviceId}>
+                        {device.label || (device.deviceId === selectedDeviceId ? 'Current Camera' : 'Camera')}
+                      </option>
+                    ))}
+                  </select>
+                )}
                 <Button className="mt-4" variant="destructive" onClick={handleCloseScan}>Close</Button>
               </div>
             </div>
