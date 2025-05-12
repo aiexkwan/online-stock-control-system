@@ -364,6 +364,7 @@ export default function StockTransferPage() {
       
       // 先檢查相機裝置
       const devices = await BrowserMultiFormatReader.listVideoInputDevices();
+      console.log('Camera devices listed:', devices); // Log listed devices
       
       if (!devices || devices.length === 0) {
         throw new Error('No camera devices found. Please ensure your device has a camera and it is enabled.');

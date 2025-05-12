@@ -15,6 +15,7 @@ All notable changes to this project will be documented in this file.
 - Improved camera scanning error handling with more specific error messages:
   - Distinguished between "camera not found" and "camera permission denied" scenarios
   - Display clear error messages with guidance for users to resolve issues
+- Added console logging for listed camera devices to aid troubleshooting camera access issues
 
 ## [Unreleased]
 
