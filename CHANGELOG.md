@@ -78,6 +78,10 @@ All notable changes to this project will be documented in this file.
 - Added client-side handling for the void action (calling action, showing toasts, updating activity log, resetting state).
 - Included `plt_remark` in pallet search results.
 - Added Shadcn UI `Dialog` and `Combobox` components and dependencies.
+- QR Code scanner component (`components/qr-scanner/qr-scanner.tsx`) for void pallet page.
+- Combobox, Command, Dialog UI components (`components/ui/`).
+- Server action for voiding pallets (`app/void-pallet/actions.ts`) with detailed logic for inventory, GRN, Slate, and ACO adjustments.
+- Implemented auto-focus on last used input field in Stock Transfer page.
 
 ### Changed
 - **Routing & UI:**
@@ -140,6 +144,13 @@ All notable changes to this project will be documented in this file.
 - Modified `voidPalletAction` in `app/void-pallet/actions.ts`:
     - History logging for "Deducted From Slate Record" now only occurs if a Slate record was actually found and deleted.
     - (ACO record adjustment logging already behaved this way and was confirmed.)
+- **Security**: Updated password verification in `app/void-pallet/actions.ts` to use `bcryptjs` for secure hash comparison instead of plaintext. **(Requires manual update of stored passwords in `data_id` table to bcrypt hashes)**.
+- Updated `app/void-pallet/page.tsx` to integrate QR scanner, void reason selection, password confirmation dialog, and call the new server action.
+- Modified `app/stock-transfer/page.tsx` for auto-focus functionality.
+- Minor fixes and enhancements to `PrintLabelPdf.tsx` and `QcLabelForm.tsx`.
+- Updated GRN label printing process in `app/print-grnlabel/page.tsx`.
+- Dashboard (`app/dashboard/page.tsx`) enhancements and data fetching corrections.
+- Navigation component (`app/components/Navigation.tsx`) responsive improvements.
 
 ### Fixed
 - **PDF Label Content (Dynamic Headers):**
@@ -162,6 +173,13 @@ All notable changes to this project will be documented in this file.
 - Corrected "Home" button navigation in `Navigation.tsx` to point to `/dashboard` instead of `/`, resolving an issue where users were incorrectly redirected to the login page.
 - Addressed potential issue where `NULL` quantity columns in `record_inventory` were not correctly updated during stock transfer by implementing `COALESCE` in the `update_inventory_stock_transfer` RPC function (user applied the SQL change).
 - Ensured cancel button in void dialog clears inputs and resets found pallet state.
+- Resolved `GoTrueClient` multiple instance warnings.
+- Corrected PDF MIME type issue for Supabase storage uploads.
+- Addressed various Linter errors and improved code consistency.
+- Fixed `date-fns` version conflict by using native date input for Slate.
+- Corrected Supabase RPC call `update_inventory_stock_transfer` for `NULL` value handling.
+- Resolved "Home" button navigation issue.
+- Addressed module not found error for `@zxing/browser` by installing the dependency.
 
 ### Removed
 - Deleted placeholder component `app/components/print-label-menu/GrnLabelForm.tsx`.
@@ -170,6 +188,8 @@ All notable changes to this project will be documented in this file.
 - Removed `useEffect` in `app/login/page.tsx` that cleared `localStorage` on every page load.
 - Removed the "Recent Activity" card from the dashboard (`app/dashboard/page.tsx`) as its data source (`record_history`) did not contain the necessary fields (e.g., `grn_number`, `code`, `ttl_pallet`) and its intended functionality was largely redundant with the "GRN History" card.
 - Removed the success toast notification that appeared after successfully finding a pallet in the Void Pallet page (`app/void-pallet/page.tsx`).
+- Removed placeholder `GrnLabelForm.tsx`.
+- Removed "Recent Activity" card from dashboard due to data unavailability and redundancy.
 
 ### Security
 - Added RLS policy to `report_log` to allow public inserts.

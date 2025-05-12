@@ -3,6 +3,7 @@
 import { supabase } from '../../lib/supabase';
 import { format } from 'date-fns';
 import { revalidatePath } from 'next/cache';
+import bcrypt from 'bcryptjs';
 
 interface PalletInfo {
   plt_num: string;
@@ -72,17 +73,19 @@ export async function voidPalletAction(args: VoidPalletArgs): Promise<ActionResu
       return { success: false, error: 'Could not verify user information.' };
     }
 
-    // TODO: Implement proper password hashing and comparison
-    // For now, direct comparison (INSECURE - REPLACE LATER)
-    if (userData.password !== password) {
+    // --- Password Verification using bcrypt ---
+    console.log('Comparing submitted password with stored hash...');
+    const isPasswordMatch = bcrypt.compareSync(password, userData.password); // Compare plaintext password with stored hash
+    
+    if (!isPasswordMatch) { 
       console.warn('Password mismatch for user', userId);
       await logHistoryRecord(userId, 'Void Pallet Fail', plt_num, null, 'Password Mismatch');
       return { success: false, error: 'Action Denied. Password Not Match. Please Try Again.' };
     }
     console.log('Password verified.');
+    // --- End of bcrypt verification ---
 
     // 2. Double-check pallet existence and get info (already have from args, but good practice)
-    // We already have palletInfo from args, rely on that for consistency unless specific need to re-fetch.
     console.log('Pallet info received:', palletInfo);
 
     // 3. Check if already voided (using latest history)
