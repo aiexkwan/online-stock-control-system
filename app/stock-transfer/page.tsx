@@ -6,6 +6,7 @@ import { format } from 'date-fns'; // For date formatting
 import { Toaster, toast } from 'sonner'; // Import Toaster and toast
 import { Button } from '../../components/ui/button';
 import { BrowserMultiFormatReader } from '@zxing/browser';
+import { QrScanner } from '../../components/qr-scanner/qr-scanner';
 
 // Helper to get user from localStorage
 const getUserId = () => {
@@ -47,8 +48,6 @@ export default function StockTransferPage() {
   const palletNumInputRef = useRef<HTMLInputElement>(null);
 
   const [showScanner, setShowScanner] = useState(false);
-  const videoRef = useRef<HTMLVideoElement | null>(null);
-  const scannerRef = useRef<{ codeReader: BrowserMultiFormatReader, controls: any } | null>(null);
 
   // 行動裝置判斷
   const isMobile = typeof window !== 'undefined' && /Mobi|Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
@@ -348,61 +347,6 @@ export default function StockTransferPage() {
     }
   };
 
-  // 啟動掃描器
-  const handleStartScan = async () => {
-    setShowScanner(true);
-    // 自動選擇後置相機
-    const devices = await BrowserMultiFormatReader.listVideoInputDevices();
-    let backCamera = devices.find(d => d.label.toLowerCase().includes('back') || d.label.toLowerCase().includes('rear'));
-    if (!backCamera) backCamera = devices[0];
-    setTimeout(() => startScanner(backCamera?.deviceId), 100); // 等待 video 元素渲染
-  };
-
-  // 啟動 @zxing/browser 掃描
-  const startScanner = async (deviceIdParam?: string) => {
-    if (!videoRef.current) return;
-    try {
-      const codeReader = new BrowserMultiFormatReader();
-      scannerRef.current = { codeReader, controls: null };
-      const devices = await BrowserMultiFormatReader.listVideoInputDevices();
-      let deviceId = deviceIdParam;
-      if (!deviceId) {
-        let backCamera = devices.find(d => d.label.toLowerCase().includes('back') || d.label.toLowerCase().includes('rear'));
-        if (!backCamera) backCamera = devices[0];
-        deviceId = backCamera?.deviceId;
-      }
-      if (!devices || devices.length === 0) {
-        throw new Error('No camera devices found. Please ensure your device has a camera and it is enabled.');
-      }
-      if (!deviceId) {
-        throw new Error('Cannot access camera device ID. Please ensure your device has a camera and it is enabled.');
-      }
-      const controls = await codeReader.decodeFromVideoDevice(deviceId, videoRef.current, (result, err) => {
-        if (result) {
-          setShowScanner(false);
-          if (controls) controls.stop();
-          setSeriesInput(result.getText());
-          setLastActiveInput('series');
-          handleSearch('series', result.getText());
-        }
-      });
-      scannerRef.current = { codeReader, controls };
-    } catch (err: any) {
-      setShowScanner(false);
-      const errorMessage = err.message || 'Failed to start camera scanning. Please check camera permissions and try again.';
-      toast.error(errorMessage);
-      console.error('Camera scanning error:', err);
-    }
-  };
-
-  // 關閉掃描器
-  const handleCloseScan = () => {
-    setShowScanner(false);
-    if (scannerRef.current?.controls) {
-      scannerRef.current.controls.stop();
-    }
-  };
-
   // Handle Enter key press for inputs
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>, inputType: 'series' | 'pallet_num') => {
     if (e.key === 'Enter') {
@@ -474,7 +418,7 @@ export default function StockTransferPage() {
                 }
                 disabled={isLoading}
                 ref={seriesInputRef}
-                {...(isMobile ? { readOnly: true, onClick: handleStartScan } : {})}
+                {...(isMobile ? { readOnly: true, onClick: () => setShowScanner(true) } : {})}
               />
             </div>
             
@@ -515,14 +459,18 @@ export default function StockTransferPage() {
             </div>
           )}
 
-          {showScanner && (
-            <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black bg-opacity-80">
-              <div className="bg-gray-900 rounded-2xl p-8 flex flex-col items-center shadow-2xl">
-                <video ref={videoRef} className="w-[400px] h-[300px] bg-black rounded-lg" autoPlay muted playsInline />
-                <Button className="mt-6 w-32" variant="destructive" onClick={handleCloseScan}>Close</Button>
-              </div>
-            </div>
-          )}
+          <QrScanner
+            open={showScanner}
+            onClose={() => setShowScanner(false)}
+            onScan={(result) => {
+              setSeriesInput(result);
+              setLastActiveInput('series');
+              setShowScanner(false);
+              handleSearch('series', result);
+            }}
+            title="Scan QR Code"
+            hint="Align the QR code within the frame"
+          />
 
           {/* Activity Log Display */}
           {activityLog.length > 0 && (
