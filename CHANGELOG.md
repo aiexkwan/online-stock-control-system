@@ -9,7 +9,7 @@ All notable changes to this project will be documented in this file.
   - Implemented mobile camera scanning using @zxing/browser
   - Scanning results automatically fill the Series field and trigger search
   - "Scan QR" button only displays on mobile devices
-- Added camera switcher: users can select front or back camera when scanning QR code on devices with multiple cameras
+- Camera now automatically uses the back camera (if available) for QR code scanning; camera switcher UI removed
 
 ### Fixed
 - Fixed QR code scanner's stopContinuousDecode method error, now using the officially recommended controls.stop() method
