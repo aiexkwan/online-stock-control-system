@@ -268,7 +268,7 @@ export default function StockTransferPage() {
        }
         activityLogMessage = `Pallet : ${pltNum}  -  Accepted  -  ${formattedTime}`;
 
-      } else if (currentLocation === 'Void') {
+      } else if (currentLocation === 'Voided') {
         historyAction = 'Scan Voided Pallet';
         newLoc = null; // No new location for void scan
         historyRemark = ''; 

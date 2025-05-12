@@ -65,6 +65,19 @@ All notable changes to this project will be documented in this file.
 - QC Label: Added `latest_update` field to `record_inventory` and `record_aco` updates.
 - QC Label: ACO Order Ref dropdown in `QcLabelForm` now only shows incomplete orders.
 - Integrated `sonner` for Toast notifications in Stock Transfer page for better user feedback.
+- Implemented "Void Pallet" functionality in `app/void-pallet/page.tsx`.
+- Added a confirmation dialog requiring void reason (combobox with presets/custom input) and user password.
+- Created server action `app/void-pallet/actions.ts#voidPalletAction` to handle the voiding logic:
+    - Verifies user password (currently insecure plain text - **NEEDS REPLACEMENT**).
+    - Checks if pallet is already voided via `record_history`.
+    - Adjusts inventory quantity in `record_inventory` based on pallet's last location (`await`, `injection`, `fold`).
+    - Deletes corresponding records from `record_grn` and `record_slate`.
+    - Adjusts (adds back) quantity in `record_aco` if pallet remark indicates an ACO order.
+    - Logs detailed steps and final status to `record_history`.
+    - Returns success/error status to the client.
+- Added client-side handling for the void action (calling action, showing toasts, updating activity log, resetting state).
+- Included `plt_remark` in pallet search results.
+- Added Shadcn UI `Dialog` and `Combobox` components and dependencies.
 
 ### Changed
 - **Routing & UI:**
@@ -120,6 +133,13 @@ All notable changes to this project will be documented in this file.
 - Stock Transfer: Messages in Activity Log are now persistent (not cleared on new actions), with new logs appearing at the top (max 50).
 - Stock Transfer: Activity Log messages are color-coded: yellow for success, red for errors/alerts.
 - Stock Transfer: Activity Log text size is responsive: `text-base` on mobile, `md:text-4xl` on larger screens.
+- Updated `app/void-pallet/page.tsx` search logic to fetch `plt_remark`.
+- Refined UI state management for voiding process.
+- Removed Activity Log from Void Pallet page (`app/void-pallet/page.tsx`); status messages now use toast notifications only.
+- Increased size of toast notifications and their text by approximately 50% on the Void Pallet page for better visibility.
+- Modified `voidPalletAction` in `app/void-pallet/actions.ts`:
+    - History logging for "Deducted From Slate Record" now only occurs if a Slate record was actually found and deleted.
+    - (ACO record adjustment logging already behaved this way and was confirmed.)
 
 ### Fixed
 - **PDF Label Content (Dynamic Headers):**
@@ -141,6 +161,7 @@ All notable changes to this project will be documented in this file.
 - Debugged and confirmed resolution of "Home" button redirecting to login page despite being logged in; refined `app/dashboard/page.tsx` authentication logic and data fetching.
 - Corrected "Home" button navigation in `Navigation.tsx` to point to `/dashboard` instead of `/`, resolving an issue where users were incorrectly redirected to the login page.
 - Addressed potential issue where `NULL` quantity columns in `record_inventory` were not correctly updated during stock transfer by implementing `COALESCE` in the `update_inventory_stock_transfer` RPC function (user applied the SQL change).
+- Ensured cancel button in void dialog clears inputs and resets found pallet state.
 
 ### Removed
 - Deleted placeholder component `app/components/print-label-menu/GrnLabelForm.tsx`.
@@ -148,9 +169,11 @@ All notable changes to this project will be documented in this file.
 - Deleted `app/page.tsx` (was a redirect or duplicate of dashboard).
 - Removed `useEffect` in `app/login/page.tsx` that cleared `localStorage` on every page load.
 - Removed the "Recent Activity" card from the dashboard (`app/dashboard/page.tsx`) as its data source (`record_history`) did not contain the necessary fields (e.g., `grn_number`, `code`, `ttl_pallet`) and its intended functionality was largely redundant with the "GRN History" card.
+- Removed the success toast notification that appeared after successfully finding a pallet in the Void Pallet page (`app/void-pallet/page.tsx`).
 
 ### Security
 - Added RLS policy to `report_log` to allow public inserts.
+- **WARNING:** Password verification in `voidPalletAction` uses plain text comparison and is insecure. Needs immediate replacement with password hashing (e.g., bcrypt).
 
 ## [1.0.0] - 2025-05-05
 

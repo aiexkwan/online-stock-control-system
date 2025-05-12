@@ -8,14 +8,15 @@
     "start": "next start",
     "lint": "next lint",
     "init-auth": "ts-node --project tsconfig.json scripts/init-auth.ts",
-    "auto-push": "node scripts/auto-push.js"
+    "auto-push": "node scripts/auto-push.js",
+    "clean": "rimraf .next .turbo dist build .cache coverage out npm-debug.log"
   },
   "dependencies": {
     "@fontsource/lato": "^5.2.5",
     "@headlessui/react": "^2.2.2",
     "@heroicons/react": "^2.2.0",
     "@hookform/resolvers": "^5.0.1",
-    "@radix-ui/react-dialog": "^1.1.11",
+    "@radix-ui/react-dialog": "^1.1.13",
     "@radix-ui/react-label": "^2.1.4",
     "@radix-ui/react-popover": "^1.1.13",
     "@radix-ui/react-progress": "^1.1.6",
@@ -33,6 +34,7 @@
     "chokidar": "^3.5.3",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "cmdk": "^1.1.1",
     "date-fns": "^4.1.0",
     "dotenv": "^16.5.0",
     "framer-motion": "^12.9.4",
@@ -46,7 +48,7 @@
     "react-dom": "^18.3.1",
     "react-hook-form": "^7.56.1",
     "sonner": "^2.0.3",
-    "tailwind-merge": "^3.2.0",
+    "tailwind-merge": "^3.3.0",
     "tailwindcss": "^3.4.0",
     "tailwindcss-animate": "^1.0.7",
     "zod": "^3.24.3"
@@ -60,6 +62,7 @@
     "postcss": "^8.4.32",
     "postcss-flexbugs-fixes": "^5.0.2",
     "postcss-preset-env": "^10.1.6",
+    "rimraf": "^6.0.1",
     "ts-node": "^10.9.2",
     "typescript": "latest"
   },
