@@ -11,7 +11,7 @@ All notable changes to this project will be documented in this file.
   - 僅在行動裝置上顯示「Scan QR」按鈕
 
 ### 修復
-- 修復 QR code 掃描器的 reset 方法錯誤，改用 stopContinuousDecode 方法停止掃描
+- 修復 QR code 掃描器的 stopContinuousDecode 方法錯誤，改用官方推薦的 controls.stop() 方法停止掃描
 
 ## [Unreleased]
 

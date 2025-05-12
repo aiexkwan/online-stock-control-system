@@ -48,7 +48,7 @@ export default function StockTransferPage() {
 
   const [showScanner, setShowScanner] = useState(false);
   const videoRef = useRef<HTMLVideoElement | null>(null);
-  const scannerRef = useRef<BrowserMultiFormatReader | null>(null);
+  const scannerRef = useRef<{ codeReader: BrowserMultiFormatReader, controls: any } | null>(null);
 
   // 行動裝置判斷
   const isMobile = typeof window !== 'undefined' && /Mobi|Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
@@ -357,29 +357,31 @@ export default function StockTransferPage() {
   // 啟動 @zxing/browser 掃描
   const startScanner = async () => {
     if (!videoRef.current) return;
-    if (scannerRef.current) {
-      scannerRef.current.stopContinuousDecode();
-    }
-    const codeReader = new BrowserMultiFormatReader();
-    scannerRef.current = codeReader;
+    
     try {
+      const codeReader = new BrowserMultiFormatReader();
+      scannerRef.current = { codeReader, controls: null };
+      
       const devices = await BrowserMultiFormatReader.listVideoInputDevices();
       const deviceId = devices[0]?.deviceId;
+      
       if (!deviceId) throw new Error('No camera found');
-      codeReader.decodeFromVideoDevice(deviceId, videoRef.current, (result, err) => {
+      
+      const controls = await codeReader.decodeFromVideoDevice(deviceId, videoRef.current, (result, err) => {
         if (result) {
           setShowScanner(false);
-          codeReader.stopContinuousDecode();
+          if (controls) controls.stop();
           setSeriesInput(result.getText());
           setLastActiveInput('series');
           handleSearch('series', result.getText());
         }
       });
+      
+      // 保存 controls 以便稍後停止掃描
+      scannerRef.current = { codeReader, controls };
+      
     } catch (err) {
       setShowScanner(false);
-      if (scannerRef.current) {
-        scannerRef.current.stopContinuousDecode();
-      }
       toast.error('Camera not available or permission denied.');
     }
   };
@@ -387,8 +389,8 @@ export default function StockTransferPage() {
   // 關閉掃描器
   const handleCloseScan = () => {
     setShowScanner(false);
-    if (scannerRef.current) {
-      scannerRef.current.stopContinuousDecode();
+    if (scannerRef.current?.controls) {
+      scannerRef.current.controls.stop();
     }
   };
 
