@@ -40,6 +40,7 @@ All notable changes to this project will be documented in this file.
 ## [Unreleased]
 
 ### Added
+- **Stock Transfer Logging (`app/stock-transfer/page.tsx`):** After a successful stock movement (inventory update and history logging), a new record is now also inserted into the `record_transfer` table. This record includes `tran_date`, `operator_id`, `plt_num`, `f_loc` (from location), and `t_loc` (to location).
 - **Feature (Auth & User Management):**
   - Implemented comprehensive login logic based on `data_id.first_login` status:
     - Users log in with their Clock Number as the password for their initial login.
@@ -303,7 +304,15 @@ All notable changes to this project will be documented in this file.
 ## [Unreleased]
 
 ### Changed
-- **PDF Label Content (Work Order Header):** Modified `PrintLabelPdf.tsx` to strictly limit `displayWorkOrderHeader` to one of three values: "Work Order Number" (default for QC), "ACO Order Ref" (for ACO product type), or "GRN Reference" (for GRN label type). This removes the possibility of other headers like "SLATE Order" or "PIPE" appearing, ensuring consistent and predefined header text.
+- **Stock Transfer Page UI (`app/stock-transfer/page.tsx`):**
+  - Increased the font size of the Activity Log messages to `text-lg` for better readability.
+  - Widened the main content container from `max-w-2xl` to `max-w-4xl`, providing more horizontal space for all elements on the page, including the Activity Log.
+- **Stock Transfer Logic (`app/stock-transfer/page.tsx`):**
+  - If a pallet being scanned for stock transfer is already located at 'Fold Mill' (according to `record_history`), the transfer process is now halted. An informational message is displayed in the activity log, and a "Transfer Blocked" entry is logged in `record_history`.
+- **Stock Transfer Page UI (`app/stock-transfer/page.tsx`):**
+  - Adjusted page layout to move input controls upwards, providing more space at the bottom (e.g., for future debug messages).
+  - Removed the dedicated "Scan" button. QR code scanning on mobile is now initiated by tapping the "QR Code / Series" input field.
+  - Enhanced styling for better readability and a cleaner look (e.g., increased font sizes, adjusted spacing).
 
 ### Added
 - **Feature (Auth & User Management):**

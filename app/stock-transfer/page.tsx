@@ -235,30 +235,15 @@ export default function StockTransferPage() {
           activityLogMessage = `Pallet : ${pltNum}  -  Accepted  -  ${formattedTime}`;
         }
       } else if (currentLocation === 'Fold Mill') {
-        newLoc = 'Production'; // Target location
-        historyRemark = 'Fold Mill > Production';
-        // Update record_inventory (RPC call)
-        console.log('[Stock Transfer] Calling RPC update_inventory_stock_transfer for Fold > Prod with params:');
-        console.log({ p_product_code: productCode, p_qty_change: productQty, p_from_col: 'fold', p_to_col: 'injection', p_latest_update: isoTime });
-        const { data: invDataF, error: invErrorF } = await supabase
-          .rpc('update_inventory_stock_transfer', {
-            p_product_code: productCode,
-            p_qty_change: productQty,
-            p_from_col: 'fold', 
-            p_to_col: 'injection', 
-            p_latest_update: isoTime
-          });
-        console.log('[Stock Transfer] RPC Fold > Prod invData:', invDataF);
-        console.log('[Stock Transfer] RPC Fold > Prod invError:', invErrorF);
-        if (invErrorF) throw new Error(`Inventory update (Fold > Prod): ${invErrorF.message}`);
-        if (invDataF && invDataF.status === 'error') {
-          throw new Error(`Inventory update (Fold > Prod): ${invDataF.message}`);
-        }
-        if (invDataF && invDataF.status !== 'success') {
-            throw new Error(`Inventory update (Fold > Prod) returned: ${invDataF.message || 'Unknown RPC non-success status'}`);
-       }
-        activityLogMessage = `Pallet : ${pltNum}  -  Accepted  -  ${formattedTime}`;
-
+        // ** NEW LOGIC: If pallet is already at Fold Mill, stop further processing **
+        const foldMillStopMsg = `Pallet ${pltNum} is already at Fold Mill. Transfer not processed. - ${formattedTime}`;
+        const newEntry: ActivityLogEntry = { message: foldMillStopMsg, type: 'info' }; 
+        setActivityLog(prevLog => [newEntry, ...prevLog].slice(0, 50));
+        await logHistory("Transfer Blocked", pltNum, currentLocation, "Pallet at Fold Mill, transfer stopped by rule.");
+        resetState();
+        setIsLoading(false);
+        return; 
+        // ** END OF NEW LOGIC FOR Fold Mill **
       } else if (currentLocation === 'Voided') {
         historyAction = 'Scan Voided Pallet';
         newLoc = null; // No new location for void scan
@@ -289,16 +274,16 @@ export default function StockTransferPage() {
         const noHistoryMsg = `Pallet : ${pltNum} Not Exist. Please Check Again - ${formattedTime}`; // Assuming no history means not exist for this user flow.
         const newEntry: ActivityLogEntry = { message: noHistoryMsg, type: 'error' };
         setActivityLog(prevLog => [newEntry, ...prevLog].slice(0, 50));
-        await logHistory("Stock Move Fail", pltNum, null, "No prior location history");
+        await logHistory("Stock Move Fail", pltNum, null, "No Prior Location History");
         resetState(); 
         setIsLoading(false);
         return;
 
       } else { 
-        const unhandledLocMsg = `Pallet : ${pltNum} at unhandled location "${currentLocation}". Transfer not applicable - ${formattedTime}`;
+        const unhandledLocMsg = `Pallet : ${pltNum} Invalid location "${currentLocation}" [Second Transaction]. Transfer Not Processed. - ${formattedTime}`;
         const newEntry: ActivityLogEntry = { message: unhandledLocMsg, type: 'error' };
         setActivityLog(prevLog => [newEntry, ...prevLog].slice(0, 50));
-        await logHistory("Scan Failure", pltNum, currentLocation, `Scan at unhandled location for transfer: ${currentLocation}`);
+        await logHistory("Scan Failure", pltNum, currentLocation, `Unhandled Location : ${currentLocation}`);
         resetState();
         setIsLoading(false);
         return;
@@ -319,10 +304,41 @@ export default function StockTransferPage() {
           const criticalHistoryErrorMsg = `CRITICAL: History log failed for ${pltNum} to ${newLoc} (Inventory WAS updated) - ${format(new Date(), 'dd-MMM-yyyy HH:mm:ss')}`;
           const errorEntry: ActivityLogEntry = { message: criticalHistoryErrorMsg, type: 'error' };
           setActivityLog(prevLog => [errorEntry, ...prevLog].slice(0, 50));
+          // Even if history log fails, attempt to log to record_transfer if it's a critical part of the process
+          // Or decide if this error should prevent record_transfer logging too.
+          // For now, we will proceed to attempt record_transfer logging.
         } else {
+          // Only add to success activity log if history was successful
           const successEntry: ActivityLogEntry = { message: activityLogMessage, type: 'success' };
           setActivityLog(prevLog => [successEntry, ...prevLog].slice(0, 50)); 
         }
+
+        // **** ADD LOGIC TO INSERT INTO record_transfer HERE ****
+        const formattedTransferDate = format(currentTime, 'dd-MMM-yyyy HH:mm:ss');
+        const transferRecord = {
+          tran_date: formattedTransferDate, // Use the formatted time string
+          operator_id: userId,
+          plt_num: pltNum,
+          f_loc: currentLocation, // Current location before transfer
+          t_loc: newLoc,          // Target location after transfer
+        };
+
+        console.log('[Stock Transfer] Attempting to insert into record_transfer:', transferRecord);
+        const { error: transferInsertError } = await supabase.from('record_transfer').insert(transferRecord);
+
+        if (transferInsertError) {
+          console.error(`Error inserting into record_transfer for ${pltNum}: ${transferInsertError.message}`);
+          const transferLogErrorMsg = `Failed to log to Transfer Record for ${pltNum} (${currentLocation} > ${newLoc}) - ${format(new Date(), 'dd-MMM-yyyy HH:mm:ss')}`;
+          // Add to activity log as an error, but don't overwrite a success message if history was logged successfully
+          const errorEntry: ActivityLogEntry = { message: transferLogErrorMsg, type: 'error' };
+          setActivityLog(prevLog => [errorEntry, ...prevLog].slice(0, 50));
+          toast.error(`Failed to create transfer record: ${transferInsertError.message}`);
+        } else {
+          console.log(`[Stock Transfer] Successfully inserted into record_transfer for ${pltNum}`);
+          // Optionally, add a specific success message for record_transfer if needed, or rely on the main activityLogMessage
+        }
+        // **** END OF record_transfer LOGIC ****
+
         resetState(); 
       }
     
@@ -338,118 +354,108 @@ export default function StockTransferPage() {
     }
   };
 
-  // useEffect for focusing input
+  // Auto-focus logic
   useEffect(() => {
-    if (!isLoading) {
-      if (lastActiveInput === 'series' && seriesInputRef.current) {
-        seriesInputRef.current.focus();
-      } else if (lastActiveInput === 'pallet_num' && palletNumInputRef.current) {
-        palletNumInputRef.current.focus();
-      }
+    if (lastActiveInput === 'series' && seriesInputRef.current) {
+      seriesInputRef.current.focus();
+    } else if (lastActiveInput === 'pallet_num' && palletNumInputRef.current) {
+      palletNumInputRef.current.focus();
     }
-  }, [isLoading, lastActiveInput, foundPallet]); // Re-focus when foundPallet changes (likely after a search)
+  }, [lastActiveInput, seriesInput, palletNumInput]); // Re-run if these change to re-apply focus
 
   const handleSeriesScanFromModal = (scannedValue: string) => {
-    if (scannedValue) {
-      setSeriesInput(scannedValue);
-      handleSearch('series', scannedValue);
-      setLastActiveInput('pallet_num');
+    setSeriesInput(scannedValue);
+    setLastActiveInput('series'); // Set last active input to series
+    // Automatically trigger search after scan
+    if (scannedValue.trim()) {
+      handleSearch('series', scannedValue.trim());
     }
-    setShowQrScannerModal(false);
+    setShowQrScannerModal(false); // Close modal after scan
   };
 
   const handleInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>, inputType: 'series' | 'pallet_num') => {
     if (e.key === 'Enter') {
-      if (inputType === 'series') {
-        handleSearch('series', seriesInput);
-        setLastActiveInput('pallet_num');
-      } else {
-        handleSearch('pallet_num', palletNumInput);
-        setLastActiveInput('series');
+      if (inputType === 'series' && seriesInput.trim()) {
+        handleSearch('series', seriesInput.trim());
+      } else if (inputType === 'pallet_num' && palletNumInput.trim()) {
+        handleSearch('pallet_num', palletNumInput.trim());
       }
     }
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-gray-900 text-white">
-      <div className="w-full max-w-4xl p-2 rounded-lg">
-        <h1 className="text-3xl font-bold mb-8 text-center text-orange-500">Stock Movement</h1>
+    <div className="flex flex-col items-center min-h-screen bg-gray-900 text-white p-4 pt-16 md:pt-24">
+      <div className="w-full max-w-4xl space-y-8">
+        <h1 className="text-4xl font-bold text-center text-orange-500 mb-10">Stock Movement</h1>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-6 items-start">
           <div className="space-y-2">
-            <label htmlFor="seriesInputDisplay" className="block text-sm font-medium">QR Code / Series</label>
-            <div className="flex items-center space-x-2">
-                <Input
-                    ref={seriesInputRef}
-                    id="seriesInputDisplay"
-                    type="text"
-                    value={seriesInput}
-                    onChange={(e) => setSeriesInput(e.target.value)}
-                    onKeyDown={(e) => handleInputKeyDown(e, 'series')}
-                    onClick={() => setLastActiveInput('series')}
-                    placeholder="Input Series or Scan QR"
-                    className="w-full p-3 bg-gray-800 border border-gray-700 rounded-md focus:ring-orange-500 focus:border-orange-500 transition"
-                    disabled={isLoading}
-                />
-                <Button
-                    type="button"
-                    onClick={() => setShowQrScannerModal(true)}
-                    disabled={isLoading}
-                    className="p-3 bg-orange-600 hover:bg-orange-700 h-full whitespace-nowrap"
-                >
-                    Scan
-                </Button>
-            </div>
+            <label htmlFor="seriesInput" className="block text-lg font-medium text-gray-300">QR Code / Series</label>
+            <Input
+              id="seriesInput"
+              ref={seriesInputRef}
+              type="text"
+              placeholder={isMobile ? "Tap To Scan QR Code" : "Scan QR"}
+              value={seriesInput}
+              onChange={(e) => setSeriesInput(e.target.value)}
+              onKeyDown={(e) => handleInputKeyDown(e, 'series')}
+              onClick={() => {
+                if (isMobile) {
+                  setShowQrScannerModal(true); 
+                }
+                setLastActiveInput('series');
+              }}
+              className="bg-gray-800 border-gray-700 placeholder-gray-400 text-lg p-3 w-full rounded-md focus:ring-orange-500 focus:border-orange-500"
+              readOnly={isMobile && !showQrScannerModal}
+            />
           </div>
           <div className="space-y-2">
-            <label htmlFor="palletNumInputDisplay" className="block text-sm font-medium">Pallet Number</label>
+            <label htmlFor="palletNumInput" className="block text-lg font-medium text-gray-300">Pallet Number</label>
             <Input
+              id="palletNumInput"
               ref={palletNumInputRef}
-              id="palletNumInputDisplay"
               type="text"
+              placeholder="Input Pallet Number To Search"
               value={palletNumInput}
               onChange={(e) => setPalletNumInput(e.target.value)}
               onKeyDown={(e) => handleInputKeyDown(e, 'pallet_num')}
               onClick={() => setLastActiveInput('pallet_num')}
-              placeholder="Input Pallet Number To Search"
-              className="w-full p-3 bg-gray-800 border border-gray-700 rounded-md focus:ring-orange-500 focus:border-orange-500 transition"
-              disabled={isLoading}
+              className="bg-gray-800 border-gray-700 placeholder-gray-400 text-lg p-3 w-full rounded-md focus:ring-orange-500 focus:border-orange-500"
             />
           </div>
         </div>
-
-        {isLoading && (
-          <div className="flex justify-center items-center my-6">
-            <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-b-4 border-orange-500"></div>
-            <p className="ml-4 text-lg">Processing...</p>
-          </div>
-        )}
-
+        
         {activityLog.length > 0 && (
-          <div className="mt-8 w-full bg-gray-800 shadow-xl rounded-lg p-6">
-            <h2 className="text-xl font-semibold mb-4 text-gray-200">Activity Log:</h2>
-            <div className="max-h-80 overflow-y-auto space-y-3 pr-2 ">
+          <div className="mt-8 w-full bg-gray-800 p-4 rounded-lg shadow max-h-96 overflow-y-auto">
+            <h2 className="text-xl font-semibold text-gray-200 mb-3">Activity Log</h2>
+            <ul className="space-y-2">
               {activityLog.map((log, index) => (
-                <div 
+                <li 
                   key={index} 
-                  className={`p-3 rounded-md text-sm ${log.type === 'success' ? 'bg-green-700/50 text-green-300' : log.type === 'error' ? 'bg-red-800/60 text-red-300' : 'bg-blue-700/50 text-blue-300'}`}>
+                  className={`text-3xl p-4 rounded-md ${
+                    log.type === 'success' ? 'bg-green-700 text-green-100' : 
+                    log.type === 'error' ? 'bg-red-700 text-red-100' : 
+                    'bg-blue-700 text-blue-100' // Default for 'info'
+                  }`}
+                >
                   {log.message}
-                </div>
+                </li>
               ))}
-            </div>
+            </ul>
           </div>
         )}
-
-        {/* Modal QrScanner */}
-        <QrScanner
-            open={showQrScannerModal}
-            onClose={() => setShowQrScannerModal(false)}
-            onScan={handleSeriesScanFromModal} 
-            title="Scan Pallet QR Code"
-            hint="Align QR code to scan for stock movement"
-        />
-
       </div>
+      
+      {showQrScannerModal && (
+        <QrScanner
+          open={showQrScannerModal}
+          onClose={() => setShowQrScannerModal(false)}
+          onScan={handleSeriesScanFromModal}
+          title="Scan Pallet Series QR Code"
+          hint="Align QR code within the frame"
+        />
+      )}
+      <Toaster richColors position="top-center" />
     </div>
   );
 } 
