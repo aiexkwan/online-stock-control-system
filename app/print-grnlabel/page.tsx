@@ -12,6 +12,8 @@ import { pdf } from '@react-pdf/renderer';
 // Import PDF utilities
 import { prepareGrnLabelData, generateAndUploadPdf, GrnInputData } from '../../lib/pdfUtils';
 import { PrintLabelPdfProps } from '../../components/print-label-pdf/PrintLabelPdf'; // Still needed for latestGeneratedPdfProps state type
+import { generateUniqueSeries as generateSingleUniqueSeries } from '../../lib/seriesUtils'; // Import and alias to avoid name collision if any local var is named generateUniqueSeries
+import { generatePalletNumbers } from '../../lib/palletNumUtils'; // Import the new pallet number utility
 
 const ManualPdfDownloadButton = dynamic(
   () => import('../../components/print-label-pdf/ManualPdfDownloadButton'),
@@ -337,29 +339,18 @@ export default function PrintGrnLabelPage() {
     setPdfProgress({ current: 0, total: totalPdfsToProcess, status: Array(totalPdfsToProcess).fill('Pending') });
     setPdfUploadSuccess(false);
 
-    const todayForSeries = new Date();
-    async function generateUniqueSeries() {
-      const datePart = format(todayForSeries, 'yyMMddHH');
-      const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-      while (true) {
-        const randomPart = Array.from({ length: 6 }, () => chars.charAt(Math.floor(Math.random() * chars.length))).join('');
-        const series = `${datePart}-${randomPart}`;
-        const { data: exist } = await supabase.from('record_palletinfo').select('series').eq('series', series).limit(1);
-        if (!exist || exist.length === 0) return series;
-      }
+    const today = new Date();
+
+    // Pre-generate all pallet numbers for this batch
+    const palletNumbersToUse = await generatePalletNumbers(supabase, totalPdfsToProcess);
+    if (palletNumbersToUse.length !== totalPdfsToProcess) {
+      // Handle error: couldn't generate enough pallet numbers
+      toast.error('Failed to generate the required number of pallet numbers. Please try again.');
+      console.error(`Pallet Number Generation Error: Requested ${totalPdfsToProcess}, Got ${palletNumbersToUse.length}`);
+      setPdfProgress(prev => ({ ...prev, status: Array(totalPdfsToProcess).fill('Failed') }));
+      return;
     }
 
-    const today = new Date();
-    const dateStrForPalletNum = format(today, 'ddMMyy');
-    const { data: todayPlts } = await supabase.from('record_palletinfo').select('plt_num').like('plt_num', `${dateStrForPalletNum}/%`);
-    let maxNum = 0;
-    if (todayPlts && todayPlts.length > 0) {
-      todayPlts.forEach(row => {
-        const parts = row.plt_num.split('/');
-        if (parts.length === 2 && !isNaN(Number(parts[1]))) maxNum = Math.max(maxNum, parseInt(parts[1]));
-      });
-    }
-    let nextPalletNumBase = maxNum + 1;
     const generateTime = format(today, 'dd-MMM-yyyy HH:mm:ss');
 
     let processedDbOperations = 0;
@@ -381,8 +372,8 @@ export default function PrintGrnLabelPage() {
         continue;
       }
 
-      const palletNum = `${dateStrForPalletNum}/${nextPalletNumBase + i}`;
-      const series = await generateUniqueSeries();
+      const palletNum = palletNumbersToUse[i]; // Use the pre-generated pallet number
+      const series = await generateSingleUniqueSeries(supabase);
       const currentUserIdInt = userId ? parseInt(userId, 10) : null;
 
       try {
@@ -424,12 +415,12 @@ export default function PrintGrnLabelPage() {
           palletNum: palletNum,
           receivedBy: userId || 'N/A', // Assuming userId state holds the clock number or similar
         };
-        const pdfPropsForThisPallet = prepareGrnLabelData(grnInputPayload);
+        const grnLabelProps = await prepareGrnLabelData(grnInputPayload);
         
         // Generate and upload PDF using the new utility function
         const uploadFileName = `GRN_${palletNum.replace(/\//g, '-')}.pdf`;
         await generateAndUploadPdf({
-            pdfProps: pdfPropsForThisPallet,
+            pdfProps: grnLabelProps,
             fileName: uploadFileName,
             storagePath: 'grn_labels',
             supabaseClient: supabase

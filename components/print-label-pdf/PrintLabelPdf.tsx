@@ -11,6 +11,7 @@ export interface PrintLabelPdfProps {
   workOrderNumber: string;
   palletNum: string;
   qrValue?: string;
+  qrCodeDataUrl?: string;
   productType?: string;
   workOrderName?: string;
   labelType?: string;
@@ -164,7 +165,7 @@ function LabelBlock({
   qcClockNum,
   workOrderNumber,
   palletNum,
-  qrValue,
+  qrCodeDataUrl,
   productType,
   workOrderName,
   labelType,
@@ -189,7 +190,7 @@ function LabelBlock({
       {/* Logo */}
       <Image src={LOGO_URL} style={{ position: 'absolute', top: 14, left: 14, width: 180, height: 48 }} />
       {/* QR Code */}
-      <Image src={`https://api.qrserver.com/v1/create-qr-code/?data=${qrValue || productCode}&size=150x150`} style={{ position: 'absolute', top: 14, right: 14, width: 140, height: 140 }} />
+      {qrCodeDataUrl && <Image src={qrCodeDataUrl} style={{ position: 'absolute', top: 14, right: 14, width: 140, height: 140 }} />}
       {/* Product Code 標題 */}
       <Text style={{ textAlign: 'center', fontSize: 16, marginTop: 30, marginBottom: 10, textDecoration: 'underline' }}>Product Code</Text>
       {/* Product Code 內容 */}

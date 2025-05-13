@@ -2,6 +2,7 @@ import { pdf } from '@react-pdf/renderer';
 import { PrintLabelPdf, PrintLabelPdfProps } from '@/components/print-label-pdf/PrintLabelPdf';
 import { format } from 'date-fns';
 import { SupabaseClient } from '@supabase/supabase-js'; // For type hinting Supabase client
+import QRCode from 'qrcode'; // Import QRCode library
 
 // Interface for GRN specific data input by the user or form
 export interface GrnInputData {
@@ -17,8 +18,16 @@ export interface GrnInputData {
   // dateForLabel?: Date; // Optional: if a specific date needs to be on the label, otherwise current date is used
 }
 
-export function prepareGrnLabelData(input: GrnInputData): PrintLabelPdfProps {
+export async function prepareGrnLabelData(input: GrnInputData): Promise<PrintLabelPdfProps> {
   const labelDate = format(new Date(), 'dd-MMM-yyyy'); // Default to current date
+  const dataForQr = input.series || input.productCode; // Fallback logic for QR data
+  let qrCodeDataUrl = '';
+  try {
+    qrCodeDataUrl = await QRCode.toDataURL(dataForQr, { errorCorrectionLevel: 'M', margin: 1, width: 140 });
+  } catch (err) {
+    console.error('Failed to generate QR code data URL for GRN:', err);
+    // Fallback or error handling for qrCodeDataUrl can be added here if necessary
+  }
 
   return {
     productCode: input.productCode,
@@ -29,7 +38,7 @@ export function prepareGrnLabelData(input: GrnInputData): PrintLabelPdfProps {
     qcClockNum: input.receivedBy, // Represents "Received By" for GRN
     workOrderNumber: `${input.grnNumber.trim()} (${input.materialSupplier.trim().toUpperCase()})`, // GRN Ref + Supplier
     palletNum: input.palletNum,
-    qrValue: input.series, // The unique series for the QR code
+    qrCodeDataUrl, // Use the generated data URL
     productType: input.productType || undefined,
     labelType: 'GRN', // Clearly mark as GRN label type
   };
@@ -101,8 +110,17 @@ export interface QcInputData {
   // dateForLabel?: Date;
 }
 
-export function prepareQcLabelData(input: QcInputData): PrintLabelPdfProps {
+export async function prepareQcLabelData(input: QcInputData): Promise<PrintLabelPdfProps> {
   const labelDate = format(new Date(), 'dd-MMM-yyyy');
+  const dataForQr = input.series || input.productCode; // Fallback logic for QR data
+  let qrCodeDataUrl = '';
+  try {
+    qrCodeDataUrl = await QRCode.toDataURL(dataForQr, { errorCorrectionLevel: 'M', margin: 1, width: 140 });
+  } catch (err) {
+    console.error('Failed to generate QR code data URL for QC:', err);
+    // Fallback or error handling for qrCodeDataUrl can be added here if necessary
+  }
+
   return {
     productCode: input.productCode,
     description: input.productDescription,
@@ -112,7 +130,7 @@ export function prepareQcLabelData(input: QcInputData): PrintLabelPdfProps {
     qcClockNum: input.qcClockNum,
     workOrderNumber: input.workOrderNumber || '-',
     palletNum: input.palletNum,
-    qrValue: input.series,
+    qrCodeDataUrl, // Use the generated data URL
     productType: input.productType || undefined,
     labelType: 'QC', // Clearly mark as QC label type
     workOrderName: input.workOrderName,

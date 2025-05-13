@@ -3,9 +3,11 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '../../../lib/supabase';
 import { format } from 'date-fns';
 import { useSearchParams } from 'next/navigation';
-import ReviewTemplate from '../../components/print-label-pdf/ReviewTemplate';
-import { generateAndUploadPdf } from '../print-label-pdf/PdfGenerator';
+import { generateAndUploadPdf } from '../../../app/components/print-label-pdf/PdfGenerator';
 import { toast } from 'sonner';
+import { QcInputData, prepareQcLabelData } from '../../../lib/pdfUtils';
+import { generateMultipleUniqueSeries } from '../../../lib/seriesUtils';
+import { generatePalletNumbers } from '../../../lib/palletNumUtils';
 
 // TODO: 將現有 Print Label 表單內容搬到這裡，並導出 QcLabelForm 組件
 
@@ -263,69 +265,10 @@ export default function QcLabelForm() {
     }
 
     // --- Step 1 Refactor: Pre-generate pallet numbers and series --- START ---
-    let maxNum = 0;
-    const { data: todayPlts, error: todayPltsError } = await supabase
-      .from('record_palletinfo')
-      .select('plt_num')
-      .like('plt_num', `${dateStr}/%`);
-
-    if (todayPltsError) {
-      setDebugMsg(`ERROR: Failed to query today's pallets for numbering: ${todayPltsError.message}`);
-      logErrorReport(`Failed to query today's pallets: ${todayPltsError.message}`, "Pallet Number Generation").catch(console.error);
-      return; // Critical error, cannot proceed
-    }
-    if (todayPlts && todayPlts.length > 0) {
-      todayPlts.forEach(row => {
-        const parts = row.plt_num.split('/');
-        if (parts.length === 2 && !isNaN(Number(parts[1]))) {
-          maxNum = Math.max(maxNum, parseInt(parts[1]));
-        }
-      });
-    }
-
     const numberOfPalletsToGenerate = productInfo?.type === 'Slate' ? 1 : countNum;
-    const palletNumbersToUse = Array.from({ length: numberOfPalletsToGenerate }).map((_, i) => `${dateStr}/${maxNum + 1 + i}`);
+    const palletNumbersToUse = await generatePalletNumbers(supabase, numberOfPalletsToGenerate);
     
-    async function generateUniqueSeriesArr(numToGenerate: number): Promise<string[]> {
-      const generatedSeries: string[] = [];
-      const datePart = format(new Date(), 'yyMMddHH'); // Get date part once for the batch
-      const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-      let attempts = 0;
-      const maxAttempts = numToGenerate * 5; // Allow more attempts to find unique series
-
-      while (generatedSeries.length < numToGenerate && attempts < maxAttempts) {
-        const randomPart = Array.from({ length: 6 }, () => chars.charAt(Math.floor(Math.random() * chars.length))).join('');
-        const candidateSeries = `${datePart}-${randomPart}`;
-        attempts++;
-
-        if (!generatedSeries.includes(candidateSeries)) { // Check local uniqueness first
-          const { data: dbCheck, error: dbError } = await supabase
-            .from('record_palletinfo')
-            .select('series')
-            .eq('series', candidateSeries)
-            .limit(1);
-
-          if (dbError) {
-            console.error('Error checking series uniqueness in DB:', dbError);
-            // Decide if we should throw, or try again, or skip. For now, log and continue trying.
-          } else if (!dbCheck || dbCheck.length === 0) {
-            generatedSeries.push(candidateSeries);
-          }
-        }
-      }
-
-      if (generatedSeries.length < numToGenerate) {
-        // This case means we couldn't generate enough unique series.
-        // Log an error or throw, as this is a critical failure.
-        const errorMessage = `Could not generate enough unique series. Requested: ${numToGenerate}, Generated: ${generatedSeries.length}`;
-        console.error(errorMessage);
-        // await logErrorReport('UniqueSeriesGeneration', errorMessage); // If logErrorReport is available and appropriate
-        throw new Error(errorMessage);
-      }
-      return generatedSeries;
-    }
-
-    const seriesArr = await generateUniqueSeriesArr(countNum);
+    const seriesArr = await generateMultipleUniqueSeries(countNum, supabase);
 
     // Determine the plt_remark for the entire batch
     let plt_remark_for_batch = '-'; // Default remark
@@ -574,51 +517,41 @@ export default function QcLabelForm() {
     for (let i = 0; i < totalPdfs; i++) {
       console.log(`[DEBUG] Entering PDF generation loop, iteration: ${i + 1}/${totalPdfs}`);
       const palletData = insertDataArr[i];
-      const pdfDocData = {
+      
+      // 1. Construct QcInputData for prepareQcLabelData
+      const qcInputForLabel: QcInputData = {
         productCode: palletData.product_code,
-        description: productInfo?.description || '-',
-        quantity: palletData.product_qty,
-        date: dateLabel,
-        operatorClockNum: operatorNum,
-        qcClockNum: qcNum,
-        palletNum: palletData.plt_num,
+        productDescription: productInfo?.description || '-',
+        quantity: Number(palletData.product_qty), // Ensure quantity is a number
         series: palletData.series,
-        qrValue: palletData.series,
-        productType: productInfo?.type || '',
-        ...(productInfo?.type === 'Slate' && {
-          // All Slate-specific detail fields are removed as per user request for PDF
-          // firstOffDate: slateDetail.firstOffDate || '-', // Removed
-          // batchNumber: slateDetail.batchNumber || '-', // Removed
-          // setterName: slateDetail.setterName || '-', // Removed
-          // weight: slateDetail.weight || '-', // Removed
-          // topThickness: slateDetail.topThickness || '-', // Removed
-          // bottomThickness: slateDetail.bottomThickness || '-', // Removed
-          // length: slateDetail.length || '-', // Removed
-          // width: slateDetail.width || '-', // Removed
-          // centreHole: slateDetail.centreHole || '-', // Removed
-          // lengthMiddleHoleToBottom: slateDetail.lengthMiddleHoleToBottom || '-', // Removed
-          // flameTest: slateDetail.flameTest || '-', // Removed
-        }),
-        workOrderNumber: (() => {
+        palletNum: palletData.plt_num,
+        operatorClockNum: operatorNum, // from form state
+        qcClockNum: qcNum, // from form state (userId)
+        workOrderNumber: (() => { // Logic for workOrderNumber based on product type
           if (productInfo?.type === 'ACO' && acoOrderRef.trim()) {
-            const currentPalletOrdinal = startingOrdinalForAco + i; // i is from the surrounding map loop
+            const currentPalletOrdinal = startingOrdinalForAco + i;
             return `${acoOrderRef.trim()} - ${currentPalletOrdinal}${getOrdinalSuffix(currentPalletOrdinal)} PLT`;
           } else if (productInfo?.type === 'Slate') {
-            return '-';
-          } else if (productInfo?.type) {
+            return '-'; // Slate W/O is '-'
+          } else if (productInfo?.type) { // For other types, use productInfo.type as W/O
             return productInfo.type;
-          } else {
-            return workOrderNumberVariableForFallback; 
           }
+          // Fallback if none of the above match (should ideally be covered by productInfo.type logic)
+          return workOrderNumberVariableForFallback; // Or a more generic default like '-'
         })(),
+        productType: productInfo?.type || '',
+        workOrderName: productInfo?.type === 'ACO' ? 'ACO Order' : (productInfo?.type === 'Slate' ? 'SLATE Order' : productInfo?.type) // Example for workOrderName
       };
 
-      console.log('[QcLabelForm] pdfData FOR PDF:', JSON.stringify(pdfDocData, null, 2));
+      // 2. Call prepareQcLabelData to get props including qrCodeDataUrl
+      const currentPdfProps = await prepareQcLabelData(qcInputForLabel);
+      console.log('[QcLabelForm] currentPdfProps from prepareQcLabelData:', JSON.stringify(currentPdfProps, null, 2));
 
+      // 3. Call generateAndUploadPdf from PdfGenerator.tsx with the prepared props
       const pdfUrl = await generateAndUploadPdf({
-        pdfData: pdfDocData,
-        fileName: `pallet-label-${palletData.series}.pdf`,
-        folderName: palletData.plt_num,
+        pdfData: currentPdfProps, // Pass the result from prepareQcLabelData
+        fileName: `pallet-label-${palletData.series}.pdf`, // Original filename logic
+        folderName: palletData.plt_num, // This is used as palletNum for uploadPdf inside PdfGenerator
         setPdfProgress: setPdfProgress,
         index: i,
         onSuccess: (url) => {
@@ -627,7 +560,7 @@ export default function QcLabelForm() {
         onError: (error) => {
           console.error(`Error generating/uploading PDF for pallet ${palletData.plt_num}:`, error);
           newPdfUrls[i] = { series: palletData.series, error: error.message };
-          logErrorReport(`PDF Generation/Upload Error for ${palletData.plt_num}: ${error.message}`, JSON.stringify(pdfDocData)).catch(console.error);
+          logErrorReport(`PDF Generation/Upload Error for ${palletData.plt_num}: ${error.message}`, JSON.stringify(qcInputForLabel)).catch(console.error);
         }
       });
     }
@@ -789,7 +722,7 @@ export default function QcLabelForm() {
         if (productEntry) {
           if (productEntry.remain_qty <= 0) {
             // setAcoRemain('Order Been Fullfilled');
-            toast.warn(`Product ${productCode} in order ${acoOrderRef} has already been fulfilled (Remaining Qty: 0).`);
+            toast.warning(`Product ${productCode} in order ${acoOrderRef} has already been fulfilled (Remaining Qty: 0).`);
             setAcoRemain('Order Been Fullfilled'); // Keep state for validation logic
           } else {
             setAcoRemain(`Order Remain Qty : ${productEntry.remain_qty}`);
