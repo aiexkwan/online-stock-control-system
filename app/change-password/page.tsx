@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '../../lib/supabase';
 import bcrypt from 'bcryptjs'; // Import bcryptjs
+import { toast } from 'sonner'; // Import toast from sonner
 
 // Cookie setter function
 function setCookie(name: string, value: string, days: number) {
@@ -169,7 +170,7 @@ export default function ChangePasswordPage() {
       // REMOVE: localStorage.removeItem('firstLogin'); as DB now controls this state.
       
       // Notify success and redirect
-      alert('Password updated successfully!');
+      toast.success('Password updated successfully!');
       router.push('/dashboard'); // Consider using router.replace for no back history to change pwd page
 
     } catch (error) {

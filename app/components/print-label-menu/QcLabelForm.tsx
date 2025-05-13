@@ -5,6 +5,7 @@ import { format } from 'date-fns';
 import { useSearchParams } from 'next/navigation';
 import ReviewTemplate from '../../components/print-label-pdf/ReviewTemplate';
 import { generateAndUploadPdf } from '../print-label-pdf/PdfGenerator';
+import { toast } from 'sonner';
 
 // TODO: 將現有 Print Label 表單內容搬到這裡，並導出 QcLabelForm 組件
 
@@ -89,7 +90,7 @@ export default function QcLabelForm() {
           .select('first_off');
 
         if (error) {
-          console.error('[QcLabelForm] Error fetching first-off dates:', error);
+          toast.error('Error fetching historical first-off dates for Slate.');
           setAvailableFirstOffDates([]);
         } else if (data) {
           const dates = data.map(item => item.first_off).filter(date => date) as string[];
@@ -107,40 +108,33 @@ export default function QcLabelForm() {
   useEffect(() => {
     if (productInfo?.type === 'ACO') {
       const fetchAcoOrderRefs = async () => {
-        // Select order_ref and remain_qty
         const { data, error } = await supabase
           .from('record_aco')
           .select('order_ref, remain_qty'); 
 
         if (error) {
-          console.error('[QcLabelForm] Error fetching ACO order refs:', error);
+          toast.error('Error fetching historical ACO order refs.');
           setAvailableAcoOrderRefs([]);
         } else if (data) {
-          // Group by order_ref and sum remain_qty
           const groupedByOrderRef = data.reduce<Record<string, { totalRemainQty: number }>>((acc, record) => {
-            const orderRefStr = String(record.order_ref); // Ensure order_ref is a string for keying
+            const orderRefStr = String(record.order_ref);
             if (record.order_ref !== null && record.order_ref !== undefined) {
               acc[orderRefStr] = acc[orderRefStr] || { totalRemainQty: 0 };
               acc[orderRefStr].totalRemainQty += (record.remain_qty || 0);
             }
             return acc;
           }, {});
-
-          // Filter out completed orders (totalRemainQty <= 0) and get unique, sorted refs
           const activeOrderRefs = Object.entries(groupedByOrderRef)
             .filter(([, value]) => value.totalRemainQty > 0)
-            .map(([key]) => parseInt(key, 10)) // Convert string key back to number
-            .filter(ref => !isNaN(ref)); // Ensure only valid numbers are included
-          
+            .map(([key]) => parseInt(key, 10))
+            .filter(ref => !isNaN(ref));
           const uniqueSortedActiveRefs = Array.from(new Set(activeOrderRefs)).sort((a, b) => a - b);
-          
-          console.log('[QcLabelForm] Filtered Active ACO Order Refs:', uniqueSortedActiveRefs);
           setAvailableAcoOrderRefs(uniqueSortedActiveRefs);
         }
       };
       fetchAcoOrderRefs();
     } else {
-      setAvailableAcoOrderRefs([]); // Clear if not ACO type
+      setAvailableAcoOrderRefs([]);
     }
   }, [productInfo?.type]);
 
@@ -227,7 +221,10 @@ export default function QcLabelForm() {
     let debugMsg = '';
     let inventoryUpdated = false;
     let acoUpdated = false;
-    if (!isFormValid) return;
+    if (!isFormValid) {
+      toast.error('Form is not valid. Please check inputs and ACO/Slate details.');
+      return;
+    }
 
     // Helper function to get ordinal suffix
     function getOrdinalSuffix(n: number): string {
@@ -664,100 +661,148 @@ export default function QcLabelForm() {
 
   // --- Product Code Search Logic --- START ---
   const handleProductCodeBlur = async () => {
-    const currentProductCode = productCode.trim();
-    if (!currentProductCode) {
+    if (!productCode.trim()) {
       setProductInfo(null);
-      // Do not clear productError if it's a required field error, for example.
-      // Let form validation handle empty required fields.
+      setProductError(null); // Clear error if input is empty
+      // Reset ACO/Slate specific fields if product code is cleared
+      setAcoOrderRef('');
+      setAcoRemain(null);
+      setAcoNewRef(false);
+      setSlateDetail({
+        firstOffDate: '',
+        batchNumber: '',
+        setterName: '',
+        material: '',
+        weight: '',
+        topThickness: '',
+        bottomThickness: '',
+        length: '',
+        width: '',
+        centreHole: '',
+        colour: '',
+        shapes: '',
+        flameTest: '',
+        remark: ''
+      });
       return;
     }
-    const { data, error } = await supabase
-      .from('data_code')
-      .select('code, description, standard_qty, type')
-      .ilike('code', currentProductCode)
-      .single();
+    try {
+      const { data, error } = await supabase
+        .from('data_product')
+        .select('description, standard_qty, type')
+        .eq('product_code', productCode.trim())
+        .single();
 
-    if (error || !data) {
+      if (error) {
+        // console.error("Error fetching product info:", error);
+        setProductInfo(null);
+        // setProductError(`Product code ${productCode.trim()} not found or error fetching.`);
+        toast.error(`Product code ${productCode.trim()} not found or error fetching details.`);
+        return;
+      }
+
+      if (data) {
+        setProductInfo(data as { description: string; standard_qty: string; type: string });
+        setProductError(null);
+        if (data.type === 'Slate') {
+            setCount('1'); // Auto set count to 1 for Slate
+        }
+      } else {
+        setProductInfo(null);
+        // setProductError(`Product code ${productCode.trim()} not found.`);
+        toast.error(`Product code ${productCode.trim()} not found.`);
+      }
+    } catch (err) {
+      // console.error("Unexpected error:", err);
       setProductInfo(null);
-      setProductError("Product Code Don't Exist. Please Check Again Or Update Product Code List.");
-    } else {
-      console.log('[QcLabelForm] Product Info Fetched, type:', data.type);
-      setProductInfo(data);
-      setProductError(null);
-      setProductCode(data.code); // Auto-correct Product Code input
+      // setProductError('An unexpected error occurred while fetching product information.');
+      toast.error('An unexpected error occurred while fetching product information.');
     }
   };
   // --- Product Code Search Logic --- END ---
 
   // --- Error Logging Function --- START ---
   const logErrorReport = async (errorPart: string, context: string) => {
+    const userId = getUserId(); 
+    const logEntry = {
+      time: new Date().toISOString(),
+      id: userId || 'unknown_user', // Use logged-in user ID or a placeholder
+      action: 'Error Report',
+      loc: null,
+      plt_num: null,
+      remark: `Part: ${errorPart}, Context: ${context}`
+    };
+    console.error(`[QcLabelForm Error Report] User: ${userId}, Part: ${errorPart}, Context: ${context}`); // Keep console for backend logging
+    toast.error(`Error during ${errorPart}. Details logged.`); // User-facing toast
     try {
-      const { error: logError } = await supabase
-        .from('report_log')
-        .insert({ error: errorPart, context: context, state: false });
-      if (logError) {
-        console.error('Failed to log error to Supabase:', logError);
-        // Optionally update debugMsg or show a fallback error
-        setDebugMsg(prev => prev + `\nFailed to log error: ${logError.message}`);
-      }
-    } catch (err) {
-      console.error('Exception during error logging:', err);
+      await supabase.from('record_history').insert(logEntry);
+    } catch (historyError) {
+      console.error('[QcLabelForm] Failed to log error report to history:', historyError);
+      // Don't show another toast for failing to log an error
     }
   };
   // --- Error Logging Function --- END ---
 
   const handleAcoSearch = async () => {
+    if (!acoOrderRef.trim() || !productCode.trim()) {
+      // toast.info('Please enter both Product Code and ACO Order Ref to search.'); // Optional: Info toast if needed
+      return;
+    }
     setAcoSearchLoading(true);
     setAcoRemain(null);
     setAcoNewRef(false);
-    const { data, error } = await supabase
-      .from('record_aco')
-      .select('remain_qty')
-      .eq('order_ref', Number(acoOrderRef.trim()))
-      .eq('code', productCode.trim())
-      .maybeSingle();
-
-    if (error) { // Handle actual errors first
-      console.error('[QcLabelForm] Error searching ACO order:', error);
-      setAcoRemain(`Error searching order: ${error.message}`);
-      // acoNewRef remains false, print label should be disabled due to acoRemain not being a valid state for printing
-    } else if (!data) { // No data found for this product_code in this order_ref
-      // Check if the order_ref itself exists with other product codes
-      const { data: orderExistsData, error: orderExistsError } = await supabase
+    setAcoOrderDetails([{ code: '', qty: '' }]); // Reset details on new search
+    
+    try {
+      const { data, error } = await supabase
         .from('record_aco')
-        .select('order_ref', { count: 'exact', head: true }) // More efficient check for existence
-        .eq('order_ref', Number(acoOrderRef.trim()));
-        // No .limit(1) needed with head:true for existence check if that's the goal, 
-        // or select a single column and limit 1 if we need to see if *any* row exists for that order_ref.
-        // Let's use a simpler existence check by fetching a minimal field with limit 1.
+        .select('id, product_code, order_qty, remain_qty')
+        .eq('order_ref', acoOrderRef.trim());
 
-      const { data: orderRefCheck, error: orderRefCheckError } = await supabase
-        .from('record_aco')
-        .select('order_ref')
-        .eq('order_ref', Number(acoOrderRef.trim()))
-        .limit(1);
+      if (error) {
+        // console.error('[QcLabelForm] Error searching ACO order:', error);
+        // setAcoRemain('Error searching order.');
+        toast.error(`Error searching ACO order ${acoOrderRef}: ${error.message}`);
+        await logErrorReport('ACO Search', `DB error searching order ${acoOrderRef}: ${error.message}`);
+        return;
+      }
 
-      if (orderRefCheckError) {
-        console.error('[QcLabelForm] Error checking if ACO order ref exists:', orderRefCheckError);
-        setAcoRemain(`Error verifying order existence: ${orderRefCheckError.message}`);
-        // acoNewRef remains false
-      } else if (orderRefCheck && orderRefCheck.length > 0) {
-        // Order ref exists, but not with the current productCode
-        setAcoRemain('Product Code Not Included In This Order');
-        // acoNewRef remains false (as set at the beginning of the function)
+      if (!data || data.length === 0) {
+        // setAcoRemain('Order Ref Not Found! You need to input New Order Details.');
+        toast.info(`ACO Order Ref ${acoOrderRef} not found. Please provide new order details below.`);
+        setAcoNewRef(true);
+        setAcoNewProductCode(productCode.trim()); // Pre-fill product code for new order detail
+        setAcoOrderDetails([{ code: productCode.trim(), qty: '' }]); // Start with current product code
       } else {
-        // Order ref itself does not exist with any product code
-        setAcoRemain('New Order, Please Enter Detail');
-        setAcoNewRef(true); // This is a genuinely new order ref
+        // Order found, check if product code exists in this order
+        const productEntry = data.find(item => item.product_code === productCode.trim());
+        if (productEntry) {
+          if (productEntry.remain_qty <= 0) {
+            // setAcoRemain('Order Been Fullfilled');
+            toast.warn(`Product ${productCode} in order ${acoOrderRef} has already been fulfilled (Remaining Qty: 0).`);
+            setAcoRemain('Order Been Fullfilled'); // Keep state for validation logic
+          } else {
+            setAcoRemain(`Order Remain Qty : ${productEntry.remain_qty}`);
+            toast.success(`Order ${acoOrderRef} found. Remaining quantity for ${productCode}: ${productEntry.remain_qty}`);
+          }
+        } else {
+          // Order exists, but product code is not part of it
+          // setAcoRemain('Product Code Not Included In This Order');
+          toast.error(`Product Code ${productCode} is not part of ACO Order ${acoOrderRef}.`);
+          setAcoRemain('Product Code Not Included In This Order'); // Keep state for validation
+          // Optionally, log this as an error report or specific history entry
+          await logErrorReport('ACO Search', `Product ${productCode} not found in existing order ${acoOrderRef}`);
+        }
+        setAcoNewRef(false); // Found existing order, not a new ref scenario
       }
-    } else if (typeof data.remain_qty !== 'undefined') {
-      if (Number(data.remain_qty) === 0) {
-        setAcoRemain('Order Been Fullfilled For This Product');
-      } else {
-        setAcoRemain(`Order Remain Qty : ${String(data.remain_qty)}`);
-      }
+    } catch (err: any) {
+      // console.error('[QcLabelForm] Unexpected error searching ACO order:', err);
+      // setAcoRemain('Unexpected error during search.');
+      toast.error(`Unexpected error searching ACO order: ${err.message}`);
+      await logErrorReport('ACO Search', `Unexpected error: ${err.message}`);
+    } finally {
+      setAcoSearchLoading(false);
     }
-    setAcoSearchLoading(false);
   };
 
   // 驗證 ACO Order Detail Product Code
@@ -821,30 +866,73 @@ export default function QcLabelForm() {
 
   // 新增：ACO Order Detail 上傳功能
   const handleAcoOrderDetailUpdate = async () => {
-    // 過濾掉沒填 code 或 qty 的行
-    const validRows = acoOrderDetails.filter(row => row.code.trim() && row.qty.trim() && !acoOrderDetailErrors[acoOrderDetails.indexOf(row)]);
-    if (!acoOrderRef.trim() || validRows.length === 0) {
-      setDebugMsg('Please enter ACO Order Ref and at least one valid Product Code/Qty.');
-      return;
+    // Basic validation: check if order ref is entered
+    if (!acoOrderRef.trim()) {
+        // alert('Please enter ACO Order Ref first.');
+        toast.error('Please enter ACO Order Ref first before adding details.');
+        return;
     }
-    const now = new Date();
-    const latestUpdate = format(now, 'dd-MMM-yyyy HH:mm:ss');
-    const insertArr = validRows.map(row => ({
-      order_ref: Number(acoOrderRef.trim()),
-      code: row.code.trim(),
-      required_qty: Number(row.qty.trim()),
-      remain_qty: Number(row.qty.trim()),
-      latest_update: latestUpdate
-    }));
-    const { error } = await supabase.from('record_aco').insert(insertArr);
-    if (error) {
-      setDebugMsg('Insert record_aco failed: ' + error.message);
-      logErrorReport(`Insert record_aco (ACO Order Detail Update) failed for order ${acoOrderRef.trim()}: ${error.message}`, JSON.stringify(insertArr)).catch(console.error);
-    } else {
-      setDebugMsg('Insert record_aco success!');
-      setAcoNewRef(false); // 隱藏區塊
-      setAcoOrderDetails([{ code: '', qty: '' }]); // 清空 input
-      handleAcoSearch(); // 重新查詢 ACO Order Ref
+    
+    // Validate all rows have product code and quantity
+    let isValid = true;
+    const errors: string[] = [];
+    acoOrderDetails.forEach((detail, index) => {
+        if (!detail.code.trim()) {
+            isValid = false;
+            errors[index] = 'Product code is required.';
+        }
+        if (!detail.qty.trim() || parseInt(detail.qty.trim(), 10) <= 0) {
+            isValid = false;
+            errors[index] = errors[index] ? errors[index] + ' Valid quantity (>0) is required.' : 'Valid quantity (>0) is required.';
+        }
+    });
+    setAcoOrderDetailErrors(errors);
+
+    if (!isValid) {
+        // alert('Please fill in all Product Code and Quantity fields in the Order Details.');
+        toast.error('Please fill in all Product Code and Quantity fields correctly in the Order Details.');
+        return;
+    }
+    
+    // Show loading state
+    setIsLoading(true); 
+    
+    try {
+        // Prepare data for Supabase insert
+        const recordsToInsert = acoOrderDetails.map(detail => ({
+            order_ref: parseInt(acoOrderRef.trim(), 10),
+            product_code: detail.code.trim(),
+            order_qty: parseInt(detail.qty.trim(), 10),
+            remain_qty: parseInt(detail.qty.trim(), 10), // Initially, remain_qty equals order_qty
+            latest_update: new Date().toISOString(), // Add timestamp
+        }));    
+
+        // Use Supabase client to insert data into record_aco
+        const { data, error } = await supabase
+            .from('record_aco')
+            .insert(recordsToInsert)
+            .select(); // Optionally select to confirm insert
+            
+        if (error) {
+            // console.error("Error inserting ACO order details:", error);
+            // alert(`Failed to save ACO Order Details: ${error.message}`);
+            toast.error(`Failed to save ACO Order Details: ${error.message}`);
+            await logErrorReport('ACO New Order Save', `DB error: ${error.message}`);
+        } else {
+            // alert('ACO Order Details saved successfully!');
+            toast.success('New ACO Order Details saved successfully!');
+            // Reset relevant state variables after successful save
+            setAcoNewRef(false);
+            // Maybe refetch remaining quantity based on the primary product code? Call handleAcoSearch again.
+            handleAcoSearch(); 
+        }
+    } catch (err: any) {
+        // console.error("Unexpected error saving ACO details:", err);
+        // alert('An unexpected error occurred while saving ACO details.');
+        toast.error('An unexpected error occurred while saving ACO details.');
+        await logErrorReport('ACO New Order Save', `Unexpected error: ${err}`);
+    } finally {
+        setIsLoading(false); // Hide loading state
     }
   };
 

@@ -41,6 +41,7 @@ interface ComboboxProps {
   customValueInput?: string;
   onCustomValueInputChange?: (event: React.ChangeEvent<HTMLInputElement>) => void;
   onCustomValueSubmit?: () => void; // Optional: if you want to handle submit explicitly
+  disabled?: boolean; // Add disabled prop
 }
 
 export function Combobox({ 
@@ -56,6 +57,7 @@ export function Combobox({
   // Instead, the parent component will manage the input state if allowCustomValue is true
   triggerClassName, // Get the prop
   contentClassName, // Get the prop
+  disabled = false, // Add disabled prop with default value
 }: ComboboxProps) {
   const [open, setOpen] = React.useState(false)
 
@@ -66,13 +68,14 @@ export function Combobox({
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
+      <PopoverTrigger asChild disabled={disabled}>
         <Button
           variant="outline"
           role="combobox"
           aria-expanded={open}
           // Apply triggerClassName here, falling back to className if triggerClassName not provided
           className={cn("w-[200px] justify-between", triggerClassName || className)} 
+          disabled={disabled} // Also apply to Button for good measure, PopoverTrigger should handle it
         >
           {value ? displayValue : placeholder}
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
@@ -96,6 +99,7 @@ export function Combobox({
               value: value, // Show the current custom value in search
               onValueChange: onValueChange // Update parent state on search input change
             })}
+            disabled={disabled} // Disable CommandInput as well
           />
           <CommandList>
             <CommandEmpty>{notFoundMessage}</CommandEmpty>
@@ -105,11 +109,13 @@ export function Combobox({
                   key={item.value}
                   value={item.value} // Use item.value for internal matching
                   onSelect={(currentValue) => {
+                    if (disabled) return; // Prevent selection if disabled
                     // currentValue will be the item.value that was selected
                     onValueChange(currentValue === value.toLowerCase() ? "" : currentValue) // Use lower case for comparison stability
                     setOpen(false)
                   }}
                   className="text-lg"
+                  disabled={disabled} // Disable CommandItem
                 >
                   <Check
                     className={cn(

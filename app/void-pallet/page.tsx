@@ -6,7 +6,7 @@ import { format } from 'date-fns'; // For date formatting
 import { Toaster, toast } from 'sonner'; // Import Toaster and toast
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input'; // Import Input
-import { QrScanner } from '../../components/qr-scanner/qr-scanner';
+import { QrScanner } from '../../components/qr-scanner/qr-scanner'; // Modal QrScanner
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from '../../components/ui/dialog'; // Import Dialog components
 import { Combobox } from '@/components/ui/combobox'; // Import Combobox
 import { voidPalletAction } from './actions'; // Import server action (will be created later)
@@ -196,15 +196,10 @@ export default function VoidPalletPage() {
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>, inputType: 'series' | 'pallet_num') => {
     if (e.key === 'Enter') {
       e.preventDefault();
-      if (isLoading) return;
+      if (isLoading || isVoiding) return;
       setLastActiveInput(inputType);
       if (inputType === 'series' && seriesInput.trim()) {
-        const isLikelySeries = seriesInput.includes('-') && seriesInput.length > 10; // Basic heuristic
-        if (isLikelySeries) {
-          handleSearch('series', seriesInput.trim());
-        } else {
-          handleSearch('pallet_num', seriesInput.trim()); // Assume as pallet num if not like series
-        }
+        handleSearch('series', seriesInput.trim());
       } else if (inputType === 'pallet_num' && palletNumInput.trim()) {
         handleSearch('pallet_num', palletNumInput.trim());
       }
@@ -212,17 +207,47 @@ export default function VoidPalletPage() {
   };
   
   useEffect(() => {
-    // Auto-focus logic after search/action
-    if (!isLoading && !isVoiding) {
+    if (!isLoading && !isVoiding && !isVoidDialogOpen) {
       if (lastActiveInput === 'series' && seriesInputRef.current) {
         seriesInputRef.current.focus();
       } else if (lastActiveInput === 'pallet_num' && palletNumInputRef.current) {
         palletNumInputRef.current.focus();
       }
     }
-  }, [isLoading, isVoiding]);
+  }, [isLoading, isVoiding, lastActiveInput, isVoidDialogOpen, foundPallet]);
 
-  // Handle Void Pallet action
+  const handleSeriesScan = (scannedValue: string) => {
+    if (scannedValue) {
+      setSeriesInput(scannedValue);
+      // Optionally trigger search immediately after scan
+      handleSearch('series', scannedValue);
+      setLastActiveInput('pallet_num'); // Or keep focus if preferred
+    }
+    setShowScanner(false); // Close the modal scanner
+  };
+  
+  const handleOpenVoidDialog = () => {
+    if (foundPallet && foundPallet.current_location === 'Voided') {
+        toast.info(`Pallet ${foundPallet.plt_num} has already been voided.`);
+        return;
+    }
+    setVoidReason(''); // Reset reason
+    setPasswordInput(''); // Reset password
+    setIsVoidDialogOpen(true);
+  };
+
+  const handleCancelVoid = () => {
+    setIsVoidDialogOpen(false);
+    // setPasswordInput(''); // Reset password on cancel
+    // setVoidReason('');    // Reset reason on cancel
+    // Re-focus logic handled by useEffect
+    if (lastActiveInput === 'series' && seriesInputRef.current) {
+        seriesInputRef.current.focus();
+    } else if (lastActiveInput === 'pallet_num' && palletNumInputRef.current) {
+        palletNumInputRef.current.focus();
+    }
+  };
+
   const handleVoidConfirm = async () => {
     if (!foundPallet) {
         toast.error('No pallet selected to void.');
@@ -275,192 +300,152 @@ export default function VoidPalletPage() {
     }
   };
 
-  const handleCancelVoid = () => {
-    setIsVoidDialogOpen(false);
-    // Clear search inputs as requested
-    resetInputFields(); 
-    setFoundPallet(null); // Also clear found pallet info
-  };
-
   return (
-    <div className="pl-12 pt-16 min-h-screen bg-[#232532]">
-      <Toaster 
-        richColors 
-        position="top-right" 
-        toastOptions={{
-          classNames: {
-            toast: 'text-xl p-6',
-            title: 'text-xl',
-            description: 'text-lg',
-          },
-        }}
-      />
-      <div className="flex flex-col w-full max-w-6xl ml-0 px-0">
-        <div className="flex items-center mb-12 mt-2">
-          <h1 className="text-3xl font-bold text-orange-400" style={{letterSpacing: 1}}>Void Pallet</h1>
-        </div>
-        <div className="space-y-6">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:gap-12 w-full">
-            {/* Left side: Series input */}
-            <div className="flex items-center w-full sm:w-1/2 max-w-xl">
-              <label htmlFor="series" className="text-lg text-white font-semibold mr-4 min-w-[90px] text-right">QR Code</label>
-              <input
-                id="series"
-                type="text"
-                value={seriesInput}
-                onChange={(e) => {
-                  setSeriesInput(e.target.value);
-                  if (palletNumInput) setPalletNumInput(''); 
-                  setLastActiveInput('series');
-                }}
-                onKeyDown={(e) => handleKeyDown(e, 'series')}
-                placeholder={isMobile ? "Tap To Void" : "Scan/Input Series To Void"}
-                className={
-                  `flex-1 px-4 py-3 rounded-md bg-gray-900 border border-gray-700 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 text-lg ` +
-                  (isMobile ? 'cursor-pointer select-none' : '')
-                }
-                disabled={isLoading}
-                ref={seriesInputRef}
-                {...(isMobile ? { readOnly: true, onClick: () => setShowScanner(true) } : {})}
-              />
-            </div>
-            {/* Right side: Pallet Number input */}
-            <div className="flex items-center w-full sm:w-1/2 max-w-xl mt-4 sm:mt-0">
-              <label htmlFor="palletNum" className="text-lg text-white font-semibold mr-4 min-w-[130px] text-right">Pallet Number</label>
-              <input
-                id="palletNum"
-                type="text"
-                value={palletNumInput}
-                onChange={(e) => {
-                  setPalletNumInput(e.target.value);
-                  if (seriesInput) setSeriesInput(''); 
-                  setLastActiveInput('pallet_num');
-                }}
-                onKeyDown={(e) => handleKeyDown(e, 'pallet_num')}
-                placeholder="Input Pallet Number To Void"
-                className="flex-1 px-4 py-3 rounded-md bg-gray-900 border border-gray-700 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 text-lg"
-                disabled={isLoading}
-                ref={palletNumInputRef}
-              />
+    <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-gray-900 text-white">
+      <div className="w-full max-w-4xl p-2 rounded-lg">
+        <h1 className="text-3xl font-bold mb-8 text-center text-red-500">Void Pallet</h1>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+          <div className="space-y-2">
+            <label htmlFor="seriesInput" className="block text-sm font-medium">Series</label>
+            <div className="flex items-center space-x-2">
+                <Input
+                    ref={seriesInputRef}
+                    id="seriesInput"
+                    type="text"
+                    value={seriesInput}
+                    onChange={(e) => setSeriesInput(e.target.value)}
+                    onKeyDown={(e) => handleKeyDown(e, 'series')}
+                    onClick={() => setLastActiveInput('series')}
+                    placeholder="Input Series or Scan QR"
+                    className="w-full p-3 bg-gray-800 border border-gray-700 rounded-md focus:ring-red-500 focus:border-red-500 transition"
+                    disabled={isLoading || isVoiding}
+                />
+                <Button
+                    type="button"
+                    onClick={() => setShowScanner(true)}
+                    disabled={isLoading || isVoiding}
+                    className="p-3 bg-red-600 hover:bg-red-700 h-full whitespace-nowrap"
+                >
+                    Scan QR
+                </Button>
             </div>
           </div>
+          <div className="space-y-2">
+            <label htmlFor="palletNumInput" className="block text-sm font-medium">Pallet Number</label>
+            <Input
+              ref={palletNumInputRef}
+              id="palletNumInput"
+              type="text"
+              value={palletNumInput}
+              onChange={(e) => setPalletNumInput(e.target.value)}
+              onKeyDown={(e) => handleKeyDown(e, 'pallet_num')}
+              onClick={() => setLastActiveInput('pallet_num')}
+              placeholder="Input Pallet Number To Void"
+              className="w-full p-3 bg-gray-800 border border-gray-700 rounded-md focus:ring-red-500 focus:border-red-500 transition"
+              disabled={isLoading || isVoiding}
+            />
+          </div>
+        </div>
 
-          {foundPallet && (
-            <div className="mt-6 p-4 bg-gray-800 rounded-md">
-              <h3 className="text-xl font-semibold text-orange-300 mb-2">Pallet Information</h3>
-              <p className="text-white text-lg"><strong>Pallet Number:</strong> {foundPallet.plt_num}</p>
-              <p className="text-white text-lg"><strong>Series:</strong> {foundPallet.series}</p>
-              <p className="text-white text-lg"><strong>Product Code:</strong> {foundPallet.product_code}</p>
-              <p className="text-white text-lg"><strong>Quantity:</strong> {foundPallet.product_qty}</p>
-              <p className="text-white text-lg"><strong>Current Location:</strong> {foundPallet.current_location || 'N/A'}</p>
-              <p className="text-white text-lg"><strong>Remark:</strong> {foundPallet.plt_remark || 'None'}</p>
-              {/* Conditionally render Void Pallet Button */}
-              {foundPallet.current_location !== 'Voided' && (
-                 <Button 
-                    onClick={() => {
-                        setPasswordInput(''); // Clear password on dialog open
-                        setVoidReason(''); // Clear reason on dialog open
-                        setIsVoidDialogOpen(true);
-                    }}
-                    className="mt-4 bg-red-600 hover:bg-red-700 text-white"
-                    disabled={isLoading || isVoiding} // Disable if searching or voiding
+        {(isLoading || isVoiding) && (
+          <div className="flex justify-center items-center my-6">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-b-4 border-red-500"></div>
+            <p className="ml-4 text-lg">{isVoiding ? 'Voiding Pallet...' : 'Searching...'}</p>
+          </div>
+        )}
+
+        {foundPallet && !isLoading && !isVoiding && (
+          <div className="mt-6 p-6 bg-gray-800 shadow-xl rounded-lg text-left">
+            <h3 className="text-xl font-semibold text-red-400 mb-3">Pallet Found:</h3>
+            <p><strong>Pallet Number:</strong> {foundPallet.plt_num}</p>
+            <p><strong>Series:</strong> {foundPallet.series}</p>
+            <p><strong>Product Code:</strong> {foundPallet.product_code}</p>
+            <p><strong>Quantity:</strong> {foundPallet.product_qty}</p>
+            <p><strong>Current Location:</strong> {foundPallet.current_location || 'N/A'}</p>
+            <p><strong>Remark:</strong> {foundPallet.plt_remark || 'N/A'}</p>
+            {foundPallet.current_location !== 'Voided' && (
+                <Button 
+                    onClick={handleOpenVoidDialog}
+                    className="mt-6 w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-3"
+                    disabled={isVoiding}
                 >
-                    Void Pallet
+                    Proceed to Void Pallet
                 </Button>
-              )}
-            </div>
-          )}
+            )}
+            {foundPallet.current_location === 'Voided' && (
+                <p className="mt-4 text-yellow-400 font-semibold">This pallet has already been voided.</p>
+            )}
+          </div>
+        )}
 
-          {isLoading && (
-            <div className="text-center py-4">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-400 mx-auto"></div>
-              <p className="mt-2 text-orange-300">Processing...</p>
-            </div>
-          )}
-
-          {/* Void Confirmation Dialog */}
-          <Dialog open={isVoidDialogOpen} onOpenChange={ (open) => {
-              if (!open) { // Handle closing via 'X' or overlay click
-                  handleCancelVoid();
-              } else {
-                  setIsVoidDialogOpen(true);
-              }
-          }}>
-              <DialogContent className="sm:max-w-lg bg-gray-800 border-gray-700 text-white p-8">
-                  <DialogHeader>
-                      <DialogTitle className="text-orange-400 text-2xl">Confirm Void Pallet</DialogTitle>
-                      <DialogDescription className="text-gray-300 text-lg">
-                          Select a reason and enter your password to confirm voiding pallet : <strong>{foundPallet?.plt_num}</strong>
-                      </DialogDescription>
-                  </DialogHeader>
-                  <div className="grid gap-6 py-4">
-                      <div className="grid grid-cols-4 items-center gap-4">
-                          <label htmlFor="reason" className="text-right text-gray-300 text-lg">
-                              Reason
-                          </label>
-                          <Combobox
-                                className="col-span-3"
-                                triggerClassName="box-border bg-gray-800 text-white border-0 hover:bg-gray-700 hover:border-transparent hover:outline-none hover:ring-0 data-[state=open]:bg-gray-700 data-[state=open]:border-transparent data-[state=open]:outline-none data-[state=open]:ring-0 w-full justify-between text-lg p-2"
-                                contentClassName=""
-                                items={VOID_REASONS}
-                                value={voidReason}
-                                onValueChange={setVoidReason}
-                                placeholder="Select Or Type In Reason"
-                                allowCustomValue={true}
-                           />
-                      </div>
-                      <div className="grid grid-cols-4 items-center gap-4">
-                          <label htmlFor="password" className="text-right text-gray-300 text-lg">
-                              Password
-                          </label>
-                          <Input
-                              id="password"
-                              type="password"
-                              value={passwordInput}
-                              onChange={(e) => setPasswordInput(e.target.value)}
-                              className="col-span-3 w-full box-border bg-gray-900 border-gray-600 placeholder-gray-500 focus:ring-blue-500 text-lg p-2"
-                              disabled={isVoiding}
-                          />
-                      </div>
-                  </div>
-                  <DialogFooter className="mt-4">
-                      <Button 
-                        variant="outline" 
-                        onClick={handleCancelVoid} 
-                        disabled={isVoiding}
-                        className="text-black border-gray-600 hover:bg-gray-300 hover:text-black text-lg p-3"
-                      >
-                        Cancel
-                      </Button>
-                      <Button 
-                        type="button" 
-                        onClick={handleVoidConfirm} 
-                        disabled={isVoiding || !voidReason || !passwordInput}
-                        className="bg-red-600 hover:bg-red-700 text-lg p-3"
-                      >
-                        {isVoiding ? (
-                            <><div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div> Voiding...</>
-                        ) : (
-                            'Confirm Void'
-                        )}
-                      </Button>
-                  </DialogFooter>
-              </DialogContent>
-          </Dialog>
-
-          <QrScanner
+        {/* Modal QrScanner */}
+        <QrScanner
             open={showScanner}
             onClose={() => setShowScanner(false)}
-            onScan={(result) => {
-              setSeriesInput(result);
-              setLastActiveInput('series');
-              setShowScanner(false);
-              handleSearch('series', result);
-            }}
-            title="Scan QR Code"
-            hint="Align the QR code within the frame"
-          />
-        </div>
+            onScan={handleSeriesScan} 
+            title="Scan Series QR Code"
+            hint="Align QR code within the frame to scan"
+        />
+
+        {/* Void Confirmation Dialog */}
+        <Dialog open={isVoidDialogOpen} onOpenChange={setIsVoidDialogOpen}>
+          <DialogContent className="bg-gray-800 border-gray-700 text-white">
+            <DialogHeader>
+              <DialogTitle className="text-red-500">Confirm Void Pallet</DialogTitle>
+              <DialogDescription className="text-gray-400">
+                You are about to void pallet <strong className="text-red-400">{foundPallet?.plt_num}</strong> (Series: {foundPallet?.series}). This action cannot be undone.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+                <div>
+                    <label htmlFor="voidReason" className="block text-sm font-medium mb-1">Void Reason</label>
+                    <Combobox
+                        items={VOID_REASONS}
+                        value={voidReason}
+                        onValueChange={setVoidReason}
+                        placeholder="Select or type a reason..."
+                        searchPlaceholder="Search or add reason..."
+                        className="w-full bg-gray-700 border-gray-600 rounded-md text-white"
+                        triggerClassName="w-full bg-gray-700 border-gray-600 text-white"
+                        contentClassName="bg-gray-700 text-white"
+                        allowCustomValue={true}
+                        disabled={isVoiding}
+                    />
+                </div>
+                <div>
+                    <label htmlFor="password" className="block text-sm font-medium mb-1">Password</label>
+                    <Input 
+                        id="password"
+                        type="password"
+                        value={passwordInput}
+                        onChange={(e) => setPasswordInput(e.target.value)}
+                        placeholder="Enter your password for confirmation"
+                        className="w-full bg-gray-700 border-gray-600 rounded-md text-white"
+                        disabled={isVoiding}
+                    />
+                </div>
+            </div>
+            <DialogFooter className="mt-2">
+              <DialogClose asChild>
+                <Button variant="outline" onClick={handleCancelVoid} disabled={isVoiding} className="border-gray-600 hover:bg-gray-700">
+                    Cancel
+                </Button>
+              </DialogClose>
+              <Button onClick={handleVoidConfirm} disabled={isVoiding || !voidReason || !passwordInput} className="bg-red-600 hover:bg-red-700">
+                {isVoiding ? (
+                  <div className="flex items-center">
+                    <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-white mr-2"></div>
+                    Voiding...
+                  </div>
+                ) : (
+                  'Confirm Void'
+                )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
       </div>
     </div>
   );

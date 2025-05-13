@@ -7,6 +7,7 @@ import { Toaster, toast } from 'sonner'; // Import Toaster and toast
 import { Button } from '../../components/ui/button';
 import { BrowserMultiFormatReader } from '@zxing/browser';
 import { QrScanner } from '../../components/qr-scanner/qr-scanner';
+import { Input } from '../../components/ui/input'; // Assuming Input is used, not seen in screenshot
 
 // Helper to get user from localStorage
 const getUserId = () => {
@@ -17,7 +18,8 @@ const getUserId = () => {
         const userData = JSON.parse(userStr);
         return userData.id || null;
       } catch (e) {
-        console.error("Error parsing user data from localStorage", e);
+        console.error("Error parsing user data from localStorage", e); // Keep for dev debug
+        toast.error('User session data is corrupted.');
         return null;
       }
     }
@@ -47,7 +49,7 @@ export default function StockTransferPage() {
   const seriesInputRef = useRef<HTMLInputElement>(null);
   const palletNumInputRef = useRef<HTMLInputElement>(null);
 
-  const [showScanner, setShowScanner] = useState(false);
+  const [showQrScannerModal, setShowQrScannerModal] = useState(false);
 
   // 行動裝置判斷
   const isMobile = typeof window !== 'undefined' && /Mobi|Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
@@ -63,8 +65,8 @@ export default function StockTransferPage() {
   const logHistory = async (action: string, plt_num_val: string | null, loc_val: string | null, remark_val: string | null) => {
     const userId = getUserId();
     if (!userId) {
-      console.error("User ID not found for history logging");
-      toast.error('User session error. Cannot log history.');
+      // console.error("User ID not found for history logging"); // Already handled by getUserId toast
+      // toast.error('User session error. Cannot log history.'); // Avoid double toast if getUserId fails
       return;
     }
     try {
@@ -77,9 +79,9 @@ export default function StockTransferPage() {
         remark: remark_val,
       });
       if (error) throw error;
-    } catch (error) {
-      console.error('Error logging history:', error);
-      toast.error('Failed to log history.');
+    } catch (error: any) {
+      console.error('Error logging history:', error); // Keep for dev debug
+      toast.error(`Failed to log history: ${error.message}`);
     }
   };
   
@@ -94,42 +96,32 @@ export default function StockTransferPage() {
     let palletData = null;
     let errorOccurred = false;
     let searchedValueDisplay = searchValue;
+    const formattedTime = format(new Date(), 'dd-MMM-yyyy HH:mm:ss');
 
     try {
+      let query = supabase.from('record_palletinfo').select('plt_num, product_code, product_qty');
       if (searchType === 'series') {
-        const { data, error } = await supabase
-          .from('record_palletinfo')
-          .select('plt_num, product_code, product_qty')
-          .eq('series', searchValue)
-          .single();
-        if (error && error.code !== 'PGRST116') throw error; // PGRST116: no rows found
-        palletData = data;
-      } else { // pallet_num
-        const { data, error } = await supabase
-          .from('record_palletinfo')
-          .select('plt_num, product_code, product_qty')
-          .eq('plt_num', searchValue)
-          .single(); // Assuming plt_num is unique enough for single(), or handle multiple if needed
-        if (error && error.code !== 'PGRST116') throw error;
-        palletData = data;
-        // If searching by pallet_num, the display value for errors is already searchValue (which is the plt_num)
+        query = query.eq('series', searchValue);
+      } else {
+        query = query.eq('plt_num', searchValue);
       }
+      const { data, error } = await query.single();
+      if (error && error.code !== 'PGRST116') throw error;
+      palletData = data;
 
       if (palletData) {
         setFoundPallet(palletData);
         await fetchLatestLocation(palletData.plt_num, palletData.product_code, palletData.product_qty);
       } else {
-        const palletNotFoundMsg = `Pallet : ${searchedValueDisplay} Not Exist. Please Check Again - ${format(new Date(), 'dd-MMM-yyyy HH:mm:ss')}`;
-        const newEntry: ActivityLogEntry = { message: palletNotFoundMsg, type: 'error' };
-        setActivityLog(prevLog => [newEntry, ...prevLog].slice(0, 50));
+        const palletNotFoundMsg = `Pallet ${searchType === 'series' ? 'Series' : 'Number'} : ${searchedValueDisplay} Not Found.`;
+        toast.error(`${palletNotFoundMsg} (${formattedTime})`);
         await logHistory("Stock Move Fail", searchedValueDisplay, null, `Pallet Not Found`);
         errorOccurred = true;
       }
     } catch (error: any) {
-      console.error('Error searching pallet:', error);
-      const searchErrorMsg = `Error searching pallet ${searchedValueDisplay}: ${error.message} - ${format(new Date(), 'dd-MMM-yyyy HH:mm:ss')}`;
-      const newEntry: ActivityLogEntry = { message: searchErrorMsg, type: 'error' };
-      setActivityLog(prevLog => [newEntry, ...prevLog].slice(0, 50)); 
+      console.error('Error searching pallet:', error); // Keep for dev debug
+      const searchErrorMsg = `Error searching pallet ${searchedValueDisplay}: ${error.message}`;
+      toast.error(`${searchErrorMsg} (${formattedTime})`);
       await logHistory("Stock Move Fail", searchedValueDisplay, null, `Search Error: ${error.message}`);
       errorOccurred = true;
     } finally {
@@ -137,11 +129,13 @@ export default function StockTransferPage() {
       if (errorOccurred) {
         if (searchType === 'series') setSeriesInput(''); else setPalletNumInput('');
       }
+      // Auto-focus logic handled by useEffect
     }
   };
 
   const fetchLatestLocation = async (pltNum: string, productCode: string, productQty: number) => {
     setIsLoading(true);
+    const formattedTime = format(new Date(), 'dd-MMM-yyyy HH:mm:ss');
     try {
       const { data: historyData, error: historyError } = await supabase
         .from('record_history')
@@ -153,20 +147,19 @@ export default function StockTransferPage() {
 
       if (historyError && historyError.code !== 'PGRST116') throw historyError; // PGRST116: no rows found
 
-      const currentLocation = historyData?.loc || null; // If no history, loc is null
+      const currentLocation = historyData?.loc || 'Unknown'; // Default to 'Unknown' if no history
 
       // Proceed to process stock movement
       await processStockMovement(pltNum, productCode, productQty, currentLocation);
 
     } catch (error: any) {
-      console.error('Error fetching latest location:', error);
-      const fetchLocErrorMsg = `Error fetching location for ${pltNum}: ${error.message} - ${format(new Date(), 'dd-MMM-yyyy HH:mm:ss')}`;
-      const newEntry: ActivityLogEntry = { message: fetchLocErrorMsg, type: 'error' };
-      setActivityLog(prevLog => [newEntry, ...prevLog].slice(0, 50));
+      console.error('Error fetching latest location:', error); // Keep for dev debug
+      const fetchLocErrorMsg = `Error fetching location for ${pltNum}: ${error.message}`;
+      toast.error(`${fetchLocErrorMsg} (${formattedTime})`);
       await logHistory("Stock Move Fail", pltNum, null, `Fetch Location Error: ${error.message}`);
-      setIsLoading(false);
-      setSeriesInput('');
-      setPalletNumInput('');
+      resetState();
+    } finally {
+      // setIsLoading(false); // processStockMovement will set it
     }
   };
 
@@ -179,9 +172,7 @@ export default function StockTransferPage() {
     setIsLoading(true);
     const userId = getUserId();
     if (!userId) {
-      const userIdErrorMsg = `User ID not found. Cannot process movement. - ${format(new Date(), 'dd-MMM-yyyy HH:mm:ss')}`;
-      const newEntry: ActivityLogEntry = { message: userIdErrorMsg, type: 'error' };
-      setActivityLog(prevLog => [newEntry, ...prevLog].slice(0, 50));
+      toast.error(`User ID not found. Cannot process movement for pallet ${pltNum}.`);
       setIsLoading(false);
       return;
     }
@@ -347,148 +338,117 @@ export default function StockTransferPage() {
     }
   };
 
-  // Handle Enter key press for inputs
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>, inputType: 'series' | 'pallet_num') => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      if (isLoading) return;
-      
-      // Set last active input before handling search
-      setLastActiveInput(inputType);
-
-      if (inputType === 'series' && seriesInput.trim()) {
-        // Attempt to determine if it's a series or plt_num based on format/length
-        // For now, let's assume series input can be EITHER series or plt_num if palletNumInput is empty
-        // This logic needs refinement. A robust way is to check series format.
-        // Example: Series '25051100-VZZROG' (15 chars, includes '-')
-        // Pallet Num '110525/11' (9 chars, includes '/')
-        const isLikelySeries = seriesInput.includes('-') && seriesInput.length > 10; // Basic heuristic
-        if (isLikelySeries) {
-            handleSearch('series', seriesInput.trim());
-        } else {
-            // If it doesn't look like a series, treat as pallet number
-            handleSearch('pallet_num', seriesInput.trim());
-        }
-      } else if (inputType === 'pallet_num' && palletNumInput.trim()) {
-        handleSearch('pallet_num', palletNumInput.trim());
-      }
-    }
-  };
-  
+  // useEffect for focusing input
   useEffect(() => {
-    // Focus on the last active input when loading stops and there's an activity log update
-    // (indicating an operation just finished)
-    if (!isLoading && activityLog.length > 0) {
+    if (!isLoading) {
       if (lastActiveInput === 'series' && seriesInputRef.current) {
         seriesInputRef.current.focus();
       } else if (lastActiveInput === 'pallet_num' && palletNumInputRef.current) {
         palletNumInputRef.current.focus();
       }
     }
-    // We only want this effect to run when isLoading changes or activityLog gets a new entry.
-    // Adding lastActiveInput to dependencies could cause re-focus on other state changes.
-  }, [isLoading, activityLog]);
+  }, [isLoading, lastActiveInput, foundPallet]); // Re-focus when foundPallet changes (likely after a search)
+
+  const handleSeriesScanFromModal = (scannedValue: string) => {
+    if (scannedValue) {
+      setSeriesInput(scannedValue);
+      handleSearch('series', scannedValue);
+      setLastActiveInput('pallet_num');
+    }
+    setShowQrScannerModal(false);
+  };
+
+  const handleInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>, inputType: 'series' | 'pallet_num') => {
+    if (e.key === 'Enter') {
+      if (inputType === 'series') {
+        handleSearch('series', seriesInput);
+        setLastActiveInput('pallet_num');
+      } else {
+        handleSearch('pallet_num', palletNumInput);
+        setLastActiveInput('series');
+      }
+    }
+  };
 
   return (
-    <div className="pl-12 pt-16 min-h-screen bg-[#232532] text-white">
-      <Toaster richColors position="top-right" />
-      <div className="flex flex-col w-full max-w-6xl ml-0 px-0">
-        <div className="flex items-center mb-12 mt-2">
-          <h1 className="text-3xl font-bold text-orange-400" style={{letterSpacing: 1}}>Stock Movement</h1>
-        </div>
+    <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-gray-900 text-white">
+      <div className="w-full max-w-4xl p-2 rounded-lg">
+        <h1 className="text-3xl font-bold mb-8 text-center text-orange-500">Stock Movement</h1>
         
-        <div className="space-y-6">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:gap-12 w-full">
-            <div className="flex items-center w-full sm:w-1/2 max-w-xl">
-              <label htmlFor="series" className="text-lg font-semibold mr-4 min-w-[90px] text-right">QR Code</label>
-              <input
-                id="series"
-                type="text"
-                value={seriesInput}
-                onChange={(e) => {
-                  setSeriesInput(e.target.value);
-                  if (palletNumInput) setPalletNumInput(''); 
-                  setLastActiveInput('series');
-                }}
-                onKeyDown={(e) => handleKeyDown(e, 'series')}
-                placeholder={isMobile ? "Tap To Scan" : "Scan QR Code To Search"}
-                className={
-                  `flex-1 px-4 py-3 rounded-md bg-gray-900 border border-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 text-lg text-white ` +
-                  (isMobile ? 'cursor-pointer select-none' : '')
-                }
-                disabled={isLoading}
-                ref={seriesInputRef}
-                {...(isMobile ? { readOnly: true, onClick: () => setShowScanner(true) } : {})}
-              />
-            </div>
-            
-            <div className="flex items-center w-full sm:w-1/2 max-w-xl mt-4 sm:mt-0">
-              <label htmlFor="palletNum" className="text-lg font-semibold mr-4 min-w-[130px] text-right">Pallet Number</label>
-              <input
-                id="palletNum"
-                type="text"
-                value={palletNumInput}
-                onChange={(e) => {
-                  setPalletNumInput(e.target.value);
-                  if (seriesInput) setSeriesInput(''); 
-                  setLastActiveInput('pallet_num');
-                }}
-                onKeyDown={(e) => handleKeyDown(e, 'pallet_num')}
-                placeholder="Input Pallet Number To Search"
-                className="flex-1 px-4 py-3 rounded-md bg-gray-900 border border-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 text-lg text-white"
-                disabled={isLoading}
-                ref={palletNumInputRef}
-              />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+          <div className="space-y-2">
+            <label htmlFor="seriesInputDisplay" className="block text-sm font-medium">QR Code / Series</label>
+            <div className="flex items-center space-x-2">
+                <Input
+                    ref={seriesInputRef}
+                    id="seriesInputDisplay"
+                    type="text"
+                    value={seriesInput}
+                    onChange={(e) => setSeriesInput(e.target.value)}
+                    onKeyDown={(e) => handleInputKeyDown(e, 'series')}
+                    onClick={() => setLastActiveInput('series')}
+                    placeholder="Input Series or Scan QR"
+                    className="w-full p-3 bg-gray-800 border border-gray-700 rounded-md focus:ring-orange-500 focus:border-orange-500 transition"
+                    disabled={isLoading}
+                />
+                <Button
+                    type="button"
+                    onClick={() => setShowQrScannerModal(true)}
+                    disabled={isLoading}
+                    className="p-3 bg-orange-600 hover:bg-orange-700 h-full whitespace-nowrap"
+                >
+                    Scan
+                </Button>
             </div>
           </div>
-
-          {foundPallet && (
-            <div className="mt-6 p-4 bg-gray-800 rounded-md">
-              <h3 className="text-xl font-semibold text-orange-300 mb-2">Pallet Information</h3>
-              <p><strong>Pallet Number:</strong> {foundPallet.plt_num}</p>
-              <p><strong>Product Code:</strong> {foundPallet.product_code}</p>
-              <p><strong>Quantity:</strong> {foundPallet.product_qty}</p>
-              { /* Add current location display here if fetched and available in foundPallet or another state */ }
-            </div>
-          )}
-
-          {isLoading && (
-            <div className="text-center py-4">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-400 mx-auto"></div>
-              <p className="mt-2 text-orange-300">Processing...</p>
-            </div>
-          )}
-
-          <QrScanner
-            open={showScanner}
-            onClose={() => setShowScanner(false)}
-            onScan={(result) => {
-              setSeriesInput(result);
-              setLastActiveInput('series');
-              setShowScanner(false);
-              handleSearch('series', result);
-            }}
-            title="Scan QR Code"
-            hint="Align the QR code within the frame"
-          />
-
-          {/* Activity Log Display */}
-          {activityLog.length > 0 && (
-            <div className="mt-6 p-4 bg-gray-700 rounded-md text-base md:text-4xl">
-              <h3 className="text-lg font-semibold text-orange-300 mb-3">Activity Log:</h3>
-              <ul className="space-y-1">
-                {activityLog.map((logEntry, index) => (
-                  <li key={index} 
-                      className={`
-                        ${logEntry.type === 'success' ? 'text-yellow-400' : 'text-red-400'}
-                      `}>
-                      {`> ${logEntry.message}`}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
+          <div className="space-y-2">
+            <label htmlFor="palletNumInputDisplay" className="block text-sm font-medium">Pallet Number</label>
+            <Input
+              ref={palletNumInputRef}
+              id="palletNumInputDisplay"
+              type="text"
+              value={palletNumInput}
+              onChange={(e) => setPalletNumInput(e.target.value)}
+              onKeyDown={(e) => handleInputKeyDown(e, 'pallet_num')}
+              onClick={() => setLastActiveInput('pallet_num')}
+              placeholder="Input Pallet Number To Search"
+              className="w-full p-3 bg-gray-800 border border-gray-700 rounded-md focus:ring-orange-500 focus:border-orange-500 transition"
+              disabled={isLoading}
+            />
+          </div>
         </div>
+
+        {isLoading && (
+          <div className="flex justify-center items-center my-6">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-b-4 border-orange-500"></div>
+            <p className="ml-4 text-lg">Processing...</p>
+          </div>
+        )}
+
+        {activityLog.length > 0 && (
+          <div className="mt-8 w-full bg-gray-800 shadow-xl rounded-lg p-6">
+            <h2 className="text-xl font-semibold mb-4 text-gray-200">Activity Log:</h2>
+            <div className="max-h-80 overflow-y-auto space-y-3 pr-2 ">
+              {activityLog.map((log, index) => (
+                <div 
+                  key={index} 
+                  className={`p-3 rounded-md text-sm ${log.type === 'success' ? 'bg-green-700/50 text-green-300' : log.type === 'error' ? 'bg-red-800/60 text-red-300' : 'bg-blue-700/50 text-blue-300'}`}>
+                  {log.message}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Modal QrScanner */}
+        <QrScanner
+            open={showQrScannerModal}
+            onClose={() => setShowQrScannerModal(false)}
+            onScan={handleSeriesScanFromModal} 
+            title="Scan Pallet QR Code"
+            hint="Align QR code to scan for stock movement"
+        />
+
       </div>
     </div>
   );

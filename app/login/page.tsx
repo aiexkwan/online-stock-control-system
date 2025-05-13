@@ -76,7 +76,7 @@ export default function LoginPage() {
 
   const handleForgotPassword = () => {
     if (!userId.trim()) {
-      toast.error('Please enter your Clock Number first to reset the password.');
+      toast.error('Remark : Please Enter Your Clock Number As Password For First Time Login.');
       return;
     }
     router.push(`/new-password?userId=${encodeURIComponent(userId.trim())}`);
@@ -105,7 +105,7 @@ export default function LoginPage() {
             Pennine Stock Control
           </CardTitle>
           <CardDescription className="text-gray-400">
-            Please enter your clock number and password to login
+            Please Enter Your Clock Number And Password To Login
           </CardDescription>
         </CardHeader>
         <form onSubmit={handleLogin}>

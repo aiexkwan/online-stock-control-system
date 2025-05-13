@@ -69,12 +69,19 @@ export default function PrintGrnLabelPage() {
   // 3. 當 palletCount 變動時，自動調整 grossWeights 長度
   React.useEffect(() => {
     setGrossWeights(prev => {
-      if (palletCount > prev.length) {
-        return [...prev, ...Array(palletCount - prev.length).fill('')];
-      } else if (palletCount < prev.length) {
-        return prev.slice(0, palletCount);
+      let currentGrossWeights = [...prev];
+      // If palletCount decreases, truncate the array.
+      if (palletCount < currentGrossWeights.length) {
+        currentGrossWeights = currentGrossWeights.slice(0, palletCount);
       }
-      return prev;
+      // Ensure there's always at least one input field if palletCount is >= 1 and array is currently empty.
+      // (palletCount is always >= 1 due to `|| 1` in its definition)
+      if (currentGrossWeights.length === 0 && palletCount >= 1) { // Check palletCount >= 1 explicitly
+        return [''];
+      }
+      // If palletCount increases, we DON'T add new fields here automatically.
+      // User interaction via handleGrossWeightChange will add them if needed.
+      return currentGrossWeights;
     });
   }, [palletCount]);
 
@@ -97,7 +104,12 @@ export default function PrintGrnLabelPage() {
   const handleGrossWeightChange = (idx: number, value: string) => {
     setGrossWeights(prev => {
       const next = prev.map((v, i) => (i === idx ? value : v));
-      // 若是最後一個且有值且未超過22個，則自動新增一個
+      // Add new field if:
+      // 1. This is the last input field (idx === prev.length - 1)
+      // 2. The user has entered some text into it (value.trim() !== '')
+      // 3. The current number of fields is less than the hard cap of 22 (prev.length < 22)
+      // The condition `prev.length < palletCount` has been removed to allow adding up to 22 fields
+      // regardless of palletCount, which will be used later to determine how many filled fields to process.
       if (idx === prev.length - 1 && value.trim() !== '' && prev.length < 22) {
         return [...next, ''];
       }
@@ -158,107 +170,59 @@ export default function PrintGrnLabelPage() {
     chepDry: 26,
     chepWet: 38,
     euro: 22,
-    notIncluded: 1,
+    notIncluded: 0,
   };
   const PACKAGE_WEIGHT: Record<string, number> = {
     still: 50,
     bag: 1,
     tote: 6,
     octo: 14,
-    notIncluded: 1,
+    notIncluded: 0,
   };
 
-  // Material Supplier 查詢（debounced）
-  const debouncedSupplierQuery = useCallback(
-    debounce(async (valueUpper: string) => {
-      if (!valueUpper.trim()) {
-        setSupplierInfo(null);
-        setSupplierError(null);
-        return;
-      }
-      const { data, error } = await supabase
-        .from('data_supplier')
-        .select('supplier_code, supplier_name')
-        .eq('supplier_code', valueUpper);
-      if (error) {
-        setSupplierInfo(null);
-        setSupplierError('Supplier Code Not Found');
-        return;
-      }
-      if (data && data.length > 0) {
-        setSupplierError(null);
-        setSupplierInfo(data[0].supplier_name);
-        setForm(f => ({ ...f, materialSupplier: data[0].supplier_code }));
-      } else {
-        setSupplierInfo(null);
-        setSupplierError('Supplier Code Not Found');
-      }
-    }, 300),
-    []
-  );
-
-  const handleSupplierChange = (value: string) => {
-    const valueUpper = value.toUpperCase();
-    setForm(f => ({ ...f, materialSupplier: valueUpper }));
-    debouncedSupplierQuery(valueUpper);
-  };
-
-  // Product Code 查詢（debounced）
-  const debouncedProductQuery = useCallback(
-    debounce(async (value: string) => {
-      if (!value || !value.trim()) {
-        setProductInfo(null);
-        setProductError(null);
-        return;
-      }
-      const { data, error } = await supabase
-        .from('data_code')
-        .select('code, description')
-        .ilike('code', `%${value.trim()}%`);
-      if (error) {
-        setProductInfo(null);
-        setProductError('Product Code Not Found');
-        return;
-      }
-      if (data && data.length > 0) {
-        setProductError(null);
-        setProductInfo(data[0].description);
-        setForm(f => ({ ...f, productCode: data[0].code }));
-      } else {
-        setProductInfo(null);
-        setProductError('Product Code Not Found');
-      }
-    }, 300),
-    []
-  );
-
-  const handleProductCodeChange = (value: string) => {
-    setForm(f => ({ ...f, productCode: value }));
-    debouncedProductQuery(value);
-  };
-
-  // 新增 onBlur 查詢 function
-  const handleSupplierBlur = async (value: string) => {
-    if (!value.trim()) {
+  // New function to query supplier code on blur with exact match
+  const querySupplierCode = async (value: string) => {
+    const valueUpper = value.trim().toUpperCase();
+    if (!valueUpper) {
       setSupplierInfo(null);
       setSupplierError(null);
+      // Optionally clear form.materialSupplier if input is empty after trim
+      // setForm(f => ({ ...f, materialSupplier: '' })); 
       return;
     }
     const { data, error } = await supabase
       .from('data_supplier')
       .select('supplier_code, supplier_name')
-      .eq('supplier_code', value.trim().toUpperCase());
-    if (error || !data || data.length === 0) {
+      .eq('supplier_code', valueUpper);
+
+    if (error) {
       setSupplierInfo(null);
-      setSupplierError('Supplier Code Not Found');
-    } else {
+      setSupplierError('Supplier Code Not Found Or Error');
+      return;
+    }
+    if (data && data.length > 0) {
       setSupplierError(null);
       setSupplierInfo(data[0].supplier_name);
-      setForm(f => ({ ...f, materialSupplier: data[0].supplier_code }));
+      setForm(f => ({ ...f, materialSupplier: data[0].supplier_code })); // Update with validated/canonical code
+    } else {
+      setSupplierInfo(null);
+      setSupplierError('Supplier Code Not Found');
     }
   };
-  const handleProductCodeBlur = async (value: string) => {
-    if (!value.trim()) {
+
+  const handleSupplierChange = (value: string) => {
+    // Only update the form state as the user types
+    setForm(f => ({ ...f, materialSupplier: value })); 
+  };
+
+  // This is the function that will be called by onBlur in the JSX
+  const handleSupplierBlur = (value: string) => {
+    querySupplierCode(value);
+  };
+
+  // Product Code 查詢 - modified to be called onBlur directly
+  const queryProductCode = async (value: string) => {
+    if (!value || !value.trim()) {
       setProductInfo(null);
       setProductError(null);
       return;
@@ -266,15 +230,30 @@ export default function PrintGrnLabelPage() {
     const { data, error } = await supabase
       .from('data_code')
       .select('code, description')
-      .ilike('code', value.trim());
-    if (error || !data || data.length === 0) {
+      .eq('code', value.trim().toUpperCase()); // Exact match, ensure consistent casing in DB or handle here
+    if (error) {
       setProductInfo(null);
-      setProductError('Product Code Not Found');
-    } else {
+      setProductError('Product Code Not Found Or Error');
+      return;
+    }
+    if (data && data.length > 0) {
       setProductError(null);
       setProductInfo(data[0].description);
       setForm(f => ({ ...f, productCode: data[0].code }));
+    } else {
+      setProductInfo(null);
+      setProductError('Product Code Not Found');
     }
+  };
+
+  const handleProductCodeChange = (value: string) => {
+    setForm(f => ({ ...f, productCode: value }));
+    // Query is now called onBlur, not onChange
+  };
+
+  // Modified handleProductCodeBlur to use the new queryProductCode function
+  const handleProductCodeBlur = (value: string) => {
+    queryProductCode(value);
   };
 
   const PALLET_TYPE_DB_VAL: Record<string, string> = {
@@ -453,148 +432,182 @@ export default function PrintGrnLabelPage() {
           -moz-appearance: textfield;
         }
       `}</style>
-      <div className="min-h-screen flex flex-col items-center justify-start bg-gray-900">
-        <div className="flex flex-col gap-8 w-full max-w-2xl mt-4">
-          {/* GRN Detail 區塊 */}
-          <div className="bg-gray-800 rounded-lg p-8 w-full shadow-lg">
-            <h2 className="text-xl font-semibold text-white mb-6">GRN Detail</h2>
-            <div className="flex flex-col gap-4">
-              <div className="flex items-center">
-                <label className="text-sm text-gray-300 mr-4 min-w-[120px]">GRN Number</label>
-                <input type="text" className="flex-1 rounded-md bg-gray-900 border border-gray-700 text-white px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Please Enter..." value={form.grnNumber} onChange={e => handleFormChange('grnNumber', e.target.value)} />
-              </div>
-              <div className="flex items-center">
-                <label className="text-sm text-gray-300 mr-4 min-w-[120px]">Material Supplier</label>
-                <input type="text" className="flex-1 rounded-md bg-gray-900 border border-gray-700 text-white px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Please Enter..." value={form.materialSupplier} onChange={e => setForm(f => ({ ...f, materialSupplier: e.target.value }))} onBlur={e => handleSupplierBlur(e.target.value)} />
-                {supplierInfo && !supplierError && (
-                  <div className="text-white text-sm font-semibold ml-4">{supplierInfo}</div>
-                )}
-                {supplierError && (
-                  <div className="text-red-500 text-sm font-semibold ml-4">{supplierError}</div>
-                )}
-              </div>
-              <div className="flex items-center">
-                <label className="text-sm text-gray-300 mr-4 min-w-[120px]">Product Code</label>
-                <input type="text" className="flex-1 rounded-md bg-gray-900 border border-gray-700 text-white px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Please Enter..." value={form.productCode} onChange={e => setForm(f => ({ ...f, productCode: e.target.value }))} onBlur={e => handleProductCodeBlur(e.target.value)} />
-                {productInfo && !productError && (
-                  <div className="text-white text-sm font-semibold ml-4">{productInfo}</div>
-                )}
-                {productError && (
-                  <div className="text-red-500 text-sm font-semibold ml-4">{productError}</div>
-                )}
-              </div>
-            </div>
-          </div>
-          {/* Pallet Type + Package Type 區塊（左右排列） */}
-          <div className="flex flex-row gap-8">
-            {/* Pallet Type 區塊 */}
-            <div className="bg-gray-800 rounded-lg p-8 w-fit shadow-lg">
-              <h3 className="text-lg font-semibold text-white mb-4">Pallet Type</h3>
-              <div className="flex flex-col gap-4">
-                {([
-                  { key: 'whiteDry' as keyof typeof palletType, label: 'White - Dry' },
-                  { key: 'whiteWet' as keyof typeof palletType, label: 'White - Wet' },
-                  { key: 'chepDry' as keyof typeof palletType, label: 'Chep - Dry' },
-                  { key: 'chepWet' as keyof typeof palletType, label: 'Chep - Wet' },
-                  { key: 'euro' as keyof typeof palletType, label: 'Euro' },
-                  { key: 'notIncluded' as keyof typeof palletType, label: '(Not Included)' }
-                ] as const).map(item => (
-                  <div className="flex items-center" key={item.key}>
-                    <label className="text-sm text-gray-300 mr-4 min-w-[120px]">{item.label}</label>
+      <div className="min-h-screen bg-gray-900 text-white p-4 md:p-8">
+        <div className="container mx-auto max-w-screen-xl">
+          <h1 className="text-3xl font-bold text-center text-orange-500 mb-10">Print GRN Label</h1>
+
+          <div className="flex flex-col lg:flex-row gap-8">
+            {/* Left Column */} 
+            <div className="flex-grow lg:w-2/3 space-y-8">
+              {/* GRN Detail Card */}
+              <div className="bg-gray-800 p-6 rounded-lg shadow-xl">
+                <h2 className="text-xl font-semibold text-orange-400 mb-6">GRN Detail</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label htmlFor="grnNumber" className="block text-sm font-medium mb-1">GRN Number</label>
                     <input
-                      type="number"
-                      min="0"
-                      inputMode="numeric"
-                      className="w-16 rounded-md bg-gray-900 border border-gray-700 text-white px-3 py-2"
-                      value={palletType[item.key]}
-                      onChange={e => handlePalletTypeChange(item.key, e.target.value)}
+                      type="text"
+                      id="grnNumber"
+                      value={form.grnNumber}
+                      onChange={e => handleFormChange('grnNumber', e.target.value)}
+                      className="w-full p-2 bg-gray-700 border border-gray-600 rounded-md focus:ring-orange-500 focus:border-orange-500"
+                      placeholder="Please Enter..."
                     />
                   </div>
-                ))}
-              </div>
-            </div>
-            {/* Package Type 區塊 */}
-            <div className="bg-gray-800 rounded-lg p-8 w-fit shadow-lg">
-              <h3 className="text-lg font-semibold text-white mb-4">Package Type</h3>
-              <div className="flex flex-col gap-4">
-                {([
-                  { key: 'still' as keyof typeof packageType, label: 'Still' },
-                  { key: 'bag' as keyof typeof packageType, label: 'Bag' },
-                  { key: 'tote' as keyof typeof packageType, label: 'Tote' },
-                  { key: 'octo' as keyof typeof packageType, label: 'Octo' },
-                  { key: 'notIncluded' as keyof typeof packageType, label: '(Not Included)' }
-                ] as const).map(item => (
-                  <div className="flex items-center" key={item.key}>
-                    <label className="text-sm text-gray-300 mr-4 min-w-[120px]">{item.label}</label>
+                  <div>
+                    <label htmlFor="materialSupplier" className="block text-sm font-medium mb-1">Material Supplier</label>
                     <input
-                      type="number"
-                      min="0"
-                      inputMode="numeric"
-                      className="w-16 rounded-md bg-gray-900 border border-gray-700 text-white px-3 py-2"
-                      value={packageType[item.key]}
-                      onChange={e => handlePackageTypeChange(item.key, e.target.value)}
+                      type="text"
+                      id="materialSupplier"
+                      value={form.materialSupplier}
+                      onChange={e => handleSupplierChange(e.target.value)}
+                      onBlur={e => handleSupplierBlur(e.target.value)}                    
+                      className="w-full p-2 bg-gray-700 border border-gray-600 rounded-md focus:ring-orange-500 focus:border-orange-500"
+                      placeholder="Please Enter..."
                     />
+                    {supplierError && <p className="text-red-500 text-xs mt-1">{supplierError}</p>}
+                    {supplierInfo && <p className="text-green-400 text-xs mt-1">{supplierInfo}</p>}
                   </div>
-                ))}
+                  <div className="md:col-span-2">
+                    <label htmlFor="productCode" className="block text-sm font-medium mb-1">Product Code</label>
+                    <input
+                      type="text"
+                      id="productCode"
+                      value={form.productCode}
+                      onChange={e => handleProductCodeChange(e.target.value)}
+                      onBlur={e => handleProductCodeBlur(e.target.value)}
+                      className="w-full p-2 bg-gray-700 border border-gray-600 rounded-md focus:ring-orange-500 focus:border-orange-500"
+                      placeholder="Please Enter..."
+                    />
+                    {productError && <p className="text-red-500 text-xs mt-1">{productError}</p>}
+                    {productInfo && <p className="text-green-400 text-xs mt-1">{productInfo}</p>}
+                  </div>
+                </div>
+              </div>
+
+              {/* Pallet & Package Type Row */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                {/* Pallet Type Card */}
+                <div className="bg-gray-800 p-6 rounded-lg shadow-xl">
+                  <h2 className="text-xl font-semibold text-orange-400 mb-6">Pallet Type</h2>
+                  <div className="space-y-3">
+                    {Object.entries(palletType).map(([key, value]) => (
+                      <div key={key} className="flex justify-between items-center">
+                        <label htmlFor={`pallet-${key}`} className="text-sm">
+                          {key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
+                        </label>
+                        <input
+                          type="number"
+                          id={`pallet-${key}`}
+                          value={value}
+                          onChange={e => handlePalletTypeChange(key as keyof typeof palletType, e.target.value)}
+                          className="w-24 p-2 bg-gray-700 border border-gray-600 rounded-md focus:ring-orange-500 focus:border-orange-500 text-center"
+                          placeholder="Qty"
+                          min="0"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Package Type Card */}
+                <div className="bg-gray-800 p-6 rounded-lg shadow-xl">
+                  <h2 className="text-xl font-semibold text-orange-400 mb-6">Package Type</h2>
+                  <div className="space-y-3">
+                    {Object.entries(packageType).map(([key, value]) => (
+                      <div key={key} className="flex justify-between items-center">
+                        <label htmlFor={`package-${key}`} className="text-sm">
+                          {key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
+                        </label>
+                        <input
+                          type="number"
+                          id={`package-${key}`}
+                          value={value}
+                          onChange={e => handlePackageTypeChange(key as keyof typeof packageType, e.target.value)}
+                          className="w-24 p-2 bg-gray-700 border border-gray-600 rounded-md focus:ring-orange-500 focus:border-orange-500 text-center"
+                          placeholder="Qty"
+                          min="0"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
-          {/* Print GRN Label 區塊（動態 Gross Weight/Qty） */}
-          <div className="bg-gray-800 rounded-lg p-8 w-full shadow-lg">
-            <h2 className="text-xl font-semibold text-white mb-6">Print GRN Label</h2>
-            <div className="flex flex-col gap-4 mb-8">
-              {grossWeights.map((val, idx) => (
-                <div className="flex items-center" key={idx}>
-                  <label className="text-sm text-gray-300 mr-4 min-w-[180px]">
-                    <span className="text-white">Gross Weight / Qty</span>
-                    <span className="text-red-500 ml-1">[{getPalletLabel(idx)}]</span>
-                  </label>
-                  <input
-                    type="text"
-                    className="flex-1 rounded-md bg-gray-900 border border-gray-700 text-white px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Please Enter..."
-                    value={val}
-                    onChange={e => handleGrossWeightChange(idx, e.target.value)}
-                  />
-                </div>
-              ))}
-            </div>
-            <button type="button" className={`w-full py-2 rounded-md text-white font-semibold transition-colors ${canPrint ? 'bg-blue-600 hover:bg-blue-700' : 'bg-gray-600 cursor-not-allowed'}`} disabled={!canPrint} onClick={handlePrintLabel}>
-              Print Label
-            </button>
-            
-            {/* New Progress Bar UI (similar to QcLabelForm) */}
-            {pdfProgress.total > 0 && (
-            <div className="mt-4">
-                <div className="mb-2 text-xs text-gray-200">
-                PDF Generation Progress: {pdfProgress.current} / {pdfProgress.total}
-                </div>
-                <div className="w-full bg-gray-700 rounded h-4 overflow-hidden mb-2">
-                <div
-                    className="bg-blue-500 h-4 transition-all duration-300"
-                    style={{
-                    width: `${pdfProgress.total > 0 ? (pdfProgress.current / pdfProgress.total) * 100 : 0}%`,
-                    }}
-                />
-                </div>
-                <div className="flex flex-row gap-1 mt-1 flex-wrap">
-                {pdfProgress.status.map((s, i) => (
-                    <div
-                    key={i}
-                    className={`
-                        w-4 h-4 rounded-full flex items-center justify-center text-xs font-bold
-                        ${s === 'Success' ? 'bg-green-500 text-white' : s === 'Failed' ? 'bg-red-500 text-white' : s === 'Processing' ? 'bg-yellow-500 text-gray-900' : 'bg-gray-400 text-gray-900'}
-                    `}
-                    title={`Pallet ${i + 1}: ${s}`}
-                    >
-                    {/* Optionally show numbers or icons based on status */}
-                    {s === 'Success' ? '✓' : s === 'Failed' ? '✗' : ''} {/* Show pallet num only if pending, or nothing*/}
+
+            {/* Right Column */} 
+            <div className="flex-grow lg:w-1/3">
+              {/* Print GRN Label Card */}
+              <div className="bg-gray-800 p-6 rounded-lg shadow-xl sticky top-8">
+                <h2 className="text-xl font-semibold text-orange-400 mb-6">Print GRN Label</h2>
+                <div className="space-y-4 mb-6 max-h-96 overflow-y-auto pr-2">
+                  {grossWeights.map((weight, idx) => (
+                    <div key={idx} className="flex items-center justify-between">
+                      <label htmlFor={`grossWeight-${idx}`} className="block text-sm font-medium text-gray-300 mr-3 whitespace-nowrap">
+                        Gross Weight / Qty <span className="text-yellow-400">[{getPalletLabel(idx)}]</span>
+                      </label>
+                      <input
+                        type="number"
+                        id={`grossWeight-${idx}`}
+                        ref={idx === grossWeights.length -1 ? grossWeightRef : null} 
+                        value={weight}
+                        onChange={e => handleGrossWeightChange(idx, e.target.value)}
+                        className="p-2 bg-gray-700 border border-gray-600 rounded-md focus:ring-orange-500 focus:border-orange-500 w-28 text-right"
+                        placeholder="Weight/Qty"
+                      />
                     </div>
-                ))}
+                  ))}
                 </div>
+                <button
+                  onClick={handlePrintLabel}
+                  disabled={!canPrint || pdfProgress.status.some(s => s === 'Processing')}
+                  className={`w-full p-3 rounded-md font-semibold transition-colors 
+                    ${!canPrint || pdfProgress.status.some(s => s === 'Processing') 
+                      ? 'bg-gray-600 text-gray-400 cursor-not-allowed' 
+                      : 'bg-orange-600 hover:bg-orange-700 text-white'}`}
+                >
+                  {pdfProgress.status.some(s => s === 'Processing') ? 'Processing Labels...' : 'Print GRN Label(s)'}
+                </button>
+
+                {/* PDF Progress UI */}
+                {pdfProgress.total > 0 && (
+                  <div className="mt-6">
+                    <div className="mb-2 text-xs text-gray-300 flex justify-between">
+                      <span>PDF Generation Progress: {pdfProgress.current} / {pdfProgress.total}</span>
+                    </div>
+                    <div className="w-full bg-gray-700 rounded-full h-2.5 overflow-hidden">
+                      <div
+                        className="bg-green-500 h-2.5 rounded-full transition-all duration-300 ease-out"
+                        style={{ width: `${(pdfProgress.current / pdfProgress.total) * 100}%` }}
+                      />
+                    </div>
+                    <div className="flex flex-wrap gap-1 mt-2">
+                      {pdfProgress.status.map((s, i) => (
+                        <span 
+                          key={i} 
+                          title={`Pallet ${i + 1}: ${s}`}
+                          className={`w-5 h-5 flex items-center justify-center text-xs font-bold rounded-full
+                            ${s === 'Success' ? 'bg-green-500 text-white' : 
+                              s === 'Failed' ? 'bg-red-500 text-white' : 
+                              s === 'Processing' ? 'bg-yellow-500 text-gray-900 animate-pulse' : 
+                              'bg-gray-500 text-gray-200'}`
+                          }
+                        >
+                          {s === 'Success' ? '✓' : s === 'Failed' ? '✗' : ''}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {/* End PDF Progress UI */}
+                
+                {/* Manual PDF Download Button (example usage) */}
+                {pdfData && (
+                    <ManualPdfDownloadButton pdfData={pdfData} fileName={`grn-label-${pdfData.series}.pdf`} />
+                )}
+
+              </div>
             </div>
-            )}
-            {/* End New Progress Bar UI */}
           </div>
         </div>
       </div>

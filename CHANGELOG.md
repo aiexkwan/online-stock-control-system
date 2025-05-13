@@ -197,6 +197,7 @@ All notable changes to this project will be documented in this file.
 - Corrected Supabase RPC call `update_inventory_stock_transfer` for `NULL` value handling.
 - Resolved "Home" button navigation issue.
 - Addressed module not found error for `@zxing/browser` by installing the dependency.
+- GRN Label: Corrected net weight calculation. If 'Not Included' is selected for Pallet Type or Package Type, their respective weights (now set to 0) are not subtracted from the gross weight.
 
 ### Removed
 - Deleted placeholder component `app/components/print-label-menu/GrnLabelForm.tsx`.
