@@ -8,13 +8,15 @@ export interface PrintLabelPdfProps {
   date: string;
   operatorClockNum: string;
   qcClockNum: string;
-  workOrderNumber: string;
   palletNum: string;
   qrValue?: string;
   qrCodeDataUrl?: string;
   productType?: string;
-  workOrderName?: string;
   labelType?: string;
+  qcWorkOrderNumber?: string;
+  qcWorkOrderName?: string;
+  grnNumber?: string;
+  grnMaterialSupplier?: string;
 }
 
 const LOGO_URL =
@@ -156,33 +158,57 @@ const styles = StyleSheet.create({
   },
 });
 
-function LabelBlock({
-  productCode,
-  description,
-  quantity,
-  date,
-  operatorClockNum,
-  qcClockNum,
-  workOrderNumber,
-  palletNum,
-  qrCodeDataUrl,
-  productType,
-  workOrderName,
-  labelType,
-}: PrintLabelPdfProps) {
-  // console.log('[PrintLabelPdf] labelType received:', labelType); // Keep this for now, might appear later
+function LabelBlock(props: PrintLabelPdfProps) {
+  console.log('[LabelBlock] Received props:', JSON.stringify(props, null, 2));
+  const {
+    productCode,
+    description,
+    quantity,
+    date,
+    operatorClockNum,
+    qcClockNum,
+    palletNum,
+    qrCodeDataUrl,
+    productType,
+    labelType,
+    qcWorkOrderNumber,
+    qcWorkOrderName,
+    grnNumber,
+    grnMaterialSupplier,
+  } = props;
+
   const isGrnLabel = labelType === 'GRN';
   const quantityHeaderText = isGrnLabel ? 'Quantity / Weight' : 'Quantity';
   const qcClockNumHeaderText = isGrnLabel ? 'Received By' : 'Q.C. Done By';
 
-  // Determine the Work Order related header text
-  let workOrderHeader = 'Work Order Number'; // Default
+  let displayWorkOrderHeader = "Work Order Number"; // Default header
+  let displayWorkOrderValue = "-"; // Default value
+
   if (isGrnLabel) {
-    workOrderHeader = 'GRN Reference';
-  } else if (workOrderName) {
-    workOrderHeader = workOrderName;
+    displayWorkOrderHeader = "GRN Reference";
+    let combinedGrnRef = '';
+    const trimmedGrnNum = grnNumber?.trim();
+    const trimmedSupplier = grnMaterialSupplier?.trim();
+    if (trimmedGrnNum) {
+      combinedGrnRef += trimmedGrnNum;
+    }
+    if (trimmedSupplier) {
+      combinedGrnRef += trimmedGrnNum ? ` (${trimmedSupplier.toUpperCase()})` : trimmedSupplier.toUpperCase();
+    }
+    if (combinedGrnRef) {
+      displayWorkOrderValue = combinedGrnRef;
+    }
   } else if (productType === 'ACO') {
-    workOrderHeader = 'ACO Order';
+    displayWorkOrderHeader = "ACO Order Ref";
+    const trimmedQcWoNum = qcWorkOrderNumber?.trim();
+    if (trimmedQcWoNum) {
+      displayWorkOrderValue = trimmedQcWoNum;
+    }
+  } else { // Normal QC Label (not GRN, not ACO)
+    const trimmedQcWoNum = qcWorkOrderNumber?.trim();
+    if (trimmedQcWoNum) {
+      displayWorkOrderValue = trimmedQcWoNum;
+    }
   }
 
   return (
@@ -232,15 +258,17 @@ function LabelBlock({
           </View>
         </View>
       </View>
-      {/* Work Order Table - 兩個儲存格 */}
+      {/* Work Order Table - uses displayWorkOrderHeader and displayWorkOrderValue */}
       <View style={styles.workOrderTable}>
         <View style={{ flex: 1, height: 48, alignItems: 'center', justifyContent: 'center' }}>
           <Text style={{ fontSize: 24, textAlign: 'center', width: '100%' }}>
-            {workOrderHeader}
+            {displayWorkOrderHeader}
           </Text>
         </View>
         <View style={{ flex: 1, height: 48, alignItems: 'center', justifyContent: 'center' }}>
-          <Text style={{ fontSize: 24, textAlign: 'center', width: '100%' }}>{workOrderNumber}</Text>
+          <Text style={{ fontSize: 24, textAlign: 'center', width: '100%' }}>
+            {displayWorkOrderValue}
+          </Text>
         </View>
       </View>
       {/* Pallet Number */}

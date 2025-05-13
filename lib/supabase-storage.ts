@@ -1,4 +1,5 @@
 import { supabase } from './supabase'; // Corrected import for the Supabase client
+import { generatePalletPdfFileName } from './pdfUtils'; // Import the new naming function
 
 export const STORAGE_BUCKET = 'pallet-label-pdf';
 
@@ -12,20 +13,25 @@ export async function setupStorage() {
 }
 
 /**
- * Uploads a PDF file to the specified Supabase storage bucket and folder.
+ * Uploads a PDF file to the Supabase storage bucket with a standardized name derived from palletNum.
  *
- * @param palletNum The pallet number, used as part of the folder/file path.
- * @param fileName The desired name of the file in Supabase storage.
+ * @param palletNum The pallet number, used to generate the PDF filename.
+ * @param _ignoredFileName This parameter is kept for compatibility with PdfGenerator.tsx but is NOT used for naming the file in Supabase.
  * @param pdfBlob The PDF content as a Blob.
  * @returns The public URL of the uploaded PDF.
- * @throws If the upload fails.
+ * @throws If the upload fails or palletNum is missing.
  */
 export async function uploadPdf(
-  palletNum: string, 
-  fileName: string,
+  palletNum: string,
+  _ignoredFileName: string, // Intentionally ignored for Supabase path naming
   pdfBlob: Blob
 ): Promise<string> {
-  console.log(`[uploadPdf] Attempting to upload ${fileName} to folder path based on ${palletNum} in bucket ${STORAGE_BUCKET}`);
+  if (!palletNum) {
+    console.error('[uploadPdf] Pallet number is required but was not provided.');
+    throw new Error('Pallet number is required for uploading PDF.');
+  }
+  console.log(`[uploadPdf] Attempting to upload PDF for palletNum: ${palletNum}. Input fileName '${_ignoredFileName}' is ignored for Supabase path construction.`);
+
   if (!pdfBlob) {
     console.error('[uploadPdf] pdfBlob is null or undefined.');
     throw new Error('pdfBlob cannot be null.');
@@ -34,25 +40,23 @@ export async function uploadPdf(
     console.warn('[uploadPdf] pdfBlob has a size of 0. Uploading an empty file.');
   }
 
-  // Constructing filePath similar to previous logic but using palletNum and fileName directly
-  // Example: Label - 090525_60 - pallet-label-250509-HFHRP6.pdf
-  const safePalletNumForPath = palletNum.replace(/\//g, '_'); 
-  const filePath = `Label - ${safePalletNumForPath} - ${fileName}`;
-  console.log('[uploadPdf] Full file path in bucket:', filePath);
+  const finalSupabaseFileName = generatePalletPdfFileName(palletNum);
+  const filePath = finalSupabaseFileName; // Store at the root of the bucket
+
+  console.log('[uploadPdf] Full file path in bucket (new logic): ', filePath);
 
   try {
-    const { data, error } = await supabase.storage // Using the imported supabase client
+    const { data, error } = await supabase.storage
       .from(STORAGE_BUCKET)
       .upload(filePath, pdfBlob, {
         cacheControl: '3600',
-        upsert: true, 
+        upsert: true,
         contentType: 'application/pdf',
       });
 
     if (error) {
       console.error('[uploadPdf] Upload error object:', error);
       let errorMessage = `Upload failed for ${filePath}. Supabase error: ${error.message}`;
-      // Consider checking error.name or error.code for more specific Supabase error types if available
       if (error.message.includes('mime type application/pdf is not supported') || (error as any).error === 'mime type application/pdf is not supported') {
         errorMessage = 'Upload failed: mime type application/pdf is not supported. Check bucket Content-Type settings or client-side Content-Type header.';
       }
@@ -80,6 +84,10 @@ export async function uploadPdf(
 
   } catch (err) {
     console.error('[uploadPdf] Error in uploadPdf:', (err as Error).message, err);
-    throw new Error(`uploadPdf failed: ${(err as Error).message}`);
+    // Ensure we throw an actual Error object
+    if (err instanceof Error) {
+      throw err; 
+    }
+    throw new Error(`uploadPdf failed: ${String(err)}`);
   }
 }

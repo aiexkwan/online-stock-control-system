@@ -528,16 +528,15 @@ export default function QcLabelForm() {
         operatorClockNum: operatorNum, // from form state
         qcClockNum: qcNum, // from form state (userId)
         workOrderNumber: (() => { // Logic for workOrderNumber based on product type
-          if (productInfo?.type === 'ACO' && acoOrderRef.trim()) {
+          const type = productInfo?.type;
+          const trimmedAcoOrderRef = acoOrderRef.trim();
+
+          if (type === 'ACO' && trimmedAcoOrderRef) {
             const currentPalletOrdinal = startingOrdinalForAco + i;
-            return `${acoOrderRef.trim()} - ${currentPalletOrdinal}${getOrdinalSuffix(currentPalletOrdinal)} PLT`;
-          } else if (productInfo?.type === 'Slate') {
-            return '-'; // Slate W/O is '-'
-          } else if (productInfo?.type) { // For other types, use productInfo.type as W/O
-            return productInfo.type;
+            return `${trimmedAcoOrderRef} - ${currentPalletOrdinal}${getOrdinalSuffix(currentPalletOrdinal)} PLT`;
           }
-          // Fallback if none of the above match (should ideally be covered by productInfo.type logic)
-          return workOrderNumberVariableForFallback; // Or a more generic default like '-'
+          // For Slate and any other non-ACO types, the work order value should be '-'.
+          return '-';
         })(),
         productType: productInfo?.type || '',
         workOrderName: productInfo?.type === 'ACO' ? 'ACO Order' : (productInfo?.type === 'Slate' ? 'SLATE Order' : productInfo?.type) // Example for workOrderName
@@ -702,7 +701,7 @@ export default function QcLabelForm() {
 
       if (!data || data.length === 0) {
         // setAcoRemain('Order Ref Not Found! You need to input New Order Details.');
-        toast.info(`ACO Order Ref ${acoOrderRef} not found. Please provide new order details below.`);
+        toast.info(`New ACO order : ${acoOrderRef} found. Please provide new order details below.`);
         setAcoNewRef(true);
         setAcoNewProductCode(productCode.trim()); // Pre-fill product code for new order detail
         setAcoOrderDetails([{ code: productCode.trim(), qty: '' }]); // Start with current product code
