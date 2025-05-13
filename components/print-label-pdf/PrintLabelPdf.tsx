@@ -174,6 +174,16 @@ function LabelBlock({
   const quantityHeaderText = isGrnLabel ? 'Quantity / Weight' : 'Quantity';
   const qcClockNumHeaderText = isGrnLabel ? 'Received By' : 'Q.C. Done By';
 
+  // Determine the Work Order related header text
+  let workOrderHeader = 'Work Order Number'; // Default
+  if (isGrnLabel) {
+    workOrderHeader = 'GRN Reference';
+  } else if (workOrderName) {
+    workOrderHeader = workOrderName;
+  } else if (productType === 'ACO') {
+    workOrderHeader = 'ACO Order';
+  }
+
   return (
     <View style={styles.label}>
       {/* Logo */}
@@ -225,7 +235,7 @@ function LabelBlock({
       <View style={styles.workOrderTable}>
         <View style={{ flex: 1, height: 48, alignItems: 'center', justifyContent: 'center' }}>
           <Text style={{ fontSize: 24, textAlign: 'center', width: '100%' }}>
-            {workOrderName || (productType === 'ACO' ? 'ACO Order' : 'Work Order Number')}
+            {workOrderHeader}
           </Text>
         </View>
         <View style={{ flex: 1, height: 48, alignItems: 'center', justifyContent: 'center' }}>

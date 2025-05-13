@@ -688,9 +688,9 @@ export default function QcLabelForm() {
     }
     try {
       const { data, error } = await supabase
-        .from('data_product')
-        .select('description, standard_qty, type')
-        .eq('product_code', productCode.trim())
+        .from('data_code')
+        .select('code, description, standard_qty, type')
+        .ilike('code', productCode.trim())
         .single();
 
       if (error) {
@@ -702,7 +702,8 @@ export default function QcLabelForm() {
       }
 
       if (data) {
-        setProductInfo(data as { description: string; standard_qty: string; type: string });
+        setProductInfo(data as { code: string; description: string; standard_qty: string; type: string });
+        setProductCode(data.code);
         setProductError(null);
         if (data.type === 'Slate') {
             setCount('1'); // Auto set count to 1 for Slate
@@ -723,10 +724,9 @@ export default function QcLabelForm() {
 
   // --- Error Logging Function --- START ---
   const logErrorReport = async (errorPart: string, context: string) => {
-    const userId = getUserId(); 
     const logEntry = {
       time: new Date().toISOString(),
-      id: userId || 'unknown_user', // Use logged-in user ID or a placeholder
+      id: userId || 'unknown_user', // Directly use the userId state variable
       action: 'Error Report',
       loc: null,
       plt_num: null,
@@ -756,7 +756,7 @@ export default function QcLabelForm() {
     try {
       const { data, error } = await supabase
         .from('record_aco')
-        .select('id, product_code, order_qty, remain_qty')
+        .select('uuid, code, required_qty, remain_qty')
         .eq('order_ref', acoOrderRef.trim());
 
       if (error) {
@@ -775,7 +775,17 @@ export default function QcLabelForm() {
         setAcoOrderDetails([{ code: productCode.trim(), qty: '' }]); // Start with current product code
       } else {
         // Order found, check if product code exists in this order
-        const productEntry = data.find(item => item.product_code === productCode.trim());
+        // console.log('[ACO Search Debug] productCode state:', productCode);
+        // console.log('[ACO Search Debug] productCode.trim():', productCode.trim(), 'Type:', typeof productCode.trim());
+        // console.log('[ACO Search Debug] Data from Supabase (raw):', JSON.stringify(data));
+        // data.forEach((item, index) => {
+        //   console.log(`[ACO Search Debug] Item ${index} code: '${item.code}', Type: ${typeof item.code}, Length: ${item.code?.length}`);
+        //   console.log(`[ACO Search Debug] Comparison: item.code ('${item.code}') === productCode.trim() ('${productCode.trim()}') -> ${item.code === productCode.trim()}`);
+        // });
+
+        const productEntry = data.find(item => item.code === productCode.trim()); 
+        // console.log('[ACO Search Debug] productEntry found:', productEntry);
+
         if (productEntry) {
           if (productEntry.remain_qty <= 0) {
             // setAcoRemain('Order Been Fullfilled');
@@ -868,71 +878,87 @@ export default function QcLabelForm() {
   const handleAcoOrderDetailUpdate = async () => {
     // Basic validation: check if order ref is entered
     if (!acoOrderRef.trim()) {
-        // alert('Please enter ACO Order Ref first.');
         toast.error('Please enter ACO Order Ref first before adding details.');
         return;
     }
     
-    // Validate all rows have product code and quantity
-    let isValid = true;
-    const errors: string[] = [];
-    acoOrderDetails.forEach((detail, index) => {
-        if (!detail.code.trim()) {
-            isValid = false;
-            errors[index] = 'Product code is required.';
-        }
-        if (!detail.qty.trim() || parseInt(detail.qty.trim(), 10) <= 0) {
-            isValid = false;
-            errors[index] = errors[index] ? errors[index] + ' Valid quantity (>0) is required.' : 'Valid quantity (>0) is required.';
-        }
-    });
-    setAcoOrderDetailErrors(errors);
+    // Validate all rows have product code and quantity, BUT IGNORE completely empty rows
+    let isValidOverall = true;
+    const errors: string[] = []; 
+    const filledOrderDetails = acoOrderDetails.filter(
+      detail => detail.code.trim() !== '' || detail.qty.trim() !== ''
+    );
 
-    if (!isValid) {
-        // alert('Please fill in all Product Code and Quantity fields in the Order Details.');
-        toast.error('Please fill in all Product Code and Quantity fields correctly in the Order Details.');
+    if (filledOrderDetails.length === 0) {
+      toast.info("Please enter at least one ACO order detail.");
+      setAcoOrderDetailErrors([]); // Clear any previous errors
+      return;
+    }
+
+    filledOrderDetails.forEach((detail, index) => {
+        let rowError = '';
+        if (!detail.code.trim()) {
+            isValidOverall = false;
+            rowError = 'Product code is required.';
+        }
+        // Ensure qty is a positive number if present, or if code is present but qty is not
+        if (!detail.qty.trim() || parseInt(detail.qty.trim(), 10) <= 0) {
+            isValidOverall = false;
+            rowError = (rowError ? rowError + ' ' : '') + 'Valid quantity (>0) is required.';
+        }
+        // We need to map errors back to the original acoOrderDetails index if displaying them per row
+        // For simplicity, if any filled row has an error, we show a general message.
+        // Or, find the original index to set specific error:
+        const originalIndex = acoOrderDetails.findIndex(originalDetail => originalDetail === detail);
+        errors[originalIndex] = rowError;
+    });
+    
+    // Update errors for all rows, including potentially empty ones that were not validated
+    const allErrors = acoOrderDetails.map((_, idx) => errors[idx] || '');
+    setAcoOrderDetailErrors(allErrors);
+
+    if (!isValidOverall) {
+        toast.error('Please fill in all Product Code and Quantity fields correctly for the entered rows.');
         return;
     }
     
-    // Show loading state
-    setIsLoading(true); 
+    setAcoSearchLoading(true); 
     
     try {
-        // Prepare data for Supabase insert
-        const recordsToInsert = acoOrderDetails.map(detail => ({
+        const recordsToInsert = filledOrderDetails.map(detail => ({ // Use filtered list
             order_ref: parseInt(acoOrderRef.trim(), 10),
-            product_code: detail.code.trim(),
-            order_qty: parseInt(detail.qty.trim(), 10),
-            remain_qty: parseInt(detail.qty.trim(), 10), // Initially, remain_qty equals order_qty
-            latest_update: new Date().toISOString(), // Add timestamp
+            code: detail.code.trim(), // Corrected to 'code'
+            required_qty: parseInt(detail.qty.trim(), 10), // Corrected to 'required_qty'
+            remain_qty: parseInt(detail.qty.trim(), 10), 
+            latest_update: new Date().toISOString(), 
         }));    
 
-        // Use Supabase client to insert data into record_aco
+        if (recordsToInsert.length === 0) { // Should not happen due to earlier check, but as a safeguard
+            toast.info("No valid order details to save.");
+            setAcoSearchLoading(false);
+            return;
+        }
+
         const { data, error } = await supabase
             .from('record_aco')
             .insert(recordsToInsert)
-            .select(); // Optionally select to confirm insert
+            .select(); 
             
         if (error) {
-            // console.error("Error inserting ACO order details:", error);
-            // alert(`Failed to save ACO Order Details: ${error.message}`);
             toast.error(`Failed to save ACO Order Details: ${error.message}`);
             await logErrorReport('ACO New Order Save', `DB error: ${error.message}`);
         } else {
-            // alert('ACO Order Details saved successfully!');
             toast.success('New ACO Order Details saved successfully!');
-            // Reset relevant state variables after successful save
             setAcoNewRef(false);
-            // Maybe refetch remaining quantity based on the primary product code? Call handleAcoSearch again.
+            setAcoOrderDetails([{ code: '', qty: '' }]); // Reset to a single empty line
+            setAcoOrderDetailErrors([]); // Clear errors
             handleAcoSearch(); 
         }
     } catch (err: any) {
-        // console.error("Unexpected error saving ACO details:", err);
-        // alert('An unexpected error occurred while saving ACO details.');
         toast.error('An unexpected error occurred while saving ACO details.');
         await logErrorReport('ACO New Order Save', `Unexpected error: ${err}`);
     } finally {
-        setIsLoading(false); // Hide loading state
+        setAcoSearchLoading(false); 
     }
   };
 
