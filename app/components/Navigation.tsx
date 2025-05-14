@@ -11,7 +11,8 @@ import {
   ChatBubbleLeftRightIcon,
   HomeIcon,
   Bars3Icon,
-  XMarkIcon
+  XMarkIcon,
+  DocumentDuplicateIcon
 } from '@heroicons/react/24/outline';
 import PrintLabelPopover from './print-label-menu/PrintLabelPopover';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -22,6 +23,7 @@ const menuItems = [
   { name: 'Stock Transfer', icon: ArrowsRightLeftIcon, href: '/stock-transfer' },
   { name: 'Void Pallet', icon: NoSymbolIcon, href: '/void-pallet' },
   { name: 'View History', icon: ClockIcon, href: '/view-history' },
+  { name: 'Export Report', icon: DocumentDuplicateIcon, href: '/export-report' },
   { name: 'Ask Database', icon: ChatBubbleLeftRightIcon, href: '/ask-database' },
 ];
 

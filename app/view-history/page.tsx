@@ -2,9 +2,12 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { getPalletHistoryAndStockInfo, ViewHistoryResult } from '../actions/viewHistoryActions';
+import { QrScanner } from '@/components/qr-scanner/qr-scanner';
+import { Button } from '@/components/ui/button';
 
-// Debounce GĀA (ms)
+// Debounce DELAY (ms)
 const DEBOUNCE_DELAY = 1000;
+const MOBILE_BREAKPOINT = 768; // md breakpoint in Tailwind
 
 export default function ViewHistoryPage() {
   const [seriesInput, setSeriesInput] = useState('');
@@ -13,19 +16,28 @@ export default function ViewHistoryPage() {
   const [searchResult, setSearchResult] = useState<ViewHistoryResult | null>(null);
   const [searchPerformed, setSearchPerformed] = useState(false);
   const [activeInput, setActiveInput] = useState<'series' | 'palletNum' | null>(null);
+  const [isScannerOpen, setIsScannerOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkIsMobile = () => {
+      setIsMobile(window.innerWidth < MOBILE_BREAKPOINT);
+    };
+    checkIsMobile();
+    window.addEventListener('resize', checkIsMobile);
+    return () => window.removeEventListener('resize', checkIsMobile);
+  }, []);
 
   const triggerSearch = useCallback(async (queryType: 'series' | 'palletNum', queryValue: string) => {
     if (!queryValue.trim()) {
       setSearchResult(null);
-      setSearchPerformed(false); // Reset if query is empty
+      setSearchPerformed(false);
       setIsLoading(false);
       return;
     }
-
     setIsLoading(true);
     setSearchPerformed(true);
-    setSearchResult(null); // Clear previous results before new search
-
+    setSearchResult(null);
     try {
       const result = await getPalletHistoryAndStockInfo({ type: queryType, value: queryValue });
       setSearchResult(result);
@@ -54,10 +66,9 @@ export default function ViewHistoryPage() {
         triggerSearch('palletNum', palletNumInput);
       }, DEBOUNCE_DELAY);
     } else if (!seriesInput.trim() && !palletNumInput.trim()) {
-      // Clear results if both inputs are empty
       setSearchResult(null);
       setSearchPerformed(false);
-      setIsLoading(false); // Ensure loading is also reset
+      setIsLoading(false);
     }
     return () => clearTimeout(timer);
   }, [seriesInput, palletNumInput, activeInput, triggerSearch]);
@@ -66,11 +77,11 @@ export default function ViewHistoryPage() {
     const value = e.target.value;
     setSeriesInput(value);
     if (value.trim()) {
-      setPalletNumInput(''); // Clear other input
+      setPalletNumInput('');
       setActiveInput('series');
     } else if (!palletNumInput.trim()) {
       setActiveInput(null);
-      setSearchPerformed(false); // Reset if this input is cleared and other is also empty
+      setSearchPerformed(false);
       setSearchResult(null);
     }
   };
@@ -79,41 +90,72 @@ export default function ViewHistoryPage() {
     const value = e.target.value;
     setPalletNumInput(value);
     if (value.trim()) {
-      setSeriesInput(''); // Clear other input
+      setSeriesInput(''); 
       setActiveInput('palletNum');
     } else if (!seriesInput.trim()) {
       setActiveInput(null);
-      setSearchPerformed(false); // Reset if this input is cleared and other is also empty
+      setSearchPerformed(false);
       setSearchResult(null);
     }
   };
+
+  const handleScanSuccess = (scannedSeries: string) => {
+    setSeriesInput(scannedSeries);
+    setPalletNumInput('');
+    setActiveInput('series');
+    setIsScannerOpen(false);
+  };
   
-  // Helper function to format date (basic example)
   const formatDate = (dateString?: string) => {
     if (!dateString) return 'N/A';
     try {
       return new Date(dateString).toLocaleString();
     } catch (e) {
-      return dateString; // Return original if parsing fails
+      return dateString;
     }
   };
 
+  const seriesInputClassName = "w-full p-3 bg-gray-800 border border-gray-700 rounded-md focus:ring-orange-500 focus:border-orange-500 transition";
+
   return (
     <div className="min-h-screen flex flex-col items-center p-4 bg-gray-900 text-white">
+      {isMobile && isScannerOpen && (
+        <QrScanner
+          open={isScannerOpen}
+          onClose={() => setIsScannerOpen(false)}
+          onScan={handleScanSuccess}
+          title="Scan Series QR Code"
+          hint="Align QR code within the frame"
+        />
+      )}
       <div className="w-full max-w-4xl p-2 rounded-lg">
         <h1 className="text-3xl font-bold mb-8 text-center text-orange-500">View History</h1>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-          <div className="space-y-2">
-            <label htmlFor="series" className="block text-sm font-medium">Series</label>
-            <input
-              id="series"
-              type="text"
-              placeholder="Scan QR Code or Enter Series"
-              value={seriesInput}
-              onChange={handleSeriesInputChange}
-              className="w-full p-3 bg-gray-800 border border-gray-700 rounded-md focus:ring-orange-500 focus:border-orange-500 transition"
-            />
+          <div className="space-y-2 flex flex-col">
+            <label htmlFor={isMobile ? "seriesScanButton" : "seriesInput"} className="block text-sm font-medium">
+              Series {isMobile ? "(via QR Scan)" : ""}
+            </label>
+            {isMobile ? (
+              <Button 
+                id="seriesScanButton"
+                onClick={() => setIsScannerOpen(true)}
+                className={`${seriesInputClassName} text-left h-[46px]`}
+              >
+                <span className={`truncate ${seriesInput ? 'text-white' : 'text-gray-400'}`}>
+                  {seriesInput || "Tap to Scan Series QR Code"}
+                </span>
+              </Button>
+            ) : (
+              <input
+                id="seriesInput"
+                type="text"
+                placeholder="Scan QR Code"
+                value={seriesInput}
+                onChange={handleSeriesInputChange}
+                className={seriesInputClassName}
+              />
+            )}
           </div>
           <div className="space-y-2">
             <label htmlFor="palletNum" className="block text-sm font-medium">Pallet Number</label>
@@ -123,7 +165,7 @@ export default function ViewHistoryPage() {
               placeholder="Enter Pallet Number"
               value={palletNumInput}
               onChange={handlePalletNumInputChange}
-              className="w-full p-3 bg-gray-800 border border-gray-700 rounded-md focus:ring-orange-500 focus:border-orange-500 transition"
+              className={seriesInputClassName} // Use the same class for consistency
             />
           </div>
         </div>
@@ -131,7 +173,6 @@ export default function ViewHistoryPage() {
         {isLoading && (
           <div className="text-center py-10">
             <p className="text-xl text-orange-400">Loading history...</p>
-            {/* You can add a spinner icon here */}
           </div>
         )}
 
@@ -155,7 +196,6 @@ export default function ViewHistoryPage() {
             
             {searchResult?.palletInfo && (
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Left Card: Pallet History */}
                 <div className="bg-gray-800 shadow-xl rounded-lg p-6">
                   <h2 className="text-2xl font-semibold mb-4 text-orange-400">Pallet History</h2>
                   {searchResult.palletHistory.length > 0 ? (
@@ -174,7 +214,6 @@ export default function ViewHistoryPage() {
                   )}
                 </div>
 
-                {/* Right Card: Stock & Pallet Info */}
                 <div className="bg-gray-800 shadow-xl rounded-lg p-6">
                   <h2 className="text-2xl font-semibold mb-4 text-orange-400">Stock Detail</h2>
                   <div className="space-y-3">
@@ -185,6 +224,9 @@ export default function ViewHistoryPage() {
                       <p><strong>Colour  :  </strong> {searchResult.palletInfo.productDetails?.colour || 'N/A'}</p>
                       <p><strong>Standard Qty  :  </strong> {searchResult.palletInfo.productDetails?.standard_qty ?? 'N/A'}</p>
                       <p><strong>Product Type  :  </strong> {searchResult.palletInfo.productDetails?.type || 'N/A'}</p>
+                      <p><strong>Pallet Generated Time:</strong> {formatDate(searchResult.palletInfo.generate_time)}</p>
+                      <p><strong>Quantity on Pallet:</strong> {searchResult.palletInfo.product_qty ?? 'N/A'}</p>
+                      <p><strong>Pallet Remark:</strong> {searchResult.palletInfo.plt_remark || 'N/A'}</p>
                     </div>
                     {searchResult.stockInfo && (
                       <div>
