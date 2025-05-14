@@ -34,7 +34,7 @@ interface PdfGeneratorProps {
   onError?: (error: Error) => void;
 }
 
-export async function generateAndUploadPdf(props: PdfGeneratorProps) {
+export async function generateAndUploadPdf(props: PdfGeneratorProps): Promise<{ publicUrl: string; blob: Blob } | undefined> {
   console.log('[PdfGenerator] FUNCTION ENTERED');
   const { pdfData, fileName, folderName, setPdfProgress, index, onSuccess, onError } = props;
 
@@ -87,7 +87,7 @@ export async function generateAndUploadPdf(props: PdfGeneratorProps) {
     }
 
     onSuccess?.(publicUrl);
-    return publicUrl;
+    return { publicUrl, blob };
 
   } catch (error) {
     console.error('[PdfGenerator] Error in PDF generation/upload process:', error);

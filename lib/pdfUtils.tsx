@@ -3,6 +3,8 @@ import { PrintLabelPdf, PrintLabelPdfProps } from '@/components/print-label-pdf/
 import { format } from 'date-fns';
 import { SupabaseClient } from '@supabase/supabase-js'; // For type hinting Supabase client
 import QRCode from 'qrcode'; // Import QRCode library
+import { PDFDocument } from 'pdf-lib'; // Added for PDF merging
+import { toast } from 'sonner';      // Added for toast notifications
 
 /**
  * Generates a PDF filename based on the pallet number.
@@ -172,4 +174,100 @@ export async function prepareQcLabelData(input: QcInputData): Promise<PrintLabel
     qcWorkOrderName: input.workOrderName, 
     // grnNumber and grnMaterialSupplier will be undefined here, which is fine
   };
+}
+
+/**
+ * Merges multiple PDF documents (provided as ArrayBuffers) into a single PDF
+ * and triggers the browser's print dialog.
+ *
+ * @param pdfArrayBuffers - An array of ArrayBuffers, each representing a PDF file.
+ * @param mergedPdfName - Optional. The suggested filename for the merged PDF.
+ * @returns Promise<void>
+ */
+export async function mergeAndPrintPdfs(
+  pdfArrayBuffers: ArrayBuffer[],
+  mergedPdfName: string = 'merged_document.pdf'
+): Promise<void> {
+  if (!pdfArrayBuffers || pdfArrayBuffers.length === 0) {
+    toast.error('No PDF documents provided to merge and print.');
+    console.error('[mergeAndPrintPdfs] No PDF documents provided.');
+    return;
+  }
+
+  try {
+    const mergedPdf = await PDFDocument.create();
+    for (const pdfBuffer of pdfArrayBuffers) {
+      if (pdfBuffer.byteLength === 0) {
+        console.warn('[mergeAndPrintPdfs] Encountered an empty ArrayBuffer, skipping.');
+        continue;
+      }
+      try {
+        const pdfToMerge = await PDFDocument.load(pdfBuffer);
+        const copiedPages = await mergedPdf.copyPages(pdfToMerge, pdfToMerge.getPageIndices());
+        copiedPages.forEach((page) => {
+          mergedPdf.addPage(page);
+        });
+      } catch (loadError) {
+        console.error('[mergeAndPrintPdfs] Error loading one of the PDFs for merging:', loadError);
+        toast.error('Error processing one of the PDFs. Merged document may be incomplete.');
+        // Optionally, decide if you want to continue merging other PDFs or stop
+      }
+    }
+
+    if (mergedPdf.getPageCount() === 0) {
+      toast.error('No pages were successfully merged. Printing cannot proceed.');
+      console.error('[mergeAndPrintPdfs] Merged PDF has no pages.');
+      return;
+    }
+
+    const mergedPdfBytes = await mergedPdf.save();
+    const pdfBlob = new Blob([mergedPdfBytes], { type: 'application/pdf' });
+
+    const url = URL.createObjectURL(pdfBlob);
+    const iframe = document.createElement('iframe');
+    iframe.style.display = 'none';
+    iframe.src = url;
+    document.body.appendChild(iframe);
+
+    iframe.onload = () => {
+      try {
+        iframe.contentWindow?.focus(); // Focus on the iframe's content
+        console.log('[mergeAndPrintPdfs] Attempting to call print() on iframe contentWindow.');
+        iframe.contentWindow?.print(); // Trigger print dialog
+        toast.info('Initiating print dialog for merged PDF...'); // Info toast
+
+        // Clean up after a delay. Adjust delay if print dialog closes too soon.
+        // Some browsers might need more time, or print might be cancelled.
+        setTimeout(() => {
+          URL.revokeObjectURL(url);
+          if (iframe.parentNode) {
+            iframe.parentNode.removeChild(iframe);
+          }
+          console.log('[mergeAndPrintPdfs] Iframe and blob URL cleaned up after timeout.');
+        }, 10000); // Increased delay to 10 seconds
+
+      } catch (printError) {
+        console.error('[mergeAndPrintPdfs] Error triggering print dialog:', printError);
+        toast.error('Failed to initiate print dialog. Please try again or check browser settings.');
+        // Cleanup in case of print error too
+        URL.revokeObjectURL(url);
+        if (iframe.parentNode) {
+          iframe.parentNode.removeChild(iframe);
+        }
+      }
+    };
+
+    iframe.onerror = () => {
+        console.error('[mergeAndPrintPdfs] Error loading PDF into iframe.');
+        toast.error('Failed to load merged PDF for printing.');
+        URL.revokeObjectURL(url);
+        if (iframe.parentNode) {
+            iframe.parentNode.removeChild(iframe);
+        }
+    };
+
+  } catch (error) {
+    console.error('[mergeAndPrintPdfs] Failed to merge and print PDFs:', error);
+    toast.error('An error occurred while merging or printing PDFs. Please check console.');
+  }
 } 

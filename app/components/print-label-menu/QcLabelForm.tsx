@@ -5,7 +5,7 @@ import { format } from 'date-fns';
 import { useSearchParams } from 'next/navigation';
 import { generateAndUploadPdf } from '../../../app/components/print-label-pdf/PdfGenerator';
 import { toast } from 'sonner';
-import { QcInputData, prepareQcLabelData } from '../../../lib/pdfUtils';
+import { QcInputData, prepareQcLabelData, mergeAndPrintPdfs } from '../../../lib/pdfUtils';
 import { generateMultipleUniqueSeries } from '../../../lib/seriesUtils';
 import { generatePalletNumbers } from '../../../lib/palletNumUtils';
 
@@ -512,7 +512,8 @@ export default function QcLabelForm() {
     console.log('PDF Progress Initialized:', { total: totalPdfs, current: 0, status: Array(totalPdfs).fill('Pending') });
     console.log('[DEBUG] Before PDF loop: countNum =', countNum, 'insertDataArr.length =', insertDataArr.length);
 
-    const newPdfUrls: { series: string; url?: string; error?: string }[] = Array(totalPdfs).fill(null);
+    const generatedPdfArrayBuffers: ArrayBuffer[] = []; // For mergeAndPrintPdfs
+    let successfulPdfGenerations = 0; // To count actual successes for merging condition
 
     for (let i = 0; i < totalPdfs; i++) {
       console.log(`[DEBUG] Entering PDF generation loop, iteration: ${i + 1}/${totalPdfs}`);
@@ -547,21 +548,61 @@ export default function QcLabelForm() {
       console.log('[QcLabelForm] currentPdfProps from prepareQcLabelData:', JSON.stringify(currentPdfProps, null, 2));
 
       // 3. Call generateAndUploadPdf from PdfGenerator.tsx with the prepared props
-      const pdfUrl = await generateAndUploadPdf({
-        pdfData: currentPdfProps, // Pass the result from prepareQcLabelData
-        fileName: `pallet-label-${palletData.series}.pdf`, // Original filename logic
-        folderName: palletData.plt_num, // This is used as palletNum for uploadPdf inside PdfGenerator
+      const pdfResult = await generateAndUploadPdf({
+        pdfData: currentPdfProps, 
+        fileName: `pallet-label-${palletData.series}.pdf`, 
+        folderName: palletData.plt_num, 
         setPdfProgress: setPdfProgress,
         index: i,
-        onSuccess: (url) => {
-          newPdfUrls[i] = { series: palletData.series, url };
-        },
-        onError: (error) => {
-          console.error(`Error generating/uploading PDF for pallet ${palletData.plt_num}:`, error);
-          newPdfUrls[i] = { series: palletData.series, error: error.message };
-          logErrorReport(`PDF Generation/Upload Error for ${palletData.plt_num}: ${error.message}`, JSON.stringify(qcInputForLabel)).catch(console.error);
-        }
+        // onSuccess and onError callbacks in generateAndUploadPdf props are now optional 
+        // as we handle the result directly.
       });
+
+      if (pdfResult && pdfResult.blob) {
+        generatedPdfArrayBuffers.push(await pdfResult.blob.arrayBuffer());
+        successfulPdfGenerations++; // Increment successful generations
+        // Optionally, store pdfResult.publicUrl if needed for other purposes, e.g., updating a DB field
+        // (but per user instruction, no DB changes here)
+
+        // setPdfProgress for success is handled inside generateAndUploadPdf if setPdfProgress and index are passed.
+        // If not, or to be certain, you could add it here:
+        // setPdfProgress(prev => {
+        //   const newStatus = [...prev.status];
+        //   newStatus[i] = 'Success'; 
+        //   return { ...prev, current: prev.current + 1, status: newStatus };
+        // });
+
+      } else {
+        // PDF generation/upload failed for this item. 
+        // generateAndUploadPdf should have called setPdfProgress to 'Failed' and logged the error.
+        console.warn(`PDF generation/upload failed for pallet ${palletData.plt_num}.`);
+      }
+    }
+
+    // After the loop, attempt to merge and print if any PDFs were successful
+    if (generatedPdfArrayBuffers.length > 0 && generatedPdfArrayBuffers.length === successfulPdfGenerations) {
+      // This implies all PDFs that were attempted and expected (totalPdfs) were successful if successfulPdfGenerations === totalPdfs
+      // Or if we only want to print if at least one was successful, then just check generatedPdfArrayBuffers.length > 0
+      try {
+        const firstPalletNumForName = insertDataArr.length > 0 ? insertDataArr[0].plt_num : 'QC_Labels';
+        await mergeAndPrintPdfs(generatedPdfArrayBuffers, `Merged_QC_Labels_${firstPalletNumForName.replace(/\//g, '_')}.pdf`);
+        toast.success(`${generatedPdfArrayBuffers.length} PDF(s) merged and sent to print.`);
+      } catch (mergeError) {
+        console.error("Error during PDF merge and print:", mergeError);
+        toast.error("Failed to merge and print PDFs. Please check console.");
+      }
+    } else if (generatedPdfArrayBuffers.length > 0) { // Some PDFs succeeded, but not all expected (if totalPdfs > successfulPdfGenerations)
+        toast.warning(`Only ${generatedPdfArrayBuffers.length} of ${totalPdfs} PDFs were successful. Attempting to print what was generated.`);
+        try {
+            const firstPalletNumForName = insertDataArr.length > 0 ? insertDataArr[0].plt_num : 'QC_Labels';
+            await mergeAndPrintPdfs(generatedPdfArrayBuffers, `Partially_Merged_QC_Labels_${firstPalletNumForName.replace(/\//g, '_')}.pdf`);
+            toast.info(`${generatedPdfArrayBuffers.length} PDF(s) merged and sent to print (partial success).`);
+        } catch (mergeError) {
+            console.error("Error during partial PDF merge and print:", mergeError);
+            toast.error("Failed to merge and print partially successful PDFs. Please check console.");
+        }
+    } else if (totalPdfs > 0) { // No PDFs were successful, but an attempt was made
+      toast.error('No PDFs were successfully generated to merge and print.');
     }
 
     // Update debugMsg (containing all messages)
