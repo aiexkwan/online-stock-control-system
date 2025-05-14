@@ -17,11 +17,13 @@ The system covers stock tracking, pallet movement, GRN records, QR code generati
 ##  Mandatory Instructions
 
 1.  **Use only existing Supabase tables and columns**  
-   DO NOT create new tables or columns. Check Supabase table structure if needed.  
-   If column names differ from legacy MS Access schema, **ask the user instead of assuming or renaming.**
+   DO NOT create new tables or columns. 
+   DO NOT assuming any name of tables, columns or headers.
+   Using MCP Tool to check table detail and structure if required.
 
 2.  **Code only in English**  
-   All variables, UI text, comments, and prompts must be in English. The system is used by native English speakers.
+   All variables, UI text, comments, and prompts must be in English. 
+   The system is used by native English speakers.
 
 3.  **Respect given instructions only**  
    DO NOT run or generate code for tasks not explicitly instructed by the user.
@@ -93,9 +95,11 @@ The system covers stock tracking, pallet movement, GRN records, QR code generati
 ---
 
 # Changelog Policy
-- After every code update, you MUST update CHANGELOG.md to record all important changes.
+- Before every push to Github, you MUST update CHANGELOG.md to record all important changes.
 
 ---
+##
+
 
 ##  Final Reminder
 

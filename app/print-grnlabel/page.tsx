@@ -352,7 +352,7 @@ export default function PrintGrnLabelPage() {
     setPdfUploadSuccess(false);
     const pdfBlobs: ArrayBuffer[] = []; // Initialize array to collect PDF blobs
 
-    const today = new Date();
+    // const today = new Date(); // Removed
 
     // Pre-generate all pallet numbers for this batch
     const palletNumbersToUse = await generatePalletNumbers(supabase, totalPdfsToProcess);
@@ -364,7 +364,7 @@ export default function PrintGrnLabelPage() {
       return;
     }
 
-    const generateTime = format(today, 'dd-MMM-yyyy HH:mm:ss');
+    // const generateTime = format(today, 'dd-MMM-yyyy HH:mm:ss'); // Removed
 
     let processedDbOperations = 0;
 
@@ -388,10 +388,11 @@ export default function PrintGrnLabelPage() {
       const palletNum = palletNumbersToUse[i]; // Use the pre-generated pallet number
       const series = await generateSingleUniqueSeries(supabase);
       const currentUserIdInt = userId ? parseInt(userId, 10) : null;
+      const currentTimeISO = new Date().toISOString(); // Added for DB timestamps
 
       try {
         // DB Operations (assuming productInfo is not null due to check above)
-        const palletInfoData = { plt_num: palletNum, generate_time: generateTime, product_code: productInfo!.product_code, product_qty: netWeight, series, plt_remark: `Material GRN - ${form.grnNumber.trim()}` };
+        const palletInfoData = { plt_num: palletNum, generate_time: currentTimeISO, product_code: productInfo!.product_code, product_qty: netWeight, series, plt_remark: `Material GRN - ${form.grnNumber.trim()}` };
         const { error: palletInfoError } = await supabase.from('record_palletinfo').insert([palletInfoData]);
         if (palletInfoError) throw new Error(`PalletInfo Insert: ${palletInfoError.message}`);
 
@@ -410,7 +411,7 @@ export default function PrintGrnLabelPage() {
           if (insertInvError) throw new Error(`Inventory Insert: ${insertInvError.message}`);
         }
 
-        const historyData = { action: 'Material Receive', time: generateTime, id: currentUserIdInt, plt_num: palletNum, loc: 'Awaiting', remark: `GRN ${form.grnNumber.trim()} - ${form.materialSupplier.trim()}` };
+        const historyData = { action: 'Material Receive', time: currentTimeISO, id: currentUserIdInt, plt_num: palletNum, loc: 'Awaiting', remark: `GRN ${form.grnNumber.trim()} - ${form.materialSupplier.trim()}` };
         const { error: historyError } = await supabase.from('record_history').insert([historyData]);
         if (historyError) throw new Error(`History Insert: ${historyError.message}`);
         
