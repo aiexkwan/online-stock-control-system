@@ -2,6 +2,34 @@
 
 All notable changes to this project will be documented in this file.
 
+## 2025-05-16
+
+### Added
+- Implemented PDF merging and direct printing functionality for QC Labels:
+  - After all individual QC label PDFs are generated and uploaded, they are now merged into a single PDF document.
+  - The merged PDF is then sent directly to the browser's print dialog for user printing.
+  - Utilizes `pdf-lib` for client-side PDF merging and an iframe-based method to trigger printing.
+- Applied the same PDF merging and direct printing functionality to GRN Labels in `app/print-grnlabel/page.tsx`.
+
+### Changed
+- Modified `app/components/print-label-pdf/PdfGenerator.tsx`:
+  - `generateAndUploadPdf` function now returns both the `publicUrl` and the generated `blob` object.
+- Updated `app/components/print-label-menu/QcLabelForm.tsx`:
+  - `handlePrintLabel` now collects all successfully generated PDF blobs.
+  - After all database updates and individual PDF uploads are complete, it calls `mergeAndPrintPdfs` (from `lib/pdfUtils.tsx`) to merge and print.
+- Updated `lib/pdfUtils.tsx`:
+  - Added the `mergeAndPrintPdfs` function, which handles merging an array of PDF ArrayBuffers and triggering the browser print dialog.
+  - Increased the `setTimeout` delay for print dialog cleanup in `mergeAndPrintPdfs` to 10 seconds to allow more time for printing.
+  - Ensured `generateAndUploadPdf` function consistently returns an object containing both `publicUrl` and `blob`.
+- Updated `app/print-grnlabel/page.tsx`:
+  - `handlePrintLabel` function now collects successfully generated GRN PDF blobs (as ArrayBuffers).
+  - After all database updates and individual GRN PDF uploads are complete, it calls `mergeAndPrintPdfs` to merge and print all generated GRN labels.
+
+### Fixed
+- Resolved Linter error in `app/components/print-label-menu/QcLabelForm.tsx` by changing `toast.warn` to `toast.warning`.
+- Ensured `mergeAndPrintPdfs` function is correctly defined and exported in `lib/pdfUtils.tsx`, resolving a module import Linter error.
+- Corrected an issue in `app/print-grnlabel/page.tsx` where PDF blobs were not being correctly collected for merged printing due to `generateAndUploadPdf` (in `lib/pdfUtils.tsx`) previously not returning the blob. This has been addressed by the change in `lib/pdfUtils.tsx`.
+
 ## 2025-05-12
 
 ### Added

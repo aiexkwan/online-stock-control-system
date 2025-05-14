@@ -78,7 +78,7 @@ export async function generateAndUploadPdf({
   fileName?: string; // Kept for logging or if needed for other purposes, but not for Supabase path.
   storagePath?: string; // Kept for logging, but not for Supabase path.
   supabaseClient: SupabaseClient;
-}): Promise<string> {
+}): Promise<{ publicUrl: string; blob: Blob }> {
   const palletNum = pdfProps.palletNum;
   if (!palletNum) {
     throw new Error('[pdfUtils.generateAndUploadPdf] Pallet number is missing in pdfProps and is required.');
@@ -128,7 +128,7 @@ export async function generateAndUploadPdf({
   }
   
   console.log(`[pdfUtils.generateAndUploadPdf] Public URL: ${publicUrlData.publicUrl}`);
-  return publicUrlData.publicUrl;
+  return { publicUrl: publicUrlData.publicUrl, blob };
 }
 
 // Placeholder for QC Label Data Preparation (to be defined based on QC label requirements)

@@ -10,7 +10,7 @@ import { toast } from 'sonner';
 import { pdf } from '@react-pdf/renderer';
 
 // Import PDF utilities
-import { prepareGrnLabelData, generateAndUploadPdf, GrnInputData } from '../../lib/pdfUtils';
+import { prepareGrnLabelData, generateAndUploadPdf, GrnInputData, mergeAndPrintPdfs } from '../../lib/pdfUtils';
 import { PrintLabelPdfProps } from '../../components/print-label-pdf/PrintLabelPdf'; // Still needed for latestGeneratedPdfProps state type
 import { generateUniqueSeries as generateSingleUniqueSeries } from '../../lib/seriesUtils'; // Import and alias to avoid name collision if any local var is named generateUniqueSeries
 import { generatePalletNumbers } from '../../lib/palletNumUtils'; // Import the new pallet number utility
@@ -338,6 +338,7 @@ export default function PrintGrnLabelPage() {
     const totalPdfsToProcess = validGrossWeights.length;
     setPdfProgress({ current: 0, total: totalPdfsToProcess, status: Array(totalPdfsToProcess).fill('Pending') });
     setPdfUploadSuccess(false);
+    const pdfBlobs: ArrayBuffer[] = []; // Initialize array to collect PDF blobs
 
     const today = new Date();
 
@@ -419,24 +420,44 @@ export default function PrintGrnLabelPage() {
         
         // Generate and upload PDF using the new utility function
         const uploadFileName = `GRN_${palletNum.replace(/\//g, '-')}.pdf`;
-        await generateAndUploadPdf({
+        const result = await generateAndUploadPdf({
             pdfProps: grnLabelProps,
             fileName: uploadFileName,
             storagePath: 'grn_labels',
             supabaseClient: supabase
         });
 
-        setPdfProgress(prev => ({ ...prev, current: prev.current + 1, status: prev.status.map((s, idx) => idx === i ? 'Success' : s) }));
+        if (result && result.blob) { // Check if blob exists
+          const arrayBuffer = await result.blob.arrayBuffer();
+          pdfBlobs.push(arrayBuffer);
+          setPdfProgress(prev => ({ ...prev, current: prev.current + 1, status: prev.status.map((s, idx) => idx === i ? 'Success' : s) }));
+        } else {
+          // Handle case where blob is not returned - mark as failed
+          console.error(`Error processing pallet ${i + 1} (Num: ${palletNum}): PDF blob was not generated or returned.`);
+          toast.error(`Pallet ${i + 1} (${palletNum}): PDF Generation Failed`);
+          setPdfProgress(prev => ({ ...prev, status: prev.status.map((s, idx) => idx === i ? 'Failed' : s) }));
+          // Do not proceed with this iteration if PDF generation failed
+          continue; 
+        }
       } catch (error: any) {
         console.error(`Error processing pallet ${i + 1} (Num: ${palletNum}):`, error.message);
         toast.error(`Pallet ${i + 1} (${palletNum}): Processing Error`);
         setPdfProgress(prev => ({ ...prev, status: prev.status.map((s, idx) => idx === i ? 'Failed' : s) }));
       }
     }
-    if (processedDbOperations === totalPdfsToProcess && totalPdfsToProcess > 0) {
-      toast.success('Upload Success');
-       setPdfUploadSuccess(true);
-       setTimeout(() => {
+    if (processedDbOperations === totalPdfsToProcess && totalPdfsToProcess > 0 && pdfBlobs.length === totalPdfsToProcess) {
+      toast.success('All GRN labels processed and uploaded successfully. Preparing to print.');
+      setPdfUploadSuccess(true); // Assuming this state is still relevant for UI
+
+      try {
+        await mergeAndPrintPdfs(pdfBlobs);
+        toast.success('Merged GRN labels sent to print dialog.');
+      } catch (printError) {
+        console.error('Error merging or printing GRN PDFs:', printError);
+        toast.error('Could not merge or print GRN labels. Please try downloading manually if needed.');
+      }
+
+      setTimeout(() => {
         setPdfProgress({ current: 0, total: 0, status: [] });
         setPdfUploadSuccess(false);
         // Preserve GRN Number and Material Supplier, clear other fields
@@ -453,7 +474,15 @@ export default function PrintGrnLabelPage() {
         console.log('[PrintGrnLabelPage] GRN processing successful, form reset.');
       }, 3000);
     } else if (totalPdfsToProcess > 0) {
-        toast.error('Some GRN labels failed to process. Check progress indicators.');
+        let errorMessage = 'Some GRN labels failed to process.';
+        if (pdfBlobs.length !== totalPdfsToProcess && processedDbOperations === totalPdfsToProcess) {
+            errorMessage = 'All database operations succeeded, but some PDF generations failed. Cannot proceed to print.';
+        } else if (pdfBlobs.length === totalPdfsToProcess && processedDbOperations !== totalPdfsToProcess) {
+            errorMessage = 'All PDFs generated, but some database operations failed. Cannot proceed to print.';
+        } else if (pdfBlobs.length !== totalPdfsToProcess && processedDbOperations !== totalPdfsToProcess) {
+            errorMessage = 'Some database operations and PDF generations failed. Cannot proceed to print.';
+        }
+        toast.error(errorMessage + ' Check progress indicators.');
     }
   };
 
