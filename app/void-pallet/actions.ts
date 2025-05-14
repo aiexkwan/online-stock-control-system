@@ -15,7 +15,7 @@ interface PalletInfo {
 }
 
 interface VoidPalletArgs {
-  userId: string;
+  userId: number;
   palletInfo: PalletInfo;
   password: string;
   voidReason: string;
@@ -29,7 +29,7 @@ interface ActionResult {
 
 // Helper function to log history (Only used for pre-RPC failures now)
 async function logHistoryRecord(
-  userId: string,
+  userId: number,
   action: string,
   plt_num: string | null,
   loc: string | null,
@@ -60,9 +60,13 @@ export async function voidPalletAction(args: VoidPalletArgs): Promise<ActionResu
   console.log(`[SA] Voiding pallet ${plt_num} initiated by user ${userId} at ${formattedTime}`);
 
   // Basic validation before hitting DB for password
+  if (userId === null || typeof userId === 'undefined') {
+    console.error('[SA] User ID is missing or invalid in input args.');
+    return { success: false, error: 'User ID is missing or invalid.' };
+  }
   if (!palletInfo || !palletInfo.plt_num || !palletInfo.product_code || palletInfo.product_qty == null || !voidReason) {
-      console.error('[SA] Missing critical pallet info or void reason in input args.');
-      return { success: false, error: 'Missing required information to void pallet.' };
+    console.error('[SA] Missing critical pallet info or void reason in input args.');
+    return { success: false, error: 'Missing required information to void pallet.' };
   }
 
   try {

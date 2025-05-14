@@ -12,13 +12,22 @@ import { Combobox } from '@/components/ui/combobox'; // Import Combobox
 import { voidPalletAction } from './actions'; // Import server action (will be created later)
 
 // Helper to get user from localStorage
-const getUserId = () => {
+const getUserId = (): number | null => {
   if (typeof window !== 'undefined') {
     const userStr = localStorage.getItem('user');
     if (userStr) {
       try {
         const userData = JSON.parse(userStr);
-        return userData.id || null;
+        if (userData && typeof userData.id !== 'undefined') {
+          const idAsNumber = parseInt(userData.id, 10);
+          if (!isNaN(idAsNumber)) {
+            return idAsNumber;
+          }
+          console.error("Parsed user ID from localStorage is not a valid number:", userData.id);
+          return null;
+        }
+        console.error("User data from localStorage does not contain an id field.");
+        return null;
       } catch (e) {
         console.error("Error parsing user data from localStorage", e);
         return null;
@@ -136,16 +145,15 @@ export default function VoidPalletPage() {
       if (palletData) {
         await fetchLatestLocation(palletData);
       } else {
-        const palletNotFoundMsg = `Pallet : ${searchedValueDisplay} Not Found. Please Check Again - ${formattedTime}`;
+        const palletNotFoundMsg = `Pallet : ${searchedValueDisplay} Not Found. Please Check Again`;
         toast.error(palletNotFoundMsg);
-        await logHistory("Void Pallet Search Fail", searchedValueDisplay, null, `Pallet Not Found`);
+        await logHistory("Void Pallet Search Fail", null, null, `Pallet Not Found (Input: ${searchedValueDisplay})`);
         errorOccurred = true;
       }
     } catch (error: any) {
       console.error('Error searching pallet:', error);
-      const searchErrorMsg = `Error searching pallet ${searchedValueDisplay}: ${error.message} - ${formattedTime}`;
       toast.error(`Error searching pallet: ${error.message}`);
-      await logHistory("Void Pallet Search Fail", searchedValueDisplay, null, `Search Error: ${error.message}`);
+      await logHistory("Void Pallet Search Fail", null, null, `Search Error (Input: ${searchedValueDisplay}, Error: ${error.message})`);
       errorOccurred = true;
     } finally {
       setIsLoading(false);
@@ -170,15 +178,20 @@ export default function VoidPalletPage() {
       if (historyError && historyError.code !== 'PGRST116') throw historyError; 
 
       const currentLocation = historyData?.loc || null;
+      // Set foundPallet first to allow other UI to react if needed, then check void status
       setFoundPallet({ ...palletInfo, current_location: currentLocation });
       
-      // 根據需要在此處添加更多邏輯，例如檢查是否已 void
       if (currentLocation === 'Voided') {
-          const alreadyVoidMsg = `Pallet : ${palletInfo.plt_num} Is Already Voided - ${formattedTime}`;
+          const alreadyVoidMsg = `Pallet : ${palletInfo.plt_num} Is Already Voided`;
           toast.info(alreadyVoidMsg);
+          // Clear inputs and found pallet display if already voided
+          resetInputFields(); 
+          setFoundPallet(null); // Explicitly clear found pallet info display
+          // Focus back to the first input (series) might be good UX here
+          setLastActiveInput('series');
       } else {
           const foundMsg = `Pallet : ${palletInfo.plt_num} Found at location ${currentLocation || 'N/A'}. Ready to Void. - ${formattedTime}`;
-          console.log(foundMsg);
+          console.log(foundMsg); // Keep for debugging or remove for production
       }
 
     } catch (error: any) {
@@ -228,10 +241,16 @@ export default function VoidPalletPage() {
   
   const handleOpenVoidDialog = () => {
     if (foundPallet && foundPallet.current_location === 'Voided') {
-        toast.info(`Pallet ${foundPallet.plt_num} has already been voided.`);
+        const formattedTime = format(new Date(), 'dd-MMM-yyyy HH:mm:ss');
+        toast.info(`Pallet ${foundPallet.plt_num} Has Already Been Voided.`);
+        // Clear inputs and found pallet display if confirmed already voided when trying to open dialog
+        resetInputFields();
+        setFoundPallet(null);
+        setLastActiveInput('series');
         return;
     }
-    setVoidReason(''); // Reset reason
+    // If not voided, proceed to open dialog
+    setVoidReason(''); 
     setPasswordInput(''); // Reset password
     setIsVoidDialogOpen(true);
   };
@@ -282,12 +301,38 @@ export default function VoidPalletPage() {
 
         if (result.success) {
             toast.success(`Pallet ${foundPallet.plt_num} voided successfully.`);
-            const successMsg = `Pallet ${foundPallet.plt_num} voided successfully. Reason: ${voidReason.trim()} - ${formattedTime}`;
+            // const successMsg = `Pallet ${foundPallet.plt_num} voided successfully. Reason: ${voidReason.trim()} - ${formattedTime}`; // Not directly used, consider removing if not logged elsewhere
             resetState(); // Reset everything on success
             setIsVoidDialogOpen(false); // Close dialog
         } else {
-            toast.error(result.error || 'Failed to void pallet.');
-            // Keep dialog open on error for correction
+            let userFriendlyError = 'Failed to void pallet. Please try again.'; // Default error
+            if (result.error) {
+                const lowerError = result.error.toLowerCase(); // For case-insensitive matching
+                if (lowerError.includes("password not match") || lowerError.includes("password mismatch")) {
+                    userFriendlyError = "Incorrect password. Please check and try again.";
+                } else if (lowerError.includes("already voided")) {
+                    userFriendlyError = `Pallet ${foundPallet?.plt_num || 'Selected pallet'} has already been voided. No further action taken.`;
+                    // If server confirms already voided, also reset UI
+                    resetInputFields();
+                    setFoundPallet(null);
+                    setIsVoidDialogOpen(false); // Close the dialog as well
+                    setLastActiveInput('series');
+                } else if (lowerError.includes("could not verify user information") || lowerError.includes("user data fetch error")) {
+                    userFriendlyError = "Could not verify your user information. Please try logging out and in again.";
+                } else if (lowerError.includes("user account configuration error") || lowerError.includes("user password missing")) {
+                    userFriendlyError = "There is a configuration issue with your user account. Please contact an administrator.";
+                } else if (lowerError.includes("database operation failed") || lowerError.includes("database operation reported an error")) {
+                    userFriendlyError = "A database error occurred while attempting to void the pallet. Please contact support if this issue persists.";
+                } else if (lowerError.includes("missing required information")) {
+                    userFriendlyError = "Missing required information. Please ensure all fields are correctly filled.";
+                } else if (lowerError.includes("missing or invalid current location")) {
+                    userFriendlyError = "Pallet location is invalid or missing. Cannot proceed.";
+                } else {
+                    userFriendlyError = result.error; // Fallback to the original error if no specific match
+                }
+            }
+            toast.error(userFriendlyError);
+            // Keep dialog open on error for correction, password will be cleared by finally block
         }
     } catch (error: any) {
         console.error('Error calling voidPalletAction:', error);
@@ -307,32 +352,29 @@ export default function VoidPalletPage() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
           <div className="space-y-2">
-            <label htmlFor="seriesInput" className="block text-sm font-medium">Series</label>
-            <div className="flex items-center space-x-2">
-                <Input
-                    ref={seriesInputRef}
-                    id="seriesInput"
-                    type="text"
-                    value={seriesInput}
-                    onChange={(e) => setSeriesInput(e.target.value)}
-                    onKeyDown={(e) => handleKeyDown(e, 'series')}
-                    onClick={() => setLastActiveInput('series')}
-                    placeholder="Input Series or Scan QR"
-                    className="w-full p-3 bg-gray-800 border border-gray-700 rounded-md focus:ring-red-500 focus:border-red-500 transition"
-                    disabled={isLoading || isVoiding}
-                />
-                <Button
-                    type="button"
-                    onClick={() => setShowScanner(true)}
-                    disabled={isLoading || isVoiding}
-                    className="p-3 bg-red-600 hover:bg-red-700 h-full whitespace-nowrap"
-                >
-                    Scan QR
-                </Button>
-            </div>
+            <label htmlFor="seriesInput" className="block text-lg font-medium text-gray-300">
+              QR Code / Series
+            </label>
+            <Input
+              id="seriesInput"
+              type="text"
+              ref={seriesInputRef}
+              value={seriesInput}
+              onChange={(e) => setSeriesInput(e.target.value)}
+              onKeyDown={(e) => handleKeyDown(e, 'series')}
+              onClick={() => {
+                if (isMobile) {
+                  setShowScanner(true); // Open modal scanner on mobile when input is clicked
+                }
+                setLastActiveInput('series');
+              }}
+              placeholder={isMobile ? "Tap To Scan QR" : "Scan QR Code"}
+              className="w-full bg-gray-700 border-gray-600 placeholder-gray-400 text-white focus:ring-orange-500 focus:border-orange-500 text-lg p-3"
+              disabled={isLoading || isVoiding}
+            />
           </div>
           <div className="space-y-2">
-            <label htmlFor="palletNumInput" className="block text-sm font-medium">Pallet Number</label>
+            <label htmlFor="palletNumInput" className="block text-lg font-medium text-gray-300">Pallet Number</label>
             <Input
               ref={palletNumInputRef}
               id="palletNumInput"
@@ -341,8 +383,8 @@ export default function VoidPalletPage() {
               onChange={(e) => setPalletNumInput(e.target.value)}
               onKeyDown={(e) => handleKeyDown(e, 'pallet_num')}
               onClick={() => setLastActiveInput('pallet_num')}
-              placeholder="Input Pallet Number To Void"
-              className="w-full p-3 bg-gray-800 border border-gray-700 rounded-md focus:ring-red-500 focus:border-red-500 transition"
+              placeholder="Input Pallet Number"
+              className="w-full bg-gray-700 border-gray-600 placeholder-gray-400 text-white focus:ring-orange-500 focus:border-orange-500 text-lg p-3"
               disabled={isLoading || isVoiding}
             />
           </div>
@@ -359,7 +401,6 @@ export default function VoidPalletPage() {
           <div className="mt-6 p-6 bg-gray-800 shadow-xl rounded-lg text-left">
             <h3 className="text-xl font-semibold text-red-400 mb-3">Pallet Found:</h3>
             <p><strong>Pallet Number:</strong> {foundPallet.plt_num}</p>
-            <p><strong>Series:</strong> {foundPallet.series}</p>
             <p><strong>Product Code:</strong> {foundPallet.product_code}</p>
             <p><strong>Quantity:</strong> {foundPallet.product_qty}</p>
             <p><strong>Current Location:</strong> {foundPallet.current_location || 'N/A'}</p>
@@ -374,7 +415,7 @@ export default function VoidPalletPage() {
                 </Button>
             )}
             {foundPallet.current_location === 'Voided' && (
-                <p className="mt-4 text-yellow-400 font-semibold">This pallet has already been voided.</p>
+                <p className="mt-4 text-yellow-400 font-semibold">This Pallet Has Already Been Voided.</p>
             )}
           </div>
         )}
@@ -394,7 +435,7 @@ export default function VoidPalletPage() {
             <DialogHeader>
               <DialogTitle className="text-red-500">Confirm Void Pallet</DialogTitle>
               <DialogDescription className="text-gray-400">
-                You are about to void pallet <strong className="text-red-400">{foundPallet?.plt_num}</strong> (Series: {foundPallet?.series}). This action cannot be undone.
+                You are about to void pallet <strong className="text-red-400">{foundPallet?.plt_num}</strong>. This action cannot be undone.
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4 py-4">
@@ -404,8 +445,8 @@ export default function VoidPalletPage() {
                         items={VOID_REASONS}
                         value={voidReason}
                         onValueChange={setVoidReason}
-                        placeholder="Select or type a reason..."
-                        searchPlaceholder="Search or add reason..."
+                        placeholder="Select Or Type A Reason..."
+                        searchPlaceholder="Search Or Add Reason..."
                         className="w-full bg-gray-700 border-gray-600 rounded-md text-white"
                         triggerClassName="w-full bg-gray-700 border-gray-600 text-white"
                         contentClassName="bg-gray-700 text-white"
@@ -420,15 +461,20 @@ export default function VoidPalletPage() {
                         type="password"
                         value={passwordInput}
                         onChange={(e) => setPasswordInput(e.target.value)}
-                        placeholder="Enter your password for confirmation"
+                        placeholder="Please Enter Your Password To Continue"
                         className="w-full bg-gray-700 border-gray-600 rounded-md text-white"
                         disabled={isVoiding}
                     />
+                    <p className="mt-1 text-xs text-gray-500">Your password is required to confirm this critical action.</p>
                 </div>
             </div>
             <DialogFooter className="mt-2">
               <DialogClose asChild>
-                <Button variant="outline" onClick={handleCancelVoid} disabled={isVoiding} className="border-gray-600 hover:bg-gray-700">
+                <Button 
+                  onClick={handleCancelVoid} 
+                  disabled={isVoiding} 
+                  className="bg-gray-700 hover:bg-gray-600 text-white border-gray-600"
+                >
                     Cancel
                 </Button>
               </DialogClose>
