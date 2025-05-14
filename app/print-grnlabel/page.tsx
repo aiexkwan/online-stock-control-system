@@ -14,6 +14,8 @@ import { prepareGrnLabelData, generateAndUploadPdf, GrnInputData, mergeAndPrintP
 import { PrintLabelPdfProps } from '../../components/print-label-pdf/PrintLabelPdf'; // Still needed for latestGeneratedPdfProps state type
 import { generateUniqueSeries as generateSingleUniqueSeries } from '../../lib/seriesUtils'; // Import and alias to avoid name collision if any local var is named generateUniqueSeries
 import { generatePalletNumbers } from '../../lib/palletNumUtils'; // Import the new pallet number utility
+import { PasswordConfirmationDialog } from '../../components/ui/PasswordConfirmationDialog'; // Added
+import { verifyCurrentUserPasswordAction } from '../../app/actions/authActions'; // Added
 
 const ManualPdfDownloadButton = dynamic(
   () => import('../../components/print-label-pdf/ManualPdfDownloadButton'),
@@ -82,6 +84,11 @@ export default function PrintGrnLabelPage() {
   // Update pdfProgress state to match QcLabelForm structure
   const [pdfProgress, setPdfProgress] = useState<{ current: number; total: number; status: ProgressStatus[] }>({ current: 0, total: 0, status: [] });
   const [pdfUploadSuccess, setPdfUploadSuccess] = useState(false); // This might be refactored or used alongside new progress
+
+  // Password Confirmation Dialog State for GRN
+  const [isGrnPasswordConfirmOpen, setIsGrnPasswordConfirmOpen] = useState(false); // Added
+  const [isGrnVerifyingPassword, setIsGrnVerifyingPassword] = useState(false); // Added
+  const [grnPrintEventToProceed, setGrnPrintEventToProceed] = useState<boolean>(false); // Added - boolean as no event object
 
   // 2. 動態計算 pallet 數量（以 Pallet Type 欄位總和為主，最大 22）
   const palletCount = Math.min(22, Object.values(palletType).reduce((sum, v) => sum + (parseInt(v) || 0), 0) || 1);
@@ -320,8 +327,13 @@ export default function PrintGrnLabelPage() {
     notIncluded: 'Not_Included_Package',
   };
 
-  const handlePrintLabel = async () => {
+  // New function to contain the original print logic
+  const proceedWithGrnPrint = async () => {
     const validGrossWeights = grossWeights.filter(gw => gw && gw.trim() !== '' && parseFloat(gw) > 0);
+    // Note: Some initial checks from original handlePrintLabel are already implicitly covered by `canPrint` 
+    // or should be re-verified if proceedWithGrnPrint is called directly without `canPrint` check first.
+    // For now, we assume `canPrint` was true before calling this.
+
     if (validGrossWeights.length === 0) {
         toast.error('Please enter at least one valid gross weight.');
         return;
@@ -486,8 +498,66 @@ export default function PrintGrnLabelPage() {
     }
   };
 
+  // Modified handlePrintLabel to open dialog
+  const handlePrintLabel = async () => {
+    if (!canPrint) { // Ensure form is valid before attempting to open dialog
+      toast.error('Please fill all required fields and ensure product/supplier details are loaded.');
+      return;
+    }
+    setGrnPrintEventToProceed(true); // Mark that we intend to print
+    setIsGrnPasswordConfirmOpen(true); // Open the dialog
+  };
+
+  // Handler for password confirmation
+  const handleGrnPasswordConfirm = async (password: string) => {
+    if (!userId) {
+      toast.error('User ID not found. Cannot verify password.');
+      setIsGrnPasswordConfirmOpen(false);
+      setGrnPrintEventToProceed(false);
+      return;
+    }
+    const numericUserId = parseInt(userId, 10);
+    if (isNaN(numericUserId)) {
+      toast.error('Invalid User ID format. Cannot verify password.');
+      setIsGrnPasswordConfirmOpen(false);
+      setGrnPrintEventToProceed(false);
+      return;
+    }
+
+    setIsGrnVerifyingPassword(true);
+    const result = await verifyCurrentUserPasswordAction(numericUserId, password);
+    setIsGrnVerifyingPassword(false);
+
+    if (result.success) {
+      toast.success('Password verified successfully! Proceeding with GRN print.');
+      setIsGrnPasswordConfirmOpen(false);
+      if (grnPrintEventToProceed) {
+        await proceedWithGrnPrint(); // Call the original logic
+      }
+      setGrnPrintEventToProceed(false); // Clear the flag
+    } else {
+      toast.error(result.error || 'Incorrect password. Please try again.');
+    }
+  };
+
+  // Handler for password cancellation
+  const handleGrnPasswordCancel = () => {
+    setIsGrnPasswordConfirmOpen(false);
+    setGrnPrintEventToProceed(false);
+    toast.info('GRN print action cancelled by user.');
+  };
+
   return (
     <>
+      <PasswordConfirmationDialog
+        isOpen={isGrnPasswordConfirmOpen}
+        onOpenChange={setIsGrnPasswordConfirmOpen} // Or handleGrnPasswordCancel if preferred on close via X/overlay
+        onConfirm={handleGrnPasswordConfirm}
+        onCancel={handleGrnPasswordCancel}
+        isLoading={isGrnVerifyingPassword}
+        title="Confirm GRN Label Print"
+        description="Please enter your password to proceed with printing GRN labels."
+      />
       <style jsx global>{`
         /* Chrome, Safari, Edge, Opera */
         input[type=number]::-webkit-inner-spin-button,

@@ -10,6 +10,13 @@ All notable changes to this project will be documented in this file.
   - The merged PDF is then sent directly to the browser's print dialog for user printing.
   - Utilizes `pdf-lib` for client-side PDF merging and an iframe-based method to trigger printing.
 - Applied the same PDF merging and direct printing functionality to GRN Labels in `app/print-grnlabel/page.tsx`.
+- Added password confirmation before initiating PDF printing for QC Labels (`app/components/print-label-menu/QcLabelForm.tsx`):
+  - Created a reusable `PasswordConfirmationDialog.tsx` component in `components/ui/`.
+  - Created a server action `verifyCurrentUserPasswordAction` in `app/actions/authActions.ts` to validate the user's password against the stored hash in `data_id` table using `bcryptjs`.
+  - Integrated the dialog and server action into the QC Label printing process. Printing only proceeds after successful password verification.
+- Added password confirmation before initiating PDF printing for GRN Labels (`app/print-grnlabel/page.tsx`):
+  - Reused `PasswordConfirmationDialog.tsx` and `verifyCurrentUserPasswordAction`.
+  - Integrated the dialog and server action into the GRN label printing flow.
 
 ### Changed
 - Modified `app/components/print-label-pdf/PdfGenerator.tsx`:
@@ -22,13 +29,17 @@ All notable changes to this project will be documented in this file.
   - Increased the `setTimeout` delay for print dialog cleanup in `mergeAndPrintPdfs` to 10 seconds to allow more time for printing.
   - Ensured `generateAndUploadPdf` function consistently returns an object containing both `publicUrl` and `blob`.
 - Updated `app/print-grnlabel/page.tsx`:
-  - `handlePrintLabel` function now collects successfully generated GRN PDF blobs (as ArrayBuffers).
-  - After all database updates and individual GRN PDF uploads are complete, it calls `mergeAndPrintPdfs` to merge and print all generated GRN labels.
+  - `handlePrintLabel` function now collects all successfully generated PDF blobs from the modified `generateAndUploadPdf` (from `lib/pdfUtils.tsx`).
+  - After all database updates and individual PDF uploads are complete, it calls `mergeAndPrintPdfs`.
+- Modified `lib/pdfUtils.tsx`:
+  - Ensured `generateAndUploadPdf` correctly returns an object `{ publicUrl: string; blob: Blob }`.
 
 ### Fixed
 - Resolved Linter error in `app/components/print-label-menu/QcLabelForm.tsx` by changing `toast.warn` to `toast.warning`.
 - Ensured `mergeAndPrintPdfs` function is correctly defined and exported in `lib/pdfUtils.tsx`, resolving a module import Linter error.
 - Corrected an issue in `app/print-grnlabel/page.tsx` where PDF blobs were not being correctly collected for merged printing due to `generateAndUploadPdf` (in `lib/pdfUtils.tsx`) previously not returning the blob. This has been addressed by the change in `lib/pdfUtils.tsx`.
+- Resolved an issue in `lib/pdfUtils.tsx` where `generateAndUploadPdf` was not correctly returning the `blob` object, causing errors in GRN label printing when trying to access `result.blob`.
+- Corrected `PasswordConfirmationDialog.tsx` import issue by temporarily removing the `Label` component that was causing a module not found error. The dialog now renders, and `Label` can be added properly later if needed.
 
 ## 2025-05-12
 

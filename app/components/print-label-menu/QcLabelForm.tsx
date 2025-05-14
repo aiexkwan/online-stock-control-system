@@ -8,6 +8,8 @@ import { toast } from 'sonner';
 import { QcInputData, prepareQcLabelData, mergeAndPrintPdfs } from '../../../lib/pdfUtils';
 import { generateMultipleUniqueSeries } from '../../../lib/seriesUtils';
 import { generatePalletNumbers } from '../../../lib/palletNumUtils';
+import { PasswordConfirmationDialog } from '../../../components/ui/PasswordConfirmationDialog';
+import { verifyCurrentUserPasswordAction } from '../../../app/actions/authActions';
 
 // TODO: 將現有 Print Label 表單內容搬到這裡，並導出 QcLabelForm 組件
 
@@ -69,6 +71,15 @@ export default function QcLabelForm() {
   const [availableFirstOffDates, setAvailableFirstOffDates] = useState<string[]>([]);
   // 新增：用於 ACO Order Ref 下拉選單的狀態
   const [availableAcoOrderRefs, setAvailableAcoOrderRefs] = useState<number[]>([]);
+
+  // Password Confirmation Dialog State
+  const [isPasswordConfirmOpen, setIsPasswordConfirmOpen] = useState(false);
+  const [isVerifyingPassword, setIsVerifyingPassword] = useState(false);
+  const [printEventToProceed, setPrintEventToProceed] = useState<React.FormEvent | null>(null);
+
+  useEffect(() => {
+    console.log("[QcLabelForm] isPasswordConfirmOpen state changed to:", isPasswordConfirmOpen);
+  }, [isPasswordConfirmOpen]);
 
   // 取得登入用戶 id
   useEffect(() => {
@@ -219,7 +230,60 @@ export default function QcLabelForm() {
   // --- 結束 console.log ---
 
   const handlePrintLabel = async (e: React.FormEvent) => {
-    e.preventDefault();
+    e.preventDefault(); // Prevent default form submission immediately
+    if (!isFormValid) {
+      toast.error('Form is not valid. Please check inputs and ACO/Slate details.');
+      return;
+    }
+    // Instead of proceeding, open the password dialog
+    setPrintEventToProceed(e); // Store the event/args needed for proceedWithPrint
+    setIsPasswordConfirmOpen(true);
+  };
+
+  const handlePasswordConfirm = async (password: string) => {
+    if (!userId) {
+      toast.error('User ID not found. Cannot verify password.');
+      setIsPasswordConfirmOpen(false); // Close dialog
+      setPrintEventToProceed(null);
+      return;
+    }
+    const numericUserId = parseInt(userId, 10);
+    if (isNaN(numericUserId)) {
+      toast.error('Invalid User ID format. Cannot verify password.');
+      setIsPasswordConfirmOpen(false); // Close dialog
+      setPrintEventToProceed(null);
+      return;
+    }
+
+    setIsVerifyingPassword(true);
+    const result = await verifyCurrentUserPasswordAction(numericUserId, password);
+    setIsVerifyingPassword(false);
+
+    if (result.success) {
+      toast.success('Password verified successfully!');
+      setIsPasswordConfirmOpen(false);
+      if (printEventToProceed) {
+        await proceedWithPrint(printEventToProceed); // Call the original logic
+      }
+      setPrintEventToProceed(null); // Clear the stored event
+    } else {
+      toast.error(result.error || 'Incorrect password. Please try again.');
+      // Keep dialog open for retry by default, or close it:
+      // setIsPasswordConfirmOpen(false);
+      // setPrintEventToProceed(null);
+    }
+  };
+
+  const handlePasswordCancel = () => {
+    setIsPasswordConfirmOpen(false);
+    setPrintEventToProceed(null);
+    toast.info('Print action cancelled by user.');
+  };
+
+  const proceedWithPrint = async (event: React.FormEvent) => {
+    // All the original logic of handlePrintLabel will go here
+    // event.preventDefault(); // Already called before opening dialog
+
     let debugMsg = '';
     let inventoryUpdated = false;
     let acoUpdated = false;
@@ -630,7 +694,7 @@ export default function QcLabelForm() {
       setProductInfo(null);
       setAcoRemain(null);
     }
-  }; // This is the end of handlePrintLabel
+  };
 
   // --- Product Code Search Logic --- START ---
   const handleProductCodeBlur = async () => {
@@ -943,6 +1007,15 @@ export default function QcLabelForm() {
 
   return (
     <div className="flex flex-row gap-8 w-full max-w-screen-lg mx-auto">
+      <PasswordConfirmationDialog
+        isOpen={isPasswordConfirmOpen}
+        onOpenChange={setIsPasswordConfirmOpen}
+        onConfirm={handlePasswordConfirm}
+        onCancel={handlePasswordCancel}
+        isLoading={isVerifyingPassword}
+        title="Confirm Print Action"
+        description="Please enter your password to proceed with printing the labels."
+      />
       {/* Pallet Detail 區塊 */}
       <div className="bg-gray-800 rounded-lg p-8 flex-1 min-w-[320px] max-w-md shadow-lg">
         <h2 className="text-xl font-semibold text-white mb-6">Pallet Detail</h2>
