@@ -7,6 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
+    "mcpIOS": "node ./node_modules/@supabase/mcp-server-supabase/dist/index.js --access-token=sbp_1ed3abb4b23fcf1f8892e32d4b4ad8856d399fdb",
     "init-auth": "ts-node --project tsconfig.json scripts/init-auth.ts",
     "auto-push": "node scripts/auto-push.js",
     "clean": "rimraf .next .turbo dist build .cache coverage out npm-debug.log"
@@ -28,6 +29,7 @@
     "@radix-ui/react-tooltip": "^1.2.6",
     "@react-pdf/renderer": "^4.3.0",
     "@supabase/auth-helpers-nextjs": "latest",
+    "@supabase/mcp-server-supabase": "^0.4.1",
     "@supabase/supabase-js": "^2.49.4",
     "@tanstack/react-table": "^8.21.3",
     "@types/bcryptjs": "^2.4.6",

@@ -66,6 +66,33 @@ All notable changes to this project will be documented in this file.
   - Display clear error messages with guidance for users to resolve issues
 - Added console logging for listed camera devices to aid troubleshooting camera access issues
 
+## [Unreleased] - 2024-07-25
+
+### Added
+- **View History Page (`app/view-history/page.tsx`)**:
+  - Implemented initial framework for viewing pallet and stock history.
+  - Users can search by "Series" or "Pallet Number".
+  - Search is automatically triggered with a debounce mechanism after user input.
+  - Displays loading state, error messages, and "no records found" state.
+  - **Data Fetching**:
+    - Created Server Action `app/actions/viewHistoryActions.ts` (`getPalletHistoryAndStockInfo`).
+    - Fetches pallet information from `record_palletinfo`.
+    - Fetches product details (description, colour, type, standard_qty) from `data_code` based on `product_code`.
+    - Fetches pallet movement history from `record_history` based on `plt_num`.
+    - Fetches current stock levels from `record_inventory` based on `product_code`.
+  - **Display**:
+    - Left card shows "Pallet History" (Location, Action, Time, Operator).
+    - Right card shows "Stock Detail" including:
+      - "Product Information" (Code, Description, Colour, Standard Qty, Product Type from `data_code`).
+      - "Stock Location" (Injection, Pipeline, Pre-Booking, Awaiting, Fold Mill, Bulk Room, Back Car Park from `record_inventory`).
+
+### Changed
+- Updated `PalletInfo` and related interfaces in `app/actions/viewHistoryActions.ts` to include product details from `data_code`.
+- Refined Supabase client usage in Server Action to use `createServerActionClient` from `@supabase/auth-helpers-nextjs`.
+
+### Removed
+- General HTML preview tool `app/html-preview/page.tsx` (file deleted, directory removal was problematic via tool).
+
 ## [Unreleased] - 2024-07-30
 
 ### Added

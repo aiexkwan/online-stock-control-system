@@ -98,7 +98,54 @@ The system covers stock tracking, pallet movement, GRN records, QR code generati
 - Before every push to Github, you MUST update CHANGELOG.md to record all important changes.
 
 ---
-##
+## 📚 Supabase Database Schema (Read-Only Reference)
+
+> ⚠️ Do **not** create or assume new tables or columns.  
+> Use only the fields listed below. Refer to MCP Tool if uncertain.
+
+---
+
+### 🗂 `record_history`
+
+| Column Name | Type       | Default              | Description                                  |
+|-------------|------------|----------------------|----------------------------------------------|
+| `uuid`      | `uuid`     | `gen_random_uuid()`  | Primary Key                                  |
+| `time`      | `timestamp`| `now()`              | Auto-generated creation timestamp            |
+| `id`        | `int4`     | —                    | Operator or source ID (optional)             |
+| `action`    | `text`     | —                    | Action name (e.g., `IN`, `OUT`, `VOID`)      |
+| `plt_num`   | `text`     | —                    | Pallet number                                |
+| `loc`       | `text`     | —                    | Location code (e.g., `A01`, `OUTBOUND`)      |
+| `remark`    | `text`     | —                    | Additional remarks (optional)                |
+
+---
+
+### 🗂 `record_inventory`
+
+| Column Name     | Type       | Default             | Description                         |
+|-----------------|------------|---------------------|-------------------------------------|
+| `uuid`          | `uuid`     | `gen_random_uuid()` | Primary Key                         |
+| `product_code`  | `text`     | `''::text`          | Product code                        |
+| `injection`     | `int8`     | —                   | Stock in injection area             |
+| `pipeline`      | `int8`     | —                   | Stock in pipeline area              |
+| `prebook`       | `int8`     | —                   | Reserved stock                      |
+| `await`         | `int8`     | —                   | Awaiting confirmation stock         |
+| `fold`          | `int8`     | —                   | Folded goods stock                  |
+| `bulk`          | `int8`     | —                   | Bulk goods stock                    |
+| `backcarpark`   | `int8`     | —                   | Back car park stock                 |
+| `latest_update` | `timestamp`| `now()`             | Last updated timestamp              |
+
+---
+
+### 🗂 `record_palletinfo`
+
+| Column Name     | Type       | Default             | Description                              |
+|-----------------|------------|---------------------|------------------------------------------|
+| `plt_num`       | `text`     | —                   | Pallet number (Primary Key)              |
+| `generate_time` | `timestamp`| `now()`             | Creation timestamp                       |
+| `product_code`  | `text`     | —                   | Product code                             |
+| `product_qty`   | `int8`     | —                   | Quantity per pallet                      |
+| `series`        | `text`     | —                   | Series number (optional)                 |
+| `plt_remark`    | `text`     | `''::text`          | Additional remarks (optional)            |
 
 
 ##  Final Reminder
