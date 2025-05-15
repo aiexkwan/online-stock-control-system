@@ -10,7 +10,14 @@ This project is a WMS (Warehouse Management System) to a modern, web-based appli
 - Shadcn UI / Radix UI
 - Deployed via GitHub + Vercel
 
-The system covers stock tracking, pallet movement, GRN records, QR code generation, reporting, and access control.
+The system covers 
+
+- Stock tracking(By QR Code)
+- Pallet movement
+- Material receiving(GRN records)
+- Generate reporting(.csv, .xls)
+- Inbound and outbound
+- Scanning and access control (with scanner, mobile devices including : Smart Phone(iOS, Android), tablet.
 
 ---
 
@@ -19,7 +26,7 @@ The system covers stock tracking, pallet movement, GRN records, QR code generati
 1.  **Use only existing Supabase tables and columns**  
    DO NOT create new tables or columns. 
    DO NOT assuming any name of tables, columns or headers.
-   Using MCP Tool to check table detail and structure if required.
+   Using MCP Tool to check table detail and structure if required and available.
 
 2.  **Code only in English**  
    All variables, UI text, comments, and prompts must be in English. 
@@ -30,6 +37,9 @@ The system covers stock tracking, pallet movement, GRN records, QR code generati
 
 4.  **Web UI must support all major browsers**  
    Ensure full compatibility with Chrome, Safari, Edge, and Firefox (desktop and mobile).
+
+5. Support mobile device
+   Smart Phone(iOS, Android), tablet
 
 ---
 
@@ -70,18 +80,7 @@ The system covers stock tracking, pallet movement, GRN records, QR code generati
 - Use Tailwind CSS (mobile-first responsive design)
 - Use Radix UI for behavior (dropdowns, dialogs, etc.)
 - Validate forms with `zod`
-
----
-
-##  Legacy VBA Migration Notes
-
-| VBA Feature | Web Implementation |
-|-------------|---------------------|
-| Insert/update record | Server Action + Supabase SQL |
-| UserForms | Shadcn Form + Tailwind |
-| QR Code print | `qrcode.react` or custom Canvas QR |
-| Void Pallet / GRN | Server Action logic |
-| Reports | Tailwind table + Server-side rendering |
+- Animate with `tailwindcss-animate` or `framer-motion`
 
 ---
 
