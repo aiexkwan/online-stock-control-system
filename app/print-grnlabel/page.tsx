@@ -327,6 +327,22 @@ export default function PrintGrnLabelPage() {
     notIncluded: 'Not_Included_Package',
   };
 
+  // Helper function to parse count values according to the new logic
+  const parseCountValue = (valueStr: string | undefined): number => {
+    if (!valueStr || valueStr.trim() === '') {
+      return 0;
+    }
+    const num = parseFloat(valueStr.trim());
+    if (isNaN(num)) {
+      return 0; // Or handle error as appropriate
+    }
+    // Check if the number is an integer (e.g., 1.0, 2.0)
+    if (num % 1 === 0) {
+      return Math.floor(num); // Return as integer
+    }
+    return num; // Return with decimals
+  };
+
   // New function to contain the original print logic
   const proceedWithGrnPrint = async () => {
     const validGrossWeights = grossWeights.filter(gw => gw && gw.trim() !== '' && parseFloat(gw) > 0);
@@ -346,6 +362,62 @@ export default function PrintGrnLabelPage() {
         toast.error('GRN Number and Material Supplier are required.');
         return;
     }
+
+    // Determine selected pallet and package types and their counts
+    const selectedPalletTypeKey = Object.keys(palletType).find(k => palletType[k as keyof typeof palletType].trim() !== '') as keyof typeof PALLET_WEIGHT || 'notIncluded';
+    const palletCountForSummary = parseCountValue(palletType[selectedPalletTypeKey as keyof typeof palletType]);
+    const palletDbValue = PALLET_TYPE_DB_VAL[selectedPalletTypeKey];
+    const palletWeightToSubtract = PALLET_WEIGHT[selectedPalletTypeKey] || 0;
+
+    const selectedPackageTypeKey = Object.keys(packageType).find(k => packageType[k as keyof typeof packageType].trim() !== '') as keyof typeof PACKAGE_WEIGHT || 'notIncluded';
+    const packageCountForSummary = parseCountValue(packageType[selectedPackageTypeKey as keyof typeof packageType]);
+    const packageDbValue = PACKAGE_TYPE_DB_VAL[selectedPackageTypeKey];
+    const packageWeightToSubtract = PACKAGE_WEIGHT[selectedPackageTypeKey] || 0;
+
+    // Calculate total gross and net weights for the summary record
+    let totalGrossWeightForSummary = 0;
+    let totalNetWeightForSummary = 0;
+    validGrossWeights.forEach(gw => {
+      const gross = parseFloat(gw);
+      totalGrossWeightForSummary += gross;
+      const net = gross - palletWeightToSubtract - packageWeightToSubtract;
+      if (net > 0) {
+        totalNetWeightForSummary += net;
+      }
+    });
+
+    if (totalNetWeightForSummary <= 0 && totalGrossWeightForSummary > 0) {
+      toast.error('Total net weight for the batch must be positive. Correct Gross/Pallet/Package weights.');
+      // Optionally, prevent further processing if total net weight is not positive
+      // return;
+    }
+    
+    // Insert single summary record into record_grn
+    try {
+      const summaryGrnData = {
+        grn_ref: parseInt(form.grnNumber.trim(), 10),
+        sup_code: form.materialSupplier.trim(),
+        material_code: productInfo!.product_code,
+        gross_weight: totalGrossWeightForSummary, // Total gross weight
+        net_weight: totalNetWeightForSummary,     // Total net weight
+        pallet: palletDbValue,
+        package: packageDbValue,
+        pallet_count: palletCountForSummary,     // Count from UI
+        package_count: packageCountForSummary,   // Count from UI
+        // plt_num is omitted as it does not make sense for a summary record.
+      };
+      const { error: summaryInsertError } = await supabase.from('record_grn').insert([summaryGrnData]);
+      if (summaryInsertError) {
+        throw new Error(`GRN Summary Record Insert: ${summaryInsertError.message}`);
+      }
+      toast.info('GRN summary record created successfully.');
+    } catch (error: any) {
+      console.error('Error creating GRN summary record:', error.message);
+      toast.error(`Failed to create GRN summary record: ${error.message}. Individual pallet processing will continue if possible.`);
+      // Decide if you want to halt all processing if summary fails.
+      // For now, we'll log the error and continue with individual pallets.
+    }
+
 
     const totalPdfsToProcess = validGrossWeights.length;
     setPdfProgress({ current: 0, total: totalPdfsToProcess, status: Array(totalPdfsToProcess).fill('Pending') });
@@ -373,10 +445,8 @@ export default function PrintGrnLabelPage() {
       setPdfProgress(prev => ({ ...prev, status: prev.status.map((s, idx) => idx === i ? 'Processing' : s) }));
 
       const grossWeight = parseFloat(gw);
-      const selectedPalletTypeKey = Object.keys(palletType).find(k => palletType[k as keyof typeof palletType].trim() !== '') as keyof typeof PALLET_WEIGHT || 'notIncluded';
-      const palletWeightToSubtract = PALLET_WEIGHT[selectedPalletTypeKey] || 0;
-      const selectedPackageTypeKey = Object.keys(packageType).find(k => packageType[k as keyof typeof packageType].trim() !== '') as keyof typeof PACKAGE_WEIGHT || 'notIncluded';
-      const packageWeightToSubtract = PACKAGE_WEIGHT[selectedPackageTypeKey] || 0;
+      // palletWeightToSubtract and packageWeightToSubtract are already defined above for summary.
+      // We use the same values for individual net weight calculation for consistency.
       const netWeight = grossWeight - palletWeightToSubtract - packageWeightToSubtract;
 
       if (netWeight <= 0) {
@@ -392,13 +462,16 @@ export default function PrintGrnLabelPage() {
 
       try {
         // DB Operations (assuming productInfo is not null due to check above)
+        // record_grn insertion is now handled by the summary record above.
+        // We still insert into record_palletinfo for each physical pallet.
         const palletInfoData = { plt_num: palletNum, generate_time: currentTimeISO, product_code: productInfo!.product_code, product_qty: netWeight, series, plt_remark: `Material GRN - ${form.grnNumber.trim()}` };
         const { error: palletInfoError } = await supabase.from('record_palletinfo').insert([palletInfoData]);
         if (palletInfoError) throw new Error(`PalletInfo Insert: ${palletInfoError.message}`);
-
-        const grnRecordData = { grn_ref: parseInt(form.grnNumber.trim(), 10), sup_code: form.materialSupplier.trim(), material_code: productInfo!.product_code, gross_weight: grossWeight, net_weight: netWeight, plt_num: palletNum, pallet: PALLET_TYPE_DB_VAL[selectedPalletTypeKey], package: PACKAGE_TYPE_DB_VAL[selectedPackageTypeKey] };
-        const { error: grnInsertError } = await supabase.from('record_grn').insert([grnRecordData]);
-        if (grnInsertError) throw new Error(`GRN Record Insert: ${grnInsertError.message}`);
+        
+        // record_grn insert is removed from here.
+        // const grnRecordData = { grn_ref: parseInt(form.grnNumber.trim(), 10), sup_code: form.materialSupplier.trim(), material_code: productInfo!.product_code, gross_weight: grossWeight, net_weight: netWeight, plt_num: palletNum, pallet: PALLET_TYPE_DB_VAL[selectedPalletTypeKey], package: PACKAGE_TYPE_DB_VAL[selectedPackageTypeKey] };
+        // const { error: grnInsertError } = await supabase.from('record_grn').insert([grnRecordData]);
+        // if (grnInsertError) throw new Error(`GRN Record Insert: ${grnInsertError.message}`);
         
         const { data: inv, error: invError } = await supabase.from('record_inventory').select('await, uuid').eq('product_code', productInfo!.product_code).maybeSingle();
         if (invError && invError.code !== 'PGRST116') throw new Error(`Inventory Query: ${invError.message}`);

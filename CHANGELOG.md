@@ -1,5 +1,6 @@
 <!-- Prepend new entries here -->
-## [Unreleased] - YYYY-MM-DD 
+## [Unreleased] - YYYY-MM-DD \n\n### Changed\n- **GRN Label Printing Logic (`app/print-grnlabel/page.tsx`)**:\n  - Modified the data insertion into `record_grn` to create a single summary record per GRN event, instead of one record per pallet.\n  - This summary record now includes `pallet_count` and `package_count` fields, reflecting the total counts entered by the user.\n  - Implemented new parsing logic for `pallet_count` and `package_count`:\n    - If the UI input value is a whole number string (e.g., \"1.0\", \"2.0\"), it's stored as an integer (e.g., 1, 2).\n    - If the UI input value has a decimal (e.g., \"0.5\"), it's stored as a number with decimals (e.g., 0.5).\n  - The summary record also includes the total gross weight and total net weight for the entire GRN event.\n  - The logic for inserting individual pallet details into `record_palletinfo`, updating `record_inventory`, and logging to `record_history` remains unchanged (i.e., performed per physical pallet processed).\n  - Added a helper function `parseCountValue` to handle the specific parsing requirements for pallet and package counts.\n\n\n<!-- Prepend new entries here -->
+## [Unreleased] - 2025-05-15 
 
 ### Added
 - **GRN Report Export Functionality (`app/export-report`, `lib/exportReport.ts`, `app/actions/reportActions.ts`)**:
