@@ -1,3 +1,26 @@
+<!-- Prepend new entries here -->
+## [Unreleased] - 2025-05-15
+
+### Added
+- **ACO Report Export Enhancement (`app/export-report`, `lib/exportReport.ts`, `app/actions/reportActions.ts`)**:
+  - Implemented a dialog popup for "ACO Order Report" allowing users to select a specific `order_ref` for export.
+  - Created a Server Action (`getAcoReportData`) to fetch data from `record_aco` (for product codes) and `record_palletinfo` (for pallet details: number, quantity, QC date) based on the selected `order_ref`.
+  - Dynamically populated the Excel report with the fetched data, including up to 4 product codes and their associated pallet details per report.
+  - Displayed the selected `order_ref` in cell M1 of the Excel report.
+  - Displayed the report generation date (e.g., "23-JUL-2024") in cell M2 of the Excel report.
+  - Updated the exported Excel filename to include the `order_ref` (e.g., `ACO_12345_Report.xlsx`).
+  - Added loading states and user feedback during the data fetching and report generation process.
+
+### Changed
+- Modified `exportAcoReport` function to accept `reportData` and `orderRef` as parameters.
+- Updated `ExportReportPage` component to manage the new selection dialog and data fetching flow for ACO reports.
+
+### Fixed
+- Resolved `Module not found` error for Supabase client in Server Actions by using `createServerActionClient` from `@supabase/auth-helpers-nextjs`.
+- Added error handling for date formatting in `getAcoReportData` to prevent `RangeError` with invalid date values.
+- Corrected `exceljs` error `Cannot merge already merged cells` by removing conflicting cell merge operations in the Excel header setup.
+- Addressed accessibility warning for `DialogContent` by including a `DialogDescription` in `app/export-report/page.tsx`.
+
 # Changelog
 
 All notable changes to this project will be documented in this file.

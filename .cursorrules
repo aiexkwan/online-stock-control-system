@@ -2,7 +2,7 @@
 
 ##  Project Background
 
-This project is a migration from a legacy VBA + MS Access-based WMS (Warehouse Management System) to a modern, web-based application using:
+This project is a  WMS (Warehouse Management System) to a modern, web-based application using:
 - Next.js (App Router)
 - React
 - Supabase (PostgreSQL)
@@ -151,5 +151,4 @@ The system covers stock tracking, pallet movement, GRN records, QR code generati
 ##  Final Reminder
 
 > This project is an enterprise-grade inventory control system. Follow all instructions exactly. Do not guess field mappings or generate unrequested logic. Use clean, declarative, modular TypeScript code optimized for clarity, performance, and multi-browser compatibility.
-
 
