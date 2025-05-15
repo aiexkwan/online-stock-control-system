@@ -2,7 +2,7 @@
 
 ##  Project Background
 
-This project is a  WMS (Warehouse Management System) to a modern, web-based application using:
+This project is a WMS (Warehouse Management System) to a modern, web-based application using:
 - Next.js (App Router)
 - React
 - Supabase (PostgreSQL)
@@ -147,6 +147,24 @@ The system covers stock tracking, pallet movement, GRN records, QR code generati
 | `series`        | `text`     | —                   | Series number (optional)                 |
 | `plt_remark`    | `text`     | `''::text`          | Additional remarks (optional)            |
 
+---
+
+### 🗂 `record_grn`
+
+| Column Name     | Type       | Default             | Description                              |
+|-----------------|------------|---------------------|------------------------------------------|
+| `uuid`          | `uuid`     | `gen_random_uuid()` | Primary Key                              |
+| `grn_ref`       | `int4`     | —                   | GRN Reference number                     |
+| `plt_num`       | `text`     | —                   | Pallet number (Foreign Key)              |
+| `material_code` | `text`     | —                   | Material code                            |
+| `gross_weight`  | `int8`     | —                   | Gross Weight per GRN pallet              |
+| `net_weight`    | `int8`     | —                   | Net Weight per GRN pallet                |
+| `pallet`        | `text`     | —                   | Pallet Type                              |
+| `package`       | `text`     | —                   | Package Type                             |
+| `pallet_count`  | `numeric`  | 0.0                 | Count of pallet Type                     |
+| `package_count` | `numeric`  | 0.0                 | Count of package Type                    |
+
+---
 
 ##  Final Reminder
 
