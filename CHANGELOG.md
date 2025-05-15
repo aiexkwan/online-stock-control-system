@@ -1,4 +1,29 @@
 <!-- Prepend new entries here -->
+## [Unreleased] - YYYY-MM-DD 
+
+### Added
+- **GRN Report Export Functionality (`app/export-report`, `lib/exportReport.ts`, `app/actions/reportActions.ts`)**:
+  - Implemented a dialog popup for the "GRN Report" button, allowing users to select a unique `grn_ref` from `record_grn`.
+  - Created Server Actions:
+    - `getUniqueGrnRefs`: Fetches unique GRN reference numbers for the selection dialog.
+    - `getMaterialCodesForGrnRef`: Fetches all unique material codes associated with a selected `grn_ref`.
+    - `getGrnReportData`: Fetches detailed data for a specific `grn_ref` and `material_code`, including material description (from `data_code`), supplier name (from `data_supplier`), GRN record details, and calculated total weights.
+  - The system now iterates through each `material_code` for the selected `grn_ref` and generates a separate Excel report for each.
+  - Updated `exportGrnReport` function in `lib/exportReport.ts` to accept `GrnReportPageData` and populate the Excel template with dynamic data, including:
+    - GRN Ref, User ID, Material Code, Material Description, Supplier Name, Report Date.
+    - Lists of Gross Weight, Net Weight, and conditional markers for Pallet and Package types.
+    - Summary of Total Gross Weight, Total Net Weight, and their difference.
+  - Excel filenames are now dynamic, incorporating the GRN Ref and Material Code (e.g., `GRN_Report_[grn_ref]_[material_code].xlsx`).
+  - Integrated logic to retrieve the logged-in user's ID from `localStorage` (as stored by the login process) and include it in the GRN report.
+
+### Changed
+- Updated `app/export-report/page.tsx` to manage state and UI for the GRN report selection dialog and multi-file export process.
+- Refined button styling on the `app/export-report/page.tsx` page for a more consistent look and feel.
+- Temporarily used `any` type for Supabase client in `app/actions/reportActions.ts` due to unresolved `Database` type import path, with a plan to fix later.
+
+### Fixed
+- Corrected `toast` import path in `lib/exportReport.ts` to use `sonner`.
+
 ## [Unreleased] - 2025-05-15
 
 ### Added

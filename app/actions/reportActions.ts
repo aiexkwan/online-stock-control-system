@@ -4,6 +4,7 @@
 import { createServerActionClient } from '@supabase/auth-helpers-nextjs';
 import { cookies } from 'next/headers';
 import { format, isValid } from 'date-fns'; // 用於日期格式化
+// import type { Database } from '../lib/database.types'; // Path still incorrect, commenting out for now
 // 如果您有資料庫類型定義，例如： import { Database } from '@/types_db';
 
 /**
@@ -12,11 +13,8 @@ import { format, isValid } from 'date-fns'; // 用於日期格式化
  *          Returns an empty array if an error occurs or no data is found.
  */
 export async function getUniqueAcoOrderRefs(): Promise<string[]> {
-  const cookieStore = cookies();
-  // 如果您有 Database 類型，請使用: const supabase = createServerActionClient<Database>({ cookies: () => cookieStore });
-  const supabase = createServerActionClient({ cookies: () => cookieStore });
+  const supabase = createServerActionClient<any>({ cookies }); // Using any for now
 
-  // 假設表名是 'record_aco' 且欄位名是 'order_ref'
   const { data, error } = await supabase
     .from('record_aco') // <<-- 假設表名
     .select('order_ref'); // <<-- 假設欄位名
@@ -136,5 +134,176 @@ export async function getAcoReportData(orderRef: string): Promise<AcoProductData
     const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
     console.error(`Unexpected error in getAcoReportData for orderRef ${orderRef}:`, errorMessage);
     return [];
+  }
+}
+
+export async function getUniqueGrnRefs(): Promise<string[]> {
+  const supabase = createServerActionClient<any>({ cookies }); // Using any for now
+
+  const { data, error } = await supabase
+    .from('record_grn')
+    .select('grn_ref');
+
+  if (error) {
+    console.error('Error fetching GRN refs:', error);
+    throw new Error('Could not fetch GRN references. ' + error.message);
+  }
+
+  if (!data) {
+    return [];
+  }
+
+  // Extract unique grn_ref values
+  const uniqueRefs = Array.from(new Set(data.map(item => item.grn_ref).filter(ref => ref !== null) as string[]));
+  return uniqueRefs.sort(); // Optional: sort the references
+}
+
+export async function getMaterialCodesForGrnRef(grnRef: string): Promise<string[]> {
+  if (!grnRef) {
+    console.error('getMaterialCodesForGrnRef: grnRef is required');
+    return [];
+  }
+  const supabase = createServerActionClient<any>({ cookies });
+  const { data, error } = await supabase
+    .from('record_grn')
+    .select('material_code')
+    .eq('grn_ref', grnRef);
+
+  if (error) {
+    console.error(`Error fetching material codes for grnRef ${grnRef}:`, error.message);
+    return [];
+  }
+  if (!data) {
+    return [];
+  }
+  const uniqueMaterialCodes = Array.from(
+    new Set(data.map((item: any) => item.material_code).filter((code: any) => code != null))
+  ) as string[];
+  return uniqueMaterialCodes.sort();
+}
+
+// --- GRN Report Types ---
+export interface GrnRecordDetail {
+  gross_weight: number | null;
+  net_weight: number | null;
+  pallet: string | null;
+  package_type: string | null; // Changed from package to package_type to avoid conflict with keyword
+}
+
+export interface GrnReportPageData {
+  grn_ref: string;
+  user_id: string; // Placeholder for now, will need to get actual user ID
+  material_code: string;
+  material_description: string | null;
+  supplier_name: string | null;
+  report_date: string; // Formatted as dd-MMM-yyyy
+  records: GrnRecordDetail[];
+  total_gross_weight: number;
+  total_net_weight: number;
+  weight_difference: number;
+}
+// --- End GRN Report Types ---
+
+export async function getGrnReportData(
+  grnRef: string, 
+  materialCode: string, 
+  userId: string // For now, can be a placeholder like "CurrentUser"
+): Promise<GrnReportPageData | null> {
+  if (!grnRef || !materialCode) {
+    console.error('getGrnReportData: grnRef and materialCode are required');
+    return null;
+  }
+
+  const supabase = createServerActionClient<any>({ cookies });
+  let supplierCode: string | null = null;
+
+  try {
+    // 1. Fetch GRN records for the given grn_ref and material_code
+    const { data: grnRecords, error: grnError } = await supabase
+      .from('record_grn')
+      .select('sup_code, material_code, gross_weight, net_weight, pallet, package') // Assuming 'package' is the column name
+      .eq('grn_ref', grnRef)
+      .eq('material_code', materialCode);
+
+    if (grnError) {
+      console.error(`Error fetching GRN records for grnRef ${grnRef} and materialCode ${materialCode}:`, grnError.message);
+      return null;
+    }
+    if (!grnRecords || grnRecords.length === 0) {
+      console.log(`No GRN records found for grnRef ${grnRef} and materialCode ${materialCode}.`);
+      return null;
+    }
+
+    // Store supplier code from the first record to fetch supplier name later
+    supplierCode = grnRecords[0].sup_code;
+
+    const recordsDetails: GrnRecordDetail[] = grnRecords.map(r => ({
+      gross_weight: r.gross_weight,
+      net_weight: r.net_weight,
+      pallet: r.pallet,
+      package_type: r.package, // map to package_type
+    }));
+
+    // 2. Fetch material description from data_code
+    let materialDescription: string | null = null;
+    const { data: materialData, error: materialError } = await supabase
+      .from('data_code')
+      .select('description')
+      .eq('code', materialCode)
+      .single(); // Expecting a single record
+
+    if (materialError) {
+      console.warn(`Could not fetch description for materialCode ${materialCode}:`, materialError.message);
+      // Continue without description if not found or error
+    }
+    if (materialData) {
+      materialDescription = materialData.description;
+    }
+
+    // 3. Fetch supplier name from data_supplier using supplierCode
+    let supplierName: string | null = null;
+    if (supplierCode) {
+      const { data: supplierData, error: supplierError } = await supabase
+        .from('data_supplier')
+        .select('supplier_name')
+        .eq('supplier_code', supplierCode)
+        .single(); // Expecting a single record
+
+      if (supplierError) {
+        console.warn(`Could not fetch supplier name for sup_code ${supplierCode}:`, supplierError.message);
+        // Continue without supplier name if not found or error
+      }
+      if (supplierData) {
+        supplierName = supplierData.supplier_name;
+      }
+    } else {
+        console.warn('Supplier code was not found in GRN records, cannot fetch supplier name.');
+    }
+
+    // 4. Calculate totals
+    const totalGrossWeight = recordsDetails.reduce((sum, rec) => sum + (rec.gross_weight || 0), 0);
+    const totalNetWeight = recordsDetails.reduce((sum, rec) => sum + (rec.net_weight || 0), 0);
+    const weightDifference = totalGrossWeight - totalNetWeight;
+
+    // 5. Format report date
+    const reportDate = format(new Date(), 'dd-MMM-yyyy').toUpperCase();
+
+    return {
+      grn_ref: grnRef,
+      user_id: userId, // Using the passed userId
+      material_code: materialCode,
+      material_description: materialDescription,
+      supplier_name: supplierName,
+      report_date: reportDate,
+      records: recordsDetails,
+      total_gross_weight: totalGrossWeight,
+      total_net_weight: totalNetWeight,
+      weight_difference: weightDifference,
+    };
+
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+    console.error(`Unexpected error in getGrnReportData for grnRef ${grnRef}, materialCode ${materialCode}:`, errorMessage);
+    return null;
   }
 } 
