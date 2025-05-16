@@ -332,4 +332,5 @@ All notable changes to this project will be documented in this file.
 - Deleted `app/dashboard/page.tsx` (old dashboard, route moved to `
 
 ### Fixed
+- **Build Error:** Resolved TypeScript type error in `app/components/Navigation.tsx` (Type 'number | null' is not assignable to type 'string | number') by ensuring `idForDb` defaults to `0` when a user ID cannot be parsed, satisfying the `record_history.id` column's expected `number` type.
 - **Build Error:** Resolved `Module not found: Can't resolve 'react-hot-toast'` in `app/users/page.tsx` by changing the import to use `sonner` for toast notifications, consistent with the rest of the project.

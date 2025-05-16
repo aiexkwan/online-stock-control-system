@@ -234,20 +234,13 @@ export default function Navigation() {
           }
 
           try {
-            // Ensure userIdToLog is in the correct format for the database (e.g., number if 'id' in record_history is int)
-            // For simplicity, assuming it's logged as string from clockNumberStr or parsed id.
-            // If record_history.id is an integer, you might need: parseInt(userIdToLog, 10) if it's a numeric string.
-            // However, given it can be 'unknown_user', keeping it as text might be safer for the 'id' column if it allows text.
             // Based on previous context, record_history.id is int4. So, we should try to parse if it's a number.
-            let idForDb: number | string = userIdToLog;
-            if (!isNaN(parseInt(userIdToLog, 10))) {
+            let idForDb: number = 0; // Default to 0 if parsing fails or unknown
+
+            if (userIdToLog !== 'unknown_user' && !isNaN(parseInt(userIdToLog, 10))) {
                 idForDb = parseInt(userIdToLog, 10);
-            } else if (userIdToLog === 'unknown_user') {
-                // Handle 'unknown_user' - perhaps by logging null or a specific placeholder ID if your DB schema requires an int
-                // For now, let's assume 'id' in record_history can handle string or we accept potential error if it must be int
-                // Based on schema, id is int4. So 'unknown_user' will fail. Let's log as null if unknown or not a number.
-                idForDb = userIdToLog !== 'unknown_user' && !isNaN(parseInt(userIdToLog)) ? parseInt(userIdToLog) : null;
             }
+            // If userIdToLog is 'unknown_user' or cannot be parsed to a number, idForDb remains 0.
 
             await supabase.from('record_history').insert({
               time: new Date().toISOString(), 
