@@ -330,3 +330,6 @@ All notable changes to this project will be documented in this file.
 ### Removed
 - Deleted placeholder component `app/components/print-label-menu/GrnLabelForm.tsx`.
 - Deleted `app/dashboard/page.tsx` (old dashboard, route moved to `
+
+### Fixed
+- **Build Error:** Resolved `Module not found: Can't resolve 'react-hot-toast'` in `app/users/page.tsx` by changing the import to use `sonner` for toast notifications, consistent with the rest of the project.
