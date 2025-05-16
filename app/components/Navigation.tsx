@@ -212,26 +212,60 @@ export default function Navigation() {
         onClick={async () => {
           console.error("CRITICAL LOG: LogOut BUTTON CLICKED!");
           setIsMobileMenuOpen(false); // Always close menu first
+          
           let userIdToLog = 'unknown_user'; 
-          const userStr = localStorage.getItem('user');
-          if (userStr) {
-            try {
-              const userData = JSON.parse(userStr);
-              if (userData && userData.id) {
-                userIdToLog = userData.id;
+          // Use loggedInUserClockNumber for logging, as this is our primary identifier now
+          const clockNumberStr = localStorage.getItem('loggedInUserClockNumber');
+          if (clockNumberStr) {
+            userIdToLog = clockNumberStr; // Assuming clock number itself is the ID to log
+          } else {
+            // Fallback or additional check if 'user' might still exist from old logic
+            const userStr = localStorage.getItem('user');
+            if (userStr) {
+              try {
+                const userData = JSON.parse(userStr);
+                if (userData && userData.id) {
+                  userIdToLog = userData.id;
+                }
+              } catch (e) {
+                console.error('Error parsing fallback user data for logout log:', e);
               }
-            } catch (e) {
-              console.error('Error parsing user data for logout log:', e);
             }
           }
+
           try {
+            // Ensure userIdToLog is in the correct format for the database (e.g., number if 'id' in record_history is int)
+            // For simplicity, assuming it's logged as string from clockNumberStr or parsed id.
+            // If record_history.id is an integer, you might need: parseInt(userIdToLog, 10) if it's a numeric string.
+            // However, given it can be 'unknown_user', keeping it as text might be safer for the 'id' column if it allows text.
+            // Based on previous context, record_history.id is int4. So, we should try to parse if it's a number.
+            let idForDb: number | string = userIdToLog;
+            if (!isNaN(parseInt(userIdToLog, 10))) {
+                idForDb = parseInt(userIdToLog, 10);
+            } else if (userIdToLog === 'unknown_user') {
+                // Handle 'unknown_user' - perhaps by logging null or a specific placeholder ID if your DB schema requires an int
+                // For now, let's assume 'id' in record_history can handle string or we accept potential error if it must be int
+                // Based on schema, id is int4. So 'unknown_user' will fail. Let's log as null if unknown or not a number.
+                idForDb = userIdToLog !== 'unknown_user' && !isNaN(parseInt(userIdToLog)) ? parseInt(userIdToLog) : null;
+            }
+
             await supabase.from('record_history').insert({
-              time: new Date().toISOString(), id: userIdToLog, plt_num: null, loc: null, action: 'Log Out', remark: null
+              time: new Date().toISOString(), 
+              id: idForDb, 
+              plt_num: null, 
+              loc: null, 
+              action: 'Log Out', 
+              remark: null
             });
           } catch (historyError) {
             console.error('Failed to log logout event:', historyError);
           }
+
+          // Clear the primary login state
+          localStorage.removeItem('loggedInUserClockNumber');
+          // Also clear the old 'user' key for safety/cleanup
           localStorage.removeItem('user');
+          
           router.push('/login');
         }}
         className="flex items-center px-4 py-2 text-base font-medium rounded-md text-gray-300 hover:bg-gray-700 hover:text-white w-full text-left"

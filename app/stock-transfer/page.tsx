@@ -9,24 +9,6 @@ import { BrowserMultiFormatReader } from '@zxing/browser';
 import { QrScanner } from '../../components/qr-scanner/qr-scanner';
 import { Input } from '../../components/ui/input'; // Assuming Input is used, not seen in screenshot
 
-// Helper to get user from localStorage
-const getUserId = () => {
-  if (typeof window !== 'undefined') {
-    const userStr = localStorage.getItem('user');
-    if (userStr) {
-      try {
-        const userData = JSON.parse(userStr);
-        return userData.id || null;
-      } catch (e) {
-        console.error("Error parsing user data from localStorage", e); // Keep for dev debug
-        toast.error('User session data is corrupted.');
-        return null;
-      }
-    }
-  }
-  return null;
-};
-
 export default function StockTransferPage() {
   const [seriesInput, setSeriesInput] = useState('');
   const [palletNumInput, setPalletNumInput] = useState('');
@@ -54,6 +36,8 @@ export default function StockTransferPage() {
   // 行動裝置判斷
   const isMobile = typeof window !== 'undefined' && /Mobi|Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
 
+  const [userId, setUserId] = useState<string | null>(null);
+
   const resetState = () => {
     setSeriesInput('');
     setPalletNumInput('');
@@ -63,7 +47,6 @@ export default function StockTransferPage() {
   };
 
   const logHistory = async (action: string, plt_num_val: string | null, loc_val: string | null, remark_val: string | null) => {
-    const userId = getUserId();
     if (!userId) {
       // console.error("User ID not found for history logging"); // Already handled by getUserId toast
       // toast.error('User session error. Cannot log history.'); // Avoid double toast if getUserId fails
@@ -170,7 +153,6 @@ export default function StockTransferPage() {
     currentLocation: string | null
   ) => {
     setIsLoading(true);
-    const userId = getUserId();
     if (!userId) {
       toast.error(`User ID not found. Cannot process movement for pallet ${pltNum}.`);
       setIsLoading(false);
@@ -362,6 +344,18 @@ export default function StockTransferPage() {
       palletNumInputRef.current.focus();
     }
   }, [lastActiveInput, seriesInput, palletNumInput]); // Re-run if these change to re-apply focus
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const clockNumber = localStorage.getItem('loggedInUserClockNumber');
+      if (clockNumber) {
+        setUserId(clockNumber);
+      } else {
+        console.warn('[StockTransferPage] loggedInUserClockNumber not found in localStorage.');
+        setUserId(null); // Or handle appropriately
+      }
+    }
+  }, []);
 
   const handleSeriesScanFromModal = (scannedValue: string) => {
     setSeriesInput(scannedValue);

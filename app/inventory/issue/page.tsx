@@ -15,7 +15,7 @@ import {
 
 export default function IssueInventoryPage() {
   const router = useRouter();
-  const [user, setUser] = useState<any>(null);
+  const [userId, setUserId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [products, setProducts] = useState<any[]>([]);
@@ -30,29 +30,38 @@ export default function IssueInventoryPage() {
   const [errorMessage, setErrorMessage] = useState('');
 
   useEffect(() => {
-    // 載入用戶數據
-    const loadUserData = () => {
+    if (typeof window !== 'undefined') {
+      const clockNumber = localStorage.getItem('loggedInUserClockNumber');
+      if (clockNumber) {
+        setUserId(clockNumber);
+      } else {
+        console.warn('[IssuePage] loggedInUserClockNumber not found in localStorage.');
+        setUserId(null); // Or handle appropriately
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    // 載入用戶數據 (權限檢查)
+    const loadUserDataAndPermissions = async () => {
       if (typeof window !== 'undefined') {
-        const userStr = localStorage.getItem('user');
-        if (userStr) {
-          try {
-            const userData = JSON.parse(userStr);
-            setUser(userData);
-            if (!userData.permissions.receive && !userData.permissions.qc) {
-              // 如果用戶沒有出庫權限，返回首頁
-              router.push('/');
-            }
-          } catch (e) {
-            console.error('無法解析用戶數據', e);
-            router.push('/login');
-          }
+        const clockNumber = localStorage.getItem('loggedInUserClockNumber');
+        if (clockNumber) {
+          // TODO: Fetch permissions for clockNumber from data_id table
+          // This needs to be replaced with actual permission fetching and checking.
+          // The original logic was: const userData = JSON.parse(userStr);
+          // if (!userData.permissions.receive && !userData.permissions.qc) { router.push('/'); }
+          console.log(`[IssuePage] User with clock number ${clockNumber} accessed. Permission check placeholder.`);
+          // For now, if a clockNumber is present, we let them proceed.
+          // Actual permission enforcement needs to query backend based on clockNumber.
         } else {
-          router.push('/login');
+          // console.warn('[IssuePage] loggedInUserClockNumber not found for permission check.');
+          router.push('/login'); // Redirect if not logged in at all
         }
       }
     };
     
-    loadUserData();
+    loadUserDataAndPermissions(); 
     fetchProducts();
   }, [router]);
 
@@ -173,7 +182,7 @@ export default function IssueInventoryPage() {
         .update({ 
           quantity: latestInventory - quantity,
           updated_at: new Date().toISOString(),
-          updated_by: user.id
+          updated_by: userId
         })
         .eq('id', inventoryData.id);
       
@@ -189,7 +198,7 @@ export default function IssueInventoryPage() {
           previous_quantity: latestInventory,
           new_quantity: latestInventory - quantity,
           description: description || '正常出庫',
-          created_by: user.id,
+          created_by: userId,
           status: 'completed'
         });
       

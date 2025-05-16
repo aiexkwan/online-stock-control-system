@@ -11,32 +11,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Combobox } from '@/components/ui/combobox'; // Import Combobox
 import { voidPalletAction } from './actions'; // Import server action (will be created later)
 
-// Helper to get user from localStorage
-const getUserId = (): number | null => {
-  if (typeof window !== 'undefined') {
-    const userStr = localStorage.getItem('user');
-    if (userStr) {
-      try {
-        const userData = JSON.parse(userStr);
-        if (userData && typeof userData.id !== 'undefined') {
-          const idAsNumber = parseInt(userData.id, 10);
-          if (!isNaN(idAsNumber)) {
-            return idAsNumber;
-          }
-          console.error("Parsed user ID from localStorage is not a valid number:", userData.id);
-          return null;
-        }
-        console.error("User data from localStorage does not contain an id field.");
-        return null;
-      } catch (e) {
-        console.error("Error parsing user data from localStorage", e);
-        return null;
-      }
-    }
-  }
-  return null;
-};
-
 interface FoundPalletInfo {
   plt_num: string;
   product_code: string;
@@ -66,6 +40,7 @@ export default function VoidPalletPage() {
   const [voidReason, setVoidReason] = useState('');
   const [passwordInput, setPasswordInput] = useState('');
   const [isVoiding, setIsVoiding] = useState(false); // For voiding loading state
+  const [userId, setUserId] = useState<string | null>(null);
 
   // Refs for input elements
   const seriesInputRef = useRef<HTMLInputElement>(null);
@@ -86,7 +61,6 @@ export default function VoidPalletPage() {
   };
 
   const logHistory = async (action: string, plt_num_val: string | null, loc_val: string | null, remark_val: string | null) => {
-    const userId = getUserId();
     if (!userId) {
       console.error("User ID not found for history logging");
       toast.error('User session error. Cannot log history.');
@@ -229,6 +203,18 @@ export default function VoidPalletPage() {
     }
   }, [isLoading, isVoiding, lastActiveInput, isVoidDialogOpen, foundPallet]);
 
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const clockNumber = localStorage.getItem('loggedInUserClockNumber');
+      if (clockNumber) {
+        setUserId(clockNumber);
+      } else {
+        console.warn('[VoidPalletPage] loggedInUserClockNumber not found in localStorage.');
+        setUserId(null); // Or handle appropriately
+      }
+    }
+  }, []);
+
   const handleSeriesScan = (scannedValue: string) => {
     if (scannedValue) {
       setSeriesInput(scannedValue);
@@ -282,7 +268,6 @@ export default function VoidPalletPage() {
     }
     
     setIsVoiding(true);
-    const userId = getUserId();
     if (!userId) {
         toast.error('User Password Error. Stop Performing Action.');
         setIsVoiding(false);

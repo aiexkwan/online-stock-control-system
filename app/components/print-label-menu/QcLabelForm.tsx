@@ -11,7 +11,47 @@ import { generatePalletNumbers } from '../../../lib/palletNumUtils';
 import { PasswordConfirmationDialog } from '../../../components/ui/PasswordConfirmationDialog';
 import { verifyCurrentUserPasswordAction } from '../../../app/actions/authActions';
 
-// TODO: 將現有 Print Label 表單內容搬到這裡，並導出 QcLabelForm 組件
+// Helper function to insert pallet info records
+async function insertPalletInfoRecords(
+  supabaseClient: any, // Consider using a more specific SupabaseClient type if available
+  palletInfoArray: any[]
+): Promise<{ error: Error | null }> {
+  if (!palletInfoArray || palletInfoArray.length === 0) {
+    console.log('[insertPalletInfoRecords] No pallet info to insert.');
+    return { error: null }; // Nothing to insert
+  }
+  console.log('[insertPalletInfoRecords] Attempting to insert pallet info:', palletInfoArray);
+  const { error } = await supabaseClient
+    .from('record_palletinfo')
+    .insert(palletInfoArray);
+  if (error) {
+    console.error('[insertPalletInfoRecords] Error inserting pallet info:', error);
+  } else {
+    console.log('[insertPalletInfoRecords] Pallet info inserted successfully.');
+  }
+  return { error };
+}
+
+// Helper function to insert history records
+async function insertHistoryRecords(
+  supabaseClient: any, // Consider using a more specific SupabaseClient type if available
+  historyArray: any[]
+): Promise<{ error: Error | null }> {
+  if (!historyArray || historyArray.length === 0) {
+    console.log('[insertHistoryRecords] No history records to insert.');
+    return { error: null }; // Nothing to insert
+  }
+  console.log('[insertHistoryRecords] Attempting to insert history records:', historyArray);
+  const { error } = await supabaseClient
+    .from('record_history')
+    .insert(historyArray);
+  if (error) {
+    console.error('[insertHistoryRecords] Error inserting history records:', error);
+  } else {
+    console.log('[insertHistoryRecords] History records inserted successfully.');
+  }
+  return { error };
+}
 
 export default function QcLabelForm() {
   const [productCode, setProductCode] = useState('');
@@ -41,7 +81,6 @@ export default function QcLabelForm() {
     length: '',
     width: '',
     centreHole: '',
-    // lengthMiddleHoleToBottom: \'\', // REMOVE THIS LINE
     colour: '',
     shapes: '',
     flameTest: '',
@@ -84,12 +123,13 @@ export default function QcLabelForm() {
   // 取得登入用戶 id
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      const userStr = localStorage.getItem('user');
-      if (userStr) {
-        try {
-          const userData = JSON.parse(userStr);
-          setUserId(userData.id || '');
-        } catch {}
+      const clockNumber = localStorage.getItem('loggedInUserClockNumber'); // Get the clock number directly
+      if (clockNumber) {
+        setUserId(clockNumber); // Set the clock number as the userId
+      } else {
+        // Optional: handle case where clockNumber might not be found, though login flow should prevent this
+        console.warn('[QcLabelForm] loggedInUserClockNumber not found in localStorage.');
+        setUserId(''); // Set to empty or handle appropriately
       }
     }
   }, []);
@@ -347,18 +387,18 @@ export default function QcLabelForm() {
     let startingOrdinalForAco = 1;
     if (productInfo?.type === 'ACO' && acoOrderRef.trim()) {
       const remarkToSearch = `ACO Ref : ${acoOrderRef.trim()}`;
-      const { count: existingPalletCount, error: countError } = await supabase
+      const { count: existingPalletCountForOrdinal, error: countErrorOrdinal } = await supabase
         .from('record_palletinfo')
         .select('*', { count: 'exact', head: true })
         .eq('plt_remark', remarkToSearch);
 
-      if (countError) {
-        console.error('[QcLabelForm] Error fetching existing pallet count for ACO remark:', countError);
-        setDebugMsg(prev => prev + `\nError fetching ACO pallet count: ${countError.message}`);
-        logErrorReport(`Error fetching ACO pallet count for order ${acoOrderRef.trim()}: ${countError.message}`, "ACO Pallet Count Fetch").catch(console.error);
-      } else if (existingPalletCount !== null) {
-        startingOrdinalForAco = existingPalletCount + 1;
-        console.log(`[QcLabelForm] Existing pallets for ${remarkToSearch}: ${existingPalletCount}. Next ordinal starts at: ${startingOrdinalForAco}`);
+      if (countErrorOrdinal) {
+        console.error('[QcLabelForm] Error fetching existing pallet count for ACO remark:', countErrorOrdinal);
+        setDebugMsg(prev => prev + `\nError fetching ACO pallet count: ${countErrorOrdinal.message}`);
+        logErrorReport(`Error fetching ACO pallet count for order ${acoOrderRef.trim()}: ${countErrorOrdinal.message}`, "ACO Pallet Count Fetch").catch(console.error);
+      } else if (existingPalletCountForOrdinal !== null) {
+        startingOrdinalForAco = existingPalletCountForOrdinal + 1;
+        console.log(`[QcLabelForm] Existing pallets for ${remarkToSearch}: ${existingPalletCountForOrdinal}. Next ordinal starts at: ${startingOrdinalForAco}`);
       }
     }
 
@@ -375,12 +415,9 @@ export default function QcLabelForm() {
       return palletData;
     });
 
-    const { error: insertError } = await supabase
-      .from('record_palletinfo')
-      .insert(insertDataArr);
-    
-    // Capture palletInfoInsertError, to be used in later refactoring steps for conditional execution
-    let palletInfoInsertError: Error | null = insertError ? insertError : null;
+    // Use helper function to insert pallet info
+    const palletInfoResult = await insertPalletInfoRecords(supabase, insertDataArr);
+    let palletInfoInsertError: Error | null = palletInfoResult.error; // Keep original variable name for later checks
 
     if (palletInfoInsertError) {
       setDebugMsg(prev => prev + `\nPallet Info Insert Error: ${palletInfoInsertError!.message}`);
@@ -472,57 +509,42 @@ export default function QcLabelForm() {
       }
     }
 
-    // === Update record_inventory ===
-    let inventoryUpdateError: Error | null = null;
+    // === Update record_inventory (New Logic: Always Insert) ===
+    let inventoryInsertError: Error | null = null; 
+    inventoryUpdated = false; // Reset inventoryUpdated flag before the loop
+
     for (const d of insertDataArr) {
         const qty = Number(d.product_qty);
-        const { data: inv, error: invFetchError } = await supabase
+        
+        const { error: insertError } = await supabase
             .from('record_inventory')
-            .select('uuid, await')
-            .eq('product_code', d.product_code)
-            .maybeSingle();
+            .insert({ 
+                product_code: d.product_code, 
+                plt_num: d.plt_num, 
+                await: qty,
+                injection: 0, 
+                pipeline: 0,
+                prebook: 0,
+                fold: 0,
+                bulk: 0,
+                backcarpark: 0,
+                latest_update: new Date().toISOString() 
+            });
 
-        if (invFetchError) {
-            inventoryUpdateError = invFetchError;
-            setDebugMsg(prev => prev + `\nInventory Check Error for ${d.product_code}: ${invFetchError.message}`);
-            logErrorReport(`Inventory Check Error for ${d.product_code}: ${invFetchError.message}`, JSON.stringify(d)).catch(console.error);
+        if (insertError) {
+            inventoryInsertError = insertError; 
+            setDebugMsg(prev => prev + `\nInventory Insert Error for ${d.product_code} (Pallet: ${d.plt_num}): ${insertError.message}`);
+            logErrorReport(`Inventory Insert Error for ${d.product_code} (Pallet: ${d.plt_num}): ${insertError.message}`, JSON.stringify(d)).catch(console.error);
             break; 
-        }
-
-        if (inv && inv.uuid) {
-            const oldAwait = Number(inv.await) || 0;
-            const newAwait = oldAwait + qty;
-            const { error: updateError } = await supabase
-                .from('record_inventory')
-                .update({ await: newAwait, latest_update: new Date().toISOString() })
-                .eq('uuid', inv.uuid);
-            if (updateError) {
-                inventoryUpdateError = updateError;
-                setDebugMsg(prev => prev + `\nInventory Update Error for ${d.product_code}: ${updateError.message}`);
-                logErrorReport(`Inventory Update Error for ${d.product_code}: ${updateError.message}`, JSON.stringify(d)).catch(console.error);
-                break;
-            } else {
-                inventoryUpdated = true;
-            }
         } else {
-            const { error: insertInvError } = await supabase
-                .from('record_inventory')
-                .insert({ product_code: d.product_code, await: qty, latest_update: new Date().toISOString() });
-            if (insertInvError) {
-                inventoryUpdateError = insertInvError;
-                setDebugMsg(prev => prev + `\nInventory Insert Error for ${d.product_code}: ${insertInvError.message}`);
-                logErrorReport(`Inventory Insert Error for ${d.product_code}: ${insertInvError.message}`, JSON.stringify(d)).catch(console.error);
-                break;
-            } else {
-                inventoryUpdated = true;
-            }
+            inventoryUpdated = true; 
         }
     }
-    if (inventoryUpdateError) {
-        return; // Critical error, stop processing
+    if (inventoryInsertError) { 
+        return; 
     }
-    if (inventoryUpdated) { // Only add confirmation if an update happened and no error stopped it
-        debugMsg += 'Inventory Update Confirmed\n\n';
+    if (inventoryUpdated) { 
+        debugMsg += 'Inventory Records Inserted Confirmed\n\n'; 
     }
 
     // === Add record_history ===
@@ -539,11 +561,13 @@ export default function QcLabelForm() {
         action: 'Production Finished Q.C.'
       };
     });
-    const { error: historyError } = await supabase.from('record_history').insert(historyArr);
+    
+    const historyResult = await insertHistoryRecords(supabase, historyArr);
+    let historyError: Error | null = historyResult.error; // Keep original variable name
+
     if (historyError) {
-      setDebugMsg(prev => prev + `\nHistory Insert Error: ${historyError.message}`);
-      console.error('Error inserting record_history:', historyError);
-      logErrorReport(`History Insert Error: ${historyError.message}`, JSON.stringify(historyArr)).catch(console.error);
+      setDebugMsg(prev => prev + `\nHistory Insert Error: ${historyError!.message}`); // Use historyError directly
+      logErrorReport(`History Insert Error: ${historyError!.message}`, JSON.stringify(historyArr)).catch(console.error);
       return; // Critical error, stop processing
     } else {
       debugMsg += 'History Record Insert Confirmed\n\n';
@@ -569,7 +593,7 @@ export default function QcLabelForm() {
     debugMsg += 'All database operations completed successfully.\n';
 
     // === PDF Generation and Upload (Loop) ===
-    console.log('[DEBUG] Errors before PDF loop check:', { palletInfoInsertError, slateInsertError, acoUpdateError, inventoryUpdateError, historyError });
+    console.log('[DEBUG] Errors before PDF loop check:', { palletInfoInsertError, slateInsertError, acoUpdateError, inventoryInsertError, historyError });
     
     const totalPdfs = insertDataArr.length;
     setPdfProgress({ current: 0, total: totalPdfs, status: Array(totalPdfs).fill('Pending') });

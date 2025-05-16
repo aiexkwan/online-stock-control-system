@@ -1,5 +1,11 @@
 <!-- Prepend new entries here -->
-## [Unreleased] - YYYY-MM-DD \n\n### Changed\n- **GRN Label Printing Logic (`app/print-grnlabel/page.tsx`)**:\n  - Modified the data insertion into `record_grn` to create a single summary record per GRN event, instead of one record per pallet.\n  - This summary record now includes `pallet_count` and `package_count` fields, reflecting the total counts entered by the user.\n  - Implemented new parsing logic for `pallet_count` and `package_count`:\n    - If the UI input value is a whole number string (e.g., \"1.0\", \"2.0\"), it's stored as an integer (e.g., 1, 2).\n    - If the UI input value has a decimal (e.g., \"0.5\"), it's stored as a number with decimals (e.g., 0.5).\n  - The summary record also includes the total gross weight and total net weight for the entire GRN event.\n  - The logic for inserting individual pallet details into `record_palletinfo`, updating `record_inventory`, and logging to `record_history` remains unchanged (i.e., performed per physical pallet processed).\n  - Added a helper function `parseCountValue` to handle the specific parsing requirements for pallet and package counts.\n\n\n<!-- Prepend new entries here -->
+## [Unreleased] - YYYY-MM-DD \n\n### Changed\n- **GRN Label Printing Logic (`app/print-grnlabel/page.tsx`)**:\n  - Reworked `record_grn` table insertion: Removed the single summary GRN record. Each row in `record_grn` now corresponds to an individual physical pallet, containing its specific `plt_num`, `gross_weight`, and `net_weight`.
+  - Each individual GRN record in `record_grn` now also includes `pallet_count` and `package_count` fields, reflecting the counts entered by the user for the selected pallet and package types for the entire GRN batch. These counts are repeated for each pallet record within that GRN batch.
+  - Optimized data fetching for pallet/package types, counts, and weight subtractions to occur once before the main processing loop, rather than on each iteration.
+  - Unified `userId` retrieval to use `localStorage.getItem('loggedInUserClockNumber')` for consistency with other parts of the application.
+  - Corrected parameters for `generateAndUploadPdf` call, removing unhandled `index` and `setPdfProgress` props, and moved progress updates to be handled within the calling loop.
+  - Ensured that if a pallet is skipped due to non-positive net weight, its status in the PDF progress UI is updated to 'Failed'.
+  - Implemented new parsing logic for `pallet_count` and `package_count`:\n    - If the UI input value is a whole number string (e.g., \"1.0\", \"2.0\"), it's stored as an integer (e.g., 1, 2).\n    - If the UI input value has a decimal (e.g., \"0.5\"), it's stored as a number with decimals (e.g., 0.5).\n  - The logic for inserting individual pallet details into `record_palletinfo`, updating `record_inventory`, and logging to `record_history` remains unchanged (i.e., performed per physical pallet processed).\n  - Added a helper function `parseCountValue` to handle the specific parsing requirements for pallet and package counts.\n\n\n<!-- Prepend new entries here -->
 ## [Unreleased] - 2025-05-15 
 
 ### Added
@@ -323,79 +329,4 @@ All notable changes to this project will be documented in this file.
 
 ### Removed
 - Deleted placeholder component `app/components/print-label-menu/GrnLabelForm.tsx`.
-- Deleted `app/dashboard/page.tsx` (old dashboard, route moved to `app/(dashboard)/page.tsx`).
-- Deleted `app/page.tsx` (was a redirect or duplicate of dashboard).
-- Removed `useEffect` in `app/login/page.tsx` that cleared `localStorage` on every page load.
-- Removed the "Recent Activity" card from the dashboard (`app/dashboard/page.tsx`) as its data source (`record_history`) did not contain the necessary fields (e.g., `grn_number`, `code`, `ttl_pallet`) and its intended functionality was largely redundant with the "GRN History" card.
-- Removed the success toast notification that appeared after successfully finding a pallet in the Void Pallet page (`app/void-pallet/page.tsx`).
-- Removed placeholder `GrnLabelForm.tsx`.
-- Removed "Recent Activity" card from dashboard due to data unavailability and redundancy.
-
-### Security
-- Added RLS policy to `report_log` to allow public inserts.
-- **WARNING:** Password verification in `voidPalletAction` uses plain text comparison and is insecure. Needs immediate replacement with password hashing (e.g., bcrypt).
-
-## [1.0.0] - 2025-05-05
-
-### Added
-- Initial project setup with Next.js, React, Supabase, Tailwind CSS, and Shadcn UI.
-- Basic file structure and dependency installation.
-- Simple page to fetch product list from Supabase.
-- Slate event: Each generated pallet number now inserts a record into record_slate with correct plt_num, code, and auto-filled material/colour/shapes.
-
-### Changed
-- Migrated from legacy VBA + MS Access-based WMS to a modern web-based application.
-- Slate event: Removed Machine No.14, Material, Colour, Shapes inputboxes from UI and validation. Only visible fields are required.
-- Slate event: Validation now ignores removed fields and remark is optional.
-
-### Fixed
-- Fixed: record_slate insert now always includes code (product code) to satisfy foreign key constraint.
-- Fixed: All pallets (count > 1) now insert corresponding record_slate rows.
-
-## [0.1.0] - 2025-05-01
-
-### Added
-- Initial release of the online warehouse stock control system.
-- Support for both Windows and Mac (no software installation on Windows).
-- Real-time code sync with GitHub and deploy via Vercel.
-- Supabase integration for data operations (insert/update/query).
-- Use of Supabase native features (Edge Functions, RLS, etc.).
-- Online code and UI editing capabilities.
-
-### Changed
-- None.
-
-### Fixed
-- None.
-
-### Previous Unreleased (Integrated into 1.0.0 or earlier, kept for reference if needed)
-- Series generation now uses smart code format: `yyMMdd-XXXXXX` (date + 6 random uppercase alphanumeric characters), ensuring uniqueness and traceability for each pallet label QR code.
-- Slate: "First-Off Date" input is now a dropdown populated with historical dates from `record_slate.first_off`, with a fallback text input for new dates.
-- ACO event: Label right cell now displays `{ACO Order Ref} - {ordinal} PLT` (e.g. `12345 - 4th PLT`), and left cell shows `ACO Order`.
-- Removed legacy 12-char random series logic, now always uses the new smart code format.
-- PDF 樣板（PrintLabelPdf.tsx）Work Order Number 右側儲存格現在會正確顯示傳入的 workOrderNumber（如 ACO Ref Order: 12345 7th PLT），不再寫死顯示內容。
-- ACO Label Ordinal Numbering: Corrected the pallet ordinal numbering for ACO orders. The system now queries the `record_palletinfo` table to find the count of existing pallets for a given `ACO Order Ref` (based on `plt_remark`) and correctly assigns subsequent ordinal numbers (e.g., if 20 pallets exist, the next printed batch will start from 21st, 22nd, etc.). Previously, it only counted ordinals within the current print batch.
-- Resolved issues preventing PDF label uploads to Supabase Storage. This involved:
-  - Ensuring the `pallet-label-pdf` storage bucket exists and is configured correctly (e.g., public access, appropriate MIME type handling by Supabase).
-  - Modifying `setupStorage` in `lib/supabase-storage.ts` to be less strict about `listBuckets` results, allowing upload attempts even if bucket listing fails (as `anon` key might not have `listBuckets` permission by default).
-  - Correcting Supabase client prop drilling and usage in `PdfGenerator.tsx` and `QcLabelForm.tsx` to prevent potential multiple client instances and ensure consistent client usage.
-- Addressed type mismatches for `setPdfProgress` between `QcLabelForm.tsx` and `PdfGenerator.tsx`.
-- Resolved 401 Unauthorized error when attempting to insert records into the `report_log` table. This was fixed by adding a new Row Level Security (RLS) policy to the `report_log` table in Supabase, granting `INSERT` permissions to `public` roles (which includes `anon` and `authenticated`).
-- Simplified `setupStorage` function in `lib/supabase-storage.ts` by removing the `listBuckets` call. This eliminates a console warning that occurred because the `anon` key might not have permission to list buckets, without affecting the PDF upload functionality (which relies on object-level permissions).
-
-### Changed
-- Refactored PDF generation logic for GRN labels:
-  - Created `lib/pdfUtils.tsx` (renamed from `.ts`) to house common PDF utility functions and allow JSX.
-  - Moved generic PDF generation/upload logic (`generateAndUploadPdf`) to `pdfUtils.tsx`.
-  - Created `prepareGrnLabelData` function in `pdfUtils.tsx` to prepare data specifically for GRN label PDFs.
-  - `app/print-grnlabel/page.tsx` now uses these utility functions.
-- Modified `productInfo` state in `app/print-grnlabel/page.tsx` to store the product object, and introduced `productInfoDisplay` for UI string representation.
-
-### Fixed
-- GRN Label: Corrected net weight calculation. If 'Not Included' is selected for Pallet Type or Package Type, their respective weights (now set to 0) are not subtracted from the gross weight.
-- GRN Label (`app/print-grnlabel/page.tsx`): Corrected product code lookup logic in `queryProductCode` function:
-  - Now queries `data_products` table instead of `data_code`.
-  - Selects `product_code, description, product_type` columns.
-  - Uses `product_code` for matching.
-  - Correctly updates `productInfo` (object) and `productInfoDisplay` (UI string) states upon successful fetch or clears them on failure/not found, ensuring product description is displayed.
-- GRN Label (`app/print-grnlabel/page.tsx`): Corrected Linter error for `ManualPdfDownloadButton` by removing the unused `pdfData`
+- Deleted `app/dashboard/page.tsx` (old dashboard, route moved to `

@@ -17,7 +17,7 @@ export default function InventoryPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingAction, setLoadingAction] = useState(false);
-  const [user, setUser] = useState<any>(null);
+  const [userId, setUserId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [operationType, setOperationType] = useState<OperationType>('receive');
   const [showConfirmModal, setShowConfirmModal] = useState(false);
@@ -33,16 +33,13 @@ export default function InventoryPage() {
   });
 
   useEffect(() => {
-    // 載入用戶數據
     if (typeof window !== 'undefined') {
-      const userStr = localStorage.getItem('user');
-      if (userStr) {
-        try {
-          const userData = JSON.parse(userStr);
-          setUser(userData);
-        } catch (e) {
-          console.error('無法解析用戶數據', e);
-        }
+      const clockNumber = localStorage.getItem('loggedInUserClockNumber');
+      if (clockNumber) {
+        setUserId(clockNumber);
+      } else {
+        console.warn('[InventoryPage] loggedInUserClockNumber not found in localStorage.');
+        setUserId(null); // Or handle appropriately
       }
     }
     fetchProducts();
@@ -130,7 +127,7 @@ export default function InventoryPage() {
         type: operationType,
         from_location: operationType === 'receive' ? '' : formData.fromLocation,
         to_location: operationType === 'issue' ? '' : (operationType === 'transfer' ? formData.toLocation : formData.fromLocation),
-        created_by: user?.id,
+        created_by: userId,
         notes: formData.notes
       };
       

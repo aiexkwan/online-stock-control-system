@@ -5,26 +5,25 @@ import { useRouter } from 'next/navigation';
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "../../components/ui/card";
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { toast } from 'sonner';
+import { customLoginAction } from '../actions/authActions';
 
 export default function LoginPage() {
   const router = useRouter();
-  const supabase = createClientComponentClient();
   
   const [clockNumber, setClockNumber] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const PSEUDO_EMAIL_DOMAIN = 'internal.company.com';
-
   useEffect(() => {
     if (typeof window !== 'undefined') {
+      localStorage.removeItem('loggedInUserClockNumber');
       localStorage.removeItem('user');
       localStorage.removeItem('isTemporaryLogin');
+      localStorage.removeItem('firstLogin');
     }
-  }, [router, supabase.auth]);
+  }, []);
 
   const logToHistory = async (userIdToLog: string, actionType: 'LogIn' | 'Password Change', remarkText: string) => {
     try {
@@ -38,62 +37,53 @@ export default function LoginPage() {
     e.preventDefault();
     setLoading(true);
     setError(null);
+    const trimmedClockNumber = clockNumber.trim();
 
-    if (!clockNumber.trim()) {
+    if (!trimmedClockNumber) {
         setError('Clock Number cannot be empty.');
         setLoading(false);
         return;
     }
-
-    const pseudoEmail = `${clockNumber.trim()}@${PSEUDO_EMAIL_DOMAIN}`;
-    console.log(`Attempting Supabase login with pseudoEmail: ${pseudoEmail}`);
-
-    try {
-      const { data, error: signInError } = await supabase.auth.signInWithPassword({
-        email: pseudoEmail,
-        password: password,
-      });
-
-      if (signInError) {
-        console.error('Supabase signInWithPassword error:', signInError);
-        let errorMessage = signInError.message;
-        if (signInError.message.includes('Invalid login credentials')) {
-            errorMessage = 'Invalid Clock Number or Password.';
-        }
-        setError(errorMessage);
-        await logToHistory(clockNumber, 'LogIn', `LogIn Fail - ${errorMessage}`);
+    if (!password) {
+        setError('Password cannot be empty.');
         setLoading(false);
         return;
-      }
+    }
 
-      if (data.user) {
-        console.log('Supabase login successful, user ID:', data.user.id);
+    console.log(`Attempting custom login for clock number: ${trimmedClockNumber}`);
+
+    try {
+      const loginResult = await customLoginAction(trimmedClockNumber, password);
+
+      if (loginResult.success && typeof loginResult.userId === 'number') {
+        console.log('Custom login successful for clock number:', loginResult.userId);
         
-        const isPotentiallyFirstSignIn = data.user.last_sign_in_at === null || 
-                                     (data.user.created_at && data.user.last_sign_in_at && 
-                                      new Date(data.user.created_at).getTime() === new Date(data.user.last_sign_in_at).getTime());
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('loggedInUserClockNumber', loginResult.userId.toString());
+        }
 
-        const actualIsFirstLoginCheck = false;
+        const isFirstLogin = loginResult.isFirstLogin;
 
-        if (actualIsFirstLoginCheck) {
-          await logToHistory(data.user.id, 'LogIn', 'First LogIn - Redirect to Change Password');
-          router.push('/change-password'); 
+        if (isFirstLogin) {
+          console.log('First login detected for user (clock number):', loginResult.userId, 'based on data_id.first_login flag.');
+          await logToHistory(loginResult.userId.toString(), 'LogIn', 'First LogIn (custom) - Redirect to Change Password');
+          router.push(`/change-password?userId=${encodeURIComponent(loginResult.userId.toString())}`); 
         } else {
-          await logToHistory(data.user.id, 'LogIn', 'LogIn Success');
+          console.log('Recurring login detected for user (clock number):', loginResult.userId, 'Redirecting to dashboard.');
+          await logToHistory(loginResult.userId.toString(), 'LogIn', 'LogIn Success (custom)');
           router.push('/dashboard');
         }
-        router.refresh();
 
       } else {
-        console.warn('Supabase login: No error but also no user data.');
-        setError('An unexpected issue occurred during login. Please try again.');
-        await logToHistory(clockNumber, 'LogIn', 'LogIn Fail - No user data returned');
+        console.error('Custom login failed:', loginResult.error);
+        setError(loginResult.error || 'Invalid Clock Number or Password.');
+        await logToHistory(trimmedClockNumber, 'LogIn', `LogIn Fail (custom) - ${loginResult.error}`);
       }
 
     } catch (err:any) {
       console.error('Login process exception:', err);
       setError(err.message || 'A system error occurred during login.');
-      await logToHistory(clockNumber, 'LogIn', `LogIn Fail - Exception: ${err.message}`);
+      await logToHistory(trimmedClockNumber, 'LogIn', `LogIn Fail (custom) - Exception: ${err.message}`);
     } finally {
       setLoading(false);
     }
@@ -104,7 +94,7 @@ export default function LoginPage() {
       toast.error('Please enter your Clock Number to proceed with password assistance.');
       return;
     }
-    router.push(`/new-password?userId=${encodeURIComponent(clockNumber.trim())}`); 
+    toast.info('Password reset functionality needs to be updated for the new login system.');
   };
 
   return (

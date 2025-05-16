@@ -46,16 +46,12 @@ export default function ExportReportPage() {
   // Function to get user ID from localStorage
   const getStoredUserId = (): string | null => {
     if (typeof window !== 'undefined') { // Ensure localStorage is available
-      const storedUser = localStorage.getItem('user');
-      if (storedUser) {
-        try {
-          const userObject = JSON.parse(storedUser);
-          return userObject.id || null; // Assuming the stored object has an 'id' property
-        } catch (e) {
-          console.error("Error parsing user data from localStorage:", e);
-          return null;
-        }
+      const clockNumber = localStorage.getItem('loggedInUserClockNumber'); // Get clock number directly
+      if (clockNumber) {
+        return clockNumber; // Return the clock number
       }
+      // Optional: Log if not found, though consuming functions should handle null
+      console.warn('[ExportReportPage] loggedInUserClockNumber not found in localStorage.');
     }
     return null;
   };

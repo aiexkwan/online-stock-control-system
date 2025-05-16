@@ -3,9 +3,10 @@ import { NextResponse, type NextRequest } from 'next/server';
 
 // Middleware is fully disabled - no code executed, directly return NextResponse.next()
 export async function middleware(req: NextRequest) {
-  console.log(`[Supabase Middleware] Path: ${req.nextUrl.pathname} - ENTER`);
+  console.log(`[Supabase Middleware] Path: ${req.nextUrl.pathname} - ENTER (Supabase Auth logic commented out)`);
   const res = NextResponse.next();
 
+  /*
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
@@ -57,8 +58,9 @@ export async function middleware(req: NextRequest) {
   } catch (error: any) {
     console.error('[Supabase Middleware] Error during supabase.auth.getSession() block:', error.message);
   }
+  */
   
-  console.log(`[Supabase Middleware] Path: ${req.nextUrl.pathname} - EXIT.`);
+  console.log(`[Supabase Middleware] Path: ${req.nextUrl.pathname} - EXIT (Supabase Auth logic commented out)`);
   return res;
 }
 
