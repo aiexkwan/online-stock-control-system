@@ -2,37 +2,33 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { authenticateUser } from '../services/auth';
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "../../components/ui/card";
-import { supabase } from '../../lib/supabase';
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { toast } from 'sonner';
 
 export default function LoginPage() {
   const router = useRouter();
-  const [userId, setUserId] = useState('');
+  const supabase = createClientComponentClient();
+  
+  const [clockNumber, setClockNumber] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const PSEUDO_EMAIL_DOMAIN = 'internal.company.com';
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
       localStorage.removeItem('user');
       localStorage.removeItem('isTemporaryLogin');
     }
-  }, []);
+  }, [router, supabase.auth]);
 
   const logToHistory = async (userIdToLog: string, actionType: 'LogIn' | 'Password Change', remarkText: string) => {
     try {
-      await supabase.from('record_history').insert({
-        time: new Date().toISOString(),
-        id: userIdToLog,
-        plt_num: null,
-        loc: null,
-        action: actionType,
-        remark: remarkText,
-      });
+      console.log(`Attempting to log: User [${userIdToLog}], Action [${actionType}], Remark [${remarkText}]`);
     } catch (historyError) {
       console.error('Failed to log to record_history:', historyError);
     }
@@ -43,43 +39,72 @@ export default function LoginPage() {
     setLoading(true);
     setError(null);
 
-    try {
-      const result = await authenticateUser(userId, password);
+    if (!clockNumber.trim()) {
+        setError('Clock Number cannot be empty.');
+        setLoading(false);
+        return;
+    }
 
-      if (!result.success || !result.user) {
-        const reason = result.error || 'Unknown login failure';
-        setError(reason);
-        await logToHistory(userId, 'LogIn', `LogIn Fail - ${reason}`);
+    const pseudoEmail = `${clockNumber.trim()}@${PSEUDO_EMAIL_DOMAIN}`;
+    console.log(`Attempting Supabase login with pseudoEmail: ${pseudoEmail}`);
+
+    try {
+      const { data, error: signInError } = await supabase.auth.signInWithPassword({
+        email: pseudoEmail,
+        password: password,
+      });
+
+      if (signInError) {
+        console.error('Supabase signInWithPassword error:', signInError);
+        let errorMessage = signInError.message;
+        if (signInError.message.includes('Invalid login credentials')) {
+            errorMessage = 'Invalid Clock Number or Password.';
+        }
+        setError(errorMessage);
+        await logToHistory(clockNumber, 'LogIn', `LogIn Fail - ${errorMessage}`);
         setLoading(false);
         return;
       }
 
-      localStorage.setItem('user', JSON.stringify(result.user));
+      if (data.user) {
+        console.log('Supabase login successful, user ID:', data.user.id);
+        
+        const isPotentiallyFirstSignIn = data.user.last_sign_in_at === null || 
+                                     (data.user.created_at && data.user.last_sign_in_at && 
+                                      new Date(data.user.created_at).getTime() === new Date(data.user.last_sign_in_at).getTime());
 
-      if (result.isFirstLogin) {
-        await logToHistory(result.user.id, 'LogIn', 'First LogIn');
-        router.push('/change-password');
+        const actualIsFirstLoginCheck = false;
+
+        if (actualIsFirstLoginCheck) {
+          await logToHistory(data.user.id, 'LogIn', 'First LogIn - Redirect to Change Password');
+          router.push('/change-password'); 
+        } else {
+          await logToHistory(data.user.id, 'LogIn', 'LogIn Success');
+          router.push('/dashboard');
+        }
+        router.refresh();
+
       } else {
-        await logToHistory(result.user.id, 'LogIn', 'LogIn');
-        router.push('/dashboard');
+        console.warn('Supabase login: No error but also no user data.');
+        setError('An unexpected issue occurred during login. Please try again.');
+        await logToHistory(clockNumber, 'LogIn', 'LogIn Fail - No user data returned');
       }
 
-    } catch (err) {
-      console.error('Login error:', err);
-      const reason = err instanceof Error ? err.message : 'System error during login';
-      setError(reason);
-      await logToHistory(userId, 'LogIn', `LogIn Fail - ${reason}`);
+    } catch (err:any) {
+      console.error('Login process exception:', err);
+      setError(err.message || 'A system error occurred during login.');
+      await logToHistory(clockNumber, 'LogIn', `LogIn Fail - Exception: ${err.message}`);
     } finally {
       setLoading(false);
     }
   };
 
   const handleForgotPassword = () => {
-    if (!userId.trim()) {
-      toast.error('Remark : Please Enter Your Clock Number As Password For First Time Login.');
+    if (!clockNumber.trim()) {
+      toast.error('Please enter your Clock Number to proceed with password assistance.');
       return;
     }
-    router.push(`/new-password?userId=${encodeURIComponent(userId.trim())}`);
+    router.push(`/new-password?userId=${encodeURIComponent(clockNumber.trim())}`); 
   };
 
   return (
@@ -111,14 +136,14 @@ export default function LoginPage() {
         <form onSubmit={handleLogin}>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <label htmlFor="userId" className="text-sm font-medium text-gray-300">
+              <label htmlFor="clockNumber" className="text-sm font-medium text-gray-300">
                 Clock Number
               </label>
               <Input
-                id="userId"
+                id="clockNumber"
                 type="text"
-                value={userId}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setUserId(e.target.value)}
+                value={clockNumber}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setClockNumber(e.target.value)}
                 className="bg-[#1e2533] border-gray-600 text-white placeholder-gray-400 focus:ring-blue-500"
                 placeholder="Enter your clock number"
                 required

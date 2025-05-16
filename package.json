@@ -28,7 +28,7 @@
     "@radix-ui/react-toast": "^1.2.11",
     "@radix-ui/react-tooltip": "^1.2.6",
     "@react-pdf/renderer": "^4.3.0",
-    "@supabase/auth-helpers-nextjs": "latest",
+    "@supabase/auth-helpers-nextjs": "^0.10.0",
     "@supabase/mcp-server-supabase": "^0.4.1",
     "@supabase/supabase-js": "^2.49.4",
     "@tanstack/react-table": "^8.21.3",

@@ -482,13 +482,13 @@ export async function exportGrnReport(data: GrnReportPageData) {
       // Pallet Type
       const palletCol = getPalletColumn(record.pallet);
       if (palletCol) {
-        sheet.getCell(`${palletCol}${rowIndex}`).value = '✓'; // Or 1, or 'X'
+        sheet.getCell(`${palletCol}${rowIndex}`).value = record.pallet_count;
       }
 
       // Package Type
       const packageCol = getPackageColumn(record.package_type);
       if (packageCol) {
-        sheet.getCell(`${packageCol}${rowIndex}`).value = '✓'; // Or 1, or 'X'
+        sheet.getCell(`${packageCol}${rowIndex}`).value = record.package_count;
       }
     }
   });
@@ -533,6 +533,7 @@ function getPackageColumn(packageType: string | null): string | null {
     case 'Still': return 'I';
     case 'Bag': return 'J';
     case 'Tote': return 'K';
+    case 'Octo': return 'L';
     // Octobin was in previous template cell I9, but not in your new mapping. Assuming K for Tote is correct.
     // case 'Octobin': return 'L'; // Or map to another column if still needed
     case 'Not_Included_Package': return null;

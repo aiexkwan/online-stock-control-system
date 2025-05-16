@@ -188,6 +188,8 @@ export interface GrnRecordDetail {
   net_weight: number | null;
   pallet: string | null;
   package_type: string | null; // Changed from package to package_type to avoid conflict with keyword
+  pallet_count: number | null;
+  package_count: number | null;
 }
 
 export interface GrnReportPageData {
@@ -221,7 +223,7 @@ export async function getGrnReportData(
     // 1. Fetch GRN records for the given grn_ref and material_code
     const { data: grnRecords, error: grnError } = await supabase
       .from('record_grn')
-      .select('sup_code, material_code, gross_weight, net_weight, pallet, package') // Assuming 'package' is the column name
+      .select('sup_code, material_code, gross_weight, net_weight, pallet, package, pallet_count, package_count')
       .eq('grn_ref', grnRef)
       .eq('material_code', materialCode);
 
@@ -242,7 +244,15 @@ export async function getGrnReportData(
       net_weight: r.net_weight,
       pallet: r.pallet,
       package_type: r.package, // map to package_type
+      pallet_count: r.pallet_count,
+      package_count: r.package_count,
     }));
+
+    // DEBUGGING LOG START
+    console.log(`[DEBUG] GRN Ref: ${grnRef}, Material: ${materialCode}`);
+    console.log('[DEBUG] grnRecords from DB:', JSON.stringify(grnRecords, null, 2));
+    console.log('[DEBUG] Mapped recordsDetails:', JSON.stringify(recordsDetails, null, 2));
+    // DEBUGGING LOG END
 
     // 2. Fetch material description from data_code
     let materialDescription: string | null = null;

@@ -25,6 +25,7 @@ import PalletDonutChart from '../components/PalletDonutChart';
 import PrintHistory from '../components/PrintHistory';
 import GrnHistory from '../components/GrnHistory';
 import AcoOrderStatus from '../components/AcoOrderStatus';
+import { createClientComponentClient, User } from '@supabase/auth-helpers-nextjs';
 
 const features = [
   {
@@ -59,9 +60,19 @@ const features = [
   },
 ];
 
+const LoadingSpinner = () => (
+  <div className="min-h-screen flex items-center justify-center bg-gray-50">
+    <div className="text-center">
+      <div className="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-600"></div>
+      <p className="mt-2 text-gray-600">Loading session...</p>
+    </div>
+  </div>
+);
+
 export default function HomePage() {
   const router = useRouter();
-  const [user, setUser] = useState<any>(null);
+  const supabase = createClientComponentClient();
+  const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [authChecked, setAuthChecked] = useState(false);
   const [stats, setStats] = useState({
@@ -75,47 +86,38 @@ export default function HomePage() {
   const isNavigating = useRef(false);
 
   useEffect(() => {
-    console.log('首頁 useEffect: 開始執行...');
-    // 已移除自動清除 localStorage 的邏輯
-    const loadUserData = async () => {
-      console.log('首頁: 開始載入用戶數據...');
-      if (typeof window !== 'undefined') {
-        try {
-          const userStr = localStorage.getItem('user');
-          console.log('首頁: 從localStorage獲取用戶信息: ', userStr ? '有數據' : '無數據');
-          
-          if (userStr) {
-            const userData = JSON.parse(userStr);
-            console.log('首頁: 解析用戶數據成功: ', userData.id);
-            setUser(userData);
-            await fetchDashboardData(userData.id);
-            setAuthChecked(true);
-          } else {
-            console.error('首頁 useEffect 關鍵日誌: 因 localStorage 無用戶數據，準備重定向到 /login');
-            setAuthChecked(true);
+    console.log('首頁 useEffect: 開始監聽認證狀態變化...');
+
+    const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('首頁 onAuthStateChange: event:', event, 'session user:', session?.user?.id);
+      const currentUser = session?.user || null;
+      setUser(currentUser);
+      
+      if (currentUser) {
+        console.log('首頁 onAuthStateChange: 用戶已登入:', currentUser.id);
+        await fetchDashboardData(currentUser.id);
+        setAuthChecked(true);
+      } else {
+        console.log('首頁 onAuthStateChange: 用戶未登入，準備重定向到 /login');
+        if (router) {
             router.push('/login');
-          }
-        } catch (e) {
-          console.error('首頁 useEffect 關鍵日誌: 因無法解析用戶數據，準備重定向到 /login', e);
-          localStorage.removeItem('user');
-          setAuthChecked(true);
-          router.push('/login');
-        } finally {
-          setLoading(false);
-          console.log('首頁 useEffect: loadUserData 執行完畢.');
         }
       }
-    };
-    
-    loadUserData();
-  }, [router]);
+      setLoading(false);
+    });
 
-  // 獲取儀表板數據
+    return () => {
+      if (authListener && authListener.subscription) {
+        authListener.subscription.unsubscribe();
+        console.log('首頁 useEffect: 已取消認證狀態監聽');
+      }
+    };
+  }, [supabase, router]);
+
   const fetchDashboardData = async (userId: string) => {
     try {
       console.log('首頁: 開始獲取儀表板數據...');
       
-      // 獲取產品總數
       const { data: productsData, error: productsError } = await supabase
         .from('data_code')
         .select('*', { count: 'exact', head: true });
@@ -123,19 +125,8 @@ export default function HomePage() {
       if (productsError) console.error('獲取產品數據錯誤:', productsError);
       else console.log('獲取產品數據成功, 數量:', productsData?.length || 0);
 
-      // 獲取低庫存產品數量 (庫存數量小於 10) - Temporarily commented out
-      /*
-      const { data: lowStockData, error: lowStockError } = await supabase
-        .from('record_inventory')
-        .select('id', { count: 'exact' })
-        .lt('quantity', 10);
+      const lowStockData = [];
 
-      if (lowStockError) console.error('獲取低庫存數據錯誤:', lowStockError);
-      else console.log('獲取低庫存數據成功, 數量:', lowStockData?.length || 0);
-      */
-      const lowStockData = []; // Temporary placeholder
-
-      // 獲取最近交易數量 (過去 7 天)
       const sevenDaysAgo = new Date();
       sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
       
@@ -147,19 +138,8 @@ export default function HomePage() {
       if (transactionsError) console.error('獲取交易數據錯誤:', transactionsError);
       else console.log('獲取交易數據成功, 數量:', transactionsData?.length || 0);
 
-      // 獲取待處理訂單數量 - Temporarily commented out due to missing 'status' field
-      /*
-      const { data: pendingOrdersData, error: pendingOrdersError } = await supabase
-        .from('record_history')
-        .select('id', { count: 'exact' })
-        .eq('status', 'pending');
+      const pendingOrdersData = [];
 
-      if (pendingOrdersError) console.error('獲取待處理訂單錯誤:', pendingOrdersError);
-      else console.log('獲取待處理訂單成功, 數量:', pendingOrdersData?.length || 0);
-      */
-      const pendingOrdersData = []; // Temporary placeholder
-
-      // 獲取當天完成的板數 (PalletDonutChart 'done' value)
       const today = new Date();
       const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 0, 0, 0, 0);
       const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59, 999);
@@ -173,22 +153,20 @@ export default function HomePage() {
       if (dailyDoneError) console.error('獲取當天完成板數錯誤:', dailyDoneError);
       else console.log('獲取當天完成板數成功, 數量:', dailyDoneCount || 0);
 
-      // 新增：獲取當天由 Production 轉移至 Fold Mill 的 pallets 數量
       const { count: dailyTransferredCount, error: dailyTransferredError } = await supabase
         .from('record_transfer')
         .select('*', { count: 'exact', head: true })
         .eq('f_loc', 'Production')
         .eq('t_loc', 'Fold Mill')
-        .gte('tran_date', startOfDay.toISOString()) // Assuming tran_date is the relevant timestamp
+        .gte('tran_date', startOfDay.toISOString())
         .lte('tran_date', endOfDay.toISOString());
 
       if (dailyTransferredError) console.error('獲取當天轉移板數錯誤:', dailyTransferredError);
       else console.log('獲取當天轉移板數成功, 數量:', dailyTransferredCount || 0);
 
-      // 更新統計數據
       setStats({
         totalProducts: productsData?.length || 0,
-        lowStockItems: 0, // Set to 0 as the feature is temporarily disabled
+        lowStockItems: 0,
         recentTransactions: transactionsData?.length || 0,
         pendingOrders: pendingOrdersData?.length || 0,
         dailyDonePallets: dailyDoneCount || 0,
@@ -203,25 +181,10 @@ export default function HomePage() {
     }
   };
 
-  // 如果正在導航到其他頁面，顯示載入狀態
-  if (isNavigating.current) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-100">
-        <div className="text-center">
-          <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
-          <p className="mt-4 text-gray-600">正在載入系統...</p>
-          
-          {/* 測試連結，以防用戶被卡在此頁面 */}
-          <div className="mt-10 flex space-x-4 justify-center">
-            <a href="/login" className="text-blue-500 hover:underline">前往登入頁面</a>
-            <a href="/test-page" className="text-green-500 hover:underline">頁面測試工具</a>
-          </div>
-        </div>
-      </div>
-    );
+  if (loading) {
+    return <LoadingSpinner />;
   }
 
-  // 如果沒有用戶數據但認證檢查已完成，顯示登入提示
   if (!user && authChecked) {
     console.log('首頁: 用戶未登入，顯示登入提示');
     return (
@@ -240,19 +203,6 @@ export default function HomePage() {
     );
   }
 
-  // 如果正在加載中，顯示載入狀態
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
-          <p className="mt-3 text-gray-600">Loading...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // 獲取當前時間和問候語
   const getGreeting = () => {
     const hour = new Date().getHours();
     if (hour < 12) return 'Morning';
@@ -262,14 +212,7 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-gray-900">
-      {/* Pallet 統計與甜甜圈圖左右排列 */}
       <div className="flex flex-row items-center justify-center gap-8 py-8">
-        {/* 左側：原 PalletRatio 位置 - 現在移除或留空 */}
-        {/* <div className="flex flex-col gap-4">
-          <PalletRatio /> // This line will be removed 
-        </div> */}
-        
-        {/* 右側（或現在是中間）：甜甜圈圖 - 更新 props */}
         <div>
           <PalletDonutChart 
             palletsDone={stats.dailyDonePallets} 
@@ -278,16 +221,6 @@ export default function HomePage() {
         </div>
       </div>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* 頂部統計卡片區域 */}
-        {/* 
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-8">
-          <div className="lg:col-span-2">
-            <PalletRatio />
-          </div>
-        </div>
-        */}
-
-        {/* Added History Section */}
         <div className="mt-8 grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="bg-gray-800 rounded-lg p-6 lg:col-span-2 shadow-lg">
             <h2 className="text-xl font-semibold text-white mb-4">Print History</h2>
@@ -299,7 +232,6 @@ export default function HomePage() {
           </div>
         </div>
 
-        {/* ACO Order Status Section -- 新增區塊 */}
         <div className="mt-8 bg-gray-800 rounded-lg p-6 shadow-lg">
           <h2 className="text-xl font-semibold text-white mb-4">ACO Order Status</h2>
           <AcoOrderStatus />

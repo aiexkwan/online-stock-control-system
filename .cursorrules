@@ -124,6 +124,7 @@ The system covers
 |-----------------|------------|---------------------|-------------------------------------|
 | `uuid`          | `uuid`     | `gen_random_uuid()` | Primary Key                         |
 | `product_code`  | `text`     | `''::text`          | Product code                        |
+| `plt_num`       | `text`     | —                   | Pallet number                       |
 | `injection`     | `int8`     | —                   | Stock in injection area             |
 | `pipeline`      | `int8`     | —                   | Stock in pipeline area              |
 | `prebook`       | `int8`     | —                   | Reserved stock                      |
@@ -168,4 +169,3 @@ The system covers
 ##  Final Reminder
 
 > This project is an enterprise-grade inventory control system. Follow all instructions exactly. Do not guess field mappings or generate unrequested logic. Use clean, declarative, modular TypeScript code optimized for clarity, performance, and multi-browser compatibility.
-
