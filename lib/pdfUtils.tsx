@@ -15,7 +15,7 @@ import { toast } from 'sonner';      // Added for toast notifications
  */
 export function generatePalletPdfFileName(palletNum: string): string {
   if (!palletNum || palletNum.trim() === '') {
-    throw new Error('Pallet number cannot be empty for PDF naming.');
+    //throw new Error('Pallet number cannot be empty for PDF naming.');
   }
   // Replace all occurrences of '/' with '_'
   const safePalletNum = palletNum.replace(/\//g, '_');
@@ -81,14 +81,14 @@ export async function generateAndUploadPdf({
 }): Promise<{ publicUrl: string; blob: Blob }> {
   const palletNum = pdfProps.palletNum;
   if (!palletNum) {
-    throw new Error('[pdfUtils.generateAndUploadPdf] Pallet number is missing in pdfProps and is required.');
+    //throw new Error('[pdfUtils.generateAndUploadPdf] Pallet number is missing in pdfProps and is required.');
   }
 
   // The PrintLabelPdf component is the actual document structure
   const blob = await pdf(<PrintLabelPdf {...pdfProps} />).toBlob();
   
   if (!(blob instanceof Blob)) {
-    throw new Error('[pdfUtils.generateAndUploadPdf] PDF generation did not return a Blob.');
+    //throw new Error('[pdfUtils.generateAndUploadPdf] PDF generation did not return a Blob.');
   }
   if (blob.size === 0) {
     console.warn('[pdfUtils.generateAndUploadPdf] Generated PDF blob has a size of 0. Uploading an empty file.');
@@ -109,11 +109,11 @@ export async function generateAndUploadPdf({
 
   if (error) {
     console.error('[pdfUtils.generateAndUploadPdf] Supabase Upload Error:', error);
-    throw new Error(`[pdfUtils.generateAndUploadPdf] Supabase Upload Failed for ${filePath}: ${error.message}`);
+    //throw new Error(`[pdfUtils.generateAndUploadPdf] Supabase Upload Failed for ${filePath}: ${error.message}`);
   }
   
   if (!data || !data.path) {
-    throw new Error(`[pdfUtils.generateAndUploadPdf] Upload for ${filePath} succeeded but no path was returned from Supabase.`);
+    //throw new Error(`[pdfUtils.generateAndUploadPdf] Upload for ${filePath} succeeded but no path was returned from Supabase.`);
   }
 
   console.log(`[pdfUtils.generateAndUploadPdf] File uploaded successfully to Supabase. Path: ${data.path}`);
@@ -124,7 +124,7 @@ export async function generateAndUploadPdf({
     .getPublicUrl(data.path);
 
   if (!publicUrlData || !publicUrlData.publicUrl) {
-    throw new Error(`[pdfUtils.generateAndUploadPdf] Failed to get public URL for ${data.path}.`);
+    //throw new Error(`[pdfUtils.generateAndUploadPdf] Failed to get public URL for ${data.path}.`);
   }
   
   console.log(`[pdfUtils.generateAndUploadPdf] Public URL: ${publicUrlData.publicUrl}`);
@@ -189,7 +189,7 @@ export async function mergeAndPrintPdfs(
   mergedPdfName: string = 'merged_document.pdf'
 ): Promise<void> {
   if (!pdfArrayBuffers || pdfArrayBuffers.length === 0) {
-    toast.error('No PDF documents provided to merge and print.');
+    //toast.error('No PDF documents provided to merge and print.');
     console.error('[mergeAndPrintPdfs] No PDF documents provided.');
     return;
   }
@@ -209,13 +209,13 @@ export async function mergeAndPrintPdfs(
         });
       } catch (loadError) {
         console.error('[mergeAndPrintPdfs] Error loading one of the PDFs for merging:', loadError);
-        toast.error('Error processing one of the PDFs. Merged document may be incomplete.');
+        //toast.error('Error processing one of the PDFs. Merged document may be incomplete.');
         // Optionally, decide if you want to continue merging other PDFs or stop
       }
     }
 
     if (mergedPdf.getPageCount() === 0) {
-      toast.error('No pages were successfully merged. Printing cannot proceed.');
+      //toast.error('No pages were successfully merged. Printing cannot proceed.');
       console.error('[mergeAndPrintPdfs] Merged PDF has no pages.');
       return;
     }
@@ -234,7 +234,7 @@ export async function mergeAndPrintPdfs(
         iframe.contentWindow?.focus(); // Focus on the iframe's content
         console.log('[mergeAndPrintPdfs] Attempting to call print() on iframe contentWindow.');
         iframe.contentWindow?.print(); // Trigger print dialog
-        toast.info('Initiating print dialog for merged PDF...'); // Info toast
+        //toast.info('Initiating print dialog for merged PDF...'); // Info toast
 
         // Clean up after a delay. Adjust delay if print dialog closes too soon.
         // Some browsers might need more time, or print might be cancelled.
@@ -248,7 +248,7 @@ export async function mergeAndPrintPdfs(
 
       } catch (printError) {
         console.error('[mergeAndPrintPdfs] Error triggering print dialog:', printError);
-        toast.error('Failed to initiate print dialog. Please try again or check browser settings.');
+        //toast.error('Failed to initiate print dialog. Please try again or check browser settings.');
         // Cleanup in case of print error too
         URL.revokeObjectURL(url);
         if (iframe.parentNode) {
@@ -259,7 +259,7 @@ export async function mergeAndPrintPdfs(
 
     iframe.onerror = () => {
         console.error('[mergeAndPrintPdfs] Error loading PDF into iframe.');
-        toast.error('Failed to load merged PDF for printing.');
+        //toast.error('Failed to load merged PDF for printing.');
         URL.revokeObjectURL(url);
         if (iframe.parentNode) {
             iframe.parentNode.removeChild(iframe);
@@ -268,6 +268,6 @@ export async function mergeAndPrintPdfs(
 
   } catch (error) {
     console.error('[mergeAndPrintPdfs] Failed to merge and print PDFs:', error);
-    toast.error('An error occurred while merging or printing PDFs. Please check console.');
+    //toast.error('An error occurred while merging or printing PDFs. Please check console.');
   }
 } 

@@ -6,16 +6,15 @@ import debounce from 'lodash/debounce';
 import { PrintLabelPdf } from '../../components/print-label-pdf';
 import dynamic from 'next/dynamic';
 import { toast } from 'sonner';
-// For PDF generation and upload
 import { pdf } from '@react-pdf/renderer';
 
-// Import PDF utilities
-import { prepareGrnLabelData, generateAndUploadPdf, GrnInputData, mergeAndPrintPdfs } from '../../lib/pdfUtils';
-import { PrintLabelPdfProps } from '../../components/print-label-pdf/PrintLabelPdf'; // Still needed for latestGeneratedPdfProps state type
-import { generateUniqueSeries as generateSingleUniqueSeries } from '../../lib/seriesUtils'; // Import and alias to avoid name collision if any local var is named generateUniqueSeries
-import { generatePalletNumbers } from '../../lib/palletNumUtils'; // Import the new pallet number utility
-import { PasswordConfirmationDialog } from '../../components/ui/PasswordConfirmationDialog'; // Added
-import { verifyCurrentUserPasswordAction } from '../../app/actions/authActions'; // Added
+import { prepareGrnLabelData, GrnInputData, mergeAndPrintPdfs, generateAndUploadPdf } from '../../lib/pdfUtils';
+import { PrintLabelPdfProps } from '../../components/print-label-pdf/PrintLabelPdf'; 
+import { generateUniqueSeries as generateSingleUniqueSeries } from '../../lib/seriesUtils'; 
+import { generatePalletNumbers } from '../../lib/palletNumUtils'; 
+import { PasswordConfirmationDialog } from '../../components/ui/PasswordConfirmationDialog'; 
+import { verifyCurrentUserPasswordAction } from '../../app/actions/authActions'; 
+import { createGrnDatabaseEntries, type GrnPalletInfoPayload, type GrnRecordPayload } from '../../app/actions/grnActions';
 
 // Helper function to insert pallet info records
 async function insertPalletInfoRecords(
@@ -50,11 +49,6 @@ async function insertHistoryRecords(
   }
   return { error };
 }
-
-const ManualPdfDownloadButton = dynamic(
-() => import('../../components/print-label-pdf/ManualPdfDownloadButton'),
-{ ssr: false }
-);
 
 // Define ProgressStatus type similar to QcLabelForm
 type ProgressStatus = 'Pending' | 'Processing' | 'Success' | 'Failed';
@@ -248,8 +242,8 @@ notIncluded: 0,
 const PACKAGE_WEIGHT: Record<string, number> = {
 still: 50,
 bag: 1,
-tote: 6,
-octo: 14,
+tote: 10,
+octo: 20,
 notIncluded: 0,
 };
 
@@ -373,285 +367,230 @@ octo: 'Octo',
 notIncluded: 'Not_Included_Package',
 };
 
-  // Helper function to parse count values according to the new logic
-  const parseCountValue = (valueStr: string | undefined): number => {
-    if (!valueStr || valueStr.trim() === '') {
-      return 0;
-    }
-    const num = parseFloat(valueStr.trim());
-    if (isNaN(num)) {
-      return 0; // Or handle error as appropriate
-    }
-    // Check if the number is an integer (e.g., 1.0, 2.0)
-    if (num % 1 === 0) {
-      return Math.floor(num); // Return as integer
-    }
-    return num; // Return with decimals
-  };
+// Helper function to parse count values, ensuring empty strings or non-numbers become 0
+const parseCountValue = (valueStr: string | undefined): number => {
+  if (!valueStr) return 0;
+  const parsed = parseInt(valueStr, 10);
+  return isNaN(parsed) ? 0 : parsed;
+};
 
-// New function to contain the original print logic
 const proceedWithGrnPrint = async () => {
-  const validGrossWeights = grossWeights.filter(gw => gw && gw.trim() !== '' && parseFloat(gw) > 0);
-
-  if (validGrossWeights.length === 0) {
-    toast.error('Please enter at least one valid gross weight.');
-    return;
-  }
-  if (!productInfo) {
-    toast.error('Product details not loaded. Please select a valid product code.');
-    return;
-  }
-  if (!form.grnNumber.trim() || !form.materialSupplier.trim()) {
-    toast.error('GRN Number and Material Supplier are required.');
-    return;
-  }
-
-  // --- Overall Process Start Toast ---
-  toast.info('Starting GRN processing...');
-  setPdfProgress({ current: 0, total: validGrossWeights.length, status: Array(validGrossWeights.length).fill('Pending') });
-  setPdfUploadSuccess(false);
-
-  // --- 2. Data Preparation Loop (Collect data for batch DB ops and PDF props) ---
-  const palletInfoBatch: any[] = [];
-  const grnIndividualRecordBatch: any[] = [];
-  const historyBatch: any[] = [];
-  const pdfLabelPropsBatch: any[] = [];
-  let inventoryUpdateErrorOccurred = false;
-
-  // Pre-generate all pallet numbers for this batch to ensure uniqueness before DB ops
-  const palletNumbersToUse = await generatePalletNumbers(supabase, validGrossWeights.length);
-  if (palletNumbersToUse.length !== validGrossWeights.length) {
-    toast.error('Failed to generate the required number of pallet numbers. Please try again.');
-    return;
-  }
-
-  // Get the selected pallet and package types and their counts ONCE before the loop
-  const selectedPalletTypeKey = Object.keys(palletType).find(k => palletType[k as keyof typeof palletType].trim() !== '') as keyof typeof PALLET_WEIGHT || 'notIncluded';
-  const palletCountForRecord = parseCountValue(palletType[selectedPalletTypeKey as keyof typeof palletType]);
-  const palletDbValueForRecord = PALLET_TYPE_DB_VAL[selectedPalletTypeKey];
-  const palletWeightToSubtract = PALLET_WEIGHT[selectedPalletTypeKey] || 0;
-
-  const selectedPackageTypeKey = Object.keys(packageType).find(k => packageType[k as keyof typeof packageType].trim() !== '') as keyof typeof PACKAGE_WEIGHT || 'notIncluded';
-  const packageCountForRecord = parseCountValue(packageType[selectedPackageTypeKey as keyof typeof packageType]);
-  const packageDbValueForRecord = PACKAGE_TYPE_DB_VAL[selectedPackageTypeKey];
-  const packageWeightToSubtract = PACKAGE_WEIGHT[selectedPackageTypeKey] || 0;
-
-  for (let i = 0; i < validGrossWeights.length; i++) {
-    const gw = validGrossWeights[i];
-    // Update progress for data preparation stage (can be more granular if needed)
-    // setPdfProgress(prev => ({ ...prev, status: prev.status.map((s, idx) => idx === i ? 'Processing Data' : s) })); 
-
-    const grossWeight = parseFloat(gw);
-    // Pallet and package weight subtractions are now determined before the loop
-    const netWeight = grossWeight - palletWeightToSubtract - packageWeightToSubtract;
-
-    if (netWeight <= 0) {
-      toast.warning(`Pallet ${i + 1}: Net weight is not positive. Skipping this pallet.`);
-      // Optionally mark this specific item as 'Skipped' or 'Failed' in pdfProgress
-      // For now, it will remain 'Pending' or its last state from the overall setPdfProgress
-      setPdfProgress(prev => ({
-        ...prev,
-        status: prev.status.map((s, idx) => idx === i ? 'Failed' : s)
-      }));
-      continue;
+    if (!productInfo || !form.materialSupplier.trim() || !userId) { 
+      toast.error('Product info, Material Supplier code, or User ID is missing.');
+      setIsGrnPasswordConfirmOpen(false);
+      setGrnPrintEventToProceed(false);
+      return;
     }
 
-    const palletNum = palletNumbersToUse[i];
-    const series = await generateSingleUniqueSeries(supabase);
-    const currentUserIdInt = userId ? parseInt(userId, 10) : null;
-    const currentTimeISO = new Date().toISOString();
-
-    // Add to PalletInfo Batch
-    palletInfoBatch.push({
-      plt_num: palletNum,
-      generate_time: currentTimeISO,
-      product_code: productInfo!.product_code,
-      product_qty: netWeight,
-      series,
-      plt_remark: `Material GRN - ${form.grnNumber.trim()}`
-    });
-
-    // Add to GRN Individual Record Batch
-    grnIndividualRecordBatch.push({
-      grn_ref: parseInt(form.grnNumber.trim(), 10),
-      sup_code: form.materialSupplier.trim(),
-      material_code: productInfo!.product_code,
-      gross_weight: grossWeight,
-      net_weight: netWeight,
-      plt_num: palletNum,
-      pallet: palletDbValueForRecord, // Use pre-loop determined value
-      package: packageDbValueForRecord, // Use pre-loop determined value
-      pallet_count: palletCountForRecord, // Add pallet_count from form
-      package_count: packageCountForRecord // Add package_count from form
-    });
+    const filledGrossWeights = grossWeights.map(gw => gw.trim()).filter(gw => gw !== '');
+    if (filledGrossWeights.length === 0) {
+      toast.error('Please enter at least one gross weight.');
+      setIsGrnPasswordConfirmOpen(false);
+      setGrnPrintEventToProceed(false);
+      return;
+    }
     
-    // Add to History Batch
-    historyBatch.push({
-      action: 'Material Receive',
-      time: currentTimeISO,
-      id: currentUserIdInt,
-      plt_num: palletNum,
-      loc: 'Awaiting',
-      remark: `GRN ${form.grnNumber.trim()} - ${form.materialSupplier.trim()}`
-    });
+    const numberOfPalletsToProcess = filledGrossWeights.length;
+    const palletCountForGrnRecord = Object.values(palletType).reduce((sum, v) => sum + parseCountValue(v), 0);
+    const packageCountForGrnRecord = Object.values(packageType).reduce((sum, v) => sum + parseCountValue(v), 0);
+    const selectedPalletTypeString = Object.entries(palletType).find(([, value]) => parseCountValue(value) > 0)?.[0] || 'notIncluded';
+    const selectedPackageTypeString = Object.entries(packageType).find(([, value]) => parseCountValue(value) > 0)?.[0] || 'notIncluded';
 
-    // Inventory Update (remains in loop due to select-then-update logic per item)
-    try {
-      const { data: inv, error: invError } = await supabase.from('record_inventory').select('await, uuid, plt_num').eq('product_code', productInfo!.product_code).eq('plt_num', palletNum).maybeSingle();
-      if (invError && invError.code !== 'PGRST116') throw new Error(`Inventory Query: ${invError.message}`);
+    setPdfProgress({ current: 0, total: numberOfPalletsToProcess, status: Array(numberOfPalletsToProcess).fill('Pending') });
+    const collectedPdfBlobs: Blob[] = [];
+    const collectedPdfLabelProps: PrintLabelPdfProps[] = [];
+    let anyFailure = false;
+
+    // Pass supabase client to generatePalletNumbers and generateSingleUniqueSeries
+    const generatedPalletNumbersList = await generatePalletNumbers(supabase, numberOfPalletsToProcess);
+    const uniqueSeriesNumbersList = await Promise.all(
+      Array(numberOfPalletsToProcess).fill(null).map(() => generateSingleUniqueSeries(supabase))
+    );
+    // Store successfully generated series for filename usage
+    const successfullyGeneratedSeries: string[] = []; 
+
+    if (generatedPalletNumbersList.length !== numberOfPalletsToProcess || uniqueSeriesNumbersList.filter(s => s).length !== numberOfPalletsToProcess) {
+        toast.error('Failed to generate unique pallet numbers or series. Please try again.');
+        setIsGrnPasswordConfirmOpen(false);
+        setGrnPrintEventToProceed(false);
+        return;
+    }
+
+    for (let i = 0; i < numberOfPalletsToProcess; i++) {
+      setPdfProgress(prev => ({ ...prev, current: i + 1, status: prev.status.map((s, idx) => idx === i ? 'Processing' : s) }));
       
-      if (inv) { // If a record with the same product_code and plt_num exists, update it (this scenario might be unlikely if plt_num is always new)
-        const newAwait = (Number(inv.await) || 0) + netWeight;
-        const { error: updateError } = await supabase.from('record_inventory').update({ await: newAwait, latest_update: currentTimeISO }).eq('uuid', inv.uuid);
-        if (updateError) throw new Error(`Inventory Update: ${updateError.message}`);
-      } else { // No existing record for this specific plt_num, or no record for product_code at all (if not also filtering by plt_num initially)
-         // Check if a general product_code entry exists to sum up, or insert new if not.
-         // The original logic implies summing up if product_code exists, or inserting if not.
-         // For GRN, each pallet is distinct. We should insert a new inventory record for each pallet_num.
-        const { error: insertInvError } = await supabase.from('record_inventory').insert({ 
-            product_code: productInfo!.product_code, 
-            plt_num: palletNum, // Ensure plt_num is part of the inventory record
-            await: netWeight, 
-            injection:0, pipeline:0, prebook:0, fold:0, bulk:0, backcarpark:0, // Explicitly set others to 0
-            latest_update: currentTimeISO 
-        });
-        if (insertInvError) throw new Error(`Inventory Insert: ${insertInvError.message}`);
+      const currentGrossWeightStr = filledGrossWeights[i];
+      const currentGrossWeight = parseFloat(currentGrossWeightStr);
+      if (isNaN(currentGrossWeight) || currentGrossWeight <= 0) {
+        toast.error(`Pallet ${i + 1} GW Error: ${currentGrossWeightStr}. Skipping.`);
+        setPdfProgress(prev => ({ ...prev, status: prev.status.map((s, idx) => idx === i ? 'Failed' : s) }));
+        anyFailure = true;
+        continue; 
       }
-    } catch (error: any) {
-      toast.error(`Pallet ${i + 1} (${palletNum}): Inventory update failed: ${error.message}`);
-      inventoryUpdateErrorOccurred = true;
-      // Continue to prepare other data but this pallet might be problematic
-    }
 
-    // Prepare PDF Props
-    const grnInputPayload: GrnInputData = {
-      grnNumber: form.grnNumber.trim(),
-      materialSupplier: form.materialSupplier.trim(),
-      productCode: productInfo!.product_code,
-      productDescription: productInfo!.description,
-      productType: productInfo!.product_type, // This was ProductInfoType.product_type, ensure it's correctly populated
-      netWeight: netWeight,
-      series: series,
-      palletNum: palletNum,
-      receivedBy: userId || 'N/A',
-    };
-    const grnLabelProps = await prepareGrnLabelData(grnInputPayload);
-    pdfLabelPropsBatch.push(grnLabelProps);
-  }
+      const palletWeight = PALLET_WEIGHT[selectedPalletTypeString] || 0;
+      const packageWeight = PACKAGE_WEIGHT[selectedPackageTypeString] || 0;
+      const netWeight = currentGrossWeight - palletWeight - packageWeight; // netWeight is a number
 
-  if (inventoryUpdateErrorOccurred) {
-    toast.error('One or more inventory updates failed. Please check logs. Other DB operations will be attempted.');
-    // Decide whether to proceed if inventory fails. For now, we attempt other batch DB ops.
-  }
+      if (netWeight <= 0) {
+        toast.error(`Pallet ${i + 1} NW Error: ${netWeight}kg. Skipping.`);
+        setPdfProgress(prev => ({ ...prev, status: prev.status.map((s, idx) => idx === i ? 'Failed' : s) }));
+        anyFailure = true;
+        continue;
+      }
+      
+      const palletNum = generatedPalletNumbersList[i];
+      const series = uniqueSeriesNumbersList[i];
 
-  // --- 3. Batch Database Operations ---
-  let dbBatchOpsSuccess = false;
-  try {
-    if (palletInfoBatch.length > 0) {
-      const { error } = await insertPalletInfoRecords(supabase, palletInfoBatch);
-      if (error) throw new Error(`Batch PalletInfo Insert Failed: ${error.message}`);
-    }
-    if (grnIndividualRecordBatch.length > 0) {
-      const { error } = await supabase.from('record_grn').insert(grnIndividualRecordBatch);
-      if (error) throw new Error(`Batch GRN Record Insert Failed: ${error.message}`);
-    }
-    if (historyBatch.length > 0) {
-      const { error } = await insertHistoryRecords(supabase, historyBatch);
-      if (error) throw new Error(`Batch History Insert Failed: ${error.message}`);
-    }
-    toast.success('Batch database operations completed successfully.');
-    dbBatchOpsSuccess = true;
-  } catch (error: any) {
-    console.error('Error during batch database operations:', error.message);
-    toast.error(`Database batch operations failed: ${error.message}`);
-    // Do not proceed to PDF generation if DB ops fail
-    return;
-  }
+      if (!palletNum || !series) {
+        toast.error(`Pallet ${i + 1} ID Error. Skipping.`);
+        setPdfProgress(prev => ({ ...prev, status: prev.status.map((s, idx) => idx === i ? 'Failed' : s) }));
+        anyFailure = true;
+        continue;
+      }
 
-  if (!dbBatchOpsSuccess) {
-    // This case should ideally be caught by errors thrown above and returned.
-    toast.error('Database operations did not complete successfully. Halting PDF generation.');
-    return;
-  }
+      const palletInfoData: GrnPalletInfoPayload = {
+        plt_num: palletNum,
+        series: series,
+        product_code: productInfo.product_code,
+        product_qty: Math.round(netWeight), 
+        plt_remark: `Material GRN- ${form.grnNumber}`,
+      };
 
-  // --- 4. PDF Generation and Upload Phase ---
-  const pdfBlobs: ArrayBuffer[] = [];
-  let allPdfsGeneratedSuccessfully = true;
-  setPdfProgress({ current: 0, total: pdfLabelPropsBatch.length, status: Array(pdfLabelPropsBatch.length).fill('Pending') }); // Reset progress for PDF gen
+      const grnRecordData: GrnRecordPayload = {
+        grn_ref: form.grnNumber,
+        material_code: productInfo.product_code,
+        sup_code: form.materialSupplier, 
+        plt_num: palletNum,
+        gross_weight: currentGrossWeight,
+        net_weight: netWeight, // netWeight is a number here
+        pallet_count: palletCountForGrnRecord, 
+        package_count: packageCountForGrnRecord, 
+        pallet: selectedPalletTypeString, 
+        package: selectedPackageTypeString, 
+      };
+      
+      try {
+        const actionResult = await createGrnDatabaseEntries({ 
+          palletInfo: palletInfoData, 
+          grnRecord: grnRecordData 
+        }, userId);
 
-  for (let i = 0; i < pdfLabelPropsBatch.length; i++) {
-    const currentPdfProps = pdfLabelPropsBatch[i];
-    const palletNumForFile = currentPdfProps.palletNum; // Assuming palletNum is part of the props
-    
-    setPdfProgress(prev => ({ ...prev, status: prev.status.map((s, idx) => idx === i ? 'Processing' : s) }));
+        if (actionResult.error) {
+          toast.error(`Pallet ${i + 1} DB Error: ${actionResult.error}. Skipping PDF.`);
+          setPdfProgress(prev => ({ ...prev, status: prev.status.map((s, idx) => idx === i ? 'Failed' : s) }));
+          anyFailure = true;
+          continue; 
+        } else {
+          if(actionResult.warning){
+            toast.warning(`Pallet ${i + 1} DB: ${actionResult.warning}`);
+          } else {
+            //toast.success(`Pallet ${i + 1} DB entries created.`);
+          }
 
-    const uploadFileName = `GRN_${palletNumForFile.replace(/\//g, '-')}.pdf`;
-    const result = await generateAndUploadPdf({
-      pdfProps: currentPdfProps,
-      fileName: uploadFileName,
-      storagePath: 'grn_labels',
-      supabaseClient: supabase
-    });
+          const grnInput: GrnInputData = {
+            grnNumber: form.grnNumber,
+            materialSupplier: form.materialSupplier, 
+            productCode: productInfo.product_code,
+            productDescription: productInfo.description,
+            productType: productInfo.product_type,
+            netWeight: netWeight, 
+            series: series,
+            palletNum: palletNum,
+            receivedBy: userId,
+          };
+          const pdfLabelProps = await prepareGrnLabelData(grnInput);
+          collectedPdfLabelProps.push(pdfLabelProps); 
+          successfullyGeneratedSeries.push(series); // Store the series used for this PDF
+          
+          try {
+            const uploadResult = await generateAndUploadPdf({
+              pdfProps: pdfLabelProps,
+              storagePath: 'grn-labels',
+              supabaseClient: supabase
+            });
 
-    if (result && result.blob) {
-      const arrayBuffer = await result.blob.arrayBuffer();
-      pdfBlobs.push(arrayBuffer);
-      // Update progress here after successful PDF generation and upload for this item
-      setPdfProgress(prev => ({
-        ...prev,
-        current: prev.current + 1, // Increment current count of processed PDFs
-        status: prev.status.map((s, idx) => idx === i ? 'Success' : s)
-      }));
+            if (uploadResult && uploadResult.blob) {
+              collectedPdfBlobs.push(uploadResult.blob);
+              //toast.success(`Pallet ${i + 1} (${palletNum}): PDF generated and uploaded.`);
+              setPdfProgress(prev => ({ ...prev, status: prev.status.map((s, idx) => idx === i ? 'Success' : s) }));
+            } else {
+              throw new Error('PDF generation or upload failed to return a blob.');
+            }
+          } catch (uploadError: any) {
+            toast.error(`Pallet ${i + 1} (${palletNum}) PDF/Upload Error: ${uploadError.message}. Skipping.`);
+            setPdfProgress(prev => ({ ...prev, status: prev.status.map((s, idx) => idx === i ? 'Failed' : s) }));
+            anyFailure = true;
+            continue; // Skip to next pallet if PDF generation/upload fails
+          }
+        }
+      } catch (e:any) {
+        toast.error(`Pallet ${i + 1} Unexpected DB or Prep Error: ${e.message}. Skipping PDF.`);
+        setPdfProgress(prev => ({ ...prev, status: prev.status.map((s, idx) => idx === i ? 'Failed' : s) }));
+        anyFailure = true;
+        continue;
+      }
+    } 
+
+    if (collectedPdfBlobs.length > 0) {
+      const pdfArrayBuffers = await Promise.all(collectedPdfBlobs.map(blob => blob.arrayBuffer()));
+      let printFileName = '';
+
+      if (collectedPdfBlobs.length === 1) {
+        const firstPalletNum = generatedPalletNumbersList.find(p => p !== null && p !== undefined) || 'single_GRN_Pallet';
+        const seriesForName = successfullyGeneratedSeries.length > 0 ? successfullyGeneratedSeries[0] : 'single_GRN_Series';
+        printFileName = `GRNLabel_${form.grnNumber}_${firstPalletNum.replace('/','_')}_${seriesForName}.pdf`;
+        //toast.success(`Single PDF prepared for printing: ${printFileName}`);
+      } else { 
+        const firstPalletNumForName = generatedPalletNumbersList.length > 0 ? generatedPalletNumbersList[0].replace('/','_') : 'GRN_Pallets';
+        printFileName = `GRNLabels_Merged_${form.grnNumber}_${firstPalletNumForName}_${format(new Date(), 'yyyyMMddHHmmss')}.pdf`;
+        //toast.success(`${collectedPdfBlobs.length} PDFs prepared for merged printing: ${printFileName}`);
+      }
+      
+      try {
+        await mergeAndPrintPdfs(pdfArrayBuffers, printFileName);
+      } catch (printError: any) {
+          toast.error(`PDF Printing Error: ${printError.message}`);
+      }
+
     } else {
-      allPdfsGeneratedSuccessfully = false;
-      console.error(`Error generating PDF for pallet ${palletNumForFile}: PDF blob was not returned or an error occurred.`);
-      // Update progress here for failed PDF generation for this item
-      setPdfProgress(prev => ({
-        ...prev,
-        current: prev.current + 1, // Still increment as an attempt was made
-        status: prev.status.map((s, idx) => idx === i ? 'Failed' : s)
-      }));
+      if (!anyFailure) { 
+        toast.error('No valid gross weights to process. No PDF generated for printing.');
+      } else { 
+         toast.warning('Processing finished. Some pallets failed. No PDFs generated for printing.');
+      }
     }
-  }
+    
+    setGrossWeights(['']); 
 
-  // --- 5. Final Merging and Printing Phase ---
-  if (pdfBlobs.length > 0 && pdfBlobs.length === pdfLabelPropsBatch.length && allPdfsGeneratedSuccessfully) {
-    toast.success('All GRN labels generated successfully. Preparing to print.');
-    try {
-      await mergeAndPrintPdfs(pdfBlobs, `Merged_GRN_Labels_${form.grnNumber.trim()}.pdf`);
-      toast.success('Merged GRN labels sent to print dialog.');
-    } catch (printError) {
-      console.error('Error merging or printing GRN PDFs:', printError);
-      toast.error('Could not merge or print GRN labels. Download manually if needed.');
-    }
-  } else if (pdfBlobs.length > 0) {
-    toast.warning(`Only ${pdfBlobs.length} of ${pdfLabelPropsBatch.length} PDFs were successful. Attempting to print what was generated.`);
-     try {
-      await mergeAndPrintPdfs(pdfBlobs, `Partially_Merged_GRN_Labels_${form.grnNumber.trim()}.pdf`);
-      toast.info('Partially successful GRN labels sent to print.');
-    } catch (printError) {
-      console.error('Error merging or printing partial GRN PDFs:', printError);
-      toast.error('Could not merge or print partially successful GRN labels.');
-    }
-  } else if (pdfLabelPropsBatch.length > 0) {
-    toast.error('No GRN PDFs were successfully generated to print.');
-  }
-
-  // --- 6. Form Reset ---
-  // Conditional reset based on overall success might be better, but for now, standard reset after a timeout.
-  setTimeout(() => {
-    setPdfProgress({ current: 0, total: 0, status: [] });
-    setPdfUploadSuccess(false);
+    // Clear Product Code and related states
     setForm(prevForm => ({ ...prevForm, productCode: '' }));
     setProductInfo(null);
     setProductInfoDisplay(null);
-    setProductError(null);
-    setPalletType({ whiteDry: '', whiteWet: '', chepDry: '', chepWet: '', euro: '', notIncluded: '' });
-    setPackageType({ still: '', bag: '', tote: '', octo: '', notIncluded: '' });
-    setGrossWeights(['']);
-    console.log('[PrintGrnLabelPage] GRN processing completed, form partially reset.');
-  }, 3000);
-};
+    setProductError(null); // Also clear any product error
+
+    // Clear Pallet Type state
+    setPalletType({
+      whiteDry: '',
+      whiteWet: '',
+      chepDry: '',
+      chepWet: '',
+      euro: '',
+      notIncluded: '',
+    });
+
+    // Clear Package Type state
+    setPackageType({
+      still: '',
+      bag: '',
+      tote: '',
+      octo: '',
+      notIncluded: '',
+    });
+
+    setIsGrnPasswordConfirmOpen(false);
+    setGrnPrintEventToProceed(false);
+  };
 
 // Modified handlePrintLabel to open dialog
 const handlePrintLabel = async () => {
@@ -893,12 +832,6 @@ className={`w-5 h-5 flex items-center justify-center text-xs font-bold rounded-f
 </div>
 )}
 {/* End PDF Progress UI */}
-
-{/* Manual PDF Download Button - Removed */}
-{/* {latestGeneratedPdfProps && ( */}
-{/* <ManualPdfDownloadButton {...latestGeneratedPdfProps} /> */}
-{/* )} */}
-
 </div>
 </div>
 </div>

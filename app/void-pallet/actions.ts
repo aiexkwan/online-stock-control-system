@@ -53,6 +53,15 @@ async function logHistoryRecord(
 }
 
 export async function voidPalletAction(args: VoidPalletArgs): Promise<ActionResult> {
+  console.log('[SA] Received args:', JSON.stringify(args, null, 2)); // Log the entire args object
+  if (args && args.palletInfo) {
+    console.log('[SA] Received palletInfo:', JSON.stringify(args.palletInfo, null, 2));
+  } else {
+    console.error('[SA] CRITICAL: args.palletInfo is missing or args itself is falsy.', args ? args.palletInfo : 'args is falsy');
+    // Return an error immediately if palletInfo is not there, before destructuring attempt
+    return { success: false, error: 'Internal Server Error: Pallet information missing in request.' };
+  }
+
   const { userId, palletInfo, password, voidReason } = args;
   const { plt_num, product_code, product_qty, plt_remark, current_location, series } = palletInfo;
   const formattedTime = format(new Date(), 'dd-MMM-yyyy HH:mm:ss');
@@ -120,31 +129,35 @@ export async function voidPalletAction(args: VoidPalletArgs): Promise<ActionResu
       p_plt_num: plt_num,
       p_product_code: product_code,
       p_product_qty: product_qty,
-      p_plt_remark: plt_remark,
-      p_latest_location: current_location,
+      p_void_location: current_location,
       p_void_reason: voidReason,
     });
 
     if (rpcError) {
-      console.error('[SA] RPC call failed:', rpcError);
-      // Attempt to log this failure specifically
+      console.error('[SA] RPC call failed with rpcError:', rpcError); 
       await logHistoryRecord(userId, 'Void Pallet Fail', plt_num, current_location, `RPC Call Error: ${rpcError.message} (SA)`);
       return { success: false, error: `Database operation failed: ${rpcError.message}` };
     }
 
-    // Process RPC response
-    console.log('[SA] RPC response received:', rpcData);
-    // Type assertion to help TypeScript understand the structure
-    const result = rpcData as ActionResult;
-
-    if (result && result.success) {
-      console.log(`[SA] Pallet ${plt_num} voided successfully via RPC.`);
-      revalidatePath('/void-pallet'); // Revalidate path on success
-      return { success: true, message: result.message || 'Pallet voided successfully.' };
+    // Handle RPCs that return a JSON object with success and message properties
+    console.log(`[SA] RPC call seemingly successful (no rpcError), response data:`, rpcData);
+    if (rpcData && typeof rpcData === 'object') {
+      const rpcResponse = rpcData as { success?: boolean; message?: string; [key: string]: any }; // Type assertion
+      if (rpcResponse.success === true) {
+        revalidatePath('/void-pallet');
+        return { success: true, message: rpcResponse.message || 'Pallet voided successfully.' };
+      } else {
+        // RPC returned success:false or success is not explicitly true
+        const errorMessage = rpcResponse.message || 'RPC indicated an issue but provided no specific message.';
+        console.warn(`[SA] RPC reported an issue:`, rpcResponse);
+        await logHistoryRecord(userId, 'Void Pallet Fail', plt_num, current_location, `RPC Reported Issue: ${errorMessage.substring(0,150)} (SA)`);
+        return { success: false, error: errorMessage };
+      }
     } else {
-      // RPC reported failure, the RPC itself should have logged details to history.
-      console.error(`[SA] RPC indicated failure for ${plt_num}:`, result?.error);
-      return { success: false, error: result?.error || 'Database operation reported an error.' };
+      // Unexpected rpcData format (not an object, or null/undefined when rpcError was also null)
+      console.error('[SA] RPC returned unexpected data format or null/undefined data when rpcError was also null:', rpcData);
+      await logHistoryRecord(userId, 'Void Pallet Fail', plt_num, current_location, 'RPC Unexpected Data Format (SA)');
+      return { success: false, error: 'Database operation returned an unexpected data format.' };
     }
 
   } catch (error: any) {

@@ -16,7 +16,7 @@ const supabaseAdmin = createClient(
 const clockNumberSchema = z.string().regex(/^\d+$/, { message: "Operator Clock Number must be a positive number string." }).transform(val => parseInt(val, 10));
 
 // 確保 GrnDatabaseEntryPayload 與實際傳入的數據以及數據庫 schema 匹配
-interface GrnPalletInfoPayload {
+export interface GrnPalletInfoPayload {
   plt_num: string;
   series: string;
   product_code: string;
@@ -25,7 +25,7 @@ interface GrnPalletInfoPayload {
   // 確保沒有多餘或缺失的字段，與 record_palletinfo 表的 Insert 類型匹配
 }
 
-interface GrnRecordPayload {
+export interface GrnRecordPayload {
   grn_ref: string; // 假設這是 string
   material_code: string;
   sup_code: string;
@@ -39,7 +39,7 @@ interface GrnRecordPayload {
   // 確保沒有多餘或缺失的字段，與 record_grn 表的 Insert 類型匹配
 }
 
-interface GrnDatabaseEntryPayload {
+export interface GrnDatabaseEntryPayload {
   palletInfo: GrnPalletInfoPayload;
   grnRecord: GrnRecordPayload;
 }
@@ -54,7 +54,7 @@ export async function createGrnDatabaseEntries(
     console.error('[grnActions] Invalid Operator Clock Number format:', operatorClockNumberStr, clockValidation.error.flatten());
     return { error: `Invalid Operator Clock Number: ${clockValidation.error.errors[0]?.message || 'Format error.'}` };
   }
-  const dataIdForHistoryRecord = clockValidation.data;
+  const operatorIdForFunction = clockValidation.data;
 
   // REMOVED: Supabase auth related logic (getUser, querying data_id by auth_user_uuid)
   // console.log('[grnActions] All available cookie names in GRN Action:'); // No longer relevant
@@ -62,81 +62,44 @@ export async function createGrnDatabaseEntries(
   // ... and subsequent logic for currentAuthUserUuid and fetching dataId from data_id based on it ...
 
   try {
-    // 1. Insert into record_palletinfo
-    const palletInfoToInsert = {
-      ...payload.palletInfo,
-      product_qty: Math.round(payload.palletInfo.product_qty),
-    };
-    const { error: palletInfoError } = await supabaseAdmin // Use admin client
-      .from('record_palletinfo')
-      .insert(palletInfoToInsert);
+    const { data: rpcData, error: rpcError } = await supabaseAdmin.rpc('create_grn_entries_atomic', {
+      p_plt_num: payload.palletInfo.plt_num,
+      p_series: payload.palletInfo.series,
+      p_product_code: payload.palletInfo.product_code,
+      p_product_qty: payload.palletInfo.product_qty, // SQL function will ROUND
+      p_plt_remark: payload.palletInfo.plt_remark,
+      
+      p_grn_ref: payload.grnRecord.grn_ref, // Pass as string, SQL function converts to INT
+      p_material_code: payload.grnRecord.material_code,
+      p_sup_code: payload.grnRecord.sup_code,
+      // p_plt_num is already mapped from palletInfo above for the SQL function context
+      p_gross_weight: payload.grnRecord.gross_weight,
+      p_net_weight: payload.grnRecord.net_weight,
+      p_pallet_count: payload.grnRecord.pallet_count,
+      p_package_count_param: payload.grnRecord.package_count, // Maps to p_package_count_param
+      p_pallet: payload.grnRecord.pallet,
+      p_package_col: payload.grnRecord.package, // Maps to p_package_col
 
-    if (palletInfoError) {
-      console.error('[grnActions] Error inserting into record_palletinfo:', palletInfoError);
-      return { error: `Failed to insert pallet info: ${palletInfoError.message}` };
+      p_operator_id: operatorIdForFunction
+    });
+
+    if (rpcError) {
+      console.error('[grnActions] RPC error calling create_grn_entries_atomic:', rpcError);
+      // Check if the error message is one of our custom prefixed ones
+      if (rpcError.message && rpcError.message.startsWith('GRN_ATOMIC_FAILURE:')) {
+        const userFriendlyMessage = rpcError.message.replace('GRN_ATOMIC_FAILURE:', '').trim();
+        return { error: `Database operation failed: ${userFriendlyMessage}` };
+      } else if (rpcError.message && rpcError.message.includes('Invalid GRN Reference format')) {
+        // Specific check for GRN ref format error raised by the function
+        return { error: rpcError.message };
+      }
+      return { error: `Database operation failed: ${rpcError.message}` }; // Generic fallback
     }
 
-    // 2. Insert into record_grn
-    const grnRefAsNumber = parseInt(payload.grnRecord.grn_ref, 10);
-    if (isNaN(grnRefAsNumber)) {
-      console.error('[grnActions] Invalid grn_ref value, cannot parse to number:', payload.grnRecord.grn_ref);
-      return { error: `Invalid GRN Reference format: ${payload.grnRecord.grn_ref}. Must be a valid number.` };
-    }
-    const grnRecordToInsert = {
-        ...payload.grnRecord,
-        grn_ref: grnRefAsNumber,
-    };
-    const { error: grnError } = await supabaseAdmin // Use admin client
-      .from('record_grn')
-      .insert(grnRecordToInsert);
-
-    if (grnError) {
-      console.error('[grnActions] Error inserting into record_grn:', grnError);
-      return { error: `Failed to insert GRN record: ${grnError.message}. Pallet info might have been created.` };
-    }
-
-    // 3. Insert into record_inventory (Consider upsert or more complex logic if needed)
-    // This simplified version assumes a direct insert or that 'await' is a direct numeric field.
-    // The original logic for record_inventory was simple. If it needs to be an update, this must change.
-    const inventoryDataToInsert = {
-      product_code: payload.grnRecord.material_code,
-      // Ensure 'pallet_num' is a valid field and correctly mapped. It was plt_num in payload.
-      // The original code had 'pallet_num', assuming it's a typo for 'plt_num' or a different mapping.
-      // For now, using payload.grnRecord.plt_num which is available.
-      plt_num: payload.grnRecord.plt_num, // Changed from pallet_num to plt_num based on payload
-      await: payload.grnRecord.net_weight, 
-    };
-    const { error: inventoryInsertError } = await supabaseAdmin // Use admin client
-      .from('record_inventory')
-      .insert(inventoryDataToInsert);
-
-    if (inventoryInsertError) {
-      console.error('[grnActions] Error inserting into record_inventory:', inventoryInsertError);
-      return { error: `Failed to insert inventory record: ${inventoryInsertError.message}. GRN and Pallet Info might have been created.` };
-    }
-
-    // 4. Insert into record_history
-    const historyData = {
-        action: 'GRN Pallet Received',
-        id: dataIdForHistoryRecord, // Use the validated and parsed clock number
-        plt_num: payload.palletInfo.plt_num,
-        loc: 'GRN Area', 
-        remark: `GRN: ${payload.grnRecord.grn_ref}, Material: ${payload.grnRecord.material_code}`,
-    };
-    const { error: historyError } = await supabaseAdmin // Use admin client
-      .from('record_history')
-      .insert(historyData);
-
-    if (historyError) {
-      console.error('[grnActions] Error inserting into record_history:', historyError);
-      // Even if history fails, the main operations succeeded.
-      return { data: 'Successfully created GRN database entries but history failed.', warning: `History record failed: ${historyError.message}` };
-    }
-
-    return { data: 'Successfully created GRN database entries.' };
+    return { data: rpcData as string };
 
   } catch (error: any) {
-    console.error('[grnActions] Unexpected error in createGrnDatabaseEntries:', error);
+    console.error('[grnActions] Unexpected error in createGrnDatabaseEntries (RPC call):', error);
     return { error: `An unexpected error occurred: ${error.message || 'Unknown error.'}` };
   }
 } 

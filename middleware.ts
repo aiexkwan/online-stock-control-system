@@ -3,7 +3,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 
 // Middleware is fully disabled - no code executed, directly return NextResponse.next()
 export async function middleware(req: NextRequest) {
-  console.log(`[Supabase Middleware] Path: ${req.nextUrl.pathname} - ENTER (Supabase Auth logic commented out)`);
+  // console.log(`[Supabase Middleware] Path: ${req.nextUrl.pathname} - ENTER (Supabase Auth logic commented out)`);
   const res = NextResponse.next();
 
   /*
@@ -60,7 +60,7 @@ export async function middleware(req: NextRequest) {
   }
   */
   
-  console.log(`[Supabase Middleware] Path: ${req.nextUrl.pathname} - EXIT (Supabase Auth logic commented out)`);
+  // console.log(`[Supabase Middleware] Path: ${req.nextUrl.pathname} - EXIT (Supabase Auth logic commented out)`);
   return res;
 }
 

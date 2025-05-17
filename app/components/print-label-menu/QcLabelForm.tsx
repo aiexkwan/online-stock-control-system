@@ -406,7 +406,7 @@ export default function QcLabelForm() {
     const insertDataArr = Array.from({length: numberOfPalletsToGenerate}).map((_, i) => {
       const palletData: any = {
         plt_num: palletNumbersToUse[i],
-        generate_time: generateTime,
+        //generate_time: generateTime,
         product_code: productCode,
         product_qty: quantity,
         series: seriesArr[i],
@@ -521,14 +521,14 @@ export default function QcLabelForm() {
             .insert({ 
                 product_code: d.product_code, 
                 plt_num: d.plt_num, 
-                await: qty,
-                injection: 0, 
-                pipeline: 0,
-                prebook: 0,
-                fold: 0,
-                bulk: 0,
-                backcarpark: 0,
-                latest_update: new Date().toISOString() 
+                await: qty
+                //injection: 0, 
+                //pipeline: 0,
+                //prebook: 0,
+                //fold: 0,
+                //bulk: 0,
+                //backcarpark: 0,
+                //latest_update: new Date().toISOString() 
             });
 
         if (insertError) {
