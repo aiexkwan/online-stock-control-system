@@ -27,6 +27,25 @@ interface ActionResult {
   message?: string;
 }
 
+// Interface for the new damaged pallet voiding action
+interface PalletInfoForDamage {
+  plt_num: string;
+  product_code: string;
+  original_product_qty: number; // This will be foundPallet.product_qty from frontend
+  original_plt_loc: string; // This will be foundPallet.original_plt_loc from frontend
+  plt_remark: string | null;
+  // series is not strictly needed by process_damaged_pallet_void RPC but can be passed if available
+  series?: string | null; 
+}
+
+interface ProcessDamagedPalletArgs {
+  userId: number;
+  palletInfo: PalletInfoForDamage;
+  password: string;
+  voidReason: string; // Should be "Damage" or a more specific damage reason
+  damageQty: number;
+}
+
 // Helper function to log history (Only used for pre-RPC failures now)
 async function logHistoryRecord(
   userId: number,
@@ -165,5 +184,134 @@ export async function voidPalletAction(args: VoidPalletArgs): Promise<ActionResu
     // Log a generic failure if something outside the RPC call fails
     await logHistoryRecord(userId, 'Void Pallet Fail', plt_num, current_location, `Unhandled Server Error (SA): ${error.message}`);
     return { success: false, error: 'An unexpected server error occurred.' };
+  }
+}
+
+export async function processDamagedPalletVoidAction(args: ProcessDamagedPalletArgs): Promise<ActionResult> {
+  console.log('[SA_DMG] Received args for damaged pallet:', JSON.stringify(args, null, 2));
+  if (!args || !args.palletInfo) {
+    console.error('[SA_DMG] CRITICAL: args.palletInfo is missing or args itself is falsy.');
+    return { success: false, error: 'Internal Server Error: Pallet information missing in request for damaged void.' };
+  }
+
+  const { userId, palletInfo, password, voidReason, damageQty } = args;
+  const { 
+    plt_num, 
+    product_code, 
+    original_product_qty, // Renamed for clarity, maps to p_original_product_qty
+    original_plt_loc,     // Renamed for clarity, maps to p_original_plt_loc
+    plt_remark            // Existing remark from palletInfo
+  } = palletInfo;
+  
+  const formattedTime = format(new Date(), 'dd-MMM-yyyy HH:mm:ss');
+  console.log(`[SA_DMG] Damaged pallet void for ${plt_num} initiated by user ${userId} at ${formattedTime} with damage qty ${damageQty}`);
+
+  // Basic validation
+  if (userId === null || typeof userId === 'undefined') {
+    console.error('[SA_DMG] User ID is missing or invalid.');
+    return { success: false, error: 'User ID is missing or invalid.' };
+  }
+  if (!plt_num || !product_code || original_product_qty == null || !voidReason || damageQty == null || original_plt_loc == null) {
+    console.error('[SA_DMG] Missing critical pallet info, void reason, damage quantity, or original location.');
+    return { success: false, error: 'Missing required information for damaged pallet void.' };
+  }
+  if (damageQty <= 0 || damageQty > original_product_qty) {
+    console.error(`[SA_DMG] Invalid damageQty: ${damageQty}. Must be > 0 and <= original_product_qty (${original_product_qty}).`);
+    return { success: false, error: `Invalid damage quantity. Must be between 1 and ${original_product_qty}.` };
+  }
+
+
+  try {
+    // 1. Verify Password
+    console.log('[SA_DMG] Verifying password...');
+    const { data: userData, error: userError } = await supabase
+      .from('data_id')
+      .select('password')
+      .eq('id', userId)
+      .single();
+
+    if (userError || !userData) {
+      console.error('[SA_DMG] Error fetching user data or user not found:', userError);
+      await logHistoryRecord(userId, 'Damaged Void Fail', plt_num, original_plt_loc, 'User Data Fetch Error (SA_DMG)');
+      return { success: false, error: 'Could not verify user information.' };
+    }
+    if (!userData.password) {
+      console.error('[SA_DMG] User password field is missing in database for user:', userId);
+      await logHistoryRecord(userId, 'Damaged Void Fail', plt_num, original_plt_loc, 'User Password Missing in DB (SA_DMG)');
+      return { success: false, error: 'User account configuration error.' };
+    }
+
+    const isPasswordMatch = bcrypt.compareSync(password, userData.password);
+    if (!isPasswordMatch) {
+      console.warn('[SA_DMG] Password mismatch for user', userId);
+      await logHistoryRecord(userId, 'Damaged Void Fail', plt_num, original_plt_loc, 'Password Mismatch (SA_DMG)');
+      return { success: false, error: 'Action Denied. Password Not Match. Please Try Again.' };
+    }
+    console.log('[SA_DMG] Password verified.');
+
+    // Pre-RPC Check: Ensure original_plt_loc is not already 'Voided'.
+    // The RPC also performs these checks.
+    if (original_plt_loc === 'Voided') {
+      console.warn(`[SA_DMG] Pallet ${plt_num} is already voided (checked in SA_DMG). Original loc: ${original_plt_loc}`);
+      return { success: false, error: 'Pallet Already Voided. Please Check Again.' };
+    }
+    
+    // Determine if ACO ref logic applies based on plt_remark
+    // This is illustrative; the RPC handles the core ACO logic.
+    // However, if ACO applies, damageQty might be forced to original_product_qty by frontend/RPC.
+    const acoRefPattern = /ACO Ref : (\d{5,7})/;
+    const acoMatch = plt_remark ? plt_remark.match(acoRefPattern) : null;
+    const isAcoPallet = !!acoMatch;
+
+    if (isAcoPallet && damageQty < original_product_qty) {
+        console.warn(`[SA_DMG] Pallet ${plt_num} has ACO Ref, but damageQty (${damageQty}) is less than original_product_qty (${original_product_qty}). The RPC will likely enforce full void.`);
+        // No specific error here, as RPC handles the logic. Frontend should ideally align damageQty.
+    }
+
+
+    // 2. Call the database function (RPC) process_damaged_pallet_void
+    console.log(`[SA_DMG] Calling RPC 'process_damaged_pallet_void' for plt_num: ${plt_num}`);
+    const { data: rpcData, error: rpcError } = await supabase.rpc('process_damaged_pallet_void', {
+      p_user_id: userId,
+      p_plt_num: plt_num,
+      p_product_code: product_code,
+      p_original_product_qty: original_product_qty,
+      p_damage_qty_to_process: damageQty,         // Changed from p_damage_qty
+      p_void_reason: voidReason, 
+      p_current_true_location: original_plt_loc, // Changed from p_original_plt_loc_param
+      p_original_plt_remark: plt_remark        // Added this parameter
+    });
+
+    if (rpcError) {
+      console.error('[SA_DMG] RPC call failed with rpcError:', rpcError);
+      await logHistoryRecord(userId, 'Damaged Void Fail', plt_num, original_plt_loc, `RPC Call Error (DMG): ${rpcError.message} (SA_DMG)`);
+      return { success: false, error: `Database operation failed: ${rpcError.message}` };
+    }
+
+    console.log(`[SA_DMG] RPC call seemingly successful, response data:`, rpcData);
+    if (rpcData && typeof rpcData === 'object') {
+      // Assuming rpcData is the JSONB object { "success": boolean, "message": "string" }
+      const rpcResponse = rpcData as { success?: boolean; message?: string; [key: string]: any };
+      if (rpcResponse.success === true) {
+        revalidatePath('/void-pallet');
+        revalidatePath('/inventory'); // Also revalidate inventory page as quantities change
+        revalidatePath('/reports/inventory-history'); // And history reports
+        return { success: true, message: rpcResponse.message || 'Damaged pallet processed successfully.' };
+      } else {
+        const errorMessage = rpcResponse.message || 'RPC for damaged pallet indicated an issue but provided no specific message.';
+        console.warn(`[SA_DMG] RPC reported an issue:`, rpcResponse);
+        await logHistoryRecord(userId, 'Damaged Void Fail', plt_num, original_plt_loc, `RPC Reported Issue (DMG): ${errorMessage.substring(0,100)} (SA_DMG)`);
+        return { success: false, error: errorMessage };
+      }
+    } else {
+      console.error('[SA_DMG] RPC returned unexpected data format or null/undefined:', rpcData);
+      await logHistoryRecord(userId, 'Damaged Void Fail', plt_num, original_plt_loc, 'RPC Unexpected Data Format (DMG) (SA_DMG)');
+      return { success: false, error: 'Database operation for damaged pallet returned an unexpected result.' };
+    }
+
+  } catch (error: any) {
+    console.error('[SA_DMG] Unhandled error during processDamagedPalletVoidAction:', error);
+    await logHistoryRecord(userId, 'Damaged Void Fail', plt_num, original_plt_loc, `Unhandled Server Error (DMG): ${error.message} (SA_DMG)`);
+    return { success: false, error: 'An unexpected server error occurred while processing damaged pallet.' };
   }
 } 

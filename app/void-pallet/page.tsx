@@ -10,7 +10,7 @@ import { QrScanner } from '../../components/qr-scanner/qr-scanner'; // Modal QrS
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from '../../components/ui/dialog'; // Import Dialog components
 import { Combobox } from '@/components/ui/combobox'; // Import Combobox
 import { verifyCurrentUserPasswordAction } from '../../app/actions/authActions'; // For password verification
-import { voidPalletAction } from './actions'; // Import server action (will be created later)
+import { voidPalletAction, processDamagedPalletVoidAction } from './actions'; // Import server actions
 
 interface FoundPalletInfo {
   plt_num: string;
@@ -26,7 +26,7 @@ const VOID_REASONS: { value: string; label: string; }[] = [
   { value: "Print Extra Label", label: "Print Extra Label" },
   { value: "Wrong Qty", label: "Wrong Qty" },
   { value: "Wrong Product Code", label: "Wrong Product Code" },
-  { value: "Product Damage", label: "Product Damage" },
+  { value: "Damage", label: "Damage" },
   { value: "Pallet Qty Changed", label: "Pallet Qty Changed" },
   { value: "Used Material", label: "Used Material" },
   { value: "Other", label: "Other (Specify if possible)" }, 
@@ -48,6 +48,11 @@ export default function VoidPalletPage() {
   const [isInputDisabled, setIsInputDisabled] = useState(false);
   const [blockingErrorToastId, setBlockingErrorToastId] = useState<string | number | null>(null);
 
+  // New states for Damage Qty
+  const [damageQtyInput, setDamageQtyInput] = useState('');
+  const [showDamageQtyInput, setShowDamageQtyInput] = useState(false);
+  const [isDamageQtyDisabledForAco, setIsDamageQtyDisabledForAco] = useState(false);
+
   // Refs for input elements
   const seriesInputRef = useRef<HTMLInputElement>(null);
   const palletNumInputRef = useRef<HTMLInputElement>(null);
@@ -58,6 +63,8 @@ export default function VoidPalletPage() {
   const resetInputFields = () => {
     setSeriesInput('');
     setPalletNumInput('');
+    // It's good practice to also reset damageQtyInput here if it's closely tied to search results
+    // setDamageQtyInput(''); // Will be handled by resetState or specific logic for voidReason
   };
 
   const resetState = () => {
@@ -65,8 +72,30 @@ export default function VoidPalletPage() {
     setFoundPallet(null);
     setVoidReason(''); // Clear void reason on reset
     setPasswordInput(''); // Clear password on reset
+    setShowDamageQtyInput(false); // Hide damage qty input
+    setDamageQtyInput(''); // Clear damage qty input
     // Do not reset isInputDisabled or blockingErrorToastId here unless specifically intended
   };
+
+  // Effect to handle Damage Qty input visibility and ACO Ref logic
+  useEffect(() => {
+    if (voidReason === 'Damage') {
+      setShowDamageQtyInput(true);
+      if (foundPallet && foundPallet.plt_remark && /ACO Ref : \d{5,7}/.test(foundPallet.plt_remark)) {
+        setDamageQtyInput(foundPallet.product_qty.toString());
+        setIsDamageQtyDisabledForAco(true);
+      } else {
+        // If not ACO or no pallet found yet, but reason is Damage, ensure damageQtyInput is not locked by previous ACO pallet
+        // and input is enabled
+        // setDamageQtyInput(''); // Allow user to type; only clear if reason changes away from Damage
+        setIsDamageQtyDisabledForAco(false);
+      }
+    } else {
+      setShowDamageQtyInput(false);
+      setDamageQtyInput(''); // Clear if reason is not Damage
+      setIsDamageQtyDisabledForAco(false); // Ensure disabled state is also reset
+    }
+  }, [voidReason, foundPallet]);
 
   const logHistory = async (action: string, plt_num_val: string | null, loc_val: string | null, remark_val: string | null) => {
     if (!userId) {
@@ -281,103 +310,174 @@ export default function VoidPalletPage() {
   }, []);
 
   const handleSeriesScan = (scannedValue: string) => {
-    if (scannedValue) {
-      setSeriesInput(scannedValue);
-      // Optionally trigger search immediately after scan
+    setSeriesInput(scannedValue);
+    setShowScanner(false);
+    // Automatically trigger search after scan
+    // Ensure seriesInputRef.current exists before trying to call focus or other methods
+    if (seriesInputRef.current) {
+      // Setting state is async, so pass scannedValue directly to handleSearch
       handleSearch('series', scannedValue);
-      setLastActiveInput('pallet_num'); // Or keep focus if preferred
+    } else {
+      // Fallback or error handling if ref is not available
+      toast.error("Internal error: Series input reference not found.");
     }
-    setShowScanner(false); // Close the modal scanner
   };
   
+  // Main function to handle the voiding process
   const handleVoidConfirm = async () => {
     if (!foundPallet) {
-        // This case should ideally be prevented by UI, but as a safeguard:
-        showErrorToastAndDisableInputs('No pallet selected to void. Please search again.', 'Void attempt: foundPallet is null');
-        return;
-    }
-    if (foundPallet.original_plt_loc === null) {
-        showErrorToastAndDisableInputs('Pallet location information is missing. Cannot void.', `Void attempt: original_plt_loc is null for ${foundPallet.plt_num}`);
-        return;
-    }
-     if (foundPallet.original_plt_loc === 'Voided') {
-        // This should also be caught by handleSearch, but as a defense:
-        showErrorToastAndDisableInputs(`Pallet ${foundPallet.plt_num} is already voided. Action cancelled.`, `Void attempt: already voided ${foundPallet.plt_num}`);
-        return;
+      toast.error('No pallet selected to void.');
+      return;
     }
     if (!voidReason.trim()) {
-        toast.error('Please Select Or Enter A Void Reason.'); // Standard non-blocking toast for simple validation
-        return;
+      toast.error('Please select or enter a void reason.');
+      return;
     }
-    if (!passwordInput.trim()) {
-        toast.error('Please Enter Your Login Password For Confirmation.'); // Standard non-blocking toast
-        return;
+    if (!passwordInput) {
+      toast.error('Please enter your password.');
+      return;
     }
-    
-    setIsVoiding(true);
     if (!userId) {
-        showErrorToastAndDisableInputs('User ID not found. Cannot perform void action.', 'Void attempt: userId is null');
-        setIsVoiding(false); 
-        return;
+      toast.error('User session not found. Please re-login.');
+      // Log to db as this is a significant issue
+      logErrorToDatabase(`Void attempt failed: User ID missing. Pallet: ${foundPallet.plt_num}`);
+      return;
     }
 
+    const userIdAsInt = parseInt(userId, 10);
+    if (isNaN(userIdAsInt)) {
+      toast.error('User ID is invalid. Please re-login.');
+      logErrorToDatabase(`Void attempt failed: User ID invalid (${userId}). Pallet: ${foundPallet.plt_num}`);
+      return;
+    }
+
+    setIsVoiding(true);
+    let result;
+
     try {
-        // Ensure userId is a number for the action, and rename palletDetails to palletInfo
-        const userIdAsInt = parseInt(userId, 10);
-        if (isNaN(userIdAsInt)) {
-            showErrorToastAndDisableInputs('Invalid User ID format.', `Void attempt: userId NaN - ${userId}`);
+      if (voidReason === 'Damage') {
+        const damageQtyNum = parseInt(damageQtyInput, 10);
+
+        if (isNaN(damageQtyNum)) {
+          showErrorToastAndDisableInputs(
+            'Invalid Damage Quantity: Not a number.',
+            `Void Fail (DMG): Pallet ${foundPallet.plt_num}, Invalid Damage Qty (NaN): ${damageQtyInput}`
+          );
+          setIsVoiding(false);
+          return;
+        }
+
+        if (damageQtyNum <= 0) {
+            showErrorToastAndDisableInputs(
+              'Invalid Damage Quantity: Must be greater than 0.',
+              `Void Fail (DMG): Pallet ${foundPallet.plt_num}, Damage Qty <= 0: ${damageQtyNum}`
+            );
+            setIsVoiding(false);
+            return;
+        }
+        
+        if (!isDamageQtyDisabledForAco && damageQtyNum > foundPallet.product_qty) {
+          showErrorToastAndDisableInputs(
+            `Invalid Damage Quantity: Cannot exceed pallet quantity (${foundPallet.product_qty}).`,
+            `Void Fail (DMG): Pallet ${foundPallet.plt_num}, Damage Qty (${damageQtyNum}) > Product Qty (${foundPallet.product_qty})`
+          );
+          setIsVoiding(false);
+          return;
+        }
+        
+        // If ACO Ref dictates full quantity, ensure damageQtyNum matches (already set by useEffect, but good to be robust)
+        if (isDamageQtyDisabledForAco && damageQtyNum !== foundPallet.product_qty) {
+            showErrorToastAndDisableInputs(
+              'ACO Pallet Mismatch: Damage quantity for ACO pallet should be the full pallet quantity. Please re-verify.',
+              `Void Fail (DMG): Pallet ${foundPallet.plt_num} (ACO), Damage Qty (${damageQtyNum}) !== Product Qty (${foundPallet.product_qty})`
+            );
             setIsVoiding(false);
             return;
         }
 
-        const result = await voidPalletAction({
-            userId: userIdAsInt, 
-            palletInfo: {      
-                plt_num: foundPallet.plt_num,
-                product_code: foundPallet.product_code,
-                product_qty: foundPallet.product_qty,
-                series: foundPallet.series || '', // Provide empty string if series is undefined
-                current_location: foundPallet.original_plt_loc, // Map original_plt_loc to current_location for the action
-                plt_remark: foundPallet.plt_remark, // Add plt_remark
-            },
-            password: passwordInput,
-            voidReason: voidReason.trim(),
+
+        const palletInfoForDamage = {
+          plt_num: foundPallet.plt_num,
+          product_code: foundPallet.product_code,
+          original_product_qty: foundPallet.product_qty, // original_product_qty is the pallet's current qty before voiding
+          original_plt_loc: foundPallet.original_plt_loc!, // Assert non-null as foundPallet implies original_plt_loc is fetched
+          plt_remark: foundPallet.plt_remark,
+          series: foundPallet.series
+        };
+
+        result = await processDamagedPalletVoidAction({
+          userId: userIdAsInt,
+          palletInfo: palletInfoForDamage,
+          password: passwordInput,
+          voidReason: voidReason, // Could be "Damage" or more specific if UI allows
+          damageQty: damageQtyNum,
         });
 
-        if (result.success) {
-            toast.success(`Pallet ${foundPallet.plt_num} voided successfully.`);
-            resetState(); 
-        } else {
-            // More detailed error handling based on result.error
-            const errorMsg = result.error || 'Unknown error from void action.';
-            if (errorMsg.toLowerCase().includes("password mismatch")) {
-                toast.error("Incorrect password. Please check and try again.");
-                // Keep inputs for password re-entry, don't disable everything
-            } else if (errorMsg.startsWith("RPC_ERROR:")) {
-                // These are critical errors from the database RPC
-                const rpcSpecificError = errorMsg.replace("RPC_ERROR:", "").trim();
-                showErrorToastAndDisableInputs(
-                    `Failed to void pallet: ${rpcSpecificError}`,
-                    `Void RPC Error: ${foundPallet.plt_num} - ${rpcSpecificError}`
-                );
-            } else {
-                // Other server-side errors reported by the action
-                showErrorToastAndDisableInputs(
-                    `Failed to void pallet: ${errorMsg}`,
-                    `Void Action Error: ${foundPallet.plt_num} - ${errorMsg}`
-                );
-            }
+      } else { // Not "Damage" reason
+        if (!foundPallet.original_plt_loc) {
+             showErrorToastAndDisableInputs(
+                'Cannot void pallet: Original location is missing.',
+                `Void Fail (Non-DMG): Pallet ${foundPallet.plt_num} missing original_plt_loc`
+             );
+             setIsVoiding(false);
+             return;
         }
-    } catch (error: any) {
-        console.error('Critical error calling voidPalletAction:', error);
-        const errMsg = error.message || 'An unexpected error occurred during void process.';
+
+        const palletInfoToVoid = {
+          plt_num: foundPallet.plt_num,
+          product_code: foundPallet.product_code,
+          product_qty: foundPallet.product_qty,
+          series: foundPallet.series || '', // Ensure series is a string, even if undefined
+          current_location: foundPallet.original_plt_loc, // Pass original_plt_loc as current_location
+          plt_remark: foundPallet.plt_remark,
+        };
+
+        result = await voidPalletAction({
+          userId: userIdAsInt,
+          palletInfo: palletInfoToVoid,
+          password: passwordInput,
+          voidReason: voidReason,
+        });
+      }
+
+      // Handle Server Action response
+      if (result.success) {
+        toast.success(result.message || 'Pallet action completed successfully!');
+        
+        if (blockingErrorToastId) {
+            toast.dismiss(blockingErrorToastId);
+            setBlockingErrorToastId(null); // Clear the ID
+        }
+        setIsInputDisabled(false); // Re-enable inputs on success
+        setIsVoiding(false); // Explicitly set isVoiding to false here
+        resetState(); // Clear inputs and found pallet
+        if (seriesInputRef.current) seriesInputRef.current.focus();
+
+      } else { // result.error
         showErrorToastAndDisableInputs(
-            `Voiding Operation Failed: ${errMsg}`,
-            `Critical Void Exception: ${foundPallet?.plt_num || 'N/A'} - ${errMsg}`
+            result.error || 'An unknown error occurred during the voiding process.',
+            `Void Fail Server Response: Pallet ${foundPallet.plt_num}, Reason: ${voidReason}, DmgQty: ${voidReason === 'Damage' ? damageQtyInput : 'N/A'}, ServerErr: ${result.error ? result.error.substring(0,100) : 'Unknown'}`
         );
+        // No need to call setIsVoiding(false) here as showErrorToastAndDisableInputs does it.
+      }
+
+    } catch (error: any) {
+      console.error('Client-side error during void confirmation:', error);
+      showErrorToastAndDisableInputs(
+        `Client Error: ${error.message || 'An unexpected client-side error occurred.'}`,
+        `Void Fail Client Catch: Pallet ${foundPallet.plt_num}, Reason: ${voidReason}, ClientErr: ${error.message ? error.message.substring(0,100) : 'Unknown'}`
+      );
+      // No need to call setIsVoiding(false) here as showErrorToastAndDisableInputs does it.
     } finally {
-        setIsVoiding(false);
-        setPasswordInput(''); 
+      // setIsVoiding(false); // This is handled by showErrorToastAndDisableInputs or directly after success
+      // Ensure isVoiding is reset if an error occurs BEFORE showErrorToastAndDisableInputs is called (e.g. parsing userId)
+      // However, the structure above mostly calls showErrorToastAndDisableInputs which sets isVoiding to false.
+      // If any path returns early without calling showErrorToastAndDisableInputs on error, then setIsVoiding(false) would be needed here.
+      // Current early returns (e.g., for missing fields) are before setIsVoiding(true) or they call showErrorToastAndDisableInputs.
+      // Let's ensure it's always reset if not already handled.
+      if (isVoiding && !blockingErrorToastId) { // Only if not already handled by showErrorToast...
+          setIsVoiding(false);
+      }
     }
   };
 
@@ -463,16 +563,20 @@ export default function VoidPalletPage() {
                   <div>
                     <label htmlFor="voidReason" className="block text-sm font-medium mb-1">Void Reason</label>
                     <Combobox
-                        items={VOID_REASONS}
-                        value={voidReason}
-                        onValueChange={setVoidReason}
-                        placeholder="Select Or Type In Reason..."
-                        searchPlaceholder="Search Or Add Reason..."
-                        className="w-full bg-gray-700 border-gray-600 rounded-md text-white"
-                        triggerClassName="w-full bg-gray-700 border-gray-600 text-white"
-                        contentClassName="bg-gray-700 text-white"
-                        allowCustomValue={true}
-                        disabled={isVoiding || isLoading || isInputDisabled}
+                      value={voidReason}
+                      onValueChange={(value) => {
+                        setVoidReason(value);
+                        // If changing away from 'Damage' with an ACO pallet, reset related states
+                        if (value !== 'Damage' && isDamageQtyDisabledForAco) {
+                          setDamageQtyInput('');
+                          setIsDamageQtyDisabledForAco(false);
+                        }
+                      }}
+                      items={VOID_REASONS}
+                      placeholder="Select void reason..."
+                      disabled={isInputDisabled || isVoiding}
+                      allowCustomValue={true}
+                      searchPlaceholder="Search or add reason..."
                     />
                   </div>
                   <div>
@@ -487,6 +591,36 @@ export default function VoidPalletPage() {
                         disabled={isVoiding || isLoading || isInputDisabled}
                     />
                   </div>
+                  {showDamageQtyInput && (
+                    <div className="space-y-1">
+                      <label htmlFor="damageQty" className="text-sm font-medium">Damage Qty:</label>
+                      <Input
+                        id="damageQty"
+                        type="number"
+                        value={damageQtyInput}
+                        onChange={(e) => setDamageQtyInput(e.target.value)}
+                        placeholder={`Enter damaged quantity (Max: ${foundPallet?.product_qty || 'N/A'})`}
+                        disabled={isInputDisabled || isVoiding || isDamageQtyDisabledForAco}
+                        min="1"
+                        max={foundPallet?.product_qty?.toString() || undefined}
+                      />
+                      {isDamageQtyDisabledForAco && (
+                        <p className="text-xs text-orange-600">
+                          ACO Pallet: Damage quantity set to full pallet quantity for voiding.
+                        </p>
+                      )}
+                      {foundPallet && parseInt(damageQtyInput) > foundPallet.product_qty && (
+                          <p className="text-xs text-red-600">
+                              Damage quantity cannot exceed pallet quantity ({foundPallet.product_qty}).
+                          </p>
+                      )}
+                       {foundPallet && parseInt(damageQtyInput) <= 0 && damageQtyInput !== '' && (
+                          <p className="text-xs text-red-600">
+                              Damage quantity must be greater than 0.
+                          </p>
+                      )}
+                    </div>
+                  )}
                   <Button 
                       onClick={handleVoidConfirm}
                       className="w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-3"
