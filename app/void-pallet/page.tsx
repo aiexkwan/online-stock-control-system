@@ -389,7 +389,7 @@ export default function VoidPalletPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
           <div className="space-y-2">
             <label htmlFor="seriesInput" className="block text-lg font-medium text-gray-300">
-              QR Code / Series
+              QR Code
             </label>
             <Input
               id="seriesInput"
@@ -449,16 +449,16 @@ export default function VoidPalletPage() {
         {foundPallet && !isLoading && !isVoiding && !isInputDisabled && (
           <div className="mt-6 p-6 bg-gray-800 shadow-xl rounded-lg text-left">
             <h3 className="text-xl font-semibold text-red-400 mb-3">Pallet Information</h3>
-            <p><strong>Pallet Number:</strong> {foundPallet.plt_num}</p>
-            <p><strong>Product Code:</strong> {foundPallet.product_code}</p>
-            <p><strong>Quantity:</strong> {foundPallet.product_qty}</p>
-            <p><strong>Latest Location:</strong> {foundPallet.original_plt_loc || 'N/A'}</p>
-            <p><strong>Remark:</strong> {foundPallet.plt_remark || 'N/A'}</p>
+            <p><strong>Pallet Number : </strong> {foundPallet.plt_num}</p>
+            <p><strong>Product Code : </strong> {foundPallet.product_code}</p>
+            <p><strong>Quantity : </strong> {foundPallet.product_qty}</p>
+            <p><strong>Latest Location : </strong> {foundPallet.original_plt_loc || 'N/A'}</p>
+            <p><strong>Remark : </strong> {foundPallet.plt_remark || 'N/A'}</p>
             
             {/* Directly show void inputs if pallet found and not voided */}
             {foundPallet.original_plt_loc !== 'Voided' && (
               <div className="mt-4 pt-4 border-t border-gray-700">
-                <h4 className="text-lg font-semibold mb-3 text-red-400">Void Pallet Confirmation</h4>
+                <h4 className="text-lg font-semibold mb-3 text-red-400">REMINDER : VOID PALLET CANNOT BE UNDONE</h4>
                 <div className="space-y-4">
                   <div>
                     <label htmlFor="voidReason" className="block text-sm font-medium mb-1">Void Reason</label>
@@ -466,7 +466,7 @@ export default function VoidPalletPage() {
                         items={VOID_REASONS}
                         value={voidReason}
                         onValueChange={setVoidReason}
-                        placeholder="Select Or Type A Reason..."
+                        placeholder="Select Or Type In Reason..."
                         searchPlaceholder="Search Or Add Reason..."
                         className="w-full bg-gray-700 border-gray-600 rounded-md text-white"
                         triggerClassName="w-full bg-gray-700 border-gray-600 text-white"
@@ -476,7 +476,7 @@ export default function VoidPalletPage() {
                     />
                   </div>
                   <div>
-                    <label htmlFor="password" className="block text-sm font-medium mb-1">Password</label>
+                    <label htmlFor="password" className="block text-sm font-medium mb-1">User Password</label>
                     <Input 
                         id="password"
                         type="password"
