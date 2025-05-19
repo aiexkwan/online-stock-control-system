@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Combobox } from '@/components/ui/combobox'; // Import Combobox
 import { verifyCurrentUserPasswordAction } from '../../app/actions/authActions'; // For password verification
 import { voidPalletAction, processDamagedPalletVoidAction } from './actions'; // Import server actions
+import { useRouter } from 'next/navigation'; // Added for redirection
 
 interface FoundPalletInfo {
   plt_num: string;
@@ -24,6 +25,7 @@ interface FoundPalletInfo {
 // Explicitly type VOID_REASONS
 const VOID_REASONS: { value: string; label: string; }[] = [
   { value: "Print Extra Label", label: "Print Extra Label" },
+  { value: "Wrong Label", label: "Wrong Label" },
   { value: "Wrong Qty", label: "Wrong Qty" },
   { value: "Wrong Product Code", label: "Wrong Product Code" },
   { value: "Damage", label: "Damage" },
@@ -33,6 +35,7 @@ const VOID_REASONS: { value: string; label: string; }[] = [
 ];
 
 export default function VoidPalletPage() {
+  const router = useRouter(); // Added for redirection
   const [seriesInput, setSeriesInput] = useState('');
   const [palletNumInput, setPalletNumInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -52,6 +55,22 @@ export default function VoidPalletPage() {
   const [damageQtyInput, setDamageQtyInput] = useState('');
   const [showDamageQtyInput, setShowDamageQtyInput] = useState(false);
   const [isDamageQtyDisabledForAco, setIsDamageQtyDisabledForAco] = useState(false);
+
+  // New states for reprint dialog
+  const [showReprintConfirmDialog, setShowReprintConfirmDialog] = useState(false);
+  const [reprintInfo, setReprintInfo] = useState<{ 
+    product_code: string; 
+    quantity: number; 
+    original_plt_num: string; 
+    source_action: string; 
+    requiresInput: boolean; // True if further input (new product_code/qty) is needed
+    reason: string; // The original void reason
+  } | null>(null);
+
+  // New states for the second dialog (for inputting new product code/qty)
+  const [showReprintInputDialog, setShowReprintInputDialog] = useState(false);
+  const [reprintNewProductCode, setReprintNewProductCode] = useState('');
+  const [reprintNewQuantity, setReprintNewQuantity] = useState('');
 
   // Refs for input elements
   const seriesInputRef = useRef<HTMLInputElement>(null);
@@ -184,6 +203,8 @@ export default function VoidPalletPage() {
     } else if (seriesInputRef.current) { // Fallback to series input
       seriesInputRef.current.focus();
     }
+    // Ensure dialogs are closed if error occurs mid-process
+    setShowReprintConfirmDialog(false);
   };
 
   const handleSearch = async (searchType: 'series' | 'pallet_num', searchValue: string) => {
@@ -312,173 +333,282 @@ export default function VoidPalletPage() {
   const handleSeriesScan = (scannedValue: string) => {
     setSeriesInput(scannedValue);
     setShowScanner(false);
-    // Automatically trigger search after scan
-    // Ensure seriesInputRef.current exists before trying to call focus or other methods
-    if (seriesInputRef.current) {
-      // Setting state is async, so pass scannedValue directly to handleSearch
-      handleSearch('series', scannedValue);
-    } else {
-      // Fallback or error handling if ref is not available
-      toast.error("Internal error: Series input reference not found.");
-    }
+    setLastActiveInput('series'); // Set last active input
+    // Trigger search immediately after scan
+    handleSearch('series', scannedValue);
   };
   
   // Main function to handle the voiding process
   const handleVoidConfirm = async () => {
-    if (!foundPallet) {
-      toast.error('No pallet selected to void.');
+    if (!foundPallet || !voidReason || !passwordInput) {
+      toast.error('請填寫所有必填欄位 (棧板資訊, 作廢原因, 密碼)。');
       return;
     }
-    if (!voidReason.trim()) {
-      toast.error('Please select or enter a void reason.');
-      return;
+    if (voidReason === 'Damage' && !damageQtyInput) {
+        toast.error('損壞數量為必填項。');
+        return;
     }
-    if (!passwordInput) {
-      toast.error('Please enter your password.');
-      return;
+    if (voidReason === 'Damage') {
+        const qty = parseInt(damageQtyInput, 10);
+        if (isNaN(qty) || qty < 0 || qty > foundPallet.product_qty) {
+            toast.error('損壞數量必須是有效數字，介於 0 和原始棧板數量之間。');
+            return;
+        }
     }
-    if (!userId) {
-      toast.error('User session not found. Please re-login.');
-      // Log to db as this is a significant issue
-      logErrorToDatabase(`Void attempt failed: User ID missing. Pallet: ${foundPallet.plt_num}`);
-      return;
+    if (!userId) { // Ensure userId from session is available
+        toast.error('用戶會話無效，無法執行操作。請重新整理頁面或重新登入。');
+        logErrorToDatabase(`Void attempt failed: User ID missing from session. Pallet: ${foundPallet.plt_num}`);
+        return;
     }
 
-    const userIdAsInt = parseInt(userId, 10);
-    if (isNaN(userIdAsInt)) {
-      toast.error('User ID is invalid. Please re-login.');
-      logErrorToDatabase(`Void attempt failed: User ID invalid (${userId}). Pallet: ${foundPallet.plt_num}`);
-      return;
+    const numericUserId = parseInt(userId, 10);
+    if (isNaN(numericUserId)) {
+        toast.error('用戶 ID 格式無效。');
+        logErrorToDatabase(`Void attempt failed: User ID invalid (${userId}). Pallet: ${foundPallet.plt_num}`);
+        return;
     }
+
 
     setIsVoiding(true);
-    let result;
+    let toastId = toast.loading('正在驗證密碼...');
 
     try {
+      // Pass numericUserId to the verification action
+      const passVerifyResult = await verifyCurrentUserPasswordAction(numericUserId, passwordInput);
+
+      if (!passVerifyResult.success) { // userId is NOT part of passVerifyResult
+        toast.error(passVerifyResult.error || '密碼錯誤。', { id: toastId });
+        setIsVoiding(false);
+        setPasswordInput(''); // Clear password input on error
+        if (passVerifyResult.error) {
+            const dbErrInfo = `Password verification failed for voiding pallet ${foundPallet.plt_num}. UserID: ${numericUserId}. Error: ${passVerifyResult.error}`;
+            logErrorToDatabase(dbErrInfo);
+        }
+        return;
+      }
+      
+      // Use numericUserId directly as it's already validated and available
+      const currentUserIdForAction = numericUserId; 
+
+      toast.loading('正在作廢棧板...', { id: toastId });
+
+      let result;
+      
       if (voidReason === 'Damage') {
-        const damageQtyNum = parseInt(damageQtyInput, 10);
-
-        if (isNaN(damageQtyNum)) {
-          showErrorToastAndDisableInputs(
-            'Invalid Damage Quantity: Not a number.',
-            `Void Fail (DMG): Pallet ${foundPallet.plt_num}, Invalid Damage Qty (NaN): ${damageQtyInput}`
-          );
-          setIsVoiding(false);
-          return;
-        }
-
-        if (damageQtyNum <= 0) {
-            showErrorToastAndDisableInputs(
-              'Invalid Damage Quantity: Must be greater than 0.',
-              `Void Fail (DMG): Pallet ${foundPallet.plt_num}, Damage Qty <= 0: ${damageQtyNum}`
-            );
-            setIsVoiding(false);
-            return;
-        }
-        
-        if (!isDamageQtyDisabledForAco && damageQtyNum > foundPallet.product_qty) {
-          showErrorToastAndDisableInputs(
-            `Invalid Damage Quantity: Cannot exceed pallet quantity (${foundPallet.product_qty}).`,
-            `Void Fail (DMG): Pallet ${foundPallet.plt_num}, Damage Qty (${damageQtyNum}) > Product Qty (${foundPallet.product_qty})`
-          );
-          setIsVoiding(false);
-          return;
-        }
-        
-        // If ACO Ref dictates full quantity, ensure damageQtyNum matches (already set by useEffect, but good to be robust)
-        if (isDamageQtyDisabledForAco && damageQtyNum !== foundPallet.product_qty) {
-            showErrorToastAndDisableInputs(
-              'ACO Pallet Mismatch: Damage quantity for ACO pallet should be the full pallet quantity. Please re-verify.',
-              `Void Fail (DMG): Pallet ${foundPallet.plt_num} (ACO), Damage Qty (${damageQtyNum}) !== Product Qty (${foundPallet.product_qty})`
-            );
-            setIsVoiding(false);
-            return;
-        }
-
-
-        const palletInfoForDamage = {
-          plt_num: foundPallet.plt_num,
-          product_code: foundPallet.product_code,
-          original_product_qty: foundPallet.product_qty, // original_product_qty is the pallet's current qty before voiding
-          original_plt_loc: foundPallet.original_plt_loc!, // Assert non-null as foundPallet implies original_plt_loc is fetched
-          plt_remark: foundPallet.plt_remark,
-          series: foundPallet.series
+        const damageQty = parseInt(damageQtyInput, 10); // Already validated
+        // Corrected structure for PalletInfoForDamage
+        const palletInfoForDamageAction: {
+            plt_num: string;
+            product_code: string;
+            original_product_qty: number;
+            original_plt_loc: string;
+            plt_remark: string | null;
+            series?: string | null;
+        } = {
+            plt_num: foundPallet.plt_num,
+            product_code: foundPallet.product_code,
+            original_product_qty: foundPallet.product_qty,
+            original_plt_loc: foundPallet.original_plt_loc || '', // Ensure string, though it should exist
+            plt_remark: foundPallet.plt_remark,
+            series: foundPallet.series,
         };
-
         result = await processDamagedPalletVoidAction({
-          userId: userIdAsInt,
-          palletInfo: palletInfoForDamage,
-          password: passwordInput,
-          voidReason: voidReason, // Could be "Damage" or more specific if UI allows
-          damageQty: damageQtyNum,
-        });
-
-      } else { // Not "Damage" reason
-        if (!foundPallet.original_plt_loc) {
-             showErrorToastAndDisableInputs(
-                'Cannot void pallet: Original location is missing.',
-                `Void Fail (Non-DMG): Pallet ${foundPallet.plt_num} missing original_plt_loc`
-             );
-             setIsVoiding(false);
-             return;
-        }
-
-        const palletInfoToVoid = {
-          plt_num: foundPallet.plt_num,
-          product_code: foundPallet.product_code,
-          product_qty: foundPallet.product_qty,
-          series: foundPallet.series || '', // Ensure series is a string, even if undefined
-          current_location: foundPallet.original_plt_loc, // Pass original_plt_loc as current_location
-          plt_remark: foundPallet.plt_remark,
-        };
-
-        result = await voidPalletAction({
-          userId: userIdAsInt,
-          palletInfo: palletInfoToVoid,
-          password: passwordInput,
+          palletInfo: palletInfoForDamageAction,
+          damageQty: damageQty,
           voidReason: voidReason,
+          userId: currentUserIdForAction, // Pass numeric userId
+          password: passwordInput, // Restore password argument for server action
+        });
+      } else {
+        // Corrected structure for PalletInfo
+        const palletInfoForVoidAction: {
+            plt_num: string;
+            product_code: string;
+            product_qty: number;
+            series: string;
+            current_location: string | null;
+            plt_remark: string | null;
+        } = {
+            plt_num: foundPallet.plt_num,
+            product_code: foundPallet.product_code,
+            product_qty: foundPallet.product_qty,
+            series: foundPallet.series || '', // Provide default for series
+            current_location: foundPallet.original_plt_loc,
+            plt_remark: foundPallet.plt_remark,
+        };
+        result = await voidPalletAction({
+          palletInfo: palletInfoForVoidAction,
+          voidReason: voidReason,
+          userId: currentUserIdForAction, // Pass numeric userId
+          password: passwordInput, // Restore password argument for server action
         });
       }
 
-      // Handle Server Action response
       if (result.success) {
-        toast.success(result.message || 'Pallet action completed successfully!');
+        toast.success(result.message || '棧板作廢成功！', { id: toastId });
         
-        if (blockingErrorToastId) {
-            toast.dismiss(blockingErrorToastId);
-            setBlockingErrorToastId(null); // Clear the ID
-        }
-        setIsInputDisabled(false); // Re-enable inputs on success
-        setIsVoiding(false); // Explicitly set isVoiding to false here
-        resetState(); // Clear inputs and found pallet
-        if (seriesInputRef.current) seriesInputRef.current.focus();
+        const reasonsAllowingReprint = ["Wrong Qty", "Wrong Product Code", "Damage", "Pallet Qty Changed", "Wrong Label"];
+        if (reasonsAllowingReprint.includes(voidReason) && foundPallet) {
+            let productCodeForReprint = foundPallet.product_code;
+            let quantityForReprint = foundPallet.product_qty;
+            let requiresInputForReprint = false;
 
-      } else { // result.error
-        showErrorToastAndDisableInputs(
-            result.error || 'An unknown error occurred during the voiding process.',
-            `Void Fail Server Response: Pallet ${foundPallet.plt_num}, Reason: ${voidReason}, DmgQty: ${voidReason === 'Damage' ? damageQtyInput : 'N/A'}, ServerErr: ${result.error ? result.error.substring(0,100) : 'Unknown'}`
-        );
-        // No need to call setIsVoiding(false) here as showErrorToastAndDisableInputs does it.
+            if (voidReason === "Damage") {
+                // For "Damage", if it was a partial damage, remainingQty comes from server action
+                // processDamagedPalletVoidAction should return remainingQty
+                const remainingQty = result.remainingQty; // Assume this is returned
+                if (typeof remainingQty === 'number' && remainingQty > 0) {
+                    quantityForReprint = remainingQty;
+                    // No further input needed for product code or quantity here
+                } else if (remainingQty === 0) {
+                    // Full damage, no reprint
+                    resetState();
+                    setIsVoiding(false);
+                    return;
+                } else {
+                    // This case should ideally not happen if server action is correct
+                    // Or if remainingQty is not returned, we can't proceed with reprint
+                    toast.error("無法獲取剩餘數量，無法重印部分損壞標籤。");
+                    resetState();
+                    setIsVoiding(false);
+                    return;
+                }
+            } else if (voidReason === "Wrong Qty" || voidReason === "Pallet Qty Changed") {
+                requiresInputForReprint = true; // User needs to input new quantity
+            } else if (voidReason === "Wrong Product Code") {
+                requiresInputForReprint = true; // User needs to input new product code
+            } else if (voidReason === "Wrong Label") {
+                requiresInputForReprint = true; // User needs to input new product code and quantity
+            }
+            
+            setReprintInfo({
+                product_code: productCodeForReprint,
+                quantity: quantityForReprint,
+                original_plt_num: foundPallet.plt_num,
+                source_action: 'void_correction',
+                requiresInput: requiresInputForReprint,
+                reason: voidReason,
+            });
+            setShowReprintConfirmDialog(true);
+        } else {
+            // For other reasons or if foundPallet is somehow null, just reset
+            resetState();
+        }
+        await logHistory(`棧板 ${foundPallet.plt_num} 已作廢`, foundPallet.plt_num, foundPallet.original_plt_loc, `原因: ${voidReason}${voidReason === 'Damage' ? ', 損壞數: ' + damageQtyInput : ''}`);
+      } else {
+        const errMsg = result.error || '作廢棧板時發生未知錯誤。';
+        const dbErrInfo = `Voiding pallet ${foundPallet.plt_num} failed. Reason: ${voidReason}. UserID: ${currentUserIdForAction}. Error from action: ${result.error}`;
+        // toast.error(errMsg, { id: toastId }); // Show a normal toast
+        showErrorToastAndDisableInputs(errMsg, dbErrInfo); // Use blocking toast for critical failure
       }
 
     } catch (error: any) {
-      console.error('Client-side error during void confirmation:', error);
-      showErrorToastAndDisableInputs(
-        `Client Error: ${error.message || 'An unexpected client-side error occurred.'}`,
-        `Void Fail Client Catch: Pallet ${foundPallet.plt_num}, Reason: ${voidReason}, ClientErr: ${error.message ? error.message.substring(0,100) : 'Unknown'}`
-      );
-      // No need to call setIsVoiding(false) here as showErrorToastAndDisableInputs does it.
+      const errMsg = `執行作廢操作時發生錯誤: ${error.message || '未知錯誤'}`;
+      const dbErrInfo = `Exception during voiding pallet ${foundPallet?.plt_num}. Reason: ${voidReason}. UserID: ${numericUserId}. Error: ${error.message}`;
+      // toast.error(errMsg, { id: toastId });
+      showErrorToastAndDisableInputs(errMsg, dbErrInfo);
     } finally {
-      // setIsVoiding(false); // This is handled by showErrorToastAndDisableInputs or directly after success
-      // Ensure isVoiding is reset if an error occurs BEFORE showErrorToastAndDisableInputs is called (e.g. parsing userId)
-      // However, the structure above mostly calls showErrorToastAndDisableInputs which sets isVoiding to false.
-      // If any path returns early without calling showErrorToastAndDisableInputs on error, then setIsVoiding(false) would be needed here.
-      // Current early returns (e.g., for missing fields) are before setIsVoiding(true) or they call showErrorToastAndDisableInputs.
-      // Let's ensure it's always reset if not already handled.
-      if (isVoiding && !blockingErrorToastId) { // Only if not already handled by showErrorToast...
+      //setIsVoiding(false); // Do not set isVoiding false here if reprint dialog is shown
+      // Password should be cleared regardless of success/failure if action was attempted
+      // setPasswordInput(''); // Let it be cleared on resetState or successful dialog interaction
+      if (!showReprintConfirmDialog) { // only set to false if not showing reprint dialog
           setIsVoiding(false);
+          setPasswordInput(''); 
       }
     }
+  };
+
+  const handleReprintConfirmed = () => {
+    if (reprintInfo) {
+      if (reprintInfo.requiresInput) {
+        // Prepare and show the second dialog for user input
+        setReprintNewProductCode(reprintInfo.product_code); // Prefill with original product code
+        setReprintNewQuantity(reprintInfo.quantity.toString()); // Prefill with original quantity
+        
+        // Adjust prefill based on reason
+        if (reprintInfo.reason === "Wrong Qty" || reprintInfo.reason === "Pallet Qty Changed") {
+          // Keep product_code, user needs to change quantity
+          setReprintNewQuantity(''); // Clear quantity for user to input new
+        } else if (reprintInfo.reason === "Wrong Product Code") {
+          // Keep quantity, user needs to change product_code
+          setReprintNewProductCode(''); // Clear product_code for user to input new
+        } else if (reprintInfo.reason === "Wrong Label") {
+          // User needs to change both
+          setReprintNewProductCode('');
+          setReprintNewQuantity('');
+        }
+
+        setShowReprintConfirmDialog(false); // Hide the first dialog
+        setShowReprintInputDialog(true);    // Show the input dialog
+      } else {
+        // No input required (e.g., partial damage), directly redirect
+        const queryParams = new URLSearchParams({
+          product_code: reprintInfo.product_code,
+          quantity: reprintInfo.quantity.toString(),
+          source_action: reprintInfo.source_action,
+          original_plt_num: reprintInfo.original_plt_num,
+        });
+        router.push(`/print-label?${queryParams.toString()}`);
+        
+        setShowReprintConfirmDialog(false);
+        setReprintInfo(null);
+        resetState();
+        setIsVoiding(false); 
+        setPasswordInput('');
+      }
+    }
+  };
+
+  const handleReprintCancelled = () => {
+    setShowReprintConfirmDialog(false);
+    // also ensure input dialog is closed if user cancels from first dialog
+    setShowReprintInputDialog(false); 
+    setReprintInfo(null);
+    resetState();
+    setIsVoiding(false); 
+    setPasswordInput('');
+    toast.info("棧板已作廢，未選擇重印標籤。");
+  };
+
+  // New handler for the second dialog (input for reprint)
+  const handleReprintInputSubmit = () => {
+    if (reprintInfo) {
+      const finalProductCode = reprintNewProductCode.trim() || reprintInfo.product_code;
+      const finalQuantityStr = reprintNewQuantity.trim();
+      const finalQuantity = parseInt(finalQuantityStr, 10);
+
+      if (!finalProductCode) {
+        toast.error("產品代碼不能為空。");
+        return;
+      }
+      if (isNaN(finalQuantity) || finalQuantity <= 0) {
+        toast.error("數量必須是大於 0 的有效數字。");
+        return;
+      }
+
+      const queryParams = new URLSearchParams({
+        product_code: finalProductCode,
+        quantity: finalQuantity.toString(),
+        source_action: reprintInfo.source_action,
+        original_plt_num: reprintInfo.original_plt_num,
+      });
+      router.push(`/print-label?${queryParams.toString()}`);
+
+      setShowReprintInputDialog(false);
+      setReprintInfo(null);
+      resetState();
+      setIsVoiding(false);
+      setPasswordInput('');
+    }
+  };
+
+  const handleReprintInputCancel = () => {
+    setShowReprintInputDialog(false);
+    setReprintInfo(null); // Clear reprint info as the process is cancelled
+    resetState();
+    setIsVoiding(false); 
+    setPasswordInput('');
+    toast.info("重印已取消。");
   };
 
   return (
@@ -566,17 +696,13 @@ export default function VoidPalletPage() {
                       value={voidReason}
                       onValueChange={(value) => {
                         setVoidReason(value);
-                        // If changing away from 'Damage' with an ACO pallet, reset related states
-                        if (value !== 'Damage' && isDamageQtyDisabledForAco) {
-                          setDamageQtyInput('');
-                          setIsDamageQtyDisabledForAco(false);
-                        }
+                        // Potentially reset damageQtyInput if reason changes from "Damage"
+                        // This is handled by the useEffect on [voidReason, foundPallet]
                       }}
                       items={VOID_REASONS}
-                      placeholder="Select void reason..."
-                      disabled={isInputDisabled || isVoiding}
-                      allowCustomValue={true}
-                      searchPlaceholder="Search or add reason..."
+                      placeholder="選擇作廢原因..."
+                      disabled={!foundPallet || isInputDisabled || isVoiding}
+                      className="w-full bg-white text-black placeholder-gray-700 border border-gray-300 rounded-md focus:ring-orange-500 focus:border-orange-500"
                     />
                   </div>
                   <div>
@@ -605,19 +731,9 @@ export default function VoidPalletPage() {
                         max={foundPallet?.product_qty?.toString() || undefined}
                       />
                       {isDamageQtyDisabledForAco && (
-                        <p className="text-xs text-orange-600">
-                          ACO Pallet: Damage quantity set to full pallet quantity for voiding.
+                        <p className="text-xs text-amber-600 dark:text-amber-500 mt-1">
+                            此棧板與 ACO 訂單相關聯，損壞數量自動設定為總數量。
                         </p>
-                      )}
-                      {foundPallet && parseInt(damageQtyInput) > foundPallet.product_qty && (
-                          <p className="text-xs text-red-600">
-                              Damage quantity cannot exceed pallet quantity ({foundPallet.product_qty}).
-                          </p>
-                      )}
-                       {foundPallet && parseInt(damageQtyInput) <= 0 && damageQtyInput !== '' && (
-                          <p className="text-xs text-red-600">
-                              Damage quantity must be greater than 0.
-                          </p>
                       )}
                     </div>
                   )}
@@ -653,6 +769,92 @@ export default function VoidPalletPage() {
             title="Scan Series QR Code"
             hint="Align QR code within the frame to scan"
         />
+
+        {/* Reprint Confirmation Dialog */}
+        <Dialog open={showReprintConfirmDialog} onOpenChange={(isOpen) => {
+          if (!isOpen) { // If dialog is closed by user (e.g. Esc or overlay click)
+              handleReprintCancelled();
+          } else {
+              setShowReprintConfirmDialog(isOpen);
+          }
+        }}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>重印修正標籤？</DialogTitle>
+              <DialogDescription>
+                {reprintInfo?.reason === "Damage" && reprintInfo.quantity > 0 ?
+                  `棧板已作廢 (部分損壞)。剩餘數量: ${reprintInfo.quantity}。是否為此剩餘數量列印新標籤？` :
+                reprintInfo?.reason === "Damage" && reprintInfo.quantity === 0 ?
+                  `棧板已完全損壞作廢。` : // This case should ideally be handled before showing dialog
+                  `棧板因 "${reprintInfo?.reason}" 作廢。是否要列印修正後的標籤？`
+                }
+                {reprintInfo && reprintInfo.requiresInput && reprintInfo.reason !== "Damage" && (
+                  <p className="mt-2 text-sm text-muted-foreground">
+                    選擇「是」將引導您輸入新的 {reprintInfo.reason === "Wrong Qty" || reprintInfo.reason === "Pallet Qty Changed" ? "數量" : reprintInfo.reason === "Wrong Product Code" ? "產品代碼" : "產品代碼和數量"}。
+                  </p>
+                )}
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button variant="outline" onClick={handleReprintCancelled}>否</Button>
+              {/* For "Damage" with 0 quantity, "Yes" button should not be shown or should be disabled,
+                  but this case should be handled before even showing the dialog.
+                  If reprintInfo.quantity is 0 due to full damage, the dialog text covers it,
+                  and the 'Yes' button would effectively do nothing or lead to printing a 0 qty label, which is bad.
+                  The logic in handleVoidConfirm already tries to prevent this dialog for 0 remainingQty.
+              */}
+              {!(reprintInfo?.reason === "Damage" && reprintInfo.quantity === 0) && (
+                   <Button onClick={handleReprintConfirmed}>是</Button>
+              )}
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Reprint Input Dialog (Second Dialog) */}
+        <Dialog open={showReprintInputDialog} onOpenChange={(isOpen) => {
+          if (!isOpen) handleReprintInputCancel();
+          else setShowReprintInputDialog(isOpen);
+        }}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>輸入修正後的標籤資訊</DialogTitle>
+              <DialogDescription>
+                請為新的標籤提供以下資訊。作廢原因：{reprintInfo?.reason}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+              <div className="grid grid-cols-4 items-center gap-4">
+                <label htmlFor="reprintProductCode" className="text-right col-span-1">
+                  產品代碼
+                </label>
+                <Input
+                  id="reprintProductCode"
+                  value={reprintNewProductCode}
+                  onChange={(e) => setReprintNewProductCode(e.target.value)}
+                  className="col-span-3"
+                  disabled={reprintInfo?.reason === "Wrong Qty" || reprintInfo?.reason === "Pallet Qty Changed"}
+                />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <label htmlFor="reprintQuantity" className="text-right col-span-1">
+                  數量
+                </label>
+                <Input
+                  id="reprintQuantity"
+                  type="number"
+                  value={reprintNewQuantity}
+                  onChange={(e) => setReprintNewQuantity(e.target.value)}
+                  className="col-span-3"
+                  disabled={reprintInfo?.reason === "Wrong Product Code"}
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={handleReprintInputCancel}>取消</Button>
+              <Button onClick={handleReprintInputSubmit}>提交並前往列印</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
       </div>
     </div>

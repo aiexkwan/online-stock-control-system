@@ -25,6 +25,7 @@ interface ActionResult {
   success: boolean;
   error?: string;
   message?: string;
+  remainingQty?: number;
 }
 
 // Interface for the new damaged pallet voiding action
@@ -290,13 +291,21 @@ export async function processDamagedPalletVoidAction(args: ProcessDamagedPalletA
 
     console.log(`[SA_DMG] RPC call seemingly successful, response data:`, rpcData);
     if (rpcData && typeof rpcData === 'object') {
-      // Assuming rpcData is the JSONB object { "success": boolean, "message": "string" }
-      const rpcResponse = rpcData as { success?: boolean; message?: string; [key: string]: any };
+      // Assuming rpcData is the JSONB object { "success": boolean, "message": "string", "remainingQty"?: number }
+      const rpcResponse = rpcData as { success?: boolean; message?: string; remainingQty?: number; [key: string]: any };
       if (rpcResponse.success === true) {
         revalidatePath('/void-pallet');
         revalidatePath('/inventory'); // Also revalidate inventory page as quantities change
         revalidatePath('/reports/inventory-history'); // And history reports
-        return { success: true, message: rpcResponse.message || 'Damaged pallet processed successfully.' };
+        
+        const actionResult: ActionResult = {
+            success: true, 
+            message: rpcResponse.message || 'Damaged pallet processed successfully.'
+        };
+        if (typeof rpcResponse.remainingQty === 'number') {
+            actionResult.remainingQty = rpcResponse.remainingQty;
+        }
+        return actionResult;
       } else {
         const errorMessage = rpcResponse.message || 'RPC for damaged pallet indicated an issue but provided no specific message.';
         console.warn(`[SA_DMG] RPC reported an issue:`, rpcResponse);

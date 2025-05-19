@@ -1,8 +1,8 @@
 "use client";
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../../../lib/supabase';
 import { format } from 'date-fns';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { generateAndUploadPdf } from '../../../app/components/print-label-pdf/PdfGenerator';
 import { toast } from 'sonner';
 import { QcInputData, prepareQcLabelData, mergeAndPrintPdfs } from '../../../lib/pdfUtils';
@@ -10,6 +10,9 @@ import { generateMultipleUniqueSeries } from '../../../lib/seriesUtils';
 import { generatePalletNumbers } from '../../../lib/palletNumUtils';
 import { PasswordConfirmationDialog } from '../../../components/ui/PasswordConfirmationDialog';
 import { verifyCurrentUserPasswordAction } from '../../../app/actions/authActions';
+
+// Server action import (assuming it's in a sibling 'actions' folder or similar)
+// import { createQcLabelEntries } from '../actions/qcLabelActions'; // Placeholder
 
 // Helper function to insert pallet info records
 async function insertPalletInfoRecords(
@@ -54,6 +57,10 @@ async function insertHistoryRecords(
 }
 
 export default function QcLabelForm() {
+  const searchParams = useSearchParams();
+  const router = useRouter(); // For potentially clearing URL params
+  const productCodeInputRef = useRef<HTMLInputElement>(null); // Ref for product code input
+
   const [productCode, setProductCode] = useState('');
   const [quantity, setQuantity] = useState('');
   const [count, setCount] = useState('');
@@ -115,6 +122,10 @@ export default function QcLabelForm() {
   const [isPasswordConfirmOpen, setIsPasswordConfirmOpen] = useState(false);
   const [isVerifyingPassword, setIsVerifyingPassword] = useState(false);
   const [printEventToProceed, setPrintEventToProceed] = useState<React.FormEvent | null>(null);
+
+  // New states for void correction data
+  const [sourceAction, setSourceAction] = useState<string | null>(null);
+  const [originalPltNum, setOriginalPltNum] = useState<string | null>(null);
 
   useEffect(() => {
     console.log("[QcLabelForm] isPasswordConfirmOpen state changed to:", isPasswordConfirmOpen);
@@ -190,6 +201,47 @@ export default function QcLabelForm() {
       setAvailableAcoOrderRefs([]);
     }
   }, [productInfo?.type]);
+
+  // Effect to handle URL parameters for void correction
+  useEffect(() => {
+    const productCodeFromUrl = searchParams.get('product_code');
+    const quantityFromUrl = searchParams.get('quantity');
+    const sourceActionFromUrl = searchParams.get('source_action');
+    const originalPltNumFromUrl = searchParams.get('original_plt_num');
+
+    if (sourceActionFromUrl === 'void_correction') {
+      if (productCodeFromUrl) {
+        setProductCode(productCodeFromUrl);
+        // Trigger blur or data fetch for product code after state update
+        // Using a timeout to allow state to settle before calling blur logic
+        setTimeout(() => {
+            if (productCodeInputRef.current) {
+                // Simulate blur or directly call the handler logic
+                // For simplicity, assuming handleProductCodeBlur can be called directly if needed
+                // Or, if handleProductCodeBlur relies on event object, this might need adjustment.
+                // Directly calling handleProductCodeBlur might be cleaner if its internal logic allows it.
+                handleProductCodeBlur(); // Call with no args, it will use state 'productCode'
+            }
+        }, 0);
+      }
+      if (quantityFromUrl) {
+        setQuantity(quantityFromUrl);
+      }
+      setSourceAction(sourceActionFromUrl);
+      if (originalPltNumFromUrl) {
+        setOriginalPltNum(originalPltNumFromUrl);
+      }
+      toast.info(`為作廢棧板 ${originalPltNumFromUrl || ''} 準備修正標籤。請確認資訊並列印。`, {
+        duration: 8000, // Longer duration for this important info
+      });
+      
+      // Optional: Clean URL params after processing to prevent re-trigger on refresh
+      // This requires router.replace and careful handling if other params are needed
+      // const currentPath = window.location.pathname;
+      // router.replace(currentPath, undefined); // Or router.replace(currentPath, { shallow: true });
+      // For now, let's not clear them automatically to simplify.
+    }
+  }, [searchParams, router]); // Added router to dependency array if used for replace
 
   // 驗證條件
   // const isAcoValid = productInfo?.type === 'ACO' ? acoOrderRef.trim() !== '' : true; // Will be replaced
@@ -368,21 +420,20 @@ export default function QcLabelForm() {
       }
     }
 
-    // --- Step 1 Refactor: Pre-generate pallet numbers and series --- START ---
-    const numberOfPalletsToGenerate = productInfo?.type === 'Slate' ? 1 : countNum;
-    const palletNumbersToUse = await generatePalletNumbers(supabase, numberOfPalletsToGenerate);
-    
-    const seriesArr = await generateMultipleUniqueSeries(countNum, supabase);
-
     // Determine the plt_remark for the entire batch
-    let plt_remark_for_batch = '-'; // Default remark
+    let base_plt_remark_for_batch = '-'; // Default remark
     if (productInfo?.type === 'ACO' && acoOrderRef.trim()) {
-      plt_remark_for_batch = `ACO Ref : ${acoOrderRef.trim()}`;
+      base_plt_remark_for_batch = `ACO Ref : ${acoOrderRef.trim()}`;
     } else if (productInfo?.type === 'Slate') {
-      plt_remark_for_batch = `Batch Number : ${slateDetail.batchNumber}`;
+      base_plt_remark_for_batch = `Batch Number : ${slateDetail.batchNumber}`;
     } else if (operator.trim()) {
-      plt_remark_for_batch = operator.trim();
+      base_plt_remark_for_batch = operator.trim();
     }
+    // If no specific remark condition is met, and it's a void correction, ensure remark indicates this.
+    // This part might be redundant if the later logic correctly appends or sets the correction remark.
+    // else if (sourceAction === 'void_correction' && originalPltNum) {
+    //   base_plt_remark_for_batch = `Corrected for voided: ${originalPltNum}`;
+    // }
 
     let startingOrdinalForAco = 1;
     if (productInfo?.type === 'ACO' && acoOrderRef.trim()) {
@@ -403,14 +454,30 @@ export default function QcLabelForm() {
     }
 
     // 準備多筆 insert 資料
-    const insertDataArr = Array.from({length: numberOfPalletsToGenerate}).map((_, i) => {
+    const numberOfPalletsToGenerate = productInfo?.type === 'Slate' ? 1 : countNum;
+    const palletNumbersToUse = await generatePalletNumbers(supabase, numberOfPalletsToGenerate);
+    
+    const seriesArr = await generateMultipleUniqueSeries(countNum, supabase);
+
+    let insertDataArr = Array.from({length: numberOfPalletsToGenerate}).map((_, i) => {
+      let currentPltRemark = base_plt_remark_for_batch; // Start with the batch remark
+
+      // Check if this is a void correction and add to remark
+      if (sourceAction === 'void_correction' && originalPltNum) {
+        const correctionText = `Corrected for voided: ${originalPltNum}`;
+        // Append to existing remark if it's not just '-', otherwise use correction text directly.
+        currentPltRemark = (currentPltRemark && currentPltRemark !== '-') 
+                           ? `${currentPltRemark}; ${correctionText}` 
+                           : correctionText;
+      }
+
       const palletData: any = {
         plt_num: palletNumbersToUse[i],
         //generate_time: generateTime,
         product_code: productCode,
         product_qty: quantity,
         series: seriesArr[i],
-        plt_remark: plt_remark_for_batch, // Use the pre-calculated batch remark
+        plt_remark: currentPltRemark, // Use the potentially modified remark
       };
       return palletData;
     });
@@ -724,27 +791,7 @@ export default function QcLabelForm() {
   const handleProductCodeBlur = async () => {
     if (!productCode.trim()) {
       setProductInfo(null);
-      setProductError(null); // Clear error if input is empty
-      // Reset ACO/Slate specific fields if product code is cleared
-      setAcoOrderRef('');
-      setAcoRemain(null);
-      setAcoNewRef(false);
-      setSlateDetail({
-        firstOffDate: '',
-        batchNumber: '',
-        setterName: '',
-        material: '',
-        weight: '',
-        topThickness: '',
-        bottomThickness: '',
-        length: '',
-        width: '',
-        centreHole: '',
-        colour: '',
-        shapes: '',
-        flameTest: '',
-        remark: ''
-      });
+      setProductError(null);
       return;
     }
     try {
@@ -755,30 +802,33 @@ export default function QcLabelForm() {
         .single();
 
       if (error) {
-        // console.error("Error fetching product info:", error);
         setProductInfo(null);
-        // setProductError(`Product code ${productCode.trim()} not found or error fetching.`);
-        toast.error(`Product code ${productCode.trim()} not found or error fetching details.`);
-        return;
-      }
-
-      if (data) {
+        if (error.code === 'PGRST116') { // PostgREST: "Searched for a single row, but found no rows"
+            setProductError(`Product Code ${productCode.trim()} Not Found. Please Check Again.`);
+            //toast.error(`Product Code ${productCode.trim()} Not Found. Please Check Again.`);
+        } else {
+            setProductError('Error fetching product info.');
+            //toast.error('Error fetching product info.');
+        }
+        console.error('Error fetching product info:', error);
+      } else if (data) {
         setProductInfo(data as { code: string; description: string; standard_qty: string; type: string });
         setProductCode(data.code);
         setProductError(null);
-        if (data.type === 'Slate') {
-            setCount('1'); // Auto set count to 1 for Slate
+        if (data.standard_qty && !quantity) { // Auto-fill quantity if it's empty and standard_qty exists
+          setQuantity(data.standard_qty);
         }
       } else {
+        // Should be covered by error.code === 'PGRST116'
         setProductInfo(null);
-        // setProductError(`Product code ${productCode.trim()} not found.`);
-        toast.error(`Product code ${productCode.trim()} not found.`);
+        setProductError('Product code not found.');
+        toast.error('Product code not found.');
       }
-    } catch (err) {
-      // console.error("Unexpected error:", err);
+    } catch (e: any) {
       setProductInfo(null);
-      // setProductError('An unexpected error occurred while fetching product information.');
-      toast.error('An unexpected error occurred while fetching product information.');
+      setProductError('An unexpected error occurred while fetching product data.');
+      toast.error('An unexpected error occurred while fetching product data.');
+      console.error('Exception fetching product info:', e);
     }
   };
   // --- Product Code Search Logic --- END ---
