@@ -199,13 +199,13 @@ export default function ViewHistoryPage() {
                 <div className="bg-gray-800 shadow-xl rounded-lg p-6">
                   <h2 className="text-2xl font-semibold mb-4 text-orange-400">Pallet History</h2>
                   {searchResult.palletHistory.length > 0 ? (
-                    <ul className="space-y-3">
+                    <ul className="space-y-5">
                       {searchResult.palletHistory.map((event, index) => (
                         <li key={index} className="p-3 bg-gray-700 rounded-md shadow">
                           <p><strong>History Location : </strong> {event.loc || 'N/A'}</p>
-                          <p><strong>Action : </strong> {event.action || 'N/A'}</p>
                           <p><strong>Operation Time : </strong> {formatDate(event.time)}</p>
                           <p><strong>Operator : </strong> {event.id || 'N/A'}</p>
+                          <p><strong>Remark : </strong> {event.remark || 'N/A'}</p>
                         </li>
                       ))}
                     </ul>
@@ -223,10 +223,10 @@ export default function ViewHistoryPage() {
                       <p><strong>Description  :  </strong> {searchResult.palletInfo.productDetails?.description || 'N/A'}</p>
                       <p><strong>Colour  :  </strong> {searchResult.palletInfo.productDetails?.colour || 'N/A'}</p>
                       <p><strong>Standard Qty  :  </strong> {searchResult.palletInfo.productDetails?.standard_qty ?? 'N/A'}</p>
-                      <p><strong>Product Type  :  </strong> {searchResult.palletInfo.productDetails?.type || 'N/A'}</p>
-                      <p><strong>Pallet Generated Time:</strong> {formatDate(searchResult.palletInfo.generate_time)}</p>
-                      <p><strong>Quantity on Pallet:</strong> {searchResult.palletInfo.product_qty ?? 'N/A'}</p>
-                      <p><strong>Pallet Remark:</strong> {searchResult.palletInfo.plt_remark || 'N/A'}</p>
+                      <p><strong>Type  :  </strong> {searchResult.palletInfo.productDetails?.type || 'N/A'}</p>
+                      <p><strong>Pallet Generated Time : </strong> {formatDate(searchResult.palletInfo.generate_time)}</p>
+                      <p><strong>Qty on Pallet : </strong> {searchResult.palletInfo.product_qty ?? 'N/A'}</p>
+                      <p><strong>Pallet Remark : </strong> {searchResult.palletInfo.plt_remark || 'N/A'}</p>
                     </div>
                     {searchResult.stockInfo && (
                       <div>

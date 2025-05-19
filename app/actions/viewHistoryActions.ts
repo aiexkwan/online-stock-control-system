@@ -172,20 +172,44 @@ export async function getPalletHistoryAndStockInfo(
 
     // Fetch stock info if productCodeForSearch is set and no major error yet
     if (productCodeForSearch && !errorMsg) {
-      const { data: stock, error: stockError } = await supabase
+      const { data: inventoryEntries, error: stockError } = await supabase
         .from('record_inventory')
-        .select('*') // Select all for debug
-        .eq('product_code', productCodeForSearch)
-        .maybeSingle(); // Use maybeSingle to allow null without erroring if no stock record
+        .select('injection, pipeline, prebook, await, fold, bulk, backcarpark') // Select only relevant columns
+        .eq('product_code', productCodeForSearch);
 
-      if (stockError) { 
-          console.error('Supabase error fetching stock info:', stockError);
+      if (stockError) {
+          console.error('Supabase error fetching stock info from record_inventory:', stockError);
           throw new Error(`Error fetching stock info: ${stockError.message}`);
       }
-      stockInfoData = stock || null;
-       if (!stock && palletInfoData) {
-        // If pallet info was found but no stock record for that product, it's not an error itself.
-        // UI will show stockInfo as null.
+      
+      if (inventoryEntries && inventoryEntries.length > 0) {
+        const totals: StockDetails = {
+          // uuid can be omitted or set to a generic value if not directly applicable for aggregated view
+          product_code: productCodeForSearch,
+          injection: 0,
+          pipeline: 0,
+          prebook: 0,
+          await: 0,
+          fold: 0,
+          bulk: 0,
+          backcarpark: 0,
+          latest_update: new Date().toISOString(), // Represents the time of aggregation
+        };
+
+        for (const entry of inventoryEntries) {
+          totals.injection = (totals.injection || 0) + (entry.injection || 0);
+          totals.pipeline = (totals.pipeline || 0) + (entry.pipeline || 0);
+          totals.prebook = (totals.prebook || 0) + (entry.prebook || 0);
+          totals.await = (totals.await || 0) + (entry.await || 0);
+          totals.fold = (totals.fold || 0) + (entry.fold || 0);
+          totals.bulk = (totals.bulk || 0) + (entry.bulk || 0);
+          totals.backcarpark = (totals.backcarpark || 0) + (entry.backcarpark || 0);
+        }
+        stockInfoData = totals;
+      } else {
+        // No inventory entries found for this product code, stockInfoData remains null
+        // The UI will show "No associated stock information found..."
+        stockInfoData = null; 
       }
     }
 

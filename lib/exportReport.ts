@@ -471,26 +471,34 @@ export async function exportGrnReport(data: GrnReportPageData) {
   sheet.getCell('D4').value = data.supplier_name;
   sheet.getCell('D6').value = data.report_date; // Already formatted dd-MMM-yyyy
 
-  // Fill Gross and Net Weights
+  // --- Data filling section ---
+  let currentRowNum = 11; // Starting row for GRN records
+  console.log("[exportGrnReport] Data received for records (first 5):", data.records.slice(0,5)); // Log first 5 records
+
   data.records.forEach((record, index) => {
-    const rowIndex = 11 + index;
-    if (rowIndex <= 42) { // Ensure we don't write past row 42 for these details
-      sheet.getCell(`A${rowIndex}`).value = rowIndex-10;
-      sheet.getCell(`B${rowIndex}`).value = record.gross_weight;
-      sheet.getCell(`C${rowIndex}`).value = record.net_weight;
-
-      // Pallet Type
-      const palletCol = getPalletColumn(record.pallet);
-      if (palletCol) {
-        sheet.getCell(`${palletCol}${rowIndex}`).value = record.pallet_count;
-      }
-
-      // Package Type
-      const packageCol = getPackageColumn(record.package_type);
-      if (packageCol) {
-        sheet.getCell(`${packageCol}${rowIndex}`).value = record.package_count;
-      }
+    if (currentRowNum > 42) { // Limit to row 42 as per template
+      console.warn(`Data for record ${index} exceeds max display rows.`);
+      return;
     }
+    const row = sheet.getRow(currentRowNum);
+    row.getCell('A').value = index+1;
+    row.getCell('B').value = record.gross_weight;
+    row.getCell('C').value = record.net_weight;
+
+    // Columns H-L: Pallet Numbers (P1 to P5) - 這是根據 record.pallet (棧板號) 和 record.package_type 來填寫的
+    const palletCol = getPalletColumn(record.pallet);
+    if (palletCol) {
+      row.getCell(palletCol).value = record.pallet_count;
+    }
+
+    // Columns M-Q: Package Counts (C1 to C5) - 這是根據 record.package_type 和 record.package_count 來填寫的
+    const packageColumn = getPackageColumn(record.package_type); 
+    console.log(`[exportGrnReport] Record ${index}, package_type: ${record.package_type}, package_count: ${record.package_count}, mapped packageColumn: ${packageColumn}`);
+    if (packageColumn && record.package_count !== null && record.package_count !== undefined) {
+        row.getCell(packageColumn).value = record.package_count; 
+    }
+
+    currentRowNum++;
   });
 
   // Totals in A45
@@ -515,30 +523,34 @@ Difference >> ${data.weight_difference}`;
 // Helper function to determine column for pallet type
 function getPalletColumn(palletType: string | null): string | null {
   if (!palletType) return null;
-  switch (palletType.trim()) {
-    case 'White_Dry': return 'D';
-    case 'White_Wet': return 'E';
-    case 'Chep_Dry': return 'F';
-    case 'Chep_Wet': return 'G';
-    case 'Euro': return 'H';
-    case 'Not_Included_Pallet': return null;
-    default: return null; // Or a specific column for 'Other'
+  const type = palletType.trim().toLowerCase(); // Normalize to lowercase
+  switch (type) {
+    case 'whitedry': return 'D';
+    case 'whitewet': return 'E';
+    case 'chepdry': return 'F';
+    case 'chepwet': return 'G';
+    case 'euro': return 'H';
+    // case 'notincludedpallet': return null; // This case can be removed as default handles unmapped types
+    default:
+      // Optionally log unmapped pallet types for debugging
+      console.warn(`[getPalletColumn] Unmapped palletType: '${palletType}' (normalized: '${type}'). No column assigned.`);
+      return null;
   }
 }
 
-// Helper function to determine column for package type
+// Helper function to determine which column (I-L) to put the package count based on package type
 function getPackageColumn(packageType: string | null): string | null {
   if (!packageType) return null;
-  switch (packageType.trim()) {
-    case 'Still': return 'I';
-    case 'Bag': return 'J';
-    case 'Tote': return 'K';
-    case 'Octo': return 'L';
-    // Octobin was in previous template cell I9, but not in your new mapping. Assuming K for Tote is correct.
-    // case 'Octobin': return 'L'; // Or map to another column if still needed
-    case 'Not_Included_Package': return null;
-    default: return null; // Or a specific column for 'Other'
-  }
+  const type = packageType.toLowerCase(); // Normalize to lowercase for case-insensitive comparison
+
+  if (type.includes('still')) return 'I'; // Stillage
+  if (type.includes('bag')) return 'J';   // Bag
+  if (type.includes('tote')) return 'K';   // Tote Bag
+  if (type.includes('octo')) return 'L';   // Octobin
+  
+  // If no match, log a warning and return null so no count is placed in an incorrect column
+  console.warn(`[getPackageColumn] Unmapped packageType: '${packageType}' (normalized: '${type}'). No column assigned.`);
+  return null;
 }
 
 // Sheet Font

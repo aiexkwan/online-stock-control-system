@@ -700,10 +700,10 @@ export default function QcLabelForm() {
       if (sourceAction === 'void_correction_damage_partial' && originalPltNum) {
         history_action = 'Void Correction Label (Partial Damage)';
         // targetLocation state 應該可以直接喺呢度用，因為佢喺 proceedWithPrint 嘅 scope 之內
-        history_remark = `New label for remaining qty of voided pallet ${originalPltNum}. Original loc: ${targetLocation || 'Unknown'}. New loc: ${final_history_loc}.`;
+        history_remark = `New label for remaining qty of voided pallet ${originalPltNum}.`;
       } else if (sourceAction === 'void_correction' && originalPltNum) {
         history_action = 'Void Correction Label';
-        history_remark = `New label for voided pallet ${originalPltNum}. New loc: ${final_history_loc}.`;
+        history_remark = `New label for voided pallet ${originalPltNum}.`;
       }
 
       return {

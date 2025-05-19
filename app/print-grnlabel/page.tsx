@@ -369,9 +369,11 @@ notIncluded: 'Not_Included_Package',
 
 // Helper function to parse count values, ensuring empty strings or non-numbers become 0
 const parseCountValue = (valueStr: string | undefined): number => {
-  if (!valueStr) return 0;
-  const parsed = parseInt(valueStr, 10);
-  return isNaN(parsed) ? 0 : parsed;
+  if (valueStr === undefined || valueStr.trim() === '') {
+    return 0; // Or perhaps null/undefined if the database column allows and 0 is a valid distinct value
+  }
+  const val = parseFloat(valueStr); // Use parseFloat to correctly parse decimals
+  return isNaN(val) ? 0 : val; // Return the parsed float value, or 0 if NaN
 };
 
 const proceedWithGrnPrint = async () => {
