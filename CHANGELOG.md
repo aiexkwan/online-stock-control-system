@@ -334,3 +334,20 @@ All notable changes to this project will be documented in this file.
 ### Fixed
 - **Build Error:** Resolved TypeScript type error in `app/components/Navigation.tsx` (Type 'number | null' is not assignable to type 'string | number') by ensuring `idForDb` defaults to `0` when a user ID cannot be parsed, satisfying the `record_history.id` column's expected `number` type.
 - **Build Error:** Resolved `Module not found: Can't resolve 'react-hot-toast'` in `app/users/page.tsx` by changing the import to use `sonner` for toast notifications, consistent with the rest of the project.
+
+## [Unreleased] - YYYY-MM-DD
+
+### Added
+- **Print Label**: For void corrections, `Count of Pallet` now defaults to `1`.
+- **Print Label**: For void corrections with pre-filled `product_code` from URL, product information is now auto-fetched, and the \"Print Label\" button is enabled only after data loads.
+
+### Changed
+- **Void Pallet**: Enhanced `processDamagedPalletVoidAction` to correctly return `actual_original_location` and `remainingQty` from the RPC, fixing an issue where the original location for reprint was not found for partially damaged pallets.
+- **Print Label**: `QcLabelForm.tsx` now uses the `target_location` URL parameter (passed from void pallet page) to set the correct location for new pallet records created during void corrections, instead of defaulting to \"Await\". This affects `record_palletinfo.plt_loc`, `record_inventory` (correct location column used), and `record_history.loc`.
+- **Void Pallet**: Client-side history logging for successful void operations is now skipped if the backend (RPC/Server Action) handles it, preventing duplicate history entries.
+- **Print Label**: `productCode` state in `QcLabelForm.tsx` is now updated with the canonical casing from the database after fetching product info, preventing potential foreign key issues.
+- **Void Pallet**: Server action `processDamagedPalletVoidAction` now explicitly sets `actual_original_location: null` in all error return paths for consistent frontend error handling.
+
+### Fixed
+- **Print Label**: Corrected a JSX comment syntax error in `QcLabelForm.tsx`.
+- Resolved issue where toast message "BUT original location for reprint not found" appeared for partially damaged pallets due to missing `actual_original_location` from server action.

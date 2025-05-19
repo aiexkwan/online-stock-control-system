@@ -29,7 +29,7 @@ const VOID_REASONS: { value: string; label: string; }[] = [
   { value: "Wrong Qty", label: "Wrong Qty" },
   { value: "Wrong Product Code", label: "Wrong Product Code" },
   { value: "Damage", label: "Damage" },
-  { value: "Pallet Qty Changed", label: "Pallet Qty Changed" },
+  //{ value: "Pallet Qty Changed", label: "Pallet Qty Changed" },
   { value: "Used Material", label: "Used Material" },
   { value: "Other", label: "Other (Specify if possible)" }, 
 ];
@@ -65,6 +65,7 @@ export default function VoidPalletPage() {
     source_action: string; 
     requiresInput: boolean; // True if further input (new product_code/qty) is needed
     reason: string; // The original void reason
+    target_location?: string | null; // Added target_location
   } | null>(null);
 
   // New states for the second dialog (for inputting new product code/qty)
@@ -341,43 +342,43 @@ export default function VoidPalletPage() {
   // Main function to handle the voiding process
   const handleVoidConfirm = async () => {
     if (!foundPallet || !voidReason || !passwordInput) {
-      toast.error('請填寫所有必填欄位 (棧板資訊, 作廢原因, 密碼)。');
+      toast.error('Please fill in all required fields (Pallet Info, Void Reason, Password).');
       return;
     }
     if (voidReason === 'Damage' && !damageQtyInput) {
-        toast.error('損壞數量為必填項。');
+        toast.error('Damage Quantity is required.');
         return;
     }
     if (voidReason === 'Damage') {
         const qty = parseInt(damageQtyInput, 10);
         if (isNaN(qty) || qty < 0 || qty > foundPallet.product_qty) {
-            toast.error('損壞數量必須是有效數字，介於 0 和原始棧板數量之間。');
+            toast.error('Damage Quantity must be a valid number, between 0 and the original pallet quantity.');
             return;
         }
     }
     if (!userId) { // Ensure userId from session is available
-        toast.error('用戶會話無效，無法執行操作。請重新整理頁面或重新登入。');
+        toast.error('Invalid User Session. Please refresh page or re-login.');
         logErrorToDatabase(`Void attempt failed: User ID missing from session. Pallet: ${foundPallet.plt_num}`);
         return;
     }
 
     const numericUserId = parseInt(userId, 10);
     if (isNaN(numericUserId)) {
-        toast.error('用戶 ID 格式無效。');
+        toast.error('User ID Format Error.');
         logErrorToDatabase(`Void attempt failed: User ID invalid (${userId}). Pallet: ${foundPallet.plt_num}`);
         return;
     }
 
 
     setIsVoiding(true);
-    let toastId = toast.loading('正在驗證密碼...');
+    let toastId = toast.loading('Verifying Password...');
 
     try {
       // Pass numericUserId to the verification action
       const passVerifyResult = await verifyCurrentUserPasswordAction(numericUserId, passwordInput);
 
       if (!passVerifyResult.success) { // userId is NOT part of passVerifyResult
-        toast.error(passVerifyResult.error || '密碼錯誤。', { id: toastId });
+        toast.error(passVerifyResult.error || 'Password Error.', { id: toastId });
         setIsVoiding(false);
         setPasswordInput(''); // Clear password input on error
         if (passVerifyResult.error) {
@@ -390,7 +391,7 @@ export default function VoidPalletPage() {
       // Use numericUserId directly as it's already validated and available
       const currentUserIdForAction = numericUserId; 
 
-      toast.loading('正在作廢棧板...', { id: toastId });
+      toast.loading('Void Precessing...', { id: toastId });
 
       let result;
       
@@ -445,42 +446,67 @@ export default function VoidPalletPage() {
       }
 
       if (result.success) {
-        toast.success(result.message || '棧板作廢成功！', { id: toastId });
+        // toast.success(result.message || 'Void Success!', { id: toastId }); // 個別情況會顯示更具體嘅toast
         
         const reasonsAllowingReprint = ["Wrong Qty", "Wrong Product Code", "Damage", "Pallet Qty Changed", "Wrong Label"];
-        if (reasonsAllowingReprint.includes(voidReason) && foundPallet) {
+        
+        if (voidReason === "Damage" && foundPallet) {
+            const remainingQty = result.remainingQty; 
+            const actual_original_location = result.actual_original_location; // 從 result 獲取
+
+            if (typeof remainingQty === 'number' && remainingQty > 0 && actual_original_location) { // 檢查 actual_original_location
+                toast.success(`Pallet ${foundPallet.plt_num} partially voided. Remaining: ${remainingQty}. Redirecting to print new label for location: ${actual_original_location}.`, { id: toastId });
+                const queryParams = new URLSearchParams({
+                    product_code: foundPallet.product_code,
+                    quantity: remainingQty.toString(),
+                    source_action: 'void_correction_damage_partial',
+                    original_plt_num: foundPallet.plt_num,
+                    target_location: actual_original_location, // 新增 target_location
+                });
+                router.push(`/print-label?${queryParams.toString()}`);
+                
+                resetState();
+                setIsVoiding(false);
+                setPasswordInput('');
+                // No longer log client-side for successful void if server action/RPC handles it.
+                // await logHistory(`Pallet ${foundPallet.plt_num} voided (Partial Damage)`, foundPallet.plt_num, foundPallet.original_plt_loc, `Reason: ${voidReason}, Damage Qty: ${damageQtyInput}, Remaining Qty: ${remainingQty}. New label at ${actual_original_location}.`);
+                return; 
+            } else if (typeof remainingQty === 'number' && remainingQty > 0 && !actual_original_location) {
+                toast.error(`Pallet ${foundPallet.plt_num} partially voided. Remaining: ${remainingQty}. BUT original location for reprint not found. Cannot redirect automatically. Please print label manually.`, { id: toastId, duration: 8000 });
+                // 即使冇 original_location，都應該重置狀態同記錄歷史
+                resetState();
+                setIsVoiding(false);
+                setPasswordInput('');
+                // No longer log client-side for successful void if server action/RPC handles it.
+                // await logHistory(`Pallet ${foundPallet.plt_num} voided (Partial Damage) - Error`, foundPallet.plt_num, foundPallet.original_plt_loc, `Reason: ${voidReason}, Damage Qty: ${damageQtyInput}, Remaining Qty: ${remainingQty}. Failed to get original location for auto-reprint.`);
+                return;
+            } else if (typeof remainingQty === 'number' && remainingQty === 0) {
+                toast.success(result.message || `Pallet ${foundPallet.plt_num} fully voided (Damage). No reprint needed.`, { id: toastId });
+                resetState();
+                setIsVoiding(false);
+                setPasswordInput('');
+                // No longer log client-side for successful void if server action/RPC handles it.
+                // await logHistory(`Pallet ${foundPallet.plt_num} voided (Full Damage)`, foundPallet.plt_num, foundPallet.original_plt_loc, `Reason: ${voidReason}, Damage Qty: ${damageQtyInput}. No reprint.`);
+                return;
+            }
+        } else if (reasonsAllowingReprint.includes(voidReason) && foundPallet) {
+            // 其他允許重新列印嘅原因，保留原有彈窗邏C輯
+            toast.success(result.message || 'Void Success! Check for reprint options.', { id: toastId }); // General success for these cases
             let productCodeForReprint = foundPallet.product_code;
             let quantityForReprint = foundPallet.product_qty;
             let requiresInputForReprint = false;
 
-            if (voidReason === "Damage") {
-                // For "Damage", if it was a partial damage, remainingQty comes from server action
-                // processDamagedPalletVoidAction should return remainingQty
-                const remainingQty = result.remainingQty; // Assume this is returned
-                if (typeof remainingQty === 'number' && remainingQty > 0) {
-                    quantityForReprint = remainingQty;
-                    // No further input needed for product code or quantity here
-                } else if (remainingQty === 0) {
-                    // Full damage, no reprint
-                    resetState();
-                    setIsVoiding(false);
-                    return;
-                } else {
-                    // This case should ideally not happen if server action is correct
-                    // Or if remainingQty is not returned, we can't proceed with reprint
-                    toast.error("無法獲取剩餘數量，無法重印部分損壞標籤。");
-                    resetState();
-                    setIsVoiding(false);
-                    return;
-                }
-            } else if (voidReason === "Wrong Qty" || voidReason === "Pallet Qty Changed") {
-                requiresInputForReprint = true; // User needs to input new quantity
+            if (voidReason === "Wrong Qty" || voidReason === "Pallet Qty Changed") {
+                requiresInputForReprint = true; 
             } else if (voidReason === "Wrong Product Code") {
-                requiresInputForReprint = true; // User needs to input new product code
+                requiresInputForReprint = true; 
             } else if (voidReason === "Wrong Label") {
-                requiresInputForReprint = true; // User needs to input new product code and quantity
+                requiresInputForReprint = true; 
             }
             
+            // Determine the original location for the reprint
+            const originalLocationForReprint = result.actual_original_location || foundPallet.original_plt_loc;
+
             setReprintInfo({
                 product_code: productCodeForReprint,
                 quantity: quantityForReprint,
@@ -488,22 +514,33 @@ export default function VoidPalletPage() {
                 source_action: 'void_correction',
                 requiresInput: requiresInputForReprint,
                 reason: voidReason,
+                target_location: originalLocationForReprint, // Populate target_location
             });
             setShowReprintConfirmDialog(true);
+            // 呢度唔 return，因為 setIsVoiding(false) 同 setPasswordInput('') 會喺 finally 處理 (如果唔係 damage case)
+            // 歷史記錄亦會喺下面統一處理 (如果唔係 damage case)
         } else {
-            // For other reasons or if foundPallet is somehow null, just reset
+            // 作廢原因唔允許重新列印，或者 foundPallet 唔存在
+            toast.success(result.message || 'Void Success!', { id: toastId });
             resetState();
+            // 歷史記錄會喺下面統一處理
         }
-        await logHistory(`棧板 ${foundPallet.plt_num} 已作廢`, foundPallet.plt_num, foundPallet.original_plt_loc, `原因: ${voidReason}${voidReason === 'Damage' ? ', 損壞數: ' + damageQtyInput : ''}`);
+        
+        // 只有當唔係 Damage case，並且 foundPallet 存在時，先執行呢個通用歷史記錄
+        if (voidReason !== "Damage" && foundPallet) {
+            // No longer log client-side for successful void if server action/RPC handles it.
+            // await logHistory(`Pallet ${foundPallet.plt_num} voided`, foundPallet.plt_num, foundPallet.original_plt_loc, `Reason: ${voidReason}`);
+        }
+
       } else {
-        const errMsg = result.error || '作廢棧板時發生未知錯誤。';
+        const errMsg = result.error || 'Unknown error during voiding pallet.';
         const dbErrInfo = `Voiding pallet ${foundPallet.plt_num} failed. Reason: ${voidReason}. UserID: ${currentUserIdForAction}. Error from action: ${result.error}`;
         // toast.error(errMsg, { id: toastId }); // Show a normal toast
         showErrorToastAndDisableInputs(errMsg, dbErrInfo); // Use blocking toast for critical failure
       }
 
     } catch (error: any) {
-      const errMsg = `執行作廢操作時發生錯誤: ${error.message || '未知錯誤'}`;
+      const errMsg = `Error during voiding pallet: ${error.message || 'Unknown error'}`;
       const dbErrInfo = `Exception during voiding pallet ${foundPallet?.plt_num}. Reason: ${voidReason}. UserID: ${numericUserId}. Error: ${error.message}`;
       // toast.error(errMsg, { id: toastId });
       showErrorToastAndDisableInputs(errMsg, dbErrInfo);
@@ -541,13 +578,16 @@ export default function VoidPalletPage() {
         setShowReprintConfirmDialog(false); // Hide the first dialog
         setShowReprintInputDialog(true);    // Show the input dialog
       } else {
-        // No input required (e.g., partial damage), directly redirect
+        // No input required, directly redirect (this path is less common for non-damage, mostly for damage with remaining qty)
         const queryParams = new URLSearchParams({
           product_code: reprintInfo.product_code,
           quantity: reprintInfo.quantity.toString(),
           source_action: reprintInfo.source_action,
           original_plt_num: reprintInfo.original_plt_num,
         });
+        if (reprintInfo.target_location) { // Add target_location if available
+          queryParams.set('target_location', reprintInfo.target_location);
+        }
         router.push(`/print-label?${queryParams.toString()}`);
         
         setShowReprintConfirmDialog(false);
@@ -567,7 +607,7 @@ export default function VoidPalletPage() {
     resetState();
     setIsVoiding(false); 
     setPasswordInput('');
-    toast.info("棧板已作廢，未選擇重印標籤。");
+    toast.info("Pallet voided, no reprint label selected.");
   };
 
   // New handler for the second dialog (input for reprint)
@@ -578,11 +618,11 @@ export default function VoidPalletPage() {
       const finalQuantity = parseInt(finalQuantityStr, 10);
 
       if (!finalProductCode) {
-        toast.error("產品代碼不能為空。");
+        toast.error("Product Code cannot be empty.");
         return;
       }
       if (isNaN(finalQuantity) || finalQuantity <= 0) {
-        toast.error("數量必須是大於 0 的有效數字。");
+        toast.error("Quantity must be a valid number greater than 0.");
         return;
       }
 
@@ -592,6 +632,9 @@ export default function VoidPalletPage() {
         source_action: reprintInfo.source_action,
         original_plt_num: reprintInfo.original_plt_num,
       });
+      if (reprintInfo.target_location) { // Add target_location if available
+        queryParams.set('target_location', reprintInfo.target_location);
+      }
       router.push(`/print-label?${queryParams.toString()}`);
 
       setShowReprintInputDialog(false);
@@ -608,7 +651,7 @@ export default function VoidPalletPage() {
     resetState();
     setIsVoiding(false); 
     setPasswordInput('');
-    toast.info("重印已取消。");
+    toast.info("Reprint cancelled.");
   };
 
   return (
@@ -688,7 +731,7 @@ export default function VoidPalletPage() {
             {/* Directly show void inputs if pallet found and not voided */}
             {foundPallet.original_plt_loc !== 'Voided' && (
               <div className="mt-4 pt-4 border-t border-gray-700">
-                <h4 className="text-lg font-semibold mb-3 text-red-400">REMINDER : VOID PALLET CANNOT BE UNDONE</h4>
+                <h4 className="text-lg font-semibold mb-3 text-red-400">REMINDER : VOID ACTION CANNOT BE UNDONE</h4>
                 <div className="space-y-4">
                   <div>
                     <label htmlFor="voidReason" className="block text-sm font-medium mb-1">Void Reason</label>
@@ -700,9 +743,9 @@ export default function VoidPalletPage() {
                         // This is handled by the useEffect on [voidReason, foundPallet]
                       }}
                       items={VOID_REASONS}
-                      placeholder="選擇作廢原因..."
+                      placeholder="Select OR Type In Void Reason"
                       disabled={!foundPallet || isInputDisabled || isVoiding}
-                      className="w-full bg-white text-black placeholder-gray-700 border border-gray-300 rounded-md focus:ring-orange-500 focus:border-orange-500"
+                      className="w-full bg-gray-900 text-white placeholder-gray-400 border border-gray-600 rounded-md focus:ring-orange-500 focus:border-orange-500"
                     />
                   </div>
                   <div>
@@ -719,7 +762,7 @@ export default function VoidPalletPage() {
                   </div>
                   {showDamageQtyInput && (
                     <div className="space-y-1">
-                      <label htmlFor="damageQty" className="text-sm font-medium">Damage Qty:</label>
+                      <label htmlFor="damageQty" className="text-sm font-medium">Damage Qty</label>
                       <Input
                         id="damageQty"
                         type="number"
@@ -729,10 +772,11 @@ export default function VoidPalletPage() {
                         disabled={isInputDisabled || isVoiding || isDamageQtyDisabledForAco}
                         min="1"
                         max={foundPallet?.product_qty?.toString() || undefined}
+                        className="w-full bg-gray-900 text-white placeholder-gray-400 border-gray-600 rounded-md focus:ring-orange-500 focus:border-orange-500"
                       />
                       {isDamageQtyDisabledForAco && (
                         <p className="text-xs text-amber-600 dark:text-amber-500 mt-1">
-                            此棧板與 ACO 訂單相關聯，損壞數量自動設定為總數量。
+                            This pallet is associated with an ACO order, the damaged quantity is automatically set to the total quantity.
                         </p>
                       )}
                     </div>
@@ -780,23 +824,23 @@ export default function VoidPalletPage() {
         }}>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>重印修正標籤？</DialogTitle>
+              <DialogTitle>Reprint Correction Label</DialogTitle>
               <DialogDescription>
                 {reprintInfo?.reason === "Damage" && reprintInfo.quantity > 0 ?
-                  `棧板已作廢 (部分損壞)。剩餘數量: ${reprintInfo.quantity}。是否為此剩餘數量列印新標籤？` :
+                  `Pallet voided (partial damage). Remaining quantity: ${reprintInfo.quantity}. Print new label for this remaining quantity?` :
                 reprintInfo?.reason === "Damage" && reprintInfo.quantity === 0 ?
-                  `棧板已完全損壞作廢。` : // This case should ideally be handled before showing dialog
-                  `棧板因 "${reprintInfo?.reason}" 作廢。是否要列印修正後的標籤？`
+                  `Pallet fully damaged and voided.` : // This case should ideally be handled before showing dialog
+                  `Pallet been voided. Suggest to print new label for the remaining quantity`
                 }
                 {reprintInfo && reprintInfo.requiresInput && reprintInfo.reason !== "Damage" && (
                   <p className="mt-2 text-sm text-muted-foreground">
-                    選擇「是」將引導您輸入新的 {reprintInfo.reason === "Wrong Qty" || reprintInfo.reason === "Pallet Qty Changed" ? "數量" : reprintInfo.reason === "Wrong Product Code" ? "產品代碼" : "產品代碼和數量"}。
+                    Select "Yes" to transfer you to print replacement label.
                   </p>
                 )}
               </DialogDescription>
             </DialogHeader>
             <DialogFooter>
-              <Button variant="outline" onClick={handleReprintCancelled}>否</Button>
+              <Button variant="outline" onClick={handleReprintCancelled}>No</Button>
               {/* For "Damage" with 0 quantity, "Yes" button should not be shown or should be disabled,
                   but this case should be handled before even showing the dialog.
                   If reprintInfo.quantity is 0 due to full damage, the dialog text covers it,
@@ -804,7 +848,7 @@ export default function VoidPalletPage() {
                   The logic in handleVoidConfirm already tries to prevent this dialog for 0 remainingQty.
               */}
               {!(reprintInfo?.reason === "Damage" && reprintInfo.quantity === 0) && (
-                   <Button onClick={handleReprintConfirmed}>是</Button>
+                   <Button onClick={handleReprintConfirmed}>Yes</Button>
               )}
             </DialogFooter>
           </DialogContent>
@@ -817,15 +861,15 @@ export default function VoidPalletPage() {
         }}>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>輸入修正後的標籤資訊</DialogTitle>
+              <DialogTitle>Input Correction Label Information</DialogTitle>
               <DialogDescription>
-                請為新的標籤提供以下資訊。作廢原因：{reprintInfo?.reason}
+                Please provide the following information for the new label. Void Reason: {reprintInfo?.reason}
               </DialogDescription>
             </DialogHeader>
             <div className="grid gap-4 py-4">
               <div className="grid grid-cols-4 items-center gap-4">
                 <label htmlFor="reprintProductCode" className="text-right col-span-1">
-                  產品代碼
+                  Product Code
                 </label>
                 <Input
                   id="reprintProductCode"
@@ -837,7 +881,7 @@ export default function VoidPalletPage() {
               </div>
               <div className="grid grid-cols-4 items-center gap-4">
                 <label htmlFor="reprintQuantity" className="text-right col-span-1">
-                  數量
+                  Quantity
                 </label>
                 <Input
                   id="reprintQuantity"
@@ -850,8 +894,8 @@ export default function VoidPalletPage() {
               </div>
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={handleReprintInputCancel}>取消</Button>
-              <Button onClick={handleReprintInputSubmit}>提交並前往列印</Button>
+              <Button variant="outline" onClick={handleReprintInputCancel}>Cancel</Button>
+              <Button onClick={handleReprintInputSubmit}>Submit and Print</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>

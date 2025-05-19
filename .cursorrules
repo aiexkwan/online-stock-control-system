@@ -108,7 +108,7 @@ The system covers
 
 | Column Name | Type       | Default              | Description                                                          |
 |-------------|------------|----------------------|----------------------------------------------------------------------|
-| `uuid`      | `uuid`     | `gen_random_uuid()`  | Primary Key                                                          |
+| `uuid`      | `uuid`     | `gen_random_uuid()`  | Primary Key Creat by supabase (Auto)                                 |
 | `time`      | `timestamp`| `now()`              | Creat by supabase (Auto)                                             |
 | `id`        | `int4`     | —                    | Operator ID ()                                                       |
 | `action`    | `text`     | —                    | Action name (e.g., `GRN Receiving`, `Production Finished Q.C.`)      |
@@ -122,16 +122,17 @@ The system covers
 
 | Column Name     | Type       | Default             | Description                         |
 |-----------------|------------|---------------------|-------------------------------------|
-| `uuid`          | `uuid`     | `gen_random_uuid()` | Primary Key                         |
+| `uuid`          | `uuid`     | `gen_random_uuid()` | Primary Key Creat by supabase (Auto)|
 | `product_code`  | `text`     | `''::text`          | Product code                        |
-| `plt_num`       | `text`     | —                   | Pallet number                       |
-| `injection`     | `int8`     | —                   | Stock in injection area             |
-| `pipeline`      | `int8`     | —                   | Stock in pipeline area              |
-| `prebook`       | `int8`     | —                   | Reserved stock                      |
-| `await`         | `int8`     | —                   | Awaiting confirmation stock         |
-| `fold`          | `int8`     | —                   | Folded goods stock                  |
-| `bulk`          | `int8`     | —                   | Bulk goods stock                    |
-| `backcarpark`   | `int8`     | —                   | Back car park stock                 |
+| `plt_num`       | `text`     | 0                   | Pallet number                       |
+| `injection`     | `int8`     | 0                   | Stock in injection area             |
+| `pipeline`      | `int8`     | 0                   | Stock in pipeline area              |
+| `prebook`       | `int8`     | 0                   | Reserved stock                      |
+| `await`         | `int8`     | 0                   | Awaiting confirmation stock         |
+| `fold`          | `int8`     | 0                   | Folded goods stock                  |
+| `bulk`          | `int8`     | 0                   | Bulk goods stock                    |
+| `backcarpark`   | `int8`     | 0                   | Back car park stock                 |
+| `damage     `   | `int8`     | 0                   | Damage Stock/ Damage Inventory      |
 | `latest_update` | `timestamp`| `now()`             | Creat by supabase (Auto)            |
 
 ---
@@ -142,7 +143,7 @@ The system covers
 |-----------------|------------|---------------------|------------------------------------------|
 | `plt_num`       | `text`     | —                   | Pallet number (Primary Key)              |
 | `plt_loc`       | `text`     | "Await"             | Pallet latest location                   |
-| `generate_time` | `timestamp`| `now()`             | Creation timestamp                       |
+| `generate_time` | `timestamp`| `now()`             | Creat by supabase (Auto)                 |
 | `product_code`  | `text`     | —                   | Product code                             |
 | `product_qty`   | `int8`     | —                   | Quantity per pallet                      |
 | `series`        | `text`     | —                   | Series number                            |
@@ -154,7 +155,7 @@ The system covers
 
 | Column Name     | Type       | Default             | Description                              |
 |-----------------|------------|---------------------|------------------------------------------|
-| `uuid`          | `uuid`     | `gen_random_uuid()` | Primary Key                              |
+| `uuid`          | `uuid`     | `gen_random_uuid()` | Primary Key Creat by supabase (Auto)     |
 | `grn_ref`       | `int4`     | —                   | GRN Reference number                     |
 | `plt_num`       | `text`     | —                   | Pallet number (Foreign Key)              |
 | `material_code` | `text`     | —                   | Material code                            |

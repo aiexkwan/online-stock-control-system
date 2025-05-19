@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { supabase } from '../../../lib/supabase';
 import { format } from 'date-fns';
 import { useSearchParams, useRouter } from 'next/navigation';
@@ -68,6 +68,7 @@ export default function QcLabelForm() {
   const [userId, setUserId] = useState<string>('');
 
   const [productInfo, setProductInfo] = useState<{
+    code: string;
     description: string;
     standard_qty: string;
     type: string;
@@ -126,6 +127,50 @@ export default function QcLabelForm() {
   // New states for void correction data
   const [sourceAction, setSourceAction] = useState<string | null>(null);
   const [originalPltNum, setOriginalPltNum] = useState<string | null>(null);
+  const [targetLocation, setTargetLocation] = useState<string | null>(null);
+
+  // --- Product Code Search Logic --- START ---
+  const handleProductCodeBlur = useCallback(async () => {
+    if (!productCode.trim()) {
+      setProductInfo(null);
+      setProductError(null);
+      return;
+    }
+    try {
+      const { data, error } = await supabase
+        .from('data_code')
+        .select('code, description, standard_qty, type')
+        .ilike('code', productCode.trim())
+        .single();
+
+      if (error) {
+        setProductInfo(null);
+        if (error.code === 'PGRST116') { 
+            setProductError(`Product Code ${productCode.trim()} Not Found. Please Check Again.`);
+        } else {
+            setProductError('Error fetching product info.');
+        }
+        console.error('Error fetching product info:', error);
+      } else if (data) {
+        setProductInfo(data as { code: string; description: string; standard_qty: string; type: string });
+        setProductCode(data.code);
+        setProductError(null);
+        if (data.standard_qty && !quantity) { 
+          setQuantity(data.standard_qty);
+        }
+      } else {
+        setProductInfo(null);
+        setProductError('Product code not found.');
+        toast.error('Product code not found.');
+      }
+    } catch (e: any) {
+      setProductInfo(null);
+      setProductError('An unexpected error occurred while fetching product data.');
+      toast.error('An unexpected error occurred while fetching product data.');
+      console.error('Exception fetching product info:', e);
+    }
+  }, [productCode, quantity, setProductInfo, setProductError, setQuantity, supabase, toast]);
+  // --- Product Code Search Logic --- END ---
 
   useEffect(() => {
     console.log("[QcLabelForm] isPasswordConfirmOpen state changed to:", isPasswordConfirmOpen);
@@ -208,40 +253,45 @@ export default function QcLabelForm() {
     const quantityFromUrl = searchParams.get('quantity');
     const sourceActionFromUrl = searchParams.get('source_action');
     const originalPltNumFromUrl = searchParams.get('original_plt_num');
+    const targetLocationFromUrl = searchParams.get('target_location');
 
-    if (sourceActionFromUrl === 'void_correction') {
+    if (sourceActionFromUrl === 'void_correction' || sourceActionFromUrl === 'void_correction_damage_partial') {
       if (productCodeFromUrl) {
         setProductCode(productCodeFromUrl);
-        // Trigger blur or data fetch for product code after state update
-        // Using a timeout to allow state to settle before calling blur logic
-        setTimeout(() => {
-            if (productCodeInputRef.current) {
-                // Simulate blur or directly call the handler logic
-                // For simplicity, assuming handleProductCodeBlur can be called directly if needed
-                // Or, if handleProductCodeBlur relies on event object, this might need adjustment.
-                // Directly calling handleProductCodeBlur might be cleaner if its internal logic allows it.
-                handleProductCodeBlur(); // Call with no args, it will use state 'productCode'
-            }
-        }, 0);
       }
       if (quantityFromUrl) {
         setQuantity(quantityFromUrl);
       }
+      setCount('1');
       setSourceAction(sourceActionFromUrl);
       if (originalPltNumFromUrl) {
         setOriginalPltNum(originalPltNumFromUrl);
       }
-      toast.info(`為作廢棧板 ${originalPltNumFromUrl || ''} 準備修正標籤。請確認資訊並列印。`, {
-        duration: 8000, // Longer duration for this important info
+      if (targetLocationFromUrl) {
+        setTargetLocation(targetLocationFromUrl);
+      }
+
+      let infoMessage = `Preparing correction label for voided pallet ${originalPltNumFromUrl || ''}. Please confirm information and print.`;
+      if (sourceActionFromUrl === 'void_correction_damage_partial' && targetLocationFromUrl) {
+        infoMessage = `Preparing label for remaining quantity of partially damaged pallet ${originalPltNumFromUrl || ''} (original location: ${targetLocationFromUrl}). Please confirm information and print.`;
+      }
+
+      toast.info(infoMessage, {
+        duration: 8000, 
       });
-      
-      // Optional: Clean URL params after processing to prevent re-trigger on refresh
-      // This requires router.replace and careful handling if other params are needed
-      // const currentPath = window.location.pathname;
-      // router.replace(currentPath, undefined); // Or router.replace(currentPath, { shallow: true });
-      // For now, let's not clear them automatically to simplify.
     }
-  }, [searchParams, router]); // Added router to dependency array if used for replace
+  }, [searchParams, router]); // Keep router if it was used for clearing params, otherwise it can be removed if not used
+
+  // New useEffect to automatically fetch product info when productCode is set from URL params in a void correction flow
+  useEffect(() => {
+    if (
+      (sourceAction === 'void_correction' || sourceAction === 'void_correction_damage_partial') &&
+      productCode.trim() &&
+      (!productInfo || productInfo.code !== productCode.trim())
+    ) {
+      handleProductCodeBlur();
+    }
+  }, [productCode, sourceAction, productInfo, handleProductCodeBlur]);
 
   // 驗證條件
   // const isAcoValid = productInfo?.type === 'ACO' ? acoOrderRef.trim() !== '' : true; // Will be replaced
@@ -304,7 +354,10 @@ export default function QcLabelForm() {
     quantity.trim() !== '' && 
     count.trim() !== '' && // For Slate, count is set to '1' by useEffect, so this check remains valid
     isSlateValid && 
-    isAcoReadyForPrint; // Use the new comprehensive ACO check
+    isAcoReadyForPrint && // Use the new comprehensive ACO check
+    // NEW CONDITION: If coming from a void correction with a product code (sourceAction is set),
+    // ensure productInfo is loaded. If not a correction, this part defaults to true.
+    (!(sourceAction && productCode.trim()) || productInfo);
 
   // --- 加入這個 console.log (更新以包含 isAcoReadyForPrint) ---
   console.log('[Form Validation] isFormValid:', isFormValid, {
@@ -463,21 +516,27 @@ export default function QcLabelForm() {
       let currentPltRemark = base_plt_remark_for_batch; // Start with the batch remark
 
       // Check if this is a void correction and add to remark
-      if (sourceAction === 'void_correction' && originalPltNum) {
-        const correctionText = `Corrected for voided: ${originalPltNum}`;
-        // Append to existing remark if it's not just '-', otherwise use correction text directly.
+      if ((sourceAction === 'void_correction' || sourceAction === 'void_correction_damage_partial') && originalPltNum) {
+        const correctionText = `Reprint for voided: ${originalPltNum}`;
         currentPltRemark = (currentPltRemark && currentPltRemark !== '-') 
                            ? `${currentPltRemark}; ${correctionText}` 
                            : correctionText;
       }
 
+      // 根據 sourceAction 同 targetLocation 決定 plt_loc
+      let final_plt_loc = "Await"; // Default location
+      if ((sourceAction === 'void_correction' || sourceAction === 'void_correction_damage_partial') && targetLocation) {
+          final_plt_loc = targetLocation;
+      }
+
       const palletData: any = {
         plt_num: palletNumbersToUse[i],
-        //generate_time: generateTime,
+        //generate_time: generateTime, // Auto by DB
         product_code: productCode,
         product_qty: quantity,
         series: seriesArr[i],
-        plt_remark: currentPltRemark, // Use the potentially modified remark
+        plt_remark: currentPltRemark, 
+        plt_loc: final_plt_loc, // 添加 plt_loc 到 palletData
       };
       return palletData;
     });
@@ -580,23 +639,37 @@ export default function QcLabelForm() {
     let inventoryInsertError: Error | null = null; 
     inventoryUpdated = false; // Reset inventoryUpdated flag before the loop
 
-    for (const d of insertDataArr) {
+    for (const d of insertDataArr) { // insertDataArr NOW INCLUDES plt_loc
         const qty = Number(d.product_qty);
         
+        // 根據 d.plt_loc 決定庫存欄位名稱
+        let inventory_column_name = "await"; // Default inventory column
+        const final_pallet_location = d.plt_loc || "Await"; // 確保 d.plt_loc 有值，否則預設 Await
+
+        // 如果唔係 Await，嘗試映射到特定庫存欄位
+        if (final_pallet_location !== "Await") {
+            const locationToColumnMap: { [key: string]: string } = {
+                "Production": "injection",
+                "PipeLine": "pipeline",
+                "Pre-Book": "prebook",
+                "Fold Mill": "fold",
+                "Bulk Room": "bulk",
+                "Back Car Park": "backcarpark"
+                // 記得呢度嘅 key 必須同 final_pallet_location 傳入嘅值完全匹配
+            };
+            inventory_column_name = locationToColumnMap[final_pallet_location] || "await"; // 如果映射唔到，都係返 await
+        }
+
+        const inventoryRecord: { [key: string]: any } = {
+            product_code: d.product_code, 
+            plt_num: d.plt_num,
+            // 所有其他數量欄位應由數據庫預設為 0
+        };
+        inventoryRecord[inventory_column_name] = qty; // 動態設定正確嘅庫存欄位同數量
+
         const { error: insertError } = await supabase
             .from('record_inventory')
-            .insert({ 
-                product_code: d.product_code, 
-                plt_num: d.plt_num, 
-                await: qty
-                //injection: 0, 
-                //pipeline: 0,
-                //prebook: 0,
-                //fold: 0,
-                //bulk: 0,
-                //backcarpark: 0,
-                //latest_update: new Date().toISOString() 
-            });
+            .insert(inventoryRecord); // 使用動態構建嘅 record
 
         if (insertError) {
             inventoryInsertError = insertError; 
@@ -617,15 +690,29 @@ export default function QcLabelForm() {
     // === Add record_history ===
     const now = new Date();
     const historyArr = insertDataArr.map((d) => {
-      const calculatedLoc = d.product_code.startsWith('U') ? 'PipeLine' : 'Awaiting';
-      console.log(`[DEBUG QcLabelForm record_history] Product Code: ${d.product_code}, Starts with U: ${d.product_code.startsWith('U')}, Calculated Loc: ${calculatedLoc}`);
+      // 新邏輯: 使用 insertDataArr 中嘅 d.plt_loc
+      const final_history_loc = d.plt_loc || "Await"; // 使用早前決定嘅 plt_loc，如果冇就預設 Await
+
+      let history_action = 'Production Finished Q.C.';
+      let history_remark = operator.trim() ? 'Pre-Booking (Print Before Product Is Ready)' : 'QC Done (Product Finished And Ready)';
+
+      // 如果係作廢更正，調整 action 同 remark
+      if (sourceAction === 'void_correction_damage_partial' && originalPltNum) {
+        history_action = 'Void Correction Label (Partial Damage)';
+        // targetLocation state 應該可以直接喺呢度用，因為佢喺 proceedWithPrint 嘅 scope 之內
+        history_remark = `New label for remaining qty of voided pallet ${originalPltNum}. Original loc: ${targetLocation || 'Unknown'}. New loc: ${final_history_loc}.`;
+      } else if (sourceAction === 'void_correction' && originalPltNum) {
+        history_action = 'Void Correction Label';
+        history_remark = `New label for voided pallet ${originalPltNum}. New loc: ${final_history_loc}.`;
+      }
+
       return {
         time: now.toISOString(),
         id: userId ? parseInt(userId, 10) : null,
-        remark: operator.trim() ? 'Pre-Booking (Print Before Product Is Ready)' : 'QC Done (Product Finished And Ready)',
+        remark: history_remark, // 使用可能已修改嘅 remark
         plt_num: d.plt_num,
-        loc: calculatedLoc, // 使用計算出的 loc
-        action: 'Production Finished Q.C.'
+        loc: final_history_loc, // 使用 final_history_loc
+        action: history_action, // 使用可能已修改嘅 action
       };
     });
     
@@ -786,52 +873,6 @@ export default function QcLabelForm() {
       setAcoRemain(null);
     }
   };
-
-  // --- Product Code Search Logic --- START ---
-  const handleProductCodeBlur = async () => {
-    if (!productCode.trim()) {
-      setProductInfo(null);
-      setProductError(null);
-      return;
-    }
-    try {
-      const { data, error } = await supabase
-        .from('data_code')
-        .select('code, description, standard_qty, type')
-        .ilike('code', productCode.trim())
-        .single();
-
-      if (error) {
-        setProductInfo(null);
-        if (error.code === 'PGRST116') { // PostgREST: "Searched for a single row, but found no rows"
-            setProductError(`Product Code ${productCode.trim()} Not Found. Please Check Again.`);
-            //toast.error(`Product Code ${productCode.trim()} Not Found. Please Check Again.`);
-        } else {
-            setProductError('Error fetching product info.');
-            //toast.error('Error fetching product info.');
-        }
-        console.error('Error fetching product info:', error);
-      } else if (data) {
-        setProductInfo(data as { code: string; description: string; standard_qty: string; type: string });
-        setProductCode(data.code);
-        setProductError(null);
-        if (data.standard_qty && !quantity) { // Auto-fill quantity if it's empty and standard_qty exists
-          setQuantity(data.standard_qty);
-        }
-      } else {
-        // Should be covered by error.code === 'PGRST116'
-        setProductInfo(null);
-        setProductError('Product code not found.');
-        toast.error('Product code not found.');
-      }
-    } catch (e: any) {
-      setProductInfo(null);
-      setProductError('An unexpected error occurred while fetching product data.');
-      toast.error('An unexpected error occurred while fetching product data.');
-      console.error('Exception fetching product info:', e);
-    }
-  };
-  // --- Product Code Search Logic --- END ---
 
   // --- Error Logging Function --- START ---
   const logErrorReport = async (errorPart: string, context: string) => {
@@ -1173,7 +1214,7 @@ export default function QcLabelForm() {
           </button>
         </form>
 
-        {/* --- 進度條 UI 移到這裡 --- */} 
+        {/* --- 進度條 UI 移到這裡 --- */}
         {pdfProgress.total > 0 && (
           <div className="mt-4">
             <div className="mb-2 text-xs text-gray-200">

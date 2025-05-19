@@ -26,6 +26,7 @@ interface ActionResult {
   error?: string;
   message?: string;
   remainingQty?: number;
+  actual_original_location?: string | null;
 }
 
 // Interface for the new damaged pallet voiding action
@@ -284,15 +285,19 @@ export async function processDamagedPalletVoidAction(args: ProcessDamagedPalletA
     });
 
     if (rpcError) {
-      console.error('[SA_DMG] RPC call failed with rpcError:', rpcError);
-      await logHistoryRecord(userId, 'Damaged Void Fail', plt_num, original_plt_loc, `RPC Call Error (DMG): ${rpcError.message} (SA_DMG)`);
-      return { success: false, error: `Database operation failed: ${rpcError.message}` };
+      console.error('[SA_DMG] RPC call failed for damaged pallet:', rpcError);
+      await logHistoryRecord(userId, 'Damaged Void Fail', plt_num, original_plt_loc, `RPC Call Error: ${rpcError.message} (SA_DMG)`);
+      return { 
+        success: false, 
+        error: `Database operation failed for damaged pallet: ${rpcError.message}`,
+        actual_original_location: null // Explicitly set to null
+      };
     }
 
-    console.log(`[SA_DMG] RPC call seemingly successful, response data:`, rpcData);
+    console.log(`[SA_DMG] RPC call for damaged pallet seemingly successful, response data:`, rpcData);
     if (rpcData && typeof rpcData === 'object') {
       // Assuming rpcData is the JSONB object { "success": boolean, "message": "string", "remainingQty"?: number }
-      const rpcResponse = rpcData as { success?: boolean; message?: string; remainingQty?: number; [key: string]: any };
+      const rpcResponse = rpcData as { success?: boolean; message?: string; remainingQty?: number; actual_original_location?: string | null; [key: string]: any };
       if (rpcResponse.success === true) {
         revalidatePath('/void-pallet');
         revalidatePath('/inventory'); // Also revalidate inventory page as quantities change
@@ -300,27 +305,45 @@ export async function processDamagedPalletVoidAction(args: ProcessDamagedPalletA
         
         const actionResult: ActionResult = {
             success: true, 
-            message: rpcResponse.message || 'Damaged pallet processed successfully.'
+            message: rpcResponse.message || 'Damaged pallet processed successfully.',
+            remainingQty: rpcResponse.remainingQty,
+            actual_original_location: rpcResponse.actual_original_location
         };
-        if (typeof rpcResponse.remainingQty === 'number') {
+        if (typeof rpcResponse.remainingQty === 'number' && actionResult.remainingQty === undefined) {
             actionResult.remainingQty = rpcResponse.remainingQty;
+        }
+        if (rpcResponse.actual_original_location !== undefined && actionResult.actual_original_location === undefined) {
+             actionResult.actual_original_location = rpcResponse.actual_original_location;
         }
         return actionResult;
       } else {
         const errorMessage = rpcResponse.message || 'RPC for damaged pallet indicated an issue but provided no specific message.';
         console.warn(`[SA_DMG] RPC reported an issue:`, rpcResponse);
         await logHistoryRecord(userId, 'Damaged Void Fail', plt_num, original_plt_loc, `RPC Reported Issue (DMG): ${errorMessage.substring(0,100)} (SA_DMG)`);
-        return { success: false, error: errorMessage };
+        return { 
+          success: false, 
+          error: errorMessage,
+          actual_original_location: null // Explicitly set to null
+        };
       }
     } else {
-      console.error('[SA_DMG] RPC returned unexpected data format or null/undefined:', rpcData);
-      await logHistoryRecord(userId, 'Damaged Void Fail', plt_num, original_plt_loc, 'RPC Unexpected Data Format (DMG) (SA_DMG)');
-      return { success: false, error: 'Database operation for damaged pallet returned an unexpected result.' };
+      // Unexpected rpcData format
+      console.error('[SA_DMG] RPC for damaged pallet returned unexpected data format or null/undefined data:', rpcData);
+      await logHistoryRecord(userId, 'Damaged Void Fail', plt_num, original_plt_loc, 'RPC Unexpected Data Format (SA_DMG)');
+      return { 
+        success: false, 
+        error: 'Database (damage proc) returned an unexpected data format.',
+        actual_original_location: null // Explicitly set to null
+      };
     }
 
   } catch (error: any) {
     console.error('[SA_DMG] Unhandled error during processDamagedPalletVoidAction:', error);
-    await logHistoryRecord(userId, 'Damaged Void Fail', plt_num, original_plt_loc, `Unhandled Server Error (DMG): ${error.message} (SA_DMG)`);
-    return { success: false, error: 'An unexpected server error occurred while processing damaged pallet.' };
+    await logHistoryRecord(userId, 'Damaged Void Fail', plt_num, original_plt_loc, `Unhandled Server Error (SA_DMG): ${error.message}`);
+    return { 
+      success: false, 
+      error: 'An unexpected server error occurred during damaged pallet processing.',
+      actual_original_location: null // Explicitly set to null
+    };
   }
 } 

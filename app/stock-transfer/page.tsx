@@ -400,7 +400,7 @@ export default function StockTransferPage() {
         <div className="mt-8">
           <h3 className="text-lg font-semibold mb-2 text-gray-300">Activity Log</h3>
           {/* Adjusted height for approx 10 lines, assuming default line height */}
-          <div className="space-y-1 max-h-60 overflow-y-auto bg-gray-700 p-3 rounded-md text-sm">
+          <div className="space-y-1 max-h-[26.25rem] overflow-y-auto bg-gray-700 p-3 rounded-md text-sm">
             {activityLog.length === 0 && <p className="text-gray-400">No Movements Found.</p>}
             {activityLog.map((log, index) => (
               <p key={index} className={`text-green-400`}> {/* Always green for success */}
