@@ -14,9 +14,12 @@ import { toast } from 'sonner';      // Added for toast notifications
  * @throws Error if palletNum is empty.
  */
 export function generatePalletPdfFileName(palletNum: string): string {
+  // 防禦性處理：如果 palletNum 為 null、undefined 或空字串，提供一個默認值
   if (!palletNum || palletNum.trim() === '') {
-    //throw new Error('Pallet number cannot be empty for PDF naming.');
+    console.warn('[generatePalletPdfFileName] Pallet number is empty or not provided. Using default filename.');
+    return `unknown_pallet_${new Date().getTime()}.pdf`;
   }
+  
   // Replace all occurrences of '/' with '_'
   const safePalletNum = palletNum.replace(/\//g, '_');
   return `${safePalletNum}.pdf`;
