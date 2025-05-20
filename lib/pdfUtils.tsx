@@ -13,16 +13,21 @@ import { toast } from 'sonner';      // Added for toast notifications
  * @returns The formatted PDF filename.
  * @throws Error if palletNum is empty.
  */
-export function generatePalletPdfFileName(palletNum: string): string {
+export function generatePalletPdfFileName(palletNum: string | null | undefined): string {
   // 防禦性處理：如果 palletNum 為 null、undefined 或空字串，提供一個默認值
-  if (!palletNum || palletNum.trim() === '') {
+  if (!palletNum || (typeof palletNum === 'string' && palletNum.trim() === '')) {
     console.warn('[generatePalletPdfFileName] Pallet number is empty or not provided. Using default filename.');
     return `unknown_pallet_${new Date().getTime()}.pdf`;
   }
   
-  // Replace all occurrences of '/' with '_'
-  const safePalletNum = palletNum.replace(/\//g, '_');
-  return `${safePalletNum}.pdf`;
+  try {
+    // Replace all occurrences of '/' with '_'
+    const safePalletNum = String(palletNum).replace(/\//g, '_');
+    return `${safePalletNum}.pdf`;
+  } catch (error) {
+    console.error('[generatePalletPdfFileName] Error processing pallet number:', error);
+    return `error_pallet_${new Date().getTime()}.pdf`;
+  }
 }
 
 // Interface for GRN specific data input by the user or form
@@ -251,7 +256,7 @@ export async function mergeAndPrintPdfs(
 
       } catch (printError) {
         console.error('[mergeAndPrintPdfs] Error triggering print dialog:', printError);
-        //toast.error('Failed to initiate print dialog. Please try again or check browser settings.');
+        toast.error('Failed to initiate print dialog. Please try again or check browser settings.');
         // Cleanup in case of print error too
         URL.revokeObjectURL(url);
         if (iframe.parentNode) {
@@ -262,7 +267,7 @@ export async function mergeAndPrintPdfs(
 
     iframe.onerror = () => {
         console.error('[mergeAndPrintPdfs] Error loading PDF into iframe.');
-        //toast.error('Failed to load merged PDF for printing.');
+        toast.error('Failed to load merged PDF for printing.');
         URL.revokeObjectURL(url);
         if (iframe.parentNode) {
             iframe.parentNode.removeChild(iframe);
@@ -271,6 +276,6 @@ export async function mergeAndPrintPdfs(
 
   } catch (error) {
     console.error('[mergeAndPrintPdfs] Failed to merge and print PDFs:', error);
-    //toast.error('An error occurred while merging or printing PDFs. Please check console.');
+    toast.error('An error occurred while merging or printing PDFs. Please check console.');
   }
 } 
