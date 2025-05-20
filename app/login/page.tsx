@@ -1,15 +1,19 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "../../components/ui/card";
 import { toast } from 'sonner';
 import { customLoginAction } from '../actions/authActions';
+import { supabase } from '@/lib/supabase';
+import { clearLocalAuthData, syncAuthStateToLocalStorage } from '../utils/auth-sync';
 
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const fromPage = searchParams?.get('from') || '/dashboard';
   
   const [clockNumber, setClockNumber] = useState('');
   const [password, setPassword] = useState('');
@@ -17,19 +21,32 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem('loggedInUserClockNumber');
-      localStorage.removeItem('user');
-      localStorage.removeItem('isTemporaryLogin');
-      localStorage.removeItem('firstLogin');
-    }
+    // 清除之前的登入狀態
+    clearLocalAuthData();
+    
+    // 檢查 Supabase Auth 會話
+    const checkSession = async () => {
+      const { data, error } = await supabase.auth.getSession();
+      if (error) {
+        console.error('[Login] Error checking session:', error.message);
+        return;
+      }
+      
+      if (data.session) {
+        console.log('[Login] Active session found, signing out');
+        // 如果有現有會話，則登出
+        await supabase.auth.signOut();
+      }
+    };
+    
+    checkSession();
   }, []);
 
   const logToHistory = async (userIdToLog: string, actionType: 'LogIn' | 'Password Change', remarkText: string) => {
     try {
-      console.log(`Attempting to log: User [${userIdToLog}], Action [${actionType}], Remark [${remarkText}]`);
+      console.log(`[Login] Logging history: User [${userIdToLog}], Action [${actionType}], Remark [${remarkText}]`);
     } catch (historyError) {
-      console.error('Failed to log to record_history:', historyError);
+      console.error('[Login] Failed to log to record_history:', historyError);
     }
   };
 
@@ -50,41 +67,57 @@ export default function LoginPage() {
         return;
     }
 
-    console.log(`Attempting custom login for clock number: ${trimmedClockNumber}`);
-    console.log(`Password being sent: ${password}`);
-
+    console.log(`[Login] Attempting login for clock number: ${trimmedClockNumber}`);
+    
     try {
       const loginResult = await customLoginAction(trimmedClockNumber, password);
 
       if (loginResult.success && typeof loginResult.userId === 'number') {
-        console.log('Custom login successful for clock number:', loginResult.userId);
+        console.log('[Login] Login successful for clock number:', loginResult.userId);
         
-        if (typeof window !== 'undefined') {
-          localStorage.setItem('loggedInUserClockNumber', loginResult.userId.toString());
+        // 確保認證狀態已同步到 localStorage
+        try {
+          await syncAuthStateToLocalStorage();
+          console.log('[Login] Authentication state synced to localStorage');
+          
+          // 設置標誌，告訴系統保留認證狀態，避免在轉換到儀表板時出現 flashing
+          localStorage.setItem('preserveAuthState', 'true');
+          
+          // 設置 cookie 以確保 middleware 可以讀取認證狀態
+          document.cookie = `loggedInUserClockNumber=${loginResult.userId}; path=/; max-age=86400; SameSite=Lax`;
+        } catch (syncError) {
+          console.error('[Login] Error syncing auth state:', syncError);
+          // 即使同步失敗，仍然繼續流程
         }
 
         const isFirstLogin = loginResult.isFirstLogin;
 
         if (isFirstLogin) {
-          console.log('First login detected for user (clock number):', loginResult.userId, 'based on data_id.first_login flag.');
-          await logToHistory(loginResult.userId.toString(), 'LogIn', 'First LogIn (custom) - Redirect to Change Password');
+          console.log('[Login] First login detected, redirecting to change password page');
+          await logToHistory(loginResult.userId.toString(), 'LogIn', 'First LogIn - Redirect to Change Password');
           router.push(`/change-password?userId=${encodeURIComponent(loginResult.userId.toString())}`); 
         } else {
-          console.log('Recurring login detected for user (clock number):', loginResult.userId, 'Redirecting to dashboard.');
-          await logToHistory(loginResult.userId.toString(), 'LogIn', 'LogIn Success (custom)');
-          router.push('/dashboard');
+          console.log('[Login] Regular login detected, redirecting to dashboard or previous page');
+          await logToHistory(loginResult.userId.toString(), 'LogIn', 'LogIn Success');
+          
+          // 強制在使用 router.push 前短暫延遲，給 Supabase Auth 時間完成其內部操作
+          setTimeout(() => {
+            // 設置超時，在完成後清除 preserveAuthState 標誌
+            setTimeout(() => {
+              localStorage.removeItem('preserveAuthState');
+            }, 5000);
+            
+            // 如果用戶從其他頁面被重定向過來，登入後返回那個頁面
+            router.push(fromPage);
+          }, 100);
         }
-
       } else {
-        console.error('Custom login failed:', loginResult.error);
-        setError(loginResult.error || 'Invalid Clock Number or Password.');
-        await logToHistory(trimmedClockNumber, 'LogIn', `LogIn Fail (custom) - ${loginResult.error}`);
+        console.error('[Login] Login failed:', loginResult.error);
+        setError(loginResult.error || 'Login failed. Please try again.');
       }
-
-    } catch (err:any) {
-      console.error('Login process exception:', err);
-      setError(err.message || 'A system error occurred during login.');
-      await logToHistory(trimmedClockNumber, 'LogIn', `LogIn Fail (custom) - Exception: ${err.message}`);
+    } catch (err: any) {
+      console.error('[Login] Unexpected login error:', err);
+      setError(err.message || 'An unexpected error occurred. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -95,7 +128,7 @@ export default function LoginPage() {
       toast.error('Please enter your Clock Number to proceed with password assistance.');
       return;
     }
-    toast.info('Password reset functionality needs to be updated for the new login system.');
+    toast.info('Please contact your administrator to reset your password.');
   };
 
   return (
@@ -134,7 +167,7 @@ export default function LoginPage() {
                 id="clockNumber"
                 type="text"
                 value={clockNumber}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setClockNumber(e.target.value)}
+                onChange={(e) => setClockNumber(e.target.value)}
                 className="bg-[#1e2533] border-gray-600 text-white placeholder-gray-400 focus:ring-blue-500"
                 placeholder="Enter your clock number"
                 required
@@ -148,7 +181,7 @@ export default function LoginPage() {
                 id="password"
                 type="password"
                 value={password}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPassword(e.target.value)}
+                onChange={(e) => setPassword(e.target.value)}
                 className="bg-[#1e2533] border-gray-600 text-white placeholder-gray-400 focus:ring-blue-500"
                 placeholder="Enter your password"
                 required
@@ -169,40 +202,17 @@ export default function LoginPage() {
               </div>
             )}
           </CardContent>
-          <CardFooter>
+          <CardFooter className="flex flex-col gap-3">
             <Button
               type="submit"
               disabled={loading}
               className="w-full bg-blue-600 hover:bg-blue-700 text-white"
             >
-              {loading ? (
-                <div className="flex items-center justify-center">
-                  <svg
-                    className="animate-spin -ml-1 mr-2 h-4 w-4"
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                  >
-                    <circle
-                      className="opacity-25"
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      strokeWidth="4"
-                    />
-                    <path
-                      className="opacity-75"
-                      fill="currentColor"
-                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                    />
-                  </svg>
-                  Logging in...
-                </div>
-              ) : (
-                'Login'
-              )}
+              {loading ? 'Logging In...' : 'Login'}
             </Button>
+            <p className="text-xs text-center text-gray-500">
+              First-time users: Your password is your Clock Number
+            </p>
           </CardFooter>
         </form>
       </Card>

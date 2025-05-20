@@ -1,4 +1,52 @@
 <!-- Prepend new entries here -->
+## [Unreleased] - 2025-05-24 
+
+### Fixed
+- **Supabase Auth Integration Bugs**:
+  - Fixed `supabaseAdmin.auth.admin.getUserByEmail is not a function` error by switching to `listUsers` API
+  - Modified `userExistsInSupabaseAuth` and `updatePasswordWithSupabaseAuth` functions to use proper Supabase API methods
+  - Resolved login session issues that caused users to be redirected back to login page after successful authentication
+  - Added cookie-based fallback authentication mechanism in middleware
+  - Enhanced AuthStateSync component with retry mechanisms and periodic synchronization
+  - Created detailed documentation in loginBuild.md for future reference
+
+### Changed
+- **Authentication Flow**:
+  - Improved authentication state synchronization between client and server
+  - Enhanced middleware to provide better session persistence
+  - Added more robust error handling in authentication-related functions
+
+## [Unreleased] - 2025-05-23 
+
+### Added
+- **Database RPC (Remote Procedure Call)**: Added a new `update_user_password` RPC function to the Supabase database for direct, cache-bypassing password updates.
+- **Server-Side Memory Cache**: Implemented a server-side memory cache for recently changed passwords, ensuring consistent user authentication experiences across concurrent requests even when database changes have propagation delays.
+- Integrated Supabase Auth for authentication
+- Migrated from custom authentication to Supabase Auth while maintaining existing UI
+- Added automatic user migration from custom auth to Supabase Auth
+- Enhanced security with JWT-based authentication
+
+### Changed
+- **Authentication Process**: Completely rebuilt password change validation and login flow to support multiple layers of verification.
+  - Added multiple retry attempts with variable delays (0.5-2s) between database checks to allow for data propagation.
+  - Added fallback mechanisms when database queries return inconsistent data.
+  - Added memory-based recovery path that retains recently changed password states in server memory.
+  - Database reads now use optimized query parameters to bypass potential Supabase query caching.
+- **Password Change Verification**: Enhanced the password change function to verify updates are correctly applied before confirming success to users, with multiple verification attempts.
+- Updated login flow to use Supabase Auth backend
+- Modified password change functionality to use Supabase Auth
+- Updated first login detection to work with Supabase Auth
+- Preserved all existing UI/UX for authentication
+
+<!-- Prepend new entries here -->
+## [Unreleased] - 2025-05-22 
+
+### Fixed
+- **Critical Authentication Bug**: Resolved an issue where changes to user login state (`first_login` and password hash) were not immediately reflected in subsequent login attempts within the same server instance. Added cache-breaking parameters to database queries in `customLoginAction` (in `app/actions/authActions.ts`) and `updateUserPasswordInDbAction` (in `app/change-password/actions.ts`) to ensure fresh data is always retrieved from the database.
+- Added verification step after password change to confirm database updates were successfully applied.
+- Updated user authentication to use a more reliable strategy with multiple database checks if inconsistencies are detected.
+
+<!-- Prepend new entries here -->
 ## [Unreleased] - 2025-05-21 
 
 ### Changed

@@ -7,6 +7,7 @@ import { Input } from "../../components/ui/input";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "../../components/ui/card";
 import { toast } from 'sonner';
 import { updateUserPasswordInDbAction } from './actions'; // Updated path
+import { syncAuthStateToLocalStorage } from '../utils/auth-sync';
 
 function ChangePasswordFormComponent() {
   const router = useRouter();
@@ -25,7 +26,7 @@ function ChangePasswordFormComponent() {
       // Optional: verify if this clock number is actually pending a first password change
       // This could be a call to a server action that checks data_id.first_login
       // For now, we assume if they are on this page with a userId, they need to change it.
-      console.log('User ID from query for password change:', userIdFromQuery);
+      console.log('[Change Password] User ID from query for password change:', userIdFromQuery);
     } else {
       toast.error('User ID not found. Please log in again.');
       router.push('/login');
@@ -54,16 +55,18 @@ function ChangePasswordFormComponent() {
       const result = await updateUserPasswordInDbAction(clockNumber, newPassword);
       if (result.success) {
         toast.success('Password updated successfully! Redirecting to dashboard...');
-        // Clear any sensitive items from localStorage if needed, though clockNumber might still be useful
-        // localStorage.removeItem('isTemporaryLogin'); // Example if such item was used
-        // localStorage.setItem('firstLoginComplete', 'true'); // Optional: set a flag
+        
+        // 同步認證狀態
+        await syncAuthStateToLocalStorage();
+        
+        // 重定向到儀表板
         router.push('/dashboard');
       } else {
         setError(result.error || 'Failed to update password.');
         toast.error(result.error || 'An unknown error occurred.');
       }
     } catch (err: any) {
-      console.error('Password change process exception:', err);
+      console.error('[Change Password] Exception:', err);
       setError(err.message || 'A system error occurred during password change.');
       toast.error(err.message || 'A system error occurred.');
     } finally {

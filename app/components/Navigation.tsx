@@ -17,6 +17,8 @@ import {
 import PrintLabelPopover from './print-label-menu/PrintLabelPopover';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/lib/supabase';
+import { clearLocalAuthData } from '../utils/auth-sync';
+import { signOut } from '../services/supabaseAuth';
 
 const menuItems = [
   { name: 'Print Label', icon: DocumentIcon, href: '/print-label' },
@@ -210,7 +212,7 @@ export default function Navigation() {
       </Link>
       <button
         onClick={async () => {
-          console.error("CRITICAL LOG: LogOut BUTTON CLICKED!");
+          console.log("[Navigation] LogOut button clicked");
           setIsMobileMenuOpen(false); // Always close menu first
           
           let userIdToLog = 'unknown_user'; 
@@ -228,7 +230,7 @@ export default function Navigation() {
                   userIdToLog = userData.id;
                 }
               } catch (e) {
-                console.error('Error parsing fallback user data for logout log:', e);
+                console.error('[Navigation] Error parsing fallback user data for logout log:', e);
               }
             }
           }
@@ -251,16 +253,19 @@ export default function Navigation() {
               remark: null
             });
           } catch (historyError) {
-            console.error('Failed to log logout event:', historyError);
+            console.error('[Navigation] Failed to log logout event:', historyError);
           }
 
-          // Clear the primary login state
-          localStorage.removeItem('loggedInUserClockNumber');
-          // Also clear the old 'user' key for safety/cleanup
-          localStorage.removeItem('user');
-          // Also clear other potentially relevant localStorage items upon logout
-          localStorage.removeItem('isTemporaryLogin');
-          localStorage.removeItem('firstLogin');
+          try {
+            // 使用 Supabase Auth 登出
+            await signOut();
+            console.log('[Navigation] Supabase Auth signOut successful');
+          } catch (authError) {
+            console.error('[Navigation] Supabase Auth signOut error:', authError);
+          }
+
+          // 使用我們的統一函數清除本地儲存
+          clearLocalAuthData();
           
           router.push('/login');
         }}
