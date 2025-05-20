@@ -525,12 +525,11 @@ function getPalletColumn(palletType: string | null): string | null {
   if (!palletType) return null;
   const type = palletType.trim().toLowerCase(); // Normalize to lowercase
   switch (type) {
-    case 'whitedry': return 'D';
-    case 'whitewet': return 'E';
-    case 'chepdry': return 'F';
-    case 'chepwet': return 'G';
-    case 'euro': return 'H';
-    // case 'notincludedpallet': return null; // This case can be removed as default handles unmapped types
+    case 'whitedry': return 'D'; // whitedry -> D 列
+    case 'whitewet': return 'E'; // whitewet -> E 列
+    case 'chepdry': return 'F'; // chepdry -> F 列 
+    case 'chepwet': return 'G'; // chepwet -> G 列
+    case 'euro': return 'H'; // euro -> H 列
     default:
       // Optionally log unmapped pallet types for debugging
       console.warn(`[getPalletColumn] Unmapped palletType: '${palletType}' (normalized: '${type}'). No column assigned.`);
@@ -543,10 +542,10 @@ function getPackageColumn(packageType: string | null): string | null {
   if (!packageType) return null;
   const type = packageType.toLowerCase(); // Normalize to lowercase for case-insensitive comparison
 
-  if (type.includes('still')) return 'I'; // Stillage
-  if (type.includes('bag')) return 'J';   // Bag
-  if (type.includes('tote')) return 'K';   // Tote Bag
-  if (type.includes('octo')) return 'L';   // Octobin
+  if (type.includes('still')) return 'I'; // Stillage - I 列
+  if (type.includes('bag') && !type.includes('tote')) return 'J';   // Bag - J 列
+  if (type.includes('tote')) return 'K';   // Tote Bag - K 列
+  if (type.includes('octo')) return 'L';   // Octobin - L 列
   
   // If no match, log a warning and return null so no count is placed in an incorrect column
   console.warn(`[getPackageColumn] Unmapped packageType: '${packageType}' (normalized: '${type}'). No column assigned.`);
