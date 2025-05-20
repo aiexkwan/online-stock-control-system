@@ -39,7 +39,7 @@ export default function DebugPage() {
       </button>
       {results && (
         <div className="mt-4 p-4 bg-gray-100 rounded">
-          <h2 class="text-xl font-semibold mb-2">Test Results:</h2>
+          <h2 className="text-xl font-semibold mb-2">Test Results:</h2>
           <pre className="overflow-x-auto whitespace-pre-wrap break-all">
             {JSON.stringify(results, null, 2)}
           </pre>

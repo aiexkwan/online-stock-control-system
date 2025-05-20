@@ -368,3 +368,4 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 - Addressed various linter errors in `lib/exportReport.ts` for the new Transaction Report feature.
+- **Build Error**: Resolved a TypeScript type error in `app/debug-test/page.tsx` by changing `class` attribute to `className` in an `<h2>` tag, fixing the Vercel deployment failure.
