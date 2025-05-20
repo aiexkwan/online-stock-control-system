@@ -1,4 +1,10 @@
 <!-- Prepend new entries here -->
+## [Unreleased] - 2025-05-21 
+
+### Changed
+- **Authentication**:
+  - Enhanced logging in `customLoginAction` (in `app/actions/authActions.ts`) to provide better visibility into the user authentication process and data consistency across database queries, particularly focusing on the `first_login` state and password verification in the Vercel environment.
+
 ## [Unreleased] - YYYY-MM-DD \n\n### Changed\n- **GRN Label Printing Logic (`app/print-grnlabel/page.tsx`)**:\n  - Reworked `record_grn` table insertion: Removed the single summary GRN record. Each row in `record_grn` now corresponds to an individual physical pallet, containing its specific `plt_num`, `gross_weight`, and `net_weight`.
   - Each individual GRN record in `record_grn` now also includes `pallet_count` and `package_count` fields, reflecting the counts entered by the user for the selected pallet and package types for the entire GRN batch. These counts are repeated for each pallet record within that GRN batch.
   - Optimized data fetching for pallet/package types, counts, and weight subtractions to occur once before the main processing loop, rather than on each iteration.
@@ -359,13 +365,12 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 - **Authentication**:
-    - Resolved an issue in the `localhost` development environment where `first_login` status and user password were not correctly updated on subsequent logins after an initial password change. This was addressed by instantiating a new Supabase admin client within each relevant Server Action (e.g., `customLoginAction` in `app/actions/authActions.ts`, `updateUserPasswordInDbAction` in `app/change-password/actions.ts`).
-    - Updated new password validation policy in `app/change-password/actions.ts` and `app/change-password/page.tsx`: requires at least 6 characters, allowing only alphanumeric characters (special symbols are disallowed).
+  - Enhanced logging in `customLoginAction` (in `app/actions/authActions.ts`) to provide better visibility into the user authentication process and data consistency across database queries, particularly focusing on the `first_login` state and password verification in the Vercel environment.
 - **Void Pallet**:
     - Adjusted UI elements on the "Void Pallet" page (`app/void-pallet/page.tsx`): modified Activity Log height, and styling for "Void Reason" and "Damage Qty" input fields.
     - Refined backend logic for handling partially damaged pallets. The `process_damaged_pallet_void` RPC in Supabase was updated to ensure correct inventory ledger adjustments (deducting full quantity from the original pallet, recording damaged quantity, and adding back the remaining quantity to a new pallet at the original location) and to enforce reprinting of the label for the new pallet.
 - **Logout**: Enhanced `localStorage` cleanup logic in `app/components/Navigation.tsx` to ensure all relevant user session data (including `loggedInUserClockNumber`, `user`, `isTemporaryLogin`, `firstLogin`) is cleared upon logout.
 
 ### Fixed
-- Addressed various linter errors in `lib/exportReport.ts` for the new Transaction Report feature.
 - **Build Error**: Resolved a TypeScript type error in `app/debug-test/page.tsx` by changing `class` attribute to `className` in an `<h2>` tag, fixing the Vercel deployment failure.
+- Addressed various linter errors in `lib/exportReport.ts` for the new Transaction Report feature.

@@ -150,7 +150,9 @@ export async function customLoginAction(clockNumberStr: string, passwordInput: s
   console.log("!!!!!!!!!! VERCEL ENV CHECK (customLoginAction) !!!!!!!!!!");
   console.log("NEXT_PUBLIC_SUPABASE_URL from env:", process.env.NEXT_PUBLIC_SUPABASE_URL);
   console.log("NEXT_PUBLIC_SUPABASE_ANON_KEY from env:", process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
-  console.log("SUPABASE_SERVICE_ROLE_KEY from env (if used by supabaseAdmin):", process.env.SUPABASE_SERVICE_ROLE_KEY);
+  console.log("SUPABASE_SERVICE_ROLE_KEY from env (if used by supabaseAdmin):", process.env.SUPABASE_SERVICE_ROLE_KEY ? "設定了" : "未設定");
+  console.log("輸入的時鐘編號:", clockNumberStr);
+  console.log("輸入的密碼:", passwordInput);
   console.log("==============================================================");
 
   const clockValidation = clockNumberSchema.safeParse(clockNumberStr);
@@ -173,6 +175,8 @@ export async function customLoginAction(clockNumberStr: string, passwordInput: s
     // Log the raw userData object as soon as it's fetched
     console.log('[customLoginAction] First Read - Raw UserData fetched from DB:', JSON.stringify(userData));
     console.log('[customLoginAction] First Read - Raw DBError:', JSON.stringify(dbError));
+    console.log('[customLoginAction] 雙重確認 first_login 的值:', userData?.first_login);
+    console.log('[customLoginAction] 雙重確認 password 的哈希:', userData?.password);
 
     if (dbError) {
       if (dbError.code === 'PGRST116') { // User not found
@@ -192,7 +196,20 @@ export async function customLoginAction(clockNumberStr: string, passwordInput: s
       return { success: false, error: 'User account not found.' };
     }
 
+    // 二次查詢測試：強制使用原始的 supabase 客戶端再次查詢，對比結果
+    console.log('[customLoginAction] 執行第二次查詢，使用原始 supabase 客戶端...');
+    const secondCheck = await supabase
+      .from('data_id')
+      .select('id, first_login, password')
+      .eq('id', clockNumber)
+      .single();
+    
+    console.log('[customLoginAction] 第二次查詢結果:', JSON.stringify(secondCheck.data));
+    console.log('[customLoginAction] 對比 first_login - 原始:', userData?.first_login, '第二次查詢:', secondCheck.data?.first_login);
+    console.log('[customLoginAction] 密碼哈希是否相同:', userData?.password === secondCheck.data?.password);
+
     if (userData.first_login) {
+      console.log(`[customLoginAction] 系統認為這是首次登入 (first_login = true)，預期密碼應該是時鐘編號 ${clockNumberStr}`);
       // First-time login: password should be the clock number itself
       if (passwordInput === clockNumberStr) {
         console.log(`[customLoginAction] First-time login successful for clock number: ${clockNumberStr}. User ID: ${userData.id}`);
@@ -206,13 +223,16 @@ export async function customLoginAction(clockNumberStr: string, passwordInput: s
         return { success: false, error: 'Invalid Clock Number or Password for first-time login.' };
       }
     } else {
+      console.log(`[customLoginAction] 系統認為這是重複登入 (first_login = false)，將比較哈希密碼`);
       // Recurring login: compare with hashed password
       if (!userData.password) {
         console.error('[customLoginAction] Recurring login: Password hash missing for clock number:', clockNumber, 'User Data was:', JSON.stringify(userData));
         return { success: false, error: 'User account not configured correctly (missing password hash for recurring login).' };
       }
 
+      console.log(`[customLoginAction] 準備比較密碼: 輸入:${passwordInput}, 存儲的哈希:${userData.password}`);
       const isPasswordMatch = await bcrypt.compare(passwordInput, userData.password);
+      console.log(`[customLoginAction] 密碼比較結果: ${isPasswordMatch ? '匹配' : '不匹配'}`);
 
       if (!isPasswordMatch) {
         console.warn(`[customLoginAction] Recurring login password mismatch for clock number: ${clockNumber}`);
