@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useTransition } from 'react';
-import { exportAcoReport, exportGrnReport } from '../../lib/exportReport';
+import { exportAcoReport, exportGrnReport, buildTransactionReport } from '../../lib/exportReport';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -21,6 +21,7 @@ import {
 // } from '@/components/ui/select'; // Shadcn Select component - currently missing
 import { getUniqueAcoOrderRefs, getAcoReportData, getUniqueGrnRefs, getMaterialCodesForGrnRef, getGrnReportData } from '../actions/reportActions';
 import { toast } from "sonner";
+import { saveAs } from 'file-saver';
 // import type { Database } from '../lib/database.types'; // Assuming Database types are available if needed for client client
 
 export default function ExportReportPage() {
@@ -40,6 +41,7 @@ export default function ExportReportPage() {
   const [selectedGrnRef, setSelectedGrnRef] = useState<string | undefined>(undefined);
   const [isLoadingGrnRefs, setIsLoadingGrnRefs] = useState(false);
   const [isExportingGrn, setIsExportingGrn] = useState(false);
+  const [isTransactionReportLoading, setIsTransactionReportLoading] = useState(false);
   
   const [isPending, startTransition] = useTransition();
 
@@ -207,6 +209,23 @@ export default function ExportReportPage() {
     setSelectedGrnRef(event.target.value || undefined);
   };
 
+  // Handler for Transaction Report
+  const handleTransactionReportExport = async () => {
+    setIsTransactionReportLoading(true);
+    toast.info('Generating Transaction Report...');
+    try {
+      const buffer = await buildTransactionReport();
+      const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      saveAs(blob, `Transaction_Report_${new Date().toISOString().split('T')[0]}.xlsx`);
+      toast.success('Transaction Report exported successfully!');
+    } catch (error) {
+      console.error("Error during Transaction report export process:", error);
+      toast.error("An error occurred while exporting the Transaction report. Please try again.");
+    } finally {
+      setIsTransactionReportLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen flex flex-col justify-center items-center p-4 bg-gray-900 text-white">
       <h1 className="text-3xl font-bold mb-8 text-center text-orange-500">
@@ -235,10 +254,11 @@ export default function ExportReportPage() {
           {isExportingGrn && showGrnRefDialog ? 'Exporting...' : 'GRN Report'}
         </button>
         <button
-          onClick={() => toast.info('Transaction Report functionality not yet implemented.')}
-          className="bg-yellow-500 hover:bg-yellow-700 text-white font-bold py-3 px-6 rounded-lg shadow-md transition duration-150 ease-in-out transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
+          onClick={handleTransactionReportExport}
+          disabled={isTransactionReportLoading || isExportingAco || isExportingGrn}
+          className="bg-purple-500 hover:bg-purple-700 text-white font-bold py-3 px-6 rounded-lg shadow-md transition duration-150 ease-in-out transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          Transaction Report
+          {isTransactionReportLoading ? 'Exporting...' : 'Transaction Report'}
         </button>
       </div>
 

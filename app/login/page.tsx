@@ -51,6 +51,7 @@ export default function LoginPage() {
     }
 
     console.log(`Attempting custom login for clock number: ${trimmedClockNumber}`);
+    console.log(`Password being sent: ${password}`);
 
     try {
       const loginResult = await customLoginAction(trimmedClockNumber, password);

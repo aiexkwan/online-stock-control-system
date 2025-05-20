@@ -351,3 +351,20 @@ All notable changes to this project will be documented in this file.
 ### Fixed
 - **Print Label**: Corrected a JSX comment syntax error in `QcLabelForm.tsx`.
 - Resolved issue where toast message "BUT original location for reprint not found" appeared for partially damaged pallets due to missing `actual_original_location` from server action.
+
+## [Unreleased] - 2025-05-20
+
+### Added
+- **Reporting**: Implemented a "Transaction Report" feature allowing users to export transaction history to an Excel file. This includes the `buildTransactionReport` function in `lib/exportReport.ts` and UI integration in `app/export-report/page.tsx`.
+
+### Changed
+- **Authentication**:
+    - Resolved an issue in the `localhost` development environment where `first_login` status and user password were not correctly updated on subsequent logins after an initial password change. This was addressed by instantiating a new Supabase admin client within each relevant Server Action (e.g., `customLoginAction` in `app/actions/authActions.ts`, `updateUserPasswordInDbAction` in `app/change-password/actions.ts`).
+    - Updated new password validation policy in `app/change-password/actions.ts` and `app/change-password/page.tsx`: requires at least 6 characters, allowing only alphanumeric characters (special symbols are disallowed).
+- **Void Pallet**:
+    - Adjusted UI elements on the "Void Pallet" page (`app/void-pallet/page.tsx`): modified Activity Log height, and styling for "Void Reason" and "Damage Qty" input fields.
+    - Refined backend logic for handling partially damaged pallets. The `process_damaged_pallet_void` RPC in Supabase was updated to ensure correct inventory ledger adjustments (deducting full quantity from the original pallet, recording damaged quantity, and adding back the remaining quantity to a new pallet at the original location) and to enforce reprinting of the label for the new pallet.
+- **Logout**: Enhanced `localStorage` cleanup logic in `app/components/Navigation.tsx` to ensure all relevant user session data (including `loggedInUserClockNumber`, `user`, `isTemporaryLogin`, `firstLogin`) is cleared upon logout.
+
+### Fixed
+- Addressed various linter errors in `lib/exportReport.ts` for the new Transaction Report feature.

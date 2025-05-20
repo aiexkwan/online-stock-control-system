@@ -102,7 +102,7 @@ function ChangePasswordFormComponent() {
                 placeholder="Enter your new password"
                 required
               />
-               <p className="text-xs text-gray-500">Must be at least 6 characters, including a letter and a number.</p>
+               <p className="text-xs text-gray-500">Must be at least 6 characters and contain only letters and numbers.</p>
             </div>
             <div className="space-y-2">
               <label htmlFor="confirmPassword" className="text-sm font-medium text-gray-300">

@@ -258,6 +258,9 @@ export default function Navigation() {
           localStorage.removeItem('loggedInUserClockNumber');
           // Also clear the old 'user' key for safety/cleanup
           localStorage.removeItem('user');
+          // Also clear other potentially relevant localStorage items upon logout
+          localStorage.removeItem('isTemporaryLogin');
+          localStorage.removeItem('firstLogin');
           
           router.push('/login');
         }}

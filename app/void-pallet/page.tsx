@@ -481,7 +481,7 @@ export default function VoidPalletPage() {
                 // await logHistory(`Pallet ${foundPallet.plt_num} voided (Partial Damage) - Error`, foundPallet.plt_num, foundPallet.original_plt_loc, `Reason: ${voidReason}, Damage Qty: ${damageQtyInput}, Remaining Qty: ${remainingQty}. Failed to get original location for auto-reprint.`);
                 return;
             } else if (typeof remainingQty === 'number' && remainingQty === 0) {
-                //toast.success(result.message || `Pallet ${foundPallet.plt_num} fully voided (Damage). No reprint needed.`, { id: toastId });
+                toast.success(result.message || `Pallet ${foundPallet.plt_num} fully voided (Damage). No reprint needed.`, { id: toastId });
                 resetState();
                 setIsVoiding(false);
                 setPasswordInput('');

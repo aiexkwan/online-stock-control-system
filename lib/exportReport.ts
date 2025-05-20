@@ -235,7 +235,7 @@ export async function exportGrnReport(data: GrnReportPageData) {
   sheet.getCell('A44').font = { size: 14, bold: true, underline: 'double' };
   sheet.getCell('A44').alignment = center;
 
-  sheet.mergeCells('A45:K48');
+  sheet.mergeCells('A45:I48');
   sheet.getCell('A45').font = { size: 18, bold: true };
   sheet.getCell('A45').alignment = center;
 
@@ -299,9 +299,9 @@ export async function exportGrnReport(data: GrnReportPageData) {
   ];
   footer.forEach((label, i) => {
     const row = 44 + i;
-    sheet.mergeCells(`N${row}:R${row}`);
+    sheet.mergeCells(`L${row}:R${row}`);
     sheet.mergeCells(`S${row}:T${row}`);
-    const cell = sheet.getCell(`N${row}`);
+    const cell = sheet.getCell(`L${row}`);
     cell.value = label;
     cell.font = { bold: true };
     cell.alignment = { horizontal: 'right', vertical: 'middle' };
@@ -421,7 +421,7 @@ export async function exportGrnReport(data: GrnReportPageData) {
   });
 
   const group4Headers: Record<string, string> = {
-    'A9:A10': 'PLT Num',
+    'A9:A10': 'PLT Ct.',
     'B9:B10': 'Gross Weight',
     'C9:C10': 'Net Weight',
   };
@@ -555,4 +555,152 @@ function getPackageColumn(packageType: string | null): string | null {
 
 // Sheet Font
 // ... existing code ...
+
+export async function buildTransactionReport(): Promise<Buffer> {
+  const workbook = new ExcelJS.Workbook()
+  const worksheet = workbook.addWorksheet('Transaction Report')
+
+  // A1:AH27 base format
+  for (let row = 1; row <= 27; row++) {
+    const excelRow = worksheet.getRow(row)
+    excelRow.height = row <= 4
+      ? [14.25, 45, 26.25, 145][row - 1]
+      : 30
+
+    for (let col = 1; col <= 34; col++) {
+      const cell = excelRow.getCell(col)
+      cell.font = { name: 'Arial', size: 16 }
+      cell.alignment = { vertical: 'middle', horizontal: 'center' }
+    }
+  }
+
+  const colWidths = [
+    3.4, 3.15, 0.6, 3.15, 0.6, 3.15, 0.6, 3.15, 0.6, 3.15,
+    0.6, 3.15, 0.6, 3.15, 0.6, 3.15, 0.6, 3.15, 0.6, 3.15,
+    0.6, 3.15, 0.6, 3.15, 2.6, 33.15, 0.6, 4.15, 0.6, 5.15,
+    0.6, 17.15, 0.6, 17.15
+  ]
+  worksheet.columns = colWidths.map(w => ({ width: w }))
+
+  // Title
+  worksheet.mergeCells('B2:AH2')
+  worksheet.getCell('B2').value = 'Product Movement Sheet'
+  worksheet.getCell('B2').font = { size: 36, bold: true }
+
+  worksheet.mergeCells('B3:L3')
+  worksheet.getCell('B3').value = 'From'
+  worksheet.mergeCells('N3:X3')
+  worksheet.getCell('N3').value = 'To'
+  ;['B3', 'N3'].forEach(addr => {
+    const cell = worksheet.getCell(addr)
+    cell.font = { size: 20, bold: true }
+    cell.border = {
+      top: { style: 'thin' },
+      left: { style: 'thin' },
+      right: { style: 'thin' },
+      bottom: { style: 'thin' }
+    }
+  })
+
+  worksheet.getCell('AF3').value = 'Movement Date : '
+  worksheet.getCell('AF3').alignment = { horizontal: 'right' }
+
+  // Label row
+  ;['B4:L4', 'N4:X4'].forEach(range => {
+    const startCellAddress = range.split(':')[0];
+    const start = worksheet.getCell(startCellAddress);
+    if (start && typeof start.col === 'number') {
+      start.font = { size: 11 };
+      for (let col = start.col; col <= start.col + 10; col++) {
+        const cell = worksheet.getRow(4).getCell(col);
+        cell.alignment = { textRotation: 90, vertical: 'bottom' };
+        cell.border = {
+          top: { style: 'thin' },
+          left: { style: 'thin' },
+          right: { style: 'thin' },
+          bottom: { style: 'thin' }
+        };
+      }
+    } else {
+      console.warn(`Could not find starting cell or its column for range: ${range}`);
+    }
+  });
+
+  const locations = [
+    'Fold Mill',
+    'Extrusion Room',
+    'Pipe Extrusion',
+    'Production',
+    'Back Car Park',
+    'Bulk Room'
+  ]
+  locations.forEach((loc, i) => {
+    worksheet.getRow(4).getCell(2 + i * 2).value = loc
+    worksheet.getRow(4).getCell(2 + i * 2).font = { size: 11 }
+    worksheet.getRow(4).getCell(14 + i * 2).value = loc
+    worksheet.getRow(4).getCell(14 + i * 2).font = { size: 11 }
+  })
+
+  worksheet.getCell('Z4').value = 'Product Code'
+  worksheet.getCell('AB4').value = 'Qty'  
+  worksheet.getCell('AD4').value = 'Total Pallet'
+  worksheet.getCell('AF4').value = 'Pallet Reference No: / Goods In No:'
+  worksheet.getCell('AH4').value = 'Clock Card No / Initials:'
+  worksheet.getCell('AH4').font = { size: 11 }
+  ;['AF4', 'AH4'].forEach(addr => worksheet.getCell(addr).alignment = { wrapText: true })
+
+  ;['Z4:AH4'].forEach(range => {
+    const start = worksheet.getCell(range.split(':')[0])
+    start.font = { size: 11 }
+    start.alignment = { vertical: 'bottom' }
+  })
+
+
+  worksheet.getCell('Z4').font = { size: 11 }
+  worksheet.getCell('Z4').alignment = { horizontal: 'center' }  
+  worksheet.getCell('Z4').alignment = { vertical: 'bottom' }
+  worksheet.getCell('AB4').font = { size: 11 }
+  worksheet.getCell('AB4').alignment = { vertical: 'bottom' }
+  worksheet.getCell('AD4').font = { size: 11 }
+  worksheet.getCell('AD4').alignment = { textRotation: 90 }
+  worksheet.getCell('AF4').font = { size: 11 }
+  worksheet.getCell('AH4').font = { size: 11 }
+
+
+  for (let i = 5; i <= 27; i++) {
+    const cols = ['B', 'D', 'F', 'H', 'J', 'L', 'N', 'P', 'R', 'T', 'V', 'X', 'Z', 'AB', 'AD', 'AF', 'AH']
+    cols.forEach(letter => {
+      const cell = worksheet.getCell(`${letter}${i}`)
+      cell.border = {
+        top: { style: 'thin' },
+        left: { style: 'thin' },
+        right: { style: 'thin' },
+        bottom: { style: 'thin' }
+      }
+    })
+  }
+
+  worksheet.pageSetup = {
+    margins: {
+      left: 0.2,
+      right: 0.2,
+      top: 0.2,
+      bottom: 0.75,
+      header: 0.3,
+      footer: 0.3
+    },
+    orientation: 'portrait',
+    paperSize: 9,
+    fitToPage: true,
+    fitToWidth: 1,
+    fitToHeight: 0,
+    horizontalCentered: false,
+    verticalCentered: false,
+    blackAndWhite: false,
+    printArea: 'A1:AH27'
+  }
+
+  const buffer = await workbook.xlsx.writeBuffer()
+  return Buffer.from(buffer)
+}
  

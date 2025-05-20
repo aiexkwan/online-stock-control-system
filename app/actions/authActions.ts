@@ -10,11 +10,11 @@ interface ActionResult {
   error?: string;
 }
 
-// Initialize Supabase Admin Client
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+// COMMENT OUT or REMOVE the module-level supabaseAdmin instance AGAIN
+// const supabaseAdmin = createClient(
+//   process.env.NEXT_PUBLIC_SUPABASE_URL!,
+//   process.env.SUPABASE_SERVICE_ROLE_KEY!
+// );
 
 const clockNumberSchema = z.string().regex(/^\d+$/, { message: 'Clock Number must be a positive number.' }).transform(val => parseInt(val, 10));
 
@@ -28,6 +28,10 @@ export async function verifyCurrentUserPasswordAction(
   userId: number, 
   enteredPassword: string
 ): Promise<ActionResult> {
+  const supabaseAdmin = createClient( // Create instance inside function
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
   if (userId === null || typeof userId === 'undefined') {
     console.error('[verifyPasswordAction] User ID is missing or invalid.');
     return { success: false, error: 'User ID is missing or invalid.' };
@@ -87,6 +91,10 @@ interface FirstLoginStatusResponse {
  * @returns An object indicating if it's a first login, or an error message.
  */
 export async function checkFirstLoginStatus(clockNumberStr: string): Promise<FirstLoginStatusResponse> {
+  const supabaseAdmin = createClient( // Create instance inside function
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
   const validation = clockNumberSchema.safeParse(clockNumberStr);
   if (!validation.success) {
     return { isFirstLogin: null, error: validation.error.errors[0]?.message || 'Invalid Clock Number format.' };
@@ -134,6 +142,11 @@ interface LoginResult {
 }
 
 export async function customLoginAction(clockNumberStr: string, passwordInput: string): Promise<LoginResult> {
+  const supabaseAdmin = createClient( // Create instance inside function
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
+
   console.log("!!!!!!!!!! VERCEL ENV CHECK (customLoginAction) !!!!!!!!!!");
   console.log("NEXT_PUBLIC_SUPABASE_URL from env:", process.env.NEXT_PUBLIC_SUPABASE_URL);
   console.log("NEXT_PUBLIC_SUPABASE_ANON_KEY from env:", process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
@@ -151,24 +164,15 @@ export async function customLoginAction(clockNumberStr: string, passwordInput: s
   const clockNumber = clockValidation.data;
 
   try {
-    // Step A: Try selecting only the password first for debugging
-    const { data: passwordOnlyData, error: passwordOnlyError } = await supabaseAdmin
+    const { data: userData, error: dbError } = await supabaseAdmin
       .from('data_id')
-      .select('password')
+      .select('id, first_login, password') // Removed department again as test is over
       .eq('id', clockNumber)
       .single();
 
-    console.log('[customLoginAction] Debug - Password Only Query Result for ', clockNumber, ':', JSON.stringify(passwordOnlyData));
-    if (passwordOnlyError) {
-        console.error('[customLoginAction] Debug - Error from password-only query:', passwordOnlyError);
-    }
-
-    // Original query
-    const { data: userData, error: dbError } = await supabaseAdmin
-      .from('data_id')
-      .select('id, first_login, password') // Changed order, password last
-      .eq('id', clockNumber) 
-      .single();
+    // Log the raw userData object as soon as it's fetched
+    console.log('[customLoginAction] First Read - Raw UserData fetched from DB:', JSON.stringify(userData));
+    console.log('[customLoginAction] First Read - Raw DBError:', JSON.stringify(dbError));
 
     if (dbError) {
       if (dbError.code === 'PGRST116') { // User not found
@@ -179,28 +183,49 @@ export async function customLoginAction(clockNumberStr: string, passwordInput: s
       return { success: false, error: 'Database error during login.' };
     }
 
-    // 關鍵的檢查點
-    // Log the entire userData object received from the database before the check
     console.log('[customLoginAction] UserData received from database for clock number ', clockNumber, ':', JSON.stringify(userData));
 
-    if (!userData || !userData.password) {
-      console.error('[customLoginAction] User data or password hash missing for clock number:', clockNumber, 'User Data was:', userData);
-      return { success: false, error: 'User account not configured correctly.' };
+    if (!userData) {
+      // This case should ideally be caught by dbError.code === 'PGRST116' if using .single()
+      // but as a fallback:
+      console.error('[customLoginAction] User data is null, though no specific dbError.code was PGRST116. Clock number:', clockNumber);
+      return { success: false, error: 'User account not found.' };
     }
 
-    const isPasswordMatch = await bcrypt.compare(passwordInput, userData.password);
+    if (userData.first_login) {
+      // First-time login: password should be the clock number itself
+      if (passwordInput === clockNumberStr) {
+        console.log(`[customLoginAction] First-time login successful for clock number: ${clockNumberStr}. User ID: ${userData.id}`);
+        return {
+          success: true,
+          userId: userData.id,
+          isFirstLogin: true,
+        };
+      } else {
+        console.warn(`[customLoginAction] First-time login password mismatch for clock number: ${clockNumberStr}. Expected '${clockNumberStr}', got '${passwordInput}'`);
+        return { success: false, error: 'Invalid Clock Number or Password for first-time login.' };
+      }
+    } else {
+      // Recurring login: compare with hashed password
+      if (!userData.password) {
+        console.error('[customLoginAction] Recurring login: Password hash missing for clock number:', clockNumber, 'User Data was:', JSON.stringify(userData));
+        return { success: false, error: 'User account not configured correctly (missing password hash for recurring login).' };
+      }
 
-    if (!isPasswordMatch) {
-      console.warn(`[customLoginAction] Password mismatch for clock number: ${clockNumber}`);
-      return { success: false, error: 'Invalid Clock Number or Password.' };
+      const isPasswordMatch = await bcrypt.compare(passwordInput, userData.password);
+
+      if (!isPasswordMatch) {
+        console.warn(`[customLoginAction] Recurring login password mismatch for clock number: ${clockNumber}`);
+        return { success: false, error: 'Invalid Clock Number or Password.' };
+      }
+
+      console.log(`[customLoginAction] Recurring login successful for clock number: ${clockNumber}. User ID: ${userData.id}`);
+      return {
+        success: true,
+        userId: userData.id,
+        isFirstLogin: false, // userData.first_login should be false here
+      };
     }
-
-    console.log(`[customLoginAction] Login successful for clock number: ${clockNumber}`);
-    return { 
-      success: true, 
-      userId: userData.id, // This is the clockNumber
-      isFirstLogin: userData.first_login // Return first_login status directly
-    };
 
   } catch (e: any) {
     console.error('[customLoginAction] Unexpected error:', e);
