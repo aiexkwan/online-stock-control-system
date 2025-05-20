@@ -7,11 +7,6 @@ import { createServerActionClient } from '@supabase/auth-helpers-nextjs';
 import { cookies } from 'next/headers';
 // import { Database } from '@/types_db'; // Assuming you have a types_db.ts for your DB schema for better type safety
 
-console.log("!!!!!!!!!! VERCEL ENV CHECK (viewHistoryActions) !!!!!!!!!!");
-console.log("NEXT_PUBLIC_SUPABASE_URL from env:", process.env.NEXT_PUBLIC_SUPABASE_URL);
-console.log("NEXT_PUBLIC_SUPABASE_ANON_KEY from env:", process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
-console.log("==========================================================");
-
 // New interface for details from data_code table
 interface DataCodeProductDetails {
   code?: string; // This should match palletInfo.productCode

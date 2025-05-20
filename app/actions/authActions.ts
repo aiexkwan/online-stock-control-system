@@ -134,6 +134,12 @@ interface LoginResult {
 }
 
 export async function customLoginAction(clockNumberStr: string, passwordInput: string): Promise<LoginResult> {
+  console.log("!!!!!!!!!! VERCEL ENV CHECK (customLoginAction) !!!!!!!!!!");
+  console.log("NEXT_PUBLIC_SUPABASE_URL from env:", process.env.NEXT_PUBLIC_SUPABASE_URL);
+  console.log("NEXT_PUBLIC_SUPABASE_ANON_KEY from env:", process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
+  console.log("SUPABASE_SERVICE_ROLE_KEY from env (if used by supabaseAdmin):", process.env.SUPABASE_SERVICE_ROLE_KEY);
+  console.log("==============================================================");
+
   const clockValidation = clockNumberSchema.safeParse(clockNumberStr);
   if (!clockValidation.success) {
     return { success: false, error: clockValidation.error.errors[0]?.message || 'Invalid Clock Number format.' };
