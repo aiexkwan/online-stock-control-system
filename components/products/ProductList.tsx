@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabase';
+import { createClient } from '@/lib/supabase';
 
 interface Product {
   code: string;
@@ -21,6 +21,7 @@ interface Product {
 }
 
 export default function ProductList() {
+  const supabase = createClient();
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
 

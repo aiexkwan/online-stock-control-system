@@ -16,9 +16,9 @@ import {
 } from '@heroicons/react/24/outline';
 import PrintLabelPopover from './print-label-menu/PrintLabelPopover';
 import { motion, AnimatePresence } from 'framer-motion';
-import { supabase } from '@/lib/supabase';
+import { createClient } from '@/lib/supabase';
 import { clearLocalAuthData } from '../utils/auth-sync';
-import { signOut } from '../services/supabaseAuth';
+import { signOut as signOutService } from '../services/supabaseAuth';
 
 const menuItems = [
   { name: 'Print Label', icon: DocumentIcon, href: '/print-label' },
@@ -58,6 +58,7 @@ const MOBILE_BREAKPOINT = 768; // md breakpoint
 export default function Navigation() {
   const pathname = usePathname();
   const router = useRouter();
+  const supabase = createClient();
   const [printLabelOpen, setPrintLabelOpen] = useState(false);
   const hoverRef = useRef(false);
   const closeTimeout = useRef<NodeJS.Timeout | null>(null);
@@ -258,7 +259,7 @@ export default function Navigation() {
 
           try {
             // 使用 Supabase Auth 登出
-            await signOut();
+            await signOutService(supabase);
             console.log('[Navigation] Supabase Auth signOut successful');
           } catch (authError) {
             console.error('[Navigation] Supabase Auth signOut error:', authError);

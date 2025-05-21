@@ -5,9 +5,6 @@ const nextConfig = {
     NEXT_PUBLIC_SUPABASE_URL: 'https://bbmkuiplnzvpudszrend.supabase.co',
     NEXT_PUBLIC_SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJibWt1aXBsbnp2cHVkc3pyZW5kIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDU3MTU2MDQsImV4cCI6MjA2MTI5MTYwNH0._xBzFK-3gOqyztwpvR6xfMbLd3ynTubEg5Z1iLYj92Q',
   },
-  experimental: {
-    serverActions: true,
-  },
   // 添加瀏覽器兼容性配置
   // future: {
   //   strictPostcssConfiguration: true,

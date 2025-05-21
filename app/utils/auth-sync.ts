@@ -5,7 +5,7 @@
  * 以保持舊系統的相容性，確保系統可以平滑過渡到 Supabase Auth。
  */
 
-import { supabase } from '@/lib/supabase';
+import { createClient } from '@/lib/supabase';
 import { emailToClockNumber } from './authUtils';
 
 interface UserData {
@@ -28,19 +28,20 @@ interface UserData {
  * @returns 同步是否成功
  */
 export async function syncAuthStateToLocalStorage(): Promise<boolean> {
+  const supabase = createClient();
   try {
-    // 獲取當前會話
-    const { data: { session }, error } = await supabase.auth.getSession();
+    // 獲取當前用戶 (經服務器驗證)
+    const { data: { user }, error } = await supabase.auth.getUser();
     
     if (error) {
-      console.error('[Auth Sync] Error fetching session:', error.message);
+      console.error('[Auth Sync] Error fetching user:', error.message);
       // 清除本地存儲
       clearLocalAuthData();
       return false;
     }
     
-    if (!session) {
-      console.log('[Auth Sync] No active session');
+    if (!user) {
+      console.log('[Auth Sync] No active user session from server');
       
       // 檢查是否應該保留狀態（例如，如果我們在等待會話刷新）
       const shouldPreserveState = localStorage.getItem('preserveAuthState') === 'true';
@@ -53,8 +54,6 @@ export async function syncAuthStateToLocalStorage(): Promise<boolean> {
       
       return false;
     }
-    
-    const user = session.user;
     
     // 獲取時鐘編號 - 首先從用戶元數據獲取，如果不存在則從郵件中提取
     let clockNumber = user.user_metadata?.clock_number as string || null;
@@ -116,11 +115,16 @@ export function clearLocalAuthData(): void {
  * 檢查用戶是否已驗證
  */
 export async function isUserAuthenticated(): Promise<boolean> {
+  const supabase = createClient();
   try {
-    const { data } = await supabase.auth.getSession();
-    return !!data.session;
-  } catch (error) {
-    console.error('[Auth] Error checking authentication status:', error);
+    const { data: { user }, error } = await supabase.auth.getUser();
+    if (error) {
+      console.error('[Auth] Error checking authentication status with getUser:', error.message);
+      return false;
+    }
+    return !!user;
+  } catch (error: any) {
+    console.error('[Auth] Unexpected error checking authentication status:', error.message);
     return false;
   }
 } 

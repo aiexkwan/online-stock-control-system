@@ -1,4 +1,4 @@
-import { supabase } from '@/lib/supabase';
+import { createClient } from '@/lib/supabase';
 import bcrypt from 'bcryptjs'; // Import bcryptjs
 
 export interface UserData {
@@ -39,6 +39,7 @@ export async function authenticateUser(userId: string, passwordInput: string): P
   isTemporaryLogin?: boolean; // Add new flag for temporary login
   error?: string;
 }> {
+  const supabase = createClient();
   try {
     const { data: rawUserData, error: userFetchError } = await supabase
       .from('data_id')

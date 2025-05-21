@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { supabase } from '../../../lib/supabase';
+import { createClient } from '@/lib/supabase';
 import { format } from 'date-fns';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { generateAndUploadPdf } from '../../../app/components/print-label-pdf/PdfGenerator';
@@ -57,6 +57,7 @@ async function insertHistoryRecords(
 }
 
 export default function QcLabelForm() {
+  const supabase = createClient();
   const searchParams = useSearchParams();
   const router = useRouter(); // For potentially clearing URL params
   const productCodeInputRef = useRef<HTMLInputElement>(null); // Ref for product code input

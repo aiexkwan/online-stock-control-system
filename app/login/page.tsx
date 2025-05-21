@@ -7,12 +7,13 @@ import { Input } from "../../components/ui/input";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "../../components/ui/card";
 import { toast } from 'sonner';
 import { customLoginAction } from '../actions/authActions';
-import { supabase } from '@/lib/supabase';
+import { createClient } from '@/lib/supabase';
 import { clearLocalAuthData, syncAuthStateToLocalStorage } from '../utils/auth-sync';
 
 export default function LoginPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const supabase = createClient();
   const fromPage = searchParams?.get('from') || '/dashboard';
   
   const [clockNumber, setClockNumber] = useState('');
@@ -23,6 +24,15 @@ export default function LoginPage() {
   useEffect(() => {
     // 清除之前的登入狀態
     clearLocalAuthData();
+    
+    // 檢查 URL 中是否有會話過期錯誤
+    const errorParam = searchParams?.get('error');
+    if (errorParam === 'session_expired') {
+      toast.error('Your session has expired. Please log in again.', {
+        id: 'session-expired',
+        duration: 5000,
+      });
+    }
     
     // 檢查 Supabase Auth 會話
     const checkSession = async () => {
@@ -40,7 +50,7 @@ export default function LoginPage() {
     };
     
     checkSession();
-  }, []);
+  }, [searchParams]);
 
   const logToHistory = async (userIdToLog: string, actionType: 'LogIn' | 'Password Change', remarkText: string) => {
     try {
@@ -75,32 +85,49 @@ export default function LoginPage() {
       if (loginResult.success && typeof loginResult.userId === 'number') {
         console.log('[Login] Login successful for clock number:', loginResult.userId);
         
-        // 確保認證狀態已同步到 localStorage
+        // 強化會話處理 - 直接設置本地存儲
+        localStorage.setItem('loggedInUserClockNumber', loginResult.userId.toString());
+        console.log('[Login] Set userId in localStorage:', loginResult.userId);
+        
+        // 手動設置 cookie 以確保中間件可以讀取認證狀態
+        document.cookie = `loggedInUserClockNumber=${loginResult.userId}; path=/; max-age=86400; SameSite=Lax`;
+        console.log('[Login] Set userId in cookie:', loginResult.userId);
+        
+        // 等待會話同步完成
         try {
+          // 嘗試同步 Supabase 會話狀態
           await syncAuthStateToLocalStorage();
           console.log('[Login] Authentication state synced to localStorage');
-          
-          // 設置標誌，告訴系統保留認證狀態，避免在轉換到儀表板時出現 flashing
-          localStorage.setItem('preserveAuthState', 'true');
-          
-          // 設置 cookie 以確保 middleware 可以讀取認證狀態
-          document.cookie = `loggedInUserClockNumber=${loginResult.userId}; path=/; max-age=86400; SameSite=Lax`;
         } catch (syncError) {
           console.error('[Login] Error syncing auth state:', syncError);
-          // 即使同步失敗，仍然繼續流程
+          // 但我們已經手動設置了 localStorage 和 cookie，所以繼續流程
         }
+        
+        // 設置標誌，告訴系統保留認證狀態
+        localStorage.setItem('preserveAuthState', 'true');
+        
+        // 再次驗證存儲是否成功
+        const storedId = localStorage.getItem('loggedInUserClockNumber');
+        console.log('[Login] Verification - ID in localStorage:', storedId);
 
         const isFirstLogin = loginResult.isFirstLogin;
 
         if (isFirstLogin) {
           console.log('[Login] First login detected, redirecting to change password page');
           await logToHistory(loginResult.userId.toString(), 'LogIn', 'First LogIn - Redirect to Change Password');
-          router.push(`/change-password?userId=${encodeURIComponent(loginResult.userId.toString())}`); 
+          
+          // 確保首次登入標誌正確設置到 localStorage
+          localStorage.setItem('firstLogin', 'true');
+          
+          // 立即重定向到更改密碼頁面
+          router.push(`/change-password?userId=${encodeURIComponent(loginResult.userId.toString())}`);
         } else {
           console.log('[Login] Regular login detected, redirecting to dashboard or previous page');
           await logToHistory(loginResult.userId.toString(), 'LogIn', 'LogIn Success');
           
-          // 強制在使用 router.push 前短暫延遲，給 Supabase Auth 時間完成其內部操作
+          // 強制較長延遲以確保狀態完全同步
+          toast.success('Login successful! Redirecting...', { duration: 2000 });
+          
           setTimeout(() => {
             // 設置超時，在完成後清除 preserveAuthState 標誌
             setTimeout(() => {
@@ -109,7 +136,7 @@ export default function LoginPage() {
             
             // 如果用戶從其他頁面被重定向過來，登入後返回那個頁面
             router.push(fromPage);
-          }, 100);
+          }, 3000); // 增加延遲到 3 秒，確保 cookie 和 localStorage 更新有足夠時間
         }
       } else {
         console.error('[Login] Login failed:', loginResult.error);
@@ -211,7 +238,7 @@ export default function LoginPage() {
               {loading ? 'Logging In...' : 'Login'}
             </Button>
             <p className="text-xs text-center text-gray-500">
-              First-time users: Your password is your Clock Number
+              First-time users? Your password is your Clock Number
             </p>
           </CardFooter>
         </form>

@@ -1,10 +1,8 @@
 'use server';
 
-// Try with createServerActionClient first, as it's designed for this.
-// If not available in your version of @supabase/auth-helpers-nextjs, 
-// createRouteHandlerClient is often a compatible alternative for server-side cookie handling.
-import { createServerActionClient } from '@supabase/auth-helpers-nextjs'; 
-import { cookies } from 'next/headers';
+// import { createServerActionClient } from '@supabase/auth-helpers-nextjs'; // OLD
+// import { cookies } from 'next/headers'; // Not needed directly, createClient handles it
+import { createClient } from '@/app/utils/supabase/server'; // NEW: Using @supabase/ssr helper
 // import { Database } from '@/types_db'; // Assuming you have a types_db.ts for your DB schema for better type safety
 
 // New interface for details from data_code table
@@ -69,10 +67,8 @@ export interface ViewHistoryResult {
 export async function getPalletHistoryAndStockInfo(
   identifier: { type: 'palletNum'; value: string } | { type: 'series'; value: string }
 ): Promise<ViewHistoryResult> {
-  const cookieStore = cookies();
-  // If you have a Database type from Supabase CLI (e.g., types_db.ts), use it here:
-  // const supabase = createServerActionClient<Database>({ cookies: () => cookieStore });
-  const supabase = createServerActionClient({ cookies: () => cookieStore }); // Without <Database> for now if types_db.ts is not set up
+  // const cookieStore = cookies(); // OLD
+  const supabase = createClient(); // NEW: Create Supabase client instance
 
   const { type, value } = identifier;
 

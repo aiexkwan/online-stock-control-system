@@ -1,8 +1,9 @@
 'use server';
 
 // import { createSupabaseServerClient } from '@/lib/supabase/server'; // 舊的錯誤路徑
-import { createServerActionClient } from '@supabase/auth-helpers-nextjs';
-import { cookies } from 'next/headers';
+// import { createServerActionClient } from '@supabase/auth-helpers-nextjs'; // OLD
+// import { cookies } from 'next/headers'; // Not needed directly, createClient handles it
+import { createClient } from '@/app/utils/supabase/server'; // NEW: Using @supabase/ssr helper
 import { format, isValid } from 'date-fns'; // 用於日期格式化
 // import type { Database } from '../lib/database.types'; // Path still incorrect, commenting out for now
 // 如果您有資料庫類型定義，例如： import { Database } from '@/types_db';
@@ -13,7 +14,7 @@ import { format, isValid } from 'date-fns'; // 用於日期格式化
  *          Returns an empty array if an error occurs or no data is found.
  */
 export async function getUniqueAcoOrderRefs(): Promise<string[]> {
-  const supabase = createServerActionClient<any>({ cookies }); // Using any for now
+  const supabase = createClient(); // NEW: Create Supabase client instance
 
   const { data, error } = await supabase
     .from('record_aco') // <<-- 假設表名
@@ -60,8 +61,7 @@ export async function getAcoReportData(orderRef: string): Promise<AcoProductData
     return [];
   }
 
-  const cookieStore = cookies();
-  const supabase = createServerActionClient({ cookies: () => cookieStore });
+  const supabase = createClient(); // NEW: Create Supabase client instance
 
   try {
     // 步驟 1: 根據 orderRef 從 record_aco 獲取唯一的 product_code
@@ -138,7 +138,7 @@ export async function getAcoReportData(orderRef: string): Promise<AcoProductData
 }
 
 export async function getUniqueGrnRefs(): Promise<string[]> {
-  const supabase = createServerActionClient<any>({ cookies }); // Using any for now
+  const supabase = createClient(); // NEW: Create Supabase client instance
 
   const { data, error } = await supabase
     .from('record_grn')
@@ -163,7 +163,7 @@ export async function getMaterialCodesForGrnRef(grnRef: string): Promise<string[
     console.error('getMaterialCodesForGrnRef: grnRef is required');
     return [];
   }
-  const supabase = createServerActionClient<any>({ cookies });
+  const supabase = createClient(); // NEW: Create Supabase client instance
   const { data, error } = await supabase
     .from('record_grn')
     .select('material_code')
@@ -216,7 +216,7 @@ export async function getGrnReportData(
     return null;
   }
 
-  const supabase = createServerActionClient<any>({ cookies });
+  const supabase = createClient(); // NEW: Create Supabase client instance
   let supplierCode: string | null = null;
 
   try {

@@ -1,17 +1,18 @@
-import { createClient } from '@supabase/supabase-js';
+// Re-export the client creation function from the new central location for client-side Supabase instances.
+// It's recommended to eventually update all imports to use '@/app/utils/supabase/client' directly.
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+export { createClient } from '@/app/utils/supabase/client';
 
-console.log('[Supabase Init] URL:', supabaseUrl ? 'Loaded' : 'MISSING!');
-console.log('[Supabase Init] Anon Key:', supabaseAnonKey ? 'Loaded' : 'MISSING!');
+// Original console logs can be kept if useful for initial load debugging, but ensure they don't expose sensitive keys.
+// It's generally better to initialize and use the client within components/hooks where needed.
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
-console.log('[Supabase Init] Client created:', supabase ? 'Yes' : 'No');
-console.log('[Supabase Init] Storage available:', supabase && supabase.storage ? 'Yes' : 'No');
+// console.log('[Supabase Init] URL:', process.env.NEXT_PUBLIC_SUPABASE_URL ? 'Loaded' : 'MISSING!');
+// console.log('[Supabase Init] Anon Key:', process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? 'Loaded' : 'MISSING!');
 
-// 臨時掛到 window 方便 debug
-if (typeof window !== 'undefined') {
-  // @ts-ignore
-  window.supabase = supabase;
-} 
+// The global supabase instance is no longer exported directly from here.
+// Components should call createClient() to get an instance.
+
+// if (typeof window !== 'undefined') {
+//   // @ts-ignore
+//   // window.supabase = supabase; // Avoid attaching to window for better practice
+// } 

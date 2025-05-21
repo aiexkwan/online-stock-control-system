@@ -1,75 +1,55 @@
 'use client';
 
-import { getCookie } from 'cookies-next';
-import { supabase } from '@/lib/supabase';
+// import { getCookie } from 'cookies-next'; // No longer relying on custom cookie for clock number
+// import { supabase } from '@/lib/supabase'; // Avoid global instance here, components should create their own
 
 /**
- * 從 cookie 中讀取時鐘號碼並設置到 localStorage
- * 這個函數應該在客戶端組件初始化時調用
+ * [DEPRECATED or NEEDS REWORK with @supabase/ssr]
+ * synchronizeAuthState was used for manual sync between cookie, localStorage, and Supabase session.
+ * With @supabase/ssr, session management is largely handled by the middleware and client libraries.
+ * This function might be removable or significantly simplified.
  */
-export function synchronizeAuthState(): Promise<void> {
-  return new Promise(async (resolve) => {
-    try {
-      // 檢查 Supabase 會話
-      const { data } = await supabase.auth.getSession();
-      const session = data.session;
-      
-      if (session) {
-        // 用戶已經登入 Supabase Auth
-        const user = session.user;
-        let clockNumber = null;
-        
-        // 從元數據中獲取時鐘編號
-        if (user.user_metadata?.clock_number) {
-          clockNumber = user.user_metadata.clock_number;
-        }
-        
-        // 如果找不到，嘗試從 cookie 讀取
-        if (!clockNumber) {
-          clockNumber = getCookie('loggedInUserClockNumber') as string;
-        }
-        
-        // 設置到 localStorage
-        if (clockNumber && typeof window !== 'undefined') {
-          localStorage.setItem('loggedInUserClockNumber', clockNumber);
-          
-          // 設置其他舊系統需要的值
-          const isFirstLogin = user.user_metadata?.first_login === true;
-          if (isFirstLogin) {
-            localStorage.setItem('firstLogin', 'true');
-          }
-        }
-      } else {
-        // 如果沒有會話，清除 localStorage
-        if (typeof window !== 'undefined') {
-          localStorage.removeItem('loggedInUserClockNumber');
-          localStorage.removeItem('user');
-          localStorage.removeItem('isTemporaryLogin');
-          localStorage.removeItem('firstLogin');
-        }
-      }
-    } catch (error) {
-      console.error('Error synchronizing auth state:', error);
-    }
-    
-    resolve();
-  });
-}
+// export function synchronizeAuthState(): Promise<void> { ... } // Removed
 
 /**
- * 獲取當前登入用戶的時鐘號碼
+ * [NEEDS REWORK/REVIEW with @supabase/ssr]
+ * Attempts to get the clock number. Previously relied on localStorage or a custom cookie.
+ * With @supabase/ssr, components should ideally get user info directly from `supabase.auth.getUser()`.
+ * This function is kept for now but might be deprecated.
  */
 export function getLoggedInClockNumber(): string | null {
   if (typeof window === 'undefined') {
     return null;
   }
   
-  // 優先從 localStorage 中獲取
+  // Primary source should be user metadata from an active Supabase session.
+  // This function, if kept, should be a simple localStorage reader as a last resort or for non-session critical info.
   const fromLocalStorage = localStorage.getItem('loggedInUserClockNumber');
   if (fromLocalStorage) {
     return fromLocalStorage;
   }
   
-  // 如果不在 localStorage 中，嘗試從 cookie 讀取
-  return getCookie('loggedInUserClockNumber') as string || null;
+  // console.warn('[getLoggedInClockNumber] Clock number not found in localStorage. Consider fetching from Supabase session directly in components.');
+  return null;
+}
+
+/**
+ * Helper function to store clock number to localStorage if needed by other parts of the app.
+ * Call this after successfully fetching user data that includes clock_number.
+ */
+export function storeClockNumberLocally(clockNumber: string): void {
+  if (typeof window !== 'undefined') {
+    localStorage.setItem('loggedInUserClockNumber', clockNumber);
+  }
+}
+
+/**
+ * Helper function to clear local clock number storage on logout.
+ */
+export function clearLocalClockNumber(): void {
+  if (typeof window !== 'undefined') {
+    localStorage.removeItem('loggedInUserClockNumber');
+    // also clear other related auth items if any, e.g., 'firstLogin' if it was set by client side logic
+    localStorage.removeItem('firstLogin'); 
+  }
 } 

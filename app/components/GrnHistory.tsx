@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, useRef } from 'react';
 import { format } from 'date-fns';
-import { supabase } from '../../lib/supabase';
+import { createClient } from '@/lib/supabase';
 
 interface GrnGroup {
   grn_ref: number;
@@ -14,6 +14,7 @@ const PAGE_SIZE = 5;
 const MAX_RECORDS = 20;
 
 export default function GrnHistory() {
+  const supabase = createClient();
   const [groups, setGroups] = useState<GrnGroup[]>([]);
   const [loading, setLoading] = useState(false);
   const [page, setPage] = useState(0);

@@ -1,115 +1,127 @@
-import { createMiddlewareClient } from '@supabase/auth-helpers-nextjs';
+import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
-import { emailToClockNumber } from './app/utils/authUtils';
+// import { emailToClockNumber } from './app/utils/authUtils'; // 可能不再需要在中間件中直接使用
 
 // 認證中間件 - 處理用戶會話和路由保護
-export async function middleware(req: NextRequest) {
-  console.log(`[Supabase Middleware] Path: ${req.nextUrl.pathname}`);
-  const res = NextResponse.next();
+export async function middleware(request: NextRequest) {
+  console.log(`[Supabase SSR Middleware] Path: ${request.nextUrl.pathname}`);
+  let response = NextResponse.next({
+    request: {
+      headers: request.headers,
+    },
+  });
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
   if (!supabaseUrl || !supabaseAnonKey) {
-    console.error('[Supabase Middleware] Supabase URL or Anon Key is missing in env.');
-    return res; 
+    console.error('[Supabase SSR Middleware] Supabase URL or Anon Key is missing in env.');
+    // 如果Supabase配置缺失，可能直接返回錯誤或重定向到一個錯誤頁面
+    return response; 
   }
 
   // 公開路由 - 這些路由不需要認證
-  const publicRoutes = ['/login', '/new-password', '/_next', '/api', '/favicon.ico'];
-  const isPublicRoute = publicRoutes.some(route => req.nextUrl.pathname.startsWith(route));
+  // 注意：/_next/static, /_next/image, /favicon.ico 通常由 matcher 排除
+  const publicRoutes = ['/login', '/new-password', '/api']; // /change-password 受保護
+  const isPublicRoute = publicRoutes.some(route => request.nextUrl.pathname.startsWith(route));
   
-  // 如果是公開路由，直接放行
   if (isPublicRoute) {
-    return res;
-  }
-
-  try {
-    // 初始化 Supabase 客戶端
-    const supabase = createMiddlewareClient({ req, res }, {
-      supabaseUrl: supabaseUrl,
-      supabaseKey: supabaseAnonKey,
-    });
-
-    // 獲取會話
-    const { data: { session }, error: sessionError } = await supabase.auth.getSession(); 
-
-    if (sessionError) {
-      console.error('[Supabase Middleware] Session error:', sessionError.message);
-    }
-
-    // 1. 檢查 Supabase 會話
-    if (session) {
-      console.log(`[Supabase Middleware] User authenticated via Supabase session: ${session.user.id}`);
-      
-      // 如果有會話，則檢查用戶是否有時鐘編號，並將其設置到 cookie
-      const user = session.user;
-      const email = user.email;
-      let clockNumber = null;
-      
-      // 從用戶元數據或電子郵件中提取時鐘編號
-      if (user.user_metadata?.clock_number) {
-        clockNumber = user.user_metadata.clock_number;
-      } else if (email) {
-        clockNumber = emailToClockNumber(email);
-      }
-      
-      if (clockNumber) {
-        console.log(`[Supabase Middleware] Setting clock number cookie: ${clockNumber}`);
-        
-        // 設置一個特殊的 cookie，在客戶端可以使用 JavaScript 讀取
-        res.cookies.set('loggedInUserClockNumber', clockNumber, {
-          httpOnly: false,
-          path: '/',
-          sameSite: 'lax',
-          maxAge: 60 * 60 * 24 // 24小時
-        });
-
-        // 檢查是否需要重定向到 change password 頁面
-        const isFirstLogin = user.user_metadata?.first_login === true;
-        const path = req.nextUrl.pathname;
-        
-        // 如果是首次登入，且不在密碼更改頁面，則重定向到密碼更改頁面
-        if (isFirstLogin && path !== '/change-password' && path !== '/login') {
-          console.log(`[Supabase Middleware] First login detected, redirecting to change password`);
-          const url = new URL('/change-password', req.url);
-          url.searchParams.set('userId', clockNumber);
-          return NextResponse.redirect(url);
-        }
-        
-        // 用戶已驗證，允許訪問
-        return res;
-      } else {
-        console.warn(`[Supabase Middleware] Authenticated user without clock number: ${email}`);
-      }
-    }
-    
-    // 2. 如果沒有 Supabase 會話，檢查 cookie 作為後備
-    const clockNumberFromCookie = req.cookies.get('loggedInUserClockNumber')?.value;
-    
-    if (clockNumberFromCookie) {
-      console.log(`[Supabase Middleware] Using cookie auth as fallback, clock number: ${clockNumberFromCookie}`);
-      // 使用 cookie 中的時鐘編號作為後備認證機制
-      // 這使系統可以在 Supabase 會話尚未完全同步時保持用戶已登入狀態
-      return res;
-    }
-    
-    // 3. 如果兩種方法都沒有驗證成功，則重定向到登入頁面
-    console.log(`[Supabase Middleware] No auth session or cookie, redirecting to login from: ${req.nextUrl.pathname}`);
-    const redirectUrl = new URL('/login', req.url);
-    // 保存用戶嘗試訪問的頁面，以便登入後重定向回去
-    redirectUrl.searchParams.set('from', req.nextUrl.pathname);
-    return NextResponse.redirect(redirectUrl);
-  } catch (error: any) {
-    console.error('[Supabase Middleware] Error:', error.message);
+    console.log(`[Supabase SSR Middleware] Public route: ${request.nextUrl.pathname}, skipping auth check.`);
+    return response; // 直接放行公開路由
   }
   
-  return res;
+  const supabase = createServerClient(
+    supabaseUrl,
+    supabaseAnonKey,
+    {
+      cookies: {
+        get(name: string) {
+          return request.cookies.get(name)?.value;
+        },
+        set(name: string, value: string, options: CookieOptions) {
+          // If the cookie is set, update the request and response cookies
+          request.cookies.set({
+            name,
+            value,
+            ...options,
+          });
+          response = NextResponse.next({
+            request: {
+              headers: request.headers,
+            },
+          });
+          response.cookies.set({
+            name,
+            value,
+            ...options,
+          });
+        },
+        remove(name: string, options: CookieOptions) {
+          // If the cookie is removed, update the request and response cookies
+          request.cookies.set({
+            name,
+            value: '',
+            ...options,
+          });
+          response = NextResponse.next({
+            request: {
+              headers: request.headers,
+            },
+          });
+          response.cookies.set({
+            name,
+            value: '',
+            ...options,
+          });
+        },
+      },
+    }
+  );
+
+  // IMPORTANT: Avoid writing Supabase cookies successfully if the client is PostgREST.
+  // This can happen if you run `await supabase.auth.getUser()` in a Server Action.
+  // Running `await supabase.auth.getSession()` from a Server Component or Page results in a loop.
+  // It is also fine to make PostgREST calls that don't change the session.
+  if (request.headers.get('X-Client-Info')?.startsWith('@supabase/postgrest-js')) {
+    return response;
+  }
+
+  const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+
+  if (sessionError) {
+    console.error('[Supabase SSR Middleware] Session error:', sessionError.message);
+    // Handle session error, maybe redirect to login or an error page
+  }
+
+  if (!session) {
+    // 如果不在 /login 頁面且沒有會話，則重定向到登入頁面
+    if (request.nextUrl.pathname !== '/login') {
+      console.log('[Supabase SSR Middleware] No session, redirecting to login from:', request.nextUrl.pathname);
+      const redirectUrl = new URL('/login', request.url);
+      redirectUrl.searchParams.set('from', request.nextUrl.pathname);
+      redirectUrl.searchParams.set('error', 'session_expired');
+      return NextResponse.redirect(redirectUrl);
+    }
+  } else {
+    // 用戶有會話
+    console.log(`[Supabase SSR Middleware] User authenticated: ${session.user.id}`);
+    // 移除在中間件中基於 needs_password_change 的重定向邏輯
+    // 這部分將由 /dashboard 頁面處理
+    // 之前的 clockNumber cookie 設置也可以移除，因為 @supabase/ssr 會自動處理會話 cookie
+  }
+
+  return response;
 }
 
 export const config = {
-  // 恢復到更通用的 matcher，確保所有相關頁面都經過 middleware
   matcher: [
-    '/((?!_next/static|_next/image|favicon.ico).*)',
+    /*
+     * Match all request paths except for the ones starting with:
+     * - _next/static (static files)
+     * - _next/image (image optimization files)
+     * - favicon.ico (favicon file)
+     * Feel free to modify this pattern to include more paths.
+     */
+    '/((?!_next/static|_next/image|favicon.ico|fonts|images).*)',
   ],
 }; 

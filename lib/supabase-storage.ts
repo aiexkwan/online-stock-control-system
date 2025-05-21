@@ -1,4 +1,4 @@
-import { supabase } from './supabase'; // Corrected import for the Supabase client
+import { createClient } from './supabase'; // MODIFIED: Import createClient
 import { generatePalletPdfFileName } from './pdfUtils'; // Import the new naming function
 
 export const STORAGE_BUCKET = 'pallet-label-pdf';
@@ -26,6 +26,7 @@ export async function uploadPdf(
   _ignoredFileName: string, // Intentionally ignored for Supabase path naming
   pdfBlob: Blob
 ): Promise<string> {
+  const supabase = createClient(); // ADDED: Create supabase instance here
   if (!palletNum) {
     console.error('[uploadPdf] Pallet number is required but was not provided.');
     throw new Error('Pallet number is required for uploading PDF.');

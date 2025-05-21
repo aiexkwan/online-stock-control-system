@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState, useRef } from 'react';
-import { supabase } from '../../lib/supabase';
+import { createClient } from '@/lib/supabase';
 import { format } from 'date-fns';
 
 interface PrintRecord {
@@ -15,6 +15,7 @@ const PAGE_SIZE = 15;
 const MAX_RECORDS = 100;
 
 export default function PrintHistory() {
+  const supabase = createClient();
   const [records, setRecords] = useState<PrintRecord[]>([]);
   const [loading, setLoading] = useState(false);
   const [hasMore, setHasMore] = useState(true);

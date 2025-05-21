@@ -1,18 +1,22 @@
 'use server';
 
-import { supabase } from '@/lib/supabase'; // Standard client, may need admin for users table
-import { createClient } from '@supabase/supabase-js'; // For creating admin client if needed
+// import { supabase } from '@/lib/supabase'; // REMOVED: Standard client is not for server actions
+import { createClient as createServerSupabaseClient } from '@/app/utils/supabase/server'; // ADDED: Server client
+import { createClient as createAdminClient } from '@supabase/supabase-js'; // For creating admin client if needed
 import bcrypt from 'bcryptjs';
 
 // It's highly recommended to use the Supabase Admin client for operations that modify users table directly,
 // especially for password resets initiated without an authenticated user session.
 // Store your Supabase Service Role Key securely in environment variables.
-const supabaseAdmin = createClient(
+const supabaseAdmin = createAdminClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL || '',
   process.env.SUPABASE_SERVICE_ROLE_KEY || '' // Ensure this is set in your .env.local or Vercel env vars
 );
 
 export async function resetPasswordAction(userId: string, newPassword: string): Promise<{ success: boolean; error?: string }> {
+  // const supabase = createServerSupabaseClient(); // If you need a user-session aware client
+  // For this action, we are directly updating data_id using admin client, so user session client might not be needed.
+
   if (!userId || !newPassword) {
     return { success: false, error: 'User ID or new password cannot be empty.' };
   }

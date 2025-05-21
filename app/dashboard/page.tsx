@@ -2,19 +2,23 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { Button } from "../../components/ui/button";
 import { Card, CardContent } from "../../components/ui/card";
 import { toast } from 'sonner';
-import { supabase } from '@/lib/supabase';
-import { synchronizeAuthState, getLoggedInClockNumber } from '../utils/authClientUtils';
+import { createClient } from '@/lib/supabase';
+import { getLoggedInClockNumber, storeClockNumberLocally, clearLocalClockNumber } from '../utils/authClientUtils';
+import PrintHistory from '../components/PrintHistory';
+import GrnHistory from '../components/GrnHistory';
+import PalletDonutChart from '../components/PalletDonutChart';
+import { signOut as signOutService } from '../services/supabaseAuth';
 
-// 定義圖標類型，使其可擴展
+// Define icon types for extensibility
 interface IconProps {
   className?: string;
 }
 
-// 庫存圖標
+// Inventory icon
 function InventoryIcon({ className = "w-6 h-6" }: IconProps) {
   return (
     <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -24,7 +28,7 @@ function InventoryIcon({ className = "w-6 h-6" }: IconProps) {
   );
 }
 
-// 生產圖標
+// Products icon
 function ProductsIcon({ className = "w-6 h-6" }: IconProps) {
   return (
     <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -34,7 +38,7 @@ function ProductsIcon({ className = "w-6 h-6" }: IconProps) {
   );
 }
 
-// 歷史圖標
+// History icon
 function HistoryIcon({ className = "w-6 h-6" }: IconProps) {
   return (
     <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -44,7 +48,7 @@ function HistoryIcon({ className = "w-6 h-6" }: IconProps) {
   );
 }
 
-// 報表圖標
+// Reports icon
 function ReportsIcon({ className = "w-6 h-6" }: IconProps) {
   return (
     <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -54,230 +58,325 @@ function ReportsIcon({ className = "w-6 h-6" }: IconProps) {
   );
 }
 
-interface CustomUser {
-  id: string;
-  name?: string;
-}
+// 修復類型定義
+type CountResponse = { count: number }[];
+type InventoryItem = {
+  product_code: string;
+  loc_fold: number;
+  loc_awaiting: number;
+  loc_injection: number;
+};
 
 export default function Dashboard() {
   const router = useRouter();
-  const [user, setUser] = useState<CustomUser | null>(null);
+  const pathname = usePathname();
+  const supabase = createClient();
+  const [user, setUser] = useState<{id: string, name?: string} | null>(null);
   const [loading, setLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [stats, setStats] = useState({
+    dailyDonePallets: 0,
+    dailyTransferredPallets: 0,
+    lowStockItems: [] as InventoryItem[],
+    pendingOrders: [] as any[],
+  });
   
+  // 獲取歡迎訊息根據時間
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return "Good Morning";
+    if (hour < 18) return "Good Afternoon";
+    return "Good Evening";
+  };
+  
+  const greeting = getGreeting();
+  const userName = user?.name || user?.id;
+
+  // Helper function to extract clock number from email, moved outside useEffect for broader use if needed
+  const emailToClockNumber = (email: string): string | null => {
+    if (!email) return null;
+    const match = email.match(/^(\d+)@/);
+    return match ? match[1] : null;
+  };
+
   useEffect(() => {
+    const maxAttempts = 3;
+    let attempts = 0;
+
+    const checkUserAuth = async (): Promise<boolean> => {
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+
+      if (userError) {
+        console.error('[Dashboard] Supabase getUser error:', userError);
+        setErrorMessage('Error validating session or fetching user details.');
+        return false;
+      }
+
+      if (user) {
+        const metadata = user.user_metadata || {};
+        const clockNumber = metadata.clock_number || emailToClockNumber(user.email || '');
+        
+        if (clockNumber) {
+          storeClockNumberLocally(clockNumber);
+        } else {
+          console.warn('[Dashboard] Clock number is missing from user metadata even after session validation.');
+        }
+
+        const needsPasswordChange = metadata.needs_password_change === true;
+        if (needsPasswordChange) {
+          console.log(`[Dashboard] User ${clockNumber || 'N/A'} needs password change. Redirecting.`);
+          router.push('/change-password');
+          return false; 
+        }
+        return true; 
+      }
+      console.warn('[Dashboard] User not authenticated after checking with server.');
+      setErrorMessage('No active authenticated session. Please login.');
+      return false;
+    };
+
+    const loadUserData = async () => {
+      try {
+        const { data: { user: authUser }, error: userError } = await supabase.auth.getUser();
+        if (userError) throw new Error(`Supabase user fetch error: ${userError.message}`);
+        if (!authUser) throw new Error('No authenticated user found in Supabase session for loadUserData.');
+
+        const metadata = authUser.user_metadata || {};
+        const clockNumber = metadata.clock_number || emailToClockNumber(authUser.email || '');
+        
+        if (!clockNumber) {
+          console.error('[Dashboard] Critical: Clock number missing in user metadata during loadUserData.');
+          toast.error('User identification failed. Please try logging in again.');
+          setUser(null);
+          return;
+        }
+
+        const loadedUser = {
+          id: clockNumber,
+          name: metadata.name || clockNumber
+        };
+        setUser(loadedUser);
+        console.log('[Dashboard] User data loaded and set:', loadedUser);
+      } catch (error: any) {
+        console.error('[Dashboard] Error loading user data:', error);
+        toast.error(`Could not load user information: ${error.message}`);
+        setUser(null);
+      }
+    };
+
+    const fetchDashboardData = async () => {
+      try {
+        const { count: palletCountResponse, error: palletError } = await supabase
+          .from('record_palletinfo')
+          .select('*', { count: 'exact', head: true })
+          .eq('void', false);
+        if (palletError) throw palletError;
+
+        const { count: transferCountResponse, error: transferError } = await supabase
+          .from('record_transfer')
+          .select('*', { count: 'exact', head: true })
+          .is('void', false);
+        if (transferError) throw transferError;
+        
+        const palletCount = palletCountResponse || 0;
+        const transferCount = transferCountResponse || 0;
+        
+        let lowStockItems: InventoryItem[] = [];
+        try {
+          const { data: stockData } = await supabase.from('record_inventory').select('product_code, loc_fold, loc_awaiting, loc_injection').or('loc_fold.lt.5,loc_awaiting.lt.5,loc_injection.lt.5').limit(10);
+          if (stockData) lowStockItems = stockData;
+        } catch (stockError) { console.warn('[Dashboard] Could not fetch low stock items:', stockError); }
+        
+        let pendingOrders: any[] = [];
+        try {
+          const { data: orderData } = await supabase.from('record_history').select('*').eq('status', 'pending').order('time', { ascending: false }).limit(10);
+          if (orderData) pendingOrders = orderData;
+        } catch (orderError) { console.warn('[Dashboard] Could not fetch pending orders:', orderError); }
+        
+        setStats({
+          dailyDonePallets: palletCount,
+          dailyTransferredPallets: transferCount,
+          lowStockItems,
+          pendingOrders,
+        });
+      } catch (error: any) {
+        console.error('[Dashboard] Error fetching dashboard data:', error);
+        toast.error(`Could not load some dashboard data: ${error.message}`);
+      }
+    };
+
     const initAuth = async () => {
       setLoading(true);
-      
-      try {
-        // 同步 Auth 狀態
-        await synchronizeAuthState();
-        
-        // 檢查 Supabase 會話
-        const { data } = await supabase.auth.getSession();
-        
-        if (data.session) {
-          // 用戶已登入
-          const clockNumber = getLoggedInClockNumber();
-          if (clockNumber) {
-            const userData = {
-              id: clockNumber,
-              name: data.session.user.user_metadata.name || clockNumber
-            };
-            setUser(userData);
-          } else {
-            // 無法獲取時鐘號碼
-            toast.error('Could not retrieve user information');
-            router.push('/login');
-          }
-        } else {
-          // 沒有會話，重定向到登入頁面
-          toast.info('Session expired. Please login again.');
-          router.push('/login');
+      let initLogicCompleted = false;
+
+      const watchdogId = setTimeout(() => {
+        if (!initLogicCompleted) {
+          console.warn('[Dashboard] initAuth took too long (watchdog timeout). Forcing loading to stop.');
+          toast.error('Dashboard loading timed out. Please refresh the page.');
+          setLoading(false); 
         }
-      } catch (error) {
-        console.error('Error checking authentication:', error);
-        toast.error('Authentication error occurred');
-        router.push('/login');
+      }, 20000);
+
+      try {
+        const isAuthenticated = await checkUserAuth();
+
+        if (isAuthenticated) {
+          await loadUserData();
+          await fetchDashboardData();
+          setLoading(false);
+          initLogicCompleted = true;
+        } else {
+          if (pathname.includes('/change-password')) {
+            setLoading(false);
+            initLogicCompleted = true;
+          } else {
+            const retryInterval = setInterval(async () => {
+              attempts++;
+              console.log(`[Dashboard] Retry auth check: ${attempts}/${maxAttempts}`);
+              const retryResult = await checkUserAuth();
+              if (retryResult) {
+                clearInterval(retryInterval);
+                await loadUserData();
+                await fetchDashboardData();
+                setLoading(false); 
+                initLogicCompleted = true;
+              } else if (attempts >= maxAttempts) {
+                clearInterval(retryInterval);
+                toast.error('Session validation failed after multiple retries. Please login again.');
+                setLoading(false); 
+                router.push('/login?error=auth_failed_dashboard_max_retry');
+                initLogicCompleted = true;
+              }
+            }, 1500);
+          }
+        }
+      } catch (error: any) {
+        console.error('[Dashboard] Error during initAuth:', error);
+        toast.error(`Authentication error: ${error.message}`);
+        setLoading(false); 
+        router.push('/login?error=auth_error_dashboard_critical');
+        initLogicCompleted = true;
       } finally {
-        setLoading(false);
+        clearTimeout(watchdogId);
       }
     };
     
     initAuth();
-  }, [router]);
+
+  }, [router, supabase, pathname]);
 
   const handleLogout = async () => {
     try {
-      await supabase.auth.signOut();
-      
-      if (typeof window !== 'undefined') {
-        localStorage.removeItem('loggedInUserClockNumber');
-        localStorage.removeItem('user');
-        localStorage.removeItem('isTemporaryLogin');
-        localStorage.removeItem('firstLogin');
-      }
+      await signOutService(supabase); 
+      clearLocalClockNumber(); 
+      localStorage.removeItem('user'); 
+      localStorage.removeItem('isTemporaryLogin');
+      // 'firstLogin' is also cleared by clearLocalClockNumber if it was set
       
       toast.success('Logged out successfully');
       router.push('/login');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Logout error:', error);
-      toast.error('Error logging out');
+      toast.error(`Logout error: ${error.message}`);
     }
   };
 
-  // 顯示載入狀態
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-100">
+      <div className="min-h-screen flex items-center justify-center bg-[#181c2f]">
         <div className="text-center p-4">
-          <div className="animate-spin w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading dashboard...</p>
+          <div className="animate-spin w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full mx-auto mb-4"></div>
+          <p className="text-gray-300">Loading...</p>
         </div>
       </div>
     );
   }
 
-  // 如果未登入，顯示錯誤
-  if (!user) {
+  if (!user && !loading) { 
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-100">
-        <div className="text-center p-4">
-          <p className="text-red-600 font-medium">Authentication error. Please log in again.</p>
-          <Button 
-            className="mt-4"
-            onClick={() => router.push('/login')}
-          >
-            Go to Login
-          </Button>
+      <div className="min-h-screen flex items-center justify-center bg-[#181c2f]">
+        <div className="text-center p-4 max-w-md">
+          <div className="bg-red-600 text-white p-4 rounded-lg">
+            <p className="font-medium text-lg">{errorMessage || 'Session invalid, expired, or user data could not be loaded. Please login.'}</p>
+            <button
+              onClick={() => router.push('/login')}
+              className="mt-4 px-4 py-2 bg-white text-red-600 rounded-md font-medium hover:bg-gray-100 transition"
+            >
+              Return to Login
+            </button>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-100">
-      <header className="bg-white shadow">
-        <div className="max-w-7xl mx-auto p-4 sm:px-6 lg:px-8 flex justify-between items-center">
-          <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
-          <div className="flex items-center gap-4">
-            <p className="text-gray-600">
-              User: <span className="font-medium">{user.name || user.id}</span>
-            </p>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={handleLogout}
-              className="text-red-600 hover:bg-red-50 border-red-300"
-            >
-              Logout
-            </Button>
+    <div className="min-h-screen bg-[#181c2f] text-white">
+      <div className="max-w-7xl mx-auto p-6">
+        {/* Header */}
+        <header className="flex justify-between items-center mb-6">
+          <h1 className="text-2xl font-bold text-white"></h1>
+          {userName && <span className="text-lg">{greeting}, {userName}</span>}
+        </header>
+        
+        {/* PalletDonutChart */}
+        <div className="flex flex-row items-center justify-center gap-8 py-4">
+          <div>
+            <PalletDonutChart 
+              palletsDone={stats.dailyDonePallets} 
+              palletsTransferred={stats.dailyTransferredPallets} 
+            />
           </div>
         </div>
-      </header>
-      
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-          {/* Inventory Management Card */}
-          <Card className="shadow-lg hover:shadow-xl transition-shadow duration-300">
-            <CardContent className="p-6">
-              <Link href="/inventory/receive" className="block">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h2 className="text-xl font-semibold text-gray-900">Inventory</h2>
-                    <p className="text-gray-600 mt-1">Manage stock and pallets</p>
-                  </div>
-                  <div className="bg-blue-100 p-3 rounded-full">
-                    <InventoryIcon className="w-8 h-8 text-blue-600" />
-                  </div>
-                </div>
-                <div className="mt-4 flex justify-end">
-                  <span className="text-blue-600 font-medium inline-flex items-center">
-                    Access
-                    <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
-                    </svg>
-                  </span>
-                </div>
-              </Link>
-            </CardContent>
-          </Card>
 
-          {/* Products Card */}
-          <Card className="shadow-lg hover:shadow-xl transition-shadow duration-300">
-            <CardContent className="p-6">
-              <Link href="/products" className="block">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h2 className="text-xl font-semibold text-gray-900">Products</h2>
-                    <p className="text-gray-600 mt-1">Manage products database</p>
-                  </div>
-                  <div className="bg-green-100 p-3 rounded-full">
-                    <ProductsIcon className="w-8 h-8 text-green-600" />
-                  </div>
-                </div>
-                <div className="mt-4 flex justify-end">
-                  <span className="text-green-600 font-medium inline-flex items-center">
-                    Access
-                    <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
-                    </svg>
-                  </span>
-                </div>
-              </Link>
-            </CardContent>
-          </Card>
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+          <div className="bg-[#252d3d] p-6 rounded-lg">
+            <div className="flex items-center space-x-4">
+              <div className="w-12 h-12 bg-blue-500/20 rounded-full flex items-center justify-center">
+                <svg className="w-6 h-6 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <div>
+                <p className="text-gray-400 text-sm">Pallets Done</p>
+                <p className="text-white text-2xl font-bold">{stats.dailyDonePallets}</p>
+              </div>
+            </div>
+          </div>
 
-          {/* History Card */}
-          <Card className="shadow-lg hover:shadow-xl transition-shadow duration-300">
-            <CardContent className="p-6">
-              <Link href="/history" className="block">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h2 className="text-xl font-semibold text-gray-900">History</h2>
-                    <p className="text-gray-600 mt-1">View movement history</p>
-                  </div>
-                  <div className="bg-purple-100 p-3 rounded-full">
-                    <HistoryIcon className="w-8 h-8 text-purple-600" />
-                  </div>
-                </div>
-                <div className="mt-4 flex justify-end">
-                  <span className="text-purple-600 font-medium inline-flex items-center">
-                    Access
-                    <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
-                    </svg>
-                  </span>
-                </div>
-              </Link>
-            </CardContent>
-          </Card>
-
-          {/* Reports Card */}
-          <Card className="shadow-lg hover:shadow-xl transition-shadow duration-300">
-            <CardContent className="p-6">
-              <Link href="/reports" className="block">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h2 className="text-xl font-semibold text-gray-900">Reports</h2>
-                    <p className="text-gray-600 mt-1">Generate system reports</p>
-                  </div>
-                  <div className="bg-amber-100 p-3 rounded-full">
-                    <ReportsIcon className="w-8 h-8 text-amber-600" />
-                  </div>
-                </div>
-                <div className="mt-4 flex justify-end">
-                  <span className="text-amber-600 font-medium inline-flex items-center">
-                    Access
-                    <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
-                    </svg>
-                  </span>
-                </div>
-              </Link>
-            </CardContent>
-          </Card>
+          <div className="bg-[#252d3d] p-6 rounded-lg">
+            <div className="flex items-center space-x-4">
+              <div className="w-12 h-12 bg-pink-500/20 rounded-full flex items-center justify-center">
+                <svg className="w-6 h-6 text-pink-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+                </svg>
+              </div>
+              <div>
+                <p className="text-gray-400 text-sm">Pallets Transferred</p>
+                <p className="text-white text-2xl font-bold">{stats.dailyTransferredPallets}</p>
+              </div>
+            </div>
+          </div>
         </div>
-      </main>
+
+        {/* History Sections */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Print History */}
+          <div className="bg-[#252d3d] p-6 rounded-lg">
+            <h3 className="text-white text-lg font-semibold mb-4">Print History</h3>
+            {/* @ts-ignore - PrintHistory組件接受limit屬性 */}
+            <PrintHistory limit={5} />
+          </div>
+
+          {/* GRN History */}
+          <div className="bg-[#252d3d] p-6 rounded-lg">
+            <h3 className="text-white text-lg font-semibold mb-4">GRN History</h3>
+            {/* @ts-ignore - GrnHistory組件接受limit屬性 */}
+            <GrnHistory limit={5} />
+          </div>
+        </div>
+      </div>
     </div>
   );
 } 
