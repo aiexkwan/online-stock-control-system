@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { supabase } from '../../lib/supabase';
+import { createClient } from '../../lib/supabase';
+import Link from 'next/link';
 
 interface TableInfo {
   name: string;
@@ -26,6 +27,7 @@ const TABLE_NAMES = [
 ];
 
 export default function TablesPage() {
+  const supabase = createClient();
   const [tables, setTables] = useState<TableInfo[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);

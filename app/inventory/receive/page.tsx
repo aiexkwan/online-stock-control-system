@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { supabase } from '../../../lib/supabase';
+import { createClient } from '../../../lib/supabase';
 import { 
   ArrowLeftIcon, 
   PlusIcon, 
@@ -14,6 +14,7 @@ import {
 
 export default function ReceiveInventoryPage() {
   const router = useRouter();
+  const supabase = createClient();
   const [userId, setUserId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);

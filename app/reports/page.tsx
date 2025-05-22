@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { supabase } from '../../lib/supabase';
+import { createClient } from '../../lib/supabase';
 import Link from 'next/link';
 import { ChartBarIcon, ClockIcon, DocumentTextIcon, ArrowTopRightOnSquareIcon } from '@heroicons/react/24/outline';
 
@@ -40,6 +40,7 @@ interface InventoryMovement {
 }
 
 export default function ReportsPage() {
+  const supabase = createClient();
   const [productSummary, setProductSummary] = useState<ProductSummary>({
     total_products: 0,
     total_quantity: 0,

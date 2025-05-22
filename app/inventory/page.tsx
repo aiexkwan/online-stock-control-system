@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { supabase } from '../../lib/supabase';
+import { createClient } from '../../lib/supabase';
 
 interface Product {
   id: number;
@@ -14,6 +14,7 @@ interface Product {
 type OperationType = 'receive' | 'issue' | 'transfer';
 
 export default function InventoryPage() {
+  const supabase = createClient();
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingAction, setLoadingAction] = useState(false);
