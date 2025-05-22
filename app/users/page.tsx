@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { supabase } from '../../lib/supabase';
+import { createClient } from '../../lib/supabase';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 
@@ -34,6 +34,7 @@ interface NewUser {
 
 export default function UsersPage() {
   const router = useRouter();
+  const supabase = createClient();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
