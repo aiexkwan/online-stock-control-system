@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { supabase } from '../../lib/supabase';
+// import { supabase } from '../../lib/supabase'; // This line will be removed
 import { DocumentIcon, ArrowsRightLeftIcon } from '@heroicons/react/24/outline';
 import PalletDonutChart from './PalletDonutChart';
 
