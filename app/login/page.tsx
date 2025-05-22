@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
@@ -10,7 +10,8 @@ import { customLoginAction } from '../actions/authActions';
 import { createClient } from '@/lib/supabase';
 import { clearLocalAuthData, syncAuthStateToLocalStorage } from '../utils/auth-sync';
 
-export default function LoginPage() {
+// New component to handle logic depending on searchParams
+function LoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const supabase = createClient();
@@ -38,25 +39,25 @@ export default function LoginPage() {
     const checkSession = async () => {
       const { data, error } = await supabase.auth.getSession();
       if (error) {
-        console.error('[Login] Error checking session:', error.message);
+        console.error('[LoginContent] Error checking session:', error.message);
         return;
       }
       
       if (data.session) {
-        console.log('[Login] Active session found, signing out');
+        console.log('[LoginContent] Active session found, signing out');
         // 如果有現有會話，則登出
         await supabase.auth.signOut();
       }
     };
     
     checkSession();
-  }, [searchParams]);
+  }, [searchParams, supabase]);
 
   const logToHistory = async (userIdToLog: string, actionType: 'LogIn' | 'Password Change', remarkText: string) => {
     try {
-      console.log(`[Login] Logging history: User [${userIdToLog}], Action [${actionType}], Remark [${remarkText}]`);
+      console.log(`[LoginContent] Logging history: User [${userIdToLog}], Action [${actionType}], Remark [${remarkText}]`);
     } catch (historyError) {
-      console.error('[Login] Failed to log to record_history:', historyError);
+      console.error('[LoginContent] Failed to log to record_history:', historyError);
     }
   };
 
@@ -77,29 +78,29 @@ export default function LoginPage() {
         return;
     }
 
-    console.log(`[Login] Attempting login for clock number: ${trimmedClockNumber}`);
+    console.log(`[LoginContent] Attempting login for clock number: ${trimmedClockNumber}`);
     
     try {
       const loginResult = await customLoginAction(trimmedClockNumber, password);
 
       if (loginResult.success && typeof loginResult.userId === 'number') {
-        console.log('[Login] Login successful for clock number:', loginResult.userId);
+        console.log('[LoginContent] Login successful for clock number:', loginResult.userId);
         
         // 強化會話處理 - 直接設置本地存儲
         localStorage.setItem('loggedInUserClockNumber', loginResult.userId.toString());
-        console.log('[Login] Set userId in localStorage:', loginResult.userId);
+        console.log('[LoginContent] Set userId in localStorage:', loginResult.userId);
         
         // 手動設置 cookie 以確保中間件可以讀取認證狀態
         document.cookie = `loggedInUserClockNumber=${loginResult.userId}; path=/; max-age=86400; SameSite=Lax`;
-        console.log('[Login] Set userId in cookie:', loginResult.userId);
+        console.log('[LoginContent] Set userId in cookie:', loginResult.userId);
         
         // 等待會話同步完成
         try {
           // 嘗試同步 Supabase 會話狀態
           await syncAuthStateToLocalStorage();
-          console.log('[Login] Authentication state synced to localStorage');
+          console.log('[LoginContent] Authentication state synced to localStorage');
         } catch (syncError) {
-          console.error('[Login] Error syncing auth state:', syncError);
+          console.error('[LoginContent] Error syncing auth state:', syncError);
           // 但我們已經手動設置了 localStorage 和 cookie，所以繼續流程
         }
         
@@ -108,12 +109,12 @@ export default function LoginPage() {
         
         // 再次驗證存儲是否成功
         const storedId = localStorage.getItem('loggedInUserClockNumber');
-        console.log('[Login] Verification - ID in localStorage:', storedId);
+        console.log('[LoginContent] Verification - ID in localStorage:', storedId);
 
         const isFirstLogin = loginResult.isFirstLogin;
 
         if (isFirstLogin) {
-          console.log('[Login] First login detected, redirecting to change password page');
+          console.log('[LoginContent] First login detected, redirecting to change password page');
           await logToHistory(loginResult.userId.toString(), 'LogIn', 'First LogIn - Redirect to Change Password');
           
           // 確保首次登入標誌正確設置到 localStorage
@@ -122,7 +123,7 @@ export default function LoginPage() {
           // 立即重定向到更改密碼頁面
           router.push(`/change-password?userId=${encodeURIComponent(loginResult.userId.toString())}`);
         } else {
-          console.log('[Login] Regular login detected, redirecting to dashboard or previous page');
+          console.log('[LoginContent] Regular login detected, redirecting to dashboard or previous page');
           await logToHistory(loginResult.userId.toString(), 'LogIn', 'LogIn Success');
           
           // 強制較長延遲以確保狀態完全同步
@@ -139,11 +140,11 @@ export default function LoginPage() {
           }, 2000); // 增加延遲到 3 秒，確保 cookie 和 localStorage 更新有足夠時間
         }
       } else {
-        console.error('[Login] Login failed:', loginResult.error);
+        console.error('[LoginContent] Login failed:', loginResult.error);
         setError(loginResult.error || 'Login failed. Please try again.');
       }
     } catch (err: any) {
-      console.error('[Login] Unexpected login error:', err);
+      console.error('[LoginContent] Unexpected login error:', err);
       setError(err.message || 'An unexpected error occurred. Please try again.');
     } finally {
       setLoading(false);
@@ -244,5 +245,13 @@ export default function LoginPage() {
         </form>
       </Card>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-[#1e2533] p-4"><div className="text-white text-xl">Loading login page...</div></div>}>
+      <LoginContent />
+    </Suspense>
   );
 } 
