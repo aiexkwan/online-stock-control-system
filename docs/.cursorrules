@@ -15,7 +15,7 @@ The system covers
 - Stock tracking(By QR Code)
 - Pallet movement
 - Material receiving(GRN records)
-- Generate reporting(.csv, .xls)
+- Generate reporting(.csv, .xls, .pdf)
 - Inbound and outbound
 - Scanning and access control (with scanner, mobile devices including : Smart Phone(iOS, Android), tablet.
 
