@@ -198,14 +198,6 @@ export default function VoidPalletPage() {
     setBlockingErrorToastId(null);
     setIsInputDisabled(false);
     resetState(); // Reset form fields and found pallet info
-    // Focus last active input or a default one
-    if (lastActiveInput === 'series' && seriesInputRef.current) {
-      seriesInputRef.current.focus();
-    } else if (lastActiveInput === 'pallet_num' && palletNumInputRef.current) {
-      palletNumInputRef.current.focus();
-    } else if (seriesInputRef.current) { // Fallback to series input
-      seriesInputRef.current.focus();
-    }
     // Ensure dialogs are closed if error occurs mid-process
     setShowReprintConfirmDialog(false);
   };
@@ -311,16 +303,6 @@ export default function VoidPalletPage() {
     }
   };
   
-  useEffect(() => {
-    if (!isLoading && !isVoiding) {
-      if (lastActiveInput === 'series' && seriesInputRef.current) {
-        seriesInputRef.current.focus();
-      } else if (lastActiveInput === 'pallet_num' && palletNumInputRef.current) {
-        palletNumInputRef.current.focus();
-      }
-    }
-  }, [isLoading, isVoiding, lastActiveInput, foundPallet]);
-
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const clockNumber = localStorage.getItem('loggedInUserClockNumber');

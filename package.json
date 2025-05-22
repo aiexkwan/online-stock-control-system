@@ -61,7 +61,6 @@
     "tailwind-merge": "^3.3.0",
     "tailwindcss": "^3.4.0",
     "tailwindcss-animate": "^1.0.7",
-    "xlsx": "^0.18.5",
     "zod": "^3.24.3"
   },
   "devDependencies": {
@@ -76,6 +75,7 @@
     "postcss-flexbugs-fixes": "^5.0.2",
     "postcss-preset-env": "^10.1.6",
     "rimraf": "^6.0.1",
+    "supabase": "^2.23.4",
     "ts-node": "^10.9.2",
     "typescript": "latest"
   },

@@ -93,7 +93,7 @@ The system covers
 
 ---
 
-# Changelog Policy
+# Historylog Policy
 - For any to-do issue, record in toDoList.md and sort later
 - For every fixed issue, record issues and soluction detail, docuement/code involved in solvedIssue.md
 - Before every push to Github, you MUST update CHANGELOG.md (summarized with 200 words) to record all important changes.

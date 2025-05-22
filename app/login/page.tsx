@@ -136,7 +136,7 @@ export default function LoginPage() {
             
             // 如果用戶從其他頁面被重定向過來，登入後返回那個頁面
             router.push(fromPage);
-          }, 3000); // 增加延遲到 3 秒，確保 cookie 和 localStorage 更新有足夠時間
+          }, 2000); // 增加延遲到 3 秒，確保 cookie 和 localStorage 更新有足夠時間
         }
       } else {
         console.error('[Login] Login failed:', loginResult.error);

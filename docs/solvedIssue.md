@@ -381,4 +381,56 @@
 
 此調整確保了作廢流程更貼合 "Used Material" 這一特定場景的業務邏輯。
 
+## Dashboard Donut Chart 更新 (2025-05-23)
+
+**問題描述:**
+
+用戶要求修改 Dashboard 頁面上 Donut Chart 的數據來源、計算方式以及相關的顯示標籤和卡片。
+
+**初始狀態:**
+
+-   Donut Chart 數據來源於 `record_palletinfo` (計為 Pallets Done) 和 `record_transfer` (計為 Pallets Transferred)。
+-   Chart 百分比計算為 `Pallets Done / (Pallets Done + Pallets Transferred)`。
+-   Dashboard 上有顯示 "Pallets Done" 和 "Pallets Transferred" 數量嘅獨立卡片。
+-   Donut Chart 中心顯示百分比和 "Done/Transferred" 文字。
+
+**用戶需求變更:**
+
+1.  **更新數據來源定義:**
+    *   `Pallets Generated` (原 Pallets Done): 從 `record_palletinfo` 表中選取，其中 `generate_time` 為當日，且 `plt_loc` 為 "Fold Mill", "Await", 或 "Voided (Partial)"。
+    *   `Pallets Transferred`: 從 `record_palletinfo` 表中選取，其中 `generate_time` 為當日，且 `plt_loc` 為 "Fold Mill"。
+2.  **更新 Donut Chart 計算方式:**
+    *   百分比應為 `Pallets Transferred / Pallets Generated * 100%`。
+3.  **界面調整:**
+    *   將 "Pallets Done" 相關標籤改為 "Pallets Generated"。
+    *   移除 Dashboard 上顯示 "Pallets Generated" 和 "Pallets Transferred" 數量嘅獨立卡片。
+    *   Donut Chart 中心只保留百分比數字，移除文字描述 ("Transferred/Generated")。
+
+**解決方案與實施步驟:**
+
+1.  **更新 `app/dashboard/page.tsx` (`fetchDashboardData` 函數):**
+    *   修改 Supabase 查詢邏輯以符合新嘅 `Pallets Generated` (原 `dailyDonePallets`) 和 `Pallets Transferred` (`dailyTransferredPallets`) 定義，兩個查詢都針對 `record_palletinfo` 表並加入日期 (`generate_time` 為當日) 和 `plt_loc` 篩選條件。
+    *   移除了之前對 `record_transfer` 表嘅查詢。
+    *   移除了獲取 `lowStockItems` 和 `pendingOrders` 數據嘅邏輯 (根據用戶後續要求)。
+    *   將顯示 "Pallets Done" 嘅卡片標題改為 "Pallets Generated"。
+    *   註釋並移除了 "Pallets Generated" 和 "Pallets Transferred" 嘅獨立統計卡片 (根據用戶後續要求)。
+
+2.  **更新 `app/components/PalletDonutChart.tsx`:**
+    *   修改 props 傳遞，明確 `palletsDone` prop 依家代表 "Pallets Generated"。
+    *   更新 Donut Chart 內部嘅百分比計算邏輯為 `(palletsTransferred / palletsGenerated) * 100%`，並處理 `palletsGenerated` 為零嘅情況以避免除零錯誤。
+    *   更新 Tooltip 內嘅標籤，將 "Pallets Done" 改為 "Pallets Generated"。
+    *   移除 Donut Chart 中心圈內嘅文字描述 ("Done/Transferred" 後改為 "Transferred/Generated"，最終移除)。
+
+**涉及文件:**
+
+-   `app/dashboard/page.tsx`
+-   `app/components/PalletDonutChart.tsx`
+
+**最終效果:**
+
+-   Dashboard 上嘅 Donut Chart 依家根據新定義嘅 "Pallets Generated" 和 "Pallets Transferred" 數量進行計算和顯示。
+-   Chart 中心只顯示 (Transferred / Generated) 百分比。
+-   之前嘅獨立統計卡片已被移除。
+-   相關標籤已更新。
+
 END OF FILE 

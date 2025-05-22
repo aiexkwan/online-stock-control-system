@@ -15,6 +15,15 @@
   - Improved authentication state synchronization between client and server
   - Enhanced middleware to provide better session persistence
   - Added more robust error handling in authentication-related functions
+- **Dashboard Donut Chart Update**:
+  - Modified the data source and calculation logic for the Donut Chart on the Dashboard page (`app/dashboard/page.tsx` and `app/components/PalletDonutChart.tsx`).
+  - "Pallets Generated" (formerly "Pallets Done") are now sourced from `record_palletinfo` where `generate_time` is today and `plt_loc` is 'Fold Mill', 'Await', or 'Voided (Partial)'.
+  - "Pallets Transferred" are sourced from `record_palletinfo` where `generate_time` is today and `plt_loc` is 'Fold Mill'.
+  - The Donut Chart percentage is now calculated as `(Pallets Transferred / Pallets Generated) * 100%`.
+  - Removed the individual statistics cards for "Pallets Generated" and "Pallets Transferred" from the dashboard.
+  - The text description ("Transferred/Generated") within the Donut Chart circle has been removed, leaving only the percentage display.
+  - Updated relevant labels in the UI and Tooltip to reflect "Pallets Generated".
+  - Removed unused data fetching logic for `lowStockItems` and `pendingOrders` from the dashboard page.
 
 ## [Unreleased] - 2025-05-23 
 
@@ -38,7 +47,22 @@
 - Updated first login detection to work with Supabase Auth
 - Preserved all existing UI/UX for authentication
 
-<!-- Prepend new entries here -->
+## [Unreleased] - 2025-05-22 M2
+
+### Changed
+- **Dependency Management & Project Cleanup**:
+  - Conducted a review of the `supabase` directory, leading to the removal of unused Supabase Edge Functions (`hash-ids`), associated configurations in `supabase/config.toml`, and an obsolete database migration file (`supabase/migrations/update_user_password.sql`). The entire `supabase` directory was subsequently manually deleted by the user.
+  - Installed the `supabase-js` client library for application-level Supabase interactions.
+  - Addressed security vulnerabilities reported by `npm audit`:
+    - Removed the unused `xlsx` package, resolving a high-risk vulnerability.
+    - Documented the decision to temporarily defer addressing low-risk vulnerabilities related to the `cookie` package (a dependency of `@supabase/ssr@^0.4.0`) in `docs/toDoList.md`, opting to maintain the current `@supabase/ssr` version to avoid breaking changes.
+
+### Fixed
+- **Dashboard Data Loading Error**: Resolved a "400 Bad Request" error occurring on the Dashboard page during data fetching. The issue was traced to missing or incorrectly configured `NEXT_PUBLIC_SUPABASE_ANON_KEY` or `NEXT_PUBLIC_SUPABASE_URL` environment variables in `.env.local`. Ensuring these variables are correctly set resolved the problem.
+
+### Housekeeping
+- **Version Control**: Synced local repository with remote by performing `git pull` and resolving merge conflicts by discarding local changes.
+
 ## [Unreleased] - 2025-05-22 
 
 ### Fixed
@@ -334,91 +358,4 @@ All notable changes to this project will be documented in this file.
 - Stock Transfer: When scanning a pallet at an unhandled location for standard transfer (e.g., already in 'Production'), the `record_history.action` is now "Scan Failure" and `remark` is "Scan at unhandled location for transfer: [currentLocation]".
 - Stock Transfer: Messages in Activity Log are now persistent (not cleared on new actions), with new logs appearing at the top (max 50).
 - Stock Transfer: Activity Log messages are color-coded: yellow for success, red for errors/alerts.
-- Stock Transfer: Activity Log text size is responsive: `text-base` on mobile, `md:text-4xl` on larger screens.
-- Updated `app/void-pallet/page.tsx` search logic to fetch `plt_remark`.
-- Refined UI state management for voiding process.
-- Removed Activity Log from Void Pallet page (`app/void-pallet/page.tsx`); status messages now use toast notifications only.
-- Increased size of toast notifications and their text by approximately 50% on the Void Pallet page for better visibility.
-- Modified `voidPalletAction` in `app/void-pallet/actions.ts`:
-    - History logging for "Deducted From Slate Record" now only occurs if a Slate record was actually found and deleted.
-    - (ACO record adjustment logging already behaved this way and was confirmed.)
-- **Security**: Updated password verification in `app/void-pallet/actions.ts` to use `bcryptjs` for secure hash comparison instead of plaintext. **(Requires manual update of stored passwords in `data_id` table to bcrypt hashes)**.
-- Updated `app/void-pallet/page.tsx` to integrate QR scanner, void reason selection, password confirmation dialog, and call the new server action.
-- Modified `app/stock-transfer/page.tsx` for auto-focus functionality.
-- Minor fixes and enhancements to `PrintLabelPdf.tsx` and `QcLabelForm.tsx`.
-- Updated GRN label printing process in `app/print-grnlabel/page.tsx`.
-- Dashboard (`app/dashboard/page.tsx`) enhancements and data fetching corrections.
-- Navigation component (`app/components/Navigation.tsx`) responsive improvements.
-- **Refactor (Void Pallet Atomicity)**: Refactored the void pallet logic (`app/void-pallet/actions.ts`) to use a Supabase database function (`void_pallet_transaction` RPC). This ensures that all related database modifications (inventory, GRN, Slate, ACO adjustments, and history logging) are performed within a single atomic transaction, improving data consistency and reliability.
-
-### Fixed
-- **PDF Label Content (Dynamic Headers):**
-  - Resolved an issue where PDF label headers (e.g., "Quantity" vs "Quantity / Weight", "Q.C. Done By" vs "Received By") were not consistently displaying correctly for QC and GRN label types.
-  - The root cause was identified as client-side browser caching of PDF files, which prevented updated rendering logic in `PrintLabelPdf.tsx` from taking effect immediately.
-  - After thorough debugging and cache clearing (hard refresh), the dynamic header logic now functions as intended based on the `labelType` prop.
-- **PDF Label Content:**
-  - Ensured "Work Order Number" on PDF labels for 'Slate' product type correctly displays as "-".
-- Resolved an issue where `AcoOrderStatus.tsx` would show an "unknown error" by improving error message handling for non-standard error objects from Supabase queries.
-- Addressed Linter error in `AcoOrderStatus.tsx` and `PalletDonutChart.tsx` related to missing `Tooltip` (and `Progress`) component by advising user to install it via `npx shadcn-ui@latest add tooltip` (and `progress`).
-- Resolved `GoTrueClient` multiple instances warning in `PdfGenerator.tsx`.
-- Addressed Supabase Storage "mime type application/pdf is not supported" error for `pallet-label-pdf` bucket.
-- Corrected `record_slate` insert errors due to mismatched column names (e.g., `batch_number` vs `batch_num`).
-- Resolved `report_log` table 401 error by adding RLS policy for public insert.
-- Fixed `date-fns` version conflict by replacing Shadcn UI Date Picker with `<input type="date">` for Slate "First-Off Date".
-- Corrected `PalletRatio.tsx` to query `record_transfer` instead of non-existent `inventory_movements` table.
-- Resolved various Linter errors related to prop names and `framer-motion` props in `Navigation.tsx`.
-- Addressed Supabase query errors in `app/dashboard/page.tsx` by correcting table/column names and temporarily disabling features dependent on missing columns (e.g., low stock items from `record_inventory`, pending orders from `record_history` based on `status`).
-- Debugged and confirmed resolution of "Home" button redirecting to login page despite being logged in; refined `app/dashboard/page.tsx` authentication logic and data fetching.
-- Corrected "Home" button navigation in `Navigation.tsx` to point to `/dashboard` instead of `/`, resolving an issue where users were incorrectly redirected to the login page.
-- Addressed potential issue where `NULL` quantity columns in `record_inventory` were not correctly updated during stock transfer by implementing `COALESCE` in the `update_inventory_stock_transfer` RPC function (user applied the SQL change).
-- Ensured cancel button in void dialog clears inputs and resets found pallet state.
-- Resolved `GoTrueClient` multiple instance warnings.
-- Corrected PDF MIME type issue for Supabase storage uploads.
-- Addressed various Linter errors and improved code consistency.
-- Fixed `date-fns` version conflict by using native date input for Slate.
-- Corrected Supabase RPC call `update_inventory_stock_transfer` for `NULL` value handling.
-- Resolved "Home" button navigation issue.
-- Addressed module not found error for `@zxing/browser` by installing the dependency.
-- GRN Label: Corrected net weight calculation. If 'Not Included' is selected for Pallet Type or Package Type, their respective weights (now set to 0) are not subtracted from the gross weight.
-
-### Removed
-- Deleted placeholder component `app/components/print-label-menu/GrnLabelForm.tsx`.
-- Deleted `app/dashboard/page.tsx` (old dashboard, route moved to `
-
-### Fixed
-- **Build Error:** Resolved TypeScript type error in `app/components/Navigation.tsx` (Type 'number | null' is not assignable to type 'string | number') by ensuring `idForDb` defaults to `0` when a user ID cannot be parsed, satisfying the `record_history.id` column's expected `number` type.
-- **Build Error:** Resolved `Module not found: Can't resolve 'react-hot-toast'` in `app/users/page.tsx` by changing the import to use `sonner` for toast notifications, consistent with the rest of the project.
-
-## [Unreleased] - YYYY-MM-DD
-
-### Added
-- **Print Label**: For void corrections, `Count of Pallet` now defaults to `1`.
-- **Print Label**: For void corrections with pre-filled `product_code` from URL, product information is now auto-fetched, and the \"Print Label\" button is enabled only after data loads.
-
-### Changed
-- **Void Pallet**: Enhanced `processDamagedPalletVoidAction` to correctly return `actual_original_location` and `remainingQty` from the RPC, fixing an issue where the original location for reprint was not found for partially damaged pallets.
-- **Print Label**: `QcLabelForm.tsx` now uses the `target_location` URL parameter (passed from void pallet page) to set the correct location for new pallet records created during void corrections, instead of defaulting to \"Await\". This affects `record_palletinfo.plt_loc`, `record_inventory` (correct location column used), and `record_history.loc`.
-- **Void Pallet**: Client-side history logging for successful void operations is now skipped if the backend (RPC/Server Action) handles it, preventing duplicate history entries.
-- **Print Label**: `productCode` state in `QcLabelForm.tsx` is now updated with the canonical casing from the database after fetching product info, preventing potential foreign key issues.
-- **Void Pallet**: Server action `processDamagedPalletVoidAction` now explicitly sets `actual_original_location: null` in all error return paths for consistent frontend error handling.
-
-### Fixed
-- **Print Label**: Corrected a JSX comment syntax error in `QcLabelForm.tsx`.
-- Resolved issue where toast message "BUT original location for reprint not found" appeared for partially damaged pallets due to missing `actual_original_location` from server action.
-
-## [Unreleased] - 2025-05-20
-
-### Added
-- **Reporting**: Implemented a "Transaction Report" feature allowing users to export transaction history to an Excel file. This includes the `buildTransactionReport` function in `lib/exportReport.ts` and UI integration in `app/export-report/page.tsx`.
-
-### Changed
-- **Authentication**:
-  - Enhanced logging in `customLoginAction` (in `app/actions/authActions.ts`) to provide better visibility into the user authentication process and data consistency across database queries, particularly focusing on the `first_login` state and password verification in the Vercel environment.
-- **Void Pallet**:
-    - Adjusted UI elements on the "Void Pallet" page (`app/void-pallet/page.tsx`): modified Activity Log height, and styling for "Void Reason" and "Damage Qty" input fields.
-    - Refined backend logic for handling partially damaged pallets. The `process_damaged_pallet_void` RPC in Supabase was updated to ensure correct inventory ledger adjustments (deducting full quantity from the original pallet, recording damaged quantity, and adding back the remaining quantity to a new pallet at the original location) and to enforce reprinting of the label for the new pallet.
-- **Logout**: Enhanced `localStorage` cleanup logic in `app/components/Navigation.tsx` to ensure all relevant user session data (including `loggedInUserClockNumber`, `user`, `isTemporaryLogin`, `firstLogin`) is cleared upon logout.
-
-### Fixed
-- **Build Error**: Resolved a TypeScript type error in `app/debug-test/page.tsx` by changing `class` attribute to `className` in an `<h2>` tag, fixing the Vercel deployment failure.
-- Addressed various linter errors in `lib/exportReport.ts` for the new Transaction Report feature.
+- Stock Transfer: Activity Log text size is responsive: `text-base`

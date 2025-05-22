@@ -1,13 +1,48 @@
-## NPM Audit Vulnerabilities (To Be Addressed Later)
+## NPM Audit Vulnerabilities (To Be Addressed Later) - Updated 2025-05-22
 
-- **cookie <0.7.0 (Low Risk)**:
+- **cookie <0.7.0 (Low Risk) via @supabase/ssr@^0.4.0**:
   - Issue: Accepts out-of-bounds characters in cookie name, path, and domain.
-  - Source: Dependency of `@supabase/ssr` (<=0.5.2-rc.7).
-  - Potential Fix: `npm audit fix --force` (upgrades `@supabase/ssr` to 0.6.1 - Breaking Change).
-  - Action: Investigate `@supabase/ssr` v0.6.1 breaking changes before applying.
+  - Source: Dependency of `@supabase/ssr` (currently at `^0.4.0`).
+  - Status: Temporarily not addressing as of 2025-05-22. Upgrading `@supabase/ssr` (e.g., to `0.6.1` as suggested by `npm audit fix --force`) would introduce breaking changes.
+  - Action: Re-evaluate if/when `@supabase/ssr` needs to be upgraded for other reasons, or if the risk profile changes.
 
-- **xlsx (High Risk)**:
-  - Issue 1: Prototype Pollution in SheetJS.
-  - Issue 2: SheetJS Regular Expression Denial of Service (ReDoS).
-  - Potential Fix: No direct fix available currently.
-  - Action: Evaluate impact on Excel export. Consider input validation, temporary feature restriction, or finding alternative libraries. Monitor SheetJS for patches.
+## Feature Enhancements / To-Do - Added 2025-05-22
+
+- **Implement 15-Minute Idle Timeout Logout**:
+  - **Requirement**: Automatically log out users after 15 minutes of inactivity (no mouse movement, key press, scroll, etc.).
+  - **Target File**: `app/components/ClientLayout.tsx`.
+  - **Implementation Steps**:
+    1.  Define idle timeout duration (15 minutes in milliseconds).
+    2.  Create `useRef` for the timer ID.
+    3.  Implement `handleIdleLogout` function:
+        - Display toast notification.
+        - Clear `localStorage` (e.g., `loggedInUserClockNumber`, `user`, etc.).
+        - Clear relevant cookies (e.g., `loggedInUserClockNumber`).
+        - Call `supabase.auth.signOut()`.
+        - Redirect to login page.
+    4.  Implement `resetIdleTimer` function:
+        - Clear existing timer.
+        - Set new `setTimeout` to call `handleIdleLogout` after 15 minutes. (Only if not on auth pages like login/register).
+    5.  Use `useEffect` to:
+        - Initialize the idle timer on component mount (if not on auth pages).
+        - Add event listeners to `window` for user activity events (e.g., `mousemove`, `mousedown`, `keypress`, `touchstart`, `scroll`, `visibilitychange`). Call `resetIdleTimer` on any activity.
+        - Return a cleanup function to clear the timer and remove event listeners on component unmount or when navigating to auth pages.
+  - **Considerations**:
+    - Ensure Supabase client is available for `signOut`.
+    - Verify all relevant `localStorage` keys and cookie names are cleared.
+    - Test thoroughly across different scenarios and browsers.
+    - (Advanced) Investigate cross-tab idle state synchronization if multiple tabs are a concern.
+
+## Browser Console Warnings - Added 2025-05-23
+
+- **CSS Preload Warning (`app/layout.css`)**:
+  - **Warning**: "The resource http://localhost:3000/static/css/app/layout.css was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally."
+  - **Context**: This warning appears in the browser console during development.
+  - **Possible Causes & Investigation Steps**:
+    1.  **CSS Not Being Used or Incorrectly Referenced**: Verify that `app/layout.css` is actually imported and used by `app/layout.tsx` or its children. Check for typos in import paths.
+    2.  **CSS Content Not Matching Elements**: Ensure the CSS rules within `layout.css` target elements that are present and rendered shortly after page load.
+    3.  **Dynamic Loading/Conditional Rendering**: If styles in `layout.css` are for components loaded dynamically or conditionally much later, the preload might be too early.
+    4.  **Incorrect `as` Attribute (if manually preloaded)**: If `<link rel="preload">` is used manually, ensure `as="style"` is correct. (Next.js typically handles this automatically).
+    5.  **Unnecessary Preload**: The browser might be preloading it, but it's not critical for the initial paint, or its benefit is marginal.
+    6.  **Next.js Internal Optimization/Caching**: Could be related to how Next.js handles CSS bundling, preloading, or development mode HMR.
+  - **Action**: Investigate the cause and resolve if it indicates an actual issue or performance concern. If it's a benign development-only warning or a known Next.js behavior without significant impact, it might be acceptable to monitor.

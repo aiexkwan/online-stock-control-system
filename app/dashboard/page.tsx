@@ -166,38 +166,41 @@ export default function Dashboard() {
 
     const fetchDashboardData = async () => {
       try {
-        const { count: palletCountResponse, error: palletError } = await supabase
+        const today = new Date();
+        const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate()).toISOString();
+        // Set end of day to the very end of the current day (23:59:59.999)
+        // This ensures that all records within the current day are included.
+        const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59, 999).toISOString();
+
+        // Fetch new palletsDone count
+        const { count: newPalletsDoneCount, error: newPalletsDoneError } = await supabase
           .from('record_palletinfo')
           .select('*', { count: 'exact', head: true })
-          .eq('void', false);
-        if (palletError) throw palletError;
+          .gte('generate_time', startOfDay)
+          .lte('generate_time', endOfDay)
+          .in('plt_loc', ['Fold Mill', 'Await', 'Voided (Partial)']);
+        if (newPalletsDoneError) {
+          console.error('[Dashboard] Error fetching newPalletsDoneCount:', newPalletsDoneError);
+          throw new Error(`Failed to fetch 'palletsDone' count: ${newPalletsDoneError.message}`);
+        }
 
-        const { count: transferCountResponse, error: transferError } = await supabase
-          .from('record_transfer')
+        // Fetch new palletsTransferred count
+        const { count: newPalletsTransferredCount, error: newPalletsTransferredError } = await supabase
+          .from('record_palletinfo')
           .select('*', { count: 'exact', head: true })
-          .is('void', false);
-        if (transferError) throw transferError;
-        
-        const palletCount = palletCountResponse || 0;
-        const transferCount = transferCountResponse || 0;
-        
-        let lowStockItems: InventoryItem[] = [];
-        try {
-          const { data: stockData } = await supabase.from('record_inventory').select('product_code, loc_fold, loc_awaiting, loc_injection').or('loc_fold.lt.5,loc_awaiting.lt.5,loc_injection.lt.5').limit(10);
-          if (stockData) lowStockItems = stockData;
-        } catch (stockError) { console.warn('[Dashboard] Could not fetch low stock items:', stockError); }
-        
-        let pendingOrders: any[] = [];
-        try {
-          const { data: orderData } = await supabase.from('record_history').select('*').eq('status', 'pending').order('time', { ascending: false }).limit(10);
-          if (orderData) pendingOrders = orderData;
-        } catch (orderError) { console.warn('[Dashboard] Could not fetch pending orders:', orderError); }
+          .gte('generate_time', startOfDay)
+          .lte('generate_time', endOfDay)
+          .eq('plt_loc', 'Fold Mill');
+        if (newPalletsTransferredError) {
+          console.error('[Dashboard] Error fetching newPalletsTransferredCount:', newPalletsTransferredError);
+          throw new Error(`Failed to fetch 'palletsTransferred' count: ${newPalletsTransferredError.message}`);
+        }
         
         setStats({
-          dailyDonePallets: palletCount,
-          dailyTransferredPallets: transferCount,
-          lowStockItems,
-          pendingOrders,
+          dailyDonePallets: newPalletsDoneCount || 0,
+          dailyTransferredPallets: newPalletsTransferredCount || 0,
+          lowStockItems: [],
+          pendingOrders: [],
         });
       } catch (error: any) {
         console.error('[Dashboard] Error fetching dashboard data:', error);
@@ -319,17 +322,18 @@ export default function Dashboard() {
           {userName && <span className="text-lg">{greeting}, {userName}</span>}
         </header>
         
-        {/* PalletDonutChart */}
-        <div className="flex flex-row items-center justify-center gap-8 py-4">
+        {/* PalletDonutChart - Centered */}
+        <div className="flex flex-row items-center justify-center gap-8 py-4 mb-6">
           <div>
             <PalletDonutChart 
-              palletsDone={stats.dailyDonePallets} 
+              palletsDone={stats.dailyDonePallets} // Represents Pallets Generated
               palletsTransferred={stats.dailyTransferredPallets} 
             />
           </div>
         </div>
 
-        {/* Stats Cards */}
+        {/* Stats Cards Removed as per user request */}
+        {/* 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
           <div className="bg-[#252d3d] p-6 rounded-lg">
             <div className="flex items-center space-x-4">
@@ -339,7 +343,7 @@ export default function Dashboard() {
                 </svg>
               </div>
               <div>
-                <p className="text-gray-400 text-sm">Pallets Done</p>
+                <p className="text-gray-400 text-sm">Pallets Generated</p>
                 <p className="text-white text-2xl font-bold">{stats.dailyDonePallets}</p>
               </div>
             </div>
@@ -359,6 +363,7 @@ export default function Dashboard() {
             </div>
           </div>
         </div>
+        */}
 
         {/* History Sections */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
