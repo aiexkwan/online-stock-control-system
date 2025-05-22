@@ -46,3 +46,18 @@
     5.  **Unnecessary Preload**: The browser might be preloading it, but it's not critical for the initial paint, or its benefit is marginal.
     6.  **Next.js Internal Optimization/Caching**: Could be related to how Next.js handles CSS bundling, preloading, or development mode HMR.
   - **Action**: Investigate the cause and resolve if it indicates an actual issue or performance concern. If it's a benign development-only warning or a known Next.js behavior without significant impact, it might be acceptable to monitor.
+
+## Authentication Issues - Added 2025-05-24
+
+- **"initAuth took too long (watchdog timeout)" on GRN Page (`/print-grnlabel`)**
+  - **Symptoms**: Vercel deployment shows this error, potentially leading to 404s or other loading issues.
+  - **Suspected Component**: `app/components/AuthStateSync.tsx` due to complex synchronization logic, retries, and timers.
+  - **Current Debugging Step (2025-05-24)**: Modified `AuthStateSync.tsx` to prevent redirection to `/login` when `maxAttempts` for synchronization is reached. Instead, it logs an error to the console. This is to help isolate the root cause on the GRN page without being masked by login page issues.
+  - **Next Steps**:
+    1. Deploy with the modified `AuthStateSync.tsx`.
+    2. Observe browser console and Vercel logs when accessing the GRN page.
+    3. Look for the new console error: `[AuthStateSync] Max sync attempts (5) reached on page /print-grnlabel...`
+    4. Analyze any other errors or prolonged operations on the GRN page that might interfere with `AuthStateSync`.
+    5. Investigate the internal logic of `AuthStateSync.tsx`'s `attemptSync`, `forcePreserveAuthState`, and `onAuthStateChange` callback for potential infinite loops, race conditions, or excessive delays, especially in the context of the GRN page.
+    6. Consider simplifying the auth sync logic in `AuthStateSync.tsx` (e.g., reducing retry mechanisms, timers, or the number of direct storage manipulations).
+    7. Examine `app/print-grnlabel/page.tsx` for any conflicting auth/storage operations or performance bottlenecks.

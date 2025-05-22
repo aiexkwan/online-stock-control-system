@@ -96,12 +96,10 @@ export default function AuthStateSync() {
     const attemptSync = () => {
       // 如果已經達到最大嘗試次數，放棄
       if (syncAttempts >= maxAttempts) {
-        console.warn(`[AuthStateSync] Max sync attempts (${maxAttempts}) reached, giving up`);
-        // 嚴重問題：無法同步狀態，重定向到登入頁面
-        if (!window.location.pathname.includes('/login')) {
-          router.push('/login?error=sync_failed');
-        }
-        return;
+        console.error(`[AuthStateSync] Max sync attempts (${maxAttempts}) reached on page ${window.location.pathname}. Auth state might be inconsistent. Will not redirect.`);
+        // alert(`Authentication sync failed after ${maxAttempts} attempts. Please try refreshing the page or logging in again if issues persist.`);
+        // setErrorState('Auth sync failed. Please refresh.'); // Example for global error state
+        return; // 停止進一步操作，避免重定向
       }
 
       // 嘗試各種同步方法
