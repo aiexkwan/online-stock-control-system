@@ -329,3 +329,56 @@
 *   成功解決了 Stock Transfer 和 Void Pallet 功能中因 Supabase Client 未正確初始化導致的 `TypeError`。
 *   統一了 Void Pallet 功能中的密碼驗證方式，使其通過 `verifyCurrentUserPasswordAction` 進行，與 QC 標籤打印等其他模塊保持一致。
 *   （注意：儘管應用了上述密碼驗證修復，用戶後續報告在 Void Pallet 中仍然遇到 "Could not verify user information."，表明 `verifyCurrentUserPasswordAction` 本身在被調用時可能存在問題，正在進一步排查。） 
+
+## `void_pallet_transaction` 函數針對 "Used Material" 作廢原因的邏輯調整
+
+**問題描述:**
+
+原有的 `void_pallet_transaction` SQL 函數在處理貨板作廢時，無論作廢原因為何，都會執行以下操作：
+1.  從 `record_grn` 表中刪除與作廢貨板相關的收貨記錄。
+2.  如果貨板備註中包含 ACO 訂單號，則將貨板數量加回到 `record_aco` 表中對應訂單的 `remain_qty`。
+
+對於作廢原因為 "Used Material" (物料已使用) 的情況，上述行為不符合預期：
+*   "Used Material" 通常表示正常的物料消耗，其原始的 `record_grn` (收貨記錄) 應視為有效而不應被刪除。
+*   如果物料已使用，通常不應將其數量歸還給 ACO 訂單的剩餘數量。
+
+**解決方案:**
+
+修改 `void_pallet_transaction` SQL 函數，針對 `p_void_reason = 'Used Material'` 的情況添加條件邏輯：
+
+1.  **`record_grn` 表處理:**
+    *   僅當 `p_void_reason` **不是** "Used Material" 時，才從 `record_grn` 表中刪除相關記錄。
+    ```sql
+    -- 5a. Conditionally delete from record_grn
+    IF p_void_reason <> 'Used Material' THEN
+        DELETE FROM public.record_grn
+        WHERE plt_num = p_plt_num;
+    END IF;
+    ```
+
+2.  **`record_aco` 表處理:**
+    *   僅當 `p_void_reason` **不是** "Used Material" 且貨板備註中包含有效的 ACO 參考號時，才嘗試更新 `record_aco` 表 (將數量加回 `remain_qty`)。
+    ```sql
+    -- 5b. Conditionally update record_aco based on original plt_remark and void reason
+    IF v_original_pallet_remark IS NOT NULL AND p_void_reason <> 'Used Material' THEN
+        v_match_array := regexp_match(v_original_pallet_remark, v_aco_ref_regex);
+        IF v_match_array IS NOT NULL AND array_length(v_match_array, 1) > 0 THEN
+            v_aco_ref := trim(v_match_array[1]); 
+            IF v_aco_ref IS NOT NULL AND v_aco_ref <> '' THEN
+                UPDATE public.record_aco
+                SET remain_qty = remain_qty + p_product_qty 
+                WHERE code = p_product_code AND order_ref = v_aco_ref::INTEGER; 
+            END IF;
+        END IF;
+    END IF;
+    ```
+
+**結果:**
+
+經過上述修改並在數據庫中更新 SQL 函數後，當因 "Used Material" 原因調用 `void_pallet_transaction` RPC 時，系統將：
+*   **保留** `record_grn` 中的相關收貨記錄。
+*   **不會**嘗試更新 `record_aco` 表（即不會錯誤地將已使用的物料數量加回 ACO 訂單）。
+
+此調整確保了作廢流程更貼合 "Used Material" 這一特定場景的業務邏輯。
+
+END OF FILE 
