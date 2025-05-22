@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { supabase } from '../../lib/supabase';
+import { createClient } from '../../lib/supabase';
 import { Progress } from '@/components/ui/progress';
 import { 
     Tooltip, 
@@ -32,6 +32,7 @@ interface OrderProgress {
 }
 
 export default function AcoOrderStatus() {
+  const supabase = createClient();
   const [ordersProgress, setOrdersProgress] = useState<OrderProgress[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
