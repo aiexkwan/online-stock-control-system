@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { supabase } from '../../lib/supabase'; // Assuming supabase client is here
+import { createClient } from '../../lib/supabase'; // Assuming supabase client is here
 import { format } from 'date-fns'; // For date formatting
 import { Toaster, toast } from 'sonner'; // Import Toaster and toast
 import { Button } from '../../components/ui/button';
@@ -21,6 +21,8 @@ interface ActivityLogEntry {
   message: string;
   type: 'success'; // Only success messages will now use ActivityLog
 }
+
+const supabase = createClient();
 
 export default function StockTransferPage() {
   const [seriesInput, setSeriesInput] = useState('');

@@ -94,7 +94,9 @@ The system covers
 ---
 
 # Changelog Policy
-- Before every push to Github, you MUST update CHANGELOG.md to record all important changes.
+- For any to-do issue, record in toDoList.md and sort later
+- For every fixed issue, record issues and soluction detail, docuement/code involved in solvedIssue.md
+- Before every push to Github, you MUST update CHANGELOG.md (summarized with 200 words) to record all important changes.
 
 ---
 ## 📚 Supabase Database Schema (Read-Only Reference)
@@ -167,6 +169,11 @@ The system covers
 | `package_count` | `numeric`  | 0.0                 | Count of package Type                    |
 
 ---
+
+### MCP Tool
+- MCP tools are available
+- Use Browser MCP to tun test and check console 
+- Use Supabase MCP to check and verify table structure and data
 
 ##  Final Reminder
 

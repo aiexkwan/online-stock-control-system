@@ -214,3 +214,118 @@
         - 在 `initAuth` 的 `finally` 塊中清除看門狗計時器。\
     - **將 `pathname` 添加到 `useEffect` 的依賴項數組**: 確保路徑變化時 `initAuth` 邏輯能正確重新觸發。\
 - **預期效果**: 提高了 Dashboard 頁面載入邏輯的健壯性，避免了因異步操作掛起或意外錯誤導致的無限載入問題。
+
+
+## QC 標籤產品代碼查詢改用 SQL 函數
+
+**問題描述:**
+
+在 QC 標籤表單中，當用戶輸入產品代碼並觸發 `onBlur` 事件時，原先使用 Supabase Client Library 的 `.from('data_code').select().ilike().single()` 方法查詢產品信息。此方法在某些情況下可能遇到問題或不夠直接。
+
+**解決方案:**
+
+1.  在 Supabase 數據庫中創建了一個名為 `get_product_details_by_code` 的 SQL 函數 (plpgsql)。此函數接受一個產品代碼 (`p_code` TEXT) 作為參數，並從 `data_code` 表中查詢匹配的產品信息（`code`, `description`, `standard_qty`, `type`），使用 `ILIKE` 進行不區分大小寫的比較。
+    ```sql
+    CREATE OR REPLACE FUNCTION get_product_details_by_code(p_code TEXT)
+    RETURNS TABLE (
+      code TEXT,
+      description TEXT,
+      standard_qty TEXT,
+      type TEXT
+    )
+    LANGUAGE plpgsql
+    AS $$
+    BEGIN
+      RETURN QUERY
+      SELECT
+        dc.code,
+        dc.description,
+        dc.standard_qty,
+        dc.type
+      FROM
+        data_code dc
+      WHERE
+        dc.code ILIKE p_code;
+    END;
+    $$;
+    ```
+2.  修改了 `app/components/print-label-menu/QcLabelForm.tsx` 文件中的 `handleProductCodeBlur` 異步回調函數。
+3.  在該函數中，將原先的 `.from().select()` 查詢替換為 `await supabase.rpc('get_product_details_by_code', { p_code: productCode.trim() })`。
+4.  相應地調整了數據處理和錯誤處理邏輯，以適應 RPC 調用的返回結構 (預期返回一個包含單個產品對象的數組，如果找到的話)。
+
+**結果:**
+
+通過 RPC 調用 SQL 函數成功獲取產品詳細信息，提高了查詢的明確性和潛在的靈活性。
+
+## QC 標籤打印及相關流程問題修復
+
+** overarching 問題:** 用戶在嘗試打印 QC 標籤時遇到 "No PDFs were successfully generated to merge and print." 的錯誤，以及其他相關的表單驗證和 Server Action 錯誤。
+
+**分點問題及解決方案:**
+
+1.  **產品信息查詢失敗 (`handleProductCodeBlur`)**
+    *   **問題描述:** 最初，在產品代碼輸入框失焦時，通過 Supabase Client Library 的 `.from('data_code').select().ilike().single()` 方法查詢產品信息的邏輯間歇性失敗或未按預期執行，導致 `productInfo` 狀態未被正確填充。這直接影響了後續的表單驗證。
+    *   **解決方案:**
+        *   在 Supabase 數據庫中創建了一個名為 `get_product_details_by_code` 的 SQL 函數 (plpgsql)，該函數接受產品代碼並返回相關的產品詳細信息。
+        *   修改了 `app/components/print-label-menu/QcLabelForm.tsx` 中的 `handleProductCodeBlur` 函數，將其數據查詢邏輯從 Supabase Client Library 的直接查詢改為通過 `supabase.rpc('get_product_details_by_code', { p_code: productCode.trim() })` 調用上述 SQL 函數。
+
+2.  **`Operator Clock Number` 字段被錯誤視為必填**
+    *   **問題描述:** 在 `handlePrintLabel` 函數的表單驗證邏輯中，`Operator Clock Number` 字段被設置為必填，而實際上它應該是選填項。
+    *   **解決方案:** 修改了 `handlePrintLabel` 函數，將對 `operator.trim()` 的驗證邏輯註釋掉，使其不再是表單通過的必要條件。
+
+3.  **PDF 上傳失敗 (行級安全策略 - RLS)**
+    *   **問題描述:** 即使 PDF 在客戶端生成成功，上傳到 Supabase Storage 時也報錯："Upload failed for ... Supabase error: new row violates row-level security policy"。
+    *   **解決方案:** 此問題的解決需要在 Supabase 控制台中操作。指導用戶檢查並修改其 `pallet-label-pdf` 存儲桶 (bucket) 的 RLS 策略，特別是針對 `INSERT` (上傳) 操作的策略，確保經過身份驗證的用戶擁有執行上傳的權限。*(用戶確認此步驟已在 Supabase 端完成)*
+
+4.  **密碼確認時的 TypeError (`result.success`)**
+    *   **問題描述:** 在 `handlePasswordConfirm` 函數中，嘗試訪問 `verifyCurrentUserPasswordAction` 返回結果 `result` 的 `success` 屬性時，出現 "TypeError: undefined is not an object (evaluating 'result.success')" 錯誤。這表明 `result` 有時為 `undefined`。
+    *   **解決方案:** 修改了 `handlePasswordConfirm` 函數，在訪問 `result.success` 或 `result.error` 之前，添加了對 `result` 本身是否為真值 (truthy) 的檢查，並提供了更安全的錯誤信息展示方式。
+
+5.  **現有 ACO 訂單打印時不應驗證 `acoOrderDetails`**
+    *   **問題描述:** 當打印現有 ACO 訂單的標籤時（即 `!acoNewRef` 狀態），表單驗證邏輯錯誤地檢查了 `acoOrderDetails` 數組。該數組主要用於定義 *新* 訂單的行項目。由於 `acoOrderDetails` 的初始空狀態（`[{ code: '', qty: '' }]`）不符合對 `code` 和 `qty` 的非空驗證，導致即使用戶已正確填寫所有與現有訂單相關的字段，仍然會觸發 "One or more ACO Order Details are invalid" 的錯誤提示。
+    *   **解決方案:** 修改了 `app/components/print-label-menu/QcLabelForm.tsx` 文件中的 `handlePrintLabel` 函數。在該函數針對 `productInfo.type === 'ACO'` 的驗證邏輯中，當 `!acoNewRef`（即處理現有訂單）為真時，將原先對 `acoOrderDetails` 數組的遍歷驗證部分註釋掉。同時，在該邏輯分支下增加了 `setAcoOrderDetailErrors([]);`，以確保清除任何可能由此前驗證邏輯殘留的錯誤狀態，避免不必要的UI提示。
+
+## GRN Material Receiving 頁面 Supabase Client 初始化問題
+
+*   **問題描述:** 在 GRN Material Receiving 頁面 (路徑 `app/print-grnlabel/page.tsx`)，當嘗試執行涉及 Supabase 的操作時（例如，在 Product Code 輸入框失焦後查詢產品信息），出現運行時錯誤 `TypeError: undefined is not an object (evaluating '_lib_supabase__WEBPACK_IMPORTED_MODULE_3__.supabase.from')`。
+*   **原因分析:** 該頁面組件試圖通過 `import { supabase } from '../../lib/supabase';` 直接導入一個名為 `supabase` 的已初始化客戶端實例。然而，自從項目遷移到 `@supabase/ssr` 後，`lib/supabase.ts` 文件被修改為導出一個 `createClient` 工廠函數，而不是直接導出實例。因此，直接導入的 `supabase` 對象為 `undefined`。
+*   **解決方案:**
+    1.  修改了 `app/print-grnlabel/page.tsx` 文件中導入 Supabase 客戶端的方式，從 `import { supabase } from '../../lib/supabase';` 更改為 `import { createClient } from '../../lib/supabase';`。
+    2.  在 `PrintGrnLabelPage` 組件函數的頂部（靠近其他 React hooks 的位置），添加了 `const supabase = createClient();` 語句，以正確創建和初始化一個該組件作用域內的 Supabase 客戶端實例。
+*   **結果:** 此修改確保了在 `app/print-grnlabel/page.tsx` 組件及其輔助函數中使用的 `supabase` 實例被正確初始化，解決了由於 `supabase` 對象為 `undefined` 而導致的 TypeError。 
+
+## Stock Transfer 和 Void Pallet 功能 Supabase Client 初始化及密碼驗證修復
+
+**問題描述:**
+
+1.  在「庫存轉移」(Stock Transfer) 頁面 (`app/stock-transfer/page.tsx`) 和「作廢貨板」(Void Pallet) 頁面 (`app/void-pallet/page.tsx`) 及其 Server Action (`app/void-pallet/actions.ts`) 中，出現類似於 GRN 頁面的 `TypeError: undefined is not an object (evaluating '_lib_supabase__WEBPACK_IMPORTED_MODULE_X__.supabase.from')` 錯誤。
+2.  在「作廢貨板」功能中，即使修復了 Supabase Client 初始化問題，用戶在驗證密碼時仍遇到 "Could not verify user information." 錯誤。
+
+**原因分析:**
+
+1.  **Client 初始化問題:** 相關頁面和 Server Action 仍然嘗試直接從 `@/lib/supabase` (客戶端) 或錯誤的路徑導入已初始化的 `supabase` 實例，而不是導入 `createClient` 工廠函數並調用它。
+2.  **密碼驗證問題:** `app/void-pallet/actions.ts` 中的 Server Action 直接查詢 `data_id` 表並使用 `bcrypt.compareSync` 比較密碼哈希，這與統一的通過 Supabase Auth 驗證的策略不符，且可能因數據不同步導致驗證失敗。
+
+**解決方案:**
+
+1.  **修復 Supabase Client 初始化:**
+    *   **`app/stock-transfer/page.tsx` (客戶端組件):**
+        *   將 `import { supabase } from '../../lib/supabase';` 修改為 `import { createClient } from '../../lib/supabase';`。
+        *   在組件頂部添加 `const supabase = createClient();`。
+    *   **`app/void-pallet/page.tsx` (客戶端組件):**
+        *   將 `import { supabase } from '../../lib/supabase';` 修改為 `import { createClient } from '../../lib/supabase';`。
+        *   在組件頂部添加 `const supabase = createClient();`。
+    *   **`app/void-pallet/actions.ts` (Server Action):**
+        *   將 `import { supabase } from '../../lib/supabase';` 修改為 `import { createClient } from '@/app/utils/supabase/server';` (使用正確的服務器端 Supabase 客戶端輔助函數)。
+        *   在文件頂部 (imports 之後) 添加 `const supabase = createClient();`。
+
+2.  **統一密碼驗證邏輯 (針對 `app/void-pallet/actions.ts`):**
+    *   在 `voidPalletAction` 和 `processDamagedPalletVoidAction` 函數中，移除原先直接查詢 `data_id` 表和使用 `bcrypt.compareSync` 進行密碼比較的代碼塊。
+    *   導入 `app/actions/authActions.ts` 中的 `verifyCurrentUserPasswordAction` 函數。
+    *   調用 `verifyCurrentUserPasswordAction(userId, password)` 進行密碼驗證，並根據其返回的 `success` 和 `error` 狀態處理後續邏輯。
+
+**結果:**
+
+*   成功解決了 Stock Transfer 和 Void Pallet 功能中因 Supabase Client 未正確初始化導致的 `TypeError`。
+*   統一了 Void Pallet 功能中的密碼驗證方式，使其通過 `verifyCurrentUserPasswordAction` 進行，與 QC 標籤打印等其他模塊保持一致。
+*   （注意：儘管應用了上述密碼驗證修復，用戶後續報告在 Void Pallet 中仍然遇到 "Could not verify user information."，表明 `verifyCurrentUserPasswordAction` 本身在被調用時可能存在問題，正在進一步排查。） 

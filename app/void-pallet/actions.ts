@@ -1,9 +1,12 @@
 'use server';
 
-import { supabase } from '../../lib/supabase';
+import { createClient } from '@/app/utils/supabase/server';
 import { format } from 'date-fns';
 import { revalidatePath } from 'next/cache';
 import bcrypt from 'bcryptjs';
+import { verifyCurrentUserPasswordAction } from '@/app/actions/authActions';
+
+const supabase = createClient();
 
 interface PalletInfo {
   plt_num: string;
@@ -100,35 +103,16 @@ export async function voidPalletAction(args: VoidPalletArgs): Promise<ActionResu
   }
 
   try {
-    // 1. Verify Password (remains in Server Action)
-    console.log('[SA] Verifying password...');
-    const { data: userData, error: userError } = await supabase
-      .from('data_id')
-      .select('password')
-      .eq('id', userId)
-      .single();
+    // 1. Verify Password
+    console.log('[SA] Verifying password using verifyCurrentUserPasswordAction...');
+    const passwordVerificationResult = await verifyCurrentUserPasswordAction(userId, password);
 
-    if (userError || !userData) {
-      console.error('[SA] Error fetching user data or user not found:', userError);
-      // Log this specific failure before returning
-      await logHistoryRecord(userId, 'Void Pallet Fail', plt_num, current_location, 'User Data Fetch Error (SA)');
-      return { success: false, error: 'Could not verify user information.' };
+    if (!passwordVerificationResult.success) {
+      console.warn(`[SA] Password verification failed for user ${userId}: ${passwordVerificationResult.error}`);
+      await logHistoryRecord(userId, 'Void Pallet Fail', plt_num, current_location, `Password Mismatch (SA): ${passwordVerificationResult.error}`);
+      return { success: false, error: passwordVerificationResult.error || 'Action Denied. Password Not Match. Please Try Again.' };
     }
-
-    // Ensure password field exists before comparing
-    if (!userData.password) {
-        console.error('[SA] User password field is missing in database for user:', userId);
-        await logHistoryRecord(userId, 'Void Pallet Fail', plt_num, current_location, 'User Password Missing in DB (SA)');
-        return { success: false, error: 'User account configuration error.' };
-    }
-
-    const isPasswordMatch = bcrypt.compareSync(password, userData.password);
-    if (!isPasswordMatch) {
-      console.warn('[SA] Password mismatch for user', userId);
-      await logHistoryRecord(userId, 'Void Pallet Fail', plt_num, current_location, 'Password Mismatch (SA)');
-      return { success: false, error: 'Action Denied. Password Not Match. Please Try Again.' };
-    }
-    console.log('[SA] Password verified.');
+    console.log('[SA] Password verified via action.');
 
     // Pre-RPC Check: Ensure current_location is provided and not already 'Voided'.
     // The RPC also performs these checks, but checking here avoids unnecessary RPC calls.
@@ -225,31 +209,19 @@ export async function processDamagedPalletVoidAction(args: ProcessDamagedPalletA
 
   try {
     // 1. Verify Password
-    console.log('[SA_DMG] Verifying password...');
-    const { data: userData, error: userError } = await supabase
-      .from('data_id')
-      .select('password')
-      .eq('id', userId)
-      .single();
+    console.log('[SA_DMG] Verifying password using verifyCurrentUserPasswordAction...');
+    const passwordVerificationResult = await verifyCurrentUserPasswordAction(userId, password);
 
-    if (userError || !userData) {
-      console.error('[SA_DMG] Error fetching user data or user not found:', userError);
-      await logHistoryRecord(userId, 'Damaged Void Fail', plt_num, original_plt_loc, 'User Data Fetch Error (SA_DMG)');
-      return { success: false, error: 'Could not verify user information.' };
+    if (!passwordVerificationResult.success) {
+      console.warn(`[SA_DMG] Password verification failed for user ${userId}: ${passwordVerificationResult.error}`);
+      await logHistoryRecord(userId, 'Damaged Void Fail', plt_num, original_plt_loc, `Password Mismatch (SA_DMG): ${passwordVerificationResult.error}`);
+      return { 
+        success: false, 
+        error: passwordVerificationResult.error || 'Action Denied. Password Not Match. Please Try Again.',
+        actual_original_location: null 
+      };
     }
-    if (!userData.password) {
-      console.error('[SA_DMG] User password field is missing in database for user:', userId);
-      await logHistoryRecord(userId, 'Damaged Void Fail', plt_num, original_plt_loc, 'User Password Missing in DB (SA_DMG)');
-      return { success: false, error: 'User account configuration error.' };
-    }
-
-    const isPasswordMatch = bcrypt.compareSync(password, userData.password);
-    if (!isPasswordMatch) {
-      console.warn('[SA_DMG] Password mismatch for user', userId);
-      await logHistoryRecord(userId, 'Damaged Void Fail', plt_num, original_plt_loc, 'Password Mismatch (SA_DMG)');
-      return { success: false, error: 'Action Denied. Password Not Match. Please Try Again.' };
-    }
-    console.log('[SA_DMG] Password verified.');
+    console.log('[SA_DMG] Password verified via action.');
 
     // Pre-RPC Check: Ensure original_plt_loc is not already 'Voided'.
     // The RPC also performs these checks.

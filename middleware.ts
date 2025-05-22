@@ -86,25 +86,34 @@ export async function middleware(request: NextRequest) {
     return response;
   }
 
-  const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+  // 使用 getUser() 替代 getSession() 以獲取經過驗證的用戶數據
+  const { data: { user }, error: userError } = await supabase.auth.getUser();
 
-  if (sessionError) {
-    console.error('[Supabase SSR Middleware] Session error:', sessionError.message);
-    // Handle session error, maybe redirect to login or an error page
-  }
-
-  if (!session) {
-    // 如果不在 /login 頁面且沒有會話，則重定向到登入頁面
+  if (userError) {
+    console.error('[Supabase SSR Middleware] User fetch error:', userError.message);
+    // 處理獲取用戶時的錯誤，可能重定向到登入頁或錯誤頁面
+    // 根據錯誤類型，您可能希望有不同的處理邏輯
+    // 例如，如果錯誤表示 token 無效，則明確重定向到登入
     if (request.nextUrl.pathname !== '/login') {
-      console.log('[Supabase SSR Middleware] No session, redirecting to login from:', request.nextUrl.pathname);
       const redirectUrl = new URL('/login', request.url);
       redirectUrl.searchParams.set('from', request.nextUrl.pathname);
-      redirectUrl.searchParams.set('error', 'session_expired');
+      redirectUrl.searchParams.set('error', 'user_fetch_failed');
+      return NextResponse.redirect(redirectUrl);
+    }
+  }
+
+  if (!user) {
+    // 如果不在 /login 頁面且沒有用戶（未認證），則重定向到登入頁面
+    if (request.nextUrl.pathname !== '/login') {
+      console.log('[Supabase SSR Middleware] No user, redirecting to login from:', request.nextUrl.pathname);
+      const redirectUrl = new URL('/login', request.url);
+      redirectUrl.searchParams.set('from', request.nextUrl.pathname);
+      redirectUrl.searchParams.set('error', 'authentication_required');
       return NextResponse.redirect(redirectUrl);
     }
   } else {
-    // 用戶有會話
-    console.log(`[Supabase SSR Middleware] User authenticated: ${session.user.id}`);
+    // 用戶已認證
+    console.log(`[Supabase SSR Middleware] User authenticated: ${user.id}`);
     // 移除在中間件中基於 needs_password_change 的重定向邏輯
     // 這部分將由 /dashboard 頁面處理
     // 之前的 clockNumber cookie 設置也可以移除，因為 @supabase/ssr 會自動處理會話 cookie

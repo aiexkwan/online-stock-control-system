@@ -62,6 +62,7 @@ export default function QcLabelForm() {
   const router = useRouter(); // For potentially clearing URL params
   const productCodeInputRef = useRef<HTMLInputElement>(null); // Ref for product code input
 
+  const [isLoading, setIsLoading] = useState(false);
   const [productCode, setProductCode] = useState('');
   const [quantity, setQuantity] = useState('');
   const [count, setCount] = useState('');
@@ -132,45 +133,51 @@ export default function QcLabelForm() {
 
   // --- Product Code Search Logic --- START ---
   const handleProductCodeBlur = useCallback(async () => {
+    console.log('[QcLabelForm.handleProductCodeBlur] Triggered. Current productCode state:', productCode);
     if (!productCode.trim()) {
+      console.log('[QcLabelForm.handleProductCodeBlur] Product code is empty, resetting productInfo and productError.');
       setProductInfo(null);
       setProductError(null);
       return;
     }
+    console.log('[QcLabelForm.handleProductCodeBlur] Querying Supabase RPC for productCode:', productCode.trim());
     try {
-      const { data, error } = await supabase
-        .from('data_code')
-        .select('code, description, standard_qty, type')
-        .ilike('code', productCode.trim())
-        .single();
+      // Modified to use RPC call
+      const { data, error } = await supabase.rpc('get_product_details_by_code', { p_code: productCode.trim() });
+
+      console.log('[QcLabelForm.handleProductCodeBlur] Supabase RPC call finished. Error:', error, 'Data:', data);
 
       if (error) {
+        console.error('[QcLabelForm.handleProductCodeBlur] Error calling RPC get_product_details_by_code:', error);
         setProductInfo(null);
-        if (error.code === 'PGRST116') { 
-            setProductError(`Product Code ${productCode.trim()} Not Found. Please Check Again.`);
-        } else {
-            setProductError('Error fetching product info.');
-        }
-        console.error('Error fetching product info:', error);
-      } else if (data) {
-        setProductInfo(data as { code: string; description: string; standard_qty: string; type: string });
-        setProductCode(data.code);
+        // Consider more specific error handling if RPC errors provide distinct codes/messages
+        setProductError('Error fetching product info via RPC.');
+        toast.error('Error fetching product info.');
+      } else if (data && data.length > 0) {
+        // Assuming the RPC function returns an array, and we care about the first element if found
+        const productData = data[0] as { code: string; description: string; standard_qty: string; type: string };
+        console.log('[QcLabelForm.handleProductCodeBlur] Product data found via RPC:', productData);
+        setProductInfo(productData);
+        setProductCode(productData.code); // Standardize to the code from DB
         setProductError(null);
-        if (data.standard_qty && !quantity) { 
-          setQuantity(data.standard_qty);
+        if (productData.standard_qty && !quantity) { // Only set quantity if it's currently empty
+          console.log('[QcLabelForm.handleProductCodeBlur] Setting quantity from standard_qty:', productData.standard_qty);
+          setQuantity(productData.standard_qty);
         }
       } else {
+        // No data returned from RPC, or data is an empty array, meaning product not found
+        console.warn(`[QcLabelForm.handleProductCodeBlur] Product code ${productCode.trim()} not found via RPC (data is null or empty).`);
         setProductInfo(null);
-        setProductError('Product code not found.');
+        setProductError(`Product Code ${productCode.trim()} Not Found. Please Check Again.`);
         toast.error('Product code not found.');
       }
     } catch (e: any) {
+      console.error('[QcLabelForm.handleProductCodeBlur] Exception during product info fetch via RPC:', e);
       setProductInfo(null);
       setProductError('An unexpected error occurred while fetching product data.');
       toast.error('An unexpected error occurred while fetching product data.');
-      console.error('Exception fetching product info:', e);
     }
-  }, [productCode, quantity, setProductInfo, setProductError, setQuantity, supabase, toast]);
+  }, [productCode, quantity, supabase]); // Dependencies remain the same
   // --- Product Code Search Logic --- END ---
 
   useEffect(() => {
@@ -376,13 +383,144 @@ export default function QcLabelForm() {
   // --- 結束 console.log ---
 
   const handlePrintLabel = async (e: React.FormEvent) => {
-    e.preventDefault(); // Prevent default form submission immediately
-    if (!isFormValid) {
-      toast.error('Form is not valid. Please check inputs and ACO/Slate details.');
-      return;
+    e.preventDefault();
+    console.log('[QcLabelForm.handlePrintLabel] Triggered.');
+    console.log('[QcLabelForm.handlePrintLabel] Current form values:', {
+      productCode,
+      productInfo,
+      quantity,
+      count,
+      operator,
+      userId,
+      acoOrderRef,
+      slateDetail,
+      acoOrderDetails,
+      acoNewRef,
+      acoNewProductCode,
+      acoNewOrderQty
+    });
+
+    let isFormValid = true;
+    let validationErrorMessages: string[] = [];
+
+    if (!productInfo) {
+      isFormValid = false;
+      validationErrorMessages.push('Product information is missing. Please enter a valid Product Code.');
+      console.error('[QcLabelForm.handlePrintLabel] Validation failed: productInfo is null.');
+      toast.error('Product information is missing. Please enter a valid Product Code.');
     }
-    // Instead of proceeding, open the password dialog
-    setPrintEventToProceed(e); // Store the event/args needed for proceedWithPrint
+
+    if (!quantity || parseInt(quantity, 10) <= 0) {
+      isFormValid = false;
+      validationErrorMessages.push('Quantity must be a positive number.');
+      console.error('[QcLabelForm.handlePrintLabel] Validation failed: Quantity is invalid.', quantity);
+      toast.error('Quantity must be a positive number.');
+    }
+
+    if (!count || parseInt(count, 10) <= 0) {
+      isFormValid = false;
+      validationErrorMessages.push('Count (number of labels) must be a positive number.');
+      console.error('[QcLabelForm.handlePrintLabel] Validation failed: Count is invalid.', count);
+      toast.error('Count (number of labels) must be a positive number.');
+    }
+
+    // if (!operator.trim()) { // Operator is optional
+    //   isFormValid = false;
+    //   validationErrorMessages.push('Operator cannot be empty.');
+    //   console.error('[QcLabelForm.handlePrintLabel] Validation failed: Operator is empty.');
+    //   toast.error('Operator cannot be empty.');
+    // }
+
+    if (!userId) {
+      isFormValid = false;
+      validationErrorMessages.push('User ID is missing. Please ensure you are logged in correctly.');
+      console.error('[QcLabelForm.handlePrintLabel] Validation failed: userId is missing.');
+      toast.error('User ID is missing. Please try logging out and in again.');
+    }
+
+    if (productInfo && productInfo.type === 'ACO') {
+      console.log('[QcLabelForm.handlePrintLabel] Validating ACO specific fields.');
+      if (!acoOrderRef.trim()) {
+        isFormValid = false;
+        validationErrorMessages.push('ACO Order Ref is required for ACO products.');
+        console.error('[QcLabelForm.handlePrintLabel] Validation failed: ACO Order Ref is empty for ACO product.');
+        toast.error('ACO Order Ref is required for ACO products.');
+      }
+      // Validate acoOrderDetails if not a new ACO ref
+      if (!acoNewRef) {
+          // If it's an existing ACO order being processed (not a new one being defined),
+          // the acoOrderDetails (which are for defining line items of a *new* order)
+          // should not be validated here. The print action relies on the main productCode and quantity/count.
+          // Thus, we can comment out or remove this block for the !acoNewRef case.
+
+          /*
+          let acoDetailsValid = true;
+          const detailErrors: string[] = [];
+          acoOrderDetails.forEach((detail, index) => {
+            if (!detail.code.trim() || !detail.qty.trim() || parseInt(detail.qty, 10) <= 0) {
+              acoDetailsValid = false;
+              const errorMsg = `ACO Order Detail #${index + 1} is incomplete or invalid (Code: ${detail.code}, Qty: ${detail.qty}).`;
+              detailErrors.push(errorMsg);
+              console.error(`[QcLabelForm.handlePrintLabel] Validation failed: ${errorMsg}`);
+            }
+          });
+          if (!acoDetailsValid) {
+            isFormValid = false;
+            validationErrorMessages.push(...detailErrors);
+            setAcoOrderDetailErrors(detailErrors.map(msg => msg.split(' ').slice(0,5).join(' ') + '...'));
+            toast.error('One or more ACO Order Details are invalid. Please check the highlighted fields.');
+          } else {
+            setAcoOrderDetailErrors([]); // Clear previous errors
+          }
+          */
+          setAcoOrderDetailErrors([]); // Always clear if not a new ref, as they are not applicable here.
+      }
+      // If it's a new ACO ref, validate the new product code and quantity
+      if (acoNewRef) {
+        if (!acoNewProductCode.trim()) {
+            isFormValid = false;
+            validationErrorMessages.push('New ACO Product Code cannot be empty.');
+            console.error('[QcLabelForm.handlePrintLabel] Validation failed: New ACO Product Code is empty.');
+            toast.error('New ACO Product Code cannot be empty.');
+        }
+        if (!acoNewOrderQty.trim() || parseInt(acoNewOrderQty, 10) <= 0) {
+            isFormValid = false;
+            validationErrorMessages.push('New ACO Order Quantity must be a positive number.');
+            console.error('[QcLabelForm.handlePrintLabel] Validation failed: New ACO Order Quantity is invalid.', acoNewOrderQty);
+            toast.error('New ACO Order Quantity must be a positive number.');
+        }
+      }
+
+    } else if (productInfo && productInfo.type === 'SLATE') {
+      console.log('[QcLabelForm.handlePrintLabel] Validating SLATE specific fields.');
+      if (!slateDetail.firstOffDate) {
+        isFormValid = false;
+        validationErrorMessages.push('First-Off Date is required for SLATE products.');
+        console.error('[QcLabelForm.handlePrintLabel] Validation failed: First-Off Date is empty for SLATE product.');
+        toast.error('First-Off Date is required for SLATE products.');
+      }
+      if (!slateDetail.batchNumber.trim()) {
+        isFormValid = false;
+        validationErrorMessages.push('Batch Number is required for SLATE products.');
+        console.error('[QcLabelForm.handlePrintLabel] Validation failed: Batch Number is empty for SLATE product.');
+        toast.error('Batch Number is required for SLATE products.');
+      }
+      if (!slateDetail.setterName.trim()) {
+        isFormValid = false;
+        validationErrorMessages.push('Setter Name is required for SLATE products.');
+        console.error('[QcLabelForm.handlePrintLabel] Validation failed: Setter Name is empty for SLATE product.');
+        toast.error('Setter Name is required for SLATE products.');
+      }
+    }
+
+    console.log(`[QcLabelForm.handlePrintLabel] Form validation finished. isFormValid: ${isFormValid}`);
+    if (!isFormValid) {
+      console.warn('[QcLabelForm.handlePrintLabel] Form is invalid. Validation errors:', validationErrorMessages.join('; '));
+      return; 
+    }
+
+    console.log('[QcLabelForm.handlePrintLabel] Form is valid. Opening password confirmation dialog.');
+    setPrintEventToProceed(e); 
     setIsPasswordConfirmOpen(true);
   };
 
@@ -405,7 +543,7 @@ export default function QcLabelForm() {
     const result = await verifyCurrentUserPasswordAction(numericUserId, password);
     setIsVerifyingPassword(false);
 
-    if (result.success) {
+    if (result && result.success) { // Added check for result being truthy
       toast.success('Password verified successfully!');
       setIsPasswordConfirmOpen(false);
       if (printEventToProceed) {
@@ -413,7 +551,9 @@ export default function QcLabelForm() {
       }
       setPrintEventToProceed(null); // Clear the stored event
     } else {
-      toast.error(result.error || 'Incorrect password. Please try again.');
+      // Also check if result and result.error exist before trying to display them
+      const errorMessage = result && result.error ? result.error : 'Incorrect password or an unexpected error occurred. Please try again.';
+      toast.error(errorMessage);
       // Keep dialog open for retry by default, or close it:
       // setIsPasswordConfirmOpen(false);
       // setPrintEventToProceed(null);
@@ -427,8 +567,17 @@ export default function QcLabelForm() {
   };
 
   const proceedWithPrint = async (event: React.FormEvent) => {
-    // All the original logic of handlePrintLabel will go here
-    // event.preventDefault(); // Already called before opening dialog
+    event.preventDefault();
+    toast.info('Processing labels, please wait...');
+    setDebugMsg('Starting PDF generation...');
+    setIsLoading(true); // Set loading state
+    setPdfProgress({ current: 0, total: parseInt(count, 10) || 0, status: Array(parseInt(count, 10) || 0).fill('Pending') });
+
+    const supabase = createClient();
+    const loggedInUserId = userId; // Use the state variable for userId (clockNumber)
+    const currentDateTime = new Date();
+    const timestamp = format(currentDateTime, 'yyyy-MM-dd HH:mm:ss.SSSxxx'); // Full timestamp with milliseconds and timezone
+    const dateForLabel = format(currentDateTime, 'dd-MMM-yyyy');
 
     let debugMsg = '';
     let inventoryUpdated = false;

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { supabase } from '../../lib/supabase'; // Assuming supabase client is here
+import { createClient } from '../../lib/supabase'; // Assuming supabase client is here
 import { format } from 'date-fns'; // For date formatting
 import { Toaster, toast } from 'sonner'; // Import Toaster and toast
 import { Button } from '../../components/ui/button';
@@ -33,6 +33,8 @@ const VOID_REASONS: { value: string; label: string; }[] = [
   { value: "Used Material", label: "Used Material" },
   { value: "Other", label: "Other (Specify if possible)" }, 
 ];
+
+const supabase = createClient();
 
 export default function VoidPalletPage() {
   const router = useRouter(); // Added for redirection
@@ -332,18 +334,18 @@ export default function VoidPalletPage() {
   }, []);
 
   const handleSeriesScan = (scannedValue: string) => {
-    setSeriesInput(scannedValue);
+      setSeriesInput(scannedValue);
     setShowScanner(false);
     setLastActiveInput('series'); // Set last active input
     // Trigger search immediately after scan
-    handleSearch('series', scannedValue);
+      handleSearch('series', scannedValue);
   };
   
   // Main function to handle the voiding process
   const handleVoidConfirm = async () => {
     if (!foundPallet || !voidReason || !passwordInput) {
       toast.error('Please fill in all required fields (Pallet Info, Void Reason, Password).');
-      return;
+        return;
     }
     if (voidReason === 'Damage' && !damageQtyInput) {
         toast.error('Damage Quantity is required.');
@@ -369,7 +371,7 @@ export default function VoidPalletPage() {
         return;
     }
 
-
+    
     setIsVoiding(true);
     let toastId = toast.loading('Verifying Password...');
 
@@ -386,7 +388,7 @@ export default function VoidPalletPage() {
             logErrorToDatabase(dbErrInfo);
         }
         return;
-      }
+    }
       
       // Use numericUserId directly as it's already validated and available
       const currentUserIdForAction = numericUserId; 
@@ -445,7 +447,7 @@ export default function VoidPalletPage() {
         });
       }
 
-      if (result.success) {
+        if (result.success) {
         // toast.success(result.message || 'Void Success!', { id: toastId }); // 個別情況會顯示更具體嘅toast
         
         const reasonsAllowingReprint = ["Wrong Qty", "Wrong Product Code", "Damage", "Pallet Qty Changed", "Wrong Label"];
@@ -640,7 +642,7 @@ export default function VoidPalletPage() {
       setShowReprintInputDialog(false);
       setReprintInfo(null);
       resetState();
-      setIsVoiding(false);
+        setIsVoiding(false);
       setPasswordInput('');
     }
   };
@@ -781,11 +783,11 @@ export default function VoidPalletPage() {
                       )}
                     </div>
                   )}
-                  <Button 
+                <Button 
                       onClick={handleVoidConfirm}
                       className="w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-3"
                       disabled={isVoiding || isLoading || !voidReason.trim() || !passwordInput.trim() || isInputDisabled}
-                  >
+                >
                     {isVoiding ? (
                       <div className="flex items-center justify-center">
                         <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-white mr-2"></div>
@@ -794,7 +796,7 @@ export default function VoidPalletPage() {
                     ) : (
                       'Confirm Void Pallet'
                     )}
-                  </Button>
+                </Button>
                 </div>
               </div>
             )}
@@ -877,13 +879,13 @@ export default function VoidPalletPage() {
                   onChange={(e) => setReprintNewProductCode(e.target.value)}
                   className="col-span-3"
                   disabled={reprintInfo?.reason === "Wrong Qty" || reprintInfo?.reason === "Pallet Qty Changed"}
-                />
-              </div>
+                    />
+                </div>
               <div className="grid grid-cols-4 items-center gap-4">
                 <label htmlFor="reprintQuantity" className="text-right col-span-1">
                   Quantity
                 </label>
-                <Input
+                    <Input 
                   id="reprintQuantity"
                   type="number"
                   value={reprintNewQuantity}
@@ -891,7 +893,7 @@ export default function VoidPalletPage() {
                   className="col-span-3"
                   disabled={reprintInfo?.reason === "Wrong Product Code"}
                 />
-              </div>
+                </div>
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={handleReprintInputCancel}>Cancel</Button>

@@ -9,6 +9,7 @@ import { migrateUserToSupabaseAuth, signInWithSupabaseAuth, userExistsInSupabase
 // import { createServerActionClient } from '@supabase/auth-helpers-nextjs'; // REMOVED
 import { createClient as createServerSideClient } from '@/app/utils/supabase/server'; // ADDED for server actions
 import { updatePasswordWithSupabaseAuth } from '../services/supabaseAuth'; // signOutService already imported
+import { clockNumberToEmail } from '@/app/utils/authUtils'; // <--- ADD THIS IMPORT
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 
@@ -46,55 +47,57 @@ export async function verifyCurrentUserPasswordAction(
   userId: number, 
   enteredPassword: string
 ): Promise<ActionResult> {
-  const supabaseAdmin = createAdminClient( 
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  );
+  // const supabaseAdmin = createAdminClient(  // No longer needed for direct password check from data_id
+  //   process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  //   process.env.SUPABASE_SERVICE_ROLE_KEY!
+  // );
   if (userId === null || typeof userId === 'undefined') {
-    console.error('[verifyPasswordAction] User ID is missing or invalid.');
-    return { success: false, error: 'User ID is missing or invalid.' };
+    console.error('[verifyCurrentUserPasswordAction] User ID (clockNumber) is missing or invalid.');
+    return { success: false, error: 'User ID (clockNumber) is missing or invalid.' };
   }
   if (!enteredPassword) {
-    console.warn('[verifyPasswordAction] Entered password is empty for user:', userId);
+    console.warn('[verifyCurrentUserPasswordAction] Entered password is empty for user:', userId);
     return { success: false, error: 'Password cannot be empty.' };
   }
 
   try {
-    console.log(`[verifyPasswordAction] Verifying password for user ID: ${userId}`);
-    const supabase = createBrowserClient(); // This was likely an error in original code, should be supabaseAdmin for data_id access
-    const { data: userData, error: userError } = await supabaseAdmin
-      .from('data_id')
-      .select('password') // Select only the password field
-      .eq('id', userId)
-      .single();
-
-    if (userError) {
-      console.error(`[verifyPasswordAction] Error fetching user data for user ID ${userId}:`, userError);
-      return { success: false, error: 'Could not retrieve user information. Please try again.' };
-    }
+    console.log(`[verifyCurrentUserPasswordAction] Verifying password for user ID (clockNumber): ${userId} using Supabase Auth`);
     
-    if (!userData) {
-      console.warn(`[verifyPasswordAction] No user data found for user ID ${userId}.`);
-      return { success: false, error: 'User not found.' };
+    const email = clockNumberToEmail(userId.toString()); // Convert userId (clockNumber) to email
+    const supabase = createServerSideClient(); // Create a server-side Supabase client for this action
+
+    const { data, error: signInError } = await supabase.auth.signInWithPassword({
+      email: email,
+      password: enteredPassword,
+    });
+
+    if (signInError) {
+      // Log the specific error for server-side debugging
+      console.warn(`[verifyCurrentUserPasswordAction] Supabase signInWithPassword error for ${email}:`, signInError.message);
+      // Provide a generic error message to the client
+      if (signInError.message.includes('Invalid login credentials')) {
+        return { success: false, error: 'Incorrect password. Please try again.' };
+      }
+      // Handle other potential errors like user not found in Supabase Auth, though this action assumes user exists
+      // For other errors, a more generic message might be appropriate
+      return { success: false, error: 'Password verification failed. Please try again.' };
     }
 
-    if (!userData.password) {
-      console.error(`[verifyPasswordAction] User password field is missing in database for user ID: ${userId}`);
-      return { success: false, error: 'User account configuration error. Password not set.' };
+    if (!data || !data.user) {
+      // This case should ideally not be reached if signInError is not present, but good to have a check
+      console.error(`[verifyCurrentUserPasswordAction] Supabase signInWithPassword returned no user data for ${email}, though no explicit error was thrown.`);
+      return { success: false, error: 'Password verification failed due to an unexpected issue.' };
     }
 
-    const isPasswordMatch = await bcrypt.compare(enteredPassword, userData.password);
-
-    if (!isPasswordMatch) {
-      console.warn(`[verifyPasswordAction] Password mismatch for user ID ${userId}.`);
-      return { success: false, error: 'Incorrect password. Please try again.' };
-    }
-
-    console.log(`[verifyPasswordAction] Password verified successfully for user ID ${userId}.`);
+    // If signInWithPassword is successful, the password is correct.
+    // The session established by this specific signInWithPassword call is scoped to this Supabase client instance
+    // and should not interfere with the broader session management of the Server Action if `createServerSideClient`
+    // handles cookies correctly (which it should with @supabase/ssr).
+    console.log(`[verifyCurrentUserPasswordAction] Password verified successfully for user ID (clockNumber) ${userId} / email ${email} via Supabase Auth.`);
     return { success: true };
 
   } catch (error: any) {
-    console.error('[verifyPasswordAction] Unhandled error during password verification:', error);
+    console.error('[verifyCurrentUserPasswordAction] Unhandled error during Supabase password verification:', error);
     return { success: false, error: 'An unexpected server error occurred during password verification.' };
   }
 }
