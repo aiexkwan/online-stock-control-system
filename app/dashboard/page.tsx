@@ -74,6 +74,7 @@ export default function Dashboard() {
   const [user, setUser] = useState<{id: string, name?: string} | null>(null);
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [initializationComplete, setInitializationComplete] = useState(false);
   const [stats, setStats] = useState({
     dailyDonePallets: 0,
     dailyTransferredPallets: 0,
@@ -100,76 +101,13 @@ export default function Dashboard() {
   };
 
   useEffect(() => {
-    const maxAttempts = 3;
-    let attempts = 0;
-
-    const checkUserAuth = async (): Promise<boolean> => {
-      const { data: { user }, error: userError } = await supabase.auth.getUser();
-
-      if (userError) {
-        console.error('[Dashboard] Supabase getUser error:', userError);
-        setErrorMessage('Error validating session or fetching user details.');
-        return false;
-      }
-
-      if (user) {
-        const metadata = user.user_metadata || {};
-        const clockNumber = metadata.clock_number || emailToClockNumber(user.email || '');
-        
-        if (clockNumber) {
-          storeClockNumberLocally(clockNumber);
-        } else {
-          console.warn('[Dashboard] Clock number is missing from user metadata even after session validation.');
-        }
-
-        const needsPasswordChange = metadata.needs_password_change === true;
-        if (needsPasswordChange) {
-          console.log(`[Dashboard] User ${clockNumber || 'N/A'} needs password change. Redirecting.`);
-          router.push('/change-password');
-          return false; 
-        }
-        return true; 
-      }
-      console.warn('[Dashboard] User not authenticated after checking with server.');
-      setErrorMessage('No active authenticated session. Please login.');
-      return false;
-    };
-
-    const loadUserData = async () => {
-      try {
-        const { data: { user: authUser }, error: userError } = await supabase.auth.getUser();
-        if (userError) throw new Error(`Supabase user fetch error: ${userError.message}`);
-        if (!authUser) throw new Error('No authenticated user found in Supabase session for loadUserData.');
-
-        const metadata = authUser.user_metadata || {};
-        const clockNumber = metadata.clock_number || emailToClockNumber(authUser.email || '');
-        
-        if (!clockNumber) {
-          console.error('[Dashboard] Critical: Clock number missing in user metadata during loadUserData.');
-          toast.error('User identification failed. Please try logging in again.');
-          setUser(null);
-          return;
-        }
-
-        const loadedUser = {
-          id: clockNumber,
-          name: metadata.name || clockNumber
-        };
-        setUser(loadedUser);
-        console.log('[Dashboard] User data loaded and set:', loadedUser);
-      } catch (error: any) {
-        console.error('[Dashboard] Error loading user data:', error);
-        toast.error(`Could not load user information: ${error.message}`);
-        setUser(null);
-      }
-    };
+    let isSubscribed = true;
+    let watchdogId: NodeJS.Timeout | undefined;
 
     const fetchDashboardData = async () => {
       try {
         const today = new Date();
         const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate()).toISOString();
-        // Set end of day to the very end of the current day (23:59:59.999)
-        // This ensures that all records within the current day are included.
         const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59, 999).toISOString();
 
         // Fetch new palletsDone count
@@ -196,75 +134,125 @@ export default function Dashboard() {
           throw new Error(`Failed to fetch 'palletsTransferred' count: ${newPalletsTransferredError.message}`);
         }
         
-        setStats({
-          dailyDonePallets: newPalletsDoneCount || 0,
-          dailyTransferredPallets: newPalletsTransferredCount || 0,
-          lowStockItems: [],
-          pendingOrders: [],
-        });
+        if (isSubscribed) {
+          setStats({
+            dailyDonePallets: newPalletsDoneCount || 0,
+            dailyTransferredPallets: newPalletsTransferredCount || 0,
+            lowStockItems: [],
+            pendingOrders: [],
+          });
+        }
       } catch (error: any) {
         console.error('[Dashboard] Error fetching dashboard data:', error);
-        toast.error(`Could not load some dashboard data: ${error.message}`);
+        if (isSubscribed) {
+          toast.error(`Could not load some dashboard data: ${error.message}`);
+        }
       }
     };
 
     const initAuth = async () => {
-      setLoading(true);
-      let initLogicCompleted = false;
-
-      const watchdogId = setTimeout(() => {
-        if (!initLogicCompleted) {
-          console.warn('[Dashboard] initAuth took too long (watchdog timeout). Forcing loading to stop.');
-          toast.error('Dashboard loading timed out. Please refresh the page.');
-          setLoading(false); 
-        }
-      }, 20000);
-
+      if (!isSubscribed) return;
+      
       try {
-        const isAuthenticated = await checkUserAuth();
+        setLoading(true);
+        console.log('[Dashboard] Starting initialization');
 
-        if (isAuthenticated) {
-          await loadUserData();
-          await fetchDashboardData();
-          setLoading(false);
-          initLogicCompleted = true;
-        } else {
-          if (pathname.includes('/change-password')) {
-            setLoading(false);
-            initLogicCompleted = true;
-          } else {
-            const retryInterval = setInterval(async () => {
-              attempts++;
-              console.log(`[Dashboard] Retry auth check: ${attempts}/${maxAttempts}`);
-              const retryResult = await checkUserAuth();
-              if (retryResult) {
-                clearInterval(retryInterval);
-                await loadUserData();
-                await fetchDashboardData();
-                setLoading(false); 
-                initLogicCompleted = true;
-              } else if (attempts >= maxAttempts) {
-                clearInterval(retryInterval);
-                toast.error('Session validation failed after multiple retries. Please login again.');
-                setLoading(false); 
-                router.push('/login?error=auth_failed_dashboard_max_retry');
-                initLogicCompleted = true;
-              }
-            }, 1500);
+        // 檢查本地存儲
+        const storedClockNumber = getLoggedInClockNumber();
+        console.log('[Dashboard] Stored clock number:', storedClockNumber);
+
+        // 檢查 session
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        if (sessionError || !session) {
+          console.error('[Dashboard] Session check error or no session:', sessionError);
+          if (isSubscribed) {
+            clearLocalClockNumber();
+            router.push('/login?error=session_expired');
           }
+          return;
         }
+
+        // 檢查認證狀態
+        const { data: { user }, error: userError } = await supabase.auth.getUser();
+        if (userError || !user) {
+          console.error('[Dashboard] User check error or no user:', userError);
+          if (isSubscribed) {
+            clearLocalClockNumber();
+            router.push('/login?error=auth_failed');
+          }
+          return;
+        }
+
+        // 載入用戶資料
+        const metadata = user.user_metadata || {};
+        const clockNumber = metadata.clock_number || emailToClockNumber(user.email || '');
+        
+        if (!clockNumber) {
+          console.error('[Dashboard] No clock number found');
+          if (isSubscribed) {
+            clearLocalClockNumber();
+            router.push('/login?error=no_clock_number');
+          }
+          return;
+        }
+
+        if (isSubscribed) {
+          setUser({
+            id: clockNumber,
+            name: metadata.name || clockNumber
+          });
+        }
+
+        // 載入儀表板資料
+        await fetchDashboardData();
+
+        if (isSubscribed) {
+          setInitializationComplete(true);
+          setLoading(false);
+        }
+
       } catch (error: any) {
-        console.error('[Dashboard] Error during initAuth:', error);
-        toast.error(`Authentication error: ${error.message}`);
-        setLoading(false); 
-        router.push('/login?error=auth_error_dashboard_critical');
-        initLogicCompleted = true;
-      } finally {
-        clearTimeout(watchdogId);
+        console.error('[Dashboard] Error during initialization:', error);
+        if (isSubscribed) {
+          setErrorMessage('Failed to initialize dashboard');
+          setLoading(false);
+        }
       }
     };
-    
+
+    // 設置 watchdog timer
+    watchdogId = setTimeout(() => {
+      if (isSubscribed && !initializationComplete) {
+        console.warn('[Dashboard] Initialization timeout');
+        setLoading(false);
+        setErrorMessage('Dashboard initialization timed out');
+      }
+    }, 10000);
+
+    // 執行初始化
     initAuth();
+
+    // 監聽 auth 狀態變化
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('[Dashboard] Auth state changed:', event);
+      if (!isSubscribed) return;
+
+      if (event === 'SIGNED_OUT') {
+        clearLocalClockNumber();
+        router.push('/login');
+      } else if (event === 'SIGNED_IN' && session) {
+        initAuth();
+      }
+    });
+
+    // 清理函數
+    return () => {
+      isSubscribed = false;
+      if (watchdogId) {
+        clearTimeout(watchdogId);
+      }
+      subscription.unsubscribe();
+    };
 
   }, [router, supabase, pathname]);
 

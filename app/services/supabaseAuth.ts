@@ -23,8 +23,8 @@ const getAdminClient = () => {
 /**
  * 使用公共方法檢查用戶是否已經在 Supabase Auth 中
  */
-export async function userExistsInSupabaseAuth(clockNumber: string): Promise<boolean> {
-  const supabase = createServerSupabaseClient(); // 使用服務器客戶端
+export async function userExistsInSupabaseAuth(supabase: SupabaseClient, clockNumber: string): Promise<boolean> {
+  // const supabase = createServerSupabaseClient(); // REMOVED: Use passed-in client
   try {
     const email = clockNumberToEmail(clockNumber);
     console.log(`[userExistsInSupabaseAuth] Checking if user exists: ${email}`);
@@ -45,11 +45,14 @@ export async function userExistsInSupabaseAuth(clockNumber: string): Promise<boo
 /**
  * 將現有用戶遷移到 Supabase Auth
  */
-export async function migrateUserToSupabaseAuth(clockNumber: string, password: string | null): Promise<{
+export async function migrateUserToSupabaseAuth(
+  supabase: SupabaseClient,
+  clockNumber: string, 
+  password: string | null
+): Promise<{
   success: boolean;
   error?: string;
 }> {
-  const supabase = createServerSupabaseClient(); // 使用服務器客戶端
   const supabaseAdmin = getAdminClient(); // 用於讀取 data_id 和可能的管理操作
 
   try {
@@ -66,7 +69,7 @@ export async function migrateUserToSupabaseAuth(clockNumber: string, password: s
       return { success: false, error: `User data not found: ${userError?.message || 'Unknown error'}` };
     }
 
-    const userExists = await userExistsInSupabaseAuth(clockNumber); // userExistsInSupabaseAuth 內部已使用 server client
+    const userExists = await userExistsInSupabaseAuth(supabase, clockNumber); // userExistsInSupabaseAuth 內部已使用 server client
     if (userExists) {
       return { success: true };
     }
@@ -111,30 +114,38 @@ export async function migrateUserToSupabaseAuth(clockNumber: string, password: s
 /**
  * 使用 Supabase Auth 登入
  */
-export async function signInWithSupabaseAuth(clockNumber: string, password: string): Promise<{
+export async function signInWithSupabaseAuth(
+  supabase: SupabaseClient,
+  clockNumber: string, 
+  password: string
+): Promise<{
   success: boolean;
   user?: UserData;
   isFirstLogin?: boolean;
   error?: string;
-  session?: any; // 注意：signInWithPassword 返回的 session 類型
+  session?: any;
 }> {
-  const supabase = createServerSupabaseClient(); // 使用服務器客戶端
   try {
     const email = clockNumberToEmail(clockNumber);
+    console.log(`[signInWithSupabaseAuth] Attempting login for ${email}`);
+    
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
-      password
+      password,
+      options: {
+        // 確保返回完整嘅 session 資訊
+        data: {
+          clock_number: clockNumber
+        }
+      }
     });
 
     if (error) {
       console.error('[signInWithSupabaseAuth] Login error:', error);
       
-      // 檢查是否是因為用戶不存在
       if (error.message.includes('Invalid login credentials')) {
         console.log('[signInWithSupabaseAuth] Invalid credentials, checking if user exists in Auth');
-        
-        // 檢查用戶是否存在於 Supabase Auth 中
-        const userExists = await userExistsInSupabaseAuth(clockNumber);
+        const userExists = await userExistsInSupabaseAuth(supabase, clockNumber);
         if (!userExists) {
           console.log('[signInWithSupabaseAuth] User does not exist in Auth, might need migration');
         }
@@ -152,8 +163,9 @@ export async function signInWithSupabaseAuth(clockNumber: string, password: stri
     const metadata = authUser.user_metadata || {};
     
     console.log(`[signInWithSupabaseAuth] User ${clockNumber} logged in successfully`);
+    console.log('[signInWithSupabaseAuth] Session:', JSON.stringify(session, null, 2));
     
-    // 構建符合現有 UserData 結構的用戶資料
+    // 構建用戶資料
     const userData: UserData = {
       id: metadata.clock_number || clockNumber,
       name: metadata.name || '',
@@ -168,18 +180,25 @@ export async function signInWithSupabaseAuth(clockNumber: string, password: stri
       }
     };
 
-    // 檢查是否需要更改密碼（基於元數據）
+    // 檢查是否需要更改密碼
     const needsPasswordChange = metadata.needs_password_change === true;
     
     if (needsPasswordChange) {
       console.log(`[signInWithSupabaseAuth] First login (needs password change) detected for user: ${clockNumber}`);
     }
 
+    // 確保 session 已經設置好
+    const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+    if (sessionError || !sessionData.session) {
+      console.error('[signInWithSupabaseAuth] Failed to verify session:', sessionError);
+      return { success: false, error: 'Failed to establish session' };
+    }
+
     return {
       success: true,
       user: userData,
       isFirstLogin: needsPasswordChange,
-      session: session
+      session: sessionData.session
     };
   } catch (error: any) {
     console.error('[signInWithSupabaseAuth] Unexpected error:', error);
@@ -244,24 +263,15 @@ export async function updatePasswordWithSupabaseAuth(
 }
 
 /**
- * 登出
- * 如果在服務器端調用 (例如 Server Action)，應傳入服務器客戶端
- * 如果在客戶端調用，則不傳參數，內部會使用客戶端 client (需要修改)
+ * Signs out the current user.
+ * If a SupabaseClient instance is provided, it will be used; otherwise, a new server client is created.
  */
 export async function signOut(supabaseInstance?: SupabaseClient): Promise<void> {
-  if (supabaseInstance) {
-    // 從服務器端調用 (例如 Server Action)
-    await supabaseInstance.auth.signOut();
+  const supabase = supabaseInstance || createServerSupabaseClient();
+  const { error } = await supabase.auth.signOut();
+  if (error) {
+    console.error('[signOut] Error signing out:', error);
   } else {
-    // 從客戶端調用 - 需要創建客戶端 client
-    // const supabase = createClientComponentClient(); // 假設您有一個 createClientComponentClient 的輔助函數
-    // 為簡化，我們假設 signOut 主要從服務器 Action 或需要客戶端自行處理其 client 的地方調用
-    // 如果需要在服務內部創建客戶端 client，則需要導入 app/utils/supabase/client.ts 中的 createClient
-    // 例如: import { createClient as createBrowserClient } from '@/app/utils/supabase/client';
-    // const browserClient = createBrowserClient();
-    // await browserClient.auth.signOut();
-    throw new Error("signOut called without a SupabaseClient instance on the server or not implemented for client-side without instance yet.");
+    console.log('[signOut] User signed out process initiated.');
   }
-  // 客戶端 localStorage 清理邏輯應在實際的客戶端登出函數中處理，而不是在這裡的服務中
-  console.log('[signOut] User signed out process initiated.');
 } 

@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { toast } from 'sonner';
 import { customLoginAction } from '../actions/authActions';
 import { createClient } from '@/lib/supabase';
-import { clearLocalAuthData, syncAuthStateToLocalStorage } from '../utils/auth-sync';
+import { clearLocalAuthData, syncAuthStateToLocalStorage, isUserAuthenticated } from '../utils/auth-sync';
 
 // New component to handle logic depending on searchParams
 function LoginContent() {
@@ -82,34 +82,33 @@ function LoginContent() {
     
     try {
       const loginResult = await customLoginAction(trimmedClockNumber, password);
+      console.log('[LoginContent] customLoginAction result (raw):', loginResult);
+      console.log('[LoginContent] customLoginAction result (stringified):', JSON.stringify(loginResult, null, 2));
 
       if (loginResult.success && typeof loginResult.userId === 'number') {
         console.log('[LoginContent] Login successful for clock number:', loginResult.userId);
         
-        // 強化會話處理 - 直接設置本地存儲
-        localStorage.setItem('loggedInUserClockNumber', loginResult.userId.toString());
-        console.log('[LoginContent] Set userId in localStorage:', loginResult.userId);
-        
-        // 手動設置 cookie 以確保中間件可以讀取認證狀態
-        document.cookie = `loggedInUserClockNumber=${loginResult.userId}; path=/; max-age=86400; SameSite=Lax`;
-        console.log('[LoginContent] Set userId in cookie:', loginResult.userId);
-        
         // 等待會話同步完成
         try {
-          // 嘗試同步 Supabase 會話狀態
           await syncAuthStateToLocalStorage();
           console.log('[LoginContent] Authentication state synced to localStorage');
         } catch (syncError) {
           console.error('[LoginContent] Error syncing auth state:', syncError);
-          // 但我們已經手動設置了 localStorage 和 cookie，所以繼續流程
+          setError('Failed to establish session. Please try again.');
+          setLoading(false);
+          return;
         }
-        
-        // 設置標誌，告訴系統保留認證狀態
-        localStorage.setItem('preserveAuthState', 'true');
         
         // 再次驗證存儲是否成功
         const storedId = localStorage.getItem('loggedInUserClockNumber');
         console.log('[LoginContent] Verification - ID in localStorage:', storedId);
+
+        if (!storedId || storedId !== loginResult.userId.toString()) {
+          console.error('[LoginContent] Session storage verification failed');
+          setError('Failed to establish session. Please try again.');
+          setLoading(false);
+          return;
+        }
 
         const isFirstLogin = loginResult.isFirstLogin;
 
@@ -120,33 +119,40 @@ function LoginContent() {
           // 確保首次登入標誌正確設置到 localStorage
           localStorage.setItem('firstLogin', 'true');
           
-          // 立即重定向到更改密碼頁面
-          router.push(`/change-password?userId=${encodeURIComponent(loginResult.userId.toString())}`);
+          // 確保重定向前關閉 loading
+          setLoading(false);
+          
+          // 使用 window.location 代替 router.replace
+          window.location.href = `/change-password?userId=${encodeURIComponent(loginResult.userId.toString())}`;
+          return;
         } else {
           console.log('[LoginContent] Regular login detected, redirecting to dashboard or previous page');
           await logToHistory(loginResult.userId.toString(), 'LogIn', 'LogIn Success');
           
-          // 強制較長延遲以確保狀態完全同步
-          toast.success('Login successful! Redirecting...', { duration: 2000 });
+          // 再次檢查認證狀態
+          const isAuthenticated = await isUserAuthenticated();
+          if (!isAuthenticated) {
+            console.error('[LoginContent] Session not properly established after login');
+            setError('Login successful but session not established. Please try again.');
+            setLoading(false);
+            return;
+          }
           
-          setTimeout(() => {
-            // 設置超時，在完成後清除 preserveAuthState 標誌
-            setTimeout(() => {
-              localStorage.removeItem('preserveAuthState');
-            }, 5000);
-            
-            // 如果用戶從其他頁面被重定向過來，登入後返回那個頁面
-            router.push(fromPage);
-          }, 2000); // 增加延遲到 3 秒，確保 cookie 和 localStorage 更新有足夠時間
+          // 確保重定向前關閉 loading
+          setLoading(false);
+          
+          // 使用 window.location 代替 router.replace
+          window.location.href = fromPage;
+          return;
         }
       } else {
         console.error('[LoginContent] Login failed:', loginResult.error);
         setError(loginResult.error || 'Login failed. Please try again.');
+        setLoading(false);
       }
     } catch (err: any) {
       console.error('[LoginContent] Unexpected login error:', err);
       setError(err.message || 'An unexpected error occurred. Please try again.');
-    } finally {
       setLoading(false);
     }
   };

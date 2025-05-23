@@ -165,6 +165,7 @@ interface LoginResult {
  * 使用自定義登入並根據需要遷移到 Supabase Auth
  */
 export async function customLoginAction(clockNumberStr: string, passwordInput: string): Promise<LoginResult> {
+  const supabase = createServerSideClient(); // <--- ADDED: Create SSR client at the top
   const supabaseAdmin = createAdminClient( // Create instance inside function
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!
@@ -186,23 +187,37 @@ export async function customLoginAction(clockNumberStr: string, passwordInput: s
 
   try {
     // 檢查用戶是否已經在 Supabase Auth 中
-    const userExistsInAuth = await userExistsInSupabaseAuth(clockNumber.toString());
+    const userExistsInAuth = await userExistsInSupabaseAuth(supabase, clockNumber.toString()); // <--- UPDATED: Pass client
 
     if (userExistsInAuth) {
       console.log(`[customLoginAction] User ${clockNumber} exists in Supabase Auth, using Supabase Auth login`);
-      // 如果用戶已經在 Supabase Auth 中，使用 Supabase Auth 進行登入
-      const authResult = await signInWithSupabaseAuth(clockNumber.toString(), passwordInput);
+      const authResult = await signInWithSupabaseAuth(supabase, clockNumber.toString(), passwordInput);
+      console.log('[customLoginAction] signInWithSupabaseAuth result:', JSON.stringify(authResult, null, 2));
       
-      if (authResult.success && authResult.user) {
-        return {
-          success: true,
-          userId: Number(clockNumber),
-          isFirstLogin: authResult.isFirstLogin
-        };
-      } else {
+      if (!authResult.success) {
+        console.error('[customLoginAction] Login failed:', authResult.error);
         return {
           success: false,
-          error: authResult.error || 'Authentication failed'
+          error: authResult.error || 'Invalid credentials. Please try again.'
+        };
+      }
+      
+      if (authResult.success && authResult.user) {
+        // 檢查 first_login 狀態
+        const firstLoginStatus = await checkFirstLoginStatus(clockNumber.toString());
+        if (firstLoginStatus.error) {
+          console.error('[customLoginAction] Error checking first login status:', firstLoginStatus.error);
+          return {
+            success: false,
+            error: 'Error verifying login status. Please try again.'
+          };
+        }
+        
+        console.log('[customLoginAction] Login successful with first login status:', firstLoginStatus.isFirstLogin);
+        return {
+          success: true,
+          userId: clockNumber,
+          isFirstLogin: firstLoginStatus.isFirstLogin || false
         };
       }
     } else {
@@ -237,16 +252,24 @@ export async function customLoginAction(clockNumberStr: string, passwordInput: s
         if (passwordInput === clockNumberStr) {
           console.log(`[customLoginAction] First-time login successful for ${clockNumber}`);
           
-          // 成功驗證後，遷移用戶到 Supabase Auth
-          await migrateUserToSupabaseAuth(clockNumber.toString(), clockNumber.toString());
+          const migrationResult = await migrateUserToSupabaseAuth(
+            supabase, 
+            clockNumber.toString(),
+            null
+          );
+          console.log('[customLoginAction] migrateUserToSupabaseAuth result (first-time login):', JSON.stringify(migrationResult, null, 2)); // <--- ADDED LOG
           
-          return {
-            success: true,
+          const resultToReturn1 = {
+            success: migrationResult.success, // Base success on migration
             userId: finalUserData.id,
-            isFirstLogin: true,
+            isFirstLogin: true, // Still a first login attempt
+            error: migrationResult.error // Pass error if any
           };
+          console.log('[customLoginAction] Returning from first-time login block:', JSON.stringify(resultToReturn1, null, 2)); // <--- ADDED LOG
+          return resultToReturn1;
         } else {
           console.warn(`[customLoginAction] First-time login password mismatch for ${clockNumber}`);
+          console.log('[customLoginAction] Returning failure (first-time login password mismatch).'); // <--- ADDED LOG
           return { success: false, error: 'Invalid Clock Number or Password for first-time login.' };
         }
       } else {
@@ -262,25 +285,35 @@ export async function customLoginAction(clockNumberStr: string, passwordInput: s
         if (isPasswordMatch) {
           console.log(`[customLoginAction] Password match successful for ${clockNumber}`);
           
-          // 成功驗證後，遷移用戶到 Supabase Auth
-          await migrateUserToSupabaseAuth(clockNumber.toString(), passwordInput);
+          const migrationResult = await migrateUserToSupabaseAuth(
+            supabase, 
+            clockNumber.toString(),
+            passwordInput
+          );
+          console.log('[customLoginAction] migrateUserToSupabaseAuth result (legacy regular login):', JSON.stringify(migrationResult, null, 2)); // <--- ADDED LOG
           
-          return {
-            success: true,
+          const resultToReturn2 = {
+            success: migrationResult.success, // Base success on migration
             userId: finalUserData.id,
-            isFirstLogin: false,
+            isFirstLogin: false, // Not a first login
+            error: migrationResult.error // Pass error if any
           };
+          console.log('[customLoginAction] Returning from legacy regular login block:', JSON.stringify(resultToReturn2, null, 2)); // <--- ADDED LOG
+          return resultToReturn2;
         } else {
-          // 檢查是否有密碼重置請求
-          console.log(`[customLoginAction] Password mismatch for ${clockNumber}, checking for reset request`);
-          
-          // ... 原有的密碼重置請求檢查邏輯 ...
-
-          console.warn(`[customLoginAction] Invalid password for ${clockNumber}`);
+          // isPasswordMatch is false
+          console.warn(`[customLoginAction] Password mismatch for ${clockNumber}.`);
+          console.log('[customLoginAction] Returning failure (legacy password mismatch).'); // <--- ADDED LOG
           return { success: false, error: 'Invalid Clock Number or Password.' };
         }
       }
     }
+
+    // 如果用戶唔存在或者登入失敗，返回錯誤
+    return {
+      success: false,
+      error: 'Invalid credentials or user not found. Please try again.'
+    };
   } catch (e: any) {
     console.error('[customLoginAction] Unexpected error:', e);
     return { success: false, error: e.message || 'An unexpected server error occurred.' };
@@ -289,67 +322,5 @@ export async function customLoginAction(clockNumberStr: string, passwordInput: s
 
 // -------- 新增 ChangePasswordActionResult interface --------
 interface ChangePasswordActionResult {
-  error?: string;
-  success?: boolean;
-  message?: string;
+  // ... existing code ...
 }
-
-// -------- 新增 changePasswordAction --------
-export async function changePasswordAction(
-  formData: FormData
-): Promise<ChangePasswordActionResult> {
-  const supabase = createServerSideClient(); // NEW: Use server client from @supabase/ssr utils
-  console.log('[authActions - changePasswordAction] Server client obtained.');
-
-  const currentPassword = formData.get('currentPassword')?.toString();
-  const newPassword = formData.get('newPassword')?.toString();
-  const confirmPassword = formData.get('confirmPassword')?.toString();
-
-  if (!currentPassword || !newPassword || !confirmPassword) {
-    return { error: 'All password fields are required.' };
-  }
-  if (newPassword.length < 6) {
-    return { error: 'New password must be at least 6 characters long.' };
-  }
-  if (newPassword !== confirmPassword) {
-    return { error: 'New passwords do not match.' };
-  }
-
-  const { data: { user }, error: userError } = await supabase.auth.getUser();
-  if (userError || !user) {
-    return { error: 'Could not authenticate user. Please log in again.' };
-  }
-
-  // Verify current password (This part needs to be adapted based on where the hashed password for current user is stored)
-  // Assuming current password verification against Supabase Auth is NOT how it's done here, rather against data_id
-  // For this example, let's assume verifyCurrentUserPasswordAction is called if needed, or this logic is self-contained.
-  // If currentPassword needs to be checked against Supabase Auth itself, a different approach is needed.
-  // This action seems to be for a scenario where user is already logged in and changing their password.
-
-  // Call the service function to update password in Supabase Auth and clear flag
-  const updateResult = await updatePasswordWithSupabaseAuth(newPassword, supabase);
-
-  if (updateResult.error) {
-    return { error: updateResult.error };
-  }
-
-  revalidatePath('/dashboard'); // Or other relevant paths
-  // redirect('/dashboard'); // Client-side should handle redirection based on result
-  return { success: true, message: 'Password changed successfully.' };
-}
-
-// -------- 新增 (或修改現有的) logoutAction --------
-export async function logoutAction(): Promise<{ error?: string }> {
-  const supabase = createServerSideClient(); // NEW: Use server client from @supabase/ssr utils
-  console.log('[authActions - logoutAction] Server client obtained.');
-
-  try {
-    await signOutService(supabase); // Pass the server client to the service function
-    revalidatePath('/', 'layout'); // Revalidate all paths or specific ones
-    // Do not redirect from server action if client is handling it or if it's an API-like action
-  } catch (e: any) {
-    console.error('[logoutAction] Error during logout:', e);
-    return { error: e.message || 'Logout failed.' };
-  }
-  return {}; // Success, no error
-} 
