@@ -6,6 +6,12 @@ import { NextResponse, type NextRequest } from 'next/server';
 export async function middleware(request: NextRequest) {
   console.log(`[Supabase SSR Middleware] Path: ${request.nextUrl.pathname}`);
   
+  // 如果是根路由，直接重定向到開放訪問頁面
+  if (request.nextUrl.pathname === '/') {
+    console.log(`[Supabase SSR Middleware] Root path detected, redirecting to open-access dashboard`);
+    return NextResponse.redirect(new URL('/dashboard/open-access', request.url));
+  }
+  
   // 創建基礎回應
   let response = NextResponse.next({
     request: {
@@ -132,9 +138,25 @@ export async function middleware(request: NextRequest) {
     }
 
     if (!user) {
-      // 如果不在 /login 頁面且沒有用戶（未認證），則重定向到登入頁面
-      if (request.nextUrl.pathname !== '/login') {
-        console.log('[Supabase SSR Middleware] No user, redirecting to login from:', request.nextUrl.pathname);
+      // 需要認證的頁面列表
+      const protectedRoutes = [
+        '/dashboard', // 但不包含 /dashboard/open-access
+        '/change-password',
+        '/users',
+        '/reports',
+        '/view-history',
+        '/void-pallet',
+      ];
+      
+      // 檢查當前路徑是否需要認證
+      const needsAuth = protectedRoutes.some(route => 
+        request.nextUrl.pathname.startsWith(route) && 
+        request.nextUrl.pathname !== '/dashboard/open-access'
+      );
+      
+      // 如果不在 /login 頁面且需要認證，則重定向到登入頁面
+      if (request.nextUrl.pathname !== '/login' && needsAuth) {
+        console.log('[Supabase SSR Middleware] Protected route requires authentication, redirecting to login from:', request.nextUrl.pathname);
         const redirectUrl = new URL('/login', request.url);
         redirectUrl.searchParams.set('from', request.nextUrl.pathname);
         redirectUrl.searchParams.set('error', 'authentication_required');
