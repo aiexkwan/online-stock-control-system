@@ -134,9 +134,6 @@ export async function signInWithSupabaseAuth(
       password,
       options: {
         // 確保返回完整嘅 session 資訊
-        data: {
-          clock_number: clockNumber
-        }
       }
     });
 

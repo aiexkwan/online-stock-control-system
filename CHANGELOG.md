@@ -9,6 +9,7 @@
   - Added cookie-based fallback authentication mechanism in middleware
   - Enhanced AuthStateSync component with retry mechanisms and periodic synchronization
   - Created detailed documentation in loginBuild.md for future reference
+  - Fixed TypeScript type error in `signInWithPassword` options by removing unsupported `data` property
 
 ### Changed
 - **Authentication Flow**:
