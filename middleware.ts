@@ -24,7 +24,15 @@ export async function middleware(request: NextRequest) {
 
   // 公開路由 - 這些路由不需要認證
   // 注意：/_next/static, /_next/image, /favicon.ico 通常由 matcher 排除
-  const publicRoutes = ['/login', '/new-password', '/api']; // /change-password 受保護
+  const publicRoutes = [
+    '/login', 
+    '/new-password', 
+    '/api',
+    '/print-label',
+    '/print-grnlabel',
+    '/stock-transfer',
+    '/dashboard/open-access'
+  ]; // /change-password 受保護
   const isPublicRoute = publicRoutes.some(route => request.nextUrl.pathname.startsWith(route));
   
   if (isPublicRoute) {
