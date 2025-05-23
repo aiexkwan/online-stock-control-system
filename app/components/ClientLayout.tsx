@@ -12,22 +12,35 @@ interface ClientLayoutProps {
   children: React.ReactNode;
 }
 
+// 定義公開路由列表
+const publicPathsForClientLayout = [
+  '/login',
+  '/new-password',
+  '/change-password',
+  // '/api', // API 路由通常不直接渲染此佈局，可選
+  '/print-label',
+  '/print-grnlabel',
+  '/stock-transfer',
+  '/dashboard/open-access'
+];
+
 const ClientLayout: React.FC<ClientLayoutProps> = ({ children }) => {
   const pathname = usePathname();
   const router = useRouter();
-  const hideSidebar = pathname === '/login' || pathname === '/change-password' || pathname === '/new-password';
+  // hideSidebar 的判斷可以保留，用於控制導航欄本身的顯示
+  const hideSidebar = publicPathsForClientLayout.includes(pathname) || pathname === '/login' || pathname === '/change-password' || pathname === '/new-password';
   const [isTemporaryLogin, setIsTemporaryLogin] = useState(false);
   const [authChecked, setAuthChecked] = useState(false);
 
   useEffect(() => {
-    // 檢查認證狀態
     const checkAuth = () => {
-      // 登入、密碼更改和新密碼頁面不需要檢查認證
-      if (hideSidebar) {
+      // 如果是定義的公開路徑，則不進行後續的 localStorage/cookie 檢查，直接認為已檢查
+      if (publicPathsForClientLayout.includes(pathname)) {
         setAuthChecked(true);
         return;
       }
       
+      // 對於非公開路徑，執行原有的檢查邏輯
       // 1. 檢查 localStorage
       const userId = localStorage.getItem('loggedInUserClockNumber');
       
@@ -35,20 +48,18 @@ const ClientLayout: React.FC<ClientLayoutProps> = ({ children }) => {
       const userIdFromCookie = getCookie('loggedInUserClockNumber');
       
       if (!userId && !userIdFromCookie) {
-        console.warn('[ClientLayout] No auth data found in localStorage or cookie');
+        console.warn('[ClientLayout] No auth data found in localStorage or cookie for protected route:', pathname);
         toast.error('Your session has expired. Please log in again.', {
           id: 'session-timeout',
           duration: 3000,
         });
         
-        // 延遲重定向，給用戶時間看到提示
         setTimeout(() => {
           router.push('/login');
         }, 1000);
         return;
       }
       
-      // 如果在 cookie 中找到用戶 ID 但不在 localStorage 中，則設置到 localStorage
       if (!userId && userIdFromCookie) {
         localStorage.setItem('loggedInUserClockNumber', userIdFromCookie.toString());
         console.log('[ClientLayout] Set userId in localStorage from cookie:', userIdFromCookie);
@@ -56,16 +67,17 @@ const ClientLayout: React.FC<ClientLayoutProps> = ({ children }) => {
       
       setAuthChecked(true);
       
-      // 檢查是否是臨時登入
       const tempLoginFlag = localStorage.getItem('isTemporaryLogin');
       setIsTemporaryLogin(tempLoginFlag === 'true');
     };
     
     checkAuth();
-  }, [hideSidebar, router, pathname]);
+    // 將 pathname 添加到依賴項數組，確保路徑變化時重新執行檢查
+  }, [pathname, router]); 
 
-  // 如果認證檢查尚未完成，顯示最小內容
-  if (!authChecked && !hideSidebar) {
+  // 如果 authChecked 為 false 且當前路徑不在公開列表（意味著是受保護路徑等待檢查），則顯示 "Authenticating..."
+  // hideSidebar 的條件在這裡不再直接用來判斷是否顯示 Authenticating，因為公開路徑也應該直接渲染
+  if (!authChecked && !publicPathsForClientLayout.includes(pathname)) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-[#181c2f]">
         <div className="animate-pulse text-white text-lg">Authenticating...</div>

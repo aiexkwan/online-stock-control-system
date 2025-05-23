@@ -61,3 +61,39 @@
     5. Investigate the internal logic of `AuthStateSync.tsx`'s `attemptSync`, `forcePreserveAuthState`, and `onAuthStateChange` callback for potential infinite loops, race conditions, or excessive delays, especially in the context of the GRN page.
     6. Consider simplifying the auth sync logic in `AuthStateSync.tsx` (e.g., reducing retry mechanisms, timers, or the number of direct storage manipulations).
     7. Examine `app/print-grnlabel/page.tsx` for any conflicting auth/storage operations or performance bottlenecks.
+
+# TODO List: Dashboard 功能遷移與調整
+
+## 任務背景
+
+主要目標係區分公開訪問 (Open-Access) Dashboard 同需要管理員登入 (Admin Login) 嘅 Dashboard 嘅功能。
+
+## 遷移與重構任務 (原計劃)
+
+以下任務原計劃係將舊 Dashboard 功能移至 Open-Access Dashboard，現根據最新指示調整為確保這些功能保留在 Admin Dashboard，並簡化 Open-Access Dashboard。
+
+1.  **分析並修改 `PrintHistory.tsx` 組件：**
+    *   確保此組件適用於需要認證的 Admin Dashboard。
+    *   如果之前有為 Open-Access 修改，可能需要調整回來或創建不同版本。
+
+2.  **分析並修改 `GrnHistory.tsx` 組件：**
+    *   確保此組件適用於需要認證的 Admin Dashboard。
+    *   如果之前有為 Open-Access 修改，可能需要調整回來或創建不同版本。
+
+3.  **更新 Admin Dashboard (`/dashboard/page.tsx`)：**
+    *   確保 `PalletDonutChart`, `PrintHistory`, `GrnHistory` 及其他核心數據展示正確運作，並且依賴 Supabase 認證和數據獲取。
+
+4.  **精簡 Open-Access Dashboard (`/dashboard/open-access/page.tsx`)：**
+    *   移除所有數據展示組件 (如 Donut Chart, ACO Order Status, Recent GRN)。
+    *   頁面內容僅保留簡單的歡迎字句 (例如 "Welcome")。
+
+5.  **側邊欄調整：**
+    *   `/dashboard/open-access` 側邊欄風格調整，使其與原有 (Admin) Dashboard 風格一致。
+    *   確認 Open-Access 側邊欄只包含允許公開訪問的連結 (例如 Print Label, Print GRN Label, Stock Transfer, 以及一個返回 Admin Login 的入口)。
+
+## 待辦事項 (根據最新指示的優先級)
+
+- [ ] **(高) 清空 Open-Access Dashboard (`/dashboard/open-access/page.tsx`) 的核心內容，只保留歡迎字眼。** (對應原列表第4點的部分執行)
+- [ ] **(中) 調整 Open-Access Dashboard (`/dashboard/open-access`) 的側邊欄風格，使其與原有 Admin Dashboard 的風格一致。** (對應原列表第5點的部分執行)
+- [ ] (低) 重新審視 `PrintHistory.tsx` 和 `GrnHistory.tsx`，確保它們在 Admin Dashboard (`/dashboard/page.tsx`) 中按預期工作，並且數據獲取依賴認證。
+- [ ] (低) 確認 Admin Dashboard (`/dashboard/page.tsx`) 包含所有應有的核心數據展示組件 (Donut Chart, Print History, GRN History 等)。
