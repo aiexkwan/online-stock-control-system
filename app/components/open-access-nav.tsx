@@ -1,3 +1,5 @@
+'use client';
+
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -10,9 +12,6 @@ import {
   Menu as MenuIcon, 
   X as XIcon 
 } from 'lucide-react';
-
-// 使用客戶端組件以支持交互
-'use client';
 
 export default function OpenAccessNav() {
   const pathname = usePathname();

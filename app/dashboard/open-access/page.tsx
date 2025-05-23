@@ -2,7 +2,6 @@ import React from 'react';
 import PalletDonutChart from '@/app/components/PalletDonutChart';
 import AcoOrderStatus from '@/app/components/AcoOrderStatus';
 import GrnHistory from '@/app/components/GrnHistory';
-import OpenAccessLayout from './layout';
 import { Suspense } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
