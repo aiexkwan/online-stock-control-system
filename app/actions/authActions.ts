@@ -203,21 +203,12 @@ export async function customLoginAction(clockNumberStr: string, passwordInput: s
       }
       
       if (authResult.success && authResult.user) {
-        // 檢查 first_login 狀態
-        const firstLoginStatus = await checkFirstLoginStatus(clockNumber.toString());
-        if (firstLoginStatus.error) {
-          console.error('[customLoginAction] Error checking first login status:', firstLoginStatus.error);
-          return {
-            success: false,
-            error: 'Error verifying login status. Please try again.'
-          };
-        }
-        
-        console.log('[customLoginAction] Login successful with first login status:', firstLoginStatus.isFirstLogin);
+        // 直接使用 authResult 返回的 isFirstLogin 值，這個值已經反映了 needs_password_change 狀態
+        console.log('[customLoginAction] Login successful with first login status (from Supabase Auth):', authResult.isFirstLogin);
         return {
           success: true,
           userId: clockNumber,
-          isFirstLogin: firstLoginStatus.isFirstLogin || false
+          isFirstLogin: authResult.isFirstLogin || false
         };
       }
     } else {
@@ -323,4 +314,4 @@ export async function customLoginAction(clockNumberStr: string, passwordInput: s
 // -------- 新增 ChangePasswordActionResult interface --------
 interface ChangePasswordActionResult {
   // ... existing code ...
-}
+} 

@@ -10,6 +10,7 @@
   - Enhanced AuthStateSync component with retry mechanisms and periodic synchronization
   - Created detailed documentation in loginBuild.md for future reference
   - Fixed TypeScript type error in `signInWithPassword` options by removing unsupported `data` property
+  - Eliminated dependency on `data_id` table for `first_login` status check during authentication, using Supabase Auth metadata directly
 
 ### Changed
 - **Authentication Flow**:
