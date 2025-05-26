@@ -12,8 +12,8 @@ export interface PasswordRequirements {
 }
 
 const DEFAULT_REQUIREMENTS: PasswordRequirements = {
-  minLength: 8,
-  requireUppercase: true,
+  minLength: 6,
+  requireUppercase: false,
   requireLowercase: true,
   requireNumbers: true,
   requireSpecialChars: false
@@ -57,6 +57,11 @@ const PasswordValidator = {
     // Check for special characters (if required)
     if (requirements.requireSpecialChars && !/[!@#$%^&*(),.?":{}|<>]/.test(password)) {
       errors.push('Password must contain at least one special character');
+    }
+
+    // Check for forbidden special characters (always check)
+    if (/[!@#$%^&*(),.?":{}|<>\-_=+\[\]\\\/~`';]/.test(password)) {
+      errors.push('Password must not contain special characters');
     }
 
     return errors;

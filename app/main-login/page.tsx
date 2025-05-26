@@ -26,10 +26,10 @@ export default function MainLoginPage() {
         {/* Brand Header */}
         <div className="text-center">
           <h1 className="text-4xl font-bold text-white mb-2">
-            Pennine Industries
+            Pennine Manufacturing
           </h1>
           <p className="text-gray-400 text-lg">
-            Stock Control System
+            Stock Management System
           </p>
           <div className="mt-4 h-1 w-24 bg-blue-500 mx-auto rounded"></div>
         </div>

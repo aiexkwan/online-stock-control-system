@@ -248,7 +248,7 @@ export default function RegisterForm({ onSuccess, onError, isLoading, setIsLoadi
           <p className="mt-1 text-sm text-red-400">{fieldErrors.password}</p>
         )}
         <p className="mt-1 text-xs text-gray-400">
-          Password must be at least 8 characters with uppercase, lowercase, and numbers
+          Password must be at least 6 characters with letters and numbers only
         </p>
       </div>
 
