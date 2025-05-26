@@ -12,9 +12,11 @@ import {
   HomeIcon,
   Bars3Icon,
   XMarkIcon,
-  DocumentDuplicateIcon
+  DocumentDuplicateIcon,
+  ShieldCheckIcon
 } from '@heroicons/react/24/outline';
 import PrintLabelPopover from './print-label-menu/PrintLabelPopover';
+import AdminPanelPopover from './admin-panel-menu/AdminPanelPopover';
 import { motion, AnimatePresence } from 'framer-motion';
 import { createClient } from '@/lib/supabase';
 import { clearLocalAuthData } from '../utils/auth-sync';
@@ -23,10 +25,7 @@ import { signOut as signOutService } from '../services/supabaseAuth';
 const menuItems = [
   { name: 'Print Label', icon: DocumentIcon, href: '/print-label' },
   { name: 'Stock Transfer', icon: ArrowsRightLeftIcon, href: '/stock-transfer' },
-  { name: 'Void Pallet', icon: NoSymbolIcon, href: '/void-pallet' },
-  { name: 'View History', icon: ClockIcon, href: '/view-history' },
-  { name: 'Export Report', icon: DocumentDuplicateIcon, href: '/export-report' },
-  { name: 'Ask Database', icon: ChatBubbleLeftRightIcon, href: '/ask-database' },
+  { name: 'Admin Panel', icon: ShieldCheckIcon, href: '/admin' },
 ];
 
 const slideInVariants = {
@@ -60,8 +59,11 @@ export default function Navigation() {
   const router = useRouter();
   const supabase = createClient();
   const [printLabelOpen, setPrintLabelOpen] = useState(false);
-  const hoverRef = useRef(false);
-  const closeTimeout = useRef<NodeJS.Timeout | null>(null);
+  const [adminPanelOpen, setAdminPanelOpen] = useState(false);
+  const hoverRefPrintLabel = useRef(false);
+  const hoverRefAdminPanel = useRef(false);
+  const closeTimeoutPrintLabel = useRef<NodeJS.Timeout | null>(null);
+  const closeTimeoutAdminPanel = useRef<NodeJS.Timeout | null>(null);
 
   const [isMobileView, setIsMobileView] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -75,11 +77,6 @@ export default function Navigation() {
       const newIsMobileView = window.innerWidth < MOBILE_BREAKPOINT;
       if (isMobileView !== newIsMobileView) { 
         setIsMobileView(newIsMobileView);
-        // If switching to desktop view and mobile menu was open, consider closing it or not based on new design.
-        // For now, if it becomes always hamburger, this specific line might not be needed or behavior might be fine.
-        // if (!newIsMobileView) { 
-        //   setIsMobileMenuOpen(false); 
-        // }
       }
     };
     if (typeof window !== 'undefined') {
@@ -114,16 +111,31 @@ export default function Navigation() {
     }
   };
 
-  const handlePopoverEnter = () => {
-    hoverRef.current = true;
-    if (closeTimeout.current) clearTimeout(closeTimeout.current);
+  // Print Label Popover handlers
+  const handlePrintLabelEnter = () => {
+    hoverRefPrintLabel.current = true;
+    if (closeTimeoutPrintLabel.current) clearTimeout(closeTimeoutPrintLabel.current);
     setPrintLabelOpen(true);
   };
 
-  const handlePopoverLeave = () => {
-    hoverRef.current = false;
-    closeTimeout.current = setTimeout(() => {
-      if (!hoverRef.current) setPrintLabelOpen(false);
+  const handlePrintLabelLeave = () => {
+    hoverRefPrintLabel.current = false;
+    closeTimeoutPrintLabel.current = setTimeout(() => {
+      if (!hoverRefPrintLabel.current) setPrintLabelOpen(false);
+    }, 200);
+  };
+
+  // Admin Panel Popover handlers
+  const handleAdminPanelEnter = () => {
+    hoverRefAdminPanel.current = true;
+    if (closeTimeoutAdminPanel.current) clearTimeout(closeTimeoutAdminPanel.current);
+    setAdminPanelOpen(true);
+  };
+
+  const handleAdminPanelLeave = () => {
+    hoverRefAdminPanel.current = false;
+    closeTimeoutAdminPanel.current = setTimeout(() => {
+      if (!hoverRefAdminPanel.current) setAdminPanelOpen(false);
     }, 200);
   };
 
@@ -133,7 +145,7 @@ export default function Navigation() {
       {/* Home */}
       <Link
         key="Home"
-        href="/dashboard"
+        href="/dashboard/access"
         onClick={() => setIsMobileMenuOpen(false)} // Always close menu
         className="flex items-center px-4 py-2 text-base font-medium rounded-md mb-4 text-gray-300 hover:bg-gray-700 hover:text-white"
       >
@@ -143,12 +155,11 @@ export default function Navigation() {
 
       {/* Print Label Popover Trigger */}
       <div
-        onMouseEnter={handlePopoverEnter}
-        onMouseLeave={handlePopoverLeave}
+        onMouseEnter={handlePrintLabelEnter}
+        onMouseLeave={handlePrintLabelLeave}
         className="relative"
       >
         <div
-          // onClick might be needed if popover should open on click on mobile too
           className={`flex items-center px-4 py-2 text-base font-medium rounded-md mb-2 cursor-pointer ${
             pathname === '/print-label' || pathname.startsWith('/print-label/') || pathname.startsWith('/print-grnlabel/') // Highlight if on child pages
               ? 'bg-gray-800 text-white'
@@ -166,8 +177,8 @@ export default function Navigation() {
               exit="exit"
               variants={slideInVariants}
               transition={{ duration: 0.2, ease: 'easeOut' }}
-              onMouseEnter={handlePopoverEnter}
-              onMouseLeave={handlePopoverLeave}
+              onMouseEnter={handlePrintLabelEnter}
+              onMouseLeave={handlePrintLabelLeave}
               className="absolute left-full top-0 z-50 shadow-md w-32"
             >
               <PrintLabelPopover onClose={() => setIsMobileMenuOpen(false)} />
@@ -176,22 +187,54 @@ export default function Navigation() {
         )}
       </div>
 
-      {/* Other menu items */}
-      {menuItems.filter(item => item.name !== 'Print Label').map((item) => (
-        <Link
-          key={item.name}
-          href={item.href}
-          onClick={() => setIsMobileMenuOpen(false)} // Always close menu
-          className={`flex items-center px-4 py-2 text-base font-medium rounded-md mb-2 ${
-            pathname === item.href
+      {/* Stock Transfer link */}
+      <Link
+        key="Stock Transfer"
+        href="/stock-transfer"
+        onClick={() => setIsMobileMenuOpen(false)}
+        className={`flex items-center px-4 py-2 text-base font-medium rounded-md mb-2 ${
+          pathname === '/stock-transfer'
+            ? 'bg-gray-800 text-white'
+            : 'text-gray-300 hover:bg-gray-700 hover:text-white'
+        }`}
+      >
+        <ArrowsRightLeftIcon className="mr-3 h-6 w-6" />
+        Stock Transfer
+      </Link>
+
+      {/* Admin Panel Popover Trigger */}
+      <div
+        onMouseEnter={handleAdminPanelEnter}
+        onMouseLeave={handleAdminPanelLeave}
+        className="relative"
+      >
+        <div
+          className={`flex items-center px-4 py-2 text-base font-medium rounded-md mb-2 cursor-pointer ${
+            pathname === '/void-pallet' || pathname === '/view-history' || pathname === '/export-report' || pathname === '/ask-database'
               ? 'bg-gray-800 text-white'
               : 'text-gray-300 hover:bg-gray-700 hover:text-white'
           }`}
         >
-          <item.icon className="mr-3 h-6 w-6" />
-          {item.name}
-        </Link>
-      ))}
+          <ShieldCheckIcon className="mr-3 h-6 w-6" />
+          Admin Panel
+        </div>
+        {adminPanelOpen && (
+          <AnimatePresence>
+            <motion.div
+              initial="hidden"
+              animate="visible"
+              exit="exit"
+              variants={slideInVariants}
+              transition={{ duration: 0.2, ease: 'easeOut' }}
+              onMouseEnter={handleAdminPanelEnter}
+              onMouseLeave={handleAdminPanelLeave}
+              className="absolute left-full top-0 z-50 shadow-md w-32"
+            >
+              <AdminPanelPopover onClose={() => setIsMobileMenuOpen(false)} />
+            </motion.div>
+          </AnimatePresence>
+        )}
+      </div>
     </nav>
   );
   

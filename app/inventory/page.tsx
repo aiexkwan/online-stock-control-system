@@ -1,31 +1,47 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
-import { createClient } from '../../lib/supabase';
-
-interface Product {
-  id: number;
-  name: string;
-  sku: string;
-  quantity: number;
-  location: string;
-}
+import React, { useState, useEffect } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
+import { Button } from '../../components/ui/button';
+import { Input } from '../../components/ui/input';
+import { 
+  StockMovementLayout, 
+  StatusMessage, 
+  ActivityLog 
+} from '../../components/ui/stock-movement-layout';
+import { UnifiedSearch } from '../../components/ui/unified-search';
+import { useStockMovement } from '../hooks/useStockMovement';
+import { Package, ArrowUp, ArrowDown, ArrowRight } from 'lucide-react';
 
 type OperationType = 'receive' | 'issue' | 'transfer';
 
+interface FormData {
+  productId: number;
+  quantity: number;
+  fromLocation: string;
+  toLocation: string;
+  notes: string;
+}
+
 export default function InventoryPage() {
-  const supabase = createClient();
-  const [products, setProducts] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [loadingAction, setLoadingAction] = useState(false);
-  const [userId, setUserId] = useState<string | null>(null);
-  const [searchTerm, setSearchTerm] = useState('');
+  const {
+    isLoading,
+    products,
+    activityLog,
+    fetchProducts,
+    executeInventoryOperation
+  } = useStockMovement();
+
   const [operationType, setOperationType] = useState<OperationType>('receive');
+  const [showHelp, setShowHelp] = useState(false);
+  const [currentStep, setCurrentStep] = useState(0);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
-  const [successMessage, setSuccessMessage] = useState('');
-  const [errorMessage, setErrorMessage] = useState('');
+  const [statusMessage, setStatusMessage] = useState<{
+    type: 'success' | 'error' | 'warning' | 'info';
+    message: string;
+  } | null>(null);
   
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<FormData>({
     productId: 0,
     quantity: 1,
     fromLocation: '',
@@ -33,147 +49,139 @@ export default function InventoryPage() {
     notes: ''
   });
 
+  const [searchTerm, setSearchTerm] = useState('');
+
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const clockNumber = localStorage.getItem('loggedInUserClockNumber');
-      if (clockNumber) {
-        setUserId(clockNumber);
-      } else {
-        console.warn('[InventoryPage] loggedInUserClockNumber not found in localStorage.');
-        setUserId(null); // Or handle appropriately
-      }
-    }
     fetchProducts();
-  }, []);
+  }, [fetchProducts]);
 
-  async function fetchProducts() {
-    try {
-      setLoading(true);
-      const { data, error } = await supabase
-        .from('products')
-        .select('*')
-        .order('name', { ascending: true });
-      
-      if (error) throw error;
-      setProducts(data || []);
-    } catch (error) {
-      console.error('Error fetching products:', error);
-    } finally {
-      setLoading(false);
+  const operationSteps = {
+    receive: [
+      "Select receive operation type",
+      "Search and select product",
+      "Enter receive quantity and location",
+      "Confirm receive information",
+      "Complete receive operation"
+    ],
+    issue: [
+      "Select issue operation type",
+      "Search and select product",
+      "Enter issue quantity (check stock)",
+      "Confirm issue information",
+      "Complete issue operation"
+    ],
+    transfer: [
+      "Select transfer operation type",
+      "Search and select product",
+      "Set transfer target location",
+      "Confirm transfer information",
+      "Complete transfer operation"
+    ]
+  };
+
+  const helpContent = (
+    <div className="space-y-4">
+      <div>
+        <h4 className="font-semibold text-blue-400 mb-2">Operation Steps:</h4>
+        <ol className="space-y-2">
+          {operationSteps[operationType].map((step, index) => (
+            <li
+              key={index}
+              className={`flex items-center space-x-3 ${
+                index === currentStep
+                  ? 'text-blue-400 font-semibold'
+                  : index < currentStep
+                  ? 'text-green-400'
+                  : 'text-gray-400'
+              }`}
+            >
+              <span
+                className={`flex items-center justify-center w-6 h-6 rounded-full text-sm ${
+                  index === currentStep
+                    ? 'bg-blue-400 text-gray-900'
+                    : index < currentStep
+                    ? 'bg-green-400 text-gray-900'
+                    : 'bg-gray-600 text-gray-300'
+                }`}
+              >
+                {index < currentStep ? '✓' : index + 1}
+              </span>
+              <span>{step}</span>
+            </li>
+          ))}
+        </ol>
+      </div>
+    </div>
+  );
+
+  // Handle product selection
+  const handleProductSelection = (result: any) => {
+    if (result.data.type === 'product') {
+      const product = result.data;
+      setFormData(prev => ({
+        ...prev,
+        productId: product.id,
+        fromLocation: product.location,
+        toLocation: product.location
+      }));
+      setCurrentStep(2);
     }
-  }
+  };
 
-  // 當選擇產品時更新表單數據
-  function handleProductSelection(e: React.ChangeEvent<HTMLSelectElement>) {
-    const productId = parseInt(e.target.value);
-    const selectedProduct = products.find(p => p.id === productId);
-    
-    if (selectedProduct) {
-      setFormData({
-        ...formData,
-        productId,
-        fromLocation: selectedProduct.location,
-        toLocation: selectedProduct.location
-      });
-    }
-  }
-
-  // 處理表單提交
-  async function handleSubmit(e: React.FormEvent) {
+  // Handle form submission
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setErrorMessage('');
-    setSuccessMessage('');
+    setStatusMessage(null);
     
-    // 基本驗證
+    // Basic validation
     if (!formData.productId) {
-      setErrorMessage('請選擇產品');
+      setStatusMessage({ type: 'error', message: 'Please select a product' });
       return;
     }
     
     if (formData.quantity <= 0) {
-      setErrorMessage('數量必須大於零');
+      setStatusMessage({ type: 'error', message: 'Quantity must be greater than zero' });
       return;
     }
     
     if (operationType === 'issue' || operationType === 'transfer') {
       const selectedProduct = products.find(p => p.id === formData.productId);
       if (selectedProduct && formData.quantity > selectedProduct.quantity) {
-        setErrorMessage('出庫數量不能大於當前庫存量');
+        setStatusMessage({ type: 'error', message: 'Issue quantity cannot exceed current stock' });
         return;
       }
     }
     
     if (operationType === 'transfer' && formData.fromLocation === formData.toLocation) {
-      setErrorMessage('轉移的目標位置不能與當前位置相同');
+      setStatusMessage({ type: 'error', message: 'Transfer target location cannot be the same as current location' });
       return;
     }
     
-    // 顯示確認對話框
+    setCurrentStep(3);
     setShowConfirmModal(true);
-  }
+  };
   
-  // 確認並執行庫存操作
-  async function confirmOperation() {
-    try {
-      setLoadingAction(true);
+  // Confirm and execute inventory operation
+  const confirmOperation = async () => {
       setShowConfirmModal(false);
+    setCurrentStep(4);
+    
+    const success = await executeInventoryOperation(
+      operationType,
+      formData.productId,
+      formData.quantity,
+      formData.fromLocation,
+      formData.toLocation,
+      formData.notes
+    );
       
-      const selectedProduct = products.find(p => p.id === formData.productId);
-      if (!selectedProduct) throw new Error('找不到選定的產品');
+    if (success) {
+      setStatusMessage({
+        type: 'success',
+        message: `${getOperationName(operationType)} operation completed successfully`
+      });
       
-      // 創建庫存移動記錄
-      const movementData = {
-        product_id: formData.productId,
-        quantity: formData.quantity,
-        type: operationType,
-        from_location: operationType === 'receive' ? '' : formData.fromLocation,
-        to_location: operationType === 'issue' ? '' : (operationType === 'transfer' ? formData.toLocation : formData.fromLocation),
-        created_by: userId,
-        notes: formData.notes
-      };
-      
-      const { error: movementError } = await supabase
-        .from('inventory_movements')
-        .insert([movementData]);
-      
-      if (movementError) throw movementError;
-      
-      // 更新產品數量和位置
-      let newQuantity = selectedProduct.quantity;
-      let newLocation = selectedProduct.location;
-      
-      if (operationType === 'receive') {
-        newQuantity += formData.quantity;
-      } else if (operationType === 'issue') {
-        newQuantity -= formData.quantity;
-      } else if (operationType === 'transfer') {
-        newLocation = formData.toLocation;
-      }
-      
-      const { error: updateError } = await supabase
-        .from('products')
-        .update({
-          quantity: newQuantity,
-          location: newLocation,
-          last_updated: new Date().toISOString()
-        })
-        .eq('id', formData.productId);
-      
-      if (updateError) throw updateError;
-      
-      // 操作成功
-      await fetchProducts(); // 刷新產品列表
-      
-      // 根據操作類型顯示成功訊息
-      if (operationType === 'receive') {
-        setSuccessMessage(`成功入庫 ${formData.quantity} 件 ${selectedProduct.name}`);
-      } else if (operationType === 'issue') {
-        setSuccessMessage(`成功出庫 ${formData.quantity} 件 ${selectedProduct.name}`);
-      } else if (operationType === 'transfer') {
-        setSuccessMessage(`成功將 ${selectedProduct.name} 從 ${formData.fromLocation} 轉移到 ${formData.toLocation}`);
-      }
-      
-      // 重置表單
+      // Reset form
       setFormData({
         productId: 0,
         quantity: 1,
@@ -181,144 +189,197 @@ export default function InventoryPage() {
         toLocation: '',
         notes: ''
       });
-      
-    } catch (error) {
-      console.error('操作失敗', error);
-      setErrorMessage('操作失敗: ' + (error instanceof Error ? error.message : '未知錯誤'));
-    } finally {
-      setLoadingAction(false);
+      setSearchTerm('');
+      setCurrentStep(0);
+    } else {
+      setCurrentStep(3);
     }
-  }
+  };
 
-  // 過濾產品列表
+  const getOperationName = (type: OperationType) => {
+    const names = { receive: 'Receive', issue: 'Issue', transfer: 'Transfer' };
+    return names[type];
+  };
+
+  const getOperationIcon = (type: OperationType) => {
+    const icons = {
+      receive: ArrowDown,
+      issue: ArrowUp,
+      transfer: ArrowRight
+    };
+    return icons[type];
+  };
+
+  const getOperationColor = (type: OperationType) => {
+    const colors = {
+      receive: 'bg-green-600 hover:bg-green-700',
+      issue: 'bg-red-600 hover:bg-red-700',
+      transfer: 'bg-blue-600 hover:bg-blue-700'
+    };
+    return colors[type];
+  };
+
+  // Filter product list
   const filteredProducts = products.filter((product) => 
     product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     product.sku.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  const selectedProduct = products.find(p => p.id === formData.productId);
+
   return (
-    <div className="p-6">
-      <h1 className="text-2xl font-bold text-gray-800 mb-6">庫存操作</h1>
-      
-      {/* 操作選擇按鈕 */}
-      <div className="mb-6">
-        <div className="flex flex-wrap gap-2">
-          <button
-            onClick={() => setOperationType('receive')}
-            className={`px-4 py-2 rounded-lg transition-colors ${
-              operationType === 'receive'
-                ? 'bg-green-600 text-white'
-                : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
-            }`}
-          >
-            入庫
-          </button>
-          <button
-            onClick={() => setOperationType('issue')}
-            className={`px-4 py-2 rounded-lg transition-colors ${
-              operationType === 'issue'
-                ? 'bg-red-600 text-white'
-                : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
-            }`}
-          >
-            出庫
-          </button>
-          <button
-            onClick={() => setOperationType('transfer')}
-            className={`px-4 py-2 rounded-lg transition-colors ${
-              operationType === 'transfer'
-                ? 'bg-blue-600 text-white'
-                : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
-            }`}
-          >
-            轉移
-          </button>
-        </div>
-      </div>
-      
-      {loading ? (
-        <div className="flex justify-center items-center h-64">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* 左側表單 */}
-          <div className="bg-white p-6 rounded-lg shadow-md">
-            <h2 className="text-lg font-semibold mb-4">
-              {operationType === 'receive' && '入庫操作'}
-              {operationType === 'issue' && '出庫操作'}
-              {operationType === 'transfer' && '庫存轉移'}
-            </h2>
-            
-            {successMessage && (
-              <div className="mb-4 p-3 bg-green-50 text-green-700 rounded-md">
-                {successMessage}
+    <StockMovementLayout
+      title="Inventory Operations"
+      description="Manage product receive, issue and transfer operations"
+      isLoading={isLoading}
+      loadingText="Processing operation..."
+      helpContent={helpContent}
+      showHelp={showHelp}
+      onToggleHelp={() => setShowHelp(!showHelp)}
+    >
+      {/* Status Messages */}
+      {statusMessage && (
+        <StatusMessage
+          type={statusMessage.type}
+          message={statusMessage.message}
+          onDismiss={() => setStatusMessage(null)}
+        />
+      )}
+
+      <div className="space-y-6">
+        {/* Operation Area */}
+        <div className="space-y-6">
+          {/* Operation Type Selection */}
+          <Card className="border-gray-600 bg-gray-800 text-white">
+            <CardHeader>
+              <CardTitle className="text-blue-400">Select Operation Type</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-3 gap-3">
+                {(['receive', 'issue', 'transfer'] as OperationType[]).map((type) => {
+                  const Icon = getOperationIcon(type);
+                  return (
+                    <Button
+                      key={type}
+                      onClick={() => {
+                        setOperationType(type);
+                        setCurrentStep(1);
+                        setFormData(prev => ({ ...prev, productId: 0 }));
+                      }}
+                      variant={operationType === type ? 'default' : 'outline'}
+                      className={`h-20 flex flex-col space-y-2 ${
+                        operationType === type 
+                          ? getOperationColor(type) + ' text-white' 
+                          : 'border-gray-600 text-gray-300 hover:bg-gray-700'
+                      }`}
+                    >
+                      <Icon className="w-6 h-6" />
+                      <span>{getOperationName(type)}</span>
+                    </Button>
+                  );
+                })}
               </div>
-            )}
+            </CardContent>
+          </Card>
             
-            {errorMessage && (
-              <div className="mb-4 p-3 bg-red-50 text-red-700 rounded-md">
-                {errorMessage}
-              </div>
-            )}
-            
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  搜尋產品
-                </label>
-                <input
-                  type="text"
+          {/* Product Search */}
+          {currentStep >= 1 && (
+            <Card className="border-gray-600 bg-gray-800 text-white">
+              <CardHeader>
+                <CardTitle className="text-blue-400">Select Product</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <UnifiedSearch
+                  searchType="product"
+                  placeholder="Search product name or SKU"
+                  onSelect={handleProductSelection}
+                  products={products}
                   value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  placeholder="輸入產品名稱或編號"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                  onChange={setSearchTerm}
+                  isLoading={isLoading}
+                  disabled={isLoading}
+                  enableQrScanner={false}
                 />
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Operation Form */}
+          {currentStep >= 2 && selectedProduct && (
+            <Card className="border-blue-400 bg-gray-800 text-white">
+              <CardHeader>
+                <CardTitle className="text-blue-400 flex items-center">
+                  <Package className="w-5 h-5 mr-2" />
+                  {getOperationName(operationType)} Operation
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={handleSubmit} className="space-y-4">
+                  {/* Selected Product Information */}
+                  <div className="p-3 bg-gray-700 rounded-md border border-gray-600">
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                      <div>
+                        <span className="font-medium text-gray-300">Product Name:</span>
+                        <span className="text-white ml-2">{selectedProduct.name}</span>
+                      </div>
+                      <div>
+                        <span className="font-medium text-gray-300">Product SKU:</span>
+                        <span className="text-white ml-2">{selectedProduct.sku}</span>
+                      </div>
+                      <div>
+                        <span className="font-medium text-gray-300">Current Stock:</span>
+                        <span className={`font-semibold ml-2 ${
+                          selectedProduct.quantity <= 0 ? 'text-red-400' : 
+                          selectedProduct.quantity <= 10 ? 'text-yellow-400' : 'text-green-400'
+                        }`}>
+                          {selectedProduct.quantity}
+                        </span>
+              </div>
+              <div>
+                        <span className="font-medium text-gray-300">Current Location:</span>
+                        <span className="text-white ml-2">{selectedProduct.location}</span>
+                      </div>
+                    </div>
               </div>
               
+                  {/* Quantity Input */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  選擇產品
+                    <label className="block text-sm font-medium text-gray-300 mb-1">
+                      Quantity
                 </label>
-                <select
-                  value={formData.productId || ''}
-                  onChange={handleProductSelection}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                  required
-                >
-                  <option value="">-- 選擇產品 --</option>
-                  {filteredProducts.map((product) => (
-                    <option key={product.id} value={product.id}>
-                      {product.name} ({product.sku}) - 庫存: {product.quantity}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  數量
-                </label>
-                <input
+                    <Input
                   type="number"
                   min="1"
+                      max={operationType === 'issue' ? selectedProduct.quantity : undefined}
                   value={formData.quantity}
-                  onChange={(e) => setFormData({...formData, quantity: parseInt(e.target.value) || 0})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                      onChange={(e) => setFormData(prev => ({
+                        ...prev, 
+                        quantity: parseInt(e.target.value) || 0
+                      }))}
+                      className="w-full bg-gray-700 border-gray-600 text-white"
                   required
                 />
+                    {operationType === 'issue' && (
+                      <p className="text-xs text-gray-400 mt-1">
+                        Maximum issue quantity: {selectedProduct.quantity}
+                      </p>
+                    )}
               </div>
               
+                  {/* Location Inputs */}
               {(operationType === 'issue' || operationType === 'transfer') && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    當前位置
+                      <label className="block text-sm font-medium text-gray-300 mb-1">
+                        Current Location
                   </label>
-                  <input
+                      <Input
                     type="text"
                     value={formData.fromLocation}
-                    onChange={(e) => setFormData({...formData, fromLocation: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50"
+                        onChange={(e) => setFormData(prev => ({
+                          ...prev, 
+                          fromLocation: e.target.value
+                        }))}
+                        className="w-full bg-gray-600 border-gray-600 text-gray-300"
                     readOnly
                   />
                 </div>
@@ -326,128 +387,151 @@ export default function InventoryPage() {
               
               {(operationType === 'receive' || operationType === 'transfer') && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    {operationType === 'receive' ? '入庫位置' : '目標位置'}
+                      <label className="block text-sm font-medium text-gray-300 mb-1">
+                        {operationType === 'receive' ? 'Receive Location' : 'Target Location'}
                   </label>
-                  <input
+                      <Input
                     type="text"
                     value={formData.toLocation}
-                    onChange={(e) => setFormData({...formData, toLocation: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                        onChange={(e) => setFormData(prev => ({
+                          ...prev, 
+                          toLocation: e.target.value
+                        }))}
+                        className="w-full bg-gray-700 border-gray-600 text-white"
                     required
                   />
                 </div>
               )}
               
+                  {/* Notes */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  備註
+                    <label className="block text-sm font-medium text-gray-300 mb-1">
+                      Notes
                 </label>
                 <textarea
                   value={formData.notes}
-                  onChange={(e) => setFormData({...formData, notes: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                      onChange={(e) => setFormData(prev => ({
+                        ...prev, 
+                        notes: e.target.value
+                      }))}
+                      className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white placeholder-gray-400"
                   rows={3}
+                      placeholder="Optional: Enter operation notes"
                 />
               </div>
               
-              <button
+                  {/* Submit Button */}
+                  <Button
                 type="submit"
-                disabled={loadingAction}
-                className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-              >
-                {loadingAction ? (
-                  <span className="flex items-center justify-center">
-                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    處理中...
-                  </span>
-                ) : (
-                  <>確認操作</>
+                    disabled={isLoading}
+                    className={`w-full ${getOperationColor(operationType)} text-white`}
+                  >
+                    Confirm {getOperationName(operationType)}
+                  </Button>
+                </form>
+              </CardContent>
+            </Card>
                 )}
-              </button>
-            </form>
           </div>
           
-          {/* 右側產品列表 */}
-          <div className="bg-white p-6 rounded-lg shadow-md">
-            <h2 className="text-lg font-semibold mb-4">庫存列表</h2>
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">產品</th>
-                    <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">編號</th>
-                    <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">數量</th>
-                    <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">位置</th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
+        {/* Product List and Activity Log */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Product List */}
+          <Card className="border-gray-600 bg-gray-800 text-white">
+            <CardHeader>
+              <CardTitle className="text-blue-400">Stock List</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="max-h-64 overflow-y-auto">
+                <div className="space-y-2">
                   {filteredProducts.map((product) => (
-                    <tr key={product.id} className="hover:bg-gray-50">
-                      <td className="px-3 py-2 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900">{product.name}</div>
-                      </td>
-                      <td className="px-3 py-2 whitespace-nowrap">
-                        <div className="text-sm text-gray-500">{product.sku}</div>
-                      </td>
-                      <td className="px-3 py-2 whitespace-nowrap">
-                        <div className={`text-sm font-medium ${
-                          product.quantity <= 0 ? 'text-red-600' : 'text-gray-900'
-                        }`}>{product.quantity}</div>
-                      </td>
-                      <td className="px-3 py-2 whitespace-nowrap">
-                        <div className="text-sm text-gray-500">{product.location}</div>
-                      </td>
-                    </tr>
+                    <div
+                      key={product.id}
+                      className={`p-3 rounded-md border cursor-pointer hover:bg-gray-700 ${
+                        product.id === formData.productId 
+                          ? 'border-blue-400 bg-gray-700' 
+                          : 'border-gray-600'
+                      }`}
+                      onClick={() => handleProductSelection({
+                        data: { type: 'product', ...product }
+                      })}
+                    >
+                      <div className="font-medium text-sm text-white">{product.name}</div>
+                      <div className="text-xs text-gray-400">{product.sku}</div>
+                      <div className="flex justify-between items-center mt-1">
+                        <span className={`text-xs font-medium ${
+                          product.quantity <= 0 ? 'text-red-400' : 
+                          product.quantity <= 10 ? 'text-yellow-400' : 'text-green-400'
+                        }`}>
+                          Stock: {product.quantity}
+                        </span>
+                        <span className="text-xs text-gray-400">{product.location}</span>
+                      </div>
+                    </div>
                   ))}
                   {filteredProducts.length === 0 && (
-                    <tr>
-                      <td colSpan={4} className="px-3 py-4 text-center text-sm text-gray-500">
-                        沒有找到產品
-                      </td>
-                    </tr>
+                    <p className="text-center text-gray-400 py-4">No products found</p>
                   )}
-                </tbody>
-              </table>
             </div>
           </div>
+            </CardContent>
+          </Card>
+
+          {/* Activity Log */}
+          <ActivityLog
+            activities={activityLog}
+            title="Operation Log"
+            maxHeight="h-64"
+          />
         </div>
-      )}
+      </div>
       
-      {/* 確認操作對話框 */}
-      {showConfirmModal && (
+      {/* Confirm Operation Dialog */}
+      {showConfirmModal && selectedProduct && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-md">
-            <h2 className="text-xl font-bold mb-4">確認操作</h2>
-            <p className="mb-6">
-              {operationType === 'receive' && `您確定要入庫 ${formData.quantity} 件產品到位置 ${formData.toLocation} 嗎？`}
-              {operationType === 'issue' && `您確定要從位置 ${formData.fromLocation} 出庫 ${formData.quantity} 件產品嗎？`}
-              {operationType === 'transfer' && `您確定要將產品從位置 ${formData.fromLocation} 轉移到位置 ${formData.toLocation} 嗎？`}
+          <Card className="w-full max-w-md border-gray-600 bg-gray-800 text-white">
+            <CardHeader>
+              <CardTitle className="text-blue-400">Confirm Operation</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-gray-300">
+                {operationType === 'receive' && 
+                  `Are you sure you want to receive ${formData.quantity} units of ${selectedProduct.name} to location ${formData.toLocation}?`}
+                {operationType === 'issue' && 
+                  `Are you sure you want to issue ${formData.quantity} units of ${selectedProduct.name} from location ${formData.fromLocation}?`}
+                {operationType === 'transfer' && 
+                  `Are you sure you want to transfer ${selectedProduct.name} from location ${formData.fromLocation} to location ${formData.toLocation}?`}
             </p>
+              
+              {formData.notes && (
+                <div className="p-2 bg-gray-700 rounded border border-gray-600">
+                  <span className="text-sm font-medium text-gray-300">Notes:</span>
+                  <span className="text-sm text-white ml-2">{formData.notes}</span>
+                </div>
+              )}
+              
             <div className="flex justify-end space-x-3">
-              <button
-                onClick={() => setShowConfirmModal(false)}
-                className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300"
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setShowConfirmModal(false);
+                    setCurrentStep(2);
+                  }}
+                  className="border-gray-600 text-gray-300 hover:bg-gray-700"
               >
-                取消
-              </button>
-              <button
+                  Cancel
+                </Button>
+                <Button
                 onClick={confirmOperation}
-                className={`px-4 py-2 text-white rounded-md ${
-                  operationType === 'receive' ? 'bg-green-600 hover:bg-green-700' :
-                  operationType === 'issue' ? 'bg-red-600 hover:bg-red-700' :
-                  'bg-blue-600 hover:bg-blue-700'
-                }`}
+                  className={getOperationColor(operationType) + ' text-white'}
               >
-                確認
-              </button>
+                  Confirm
+                </Button>
             </div>
-          </div>
+            </CardContent>
+          </Card>
         </div>
       )}
-    </div>
+    </StockMovementLayout>
   );
 } 

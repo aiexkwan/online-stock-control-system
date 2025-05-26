@@ -10,6 +10,22 @@ import { getCookie } from 'cookies-next';
  */
 export default function AuthMeta() {
   useEffect(() => {
+    // 檢查是否為公開路徑，如果是則跳過認證邏輯 - 應與 ClientLayout 保持一致
+    const publicPaths = [
+      '/login',
+      '/new-password',
+      '/change-password',
+      '/dashboard/access',
+      '/print-label',
+      '/print-grnlabel',
+      '/stock-transfer'  // 添加 stock-transfer 作為公開路由
+    ];
+    const currentPath = window.location.pathname;
+    if (publicPaths.some(path => currentPath.startsWith(path))) {
+      console.log(`[AuthMeta] Public path detected (${currentPath}), skipping auth checks.`);
+      return; // 跳過下面的認證邏輯
+    }
+    
     // 從 cookie 中獲取用戶 ID
     const userId = getCookie('loggedInUserClockNumber');
     

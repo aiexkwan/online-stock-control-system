@@ -56,6 +56,22 @@ export default function AuthStateSync() {
   };
   
   useEffect(() => {
+    // 檢查是否為公開路徑，如果是則跳過認證邏輯 - 應與 ClientLayout 保持一致
+    const publicPaths = [
+      '/login',
+      '/new-password',
+      '/change-password',
+      '/dashboard/access',
+      '/print-label',
+      '/print-grnlabel',
+      '/stock-transfer'  // 添加 stock-transfer 作為公開路由
+    ];
+    const currentPath = window.location.pathname;
+    if (publicPaths.some(path => currentPath.startsWith(path))) {
+      console.log(`[AuthStateSync] Public path detected (${currentPath}), skipping auth checks.`);
+      return; // 跳過下面的認證邏輯
+    }
+    
     // 1. 檢查 header 中的 X-Auth-User-ID
     const checkHeaderAuth = () => {
       const userId = document.querySelector('meta[name="x-auth-user-id"]')?.getAttribute('content');

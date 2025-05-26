@@ -7,11 +7,11 @@ import Navigation from '@/app/components/Navigation'; // 改為引入 Navigation
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'Pennine Stock Control - Open Access',
+  title: 'Pennine Stock Control - Access',
   description: 'Stock control system for Pennine',
 };
 
-export default function OpenAccessLayout({
+export default function AccessLayout({
   children,
 }: {
   children: React.ReactNode;

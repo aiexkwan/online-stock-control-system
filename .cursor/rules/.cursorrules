@@ -15,7 +15,7 @@ The system covers
 - Stock tracking(By QR Code)
 - Pallet movement
 - Material receiving(GRN records)
-- Generate reporting(.csv, .xls, .pdf)
+- Generate reporting(.csv, .xls)
 - Inbound and outbound
 - Scanning and access control (with scanner, mobile devices including : Smart Phone(iOS, Android), tablet.
 
@@ -96,13 +96,12 @@ The system covers
 # Historylog Policy
 - For any to-do issue, record in toDoList.md and sort later
 - For every fixed issue, record issues and soluction detail, docuement/code involved in solvedIssue.md
-- Before every push to Github, you MUST update CHANGELOG.md (summarized with 200 words) to record all important changes.
 
 ---
 ## 📚 Supabase Database Schema (Read-Only Reference)
 
-> ⚠️ Do **not** create or assume new tables or columns.  
-> Use only the fields listed below. Refer to MCP Tool if uncertain.
+⚠️ Do **not** create or assume new tables or columns.  
+ Use only the fields listed below. Refer to MCP Tool if uncertain.
 
 ---
 
@@ -144,7 +143,6 @@ The system covers
 | Column Name     | Type       | Default             | Description                              |
 |-----------------|------------|---------------------|------------------------------------------|
 | `plt_num`       | `text`     | —                   | Pallet number (Primary Key)              |
-| `plt_loc`       | `text`     | "Await"             | Pallet latest location                   |
 | `generate_time` | `timestamp`| `now()`             | Creat by supabase (Auto)                 |
 | `product_code`  | `text`     | —                   | Product code                             |
 | `product_qty`   | `int8`     | —                   | Quantity per pallet                      |

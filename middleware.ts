@@ -8,8 +8,8 @@ export async function middleware(request: NextRequest) {
   
   // 如果是根路由，直接重定向到開放訪問頁面
   if (request.nextUrl.pathname === '/') {
-    console.log(`[Supabase SSR Middleware] Root path detected, redirecting to open-access dashboard`);
-    return NextResponse.redirect(new URL('/dashboard/open-access', request.url));
+    console.log(`[Supabase SSR Middleware] Root path detected, redirecting to access dashboard`);
+    return NextResponse.redirect(new URL('/dashboard/access', request.url));
   }
   
   // 創建基礎回應
@@ -37,7 +37,7 @@ export async function middleware(request: NextRequest) {
     '/print-label',
     '/print-grnlabel',
     '/stock-transfer',
-    '/dashboard/open-access'
+    '/dashboard/access'
   ]; // /change-password 受保護
   const isPublicRoute = publicRoutes.some(route => request.nextUrl.pathname.startsWith(route));
   
@@ -123,13 +123,12 @@ export async function middleware(request: NextRequest) {
   try {
     // 使用 getUser() 獲取用戶
     const { data: { user }, error: userError } = await supabase.auth.getUser();
-
+    
     if (userError) {
       console.error('[Supabase SSR Middleware] User fetch error:', userError.message);
-      // 處理獲取用戶時的錯誤，可能重定向到登入頁或錯誤頁面
-      // 根據錯誤類型，您可能希望有不同的處理邏輯
-      // 例如，如果錯誤表示 token 無效，則明確重定向到登入
-      if (request.nextUrl.pathname !== '/login') {
+      // 處理獲取用戶時的錯誤，但不要重定向公開路由
+      // 只有在非公開路由且不在登入頁面時才重定向
+      if (!isPublicRoute && request.nextUrl.pathname !== '/login') {
         const redirectUrl = new URL('/login', request.url);
         redirectUrl.searchParams.set('from', request.nextUrl.pathname);
         redirectUrl.searchParams.set('error', 'user_fetch_failed');
@@ -140,18 +139,23 @@ export async function middleware(request: NextRequest) {
     if (!user) {
       // 需要認證的頁面列表
       const protectedRoutes = [
-        '/dashboard', // 但不包含 /dashboard/open-access
+        '/dashboard/open-access', // 只有這個dashboard子路由需要認證
         '/change-password',
         '/users',
         '/reports',
         '/view-history',
         '/void-pallet',
+        '/tables',
+        '/inventory',
+        '/export-report',
+        '/history',
+        '/products',
+        '/debug-test'
       ];
       
       // 檢查當前路徑是否需要認證
       const needsAuth = protectedRoutes.some(route => 
-        request.nextUrl.pathname.startsWith(route) && 
-        request.nextUrl.pathname !== '/dashboard/open-access'
+        request.nextUrl.pathname.startsWith(route)
       );
       
       // 如果不在 /login 頁面且需要認證，則重定向到登入頁面

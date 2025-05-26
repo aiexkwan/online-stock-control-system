@@ -1,8 +1,9 @@
 'use client';
 import React, { useState } from 'react';
 import * as Tabs from '@radix-ui/react-tabs';
-import QcLabelForm from './QcLabelForm';
+// QcLabelForm import removed - using navigation to dedicated page instead
 import { useRouter } from 'next/navigation';
+import { DocumentCheckIcon, DocumentTextIcon } from '@heroicons/react/24/outline';
 
 export default function PrintLabelPopover({ onClose }: { onClose?: () => void }) {
   const router = useRouter();
@@ -21,11 +22,12 @@ export default function PrintLabelPopover({ onClose }: { onClose?: () => void })
         <div className="relative">
           <Tabs.Trigger
             value="qc"
-            className="px-4 py-3 text-base font-semibold text-white text-left data-[state=active]:bg-gray-800 data-[state=active]:border-l-4 data-[state=active]:border-blue-500"
+            className="px-3 py-2 text-sm font-medium text-white text-left data-[state=active]:bg-gray-800 data-[state=active]:border-l-4 data-[state=active]:border-blue-500 flex items-center"
             onMouseEnter={() => setHovered('qc')}
             onMouseLeave={() => setHovered(null)}
             onClick={() => handleTabClick('qc')}
           >
+            <DocumentCheckIcon className="mr-2 h-4 w-4" />
             Q.C. Label
           </Tabs.Trigger>
           {hovered === 'qc' && (
@@ -37,11 +39,12 @@ export default function PrintLabelPopover({ onClose }: { onClose?: () => void })
         <div className="relative">
           <Tabs.Trigger
             value="grn"
-            className="px-4 py-3 text-base font-semibold text-white text-left data-[state=active]:bg-gray-800 data-[state=active]:border-l-4 data-[state=active]:border-blue-500"
+            className="px-3 py-2 text-sm font-medium text-white text-left data-[state=active]:bg-gray-800 data-[state=active]:border-l-4 data-[state=active]:border-blue-500 flex items-center"
             onMouseEnter={() => setHovered('grn')}
             onMouseLeave={() => setHovered(null)}
             onClick={() => handleTabClick('grn')}
           >
+            <DocumentTextIcon className="mr-2 h-4 w-4" />
             GRN Label
           </Tabs.Trigger>
           {hovered === 'grn' && (

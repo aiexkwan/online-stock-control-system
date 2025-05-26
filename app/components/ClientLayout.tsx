@@ -12,23 +12,22 @@ interface ClientLayoutProps {
   children: React.ReactNode;
 }
 
-// 定義公開路由列表
+// 定義公開路由列表 - 應與 middleware.ts 中的 publicRoutes 保持一致
 const publicPathsForClientLayout = [
   '/login',
   '/new-password',
   '/change-password',
-  // '/api', // API 路由通常不直接渲染此佈局，可選
+  '/dashboard/access',
   '/print-label',
   '/print-grnlabel',
-  '/stock-transfer',
-  '/dashboard/open-access'
+  '/stock-transfer',  // 添加 stock-transfer 作為公開路由
 ];
 
 const ClientLayout: React.FC<ClientLayoutProps> = ({ children }) => {
   const pathname = usePathname();
   const router = useRouter();
-  // hideSidebar 的判斷可以保留，用於控制導航欄本身的顯示
-  const hideSidebar = publicPathsForClientLayout.includes(pathname) || pathname === '/login' || pathname === '/change-password' || pathname === '/new-password';
+  // 只隱藏登入和密碼相關頁面的側邊欄，其他頁面都顯示
+  const hideSidebar = pathname === '/login' || pathname === '/change-password' || pathname === '/new-password';
   const [isTemporaryLogin, setIsTemporaryLogin] = useState(false);
   const [authChecked, setAuthChecked] = useState(false);
 
@@ -76,7 +75,6 @@ const ClientLayout: React.FC<ClientLayoutProps> = ({ children }) => {
   }, [pathname, router]); 
 
   // 如果 authChecked 為 false 且當前路徑不在公開列表（意味著是受保護路徑等待檢查），則顯示 "Authenticating..."
-  // hideSidebar 的條件在這裡不再直接用來判斷是否顯示 Authenticating，因為公開路徑也應該直接渲染
   if (!authChecked && !publicPathsForClientLayout.includes(pathname)) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-[#181c2f]">

@@ -1,15 +1,30 @@
 {
-  "mcpServers": {
-    "supabase": {
-      "command": "cmd",
-      "args": [
-        "/c",
-        "npx",
-        "-y",
-        "@supabase/mcp-server-supabase@latest",
-        "--access-token",
-        "sbp_b8bfd51a146bfd1d7ad2c325c7597ead9f737004"
-      ]    
-    }    
+    "mcpServers": {
+      "browsermcp": {
+        "command": "npx",
+        "args": ["@browsermcp/mcp@latest"]
+      },
+  
+      "mac_supabase": {
+        "command": "npx",
+        "args": [
+          "-y",
+          "@supabase/mcp-server-supabase@latest",
+          "--access-token",
+          "sbp_f1c692f583df5ca25d1560129ae008683f8becd8"
+        ]
+      },
+      "mac_supabase2": {
+        "type": "command",
+        "command": "/Users/kwanchuncheong/.local/bin/supabase-mcp-server",
+        "env": {
+        "SUPABASE_PROJECT_REF": "bbmkuiplnzvpudszrend",
+        "SUPABASE_DB_PASSWORD": "vusfyf-vytfEr-qohqy0",
+        "SUPABASE_REGION": "us-east-1",
+        "QUERY_API_KEY": "qry_v1_dEWNuT8NOAZIB-dskHkLHFEKK87Qw3hhFhCEDIvTk0g",
+        "SUPABASE_SERVICE_ROLE_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJibWt1aXBsbnp2cHVkc3pyZW5kIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0NTcxNTYwNCwiZXhwIjoyMDYxMjkxNjA0fQ.B0pQF2V0kWdrU2_2VEYXR6qxZzt2oMDvwxD7qiR3huM"
+        }  
+      }
+    }
   }
-}
+  

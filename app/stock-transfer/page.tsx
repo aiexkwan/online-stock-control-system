@@ -1,417 +1,355 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
-import { createClient } from '../../lib/supabase'; // Assuming supabase client is here
-import { format } from 'date-fns'; // For date formatting
-import { Toaster, toast } from 'sonner'; // Import Toaster and toast
+import React, { useState, useEffect, useCallback } from 'react';
+import { Toaster } from 'sonner';
+import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
-import { QrScanner } from '../../components/qr-scanner/qr-scanner';
-import { Input } from '../../components/ui/input'; // Assuming Input is used, not seen in screenshot
+import { 
+  StockMovementLayout, 
+  StatusMessage, 
+  ActivityLog 
+} from '../../components/ui/stock-movement-layout';
+import { UnifiedSearch } from '../../components/ui/unified-search';
+import { useStockMovement } from '../hooks/useStockMovement';
+import { ClockNumberConfirmDialog } from '../components/qc-label-form/ClockNumberConfirmDialog';
 
-// Define types for pallet info and activity log
 interface PalletInfo {
   plt_num: string;
   product_code: string;
   product_qty: number;
-  plt_remark?: string | null; // Added from new logic spec
-  current_plt_loc?: string | null; // Added: To store the current location from record_palletinfo
+  plt_remark?: string | null;
+  current_plt_loc?: string | null;
 }
-
-interface ActivityLogEntry {
-  message: string;
-  type: 'success'; // Only success messages will now use ActivityLog
-}
-
-const supabase = createClient();
 
 export default function StockTransferPage() {
-  const [seriesInput, setSeriesInput] = useState('');
-  const [palletNumInput, setPalletNumInput] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
+  const {
+    isLoading,
+    activityLog,
+    searchPalletInfo,
+    executeStockTransfer,
+    addActivityLog
+  } = useStockMovement();
+
   const [scannedPalletInfo, setScannedPalletInfo] = useState<PalletInfo | null>(null);
-  const [activityLog, setActivityLog] = useState<ActivityLogEntry[]>([]); // Will only store success messages
-  const [lastActiveInput, setLastActiveInput] = useState<'series' | 'pallet_num' | null>('series');
+  const [showHelp, setShowHelp] = useState(false);
+  const [currentStep, setCurrentStep] = useState(0);
+  const [searchValue, setSearchValue] = useState('');
+  const [statusMessage, setStatusMessage] = useState<{
+    type: 'success' | 'error' | 'warning' | 'info';
+    message: string;
+  } | null>(null);
+  const [showClockNumberDialog, setShowClockNumberDialog] = useState(false);
+  const [pendingTransferData, setPendingTransferData] = useState<{
+    palletInfo: PalletInfo;
+    targetLocation: string;
+  } | null>(null);
 
-  const seriesInputRef = useRef<HTMLInputElement>(null);
-  const palletNumInputRef = useRef<HTMLInputElement>(null);
-  const [showQrScannerModal, setShowQrScannerModal] = useState(false);
-  const [userId, setUserId] = useState<string | null>(null);
-  const qrTriggerInputRef = useRef<'series' | null>(null);
-  const isMobile = typeof window !== 'undefined' && /Mobi|Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
+  const operationSteps = [
+    "Scan QR code or enter complete pallet number",
+    "Confirm pallet information and current location",
+    "System automatically calculates target location",
+    "Enter clock number to confirm transfer",
+    "View operation results and activity log"
+  ];
 
-  // New states for blocking toast and disabling input
-  const [isInputDisabled, setIsInputDisabled] = useState(false);
-  const [blockingErrorToastId, setBlockingErrorToastId] = useState<string | number | null>(null);
+  const helpContent = (
+    <div className="space-y-4">
+      <div>
+        <h4 className="font-semibold text-blue-400 mb-2">Operation Steps:</h4>
+        <ol className="space-y-2">
+          {operationSteps.map((step, index) => (
+            <li
+              key={index}
+              className={`flex items-center space-x-3 ${
+                index === currentStep
+                  ? 'text-blue-400 font-semibold'
+                  : index < currentStep
+                  ? 'text-green-400'
+                  : 'text-gray-400'
+              }`}
+            >
+              <span
+                className={`flex items-center justify-center w-6 h-6 rounded-full text-sm ${
+                  index === currentStep
+                    ? 'bg-blue-400 text-gray-900'
+                    : index < currentStep
+                    ? 'bg-green-400 text-gray-900'
+                    : 'bg-gray-600 text-gray-300'
+                }`}
+              >
+                {index < currentStep ? '✓' : index + 1}
+              </span>
+              <span>{step}</span>
+            </li>
+          ))}
+        </ol>
+      </div>
+    </div>
+  );
 
-  const resetFormState = (keepActivityLog = true) => {
-    setSeriesInput('');
-    setPalletNumInput('');
-    setScannedPalletInfo(null);
-    if (!keepActivityLog) {
-      setActivityLog([]);
-    }
-  };
-  
-  // Updated addActivityLog for success messages only and new timestamp format
-  const addSuccessLog = (message: string) => {
-    const newEntry: ActivityLogEntry = { 
-      message: `${message} - ${format(new Date(), 'dd-MMM-yyyy HH:mm')}`, 
-      type: 'success' 
-    };
-    setActivityLog(prevLog => [newEntry, ...prevLog].slice(0, 100)); // Keep last 100 success entries
-  };
+  // Calculate target location (pure function - no side effects)
+  // Removed terminal location restrictions - pallets can move from any location
+  const calculateTargetLocation = useCallback((palletInfo: PalletInfo): { location: string | null; error?: string } => {
+    const { product_code, current_plt_loc } = palletInfo;
+    const fromLocation = current_plt_loc || 'Await';
 
-  // New function to log errors to the database
-  const logErrorToDatabase = async (specificErrorInfo: string, currentUserId: string | null) => {
-    if (!currentUserId) {
-      console.warn('Cannot log error to database: User ID is null.');
-      return;
-    }
-    try {
-      const userIdAsInt = parseInt(currentUserId, 10);
-      if (isNaN(userIdAsInt)) {
-        console.warn('Cannot log error to database: User ID is not a valid number.', currentUserId);
-        return;
-      }
-
-      const { error } = await supabase.from('report_log').insert({
-        error: 'Transfer Error', // General error type
-        error_info: specificErrorInfo, // Specific short description
-        user_id: userIdAsInt,
-        state: false, // Default to false as per table structure
-        // uuid and time are auto-generated by the database
-      });
-      if (error) {
-        console.error('Failed to log error to report_log table:', error);
-      }
-    } catch (e) {
-      console.error('Exception while logging error to report_log:', e);
-    }
-  };
-
-  const showErrorToastAndDisableInputs = (toastMessage: string, dbReportErrorInfo: string) => {
-    // Log to database first (fire and forget)
-    logErrorToDatabase(dbReportErrorInfo, userId);
-
-    if (blockingErrorToastId) {
-      toast.dismiss(blockingErrorToastId); // Dismiss previous blocking toast if any
-    }
-    const newToastId = toast.error(toastMessage, {
-      duration: Infinity,
-    });
-    setBlockingErrorToastId(newToastId);
-    setIsInputDisabled(true);
-    setIsLoading(false); // Ensure loading state is also reset
-  };
-
-  const handleConfirmError = () => {
-    if (blockingErrorToastId) {
-      toast.dismiss(blockingErrorToastId);
-    }
-    setBlockingErrorToastId(null);
-    setIsInputDisabled(false);
-    resetFormState(true); // Keep activity log (which is now only success log)
-    // Focus last active input
-    if (lastActiveInput === 'series' && seriesInputRef.current) {
-      seriesInputRef.current.focus();
-    } else if (lastActiveInput === 'pallet_num' && palletNumInputRef.current) {
-      palletNumInputRef.current.focus();
-    }
-  };
-
-  const handleStockMovementTrigger = async (searchType: 'series' | 'pallet_num', searchValue: string) => {
-    if (!userId) {
-      // This case should ideally not happen if userId is fetched on load and is required
-      // but as a fallback, show a standard toast. Not a blocking one.
-      toast.error('User ID not found. Cannot process movement.'); 
-      return;
-    }
-    if (!searchValue.trim()) {
-      toast.info(`Please enter a ${searchType === 'series' ? 'Series' : 'Pallet Number'}.`);
-      return;
+    // Only prevent movement from 'Voided' location
+    if (fromLocation === 'Voided') {
+      return { 
+        location: null, 
+        error: 'Pallet is voided, cannot be moved' 
+      };
     }
 
-    setIsLoading(true);
-    setScannedPalletInfo(null);
-
-    let fetchedPalletInfo: PalletInfo | null = null;
-    let pltNumToProcess: string | null = null;
-
-    // STEP 1: Pallet Information Search
-    try {
-      let query = supabase.from('record_palletinfo')
-                      .select('plt_num, product_code, product_qty, plt_remark, plt_loc');
-
-      if (searchType === 'series') {
-        query = query.eq('series', searchValue.trim());
-      } else {
-        pltNumToProcess = searchValue.trim();
-        query = query.eq('plt_num', pltNumToProcess);
-      }
-      
-      const { data, error } = await query.single();
-
-      if (error) {
-        if (error.code === 'PGRST116') {
-          const errMsg = `Pallet ${searchValue} Not Found .`;
-          const dbErrInfo = `Pallet not found: ${searchType} '${searchValue}'.`;
-          showErrorToastAndDisableInputs(errMsg, dbErrInfo);
-        } else {
-          throw error; 
-        }
-        return; // Stop further processing after showing toast
-      } else if (data) {
-        fetchedPalletInfo = {
-          plt_num: data.plt_num,
-          product_code: data.product_code,
-          product_qty: data.product_qty,
-          plt_remark: data.plt_remark,
-          current_plt_loc: data.plt_loc 
-        };
-        setScannedPalletInfo(fetchedPalletInfo);
-        pltNumToProcess = data.plt_num;
-      } else {
-         const errMsg = `Pallet ${searchValue} Not Found .`; // Should be caught by PGRST116 mostly
-         const dbErrInfo = `Pallet not found (no data returned): ${searchType} '${searchValue}'.`;
-         showErrorToastAndDisableInputs(errMsg, dbErrInfo);
-         return; // Stop further processing
-      }
-    } catch (error: any) {
-      console.error('Error fetching pallet info:', error);
-      const errMsg = `Error Fetching Pallet: ${error.message}`;
-      const dbErrInfo = `Error fetching pallet: ${error.code || 'Unknown'} - ${error.message.substring(0,30)}`;
-      showErrorToastAndDisableInputs(errMsg, dbErrInfo);
-      return; // Stop further processing
-    }
-
-    if (!fetchedPalletInfo || !pltNumToProcess) {
-      const errMsg = 'Pallet Information Incomplete, Stop Proceed.';
-      const dbErrInfo = 'Pallet info incomplete after fetch.';
-      showErrorToastAndDisableInputs(errMsg, dbErrInfo);
-      return; // Stop further processing
-    }
-
-    const { product_code, current_plt_loc, product_qty } = fetchedPalletInfo;
-    let fromLocation = current_plt_loc || 'Await';
-    let toLocation = '';
-
+    // Apply standard movement rules regardless of current location
     if (fromLocation === 'Await') {
-      if (product_code.startsWith('Z')) toLocation = 'Production'; else toLocation = 'Fold Mill';
+      return { location: product_code.startsWith('Z') ? 'Production' : 'Fold Mill' };
     } else if (fromLocation === 'Fold Mill') {
-      if (product_code.startsWith('U')) toLocation = 'PipeLine'; else toLocation = 'Production';
+      return { location: product_code.startsWith('U') ? 'PipeLine' : 'Production' };
     } else {
-      const finalLocationsForZ = ['Production', 'PipeLine', 'Pre-Book', 'Bulk', 'Back Car Park'];
-      const finalLocationsForNonZ = ['Fold Mill', 'Production', 'PipeLine', 'Pre-Book', 'Bulk', 'Back Car Park'];
-      let isAtFinalLocation = false;
-      if (product_code.startsWith('Z') && finalLocationsForZ.includes(fromLocation)) isAtFinalLocation = true;
-      else if (!product_code.startsWith('Z') && !product_code.startsWith('U') && finalLocationsForNonZ.includes(fromLocation)) isAtFinalLocation = true;
-      else if (product_code.startsWith('U') && finalLocationsForNonZ.includes(fromLocation) && fromLocation !== 'Fold Mill') isAtFinalLocation = true;
-
-      if (isAtFinalLocation) {
-          const errMsg = `Pallet ${pltNumToProcess} is already at a terminal location ('${fromLocation}'). No further movement by current rules.`;
-          const dbErrInfo = `Pallet ${pltNumToProcess} at terminal loc: '${fromLocation}'. Prod: ${product_code}.`;
-          showErrorToastAndDisableInputs(errMsg, dbErrInfo);
-          return;
-      } else if (fromLocation === 'Voided') {
-          const errMsg = `Pallet ${pltNumToProcess} is VOIDED. No movement allowed.`;
-          const dbErrInfo = `Attempt to move VOIDED pallet: ${pltNumToProcess}.`;
-          showErrorToastAndDisableInputs(errMsg, dbErrInfo);
-          return;
-      } else {
-          const errMsg = `No movement rule from '${fromLocation}' for pallet ${pltNumToProcess} in the new logic. Movement halted.`;
-          const dbErrInfo = `No rule from '${fromLocation}' for ${pltNumToProcess}. Prod: ${product_code}.`;
-          showErrorToastAndDisableInputs(errMsg, dbErrInfo);
-          return;
-      }
+      // For all other locations, apply the same rules as from 'Await'
+      // This allows movement from any location (including previous terminal locations)
+      return { location: product_code.startsWith('Z') ? 'Production' : 'Fold Mill' };
     }
-    
-    try {
-      setIsLoading(true); 
-      const { data: rpcData, error: rpcError } = await supabase.rpc('process_atomic_stock_transfer', {
-        p_plt_num: pltNumToProcess,
-        p_product_code: product_code,
-        p_product_qty: product_qty,
-        p_current_plt_loc: fromLocation,
-        p_new_plt_loc: toLocation,
-        p_operator_id: parseInt(userId, 10)
-      });
-
-      if (rpcError) throw rpcError;
-
-      addSuccessLog(`Pallet ${pltNumToProcess} Movement Successful`);
-      resetFormState(true);
-      if (lastActiveInput === 'series' && seriesInputRef.current) seriesInputRef.current.focus();
-      else if (lastActiveInput === 'pallet_num' && palletNumInputRef.current) palletNumInputRef.current.focus();
-      
-    } catch (error: any) {
-      console.error('Error processing stock movement via RPC:', error);
-      let toastErrorMessage = error.message || 'Unknown RPC error.';
-      let dbErrorDetail = toastErrorMessage.substring(0,50); // Default db error to truncated toast message
-
-      if (error.message && error.message.startsWith('ATOMIC_TRANSFER_FAILURE:')) {
-        toastErrorMessage = error.message.replace('ATOMIC_TRANSFER_FAILURE:', '').trim();
-        dbErrorDetail = toastErrorMessage.substring(0,50); // Update db error if prefix was stripped
-      }
-      
-      const finalToastMsg = `Movement failed for ${pltNumToProcess}: ${toastErrorMessage}`;
-      const finalDbErrInfo = `RPC Fail ${pltNumToProcess}: ${dbErrorDetail}`;
-      showErrorToastAndDisableInputs(finalToastMsg, finalDbErrInfo);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    const clockNumber = localStorage.getItem('loggedInUserClockNumber');
-    if (clockNumber) setUserId(clockNumber);
-    else toast.error('User session not found. Please log in again.'); // Non-blocking toast
   }, []);
 
-  useEffect(() => {
-    if (lastActiveInput === 'series' && seriesInputRef.current && !isInputDisabled) seriesInputRef.current.focus();
-    else if (lastActiveInput === 'pallet_num' && palletNumInputRef.current && !isInputDisabled) palletNumInputRef.current.focus();
-  }, [lastActiveInput, isInputDisabled]);
+  // Handle search selection
+  const handleSearchSelect = useCallback(async (result: any) => {
+    if (result.data.type === 'pallet') {
+      setCurrentStep(1);
+      setStatusMessage(null);
+      
+      const searchValue = result.data.value;
+      // Don't update searchValue here to avoid infinite loop
+      // The UnifiedSearch component will handle the value update
+      
+      // Only support exact pallet number or series search
+      // Pallet numbers typically contain "/" (e.g., "260525/1")
+      // Series typically contain "-" (e.g., "260525-5UNXGE")
+      let searchType: 'series' | 'pallet_num';
+      
+      if (searchValue.includes('/')) {
+        searchType = 'pallet_num';
+      } else if (searchValue.includes('-')) {
+        searchType = 'series';
+      } else {
+        // For unclear format, show error message
+        setStatusMessage({
+          type: 'error',
+          message: 'Please enter complete pallet number (e.g., 250525/13) or series number (e.g., 260525-5UNXGE)'
+        });
+        setCurrentStep(0);
+        return;
+      }
+      
+      // Search pallet information (exact match only)
+      const palletInfo = await searchPalletInfo(searchType, searchValue);
+      
+      if (palletInfo) {
+        setScannedPalletInfo(palletInfo);
+        setCurrentStep(2);
 
-  // --- Input Handlers & QR Scanner (largely unchanged, but inputs will respect isInputDisabled) ---
-  const handleSeriesInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSeriesInput(e.target.value.toUpperCase());
-    setLastActiveInput('series');
-  };
-
-  const handlePalletNumInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setPalletNumInput(e.target.value.toUpperCase());
-    setLastActiveInput('pallet_num');
-  };
-  
-  const handleInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>, inputType: 'series' | 'pallet_num') => {
-    if (isInputDisabled) return; // Prevent action if input is disabled
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      const value = inputType === 'series' ? seriesInput : palletNumInput;
-      if (value.trim()) handleStockMovementTrigger(inputType, value.trim());
-      else toast.info(`Please enter a ${inputType} value.`);
+        // Calculate target location
+        const targetResult = calculateTargetLocation(palletInfo);
+        if (targetResult.location) {
+          setCurrentStep(3);
+          
+          // Store transfer data and show clock number dialog
+          setPendingTransferData({
+            palletInfo,
+            targetLocation: targetResult.location
+          });
+          setShowClockNumberDialog(true);
+        } else if (targetResult.error) {
+          // Set error message using useEffect to avoid setState during render
+          setTimeout(() => {
+            setStatusMessage({
+              type: 'warning',
+              message: targetResult.error!
+            });
+          }, 0);
+        }
+      } else {
+        setCurrentStep(0);
+      }
     }
-  };
+  }, [searchPalletInfo, calculateTargetLocation]);
 
-  const openQrScanner = (inputType: 'series') => {
-    if (isInputDisabled) return; // Prevent opening scanner if input is disabled
-    qrTriggerInputRef.current = inputType;
-    setShowQrScannerModal(true);
-  };
 
-  const handleScanSuccess = (scannedValue: string) => {
-    setShowQrScannerModal(false);
-    if (qrTriggerInputRef.current === 'series') {
-      setSeriesInput(scannedValue.toUpperCase());
-      setLastActiveInput('series');
-      if (seriesInputRef.current && !isInputDisabled) seriesInputRef.current.focus();
-      handleStockMovementTrigger('series', scannedValue.toUpperCase());
+
+  // Handle clock number confirmation
+  const handleClockNumberConfirm = async (clockNumber: string) => {
+    if (!pendingTransferData) return;
+
+    const { palletInfo, targetLocation } = pendingTransferData;
+    
+    setShowClockNumberDialog(false);
+    setCurrentStep(4);
+    
+    const success = await executeStockTransfer(
+      palletInfo.plt_num,
+      palletInfo.product_code,
+      palletInfo.product_qty,
+      palletInfo.current_plt_loc || 'Await',
+      targetLocation,
+      clockNumber  // 傳遞 clock number
+    );
+
+    if (success) {
+      setStatusMessage({
+        type: 'success',
+        message: `Pallet ${palletInfo.plt_num} successfully moved to ${targetLocation}`
+      });
+      // Reset for next operation
+      setScannedPalletInfo(null);
+      setSearchValue('');
+      setCurrentStep(0);
+    } else {
+      setCurrentStep(3);
     }
+    
+    setPendingTransferData(null);
+  };
+
+  // Handle clock number dialog cancel
+  const handleClockNumberCancel = () => {
+    setShowClockNumberDialog(false);
+    setPendingTransferData(null);
+    setCurrentStep(2); // Go back to pallet info display
+  };
+
+  // Reset operation
+  const handleReset = () => {
+    setScannedPalletInfo(null);
+    setSearchValue('');
+    setCurrentStep(0);
+    setStatusMessage(null);
+    setShowClockNumberDialog(false);
+    setPendingTransferData(null);
   };
 
   return (
-    <div className="container mx-auto p-4 max-w-2xl bg-gray-900 min-h-screen text-white">
+    <StockMovementLayout
+      title="Stock Transfer"
+      //description="Scan or enter pallet information for stock location transfer"
+      isLoading={isLoading}
+      loadingText="Processing transfer..."
+      helpContent={helpContent}
+      showHelp={showHelp}
+      onToggleHelp={() => setShowHelp(!showHelp)}
+    >
       <Toaster richColors position="top-center" />
-      {showQrScannerModal && (
-        <QrScanner
-          open={showQrScannerModal}
-          onScan={handleScanSuccess}
-          onClose={() => {
-            setShowQrScannerModal(false);
-            if(lastActiveInput === 'series' && seriesInputRef.current && !isInputDisabled) seriesInputRef.current.focus();
-          }}
-          title="Scan QR Code"
-          hint="Align QR code within the frame"
+      
+      {/* Status Messages */}
+      {statusMessage && (
+        <StatusMessage
+          type={statusMessage.type}
+          message={statusMessage.message}
+          onDismiss={() => setStatusMessage(null)}
         />
       )}
 
-      <header className="text-center my-8">
-        <h1 className="text-4xl font-bold text-orange-500">Stock Movement</h1>
-      </header>
+      <div className="space-y-6">
+        {/* Operation Area */}
+        <div className="space-y-6">
+          {/* Search Area */}
+          <Card className="border-gray-600 bg-gray-800 text-white">
+            <CardHeader>
+              <CardTitle className="text-blue-400">Pallet Search</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <UnifiedSearch
+                searchType="pallet"
+                placeholder="Scan QR code or enter complete pallet number (e.g., 250525/13)"
+                onSelect={handleSearchSelect}
+                value={searchValue}
+                onChange={setSearchValue}
+                isLoading={isLoading}
+                disabled={isLoading}
+              />
+            </CardContent>
+          </Card>
 
-      <main className="space-y-6 bg-gray-800 p-6 rounded-lg shadow-xl">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
+          {/* Pallet Information Display */}
+          {scannedPalletInfo && (
+            <Card className="border-blue-400 bg-gray-800 text-white">
+              <CardHeader>
+                <CardTitle className="text-blue-400">Pallet Details</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <span className="font-medium text-gray-300">Pallet Number:</span>
+                    <span className="text-white ml-2">{scannedPalletInfo.plt_num}</span>
+                  </div>
+                  <div>
+                    <span className="font-medium text-gray-300">Product Code:</span>
+                    <span className="text-white ml-2">{scannedPalletInfo.product_code}</span>
+                  </div>
           <div>
-            <label htmlFor="seriesInput" className="block text-sm font-medium text-gray-300 mb-1">
-              Scan/Enter Series {isMobile && "(Tap to Scan)"}
-            </label>
-            <Input
-              id="seriesInput"
-              ref={seriesInputRef}
-              type="text"
-              value={seriesInput}
-              onChange={handleSeriesInputChange}
-              onKeyDown={e => handleInputKeyDown(e, 'series')}
-              placeholder={isMobile ? "Tap To Scan QR Code" : "Scan QR Code"}
-              className="w-full bg-gray-700 border-gray-600 focus:ring-orange-500 focus:border-orange-500"
-              onFocus={() => setLastActiveInput('series')}
-              onClick={() => { if (isMobile) openQrScanner('series'); }}
-              readOnly={isMobile && showQrScannerModal}
-              disabled={isInputDisabled} // Disable input when needed
-            />
+                    <span className="font-medium text-gray-300">Quantity:</span>
+                    <span className="text-white ml-2">{scannedPalletInfo.product_qty}</span>
           </div>
           <div>
-            <label htmlFor="palletNumInput" className="block text-sm font-medium text-gray-300 mb-1">
-              Enter Pallet Number
-            </label>
-            <Input
-              id="palletNumInput"
-              ref={palletNumInputRef}
-              type="text"
-              value={palletNumInput}
-              onChange={handlePalletNumInputChange}
-              onKeyDown={e => handleInputKeyDown(e, 'pallet_num')}
-              placeholder="Type In Pallet Number"
-              className="w-full bg-gray-700 border-gray-600 focus:ring-orange-500 focus:border-orange-500"
-              onFocus={() => setLastActiveInput('pallet_num')}
-              disabled={isInputDisabled} // Disable input when needed
-            />
+                    <span className="font-medium text-gray-300">Current Location:</span>
+                    <span className="text-white ml-2">{scannedPalletInfo.current_plt_loc || 'Await'}</span>
           </div>
         </div>
 
-        {/* Confirm button for blocking toasts */} 
-        {blockingErrorToastId && (
-          <div className="text-center mt-4">
-            <Button 
-              onClick={handleConfirmError}
-              variant="destructive" 
-              className="bg-orange-500 hover:bg-orange-600 text-white font-bold py-2 px-4 rounded"
-            >
-              Confirm
-            </Button>
+                {scannedPalletInfo.plt_remark && (
+                  <div>
+                    <span className="font-medium text-gray-300">Remarks:</span>
+                    <span className="text-white ml-2">{scannedPalletInfo.plt_remark}</span>
           </div>
         )}
 
-        {isLoading && (
-          <div className="text-center py-4">
-            <p className="text-lg text-yellow-400 animate-pulse">Processing...</p>
+                {/* Target Location Display */}
+                {(() => {
+                  const targetResult = calculateTargetLocation(scannedPalletInfo);
+                  return targetResult.location && (
+                    <div className="mt-4 p-3 bg-gray-700 rounded-md border border-green-400">
+                      <span className="font-medium text-green-400">Target Location:</span>
+                      <span className="text-green-400 font-semibold ml-2">{targetResult.location}</span>
           </div>
-        )}
+                  );
+                })()}
 
-        {scannedPalletInfo && !isLoading && !blockingErrorToastId && ( // Only show pallet info if no blocking error
-          <div className="mt-6 p-4 bg-gray-700 rounded-md shadow">
-            <h3 className="text-xl font-semibold text-orange-400 mb-2">Pallet Details</h3>
-            <p><span className="font-medium">Pallet No:</span> {scannedPalletInfo.plt_num}</p>
-            <p><span className="font-medium">Product Code:</span> {scannedPalletInfo.product_code}</p>
-            <p><span className="font-medium">Quantity:</span> {scannedPalletInfo.product_qty}</p>
-            <p><span className="font-medium">Remark:</span> {scannedPalletInfo.plt_remark || 'N/A'}</p>
-            <p><span className="font-medium">Current Location (from palletinfo):</span> {scannedPalletInfo.current_plt_loc || 'N/A'}</p>
+                {/* Operation Buttons */}
+                <div className="flex space-x-3 mt-4">
+                  <Button
+                    variant="outline"
+                    onClick={handleReset}
+                    disabled={isLoading}
+                    className="border-gray-600 text-gray-300 hover:bg-gray-700"
+                  >
+                    Reset
+                  </Button>
           </div>
-        )}
+              </CardContent>
+            </Card>
+          )}
+          </div>
 
-        <div className="mt-8">
-          <h3 className="text-lg font-semibold mb-2 text-gray-300">Activity Log</h3>
-          {/* Adjusted height for approx 10 lines, assuming default line height */}
-          <div className="space-y-1 max-h-[26.25rem] overflow-y-auto bg-gray-700 p-3 rounded-md text-sm">
-            {activityLog.length === 0 && <p className="text-gray-400">No Movements Found.</p>}
-            {activityLog.map((log, index) => (
-              <p key={index} className={`text-green-400`}> {/* Always green for success */}
-                {log.message}
-              </p>
-            ))}
-          </div>
+        {/* Activity Log */}
+        <div>
+          <ActivityLog
+            activities={activityLog}
+            title="Transfer Log"
+            maxHeight="h-96"
+          />
         </div>
-      </main>
     </div>
+
+      {/* Clock Number Confirmation Dialog */}
+      <ClockNumberConfirmDialog
+        isOpen={showClockNumberDialog}
+        onOpenChange={setShowClockNumberDialog}
+        onConfirm={handleClockNumberConfirm}
+        onCancel={handleClockNumberCancel}
+        title="Confirm Stock Transfer"
+        description="Please enter your clock number to proceed with the stock transfer."
+        isLoading={isLoading}
+      />
+    </StockMovementLayout>
   );
 } 

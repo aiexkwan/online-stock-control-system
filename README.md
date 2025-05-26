@@ -130,7 +130,35 @@ chmod +x scripts/start-auto-push.sh
   /supabase.ts        - Supabase 客戶端初始化
 /scripts              - 數據庫初始化腳本
 /docs                 - 系統文檔
+  /databaseStructure.md - 資料庫結構文檔
 ```
+
+## 📊 資料庫文檔
+
+系統提供完整的資料庫結構文檔，包含所有表格的詳細信息：
+
+- **查看文檔**: [資料庫結構文檔](docs/databaseStructure.md)
+- **自動更新**: `node scripts/update-database-docs.js`
+- **手動檢查**: `node check_actual_tables.js`
+
+### 資料庫概覽
+- 總表格數: 14個
+- 總記錄數: 8,545筆
+- 主要表格: `data_code`, `data_id`, `record_inventory`, `record_history`
+
+### MCP工具支援
+系統已配置MCP (Model Context Protocol) 工具，可直接與Supabase資料庫互動：
+- 查詢表格結構
+- 執行SQL操作
+- 數據分析和報告
+
+### ACO訂單管理功能
+系統提供完整的ACO (Advanced Customer Order) 訂單管理功能：
+- **智能訂單選擇**: 支援從現有訂單選擇或手動輸入新訂單
+- **庫存檢查**: 自動檢查剩餘數量，防止超量操作
+- **狀態管理**: 自動識別已完成訂單並禁用相關操作
+- **輸入驗證**: 數字欄位自動過濾，確保數據完整性
+- **用戶友好**: 清晰的警告信息和狀態指示
 
 ## 故障排除
 
