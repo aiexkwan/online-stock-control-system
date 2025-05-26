@@ -37,7 +37,9 @@ export async function middleware(request: NextRequest) {
     '/print-label',
     '/print-grnlabel',
     '/stock-transfer',
-    '/dashboard/access'
+    '/dashboard/access',
+    '/main-login',
+    '/access'
   ]; // /change-password 受保護
   const isPublicRoute = publicRoutes.some(route => request.nextUrl.pathname.startsWith(route));
   
