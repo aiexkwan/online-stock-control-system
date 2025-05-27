@@ -38,7 +38,7 @@ export default function OpenAccessNav() {
       icon: <MoveHorizontalIcon className="mr-2 h-5 w-5" />,
     },
     {
-      href: '/login',
+      href: '/main-login',
       label: 'Admin Login',
       icon: <LogInIcon className="mr-2 h-5 w-5" />,
     },

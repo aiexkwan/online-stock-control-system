@@ -24,19 +24,13 @@ export async function middleware(request: NextRequest) {
     return response; 
   }
 
-  // 公開路由 - 這些路由不需要認證
+  // 公開路由 - 主登入頁面、密碼重設頁面和 API 路由不需要認證
   // 注意：/_next/static, /_next/image, /favicon.ico 通常由 matcher 排除
   const publicRoutes = [
-    '/login', 
-    '/new-password', 
-    '/api',
-    '/print-label',
-    '/print-grnlabel',
-    '/stock-transfer',
-    '/dashboard/access',
     '/main-login',
-    '/access'
-  ]; // /change-password 受保護
+    '/new-password',  // 密碼重設頁面需要公開，用戶通過電郵連結訪問
+    '/api'  // API 路由保持公開以支援功能調用
+  ];
   const isPublicRoute = publicRoutes.some(route => request.nextUrl.pathname.startsWith(route));
   
   if (isPublicRoute) {
@@ -126,8 +120,8 @@ export async function middleware(request: NextRequest) {
       console.error('[Supabase SSR Middleware] User fetch error:', userError.message);
       // 處理獲取用戶時的錯誤，但不要重定向公開路由
       // 只有在非公開路由且不在登入頁面時才重定向
-      if (!isPublicRoute && request.nextUrl.pathname !== '/login') {
-        const redirectUrl = new URL('/login', request.url);
+      if (!isPublicRoute && request.nextUrl.pathname !== '/main-login') {
+        const redirectUrl = new URL('/main-login', request.url);
         redirectUrl.searchParams.set('from', request.nextUrl.pathname);
         redirectUrl.searchParams.set('error', 'user_fetch_failed');
         return NextResponse.redirect(redirectUrl);
@@ -135,10 +129,11 @@ export async function middleware(request: NextRequest) {
     }
 
     if (!user) {
-      // 需要認證的頁面列表
+      // 需要認證的頁面列表 - 除了公開路由外的所有頁面都需要認證
       const protectedRoutes = [
-        '/dashboard/open-access', // 只有這個dashboard子路由需要認證
-        '/change-password',
+        '/access',
+        '/dashboard',
+        '/change-password',  // 密碼修改頁面需要認證，用戶必須已登入
         '/users',
         '/reports',
         '/view-history',
@@ -148,6 +143,9 @@ export async function middleware(request: NextRequest) {
         '/export-report',
         '/history',
         '/products',
+        '/stock-transfer',
+        '/print-label',
+        '/print-grnlabel',
         '/debug-test'
       ];
       
@@ -156,10 +154,10 @@ export async function middleware(request: NextRequest) {
         request.nextUrl.pathname.startsWith(route)
       );
       
-      // 如果不在 /login 頁面且需要認證，則重定向到登入頁面
-      if (request.nextUrl.pathname !== '/login' && needsAuth) {
-        console.log('[Supabase SSR Middleware] Protected route requires authentication, redirecting to login from:', request.nextUrl.pathname);
-        const redirectUrl = new URL('/login', request.url);
+      // 如果不在 /main-login 頁面且需要認證，則重定向到登入頁面
+      if (request.nextUrl.pathname !== '/main-login' && needsAuth) {
+        console.log('[Supabase SSR Middleware] Protected route requires authentication, redirecting to main-login from:', request.nextUrl.pathname);
+        const redirectUrl = new URL('/main-login', request.url);
         redirectUrl.searchParams.set('from', request.nextUrl.pathname);
         redirectUrl.searchParams.set('error', 'authentication_required');
         return NextResponse.redirect(redirectUrl);

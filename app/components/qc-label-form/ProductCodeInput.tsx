@@ -34,34 +34,22 @@ export const ProductCodeInput: React.FC<ProductCodeInputProps> = React.memo(({
   const [isLoading, setIsLoading] = useState(false);
 
   const handleProductCodeBlur = useCallback(async () => {
-    console.log('[ProductCodeInput.handleProductCodeBlur] Triggered. Current value:', value);
-    console.log('[ProductCodeInput.handleProductCodeBlur] Supabase URL:', process.env.NEXT_PUBLIC_SUPABASE_URL);
-    console.log('[ProductCodeInput.handleProductCodeBlur] Supabase Anon Key exists:', !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
-    
     if (!value.trim()) {
-      console.log('[ProductCodeInput.handleProductCodeBlur] Product code is empty, resetting productInfo and productError.');
       onProductInfoChange(null);
       setProductError(null);
       return;
     }
 
     setIsLoading(true);
-    console.log('[ProductCodeInput.handleProductCodeBlur] Querying Supabase RPC for productCode:', value.trim());
     
     try {
-      console.log('[ProductCodeInput.handleProductCodeBlur] Creating Supabase client...');
       const client = createClient();
-      console.log('[ProductCodeInput.handleProductCodeBlur] Supabase client created:', !!client);
-      
-      console.log('[ProductCodeInput.handleProductCodeBlur] Calling RPC function get_product_details_by_code...');
       const { data, error } = await client.rpc('get_product_details_by_code', { 
         p_code: value.trim() 
       });
 
-      console.log('[ProductCodeInput.handleProductCodeBlur] Supabase RPC call finished. Error:', error, 'Data:', data);
-
       if (error) {
-        console.error('[ProductCodeInput.handleProductCodeBlur] Error calling RPC get_product_details_by_code:', error);
+        console.error('[ProductCodeInput] Error calling RPC get_product_details_by_code:', error);
         onProductInfoChange(null);
         setProductError('Error fetching product info via RPC.');
         
@@ -73,7 +61,6 @@ export const ProductCodeInput: React.FC<ProductCodeInputProps> = React.memo(({
         }, 'Error fetching product info.');
       } else if (data && data.length > 0) {
         const productData = data[0] as ProductInfo;
-        console.log('[ProductCodeInput.handleProductCodeBlur] Product data found via RPC:', productData);
         
         onProductInfoChange(productData);
         onChange(productData.code); // Standardize to the code from DB
@@ -81,11 +68,9 @@ export const ProductCodeInput: React.FC<ProductCodeInputProps> = React.memo(({
         
         // Auto-fill quantity if available and callback provided
         if (productData.standard_qty && onQuantityChange) {
-          console.log('[ProductCodeInput.handleProductCodeBlur] Setting quantity from standard_qty:', productData.standard_qty);
           onQuantityChange(productData.standard_qty);
         }
       } else {
-        console.warn(`[ProductCodeInput.handleProductCodeBlur] Product code ${value.trim()} not found via RPC.`);
         onProductInfoChange(null);
         setProductError(`Product Code ${value.trim()} Not Found. Please Check Again.`);
         
@@ -97,7 +82,7 @@ export const ProductCodeInput: React.FC<ProductCodeInputProps> = React.memo(({
         }, false); // Don't show toast as we have field-level error
       }
     } catch (e: any) {
-      console.error('[ProductCodeInput.handleProductCodeBlur] Exception during product info fetch via RPC:', e);
+      console.error('[ProductCodeInput] Exception during product info fetch via RPC:', e);
       onProductInfoChange(null);
       setProductError('An unexpected error occurred while fetching product data.');
       

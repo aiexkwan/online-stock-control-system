@@ -311,7 +311,7 @@ export default function Navigation() {
           // 使用我們的統一函數清除本地儲存
           clearLocalAuthData();
           
-          router.push('/login');
+          router.push('/main-login');
         }}
         className="flex items-center px-4 py-2 text-base font-medium rounded-md text-gray-300 hover:bg-gray-700 hover:text-white w-full text-left"
       >

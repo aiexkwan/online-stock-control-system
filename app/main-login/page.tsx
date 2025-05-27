@@ -1,10 +1,32 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import SimpleLoginForm from './components/SimpleLoginForm';
+import { forceCleanupAllAuth } from './utils/cleanup-legacy-auth';
 
 export default function MainLoginPage() {
+  const [showConfirmation, setShowConfirmation] = useState(false);
+
+  // 在開發環境中，可以通過 URL 參數強制清理
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    
+    // 檢查是否是電郵確認後的重定向
+    if (urlParams.get('confirmed') === 'true') {
+      setShowConfirmation(true);
+      // 移除 URL 參數
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+    
+    if (urlParams.get('cleanup') === 'force') {
+      console.log('[MainLoginPage] Force cleanup requested via URL parameter');
+      forceCleanupAllAuth();
+      // 移除 URL 參數
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  }, []);
+
   return (
     <div className="min-h-screen bg-gray-900 flex items-center justify-center px-4">
       <div className="max-w-md w-full space-y-8">
@@ -29,6 +51,21 @@ export default function MainLoginPage() {
               Access your account
             </p>
           </div>
+
+          {/* Email Confirmation Success Message */}
+          {showConfirmation && (
+            <div className="mb-6 p-4 bg-green-900/50 border border-green-500 rounded-md">
+              <div className="flex items-center">
+                <svg className="w-5 h-5 text-green-400 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <div>
+                  <p className="text-green-300 font-medium text-sm">Email Confirmed!</p>
+                  <p className="text-green-400 text-xs mt-1">Your account has been activated. You can now sign in.</p>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Login Form */}
           <SimpleLoginForm />

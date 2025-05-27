@@ -29,7 +29,7 @@
     "@radix-ui/react-tooltip": "^1.2.6",
     "@react-pdf/renderer": "^4.3.0",
     "@supabase/mcp-server-supabase": "^0.4.1",
-    "@supabase/ssr": "^0.4.0",
+    "@supabase/ssr": "^0.4.1",
     "@supabase/supabase-js": "^2.49.7",
     "@tanstack/react-table": "^8.21.3",
     "@types/bcryptjs": "^2.4.6",

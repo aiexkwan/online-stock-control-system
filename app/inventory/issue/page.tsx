@@ -52,12 +52,12 @@ export default function IssueInventoryPage() {
           // This needs to be replaced with actual permission fetching and checking.
           // The original logic was: const userData = JSON.parse(userStr);
           // if (!userData.permissions.receive && !userData.permissions.qc) { router.push('/'); }
-          console.log(`[IssuePage] User with clock number ${clockNumber} accessed. Permission check placeholder.`);
+          // Permission check placeholder - user access logged
           // For now, if a clockNumber is present, we let them proceed.
           // Actual permission enforcement needs to query backend based on clockNumber.
         } else {
           // console.warn('[IssuePage] loggedInUserClockNumber not found for permission check.');
-          router.push('/login'); // Redirect if not logged in at all
+          router.push('/main-login'); // Redirect if not logged in at all
         }
       }
     };

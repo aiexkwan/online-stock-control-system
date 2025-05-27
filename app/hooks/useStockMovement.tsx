@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { createClient } from '../../lib/supabase';
 import { toast } from 'sonner';
+import { AuthUtils } from '../utils/auth-utils';
 
 interface Product {
   id: number;
@@ -48,34 +49,23 @@ export function useStockMovement(options: UseStockMovementOptions = {}) {
   const debounceTimer = useRef<NodeJS.Timeout>();
   const retryCount = useRef<number>(0);
 
-  // Initialize user ID - skip for public routes
+  // Initialize user ID from Supabase Auth
   useEffect(() => {
-    // 檢查是否為公開路徑
-    const publicPaths = [
-      '/login',
-      '/new-password', 
-      '/change-password',
-      '/dashboard/access',
-      '/print-label',
-      '/print-grnlabel',
-      '/stock-transfer'
-    ];
-    const currentPath = window.location.pathname;
-    const isPublicRoute = publicPaths.some(path => currentPath.startsWith(path));
+    const initializeUser = async () => {
+      try {
+        const clockNumber = await AuthUtils.getCurrentUserClockNumber();
+        if (clockNumber) {
+          setUserId(clockNumber);
+        } else {
+          // AuthChecker middleware will handle authentication
+        }
+      } catch (error) {
+        console.error('[useStockMovement] Error initializing user:', error);
+        // AuthChecker middleware will handle authentication
+      }
+    };
     
-    if (isPublicRoute) {
-      // 對於公開路由，設置一個默認的用戶 ID 或跳過
-      console.log(`[useStockMovement] Public route detected (${currentPath}), using default user ID`);
-      setUserId('public'); // 設置一個默認值
-      return;
-    }
-    
-    const clockNumber = localStorage.getItem('loggedInUserClockNumber');
-    if (clockNumber) {
-      setUserId(clockNumber);
-    } else {
-      toast.error('User session not found, please log in again');
-    }
+    initializeUser();
   }, []);
 
   // Debounced search function
@@ -158,32 +148,29 @@ export function useStockMovement(options: UseStockMovementOptions = {}) {
       let palletData, palletError;
 
       if (searchType === 'series') {
-        // For series search, try to search by plt_num pattern since series column may not exist
-        console.warn('Series search not supported, searching by plt_num pattern instead');
+        // 搜尋系列號：使用 record_palletinfo.series 欄位
         const { data, error } = await supabase
           .from('record_palletinfo')
-          .select('plt_num, product_code, product_qty, plt_remark')
-          .ilike('plt_num', `${searchValue.trim()}%`)
-          .limit(1)
+          .select('plt_num, product_code, product_qty, plt_remark, series')
+          .eq('series', searchValue.trim())
           .single();
         palletData = data;
         palletError = error;
       } else {
-        // For pallet number search, try exact match first
+        // 搜尋托盤號：使用 record_palletinfo.plt_num 欄位
         const { data, error } = await supabase
           .from('record_palletinfo')
-          .select('plt_num, product_code, product_qty, plt_remark')
+          .select('plt_num, product_code, product_qty, plt_remark, series')
           .eq('plt_num', searchValue.trim())
           .single();
         palletData = data;
         palletError = error;
       }
 
-      // Remove fuzzy search - only support exact pallet number match
-
       if (palletError || !palletData) {
         if (palletError?.code === 'PGRST116' || !palletData) {
-          toast.error(`Pallet ${searchValue} not found`);
+          const searchTypeText = searchType === 'series' ? 'Series' : 'Pallet number';
+          toast.error(`${searchTypeText} ${searchValue} not found`);
         } else if (palletError) {
           throw palletError;
         }
@@ -231,7 +218,7 @@ export function useStockMovement(options: UseStockMovementOptions = {}) {
     // 使用傳入的 clockNumber 或現有的 userId
     const operatorId = clockNumber || userId;
     
-    if (!operatorId || operatorId === 'public') {
+    if (!operatorId) {
       toast.error('Valid operator ID required for stock transfer');
       return false;
     }

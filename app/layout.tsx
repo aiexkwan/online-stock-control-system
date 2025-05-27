@@ -9,6 +9,9 @@ const inter = Inter({ subsets: ['latin'] })
 export const metadata: Metadata = {
   title: 'Pennine Stock Control System',
   description: 'Online warehouse stock control system',
+  icons: {
+    icon: '/images/logo.png', // 使用現有的圖片作為 favicon
+  },
 }
 
 export default function RootLayout({

@@ -52,7 +52,7 @@
 - **"initAuth took too long (watchdog timeout)" on GRN Page (`/print-grnlabel`)**
   - **Symptoms**: Vercel deployment shows this error, potentially leading to 404s or other loading issues.
   - **Suspected Component**: `app/components/AuthStateSync.tsx` due to complex synchronization logic, retries, and timers.
-  - **Current Debugging Step (2025-05-24)**: Modified `AuthStateSync.tsx` to prevent redirection to `/login` when `maxAttempts` for synchronization is reached. Instead, it logs an error to the console. This is to help isolate the root cause on the GRN page without being masked by login page issues.
+  - **Current Debugging Step (2025-05-24)**: Modified `AuthStateSync.tsx` to prevent redirection to `/main-login` when `maxAttempts` for synchronization is reached. Instead, it logs an error to the console. This is to help isolate the root cause on the GRN page without being masked by login page issues.
   - **Next Steps**:
     1. Deploy with the modified `AuthStateSync.tsx`.
     2. Observe browser console and Vercel logs when accessing the GRN page.

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Toaster } from 'sonner';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
@@ -44,6 +44,9 @@ export default function StockTransferPage() {
     targetLocation: string;
   } | null>(null);
 
+  // 添加搜尋輸入框的 ref
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
   const operationSteps = [
     "Scan QR code or enter complete pallet number",
     "Confirm pallet information and current location",
@@ -51,6 +54,20 @@ export default function StockTransferPage() {
     "Enter clock number to confirm transfer",
     "View operation results and activity log"
   ];
+
+  // 自動聚焦到搜尋欄位
+  const focusSearchInput = useCallback(() => {
+    setTimeout(() => {
+      if (searchInputRef.current) {
+        searchInputRef.current.focus();
+      }
+    }, 100); // 短暫延遲確保 DOM 已更新
+  }, []);
+
+  // 頁面載入時自動聚焦
+  useEffect(() => {
+    focusSearchInput();
+  }, [focusSearchInput]);
 
   const helpContent = (
     <div className="space-y-4">
@@ -204,6 +221,8 @@ export default function StockTransferPage() {
       setScannedPalletInfo(null);
       setSearchValue('');
       setCurrentStep(0);
+      // 自動聚焦到搜尋欄位以便快速執行下一個操作
+      focusSearchInput();
     } else {
       setCurrentStep(3);
     }
@@ -226,6 +245,8 @@ export default function StockTransferPage() {
     setStatusMessage(null);
     setShowClockNumberDialog(false);
     setPendingTransferData(null);
+    // 重置後自動聚焦到搜尋欄位
+    focusSearchInput();
   };
 
   return (
@@ -259,6 +280,7 @@ export default function StockTransferPage() {
             </CardHeader>
             <CardContent>
               <UnifiedSearch
+                ref={searchInputRef}
                 searchType="pallet"
                 placeholder="Scan QR code or enter complete pallet number (e.g., 250525/13)"
                 onSelect={handleSearchSelect}

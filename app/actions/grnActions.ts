@@ -80,7 +80,8 @@ export async function createGrnDatabaseEntries(
       p_pallet: payload.grnRecord.pallet,
       p_package_col: payload.grnRecord.package, // Maps to p_package_col
 
-      p_operator_id: operatorIdForFunction
+      p_operator_id: operatorIdForFunction,
+      p_loc: 'Await' // Set location to "Await" for GRN entries
     });
 
     if (rpcError) {

@@ -78,7 +78,7 @@ export default function UsersPage() {
           // For now, if a clockNumber is present, we'll let them stay, 
           // assuming the page itself will handle content based on more detailed permissions later.
           // If direct blocking is needed here, the above commented logic needs to be implemented.
-          console.log(`[UsersPage] User with clock number ${clockNumber} accessed the page. Permission check placeholder.`);
+          // Permission check placeholder - user access logged
           // Example: To store basic info if needed, though permissions are key.
           setUserInfo({ id: clockNumber }); 
         };
@@ -86,7 +86,7 @@ export default function UsersPage() {
 
       } else {
         toast.info("Redirecting to login: No user session found.");
-        router.push('/login');
+        router.push('/main-login');
       }
     }
   }, [router]);

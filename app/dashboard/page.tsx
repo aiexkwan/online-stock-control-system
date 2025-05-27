@@ -159,7 +159,7 @@ export default function Dashboard() {
 
         // 檢查本地存儲
         const storedClockNumber = getLoggedInClockNumber();
-        console.log('[Dashboard] Stored clock number:', storedClockNumber);
+        // Check stored clock number for session validation
 
         // 檢查 session
         const { data: { session }, error: sessionError } = await supabase.auth.getSession();
@@ -167,7 +167,7 @@ export default function Dashboard() {
           console.error('[Dashboard] Session check error or no session:', sessionError);
           if (isSubscribed) {
             clearLocalClockNumber();
-            router.push('/login?error=session_expired');
+            router.push('/main-login?error=session_expired');
           }
           return;
         }
@@ -178,7 +178,7 @@ export default function Dashboard() {
           console.error('[Dashboard] User check error or no user:', userError);
           if (isSubscribed) {
             clearLocalClockNumber();
-            router.push('/login?error=auth_failed');
+            router.push('/main-login?error=auth_failed');
           }
           return;
         }
@@ -191,7 +191,7 @@ export default function Dashboard() {
           console.error('[Dashboard] No clock number found');
           if (isSubscribed) {
             clearLocalClockNumber();
-            router.push('/login?error=no_clock_number');
+            router.push('/main-login?error=no_clock_number');
           }
           return;
         }
@@ -239,7 +239,7 @@ export default function Dashboard() {
 
       if (event === 'SIGNED_OUT') {
         clearLocalClockNumber();
-        router.push('/login');
+        router.push('/main-login');
       } else if (event === 'SIGNED_IN' && session) {
         initAuth();
       }
@@ -265,7 +265,7 @@ export default function Dashboard() {
       // 'firstLogin' is also cleared by clearLocalClockNumber if it was set
       
       toast.success('Logged out successfully');
-      router.push('/login');
+      router.push('/main-login');
     } catch (error: any) {
       console.error('Logout error:', error);
       toast.error(`Logout error: ${error.message}`);
@@ -290,7 +290,7 @@ export default function Dashboard() {
           <div className="bg-red-600 text-white p-4 rounded-lg">
             <p className="font-medium text-lg">{errorMessage || 'Session invalid, expired, or user data could not be loaded. Please login.'}</p>
             <button
-              onClick={() => router.push('/login')}
+              onClick={() => router.push('/main-login')}
               className="mt-4 px-4 py-2 bg-white text-red-600 rounded-md font-medium hover:bg-gray-100 transition"
             >
               Return to Login

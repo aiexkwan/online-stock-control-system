@@ -32,6 +32,11 @@ const nextConfig = {
         destination: '/main-login',
         permanent: true,
       },
+      {
+        source: '/login',
+        destination: '/main-login',
+        permanent: true,
+      },
     ];
   },
   webpack: (config, { isServer }) => {

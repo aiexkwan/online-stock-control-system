@@ -12,13 +12,13 @@ export default function AuthMeta() {
   useEffect(() => {
     // 檢查是否為公開路徑，如果是則跳過認證邏輯 - 應與 ClientLayout 保持一致
     const publicPaths = [
-      '/login',
+      '/main-login',
       '/new-password',
       '/change-password',
       '/dashboard/access',
       '/print-label',
       '/print-grnlabel',
-      '/stock-transfer'  // 添加 stock-transfer 作為公開路由
+      '/stock-transfer'  // 移除 '/access' - 此頁面需要認證才能訪問
     ];
     const currentPath = window.location.pathname;
     if (publicPaths.some(path => currentPath.startsWith(path))) {

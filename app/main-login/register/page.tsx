@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { simpleAuth } from '../utils/simple-supabase';
+import { unifiedAuth } from '../utils/unified-auth';
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -14,7 +14,8 @@ export default function RegisterPage() {
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
-  const [success, setSuccess] = useState(false);
+  const [isRegistered, setIsRegistered] = useState(false);
+  const [registeredEmail, setRegisteredEmail] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -48,40 +49,86 @@ export default function RegisterPage() {
     setError('');
 
     try {
-      await simpleAuth.signUp(formData.email, formData.password);
-      setSuccess(true);
+      const result = await unifiedAuth.signUp(formData.email, formData.password);
+      console.log('[RegisterPage] Registration result:', result);
+      
+      // 註冊成功，顯示電郵確認訊息
+      setRegisteredEmail(formData.email);
+      setIsRegistered(true);
+      setError('');
     } catch (err: any) {
+      console.error('[RegisterPage] Registration failed:', err);
       setError(err.message || 'Registration failed');
     } finally {
       setIsLoading(false);
     }
   };
 
-  if (success) {
+  // 如果已註冊，顯示電郵確認頁面
+  if (isRegistered) {
     return (
       <div className="min-h-screen bg-gray-900 flex items-center justify-center px-4">
-        <div className="max-w-md w-full text-center">
+        <div className="max-w-md w-full space-y-8">
+          {/* Brand Header */}
+          <div className="text-center">
+            <h1 className="text-4xl font-bold text-white mb-2">
+              Pennine Industries
+            </h1>
+            <p className="text-gray-400 text-lg">
+              Stock Control System
+            </p>
+            <div className="mt-4 h-1 w-24 bg-blue-500 mx-auto rounded"></div>
+          </div>
+
+          {/* Email Confirmation Card */}
           <div className="bg-gray-800 rounded-lg shadow-xl border border-gray-600 p-8">
-            <div className="mb-6">
+            <div className="text-center mb-6">
               <div className="mx-auto w-16 h-16 bg-green-500 rounded-full flex items-center justify-center mb-4">
                 <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                 </svg>
               </div>
               <h2 className="text-2xl font-semibold text-white mb-2">
-                Registration Successful!
+                Check Your Email
               </h2>
               <p className="text-gray-400">
-                Please check your email to verify your account.
+                We've sent a confirmation link to
+              </p>
+              <p className="text-blue-400 font-medium mt-1">
+                {registeredEmail}
               </p>
             </div>
-            
-            <Link
-              href="/main-login"
-              className="inline-block bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-6 rounded-md transition-colors"
-            >
-              Back to Login
-            </Link>
+
+            <div className="space-y-4 text-center">
+              <p className="text-gray-300 text-sm">
+                Please check your email and click the confirmation link to activate your account.
+                The link will redirect you back to the login page.
+              </p>
+              
+              <div className="bg-yellow-900/30 border border-yellow-600 rounded-md p-3">
+                <p className="text-yellow-300 text-xs">
+                  <strong>Important:</strong> Make sure to check your spam folder if you don't see the email within a few minutes.
+                </p>
+              </div>
+
+              <div className="pt-4">
+                <Link
+                  href="/main-login"
+                  className="inline-flex items-center text-blue-400 hover:text-blue-300 text-sm transition-colors"
+                >
+                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                  </svg>
+                  Back to Login
+                </Link>
+              </div>
+            </div>
+          </div>
+
+          {/* Footer */}
+          <div className="text-center text-gray-500 text-xs">
+            <p>© 2024 Pennine Industries. All rights reserved.</p>
+            <p className="mt-1">Authorized personnel only</p>
           </div>
         </div>
       </div>

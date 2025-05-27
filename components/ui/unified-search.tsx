@@ -34,7 +34,7 @@ interface UnifiedSearchProps {
   onChange?: (value: string) => void;
 }
 
-export function UnifiedSearch({
+export const UnifiedSearch = React.forwardRef<HTMLInputElement, UnifiedSearchProps>(({
   searchType,
   placeholder = "Search...",
   onSelect,
@@ -45,7 +45,7 @@ export function UnifiedSearch({
   disabled = false,
   value = "",
   onChange
-}: UnifiedSearchProps) {
+}, ref) => {
   const [searchQuery, setSearchQuery] = useState(value);
   const [showResults, setShowResults] = useState(false);
   const [showQrScanner, setShowQrScanner] = useState(false);
@@ -70,14 +70,15 @@ export function UnifiedSearch({
     }
 
     const results: SearchResult[] = [];
-    const query = searchQuery.toLowerCase();
+    const query = searchQuery; // 保持原始大小寫，避免搜尋失敗
+    const queryLower = searchQuery.toLowerCase(); // 僅用於產品搜尋的大小寫不敏感比較
 
     // Product search
     if ((searchType === 'product' || searchType === 'both') && products.length > 0) {
       const productResults = products
         .filter(product => 
-          product.name.toLowerCase().includes(query) ||
-          product.sku.toLowerCase().includes(query)
+          product.name.toLowerCase().includes(queryLower) ||
+          product.sku.toLowerCase().includes(queryLower)
         )
         .slice(0, 10) // Limit results
         .map(product => ({
@@ -215,7 +216,17 @@ export function UnifiedSearch({
         </div>
         
         <Input
-          ref={inputRef}
+          ref={(node) => {
+            // 合併內部 ref 和外部 ref
+            if (typeof ref === 'function') {
+              ref(node);
+            } else if (ref && 'current' in ref) {
+              (ref as React.MutableRefObject<HTMLInputElement | null>).current = node;
+            }
+            if (inputRef && inputRef.current !== node) {
+              (inputRef as React.MutableRefObject<HTMLInputElement | null>).current = node;
+            }
+          }}
           type="text"
           value={searchQuery}
           onChange={handleInputChange}
@@ -304,4 +315,6 @@ export function UnifiedSearch({
       )}
     </div>
   );
-} 
+});
+
+UnifiedSearch.displayName = 'UnifiedSearch'; 

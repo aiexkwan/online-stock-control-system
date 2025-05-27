@@ -1,9 +1,97 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { unifiedAuth } from '../main-login/utils/unified-auth';
 
 export default function AccessPage() {
+  const router = useRouter();
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [userEmail, setUserEmail] = useState<string>('');
+  const [securityInfo, setSecurityInfo] = useState<any>(null);
+  const [countdown, setCountdown] = useState(3);
+  const [isRedirecting, setIsRedirecting] = useState(false);
+
+  useEffect(() => {
+    const checkAuthentication = async () => {
+      try {
+        // 檢查用戶是否已通過 main-login 認證
+        const user = await unifiedAuth.getCurrentUser();
+        
+        if (!user || !user.email) {
+          // 沒有認證用戶，重定向到 main-login
+          router.push('/main-login?error=access_denied');
+          return;
+        }
+
+        // 驗證 email 域名
+        if (!user.email.endsWith('@pennineindustries.com')) {
+          // 不是授權域名，重定向到 main-login
+          router.push('/main-login?error=unauthorized_domain');
+          return;
+        }
+
+        // 認證成功
+        setUserEmail(user.email);
+        setSecurityInfo(unifiedAuth.getSecurityInfo());
+        setIsAuthenticated(true);
+      } catch (error) {
+        console.error('Authentication check failed:', error);
+        router.push('/main-login?error=auth_check_failed');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    checkAuthentication();
+  }, [router]);
+
+  // 倒計時和自動重定向
+  useEffect(() => {
+    if (isAuthenticated && !isLoading) {
+      const timer = setInterval(() => {
+        setCountdown((prev) => {
+          if (prev <= 1) {
+            setIsRedirecting(true);
+            // 重定向到主要儀表板
+            setTimeout(() => {
+              router.push('/dashboard/access');
+            }, 500);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+
+      return () => clearInterval(timer);
+    }
+  }, [isAuthenticated, isLoading, router]);
+
+  // 載入中狀態
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-900 flex items-center justify-center px-4">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+          <p className="text-gray-400">Verifying access...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // 未認證狀態（這個應該不會顯示，因為會重定向）
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-gray-900 flex items-center justify-center px-4">
+        <div className="text-center">
+          <p className="text-red-400">Access denied. Redirecting...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-900 flex items-center justify-center px-4">
       <div className="max-w-2xl w-full text-center">
@@ -33,39 +121,57 @@ export default function AccessPage() {
                 <svg className="w-5 h-5 text-green-400 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
+                <span>Authenticated as: {userEmail}</span>
+              </div>
+              <div className="flex items-center text-gray-300">
+                <svg className="w-5 h-5 text-green-400 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
                 <span>Email domain verified: @pennineindustries.com</span>
               </div>
               <div className="flex items-center text-gray-300">
                 <svg className="w-5 h-5 text-green-400 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
-                <span>Authentication successful</span>
+                <span>
+                  Security Mode: {securityInfo?.mode || 'unknown'} 
+                  {securityInfo?.useLocalStorage ? ' (with secure localStorage)' : ' (no localStorage)'}
+                </span>
               </div>
-              <div className="flex items-center text-gray-300">
-                <svg className="w-5 h-5 text-green-400 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                <span>Session established securely</span>
-              </div>
+              {securityInfo?.useLocalStorage && (
+                <div className="flex items-center text-gray-300">
+                  <svg className="w-5 h-5 text-blue-400 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                  </svg>
+                  <span>Session expires in {Math.round((securityInfo.sessionTimeout || 0) / (60 * 60 * 1000))} hours</span>
+                </div>
+              )}
             </div>
           </div>
 
-          {/* Action Buttons */}
+          {/* Redirect Status */}
           <div className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Link
-                href="/dashboard/access"
-                className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-6 rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-gray-800"
-              >
-                Go to Dashboard
-              </Link>
-              <Link
-                href="/stock-transfer"
-                className="bg-gray-600 hover:bg-gray-700 text-white font-medium py-3 px-6 rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 focus:ring-offset-gray-800"
-              >
-                Stock Transfer
-              </Link>
-            </div>
+            {isRedirecting ? (
+              <div className="text-center py-6">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-4"></div>
+                <p className="text-blue-400 text-lg font-medium">Redirecting...</p>
+                <p className="text-gray-400 text-sm mt-2">Taking you to the dashboard</p>
+              </div>
+            ) : (
+              <div className="text-center py-6">
+                <div className="mb-4">
+                  <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-600 rounded-full mb-4">
+                    <span className="text-2xl font-bold text-white">{countdown}</span>
+                  </div>
+                </div>
+                <p className="text-blue-400 text-lg font-medium">
+                  Redirecting in {countdown} second{countdown !== 1 ? 's' : ''}...
+                </p>
+                <p className="text-gray-400 text-sm mt-2">
+                  You will be automatically taken to the dashboard
+                </p>
+              </div>
+            )}
             
             <div className="pt-4 border-t border-gray-600">
               <Link

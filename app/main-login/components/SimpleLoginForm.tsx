@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { simpleAuth } from '../utils/simple-supabase';
+import { unifiedAuth } from '../utils/unified-auth';
 
 export default function SimpleLoginForm() {
   const router = useRouter();
@@ -28,9 +28,17 @@ export default function SimpleLoginForm() {
     setError('');
 
     try {
-      await simpleAuth.signIn(email, password);
+      console.log('[SimpleLoginForm] Attempting sign in...');
+      const result = await unifiedAuth.signIn(email, password);
+      console.log('[SimpleLoginForm] Sign in successful:', result);
+      
+      // 等待一小段時間確保 session 建立
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      console.log('[SimpleLoginForm] Redirecting to /access');
       router.push('/access');
     } catch (err: any) {
+      console.error('[SimpleLoginForm] Sign in failed:', err);
       setError(err.message || 'Login failed');
     } finally {
       setIsLoading(false);

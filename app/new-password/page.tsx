@@ -33,7 +33,7 @@ function NewPasswordContent() {
       setError('User ID not provided. Please return to the login page and use the "Forgot Password" link again.');
       // Consider disabling the form or redirecting if no userId
       // toast.error('User ID not found in URL. Cannot reset password.');
-      // setTimeout(() => router.push('/login'), 4000); // Example redirect
+              // setTimeout(() => router.push('/main-login'), 4000); // Example redirect
     }
     // localStorage cleanup is fine here
     localStorage.removeItem('user');
@@ -75,7 +75,7 @@ function NewPasswordContent() {
         setSuccess(true);
         toast.success('Password reset successfully! Redirecting to login...'); // Success toast
         setTimeout(() => {
-           router.push('/login');
+           router.push('/main-login');
         }, 3000);
       } else {
         console.error(`Password reset failed for user: ${userId}. Reason: ${result.error}`);
@@ -134,7 +134,7 @@ function NewPasswordContent() {
                    </div>
                    <h1 className="text-xl font-bold text-red-700 mb-4">Access Error</h1>
                    <p className="text-red-600 mb-6">{error}</p>
-                   <Button onClick={() => router.push('/login')} variant="destructive" className="bg-red-600 hover:bg-red-700">
+                   <Button onClick={() => router.push('/main-login')} variant="destructive" className="bg-red-600 hover:bg-red-700">
                        Return to Login
                    </Button>
                </div>
@@ -199,7 +199,7 @@ function NewPasswordContent() {
             <Button
               type="button"
               variant="outline"
-              onClick={() => router.push('/login')}
+              onClick={() => router.push('/main-login')}
               size="sm"
               disabled={loading} // Disable if loading
             >

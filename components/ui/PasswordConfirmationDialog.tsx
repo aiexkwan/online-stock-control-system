@@ -36,19 +36,18 @@ export function PasswordConfirmationDialog(props: PasswordConfirmationDialogProp
   const [password, setPassword] = React.useState("");
   const passwordInputRef = React.useRef<HTMLInputElement>(null);
 
-  console.log("[PasswordConfirmationDialog] Rendering. isOpen:", isOpen, "isLoading:", isLoading);
-  console.log("[PasswordConfirmationDialog] Received props:", props);
+  // Debug logs removed to reduce console noise
 
-  const handleConfirm = () => {
+  const handleConfirm = React.useCallback(() => {
     if (password.trim() !== "") {
       onConfirm(password);
     }
-  };
+  }, [password, onConfirm]);
 
-  const handleCancel = () => {
+  const handleCancel = React.useCallback(() => {
     onCancel();
     setPassword(""); // Clear password on cancel
-  };
+  }, [onCancel]);
   
   // Effect to focus the password input when the dialog opens
   React.useEffect(() => {

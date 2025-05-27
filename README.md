@@ -121,7 +121,7 @@ chmod +x scripts/start-auto-push.sh
 ```
 /app                  - Next.js 應用代碼
   /components         - 共享組件
-  /login              - 登入頁面
+  /main-login         - 登入頁面
   /products           - 產品管理
   /inventory          - 庫存操作
   /reports            - 報表頁面
