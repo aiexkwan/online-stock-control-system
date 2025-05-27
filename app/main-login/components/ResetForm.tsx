@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
 import EmailValidator from './EmailValidator';
 import PasswordValidator from './PasswordValidator';
+import { mainLoginAuth } from '../utils/supabase';
 
 interface ResetFormProps {
   step: 'request' | 'reset';
@@ -81,10 +82,10 @@ export default function ResetForm({ step, token, onSuccess, onError, isLoading, 
     onError('');
 
     try {
-      // TODO: Implement actual password reset request with Supabase
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      // 使用 Supabase Auth 發送密碼重設 email
+      await mainLoginAuth.resetPassword(requestData.email);
       
-      // Simulate successful request
+      // 發送成功
       onSuccess();
     } catch (error) {
       onError(error instanceof Error ? error.message : 'Failed to send reset email. Please try again.');
@@ -109,10 +110,10 @@ export default function ResetForm({ step, token, onSuccess, onError, isLoading, 
     onError('');
 
     try {
-      // TODO: Implement actual password reset with Supabase
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      // 使用 Supabase Auth 更新密碼
+      await mainLoginAuth.updatePassword(resetData.password);
       
-      // Simulate successful reset
+      // 密碼重設成功
       onSuccess();
     } catch (error) {
       onError(error instanceof Error ? error.message : 'Failed to reset password. Please try again.');

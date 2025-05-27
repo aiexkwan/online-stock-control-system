@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
 import EmailValidator from './EmailValidator';
 import PasswordValidator from './PasswordValidator';
+import { mainLoginAuth } from '../utils/supabase';
 
 interface RegisterFormProps {
   onSuccess: () => void;
@@ -103,11 +104,18 @@ export default function RegisterForm({ onSuccess, onError, isLoading, setIsLoadi
     onError(''); // Clear previous errors
 
     try {
-      // TODO: Implement actual registration logic with Supabase
-      // For now, simulate API call
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // 使用 Supabase Auth 進行註冊
+      await mainLoginAuth.signUp(
+        formData.email, 
+        formData.password,
+        {
+          firstName: formData.firstName,
+          lastName: formData.lastName,
+          department: formData.department
+        }
+      );
       
-      // Simulate successful registration
+      // 註冊成功
       onSuccess();
     } catch (error) {
       onError(error instanceof Error ? error.message : 'Registration failed. Please try again.');

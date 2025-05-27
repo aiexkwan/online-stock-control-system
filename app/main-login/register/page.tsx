@@ -3,27 +3,58 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import RegisterForm from '../components/RegisterForm';
+import { simpleAuth } from '../utils/simple-supabase';
 
 export default function RegisterPage() {
   const router = useRouter();
+  const [formData, setFormData] = useState({
+    email: '',
+    password: '',
+    confirmPassword: ''
+  });
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
 
-  const handleRegisterSuccess = () => {
-    setSuccess(true);
-    setError(null);
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
     
-    // Redirect to login page after 3 seconds
-    setTimeout(() => {
-      router.push('/main-login');
-    }, 3000);
-  };
+    if (!formData.email || !formData.password || !formData.confirmPassword) {
+      setError('Please fill in all fields');
+      return;
+    }
 
-  const handleRegisterError = (errorMessage: string) => {
-    setError(errorMessage);
-    setIsLoading(false);
+    if (!formData.email.endsWith('@pennineindustries.com')) {
+      setError('Only @pennineindustries.com email addresses are allowed');
+      return;
+    }
+
+    if (formData.password.length < 6) {
+      setError('Password must be at least 6 characters');
+      return;
+    }
+
+    if (!/^[a-zA-Z0-9]+$/.test(formData.password)) {
+      setError('Password must contain only letters and numbers');
+      return;
+    }
+
+    if (formData.password !== formData.confirmPassword) {
+      setError('Passwords do not match');
+      return;
+    }
+
+    setIsLoading(true);
+    setError('');
+
+    try {
+      await simpleAuth.signUp(formData.email, formData.password);
+      setSuccess(true);
+    } catch (err: any) {
+      setError(err.message || 'Registration failed');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   if (success) {
@@ -41,7 +72,7 @@ export default function RegisterPage() {
                 Registration Successful!
               </h2>
               <p className="text-gray-400">
-                Your account has been created successfully. You will be redirected to the login page shortly.
+                Please check your email to verify your account.
               </p>
             </div>
             
@@ -49,7 +80,7 @@ export default function RegisterPage() {
               href="/main-login"
               className="inline-block bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-6 rounded-md transition-colors"
             >
-              Go to Login
+              Back to Login
             </Link>
           </div>
         </div>
@@ -78,24 +109,84 @@ export default function RegisterPage() {
               Create Account
             </h2>
             <p className="text-gray-400 mt-2">
-              Join Pennine Industries team
+              Join the Pennine team
             </p>
           </div>
 
-          {/* Error Message */}
           {error && (
             <div className="mb-4 p-3 bg-red-900/50 border border-red-500 rounded-md">
               <p className="text-red-300 text-sm">{error}</p>
             </div>
           )}
 
-          {/* Register Form */}
-          <RegisterForm
-            onSuccess={handleRegisterSuccess}
-            onError={handleRegisterError}
-            isLoading={isLoading}
-            setIsLoading={setIsLoading}
-          />
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {/* Email Field */}
+            <div>
+              <label htmlFor="email" className="block text-sm font-medium text-gray-300 mb-2">
+                Email Address
+              </label>
+              <input
+                id="email"
+                type="email"
+                value={formData.email}
+                onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
+                placeholder="your.name@pennineindustries.com"
+                disabled={isLoading}
+              />
+            </div>
+
+            {/* Password Field */}
+            <div>
+              <label htmlFor="password" className="block text-sm font-medium text-gray-300 mb-2">
+                Password
+              </label>
+              <input
+                id="password"
+                type="password"
+                value={formData.password}
+                onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
+                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
+                placeholder="Enter your password"
+                disabled={isLoading}
+              />
+              <p className="mt-1 text-xs text-gray-400">
+                Password must be at least 6 characters with letters and numbers only
+              </p>
+            </div>
+
+            {/* Confirm Password Field */}
+            <div>
+              <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-300 mb-2">
+                Confirm Password
+              </label>
+              <input
+                id="confirmPassword"
+                type="password"
+                value={formData.confirmPassword}
+                onChange={(e) => setFormData(prev => ({ ...prev, confirmPassword: e.target.value }))}
+                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
+                placeholder="Confirm your password"
+                disabled={isLoading}
+              />
+            </div>
+
+            {/* Submit Button */}
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-800 disabled:cursor-not-allowed text-white font-medium py-2 px-4 rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-gray-800"
+            >
+              {isLoading ? (
+                <div className="flex items-center justify-center">
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  Creating Account...
+                </div>
+              ) : (
+                'Create Account'
+              )}
+            </button>
+          </form>
 
           {/* Links */}
           <div className="mt-6 text-center">

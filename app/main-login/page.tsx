@@ -1,25 +1,10 @@
 'use client';
 
-import React, { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import React from 'react';
 import Link from 'next/link';
-import LoginForm from './components/LoginForm';
+import SimpleLoginForm from './components/SimpleLoginForm';
 
 export default function MainLoginPage() {
-  const router = useRouter();
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const handleLoginSuccess = () => {
-    // Redirect to access page without storing any local data
-    router.push('/access');
-  };
-
-  const handleLoginError = (errorMessage: string) => {
-    setError(errorMessage);
-    setIsLoading(false);
-  };
-
   return (
     <div className="min-h-screen bg-gray-900 flex items-center justify-center px-4">
       <div className="max-w-md w-full space-y-8">
@@ -45,20 +30,8 @@ export default function MainLoginPage() {
             </p>
           </div>
 
-          {/* Error Message */}
-          {error && (
-            <div className="mb-4 p-3 bg-red-900/50 border border-red-500 rounded-md">
-              <p className="text-red-300 text-sm">{error}</p>
-            </div>
-          )}
-
           {/* Login Form */}
-          <LoginForm
-            onSuccess={handleLoginSuccess}
-            onError={handleLoginError}
-            isLoading={isLoading}
-            setIsLoading={setIsLoading}
-          />
+          <SimpleLoginForm />
 
           {/* Links */}
           <div className="mt-6 space-y-3">

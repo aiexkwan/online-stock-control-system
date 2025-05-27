@@ -29,7 +29,7 @@ const nextConfig = {
     return [
       {
         source: '/',
-        destination: '/dashboard/access',
+        destination: '/main-login',
         permanent: true,
       },
     ];

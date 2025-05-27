@@ -6,11 +6,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 export async function middleware(request: NextRequest) {
   console.log(`[Supabase SSR Middleware] Path: ${request.nextUrl.pathname}`);
   
-  // 如果是根路由，直接重定向到開放訪問頁面
-  if (request.nextUrl.pathname === '/') {
-    console.log(`[Supabase SSR Middleware] Root path detected, redirecting to access dashboard`);
-    return NextResponse.redirect(new URL('/dashboard/access', request.url));
-  }
+  // 讓根路由由 app/page.tsx 處理重定向
   
   // 創建基礎回應
   let response = NextResponse.next({

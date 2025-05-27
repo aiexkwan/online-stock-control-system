@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
 import EmailValidator from './EmailValidator';
+import { mainLoginAuth } from '../utils/supabase';
 
 interface LoginFormProps {
   onSuccess: () => void;
@@ -58,16 +59,11 @@ export default function LoginForm({ onSuccess, onError, isLoading, setIsLoading 
     onError(''); // Clear previous errors
 
     try {
-      // TODO: Implement actual login logic with Supabase
-      // For now, simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // 使用 Supabase Auth 進行登入
+      await mainLoginAuth.signIn(formData.email, formData.password);
       
-      // Simulate login validation
-      if (formData.email && formData.password) {
-        onSuccess();
-      } else {
-        throw new Error('Invalid credentials');
-      }
+      // 登入成功，跳轉到 access 頁面
+      onSuccess();
     } catch (error) {
       onError(error instanceof Error ? error.message : 'Login failed. Please try again.');
     } finally {

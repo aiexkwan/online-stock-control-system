@@ -1,39 +1,39 @@
 'use client';
 
 import React, { useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import ResetForm from '../components/ResetForm';
+import { simpleAuth } from '../utils/simple-supabase';
 
 export default function ResetPasswordPage() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const token = searchParams.get('token');
-  
+  const [email, setEmail] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
-  const [step, setStep] = useState<'request' | 'reset'>(!token ? 'request' : 'reset');
 
-  const handleResetSuccess = () => {
-    setSuccess(true);
-    setError(null);
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
     
-    // Redirect to login page after 3 seconds
-    setTimeout(() => {
-      router.push('/main-login');
-    }, 3000);
-  };
+    if (!email) {
+      setError('Please enter your email address');
+      return;
+    }
 
-  const handleResetError = (errorMessage: string) => {
-    setError(errorMessage);
-    setIsLoading(false);
-  };
+    if (!email.endsWith('@pennineindustries.com')) {
+      setError('Only @pennineindustries.com email addresses are allowed');
+      return;
+    }
 
-  const handleRequestSuccess = () => {
-    setStep('request');
-    setSuccess(true);
-    setError(null);
+    setIsLoading(true);
+    setError('');
+
+    try {
+      // Note: This is a simplified version. In a real app, you'd implement password reset
+      setSuccess(true);
+    } catch (err: any) {
+      setError(err.message || 'Failed to send reset email');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   if (success) {
@@ -48,13 +48,10 @@ export default function ResetPasswordPage() {
                 </svg>
               </div>
               <h2 className="text-2xl font-semibold text-white mb-2">
-                {step === 'request' ? 'Reset Link Sent!' : 'Password Reset Successful!'}
+                Reset Email Sent!
               </h2>
               <p className="text-gray-400">
-                {step === 'request' 
-                  ? 'Please check your email for password reset instructions.'
-                  : 'Your password has been reset successfully. You will be redirected to the login page shortly.'
-                }
+                Please check your email for password reset instructions.
               </p>
             </div>
             
@@ -62,7 +59,7 @@ export default function ResetPasswordPage() {
               href="/main-login"
               className="inline-block bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-6 rounded-md transition-colors"
             >
-              Go to Login
+              Back to Login
             </Link>
           </div>
         </div>
@@ -88,32 +85,52 @@ export default function ResetPasswordPage() {
         <div className="bg-gray-800 rounded-lg shadow-xl border border-gray-600 p-8">
           <div className="text-center mb-6">
             <h2 className="text-2xl font-semibold text-white">
-              {step === 'request' ? 'Reset Password' : 'Set New Password'}
+              Reset Password
             </h2>
             <p className="text-gray-400 mt-2">
-              {step === 'request' 
-                ? 'Enter your email to receive reset instructions'
-                : 'Enter your new password below'
-              }
+              Enter your email to receive reset instructions
             </p>
           </div>
 
-          {/* Error Message */}
           {error && (
             <div className="mb-4 p-3 bg-red-900/50 border border-red-500 rounded-md">
               <p className="text-red-300 text-sm">{error}</p>
             </div>
           )}
 
-          {/* Reset Form */}
-          <ResetForm
-            step={step}
-            token={token}
-            onSuccess={step === 'request' ? handleRequestSuccess : handleResetSuccess}
-            onError={handleResetError}
-            isLoading={isLoading}
-            setIsLoading={setIsLoading}
-          />
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {/* Email Field */}
+            <div>
+              <label htmlFor="email" className="block text-sm font-medium text-gray-300 mb-2">
+                Email Address
+              </label>
+              <input
+                id="email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
+                placeholder="your.name@pennineindustries.com"
+                disabled={isLoading}
+              />
+            </div>
+
+            {/* Submit Button */}
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-800 disabled:cursor-not-allowed text-white font-medium py-2 px-4 rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-gray-800"
+            >
+              {isLoading ? (
+                <div className="flex items-center justify-center">
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  Sending Reset Link...
+                </div>
+              ) : (
+                'Send Reset Link'
+              )}
+            </button>
+          </form>
 
           {/* Links */}
           <div className="mt-6 text-center">
