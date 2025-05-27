@@ -28,6 +28,7 @@ const protectedPaths = [
   '/export-report',
   '/history',
   '/products',
+  '/productUpdate',
   '/stock-transfer',
   '/print-label',
   '/print-grnlabel',

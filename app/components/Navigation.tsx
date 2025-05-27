@@ -240,20 +240,6 @@ export default function Navigation() {
   
   const bottomLinks = (
     <div className="px-2 pb-6 flex flex-col gap-2">
-      <Link 
-        href="/products/update" 
-        onClick={() => setIsMobileMenuOpen(false)} // Always close menu
-        className="flex items-center px-4 py-2 text-base font-medium rounded-md text-gray-300 hover:bg-gray-700 hover:text-white"
-      >
-        <span className="mr-3">🛠️</span> Product Update
-      </Link>
-      <Link 
-        href="/access/update" 
-        onClick={() => setIsMobileMenuOpen(false)} // Always close menu
-        className="flex items-center px-4 py-2 text-base font-medium rounded-md text-gray-300 hover:bg-gray-700 hover:text-white"
-      >
-        <span className="mr-3">🔑</span> Access Update
-      </Link>
       <button
         onClick={async () => {
           console.log("[Navigation] LogOut button clicked");

@@ -178,6 +178,9 @@ export const GrnLabelForm: React.FC = () => {
   // User info
   const [currentUserId, setCurrentUserId] = useState<string>('');
 
+  // Instructions panel state
+  const [isInstructionsExpanded, setIsInstructionsExpanded] = useState(false);
+
   // Initialize user
   useEffect(() => {
     const initializeUser = async () => {
@@ -579,6 +582,44 @@ export const GrnLabelForm: React.FC = () => {
             <h1 className="text-3xl font-bold text-orange-500">Material Receiving</h1>
           </div>
 
+          {/* Collapsible Instructions Card */}
+          <div className="mb-8 bg-blue-900/30 border border-blue-700/50 rounded-lg overflow-hidden">
+            <button
+              onClick={() => setIsInstructionsExpanded(!isInstructionsExpanded)}
+              className="w-full p-4 flex items-center justify-between hover:bg-blue-900/40 transition-colors duration-200"
+            >
+              <div className="flex items-center space-x-3">
+                <div className="flex-shrink-0 w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center">
+                  <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <h3 className="text-sm font-semibold text-blue-300">Instructions</h3>
+              </div>
+              <div className="flex-shrink-0">
+                <svg 
+                  className={`w-5 h-5 text-blue-300 transition-transform duration-200 ${isInstructionsExpanded ? 'rotate-180' : ''}`} 
+                  fill="none" 
+                  stroke="currentColor" 
+                  viewBox="0 0 24 24"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </div>
+            </button>
+            
+            {isInstructionsExpanded && (
+              <div className="px-4 pb-4 border-t border-blue-700/30">
+                <div className="pt-3 text-xs text-blue-200 space-y-2">
+                  <p>• <strong>Fill GRN Details:</strong> Enter GRN Number, Material Supplier Code, and Product Code (system will auto-validate)</p>
+                  <p>• <strong>Select Pallet & Package Types:</strong> Choose one pallet type and one package type (mutually exclusive selection)</p>
+                  <p>• <strong>Enter Weight Information:</strong> Input gross weight for each pallet, system will auto-calculate net weight (Gross - Pallet - Package)</p>
+                  <p>• <strong>Print Labels:</strong> Confirm all information is correct, then click print button and enter password for confirmation</p>
+                </div>
+              </div>
+            )}
+          </div>
+
           <ResponsiveStack direction="responsive" spacing={8}>
             {/* Left Column */}
             <div className="flex-1 space-y-8">
@@ -741,13 +782,13 @@ export const GrnLabelForm: React.FC = () => {
                             {idx + 1}
                           </div>
                           
-                          {/* Pallet Label */}
-                          <div className="flex-1 min-w-0">
+                          {/* Pallet Label and Net Weight */}
+                          <div className="flex-1 min-w-0 flex items-center space-x-2">
                             <div className={`text-sm font-medium ${hasValue ? 'text-white' : 'text-gray-400'}`}>
                               {getPalletLabel(idx)}
                             </div>
                             {hasValue && (
-                              <div className="text-xs text-gray-400 mt-1">
+                              <div className="text-xs text-gray-400">
                                 Net: {(parseFloat(weight) - 
                                   (PALLET_WEIGHT[Object.entries(palletType).find(([, value]) => (parseInt(value) || 0) > 0)?.[0] || 'notIncluded'] || 0) - 
                                   (PACKAGE_WEIGHT[Object.entries(packageType).find(([, value]) => (parseInt(value) || 0) > 0)?.[0] || 'notIncluded'] || 0)
@@ -757,12 +798,12 @@ export const GrnLabelForm: React.FC = () => {
                           </div>
                           
                           {/* Weight Input */}
-                          <div className="flex-shrink-0">
+                          <div className="flex-shrink-0 flex items-center space-x-1">
                             <input
                               type="number"
                               value={weight}
                               onChange={e => handleGrossWeightChange(idx, e.target.value)}
-                              className={`w-20 p-2 text-right text-sm rounded-md border transition-all duration-200 ${
+                              className={`w-16 p-2 text-right text-sm rounded-md border transition-all duration-200 ${
                                 hasValue 
                                   ? 'bg-gray-600 border-gray-500 text-white focus:ring-orange-500 focus:border-orange-500' 
                                   : 'bg-gray-700 border-gray-600 text-gray-300 focus:ring-orange-500 focus:border-orange-500'
@@ -770,8 +811,9 @@ export const GrnLabelForm: React.FC = () => {
                               placeholder={isLast ? "Enter" : "0"}
                               min="0"
                               step="0.1"
+                              maxLength={5}
                             />
-                            <div className="text-xs text-gray-500 text-center mt-1">kg</div>
+                            <span className="text-xs text-gray-500">kg</span>
                           </div>
                           
                           {/* Remove Button for filled entries */}

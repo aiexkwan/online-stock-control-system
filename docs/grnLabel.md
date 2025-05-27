@@ -1213,3 +1213,343 @@ const adaptProductInfo = useCallback((qcProductInfo: any): GrnProductInfo | null
 - 🔒 **安全性**：簡化但安全的認證流程
 
 整個重構過程解決了原有的技術債務，大幅提升了代碼質量、用戶體驗和系統可維護性，為未來的功能擴展奠定了堅實基礎。
+
+## 🎨 界面優化 Phase 2 - 重量輸入區域優化（2025年5月27日）
+
+### 優化目標
+根據用戶反饋，進一步優化重量輸入區域的視覺設計和用戶體驗：
+- "kg" 字放到輸入欄跟刪除按鍵中間
+- 輸入欄只需容納5個字元，可縮短欄寬
+- "Net Weight"的計算放"Xst Pallet 右方"，並可以字型縮小
+- 整體視覺以一行排列，避免分行顯示
+
+### 🎯 具體改進
+
+#### 1. 重量輸入欄位優化
+```typescript
+{/* Weight Input */}
+<div className="flex-shrink-0 flex items-center space-x-1">
+  <input
+    type="number"
+    value={weight}
+    onChange={e => handleGrossWeightChange(idx, e.target.value)}
+    className={`w-16 p-2 text-right text-sm rounded-md border transition-all duration-200 ${
+      hasValue 
+        ? 'bg-gray-600 border-gray-500 text-white focus:ring-orange-500 focus:border-orange-500' 
+        : 'bg-gray-700 border-gray-600 text-gray-300 focus:ring-orange-500 focus:border-orange-500'
+    }`}
+    placeholder={isLast ? "Enter" : "0"}
+    min="0"
+    step="0.1"
+    maxLength={5}
+  />
+  <span className="text-xs text-gray-500">kg</span>
+</div>
+```
+
+**改進內容**：
+- **輸入欄寬度**：從 `w-20` 縮短為 `w-16`，更適合5個字元的輸入
+- **字元限制**：添加 `maxLength={5}` 限制輸入長度
+- **kg 標籤位置**：從輸入欄下方移到右側，與輸入欄在同一行
+- **佈局優化**：使用 `flex items-center space-x-1` 實現水平對齊
+
+#### 2. 托盤標籤和淨重顯示優化
+```typescript
+{/* Pallet Label and Net Weight */}
+<div className="flex-1 min-w-0 flex items-center space-x-2">
+  <div className={`text-sm font-medium ${hasValue ? 'text-white' : 'text-gray-400'}`}>
+    {getPalletLabel(idx)}
+  </div>
+  {hasValue && (
+    <div className="text-xs text-gray-400">
+      Net: {(parseFloat(weight) - 
+        (PALLET_WEIGHT[Object.entries(palletType).find(([, value]) => (parseInt(value) || 0) > 0)?.[0] || 'notIncluded'] || 0) - 
+        (PACKAGE_WEIGHT[Object.entries(packageType).find(([, value]) => (parseInt(value) || 0) > 0)?.[0] || 'notIncluded'] || 0)
+      ).toFixed(1)}kg
+    </div>
+  )}
+</div>
+```
+
+**改進內容**：
+- **水平佈局**：托盤標籤和淨重在同一行顯示
+- **淨重位置**：從下方移到托盤標籤右側
+- **字型大小**：淨重保持 `text-xs` 小字型
+- **間距優化**：使用 `space-x-2` 提供適當間距
+
+#### 3. 整體佈局優化
+
+**修改前的佈局**：
+```
+[1] 1st Pallet
+    Net: 76.0kg
+    [100] 
+     kg        [×]
+```
+
+**修改後的佈局**：
+```
+[1] 1st Pallet Net: 76.0kg  [100] kg  [×]
+```
+
+**視覺效果改善**：
+- ✅ **空間利用**：更緊湊的一行式佈局
+- ✅ **視覺流暢**：從左到右的邏輯順序
+- ✅ **操作便利**：所有元素在同一視線內
+- ✅ **響應式**：在不同屏幕尺寸下都能良好顯示
+
+### 🎨 可縮放說明方塊優化
+
+#### 1. 多語言支援
+將說明內容改為英文，提升國際化支援：
+
+```typescript
+{/* Collapsible Instructions Card */}
+<div className="mb-8 bg-blue-900/30 border border-blue-700/50 rounded-lg overflow-hidden">
+  <button
+    onClick={() => setIsInstructionsExpanded(!isInstructionsExpanded)}
+    className="w-full p-4 flex items-center justify-between hover:bg-blue-900/40 transition-colors duration-200"
+  >
+    <div className="flex items-center space-x-3">
+      <div className="flex-shrink-0 w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center">
+        <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+      </div>
+      <h3 className="text-sm font-semibold text-blue-300">Instructions</h3>
+    </div>
+    <div className="flex-shrink-0">
+      <svg 
+        className={`w-5 h-5 text-blue-300 transition-transform duration-200 ${isInstructionsExpanded ? 'rotate-180' : ''}`} 
+        fill="none" 
+        stroke="currentColor" 
+        viewBox="0 0 24 24"
+      >
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+      </svg>
+    </div>
+  </button>
+  
+  {isInstructionsExpanded && (
+    <div className="px-4 pb-4 border-t border-blue-700/30">
+      <div className="pt-3 text-xs text-blue-200 space-y-2">
+        <p>• <strong>Fill GRN Details:</strong> Enter GRN Number, Material Supplier Code, and Product Code (system will auto-validate)</p>
+        <p>• <strong>Select Pallet & Package Types:</strong> Choose one pallet type and one package type (mutually exclusive selection)</p>
+        <p>• <strong>Enter Weight Information:</strong> Input gross weight for each pallet, system will auto-calculate net weight (Gross - Pallet - Package)</p>
+        <p>• <strong>Print Labels:</strong> Confirm all information is correct, then click print button and enter password for confirmation</p>
+      </div>
+    </div>
+  )}
+</div>
+```
+
+#### 2. 交互設計改善
+- **可縮放設計**：默認收起，用戶可選擇展開
+- **動畫效果**：箭頭圖標有平滑的旋轉動畫
+- **懸停反饋**：鼠標懸停時背景色變化
+- **狀態管理**：使用 `isInstructionsExpanded` 狀態控制
+
+### 📊 優化效果對比
+
+| 項目 | 優化前 | 優化後 | 改進效果 |
+|------|--------|--------|----------|
+| 輸入欄寬度 | w-20 (80px) | w-16 (64px) | ✅ 更緊湊，適合5字元 |
+| kg 標籤位置 | 輸入欄下方 | 輸入欄右側 | ✅ 一行式佈局 |
+| 淨重顯示 | 托盤標籤下方 | 托盤標籤右側 | ✅ 水平對齊 |
+| 說明方塊 | 固定顯示 | 可縮放 | ✅ 節省空間 |
+| 語言支援 | 中文 | 英文 | ✅ 國際化 |
+| 視覺層次 | 多行顯示 | 單行顯示 | ✅ 更簡潔 |
+
+## 🔍 /print-grnlabel 頁面改進評估
+
+### 🎯 當前優勢
+
+#### 1. 技術架構優勢
+- ✅ **模組化設計**：主頁面僅8行，核心邏輯在獨立組件中
+- ✅ **組件重用**：整合QC Label的成熟組件系統
+- ✅ **類型安全**：完整的TypeScript類型定義
+- ✅ **響應式設計**：支援所有設備尺寸
+- ✅ **統一主題**：與系統其他頁面保持一致的視覺風格
+
+#### 2. 用戶體驗優勢
+- ✅ **直觀操作**：清晰的步驟指引和視覺反饋
+- ✅ **實時驗證**：供應商和產品代碼自動驗證
+- ✅ **智能計算**：自動計算淨重，減少人工錯誤
+- ✅ **進度追蹤**：PDF生成過程的詳細進度顯示
+- ✅ **錯誤處理**：友好的錯誤提示和恢復機制
+
+#### 3. 功能完整性
+- ✅ **完整工作流**：從數據輸入到PDF列印的完整流程
+- ✅ **批量處理**：支援最多22個托盤的批量標籤生成
+- ✅ **數據持久化**：完整的資料庫記錄和歷史追蹤
+- ✅ **安全認證**：Clock Number認證確保操作安全
+
+### 🚀 潛在改進方向
+
+#### 1. 短期改進（1-2週）
+
+**A. 表單體驗優化**
+- 🔄 **自動保存草稿**：防止用戶意外丟失輸入數據
+  ```typescript
+  // 實現本地存儲自動保存
+  useEffect(() => {
+    const draftData = {
+      formData,
+      palletType,
+      packageType,
+      grossWeights: grossWeights.filter(w => w.trim() !== '')
+    };
+    localStorage.setItem('grnLabelDraft', JSON.stringify(draftData));
+  }, [formData, palletType, packageType, grossWeights]);
+  ```
+
+- 🔄 **快速填充模板**：為常用的托盤/包裝組合提供快速選擇
+  ```typescript
+  const COMMON_TEMPLATES = {
+    'Standard Dry': { palletType: 'whiteDry', packageType: 'still' },
+    'Standard Wet': { palletType: 'whiteWet', packageType: 'tote' },
+    'CHEP Standard': { palletType: 'chepDry', packageType: 'still' }
+  };
+  ```
+
+- 🔄 **批量重量輸入**：支援CSV導入或批量粘貼重量數據
+  ```typescript
+  const handleBatchWeightInput = (csvData: string) => {
+    const weights = csvData.split(',').map(w => w.trim());
+    setGrossWeights([...weights, '']);
+  };
+  ```
+
+**B. 視覺體驗增強**
+- 🔄 **深色/淺色主題切換**：提供用戶個人化選擇
+- 🔄 **字體大小調整**：支援視力需求不同的用戶
+- 🔄 **高對比度模式**：提升可訪問性
+
+**C. 操作效率提升**
+- 🔄 **鍵盤快捷鍵**：支援Tab導航和Enter確認
+- 🔄 **條碼掃描支援**：整合條碼掃描器輸入產品代碼
+- 🔄 **語音輸入**：支援語音輸入重量數據
+
+#### 2. 中期改進（1-2個月）
+
+**A. 數據管理增強**
+- 🔄 **歷史記錄查詢**：快速查找和重用之前的GRN數據
+  ```typescript
+  const GrnHistoryPanel = () => {
+    const [recentGrns, setRecentGrns] = useState([]);
+    
+    const loadRecentGrns = async () => {
+      const { data } = await supabase
+        .from('record_grn')
+        .select('*')
+        .eq('operator_id', currentUserId)
+        .order('created_at', { ascending: false })
+        .limit(10);
+      setRecentGrns(data);
+    };
+  };
+  ```
+
+- 🔄 **數據驗證增強**：更智能的數據驗證和建議
+  ```typescript
+  const validateWeightRange = (weight: number, productCode: string) => {
+    // 根據產品類型提供重量範圍建議
+    const expectedRange = getExpectedWeightRange(productCode);
+    if (weight < expectedRange.min || weight > expectedRange.max) {
+      return `Weight ${weight}kg seems unusual for ${productCode}. Expected range: ${expectedRange.min}-${expectedRange.max}kg`;
+    }
+  };
+  ```
+
+- 🔄 **智能建議系統**：基於歷史數據提供輸入建議
+  ```typescript
+  const getSuggestedPalletType = (supplierCode: string, productCode: string) => {
+    // 分析歷史數據，建議最常用的托盤類型
+  };
+  ```
+
+**B. 報表和分析**
+- 🔄 **GRN統計儀表板**：顯示日/週/月的GRN處理統計
+- 🔄 **效率分析**：分析操作員的處理效率和準確率
+- 🔄 **異常檢測**：自動識別異常的重量或數量數據
+
+**C. 整合功能**
+- 🔄 **ERP系統整合**：與現有ERP系統雙向同步
+- 🔄 **移動端應用**：開發專用的移動端應用
+- 🔄 **API接口**：提供REST API供其他系統調用
+
+#### 3. 長期改進（3-6個月）
+
+**A. 人工智能增強**
+- 🔄 **智能OCR**：自動識別紙質文檔上的GRN信息
+- 🔄 **預測分析**：預測庫存需求和接收模式
+- 🔄 **異常檢測AI**：使用機器學習檢測異常模式
+
+**B. 工作流程自動化**
+- 🔄 **自動化工作流**：設定規則自動處理標準GRN
+- 🔄 **通知系統**：自動通知相關人員GRN狀態變化
+- 🔄 **審批流程**：對大量或異常GRN實施審批流程
+
+**C. 高級功能**
+- 🔄 **多語言支援**：支援中文、英文、馬來文等多語言
+- 🔄 **離線模式**：支援網絡不穩定環境下的離線操作
+- 🔄 **區塊鏈追蹤**：使用區塊鏈技術確保數據不可篡改
+
+### 🎯 優先級建議
+
+#### 高優先級（立即實施）
+1. **自動保存草稿** - 防止數據丟失
+2. **鍵盤快捷鍵** - 提升操作效率
+3. **批量重量輸入** - 減少重複操作
+
+#### 中優先級（1個月內）
+1. **歷史記錄查詢** - 提升用戶體驗
+2. **數據驗證增強** - 減少錯誤
+3. **條碼掃描支援** - 現代化操作方式
+
+#### 低優先級（長期規劃）
+1. **AI功能** - 未來技術趨勢
+2. **區塊鏈追蹤** - 高級安全需求
+3. **多語言支援** - 國際化需求
+
+### 📊 改進效益評估
+
+| 改進項目 | 開發成本 | 用戶價值 | 技術複雜度 | ROI評分 |
+|----------|----------|----------|------------|---------|
+| 自動保存草稿 | 低 | 高 | 低 | ⭐⭐⭐⭐⭐ |
+| 鍵盤快捷鍵 | 低 | 高 | 低 | ⭐⭐⭐⭐⭐ |
+| 批量重量輸入 | 中 | 高 | 中 | ⭐⭐⭐⭐ |
+| 歷史記錄查詢 | 中 | 中 | 中 | ⭐⭐⭐ |
+| 條碼掃描 | 高 | 高 | 高 | ⭐⭐⭐ |
+| AI功能 | 很高 | 中 | 很高 | ⭐⭐ |
+
+### 🎉 總結
+
+當前的 `/print-grnlabel` 頁面已經具備了完整的功能和良好的用戶體驗基礎。通過Phase 6的重構和界面優化，系統在技術架構、用戶體驗和視覺設計方面都達到了較高水準。
+
+建議的改進方向主要集中在：
+1. **操作效率提升** - 通過自動化和快捷操作減少用戶工作量
+2. **數據管理增強** - 提供更智能的數據處理和分析功能
+3. **技術現代化** - 整合新技術提升系統能力
+
+這些改進將進一步鞏固系統的競爭優勢，為用戶提供更加高效、智能的GRN標籤管理體驗。
+
+---
+
+**最後更新**: 2025年5月27日  
+**版本**: 2.2 (Phase 6 重構版本 + 界面優化 Phase 2 + 改進評估)  
+**狀態**: ✅ 已完成系統重構、界面優化和改進評估  
+
+**Phase 6 + 界面優化 Phase 2 完成項目**:
+- ✅ 重量輸入區域視覺優化（一行式佈局）
+- ✅ 可縮放英文說明方塊
+- ✅ 輸入欄寬度和字元限制優化
+- ✅ kg標籤位置調整
+- ✅ 淨重顯示位置優化
+- ✅ 完整的改進評估和優先級建議
+
+**改進評估成果**:
+- 🎯 **短期改進**：自動保存、快捷鍵、批量輸入
+- 🚀 **中期改進**：歷史查詢、智能驗證、條碼掃描
+- 🌟 **長期改進**：AI增強、工作流自動化、區塊鏈追蹤
+- 📊 **ROI評估**：提供開發成本和用戶價值的量化分析

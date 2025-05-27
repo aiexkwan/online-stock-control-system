@@ -102,7 +102,7 @@ export default function AdminPanelPopover({ onClose }: { onClose?: () => void })
             className="px-3 py-2 text-sm font-medium text-white text-left data-[state=active]:bg-gray-800 data-[state=active]:border-l-4 data-[state=active]:border-blue-500 flex items-center"
             onMouseEnter={() => setHovered('product')}
             onMouseLeave={() => setHovered(null)}
-            onClick={() => handleTabClick('/products')}
+            onClick={() => handleTabClick('/productUpdate')}
           >
             <CubeIcon className="mr-2 h-4 w-4" />
             Product Update
