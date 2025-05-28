@@ -147,8 +147,12 @@ export const useQcLabelBusiness = ({
       return false;
     }
 
-    const quantity = parseInt(formData.quantity.trim(), 10);
-    const count = parseInt(formData.count.trim(), 10);
+    // 安全處理 quantity 和 count - 確保它們是字符串
+    const quantityStr = String(formData.quantity || '');
+    const countStr = String(formData.count || '');
+    
+    const quantity = parseInt(quantityStr.trim(), 10);
+    const count = parseInt(countStr.trim(), 10);
     
     if (isNaN(quantity) || isNaN(count) || quantity <= 0 || count <= 0) {
       return false;
@@ -377,14 +381,18 @@ export const useQcLabelBusiness = ({
   const handleClockNumberConfirm = useCallback(async (clockNumber: string) => {
     setIsClockConfirmOpen(false);
     
-    if (!productInfo || !formData.productCode.trim() || !formData.quantity.trim() || !formData.count.trim()) {
+    // 安全處理字符串轉換
+    const quantityStr = String(formData.quantity || '');
+    const countStr = String(formData.count || '');
+    
+    if (!productInfo || !formData.productCode.trim() || !quantityStr.trim() || !countStr.trim()) {
       toast.error('Product info, quantity, or count is missing.');
       setPrintEventToProceed(null);
       return;
     }
 
-    const quantity = parseInt(formData.quantity.trim(), 10);
-    const count = parseInt(formData.count.trim(), 10);
+    const quantity = parseInt(quantityStr.trim(), 10);
+    const count = parseInt(countStr.trim(), 10);
 
     if (isNaN(quantity) || quantity <= 0 || isNaN(count) || count <= 0) {
       toast.error('Please enter valid quantity and count values.');
@@ -754,8 +762,11 @@ export const useQcLabelBusiness = ({
       const match = formData.acoRemain.match(/Order Remain Qty : (\d+)/);
       if (match) {
         const acoRemainQty = parseInt(match[1], 10);
-        const quantityPerPallet = parseInt(formData.quantity.trim(), 10);
-        const palletCount = parseInt(formData.count.trim(), 10);
+        // 安全處理 quantity 和 count - 確保它們是字符串
+        const quantityStr = String(formData.quantity || '');
+        const countStr = String(formData.count || '');
+        const quantityPerPallet = parseInt(quantityStr.trim(), 10);
+        const palletCount = parseInt(countStr.trim(), 10);
 
         if (!isNaN(acoRemainQty) && !isNaN(quantityPerPallet) && !isNaN(palletCount)) {
           return (quantityPerPallet * palletCount) > acoRemainQty;

@@ -21,7 +21,7 @@
 | `code` | string | "0010" |
 | `description` | string | "xxxBeany Baby Box" |
 | `colour` | string | "-" |
-| `standard_qty` | string | "-" |
+| `standard_qty` | number | "-" |
 | `type` | string | "-" |
 
 ### 2. `data_id`
@@ -31,6 +31,7 @@
 |---------|---------|--------|
 | `name` | string | "Matthew" |
 | `id` | number | 1767 |
+| `email` | string | "matthew@pennineindustries.com" |
 | `uuid` | string | "bda83282-2417-4784-b74e-38e..." |
 
 ### 3. `data_slateinfo`

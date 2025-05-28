@@ -1,1148 +1,410 @@
-# Product Update 系統重建文檔
+# Product Update 系統文檔
 
 ## 概述
 
-Product Update 系統是一個用於管理產品代碼信息的完整 CRUD 系統。該系統允許用戶搜尋、查看、編輯和新增產品代碼信息，所有數據存儲在 `data_code` 表中。
+Product Update 系統提供完整的產品代碼管理功能，包括搜尋、更新和新增產品。系統支援大小寫不敏感搜尋，確保用戶可以使用任何大小寫組合來查找產品。所有操作都會自動記錄到系統歷史中。
 
-## 🏗️ 系統架構
+## 功能特性
 
-### 核心組件
-- **ProductUpdatePage**: 主要的產品更新頁面 (`/productUpdate`)
-- **ProductSearchForm**: 產品搜尋表單組件
-- **ProductEditForm**: 產品編輯/新增表單組件
-- **ProductInfoCard**: 產品信息展示卡片
-- **getProductByCode**: 資料庫查詢 Action
-- **updateProduct**: 產品更新 Action
-- **createProduct**: 產品新增 Action
+### ✅ 核心功能
+- **智能搜尋**: 支援精確匹配和大小寫不敏感搜尋
+- **產品更新**: 修改現有產品的描述、顏色、標準數量等信息
+- **產品新增**: 創建新的產品代碼和相關信息
+- **數據驗證**: 自動檢查產品代碼是否存在，防止重複創建
+- **操作歷史**: 自動記錄所有產品更新和新增操作到 record_history 表
 
-### 資料庫表
-- **data_code**: 產品代碼主表
-  - `code`: 產品代碼 (主鍵)
-  - `description`: 產品描述
-  - `colour`: 產品顏色
-  - `standard_qty`: 標準數量
-  - `type`: 產品類型
+### 🔍 搜尋功能
+- **精確匹配**: 優先使用精確匹配提高性能
+- **模糊匹配**: 如果精確匹配失敗，自動使用大小寫不敏感搜尋
+- **支援格式**: 
+  - `MEP9090150` (原始大寫)
+  - `mep9090150` (全小寫)
+  - `Mep9090150` (混合大小寫)
+  - 任何大小寫組合
 
-## 🚀 主要功能
+### 📝 歷史記錄功能
+- **自動記錄**: 每次產品更新或新增都會自動記錄到 record_history 表
+- **操作類型**: 
+  - `Product Update` - 產品更新操作
+  - `Product Added` - 產品新增操作
+- **記錄格式**: 
+  - **action**: `Product Update` 或 `Product Added`
+  - **remark**: `{產品代碼}, By {用戶名}`
+  - **id**: `null` (id 是 data_id 的外鍵，產品操作時留空)
+  - **time**: 操作時間戳
+- **用戶識別**: 自動從當前登入用戶的 email 中提取用戶名
 
-### 1. 產品搜尋功能
+## 技術架構
 
-#### 搜尋方式
-- **輸入方式**: 手動輸入產品代碼
-- **觸發方式**: 失焦後自動搜尋 (onBlur)
-- **搜尋表**: `data_code.code`
-
-#### 搜尋邏輯
-```typescript
-// 失焦後自動搜尋
-const handleProductCodeBlur = async (productCode: string) => {
-  if (productCode.trim()) {
-    setIsLoading(true);
-    const result = await getProductByCode(productCode);
-    
-    if (result.success && result.data) {
-      // 搜尋成功 - 顯示產品信息
-      setProductData(result.data);
-      setIsEditing(false);
-      setShowForm(false);
-    } else {
-      // 搜尋失敗 - 詢問是否新增
-      setShowCreateDialog(true);
-    }
-    setIsLoading(false);
-  }
-};
+### 資料庫表結構
+```sql
+-- data_code 表結構
+CREATE TABLE public.data_code (
+  code text PRIMARY KEY,           -- 產品代碼
+  description text,                -- 產品描述
+  colour text,                     -- 顏色
+  standard_qty integer,            -- 標準數量
+  type text                        -- 類型
+);
 ```
 
-### 2. 產品信息展示
+### 認證要求
+- 使用 Supabase 服務端認證
+- 需要 `authenticated` 角色權限
+- RLS (Row Level Security) 政策保護數據安全
 
-#### 成功搜尋後顯示
-- Product Code
-- Product Description  
-- Product Colour
-- Standard Qty
-- Product Type
+### 核心函數
 
-#### 展示格式
+#### 0. recordProductHistory(action, productCode, userEmail?)
+**歷史記錄函數，自動記錄產品操作**
+
 ```typescript
-interface ProductData {
-  code: string;           // 產品代碼
-  description: string;    // 產品描述
-  colour: string;         // 產品顏色
-  standard_qty: number;   // 標準數量
-  type: string;          // 產品類型
+async function recordProductHistory(
+  action: 'Product Update' | 'Product Added',
+  productCode: string,
+  userEmail?: string
+): Promise<void>
+```
+
+**功能說明**:
+- 自動獲取當前登入用戶信息
+- 從 email 中提取用戶名 (去掉 @pennineindustries.com 部分)
+- 構建 remark 格式: `{產品代碼}, By {用戶名}`
+- 插入記錄到 record_history 表
+- id 欄位設為 null (因為是 data_id 的外鍵)
+- 錯誤不會影響主要操作 (使用 try-catch 保護)
+
+**記錄示例**:
+```typescript
+// 用戶: akwan@pennineindustries.com
+// 產品: MEP9090150
+// 結果 remark: "MEP9090150, By akwan"
+// id: null
+```
+
+#### 1. getProductByCode(code: string)
+**智能搜尋函數，支援大小寫不敏感**
+
+```typescript
+// 第一步：精確匹配
+const exactMatch = await supabase
+  .from('data_code')
+  .select('*')
+  .eq('code', code.trim())
+  .limit(1);
+
+// 第二步：如果精確匹配失敗，使用模糊匹配
+if (!exactMatch.data?.length) {
+  const fuzzyMatch = await supabase
+    .from('data_code')
+    .select('*')
+    .ilike('code', code.trim())
+    .limit(1);
 }
 ```
 
-### 3. 產品編輯/新增功能
-
-#### 表單字段配置
-
-##### 普通輸入欄
-- **Product Code**: 文本輸入 (必填)
-- **Product Description**: 文本輸入 (必填)
-- **Standard Qty**: 數字輸入
-
-##### 下拉選擇欄
-- **Product Colour**: 下拉選擇
-  - 選項: Yellow, Grey, Old World Red, Green, Black
-- **Product Type**: 下拉選擇
-  - 選項: SupaStack, Manhole, Slate, ACO, EasyStack, EcoPlus, EasyLiner, Easystack Chamber, EasyLadder, Parts, Material, Pipes, Tools
-
-#### 驗證規則
+**返回格式**:
 ```typescript
-const validationRules = {
-  code: { required: true, message: "Product Code is required" },
-  description: { required: true, message: "Product Description is required" },
-  colour: { required: false },
-  standard_qty: { required: false, type: "number" },
-  type: { required: false }
-};
-```
-
-## 🎨 界面設計
-
-### 設計原則
-- 符合系統整體主題 (深色主題 + 藍色強調)
-- 使用統一的組件庫 (Card, Button, Input 等)
-- 響應式設計，支援桌面和移動端
-- 清晰的視覺層次和狀態反饋
-
-### 佈局結構
-```
-ProductUpdatePage
-├── Header (標題和描述)
-├── SearchSection (搜尋區域)
-│   └── ProductCodeInput (產品代碼輸入)
-├── ResultSection (結果展示區域)
-│   ├── ProductInfoCard (產品信息卡片)
-│   └── EditButton (編輯按鈕)
-└── FormSection (表單區域)
-    └── ProductEditForm (編輯/新增表單)
-```
-
-### 顏色主題
-- **主色調**: 深灰色背景 (#1f2937, #374151)
-- **強調色**: 藍色 (#3b82f6, #60a5fa)
-- **成功色**: 綠色 (#10b981)
-- **警告色**: 黃色 (#f59e0b)
-- **錯誤色**: 紅色 (#ef4444)
-
-## 📋 用戶流程
-
-### 流程 1: 搜尋現有產品
-1. 用戶輸入產品代碼
-2. 失焦後自動觸發搜尋
-3. 系統在 `data_code` 表中查詢
-4. 成功 → 顯示產品信息卡片
-5. 用戶可選擇編輯產品信息
-
-### 流程 2: 新增產品
-1. 用戶輸入不存在的產品代碼
-2. 失焦後觸發搜尋，返回無結果
-3. 系統詢問是否新增產品
-4. 用戶確認 → 顯示新增表單
-5. 填寫必填字段後提交
-6. 系統新增到 `data_code` 表
-
-### 流程 3: 編輯產品
-1. 搜尋到現有產品
-2. 點擊編輯按鈕
-3. 顯示預填充的編輯表單
-4. 修改字段後提交
-5. 系統更新 `data_code` 表
-
-## 🛠️ 技術實施
-
-### 組件架構
-
-#### 主頁面組件
-```typescript
-// app/productUpdate/page.tsx
-'use client';
-
-import React, { useState } from 'react';
-import { StockMovementLayout } from '../components/ui/stock-movement-layout';
-import ProductSearchForm from './components/ProductSearchForm';
-import ProductInfoCard from './components/ProductInfoCard';
-import ProductEditForm from './components/ProductEditForm';
-
-export default function ProductUpdatePage() {
-  const [productData, setProductData] = useState(null);
-  const [isEditing, setIsEditing] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-
-  return (
-    <StockMovementLayout
-      title="Product Update"
-      description="Search, view, and manage product information"
-    >
-      {/* 實施內容 */}
-    </StockMovementLayout>
-  );
-}
-```
-
-#### 搜尋表單組件
-```typescript
-// app/productUpdate/components/ProductSearchForm.tsx
-interface ProductSearchFormProps {
-  onSearch: (code: string) => Promise<void>;
-  isLoading: boolean;
-}
-
-export default function ProductSearchForm({ onSearch, isLoading }: ProductSearchFormProps) {
-  const [productCode, setProductCode] = useState('');
-
-  const handleBlur = () => {
-    if (productCode.trim()) {
-      onSearch(productCode.trim());
-    }
+{
+  success: boolean;
+  data?: {
+    code: string;
+    description: string;
+    colour: string;
+    standard_qty: number;
+    type: string;
   };
-
-  return (
-    <Card className="border-gray-600 bg-gray-800 text-white">
-      <CardHeader>
-        <CardTitle className="text-blue-400">Product Search</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <Input
-          value={productCode}
-          onChange={(e) => setProductCode(e.target.value)}
-          onBlur={handleBlur}
-          placeholder="Enter product code..."
-          disabled={isLoading}
-        />
-      </CardContent>
-    </Card>
-  );
+  error?: string;
 }
 ```
 
-#### 產品信息卡片
+#### 2. updateProduct(code: string, productData: Partial<ProductData>)
+**更新現有產品信息**
+
 ```typescript
-// app/productUpdate/components/ProductInfoCard.tsx
-interface ProductInfoCardProps {
-  productData: ProductData;
-  onEdit: () => void;
-}
-
-export default function ProductInfoCard({ productData, onEdit }: ProductInfoCardProps) {
-  return (
-    <Card className="border-blue-400 bg-gray-800 text-white">
-      <CardHeader>
-        <CardTitle className="text-blue-400">Product Information</CardTitle>
-      </CardHeader>
-      <CardContent>
-        {/* 產品信息展示 */}
-        <Button onClick={onEdit} className="mt-4">
-          Edit Product
-        </Button>
-      </CardContent>
-    </Card>
-  );
-}
-```
-
-#### 編輯表單組件
-```typescript
-// app/productUpdate/components/ProductEditForm.tsx
-interface ProductEditFormProps {
-  initialData?: ProductData;
-  isCreating: boolean;
-  onSubmit: (data: ProductData) => Promise<void>;
-  onCancel: () => void;
-}
-
-export default function ProductEditForm({ 
-  initialData, 
-  isCreating, 
-  onSubmit, 
-  onCancel 
-}: ProductEditFormProps) {
-  // 表單邏輯實施
-}
-```
-
-### 資料庫操作
-
-#### 查詢產品
-```typescript
-// app/actions/productActions.ts
-export async function getProductByCode(code: string) {
-  try {
-    const supabase = createClient();
-    const { data, error } = await supabase
+// 使用大小寫不敏感搜尋找到實際產品代碼
+const matches = await supabase
       .from('data_code')
-      .select('*')
-      .ilike('code', code)
-      .single();
+  .select('code')
+  .ilike('code', code.trim());
 
-    if (error) {
-      return { success: false, error: error.message };
-    }
-
-    return { success: true, data };
-  } catch (error) {
-    return { success: false, error: 'Unexpected error occurred' };
-  }
-}
-```
-
-#### 更新產品
-```typescript
-export async function updateProduct(code: string, productData: Partial<ProductData>) {
-  try {
-    const supabase = createClient();
-    const { data, error } = await supabase
+// 使用實際代碼進行精確更新
+const result = await supabase
       .from('data_code')
-      .update(productData)
-      .ilike('code', code)
-      .select()
-      .single();
-
-    if (error) {
-      return { success: false, error: error.message };
-    }
-
-    return { success: true, data };
-  } catch (error) {
-    return { success: false, error: 'Failed to update product' };
-  }
-}
+  .update(updateData)
+  .eq('code', actualCode)
+  .select();
 ```
 
-#### 新增產品
+#### 3. createProduct(productData: ProductData)
+**創建新產品**
+
 ```typescript
-export async function createProduct(productData: ProductData) {
-  try {
-    const supabase = createClient();
-    const { data, error } = await supabase
+const result = await supabase
       .from('data_code')
       .insert(productData)
       .select()
       .single();
-
-    if (error) {
-      return { success: false, error: error.message };
-    }
-
-    return { success: true, data };
-  } catch (error) {
-    return { success: false, error: 'Failed to create product' };
-  }
-}
 ```
 
-## 📊 狀態管理
+#### 4. checkProductExists(code: string)
+**檢查產品是否存在**
 
-### 主要狀態
 ```typescript
-interface ProductUpdateState {
-  // 搜尋狀態
-  searchCode: string;
-  isLoading: boolean;
+const result = await supabase
+  .from('data_code')
+  .select('code')
+  .ilike('code', code.trim());
+
+return { exists: result.data?.length > 0 };
+```
+
+## 使用方式
+
+### 前端整合
+
+#### 搜尋產品
+```typescript
+import { getProductByCode } from '@/app/actions/productActions';
+
+const handleSearch = async (code: string) => {
+  const result = await getProductByCode(code);
   
-  // 產品數據
-  productData: ProductData | null;
-  
-  // 界面狀態
-  isEditing: boolean;
-  showCreateDialog: boolean;
-  showForm: boolean;
-  
-  // 消息狀態
-  statusMessage: {
-    type: 'success' | 'error' | 'warning' | 'info';
-    message: string;
-  } | null;
-}
-```
-
-### 狀態轉換
-```typescript
-// 搜尋成功
-setProductData(result.data);
-setIsEditing(false);
-setShowForm(false);
-setStatusMessage({ type: 'success', message: 'Product found' });
-
-// 搜尋失敗
-setProductData(null);
-setShowCreateDialog(true);
-setStatusMessage({ type: 'warning', message: 'Product not found. Create new?' });
-
-// 開始編輯
-setIsEditing(true);
-setShowForm(true);
-setShowCreateDialog(false);
-```
-
-## 🎯 用戶體驗設計
-
-### 交互反饋
-- **加載狀態**: 搜尋時顯示 loading 指示器
-- **成功反饋**: 綠色消息提示操作成功
-- **錯誤處理**: 紅色消息提示錯誤信息
-- **確認對話框**: 新增產品前的確認提示
-
-### 表單驗證
-- **實時驗證**: 輸入時即時檢查格式
-- **提交驗證**: 提交前完整驗證所有字段
-- **錯誤提示**: 清晰的錯誤消息和修正建議
-
-### 響應式設計
-- **桌面端**: 三欄佈局 (搜尋 | 信息 | 表單)
-- **平板端**: 兩欄佈局 (搜尋+信息 | 表單)
-- **移動端**: 單欄佈局，垂直排列
-
-## 🔧 配置選項
-
-### 產品顏色選項
-```typescript
-export const PRODUCT_COLOURS = [
-  { value: 'Yellow', label: 'Yellow' },
-  { value: 'Grey', label: 'Grey' },
-  { value: 'Old World Red', label: 'Old World Red' },
-  { value: 'Green', label: 'Green' },
-  { value: 'Black', label: 'Black' }
-] as const;
-```
-
-### 產品類型選項
-```typescript
-export const PRODUCT_TYPES = [
-  { value: 'SupaStack', label: 'SupaStack' },
-  { value: 'Manhole', label: 'Manhole' },
-  { value: 'Slate', label: 'Slate' },
-  { value: 'ACO', label: 'ACO' },
-  { value: 'EasyStack', label: 'EasyStack' },
-  { value: 'EcoPlus', label: 'EcoPlus' },
-  { value: 'EasyLiner', label: 'EasyLiner' },
-  { value: 'Easystack Chamber', label: 'Easystack Chamber' },
-  { value: 'EasyLadder', label: 'EasyLadder' },
-  { value: 'Parts', label: 'Parts' },
-  { value: 'Material', label: 'Material' },
-  { value: 'Pipes', label: 'Pipes' },
-  { value: 'Tools', label: 'Tools' }
-] as const;
-```
-
-## 📈 性能優化
-
-### 搜尋優化
-- **防抖處理**: 避免頻繁的資料庫查詢
-- **緩存機制**: 緩存最近搜尋的結果
-- **索引優化**: 確保 `data_code.code` 有適當索引
-
-### 表單優化
-- **懶加載**: 只在需要時載入表單組件
-- **記憶化**: 使用 useMemo 優化重複計算
-- **受控組件**: 優化表單狀態管理
-
-## 🧪 測試策略
-
-### 單元測試
-- 搜尋功能測試
-- 表單驗證測試
-- 資料庫操作測試
-
-### 集成測試
-- 完整用戶流程測試
-- 錯誤處理測試
-- 響應式設計測試
-
-### 用戶測試
-- 可用性測試
-- 性能測試
-- 無障礙測試
-
-## 🚀 部署和維護
-
-### 部署檢查清單
-- [ ] 資料庫遷移完成
-- [ ] 環境變量配置
-- [ ] 權限設置正確
-- [ ] 性能監控設置
-
-### 維護計劃
-- 定期備份資料庫
-- 監控系統性能
-- 用戶反饋收集
-- 功能迭代更新
-
----
-
-**創建日期**: 2025年5月27日  
-**版本**: 1.0  
-**狀態**: 📋 規劃完成，準備實施  
-
-**開發團隊**: Pennine Industries 開發團隊  
-**技術棧**: Next.js 14, Supabase, TypeScript, Tailwind CSS, Lucide Icons
-
-**實施優先級**:
-1. **Phase 1**: 基礎搜尋和展示功能
-2. **Phase 2**: 編輯和新增功能  
-3. **Phase 3**: 高級功能和優化
-
-## 🎉 實施完成 (2025年5月27日)
-
-### ✅ 已完成的功能
-
-#### 1. 核心架構
-- ✅ **主頁面**: `/productUpdate/page.tsx` - 完整的狀態管理和用戶流程
-- ✅ **資料庫操作**: `actions/productActions.ts` - 完整的 CRUD 操作
-- ✅ **配置常量**: `productUpdate/constants.ts` - 產品顏色和類型選項
-
-#### 2. 組件系統
-- ✅ **ProductSearchForm**: 失焦自動搜尋，支援 Enter 鍵觸發
-- ✅ **ProductInfoCard**: 完整的產品信息展示，包含編輯按鈕
-- ✅ **ProductEditForm**: 完整的表單驗證和提交邏輯
-
-#### 3. 功能實現
-
-##### 搜尋功能
-```typescript
-// 失焦後自動搜尋實現
-const handleBlur = async () => {
-  const trimmedCode = productCode.trim();
-  if (trimmedCode && !hasSearched) {
-    setHasSearched(true);
-    await onSearch(trimmedCode);
+  if (result.success) {
+    console.log('找到產品:', result.data);
+    // 顯示產品信息
+  } else {
+    console.log('產品未找到:', result.error);
+    // 顯示錯誤或建議創建新產品
   }
 };
 ```
 
-##### 產品信息展示
-- ✅ Product Code (產品代碼)
-- ✅ Product Description (產品描述)
-- ✅ Product Colour (產品顏色)
-- ✅ Standard Qty (標準數量)
-- ✅ Product Type (產品類型)
-
-##### 表單字段配置
-- ✅ **普通輸入欄**: Product Code, Product Description, Standard Qty
-- ✅ **下拉選擇欄**: Product Colour, Product Type
-- ✅ **必填驗證**: Product Code, Product Description
-- ✅ **編輯限制**: 編輯時不允許修改 Product Code
-
-##### 下拉選項實現
+#### 更新產品
 ```typescript
-// 產品顏色選項
-PRODUCT_COLOURS = [
-  'Yellow', 'Grey', 'Old World Red', 'Green', 'Black'
-]
+import { updateProduct } from '@/app/actions/productActions';
 
-// 產品類型選項  
-PRODUCT_TYPES = [
-  'SupaStack', 'Manhole', 'Slate', 'ACO', 'EasyStack', 
-  'EcoPlus', 'EasyLiner', 'Easystack Chamber', 'EasyLadder', 
-  'Parts', 'Material', 'Pipes', 'Tools'
-]
+const handleUpdate = async (code: string, updates: Partial<ProductData>) => {
+  const result = await updateProduct(code, updates);
+
+  if (result.success) {
+    console.log('更新成功:', result.data);
+    // ✅ 歷史記錄已自動添加到 record_history 表
+    // action: "Product Update"
+    // remark: "{產品代碼}, By {用戶名}"
+  } else {
+    console.log('更新失敗:', result.error);
+  }
+};
 ```
 
-#### 4. 用戶流程實現
-
-##### 流程 1: 搜尋現有產品 ✅
-1. 用戶輸入產品代碼 → 失焦觸發搜尋
-2. 系統查詢 `data_code` 表
-3. 成功 → 顯示產品信息卡片
-4. 用戶點擊 "Edit Product" → 顯示編輯表單
-
-##### 流程 2: 新增產品 ✅
-1. 用戶輸入不存在的產品代碼
-2. 系統返回 "Product not found"
-3. 顯示確認對話框："Would you like to create it?"
-4. 用戶確認 → 顯示新增表單
-5. 填寫必填字段 → 提交到 `data_code` 表
-
-##### 流程 3: 編輯產品 ✅
-1. 搜尋到現有產品 → 顯示產品信息
-2. 點擊 "Edit Product" → 顯示預填充表單
-3. 修改字段 → 提交更新到 `data_code` 表
-
-#### 5. 界面設計實現
-
-##### 設計主題 ✅
-- ✅ **深色主題**: 灰色背景 (#1f2937, #374151)
-- ✅ **藍色強調**: 主要按鈕和標題 (#3b82f6)
-- ✅ **狀態顏色**: 成功(綠)、警告(黃)、錯誤(紅)
-
-##### 響應式佈局 ✅
-- ✅ **桌面端**: 兩欄佈局 (搜尋+信息 | 表單)
-- ✅ **移動端**: 單欄佈局，垂直排列
-- ✅ **動態切換**: 搜尋後隱藏搜尋區域，專注結果
-
-##### 用戶體驗 ✅
-- ✅ **加載狀態**: 搜尋和提交時的 loading 指示器
-- ✅ **狀態反饋**: 成功/錯誤/警告消息
-- ✅ **確認對話框**: 新增產品前的確認提示
-- ✅ **表單驗證**: 實時驗證和錯誤提示
-
-#### 6. 技術實現亮點
-
-##### 資料庫操作優化
+#### 創建產品
 ```typescript
-// 錯誤處理和類型安全
-export async function getProductByCode(code: string): Promise<ProductActionResult> {
-  try {
-    const supabase = createClient();
-    const { data, error } = await supabase
-      .from('data_code')
-      .select('*')
-      .ilike('code', code)
-      .single();
+import { createProduct } from '@/app/actions/productActions';
 
-    if (error?.code === 'PGRST116') {
-      return { success: false, error: 'Product not found' };
-    }
-    
-    return { success: true, data };
-  } catch (error) {
-    return { success: false, error: 'Unexpected error occurred' };
+const handleCreate = async (productData: ProductData) => {
+  const result = await createProduct(productData);
+  
+  if (result.success) {
+    console.log('創建成功:', result.data);
+    // ✅ 歷史記錄已自動添加到 record_history 表
+    // action: "Product Added"
+    // remark: "{產品代碼}, By {用戶名}"
+  } else {
+    console.log('創建失敗:', result.error);
+  }
+};
+```
+
+### 歷史記錄查詢
+
+可以通過查詢 record_history 表來查看產品操作歷史：
+
+```sql
+-- 查看特定產品的操作歷史
+SELECT time, action, remark 
+FROM record_history 
+WHERE action IN ('Product Update', 'Product Added')
+  AND remark LIKE 'MEP9090150%'
+ORDER BY time DESC;
+
+-- 查看特定用戶的產品操作 (通過 remark 中的用戶名)
+SELECT time, action, remark 
+FROM record_history 
+WHERE action IN ('Product Update', 'Product Added')
+  AND remark LIKE '%, By akwan'
+ORDER BY time DESC;
+
+-- 查看所有產品操作歷史
+SELECT time, action, remark 
+FROM record_history 
+WHERE action IN ('Product Update', 'Product Added')
+ORDER BY time DESC
+LIMIT 50;
+```
+
+## 錯誤處理
+
+### 常見錯誤類型
+- `Product not found`: 產品代碼不存在
+- `Product code already exists`: 嘗試創建重複的產品代碼
+- `Update failed: No rows affected`: 更新操作沒有影響任何行
+- `Auth session missing!`: 認證會話缺失
+
+### 錯誤處理最佳實踐
+```typescript
+const result = await getProductByCode(code);
+
+if (!result.success) {
+  switch (result.error) {
+    case 'Product not found':
+      // 提示用戶產品不存在，詢問是否創建
+      break;
+    case 'Auth session missing!':
+      // 重定向到登入頁面
+      break;
+    default:
+      // 顯示通用錯誤信息
+      console.error('操作失敗:', result.error);
   }
 }
 ```
 
-##### 狀態管理優化
-```typescript
-// 使用 useCallback 優化性能
-const handleSearch = useCallback(async (code: string) => {
-  // 搜尋邏輯
-}, []);
+## 性能優化
 
-const handleSubmit = useCallback(async (formData: ProductData) => {
-  // 提交邏輯
-}, [isEditing, productData]);
+### 搜尋策略
+1. **優先精確匹配**: 大部分情況下用戶輸入正確的大小寫
+2. **智能降級**: 只有在精確匹配失敗時才使用模糊匹配
+3. **限制結果**: 使用 `limit(1)` 減少數據傳輸
+
+### 資料庫優化
+```sql
+-- 建議在 code 欄位上創建索引
+CREATE INDEX idx_data_code_code ON public.data_code (code);
+
+-- 對於大小寫不敏感搜尋，可以考慮創建函數索引
+CREATE INDEX idx_data_code_code_lower ON public.data_code (LOWER(code));
 ```
 
-##### 表單驗證系統
-```typescript
-// 完整的表單驗證
-const validateForm = (): boolean => {
-  const newErrors: FormErrors = {};
-  
-  if (!formData.code.trim()) {
-    newErrors.code = "Product Code is required";
-  }
-  
-  if (!formData.description.trim()) {
-    newErrors.description = "Product Description is required";
-  }
-  
-  return Object.keys(newErrors).length === 0;
-};
+## 安全考慮
+
+### RLS 政策
+確保 `data_code` 表有適當的 RLS 政策：
+
+```sql
+-- 允許認證用戶讀取
+CREATE POLICY "Allow authenticated users to read data_code" 
+ON public.data_code 
+FOR SELECT 
+TO authenticated 
+USING (true);
+
+-- 允許認證用戶更新
+CREATE POLICY "Allow authenticated users to update data_code" 
+ON public.data_code 
+FOR UPDATE 
+TO authenticated 
+USING (true);
+
+-- 允許認證用戶插入
+CREATE POLICY "Allow authenticated users to insert data_code" 
+ON public.data_code 
+FOR INSERT 
+TO authenticated 
+WITH CHECK (true);
 ```
 
-### 🔗 系統整合
+### 輸入驗證
+- 所有輸入都會使用 `trim()` 去除空白字符
+- 產品代碼不能為空
+- 數值字段會進行類型轉換和驗證
 
-#### Admin Panel 整合 ✅
-- ✅ 更新 `AdminPanelPopover.tsx` 路由: `/products` → `/productUpdate`
-- ✅ 保持原有的 hover 效果和圖標設計
-- ✅ 統一的訪問入口: Home → Admin Panel → Product Update
+## 部署配置
 
-#### 導航系統整合 ✅
-- ✅ 移除了重複的底部導航連結
-- ✅ 統一通過 Admin Panel 訪問
-- ✅ 符合系統整體架構設計
-
-### 📊 實施成果
-
-| 功能項目 | 實施狀態 | 完成度 |
-|----------|----------|--------|
-| 產品搜尋 | ✅ 完成 | 100% |
-| 產品展示 | ✅ 完成 | 100% |
-| 產品編輯 | ✅ 完成 | 100% |
-| 產品新增 | ✅ 完成 | 100% |
-| 表單驗證 | ✅ 完成 | 100% |
-| 錯誤處理 | ✅ 完成 | 100% |
-| 響應式設計 | ✅ 完成 | 100% |
-| 系統整合 | ✅ 完成 | 100% |
-
-### 🧪 測試結果
-
-#### 構建測試 ✅
+### 環境變數
 ```bash
-npm run build
-✓ Compiled successfully
-✓ Linting and checking validity of types
-✓ Collecting page data
-✓ Generating static pages (33/33)
+# .env.local
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
 ```
 
-#### 功能測試清單
-- ✅ 失焦自動搜尋功能
-- ✅ Enter 鍵觸發搜尋
-- ✅ 產品信息正確展示
-- ✅ 編輯表單預填充
-- ✅ 新增產品確認對話框
-- ✅ 表單驗證和錯誤提示
-- ✅ 成功/錯誤狀態反饋
-- ✅ 響應式佈局適配
+### Supabase 配置
+1. 確保 RLS 已啟用
+2. 創建必要的政策
+3. 設置適當的角色權限
+4. 配置認證提供者
 
-### 🚀 部署準備
+## 故障排除
 
-#### 檢查清單 ✅
-- ✅ 所有組件編譯成功
-- ✅ TypeScript 類型檢查通過
-- ✅ 資料庫操作測試完成
-- ✅ 路由配置正確
-- ✅ Admin Panel 整合完成
+### 常見問題
 
-#### 生產環境注意事項
-1. **資料庫權限**: 確保 `data_code` 表的讀寫權限
-2. **索引優化**: 確保 `code` 字段有適當索引
-3. **錯誤監控**: 監控資料庫操作錯誤
-4. **性能監控**: 監控搜尋響應時間
+#### 1. 搜尋返回空結果
+**症狀**: 明明存在的產品代碼搜尋不到
+**原因**: RLS 政策缺失或認證問題
+**解決**: 檢查 RLS 政策和用戶認證狀態
 
----
+#### 2. 更新失敗
+**症狀**: 更新操作返回 "No rows affected"
+**原因**: 產品代碼不存在或權限不足
+**解決**: 先使用 `checkProductExists` 確認產品存在
 
-**實施完成日期**: 2025年5月27日  
-**版本**: 1.0 - 生產就緒版本  
-**狀態**: ✅ 實施完成，準備部署  
+#### 3. 認證錯誤
+**症狀**: "Auth session missing!" 錯誤
+**原因**: 服務端無法獲取用戶認證信息
+**解決**: 確保使用正確的 Supabase 服務端客戶端
 
-**技術成果**:
-- 📁 **4個核心組件**: 搜尋、展示、編輯、主頁面
-- 🔧 **5個資料庫操作**: 查詢、新增、更新、檢查、錯誤處理
-- 🎨 **統一設計系統**: 符合系統主題的完整 UI
-- 📱 **響應式支援**: 桌面和移動端完整適配
-- ⚡ **性能優化**: useCallback、錯誤處理、狀態管理
+### 調試工具
 
-**用戶體驗提升**:
-- 🔍 **智能搜尋**: 失焦自動觸發，減少用戶操作
-- 💬 **清晰反饋**: 完整的狀態消息和錯誤提示
-- 🎯 **直觀流程**: 搜尋 → 展示 → 編輯的自然流程
-- 📋 **表單優化**: 必填驗證、下拉選項、編輯限制
-
-## 🔄 最新改進 (2025年5月27日 - 忽略大小寫搜尋)
-
-### 搜尋功能增強
-
-#### 問題背景
-用戶在搜尋產品代碼時，可能會輸入不同的大小寫組合（如：`mep9090150`、`MEP9090150`、`Mep9090150`），原有的精確匹配搜尋會導致搜尋失敗。
-
-#### 解決方案
-實施忽略大小寫的搜尋功能，提升用戶體驗和搜尋成功率。
-
-#### 技術實施
-
-##### 1. 資料庫查詢優化
+#### 檢查認證狀態
 ```typescript
-// 修改前：精確匹配
-const { data, error } = await supabase
-  .from('data_code')
-  .select('*')
-  .eq('code', code)  // 精確匹配，區分大小寫
-  .single();
-
-// 修改後：忽略大小寫匹配
-const { data, error } = await supabase
-  .from('data_code')
-  .select('*')
-  .ilike('code', code)  // 忽略大小寫匹配
-  .single();
+const supabase = createClient();
+const { data: user } = await supabase.auth.getUser();
+console.log('當前用戶:', user);
 ```
 
-##### 2. 函數更新
-- ✅ **getProductByCode**: 使用 `ilike` 替代 `eq` 進行忽略大小寫搜尋
-- ✅ **checkProductExists**: 同步更新為忽略大小寫檢查
-- ✅ **搜尋提示**: 更新用戶界面提示文字
+#### 檢查 RLS 政策
+```sql
+-- 查看表的 RLS 狀態
+SELECT schemaname, tablename, rowsecurity 
+FROM pg_tables 
+WHERE tablename = 'data_code';
 
-##### 3. 用戶界面改進
-```typescript
-// 更新搜尋提示文字
-<p className="text-xs text-gray-400 mt-2">
-  Enter a product code and press Tab or Enter to search (case-insensitive)
-</p>
+-- 查看現有政策
+SELECT schemaname, tablename, policyname, permissive, roles, cmd, qual 
+FROM pg_policies 
+WHERE tablename = 'data_code';
 ```
 
-#### 改進效果
-
-| 搜尋輸入 | 修改前 | 修改後 | 改進效果 |
-|----------|--------|--------|----------|
-| `mep9090150` | ❌ 找不到 | ✅ 找到 | 提升搜尋成功率 |
-| `MEP9090150` | ✅ 找到 | ✅ 找到 | 保持原有功能 |
-| `Mep9090150` | ❌ 找不到 | ✅ 找到 | 提升用戶體驗 |
-| `MeP9090150` | ❌ 找不到 | ✅ 找到 | 增強容錯性 |
-
-#### 用戶體驗提升
-- 🔍 **搜尋容錯**: 不再因為大小寫問題導致搜尋失敗
-- 💡 **清晰提示**: 界面明確標示支援忽略大小寫搜尋
-- 🎯 **一致性**: 所有相關函數都採用相同的搜尋邏輯
-- 📈 **成功率**: 大幅提升產品代碼搜尋的成功率
-
-#### 技術優勢
-- ⚡ **性能**: `ilike` 操作在 PostgreSQL 中高效執行
-- 🔒 **安全**: 保持原有的 SQL 注入防護
-- 🧪 **測試**: 通過完整的構建和類型檢查
-- 📱 **兼容**: 與現有系統完全兼容
-
-#### 實施細節
-```typescript
-// app/actions/productActions.ts
-
-/**
- * 根據產品代碼查詢產品信息 (忽略大小寫)
- */
-export async function getProductByCode(code: string): Promise<ProductActionResult> {
-  try {
-    const supabase = createClient();
-    
-    // 使用 ilike 進行忽略大小寫的搜尋
-    const { data, error } = await supabase
-      .from('data_code')
-      .select('*')
-      .ilike('code', code)
-      .single();
-
-    // 錯誤處理邏輯保持不變
-    if (error?.code === 'PGRST116') {
-      return { success: false, error: 'Product not found' };
-    }
-    
-    return { success: true, data };
-  } catch (error) {
-    return { success: false, error: 'Unexpected error occurred' };
-  }
-}
-```
-
----
-
-**忽略大小寫搜尋更新**: ✅ 2025年5月27日完成  
-**構建測試**: ✅ 通過  
-**用戶體驗**: ✅ 顯著提升  
-**向後兼容**: ✅ 完全兼容
-
-## 🔒 安全性和錯誤修復 (2025年5月27日)
-
-### 1. 路由保護修復
-
-#### 問題背景
-`/productUpdate` 路由沒有被設為受保護路由，任何用戶都可以直接訪問，存在安全風險。
-
-#### 解決方案
-將 `/productUpdate` 添加到受保護路由列表中，確保只有已認證用戶才能訪問。
-
-#### 技術實施
-```typescript
-// app/components/AuthChecker.tsx
-const protectedPaths = [
-  '/access',
-  '/dashboard',
-  '/users',
-  '/reports',
-  '/view-history',
-  '/void-pallet',
-  '/tables',
-  '/inventory',
-  '/export-report',
-  '/history',
-  '/products',
-  '/productUpdate',  // ✅ 新增保護
-  '/stock-transfer',
-  '/print-label',
-  '/print-grnlabel',
-  '/change-password'
-];
-```
-
-#### 安全效果
-- ✅ **訪問控制**: 未登入用戶無法訪問產品更新功能
-- ✅ **自動重定向**: 未認證用戶自動重定向到登入頁面
-- ✅ **一致性**: 與其他管理功能保持相同的安全級別
-
-### 2. 更新功能錯誤修復
-
-#### 問題背景
-用戶在編輯產品時遇到 "JSON object requested, multiple (or no) rows returned" 錯誤。
-
-#### 根本原因分析
-```typescript
-// 問題：搜尋和更新使用不同的匹配方式
-// 搜尋時：使用 ilike (忽略大小寫)
-.ilike('code', code)  // 找到 MEP9090150
-
-// 更新時：使用 eq (精確匹配)  
-.eq('code', code)     // 找不到 mep9090150
-```
-
-當用戶搜尋 `mep9090150` 時：
-1. 搜尋成功找到 `MEP9090150`
-2. 但更新時使用 `mep9090150` 進行精確匹配
-3. 找不到記錄，導致錯誤
-
-#### 解決方案
-統一使用忽略大小寫的匹配方式：
-
-```typescript
-// 修改前：精確匹配更新
-const { data, error } = await supabase
-  .from('data_code')
-  .update(updateData)
-  .ilike('code', code)   // 忽略大小寫匹配
-  .select()
-  .single();
-```
-
-#### 錯誤處理改進
-```typescript
-if (error) {
-  if (error.code === 'PGRST116') {
-    // No rows returned
-    return { success: false, error: 'Product not found for update' };
-  }
-  return { success: false, error: error.message };
-}
-```
-
-### 3. 一致性改進
-
-#### 函數統一性
-所有產品相關函數現在都使用忽略大小寫匹配：
-
-| 函數 | 修改前 | 修改後 | 狀態 |
-|------|--------|--------|------|
-| `getProductByCode` | `eq` → `ilike` | ✅ 忽略大小寫 | ✅ 完成 |
-| `updateProduct` | `eq` → `ilike` | ✅ 忽略大小寫 | ✅ 完成 |
-| `checkProductExists` | `eq` → `ilike` | ✅ 忽略大小寫 | ✅ 完成 |
-| `createProduct` | N/A | ✅ 新增功能 | ✅ 完成 |
-
-#### 用戶體驗一致性
-- 🔍 **搜尋**: 忽略大小寫，容錯性強
-- ✏️ **編輯**: 忽略大小寫，與搜尋一致
-- ➕ **新增**: 正常功能，無大小寫問題
-- 🔒 **安全**: 統一的認證保護
-
-### 4. 測試和驗證
-
-#### 功能測試場景
-```typescript
-// 測試場景：用戶輸入小寫搜尋，編輯大寫存儲的產品
-1. 搜尋: "mep9090150" → 找到 "MEP9090150" ✅
-2. 編輯: 修改描述 → 成功更新 "MEP9090150" ✅
-3. 結果: 數據正確保存，無錯誤 ✅
-```
-
-#### 錯誤處理測試
-- ✅ **產品不存在**: 正確返回 "Product not found for update"
-- ✅ **網絡錯誤**: 正確返回 "Failed to update product"
-- ✅ **權限錯誤**: 正確處理資料庫權限問題
-
-### 5. 安全性提升
-
-#### 認證保護
-- ✅ **路由保護**: `/productUpdate` 需要登入才能訪問
-- ✅ **會話檢查**: 自動檢查用戶認證狀態
-- ✅ **自動重定向**: 未認證用戶重定向到登入頁
-
-#### 數據安全
-- ✅ **SQL 注入防護**: 使用 Supabase 參數化查詢
-- ✅ **輸入驗證**: 完整的表單驗證機制
-- ✅ **錯誤處理**: 不洩露敏感信息的錯誤消息
-
----
-
-**安全性和錯誤修復**: ✅ 2025年5月27日完成  
-**路由保護**: ✅ 已啟用  
-**更新功能**: ✅ 錯誤已修復  
-**一致性**: ✅ 全面統一  
-**測試狀態**: ✅ 通過所有測試
-
-## 🔧 產品代碼預填和精確匹配修復 (2025年5月27日)
-
-### 問題重現
-用戶反映兩個關鍵問題：
-1. **產品代碼應由系統預填**：編輯時不應出現 "Product not found for update"
-2. **代碼轉換問題**：當用戶輸入產品代碼，系統搜尋成功後，應將產品代碼轉換成 `data_code` 中的真實名稱
-
-### 根本原因分析
-
-#### 問題 1: ILIKE 在 UPDATE 中的不穩定性
-```typescript
-// 問題代碼：在 updateProductOptimized 中使用 ILIKE
-const { data, error } = await supabase
-  .from('data_code')
-  .update(updateData)
-  .ilike('code', code)  // ❌ ILIKE 在 UPDATE 中可能不穩定
-  .select();
-```
-
-#### 問題 2: 代碼轉換流程
-```typescript
-// 正確的流程應該是：
-1. 用戶輸入: 'mep9090150' (小寫)
-2. 搜尋成功: 找到 'MEP9090150' (大寫，真實代碼)
-3. 編輯表單: 預填 'MEP9090150' (真實代碼)
-4. 更新操作: 使用 'MEP9090150' (精確匹配)
-```
-
-### 最終解決方案
-
-#### 1. 修復 updateProductOptimized 函數
-```typescript
-// 修復前：使用 ILIKE (不穩定)
-const { data, error } = await supabase
-  .from('data_code')
-  .update(updateData)
-  .ilike('code', code)  // ❌ 可能失敗
-  .select();
-
-// 修復後：使用精確匹配 (穩定)
-const { data, error } = await supabase
-  .from('data_code')
-  .update(updateData)
-  .eq('code', code)  // ✅ 精確匹配，因為 code 已經是正確的
-  .select();
-```
-
-#### 2. 確保代碼轉換流程正確
-```typescript
-// 在 handleSubmit 中使用正確的代碼
-if (isEditing && productData) {
-  // 使用 productData.code (從搜尋中獲得的真實代碼)
-  result = await updateProductOptimized(productData.code, formData);
-}
-```
-
-#### 3. 表單預填邏輯確認
-```typescript
-// ProductEditForm 中的正確處理
-<Input
-  id="code"
-  value={formData.code}  // 顯示真實的產品代碼
-  disabled={isFormDisabled || !isCreating}  // 編輯時禁用
-  placeholder="Enter product code..."
-/>
-```
-
-### 完整的代碼轉換流程
-
-#### 搜尋階段
-```typescript
-// 1. 用戶輸入任意大小寫
-const userInput = 'mep9090150';
-
-// 2. 系統使用 ILIKE 搜尋
-const result = await getProductByCode(userInput);
-
-// 3. 返回真實的產品代碼
-if (result.success) {
-  setProductData(result.data);  // data.code = 'MEP9090150'
-}
-```
-
-#### 編輯階段
-```typescript
-// 4. 表單預填真實代碼
-<ProductEditForm
-  initialData={productData}  // code: 'MEP9090150'
-  isCreating={false}
-  onSubmit={handleSubmit}
-/>
-
-// 5. 產品代碼欄位被禁用，顯示真實代碼
-disabled={!isCreating}  // 編輯時不可修改
-```
-
-#### 更新階段
-```typescript
-// 6. 使用真實代碼進行精確更新
-const result = await updateProductOptimized(
-  productData.code,  // 'MEP9090150' (真實代碼)
-  formData
-);
-
-// 7. 精確匹配更新
-.eq('code', code)  // 使用真實代碼進行精確匹配
-```
-
-### 技術優勢
-
-#### 1. 精確匹配的優勢
-- **性能更好**: `eq` 比 `ilike` 更快
-- **穩定性高**: 精確匹配不會有歧義
-- **索引友好**: 資料庫可以更好地利用主鍵索引
-
-#### 2. 代碼轉換的優勢
-- **用戶友好**: 用戶可以輸入任意大小寫
-- **數據一致**: 系統內部使用統一的真實代碼
-- **錯誤減少**: 避免大小寫不匹配的問題
-
-#### 3. 表單預填的優勢
-- **清晰明確**: 用戶看到的是真實的產品代碼
-- **防止錯誤**: 編輯時不允許修改代碼
-- **數據完整**: 確保更新操作使用正確的代碼
-
-### 用戶體驗改進
-
-#### 搜尋體驗
-```typescript
-// 用戶輸入: mep9090150
-// 系統顯示: Product found: MEP9090150
-// 用戶理解: 系統找到了對應的產品
-```
-
-#### 編輯體驗
-```typescript
-// 產品代碼欄位: MEP9090150 (禁用狀態)
-// 用戶理解: 這是系統中的真實代碼
-// 操作結果: 更新成功，無錯誤
-```
-
-#### 錯誤消除
-- ❌ **修復前**: "Product not found for update"
-- ✅ **修復後**: "Product updated successfully with optimized SQL!"
-
-### 測試場景驗證
-
-#### 場景 1: 小寫輸入，大寫存儲
-```typescript
-// 1. 用戶輸入: 'mep9090150'
-// 2. 搜尋結果: 'MEP9090150'
-// 3. 編輯表單: 顯示 'MEP9090150' (禁用)
-// 4. 更新操作: 使用 'MEP9090150' 精確匹配
-// 5. 結果: ✅ 更新成功
-```
-
-#### 場景 2: 混合大小寫輸入
-```typescript
-// 1. 用戶輸入: 'MeP9090150'
-// 2. 搜尋結果: 'MEP9090150'
-// 3. 編輯表單: 顯示 'MEP9090150' (禁用)
-// 4. 更新操作: 使用 'MEP9090150' 精確匹配
-// 5. 結果: ✅ 更新成功
-```
-
-#### 場景 3: 精確輸入
-```typescript
-// 1. 用戶輸入: 'MEP9090150'
-// 2. 搜尋結果: 'MEP9090150'
-// 3. 編輯表單: 顯示 'MEP9090150' (禁用)
-// 4. 更新操作: 使用 'MEP9090150' 精確匹配
-// 5. 結果: ✅ 更新成功
-```
-
-### 性能和穩定性提升
-
-#### 性能對比
-| 操作 | 修復前 | 修復後 | 改進 |
-|------|--------|--------|------|
-| 更新成功率 | 60% | 100% | +40% |
-| 查詢效率 | ILIKE | EQ | +30% |
-| 用戶體驗 | 困惑 | 清晰 | +200% |
-| 錯誤率 | 高 | 零 | +100% |
-
-#### 穩定性保證
-- ✅ **代碼轉換**: 用戶輸入 → 真實代碼 → 精確更新
-- ✅ **表單預填**: 顯示真實代碼，編輯時禁用
-- ✅ **精確匹配**: 使用 `eq` 而不是 `ilike` 進行更新
-- ✅ **錯誤消除**: 完全解決 "Product not found for update"
-
----
-
-**產品代碼預填和精確匹配修復**: ✅ 2025年5月27日完成  
-**代碼轉換流程**: ✅ 用戶輸入 → 真實代碼 → 精確更新  
-**表單預填**: ✅ 系統自動預填真實代碼，編輯時禁用  
-**更新穩定性**: ✅ 從60%提升到100%成功率  
-**用戶體驗**: ✅ 清晰明確，無錯誤困擾
+## 更新歷史
+
+### v2.1.0 (最新)
+- ✅ 新增操作歷史記錄功能
+- ✅ 自動記錄產品更新和新增操作到 record_history 表
+- ✅ 智能用戶識別 (從 email 提取用戶名)
+- ✅ 標準化 remark 格式: `{產品代碼}, By {用戶名}`
+- ✅ 錯誤保護機制 (歷史記錄失敗不影響主要操作)
+- ✅ 完整的歷史查詢 SQL 示例
+
+### v2.0.0
+- ✅ 實現智能搜尋 (精確 + 模糊匹配)
+- ✅ 支援大小寫不敏感搜尋
+- ✅ 修復服務端認證問題
+- ✅ 優化性能和錯誤處理
+- ✅ 移除調試日誌減少開支
+
+### v1.0.0 (初始版本)
+- ✅ 基本搜尋功能
+- ✅ 產品更新和創建
+- ✅ RLS 安全保護
+
+## 相關文件
+- `app/actions/productActions.ts` - 核心業務邏輯
+- `app/productUpdate/page.tsx` - 前端界面
+- `app/utils/supabase/server.ts` - 服務端 Supabase 客戶端
+- `middleware.ts` - 認證中間件
+
+## 支援
+如有問題或需要協助，請參考：
+1. 本文檔的故障排除部分
+2. Supabase 官方文檔
+3. Next.js 服務端 Actions 文檔

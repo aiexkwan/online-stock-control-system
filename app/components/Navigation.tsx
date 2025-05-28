@@ -179,7 +179,7 @@ export default function Navigation() {
               transition={{ duration: 0.2, ease: 'easeOut' }}
               onMouseEnter={handlePrintLabelEnter}
               onMouseLeave={handlePrintLabelLeave}
-              className="absolute left-full top-0 z-50 shadow-md w-32"
+              className="absolute left-full top-0 z-50 shadow-md ml-2"
             >
               <PrintLabelPopover onClose={() => setIsMobileMenuOpen(false)} />
             </motion.div>
@@ -228,7 +228,7 @@ export default function Navigation() {
               transition={{ duration: 0.2, ease: 'easeOut' }}
               onMouseEnter={handleAdminPanelEnter}
               onMouseLeave={handleAdminPanelLeave}
-              className="absolute left-full top-0 z-50 shadow-md w-32"
+              className="absolute left-full top-0 z-50 shadow-md ml-2"
             >
               <AdminPanelPopover onClose={() => setIsMobileMenuOpen(false)} />
             </motion.div>

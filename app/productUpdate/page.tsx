@@ -13,7 +13,6 @@ import {
   createProduct, 
   updateProduct,
   updateProductOptimized,  // 新增優化版本
-  testDatabaseConnection,  // 新增測試函數
   ProductData 
 } from '../actions/productActions';
 
@@ -37,9 +36,6 @@ export default function ProductUpdatePage() {
     setIsLoading(true);
     setStatusMessage(null);
     setSearchedCode(code);
-    
-    // 運行資料庫連接測試
-    await testDatabaseConnection();
     
     try {
       const result = await getProductByCode(code);
@@ -134,7 +130,7 @@ export default function ProductUpdatePage() {
           setProductData(result.data!);
           setStatusMessage({
             type: 'success',
-            message: 'Product updated successfully with optimized SQL!'
+            message: 'Product details updated successfully!'
           });
         }
       } else {

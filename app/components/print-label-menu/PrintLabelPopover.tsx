@@ -17,17 +17,17 @@ export default function PrintLabelPopover({ onClose }: { onClose?: () => void })
   };
 
   return (
-    <Tabs.Root defaultValue="qc" className="flex w-[340px] min-h-[120px]">
-      <Tabs.List className="flex flex-col w-32 border-r border-gray-700 bg-[#23263a] shadow-md">
+    <Tabs.Root defaultValue="qc" className="flex min-h-[100px]">
+      <Tabs.List className="flex flex-col bg-[#23263a] shadow-md rounded-md">
         <div className="relative">
           <Tabs.Trigger
             value="qc"
-            className="px-3 py-2 text-sm font-medium text-white text-left data-[state=active]:bg-gray-800 data-[state=active]:border-l-4 data-[state=active]:border-blue-500 flex items-center"
+            className="px-3 py-2 text-sm font-medium text-white text-left data-[state=active]:bg-gray-800 data-[state=active]:border-l-4 data-[state=active]:border-blue-500 flex items-center hover:bg-gray-700 transition-colors rounded-t-md w-full"
             onMouseEnter={() => setHovered('qc')}
             onMouseLeave={() => setHovered(null)}
             onClick={() => handleTabClick('qc')}
           >
-            <DocumentCheckIcon className="mr-2 h-4 w-4" />
+            <DocumentCheckIcon className="mr-3 h-4 w-4" />
             Q.C. Label
           </Tabs.Trigger>
           {hovered === 'qc' && (
@@ -39,12 +39,12 @@ export default function PrintLabelPopover({ onClose }: { onClose?: () => void })
         <div className="relative">
           <Tabs.Trigger
             value="grn"
-            className="px-3 py-2 text-sm font-medium text-white text-left data-[state=active]:bg-gray-800 data-[state=active]:border-l-4 data-[state=active]:border-blue-500 flex items-center"
+            className="px-3 py-2 text-sm font-medium text-white text-left data-[state=active]:bg-gray-800 data-[state=active]:border-l-4 data-[state=active]:border-blue-500 flex items-center hover:bg-gray-700 transition-colors rounded-b-md w-full"
             onMouseEnter={() => setHovered('grn')}
             onMouseLeave={() => setHovered(null)}
             onClick={() => handleTabClick('grn')}
           >
-            <DocumentTextIcon className="mr-2 h-4 w-4" />
+            <DocumentTextIcon className="mr-3 h-4 w-4" />
             GRN Label
           </Tabs.Trigger>
           {hovered === 'grn' && (

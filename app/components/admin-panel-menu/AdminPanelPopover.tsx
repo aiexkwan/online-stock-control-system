@@ -22,18 +22,18 @@ export default function AdminPanelPopover({ onClose }: { onClose?: () => void })
   };
 
   return (
-    <Tabs.Root defaultValue="void" className="flex w-[340px] min-h-[280px]">
-      <Tabs.List className="flex flex-col w-32 border-r border-gray-700 bg-[#23263a] shadow-md">
+    <Tabs.Root defaultValue="void" className="flex min-h-[300px]">
+      <Tabs.List className="flex flex-col bg-[#23263a] shadow-md rounded-md">
         <div className="relative">
           <Tabs.Trigger
             value="void"
-            className="px-3 py-2 text-sm font-medium text-white text-left data-[state=active]:bg-gray-800 data-[state=active]:border-l-4 data-[state=active]:border-blue-500 flex items-center"
+            className="px-3 py-2 text-sm font-medium text-white text-left data-[state=active]:bg-gray-800 data-[state=active]:border-l-4 data-[state=active]:border-blue-500 flex items-center hover:bg-gray-700 transition-colors rounded-t-md w-full"
             onMouseEnter={() => setHovered('void')}
             onMouseLeave={() => setHovered(null)}
             onClick={() => handleTabClick('/void-pallet')}
           >
-            <NoSymbolIcon className="mr-2 h-4 w-4" />
-            Void Pallet
+            <NoSymbolIcon className="mr-3 h-4 w-4" />
+            <span className="whitespace-nowrap">Void Pallet</span>
           </Tabs.Trigger>
           {hovered === 'void' && (
             <div className="absolute left-full top-0 ml-2 bg-gray-900 text-white text-xs rounded shadow-lg px-3 py-2 z-50 whitespace-nowrap">
@@ -45,13 +45,13 @@ export default function AdminPanelPopover({ onClose }: { onClose?: () => void })
         <div className="relative">
           <Tabs.Trigger
             value="history"
-            className="px-3 py-2 text-sm font-medium text-white text-left data-[state=active]:bg-gray-800 data-[state=active]:border-l-4 data-[state=active]:border-blue-500 flex items-center"
+            className="px-3 py-2 text-sm font-medium text-white text-left data-[state=active]:bg-gray-800 data-[state=active]:border-l-4 data-[state=active]:border-blue-500 flex items-center hover:bg-gray-700 transition-colors w-full"
             onMouseEnter={() => setHovered('history')}
             onMouseLeave={() => setHovered(null)}
             onClick={() => handleTabClick('/view-history')}
           >
-            <ClockIcon className="mr-2 h-4 w-4" />
-            View History
+            <ClockIcon className="mr-3 h-4 w-4" />
+            <span className="whitespace-nowrap">View History</span>
           </Tabs.Trigger>
           {hovered === 'history' && (
             <div className="absolute left-full top-0 ml-2 bg-gray-900 text-white text-xs rounded shadow-lg px-3 py-2 z-50 whitespace-nowrap">
@@ -63,13 +63,13 @@ export default function AdminPanelPopover({ onClose }: { onClose?: () => void })
         <div className="relative">
           <Tabs.Trigger
             value="export"
-            className="px-3 py-2 text-sm font-medium text-white text-left data-[state=active]:bg-gray-800 data-[state=active]:border-l-4 data-[state=active]:border-blue-500 flex items-center"
+            className="px-3 py-2 text-sm font-medium text-white text-left data-[state=active]:bg-gray-800 data-[state=active]:border-l-4 data-[state=active]:border-blue-500 flex items-center hover:bg-gray-700 transition-colors w-full"
             onMouseEnter={() => setHovered('export')}
             onMouseLeave={() => setHovered(null)}
             onClick={() => handleTabClick('/export-report')}
           >
-            <DocumentArrowDownIcon className="mr-2 h-4 w-4" />
-            Export Report
+            <DocumentArrowDownIcon className="mr-3 h-4 w-4" />
+            <span className="whitespace-nowrap">Export Report</span>
           </Tabs.Trigger>
           {hovered === 'export' && (
             <div className="absolute left-full top-0 ml-2 bg-gray-900 text-white text-xs rounded shadow-lg px-3 py-2 z-50 whitespace-nowrap">
@@ -81,13 +81,13 @@ export default function AdminPanelPopover({ onClose }: { onClose?: () => void })
         <div className="relative">
           <Tabs.Trigger
             value="ask"
-            className="px-3 py-2 text-sm font-medium text-white text-left data-[state=active]:bg-gray-800 data-[state=active]:border-l-4 data-[state=active]:border-blue-500 flex items-center"
+            className="px-3 py-2 text-sm font-medium text-white text-left data-[state=active]:bg-gray-800 data-[state=active]:border-l-4 data-[state=active]:border-blue-500 flex items-center hover:bg-gray-700 transition-colors w-full"
             onMouseEnter={() => setHovered('ask')}
             onMouseLeave={() => setHovered(null)}
             onClick={() => handleTabClick('/ask-database')}
           >
-            <ChatBubbleLeftRightIcon className="mr-2 h-4 w-4" />
-            Ask Database
+            <ChatBubbleLeftRightIcon className="mr-3 h-4 w-4" />
+            <span className="whitespace-nowrap">Ask Database</span>
           </Tabs.Trigger>
           {hovered === 'ask' && (
             <div className="absolute left-full top-0 ml-2 bg-gray-900 text-white text-xs rounded shadow-lg px-3 py-2 z-50 whitespace-nowrap">
@@ -99,13 +99,13 @@ export default function AdminPanelPopover({ onClose }: { onClose?: () => void })
         <div className="relative">
           <Tabs.Trigger
             value="product"
-            className="px-3 py-2 text-sm font-medium text-white text-left data-[state=active]:bg-gray-800 data-[state=active]:border-l-4 data-[state=active]:border-blue-500 flex items-center"
+            className="px-3 py-2 text-sm font-medium text-white text-left data-[state=active]:bg-gray-800 data-[state=active]:border-l-4 data-[state=active]:border-blue-500 flex items-center hover:bg-gray-700 transition-colors w-full"
             onMouseEnter={() => setHovered('product')}
             onMouseLeave={() => setHovered(null)}
             onClick={() => handleTabClick('/productUpdate')}
           >
-            <CubeIcon className="mr-2 h-4 w-4" />
-            Product Update
+            <CubeIcon className="mr-3 h-4 w-4" />
+            <span className="whitespace-nowrap">Product Update</span>
           </Tabs.Trigger>
           {hovered === 'product' && (
             <div className="absolute left-full top-0 ml-2 bg-gray-900 text-white text-xs rounded shadow-lg px-3 py-2 z-50 whitespace-nowrap">
@@ -117,13 +117,13 @@ export default function AdminPanelPopover({ onClose }: { onClose?: () => void })
         <div className="relative">
           <Tabs.Trigger
             value="access"
-            className="px-3 py-2 text-sm font-medium text-white text-left data-[state=active]:bg-gray-800 data-[state=active]:border-l-4 data-[state=active]:border-blue-500 flex items-center"
+            className="px-3 py-2 text-sm font-medium text-white text-left data-[state=active]:bg-gray-800 data-[state=active]:border-l-4 data-[state=active]:border-blue-500 flex items-center hover:bg-gray-700 transition-colors rounded-b-md w-full"
             onMouseEnter={() => setHovered('access')}
             onMouseLeave={() => setHovered(null)}
             onClick={() => handleTabClick('/users')}
           >
-            <KeyIcon className="mr-2 h-4 w-4" />
-            Access Update
+            <KeyIcon className="mr-3 h-4 w-4" />
+            <span className="whitespace-nowrap">Access Update</span>
           </Tabs.Trigger>
           {hovered === 'access' && (
             <div className="absolute left-full top-0 ml-2 bg-gray-900 text-white text-xs rounded shadow-lg px-3 py-2 z-50 whitespace-nowrap">

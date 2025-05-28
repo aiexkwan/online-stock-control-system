@@ -1,321 +1,929 @@
 'use server';
 
 import { createClient } from '@/app/utils/supabase/server';
-import { format } from 'date-fns';
-import { revalidatePath } from 'next/cache';
-import bcrypt from 'bcryptjs';
-import { verifyCurrentUserPasswordAction } from '@/app/actions/authActions';
+import { clockNumberToEmail, emailToClockNumber } from '@/app/utils/authUtils';
+import { 
+  SearchParams, 
+  SearchResult, 
+  VoidParams, 
+  VoidResult, 
+  PalletInfo,
+  HistoryRecord 
+} from './types';
 
 const supabase = createClient();
 
-interface PalletInfo {
-  plt_num: string;
-  product_code: string;
-  product_qty: number;
-  series: string;
-  current_location: string | null;
-  plt_remark: string | null;
+/**
+ * Get user ID from data_id table by email
+ */
+async function getUserIdFromEmail(email: string): Promise<number | null> {
+  try {
+    const { data, error } = await supabase
+      .from('data_id')
+      .select('id')
+      .eq('email', email)
+      .single();
+
+    if (error) {
+      if (error.code === 'PGRST116') {
+        // No user found with this email
+        return null;
+      }
+      throw error;
+    }
+
+    return data?.id || null;
+  } catch (error: any) {
+    console.error('Error getting user ID from email:', error);
+    return null;
+  }
 }
 
-interface VoidPalletArgs {
-  userId: number;
-  palletInfo: PalletInfo;
-  password: string;
-  voidReason: string;
+/**
+ * Check if pallet is an ACO Order Pallet by checking plt_remark
+ */
+function isACOOrderPallet(plt_remark: string | null): { isACO: boolean; refNumber?: string } {
+  if (!plt_remark) {
+    console.log('[ACO Check] No plt_remark found');
+    return { isACO: false };
+  }
+  
+  console.log(`[ACO Check] Checking plt_remark: "${plt_remark}"`);
+  
+  // Look for ACO reference pattern in remarks - support multiple formats with flexible spacing
+  const acoPatterns = [
+    /ACO\s+Ref\s*:\s*(\d+)/i,           // "ACO Ref: 123456" or "ACO Ref : 123456"
+    /ACO\s+Reference\s*:\s*(\d+)/i,     // "ACO Reference: 123456" or "ACO Reference : 123456"
+    /ACO\s*:\s*(\d+)/i,                 // "ACO: 123456" or "ACO : 123456"
+    /ACO\s+(\d+)/i,                     // "ACO 123456"
+    /Ref\s*:\s*(\d+)/i,                 // "Ref: 123456" or "Ref : 123456"
+  ];
+  
+  for (const pattern of acoPatterns) {
+    const match = plt_remark.match(pattern);
+    if (match) {
+      console.log(`[ACO Check] Found ACO reference: ${match[1]} using pattern: ${pattern}`);
+      return { isACO: true, refNumber: match[1] };
+    }
+  }
+  
+  console.log('[ACO Check] No ACO reference found');
+  return { isACO: false };
 }
 
-interface ActionResult {
-  success: boolean;
-  error?: string;
-  message?: string;
-  remainingQty?: number;
-  actual_original_location?: string | null;
+/**
+ * Update ACO record when voiding ACO Order Pallet
+ */
+async function updateACORecord(
+  refNumber: string,
+  productCode: string,
+  quantity: number
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    console.log(`[ACO Update] Starting update: ref=${refNumber}, code=${productCode}, qty=${quantity}`);
+    
+    // Find the ACO record by order_ref and code (case-insensitive for product code)
+    const { data: acoRecord, error: findError } = await supabase
+      .from('record_aco')
+      .select('uuid, remain_qty, code')
+      .eq('order_ref', refNumber)
+      .ilike('code', productCode) // Use ilike for case-insensitive matching
+      .single();
+
+    console.log(`[ACO Update] Query result:`, { acoRecord, findError });
+
+    if (findError) {
+      if (findError.code === 'PGRST116') {
+        console.log(`[ACO Update] No record found for ref=${refNumber}, code=${productCode}`);
+        
+        // Try to find any records with this order_ref to see what's available
+        const { data: allRecords } = await supabase
+          .from('record_aco')
+          .select('uuid, code, remain_qty')
+          .eq('order_ref', refNumber);
+        
+        console.log(`[ACO Update] Available records for ref=${refNumber}:`, allRecords);
+        
+        return { 
+          success: false, 
+          error: `ACO record not found for ref: ${refNumber}, code: ${productCode}` 
+        };
+      }
+      throw findError;
+    }
+
+    if (!acoRecord) {
+      console.log(`[ACO Update] No ACO record returned`);
+      return { 
+        success: false, 
+        error: `ACO record not found for ref: ${refNumber}, code: ${productCode}` 
+      };
+    }
+
+    console.log(`[ACO Update] Found record: uuid=${acoRecord.uuid}, current_remain_qty=${acoRecord.remain_qty}`);
+
+    // Update remain_qty by adding back the voided quantity
+    const newRemainQty = acoRecord.remain_qty + quantity;
+    
+    console.log(`[ACO Update] Updating remain_qty: ${acoRecord.remain_qty} + ${quantity} = ${newRemainQty}`);
+    
+    const { error: updateError } = await supabase
+      .from('record_aco')
+      .update({ remain_qty: newRemainQty })
+      .eq('uuid', acoRecord.uuid);
+
+    if (updateError) {
+      console.error(`[ACO Update] Update failed:`, updateError);
+      throw updateError;
+    }
+
+    console.log(`[ACO Update] Successfully updated: ref=${refNumber}, code=${productCode}, added=${quantity}, new_remain_qty=${newRemainQty}`);
+    
+    return { success: true };
+  } catch (error: any) {
+    console.error('[ACO Update] Error updating ACO record:', error);
+    return { 
+      success: false, 
+      error: `Failed to update ACO record: ${error.message}` 
+    };
+  }
 }
 
-// Interface for the new damaged pallet voiding action
-interface PalletInfoForDamage {
-  plt_num: string;
-  product_code: string;
-  original_product_qty: number; // This will be foundPallet.product_qty from frontend
-  original_plt_loc: string; // This will be foundPallet.original_plt_loc from frontend
-  plt_remark: string | null;
-  // series is not strictly needed by process_damaged_pallet_void RPC but can be passed if available
-  series?: string | null; 
+/**
+ * Verify current user password using Supabase Auth
+ */
+export async function verifyPasswordWithSupabaseAuth(
+  password: string
+): Promise<{ success: boolean; error?: string; clockNumber?: string }> {
+  try {
+    const supabase = createClient();
+    
+    // 1. Get current user session
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    
+    if (userError || !user) {
+      return { 
+        success: false, 
+        error: 'Invalid user session, please login again' 
+      };
+    }
+
+    // 2. Look up user ID in data_id table by email
+    if (!user.email) {
+      return { 
+        success: false, 
+        error: 'User email not found' 
+      };
+    }
+
+    const userId = await getUserIdFromEmail(user.email);
+    if (!userId) {
+      return { 
+        success: false, 
+        error: 'User not found in system. Please contact administrator.' 
+      };
+    }
+
+    const clockNumber = userId.toString();
+
+    // 3. Verify password using Supabase Auth
+    const { error: signInError } = await supabase.auth.signInWithPassword({
+      email: user.email,
+      password,
+    });
+
+    if (signInError) {
+      if (signInError.message.includes('Invalid login credentials')) {
+        return { 
+          success: false, 
+          error: 'Incorrect password, please try again' 
+        };
+      }
+      return { 
+        success: false, 
+        error: 'Password verification failed, please retry' 
+      };
+    }
+
+    return { 
+      success: true, 
+      clockNumber 
+    };
+
+  } catch (error: any) {
+    console.error('Error in verifyPasswordWithSupabaseAuth:', error);
+    return { 
+      success: false, 
+      error: 'Error occurred during password verification' 
+    };
+  }
 }
 
-interface ProcessDamagedPalletArgs {
-  userId: number;
-  palletInfo: PalletInfoForDamage;
-  password: string;
-  voidReason: string; // Should be "Damage" or a more specific damage reason
-  damageQty: number;
+/**
+ * Get latest pallet location from record_history
+ */
+async function getLatestPalletLocation(plt_num: string): Promise<string | null> {
+  try {
+    const { data, error } = await supabase
+      .from('record_history')
+      .select('loc')
+      .eq('plt_num', plt_num)
+      .not('loc', 'is', null)
+      .order('time', { ascending: false })
+      .limit(1)
+      .single();
+
+    if (error) {
+      if (error.code === 'PGRST116') {
+        // No history record found, return null
+        return null;
+      }
+      throw error;
+    }
+
+    return data?.loc || null;
+  } catch (error: any) {
+    console.error('Error getting latest pallet location:', error);
+    return null;
+  }
 }
 
-// Helper function to log history (Only used for pre-RPC failures now)
-async function logHistoryRecord(
-  userId: number,
+/**
+ * Search pallet information - using pure SQL syntax
+ */
+export async function searchPalletAction(params: SearchParams): Promise<SearchResult> {
+  try {
+    const { searchValue, searchType } = params;
+    
+    if (!searchValue.trim()) {
+      return { success: false, error: 'Search value cannot be empty' };
+    }
+
+    let query = supabase
+      .from('record_palletinfo')
+      .select('plt_num, product_code, product_qty, series, plt_remark, generate_time');
+
+    // Build query based on search type
+    if (searchType === 'qr') {
+      // QR Code search (series)
+      query = query.eq('series', searchValue.trim());
+    } else {
+      // Pallet number search
+      query = query.eq('plt_num', searchValue.trim());
+    }
+
+    const { data, error } = await query.single();
+
+    if (error) {
+      if (error.code === 'PGRST116') {
+        return { success: false, error: 'Pallet not found' };
+      }
+      throw error;
+    }
+
+    if (!data) {
+      return { success: false, error: 'Pallet not found' };
+    }
+
+    // Get latest location from record_history
+    const latestLocation = await getLatestPalletLocation(data.plt_num);
+
+    // Check if pallet is already voided
+    if (latestLocation === 'Voided' || latestLocation === 'Damaged') {
+      return { success: false, error: `Pallet is already ${latestLocation.toLowerCase()}` };
+    }
+
+    const palletInfo: PalletInfo = {
+      plt_num: data.plt_num,
+      product_code: data.product_code,
+      product_qty: data.product_qty,
+      series: data.series,
+      plt_remark: data.plt_remark,
+      plt_loc: latestLocation,
+      creation_date: data.generate_time,
+      user_id: undefined, // user_id field doesn't exist in record_palletinfo
+    };
+
+    return { success: true, data: palletInfo };
+
+  } catch (error: any) {
+    console.error('Error searching pallet:', error);
+    return { 
+      success: false, 
+      error: `Search failed: ${error.message || 'Unknown error'}` 
+    };
+  }
+}
+
+/**
+ * Record history operation
+ */
+export async function recordHistoryAction(
+  clockNumber: string,
   action: string,
   plt_num: string | null,
   loc: string | null,
   remark: string | null
-): Promise<{ error?: any }> {
+): Promise<{ success: boolean; error?: string }> {
   try {
-    const { error } = await supabase.from('record_history').insert({
-      time: new Date().toISOString(),
-      id: userId,
-      action: action,
-      plt_num: plt_num,
-      loc: loc,
-      remark: remark,
-    });
+    // Convert clockNumber to numeric ID
+    const numericId = parseInt(clockNumber, 10);
+    if (isNaN(numericId)) {
+      console.error(`Invalid clockNumber: ${clockNumber}, cannot convert to numeric ID`);
+      return { 
+        success: false, 
+        error: 'Invalid user ID format' 
+      };
+    }
+
+    const { error } = await supabase
+      .from('record_history')
+      .insert({
+        time: new Date().toISOString(),
+        id: numericId,
+        action: action,
+        plt_num: plt_num,
+        loc: loc,
+        remark: remark,
+      });
+
     if (error) throw error;
-    return {};
-  } catch (error) {
-    console.error(`[SA] History logging failed for action '${action}', remark '${remark}':`, error);
-    return { error }; // Return error
-  }
-}
 
-export async function voidPalletAction(args: VoidPalletArgs): Promise<ActionResult> {
-  console.log('[SA] Received args:', JSON.stringify(args, null, 2)); // Log the entire args object
-  if (args && args.palletInfo) {
-    console.log('[SA] Received palletInfo:', JSON.stringify(args.palletInfo, null, 2));
-  } else {
-    console.error('[SA] CRITICAL: args.palletInfo is missing or args itself is falsy.', args ? args.palletInfo : 'args is falsy');
-    // Return an error immediately if palletInfo is not there, before destructuring attempt
-    return { success: false, error: 'Internal Server Error: Pallet information missing in request.' };
-  }
-
-  const { userId, palletInfo, password, voidReason } = args;
-  const { plt_num, product_code, product_qty, plt_remark, current_location, series } = palletInfo;
-  const formattedTime = format(new Date(), 'dd-MMM-yyyy HH:mm:ss');
-
-  console.log(`[SA] Voiding pallet ${plt_num} initiated by user ${userId} at ${formattedTime}`);
-
-  // Basic validation before hitting DB for password
-  if (userId === null || typeof userId === 'undefined') {
-    console.error('[SA] User ID is missing or invalid in input args.');
-    return { success: false, error: 'User ID is missing or invalid.' };
-  }
-  if (!palletInfo || !palletInfo.plt_num || !palletInfo.product_code || palletInfo.product_qty == null || !voidReason) {
-    console.error('[SA] Missing critical pallet info or void reason in input args.');
-    return { success: false, error: 'Missing required information to void pallet.' };
-  }
-
-  try {
-    // 1. Verify Password
-    console.log('[SA] Verifying password using verifyCurrentUserPasswordAction...');
-    const passwordVerificationResult = await verifyCurrentUserPasswordAction(userId, password);
-
-    if (!passwordVerificationResult.success) {
-      console.warn(`[SA] Password verification failed for user ${userId}: ${passwordVerificationResult.error}`);
-      await logHistoryRecord(userId, 'Void Pallet Fail', plt_num, current_location, `Password Mismatch (SA): ${passwordVerificationResult.error}`);
-      return { success: false, error: passwordVerificationResult.error || 'Action Denied. Password Not Match. Please Try Again.' };
-    }
-    console.log('[SA] Password verified via action.');
-
-    // Pre-RPC Check: Ensure current_location is provided and not already 'Voided'.
-    // The RPC also performs these checks, but checking here avoids unnecessary RPC calls.
-    if (current_location === null || typeof current_location === 'undefined') {
-        console.error(`[SA] Pallet ${plt_num} has invalid current location: ${current_location}`);
-        await logHistoryRecord(userId, 'Void Pallet Fail', plt_num, null, 'Missing or invalid current location (SA)');
-        return { success: false, error: 'Pallet current location is missing or invalid.' };
-    }
-    if (current_location === 'Voided') {
-      console.warn(`[SA] Pallet ${plt_num} is already voided (checked in SA).`);
-      // Log this attempt? Maybe not, as it's just a state check.
-      return { success: false, error: 'Pallet Already Voided. Please Check Again.' };
-    }
-
-    // 2. Call the database function (RPC)
-    console.log(`[SA] Calling RPC 'void_pallet_transaction' for plt_num: ${plt_num}`);
-    const { data: rpcData, error: rpcError } = await supabase.rpc('void_pallet_transaction', {
-      p_user_id: userId,
-      p_plt_num: plt_num,
-      p_product_code: product_code,
-      p_product_qty: product_qty,
-      p_void_location: current_location,
-      p_void_reason: voidReason,
-    });
-
-    if (rpcError) {
-      console.error('[SA] RPC call failed with rpcError:', rpcError); 
-      await logHistoryRecord(userId, 'Void Pallet Fail', plt_num, current_location, `RPC Call Error: ${rpcError.message} (SA)`);
-      return { success: false, error: `Database operation failed: ${rpcError.message}` };
-    }
-
-    // Handle RPCs that return a JSON object with success and message properties
-    console.log(`[SA] RPC call seemingly successful (no rpcError), response data:`, rpcData);
-    if (rpcData && typeof rpcData === 'object') {
-      const rpcResponse = rpcData as { success?: boolean; message?: string; [key: string]: any }; // Type assertion
-      if (rpcResponse.success === true) {
-        revalidatePath('/void-pallet');
-        return { success: true, message: rpcResponse.message || 'Pallet voided successfully.' };
-      } else {
-        // RPC returned success:false or success is not explicitly true
-        const errorMessage = rpcResponse.message || 'RPC indicated an issue but provided no specific message.';
-        console.warn(`[SA] RPC reported an issue:`, rpcResponse);
-        await logHistoryRecord(userId, 'Void Pallet Fail', plt_num, current_location, `RPC Reported Issue: ${errorMessage.substring(0,150)} (SA)`);
-        return { success: false, error: errorMessage };
-      }
-    } else {
-      // Unexpected rpcData format (not an object, or null/undefined when rpcError was also null)
-      console.error('[SA] RPC returned unexpected data format or null/undefined data when rpcError was also null:', rpcData);
-      await logHistoryRecord(userId, 'Void Pallet Fail', plt_num, current_location, 'RPC Unexpected Data Format (SA)');
-      return { success: false, error: 'Database operation returned an unexpected data format.' };
-    }
-
+    return { success: true };
   } catch (error: any) {
-    console.error('[SA] Unhandled error during voidPalletAction:', error);
-    // Log a generic failure if something outside the RPC call fails
-    await logHistoryRecord(userId, 'Void Pallet Fail', plt_num, current_location, `Unhandled Server Error (SA): ${error.message}`);
-    return { success: false, error: 'An unexpected server error occurred.' };
-  }
-}
-
-export async function processDamagedPalletVoidAction(args: ProcessDamagedPalletArgs): Promise<ActionResult> {
-  console.log('[SA_DMG] Received args for damaged pallet:', JSON.stringify(args, null, 2));
-  if (!args || !args.palletInfo) {
-    console.error('[SA_DMG] CRITICAL: args.palletInfo is missing or args itself is falsy.');
-    return { success: false, error: 'Internal Server Error: Pallet information missing in request for damaged void.' };
-  }
-
-  const { userId, palletInfo, password, voidReason, damageQty } = args;
-  const { 
-    plt_num, 
-    product_code, 
-    original_product_qty, // Renamed for clarity, maps to p_original_product_qty
-    original_plt_loc,     // Renamed for clarity, maps to p_original_plt_loc
-    plt_remark            // Existing remark from palletInfo
-  } = palletInfo;
-  
-  const formattedTime = format(new Date(), 'dd-MMM-yyyy HH:mm:ss');
-  console.log(`[SA_DMG] Damaged pallet void for ${plt_num} initiated by user ${userId} at ${formattedTime} with damage qty ${damageQty}`);
-
-  // Basic validation
-  if (userId === null || typeof userId === 'undefined') {
-    console.error('[SA_DMG] User ID is missing or invalid.');
-    return { success: false, error: 'User ID is missing or invalid.' };
-  }
-  if (!plt_num || !product_code || original_product_qty == null || !voidReason || damageQty == null || original_plt_loc == null) {
-    console.error('[SA_DMG] Missing critical pallet info, void reason, damage quantity, or original location.');
-    return { success: false, error: 'Missing required information for damaged pallet void.' };
-  }
-  if (damageQty <= 0 || damageQty > original_product_qty) {
-    console.error(`[SA_DMG] Invalid damageQty: ${damageQty}. Must be > 0 and <= original_product_qty (${original_product_qty}).`);
-    return { success: false, error: `Invalid damage quantity. Must be between 1 and ${original_product_qty}.` };
-  }
-
-
-  try {
-    // 1. Verify Password
-    console.log('[SA_DMG] Verifying password using verifyCurrentUserPasswordAction...');
-    const passwordVerificationResult = await verifyCurrentUserPasswordAction(userId, password);
-
-    if (!passwordVerificationResult.success) {
-      console.warn(`[SA_DMG] Password verification failed for user ${userId}: ${passwordVerificationResult.error}`);
-      await logHistoryRecord(userId, 'Damaged Void Fail', plt_num, original_plt_loc, `Password Mismatch (SA_DMG): ${passwordVerificationResult.error}`);
-      return { 
-        success: false, 
-        error: passwordVerificationResult.error || 'Action Denied. Password Not Match. Please Try Again.',
-        actual_original_location: null 
-      };
-    }
-    console.log('[SA_DMG] Password verified via action.');
-
-    // Pre-RPC Check: Ensure original_plt_loc is not already 'Voided'.
-    // The RPC also performs these checks.
-    if (original_plt_loc === 'Voided') {
-      console.warn(`[SA_DMG] Pallet ${plt_num} is already voided (checked in SA_DMG). Original loc: ${original_plt_loc}`);
-      return { success: false, error: 'Pallet Already Voided. Please Check Again.' };
-    }
-    
-    // Determine if ACO ref logic applies based on plt_remark
-    // This is illustrative; the RPC handles the core ACO logic.
-    // However, if ACO applies, damageQty might be forced to original_product_qty by frontend/RPC.
-    const acoRefPattern = /ACO Ref : (\d{5,7})/;
-    const acoMatch = plt_remark ? plt_remark.match(acoRefPattern) : null;
-    const isAcoPallet = !!acoMatch;
-
-    if (isAcoPallet && damageQty < original_product_qty) {
-        console.warn(`[SA_DMG] Pallet ${plt_num} has ACO Ref, but damageQty (${damageQty}) is less than original_product_qty (${original_product_qty}). The RPC will likely enforce full void.`);
-        // No specific error here, as RPC handles the logic. Frontend should ideally align damageQty.
-    }
-
-
-    // 2. Call the database function (RPC) process_damaged_pallet_void
-    console.log(`[SA_DMG] Calling RPC 'process_damaged_pallet_void' for plt_num: ${plt_num}`);
-    const { data: rpcData, error: rpcError } = await supabase.rpc('process_damaged_pallet_void', {
-      p_user_id: userId,
-      p_plt_num: plt_num,
-      p_product_code: product_code,
-      p_original_product_qty: original_product_qty,
-      p_damage_qty_to_process: damageQty,         // Changed from p_damage_qty
-      p_void_reason: voidReason, 
-      p_current_true_location: original_plt_loc, // Changed from p_original_plt_loc_param
-      p_original_plt_remark: plt_remark        // Added this parameter
-    });
-
-    if (rpcError) {
-      console.error('[SA_DMG] RPC call failed for damaged pallet:', rpcError);
-      await logHistoryRecord(userId, 'Damaged Void Fail', plt_num, original_plt_loc, `RPC Call Error: ${rpcError.message} (SA_DMG)`);
-      return { 
-        success: false, 
-        error: `Database operation failed for damaged pallet: ${rpcError.message}`,
-        actual_original_location: null // Explicitly set to null
-      };
-    }
-
-    console.log(`[SA_DMG] RPC call for damaged pallet seemingly successful, response data:`, rpcData);
-    if (rpcData && typeof rpcData === 'object') {
-      // Assuming rpcData is the JSONB object { "success": boolean, "message": "string", "remainingQty"?: number }
-      const rpcResponse = rpcData as { success?: boolean; message?: string; remainingQty?: number; actual_original_location?: string | null; [key: string]: any };
-      if (rpcResponse.success === true) {
-        revalidatePath('/void-pallet');
-        revalidatePath('/inventory'); // Also revalidate inventory page as quantities change
-        revalidatePath('/reports/inventory-history'); // And history reports
-        
-        const actionResult: ActionResult = {
-            success: true, 
-            message: rpcResponse.message || 'Damaged pallet processed successfully.',
-            remainingQty: rpcResponse.remainingQty,
-            actual_original_location: rpcResponse.actual_original_location
-        };
-        if (typeof rpcResponse.remainingQty === 'number' && actionResult.remainingQty === undefined) {
-            actionResult.remainingQty = rpcResponse.remainingQty;
-        }
-        if (rpcResponse.actual_original_location !== undefined && actionResult.actual_original_location === undefined) {
-             actionResult.actual_original_location = rpcResponse.actual_original_location;
-        }
-        return actionResult;
-      } else {
-        const errorMessage = rpcResponse.message || 'RPC for damaged pallet indicated an issue but provided no specific message.';
-        console.warn(`[SA_DMG] RPC reported an issue:`, rpcResponse);
-        await logHistoryRecord(userId, 'Damaged Void Fail', plt_num, original_plt_loc, `RPC Reported Issue (DMG): ${errorMessage.substring(0,100)} (SA_DMG)`);
-        return { 
-          success: false, 
-          error: errorMessage,
-          actual_original_location: null // Explicitly set to null
-        };
-      }
-    } else {
-      // Unexpected rpcData format
-      console.error('[SA_DMG] RPC for damaged pallet returned unexpected data format or null/undefined data:', rpcData);
-      await logHistoryRecord(userId, 'Damaged Void Fail', plt_num, original_plt_loc, 'RPC Unexpected Data Format (SA_DMG)');
-      return { 
-        success: false, 
-        error: 'Database (damage proc) returned an unexpected data format.',
-        actual_original_location: null // Explicitly set to null
-      };
-    }
-
-  } catch (error: any) {
-    console.error('[SA_DMG] Unhandled error during processDamagedPalletVoidAction:', error);
-    await logHistoryRecord(userId, 'Damaged Void Fail', plt_num, original_plt_loc, `Unhandled Server Error (SA_DMG): ${error.message}`);
+    console.error('Error recording history:', error);
     return { 
       success: false, 
-      error: 'An unexpected server error occurred during damaged pallet processing.',
-      actual_original_location: null // Explicitly set to null
+      error: `Failed to record history: ${error.message}` 
+    };
+  }
+}
+
+/**
+ * Log error to database
+ */
+export async function logErrorAction(
+  clockNumber: string,
+  errorInfo: string
+): Promise<void> {
+  try {
+    // Convert clockNumber to numeric ID
+    const numericId = parseInt(clockNumber, 10);
+    if (isNaN(numericId)) {
+      console.error(`Invalid clockNumber: ${clockNumber}, cannot convert to numeric ID`);
+      return;
+    }
+
+    await supabase
+      .from('report_log')
+      .insert({
+        error: 'Void Pallet Error',
+        error_info: errorInfo.substring(0, 255),
+        user_id: numericId,
+        state: false,
+      });
+  } catch (error) {
+    console.error('Failed to log error to database:', error);
+  }
+}
+
+/**
+ * General void processing - using Supabase Auth verification
+ */
+export async function voidPalletAction(params: Omit<VoidParams, 'userId'>): Promise<VoidResult> {
+  try {
+    const { palletInfo, voidReason, password } = params;
+
+    console.log('[Void Pallet] Starting void operation:', {
+      plt_num: palletInfo.plt_num,
+      product_code: palletInfo.product_code,
+      product_qty: palletInfo.product_qty,
+      plt_remark: palletInfo.plt_remark,
+      voidReason
+    });
+
+    // 1. Use Supabase Auth verification to get user information
+    const passwordResult = await verifyPasswordWithSupabaseAuth(password);
+    if (!passwordResult.success || !passwordResult.clockNumber) {
+      await recordHistoryAction(
+        passwordResult.clockNumber || 'unknown', 
+        'Void Pallet Fail', 
+        palletInfo.plt_num, 
+        palletInfo.plt_loc, 
+        `Password verification failed: ${passwordResult.error}`
+      );
+      return { 
+        success: false, 
+        error: passwordResult.error || 'Password verification failed' 
+      };
+    }
+
+    const clockNumber = passwordResult.clockNumber;
+
+    // 2. Update pallet remark only (plt_loc is now managed in record_history)
+    const { error: updateError } = await supabase
+      .from('record_palletinfo')
+      .update({
+        plt_remark: `${palletInfo.plt_remark || ''} | Voided: ${voidReason} at ${new Date().toISOString()}`
+      })
+      .eq('plt_num', palletInfo.plt_num);
+
+    if (updateError) {
+      await recordHistoryAction(
+        clockNumber, 
+        'Void Pallet Fail', 
+        palletInfo.plt_num, 
+        palletInfo.plt_loc, 
+        `Update failed: ${updateError.message}`
+      );
+      return { 
+        success: false, 
+        error: `Failed to update pallet: ${updateError.message}` 
+      };
+    }
+
+    // 3. Update inventory - deduct from original location
+    const inventoryColumn = getInventoryColumn(palletInfo.plt_loc);
+    const inventoryUpdate: any = {
+      product_code: palletInfo.product_code,
+      latest_update: new Date().toISOString(),
+      plt_num: palletInfo.plt_num,
+    };
+    inventoryUpdate[inventoryColumn] = -palletInfo.product_qty;
+
+    const { error: inventoryError } = await supabase
+      .from('record_inventory')
+      .insert(inventoryUpdate);
+
+    if (inventoryError) {
+      // Rollback pallet remark
+      await supabase
+        .from('record_palletinfo')
+        .update({
+          plt_remark: palletInfo.plt_remark
+        })
+        .eq('plt_num', palletInfo.plt_num);
+
+      return { 
+        success: false, 
+        error: `Failed to update inventory: ${inventoryError.message}` 
+      };
+    }
+
+    // 4. Record history with new location 'Voided'
+    await recordHistoryAction(
+      clockNumber,
+      'Void Pallet',
+      palletInfo.plt_num,
+      'Voided',
+      `Reason: ${voidReason}`
+    );
+
+    // 5. Record void report
+    await supabase
+      .from('report_void')
+      .insert({
+        plt_num: palletInfo.plt_num,
+        reason: voidReason,
+        time: new Date().toISOString(),
+      });
+
+    // 6. Handle ACO Order Pallet if applicable
+    const acoCheck = isACOOrderPallet(palletInfo.plt_remark);
+    if (acoCheck.isACO && acoCheck.refNumber) {
+      console.log(`Processing ACO Order Pallet: ref=${acoCheck.refNumber}, code=${palletInfo.product_code}, qty=${palletInfo.product_qty}`);
+      
+      const acoResult = await updateACORecord(
+        acoCheck.refNumber,
+        palletInfo.product_code,
+        palletInfo.product_qty
+      );
+      
+      if (!acoResult.success) {
+        console.warn(`ACO update failed: ${acoResult.error}`);
+        // Log the ACO update failure but don't fail the entire void operation
+        await recordHistoryAction(
+          clockNumber,
+          'ACO Update Failed',
+          palletInfo.plt_num,
+          'Voided',
+          `ACO update failed: ${acoResult.error}`
+        );
+      } else {
+        // Log successful ACO update
+        await recordHistoryAction(
+          clockNumber,
+          'ACO Updated',
+          palletInfo.plt_num,
+          'Voided',
+          `ACO remain_qty updated: ref=${acoCheck.refNumber}, added=${palletInfo.product_qty}`
+        );
+      }
+    }
+
+    // 7. Handle Material GRN Pallet if applicable
+    const grnCheck = isMaterialGRNPallet(palletInfo.plt_remark);
+    if (grnCheck.isGRN && grnCheck.grnNumber) {
+      console.log(`Processing Material GRN Pallet: grn=${grnCheck.grnNumber}, plt_num=${palletInfo.plt_num}`);
+      
+      const grnResult = await deleteGRNRecord(palletInfo.plt_num);
+      
+      if (!grnResult.success) {
+        console.warn(`GRN deletion failed: ${grnResult.error}`);
+        // Log the GRN deletion failure but don't fail the entire void operation
+        await recordHistoryAction(
+          clockNumber,
+          'GRN Delete Failed',
+          palletInfo.plt_num,
+          'Voided',
+          `GRN deletion failed: ${grnResult.error}`
+        );
+      } else {
+        // Log successful GRN deletion
+        await recordHistoryAction(
+          clockNumber,
+          'GRN Deleted',
+          palletInfo.plt_num,
+          'Voided',
+          `GRN record deleted: grn=${grnCheck.grnNumber}`
+        );
+      }
+    }
+
+    // 8. Determine if reprint is needed
+    const needsReprint = ['Wrong Qty', 'Wrong Product Code', 'Wrong Label'].includes(voidReason);
+    
+    return { 
+      success: true, 
+      message: `Pallet ${palletInfo.plt_num} voided successfully`,
+      requiresReprint: needsReprint,
+      reprintInfo: needsReprint ? {
+        product_code: palletInfo.product_code,
+        quantity: palletInfo.product_qty,
+        original_plt_num: palletInfo.plt_num,
+        source_action: 'void_correction',
+        target_location: palletInfo.plt_loc,
+        reason: voidReason
+      } : undefined
+    };
+
+  } catch (error: any) {
+    console.error('Error in voidPalletAction:', error);
+    await logErrorAction('unknown', `Void pallet error: ${error.message}`);
+    return { 
+      success: false, 
+      error: `An unexpected error occurred: ${error.message}` 
+    };
+  }
+}
+
+/**
+ * Damage processing - using Supabase Auth verification
+ */
+export async function processDamageAction(params: Omit<VoidParams, 'userId'>): Promise<VoidResult> {
+  try {
+    const { palletInfo, voidReason, password, damageQuantity } = params;
+
+    console.log('[Damage Processing] Starting damage operation:', {
+      plt_num: palletInfo.plt_num,
+      product_code: palletInfo.product_code,
+      product_qty: palletInfo.product_qty,
+      plt_remark: palletInfo.plt_remark,
+      voidReason,
+      damageQuantity
+    });
+
+    if (!damageQuantity || damageQuantity <= 0 || damageQuantity > palletInfo.product_qty) {
+      return { 
+        success: false, 
+        error: `Invalid damage quantity. Must be between 1 and ${palletInfo.product_qty}` 
+      };
+    }
+
+    // 1. Use Supabase Auth to verify password and get user information
+    const passwordResult = await verifyPasswordWithSupabaseAuth(password);
+    if (!passwordResult.success || !passwordResult.clockNumber) {
+      return { 
+        success: false, 
+        error: passwordResult.error || 'Password verification failed' 
+      };
+    }
+
+    const clockNumber = passwordResult.clockNumber;
+    const remainingQty = palletInfo.product_qty - damageQuantity;
+    const isFullDamage = remainingQty === 0;
+
+    // 2. Update original pallet (only remark and quantity, plt_loc is now managed in record_history)
+    const { error: updateError } = await supabase
+      .from('record_palletinfo')
+      .update({
+        product_qty: 0,
+        plt_remark: `${palletInfo.plt_remark || ''} | Damaged: ${damageQuantity}/${palletInfo.product_qty} at ${new Date().toISOString()}`
+      })
+      .eq('plt_num', palletInfo.plt_num);
+
+    if (updateError) {
+      return { 
+        success: false, 
+        error: `Failed to update pallet: ${updateError.message}` 
+      };
+    }
+
+    // 3. Update inventory - deduct all from original location, add to damage
+    const inventoryColumn = getInventoryColumn(palletInfo.plt_loc);
+    const inventoryUpdate: any = {
+      product_code: palletInfo.product_code,
+      damage: damageQuantity,
+      latest_update: new Date().toISOString(),
+      plt_num: palletInfo.plt_num,
+    };
+    inventoryUpdate[inventoryColumn] = -palletInfo.product_qty;
+
+    const { error: inventoryError } = await supabase
+      .from('record_inventory')
+      .insert(inventoryUpdate);
+
+    if (inventoryError) {
+      // Rollback pallet changes
+      await supabase
+        .from('record_palletinfo')
+        .update({
+          product_qty: palletInfo.product_qty,
+          plt_remark: palletInfo.plt_remark
+        })
+        .eq('plt_num', palletInfo.plt_num);
+
+      return { 
+        success: false, 
+        error: `Failed to update inventory: ${inventoryError.message}` 
+      };
+    }
+
+    // 4. Record history with appropriate location status
+    const newLocation = isFullDamage ? 'Damaged' : 'Voided (Partial)';
+    await recordHistoryAction(
+      clockNumber,
+      isFullDamage ? 'Fully Damaged' : 'Partially Damaged',
+      palletInfo.plt_num,
+      newLocation,
+      `Damage: ${damageQuantity}/${palletInfo.product_qty}, Remaining: ${remainingQty}`
+    );
+
+    // 5. Record void report
+    await supabase
+      .from('report_void')
+      .insert({
+        plt_num: palletInfo.plt_num,
+        reason: voidReason,
+        damage_qty: damageQuantity,
+        time: new Date().toISOString(),
+      });
+
+    // 6. Handle ACO Order Pallet if applicable
+    const acoCheck = isACOOrderPallet(palletInfo.plt_remark);
+    if (acoCheck.isACO && acoCheck.refNumber) {
+      console.log(`Processing ACO Order Pallet (Damage): ref=${acoCheck.refNumber}, code=${palletInfo.product_code}, qty=${palletInfo.product_qty}`);
+      
+      const acoResult = await updateACORecord(
+        acoCheck.refNumber,
+        palletInfo.product_code,
+        palletInfo.product_qty
+      );
+      
+      if (!acoResult.success) {
+        console.warn(`ACO update failed: ${acoResult.error}`);
+        // Log the ACO update failure but don't fail the entire void operation
+        await recordHistoryAction(
+          clockNumber,
+          'ACO Update Failed',
+          palletInfo.plt_num,
+          newLocation,
+          `ACO update failed: ${acoResult.error}`
+        );
+      } else {
+        // Log successful ACO update
+        await recordHistoryAction(
+          clockNumber,
+          'ACO Updated',
+          palletInfo.plt_num,
+          newLocation,
+          `ACO remain_qty updated: ref=${acoCheck.refNumber}, added=${palletInfo.product_qty}`
+        );
+      }
+    }
+
+    // 7. Handle Material GRN Pallet if applicable
+    const grnCheck = isMaterialGRNPallet(palletInfo.plt_remark);
+    if (grnCheck.isGRN && grnCheck.grnNumber) {
+      console.log(`Processing Material GRN Pallet (Damage): grn=${grnCheck.grnNumber}, plt_num=${palletInfo.plt_num}`);
+      
+      const grnResult = await deleteGRNRecord(palletInfo.plt_num);
+      
+      if (!grnResult.success) {
+        console.warn(`GRN deletion failed: ${grnResult.error}`);
+        // Log the GRN deletion failure but don't fail the entire void operation
+        await recordHistoryAction(
+          clockNumber,
+          'GRN Delete Failed',
+          palletInfo.plt_num,
+          newLocation,
+          `GRN deletion failed: ${grnResult.error}`
+        );
+      } else {
+        // Log successful GRN deletion
+        await recordHistoryAction(
+          clockNumber,
+          'GRN Deleted',
+          palletInfo.plt_num,
+          newLocation,
+          `GRN record deleted: grn=${grnCheck.grnNumber}`
+        );
+      }
+    }
+
+    // 8. Return result
+    if (isFullDamage) {
+      return { 
+        success: true, 
+        message: `Pallet ${palletInfo.plt_num} fully damaged. No reprint needed.`,
+        remainingQty: 0
+      };
+    } else {
+      return { 
+        success: true, 
+        message: `Pallet ${palletInfo.plt_num} partially damaged. Remaining: ${remainingQty}`,
+        remainingQty: remainingQty,
+        actual_original_location: palletInfo.plt_loc,
+        requiresReprint: true,
+        reprintInfo: {
+          product_code: palletInfo.product_code,
+          quantity: remainingQty,
+          original_plt_num: palletInfo.plt_num,
+          source_action: 'void_correction_damage_partial',
+          target_location: palletInfo.plt_loc,
+          reason: voidReason
+        }
+      };
+    }
+
+  } catch (error: any) {
+    console.error('Error in processDamageAction:', error);
+    await logErrorAction('unknown', `Damage processing error: ${error.message}`);
+    return { 
+      success: false, 
+      error: `An unexpected error occurred: ${error.message}` 
+    };
+  }
+}
+
+/**
+ * Check if pallet is a Material GRN pallet by checking plt_remark
+ */
+function isMaterialGRNPallet(plt_remark: string | null): { isGRN: boolean; grnNumber?: string } {
+  if (!plt_remark) {
+    console.log('[GRN Check] No plt_remark found');
+    return { isGRN: false };
+  }
+  
+  console.log(`[GRN Check] Checking plt_remark: "${plt_remark}"`);
+  
+  // Look for Material GRN pattern in remarks - support flexible spacing
+  const grnPattern = /Material\s+GRN\s*-\s*(\w+)/i;
+  const match = plt_remark.match(grnPattern);
+  
+  if (match) {
+    console.log(`[GRN Check] Found GRN reference: ${match[1]}`);
+    return { isGRN: true, grnNumber: match[1] };
+  }
+  
+  console.log('[GRN Check] No GRN reference found');
+  return { isGRN: false };
+}
+
+/**
+ * Delete GRN record when voiding Material GRN pallet
+ */
+async function deleteGRNRecord(
+  pltNum: string
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    console.log(`[GRN Delete] Starting deletion for plt_num: ${pltNum}`);
+    
+    // Find and delete the GRN record by plt_num
+    const { data: deletedRecord, error: deleteError } = await supabase
+      .from('record_grn')
+      .delete()
+      .eq('plt_num', pltNum)
+      .select(); // Return deleted records for logging
+
+    if (deleteError) {
+      console.error(`[GRN Delete] Delete failed:`, deleteError);
+      throw deleteError;
+    }
+
+    if (!deletedRecord || deletedRecord.length === 0) {
+      console.log(`[GRN Delete] No GRN record found for plt_num: ${pltNum}`);
+      return { 
+        success: false, 
+        error: `No GRN record found for pallet: ${pltNum}` 
+      };
+    }
+
+    console.log(`[GRN Delete] Successfully deleted ${deletedRecord.length} GRN record(s) for plt_num: ${pltNum}`);
+    console.log(`[GRN Delete] Deleted records:`, deletedRecord);
+    
+    return { success: true };
+  } catch (error: any) {
+    console.error('[GRN Delete] Error deleting GRN record:', error);
+    return { 
+      success: false, 
+      error: `Failed to delete GRN record: ${error.message}` 
+    };
+  }
+}
+
+/**
+ * Get inventory column name - corrected mapping based on database structure
+ */
+function getInventoryColumn(location: string | null): string {
+  if (!location) return 'injection'; // Default value
+  
+  console.log(`[Inventory] Mapping location "${location}" to inventory column`);
+  
+  const locationMap: { [key: string]: string } = {
+    // Exact matches for database locations
+    'Injection': 'injection',
+    'Pipeline': 'pipeline', 
+    'Prebook': 'prebook',
+    'Await': 'await',
+    'Awaiting': 'await', // Alternative spelling
+    'Fold Mill': 'fold',
+    'Bulk': 'bulk',
+    'Backcarpark': 'backcarpark',
+    'Back Car Park': 'backcarpark', // Alternative spelling
+    
+    // Fallback mappings for other locations
+    'Warehouse': 'injection',
+    'QC': 'injection', 
+    'Shipping': 'injection',
+    'Production': 'injection',
+    'Storage': 'injection',
+  };
+  
+  const column = locationMap[location] || 'injection';
+  console.log(`[Inventory] Location "${location}" mapped to column "${column}"`);
+  
+  return column;
+}
+
+/**
+ * Get user history records
+ */
+export async function getUserHistoryAction(
+  limit: number = 50
+): Promise<{ success: boolean; data?: HistoryRecord[]; error?: string }> {
+  try {
+    // Get current user from Supabase Auth
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    
+    if (userError || !user) {
+      return { 
+        success: false, 
+        error: 'Invalid user session, please login again' 
+      };
+    }
+
+    // Look up user ID in data_id table by email
+    if (!user.email) {
+      return { 
+        success: false, 
+        error: 'User email not found' 
+      };
+    }
+
+    const userId = await getUserIdFromEmail(user.email);
+    if (!userId) {
+      return { 
+        success: false, 
+        error: 'User not found in system. Please contact administrator.' 
+      };
+    }
+
+    const { data, error } = await supabase
+      .from('record_history')
+      .select('time, id, action, plt_num, loc, remark')
+      .eq('id', userId)
+      .order('time', { ascending: false })
+      .limit(limit);
+
+    if (error) throw error;
+
+    return { success: true, data: data || [] };
+  } catch (error: any) {
+    console.error('Error fetching user history:', error);
+    return { 
+      success: false, 
+      error: `Failed to fetch history: ${error.message}` 
     };
   }
 } 

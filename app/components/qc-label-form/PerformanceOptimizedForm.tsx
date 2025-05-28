@@ -330,11 +330,15 @@ export const PerformanceOptimizedForm: React.FC<PerformanceOptimizedFormProps> =
       newErrors.productCode = 'Product code is required';
     }
 
-    if (!formData.quantity.trim() || parseInt(formData.quantity) <= 0) {
+    // 安全處理 quantity - 確保它是字符串
+    const quantityStr = String(formData.quantity || '');
+    if (!quantityStr.trim() || parseInt(quantityStr) <= 0) {
       newErrors.quantity = 'Valid quantity is required';
     }
 
-    if (!formData.count.trim() || parseInt(formData.count) <= 0) {
+    // 安全處理 count - 確保它是字符串
+    const countStr = String(formData.count || '');
+    if (!countStr.trim() || parseInt(countStr) <= 0) {
       newErrors.count = 'Valid count is required';
     }
 
