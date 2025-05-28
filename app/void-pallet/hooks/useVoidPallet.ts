@@ -9,7 +9,9 @@ import {
   ErrorState, 
   VOID_REASONS,
   SearchParams,
-  VoidParams 
+  VoidParams,
+  ReprintInfoInput,
+  AutoReprintParams 
 } from '../types';
 import { 
   searchPalletAction, 
@@ -17,6 +19,9 @@ import {
   processDamageAction,
   logErrorAction 
 } from '../actions';
+import { createClient } from '@/app/utils/supabase/client';
+
+const supabase = createClient();
 
 const initialState: VoidPalletState = {
   searchInput: '',
@@ -32,6 +37,10 @@ const initialState: VoidPalletState = {
   showConfirmDialog: false,
   showReprintDialog: false,
   isInputDisabled: false,
+  // Enhanced reprint flow
+  showReprintInfoDialog: false,
+  reprintInfo: null,
+  isAutoReprinting: false,
 };
 
 export function useVoidPallet() {
@@ -53,7 +62,10 @@ export function useVoidPallet() {
     updateState({ error, isInputDisabled: error?.isBlocking || false });
     
     if (error) {
-      // Log error, no need for userId as logErrorAction now gets user info from Supabase Auth
+      // Log error to console for debugging
+      console.error(`[VoidPallet] ${error.type}: ${error.message}`);
+      
+      // Log error to database (logErrorAction will handle user ID lookup automatically)
       logErrorAction('unknown', `${error.type}: ${error.message}`);
     }
   }, [updateState]);
@@ -163,7 +175,27 @@ export function useVoidPallet() {
       if (result.success) {
         toast.success(result.message || 'Pallet voided successfully');
 
-        // Process reprint logic
+        // Check if we need to show reprint info dialog for special cases
+        if (shouldShowReprintDialog(state.voidReason, result)) {
+          const reprintType = getReprintType(state.voidReason);
+          const reprintInfo: ReprintInfoInput = {
+            type: reprintType,
+            originalPalletInfo: state.foundPallet,
+          };
+
+          // For damage cases, set remaining quantity
+          if (reprintType === 'damage' && result.remainingQty !== undefined) {
+            reprintInfo.remainingQuantity = result.remainingQty;
+          }
+
+          updateState({ 
+            showReprintInfoDialog: true, 
+            reprintInfo: reprintInfo 
+          });
+          return; // Don't reset state yet, wait for user input
+        }
+
+        // Process reprint logic for other cases (legacy flow)
         if (result.requiresReprint && result.reprintInfo) {
           const queryParams = new URLSearchParams({
             product_code: result.reprintInfo.product_code,
@@ -228,6 +260,123 @@ export function useVoidPallet() {
     }
   }, [updateState]);
 
+  // Enhanced reprint flow functions
+  const shouldShowReprintDialog = useCallback((voidReason: string, result: any): boolean => {
+    // Check if this is one of the three special cases that need reprint info
+    const specialCases = ['Damage', 'Wrong Qty', 'Wrong Product Code'];
+    return specialCases.includes(voidReason) && result.success;
+  }, []);
+
+  const getReprintType = useCallback((voidReason: string): 'damage' | 'wrong_qty' | 'wrong_code' => {
+    switch (voidReason) {
+      case 'Damage':
+        return 'damage';
+      case 'Wrong Qty':
+        return 'wrong_qty';
+      case 'Wrong Product Code':
+        return 'wrong_code';
+      default:
+        return 'damage'; // fallback
+    }
+  }, []);
+
+  const handleReprintInfoConfirm = useCallback(async (reprintInfo: ReprintInfoInput) => {
+    updateState({ isAutoReprinting: true, showReprintInfoDialog: false });
+    
+    try {
+      // Get current user info for operator clock number
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      if (userError || !user?.email) {
+        throw new Error('Unable to get user information');
+      }
+
+      console.log(`[Auto Reprint] Looking up user ID for email: ${user.email}`);
+
+      // Look up user ID from data_id table
+      const { data: userData, error: userDataError } = await supabase
+        .from('data_id')
+        .select('id, name, email')
+        .eq('email', user.email)
+        .single();
+
+      console.log(`[Auto Reprint] User lookup result:`, { userData, userDataError });
+
+      if (userDataError || !userData) {
+        throw new Error('User not found in system');
+      }
+
+      // Use the id field as the operator clock number
+      const operatorClockNum = userData.id.toString();
+      console.log(`[Auto Reprint] Using operator clock number: ${operatorClockNum}`);
+
+      // Prepare auto reprint parameters
+      const autoReprintParams = {
+        productCode: reprintInfo.correctedProductCode || reprintInfo.originalPalletInfo.product_code,
+        quantity: reprintInfo.correctedQuantity || reprintInfo.remainingQuantity || reprintInfo.originalPalletInfo.product_qty,
+        originalPltNum: reprintInfo.originalPalletInfo.plt_num,
+        originalLocation: reprintInfo.originalPalletInfo.plt_loc || 'await',
+        sourceAction: `void_${reprintInfo.type}`,
+        targetLocation: reprintInfo.originalPalletInfo.plt_loc || 'Pipeline',
+        reason: state.voidReason,
+        operatorClockNum: operatorClockNum
+      };
+
+      console.log(`[Auto Reprint] Calling API with params:`, autoReprintParams);
+
+      // Call auto reprint API
+      const response = await fetch('/api/auto-reprint-label', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(autoReprintParams),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Auto reprint failed');
+      }
+
+      // Get success message and new pallet number from headers
+      const newPalletNum = response.headers.get('X-New-Pallet-Number');
+      const successMessage = response.headers.get('X-Success-Message');
+
+      console.log(`[Auto Reprint] Success! New pallet: ${newPalletNum}`);
+
+      // Download the PDF
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.style.display = 'none';
+      a.href = url;
+      a.download = newPalletNum ? `${newPalletNum.replace(/\//g, '_')}.pdf` : `auto-reprint-${Date.now()}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+
+      toast.success(successMessage || `New pallet ${newPalletNum} created and printed successfully`);
+      
+      // Reset state
+      resetState();
+
+    } catch (error: any) {
+      console.error('Auto reprint error:', error);
+      setError({
+        type: 'system',
+        message: `Auto reprint failed: ${error.message}`,
+        isBlocking: true,
+        timestamp: new Date()
+      });
+    } finally {
+      updateState({ isAutoReprinting: false });
+    }
+  }, [state.voidReason, updateState, resetState, setError]);
+
+  const handleReprintInfoCancel = useCallback(() => {
+    updateState({ showReprintInfoDialog: false, reprintInfo: null });
+  }, [updateState]);
+
   return {
     // State
     state,
@@ -244,6 +393,12 @@ export function useVoidPallet() {
     executeVoid,
     handleDamageQuantityChange,
     handleVoidReasonChange,
+    
+    // Enhanced reprint flow functions
+    handleReprintInfoConfirm,
+    handleReprintInfoCancel,
+    shouldShowReprintDialog,
+    getReprintType,
     
     // Helper function
     validateVoidParams,

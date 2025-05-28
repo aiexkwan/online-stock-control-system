@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { 
   ResponsiveLayout, 
   ResponsiveContainer, 
@@ -252,21 +253,35 @@ export const PerformanceOptimizedForm: React.FC<PerformanceOptimizedFormProps> =
 }) => {
   const isMobile = useMediaQuery('(max-width: 768px)');
   const isTablet = useMediaQuery('(max-width: 1024px)');
+  const searchParams = useSearchParams();
   
   const { handleError, handleSuccess } = useErrorHandler({
     component: 'PerformanceOptimizedForm',
     userId: '12345' // This should come from auth context
   });
 
+  // Check if this is an auto-fill request from void-pallet
+  const isAutoFill = searchParams.get('autoFill') === 'true';
+  const autoFillSource = searchParams.get('autoFillSource');
 
+  // Get URL parameters for pre-filling
+  const urlParams = useMemo(() => ({
+    productCode: searchParams.get('productCode') || '',
+    quantity: searchParams.get('quantity') || '',
+    operatorClockNum: searchParams.get('operatorClockNum') || '',
+    qcClockNum: searchParams.get('qcClockNum') || '',
+    sourceAction: searchParams.get('sourceAction') || '',
+    originalPltNum: searchParams.get('originalPltNum') || '',
+    voidReason: searchParams.get('voidReason') || '',
+  }), [searchParams]);
 
   // Form state with batched updates
   const [formData, setFormData] = useState<FormData>({
-    productCode: '',
+    productCode: urlParams.productCode, // Pre-fill from URL
     productInfo: null,
-    quantity: '',
+    quantity: urlParams.quantity, // Pre-fill from URL
     count: '',
-    operator: '',
+    operator: urlParams.operatorClockNum, // Pre-fill from URL
     userId: '12345', // This should come from auth context
     acoOrderRef: '',
     acoOrderDetails: [],
@@ -438,6 +453,29 @@ export const PerformanceOptimizedForm: React.FC<PerformanceOptimizedFormProps> =
   return (
     <ResponsiveLayout className={className}>
       <ResponsiveContainer maxWidth="xl">
+        {/* Auto-fill notification */}
+        {isAutoFill && autoFillSource === 'void-pallet' && (
+          <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <div className="flex items-center space-x-2">
+              <InformationCircleIcon className="h-5 w-5 text-blue-600" />
+              <div>
+                <div className="text-sm font-medium text-blue-800">
+                  自動填充模式
+                </div>
+                <div className="text-xs text-blue-600 mt-1">
+                  表單已從 Void Pallet 系統自動填充基本信息。請檢查並完成其他必要欄位，然後點擊「Print Label」生成新標籤。
+                  {urlParams.originalPltNum && (
+                    <span className="block mt-1">
+                      原棧板號碼: <span className="font-mono">{urlParams.originalPltNum}</span>
+                      {urlParams.voidReason && ` | 作廢原因: ${urlParams.voidReason}`}
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+        
         <form onSubmit={handleSubmit}>
           <ResponsiveStack 
             direction="responsive" 

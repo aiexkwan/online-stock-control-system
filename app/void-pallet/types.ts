@@ -86,6 +86,11 @@ export interface VoidPalletState {
   showConfirmDialog: boolean;
   showReprintDialog: boolean;
   isInputDisabled: boolean;
+  
+  // Enhanced reprint flow
+  showReprintInfoDialog: boolean;
+  reprintInfo: ReprintInfoInput | null;
+  isAutoReprinting: boolean;
 }
 
 export interface HistoryRecord {
@@ -153,4 +158,41 @@ export const ERROR_TYPES = {
   VOID: 'void' as const,
   SYSTEM: 'system' as const,
   VALIDATION: 'validation' as const,
-} as const; 
+} as const;
+
+// New interfaces for enhanced reprint flow
+export interface ReprintInfoInput {
+  type: 'damage' | 'wrong_qty' | 'wrong_code';
+  originalPalletInfo: PalletInfo;
+  // For damage: remainingQty is calculated
+  // For wrong_qty: user inputs correct quantity
+  // For wrong_code: user inputs correct product code
+  correctedQuantity?: number;
+  correctedProductCode?: string;
+  remainingQuantity?: number; // For damage cases
+}
+
+export interface AutoReprintParams {
+  productCode: string;
+  quantity: number;
+  originalPltNum: string;
+  sourceAction: string;
+  targetLocation?: string;
+  reason: string;
+  operatorClockNum: string;
+  // Auto-generated fields
+  description?: string;
+  date: string;
+  qcClockNum: string;
+  workOrderNumber: string;
+  palletNum: string;
+  qrValue: string;
+}
+
+export interface AutoReprintResult {
+  success: boolean;
+  message?: string;
+  error?: string;
+  pdfUrl?: string;
+  newPalletNum?: string;
+} 

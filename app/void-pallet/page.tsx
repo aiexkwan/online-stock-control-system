@@ -7,6 +7,7 @@ import { SearchSection } from './components/SearchSection';
 import { PalletInfoCard } from './components/PalletInfoCard';
 import { VoidForm } from './components/VoidForm';
 import { ErrorHandler } from './components/ErrorHandler';
+import { ReprintInfoDialog } from './components/ReprintInfoDialog';
 
 export default function VoidPalletPage() {
   const {
@@ -21,6 +22,10 @@ export default function VoidPalletPage() {
     canExecuteVoid,
     showDamageQuantityInput,
     isACOPallet,
+    // Enhanced reprint flow
+    handleReprintInfoConfirm,
+    handleReprintInfoCancel,
+    getReprintType,
   } = useVoidPallet();
 
   // Handle search input change
@@ -153,6 +158,19 @@ export default function VoidPalletPage() {
           },
         }}
       />
+
+      {/* Enhanced Reprint Info Dialog */}
+      {state.showReprintInfoDialog && state.reprintInfo && state.foundPallet && (
+        <ReprintInfoDialog
+          isOpen={state.showReprintInfoDialog}
+          onClose={handleReprintInfoCancel}
+          onConfirm={handleReprintInfoConfirm}
+          type={getReprintType(state.voidReason)}
+          palletInfo={state.foundPallet}
+          remainingQuantity={state.reprintInfo.remainingQuantity}
+          isProcessing={state.isAutoReprinting}
+        />
+      )}
     </div>
   );
 } 

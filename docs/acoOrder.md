@@ -381,6 +381,48 @@ const isAcoOrderIncomplete = (() => {
    - 根據剩餘量建議最佳托盤配置
    - 自動計算最優分配方案
 
+## 🔧 最新修正 (2025-01-28)
+
+### ACO 訂單負數防護
+
+**問題**: ACO 訂單的 `remain_qty` 可能被扣減至負數，導致數據不一致。
+
+**根本原因**: 在 `updateAcoOrderRemainQty` 函數中，沒有檢查扣減後的結果是否為負數：
+```typescript
+// 修正前 (有問題)
+const newRemainQty = (currentData.remain_qty || 0) - quantityUsed;
+```
+
+**解決方案**: 添加負數防護和警告日誌：
+```typescript
+// 修正後 (安全)
+const currentRemainQty = currentData.remain_qty || 0;
+const newRemainQty = Math.max(0, currentRemainQty - quantityUsed); // 防止負數
+
+// 檢查是否會導致負數
+if (currentRemainQty < quantityUsed) {
+  console.warn(`[qcActions] ACO quantity warning: Trying to use ${quantityUsed} but only ${currentRemainQty} remaining. Setting to 0.`);
+}
+```
+
+**修正效果**:
+- ✅ **防止負數**: `remain_qty` 永遠不會小於 0
+- ✅ **警告日誌**: 當嘗試超量使用時記錄警告
+- ✅ **詳細回饋**: 返回更詳細的操作信息
+- ✅ **數據一致性**: 確保 ACO 訂單數據的完整性
+
+**測試案例**:
+| 當前剩餘量 | 使用量 | 修正前結果 | 修正後結果 | 狀態 |
+|-----------|--------|-----------|-----------|------|
+| 100 | 50 | 50 | 50 | ✅ 正常 |
+| 30 | 50 | -20 ❌ | 0 ✅ | ✅ 防護生效 |
+| 0 | 10 | -10 ❌ | 0 ✅ | ✅ 防護生效 |
+
+**影響範圍**:
+- `app/actions/qcActions.ts` - `updateAcoOrderRemainQty` 函數
+- 所有使用 ACO 訂單更新的功能（Print QC Label）
+- ACO 訂單數據完整性
+
 ---
 
 > **注意**: 此功能改進已經過完整測試，可以安全部署到生產環境。如有任何問題，請參考測試腳本或聯繫開發團隊。 

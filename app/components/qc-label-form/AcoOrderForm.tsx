@@ -41,7 +41,7 @@ export const AcoOrderForm: React.FC<AcoOrderFormProps> = React.memo(({
   return (
     <div className="space-y-4">
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-        <h3 className="text-lg font-semibold text-blue-800 mb-2">ACO Order Management</h3>
+        <h3 className="text-lg font-semibold text-blue-800 mb-2">ACO Order Record</h3>
         <p className="text-blue-600 text-sm mb-4">
           Choose from existing orders or enter a new order reference
         </p>
@@ -79,7 +79,7 @@ export const AcoOrderForm: React.FC<AcoOrderFormProps> = React.memo(({
               onAcoOrderRefChange(numericValue);
             }}
             disabled={disabled || acoSearchLoading}
-            placeholder="Or enter new Order Ref (min 5 digits)"
+            placeholder="Or enter new Order Ref"
           />
           
           {/* Search Button */}

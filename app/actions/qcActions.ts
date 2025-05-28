@@ -217,7 +217,13 @@ export async function updateAcoOrderRemainQty(
       return { error: 'ACO record not found' };
     }
 
-    const newRemainQty = (currentData.remain_qty || 0) - quantityUsed;
+    const currentRemainQty = currentData.remain_qty || 0;
+    const newRemainQty = Math.max(0, currentRemainQty - quantityUsed); // 防止負數
+
+    // 檢查是否會導致負數
+    if (currentRemainQty < quantityUsed) {
+      console.warn(`[qcActions] ACO quantity warning: Trying to use ${quantityUsed} but only ${currentRemainQty} remaining. Setting to 0.`);
+    }
 
     // Update the remain_qty
     const { error: updateError } = await supabaseAdmin
@@ -231,7 +237,7 @@ export async function updateAcoOrderRemainQty(
       return { error: `Failed to update ACO remain quantity: ${updateError.message}` };
     }
 
-    return { data: `ACO remain quantity updated successfully. New remaining: ${newRemainQty}` };
+    return { data: `ACO remain quantity updated successfully. Previous: ${currentRemainQty}, Used: ${quantityUsed}, New remaining: ${newRemainQty}` };
 
   } catch (error: any) {
     console.error('[qcActions] Unexpected error in updateAcoOrderRemainQty:', error);

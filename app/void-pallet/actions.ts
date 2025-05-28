@@ -18,21 +18,29 @@ const supabase = createClient();
  */
 async function getUserIdFromEmail(email: string): Promise<number | null> {
   try {
+    console.log(`[getUserIdFromEmail] Looking up user ID for email: ${email}`);
+    
     const { data, error } = await supabase
       .from('data_id')
-      .select('id')
+      .select('id, name, email')
       .eq('email', email)
       .single();
+
+    console.log(`[getUserIdFromEmail] Query result:`, { data, error });
 
     if (error) {
       if (error.code === 'PGRST116') {
         // No user found with this email
+        console.log(`[getUserIdFromEmail] No user found for email: ${email}`);
         return null;
       }
       throw error;
     }
 
-    return data?.id || null;
+    const userId = data?.id;
+    console.log(`[getUserIdFromEmail] Found user ID: ${userId} for email: ${email}`);
+    
+    return userId || null;
   } catch (error: any) {
     console.error('Error getting user ID from email:', error);
     return null;
@@ -316,7 +324,7 @@ export async function searchPalletAction(params: SearchParams): Promise<SearchRe
 }
 
 /**
- * Record history operation
+ * Record history operation - with proper user ID lookup
  */
 export async function recordHistoryAction(
   clockNumber: string,
@@ -326,13 +334,33 @@ export async function recordHistoryAction(
   remark: string | null
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    // Convert clockNumber to numeric ID
-    const numericId = parseInt(clockNumber, 10);
-    if (isNaN(numericId)) {
-      console.error(`Invalid clockNumber: ${clockNumber}, cannot convert to numeric ID`);
+    let numericId: number | null = null;
+
+    // If clockNumber is 'unknown', try to get current user from Supabase Auth
+    if (clockNumber === 'unknown') {
+      try {
+        const { data: { user }, error: userError } = await supabase.auth.getUser();
+        if (!userError && user?.email) {
+          numericId = await getUserIdFromEmail(user.email);
+        }
+      } catch (authError) {
+        console.warn('Could not get user from auth for history recording:', authError);
+      }
+    } else {
+      // Convert clockNumber to numeric ID
+      const parsed = parseInt(clockNumber, 10);
+      if (!isNaN(parsed)) {
+        numericId = parsed;
+      }
+    }
+
+    // If we still don't have a valid user ID, return error
+    if (!numericId) {
+      const errorMsg = `Invalid user ID for history recording. ClockNumber: ${clockNumber}`;
+      console.error(errorMsg);
       return { 
         success: false, 
-        error: 'Invalid user ID format' 
+        error: errorMsg
       };
     }
 
@@ -360,17 +388,36 @@ export async function recordHistoryAction(
 }
 
 /**
- * Log error to database
+ * Log error to database - with proper user ID lookup
  */
 export async function logErrorAction(
   clockNumber: string,
   errorInfo: string
 ): Promise<void> {
   try {
-    // Convert clockNumber to numeric ID
-    const numericId = parseInt(clockNumber, 10);
-    if (isNaN(numericId)) {
-      console.error(`Invalid clockNumber: ${clockNumber}, cannot convert to numeric ID`);
+    let numericId: number | null = null;
+
+    // If clockNumber is 'unknown', try to get current user from Supabase Auth
+    if (clockNumber === 'unknown') {
+      try {
+        const { data: { user }, error: userError } = await supabase.auth.getUser();
+        if (!userError && user?.email) {
+          numericId = await getUserIdFromEmail(user.email);
+        }
+      } catch (authError) {
+        console.warn('Could not get user from auth for error logging:', authError);
+      }
+    } else {
+      // Convert clockNumber to numeric ID
+      const parsed = parseInt(clockNumber, 10);
+      if (!isNaN(parsed)) {
+        numericId = parsed;
+      }
+    }
+
+    // If we still don't have a valid user ID, skip logging to avoid database errors
+    if (!numericId) {
+      console.warn(`Cannot log error to database: invalid user ID. ClockNumber: ${clockNumber}, ErrorInfo: ${errorInfo}`);
       return;
     }
 
