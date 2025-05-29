@@ -150,7 +150,58 @@ export async function generateGrnPalletNumbersAndSeries(count: number): Promise<
   try {
     console.log('[grnActions] 生成 GRN 棧板號碼和系列號，數量:', count);
     
+    // 詳細檢查環境變數
+    const urlExists = !!process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const serviceRoleKeyExists = !!process.env.SUPABASE_SERVICE_ROLE_KEY;
+    
+    console.log('[grnActions] 環境變數檢查:', {
+      NEXT_PUBLIC_SUPABASE_URL: urlExists,
+      SUPABASE_SERVICE_ROLE_KEY: serviceRoleKeyExists,
+      isUsingFallbackUrl: !urlExists,
+      isUsingFallbackKey: !serviceRoleKeyExists
+    });
+    
+    if (!urlExists) {
+      console.error('[grnActions] 警告: 使用備用 Supabase URL');
+    }
+    
+    if (!serviceRoleKeyExists) {
+      console.error('[grnActions] 警告: 使用備用 Service Role Key');
+      return {
+        palletNumbers: [],
+        series: [],
+        error: 'SUPABASE_SERVICE_ROLE_KEY environment variable not found in production. Using fallback but this may cause API key errors.'
+      };
+    }
+    
     const supabaseAdmin = createSupabaseAdmin();
+    
+    // 測試基本連接
+    console.log('[grnActions] 測試基本 Supabase 連接...');
+    try {
+      const { data: testData, error: testError } = await supabaseAdmin
+        .from('record_palletinfo')
+        .select('plt_num')
+        .limit(1);
+      
+      if (testError) {
+        console.error('[grnActions] Supabase 連接測試失敗:', testError);
+        return {
+          palletNumbers: [],
+          series: [],
+          error: `Supabase connection test failed: ${testError.message}. This indicates an API key or permission issue.`
+        };
+      }
+      
+      console.log('[grnActions] Supabase 連接測試成功');
+    } catch (connectionError: any) {
+      console.error('[grnActions] Supabase 連接測試異常:', connectionError);
+      return {
+        palletNumbers: [],
+        series: [],
+        error: `Supabase connection exception: ${connectionError.message}`
+      };
+    }
     
     // Generate pallet numbers
     const palletNumbers = await generatePalletNumbers(supabaseAdmin, count);
@@ -173,7 +224,7 @@ export async function generateGrnPalletNumbersAndSeries(count: number): Promise<
     return {
       palletNumbers: [],
       series: [],
-      error: error.message
+      error: `Failed to generate pallet numbers: ${error.message}`
     };
   }
 }
