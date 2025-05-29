@@ -106,9 +106,35 @@ export async function GET(request: NextRequest) {
     
     // 測試寫入權限
     console.log('測試寫入權限...');
+    
+    // 先獲取一個存在的用戶 ID
+    const { data: userData, error: userError } = await supabase
+      .from('data_id')
+      .select('id')
+      .limit(1)
+      .single();
+    
+    if (userError || !userData) {
+      console.error('無法獲取測試用戶 ID:', userError);
+      return NextResponse.json({
+        success: false,
+        error: '無法獲取測試用戶 ID',
+        details: {
+          message: userError?.message || 'No user found',
+          code: userError?.code
+        },
+        jwtInfo,
+        connectionTest: '✓ 成功',
+        envDetails
+      });
+    }
+    
+    const testUserId = userData.id;
+    console.log('使用測試用戶 ID:', testUserId);
+    
     const testRecord = {
       time: new Date().toISOString(),
-      id: 999999,
+      id: testUserId,
       action: 'API Test',
       plt_num: 'TEST001',
       loc: 'Test',
