@@ -13,27 +13,31 @@ export async function POST(request: NextRequest) {
   try {
     console.log('=== 測試 QC Action 開始 ===');
     
+    // 使用存在的產品代碼和唯一的測試棧板號碼
+    const testPalletNum = `TEST${Date.now()}`;
+    const testSeries = `TEST-${Date.now()}`;
+    
     // 準備測試數據
     const palletInfoRecord: QcPalletInfoPayload = {
-      plt_num: 'TEST001',
-      series: 'TEST-123456',
-      product_code: 'TEST001',
+      plt_num: testPalletNum,
+      series: testSeries,
+      product_code: 'MEP9090150', // 使用存在的產品代碼
       product_qty: 10,
       plt_remark: 'API 測試棧板'
     };
 
     const historyRecord: QcHistoryPayload = {
       time: new Date().toISOString(),
-      id: '1', // 使用一個存在的用戶 ID
+      id: '1767', // 使用構建日誌中找到的用戶 ID
       action: 'API Test',
-      plt_num: 'TEST001',
+      plt_num: testPalletNum,
       loc: 'Test',
       remark: 'API 測試記錄'
     };
 
     const inventoryRecord: QcInventoryPayload = {
-      product_code: 'TEST001',
-      plt_num: 'TEST001',
+      product_code: 'MEP9090150',
+      plt_num: testPalletNum,
       await: 10
     };
 
@@ -44,9 +48,12 @@ export async function POST(request: NextRequest) {
     };
 
     console.log('測試數據準備完成，調用 createQcDatabaseEntriesWithTransaction...');
+    console.log('使用棧板號碼:', testPalletNum);
+    console.log('使用產品代碼:', 'MEP9090150');
+    console.log('使用用戶 ID:', '1767');
     
     // 調用 server action
-    const result = await createQcDatabaseEntriesWithTransaction(databasePayload, '1');
+    const result = await createQcDatabaseEntriesWithTransaction(databasePayload, '1767');
     
     console.log('QC Action 調用結果:', result);
     
@@ -54,18 +61,26 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({
         success: false,
         error: 'QC Action 調用失敗',
-        details: result.error
+        details: result.error,
+        testData: {
+          palletNum: testPalletNum,
+          productCode: 'MEP9090150',
+          userId: '1767'
+        }
       });
     }
     
-    // 清理測試數據
-    console.log('清理測試數據...');
-    // 這裡可以添加清理邏輯，但為了簡單起見先跳過
+    console.log('QC Action 測試成功！');
     
     return NextResponse.json({
       success: true,
-      message: 'QC Action 測試成功',
-      result: result
+      message: 'QC Action 測試成功 - 這證明 Service Role Key 工作正常！',
+      result: result,
+      testData: {
+        palletNum: testPalletNum,
+        productCode: 'MEP9090150',
+        userId: '1767'
+      }
     });
     
   } catch (error: any) {
