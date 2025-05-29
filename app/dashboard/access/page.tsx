@@ -150,19 +150,6 @@ export default function ModernDashboard() {
   // Handle logout
   const handleLogout = async () => {
     try {
-      // Log logout event
-      const clockNumber = user?.clockNumber || 'unknown';
-      const idForDb = parseInt(clockNumber, 10) || 0;
-      
-      await supabase.from('record_history').insert({
-        time: new Date().toISOString(),
-        id: idForDb,
-        plt_num: null,
-        loc: null,
-        action: 'Log Out',
-        remark: null
-      });
-
       // Sign out from Supabase
       await signOutService(supabase);
       

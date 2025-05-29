@@ -90,13 +90,13 @@ export default function FinishedProduct() {
 
   async function fetchProductSummary(timeRange: TimeRange, reset = false) {
     try {
-      setLoading(true);
+    setLoading(true);
       setError(null);
       
       const { start, end } = getDateRange(timeRange);
       
       const { data, error: fetchError } = await supabase
-        .from('record_palletinfo')
+      .from('record_palletinfo')
         .select('product_code, product_qty, plt_num, plt_remark')
         .gte('generate_time', start)
         .lte('generate_time', end)
@@ -280,8 +280,8 @@ export default function FinishedProduct() {
                     <th className="px-4 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
                       TTL Pallet
                     </th>
-                  </tr>
-                </thead>
+          </tr>
+        </thead>
                 <tbody className="divide-y divide-slate-700/50">
                   <AnimatePresence>
                     {products.map((product, index) => (
@@ -307,7 +307,7 @@ export default function FinishedProduct() {
                           <Badge variant="outline" className="border-slate-600 text-blue-300 text-xs">
                             {product.total_pallets}
                           </Badge>
-                        </td>
+              </td>
                       </motion.tr>
                     ))}
                   </AnimatePresence>

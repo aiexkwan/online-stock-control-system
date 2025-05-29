@@ -365,3 +365,38 @@ interface UserData {
   - 保持響應式設計和動畫效果
 
 - **狀態**: ✅ 已完成
+
+### 2024-12-29 - Dashboard 新功能實現
+- **修正 Logout 按鈕功能**:
+  - 添加實際登出功能的成功提示訊息
+  - 修正錯誤：移除對 `record_history` 表的寫入操作
+  - 簡化 logout 流程：Supabase 登出 → 清除本地數據 → 成功提示 → 重定向
+
+- **ACO Order Progress 卡片**:
+  - 下拉選擇器顯示未完成訂單 (`remain_qty > 0`)
+  - 智能查詢 `record_aco` 表並按 `order_ref` 排序
+  - 選擇訂單後顯示包含的產品代碼及完成進度
+  - 橫向進度條採用橙色漸層設計 (`from-orange-500 to-orange-400`)
+  - 智能百分比顯示：>20% 顯示在進度條內，≤20% 顯示在右側
+
+- **Quick Search 庫存查詢**:
+  - 產品代碼搜尋功能，支援即時查詢
+  - **修正聚合邏輯**：從 `.single()` 改為聚合多筆相同產品代碼記錄
+  - 顯示所有庫存位置統計 (Production, Pipeline, Awaiting, Fold Mill, Bulk Room, Back Car Park, Damage)
+  - 彩色編碼系統：每個位置使用不同顏色標識
+  - 智能總計計算和顯示
+
+- **技術實現**:
+  - 新增 TypeScript 接口：`AcoOrder`, `AcoOrderProgress`, `InventoryLocation`
+  - 實現並行數據查詢優化性能
+  - 統一錯誤處理和載入狀態管理
+  - 響應式設計：桌面端 2 列，移動端 1 列佈局
+  - Framer Motion 動畫效果和視覺反饋
+
+- **UI/UX 設計**:
+  - 與現有卡片保持一致的設計語言
+  - 友好的錯誤處理和空狀態提示
+  - 智能載入動畫和骨架屏效果
+  - 點擊外部關閉下拉選單功能
+
+- **狀態**: ✅ 已完成
