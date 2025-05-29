@@ -50,38 +50,12 @@ import {
   mergeAndPrintPdfs, 
   generateAndUploadPdf 
 } from '../../../lib/pdfUtils';
-import { generateUniqueSeries as generateSingleUniqueSeries } from '../../../lib/seriesUtils';
-import { generatePalletNumbers } from '../../../lib/palletNumUtils';
 import { 
-  createGrnDatabaseEntries, 
+  createGrnDatabaseEntries,
+  generateGrnPalletNumbersAndSeries,
   type GrnPalletInfoPayload, 
   type GrnRecordPayload 
 } from '../../actions/grnActions';
-
-// 備用環境變數（與 qcActions.ts 保持一致）
-const FALLBACK_SUPABASE_URL = 'https://bbmkuiplnzvpudszrend.supabase.co';
-const FALLBACK_SERVICE_ROLE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJibWt1aXBsbnp2cHVkc3pyZW5kIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTY4MDAxNTYwNCwiZXhwIjoxOTk1NTkxNjA0fQ.lkRDHLCdZdP4YE5c3XFu_G26F1O_N1fxEP2Wa3M1NtM';
-
-// 創建服務端 Supabase 客戶端的函數（與 qcActions.ts 保持一致）
-const createSupabaseAdmin = () => {
-  const { createClient: createSupabaseClient } = require('@supabase/supabase-js');
-  
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || FALLBACK_SUPABASE_URL;
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || FALLBACK_SERVICE_ROLE_KEY;
-  
-  console.log('[GrnLabelForm] 創建服務端 Supabase 客戶端...');
-  
-  return createSupabaseClient(
-    supabaseUrl,
-    serviceRoleKey,
-    {
-      auth: {
-        autoRefreshToken: false,
-        persistSession: false
-      }
-    }
-  );
-};
 
 // Types for GRN Label (simplified from QC Label ProductInfo)
 interface GrnProductInfo {
@@ -255,7 +229,7 @@ export const GrnLabelForm: React.FC = () => {
     }
 
     try {
-      const supabaseAdmin = createSupabaseAdmin();
+      const supabaseAdmin = createClient();
       const { data, error } = await supabaseAdmin
         .from('data_supplier')
         .select('supplier_code, supplier_name')
@@ -371,17 +345,18 @@ export const GrnLabelForm: React.FC = () => {
       const collectedPdfBlobs: Blob[] = [];
       let anyFailure = false;
 
-      // 創建服務端 Supabase 客戶端用於生成棧板號碼和系列號
-      const supabaseAdmin = createSupabaseAdmin();
-
-      // Generate pallet numbers and series using admin client
-      const generatedPalletNumbersList = await generatePalletNumbers(supabaseAdmin, numberOfPalletsToProcess);
-      const uniqueSeriesNumbersList = await Promise.all(
-        Array(numberOfPalletsToProcess).fill(null).map(() => generateSingleUniqueSeries(supabaseAdmin))
-      );
+      // 使用服務端 action 生成棧板號碼和系列號
+      const generationResult = await generateGrnPalletNumbersAndSeries(numberOfPalletsToProcess);
+      
+      if (generationResult.error) {
+        toast.error(`Failed to generate pallet numbers: ${generationResult.error}`);
+        return;
+      }
+      
+      const { palletNumbers: generatedPalletNumbersList, series: uniqueSeriesNumbersList } = generationResult;
 
       if (generatedPalletNumbersList.length !== numberOfPalletsToProcess || 
-          uniqueSeriesNumbersList.filter(s => s).length !== numberOfPalletsToProcess) {
+          uniqueSeriesNumbersList.length !== numberOfPalletsToProcess) {
         toast.error('Failed to generate unique pallet numbers or series. Please try again.');
         return;
       }
@@ -489,7 +464,7 @@ export const GrnLabelForm: React.FC = () => {
           const uploadResult = await generateAndUploadPdf({
             pdfProps: pdfLabelProps,
             storagePath: 'grn-labels',
-            supabaseClient: supabaseAdmin
+            supabaseClient: createClient()
           });
 
           if (uploadResult && uploadResult.blob) {

@@ -1,10 +1,9 @@
 'use server';
 
-import { createClient } from '@supabase/supabase-js'; // Ensure this is here for supabaseAdmin
-// import { createServerActionClient } from '@supabase/auth-helpers-nextjs'; // No longer needed
-// import { cookies } from 'next/headers'; // No longer needed
-// import type { Database } from '@/lib/database.types'; // Keep if type definitions are used for payload
+import { createClient } from '@supabase/supabase-js';
 import { z } from 'zod';
+import { generatePalletNumbers } from '@/lib/palletNumUtils';
+import { generateUniqueSeries } from '@/lib/seriesUtils';
 
 // 備用環境變數（與 qcActions.ts 保持一致）
 const FALLBACK_SUPABASE_URL = 'https://bbmkuiplnzvpudszrend.supabase.co';
@@ -17,16 +16,29 @@ function createSupabaseAdmin() {
   
   console.log('[grnActions] 創建服務端 Supabase 客戶端...');
   
-  return createClient(
+  const client = createClient(
     supabaseUrl,
     serviceRoleKey,
     {
       auth: {
         autoRefreshToken: false,
         persistSession: false
+      },
+      db: {
+        schema: 'public'
+      },
+      global: {
+        headers: {
+          'apikey': serviceRoleKey,
+          'Authorization': `Bearer ${serviceRoleKey}`
+        }
       }
     }
   );
+  
+  console.log('[grnActions] 服務端客戶端創建完成，應該能夠繞過 RLS');
+  
+  return client;
 }
 
 console.log('[grnActions] grnActions 模塊已加載');
@@ -124,5 +136,44 @@ export async function createGrnDatabaseEntries(
   } catch (error: any) {
     console.error('[grnActions] Unexpected error in createGrnDatabaseEntries (RPC call):', error);
     return { error: `An unexpected error occurred: ${error.message || 'Unknown error.'}` };
+  }
+}
+
+/**
+ * Generate pallet numbers and series for GRN labels on server side
+ */
+export async function generateGrnPalletNumbersAndSeries(count: number): Promise<{
+  palletNumbers: string[];
+  series: string[];
+  error?: string;
+}> {
+  try {
+    console.log('[grnActions] 生成 GRN 棧板號碼和系列號，數量:', count);
+    
+    const supabaseAdmin = createSupabaseAdmin();
+    
+    // Generate pallet numbers
+    const palletNumbers = await generatePalletNumbers(supabaseAdmin, count);
+    console.log('[grnActions] 生成的棧板號碼:', palletNumbers);
+    
+    // Generate series (one by one for GRN)
+    const series: string[] = [];
+    for (let i = 0; i < count; i++) {
+      const singleSeries = await generateUniqueSeries(supabaseAdmin);
+      series.push(singleSeries);
+    }
+    console.log('[grnActions] 生成的系列號:', series);
+    
+    return {
+      palletNumbers,
+      series
+    };
+  } catch (error: any) {
+    console.error('[grnActions] 生成 GRN 棧板號碼和系列號失敗:', error);
+    return {
+      palletNumbers: [],
+      series: [],
+      error: error.message
+    };
   }
 } 
