@@ -2,6 +2,8 @@
 
 import { createClient } from '@supabase/supabase-js';
 import { z } from 'zod';
+import { generatePalletNumbers } from '@/lib/palletNumUtils';
+import { generateMultipleUniqueSeries } from '@/lib/seriesUtils';
 
 // 詳細的環境變數檢查
 console.log('[qcActions] 環境變數檢查:');
@@ -409,5 +411,40 @@ export async function createQcDatabaseEntriesWithTransaction(
       name: error.name
     });
     return { error: `Transaction failed: ${error.message || 'Unknown error.'}` };
+  }
+}
+
+/**
+ * Generate pallet numbers and series on server side
+ */
+export async function generatePalletNumbersAndSeries(count: number): Promise<{
+  palletNumbers: string[];
+  series: string[];
+  error?: string;
+}> {
+  try {
+    console.log('[qcActions] 生成棧板號碼和系列號，數量:', count);
+    
+    const supabaseAdmin = createSupabaseAdmin();
+    
+    // Generate pallet numbers
+    const palletNumbers = await generatePalletNumbers(supabaseAdmin, count);
+    console.log('[qcActions] 生成的棧板號碼:', palletNumbers);
+    
+    // Generate series
+    const series = await generateMultipleUniqueSeries(count, supabaseAdmin);
+    console.log('[qcActions] 生成的系列號:', series);
+    
+    return {
+      palletNumbers,
+      series
+    };
+  } catch (error: any) {
+    console.error('[qcActions] 生成棧板號碼和系列號失敗:', error);
+    return {
+      palletNumbers: [],
+      series: [],
+      error: error.message
+    };
   }
 } 

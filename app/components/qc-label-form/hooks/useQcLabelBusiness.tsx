@@ -3,8 +3,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
-import { generatePalletNumbers } from '@/lib/palletNumUtils';
-import { generateMultipleUniqueSeries } from '@/lib/seriesUtils';
 import { prepareQcLabelData, mergeAndPrintPdfs, type QcInputData } from '@/lib/pdfUtils';
 import { pdf } from '@react-pdf/renderer';
 import { PrintLabelPdf } from '@/components/print-label-pdf/PrintLabelPdf';
@@ -13,6 +11,7 @@ import {
   createQcDatabaseEntriesWithTransaction,
   uploadPdfToStorage,
   updateAcoOrderRemainQty,
+  generatePalletNumbersAndSeries,
   type QcDatabaseEntryPayload,
   type QcPalletInfoPayload,
   type QcHistoryPayload,
@@ -35,22 +34,19 @@ export const useQcLabelBusiness = ({
   productInfo,
   onProductInfoReset
 }: UseQcLabelBusinessProps) => {
-  // 創建服務端 Supabase 客戶端的函數（與 qcActions.ts 相同）
-  const createSupabaseAdmin = useCallback(() => {
+  // 創建客戶端 Supabase 客戶端的函數（用於查詢）
+  const createSupabaseClient = useCallback(() => {
     const { createClient: createSupabaseClient } = require('@supabase/supabase-js');
     
-    // 使用與 qcActions.ts 相同的邏輯
-    const FALLBACK_SUPABASE_URL = 'https://bbmkuiplnzvpudszrend.supabase.co';
-    const FALLBACK_SERVICE_ROLE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJibWt1aXBsbnp2cHVkc3pyZW5kIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTY4MDAxNTYwNCwiZXhwIjoxOTk1NTkxNjA0fQ.lkRDHLCdZdP4YE5c3XFu_G26F1O_N1fxEP2Wa3M1NtM';
+    // 客戶端只能使用 anon key 進行查詢
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://bbmkuiplnzvpudszrend.supabase.co';
+    const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJibWt1aXBsbnp2cHVkc3pyZW5kIiwicm9sZSI6ImFub24iLCJpYXQiOjE2ODAwMTU2MDQsImV4cCI6MTk5NTU5MTYwNH0.Hs_rDzqsYPmhKXOMy_VBmEuFaZFYZYCNTcaXXi2D1_4';
     
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || FALLBACK_SUPABASE_URL;
-    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || FALLBACK_SERVICE_ROLE_KEY;
-    
-    console.log('[useQcLabelBusiness] 創建服務端 Supabase 客戶端...');
+    console.log('[useQcLabelBusiness] 創建客戶端 Supabase 客戶端...');
     
     return createSupabaseClient(
       supabaseUrl,
-      serviceRoleKey,
+      anonKey,
       {
         auth: {
           autoRefreshToken: false,
@@ -75,8 +71,8 @@ export const useQcLabelBusiness = ({
     if (productInfo?.type === 'Slate') {
       const fetchFirstOffDates = async () => {
         try {
-          const supabaseAdmin = createSupabaseAdmin();
-          const { data, error } = await supabaseAdmin
+          const supabaseClient = createSupabaseClient();
+          const { data, error } = await supabaseClient
             .from('record_slate')
             .select('first_off');
 
@@ -97,8 +93,8 @@ export const useQcLabelBusiness = ({
       
       const fetchSlateInfo = async () => {
         try {
-          const supabaseAdmin = createSupabaseAdmin();
-          const { data, error } = await supabaseAdmin
+          const supabaseClient = createSupabaseClient();
+          const { data, error } = await supabaseClient
             .from('data_slateinfo')
             .select('shapes, colour')
             .eq('code', productInfo.code)
@@ -129,15 +125,15 @@ export const useQcLabelBusiness = ({
     } else {
       setFormData(prev => ({ ...prev, availableFirstOffDates: [] }));
     }
-  }, [productInfo?.type, productInfo?.code, createSupabaseAdmin, setFormData]);
+  }, [productInfo?.type, productInfo?.code, createSupabaseClient, setFormData]);
 
   // Fetch available ACO order refs
   useEffect(() => {
     if (productInfo?.type === 'ACO') {
       const fetchAcoOrderRefs = async () => {
         try {
-          const supabaseAdmin = createSupabaseAdmin();
-          const { data, error } = await supabaseAdmin
+          const supabaseClient = createSupabaseClient();
+          const { data, error } = await supabaseClient
             .from('record_aco')
             .select('order_ref, remain_qty');
 
@@ -164,7 +160,7 @@ export const useQcLabelBusiness = ({
     } else {
       setFormData(prev => ({ ...prev, availableAcoOrderRefs: [] }));
     }
-  }, [productInfo?.type, createSupabaseAdmin, setFormData]);
+  }, [productInfo?.type, createSupabaseClient, setFormData]);
 
   // Check if current input quantity exceeds ACO remaining quantity
   const checkAcoQuantityExcess = useCallback(() => {
@@ -213,8 +209,8 @@ export const useQcLabelBusiness = ({
     }));
 
     try {
-      const supabaseAdmin = createSupabaseAdmin();
-      const { data, error } = await supabaseAdmin
+      const supabaseClient = createSupabaseClient();
+      const { data, error } = await supabaseClient
         .from('record_aco')
         .select('order_ref, remain_qty')
         .eq('order_ref', parseInt(formData.acoOrderRef.trim(), 10));
@@ -261,7 +257,7 @@ export const useQcLabelBusiness = ({
     } finally {
       setFormData(prev => ({ ...prev, acoSearchLoading: false }));
     }
-  }, [formData.acoOrderRef, formData.productCode, createSupabaseAdmin, setFormData]);
+  }, [formData.acoOrderRef, formData.productCode, createSupabaseClient, setFormData]);
 
   // ACO Order Detail Change
   const handleAcoOrderDetailChange = useCallback((idx: number, key: 'code' | 'qty', value: string) => {
@@ -284,8 +280,8 @@ export const useQcLabelBusiness = ({
     }
 
     try {
-      const supabaseAdmin = createSupabaseAdmin();
-      const { data, error } = await supabaseAdmin.rpc('get_product_details_by_code', { 
+      const supabaseClient = createSupabaseClient();
+      const { data, error } = await supabaseClient.rpc('get_product_details_by_code', { 
         p_code: code.trim() 
       });
 
@@ -334,7 +330,7 @@ export const useQcLabelBusiness = ({
       });
       toast.error('Error validating product code.');
     }
-  }, [createSupabaseAdmin, setFormData]);
+  }, [createSupabaseClient, setFormData]);
 
   // ACO Order Detail Update
   const handleAcoOrderDetailUpdate = useCallback(async () => {
@@ -438,13 +434,17 @@ export const useQcLabelBusiness = ({
         }
       }));
 
-      // 創建服務端 Supabase 客戶端用於生成棧板號碼和系列號
-      console.log('[useQcLabelBusiness] 創建服務端客戶端用於生成棧板號碼...');
-      const supabaseAdmin = createSupabaseAdmin();
-
-      // Generate pallet numbers and series using admin client
-      const generatedPalletNumbers = await generatePalletNumbers(supabaseAdmin, count);
-      const generatedSeries = await generateMultipleUniqueSeries(count, supabaseAdmin);
+      // 使用服務端 action 生成棧板號碼和系列號
+      console.log('[useQcLabelBusiness] 使用服務端 action 生成棧板號碼和系列號...');
+      const generationResult = await generatePalletNumbersAndSeries(count);
+      
+      if (generationResult.error) {
+        toast.error(`Failed to generate pallet numbers: ${generationResult.error}`);
+        setPrintEventToProceed(null);
+        return;
+      }
+      
+      const { palletNumbers: generatedPalletNumbers, series: generatedSeries } = generationResult;
 
       if (generatedPalletNumbers.length !== count || generatedSeries.length !== count) {
         toast.error('Failed to generate unique pallet numbers or series. Please try again.');
@@ -455,10 +455,11 @@ export const useQcLabelBusiness = ({
       const collectedPdfBlobs: Blob[] = [];
       let anyFailure = false;
       
-      // For ACO orders, get the initial pallet count once (using admin client)
+      // For ACO orders, get the initial pallet count once (using client)
       let initialAcoPalletCount = 0;
       if (productInfo.type === 'ACO' && formData.acoOrderRef.trim()) {
-        initialAcoPalletCount = await getAcoPalletCount(supabaseAdmin, formData.acoOrderRef.trim());
+        const supabaseClient = createSupabaseClient();
+        initialAcoPalletCount = await getAcoPalletCount(supabaseClient, formData.acoOrderRef.trim());
       }
       
       // For new ACO orders, create ACO records only once (not per pallet)
@@ -729,7 +730,7 @@ export const useQcLabelBusiness = ({
     } finally {
       setPrintEventToProceed(null);
     }
-  }, [productInfo, formData, setFormData, onProductInfoReset, createSupabaseAdmin]);
+  }, [productInfo, formData, setFormData, onProductInfoReset, createSupabaseClient]);
 
   // Handle clock number confirmation cancel
   const handleClockNumberCancel = useCallback(() => {
