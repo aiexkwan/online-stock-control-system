@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
 
     const historyRecord: QcHistoryPayload = {
       time: new Date().toISOString(),
-      id: '1767', // 使用構建日誌中找到的用戶 ID
+      id: '5942', // 使用最新的用戶 ID
       action: 'API Test',
       plt_num: testPalletNum,
       loc: 'Test',
@@ -50,10 +50,10 @@ export async function POST(request: NextRequest) {
     console.log('測試數據準備完成，調用 createQcDatabaseEntriesWithTransaction...');
     console.log('使用棧板號碼:', testPalletNum);
     console.log('使用產品代碼:', 'MEP9090150');
-    console.log('使用用戶 ID:', '1767');
+    console.log('使用用戶 ID:', '5942');
     
     // 調用 server action
-    const result = await createQcDatabaseEntriesWithTransaction(databasePayload, '1767');
+    const result = await createQcDatabaseEntriesWithTransaction(databasePayload, '5942');
     
     console.log('QC Action 調用結果:', result);
     
@@ -65,7 +65,7 @@ export async function POST(request: NextRequest) {
         testData: {
           palletNum: testPalletNum,
           productCode: 'MEP9090150',
-          userId: '1767'
+          userId: '5942'
         }
       });
     }
@@ -79,7 +79,7 @@ export async function POST(request: NextRequest) {
       testData: {
         palletNum: testPalletNum,
         productCode: 'MEP9090150',
-        userId: '1767'
+        userId: '5942'
       }
     });
     
