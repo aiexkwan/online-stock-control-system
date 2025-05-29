@@ -19,9 +19,6 @@ import {
   processDamageAction,
   logErrorAction 
 } from '../actions';
-import { createClient } from '@/app/utils/supabase/client';
-
-const supabase = createClient();
 
 const initialState: VoidPalletState = {
   searchInput: '',
@@ -284,30 +281,16 @@ export function useVoidPallet() {
     updateState({ isAutoReprinting: true, showReprintInfoDialog: false });
     
     try {
-      // Get current user info for operator clock number
-      const { data: { user }, error: userError } = await supabase.auth.getUser();
-      if (userError || !user?.email) {
-        throw new Error('Unable to get user information');
+      // 從 localStorage 獲取用戶 clock number（與其他組件保持一致）
+      let operatorClockNum = 'unknown';
+      if (typeof window !== 'undefined') {
+        const clockNumber = localStorage.getItem('loggedInUserClockNumber');
+        if (clockNumber) {
+          operatorClockNum = clockNumber;
+        }
       }
 
-      console.log(`[Auto Reprint] Looking up user ID for email: ${user.email}`);
-
-      // Look up user ID from data_id table
-      const { data: userData, error: userDataError } = await supabase
-        .from('data_id')
-        .select('id, name, email')
-        .eq('email', user.email)
-        .single();
-
-      console.log(`[Auto Reprint] User lookup result:`, { userData, userDataError });
-
-      if (userDataError || !userData) {
-        throw new Error('User not found in system');
-      }
-
-      // Use the id field as the operator clock number
-      const operatorClockNum = userData.id.toString();
-      console.log(`[Auto Reprint] Using operator clock number: ${operatorClockNum}`);
+      console.log(`[Auto Reprint] Using operator clock number from localStorage: ${operatorClockNum}`);
 
       // Prepare auto reprint parameters
       const autoReprintParams = {

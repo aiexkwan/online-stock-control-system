@@ -58,6 +58,31 @@ import {
   type GrnRecordPayload 
 } from '../../actions/grnActions';
 
+// 備用環境變數（與 qcActions.ts 保持一致）
+const FALLBACK_SUPABASE_URL = 'https://bbmkuiplnzvpudszrend.supabase.co';
+const FALLBACK_SERVICE_ROLE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJibWt1aXBsbnp2cHVkc3pyZW5kIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTY4MDAxNTYwNCwiZXhwIjoxOTk1NTkxNjA0fQ.lkRDHLCdZdP4YE5c3XFu_G26F1O_N1fxEP2Wa3M1NtM';
+
+// 創建服務端 Supabase 客戶端的函數（與 qcActions.ts 保持一致）
+const createSupabaseAdmin = () => {
+  const { createClient: createSupabaseClient } = require('@supabase/supabase-js');
+  
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || FALLBACK_SUPABASE_URL;
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || FALLBACK_SERVICE_ROLE_KEY;
+  
+  console.log('[GrnLabelForm] 創建服務端 Supabase 客戶端...');
+  
+  return createSupabaseClient(
+    supabaseUrl,
+    serviceRoleKey,
+    {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false
+      }
+    }
+  );
+};
+
 // Types for GRN Label (simplified from QC Label ProductInfo)
 interface GrnProductInfo {
   code: string;
@@ -115,7 +140,8 @@ const PACKAGE_WEIGHT: Record<string, number> = {
 };
 
 export const GrnLabelForm: React.FC = () => {
-  const supabase = createClient();
+  // 移除模塊級別的客戶端實例，改為在需要時創建服務端客戶端
+  // const supabase = createClient();
 
   // Adapter function to convert QC Label ProductInfo to GRN ProductInfo
   const adaptProductInfo = useCallback((qcProductInfo: any): GrnProductInfo | null => {
@@ -220,7 +246,7 @@ export const GrnLabelForm: React.FC = () => {
     });
   }, [palletCount]);
 
-  // Supplier validation
+  // Supplier validation - 使用服務端客戶端
   const validateSupplier = useCallback(async (supplierCode: string) => {
     if (!supplierCode.trim()) {
       setSupplierInfo(null);
@@ -229,7 +255,8 @@ export const GrnLabelForm: React.FC = () => {
     }
 
     try {
-      const { data, error } = await supabase
+      const supabaseAdmin = createSupabaseAdmin();
+      const { data, error } = await supabaseAdmin
         .from('data_supplier')
         .select('supplier_code, supplier_name')
         .eq('supplier_code', supplierCode.toUpperCase())
@@ -248,7 +275,7 @@ export const GrnLabelForm: React.FC = () => {
       setSupplierInfo(null);
       setSupplierError('Error validating supplier');
     }
-  }, [supabase]);
+  }, []);
 
   // Form handlers
   const handleFormChange = useCallback((field: keyof FormData, value: string) => {
@@ -344,10 +371,13 @@ export const GrnLabelForm: React.FC = () => {
       const collectedPdfBlobs: Blob[] = [];
       let anyFailure = false;
 
-      // Generate pallet numbers and series
-      const generatedPalletNumbersList = await generatePalletNumbers(supabase, numberOfPalletsToProcess);
+      // 創建服務端 Supabase 客戶端用於生成棧板號碼和系列號
+      const supabaseAdmin = createSupabaseAdmin();
+
+      // Generate pallet numbers and series using admin client
+      const generatedPalletNumbersList = await generatePalletNumbers(supabaseAdmin, numberOfPalletsToProcess);
       const uniqueSeriesNumbersList = await Promise.all(
-        Array(numberOfPalletsToProcess).fill(null).map(() => generateSingleUniqueSeries(supabase))
+        Array(numberOfPalletsToProcess).fill(null).map(() => generateSingleUniqueSeries(supabaseAdmin))
       );
 
       if (generatedPalletNumbersList.length !== numberOfPalletsToProcess || 
@@ -442,7 +472,7 @@ export const GrnLabelForm: React.FC = () => {
             continue;
           }
 
-          // Generate PDF
+          // Generate PDF using admin client
           const grnInput: GrnInputData = {
             grnNumber: formData.grnNumber,
             materialSupplier: supplierInfo.supplier_code,
@@ -459,7 +489,7 @@ export const GrnLabelForm: React.FC = () => {
           const uploadResult = await generateAndUploadPdf({
             pdfProps: pdfLabelProps,
             storagePath: 'grn-labels',
-            supabaseClient: supabase
+            supabaseClient: supabaseAdmin
           });
 
           if (uploadResult && uploadResult.blob) {
@@ -524,7 +554,7 @@ export const GrnLabelForm: React.FC = () => {
     } finally {
       setIsProcessing(false);
     }
-  }, [productInfo, supplierInfo, formData, palletType, packageType, grossWeights, supabase]);
+  }, [productInfo, supplierInfo, formData, palletType, packageType, grossWeights]);
 
 
 

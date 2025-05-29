@@ -11,6 +11,7 @@ import {
   HistoryRecord 
 } from './types';
 
+// 恢復模塊級別的客戶端實例，因為這個文件使用的是服務端客戶端，不會有混合客戶端問題
 const supabase = createClient();
 
 /**
@@ -164,8 +165,6 @@ export async function verifyPasswordWithSupabaseAuth(
   password: string
 ): Promise<{ success: boolean; error?: string; clockNumber?: string }> {
   try {
-    const supabase = createClient();
-    
     // 1. Get current user session
     const { data: { user }, error: userError } = await supabase.auth.getUser();
     

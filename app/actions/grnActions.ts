@@ -6,11 +6,30 @@ import { createClient } from '@supabase/supabase-js'; // Ensure this is here for
 // import type { Database } from '@/lib/database.types'; // Keep if type definitions are used for payload
 import { z } from 'zod';
 
-// Initialize Supabase Admin Client if not imported from a shared lib
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+// 備用環境變數（與 qcActions.ts 保持一致）
+const FALLBACK_SUPABASE_URL = 'https://bbmkuiplnzvpudszrend.supabase.co';
+const FALLBACK_SERVICE_ROLE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJibWt1aXBsbnp2cHVkc3pyZW5kIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTY4MDAxNTYwNCwiZXhwIjoxOTk1NTkxNjA0fQ.lkRDHLCdZdP4YE5c3XFu_G26F1O_N1fxEP2Wa3M1NtM';
+
+// 創建 Supabase 客戶端的函數（與 qcActions.ts 保持一致）
+function createSupabaseAdmin() {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || FALLBACK_SUPABASE_URL;
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || FALLBACK_SERVICE_ROLE_KEY;
+  
+  console.log('[grnActions] 創建服務端 Supabase 客戶端...');
+  
+  return createClient(
+    supabaseUrl,
+    serviceRoleKey,
+    {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false
+      }
+    }
+  );
+}
+
+console.log('[grnActions] grnActions 模塊已加載');
 
 // Schema for validating the clock number string and converting to number
 const clockNumberSchema = z.string().regex(/^\d+$/, { message: "Operator Clock Number must be a positive number string." }).transform(val => parseInt(val, 10));
@@ -55,6 +74,9 @@ export async function createGrnDatabaseEntries(
     return { error: `Invalid Operator Clock Number: ${clockValidation.error.errors[0]?.message || 'Format error.'}` };
   }
   const operatorIdForFunction = clockValidation.data;
+
+  // 創建新的 Supabase 客戶端
+  const supabaseAdmin = createSupabaseAdmin();
 
   // REMOVED: Supabase auth related logic (getUser, querying data_id by auth_user_uuid)
   // console.log('[grnActions] All available cookie names in GRN Action:'); // No longer relevant

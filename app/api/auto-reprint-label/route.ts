@@ -11,10 +11,28 @@ import {
   type QcInventoryPayload
 } from '@/app/actions/qcActions';
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+// 備用環境變數（與 qcActions.ts 保持一致）
+const FALLBACK_SUPABASE_URL = 'https://bbmkuiplnzvpudszrend.supabase.co';
+const FALLBACK_SERVICE_ROLE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJibWt1aXBsbnp2cHVkc3pyZW5kIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTY4MDAxNTYwNCwiZXhwIjoxOTk1NTkxNjA0fQ.lkRDHLCdZdP4YE5c3XFu_G26F1O_N1fxEP2Wa3M1NtM';
+
+// 創建 Supabase 客戶端的函數（與 qcActions.ts 保持一致）
+function createSupabaseAdmin() {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || FALLBACK_SUPABASE_URL;
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || FALLBACK_SERVICE_ROLE_KEY;
+  
+  console.log('[Auto Reprint] 創建服務端 Supabase 客戶端...');
+  
+  return createClient(
+    supabaseUrl,
+    serviceRoleKey,
+    {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false
+      }
+    }
+  );
+}
 
 export const runtime = 'nodejs';
 
@@ -36,6 +54,7 @@ async function getUserIdFromEmail(email: string): Promise<number | null> {
   try {
     console.log(`[Auto Reprint] Looking up user ID for email: ${email}`);
     
+    const supabase = createSupabaseAdmin();
     const { data, error } = await supabase
       .from('data_id')
       .select('id, name, email')
@@ -69,10 +88,7 @@ async function getUserIdFromEmail(email: string): Promise<number | null> {
 async function getCurrentUserId(): Promise<string | null> {
   try {
     // Create a client for auth operations
-    const authClient = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
-    );
+    const authClient = createSupabaseAdmin();
 
     // Note: In server-side API routes, we need to get user info from the request
     // For now, we'll return null and handle this in the calling function
@@ -88,6 +104,7 @@ async function getCurrentUserId(): Promise<string | null> {
  * Get product information from database
  */
 async function getProductInfo(productCode: string) {
+  const supabase = createSupabaseAdmin();
   const { data, error } = await supabase.rpc('get_product_details_by_code', { 
     p_code: productCode 
   });
@@ -142,6 +159,9 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
+
+    // Create Supabase admin client for this request
+    const supabase = createSupabaseAdmin();
 
     // Get product information
     const productInfo = await getProductInfo(data.productCode);
