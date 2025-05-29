@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
+import { createClient } from '@supabase/supabase-js';
 import { prepareQcLabelData, mergeAndPrintPdfs, type QcInputData } from '@/lib/pdfUtils';
 import { pdf } from '@react-pdf/renderer';
 import { PrintLabelPdf } from '@/components/print-label-pdf/PrintLabelPdf';
@@ -34,26 +35,20 @@ export const useQcLabelBusiness = ({
   productInfo,
   onProductInfoReset
 }: UseQcLabelBusinessProps) => {
-  // 創建客戶端 Supabase 客戶端的函數（用於查詢）
-  const createSupabaseClient = useCallback(() => {
-    const { createClient: createSupabaseClient } = require('@supabase/supabase-js');
+  // 創建客戶端 Supabase 實例用於查詢操作
+  const createClientSupabase = useCallback(() => {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
     
-    // 客戶端只能使用 anon key 進行查詢
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://bbmkuiplnzvpudszrend.supabase.co';
-    const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJibWt1aXBsbnp2cHVkc3pyZW5kIiwicm9sZSI6ImFub24iLCJpYXQiOjE2ODAwMTU2MDQsImV4cCI6MTk5NTU5MTYwNH0.Hs_rDzqsYPmhKXOMy_VBmEuFaZFYZYCNTcaXXi2D1_4';
+    if (!supabaseUrl) {
+      throw new Error('NEXT_PUBLIC_SUPABASE_URL environment variable is not set');
+    }
     
-    console.log('[useQcLabelBusiness] 創建客戶端 Supabase 客戶端...');
+    if (!anonKey) {
+      throw new Error('NEXT_PUBLIC_SUPABASE_ANON_KEY environment variable is not set');
+    }
     
-    return createSupabaseClient(
-      supabaseUrl,
-      anonKey,
-      {
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false
-        }
-      }
-    );
+    return createClient(supabaseUrl, anonKey);
   }, []);
 
   // Get logged in user ID
@@ -71,7 +66,7 @@ export const useQcLabelBusiness = ({
     if (productInfo?.type === 'Slate') {
       const fetchFirstOffDates = async () => {
         try {
-          const supabaseClient = createSupabaseClient();
+          const supabaseClient = createClientSupabase();
           const { data, error } = await supabaseClient
             .from('record_slate')
             .select('first_off');
@@ -93,7 +88,7 @@ export const useQcLabelBusiness = ({
       
       const fetchSlateInfo = async () => {
         try {
-          const supabaseClient = createSupabaseClient();
+          const supabaseClient = createClientSupabase();
           const { data, error } = await supabaseClient
             .from('data_slateinfo')
             .select('shapes, colour')
@@ -125,14 +120,14 @@ export const useQcLabelBusiness = ({
     } else {
       setFormData(prev => ({ ...prev, availableFirstOffDates: [] }));
     }
-  }, [productInfo?.type, productInfo?.code, createSupabaseClient, setFormData]);
+  }, [productInfo?.type, productInfo?.code, createClientSupabase, setFormData]);
 
   // Fetch available ACO order refs
   useEffect(() => {
     if (productInfo?.type === 'ACO') {
       const fetchAcoOrderRefs = async () => {
         try {
-          const supabaseClient = createSupabaseClient();
+          const supabaseClient = createClientSupabase();
           const { data, error } = await supabaseClient
             .from('record_aco')
             .select('order_ref, remain_qty');
@@ -160,7 +155,7 @@ export const useQcLabelBusiness = ({
     } else {
       setFormData(prev => ({ ...prev, availableAcoOrderRefs: [] }));
     }
-  }, [productInfo?.type, createSupabaseClient, setFormData]);
+  }, [productInfo?.type, createClientSupabase, setFormData]);
 
   // Check if current input quantity exceeds ACO remaining quantity
   const checkAcoQuantityExcess = useCallback(() => {
@@ -209,7 +204,7 @@ export const useQcLabelBusiness = ({
     }));
 
     try {
-      const supabaseClient = createSupabaseClient();
+      const supabaseClient = createClientSupabase();
       const { data, error } = await supabaseClient
         .from('record_aco')
         .select('order_ref, remain_qty')
@@ -257,7 +252,7 @@ export const useQcLabelBusiness = ({
     } finally {
       setFormData(prev => ({ ...prev, acoSearchLoading: false }));
     }
-  }, [formData.acoOrderRef, formData.productCode, createSupabaseClient, setFormData]);
+  }, [formData.acoOrderRef, formData.productCode, createClientSupabase, setFormData]);
 
   // ACO Order Detail Change
   const handleAcoOrderDetailChange = useCallback((idx: number, key: 'code' | 'qty', value: string) => {
@@ -280,7 +275,7 @@ export const useQcLabelBusiness = ({
     }
 
     try {
-      const supabaseClient = createSupabaseClient();
+      const supabaseClient = createClientSupabase();
       const { data, error } = await supabaseClient.rpc('get_product_details_by_code', { 
         p_code: code.trim() 
       });
@@ -330,7 +325,7 @@ export const useQcLabelBusiness = ({
       });
       toast.error('Error validating product code.');
     }
-  }, [createSupabaseClient, setFormData]);
+  }, [createClientSupabase, setFormData]);
 
   // ACO Order Detail Update
   const handleAcoOrderDetailUpdate = useCallback(async () => {
@@ -458,7 +453,7 @@ export const useQcLabelBusiness = ({
       // For ACO orders, get the initial pallet count once (using client)
       let initialAcoPalletCount = 0;
       if (productInfo.type === 'ACO' && formData.acoOrderRef.trim()) {
-        const supabaseClient = createSupabaseClient();
+        const supabaseClient = createClientSupabase();
         initialAcoPalletCount = await getAcoPalletCount(supabaseClient, formData.acoOrderRef.trim());
       }
       
@@ -730,7 +725,7 @@ export const useQcLabelBusiness = ({
     } finally {
       setPrintEventToProceed(null);
     }
-  }, [productInfo, formData, setFormData, onProductInfoReset, createSupabaseClient]);
+  }, [productInfo, formData, setFormData, onProductInfoReset, createClientSupabase]);
 
   // Handle clock number confirmation cancel
   const handleClockNumberCancel = useCallback(() => {

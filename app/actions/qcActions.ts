@@ -18,21 +18,23 @@ if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
   console.error('[qcActions] 錯誤: SUPABASE_SERVICE_ROLE_KEY 未設置');
 }
 
-// 備用環境變數（從 vercel.json 中的值）
-const FALLBACK_SUPABASE_URL = 'https://bbmkuiplnzvpudszrend.supabase.co';
-const FALLBACK_SERVICE_ROLE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJibWt1aXBsbnp2cHVkc3pyZW5kIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTY4MDAxNTYwNCwiZXhwIjoxOTk1NTkxNjA0fQ.lkRDHLCdZdP4YE5c3XFu_G26F1O_N1fxEP2Wa3M1NtM';
-
 // 創建 Supabase 客戶端的函數
 function createSupabaseAdmin() {
-  // 優先使用環境變數，如果不可用則使用備用值
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || FALLBACK_SUPABASE_URL;
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || FALLBACK_SERVICE_ROLE_KEY;
+  // 確保環境變數存在
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  
+  if (!supabaseUrl) {
+    throw new Error('NEXT_PUBLIC_SUPABASE_URL environment variable is not set');
+  }
+  
+  if (!serviceRoleKey) {
+    throw new Error('SUPABASE_SERVICE_ROLE_KEY environment variable is not set');
+  }
   
   console.log('[qcActions] 創建 Supabase 客戶端...');
   console.log('[qcActions] URL:', supabaseUrl);
   console.log('[qcActions] Key 長度:', serviceRoleKey.length);
-  console.log('[qcActions] 使用環境變數 URL:', supabaseUrl === process.env.NEXT_PUBLIC_SUPABASE_URL);
-  console.log('[qcActions] 使用環境變數 Key:', serviceRoleKey === process.env.SUPABASE_SERVICE_ROLE_KEY);
   
   const client = createClient(
     supabaseUrl,

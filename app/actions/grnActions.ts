@@ -5,14 +5,19 @@ import { z } from 'zod';
 import { generatePalletNumbers } from '@/lib/palletNumUtils';
 import { generateUniqueSeries } from '@/lib/seriesUtils';
 
-// 備用環境變數（與 qcActions.ts 保持一致）
-const FALLBACK_SUPABASE_URL = 'https://bbmkuiplnzvpudszrend.supabase.co';
-const FALLBACK_SERVICE_ROLE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJibWt1aXBsbnp2cHVkc3pyZW5kIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTY4MDAxNTYwNCwiZXhwIjoxOTk1NTkxNjA0fQ.lkRDHLCdZdP4YE5c3XFu_G26F1O_N1fxEP2Wa3M1NtM';
-
-// 創建 Supabase 客戶端的函數（與 qcActions.ts 保持一致）
+// 創建 Supabase 客戶端的函數
 function createSupabaseAdmin() {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || FALLBACK_SUPABASE_URL;
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || FALLBACK_SERVICE_ROLE_KEY;
+  // 確保環境變數存在
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  
+  if (!supabaseUrl) {
+    throw new Error('NEXT_PUBLIC_SUPABASE_URL environment variable is not set');
+  }
+  
+  if (!serviceRoleKey) {
+    throw new Error('SUPABASE_SERVICE_ROLE_KEY environment variable is not set');
+  }
   
   console.log('[grnActions] 創建服務端 Supabase 客戶端...');
   
@@ -149,30 +154,6 @@ export async function generateGrnPalletNumbersAndSeries(count: number): Promise<
 }> {
   try {
     console.log('[grnActions] 生成 GRN 棧板號碼和系列號，數量:', count);
-    
-    // 詳細檢查環境變數
-    const urlExists = !!process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const serviceRoleKeyExists = !!process.env.SUPABASE_SERVICE_ROLE_KEY;
-    
-    console.log('[grnActions] 環境變數檢查:', {
-      NEXT_PUBLIC_SUPABASE_URL: urlExists,
-      SUPABASE_SERVICE_ROLE_KEY: serviceRoleKeyExists,
-      isUsingFallbackUrl: !urlExists,
-      isUsingFallbackKey: !serviceRoleKeyExists
-    });
-    
-    if (!urlExists) {
-      console.error('[grnActions] 警告: 使用備用 Supabase URL');
-    }
-    
-    if (!serviceRoleKeyExists) {
-      console.error('[grnActions] 警告: 使用備用 Service Role Key');
-      return {
-        palletNumbers: [],
-        series: [],
-        error: 'SUPABASE_SERVICE_ROLE_KEY environment variable not found in production. Using fallback but this may cause API key errors.'
-      };
-    }
     
     const supabaseAdmin = createSupabaseAdmin();
     

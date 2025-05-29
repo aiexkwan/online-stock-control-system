@@ -11,18 +11,29 @@ import {
   type QcInventoryPayload
 } from '@/app/actions/qcActions';
 
-// 備用環境變數（與 qcActions.ts 保持一致）
-const FALLBACK_SUPABASE_URL = 'https://bbmkuiplnzvpudszrend.supabase.co';
-const FALLBACK_SERVICE_ROLE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJibWt1aXBsbnp2cHVkc3pyZW5kIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTY4MDAxNTYwNCwiZXhwIjoxOTk1NTkxNjA0fQ.lkRDHLCdZdP4YE5c3XFu_G26F1O_N1fxEP2Wa3M1NtM';
+// 檢查環境變數
+if (!process.env.NEXT_PUBLIC_SUPABASE_URL) {
+  console.error('[auto-reprint-label] NEXT_PUBLIC_SUPABASE_URL 未設置');
+}
 
-// 創建 Supabase 客戶端的函數（與 qcActions.ts 保持一致）
+if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+  console.error('[auto-reprint-label] SUPABASE_SERVICE_ROLE_KEY 未設置');
+}
+
+// 創建 Supabase 服務端客戶端的函數
 function createSupabaseAdmin() {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || FALLBACK_SUPABASE_URL;
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || FALLBACK_SERVICE_ROLE_KEY;
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
   
-  console.log('[Auto Reprint] 創建服務端 Supabase 客戶端...');
+  if (!supabaseUrl) {
+    throw new Error('NEXT_PUBLIC_SUPABASE_URL environment variable is not set');
+  }
   
-  const client = createClient(
+  if (!serviceRoleKey) {
+    throw new Error('SUPABASE_SERVICE_ROLE_KEY environment variable is not set');
+  }
+  
+  return createClient(
     supabaseUrl,
     serviceRoleKey,
     {
@@ -41,10 +52,6 @@ function createSupabaseAdmin() {
       }
     }
   );
-  
-  console.log('[Auto Reprint] 服務端客戶端創建完成，應該能夠繞過 RLS');
-  
-  return client;
 }
 
 export const runtime = 'nodejs';

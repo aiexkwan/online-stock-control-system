@@ -3,23 +3,20 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
-// 備用環境變數（與其他 actions 保持一致）
-const FALLBACK_SUPABASE_URL = 'https://bbmkuiplnzvpudszrend.supabase.co';
-const FALLBACK_SERVICE_ROLE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJibWt1aXBsbnp2cHVkc3pyZW5kIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTY4MDAxNTYwNCwiZXhwIjoxOTk1NTkxNjA0fQ.lkRDHLCdZdP4YE5c3XFu_G26F1O_N1fxEP2Wa3M1NtM';
-
-// 創建 Supabase 服務端客戶端
+// 創建 Supabase 服務端客戶端的函數
 function createSupabaseAdmin() {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || FALLBACK_SUPABASE_URL;
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || FALLBACK_SERVICE_ROLE_KEY;
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
   
-  console.log('[Upload PDF API] 創建服務端 Supabase 客戶端...');
-  console.log('[Upload PDF API] Environment check:', {
-    url: supabaseUrl,
-    serviceRoleKeyExists: !!serviceRoleKey,
-    serviceRoleKeyFirst10: serviceRoleKey?.substring(0, 10) + '...'
-  });
+  if (!supabaseUrl) {
+    throw new Error('NEXT_PUBLIC_SUPABASE_URL environment variable is not set');
+  }
   
-  const client = createClient(
+  if (!serviceRoleKey) {
+    throw new Error('SUPABASE_SERVICE_ROLE_KEY environment variable is not set');
+  }
+  
+  return createClient(
     supabaseUrl,
     serviceRoleKey,
     {
@@ -38,10 +35,6 @@ function createSupabaseAdmin() {
       }
     }
   );
-  
-  console.log('[Upload PDF API] 服務端客戶端創建完成，應該能夠繞過 RLS');
-  
-  return client;
 }
 
 export async function POST(request: NextRequest) {
