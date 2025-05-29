@@ -240,6 +240,8 @@ export default function Navigation() {
   
   const bottomLinks = (
     <div className="px-2 pb-6 flex flex-col gap-2">
+      {/* LogOut button moved to dashboard header */}
+      {/* 
       <button
         onClick={async () => {
           console.log("[Navigation] LogOut button clicked");
@@ -303,6 +305,7 @@ export default function Navigation() {
       >
         <span className="mr-3">🚪</span> LogOut
       </button>
+      */}
     </div>
   );
 

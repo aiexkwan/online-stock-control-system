@@ -3,14 +3,15 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "npm run clean && next dev",
+    "dev": "npm run kill-localhost && npm run clean && next dev",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
     "mcpIOS": "node ./node_modules/@supabase/mcp-server-supabase/dist/index.js --access-token=sbp_1ed3abb4b23fcf1f8892e32d4b4ad8856d399fdb",
     "init-auth": "ts-node --project tsconfig.json scripts/init-auth.ts",
     "auto-push": "node scripts/auto-push.js",
-    "clean": "rimraf .next .turbo dist build .cache coverage out npm-debug.log"
+    "clean": "rimraf .next .turbo dist build .cache coverage out npm-debug.log",
+    "kill-localhost": "node scripts/kill-localhost.js"
   },
   "dependencies": {
     "@fontsource/lato": "^5.2.5",
