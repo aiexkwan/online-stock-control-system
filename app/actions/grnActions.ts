@@ -19,7 +19,7 @@ function createSupabaseAdmin() {
     throw new Error('SUPABASE_SERVICE_ROLE_KEY environment variable is not set');
   }
   
-  console.log('[grnActions] 創建服務端 Supabase 客戶端...');
+  // console.log('[grnActions] 創建服務端 Supabase 客戶端...');
   
   const client = createClient(
     supabaseUrl,
@@ -41,12 +41,12 @@ function createSupabaseAdmin() {
     }
   );
   
-  console.log('[grnActions] 服務端客戶端創建完成，應該能夠繞過 RLS');
+  // console.log('[grnActions] 服務端客戶端創建完成，應該能夠繞過 RLS');
   
   return client;
 }
 
-console.log('[grnActions] grnActions 模塊已加載');
+// console.log('[grnActions] grnActions 模塊已加載');
 
 // Schema for validating the clock number string and converting to number
 const clockNumberSchema = z.string().regex(/^\d+$/, { message: "Operator Clock Number must be a positive number string." }).transform(val => parseInt(val, 10));
@@ -153,12 +153,12 @@ export async function generateGrnPalletNumbersAndSeries(count: number): Promise<
   error?: string;
 }> {
   try {
-    console.log('[grnActions] 生成 GRN 棧板號碼和系列號，數量:', count);
+    // console.log('[grnActions] 生成 GRN 棧板號碼和系列號，數量:', count);
     
     const supabaseAdmin = createSupabaseAdmin();
     
     // 測試基本連接
-    console.log('[grnActions] 測試基本 Supabase 連接...');
+    // console.log('[grnActions] 測試基本 Supabase 連接...');
     try {
       const { data: testData, error: testError } = await supabaseAdmin
         .from('record_palletinfo')
@@ -174,7 +174,7 @@ export async function generateGrnPalletNumbersAndSeries(count: number): Promise<
         };
       }
       
-      console.log('[grnActions] Supabase 連接測試成功');
+      // console.log('[grnActions] Supabase 連接測試成功');
     } catch (connectionError: any) {
       console.error('[grnActions] Supabase 連接測試異常:', connectionError);
       return {
@@ -186,7 +186,7 @@ export async function generateGrnPalletNumbersAndSeries(count: number): Promise<
     
     // Generate pallet numbers
     const palletNumbers = await generatePalletNumbers(supabaseAdmin, count);
-    console.log('[grnActions] 生成的棧板號碼:', palletNumbers);
+    // console.log('[grnActions] 生成的棧板號碼:', palletNumbers);
     
     // Generate series (one by one for GRN)
     const series: string[] = [];
@@ -194,7 +194,7 @@ export async function generateGrnPalletNumbersAndSeries(count: number): Promise<
       const singleSeries = await generateUniqueSeries(supabaseAdmin);
       series.push(singleSeries);
     }
-    console.log('[grnActions] 生成的系列號:', series);
+    // console.log('[grnActions] 生成的系列號:', series);
     
     return {
       palletNumbers,

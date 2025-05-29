@@ -12,13 +12,13 @@ import {
 } from '@/app/actions/qcActions';
 
 // 檢查環境變數
-if (!process.env.NEXT_PUBLIC_SUPABASE_URL) {
-  console.error('[auto-reprint-label] NEXT_PUBLIC_SUPABASE_URL 未設置');
-}
+// if (!process.env.NEXT_PUBLIC_SUPABASE_URL) {
+//   console.error('[auto-reprint-label] NEXT_PUBLIC_SUPABASE_URL 未設置');
+// }
 
-if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
-  console.error('[auto-reprint-label] SUPABASE_SERVICE_ROLE_KEY 未設置');
-}
+// if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+//   console.error('[auto-reprint-label] SUPABASE_SERVICE_ROLE_KEY 未設置');
+// }
 
 // 創建 Supabase 服務端客戶端的函數
 function createSupabaseAdmin() {

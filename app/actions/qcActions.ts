@@ -5,10 +5,10 @@ import { z } from 'zod';
 import { generatePalletNumbers } from '@/lib/palletNumUtils';
 import { generateMultipleUniqueSeries } from '@/lib/seriesUtils';
 
-// 詳細的環境變數檢查
-console.log('[qcActions] 環境變數檢查:');
-console.log('[qcActions] NEXT_PUBLIC_SUPABASE_URL:', process.env.NEXT_PUBLIC_SUPABASE_URL ? '✓ 已設置' : '✗ 未設置');
-console.log('[qcActions] SUPABASE_SERVICE_ROLE_KEY:', process.env.SUPABASE_SERVICE_ROLE_KEY ? '✓ 已設置' : '✗ 未設置');
+// 詳細的環境變數檢查（生產環境可以注釋掉）
+// console.log('[qcActions] 環境變數檢查:');
+// console.log('[qcActions] NEXT_PUBLIC_SUPABASE_URL:', process.env.NEXT_PUBLIC_SUPABASE_URL ? '✓ 已設置' : '✗ 未設置');
+// console.log('[qcActions] SUPABASE_SERVICE_ROLE_KEY:', process.env.SUPABASE_SERVICE_ROLE_KEY ? '✓ 已設置' : '✗ 未設置');
 
 if (!process.env.NEXT_PUBLIC_SUPABASE_URL) {
   console.error('[qcActions] 錯誤: NEXT_PUBLIC_SUPABASE_URL 未設置');
@@ -32,9 +32,9 @@ function createSupabaseAdmin() {
     throw new Error('SUPABASE_SERVICE_ROLE_KEY environment variable is not set');
   }
   
-  console.log('[qcActions] 創建 Supabase 客戶端...');
-  console.log('[qcActions] URL:', supabaseUrl);
-  console.log('[qcActions] Key 長度:', serviceRoleKey.length);
+  // console.log('[qcActions] 創建 Supabase 客戶端...');
+  // console.log('[qcActions] URL:', supabaseUrl);
+  // console.log('[qcActions] Key 長度:', serviceRoleKey.length);
   
   const client = createClient(
     supabaseUrl,
@@ -57,12 +57,12 @@ function createSupabaseAdmin() {
   );
   
   // 明確設置 RLS 繞過（service_role 應該能夠繞過 RLS）
-  console.log('[qcActions] 服務端客戶端創建完成，應該能夠繞過 RLS');
+  // console.log('[qcActions] 服務端客戶端創建完成，應該能夠繞過 RLS');
   
   return client;
 }
 
-console.log('[qcActions] qcActions 模塊已加載');
+// console.log('[qcActions] qcActions 模塊已加載');
 
 // Schema for validating the clock number string and converting to number
 const clockNumberSchema = z.string().regex(/^\d+$/, { message: "Clock Number must be a positive number string." }).transform(val => parseInt(val, 10));
@@ -309,13 +309,13 @@ export async function createQcDatabaseEntriesWithTransaction(
   acoUpdateInfo?: { orderRef: number; productCode: string; quantityUsed: number }
 ): Promise<{ data?: string; error?: string; warning?: string }> {
 
-  console.log('[qcActions] createQcDatabaseEntriesWithTransaction 開始');
-  console.log('[qcActions] 檢查環境變數狀態...');
+  // console.log('[qcActions] createQcDatabaseEntriesWithTransaction 開始');
+  // console.log('[qcActions] 檢查環境變數狀態...');
   
   // 在函數調用時創建新的 Supabase 客戶端
   const supabaseAdmin = createSupabaseAdmin();
   
-  console.log('[qcActions] 新的 Supabase 客戶端已創建');
+  // console.log('[qcActions] 新的 Supabase 客戶端已創建');
 
   const clockValidation = clockNumberSchema.safeParse(operatorClockNumberStr);
   if (!clockValidation.success) {
@@ -324,12 +324,12 @@ export async function createQcDatabaseEntriesWithTransaction(
   }
 
   try {
-    console.log('[qcActions] 開始執行數據庫操作...');
+    // console.log('[qcActions] 開始執行數據庫操作...');
     
     // Execute inserts in correct order to satisfy foreign key constraints
     
     // 1. Insert pallet info record first (required by foreign key constraints)
-    console.log('[qcActions] 插入 pallet info 記錄...');
+    // console.log('[qcActions] 插入 pallet info 記錄...');
     const { error: palletInfoError } = await supabaseAdmin
       .from('record_palletinfo')
       .insert(payload.palletInfo);
@@ -346,10 +346,10 @@ export async function createQcDatabaseEntriesWithTransaction(
       
       throw new Error(`Failed to insert pallet info: ${palletInfoError.message}`);
     }
-    console.log('[qcActions] Pallet info 插入成功');
+    // console.log('[qcActions] Pallet info 插入成功');
 
     // 2. Insert history record
-    console.log('[qcActions] 插入 history 記錄...');
+    // console.log('[qcActions] 插入 history 記錄...');
     const { error: historyError } = await supabaseAdmin
       .from('record_history')
       .insert(payload.historyRecord);
@@ -358,10 +358,10 @@ export async function createQcDatabaseEntriesWithTransaction(
       console.error('[qcActions] Error inserting history record:', historyError);
       throw new Error(`Failed to insert history record: ${historyError.message}`);
     }
-    console.log('[qcActions] History 記錄插入成功');
+    // console.log('[qcActions] History 記錄插入成功');
 
     // 3. Insert inventory record (depends on pallet info)
-    console.log('[qcActions] 插入 inventory 記錄...');
+    // console.log('[qcActions] 插入 inventory 記錄...');
     const { error: inventoryError } = await supabaseAdmin
       .from('record_inventory')
       .insert(payload.inventoryRecord);
@@ -370,11 +370,11 @@ export async function createQcDatabaseEntriesWithTransaction(
       console.error('[qcActions] Error inserting inventory record:', inventoryError);
       throw new Error(`Failed to insert inventory record: ${inventoryError.message}`);
     }
-    console.log('[qcActions] Inventory 記錄插入成功');
+    // console.log('[qcActions] Inventory 記錄插入成功');
 
     // 4. Insert ACO records if provided
     if (payload.acoRecords && payload.acoRecords.length > 0) {
-      console.log('[qcActions] 插入 ACO 記錄...');
+      // console.log('[qcActions] 插入 ACO 記錄...');
       const { error: acoError } = await supabaseAdmin
         .from('record_aco')
         .insert(payload.acoRecords);
@@ -383,12 +383,12 @@ export async function createQcDatabaseEntriesWithTransaction(
         console.error('[qcActions] Error inserting ACO records:', acoError);
         throw new Error(`Failed to insert ACO records: ${acoError.message}`);
       }
-      console.log('[qcActions] ACO 記錄插入成功');
+      // console.log('[qcActions] ACO 記錄插入成功');
     }
 
     // 5. Insert Slate records if provided
     if (payload.slateRecords && payload.slateRecords.length > 0) {
-      console.log('[qcActions] 插入 Slate 記錄...');
+      // console.log('[qcActions] 插入 Slate 記錄...');
       const { error: slateError } = await supabaseAdmin
         .from('record_slate')
         .insert(payload.slateRecords);
@@ -397,12 +397,12 @@ export async function createQcDatabaseEntriesWithTransaction(
         console.error('[qcActions] Error inserting Slate records:', slateError);
         throw new Error(`Failed to insert Slate records: ${slateError.message}`);
       }
-      console.log('[qcActions] Slate 記錄插入成功');
+      // console.log('[qcActions] Slate 記錄插入成功');
     }
 
     // 6. If ACO update is needed, do it after successful inserts
     if (acoUpdateInfo) {
-      console.log('[qcActions] 更新 ACO 剩餘數量...');
+      // console.log('[qcActions] 更新 ACO 剩餘數量...');
       const updateResult = await updateAcoOrderRemainQty(
         acoUpdateInfo.orderRef,
         acoUpdateInfo.productCode,
@@ -413,10 +413,10 @@ export async function createQcDatabaseEntriesWithTransaction(
         console.error('[qcActions] ACO update failed:', updateResult.error);
         throw new Error(`ACO update failed: ${updateResult.error}`);
       }
-      console.log('[qcActions] ACO 更新成功');
+      // console.log('[qcActions] ACO 更新成功');
     }
 
-    console.log('[qcActions] 所有數據庫操作完成');
+    // console.log('[qcActions] 所有數據庫操作完成');
     return { data: 'QC database entries created successfully with transaction' };
 
   } catch (error: any) {
@@ -439,17 +439,17 @@ export async function generatePalletNumbersAndSeries(count: number): Promise<{
   error?: string;
 }> {
   try {
-    console.log('[qcActions] 生成棧板號碼和系列號，數量:', count);
+    // console.log('[qcActions] 生成棧板號碼和系列號，數量:', count);
     
     const supabaseAdmin = createSupabaseAdmin();
     
     // Generate pallet numbers
     const palletNumbers = await generatePalletNumbers(supabaseAdmin, count);
-    console.log('[qcActions] 生成的棧板號碼:', palletNumbers);
+    // console.log('[qcActions] 生成的棧板號碼:', palletNumbers);
     
     // Generate series
     const series = await generateMultipleUniqueSeries(count, supabaseAdmin);
-    console.log('[qcActions] 生成的系列號:', series);
+    // console.log('[qcActions] 生成的系列號:', series);
     
     return {
       palletNumbers,
