@@ -47,12 +47,12 @@ import {
 import { 
   prepareGrnLabelData, 
   GrnInputData, 
-  mergeAndPrintPdfs, 
-  generateAndUploadPdf 
+  mergeAndPrintPdfs
 } from '../../../lib/pdfUtils';
 import { 
   createGrnDatabaseEntries,
   generateGrnPalletNumbersAndSeries,
+  uploadPdfToStorage,
   type GrnPalletInfoPayload, 
   type GrnRecordPayload 
 } from '../../actions/grnActions';
@@ -460,21 +460,66 @@ export const GrnLabelForm: React.FC = () => {
             receivedBy: clockNumber,
           };
 
-          const pdfLabelProps = await prepareGrnLabelData(grnInput);
-          const uploadResult = await generateAndUploadPdf({
-            pdfProps: pdfLabelProps,
-            storagePath: 'grn-labels',
-            supabaseClient: createClient()
+          console.log(`[GrnLabelForm] 準備生成 PDF ${i + 1}/${numberOfPalletsToProcess}`, {
+            palletNum,
+            series,
+            netWeight,
+            grnInput
           });
 
-          if (uploadResult && uploadResult.blob) {
-            collectedPdfBlobs.push(uploadResult.blob);
+          const pdfLabelProps = await prepareGrnLabelData(grnInput);
+          console.log(`[GrnLabelForm] PDF 標籤屬性準備完成:`, pdfLabelProps);
+
+          // 生成 PDF blob（不使用 generateAndUploadPdf）
+          const { pdf } = await import('@react-pdf/renderer');
+          const { PrintLabelPdf } = await import('@/components/print-label-pdf/PrintLabelPdf');
+          
+          console.log(`[GrnLabelForm] 開始生成 PDF blob...`);
+          const pdfBlob = await pdf(<PrintLabelPdf {...pdfLabelProps} />).toBlob();
+          
+          if (!pdfBlob) {
+            throw new Error('PDF generation failed to return a blob.');
+          }
+          
+          console.log(`[GrnLabelForm] PDF blob 生成成功:`, {
+            blobSize: pdfBlob.size,
+            blobType: pdfBlob.type
+          });
+
+          // 轉換 blob 為 number array 以便傳遞給 server action
+          const pdfArrayBuffer = await pdfBlob.arrayBuffer();
+          const pdfUint8Array = new Uint8Array(pdfArrayBuffer);
+          const pdfNumberArray = Array.from(pdfUint8Array);
+
+          // 使用 server action 上傳 PDF
+          const fileName = `${palletNum.replace('/', '_')}.pdf`;
+          console.log(`[GrnLabelForm] 即將調用 uploadPdfToStorage...`, {
+            fileName,
+            arrayLength: pdfNumberArray.length
+          });
+
+          const uploadResult = await uploadPdfToStorage(pdfNumberArray, fileName, 'grn-labels');
+
+          console.log(`[GrnLabelForm] uploadPdfToStorage 完成:`, {
+            success: !!uploadResult.publicUrl,
+            error: uploadResult.error,
+            publicUrl: uploadResult.publicUrl?.substring(0, 50) + '...'
+          });
+
+          if (uploadResult.error) {
+            throw new Error(`PDF upload failed: ${uploadResult.error}`);
+          }
+
+          if (uploadResult.publicUrl) {
+            collectedPdfBlobs.push(pdfBlob);
             setPdfProgress(prev => ({ 
               ...prev, 
               status: prev.status.map((s, idx) => idx === i ? 'Success' : s) 
             }));
+            console.log(`[GrnLabelForm] PDF ${i + 1} 成功添加到收集列表`);
           } else {
-            throw new Error('PDF generation failed');
+            console.error(`[GrnLabelForm] PDF ${i + 1} 上傳失敗: uploadResult 沒有 publicUrl`);
+            throw new Error('PDF upload succeeded but no public URL returned.');
           }
         } catch (error: any) {
           toast.error(`Pallet ${i + 1} Error: ${error.message}. Skipping.`);

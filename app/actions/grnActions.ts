@@ -176,4 +176,76 @@ export async function generateGrnPalletNumbersAndSeries(count: number): Promise<
       error: error.message
     };
   }
+}
+
+/**
+ * Upload PDF to storage using server-side Supabase client
+ */
+export async function uploadPdfToStorage(
+  pdfUint8Array: number[],
+  fileName: string,
+  storagePath: string = 'grn-labels'
+): Promise<{ publicUrl?: string; error?: string }> {
+  try {
+    console.log('[grnActions] 開始上傳 PDF 到 Storage...', {
+      fileName,
+      storagePath,
+      arrayLength: pdfUint8Array.length
+    });
+    
+    // 創建新的 Supabase 客戶端
+    const supabaseAdmin = createSupabaseAdmin();
+    
+    // Convert number array back to Uint8Array and then to Blob
+    const uint8Array = new Uint8Array(pdfUint8Array);
+    const pdfBlob = new Blob([uint8Array], { type: 'application/pdf' });
+    
+    console.log('[grnActions] PDF Blob 創建完成:', {
+      blobSize: pdfBlob.size,
+      blobType: pdfBlob.type
+    });
+    
+    const { data: uploadData, error: uploadError } = await supabaseAdmin.storage
+      .from('pallet-label-pdf')
+      .upload(fileName, pdfBlob, {
+        cacheControl: '3600',
+        upsert: true,
+        contentType: 'application/pdf',
+      });
+
+    if (uploadError) {
+      console.error('[grnActions] Supabase Upload Error:', uploadError);
+      
+      // 檢查是否是 API key 相關錯誤
+      if (uploadError.message && uploadError.message.toLowerCase().includes('api key')) {
+        console.error('[grnActions] 檢測到 API key 錯誤 - 這可能是環境變數問題');
+        return { error: `API Key Error: ${uploadError.message}. 請檢查 SUPABASE_SERVICE_ROLE_KEY 環境變數。` };
+      }
+      
+      return { error: `Upload failed: ${uploadError.message}` };
+    }
+
+    if (!uploadData || !uploadData.path) {
+      console.error('[grnActions] 上傳成功但沒有返回路徑');
+      return { error: 'Upload succeeded but no path was returned' };
+    }
+
+    console.log('[grnActions] 文件上傳成功，路徑:', uploadData.path);
+
+    const { data: urlData } = supabaseAdmin.storage
+      .from('pallet-label-pdf')
+      .getPublicUrl(uploadData.path);
+
+    if (!urlData || !urlData.publicUrl) {
+      console.error('[grnActions] 無法獲取公共 URL');
+      return { error: 'Failed to get public URL' };
+    }
+
+    console.log('[grnActions] 公共 URL 生成成功:', urlData.publicUrl);
+    return { publicUrl: urlData.publicUrl };
+
+  } catch (error: any) {
+    console.error('[grnActions] uploadPdfToStorage 意外錯誤:', error);
+    return { error: `Upload error: ${error.message || 'Unknown error'}` };
+  }
 } 

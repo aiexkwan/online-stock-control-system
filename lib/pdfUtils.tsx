@@ -78,23 +78,36 @@ export async function generateAndUploadPdf({
   pdfProps,
   fileName,
   storagePath, // e.g., 'grn_labels' or 'qc_labels'
-  supabaseClient
+  supabaseClient,
+  useApiUpload = false // 新參數：是否使用 API 路由上傳
 }: {
   pdfProps: PrintLabelPdfProps;
   fileName?: string; 
   storagePath?: string; 
   supabaseClient: SupabaseClient;
+  useApiUpload?: boolean;
 }): Promise<{ publicUrl: string; blob: Blob }> {
   const palletNum = pdfProps.palletNum;
   if (!palletNum) {
     console.error('[pdfUtils.generateAndUploadPdf] Pallet number is missing in pdfProps. This is critical for naming and potentially content.');
   }
 
-  console.log('[pdfUtils.generateAndUploadPdf] Attempting to generate PDF with props:', JSON.stringify(pdfProps, null, 2));
+  console.log('[pdfUtils.generateAndUploadPdf] 開始生成 PDF...', {
+    palletNum,
+    useApiUpload,
+    storagePath: storagePath || 'pallet-label-pdf',
+    pdfPropsKeys: Object.keys(pdfProps)
+  });
 
   let blob: Blob | null = null;
   try {
+    console.log('[pdfUtils.generateAndUploadPdf] 調用 @react-pdf/renderer...');
     blob = await pdf(<PrintLabelPdf {...pdfProps} />).toBlob();
+    console.log('[pdfUtils.generateAndUploadPdf] PDF 渲染完成:', {
+      blobExists: !!blob,
+      blobSize: blob?.size,
+      blobType: blob?.type
+    });
   } catch (renderError: any) {
     console.error('[pdfUtils.generateAndUploadPdf] Error during @react-pdf/renderer toBlob():', renderError);
     toast.error(`PDF render error for pallet ${palletNum || 'UNKNOWN'}: ${renderError.message}`);
@@ -111,61 +124,95 @@ export async function generateAndUploadPdf({
 
   if (blob.size === 0) {
     console.warn(`[pdfUtils.generateAndUploadPdf] Generated PDF blob for pallet ${palletNum || 'UNKNOWN'} has a size of 0. This will likely result in an empty PDF.`);
-    // toast.warn(`Generated PDF for pallet ${palletNum || 'UNKNOWN'} is empty.`); 
   }
 
   const finalSupabaseFileName = palletNum ? generatePalletPdfFileName(palletNum) : `unknown_pallet_${Date.now()}.pdf`;
-  const filePath = finalSupabaseFileName;
+  const bucketName = storagePath || 'pallet-label-pdf';
 
-  // Access original arguments via the 'arguments' object is generally discouraged in modern JS/TS.
-  // If fileName and storagePath are needed for logging, they should be explicitly passed and used.
-  // For now, assuming they are not critical for this log message as they are ignored for the path.
-  console.log(`[pdfUtils.generateAndUploadPdf] Uploading PDF. Final Supabase path: ${filePath}`);
+  console.log(`[pdfUtils.generateAndUploadPdf] 準備上傳...`, {
+    fileName: finalSupabaseFileName,
+    bucketName,
+    useApiUpload
+  });
 
-  const { data: uploadData, error: uploadError } = await supabaseClient.storage
-    .from('pallet-label-pdf')
-    .upload(filePath, blob, {
-      cacheControl: '3600',
-      upsert: true,
-      contentType: 'application/pdf',
-    });
+  if (useApiUpload) {
+    console.log('[pdfUtils.generateAndUploadPdf] 使用 API 路由上傳...');
+    try {
+      // 使用 API 路由上傳
+      const formData = new FormData();
+      formData.append('file', blob, finalSupabaseFileName);
+      formData.append('fileName', finalSupabaseFileName);
+      formData.append('storagePath', bucketName);
 
-  if (uploadError) {
-    console.error('[pdfUtils.generateAndUploadPdf] Supabase Upload Error:', uploadError);
-    toast.error(`Supabase Upload Failed for ${filePath}: ${uploadError.message}`);
-    throw new Error(`[pdfUtils.generateAndUploadPdf] Supabase Upload Failed for ${filePath}: ${uploadError.message}`);
+      console.log('[pdfUtils.generateAndUploadPdf] 發送到 /api/upload-pdf...');
+      const response = await fetch('/api/upload-pdf', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('[pdfUtils.generateAndUploadPdf] API upload failed:', errorData);
+        throw new Error(`API upload failed: ${errorData.error}`);
+      }
+
+      const result = await response.json();
+      console.log('[pdfUtils.generateAndUploadPdf] API 上傳成功:', result);
+      
+      return { publicUrl: result.publicUrl, blob };
+    } catch (apiError: any) {
+      console.error('[pdfUtils.generateAndUploadPdf] API upload error:', apiError);
+      toast.error(`API upload failed for ${finalSupabaseFileName}: ${apiError.message}`);
+      throw new Error(`API upload failed for ${finalSupabaseFileName}: ${apiError.message}`);
+    }
+  } else {
+    console.log('[pdfUtils.generateAndUploadPdf] 使用直接 Supabase 客戶端上傳...');
+    // 原有的直接上傳邏輯
+    const { data: uploadData, error: uploadError } = await supabaseClient.storage
+      .from(bucketName)
+      .upload(finalSupabaseFileName, blob, {
+        cacheControl: '3600',
+        upsert: true,
+        contentType: 'application/pdf',
+      });
+
+    if (uploadError) {
+      console.error('[pdfUtils.generateAndUploadPdf] Supabase Upload Error:', uploadError);
+      toast.error(`Supabase Upload Failed for ${finalSupabaseFileName}: ${uploadError.message}`);
+      throw new Error(`[pdfUtils.generateAndUploadPdf] Supabase Upload Failed for ${finalSupabaseFileName}: ${uploadError.message}`);
+    }
+    
+    if (!uploadData || !uploadData.path) {
+      console.error(`[pdfUtils.generateAndUploadPdf] Upload for ${finalSupabaseFileName} succeeded but no path was returned from Supabase.`);
+      toast.error(`Upload for ${finalSupabaseFileName} succeeded but no path was returned.`);
+      throw new Error(`[pdfUtils.generateAndUploadPdf] Upload for ${finalSupabaseFileName} succeeded but no path was returned from Supabase.`);
+    }
+
+    console.log(`[pdfUtils.generateAndUploadPdf] File uploaded successfully to Supabase. Path: ${uploadData.path}`);
+
+    const publicUrlResult = await supabaseClient.storage
+      .from(bucketName)
+      .getPublicUrl(uploadData.path) as StoragePublicUrlResponse;
+
+    const urlError = publicUrlResult.error;
+    const urlData = publicUrlResult.data;
+
+    if (urlError) {
+      console.error(`[pdfUtils.generateAndUploadPdf] Error getting public URL for ${uploadData.path}:`, urlError);
+      toast.error(`Failed to get public URL for ${uploadData.path}: ${urlError.message}`);
+      throw new Error(`[pdfUtils.generateAndUploadPdf] Failed to get public URL for ${uploadData.path}: ${urlError.message}`);
+    }
+
+    if (!urlData || !urlData.publicUrl) {
+      console.error(`[pdfUtils.generateAndUploadPdf] Failed to get public URL for ${uploadData.path} (no URL in data).`);
+      toast.error(`Failed to get public URL for ${uploadData.path}.`);
+      throw new Error(`[pdfUtils.generateAndUploadPdf] Failed to get public URL for ${uploadData.path}.`);
+    }
+    
+    const publicUrl = urlData.publicUrl;
+    console.log(`[pdfUtils.generateAndUploadPdf] Public URL: ${publicUrl}`);
+    return { publicUrl: publicUrl, blob };
   }
-  
-  if (!uploadData || !uploadData.path) {
-    console.error(`[pdfUtils.generateAndUploadPdf] Upload for ${filePath} succeeded but no path was returned from Supabase.`);
-    toast.error(`Upload for ${filePath} succeeded but no path was returned.`);
-    throw new Error(`[pdfUtils.generateAndUploadPdf] Upload for ${filePath} succeeded but no path was returned from Supabase.`);
-  }
-
-  console.log(`[pdfUtils.generateAndUploadPdf] File uploaded successfully to Supabase. Path: ${uploadData.path}`);
-
-  const publicUrlResult = await supabaseClient.storage
-    .from('pallet-label-pdf')
-    .getPublicUrl(uploadData.path) as StoragePublicUrlResponse; // Type assertion added
-
-  const urlError = publicUrlResult.error;
-  const urlData = publicUrlResult.data;
-
-  if (urlError) {
-    console.error(`[pdfUtils.generateAndUploadPdf] Error getting public URL for ${uploadData.path}:`, urlError);
-    toast.error(`Failed to get public URL for ${uploadData.path}: ${urlError.message}`);
-    throw new Error(`[pdfUtils.generateAndUploadPdf] Failed to get public URL for ${uploadData.path}: ${urlError.message}`);
-  }
-
-  if (!urlData || !urlData.publicUrl) {
-    console.error(`[pdfUtils.generateAndUploadPdf] Failed to get public URL for ${uploadData.path} (no URL in data).`);
-    toast.error(`Failed to get public URL for ${uploadData.path}.`);
-    throw new Error(`[pdfUtils.generateAndUploadPdf] Failed to get public URL for ${uploadData.path}.`);
-  }
-  
-  const publicUrl = urlData.publicUrl;
-  console.log(`[pdfUtils.generateAndUploadPdf] Public URL: ${publicUrl}`);
-  return { publicUrl: publicUrl, blob };
 }
 
 // Placeholder for QC Label Data Preparation (to be defined based on QC label requirements)
