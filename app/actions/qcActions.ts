@@ -34,16 +34,30 @@ function createSupabaseAdmin() {
   console.log('[qcActions] 使用環境變數 URL:', supabaseUrl === process.env.NEXT_PUBLIC_SUPABASE_URL);
   console.log('[qcActions] 使用環境變數 Key:', serviceRoleKey === process.env.SUPABASE_SERVICE_ROLE_KEY);
   
-  return createClient(
+  const client = createClient(
     supabaseUrl,
     serviceRoleKey,
     {
       auth: {
         autoRefreshToken: false,
         persistSession: false
+      },
+      db: {
+        schema: 'public'
+      },
+      global: {
+        headers: {
+          'apikey': serviceRoleKey,
+          'Authorization': `Bearer ${serviceRoleKey}`
+        }
       }
     }
   );
+  
+  // 明確設置 RLS 繞過（service_role 應該能夠繞過 RLS）
+  console.log('[qcActions] 服務端客戶端創建完成，應該能夠繞過 RLS');
+  
+  return client;
 }
 
 console.log('[qcActions] qcActions 模塊已加載');

@@ -22,16 +22,29 @@ function createSupabaseAdmin() {
   
   console.log('[Auto Reprint] 創建服務端 Supabase 客戶端...');
   
-  return createClient(
+  const client = createClient(
     supabaseUrl,
     serviceRoleKey,
     {
       auth: {
         autoRefreshToken: false,
         persistSession: false
+      },
+      db: {
+        schema: 'public'
+      },
+      global: {
+        headers: {
+          'apikey': serviceRoleKey,
+          'Authorization': `Bearer ${serviceRoleKey}`
+        }
       }
     }
   );
+  
+  console.log('[Auto Reprint] 服務端客戶端創建完成，應該能夠繞過 RLS');
+  
+  return client;
 }
 
 export const runtime = 'nodejs';

@@ -16,16 +16,29 @@ function createSupabaseAdmin() {
   console.log('[Test Pallet Generation] Service Key exists:', !!serviceRoleKey);
   console.log('[Test Pallet Generation] Service Key length:', serviceRoleKey?.length);
   
-  return createClient(
+  const client = createClient(
     supabaseUrl,
     serviceRoleKey,
     {
       auth: {
         autoRefreshToken: false,
         persistSession: false
+      },
+      db: {
+        schema: 'public'
+      },
+      global: {
+        headers: {
+          'apikey': serviceRoleKey,
+          'Authorization': `Bearer ${serviceRoleKey}`
+        }
       }
     }
   );
+  
+  console.log('[Test Pallet Generation] 服務端客戶端創建完成，應該能夠繞過 RLS');
+  
+  return client;
 }
 
 export async function GET(request: NextRequest) {
