@@ -17,14 +17,32 @@ export async function GET(request: NextRequest) {
     console.log('- NEXT_PUBLIC_SUPABASE_ANON_KEY:', anonKey ? '✓ 已設置' : '✗ 未設置');
     console.log('- SUPABASE_SERVICE_ROLE_KEY:', serviceKey ? '✓ 已設置' : '✗ 未設置');
     
+    // 詳細檢查環境變數格式
+    const envDetails = {
+      supabaseUrl: {
+        exists: !!supabaseUrl,
+        length: supabaseUrl?.length || 0,
+        format: supabaseUrl?.startsWith('https://') ? '✓ 正確格式' : '✗ 格式錯誤'
+      },
+      anonKey: {
+        exists: !!anonKey,
+        length: anonKey?.length || 0,
+        format: anonKey?.startsWith('eyJ') ? '✓ JWT 格式' : '✗ 非 JWT 格式'
+      },
+      serviceKey: {
+        exists: !!serviceKey,
+        length: serviceKey?.length || 0,
+        format: serviceKey?.startsWith('eyJ') ? '✓ JWT 格式' : '✗ 非 JWT 格式'
+      }
+    };
+    
+    console.log('環境變數詳細信息:', envDetails);
+    
     if (!supabaseUrl || !serviceKey) {
       return NextResponse.json({
         success: false,
         error: '環境變數未正確設置',
-        details: {
-          supabaseUrl: !!supabaseUrl,
-          serviceKey: !!serviceKey
-        }
+        details: envDetails
       });
     }
     
@@ -41,12 +59,20 @@ export async function GET(request: NextRequest) {
           exp: new Date(payload.exp * 1000).toISOString(),
           isExpired: Date.now() > payload.exp * 1000
         };
+        console.log('JWT 解碼成功:', jwtInfo);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('JWT 解碼失敗:', error);
+      return NextResponse.json({
+        success: false,
+        error: 'Service Role Key JWT 解碼失敗',
+        details: error.message,
+        envDetails
+      });
     }
     
     // 創建 Supabase 客戶端
+    console.log('創建 Supabase 客戶端...');
     const supabase = createClient(supabaseUrl, serviceKey, {
       auth: {
         autoRefreshToken: false,
@@ -54,11 +80,11 @@ export async function GET(request: NextRequest) {
       }
     });
     
-    // 測試基本連接
+    // 測試基本連接 - 修正查詢語法
     console.log('測試 Supabase 連接...');
     const { data: testData, error: testError } = await supabase
       .from('data_id')
-      .select('count(*)')
+      .select('id')
       .limit(1);
     
     if (testError) {
@@ -71,9 +97,12 @@ export async function GET(request: NextRequest) {
           code: testError.code,
           hint: testError.hint
         },
-        jwtInfo
+        jwtInfo,
+        envDetails
       });
     }
+    
+    console.log('連接測試成功，查詢到', testData?.length || 0, '條記錄');
     
     // 測試寫入權限
     console.log('測試寫入權限...');
@@ -101,9 +130,12 @@ export async function GET(request: NextRequest) {
           hint: writeError.hint
         },
         jwtInfo,
-        connectionTest: '✓ 成功'
+        connectionTest: '✓ 成功',
+        envDetails
       });
     }
+    
+    console.log('寫入測試成功');
     
     // 清理測試記錄
     await supabase
@@ -118,7 +150,8 @@ export async function GET(request: NextRequest) {
       message: 'Supabase 連接和權限測試成功',
       jwtInfo,
       connectionTest: '✓ 成功',
-      writeTest: '✓ 成功'
+      writeTest: '✓ 成功',
+      envDetails
     });
     
   } catch (error: any) {
