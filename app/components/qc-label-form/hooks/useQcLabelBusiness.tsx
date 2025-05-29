@@ -89,7 +89,7 @@ export const useQcLabelBusiness = ({
             toast.error('Error fetching historical first-off dates for Slate.');
             setFormData(prev => ({ ...prev, availableFirstOffDates: [] }));
           } else if (data) {
-            const dates = data.map(item => item.first_off).filter(date => date) as string[];
+            const dates = data.map((item: { first_off: string | null }) => item.first_off).filter((date: string | null) => date) as string[];
             const uniqueSortedDates = Array.from(new Set(dates)).sort();
             setFormData(prev => ({ ...prev, availableFirstOffDates: uniqueSortedDates }));
           }
@@ -151,11 +151,11 @@ export const useQcLabelBusiness = ({
             setFormData(prev => ({ ...prev, availableAcoOrderRefs: [] }));
           } else if (data) {
             // Get all unique order_ref values (including those with remain_qty = 0)
-            const allOrderRefs = Array.from(new Set(
-              data
-                .filter(record => record.order_ref !== null && record.order_ref !== undefined)
-                .map(record => record.order_ref)
-            )).sort((a, b) => a - b);
+            const orderRefs: number[] = data
+              .filter((record: { order_ref: number | null; remain_qty: number | null }) => record.order_ref !== null && record.order_ref !== undefined)
+              .map((record: { order_ref: number | null; remain_qty: number | null }) => record.order_ref as number);
+            
+            const allOrderRefs = Array.from(new Set(orderRefs)).sort((a, b) => a - b);
             
             setFormData(prev => ({ ...prev, availableAcoOrderRefs: allOrderRefs }));
           }
@@ -242,7 +242,7 @@ export const useQcLabelBusiness = ({
         toast.info('New ACO Order detected. Please enter order details.');
       } else {
         // Existing order - calculate total remaining quantity
-        const totalRemainQty = data.reduce((sum, record) => sum + (record.remain_qty || 0), 0);
+        const totalRemainQty = data.reduce((sum: number, record: { order_ref: number | null; remain_qty: number | null }) => sum + (record.remain_qty || 0), 0);
 
         if (totalRemainQty <= 0) {
           setFormData(prev => ({ 
@@ -733,7 +733,7 @@ export const useQcLabelBusiness = ({
     } finally {
       setPrintEventToProceed(null);
     }
-  }, [productInfo, formData, setFormData, supabase, onProductInfoReset, createSupabaseAdmin]);
+  }, [productInfo, formData, setFormData, onProductInfoReset, createSupabaseAdmin]);
 
   // Handle clock number confirmation cancel
   const handleClockNumberCancel = useCallback(() => {
