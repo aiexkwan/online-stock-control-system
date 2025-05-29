@@ -3,6 +3,19 @@
 import { createClient } from '@supabase/supabase-js';
 import { z } from 'zod';
 
+// 詳細的環境變數檢查
+console.log('[qcActions] 環境變數檢查:');
+console.log('[qcActions] NEXT_PUBLIC_SUPABASE_URL:', process.env.NEXT_PUBLIC_SUPABASE_URL ? '✓ 已設置' : '✗ 未設置');
+console.log('[qcActions] SUPABASE_SERVICE_ROLE_KEY:', process.env.SUPABASE_SERVICE_ROLE_KEY ? '✓ 已設置' : '✗ 未設置');
+
+if (!process.env.NEXT_PUBLIC_SUPABASE_URL) {
+  console.error('[qcActions] 錯誤: NEXT_PUBLIC_SUPABASE_URL 未設置');
+}
+
+if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+  console.error('[qcActions] 錯誤: SUPABASE_SERVICE_ROLE_KEY 未設置');
+}
+
 // Initialize Supabase Admin Client
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -14,6 +27,8 @@ const supabaseAdmin = createClient(
     }
   }
 );
+
+console.log('[qcActions] Supabase 客戶端已初始化');
 
 // Schema for validating the clock number string and converting to number
 const clockNumberSchema = z.string().regex(/^\d+$/, { message: "Clock Number must be a positive number string." }).transform(val => parseInt(val, 10));
@@ -251,6 +266,22 @@ export async function createQcDatabaseEntriesWithTransaction(
   acoUpdateInfo?: { orderRef: number; productCode: string; quantityUsed: number }
 ): Promise<{ data?: string; error?: string; warning?: string }> {
 
+  console.log('[qcActions] createQcDatabaseEntriesWithTransaction 開始');
+  console.log('[qcActions] 檢查環境變數狀態...');
+  
+  // 再次檢查環境變數
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL) {
+    console.error('[qcActions] 錯誤: NEXT_PUBLIC_SUPABASE_URL 在運行時未設置');
+    return { error: 'Environment variable NEXT_PUBLIC_SUPABASE_URL is not set' };
+  }
+  
+  if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    console.error('[qcActions] 錯誤: SUPABASE_SERVICE_ROLE_KEY 在運行時未設置');
+    return { error: 'Environment variable SUPABASE_SERVICE_ROLE_KEY is not set' };
+  }
+  
+  console.log('[qcActions] 環境變數檢查通過');
+
   const clockValidation = clockNumberSchema.safeParse(operatorClockNumberStr);
   if (!clockValidation.success) {
     console.error('[qcActions] Invalid Operator Clock Number format:', operatorClockNumberStr, clockValidation.error.flatten());
@@ -258,19 +289,32 @@ export async function createQcDatabaseEntriesWithTransaction(
   }
 
   try {
+    console.log('[qcActions] 開始執行數據庫操作...');
+    
     // Execute inserts in correct order to satisfy foreign key constraints
     
     // 1. Insert pallet info record first (required by foreign key constraints)
+    console.log('[qcActions] 插入 pallet info 記錄...');
     const { error: palletInfoError } = await supabaseAdmin
       .from('record_palletinfo')
       .insert(payload.palletInfo);
 
     if (palletInfoError) {
       console.error('[qcActions] Error inserting pallet info:', palletInfoError);
+      console.error('[qcActions] Pallet info payload:', payload.palletInfo);
+      
+      // 檢查是否是 API key 相關錯誤
+      if (palletInfoError.message && palletInfoError.message.toLowerCase().includes('api key')) {
+        console.error('[qcActions] 檢測到 API key 錯誤 - 這可能是環境變數問題');
+        return { error: `API Key Error: ${palletInfoError.message}. 請檢查 SUPABASE_SERVICE_ROLE_KEY 環境變數。` };
+      }
+      
       throw new Error(`Failed to insert pallet info: ${palletInfoError.message}`);
     }
+    console.log('[qcActions] Pallet info 插入成功');
 
     // 2. Insert history record
+    console.log('[qcActions] 插入 history 記錄...');
     const { error: historyError } = await supabaseAdmin
       .from('record_history')
       .insert(payload.historyRecord);
@@ -279,8 +323,10 @@ export async function createQcDatabaseEntriesWithTransaction(
       console.error('[qcActions] Error inserting history record:', historyError);
       throw new Error(`Failed to insert history record: ${historyError.message}`);
     }
+    console.log('[qcActions] History 記錄插入成功');
 
     // 3. Insert inventory record (depends on pallet info)
+    console.log('[qcActions] 插入 inventory 記錄...');
     const { error: inventoryError } = await supabaseAdmin
       .from('record_inventory')
       .insert(payload.inventoryRecord);
@@ -289,9 +335,11 @@ export async function createQcDatabaseEntriesWithTransaction(
       console.error('[qcActions] Error inserting inventory record:', inventoryError);
       throw new Error(`Failed to insert inventory record: ${inventoryError.message}`);
     }
+    console.log('[qcActions] Inventory 記錄插入成功');
 
     // 4. Insert ACO records if provided
     if (payload.acoRecords && payload.acoRecords.length > 0) {
+      console.log('[qcActions] 插入 ACO 記錄...');
       const { error: acoError } = await supabaseAdmin
         .from('record_aco')
         .insert(payload.acoRecords);
@@ -300,10 +348,12 @@ export async function createQcDatabaseEntriesWithTransaction(
         console.error('[qcActions] Error inserting ACO records:', acoError);
         throw new Error(`Failed to insert ACO records: ${acoError.message}`);
       }
+      console.log('[qcActions] ACO 記錄插入成功');
     }
 
     // 5. Insert Slate records if provided
     if (payload.slateRecords && payload.slateRecords.length > 0) {
+      console.log('[qcActions] 插入 Slate 記錄...');
       const { error: slateError } = await supabaseAdmin
         .from('record_slate')
         .insert(payload.slateRecords);
@@ -312,10 +362,12 @@ export async function createQcDatabaseEntriesWithTransaction(
         console.error('[qcActions] Error inserting Slate records:', slateError);
         throw new Error(`Failed to insert Slate records: ${slateError.message}`);
       }
+      console.log('[qcActions] Slate 記錄插入成功');
     }
 
     // 6. If ACO update is needed, do it after successful inserts
     if (acoUpdateInfo) {
+      console.log('[qcActions] 更新 ACO 剩餘數量...');
       const updateResult = await updateAcoOrderRemainQty(
         acoUpdateInfo.orderRef,
         acoUpdateInfo.productCode,
@@ -326,12 +378,19 @@ export async function createQcDatabaseEntriesWithTransaction(
         console.error('[qcActions] ACO update failed:', updateResult.error);
         throw new Error(`ACO update failed: ${updateResult.error}`);
       }
+      console.log('[qcActions] ACO 更新成功');
     }
 
+    console.log('[qcActions] 所有數據庫操作完成');
     return { data: 'QC database entries created successfully with transaction' };
 
   } catch (error: any) {
     console.error('[qcActions] Transaction failed, all operations rolled back:', error);
+    console.error('[qcActions] Error details:', {
+      message: error.message,
+      stack: error.stack,
+      name: error.name
+    });
     return { error: `Transaction failed: ${error.message || 'Unknown error.'}` };
   }
 } 
