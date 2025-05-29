@@ -20,11 +20,13 @@ if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
 const FALLBACK_SUPABASE_URL = 'https://bbmkuiplnzvpudszrend.supabase.co';
 const FALLBACK_SERVICE_ROLE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJibWt1aXBsbnp2cHVkc3pyZW5kIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTY4MDAxNTYwNCwiZXhwIjoxOTk1NTkxNjA0fQ.lkRDHLCdZdP4YE5c3XFu_G26F1O_N1fxEP2Wa3M1NtM';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || FALLBACK_SUPABASE_URL;
-const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || FALLBACK_SERVICE_ROLE_KEY;
+// 暫時強制使用正確的值來排除環境變數問題
+const supabaseUrl = FALLBACK_SUPABASE_URL;
+const serviceRoleKey = FALLBACK_SERVICE_ROLE_KEY;
 
-console.log('[qcActions] 使用的 URL:', supabaseUrl === FALLBACK_SUPABASE_URL ? '備用 URL' : '環境變數 URL');
-console.log('[qcActions] 使用的 Key:', serviceRoleKey === FALLBACK_SERVICE_ROLE_KEY ? '備用 Key' : '環境變數 Key');
+console.log('[qcActions] 強制使用正確的 URL 和 Key');
+console.log('[qcActions] URL:', supabaseUrl);
+console.log('[qcActions] Key 長度:', serviceRoleKey.length);
 
 // Initialize Supabase Admin Client
 const supabaseAdmin = createClient(
@@ -39,6 +41,25 @@ const supabaseAdmin = createClient(
 );
 
 console.log('[qcActions] Supabase 客戶端已初始化');
+
+// 立即測試 Supabase 連接
+(async () => {
+  try {
+    console.log('[qcActions] 測試 Supabase 連接...');
+    const { data, error } = await supabaseAdmin
+      .from('data_id')
+      .select('id')
+      .limit(1);
+    
+    if (error) {
+      console.error('[qcActions] 初始化連接測試失敗:', error);
+    } else {
+      console.log('[qcActions] 初始化連接測試成功，查詢到', data?.length || 0, '條記錄');
+    }
+  } catch (testError) {
+    console.error('[qcActions] 初始化連接測試異常:', testError);
+  }
+})();
 
 // Schema for validating the clock number string and converting to number
 const clockNumberSchema = z.string().regex(/^\d+$/, { message: "Clock Number must be a positive number string." }).transform(val => parseInt(val, 10));
