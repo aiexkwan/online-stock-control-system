@@ -16,10 +16,20 @@ if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
   console.error('[qcActions] 錯誤: SUPABASE_SERVICE_ROLE_KEY 未設置');
 }
 
+// 備用環境變數（從 vercel.json 中的值）
+const FALLBACK_SUPABASE_URL = 'https://bbmkuiplnzvpudszrend.supabase.co';
+const FALLBACK_SERVICE_ROLE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJibWt1aXBsbnp2cHVkc3pyZW5kIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTY4MDAxNTYwNCwiZXhwIjoxOTk1NTkxNjA0fQ.lkRDHLCdZdP4YE5c3XFu_G26F1O_N1fxEP2Wa3M1NtM';
+
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || FALLBACK_SUPABASE_URL;
+const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || FALLBACK_SERVICE_ROLE_KEY;
+
+console.log('[qcActions] 使用的 URL:', supabaseUrl === FALLBACK_SUPABASE_URL ? '備用 URL' : '環境變數 URL');
+console.log('[qcActions] 使用的 Key:', serviceRoleKey === FALLBACK_SERVICE_ROLE_KEY ? '備用 Key' : '環境變數 Key');
+
 // Initialize Supabase Admin Client
 const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  supabaseUrl,
+  serviceRoleKey,
   {
     auth: {
       autoRefreshToken: false,
@@ -269,16 +279,12 @@ export async function createQcDatabaseEntriesWithTransaction(
   console.log('[qcActions] createQcDatabaseEntriesWithTransaction 開始');
   console.log('[qcActions] 檢查環境變數狀態...');
   
-  // 再次檢查環境變數
-  if (!process.env.NEXT_PUBLIC_SUPABASE_URL) {
-    console.error('[qcActions] 錯誤: NEXT_PUBLIC_SUPABASE_URL 在運行時未設置');
-    return { error: 'Environment variable NEXT_PUBLIC_SUPABASE_URL is not set' };
-  }
+  // 再次檢查環境變數（使用相同的備用邏輯）
+  const runtimeUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || FALLBACK_SUPABASE_URL;
+  const runtimeKey = process.env.SUPABASE_SERVICE_ROLE_KEY || FALLBACK_SERVICE_ROLE_KEY;
   
-  if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
-    console.error('[qcActions] 錯誤: SUPABASE_SERVICE_ROLE_KEY 在運行時未設置');
-    return { error: 'Environment variable SUPABASE_SERVICE_ROLE_KEY is not set' };
-  }
+  console.log('[qcActions] 運行時 URL:', runtimeUrl === FALLBACK_SUPABASE_URL ? '使用備用 URL' : '使用環境變數 URL');
+  console.log('[qcActions] 運行時 Key:', runtimeKey === FALLBACK_SERVICE_ROLE_KEY ? '使用備用 Key' : '使用環境變數 Key');
   
   console.log('[qcActions] 環境變數檢查通過');
 
