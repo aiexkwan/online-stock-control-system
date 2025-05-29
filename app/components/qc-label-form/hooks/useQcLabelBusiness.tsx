@@ -38,6 +38,31 @@ export const useQcLabelBusiness = ({
 }: UseQcLabelBusinessProps) => {
   const supabase = createClient();
 
+  // 創建服務端 Supabase 客戶端的函數（與 qcActions.ts 相同）
+  const createSupabaseAdmin = useCallback(() => {
+    const { createClient: createSupabaseClient } = require('@supabase/supabase-js');
+    
+    // 使用與 qcActions.ts 相同的邏輯
+    const FALLBACK_SUPABASE_URL = 'https://bbmkuiplnzvpudszrend.supabase.co';
+    const FALLBACK_SERVICE_ROLE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJibWt1aXBsbnp2cHVkc3pyZW5kIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTY4MDAxNTYwNCwiZXhwIjoxOTk1NTkxNjA0fQ.lkRDHLCdZdP4YE5c3XFu_G26F1O_N1fxEP2Wa3M1NtM';
+    
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || FALLBACK_SUPABASE_URL;
+    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || FALLBACK_SERVICE_ROLE_KEY;
+    
+    console.log('[useQcLabelBusiness] 創建服務端 Supabase 客戶端...');
+    
+    return createSupabaseClient(
+      supabaseUrl,
+      serviceRoleKey,
+      {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false
+        }
+      }
+    );
+  }, []);
+
   // Get logged in user ID
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -411,9 +436,13 @@ export const useQcLabelBusiness = ({
         }
       }));
 
-      // Generate pallet numbers and series
-      const generatedPalletNumbers = await generatePalletNumbers(supabase, count);
-      const generatedSeries = await generateMultipleUniqueSeries(count, supabase);
+      // 創建服務端 Supabase 客戶端用於生成棧板號碼和系列號
+      console.log('[useQcLabelBusiness] 創建服務端客戶端用於生成棧板號碼...');
+      const supabaseAdmin = createSupabaseAdmin();
+
+      // Generate pallet numbers and series using admin client
+      const generatedPalletNumbers = await generatePalletNumbers(supabaseAdmin, count);
+      const generatedSeries = await generateMultipleUniqueSeries(count, supabaseAdmin);
 
       if (generatedPalletNumbers.length !== count || generatedSeries.length !== count) {
         toast.error('Failed to generate unique pallet numbers or series. Please try again.');
@@ -424,10 +453,10 @@ export const useQcLabelBusiness = ({
       const collectedPdfBlobs: Blob[] = [];
       let anyFailure = false;
       
-      // For ACO orders, get the initial pallet count once
+      // For ACO orders, get the initial pallet count once (using admin client)
       let initialAcoPalletCount = 0;
       if (productInfo.type === 'ACO' && formData.acoOrderRef.trim()) {
-        initialAcoPalletCount = await getAcoPalletCount(supabase, formData.acoOrderRef.trim());
+        initialAcoPalletCount = await getAcoPalletCount(supabaseAdmin, formData.acoOrderRef.trim());
       }
       
       // For new ACO orders, create ACO records only once (not per pallet)
@@ -698,7 +727,7 @@ export const useQcLabelBusiness = ({
     } finally {
       setPrintEventToProceed(null);
     }
-  }, [productInfo, formData, setFormData, supabase, onProductInfoReset]);
+  }, [productInfo, formData, setFormData, supabase, onProductInfoReset, createSupabaseAdmin]);
 
   // Handle clock number confirmation cancel
   const handleClockNumberCancel = useCallback(() => {
