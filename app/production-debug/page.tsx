@@ -51,7 +51,7 @@ export default function ProductionDebugPage() {
       if (result.error) {
         setError(`GRN Actions 錯誤: ${result.error}`);
       } else {
-        setDebugData(prev => ({
+        setDebugData((prev: any) => ({
           ...prev,
           grnActionsTest: {
             success: true,
