@@ -20,46 +20,31 @@ if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
 const FALLBACK_SUPABASE_URL = 'https://bbmkuiplnzvpudszrend.supabase.co';
 const FALLBACK_SERVICE_ROLE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJibWt1aXBsbnp2cHVkc3pyZW5kIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTY4MDAxNTYwNCwiZXhwIjoxOTk1NTkxNjA0fQ.lkRDHLCdZdP4YE5c3XFu_G26F1O_N1fxEP2Wa3M1NtM';
 
-// 暫時強制使用正確的值來排除環境變數問題
-const supabaseUrl = FALLBACK_SUPABASE_URL;
-const serviceRoleKey = FALLBACK_SERVICE_ROLE_KEY;
-
-console.log('[qcActions] 強制使用正確的 URL 和 Key');
-console.log('[qcActions] URL:', supabaseUrl);
-console.log('[qcActions] Key 長度:', serviceRoleKey.length);
-
-// Initialize Supabase Admin Client
-const supabaseAdmin = createClient(
-  supabaseUrl,
-  serviceRoleKey,
-  {
-    auth: {
-      autoRefreshToken: false,
-      persistSession: false
+// 創建 Supabase 客戶端的函數
+function createSupabaseAdmin() {
+  // 優先使用環境變數，如果不可用則使用備用值
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || FALLBACK_SUPABASE_URL;
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || FALLBACK_SERVICE_ROLE_KEY;
+  
+  console.log('[qcActions] 創建 Supabase 客戶端...');
+  console.log('[qcActions] URL:', supabaseUrl);
+  console.log('[qcActions] Key 長度:', serviceRoleKey.length);
+  console.log('[qcActions] 使用環境變數 URL:', supabaseUrl === process.env.NEXT_PUBLIC_SUPABASE_URL);
+  console.log('[qcActions] 使用環境變數 Key:', serviceRoleKey === process.env.SUPABASE_SERVICE_ROLE_KEY);
+  
+  return createClient(
+    supabaseUrl,
+    serviceRoleKey,
+    {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false
+      }
     }
-  }
-);
+  );
+}
 
-console.log('[qcActions] Supabase 客戶端已初始化');
-
-// 立即測試 Supabase 連接
-(async () => {
-  try {
-    console.log('[qcActions] 測試 Supabase 連接...');
-    const { data, error } = await supabaseAdmin
-      .from('data_id')
-      .select('id')
-      .limit(1);
-    
-    if (error) {
-      console.error('[qcActions] 初始化連接測試失敗:', error);
-    } else {
-      console.log('[qcActions] 初始化連接測試成功，查詢到', data?.length || 0, '條記錄');
-    }
-  } catch (testError) {
-    console.error('[qcActions] 初始化連接測試異常:', testError);
-  }
-})();
+console.log('[qcActions] qcActions 模塊已加載');
 
 // Schema for validating the clock number string and converting to number
 const clockNumberSchema = z.string().regex(/^\d+$/, { message: "Clock Number must be a positive number string." }).transform(val => parseInt(val, 10));
@@ -133,6 +118,9 @@ export async function createQcDatabaseEntries(
     return { error: `Invalid Operator Clock Number: ${clockValidation.error.errors[0]?.message || 'Format error.'}` };
   }
 
+  // 創建新的 Supabase 客戶端
+  const supabaseAdmin = createSupabaseAdmin();
+
   try {
     // Insert pallet info record
     const { error: palletInfoError } = await supabaseAdmin
@@ -203,6 +191,9 @@ export async function uploadPdfToStorage(
   storagePath: string = 'qc-labels'
 ): Promise<{ publicUrl?: string; error?: string }> {
   try {
+    // 創建新的 Supabase 客戶端
+    const supabaseAdmin = createSupabaseAdmin();
+    
     // Convert number array back to Uint8Array and then to Blob
     const uint8Array = new Uint8Array(pdfUint8Array);
     const pdfBlob = new Blob([uint8Array], { type: 'application/pdf' });
@@ -246,6 +237,9 @@ export async function updateAcoOrderRemainQty(
   quantityUsed: number
 ): Promise<{ data?: string; error?: string }> {
   try {
+    // 創建新的 Supabase 客戶端
+    const supabaseAdmin = createSupabaseAdmin();
+    
     // First, get the current remain_qty
     const { data: currentData, error: selectError } = await supabaseAdmin
       .from('record_aco')
@@ -300,14 +294,10 @@ export async function createQcDatabaseEntriesWithTransaction(
   console.log('[qcActions] createQcDatabaseEntriesWithTransaction 開始');
   console.log('[qcActions] 檢查環境變數狀態...');
   
-  // 再次檢查環境變數（使用相同的備用邏輯）
-  const runtimeUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || FALLBACK_SUPABASE_URL;
-  const runtimeKey = process.env.SUPABASE_SERVICE_ROLE_KEY || FALLBACK_SERVICE_ROLE_KEY;
+  // 在函數調用時創建新的 Supabase 客戶端
+  const supabaseAdmin = createSupabaseAdmin();
   
-  console.log('[qcActions] 運行時 URL:', runtimeUrl === FALLBACK_SUPABASE_URL ? '使用備用 URL' : '使用環境變數 URL');
-  console.log('[qcActions] 運行時 Key:', runtimeKey === FALLBACK_SERVICE_ROLE_KEY ? '使用備用 Key' : '使用環境變數 Key');
-  
-  console.log('[qcActions] 環境變數檢查通過');
+  console.log('[qcActions] 新的 Supabase 客戶端已創建');
 
   const clockValidation = clockNumberSchema.safeParse(operatorClockNumberStr);
   if (!clockValidation.success) {
