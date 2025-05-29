@@ -24,7 +24,9 @@ import {
   CheckCircleIcon,
   ExclamationTriangleIcon,
   ChevronDownIcon,
-  ArrowRightOnRectangleIcon
+  ArrowRightOnRectangleIcon,
+  ClipboardDocumentListIcon,
+  MagnifyingGlassIcon
 } from '@heroicons/react/24/outline';
 
 interface DashboardStats {
@@ -40,6 +42,34 @@ interface UserData {
   email: string;
   clockNumber: string;
   displayName?: string; // Name from data_id table
+}
+
+interface AcoOrder {
+  order_ref: number;
+  code: string;
+  required_qty: number;
+  remain_qty: number;
+  latest_update: string;
+}
+
+interface AcoOrderProgress {
+  code: string;
+  required_qty: number;
+  remain_qty: number;
+  completed_qty: number;
+  completion_percentage: number;
+}
+
+interface InventoryLocation {
+  product_code: string;
+  injection: number;
+  pipeline: number;
+  await: number;
+  fold: number;
+  bulk: number;
+  backcarpark: number;
+  damage: number;
+  total: number;
 }
 
 const containerVariants = {
@@ -81,6 +111,19 @@ export default function ModernDashboard() {
   const [donutTimeRange, setDonutTimeRange] = useState<string>('Past 3 days');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // ACO Orders state
+  const [incompleteOrders, setIncompleteOrders] = useState<AcoOrder[]>([]);
+  const [selectedOrderRef, setSelectedOrderRef] = useState<number | null>(null);
+  const [orderProgress, setOrderProgress] = useState<AcoOrderProgress[]>([]);
+  const [isAcoDropdownOpen, setIsAcoDropdownOpen] = useState(false);
+  const [acoLoading, setAcoLoading] = useState(false);
+  const acoDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Quick Search state
+  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [searchResults, setSearchResults] = useState<InventoryLocation | null>(null);
+  const [searchLoading, setSearchLoading] = useState(false);
 
   // Get greeting based on time
   const getGreeting = () => {
@@ -125,6 +168,9 @@ export default function ModernDashboard() {
       
       // Clear local auth data
       clearLocalAuthData();
+      
+      // Show success message
+      toast.success('Successfully logged out');
       
       // Redirect to login
       router.push('/main-login');
@@ -345,6 +391,9 @@ export default function ModernDashboard() {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setIsDropdownOpen(false);
       }
+      if (acoDropdownRef.current && !acoDropdownRef.current.contains(event.target as Node)) {
+        setIsAcoDropdownOpen(false);
+      }
     }
 
     document.addEventListener('mousedown', handleClickOutside);
@@ -352,6 +401,153 @@ export default function ModernDashboard() {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, []);
+
+  // Load ACO orders on component mount
+  useEffect(() => {
+    loadIncompleteAcoOrders();
+  }, []);
+
+  // Load incomplete ACO orders
+  const loadIncompleteAcoOrders = async () => {
+    try {
+      setAcoLoading(true);
+      const { data, error } = await supabase
+        .from('record_aco')
+        .select('*')
+        .gt('remain_qty', 0)
+        .order('order_ref', { ascending: false });
+
+      if (error) throw error;
+
+      setIncompleteOrders(data || []);
+    } catch (err: any) {
+      console.error('[Dashboard] Error loading ACO orders:', err);
+      toast.error(`Failed to load ACO orders: ${err.message}`);
+    } finally {
+      setAcoLoading(false);
+    }
+  };
+
+  // Load progress for selected ACO order
+  const loadAcoOrderProgress = async (orderRef: number) => {
+    try {
+      setAcoLoading(true);
+      const { data, error } = await supabase
+        .from('record_aco')
+        .select('*')
+        .eq('order_ref', orderRef);
+
+      if (error) throw error;
+
+      const progress: AcoOrderProgress[] = (data || []).map(item => ({
+        code: item.code,
+        required_qty: item.required_qty,
+        remain_qty: item.remain_qty,
+        completed_qty: item.required_qty - item.remain_qty,
+        completion_percentage: Math.round(((item.required_qty - item.remain_qty) / item.required_qty) * 100)
+      }));
+
+      setOrderProgress(progress);
+    } catch (err: any) {
+      console.error('[Dashboard] Error loading order progress:', err);
+      toast.error(`Failed to load order progress: ${err.message}`);
+    } finally {
+      setAcoLoading(false);
+    }
+  };
+
+  // Handle ACO order selection
+  const handleAcoOrderSelect = (orderRef: number) => {
+    setSelectedOrderRef(orderRef);
+    setIsAcoDropdownOpen(false);
+    loadAcoOrderProgress(orderRef);
+  };
+
+  // Search inventory by product code
+  const searchInventory = async (productCode: string) => {
+    if (!productCode.trim()) {
+      setSearchResults(null);
+      return;
+    }
+
+    try {
+      setSearchLoading(true);
+      const { data, error } = await supabase
+        .from('record_inventory')
+        .select('*')
+        .eq('product_code', productCode.toUpperCase());
+
+      if (error) {
+        throw error;
+      }
+
+      if (!data || data.length === 0) {
+        // No records found
+        setSearchResults({
+          product_code: productCode.toUpperCase(),
+          injection: 0,
+          pipeline: 0,
+          await: 0,
+          fold: 0,
+          bulk: 0,
+          backcarpark: 0,
+          damage: 0,
+          total: 0
+        });
+      } else {
+        // Aggregate all records for this product code
+        const aggregated = data.reduce((sum, record) => ({
+          injection: sum.injection + (record.injection || 0),
+          pipeline: sum.pipeline + (record.pipeline || 0),
+          await: sum.await + (record.await || 0),
+          fold: sum.fold + (record.fold || 0),
+          bulk: sum.bulk + (record.bulk || 0),
+          backcarpark: sum.backcarpark + (record.backcarpark || 0),
+          damage: sum.damage + (record.damage || 0)
+        }), {
+          injection: 0,
+          pipeline: 0,
+          await: 0,
+          fold: 0,
+          bulk: 0,
+          backcarpark: 0,
+          damage: 0
+        });
+
+        const total = aggregated.injection + aggregated.pipeline + aggregated.await + 
+                     aggregated.fold + aggregated.bulk + aggregated.backcarpark + aggregated.damage;
+        
+        setSearchResults({
+          product_code: productCode.toUpperCase(),
+          injection: aggregated.injection,
+          pipeline: aggregated.pipeline,
+          await: aggregated.await,
+          fold: aggregated.fold,
+          bulk: aggregated.bulk,
+          backcarpark: aggregated.backcarpark,
+          damage: aggregated.damage,
+          total: total
+        });
+      }
+    } catch (err: any) {
+      console.error('[Dashboard] Error searching inventory:', err);
+      toast.error(`Search failed: ${err.message}`);
+      setSearchResults(null);
+    } finally {
+      setSearchLoading(false);
+    }
+  };
+
+  // Handle search input change
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchQuery(e.target.value);
+  };
+
+  // Handle search submit
+  const handleSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    searchInventory(searchQuery);
+  };
 
   // Loading state
   if (loading) {
@@ -572,6 +768,195 @@ export default function ModernDashboard() {
               <Card className="bg-slate-800/50 border-slate-700 backdrop-blur-sm">
                 <CardContent className="pt-6">
                   <MaterialReceived />
+                </CardContent>
+              </Card>
+            </motion.div>
+          </div>
+
+          {/* Additional Cards Row */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-8">
+            {/* ACO Order Progress Card */}
+            <motion.div variants={itemVariants}>
+              <Card className="bg-slate-800/50 border-slate-700 backdrop-blur-sm">
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-slate-200 flex items-center gap-2">
+                      <ClipboardDocumentListIcon className="w-5 h-5 text-orange-400" />
+                      ACO Order Progress
+                    </CardTitle>
+                    
+                    {/* ACO Order Dropdown */}
+                    <div className="relative" ref={acoDropdownRef}>
+                      <button
+                        onClick={() => setIsAcoDropdownOpen(!isAcoDropdownOpen)}
+                        className="flex items-center gap-2 px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-lg transition-colors text-xs"
+                        disabled={acoLoading}
+                      >
+                        <ClipboardDocumentListIcon className="w-3 h-3" />
+                        {selectedOrderRef ? `Order ${selectedOrderRef}` : 'Select Order'}
+                        <ChevronDownIcon className={`w-3 h-3 transition-transform ${isAcoDropdownOpen ? 'rotate-180' : ''}`} />
+                      </button>
+                      
+                      <AnimatePresence>
+                        {isAcoDropdownOpen && (
+                          <motion.div
+                            initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                            transition={{ duration: 0.2 }}
+                            className="absolute right-0 top-full mt-1 bg-slate-800 border border-slate-600 rounded-lg shadow-xl z-50 min-w-[180px] max-h-60 overflow-y-auto"
+                          >
+                            {incompleteOrders.length === 0 ? (
+                              <div className="px-3 py-2 text-xs text-slate-400">
+                                No incomplete orders
+                              </div>
+                            ) : (
+                              incompleteOrders.map((order) => (
+                                <button
+                                  key={order.order_ref}
+                                  onClick={() => handleAcoOrderSelect(order.order_ref)}
+                                  className={`w-full px-3 py-2 text-left text-xs hover:bg-slate-700 transition-colors first:rounded-t-lg last:rounded-b-lg ${
+                                    selectedOrderRef === order.order_ref ? 'bg-slate-700 text-orange-400' : 'text-slate-300'
+                                  }`}
+                                >
+                                  <div className="flex justify-between items-center">
+                                    <span>Order {order.order_ref}</span>
+                                    <Badge variant="secondary" className="text-xs">
+                                      {order.remain_qty} remain
+                                    </Badge>
+                                  </div>
+                                </button>
+                              ))
+                            )}
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  {acoLoading ? (
+                    <div className="space-y-3">
+                      <Skeleton className="h-4 w-full bg-slate-700" />
+                      <Skeleton className="h-4 w-3/4 bg-slate-700" />
+                      <Skeleton className="h-4 w-1/2 bg-slate-700" />
+                    </div>
+                  ) : orderProgress.length === 0 ? (
+                    <div className="text-center py-8">
+                      <ClipboardDocumentListIcon className="w-12 h-12 text-slate-600 mx-auto mb-3" />
+                      <p className="text-slate-400">Select an ACO order to view progress</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {orderProgress.map((item, index) => (
+                        <div key={index} className="space-y-2">
+                          <div className="flex justify-between items-center">
+                            <span className="text-sm font-medium text-slate-200">{item.code}</span>
+                            <span className="text-xs text-slate-400">
+                              {item.completed_qty} / {item.required_qty}
+                            </span>
+                          </div>
+                          <div className="w-full bg-slate-700 rounded-full h-2">
+                            <div 
+                              className="bg-gradient-to-r from-orange-500 to-orange-400 h-2 rounded-full transition-all duration-500 flex items-center justify-end pr-1"
+                              style={{ width: `${item.completion_percentage}%` }}
+                            >
+                              {item.completion_percentage > 20 && (
+                                <span className="text-xs text-white font-medium">
+                                  {item.completion_percentage}%
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          {item.completion_percentage <= 20 && (
+                            <div className="text-right">
+                              <span className="text-xs text-orange-400 font-medium">
+                                {item.completion_percentage}%
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </motion.div>
+
+            {/* Quick Search Card */}
+            <motion.div variants={itemVariants}>
+              <Card className="bg-slate-800/50 border-slate-700 backdrop-blur-sm">
+                <CardHeader>
+                  <CardTitle className="text-slate-200 flex items-center gap-2">
+                    <MagnifyingGlassIcon className="w-5 h-5 text-blue-400" />
+                    Quick Search
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <form onSubmit={handleSearchSubmit} className="space-y-4">
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={searchQuery}
+                        onChange={handleSearchChange}
+                        placeholder="Enter Product Code"
+                        className="flex-1 px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-slate-200 placeholder-slate-400 focus:outline-none focus:border-blue-500 transition-colors"
+                      />
+                      <button
+                        type="submit"
+                        disabled={searchLoading || !searchQuery.trim()}
+                        className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-600 disabled:cursor-not-allowed text-white rounded-lg transition-colors"
+                      >
+                        {searchLoading ? (
+                          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                        ) : (
+                          <MagnifyingGlassIcon className="w-4 h-4" />
+                        )}
+                      </button>
+                    </div>
+                  </form>
+
+                  {searchResults && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="mt-4 space-y-3"
+                    > 
+                      
+                      <div className="grid grid-cols-2 gap-3 text-xs">
+                        {[
+                          { label: 'Production', value: searchResults.injection, color: 'text-blue-400' },
+                          { label: 'Pipeline', value: searchResults.pipeline, color: 'text-green-400' },
+                          { label: 'Awaiting', value: searchResults.await, color: 'text-yellow-400' },
+                          { label: 'Fold Mill', value: searchResults.fold, color: 'text-purple-400' },
+                          { label: 'Bulk Room', value: searchResults.bulk, color: 'text-orange-400' },
+                          { label: 'Back Car Park', value: searchResults.backcarpark, color: 'text-cyan-400' },
+                          { label: 'Damage', value: searchResults.damage, color: 'text-red-400' },
+                        ].map((location) => (
+                          <div key={location.label} className="flex justify-between items-center py-1 px-2 bg-slate-700/50 rounded">
+                            <span className="text-slate-300">{location.label}:</span>
+                            <span className={`font-medium ${location.color}`}>
+                              {location.value.toLocaleString()}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                      
+                      <div className="flex justify-between items-center py-2 px-3 bg-slate-700 rounded-lg border-l-4 border-blue-500">
+                        <span className="text-sm font-medium text-slate-200">Total:</span>
+                        <span className="text-lg font-bold text-blue-400">
+                          {searchResults.total.toLocaleString()}
+                        </span>
+                      </div>
+                    </motion.div>
+                  )}
+
+                  {searchQuery && !searchResults && !searchLoading && (
+                    <div className="mt-4 text-center py-4">
+                      <MagnifyingGlassIcon className="w-8 h-8 text-slate-600 mx-auto mb-2" />
+                      <p className="text-slate-400 text-sm">Enter a product code and click search</p>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </motion.div>
