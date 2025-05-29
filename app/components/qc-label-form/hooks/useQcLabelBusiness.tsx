@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { createClient } from '@/lib/supabase';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { generatePalletNumbers } from '@/lib/palletNumUtils';
@@ -36,9 +35,6 @@ export const useQcLabelBusiness = ({
   productInfo,
   onProductInfoReset
 }: UseQcLabelBusinessProps) => {
-  // 移除客戶端實例，統一使用服務端客戶端
-  // const supabase = createClient();
-
   // 創建服務端 Supabase 客戶端的函數（與 qcActions.ts 相同）
   const createSupabaseAdmin = useCallback(() => {
     const { createClient: createSupabaseClient } = require('@supabase/supabase-js');
