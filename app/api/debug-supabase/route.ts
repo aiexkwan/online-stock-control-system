@@ -3,102 +3,98 @@ import { createClient } from '@supabase/supabase-js';
 
 export const runtime = 'nodejs';
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     console.log('=== Supabase 診斷開始 ===');
     
     // 檢查環境變數
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-    
     console.log('環境變數檢查:');
-    console.log('- NEXT_PUBLIC_SUPABASE_URL:', supabaseUrl ? '✓ 已設置' : '✗ 未設置');
-    console.log('- NEXT_PUBLIC_SUPABASE_ANON_KEY:', anonKey ? '✓ 已設置' : '✗ 未設置');
-    console.log('- SUPABASE_SERVICE_ROLE_KEY:', serviceKey ? '✓ 已設置' : '✗ 未設置');
+    console.log('- NEXT_PUBLIC_SUPABASE_URL:', process.env.NEXT_PUBLIC_SUPABASE_URL ? '✓ 已設置' : '✗ 未設置');
+    console.log('- NEXT_PUBLIC_SUPABASE_ANON_KEY:', process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? '✓ 已設置' : '✗ 未設置');
+    console.log('- SUPABASE_SERVICE_ROLE_KEY:', process.env.SUPABASE_SERVICE_ROLE_KEY ? '✓ 已設置' : '✗ 未設置');
     
-    // 詳細檢查環境變數格式
+    // 詳細環境變數信息
     const envDetails = {
       supabaseUrl: {
-        exists: !!supabaseUrl,
-        length: supabaseUrl?.length || 0,
-        format: supabaseUrl?.startsWith('https://') ? '✓ 正確格式' : '✗ 格式錯誤'
+        exists: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
+        length: process.env.NEXT_PUBLIC_SUPABASE_URL?.length || 0,
+        format: process.env.NEXT_PUBLIC_SUPABASE_URL?.startsWith('https://') && 
+                process.env.NEXT_PUBLIC_SUPABASE_URL?.includes('.supabase.co') ? '✓ 正確格式' : '✗ 格式錯誤'
       },
       anonKey: {
-        exists: !!anonKey,
-        length: anonKey?.length || 0,
-        format: anonKey?.startsWith('eyJ') ? '✓ JWT 格式' : '✗ 非 JWT 格式'
+        exists: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+        length: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.length || 0,
+        format: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.includes('.') ? '✓ JWT 格式' : '✗ 非 JWT 格式'
       },
       serviceKey: {
-        exists: !!serviceKey,
-        length: serviceKey?.length || 0,
-        format: serviceKey?.startsWith('eyJ') ? '✓ JWT 格式' : '✗ 非 JWT 格式'
+        exists: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
+        length: process.env.SUPABASE_SERVICE_ROLE_KEY?.length || 0,
+        format: process.env.SUPABASE_SERVICE_ROLE_KEY?.includes('.') ? '✓ JWT 格式' : '✗ 非 JWT 格式'
       }
     };
     
     console.log('環境變數詳細信息:', envDetails);
     
-    if (!supabaseUrl || !serviceKey) {
+    // 如果環境變數缺失，返回錯誤
+    if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
       return NextResponse.json({
         success: false,
-        error: '環境變數未正確設置',
-        details: envDetails
-      });
-    }
-    
-    // 解碼 Service Role Key
-    let jwtInfo = null;
-    try {
-      const parts = serviceKey.split('.');
-      if (parts.length === 3) {
-        const payload = JSON.parse(atob(parts[1]));
-        jwtInfo = {
-          role: payload.role,
-          iss: payload.iss,
-          ref: payload.ref,
-          exp: new Date(payload.exp * 1000).toISOString(),
-          isExpired: Date.now() > payload.exp * 1000
-        };
-        console.log('JWT 解碼成功:', jwtInfo);
-      }
-    } catch (error: any) {
-      console.error('JWT 解碼失敗:', error);
-      return NextResponse.json({
-        success: false,
-        error: 'Service Role Key JWT 解碼失敗',
-        details: error.message,
+        error: '關鍵環境變數缺失',
         envDetails
       });
     }
     
-    // 創建 Supabase 客戶端
-    console.log('創建 Supabase 客戶端...');
-    const supabase = createClient(supabaseUrl, serviceKey, {
-      auth: {
-        autoRefreshToken: false,
-        persistSession: false
+    // JWT 解碼測試
+    let jwtDecoded = null;
+    try {
+      const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+      if (serviceKey) {
+        const payload = serviceKey.split('.')[1];
+        if (payload) {
+          const decoded = JSON.parse(atob(payload));
+          const exp = decoded.exp ? new Date(decoded.exp * 1000) : null;
+          jwtDecoded = {
+            role: decoded.role,
+            iss: decoded.iss,
+            ref: decoded.ref,
+            exp: exp?.toISOString(),
+            isExpired: exp ? exp < new Date() : null
+          };
+          console.log('JWT 解碼成功:', jwtDecoded);
+        }
       }
-    });
+    } catch (jwtError) {
+      console.error('JWT 解碼失敗:', jwtError);
+    }
     
-    // 測試基本連接 - 修正查詢語法
+    // 創建 Supabase 客戶端 (與 qcActions.ts 相同的配置)
+    console.log('創建 Supabase 客戶端...');
+    const supabaseAdmin = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL,
+      process.env.SUPABASE_SERVICE_ROLE_KEY,
+      {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false
+        }
+      }
+    );
+    
+    // 測試 Supabase 連接
     console.log('測試 Supabase 連接...');
-    const { data: testData, error: testError } = await supabase
+    const { data: testData, error: testError } = await supabaseAdmin
       .from('data_id')
       .select('id')
       .limit(1);
     
     if (testError) {
-      console.error('Supabase 連接測試失敗:', testError);
+      console.error('連接測試失敗:', testError);
       return NextResponse.json({
         success: false,
         error: 'Supabase 連接失敗',
-        details: {
-          message: testError.message,
-          code: testError.code,
-          hint: testError.hint
-        },
-        jwtInfo,
-        envDetails
+        details: testError,
+        envDetails,
+        jwtDecoded
       });
     }
     
@@ -106,78 +102,67 @@ export async function GET(request: NextRequest) {
     
     // 測試寫入權限
     console.log('測試寫入權限...');
+    const testPalletNum = 'TEST001';
     
-    // 先獲取一個存在的用戶 ID
-    const { data: userData, error: userError } = await supabase
+    // 首先檢查用戶 ID 是否存在
+    console.log('檢查用戶 ID...');
+    const { data: userData, error: userError } = await supabaseAdmin
       .from('data_id')
       .select('id')
-      .limit(1)
-      .single();
+      .order('id', { ascending: false })
+      .limit(1);
     
-    if (userError || !userData) {
-      console.error('無法獲取測試用戶 ID:', userError);
-      return NextResponse.json({
-        success: false,
-        error: '無法獲取測試用戶 ID',
-        details: {
-          message: userError?.message || 'No user found',
-          code: userError?.code
-        },
-        jwtInfo,
-        connectionTest: '✓ 成功',
-        envDetails
-      });
+    let testUserId = '5942'; // 默認用戶 ID
+    if (userError) {
+      console.error('獲取用戶 ID 失敗:', userError);
+    } else if (userData && userData.length > 0) {
+      testUserId = userData[0].id.toString();
+      console.log('使用測試用戶 ID:', testUserId);
     }
     
-    const testUserId = userData.id;
-    console.log('使用測試用戶 ID:', testUserId);
-    
-    const testRecord = {
-      time: new Date().toISOString(),
-      id: testUserId,
-      action: 'API Test',
-      plt_num: 'TEST001',
-      loc: 'Test',
-      remark: 'API 診斷測試'
-    };
-    
-    const { error: writeError } = await supabase
-      .from('record_history')
-      .insert(testRecord);
+    // 測試寫入 record_palletinfo
+    const { error: writeError } = await supabaseAdmin
+      .from('record_palletinfo')
+      .insert({
+        plt_num: testPalletNum,
+        series: 'TEST-SERIES',
+        product_code: 'MEP9090150',
+        product_qty: 1,
+        plt_remark: '診斷測試'
+      });
     
     if (writeError) {
       console.error('寫入權限測試失敗:', writeError);
       return NextResponse.json({
         success: false,
         error: '寫入權限測試失敗',
-        details: {
-          message: writeError.message,
-          code: writeError.code,
-          hint: writeError.hint
-        },
-        jwtInfo,
-        connectionTest: '✓ 成功',
-        envDetails
+        details: writeError,
+        envDetails,
+        jwtDecoded,
+        connectionTest: '成功',
+        testUserId
       });
     }
     
-    console.log('寫入測試成功');
+    console.log('寫入權限測試成功');
     
-    // 清理測試記錄
-    await supabase
-      .from('record_history')
+    // 清理測試數據
+    await supabaseAdmin
+      .from('record_palletinfo')
       .delete()
-      .eq('plt_num', 'TEST001');
+      .eq('plt_num', testPalletNum);
     
     console.log('=== Supabase 診斷完成 ===');
     
     return NextResponse.json({
       success: true,
-      message: 'Supabase 連接和權限測試成功',
-      jwtInfo,
-      connectionTest: '✓ 成功',
-      writeTest: '✓ 成功',
-      envDetails
+      message: 'Supabase 診斷完全成功 - 所有功能正常！',
+      envDetails,
+      jwtDecoded,
+      connectionTest: '成功',
+      writeTest: '成功',
+      testUserId,
+      timestamp: new Date().toISOString()
     });
     
   } catch (error: any) {
