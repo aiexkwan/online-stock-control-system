@@ -14,9 +14,9 @@ interface AcoOrderFormProps {
   acoNewRef: boolean;
   acoOrderDetails: AcoOrderDetail[];
   acoOrderDetailErrors: string[];
-  onAcoOrderDetailChange: (idx: number, key: 'code' | 'qty', value: string) => void;
+  onAcoOrderDetailChange: (idx: number, field: 'code' | 'qty', value: string) => void;
   onAcoOrderDetailUpdate: () => void;
-  onValidateAcoOrderDetailCode: (idx: number, code: string) => void;
+  onValidateAcoOrderDetailCode: (code: string, idx: number) => void;
   isAcoOrderExcess?: boolean;
   disabled?: boolean;
 }
@@ -144,7 +144,7 @@ export const AcoOrderForm: React.FC<AcoOrderFormProps> = React.memo(({
                       placeholder="Product Code"
                       value={row.code}
                       onChange={(e) => onAcoOrderDetailChange(idx, 'code', e.target.value)}
-                      onBlur={(e) => onValidateAcoOrderDetailCode(idx, e.target.value)}
+                      onBlur={(e) => onValidateAcoOrderDetailCode(e.target.value, idx)}
                       disabled={disabled}
                     />
                   </div>

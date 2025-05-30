@@ -44,6 +44,15 @@ interface PerformanceOptimizedFormProps {
   className?: string;
 }
 
+interface AcoHandlers {
+  onAcoOrderRefChange: (value: string) => void;
+  onAcoNewRefChange: (checked: boolean) => void;
+  onAcoOrderDetailChange: (idx: number, field: 'code' | 'qty', value: string) => void;
+  onValidateAcoOrderDetailCode: (code: string, idx: number) => void;
+  onAcoOrderDetailUpdate: () => void;
+  onAcoSearch: () => void;
+}
+
 // Memoized form sections
 const ProductSection = React.memo<{
   productCode: string;
@@ -112,7 +121,7 @@ const AcoSection = React.memo<{
   acoOrderDetailErrors: string[];
   onAcoOrderDetailChange: (idx: number, key: 'code' | 'qty', value: string) => void;
   onAcoOrderDetailUpdate: () => void;
-  onValidateAcoOrderDetailCode: (idx: number, code: string) => void;
+  onValidateAcoOrderDetailCode: (code: string, idx: number) => void;
   isAcoOrderExcess?: boolean;
   disabled?: boolean;
 }>(({
@@ -431,7 +440,7 @@ export const PerformanceOptimizedForm: React.FC<PerformanceOptimizedFormProps> =
     onAcoSearch: businessLogic.handleAcoSearch,
     onAcoOrderDetailChange: businessLogic.handleAcoOrderDetailChange,
     onAcoOrderDetailUpdate: businessLogic.handleAcoOrderDetailUpdate,
-    onValidateAcoOrderDetailCode: businessLogic.validateAcoOrderDetailCode
+    onValidateAcoOrderDetailCode: businessLogic.validateAcoProductCode
   }), [handleInputChange, businessLogic]);
 
   const handleSubmit = useCallback((e: React.FormEvent) => {

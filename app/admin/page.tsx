@@ -494,7 +494,7 @@ export default function AdminPanelPage() {
   return (
     <div className="min-h-screen bg-gray-900 text-white pt-24">
       {/* Admin Panel Navigation Bar */}
-      <div className="bg-transparent border-b border-gray-700/50 sticky top-24 z-30 -mt-24">
+      <div className="bg-gray-900/95 backdrop-blur-sm border-b border-gray-700/50 sticky top-24 z-35 -mt-24">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-12">
             {/* Left side - Empty space or could be used for breadcrumbs */}

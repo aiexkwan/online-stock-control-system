@@ -263,8 +263,8 @@ export const useQcLabelBusiness = ({
     });
   }, [setFormData]);
 
-  // Validate ACO Order Detail Code
-  const validateAcoOrderDetailCode = useCallback(async (idx: number, code: string) => {
+  // ACO Product Code Validation
+  const validateAcoProductCode = useCallback(async (code: string, idx: number) => {
     if (!code.trim()) {
       setFormData(prev => {
         const newErrors = [...prev.acoOrderDetailErrors];
@@ -275,8 +275,8 @@ export const useQcLabelBusiness = ({
     }
 
     try {
-      const supabaseClient = createClientSupabase();
-      const { data, error } = await supabaseClient.rpc('get_product_details_by_code', { 
+      // Use the same RPC function as ProductCodeInput
+      const { data, error } = await createClientSupabase().rpc('get_product_details_by_code', { 
         p_code: code.trim() 
       });
 
@@ -807,7 +807,7 @@ export const useQcLabelBusiness = ({
     // ACO handlers
     handleAcoSearch,
     handleAcoOrderDetailChange,
-    validateAcoOrderDetailCode,
+    validateAcoProductCode,
     handleAcoOrderDetailUpdate,
     checkAcoQuantityExcess,
 
