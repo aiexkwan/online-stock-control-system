@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { unifiedAuth } from '../main-login/utils/unified-auth';
+import { getUserRole } from '../hooks/useAuth';
 
 export default function AccessPage() {
   const router = useRouter();
@@ -13,6 +14,7 @@ export default function AccessPage() {
   const [securityInfo, setSecurityInfo] = useState<any>(null);
   const [countdown, setCountdown] = useState(3);
   const [isRedirecting, setIsRedirecting] = useState(false);
+  const [redirectPath, setRedirectPath] = useState('/home');
 
   useEffect(() => {
     const checkAuthentication = async () => {
@@ -32,6 +34,10 @@ export default function AccessPage() {
           router.push('/main-login?error=unauthorized_domain');
           return;
         }
+
+        // 根據用戶角色設置重定向路徑
+        const userRole = getUserRole(user.email);
+        setRedirectPath(userRole.defaultPath);
 
         // 認證成功
         setUserEmail(user.email);
@@ -55,9 +61,9 @@ export default function AccessPage() {
         setCountdown((prev) => {
           if (prev <= 1) {
             setIsRedirecting(true);
-            // 重定向到主要儀表板
+            // 重定向到角色對應的頁面
             setTimeout(() => {
-              router.push('/home');
+              router.push(redirectPath);
             }, 500);
             return 0;
           }
@@ -67,7 +73,7 @@ export default function AccessPage() {
 
       return () => clearInterval(timer);
     }
-  }, [isAuthenticated, isLoading, router]);
+  }, [isAuthenticated, isLoading, router, redirectPath]);
 
   // 載入中狀態
   if (isLoading) {
@@ -184,7 +190,7 @@ export default function AccessPage() {
           </div>
 
           <button
-            onClick={() => router.push('/home')}
+            onClick={() => router.push(redirectPath)}
             className="group relative px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300"
           >
             <span className="relative z-10">Enter Dashboard</span>

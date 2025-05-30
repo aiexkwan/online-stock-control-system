@@ -72,7 +72,7 @@ const menuItems: MenuItem[] = [
     path: '/admin',
     icon: CogIcon,
     description: 'System administration and management'
-  }  
+  }
 ];
 
 export default function GlobalHeader() {

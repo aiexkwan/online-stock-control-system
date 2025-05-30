@@ -13,12 +13,7 @@ export default function AuthMeta() {
     // 檢查是否為公開路徑，如果是則跳過認證邏輯 - 應與 ClientLayout 保持一致
     const publicPaths = [
       '/main-login',
-      '/new-password',
-      '/change-password',
-      '/home',
-      '/print-label',
-      '/print-grnlabel',
-      '/stock-transfer'  // 移除 '/access' - 此頁面需要認證才能訪問
+      '/new-password'
     ];
     const currentPath = window.location.pathname;
     if (publicPaths.some(path => currentPath.startsWith(path))) {

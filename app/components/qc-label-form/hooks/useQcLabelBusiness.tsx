@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
-import { createClient } from '@supabase/supabase-js';
+import { createClient } from '@/app/utils/supabase/client';
 import { prepareQcLabelData, mergeAndPrintPdfs, type QcInputData } from '@/lib/pdfUtils';
 import { pdf } from '@react-pdf/renderer';
 import { PrintLabelPdf } from '@/components/print-label-pdf/PrintLabelPdf';
@@ -37,18 +37,8 @@ export const useQcLabelBusiness = ({
 }: UseQcLabelBusinessProps) => {
   // 創建客戶端 Supabase 實例用於查詢操作
   const createClientSupabase = useCallback(() => {
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-    
-    if (!supabaseUrl) {
-      throw new Error('NEXT_PUBLIC_SUPABASE_URL environment variable is not set');
-    }
-    
-    if (!anonKey) {
-      throw new Error('NEXT_PUBLIC_SUPABASE_ANON_KEY environment variable is not set');
-    }
-    
-    return createClient(supabaseUrl, anonKey);
+    // Use the correct SSR client from utils
+    return createClient();
   }, []);
 
   // Get logged in user ID
@@ -124,38 +114,60 @@ export const useQcLabelBusiness = ({
 
   // Fetch available ACO order refs
   useEffect(() => {
-    if (productInfo?.type === 'ACO') {
+    if (productInfo?.type === 'ACO' && productInfo?.code) {
       const fetchAcoOrderRefs = async () => {
         try {
+          console.log('[useQcLabelBusiness] Fetching ACO order refs for product:', productInfo.code);
           const supabaseClient = createClientSupabase();
           const { data, error } = await supabaseClient
             .from('record_aco')
-            .select('order_ref, remain_qty');
+            .select('order_ref, remain_qty, code')
+            .eq('code', productInfo.code);
+
+          console.log('[useQcLabelBusiness] ACO query result for product:', { data, error, productCode: productInfo.code });
 
           if (error) {
             console.error('Error fetching ACO order refs:', error);
             toast.error('Error fetching historical ACO order refs.');
             setFormData(prev => ({ ...prev, availableAcoOrderRefs: [] }));
           } else if (data) {
-            // Get all unique order_ref values (including those with remain_qty = 0)
+            console.log('[useQcLabelBusiness] Raw ACO data for product:', data);
+            
+            // Get all unique order_ref values for this specific product
+            // Handle both string and number types for order_ref
             const orderRefs: number[] = data
-              .filter((record: { order_ref: number | null; remain_qty: number | null }) => record.order_ref !== null && record.order_ref !== undefined)
-              .map((record: { order_ref: number | null; remain_qty: number | null }) => record.order_ref as number);
+              .filter((record: any) => record.order_ref !== null && record.order_ref !== undefined)
+              .map((record: any) => {
+                // Convert to number, handling both string and number inputs
+                const orderRef = typeof record.order_ref === 'string' 
+                  ? parseInt(record.order_ref, 10) 
+                  : Number(record.order_ref);
+                return isNaN(orderRef) ? null : orderRef;
+              })
+              .filter((ref: number | null) => ref !== null) as number[];
             
             const allOrderRefs = Array.from(new Set(orderRefs)).sort((a, b) => a - b);
             
+            console.log('[useQcLabelBusiness] Processed order refs for product:', allOrderRefs);
             setFormData(prev => ({ ...prev, availableAcoOrderRefs: allOrderRefs }));
+            
+            if (allOrderRefs.length > 0) {
+              //toast.success(`Loaded ${allOrderRefs.length} ACO order references for ${productInfo.code}.`);
+            } else {
+              //toast.info(`No ACO order references found for product ${productInfo.code}.`);
+            }
           }
         } catch (error) {
           console.error('Error fetching ACO order refs:', error);
-          toast.error('Error fetching ACO order refs.');
+          //  toast.error('Error fetching ACO order refs.');
+          setFormData(prev => ({ ...prev, availableAcoOrderRefs: [] }));
         }
       };
       fetchAcoOrderRefs();
     } else {
       setFormData(prev => ({ ...prev, availableAcoOrderRefs: [] }));
     }
-  }, [productInfo?.type, createClientSupabase, setFormData]);
+  }, [productInfo?.type, productInfo?.code, createClientSupabase, setFormData]);
 
   // Check if current input quantity exceeds ACO remaining quantity
   const checkAcoQuantityExcess = useCallback(() => {
@@ -176,9 +188,9 @@ export const useQcLabelBusiness = ({
 
     const totalPalletQuantity = quantity * count;
     
-    // Extract remaining quantity from acoRemain string
-    if (formData.acoRemain && formData.acoRemain.includes('Order Remain Qty :')) {
-      const remainQtyMatch = formData.acoRemain.match(/Order Remain Qty : (\d+)/);
+    // Extract remaining quantity from acoRemain string - updated pattern to match new format
+    if (formData.acoRemain && formData.acoRemain.includes('Order Remain Qty for')) {
+      const remainQtyMatch = formData.acoRemain.match(/Order Remain Qty for .+: (\d+)/);
       if (remainQtyMatch) {
         const remainingQty = parseInt(remainQtyMatch[1], 10);
         return totalPalletQuantity > remainingQty;
@@ -195,6 +207,16 @@ export const useQcLabelBusiness = ({
       return;
     }
 
+    if (!productInfo?.code) {
+      toast.error('Please select a product first before searching ACO order.');
+      return;
+    }
+
+    console.log('[useQcLabelBusiness] Searching for ACO order:', {
+      orderRef: formData.acoOrderRef.trim(),
+      productCode: productInfo.code
+    });
+
     setFormData(prev => ({ 
       ...prev, 
       acoSearchLoading: true,
@@ -205,10 +227,21 @@ export const useQcLabelBusiness = ({
 
     try {
       const supabaseClient = createClientSupabase();
+      const searchOrderRef = formData.acoOrderRef.trim();
+      
+      // Search for ACO order with both order_ref and product code matching
       const { data, error } = await supabaseClient
         .from('record_aco')
-        .select('order_ref, remain_qty')
-        .eq('order_ref', parseInt(formData.acoOrderRef.trim(), 10));
+        .select('order_ref, code, remain_qty')
+        .or(`order_ref.eq.${searchOrderRef},order_ref.eq."${searchOrderRef}"`)
+        .eq('code', productInfo.code);
+
+      console.log('[useQcLabelBusiness] ACO search result:', { 
+        data, 
+        error, 
+        searchOrderRef, 
+        productCode: productInfo.code 
+      });
 
       if (error) {
         console.error('Error searching ACO order:', error);
@@ -218,31 +251,40 @@ export const useQcLabelBusiness = ({
       }
 
       if (!data || data.length === 0) {
-        // New ACO order
+        // New ACO order - no matching order_ref + product_code combination found
+        console.log('[useQcLabelBusiness] New ACO order detected for this product');
         setFormData(prev => ({ 
           ...prev, 
           acoNewRef: true,
-          acoRemain: 'New Order Detected. Please Enter Order Details Below.',
-          acoOrderDetails: [{ code: '', qty: '' }], // Initialize with one empty row
+          acoRemain: `New Order Detected for ${productInfo.code}. Please Enter Order Details Below.`,
+          acoOrderDetails: [{ code: productInfo.code, qty: '' }], // Pre-fill with current product code
           acoOrderDetailErrors: [''] // Initialize with one empty error
         }));
-        toast.info('New ACO Order detected. Please enter order details.');
+        toast.info(`New ACO Order detected for product ${productInfo.code}. Please enter order details.`);
       } else {
-        // Existing order - calculate total remaining quantity
-        const totalRemainQty = data.reduce((sum: number, record: { order_ref: number | null; remain_qty: number | null }) => sum + (record.remain_qty || 0), 0);
+        // Existing order - calculate total remaining quantity for this specific product
+        console.log('[useQcLabelBusiness] Existing ACO order found for this product:', data);
+        const totalRemainQty = data.reduce((sum: number, record: any) => {
+          const remainQty = typeof record.remain_qty === 'string' 
+            ? parseInt(record.remain_qty, 10) 
+            : Number(record.remain_qty || 0);
+          return sum + (isNaN(remainQty) ? 0 : remainQty);
+        }, 0);
+
+        console.log('[useQcLabelBusiness] Total remaining quantity for this product:', totalRemainQty);
 
         if (totalRemainQty <= 0) {
           setFormData(prev => ({ 
             ...prev, 
-            acoRemain: 'Order Been Fullfilled'
+            acoRemain: `Order Been Fulfilled for ${productInfo.code}`
           }));
-          toast.warning('This ACO order has been fulfilled.');
+          //toast.warning(`This ACO order has been fulfilled for product ${productInfo.code}.`);
         } else {
           setFormData(prev => ({ 
             ...prev, 
-            acoRemain: `Order Remain Qty : ${totalRemainQty}`
+            acoRemain: `Order Remain Qty for ${productInfo.code}: ${totalRemainQty}`
           }));
-          toast.success(`ACO order found. Remaining quantity: ${totalRemainQty}`);
+          //toast.success(`ACO order found for ${productInfo.code}. Remaining quantity: ${totalRemainQty}`);
         }
       }
     } catch (error) {
@@ -252,7 +294,7 @@ export const useQcLabelBusiness = ({
     } finally {
       setFormData(prev => ({ ...prev, acoSearchLoading: false }));
     }
-  }, [formData.acoOrderRef, formData.productCode, createClientSupabase, setFormData]);
+  }, [formData.acoOrderRef, productInfo, createClientSupabase, setFormData]);
 
   // ACO Order Detail Change
   const handleAcoOrderDetailChange = useCallback((idx: number, key: 'code' | 'qty', value: string) => {
@@ -313,7 +355,7 @@ export const useQcLabelBusiness = ({
             };
           });
           
-          toast.success(`Product ${productData.code} validated as ACO product.`);
+          // toast.success(`Product ${productData.code} validated as ACO product.`);
         }
       }
     } catch (error) {
@@ -335,7 +377,7 @@ export const useQcLabelBusiness = ({
       acoOrderDetails: [...prev.acoOrderDetails, { code: '', qty: '' }],
       acoOrderDetailErrors: [...prev.acoOrderDetailErrors, '']
     }));
-    toast.success('New product row added. You can now enter additional products for this ACO order.');
+    //toast.success('New product row added. You can now enter additional products for this ACO order.');
   }, [setFormData]);
 
   // Slate batch number change handler
@@ -739,7 +781,7 @@ export const useQcLabelBusiness = ({
   // Check if ACO order is fulfilled
   const isAcoOrderFulfilled = (() => {
     if (productInfo?.type === 'ACO' && formData.acoRemain) {
-      return formData.acoRemain.includes('Order Been Fullfilled');
+      return formData.acoRemain.includes('Order Been Fulfilled for');
     }
     return false;
   })();
@@ -785,8 +827,8 @@ export const useQcLabelBusiness = ({
   })();
   
   const isAcoOrderExcess = (() => {
-    if (productInfo?.type === 'ACO' && formData.acoRemain && formData.acoRemain.startsWith('Order Remain Qty : ')) {
-      const match = formData.acoRemain.match(/Order Remain Qty : (\d+)/);
+    if (productInfo?.type === 'ACO' && formData.acoRemain && formData.acoRemain.includes('Order Remain Qty for')) {
+      const match = formData.acoRemain.match(/Order Remain Qty for .+: (\d+)/);
       if (match) {
         const acoRemainQty = parseInt(match[1], 10);
         // 安全處理 quantity 和 count - 確保它們是字符串
@@ -865,4 +907,4 @@ async function getAcoPalletCount(supabase: any, acoOrderRef: string): Promise<nu
     console.error('Error in getAcoPalletCount:', error);
     return 1; // Start from 1 if error
   }
-} 
+}
