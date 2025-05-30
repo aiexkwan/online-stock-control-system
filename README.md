@@ -1,10 +1,7 @@
-# Pennine Manufacturing Stock Control System
-# Pennine Manufacturing 庫存控制系統
-
 [English](#english) | [中文](#中文)
 
 ---
-
+# Pennine Manufacturing Stock Control System
 ## English
 
 ### Overview
@@ -171,6 +168,7 @@ This project is proprietary software developed for Pennine Industries.
 ---
 
 ## 中文
+# Pennine Manufacturing 庫存控制系統
 
 ### 概述
 基於 Next.js 14、TypeScript 和 Supabase 構建的綜合庫存控制和管理系統。該系統為賓尼工業提供實時庫存追蹤、棧板管理、標籤列印和管理工具。
