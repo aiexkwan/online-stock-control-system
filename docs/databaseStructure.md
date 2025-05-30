@@ -14,28 +14,25 @@
 ## 📋 表格詳細信息
 
 ### 1. `data_code`
-**記錄數**: 8,411筆  
 
 | 欄位名稱 | 資料類型 | 範例值 |
 |---------|---------|--------|
 | `code` | string | "0010" |
 | `description` | string | "xxxBeany Baby Box" |
 | `colour` | string | "-" |
-| `standard_qty` | number | "-" |
-| `type` | string | "-" |
+| `standard_qty` | number | 1 |
+| `type` | string | "ACO" |
 
 ### 2. `data_id`
-**記錄數**: 22筆  
 
 | 欄位名稱 | 資料類型 | 範例值 |
 |---------|---------|--------|
 | `name` | string | "Matthew" |
 | `id` | number | 1767 |
 | `email` | string | "matthew@pennineindustries.com" |
-| `uuid` | string | "bda83282-2417-4784-b74e-38e..." |
+| `uuid` | string | (由SUPABASE自動生成) |
 
 ### 3. `data_slateinfo`
-**記錄數**: 14筆  
 
 | 欄位名稱 | 資料類型 | 範例值 |
 |---------|---------|--------|
@@ -52,7 +49,6 @@
 | `shapes` | string | "Colonial" |
 
 ### 4. `data_supplier`
-**記錄數**: 64筆  
 
 | 欄位名稱 | 資料類型 | 範例值 |
 |---------|---------|--------|
@@ -60,32 +56,29 @@
 | `supplier_name` | string | "Safic Alcan" |
 
 ### 5. `record_aco`
-**記錄數**: 1筆  
 
 | 欄位名稱 | 資料類型 | 範例值 |
 |---------|---------|--------|
-| `uuid` | string | "fcdb3d5f-1410-45c3-b15f-f56..." |
+| `uuid` | string | (由SUPABASE自動生成) |
 | `order_ref` | number | 123456 |
 | `code` | string | "MHWEDGE30" |
 | `required_qty` | number | 600 |
 | `remain_qty` | number | 0 |
-| `latest_update` | string | "2025-05-24T23:42:15.915407+..." |
+| `latest_update` | string | (由SUPABASE自動生成) |
 
 ### 6. `record_history`
-**記錄數**: 11筆  
 
 | 欄位名稱 | 資料類型 | 範例值 |
 |---------|---------|--------|
-| `time` | string | "2025-05-24T23:42:15.433+00:00" |
+| `time` | string | (由SUPABASE自動生成) |
 | `id` | number | 5942 |
 | `action` | string | "Finished QC" |
 | `plt_num` | string | "250525/1" |
 | `loc` | string | "Await" |
 | `remark` | string | "ACO Ref : 123456" |
-| `uuid` | string | "8c99de10-a422-4128-b567-c55..." |
+| `uuid` | string | (由SUPABASE自動生成) |
 
 ### 7. `record_inventory`
-**記錄數**: 11筆  
 
 | 欄位名稱 | 資料類型 | 範例值 |
 |---------|---------|--------|
@@ -98,30 +91,84 @@
 | `bulk` | number | 0 |
 | `backcarpark` | number | 0 |
 | `uuid` | string | "dff8266d-2642-443b-96fe-67d..." |
-| `latest_update` | string | "2025-05-24T23:42:15.85891+0..." |
+| `latest_update` | string | (由SUPABASE自動生成) |
 | `plt_num` | string | "250525/1" |
 | `damage` | number | 0 |
 
 ### 8. `record_palletinfo`
-**記錄數**: 11筆  
 
 | 欄位名稱 | 資料類型 | 範例值 |
 |---------|---------|--------|
-| `generate_time` | string | "2025-05-24T23:42:15.758608+..." |
+| `generate_time` | string | (由SUPABASE自動生成) |
 | `plt_num` | string | "250525/1" |
 | `product_code` | string | "MHWEDGE30" |
 | `series` | string | "250525-BC6K22" |
 | `plt_remark` | string | "Finished In Production ACO ..." |
 | `product_qty` | number | 120 |
 
+### 9. `record_transfer`
+
+| 欄位名稱 | 資料類型 | 範例值 |
+|---------|---------|--------|
+| `tran_date` | timestamp with time zone | (由SUPABASE自動生成) |
+| `f_loc` | string | "Fold" |
+| `t_loc` | string | "Await" |
+| `plt_num` | string | "250525/1" |
+| `operator_id` | number | 1234 |
+
+### 10. `record_grn`
+
+| 欄位名稱 | 資料類型 | 範例值 |
+|---------|---------|--------|
+| `grn_ref` | number | 123456 |
+| `plt_num` | string | "250525/1" |
+| `sup_code` | string | "AV" |
+| `material_code` | string | "MEP9090150" |
+| `gross_weight` | string | 123456 |
+| `net_weight` | string | 123456 |
+| `pallet` | string | "Euro" |
+| `package` | string | "Bag" |
+| `pallet_count` | number | 1 |
+| `package_count` | number | 2 |
+
+### 11. `record_slate`
+
+| 欄位名稱 | 資料類型 | 範例值 |
+|---------|---------|--------|
+| `code` | string | "RS504X" |
+| `plt_num` | string | "250525/1" |
+| `setter` | string | "John" |
+| `mach_num` | string | "Mach. No. 14" |
+| `material` | string | "Mix Material 39" |
+| `batch_num` | string | "393939A" |
+| `weight` | number | 200 |
+| `t_thick` | number | 300 |
+| `b_thick` | number | 400 |
+| `length` | number | 500 |
+| `width` | number | 100 |
+| `centre_hole` | number | 80 |
+| `colour` | string | "Black" |
+| `shape` | string | "Circle" |
+| `flame_test` | number | 10 |
+| `remark` | string | "Flame Going On" |
+| `uuid` | string | (由SUPABASE自動生成) |
+| `first_off` | data | "25-MAY-2025" |
+
+### 12. `record_void`
+
+| 欄位名稱 | 資料類型 | 範例值 |
+|---------|---------|--------|
+| `uuid` | string | (由SUPABASE自動生成) |
+| `time` | timestamp with time zone | (由SUPABASE自動生成) |
+| `plt_num` | string | "250525/1" |
+| `reason` | string | "Damaged |
+| `damage_qty` | number | 1000 |
+
 ## 📋 空表格
 
 以下表格已創建但目前無數據：
 
 - `debug_log`
-- `record_grn`
-- `record_slate`
-- `record_transfer`
 - `report_log`
 - `report_void`
 

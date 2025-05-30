@@ -16,7 +16,6 @@ import {
   ShieldCheckIcon
 } from '@heroicons/react/24/outline';
 import PrintLabelPopover from './print-label-menu/PrintLabelPopover';
-import AdminPanelPopover from './admin-panel-menu/AdminPanelPopover';
 import { motion, AnimatePresence } from 'framer-motion';
 import { createClient } from '@/lib/supabase';
 import { clearLocalAuthData } from '../utils/auth-sync';
@@ -59,11 +58,8 @@ export default function Navigation() {
   const router = useRouter();
   const supabase = createClient();
   const [printLabelOpen, setPrintLabelOpen] = useState(false);
-  const [adminPanelOpen, setAdminPanelOpen] = useState(false);
   const hoverRefPrintLabel = useRef(false);
-  const hoverRefAdminPanel = useRef(false);
   const closeTimeoutPrintLabel = useRef<NodeJS.Timeout | null>(null);
-  const closeTimeoutAdminPanel = useRef<NodeJS.Timeout | null>(null);
 
   const [isMobileView, setIsMobileView] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -122,20 +118,6 @@ export default function Navigation() {
     hoverRefPrintLabel.current = false;
     closeTimeoutPrintLabel.current = setTimeout(() => {
       if (!hoverRefPrintLabel.current) setPrintLabelOpen(false);
-    }, 200);
-  };
-
-  // Admin Panel Popover handlers
-  const handleAdminPanelEnter = () => {
-    hoverRefAdminPanel.current = true;
-    if (closeTimeoutAdminPanel.current) clearTimeout(closeTimeoutAdminPanel.current);
-    setAdminPanelOpen(true);
-  };
-
-  const handleAdminPanelLeave = () => {
-    hoverRefAdminPanel.current = false;
-    closeTimeoutAdminPanel.current = setTimeout(() => {
-      if (!hoverRefAdminPanel.current) setAdminPanelOpen(false);
     }, 200);
   };
 
@@ -202,39 +184,20 @@ export default function Navigation() {
         Stock Transfer
       </Link>
 
-      {/* Admin Panel Popover Trigger */}
-      <div
-        onMouseEnter={handleAdminPanelEnter}
-        onMouseLeave={handleAdminPanelLeave}
-        className="relative"
-      >
-        <div
-          className={`flex items-center px-4 py-2 text-base font-medium rounded-md mb-2 cursor-pointer ${
-            pathname === '/void-pallet' || pathname === '/view-history' || pathname === '/export-report' || pathname === '/ask-database'
+      {/* Admin Panel Link - 直接跳轉到 /admin 頁面 */}
+      <Link
+        key="Admin Panel"
+        href="/admin"
+        onClick={() => setIsMobileMenuOpen(false)}
+        className={`flex items-center px-4 py-2 text-base font-medium rounded-md mb-2 ${
+          pathname === '/admin' || pathname === '/void-pallet' || pathname === '/view-history' || pathname === '/export-report' || pathname === '/ask-database' || pathname === '/productUpdate' || pathname === '/users'
               ? 'bg-gray-800 text-white'
               : 'text-gray-300 hover:bg-gray-700 hover:text-white'
           }`}
         >
           <ShieldCheckIcon className="mr-3 h-6 w-6" />
           Admin Panel
-        </div>
-        {adminPanelOpen && (
-          <AnimatePresence>
-            <motion.div
-              initial="hidden"
-              animate="visible"
-              exit="exit"
-              variants={slideInVariants}
-              transition={{ duration: 0.2, ease: 'easeOut' }}
-              onMouseEnter={handleAdminPanelEnter}
-              onMouseLeave={handleAdminPanelLeave}
-              className="absolute left-full top-0 z-50 shadow-md ml-2"
-            >
-              <AdminPanelPopover onClose={() => setIsMobileMenuOpen(false)} />
-            </motion.div>
-          </AnimatePresence>
-        )}
-      </div>
+      </Link>
     </nav>
   );
   

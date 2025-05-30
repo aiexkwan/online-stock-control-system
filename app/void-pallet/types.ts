@@ -158,7 +158,7 @@ export const ERROR_TYPES = {
   VOID: 'void' as const,
   SYSTEM: 'system' as const,
   VALIDATION: 'validation' as const,
-} as const;
+} as const; 
 
 // New interfaces for enhanced reprint flow
 export interface ReprintInfoInput {

@@ -1,8 +1,7 @@
 import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
-import type { AcoProductData } from '../app/actions/reportActions'; // 引入類型
+import { AcoProductData, GrnReportPageData, TransactionReportData } from '../app/actions/reportActions';
 import { format as formatDateFns } from 'date-fns'; // 重新命名以避免與可能的內部 format 衝突
-import type { GrnReportPageData } from '../app/actions/reportActions'; // Added for GRN Report
 import { toast } from 'sonner';
 
 // 最大處理的產品代碼數量 (對應 A-D, E-H, I-L, M-P 四個區塊)
@@ -52,25 +51,42 @@ export async function exportAcoReport(reportData: AcoProductData[], orderRef: st
   sheet.mergeCells('E1:L2');
   sheet.getRow(1).height = 25;
   sheet.getRow(2).height = 25;
+  sheet.getRow(4).height = 25;
+  sheet.getRow(5).height = 20;
   const titleCell = sheet.getCell('E1');
   titleCell.value = 'ACO Record';
   titleCell.font = { size: 48, bold: true, name: 'Arial', underline: true };
   titleCell.alignment = { vertical: 'middle', horizontal: 'center' };
 
+ // === Merge A4:P4, A5:D5... === (這些是產品代碼標題行和其下方可能的分隔行)
+  // 這部分可能需要根據實際資料動態調整，或者如果只是固定樣式則保留
+  // 您的描述是產品代碼在 A4, E4, I4, M4
+  // 所以 A4:D4 合併似乎不對，應該是單獨的 A4, E4 等
+  // 這部分先註解，根據數據填充邏輯來處理
+  const mergeGroups = ['A4:D4', 'E4:H4', 'I4:L4', 'M4:P4', 'A5:D5', 'E5:H5', 'I5:L5', 'M5:P5','M1:P1','M2:P2'];
+  mergeGroups.forEach((range) => {
+      try {
+        sheet.mergeCells(range);
+      } catch (e) {
+        console.warn(`Could not merge cells for range ${range}:`, e);
+        // 如果合併失敗，可以選擇忽略或記錄，以避免整個報表生成失敗
+      }
+  });
+
   //=== Order Ref. Report Date ===
-  const m1Cell = sheet.getCell('M1');
+  const m1Cell = sheet.getCell('P1');
   m1Cell.value = `ACO Order Ref. : ${orderRef}`;
   m1Cell.font = { size: 16, bold: true };
-  m1Cell.alignment = { vertical: 'middle', horizontal: 'left' };
+  m1Cell.alignment = { vertical: 'middle', horizontal: 'center' };
 
-  const m2Cell = sheet.getCell('M2');
+  const m2Cell = sheet.getCell('P2');
   const today = new Date();
   // 使用 toLocaleDateString 獲得類似 '23-Jul-2024' 的格式，但月份名稱取決於地區設定
   // 或者使用 date-fns 進行精確格式化
   const formattedDate = formatDateFns(today, 'dd-MMM-yyyy').toUpperCase(); // DD-MMM-YYYY, e.g., 23-JUL-2024
-  m2Cell.value = `File Generate Date : ${formattedDate}`;
+  m2Cell.value = `Print Date : ${formattedDate}`;
   m2Cell.font = { size: 16, bold: true };
-  m2Cell.alignment = { vertical: 'middle', horizontal: 'left' };
+  m2Cell.alignment = { vertical: 'middle', horizontal: 'center' };
 
   // === Column Widths ===
   const colWidthsConfig = [1.75, 15.15, 8.15, 15.75]; // 每個產品區塊內4欄的寬度
@@ -106,22 +122,6 @@ export async function exportAcoReport(reportData: AcoProductData[], orderRef: st
       headerCell.alignment = { vertical: 'middle', horizontal: 'center' };
     }
   }
-  
-  // === Merge A4:P4, A5:D5... === (這些是產品代碼標題行和其下方可能的分隔行)
-  // 這部分可能需要根據實際資料動態調整，或者如果只是固定樣式則保留
-  // 您的描述是產品代碼在 A4, E4, I4, M4
-  // 所以 A4:D4 合併似乎不對，應該是單獨的 A4, E4 等
-  // 這部分先註解，根據數據填充邏輯來處理
-  const mergeGroups = ['A4:D4', 'E4:H4', 'I4:L4', 'M4:P4', 'A5:D5', 'E5:H5', 'I5:L5', 'M5:P5'];
-  mergeGroups.forEach((range) => {
-      try {
-        sheet.mergeCells(range);
-      } catch (e) {
-        console.warn(`Could not merge cells for range ${range}:`, e);
-        // 如果合併失敗，可以選擇忽略或記錄，以避免整個報表生成失敗
-      }
-  });
-
   // === Apply borders from A4:P40 and data font/alignment ===
   const maxDataRows = 40;
   for (let r = 4; r <= maxDataRows; r++) {
@@ -145,6 +145,12 @@ export async function exportAcoReport(reportData: AcoProductData[], orderRef: st
     productCodeCell.value = productData.product_code;
     productCodeCell.font = { size: 16, bold: true };
     productCodeCell.alignment = { vertical: 'middle', horizontal: 'center' };
+
+    // 新增：在第5行添加 required_qty
+    const requiredQtyCell = sheet.getCell(5, baseCol);
+    requiredQtyCell.value = productData.required_qty !== null ? `Required Qty: ${productData.required_qty}` : 'Required Qty: N/A';
+    requiredQtyCell.font = { size: 12, bold: true, color: { argb: 'FF0066CC' } }; // 藍色字體
+    requiredQtyCell.alignment = { vertical: 'middle', horizontal: 'center' };
 
     productData.pallets.forEach((pallet, palletIndex) => {
       const currentRow = 7 + palletIndex;
@@ -221,7 +227,7 @@ export async function exportGrnReport(data: GrnReportPageData) {
   const colWidths = [
     5.25, 9.75, 9.1, 7, 7, 7, 7, 7, // A-H
     8, 6.15, 6.15, 8,       // I-L
-    5, 5, 5,             // M-O
+    5, 7, 5,             // M-O
     5.5, 5.5,                      // P-Q
     8.25, 9.5, 9.5,                // R-T
   ];
@@ -509,7 +515,7 @@ Difference >> ${data.weight_difference}`;
   sheet.getCell('A45').value = totalsText;
   sheet.getCell('A45').alignment = { ...center, horizontal: 'left', vertical: 'top', wrapText: true }; // Align left, top, wrap
   // Ensure A45 merged area (A45:K48) has appropriate font/styling if needed
-  sheet.getCell('A45').font = { size: 12, bold: false }; // Example: Reset font from previous bold
+  sheet.getCell('A45').font = { size: 20, bold: false }; // Example: Reset font from previous bold
 
 
   // ---- END DATA FILLING ----
@@ -556,7 +562,7 @@ function getPackageColumn(packageType: string | null): string | null {
 // Sheet Font
 // ... existing code ...
 
-export async function buildTransactionReport(): Promise<Buffer> {
+export async function buildTransactionReport(reportData?: TransactionReportData): Promise<Buffer> {
   const workbook = new ExcelJS.Workbook()
   const worksheet = workbook.addWorksheet('Transaction Report')
 
@@ -577,7 +583,7 @@ export async function buildTransactionReport(): Promise<Buffer> {
   const colWidths = [
     3.4, 3.15, 0.6, 3.15, 0.6, 3.15, 0.6, 3.15, 0.6, 3.15,
     0.6, 3.15, 0.6, 3.15, 0.6, 3.15, 0.6, 3.15, 0.6, 3.15,
-    0.6, 3.15, 0.6, 3.15, 2.6, 33.15, 0.6, 4.15, 0.6, 5.15,
+    0.6, 3.15, 0.6, 3.15, 2.6, 33.15, 0.6, 6, 0.6, 6,
     0.6, 17.15, 0.6, 17.15
   ]
   worksheet.columns = colWidths.map(w => ({ width: w }))
@@ -586,6 +592,14 @@ export async function buildTransactionReport(): Promise<Buffer> {
   worksheet.mergeCells('B2:AH2')
   worksheet.getCell('B2').value = 'Product Movement Sheet'
   worksheet.getCell('B2').font = { size: 36, bold: true }
+
+  // 🆕 如果有報表數據，添加日期範圍資訊
+  if (reportData) {
+    worksheet.mergeCells('B1:AH1')
+    worksheet.getCell('B1').value = `Report Period: ${reportData.date_range.start_date} to ${reportData.date_range.end_date}`
+    worksheet.getCell('B1').font = { size: 14, bold: true }
+    worksheet.getCell('B1').alignment = { horizontal: 'center' }
+  }
 
   worksheet.mergeCells('B3:L3')
   worksheet.getCell('B3').value = 'From'
@@ -602,6 +616,7 @@ export async function buildTransactionReport(): Promise<Buffer> {
     }
   })
 
+  // 🆕 移除統計信息，只顯示 Movement Date
   worksheet.getCell('AF3').value = 'Movement Date : '
   worksheet.getCell('AF3').alignment = { horizontal: 'right' }
 
@@ -642,31 +657,117 @@ export async function buildTransactionReport(): Promise<Buffer> {
   })
 
   worksheet.getCell('Z4').value = 'Product Code'
-  worksheet.getCell('AB4').value = 'Qty'  
-  worksheet.getCell('AD4').value = 'Total Pallet'
-  worksheet.getCell('AF4').value = 'Pallet Reference No: / Goods In No:'
-  worksheet.getCell('AH4').value = 'Clock Card No / Initials:'
-  worksheet.getCell('AH4').font = { size: 11 }
-  ;['AF4', 'AH4'].forEach(addr => worksheet.getCell(addr).alignment = { wrapText: true })
-
-  ;['Z4:AH4'].forEach(range => {
-    const start = worksheet.getCell(range.split(':')[0])
-    start.font = { size: 11 }
-    start.alignment = { vertical: 'bottom' }
-  })
-
-
-  worksheet.getCell('Z4').font = { size: 11 }
-  worksheet.getCell('Z4').alignment = { horizontal: 'center' }  
-  worksheet.getCell('Z4').alignment = { vertical: 'bottom' }
-  worksheet.getCell('AB4').font = { size: 11 }
-  worksheet.getCell('AB4').alignment = { vertical: 'bottom' }
-  worksheet.getCell('AD4').font = { size: 11 }
-  worksheet.getCell('AD4').alignment = { textRotation: 90 }
+  worksheet.getCell('AB4').value = 'TTL\nQty'
+  worksheet.getCell('AD4').value = 'TTL\nPLT'
+  worksheet.getCell('AF4').value = 'Pallet Ref. No\nGoods In No'
+  worksheet.getCell('AH4').value = 'Clock Card No'
   worksheet.getCell('AF4').font = { size: 11 }
   worksheet.getCell('AH4').font = { size: 11 }
+  worksheet.getCell('AF4').alignment = { wrapText: true }
+  worksheet.getCell('AH4').alignment = { wrapText: true }
 
+  ;['Z4', 'AB4', 'AD4', 'AF4', 'AH4'].forEach(addr => {
+    const cell = worksheet.getCell(addr)
+    cell.font = { size: 11 }
+    cell.alignment = { vertical: 'bottom' }
+  })
 
+  worksheet.getCell('Z4').alignment = { horizontal: 'center', vertical: 'bottom' }
+  worksheet.getCell('AD4').alignment = { textRotation: 90, vertical: 'bottom' }
+  worksheet.getCell('AF4').alignment = { wrapText: true, vertical: 'bottom' }
+
+  // 🆕 數據填充邏輯
+  if (reportData && reportData.transfers.length > 0) {
+    let currentRow = 5;
+    const maxRows = 27;
+
+    // 🆕 計算相同條件的總板數
+    const groupedTransfers = new Map<string, number>();
+    
+    reportData.transfers.forEach((transfer) => {
+      // 🆕 處理 f_loc 為 "Await" 的特殊條件
+      let actualFromLocation = transfer.from_location;
+      if (transfer.from_location === 'Await') {
+        // 如果產品代碼第一個字是 "Z"，則視為 "Fold Mill"
+        if (transfer.product_code && transfer.product_code.charAt(0).toUpperCase() === 'Z') {
+          actualFromLocation = 'Fold Mill';
+        } else {
+          // 否則視為 "Production"
+          actualFromLocation = 'Production';
+        }
+      }
+      
+      const key = `${transfer.product_code}|${transfer.operator_name}|${actualFromLocation}|${transfer.to_location}`;
+      groupedTransfers.set(key, (groupedTransfers.get(key) || 0) + 1);
+    });
+
+    // 🆕 去重並填充數據
+    const uniqueTransfers = new Map<string, any>();
+    
+    reportData.transfers.forEach((transfer) => {
+      // 🆕 處理 f_loc 為 "Await" 的特殊條件
+      let actualFromLocation = transfer.from_location;
+      if (transfer.from_location === 'Await') {
+        // 如果產品代碼第一個字是 "Z"，則視為 "Fold Mill"
+        if (transfer.product_code && transfer.product_code.charAt(0).toUpperCase() === 'Z') {
+          actualFromLocation = 'Fold Mill';
+        } else {
+          // 否則視為 "Production"
+          actualFromLocation = 'Production';
+        }
+      }
+      
+      const key = `${transfer.product_code}|${transfer.operator_name}|${actualFromLocation}|${transfer.to_location}`;
+      if (!uniqueTransfers.has(key)) {
+        uniqueTransfers.set(key, {
+          ...transfer,
+          actualFromLocation, // 🆕 保存處理後的位置
+          totalPallets: groupedTransfers.get(key) || 1
+        });
+      }
+    });
+
+    Array.from(uniqueTransfers.values()).forEach((transfer, index) => {
+      if (currentRow > maxRows) return; // 防止超出表格範圍
+
+      const row = worksheet.getRow(currentRow);
+
+      // 根據處理後的 from_location 在 B-L 欄位標記（藍色 ✓）
+      const fromIndex = locations.indexOf(transfer.actualFromLocation);
+      if (fromIndex >= 0) {
+        const fromCol = 2 + fromIndex * 2; // B, D, F, H, J, L
+        row.getCell(fromCol).value = '✓';
+        row.getCell(fromCol).font = { size: 14, bold: true, color: { argb: 'FF0066CC' } };
+      }
+
+      // 根據 to_location 在 N-X 欄位標記（綠色 ✓）
+      const toIndex = locations.indexOf(transfer.to_location);
+      if (toIndex >= 0) {
+        const toCol = 14 + toIndex * 2; // N, P, R, T, V, X
+        row.getCell(toCol).value = '✓';
+        row.getCell(toCol).font = { size: 14, bold: true, color: { argb: 'FF009900' } };
+      }
+
+      // 填充產品資訊
+      row.getCell('Z').value = transfer.product_code; // Product Code
+      row.getCell('AB').value = transfer.quantity; // Qty
+      row.getCell('AD').value = transfer.totalPallets; // 🆕 相同條件的總板數
+      // AF 欄位留空（Pallet Reference No）
+      
+      // 🆕 修改 AH 欄：顯示操作員姓名和 clock number，格式為 "Alex[換行]（5997）"
+      const operatorDisplayText = `${transfer.operator_name}\n（${transfer.operator_id}）`;
+      row.getCell('AH').value = operatorDisplayText; // Operator Name + Clock Number
+      row.getCell('AH').alignment = { 
+        vertical: 'middle', 
+        horizontal: 'center', 
+        wrapText: true // 啟用文字換行
+      };
+
+      currentRow++;
+    });
+  }
+
+  // 添加邊框到數據區域
   for (let i = 5; i <= 27; i++) {
     const cols = ['B', 'D', 'F', 'H', 'J', 'L', 'N', 'P', 'R', 'T', 'V', 'X', 'Z', 'AB', 'AD', 'AF', 'AH']
     cols.forEach(letter => {
