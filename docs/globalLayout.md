@@ -27,24 +27,47 @@ RootLayout
 
 #### 1. 響應式導航欄
 - **固定定位**: `fixed top-0 left-0 right-0 z-40`
+- **增強高度**: `h-24` (相比原來增加 50%)
 - **深色主題**: `bg-[#23263a]` 符合系統風格
 - **三段式佈局**: 左側菜單 | 中央標題 | 右側登出
 
-#### 2. 左側功能欄
-- **漢堡菜單**: 點擊展開側邊欄
-- **BALOLO 風格**: 白色背景、優雅間距、詳細描述
-- **動畫效果**: Framer Motion 滑入/滑出動畫
-- **點擊外部關閉**: 智能檢測點擊區域
+#### 2. 左側功能欄 - 懸浮式設計
+- **懸浮式漢堡選單**: 滑鼠懸停即顯示，無需點擊
+- **更大圖標**: `h-7 w-7` (增加視覺重量)
+- **白色背景下拉選單**: 優雅間距、詳細描述
+- **即時響應**: onMouseEnter/onMouseLeave 觸發
+- **流暢過渡**: 200ms 過渡動畫
 
 #### 3. 功能選項
 ```typescript
 const menuItems: MenuItem[] = [
   {
     id: 'dashboard',
-    title: 'Dashboard',
-    path: '/dashboard/access',
+    title: 'Home',
+    path: '/home',  // 更新路徑
     icon: HomeIcon,
-    description: 'Main dashboard and overview'
+    description: 'Back to home page'
+  },
+  {
+    id: 'print-label',
+    title: 'Print Labels',
+    path: '/print-label',
+    icon: PrinterIcon,
+    description: 'Print pallet labels'
+  },
+  {
+    id: 'print-grn-label',
+    title: 'Print GRN Labels',
+    path: '/print-grnlabel',
+    icon: PrinterIcon,
+    description: 'Print GRN labels'
+  },
+  {
+    id: 'stock-transfer',
+    title: 'Stock Transfer',
+    path: '/stock-transfer',
+    icon: ChartBarIcon,
+    description: 'Transfer stock between locations'
   },
   {
     id: 'admin',
@@ -52,49 +75,48 @@ const menuItems: MenuItem[] = [
     path: '/admin',
     icon: CogIcon,
     description: 'System administration and management'
-  },
-  {
-    id: 'print-label',
-    title: 'Print Labels',
-    path: '/print-label',
-    icon: PrinterIcon,
-    description: 'Print pallet and product labels'
-  },
-  {
-    id: 'export-report',
-    title: 'Export Reports',
-    path: '/export-report',
-    icon: DocumentTextIcon,
-    description: 'Generate and export various reports'
-  },
-  {
-    id: 'history',
-    title: 'View History',
-    path: '/view-history',
-    icon: ClockIcon,
-    description: 'View transaction and operation history'
-  },
-  {
-    id: 'inventory',
-    title: 'Inventory',
-    path: '/inventory',
-    icon: ChartBarIcon,
-    description: 'Inventory management and tracking'
   }
 ];
 ```
 
-#### 4. 中央標題區
+#### 4. 中央標題區 - 增強設計
+- **更大標題**: `text-2xl` (相比原來增加)
 - **動態問候語**: 根據時間顯示 Good Morning/Afternoon/Evening
-- **用戶歡迎**: 顯示用戶顯示名稱或姓名
+- **用戶歡迎**: `text-base` 顯示用戶顯示名稱或姓名
 - **漸層效果**: `bg-gradient-to-r from-blue-400 to-purple-400`
 
-#### 5. 右側登出功能
+#### 5. 右側登出功能 - 增強按鈕
+- **更大按鈕**: `px-4 py-3` 和 `text-base`
+- **更大圖標**: `w-5 h-5`
 - **一鍵登出**: 紅色主題按鈕
 - **完整流程**: Supabase 登出 → 清除本地數據 → 成功提示 → 跳轉登入
 - **錯誤處理**: 登出失敗時的友好提示
 
 ### 技術實現
+
+#### 懸浮式選單邏輯
+```typescript
+// 懸浮狀態管理
+const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+// 懸浮觸發邏輯
+<button
+  className="p-3 rounded-md text-gray-300 hover:text-white hover:bg-gray-700 transition-colors"
+  onMouseEnter={() => setIsMenuOpen(true)}
+  onMouseLeave={() => setIsMenuOpen(false)}
+>
+  <Bars3Icon className="h-7 w-7" />
+</button>
+
+// 下拉選單
+<div 
+  className={`absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-xl z-50 min-w-[300px] transition-all duration-200 ${
+    isMenuOpen ? 'opacity-100 visible' : 'opacity-0 invisible'
+  }`}
+  onMouseEnter={() => setIsMenuOpen(true)}
+  onMouseLeave={() => setIsMenuOpen(false)}
+>
+```
 
 #### 用戶數據管理
 ```typescript
@@ -134,24 +156,13 @@ if (isLoginPage || !isAuthenticated) {
 }
 ```
 
-#### 側邊欄動畫
-```typescript
-// 側邊欄滑入動畫
-<motion.div
-  initial={{ x: -300 }}
-  animate={{ x: 0 }}
-  exit={{ x: -300 }}
-  transition={{ type: "spring", damping: 25, stiffness: 200 }}
-  className="fixed top-0 left-0 z-50 w-80 h-full bg-white shadow-2xl"
->
-```
-
 ## ClientLayout 組件
 
 ### 功能特色
 
 #### 1. 佈局管理
 - **條件佈局**: 根據頁面類型選擇不同佈局
+- **增強間距**: `pt-24` 配合新的 GlobalHeader 高度
 - **認證檢查**: 整合 AuthChecker 組件
 - **狀態同步**: AuthStateSync 和 AuthMeta 管理
 
@@ -170,6 +181,27 @@ const hideHeader = pathname === '/main-login' ||
 - **用戶提示**: 友好的操作指引
 
 ### 版本歷史
+
+#### v4.0.0 - 增強設計與懸浮式交互
+**日期**: 2025年5月
+**主要變更**:
+- **GlobalHeader 增強**:
+  - 高度從 `h-16` 增加到 `h-24` (50% 增加)
+  - 文字大小相應調整 (`text-xl` → `text-2xl`, `text-sm` → `text-base`)
+  - 圖標和按鈕尺寸增加
+- **懸浮式漢堡選單**:
+  - 移除側邊欄實現，改為懸浮下拉選單
+  - 使用 onMouseEnter/onMouseLeave 觸發
+  - 更直觀的用戶體驗
+- **路徑更新**:
+  - Dashboard 路徑從 `/dashboard/access` 更改為 `/home`
+  - 更新所有相關導航和認證檢查
+
+**技術改進**:
+- 移除複雜的側邊欄動畫邏輯
+- 簡化事件處理機制
+- 優化響應式設計
+- 提升可訪問性
 
 #### v3.0.0 - GlobalHeader 整合
 **日期**: 2024年12月

@@ -59,9 +59,9 @@ export default function PalletDonutChart({
     <div className="flex items-center justify-center w-full">
       {/* Center - Donut Chart */}
       <div className="flex-shrink-0 mr-8">
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>
               <motion.div 
                 className="relative flex flex-col items-center justify-center cursor-pointer"
                 style={{ width: size, height: size }}
@@ -81,13 +81,13 @@ export default function PalletDonutChart({
                 {/* SVG Chart */}
                 <svg width={size} height={size} className="transform -rotate-90">
                   {/* Background circle */}
-                  <circle
+              <circle
                     cx={size / 2}
                     cy={size / 2}
                     r={radius}
                     stroke="#334155"
                     strokeWidth={strokeWidth}
-                    fill="transparent"
+                fill="transparent"
                     className="opacity-30"
                   />
                   
@@ -105,17 +105,17 @@ export default function PalletDonutChart({
                     r={radius}
                     stroke="url(#progressGradient)"
                     strokeWidth={strokeWidth}
-                    fill="transparent"
-                    strokeLinecap="round"
-                    strokeDasharray={circumference}
+                fill="transparent"
+                strokeLinecap="round"
+                strokeDasharray={circumference}
                     strokeDashoffset={circumference}
                     animate={{ strokeDashoffset: offset }}
                     transition={{ duration: 1.5, ease: "easeInOut", delay: 0.2 }}
                     style={{ 
                       filter: `drop-shadow(0 0 8px ${progressColor}60)`,
                     }}
-                  />
-                </svg>
+              />
+            </svg>
 
                 {/* Center content */}
                 <div className="absolute inset-0 flex flex-col items-center justify-center">
@@ -147,12 +147,12 @@ export default function PalletDonutChart({
                   <div className="text-center">
                     <div className="text-green-400 font-bold text-lg">{palletsTransferred}</div>
                     <div className="text-slate-300">Pallets Transferred</div>
-                  </div>
-                </div>
-              </div>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
+            </div>
+          </div>
+          </div>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
       </div>
 
       {/* Right side - Statistics */}

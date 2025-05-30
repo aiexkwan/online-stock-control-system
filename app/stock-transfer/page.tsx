@@ -251,8 +251,6 @@ export default function StockTransferPage() {
 
   return (
     <StockMovementLayout
-      title="Stock Transfer"
-      //description="Scan or enter pallet information for stock location transfer"
       isLoading={isLoading}
       loadingText="Processing transfer..."
       helpContent={helpContent}

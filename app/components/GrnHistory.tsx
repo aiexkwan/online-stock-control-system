@@ -90,7 +90,7 @@ export default function MaterialReceived() {
 
   async function fetchMaterialSummary(timeRange: TimeRange, reset = false) {
     try {
-      setLoading(true);
+    setLoading(true);
       setError(null);
       
       const { start, end } = getDateRange(timeRange);
@@ -273,15 +273,15 @@ export default function MaterialReceived() {
                   <tr>
                     <th className="px-4 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
                       Material Code
-                    </th>
+            </th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
                       TTL Weight/Qty
-                    </th>
+            </th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
-                      TTL Pallet
-                    </th>
-                  </tr>
-                </thead>
+              TTL Pallet
+            </th>
+          </tr>
+        </thead>
                 <tbody className="divide-y divide-slate-700/50">
                   <AnimatePresence>
                     {materials.map((material, index) => (

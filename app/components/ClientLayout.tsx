@@ -15,7 +15,7 @@ interface ClientLayoutProps {
 
 const ClientLayout: React.FC<ClientLayoutProps> = ({ children }) => {
   const pathname = usePathname();
-  // 隱藏登入和密碼相關頁面的 header
+  // 只隱藏登入和密碼相關頁面的 header
   const hideHeader = pathname === '/main-login' || pathname === '/change-password' || pathname === '/new-password' || pathname === '/';
   const [isTemporaryLogin, setIsTemporaryLogin] = useState(false);
 
@@ -33,37 +33,18 @@ const ClientLayout: React.FC<ClientLayoutProps> = ({ children }) => {
   }, []);
 
   return (
-    <>
-      <AuthMeta />
+    <div className="min-h-screen bg-gray-900 text-white">
       <AuthStateSync />
+      <AuthMeta />
+      
       <AuthChecker>
-        {hideHeader ? (
-          <div className="min-h-screen bg-[#181c2f] flex flex-col">
-            {children}
-          </div>
-        ) : (
-          <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
-            {/* Global Header */}
-            <GlobalHeader />
-            
-            {/* Temporary Login Banner */}
-            {isTemporaryLogin && (
-              <div className="bg-yellow-500 text-black p-3 text-center text-sm font-semibold z-30 shadow mt-16">
-                You are logged in with temporary access while your password reset is pending.
-                Please log in with your Clock Number as the password after administrator confirmation to set a new permanent password.
-              </div>
-            )}
-            
-            {/* Main Content Area */}
-            <main className="flex-1 overflow-x-hidden overflow-y-auto">
-              <div className="mx-auto px-0 py-0">
-                {children}
-              </div>
-            </main>
-          </div>
-        )}
+        {!hideHeader && <GlobalHeader />}
+        
+        <main className={hideHeader ? '' : 'pt-10'}>
+          {children}
+        </main>
       </AuthChecker>
-    </>
+    </div>
   );
 };
 

@@ -15,7 +15,7 @@ export default function AuthMeta() {
       '/main-login',
       '/new-password',
       '/change-password',
-      '/dashboard/access',
+      '/home',
       '/print-label',
       '/print-grnlabel',
       '/stock-transfer'  // 移除 '/access' - 此頁面需要認證才能訪問

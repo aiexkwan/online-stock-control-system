@@ -1,169 +1,334 @@
-# 庫存管理系統
+# Pennine Manufacturing Stock Control System
+# Pennine Manufacturing 庫存控制系統
 
-在線倉庫庫存控制系統，使用 Next.js 作為前端和 Supabase 作為後端。
+[English](#english) | [中文](#中文)
 
-## 功能概述
+---
 
-- 用戶認證與權限管理
-- 產品庫存管理
-- 入庫、出庫和庫存轉移操作
-- 庫存報表與數據分析
-- 用戶管理
-- 多角色支持（管理員、倉庫員、物流等）
+## English
 
-## 系統要求
+### Overview
+A comprehensive stock control and management system built with Next.js 14, TypeScript, and Supabase. This system provides real-time inventory tracking, pallet management, label printing, and administrative tools for Pennine Industries.
 
-- Node.js 18+ 
-- 互聯網連接（用於 Supabase）
-- 支持現代瀏覽器（Chrome, Firefox, Safari, Edge）
+### 🚀 Key Features
 
-## 快速開始
+#### **Home Dashboard**
+- Real-time inventory overview with interactive charts
+- History log with enhanced display (25% larger viewing area)
+- User-friendly interface with improved navigation
 
-### 1. 安裝依賴
+#### **Label Printing System**
+- **QC Label Printing**: Support for regular products, ACO orders, and Slate products
+- **GRN Label Printing**: Material receipt label generation
+- **PDF Generation**: High-quality label output with barcode support
+- **Batch Processing**: Multiple pallet label generation
 
-```bash
-npm install
-```
+#### **Stock Management**
+- **Stock Transfer**: Location-based inventory movement
+- **Inventory Tracking**: Real-time stock levels across multiple locations
+- **Void Pallet**: Pallet cancellation and management
+- **History Tracking**: Complete audit trail of all operations
 
-### 2. 設置環境變數
+#### **Admin Panel**
+- **Dual Header Design**: Global navigation + dedicated admin navigation
+- **Transparent Navigation**: Seamless integration with page content
+- **Hover-based Interactions**: Intuitive dropdown menus without clicking
+- **Dashboard Analytics**: Real-time statistics and performance metrics
+- **User Management**: Role-based access control
+- **Report Generation**: ACO, GRN, Transaction, and Slate reports
 
-創建 `.env.local` 文件並添加以下內容：
+#### **Enhanced UI/UX**
+- **50% Larger GlobalHeader**: Improved readability and accessibility
+- **Hover-based Navigation**: Floating dropdown menus for better UX
+- **Responsive Design**: Optimized for desktop, tablet, and mobile
+- **Dark Theme**: Professional appearance with consistent styling
 
-```
-NEXT_PUBLIC_SUPABASE_URL=https://bbmkuiplnzvpudszrend.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
-```
+### 🛠 Technology Stack
 
-### 3. 初始化數據庫
+- **Frontend**: Next.js 14, React 18, TypeScript
+- **Styling**: Tailwind CSS, Framer Motion
+- **Backend**: Supabase (PostgreSQL, Auth, Real-time)
+- **PDF Generation**: React-PDF, jsPDF
+- **UI Components**: Radix UI, Lucide Icons
+- **State Management**: React Hooks, Context API
+- **Authentication**: Supabase Auth with role-based access
 
-在 Supabase 控制台的 SQL 編輯器中運行 `scripts/supabase-schema.sql` 中的 SQL 腳本。
-
-### 4. 啟動開發服務器
-
-```bash
-npm run dev
-```
-
-訪問 http://localhost:3000 查看應用程序。
-
-## 登入系統
-
-### 預設帳號
-
-| 帳號 ID | 密碼 | 角色 |
-|---------|------|------|
-| admin | admin123 | 系統管理員 |
-| user1 | user1 | 倉庫人員 |
-| user2 | user2 | 物流人員 |
-
-首次登入時，系統會要求您更改密碼（除管理員帳號外）。
-
-### 登入問題排查
-
-如果您在登入時遇到問題，請參考：
-
-1. **用戶不存在錯誤**：請參閱 [Supabase 疑難排解指南](docs/supabase-troubleshooting.md)
-2. **可用的測試用戶**：
-   - 用戶 ID: `5997`, 密碼: `5997`
-   - 用戶 ID: `testuser`, 密碼: `testuser`
-   - 用戶 ID: `admin`, 密碼: `admin123`
-
-## 部署
-
-系統已配置好自動部署流程：
-
-1. 代碼推送到 GitHub 存儲庫
-2. Vercel 自動部署應用程序
-
-### 自動代碼推送功能
-
-系統配置了自動代碼推送功能，可以監控檔案變更並自動提交至 GitHub：
-
-#### 開啟自動推送（Windows）：
-
-```powershell
-# 使用 PowerShell 腳本啟動
-.\scripts\start-auto-push.ps1
-```
-
-#### 開啟自動推送（Linux/MacOS）：
-
-```bash
-# 給予執行權限
-chmod +x scripts/start-auto-push.sh
-
-# 啟動自動推送
-./scripts/start-auto-push.sh
-```
-
-自動推送功能會：
-- 監控所有檔案變更（新增、修改、刪除）
-- 每 5 分鐘檢查是否有變更，如有則自動提交並推送到 GitHub
-- 忽略 .git、node_modules 等目錄的變更
-- 提交訊息格式為「自動提交: YYYY-MM-DD HH:MM:SS」
-
-如需手動推送，可使用：
-
-```bash
-./push.sh "您的提交訊息"
-```
-
-## 技術堆棧
-
-- **前端框架**：Next.js 13 (App Router)
-- **UI 框架**：Tailwind CSS
-- **後端服務**：Supabase
-- **認證**：Custom JWT with Supabase
-- **托管**：Vercel
-
-## 文件結構
+### 📁 Project Structure
 
 ```
-/app                  - Next.js 應用代碼
-  /components         - 共享組件
-  /main-login         - 登入頁面
-  /products           - 產品管理
-  /inventory          - 庫存操作
-  /reports            - 報表頁面
-  /users              - 用戶管理 
-/lib                  - 通用庫和工具
-  /supabase.ts        - Supabase 客戶端初始化
-/scripts              - 數據庫初始化腳本
-/docs                 - 系統文檔
-  /databaseStructure.md - 資料庫結構文檔
+online-stock-control-system/
+├── app/
+│   ├── home/                    # Main dashboard (formerly /dashboard/access)
+│   ├── admin/                   # Admin panel with dual header design
+│   ├── print-label/            # QC label printing system
+│   ├── print-grnlabel/         # GRN label printing
+│   ├── stock-transfer/         # Stock movement management
+│   ├── void-pallet/            # Pallet cancellation
+│   ├── users/                  # User management
+│   ├── products/               # Product catalog
+│   ├── tables/                 # Database structure viewer
+│   └── components/             # Shared components
+├── components/
+│   ├── ui/                     # UI component library
+│   ├── GlobalHeader.tsx        # Enhanced global navigation
+│   └── products/               # Product-related components
+├── docs/                       # Comprehensive documentation
+├── lib/                        # Utility libraries
+└── public/                     # Static assets
 ```
 
-## 📊 資料庫文檔
+### 🔧 Installation & Setup
 
-系統提供完整的資料庫結構文檔，包含所有表格的詳細信息：
+1. **Clone the repository**
+   ```bash
+   git clone <repository-url>
+   cd online-stock-control-system
+   ```
 
-- **查看文檔**: [資料庫結構文檔](docs/databaseStructure.md)
-- **自動更新**: `node scripts/update-database-docs.js`
-- **手動檢查**: `node check_actual_tables.js`
+2. **Install dependencies**
+   ```bash
+   npm install
+   ```
 
-### 資料庫概覽
-- 總表格數: 14個
-- 總記錄數: 8,545筆
-- 主要表格: `data_code`, `data_id`, `record_inventory`, `record_history`
+3. **Environment setup**
+   ```bash
+   cp .env.example .env.local
+   # Configure your Supabase credentials
+   ```
 
-### MCP工具支援
-系統已配置MCP (Model Context Protocol) 工具，可直接與Supabase資料庫互動：
-- 查詢表格結構
-- 執行SQL操作
-- 數據分析和報告
+4. **Run development server**
+   ```bash
+   npm run dev
+   ```
 
-### ACO訂單管理功能
-系統提供完整的ACO (Advanced Customer Order) 訂單管理功能：
-- **智能訂單選擇**: 支援從現有訂單選擇或手動輸入新訂單
-- **庫存檢查**: 自動檢查剩餘數量，防止超量操作
-- **狀態管理**: 自動識別已完成訂單並禁用相關操作
-- **輸入驗證**: 數字欄位自動過濾，確保數據完整性
-- **用戶友好**: 清晰的警告信息和狀態指示
+5. **Build for production**
+   ```bash
+   npm run build
+   npm start
+   ```
 
-## 故障排除
+### 🔐 Authentication & Security
 
-常見問題：
+- **Supabase Authentication**: Secure user login with email/password
+- **Role-based Access**: Different permission levels (Admin, QC, Receive, etc.)
+- **Session Management**: Automatic session handling and cleanup
+- **Route Protection**: Middleware-based route protection
 
-1. **登入失敗** - 檢查 Supabase 連接和用戶表設置
-2. **無法訪問功能** - 檢查用戶權限設置
-3. **數據不顯示** - 查看開發者控制台是否有 API 錯誤 
+### 📊 Database Schema
+
+The system uses PostgreSQL through Supabase with the following main tables:
+- `record_palletinfo`: Pallet information and tracking
+- `record_history`: Complete audit trail
+- `record_transfer`: Stock movement records
+- `record_inventory`: Real-time inventory levels
+- `data_id`: User management and permissions
+- `data_code`: Product catalog and specifications
+
+### 🚀 Recent Updates (v4.0.0)
+
+#### **Path Restructuring**
+- Renamed `/dashboard/access` to `/home` for better user understanding
+- Updated all navigation and authentication checks
+- Maintained backward compatibility with redirects
+
+#### **GlobalHeader Enhancements**
+- Increased height by 50% (`h-16` → `h-24`) for better visibility
+- Implemented hover-based hamburger menu (no clicking required)
+- Improved text sizing and icon scaling
+- Removed complex sidebar animations for simpler dropdown menus
+
+#### **Admin Panel Improvements**
+- Removed "Admin Panel" title and icon for cleaner design
+- Transparent background navigation bar
+- Seamless integration with GlobalHeader
+- Hover-based sub-menu interactions
+
+#### **Home Page UI Improvements**
+- History Log height increased by 25% for more data visibility
+- Enhanced scrolling and pagination functionality
+- Better information density
+
+### 📖 Documentation
+
+Comprehensive documentation is available in the `/docs` folder:
+- [Dashboard Documentation](./docs/dashboard.md)
+- [Admin Panel Guide](./docs/adminPanel.md)
+- [Global Layout System](./docs/globalLayout.md)
+- [Project Details](./docs/projectDetail.md)
+
+### 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+### 📄 License
+
+This project is proprietary software developed for Pennine Industries.
+
+---
+
+## 中文
+
+### 概述
+基於 Next.js 14、TypeScript 和 Supabase 構建的綜合庫存控制和管理系統。該系統為賓尼工業提供實時庫存追蹤、棧板管理、標籤列印和管理工具。
+
+### 🚀 主要功能
+
+#### **主頁儀表板**
+- 帶有互動圖表的實時庫存概覽
+- 增強顯示的歷史記錄（顯示區域增加 25%）
+- 改進導航的用戶友好界面
+
+#### **標籤列印系統**
+- **QC 標籤列印**：支援普通產品、ACO 訂單和 Slate 產品
+- **GRN 標籤列印**：物料收貨標籤生成
+- **PDF 生成**：支援條碼的高品質標籤輸出
+- **批量處理**：多個棧板標籤生成
+
+#### **庫存管理**
+- **庫存轉移**：基於位置的庫存移動
+- **庫存追蹤**：跨多個位置的實時庫存水平
+- **作廢棧板**：棧板取消和管理
+- **歷史追蹤**：所有操作的完整審計軌跡
+
+#### **管理面板**
+- **雙 Header 設計**：全局導航 + 專用管理導航
+- **透明導航**：與頁面內容無縫整合
+- **懸停式交互**：無需點擊的直觀下拉選單
+- **儀表板分析**：實時統計和性能指標
+- **用戶管理**：基於角色的訪問控制
+- **報告生成**：ACO、GRN、交易和 Slate 報告
+
+#### **增強的 UI/UX**
+- **50% 更大的 GlobalHeader**：改善可讀性和可訪問性
+- **懸停式導航**：更好用戶體驗的浮動下拉選單
+- **響應式設計**：針對桌面、平板和手機優化
+- **深色主題**：一致樣式的專業外觀
+
+### 🛠 技術棧
+
+- **前端**：Next.js 14、React 18、TypeScript
+- **樣式**：Tailwind CSS、Framer Motion
+- **後端**：Supabase（PostgreSQL、Auth、實時）
+- **PDF 生成**：React-PDF、jsPDF
+- **UI 組件**：Radix UI、Lucide Icons
+- **狀態管理**：React Hooks、Context API
+- **身份驗證**：Supabase Auth 與基於角色的訪問
+
+### 📁 專案結構
+
+```
+online-stock-control-system/
+├── app/
+│   ├── home/                    # 主儀表板（原 /dashboard/access）
+│   ├── admin/                   # 雙 header 設計的管理面板
+│   ├── print-label/            # QC 標籤列印系統
+│   ├── print-grnlabel/         # GRN 標籤列印
+│   ├── stock-transfer/         # 庫存移動管理
+│   ├── void-pallet/            # 棧板取消
+│   ├── users/                  # 用戶管理
+│   ├── products/               # 產品目錄
+│   ├── tables/                 # 數據庫結構查看器
+│   └── components/             # 共享組件
+├── components/
+│   ├── ui/                     # UI 組件庫
+│   ├── GlobalHeader.tsx        # 增強的全局導航
+│   └── products/               # 產品相關組件
+├── docs/                       # 綜合文檔
+├── lib/                        # 工具庫
+└── public/                     # 靜態資源
+```
+
+### 🔧 安裝與設置
+
+1. **克隆倉庫**
+   ```bash
+   git clone <repository-url>
+   cd online-stock-control-system
+   ```
+
+2. **安裝依賴**
+   ```bash
+   npm install
+   ```
+
+3. **環境設置**
+   ```bash
+   cp .env.example .env.local
+   # 配置您的 Supabase 憑證
+   ```
+
+4. **運行開發服務器**
+   ```bash
+   npm run dev
+   ```
+
+5. **生產構建**
+   ```bash
+   npm run build
+   npm start
+   ```
+
+### 🔐 身份驗證與安全
+
+- **Supabase 身份驗證**：使用電子郵件/密碼的安全用戶登錄
+- **基於角色的訪問**：不同權限級別（管理員、QC、接收等）
+- **會話管理**：自動會話處理和清理
+- **路由保護**：基於中間件的路由保護
+
+### 📊 數據庫架構
+
+系統通過 Supabase 使用 PostgreSQL，主要表格包括：
+- `record_palletinfo`：棧板信息和追蹤
+- `record_history`：完整審計軌跡
+- `record_transfer`：庫存移動記錄
+- `record_inventory`：實時庫存水平
+- `data_id`：用戶管理和權限
+- `data_code`：產品目錄和規格
+
+### 🚀 最新更新 (v4.0.0)
+
+#### **路徑重構**
+- 將 `/dashboard/access` 重命名為 `/home`，提升用戶理解度
+- 更新所有導航和身份驗證檢查
+- 通過重定向保持向後兼容性
+
+#### **GlobalHeader 增強**
+- 高度增加 50%（`h-16` → `h-24`）以提高可見性
+- 實現懸停式漢堡選單（無需點擊）
+- 改進文字大小和圖標縮放
+- 移除複雜的側邊欄動畫，改為簡單的下拉選單
+
+#### **管理面板改進**
+- 移除 "Admin Panel" 標題和圖標，設計更簡潔
+- 透明背景導航欄
+- 與 GlobalHeader 無縫整合
+- 懸停式子選單交互
+
+#### **主頁 UI 改進**
+- 歷史記錄高度增加 25%，提高數據可見性
+- 增強滾動和分頁功能
+- 更好的信息密度
+
+### 📖 文檔
+
+`/docs` 文件夾中提供了綜合文檔：
+- [儀表板文檔](./docs/dashboard.md)
+- [管理面板指南](./docs/adminPanel.md)
+- [全局佈局系統](./docs/globalLayout.md)
+- [專案詳情](./docs/projectDetail.md)
+
+### 🤝 貢獻
+
+1. Fork 倉庫
+2. 創建功能分支（`git checkout -b feature/amazing-feature`）
+3. 提交更改（`git commit -m 'Add amazing feature'`）
+4. 推送到分支（`git push origin feature/amazing-feature`）
+5. 打開 Pull Request
+
+### 📄 許可證
+
+本專案是為Pennine Manufacturing的專有軟件。

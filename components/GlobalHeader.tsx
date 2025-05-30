@@ -6,7 +6,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { createClient } from '@/lib/supabase';
 import { toast } from 'sonner';
 import { clearLocalAuthData } from '@/app/utils/auth-sync';
-import { signOut as signOutService } from '@/app/services/supabaseAuth';
 import { useAuth } from '@/app/hooks/useAuth';
 
 // Icons
@@ -41,10 +40,31 @@ interface UserData {
 const menuItems: MenuItem[] = [
   {
     id: 'dashboard',
-    title: 'Dashboard',
-    path: '/dashboard/access',
+    title: 'Home',
+    path: '/home',
     icon: HomeIcon,
-    description: 'Main dashboard and overview'
+    description: 'Back to home page'
+  },
+  {
+    id: 'print-label',
+    title: 'Print Labels',
+    path: '/print-label',
+    icon: PrinterIcon,
+    description: 'Print pallet labels'
+  },
+  {
+    id: 'print-grn-label',
+    title: 'Print GRN Labels',
+    path: '/print-grnlabel',
+    icon: PrinterIcon,
+    description: 'Print GRN labels'
+  },
+  {
+    id: 'stock-transfer',
+    title: 'Stock Transfer',
+    path: '/stock-transfer',
+    icon: ChartBarIcon,
+    description: 'Transfer stock between locations'
   },
   {
     id: 'admin',
@@ -52,45 +72,31 @@ const menuItems: MenuItem[] = [
     path: '/admin',
     icon: CogIcon,
     description: 'System administration and management'
-  },
-  {
-    id: 'print-label',
-    title: 'Print Labels',
-    path: '/print-label',
-    icon: PrinterIcon,
-    description: 'Print pallet and product labels'
-  },
-  {
-    id: 'export-report',
-    title: 'Export Reports',
-    path: '/export-report',
-    icon: DocumentTextIcon,
-    description: 'Generate and export various reports'
-  },
-  {
-    id: 'history',
-    title: 'View History',
-    path: '/view-history',
-    icon: ClockIcon,
-    description: 'View transaction and operation history'
-  },
-  {
-    id: 'inventory',
-    title: 'Inventory',
-    path: '/inventory',
-    icon: ChartBarIcon,
-    description: 'Inventory management and tracking'
-  }
+  }  
 ];
 
 export default function GlobalHeader() {
   const router = useRouter();
   const pathname = usePathname();
   const supabase = createClient();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, userRole } = useAuth();
   
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [user, setUser] = useState<UserData | null>(null);
+
+  // Filter menu items based on user role
+  const getFilteredMenuItems = () => {
+    if (!userRole || userRole.type === 'admin') {
+      return menuItems; // Admin sees all menu items
+    }
+    
+    // Filter menu items based on allowed paths
+    return menuItems.filter(item => 
+      userRole.allowedPaths.includes(item.path)
+    );
+  };
+
+  const filteredMenuItems = getFilteredMenuItems();
 
   // Get greeting based on time
   const getGreeting = () => {
@@ -144,9 +150,21 @@ export default function GlobalHeader() {
   // Handle logout
   const handleLogout = async () => {
     try {
-      await signOutService(supabase);
+      // 直接使用客戶端 Supabase 登出，不調用 Server Action
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+        console.error('[Header] Logout error:', error);
+        toast.error('Logout failed. Please try again.');
+        return;
+      }
+      
+      // 清除本地認證數據
       clearLocalAuthData();
+      
+      // 顯示成功訊息
       toast.success('Successfully logged out');
+      
+      // 重定向到登入頁面
       router.push('/main-login');
     } catch (error: any) {
       console.error('[Header] Logout error:', error);
@@ -157,29 +175,8 @@ export default function GlobalHeader() {
   // Handle menu item click
   const handleMenuClick = (path: string) => {
     router.push(path);
-    setIsSidebarOpen(false);
+    setIsMenuOpen(false);
   };
-
-  // Close sidebar when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      const sidebar = document.getElementById('global-sidebar');
-      const menuButton = document.getElementById('menu-button');
-      
-      if (sidebar && !sidebar.contains(event.target as Node) && 
-          menuButton && !menuButton.contains(event.target as Node)) {
-        setIsSidebarOpen(false);
-      }
-    };
-
-    if (isSidebarOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
-
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [isSidebarOpen]);
 
   // Don't render on login pages
   const isLoginPage = pathname?.startsWith('/main-login') || pathname === '/';
@@ -192,24 +189,75 @@ export default function GlobalHeader() {
       {/* Header */}
       <header className="fixed top-0 left-0 right-0 z-40 bg-[#23263a] shadow-lg border-b border-gray-700">
         <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            {/* Left side - Menu button */}
-            <div className="flex items-center">
+          <div className="flex items-center justify-between h-24">
+            {/* Left side - Menu button with hover dropdown */}
+            <div className="flex items-center relative group">
               <button
-                id="menu-button"
-                onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-                className="p-2 rounded-md text-gray-300 hover:text-white hover:bg-gray-700 transition-colors"
+                className="p-3 rounded-md text-gray-300 hover:text-white hover:bg-gray-700 transition-colors"
+                onMouseEnter={() => setIsMenuOpen(true)}
+                onMouseLeave={() => setIsMenuOpen(false)}
               >
-                <Bars3Icon className="h-6 w-6" />
+                <Bars3Icon className="h-7 w-7" />
               </button>
+
+              {/* Hover Dropdown Menu */}
+              <div 
+                className={`absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-xl z-50 min-w-[300px] transition-all duration-200 ${
+                  isMenuOpen ? 'opacity-100 visible' : 'opacity-0 invisible'
+                }`}
+                onMouseEnter={() => setIsMenuOpen(true)}
+                onMouseLeave={() => setIsMenuOpen(false)}
+              >
+                <div className="p-4">
+                  <h3 className="text-base font-semibold text-gray-900 mb-3">Navigation</h3>
+                  <nav className="space-y-1">
+                    {filteredMenuItems.map((item) => {
+                      const IconComponent = item.icon;
+                      const isActive = pathname === item.path;
+                      
+                      return (
+                        <button
+                          key={item.id}
+                          onClick={() => handleMenuClick(item.path)}
+                          className={`w-full flex items-center p-3 rounded-lg transition-colors text-left hover:bg-gray-50 ${
+                            isActive ? 'bg-blue-50 text-blue-700' : 'text-gray-700'
+                          }`}
+                        >
+                          <div className={`flex-shrink-0 mr-3 w-9 h-9 rounded-lg flex items-center justify-center ${
+                            isActive ? 'bg-blue-100' : 'bg-gray-100'
+                          }`}>
+                            <IconComponent className={`h-5 w-5 ${
+                              isActive ? 'text-blue-600' : 'text-gray-600'
+                            }`} />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className={`text-base font-medium ${
+                              isActive ? 'text-blue-900' : 'text-gray-900'
+                            }`}>
+                              {item.title}
+                            </p>
+                            {item.description && (
+                              <p className={`text-sm ${
+                                isActive ? 'text-blue-600' : 'text-gray-500'
+                              }`}>
+                                {item.description}
+                              </p>
+                            )}
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </nav>
+                </div>
+              </div>
             </div>
 
             {/* Center - Title and greeting */}
             <div className="flex-1 text-center">
-              <h1 className="text-xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
+              <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
                 {getGreeting()}
               </h1>
-              <p className="text-sm text-slate-400">
+              <p className="text-base text-slate-400">
                 Welcome back, {user?.displayName || user?.name || 'User'}
               </p>
             </div>
@@ -218,9 +266,9 @@ export default function GlobalHeader() {
             <div className="flex items-center">
               <button
                 onClick={handleLogout}
-                className="flex items-center gap-2 px-3 py-2 bg-red-600 hover:bg-red-700 border border-red-500 rounded-lg transition-colors text-white text-sm"
+                className="flex items-center gap-2 px-4 py-3 bg-red-600 hover:bg-red-700 border border-red-500 rounded-lg transition-colors text-white text-base"
               >
-                <ArrowRightOnRectangleIcon className="w-4 h-4" />
+                <ArrowRightOnRectangleIcon className="w-5 h-5" />
                 Logout
               </button>
             </div>
@@ -228,95 +276,8 @@ export default function GlobalHeader() {
         </div>
       </header>
 
-      {/* Sidebar Overlay */}
-      <AnimatePresence>
-        {isSidebarOpen && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 bg-black bg-opacity-50"
-          />
-        )}
-      </AnimatePresence>
-
-      {/* Sidebar */}
-      <AnimatePresence>
-        {isSidebarOpen && (
-          <motion.div
-            id="global-sidebar"
-            initial={{ x: -300 }}
-            animate={{ x: 0 }}
-            exit={{ x: -300 }}
-            transition={{ type: "spring", damping: 25, stiffness: 200 }}
-            className="fixed top-0 left-0 z-50 w-80 h-full bg-white shadow-2xl"
-          >
-            {/* Sidebar Header */}
-            <div className="flex items-center justify-between p-6 border-b border-gray-200">
-              <h2 className="text-xl font-bold text-gray-900">Navigation</h2>
-              <button
-                onClick={() => setIsSidebarOpen(false)}
-                className="p-2 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
-              >
-                <XMarkIcon className="h-5 w-5" />
-              </button>
-            </div>
-
-            {/* Menu Items */}
-            <div className="p-6">
-              <nav className="space-y-2">
-                {menuItems.map((item) => {
-                  const IconComponent = item.icon;
-                  const isActive = pathname === item.path;
-                  
-                  return (
-                    <button
-                      key={item.id}
-                      onClick={() => handleMenuClick(item.path)}
-                      className={`w-full flex items-start p-4 rounded-xl transition-all duration-200 text-left hover:bg-gray-50 border border-transparent hover:border-gray-200 hover:shadow-sm transform hover:-translate-y-0.5 ${
-                        isActive ? 'bg-blue-50 border-blue-200 shadow-sm' : ''
-                      }`}
-                    >
-                      <div className={`flex-shrink-0 mr-4 mt-1 w-10 h-10 rounded-lg flex items-center justify-center transition-colors ${
-                        isActive ? 'bg-blue-100' : 'bg-gray-100 group-hover:bg-gray-200'
-                      }`}>
-                        <IconComponent className={`h-5 w-5 ${
-                          isActive ? 'text-blue-600' : 'text-gray-600'
-                        }`} />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className={`text-lg font-semibold mb-1 ${
-                          isActive ? 'text-blue-900' : 'text-gray-900'
-                        }`}>
-                          {item.title}
-                        </p>
-                        {item.description && (
-                          <p className={`text-sm leading-relaxed ${
-                            isActive ? 'text-blue-700' : 'text-gray-600'
-                          }`}>
-                            {item.description}
-                          </p>
-                        )}
-                      </div>
-                    </button>
-                  );
-                })}
-              </nav>
-            </div>
-
-            {/* Sidebar Footer */}
-            <div className="absolute bottom-0 left-0 right-0 p-6 border-t border-gray-200 bg-gray-50">
-              <div className="text-center">
-                <p className="text-sm text-gray-600">Pennine Industries</p>
-                <p className="text-xs text-gray-500">Management System</p>
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
       {/* Spacer for fixed header */}
-      <div className="h-16"></div>
+      <div className="h-24"></div>
     </>
   );
 } 

@@ -24,7 +24,10 @@ import {
   DocumentTextIcon,
   TableCellsIcon,
   DocumentChartBarIcon,
-  RectangleStackIcon
+  RectangleStackIcon,
+  CogIcon,
+  Bars3Icon,
+  XMarkIcon
 } from '@heroicons/react/24/outline';
 import { useAuth } from '@/app/hooks/useAuth';
 
@@ -166,7 +169,6 @@ export default function AdminPanelPage() {
   const { isAuthenticated, loading } = useAuth();
   const supabase = createClient();
   
-  const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const [statsLoading, setStatsLoading] = useState(true);
   const [stats, setStats] = useState<DashboardStats>({
     dailyDonePallets: 0,
@@ -438,10 +440,6 @@ export default function AdminPanelPage() {
     router.push(path);
   };
 
-  const handleDropdownToggle = (category: string) => {
-    setActiveDropdown(activeDropdown === category ? null : category);
-  };
-
   // Click outside handler for dropdown
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -494,50 +492,156 @@ export default function AdminPanelPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white">
+    <div className="min-h-screen bg-gray-900 text-white pt-24">
+      {/* Admin Panel Navigation Bar */}
+      <div className="bg-transparent border-b border-gray-700/50 sticky top-24 z-30 -mt-24">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-12">
+            {/* Left side - Empty space or could be used for breadcrumbs */}
+            <div className="flex items-center">
+              {/* Removed Admin Panel title and icon */}
+            </div>
+
+            {/* Center - Navigation Menu */}
+            <div className="hidden md:flex items-center space-x-1">
+              {Object.entries(groupedItems).map(([category, items]) => (
+                <div key={category} className="relative group">
+                  <div className="flex items-center gap-2 px-3 py-1 text-sm text-gray-300 hover:text-white hover:bg-gray-700/50 rounded-lg transition-colors cursor-pointer">
+                    {category}
+                    <ChevronDownIcon className="w-4 h-4 transition-transform group-hover:rotate-180" />
+                  </div>
+                  
+                  {/* Hover Dropdown */}
+                  <div className="absolute top-full left-0 mt-1 bg-slate-800 border border-slate-600 rounded-lg shadow-xl z-50 min-w-[250px] opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
+                    {items.map((item) => {
+                      const IconComponent = item.icon;
+                      return (
+                        <button
+                          key={item.id}
+                          onClick={() => handleItemClick(item.path)}
+                          className={`w-full px-4 py-3 text-left hover:bg-slate-700 transition-colors first:rounded-t-lg last:rounded-b-lg ${item.color}`}
+                        >
+                          <div className="flex items-center gap-3">
+                            <IconComponent className="w-5 h-5" />
+                            <div>
+                              <div className="text-sm font-medium">{item.title}</div>
+                              <div className="text-xs text-slate-400">{item.description}</div>
+                            </div>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Right side - Mobile menu button */}
+            <div className="md:hidden">
+              <button
+                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                className="p-2 text-gray-300 hover:text-white hover:bg-gray-700/50 rounded-lg transition-colors"
+              >
+                {isDropdownOpen ? (
+                  <XMarkIcon className="w-6 h-6" />
+                ) : (
+                  <Bars3Icon className="w-6 h-6" />
+                )}
+              </button>
+            </div>
+          </div>
+
+          {/* Mobile Navigation Menu */}
+          <AnimatePresence>
+            {isDropdownOpen && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.3 }}
+                className="md:hidden border-t border-gray-700/50 py-4"
+              >
+                <div className="space-y-4">
+                  {Object.entries(groupedItems).map(([category, items]) => (
+                    <div key={category}>
+                      <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-2">
+                        {category}
+                      </h3>
+                      <div className="space-y-1">
+                        {items.map((item) => {
+                          const IconComponent = item.icon;
+                          return (
+                            <button
+                              key={item.id}
+                              onClick={() => {
+                                handleItemClick(item.path);
+                                setIsDropdownOpen(false);
+                              }}
+                              className={`w-full px-3 py-2 text-left hover:bg-slate-700/50 rounded-lg transition-colors ${item.color}`}
+                            >
+                              <div className="flex items-center gap-3">
+                                <IconComponent className="w-5 h-5" />
+                                <div>
+                                  <div className="text-sm font-medium">{item.title}</div>
+                                  <div className="text-xs text-slate-400">{item.description}</div>
+                                </div>
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      </div>
+
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {/* Dashboard Content */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           {/* Today's Generated Pallets */}
           <Card className="bg-slate-800/50 border-slate-700">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-slate-200">Today's Generated</CardTitle>
+              <CardTitle className="text-sm font-medium text-slate-200">Today's Output</CardTitle>
               <CubeIcon className="h-4 w-4 text-blue-400" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-white">{stats.dailyDonePallets}</div>
-              <p className="text-xs text-slate-400">Pallets generated today</p>
+              <p className="text-xs text-slate-400">Pallets outputed today</p>
             </CardContent>
           </Card>
 
           {/* Today's Transferred Pallets */}
           <Card className="bg-slate-800/50 border-slate-700">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-slate-200">Today's Transferred</CardTitle>
+              <CardTitle className="text-sm font-medium text-slate-200">Today's Booked Out</CardTitle>
               <TruckIcon className="h-4 w-4 text-green-400" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-white">{stats.dailyTransferredPallets}</div>
-              <p className="text-xs text-slate-400">Pallets transferred today</p>
+              <p className="text-xs text-slate-400">Pallets booked out today</p>
             </CardContent>
           </Card>
 
           {/* Past 3 Days Generated */}
           <Card className="bg-slate-800/50 border-slate-700">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-slate-200">Past 3 Days Generated</CardTitle>
+              <CardTitle className="text-sm font-medium text-slate-200">Past 3 Days Output</CardTitle>
               <ChartBarIcon className="h-4 w-4 text-purple-400" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-white">{stats.past3DaysGenerated}</div>
-              <p className="text-xs text-slate-400">Total pallets generated</p>
+              <p className="text-xs text-slate-400">Total pallets outputed</p>
             </CardContent>
           </Card>
 
           {/* Past 3 Days Transfer Rate */}
           <Card className="bg-slate-800/50 border-slate-700">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-slate-200">Transfer Rate</CardTitle>
+              <CardTitle className="text-sm font-medium text-slate-200">Booked Out Rate</CardTitle>
               <CheckCircleIcon className="h-4 w-4 text-orange-400" />
             </CardHeader>
             <CardContent>
@@ -546,7 +650,7 @@ export default function AdminPanelPage() {
                   ? Math.round((stats.past3DaysTransferredPallets / stats.past3DaysGenerated) * 100)
                   : 0}%
               </div>
-              <p className="text-xs text-slate-400">Past 3 days efficiency</p>
+              <p className="text-xs text-slate-400">Past 3 days Rate</p>
             </CardContent>
           </Card>
         </div>
@@ -752,7 +856,7 @@ export default function AdminPanelPage() {
                       type="text"
                       value={searchQuery}
                       onChange={handleSearchChange}
-                      placeholder="Enter Product Code"
+                      placeholder="Enter Product Code To Search"
                       className="flex-1 px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-slate-200 placeholder-slate-400 focus:outline-none focus:border-blue-500 transition-colors"
                     />
                     <button

@@ -6,46 +6,95 @@ export interface AuthState {
   user: User | null;
   loading: boolean;
   isAuthenticated: boolean;
+  userRole: UserRole | null;
 }
+
+export interface UserRole {
+  type: 'production' | 'warehouse' | 'admin';
+  allowedPaths: string[];
+  defaultPath: string;
+}
+
+export const getUserRole = (email: string): UserRole => {
+  if (email === 'production@pennineindustries.com') {
+    return {
+      type: 'production',
+      allowedPaths: ['/print-label', '/home'],
+      defaultPath: '/print-label'
+    };
+  } else if (email === 'warehouse@pennineindustries.com') {
+    return {
+      type: 'warehouse', 
+      allowedPaths: ['/stock-transfer', '/home'],
+      defaultPath: '/stock-transfer'
+    };
+  } else {
+    return {
+      type: 'admin',
+      allowedPaths: [], // No restrictions for admin
+      defaultPath: '/admin'
+    };
+  }
+};
 
 export function useAuth(): AuthState {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+  const [userRole, setUserRole] = useState<UserRole | null>(null);
   const supabase = createClient();
 
   useEffect(() => {
-    // Get initial user
-    const getUser = async () => {
+    const checkAuth = async () => {
       try {
-        const { data: { user }, error } = await supabase.auth.getUser();
-        if (error) {
-          console.error('Error getting user:', error);
+        const { data: { user } } = await supabase.auth.getUser();
+        
+        if (user) {
+          setIsAuthenticated(true);
+          setUser(user);
+          // Set user role based on email
+          const role = getUserRole(user.email || '');
+          setUserRole(role);
+        } else {
+          setIsAuthenticated(false);
+          setUser(null);
+          setUserRole(null);
         }
-        setUser(user);
       } catch (error) {
-        console.error('Error in getUser:', error);
+        console.error('[useAuth] Error checking authentication:', error);
+        setIsAuthenticated(false);
+        setUser(null);
+        setUserRole(null);
       } finally {
         setLoading(false);
       }
     };
 
-    getUser();
+    checkAuth();
 
-    // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        setUser(session?.user ?? null);
-        setLoading(false);
+        if (event === 'SIGNED_IN' && session?.user) {
+          setIsAuthenticated(true);
+          setUser(session.user);
+          const role = getUserRole(session.user.email || '');
+          setUserRole(role);
+        } else if (event === 'SIGNED_OUT') {
+          setIsAuthenticated(false);
+          setUser(null);
+          setUserRole(null);
+        }
       }
     );
 
     return () => subscription.unsubscribe();
-  }, [supabase.auth]);
+  }, []);
 
   return {
     user,
     loading,
-    isAuthenticated: !!user,
+    isAuthenticated,
+    userRole,
   };
 }
 

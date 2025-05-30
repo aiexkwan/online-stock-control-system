@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { getCookie } from 'cookies-next';
 import { createClient } from '@/lib/supabase';
 import { syncAuthStateToLocalStorage, clearLocalAuthData } from '../utils/auth-sync';
+import { getUserRole } from '../hooks/useAuth';
 
 /**
  * AuthStateSync 組件負責監聽 Supabase Auth 狀態變化並保持本地儲存同步。
@@ -16,6 +17,27 @@ export default function AuthStateSync() {
   const [syncAttempts, setSyncAttempts] = useState(0);
   const maxAttempts = 5; // 增加最大嘗試次數
   const activeSessionRef = useRef(false);
+  const [hasRedirected, setHasRedirected] = useState(false);
+  
+  // 定義需要認證的路由
+  const protectedRoutes = [
+    '/admin',
+    '/home',
+    '/users',
+    '/reports',
+    '/view-history',
+    '/void-pallet',
+    '/tables',
+    '/inventory',
+    '/export-report',
+    '/history',
+    '/products',
+    '/productUpdate',
+    '/stock-transfer',
+    '/print-label',
+    '/print-grnlabel',
+    '/change-password'
+  ];
   
   // 強力保存認證狀態的函數
   const forcePreserveAuthState = () => {
@@ -61,7 +83,7 @@ export default function AuthStateSync() {
       '/main-login',
       '/new-password',
       '/change-password',
-      '/dashboard/access',
+      '/home',
       '/print-label',
       '/print-grnlabel',
       '/stock-transfer'  // 移除 '/access' - 此頁面需要認證才能訪問
@@ -170,6 +192,11 @@ export default function AuthStateSync() {
           const syncResult = await syncAuthStateToLocalStorage();
           forcePreserveAuthState();
           
+          // 處理角色導向重定向
+          if (session?.user) {
+            await handleRoleBasedRedirect(session.user);
+          }
+          
           if (!syncResult && syncAttempts < maxAttempts) {
             // 如果同步失敗，嘗試重試幾次 (使用遞增延遲)
             setSyncAttempts(prev => prev + 1);
@@ -187,8 +214,12 @@ export default function AuthStateSync() {
         // 用戶登出
         activeSessionRef.current = false;
         clearLocalAuthData();
+        setHasRedirected(false); // 重置重定向狀態
       }
     });
+
+    // 頁面加載時檢查用戶訪問權限
+    checkUserAccess();
 
     // 組件卸載時清理
     return () => {
@@ -198,6 +229,57 @@ export default function AuthStateSync() {
       subscription.unsubscribe();
     };
   }, [router, syncAttempts, maxAttempts]);
+
+  // 檢查用戶是否有權限訪問當前路徑
+  const checkUserAccess = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user || !user.email) return;
+
+      const userRole = getUserRole(user.email);
+      const currentPath = window.location.pathname;
+
+      // Admin 用戶沒有限制
+      if (userRole.type === 'admin') return;
+
+      // 檢查當前路徑是否在允許的路徑中
+      const isAllowed = userRole.allowedPaths.some(path => currentPath.startsWith(path));
+      
+      if (!isAllowed && !hasRedirected) {
+        console.log(`[AuthStateSync] User ${user.email} (${userRole.type}) redirected from ${currentPath} to ${userRole.defaultPath}`);
+        setHasRedirected(true);
+        router.push(userRole.defaultPath);
+      }
+    } catch (error) {
+      console.error('[AuthStateSync] Error checking user access:', error);
+    }
+  };
+
+  // 處理登入後的角色導向重定向
+  const handleRoleBasedRedirect = async (user: any) => {
+    if (!user?.email || hasRedirected) return;
+
+    const userRole = getUserRole(user.email);
+    const currentPath = window.location.pathname;
+
+    // 如果用戶在登入頁面，重定向到默認頁面
+    if (currentPath.startsWith('/main-login') || currentPath === '/') {
+      console.log(`[AuthStateSync] User ${user.email} (${userRole.type}) redirected to default page: ${userRole.defaultPath}`);
+      setHasRedirected(true);
+      router.push(userRole.defaultPath);
+      return;
+    }
+
+    // 檢查當前頁面是否允許訪問
+    if (userRole.type !== 'admin') {
+      const isAllowed = userRole.allowedPaths.some(path => currentPath.startsWith(path));
+      if (!isAllowed) {
+        console.log(`[AuthStateSync] User ${user.email} (${userRole.type}) redirected from unauthorized page ${currentPath} to ${userRole.defaultPath}`);
+        setHasRedirected(true);
+        router.push(userRole.defaultPath);
+      }
+    }
+  };
 
   // 這是一個無 UI 的組件，只處理同步邏輯
   return null;

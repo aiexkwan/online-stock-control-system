@@ -10,14 +10,14 @@ export default function PrintLabelPage() {
   return (
     <div className="min-h-screen bg-gray-900 text-white">
       <div className="container mx-auto px-4 py-8">
-        <div className="text-center mb-8">
+        {/* <div className="text-center mb-8">
           <h1 className="text-4xl font-bold text-blue-400 mb-2">
             Print QC Label
           </h1>
-          {/* <p className="text-gray-300 text-lg">
+          <p className="text-gray-300 text-lg">
             Generate and print quality control labels for your products
-          </p> */}
-        </div>
+          </p>
+        </div> */}
 
         <ErrorBoundary>
           <PerformanceOptimizedForm />

@@ -57,7 +57,7 @@ export default function AccessPage() {
             setIsRedirecting(true);
             // 重定向到主要儀表板
             setTimeout(() => {
-              router.push('/dashboard/access');
+              router.push('/home');
             }, 500);
             return 0;
           }
@@ -93,7 +93,7 @@ export default function AccessPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-900 flex items-center justify-center px-4">
+    <div className="min-h-screen bg-gray-900 flex items-center justify-center px-4 pt-16">
       <div className="max-w-2xl w-full text-center">
         <div className="bg-gray-800 rounded-lg shadow-xl border border-gray-600 p-8">
           {/* Success Icon */}
@@ -182,11 +182,19 @@ export default function AccessPage() {
               </Link>
             </div>
           </div>
+
+          <button
+            onClick={() => router.push('/home')}
+            className="group relative px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300"
+          >
+            <span className="relative z-10">Enter Dashboard</span>
+            <div className="absolute inset-0 bg-gradient-to-r from-blue-700 to-purple-700 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+          </button>
         </div>
 
         {/* Footer */}
         <div className="mt-8 text-center text-gray-500 text-xs">
-          <p>© 2024 Pennine Industries. All rights reserved.</p>
+          <p>© 2025 Pennine Industries. All rights reserved.</p>
           <p className="mt-1">Secure access portal for authorized personnel</p>
         </div>
       </div>

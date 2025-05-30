@@ -95,7 +95,7 @@ export default function MainLoginPage() {
 
         {/* Footer */}
         <div className="text-center text-gray-500 text-xs">
-          <p>© 2024 Pennine Industries. All rights reserved.</p>
+          <p>© 2025 Pennine Industries. All rights reserved.</p>
           <p className="mt-1">Authorized personnel only</p>
         </div>
       </div>

@@ -50,7 +50,7 @@ import {
   mergeAndPrintPdfs
 } from '../../../lib/pdfUtils';
 import { 
-  createGrnDatabaseEntries,
+  createGrnDatabaseEntries, 
   generateGrnPalletNumbersAndSeries,
   uploadPdfToStorage,
   type GrnPalletInfoPayload, 
@@ -621,7 +621,7 @@ export const GrnLabelForm: React.FC = () => {
         onOpenChange={setIsClockNumberDialogOpen}
         onConfirm={handleClockNumberConfirm}
         onCancel={() => setIsClockNumberDialogOpen(false)}
-        title="Confirm GRN Label Print"
+        title="Confirm Printing"
         description="Please enter your clock number to proceed with printing GRN labels."
         isLoading={isProcessing}
       />
@@ -629,7 +629,7 @@ export const GrnLabelForm: React.FC = () => {
       <ResponsiveLayout className="bg-gray-900 text-white">
         <ResponsiveContainer maxWidth="xl">
           <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-orange-500">Material Receiving</h1>
+            {/* <h1 className="text-3xl font-bold text-orange-500">Material Receiving</h1> */}
           </div>
 
           {/* Collapsible Instructions Card */}
@@ -661,10 +661,12 @@ export const GrnLabelForm: React.FC = () => {
             {isInstructionsExpanded && (
               <div className="px-4 pb-4 border-t border-blue-700/30">
                 <div className="pt-3 text-xs text-blue-200 space-y-2">
-                  <p>• <strong>Fill GRN Details:</strong> Enter GRN Number, Material Supplier Code, and Product Code (system will auto-validate)</p>
-                  <p>• <strong>Select Pallet & Package Types:</strong> Choose one pallet type and one package type (mutually exclusive selection)</p>
-                  <p>• <strong>Enter Weight Information:</strong> Input gross weight for each pallet, system will auto-calculate net weight (Gross - Pallet - Package)</p>
-                  <p>• <strong>Print Labels:</strong> Confirm all information is correct, then click print button and enter password for confirmation</p>
+                  <p>• <strong>Fill GRN Details:</strong> Enter GRN Number, Material Supplier Code, and Product Code</p>
+                  <p>• <strong>System Validate:</strong> System will auto-validate material supplier Code and product code</p>
+                  <p>• <strong>Select Pallet & Package Types:</strong> Put in count of pallet and package, based on their type</p>
+                  <p>• <strong>Enter Gross Weight :</strong> Input gross weight for each pallet</p>
+                  <p>• <strong>Print Labels:</strong> Click print button after confirm all information is correct and enter password for confirmation</p>
+                  <p>• <strong>Enter Clock Number:</strong> Enter your clock number to proceed</p>
                 </div>
               </div>
             )}
@@ -775,7 +777,7 @@ export const GrnLabelForm: React.FC = () => {
 
             {/* Right Column */}
             <div className="flex-1 lg:max-w-md">
-              <ResponsiveCard title="Print GRN Label" className="bg-gray-800 sticky top-8">
+              <ResponsiveCard title="Weight Information" className="bg-gray-800 sticky top-8">
                 {/* Summary Information */}
                 <div className="mb-6 p-4 bg-gray-700 rounded-lg">
                   <div className="grid grid-cols-2 gap-4 text-sm">

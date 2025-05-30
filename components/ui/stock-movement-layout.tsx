@@ -4,7 +4,7 @@ import { Button } from './button';
 import { AlertCircle, Info, CheckCircle, XCircle } from 'lucide-react';
 
 interface StockMovementLayoutProps {
-  title: string;
+  title?: string;
   description?: string;
   children: React.ReactNode;
   isLoading?: boolean;
@@ -33,24 +33,41 @@ export function StockMovementLayout({
   return (
     <div className="min-h-screen bg-gray-900 text-white">
       <div className="container mx-auto px-4 py-8 max-w-6xl">
-        {/* Unified Header Area */}
-        <header className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-blue-400 mb-2">{title}</h1>
-          {description && (
-            <p className="text-lg text-gray-300">{description}</p>
-          )}
-          {onToggleHelp && (
+        {/* Unified Header Area - Only show if title exists */}
+        {title && (
+          <header className="text-center mb-8">
+            <h1 className="text-4xl font-bold text-blue-400 mb-2">{title}</h1>
+            {description && (
+              <p className="text-lg text-gray-300">{description}</p>
+            )}
+            {onToggleHelp && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={onToggleHelp}
+                className="mt-4 border-blue-400 text-blue-400 hover:bg-blue-400 hover:text-gray-900"
+              >
+                <Info className="w-4 h-4 mr-2" />
+                {showHelp ? 'Hide Instructions' : 'Show Instructions'}
+              </Button>
+            )}
+          </header>
+        )}
+
+        {/* Help button for pages without title */}
+        {!title && onToggleHelp && (
+          <div className="text-center mb-8">
             <Button
               variant="outline"
               size="sm"
               onClick={onToggleHelp}
-              className="mt-4 border-blue-400 text-blue-400 hover:bg-blue-400 hover:text-gray-900"
+              className="border-blue-400 text-blue-400 hover:bg-blue-400 hover:text-gray-900"
             >
               <Info className="w-4 h-4 mr-2" />
               {showHelp ? 'Hide Instructions' : 'Show Instructions'}
             </Button>
-          )}
-        </header>
+          </div>
+        )}
 
         {/* Instructions Area */}
         {showHelp && helpContent && (
