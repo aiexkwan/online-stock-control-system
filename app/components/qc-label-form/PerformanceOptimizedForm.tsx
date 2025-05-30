@@ -25,6 +25,7 @@ import { AcoOrderForm } from './AcoOrderForm';
 import { SlateDetailsForm } from './SlateDetailsForm';
 import { useErrorHandler } from './hooks/useErrorHandler';
 import { useMediaQuery } from './hooks/useMediaQuery';
+import FloatingInstructions from '@/components/ui/floating-instructions';
 
 import { useOptimizedFormHandler } from './hooks/useOptimizedCallback';
 import { useQcLabelBusiness } from './hooks/useQcLabelBusiness';
@@ -90,6 +91,26 @@ const ProductSection = React.memo<{
       title="Pallet Details"
       //subtitle="Enter the basic information for your pallet labels"
       className="mb-6"
+      headerAction={
+        <FloatingInstructions
+          title="QC Label Instructions"
+          variant="hangover"
+          steps={[
+            {
+              title: "Enter Pallet Details",
+              description: "Fill in all required pallet information including product code, quantity, count, and operator details."
+            },
+            {
+              title: "Configure Product Settings",
+              description: "For ACO products, enter order reference and details. For Slate products, configure batch and material information."
+            },
+            {
+              title: "Generate Labels",
+              description: "Click 'Print Label' button to generate and print QC labels. Enter your clock number when prompted."
+            }
+          ]}
+        />
+      }
     >
       <BasicProductForm
         productCode={productCode}
@@ -539,27 +560,6 @@ export const PerformanceOptimizedForm: React.FC<PerformanceOptimizedFormProps> =
             {/* Sidebar */}
             <div className={`${isMobile ? 'w-full' : 'w-80'} flex-shrink-0`}>
               <div className="space-y-6">
-                {/* Instructions */}
-                <ResponsiveCard
-                  title="Instructions"
-                  padding="sm"
-                >
-                  <ul className="text-sm text-gray-300 space-y-2">
-                    <li className="flex items-start">
-                      <span className="text-blue-400 mr-2">1.</span>
-                      Enter all required pallet details
-                    </li>
-                    <li className="flex items-start">
-                      <span className="text-blue-400 mr-2">2.</span>
-                      Configure product-specific settings if needed
-                    </li>
-                    <li className="flex items-start">
-                      <span className="text-blue-400 mr-2">3.</span>
-                      Click Print Label to generate labels
-                    </li>
-                  </ul>
-                </ResponsiveCard>
-
                 {/* Progress */}
                 <ProgressSection
                   current={pdfProgress.current}

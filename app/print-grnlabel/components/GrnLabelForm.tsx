@@ -4,6 +4,7 @@ import React, { useState, useCallback, useEffect } from 'react';
 import { createClient } from '../../../lib/supabase';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
+import FloatingInstructions from '@/components/ui/floating-instructions';
 
 // Add custom CSS for scrollbar styling
 const customStyles = `
@@ -178,9 +179,6 @@ export const GrnLabelForm: React.FC = () => {
   // User info
   const [currentUserId, setCurrentUserId] = useState<string>('');
 
-  // Instructions panel state
-  const [isInstructionsExpanded, setIsInstructionsExpanded] = useState(false);
-
   // Initialize user
   useEffect(() => {
     const initializeUser = async () => {
@@ -200,8 +198,6 @@ export const GrnLabelForm: React.FC = () => {
 
     initializeUser();
   }, []);
-
-
 
   // Calculate pallet count
   const palletCount = Math.min(22, Object.values(palletType).reduce((sum, v) => sum + (parseInt(v) || 0), 0) || 1);
@@ -576,8 +572,6 @@ export const GrnLabelForm: React.FC = () => {
     }
   }, [productInfo, supplierInfo, formData, palletType, packageType, grossWeights]);
 
-
-
   // Reset form
   const resetForm = useCallback(() => {
     setGrossWeights(['']);
@@ -616,67 +610,44 @@ export const GrnLabelForm: React.FC = () => {
       {/* Inject custom styles */}
       <style jsx global>{customStyles}</style>
       
-      <ClockNumberConfirmDialog
-        isOpen={isClockNumberDialogOpen}
-        onOpenChange={setIsClockNumberDialogOpen}
-        onConfirm={handleClockNumberConfirm}
-        onCancel={() => setIsClockNumberDialogOpen(false)}
-        title="Confirm Printing"
-        description="Please enter your clock number to proceed with printing GRN labels."
-        isLoading={isProcessing}
-      />
-
       <ResponsiveLayout className="bg-gray-900 text-white">
         <ResponsiveContainer maxWidth="xl">
           <div className="text-center mb-8">
             {/* <h1 className="text-3xl font-bold text-orange-500">Material Receiving</h1> */}
           </div>
 
-          {/* Collapsible Instructions Card */}
-          <div className="mb-8 bg-blue-900/30 border border-blue-700/50 rounded-lg overflow-hidden">
-            <button
-              onClick={() => setIsInstructionsExpanded(!isInstructionsExpanded)}
-              className="w-full p-4 flex items-center justify-between hover:bg-blue-900/40 transition-colors duration-200"
-            >
-              <div className="flex items-center space-x-3">
-                <div className="flex-shrink-0 w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center">
-                  <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                </div>
-                <h3 className="text-sm font-semibold text-blue-300">Instructions</h3>
-              </div>
-              <div className="flex-shrink-0">
-                <svg 
-                  className={`w-5 h-5 text-blue-300 transition-transform duration-200 ${isInstructionsExpanded ? 'rotate-180' : ''}`} 
-                  fill="none" 
-                  stroke="currentColor" 
-                  viewBox="0 0 24 24"
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
-              </div>
-            </button>
-            
-            {isInstructionsExpanded && (
-              <div className="px-4 pb-4 border-t border-blue-700/30">
-                <div className="pt-3 text-xs text-blue-200 space-y-2">
-                  <p>• <strong>Fill GRN Details:</strong> Enter GRN Number, Material Supplier Code, and Product Code</p>
-                  <p>• <strong>System Validate:</strong> System will auto-validate material supplier Code and product code</p>
-                  <p>• <strong>Select Pallet & Package Types:</strong> Put in count of pallet and package, based on their type</p>
-                  <p>• <strong>Enter Gross Weight :</strong> Input gross weight for each pallet</p>
-                  <p>• <strong>Print Labels:</strong> Click print button after confirm all information is correct and enter password for confirmation</p>
-                  <p>• <strong>Enter Clock Number:</strong> Enter your clock number to proceed</p>
-                </div>
-              </div>
-            )}
-          </div>
-
           <ResponsiveStack direction="responsive" spacing={8}>
             {/* Left Column */}
             <div className="flex-1 space-y-8">
               {/* GRN Detail Card */}
-              <ResponsiveCard title="GRN Detail" className="bg-gray-800">
+              <ResponsiveCard 
+                title="GRN Detail" 
+                className="bg-gray-800"
+                headerAction={
+                  <FloatingInstructions
+                    title="GRN Label Instructions"
+                    variant="hangover"
+                    steps={[
+                      {
+                        title: "Fill GRN Details",
+                        description: "Enter GRN Number, Material Supplier Code, and Product Code. System will auto-validate supplier and product information."
+                      },
+                      {
+                        title: "Select Pallet & Package Types",
+                        description: "Choose the appropriate pallet and package types, then enter the quantity count for each type."
+                      },
+                      {
+                        title: "Enter Gross Weight",
+                        description: "Input the gross weight for each pallet. System will automatically calculate net weight."
+                      },
+                      {
+                        title: "Print Labels",
+                        description: "Click 'Print GRN Label(s)' button after confirming all information is correct, then enter your clock number."
+                      }
+                    ]}
+                  />
+                }
+              >
                 <ResponsiveGrid columns={{ sm: 1, md: 2 }} gap={6}>
                   <div>
                     <label className="block text-sm font-medium mb-1 text-gray-300">
@@ -937,6 +908,16 @@ export const GrnLabelForm: React.FC = () => {
           </ResponsiveStack>
         </ResponsiveContainer>
       </ResponsiveLayout>
+
+      <ClockNumberConfirmDialog
+        isOpen={isClockNumberDialogOpen}
+        onOpenChange={setIsClockNumberDialogOpen}
+        onConfirm={handleClockNumberConfirm}
+        onCancel={() => setIsClockNumberDialogOpen(false)}
+        title="Confirm Printing"
+        description="Please enter your clock number to proceed with printing GRN labels."
+        isLoading={isProcessing}
+      />
     </>
   );
 };

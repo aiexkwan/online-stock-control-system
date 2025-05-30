@@ -109,13 +109,15 @@ export const ResponsiveCard: React.FC<{
   className?: string;
   padding?: 'sm' | 'md' | 'lg';
   shadow?: boolean;
+  headerAction?: ReactNode;
 }> = React.memo(({
   children,
   title,
   subtitle,
   className = '',
   padding = 'md',
-  shadow = true
+  shadow = true,
+  headerAction
 }) => {
   const paddingClasses = {
     sm: 'p-4',
@@ -130,12 +132,21 @@ export const ResponsiveCard: React.FC<{
       ${paddingClasses[padding]}
       ${className}
     `}>
-      {(title || subtitle) && (
+      {(title || subtitle || headerAction) && (
         <div className="mb-6">
-          {title && (
-            <h2 className="text-xl sm:text-2xl font-semibold text-white mb-2">
-              {title}
-            </h2>
+          {(title || headerAction) && (
+            <div className="flex items-center justify-between mb-2">
+              {title && (
+                <h2 className="text-xl sm:text-2xl font-semibold text-white">
+                  {title}
+                </h2>
+              )}
+              {headerAction && (
+                <div className="flex-shrink-0">
+                  {headerAction}
+                </div>
+              )}
+            </div>
           )}
           {subtitle && (
             <p className="text-sm text-gray-400">
