@@ -443,6 +443,15 @@ export const PerformanceOptimizedForm: React.FC<PerformanceOptimizedFormProps> =
     }
   }, [validationState.isValid, formData, onSubmit, handleError, businessLogic]);
 
+  // Sync pdfProgress from formData to local state
+  useEffect(() => {
+    setPdfProgress({
+      current: formData.pdfProgress.current,
+      total: formData.pdfProgress.total,
+      status: formData.pdfProgress.status
+    });
+  }, [formData.pdfProgress]);
+
   return (
     <ResponsiveLayout className={className}>
       <ResponsiveContainer maxWidth="xl">
