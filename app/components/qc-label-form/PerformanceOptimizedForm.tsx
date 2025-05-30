@@ -218,25 +218,6 @@ const ProgressSection = React.memo<{
   status,
   isMobile
 }) => {
-
-
-  // Memoize progress calculations
-  const progressData = useMemo(() => {
-    const percentage = total > 0 ? Math.round((current / total) * 100) : 0;
-    const successCount = status.filter(s => s === 'Success').length;
-    const failedCount = status.filter(s => s === 'Failed').length;
-    const processingCount = status.filter(s => s === 'Processing').length;
-
-    return {
-      percentage,
-      successCount,
-      failedCount,
-      processingCount,
-      isComplete: current === total && total > 0,
-      hasErrors: failedCount > 0
-    };
-  }, [current, total, status]);
-
   if (total === 0) return null;
 
   return (
@@ -248,8 +229,11 @@ const ProgressSection = React.memo<{
         current={current}
         total={total}
         status={status}
+        title="QC Label Generation"
         variant={isMobile ? 'compact' : 'default'}
-        title="PDF Generation"
+        showPercentage={true}
+        showItemDetails={true}
+        className="bg-gray-700 p-4 rounded-lg"
       />
     </ResponsiveCard>
   );

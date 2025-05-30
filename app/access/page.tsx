@@ -189,13 +189,13 @@ export default function AccessPage() {
             </div>
           </div>
 
-          <button
+          {/*<button
             onClick={() => router.push(redirectPath)}
             className="group relative px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300"
           >
             <span className="relative z-10">Enter Dashboard</span>
             <div className="absolute inset-0 bg-gradient-to-r from-blue-700 to-purple-700 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-          </button>
+          </button> */}
         </div>
 
         {/* Footer */}

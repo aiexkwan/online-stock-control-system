@@ -38,7 +38,7 @@ import {
   ResponsiveStack,
   ResponsiveGrid,
   ProductCodeInput,
-  PrintProgressBar,
+  EnhancedProgressBar,
   ClockNumberConfirmDialog,
   type ProgressStatus
 } from '../../components/qc-label-form';
@@ -920,10 +920,15 @@ export const GrnLabelForm: React.FC = () => {
                 {/* Progress Bar */}
                 {pdfProgress.total > 0 && (
                   <div className="mt-4">
-                    <PrintProgressBar
+                    <EnhancedProgressBar
                       current={pdfProgress.current}
                       total={pdfProgress.total}
                       status={pdfProgress.status}
+                      title="GRN Label Generation"
+                      variant="compact"
+                      showPercentage={true}
+                      showItemDetails={true}
+                      className="bg-gray-700 p-4 rounded-lg"
                     />
                   </div>
                 )}
