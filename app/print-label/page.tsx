@@ -21,54 +21,50 @@ export default function PrintLabelPage() {
         <div className="absolute inset-0 bg-[linear-gradient(rgba(59,130,246,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(59,130,246,0.03)_1px,transparent_1px)] bg-[size:50px_50px]"></div>
       </div>
 
-      {/* 固定位置的 Instructions 按鈕 */}
-      <div className="fixed top-6 right-6 z-[9999]">
-        <FloatingInstructions
-          title="QC Label Instructions"
-          variant="floating"
-          position="top-right"
-          steps={[
-            {
-              title: "1. Enter Pallet Information",
-              description: "Fill in product code, quantity, count, and operator details. The system will automatically validate the product code."
-            },
-            {
-              title: "2. Configure Product Settings",
-              description: "For ACO products, enter order reference and details. For Slate products, configure batch and material information."
-            },
-            {
-              title: "3. Generate and Print Labels",
-              description: "Click 'Print Label' button to generate QC labels. The system will prompt for your clock number confirmation."
-            },
-            {
-              title: "4. Check Progress",
-              description: "The progress bar on the right shows label generation status. Download PDF files or print directly when completed."
-            }
-          ]}
-        />
-      </div>
-
       {/* 主要內容區域 */}
       <div className="relative z-10">
         <div className="container mx-auto px-4 py-8">
           {/* 頁面標題區域 */}
           <div className="text-center mb-12">
-            <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-2xl mb-6 shadow-lg shadow-blue-500/25">
-              <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
-              </svg>
-            </div>
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-400 via-cyan-400 to-blue-300 bg-clip-text text-transparent mb-3">
-              QC Label Generator
-            </h1>
-            {/* <p className="text-slate-300 text-lg max-w-2xl mx-auto leading-relaxed">
-              Generate and print quality control labels with precision and efficiency
-            </p> */}
-            
-            {/* 狀態指示器 */}
-            <div className="flex items-center justify-center mt-6 space-x-2">
-              <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-              <span className="text-sm text-slate-400">System Ready</span>
+            <div className="flex items-center justify-center relative">
+              <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-400 via-cyan-400 to-blue-300 bg-clip-text text-transparent mb-3 flex items-center justify-center">
+                <div className="inline-flex items-center justify-center w-12 h-12 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-xl mr-4 shadow-lg shadow-blue-500/25">
+                  <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                  </svg>
+                </div>
+                QC Label Generator
+              </h1>
+              
+              {/* Instructions 按鈕在標題右邊 */}
+              <div className="absolute right-0 top-0">
+                <FloatingInstructions
+                  title="QC Label Instructions"
+                  variant="hangover"
+                  steps={[
+                    {
+                      title: "1. Enter Pallet Information",
+                      description: "Fill in product code, quantity, count, and operator details(optional)."
+                    },
+                    {
+                      title: "2. Configure Product Settings",
+                      description: "For ACO & Slate products, enter order reference and product details."
+                    },
+                    {
+                      title: "3. Generate and Print Labels",
+                      description: "Click 'Print Label' button to generate QC labels."
+                    },
+                    {
+                      title: "4. Enter Clock Number",
+                      description: "Enter your clock number to confirm the QC label generation."
+                    },
+                    {
+                      title: "5. Check Progress",
+                      description: "The label will be generated and able to download. Press 'Print' button to print the label."
+                    }
+                  ]}
+                />
+              </div>
             </div>
           </div>
 

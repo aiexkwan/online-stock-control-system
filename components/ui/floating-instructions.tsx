@@ -11,7 +11,8 @@ interface InstructionStep {
 interface FloatingInstructionsProps {
   title?: string;
   steps: InstructionStep[];
-  position?: 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right' | 'relative';
+  position?: 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right' | 'relative' | 'custom';
+  customPosition?: { top?: string; right?: string; bottom?: string; left?: string };
   className?: string;
   variant?: 'floating' | 'hangover';
 }
@@ -19,16 +20,14 @@ interface FloatingInstructionsProps {
 export const FloatingInstructions: React.FC<FloatingInstructionsProps> = ({
   title = "Instructions",
   steps,
-  position = 'top-right',
+  position = 'top-left',
+  customPosition,
   className = '',
   variant = 'hangover'
 }) => {
   const [isHovered, setIsHovered] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [panelPosition, setPanelPosition] = useState<'left' | 'right'>('left');
-  const [dragPosition, setDragPosition] = useState({ x: 0, y: 0 });
-  const [isDragging, setIsDragging] = useState(false);
-  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const buttonRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
 
@@ -38,70 +37,44 @@ export const FloatingInstructions: React.FC<FloatingInstructionsProps> = ({
       const panelWidth = 320; // w-80 = 320px
       const viewportWidth = window.innerWidth;
       
-      // 檢查左側是否有足夠空間（改為優先向左顯示）
-      const spaceOnLeft = buttonRect.left;
+      // 檢查右側是否有足夠空間（改為優先向右顯示）
       const spaceOnRight = viewportWidth - buttonRect.right;
+      const spaceOnLeft = buttonRect.left;
       
-      // 修復邏輯：確保對話框完全顯示在視窗內
-      if (spaceOnLeft >= panelWidth) {
-        setPanelPosition('left');
-      } else if (spaceOnRight >= panelWidth) {
+      // 修復邏輯：優先向右顯示，確保對話框完全顯示在視窗內
+      if (spaceOnRight >= panelWidth) {
         setPanelPosition('right');
+      } else if (spaceOnLeft >= panelWidth) {
+        setPanelPosition('left');
       } else {
         // 如果兩側都不夠，選擇空間較大的一側
-        setPanelPosition(spaceOnLeft > spaceOnRight ? 'left' : 'right');
+        setPanelPosition(spaceOnRight > spaceOnLeft ? 'right' : 'left');
       }
     }
   }, [isHovered, isOpen]);
-
-  // 拖動處理函數
-  const handleMouseDown = (e: React.MouseEvent) => {
-    if (variant === 'floating' && isOpen) {
-      setIsDragging(true);
-      setDragStart({
-        x: e.clientX - dragPosition.x,
-        y: e.clientY - dragPosition.y
-      });
-    }
-  };
-
-  const handleMouseMove = (e: MouseEvent) => {
-    if (isDragging) {
-      const newX = e.clientX - dragStart.x;
-      const newY = e.clientY - dragStart.y;
-      
-      // 限制拖動範圍在視窗內
-      const maxX = window.innerWidth - 320; // 320px 是對話框寬度
-      const maxY = window.innerHeight - 400; // 400px 是對話框大概高度
-      
-      setDragPosition({
-        x: Math.max(0, Math.min(newX, maxX)),
-        y: Math.max(0, Math.min(newY, maxY))
-      });
-    }
-  };
-
-  const handleMouseUp = () => {
-    setIsDragging(false);
-  };
-
-  useEffect(() => {
-    if (isDragging) {
-      document.addEventListener('mousemove', handleMouseMove);
-      document.addEventListener('mouseup', handleMouseUp);
-      return () => {
-        document.removeEventListener('mousemove', handleMouseMove);
-        document.removeEventListener('mouseup', handleMouseUp);
-      };
-    }
-  }, [isDragging, dragStart]);
 
   const positionClasses = {
     'top-left': 'top-4 left-4',
     'top-right': 'top-4 right-4',
     'bottom-left': 'bottom-4 left-4',
     'bottom-right': 'bottom-4 right-4',
-    'relative': 'relative'
+    'relative': 'relative',
+    'custom': ''
+  };
+
+  // 處理自定義位置
+  const getPositionStyle = () => {
+    if (position === 'custom' && customPosition) {
+      return customPosition;
+    }
+    return {};
+  };
+
+  const getPositionClass = () => {
+    if (position === 'custom') {
+      return '';
+    }
+    return positionClasses[position];
   };
 
   if (variant === 'hangover') {
@@ -180,7 +153,9 @@ export const FloatingInstructions: React.FC<FloatingInstructionsProps> = ({
   }
 
   return (
-    <div className={`fixed ${positionClasses[position]} z-[9999] ${className}`}>
+    <div 
+      className={`fixed z-[9999] ${getPositionClass()} ${className}`}
+    >
       <button
         ref={buttonRef}
         onClick={() => setIsOpen(!isOpen)}
@@ -217,42 +192,33 @@ export const FloatingInstructions: React.FC<FloatingInstructionsProps> = ({
           <div 
             ref={panelRef}
             className={`
-              fixed w-72 sm:w-80 max-w-[95vw] z-[9999]
+              absolute w-72 sm:w-80 max-w-[95vw] z-[9999]
               bg-white/95 backdrop-blur-md rounded-xl shadow-2xl border border-gray-200/50
               transform transition-all duration-300 ease-out
               ${isOpen ? 'opacity-100 scale-100' : 'opacity-0 scale-95 pointer-events-none'}
-              ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}
+              ${panelPosition === 'right' ? 'right-0' : 'left-0'}
             `}
             style={{
-              left: `${dragPosition.x}px`,
-              top: `${dragPosition.y}px`,
-              transformOrigin: 'top left'
+              top: '4rem',
+              transformOrigin: panelPosition === 'right' ? 'top right' : 'top left',
+              ...getPositionStyle()
             }}
-            onMouseDown={handleMouseDown}
           >
-            <div className="p-4 border-b border-gray-200/50 bg-gradient-to-r from-blue-50 to-cyan-50 cursor-grab active:cursor-grabbing">
+            <div className="p-4 border-b border-gray-200/50 bg-gradient-to-r from-blue-50 to-cyan-50">
               <div className="flex items-center justify-between">
                 <h3 className="text-lg font-semibold text-gray-800 flex items-center">
                   <BookOpenIcon className="h-5 w-5 text-blue-600 mr-2" />
                   {title}
                 </h3>
-                <div className="flex items-center space-x-2">
-                  <div className="text-xs text-gray-400 flex items-center">
-                    <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                      <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
-                    </svg>
-                    Drag to move
-                  </div>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setIsOpen(false);
-                    }}
-                    className="p-1 rounded-full hover:bg-gray-100 transition-colors"
-                  >
-                    <XMarkIcon className="h-4 w-4 text-gray-500" />
-                  </button>
-                </div>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setIsOpen(false);
+                  }}
+                  className="p-1 rounded-full hover:bg-gray-100 transition-colors"
+                >
+                  <XMarkIcon className="h-4 w-4 text-gray-500" />
+                </button>
               </div>
             </div>
 
@@ -279,7 +245,7 @@ export const FloatingInstructions: React.FC<FloatingInstructionsProps> = ({
             <div className="p-3 bg-gradient-to-r from-blue-50/50 to-cyan-50/50 rounded-b-xl border-t border-gray-200/50">
               <p className="text-xs text-gray-500 text-center flex items-center justify-center">
                 <QuestionMarkCircleIcon className="h-3 w-3 mr-1" />
-                Drag header to move • Click outside to close
+                Click outside to close
               </p>
             </div>
           </div>

@@ -219,55 +219,42 @@ export default function StockTransferPage() {
         <div className="absolute inset-0 bg-[linear-gradient(rgba(59,130,246,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(59,130,246,0.03)_1px,transparent_1px)] bg-[size:50px_50px]"></div>
       </div>
 
-      {/* 固定位置的 Instructions 按鈕 */}
-      <div className="fixed top-6 right-6 z-[9999]">
-        <FloatingInstructions
-          title="Stock Transfer Instructions"
-          variant="floating"
-          position="top-right"
-          steps={[
-            {
-              title: "1. Scan or Enter Pallet",
-              description: "Scan QR code or enter complete pallet number (e.g., 250525/13) or series number (e.g., 260525-5UNXGE)."
-            },
-            {
-              title: "2. Confirm Pallet Information",
-              description: "Review pallet details including product code, quantity, and current location. System will automatically calculate target location."
-            },
-            {
-              title: "3. Enter Clock Number",
-              description: "Enter your clock number to confirm the stock transfer operation."
-            },
-            {
-              title: "4. View Results",
-              description: "Check operation results and activity log. The search field will auto-focus for next operation."
-            }
-          ]}
-        />
-      </div>
-
       {/* 主要內容區域 */}
       <div className="relative z-10">
         <div className="container mx-auto px-4 py-8 max-w-5xl">
           {/* 頁面標題區域 */}
           <div className="text-center mb-12">
-            <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-2xl mb-6 shadow-lg shadow-blue-500/25">
-              <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
-              </svg>
-            </div>
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-400 via-cyan-400 to-indigo-300 bg-clip-text text-transparent mb-3">
-              {/*   Stock Transfer */}
-              Pallet Transfer
-            </h1>
-            <p className="text-slate-300 text-lg max-w-2xl mx-auto leading-relaxed">
-              {/* Transfer pallets between locations with automated routing and tracking */}
-            </p>
-            
-            {/* 狀態指示器 */}
-            <div className="flex items-center justify-center mt-6 space-x-2">
-              <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-              <span className="text-sm text-slate-400">System Ready</span>
+            <div className="flex items-center justify-center relative">
+              <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-400 via-cyan-400 to-indigo-300 bg-clip-text text-transparent mb-3 flex items-center justify-center">
+                <div className="inline-flex items-center justify-center w-12 h-12 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-xl mr-4 shadow-lg shadow-blue-500/25">
+                  <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+                  </svg>
+                </div>
+                Pallet Transfer
+              </h1>
+              
+              {/* Instructions 按鈕在標題右邊 */}
+              <div className="absolute right-0 top-0">
+                <FloatingInstructions
+                  title="Stock Transfer Instructions"
+                  variant="hangover"
+                  steps={[
+                    {
+                      title: "1. Scan or Enter Pallet",
+                      description: "Scan QR code or manually enter complete pallet number."
+                    },
+                    {
+                      title: "2. Scan Clock ID Code",
+                      description: "Scan your clock ID code for confirmation."
+                    },
+                    {
+                      title: "3. View Results",
+                      description: "Operation update and previous activity log will be shown in the transfer log section."
+                    }
+                  ]}
+                />
+              </div>
             </div>
           </div>
 

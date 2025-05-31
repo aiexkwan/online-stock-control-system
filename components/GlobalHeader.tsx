@@ -162,7 +162,7 @@ export default function GlobalHeader() {
       clearLocalAuthData();
       
       // 顯示成功訊息
-      toast.success('Successfully logged out');
+      toast.success('You have logged out');
       
       // 重定向到登入頁面
       router.push('/main-login');

@@ -53,7 +53,7 @@ const adminMenuItems = [
     icon: NoSymbolIcon,
     path: '/void-pallet',
     color: 'hover:bg-red-900/20 hover:text-red-400',
-    category: 'Data Management'
+    category: 'System Tools'
   },
   {
     id: 'history',
@@ -62,7 +62,7 @@ const adminMenuItems = [
     icon: ClockIcon,
     path: '/view-history',
     color: 'hover:bg-blue-900/20 hover:text-blue-400',
-    category: 'Data Management'
+    category: 'System Tools'
   },
   {
     id: 'aco-report',
@@ -70,9 +70,9 @@ const adminMenuItems = [
     description: 'Export ACO order reports',
     icon: DocumentChartBarIcon,
     action: 'generate-report',
-    reportType: 'ACO',
+    reportType: 'aco',
     color: 'hover:bg-green-900/20 hover:text-green-400',
-    category: 'Reports'
+    category: 'Export Reports'
   },
   {
     id: 'grn-report',
@@ -80,9 +80,9 @@ const adminMenuItems = [
     description: 'Export GRN reports',
     icon: DocumentTextIcon,
     action: 'generate-report',
-    reportType: 'GRN',
+    reportType: 'grn',
     color: 'hover:bg-blue-900/20 hover:text-blue-400',
-    category: 'Reports'
+    category: 'Export Reports'
   },
   {
     id: 'transaction-report',
@@ -92,7 +92,7 @@ const adminMenuItems = [
     action: 'generate-report',
     reportType: 'transaction',
     color: 'hover:bg-purple-900/20 hover:text-purple-400',
-    category: 'Reports'
+    category: 'Export Reports'
   },
   {
     id: 'slate-report',
@@ -102,7 +102,7 @@ const adminMenuItems = [
     action: 'generate-report',
     reportType: 'slate',
     color: 'hover:bg-orange-900/20 hover:text-orange-400',
-    category: 'Reports'
+    category: 'Export Reports'
   },
   {
     id: 'product',
@@ -1356,7 +1356,7 @@ export default function AdminPanelPage() {
             <div className="relative z-10">
               <DialogHeader className="pb-6">
                 <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-blue-300 via-purple-300 to-cyan-300 bg-clip-text text-transparent">
-                  Generate {currentReportType.toUpperCase()} Report
+                  Export {currentReportType.toUpperCase()} Report
                 </DialogTitle>
                 <DialogDescription className="text-slate-400 text-lg">
                   Select parameters for your {currentReportType} report
@@ -1417,7 +1417,7 @@ export default function AdminPanelPage() {
                   <div className="space-y-4">
                     <div>
                       <label className="block text-sm font-medium text-slate-200 mb-3">
-                        From
+                        Start Date
                       </label>
                       <input
                         type="date"
@@ -1429,7 +1429,7 @@ export default function AdminPanelPage() {
                     
                     <div>
                       <label className="block text-sm font-medium text-slate-200 mb-3">
-                        To
+                        End Date
                       </label>
                       <input
                         type="date"
