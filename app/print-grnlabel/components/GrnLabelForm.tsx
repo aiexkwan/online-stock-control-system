@@ -4,7 +4,14 @@ import React, { useState, useCallback, useEffect } from 'react';
 import { createClient } from '../../../lib/supabase';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
-import FloatingInstructions from '@/components/ui/floating-instructions';
+import { ProductCodeInput } from '../../components/qc-label-form/ProductCodeInput';
+import { ResponsiveLayout, ResponsiveContainer, ResponsiveCard, ResponsiveStack, ResponsiveGrid } from '../../components/qc-label-form/ResponsiveLayout';
+import { EnhancedProgressBar } from '../../components/qc-label-form/EnhancedProgressBar';
+import ClockNumberConfirmDialog from '../../components/qc-label-form/ClockNumberConfirmDialog';
+// import { generateGrnLabelPdf } from '../../actions/generateGrnLabelPdf';
+// import { uploadPdfToStorage } from '../../actions/uploadPdfToStorage';
+// import { mergeAndPrintPdfs } from '../../utils/pdfUtils';
+// import { getCurrentUser } from '../../utils/supabase/client';
 
 // Add custom CSS for scrollbar styling
 const customStyles = `
@@ -40,14 +47,14 @@ const customStyles = `
 
 // Import reusable components from QC Label
 import {
-  ResponsiveLayout,
-  ResponsiveContainer,
-  ResponsiveCard,
-  ResponsiveStack,
-  ResponsiveGrid,
-  ProductCodeInput,
-  EnhancedProgressBar,
-  ClockNumberConfirmDialog,
+  ResponsiveLayout as QCLabelResponsiveLayout,
+  ResponsiveContainer as QCLabelResponsiveContainer,
+  ResponsiveCard as QCLabelResponsiveCard,
+  ResponsiveStack as QCLabelResponsiveStack,
+  ResponsiveGrid as QCLabelResponsiveGrid,
+  ProductCodeInput as QCLabelProductCodeInput,
+  EnhancedProgressBar as QCLEnhancedProgressBar,
+  ClockNumberConfirmDialog as QCClockNumberConfirmDialog,
   type ProgressStatus
 } from '../../components/qc-label-form';
 
@@ -55,12 +62,12 @@ import {
 import { 
   prepareGrnLabelData, 
   GrnInputData, 
-  mergeAndPrintPdfs
+  mergeAndPrintPdfs as pdfUtilsMergeAndPrintPdfs
 } from '../../../lib/pdfUtils';
 import { 
   createGrnDatabaseEntries, 
   generateGrnPalletNumbersAndSeries,
-  uploadPdfToStorage,
+  uploadPdfToStorage as grnActionsUploadPdfToStorage,
   type GrnPalletInfoPayload, 
   type GrnRecordPayload 
 } from '../../actions/grnActions';
@@ -501,7 +508,7 @@ export const GrnLabelForm: React.FC = () => {
           //  arrayLength: pdfNumberArray.length
           //});
 
-          const uploadResult = await uploadPdfToStorage(pdfNumberArray, fileName, 'grn-labels');
+          const uploadResult = await grnActionsUploadPdfToStorage(pdfNumberArray, fileName, 'grn-labels');
 
           console.log(`[GrnLabelForm] uploadPdfToStorage 完成:`, {
             success: !!uploadResult.publicUrl,
@@ -519,9 +526,9 @@ export const GrnLabelForm: React.FC = () => {
               ...prev, 
               status: prev.status.map((s, idx) => idx === i ? 'Success' : s) 
             }));
-            console.log(`[GrnLabelForm] PDF ${i + 1} 成功添加到收集列表`);
+            //console.log(`[GrnLabelForm] PDF ${i + 1} 成功添加到收集列表`);
           } else {
-            console.error(`[GrnLabelForm] PDF ${i + 1} 上傳失敗: uploadResult 沒有 publicUrl`);
+            //console.error(`[GrnLabelForm] PDF ${i + 1} 上傳失敗: uploadResult 沒有 publicUrl`);
             throw new Error('PDF upload succeeded but no public URL returned.');
           }
         } catch (error: any) {
@@ -542,8 +549,8 @@ export const GrnLabelForm: React.FC = () => {
           : `GRNLabels_Merged_${formData.grnNumber}_${format(new Date(), 'yyyyMMddHHmmss')}.pdf`;
 
         try {
-          await mergeAndPrintPdfs(pdfArrayBuffers, printFileName);
-          toast.success(`Successfully printed ${collectedPdfBlobs.length} GRN label(s)`);
+          await pdfUtilsMergeAndPrintPdfs(pdfArrayBuffers, printFileName);
+          toast.success(`${collectedPdfBlobs.length} GRN label(s) printed successfully`);
         } catch (printError: any) {
           toast.error(`PDF Printing Error: ${printError.message}`);
         }
@@ -625,30 +632,6 @@ export const GrnLabelForm: React.FC = () => {
               {/* GRN Detail Card */}
               <ResponsiveCard 
                 title="GRN Detail" 
-                headerAction={
-                  <FloatingInstructions
-                    title="GRN Label Instructions"
-                    variant="hangover"
-                    steps={[
-                      {
-                        title: "Fill In Details",
-                        description: "Enter GRN Number, Material Supplier Code, and Product Code."
-                      },
-                      {
-                        title: "Select Pallet & Package Types",
-                        description: "Choose the appropriate pallet and package types, and enter quantity count for each type."
-                      },
-                      {
-                        title: "Enter Gross Weight",
-                        description: "Input the gross weight for each pallet."
-                      },
-                      {
-                        title: "Print Labels",
-                        description: "Click 'Print GRN Label(s)' button after confirming all information, then enter your clock number."
-                      }
-                    ]}
-                  />
-                }
               >
                 <ResponsiveGrid columns={{ sm: 1, md: 2 }} gap={6}>
                   <div className="group">
@@ -740,7 +723,7 @@ export const GrnLabelForm: React.FC = () => {
                   <div className="space-y-3">
                     {Object.entries(palletType).map(([key, value]) => (
                       <div key={key} className="group flex justify-between items-center p-1 bg-slate-800/30 rounded-xl border border-slate-600/20 hover:border-orange-500/30 hover:bg-slate-800/50 transition-all duration-300">
-                        <label className="text-xs text-slate-300 font-medium whitespace-nowrap -ml-4">
+                        <label className="text-xs text-slate-300 font-medium whitespace-nowrap pl-1">
                           {key === 'whiteDry' ? 'White Dry' :
                            key === 'whiteWet' ? 'White Wet' :
                            key === 'chepDry' ? 'Chep Dry' :
@@ -768,7 +751,7 @@ export const GrnLabelForm: React.FC = () => {
                   <div className="space-y-4">
                     {Object.entries(packageType).map(([key, value]) => (
                       <div key={key} className="group flex justify-between items-center p-1 bg-slate-800/30 rounded-xl border border-slate-600/20 hover:border-orange-500/30 hover:bg-slate-800/50 transition-all duration-300">
-                        <label className="text-xs text-slate-300 font-medium whitespace-nowrap -ml-4">
+                        <label className="text-xs text-slate-300 font-medium whitespace-nowrap pl-1">
                           {key === 'still' ? 'Still' :
                            key === 'bag' ? 'Bag' :
                            key === 'tote' ? 'Tote' :

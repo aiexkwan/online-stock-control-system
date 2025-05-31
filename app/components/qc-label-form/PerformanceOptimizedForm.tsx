@@ -25,7 +25,6 @@ import { AcoOrderForm } from './AcoOrderForm';
 import { SlateDetailsForm } from './SlateDetailsForm';
 import { useErrorHandler } from './hooks/useErrorHandler';
 import { useMediaQuery } from './hooks/useMediaQuery';
-import FloatingInstructions from '@/components/ui/floating-instructions';
 
 import { useOptimizedFormHandler } from './hooks/useOptimizedCallback';
 import { useQcLabelBusiness } from './hooks/useQcLabelBusiness';
@@ -86,31 +85,15 @@ const ProductSection = React.memo<{
     onProductCodeChange(value);
   }, [onProductCodeChange]);
 
+  const handleProductInfoChange = useCallback((info: ProductInfo | null) => {
+    onProductInfoChange(info);
+  }, [onProductInfoChange]);
+
   return (
     <ResponsiveCard 
       title="Pallet Details"
       //subtitle="Enter the basic information for your pallet labels"
       className="mb-6"
-      headerAction={
-        <FloatingInstructions
-          title="QC Label Instructions"
-          variant="hangover"
-          steps={[
-            {
-              title: "Enter Pallet Details",
-              description: "Fill in all required pallet information including product code, quantity, count, and operator details."
-            },
-            {
-              title: "Configure Product Settings",
-              description: "For ACO products, enter order reference and details. For Slate products, configure batch and material information."
-            },
-            {
-              title: "Generate Labels",
-              description: "Click 'Print Label' button to generate and print QC labels. Enter your clock number when prompted."
-            }
-          ]}
-        />
-      }
     >
       <BasicProductForm
         productCode={productCode}

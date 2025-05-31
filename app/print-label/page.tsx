@@ -3,6 +3,7 @@
 import React from 'react';
 import { PerformanceOptimizedForm } from '../components/qc-label-form/PerformanceOptimizedForm';
 import { ErrorBoundary } from '../components/qc-label-form/ErrorBoundary';
+import FloatingInstructions from '@/components/ui/floating-instructions';
 // import ReviewTemplate from '../components/print-label-pdf/ReviewTemplate';
 // import PdfPreview from '../components/print-label-pdf/PdfPreview';
 
@@ -18,6 +19,33 @@ export default function PrintLabelPage() {
         
         {/* 網格背景 */}
         <div className="absolute inset-0 bg-[linear-gradient(rgba(59,130,246,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(59,130,246,0.03)_1px,transparent_1px)] bg-[size:50px_50px]"></div>
+      </div>
+
+      {/* 固定位置的 Instructions 按鈕 */}
+      <div className="fixed top-6 right-6 z-[9999]">
+        <FloatingInstructions
+          title="QC Label Instructions"
+          variant="floating"
+          position="top-right"
+          steps={[
+            {
+              title: "1. Enter Pallet Information",
+              description: "Fill in product code, quantity, count, and operator details. The system will automatically validate the product code."
+            },
+            {
+              title: "2. Configure Product Settings",
+              description: "For ACO products, enter order reference and details. For Slate products, configure batch and material information."
+            },
+            {
+              title: "3. Generate and Print Labels",
+              description: "Click 'Print Label' button to generate QC labels. The system will prompt for your clock number confirmation."
+            },
+            {
+              title: "4. Check Progress",
+              description: "The progress bar on the right shows label generation status. Download PDF files or print directly when completed."
+            }
+          ]}
+        />
       </div>
 
       {/* 主要內容區域 */}

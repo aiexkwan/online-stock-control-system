@@ -219,6 +219,33 @@ export default function StockTransferPage() {
         <div className="absolute inset-0 bg-[linear-gradient(rgba(59,130,246,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(59,130,246,0.03)_1px,transparent_1px)] bg-[size:50px_50px]"></div>
       </div>
 
+      {/* 固定位置的 Instructions 按鈕 */}
+      <div className="fixed top-6 right-6 z-[9999]">
+        <FloatingInstructions
+          title="Stock Transfer Instructions"
+          variant="floating"
+          position="top-right"
+          steps={[
+            {
+              title: "1. Scan or Enter Pallet",
+              description: "Scan QR code or enter complete pallet number (e.g., 250525/13) or series number (e.g., 260525-5UNXGE)."
+            },
+            {
+              title: "2. Confirm Pallet Information",
+              description: "Review pallet details including product code, quantity, and current location. System will automatically calculate target location."
+            },
+            {
+              title: "3. Enter Clock Number",
+              description: "Enter your clock number to confirm the stock transfer operation."
+            },
+            {
+              title: "4. View Results",
+              description: "Check operation results and activity log. The search field will auto-focus for next operation."
+            }
+          ]}
+        />
+      </div>
+
       {/* 主要內容區域 */}
       <div className="relative z-10">
         <div className="container mx-auto px-4 py-8 max-w-5xl">
@@ -275,28 +302,6 @@ export default function StockTransferPage() {
                       <h2 className="text-2xl font-semibold bg-gradient-to-r from-white via-blue-100 to-cyan-100 bg-clip-text text-transparent">
                         Pallet Search
                       </h2>
-                      <FloatingInstructions
-                        title="Stock Transfer Instructions"
-                        variant="hangover"
-                        steps={[
-                          {
-                            title: "Scan or Enter Pallet",
-                            description: "Scan QR code or enter complete pallet number (e.g., 250525/13) or series number (e.g., 260525-5UNXGE)."
-                          },
-                          {
-                            title: "Confirm Pallet Information",
-                            description: "Review pallet details including product code, quantity, and current location. System will calculate target location."
-                          },
-                          {
-                            title: "Enter Clock Number",
-                            description: "Enter your clock number to confirm the stock transfer operation."
-                          },
-                          {
-                            title: "View Results",
-                            description: "Check operation results and activity log. The search field will auto-focus for next operation."
-                          }
-                        ]}
-                      />
                     </div>
                     
                     <UnifiedSearch
