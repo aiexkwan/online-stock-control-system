@@ -26,6 +26,9 @@ export const FloatingInstructions: React.FC<FloatingInstructionsProps> = ({
   const [isHovered, setIsHovered] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [panelPosition, setPanelPosition] = useState<'left' | 'right'>('left');
+  const [dragPosition, setDragPosition] = useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const buttonRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
 
@@ -39,13 +42,59 @@ export const FloatingInstructions: React.FC<FloatingInstructionsProps> = ({
       const spaceOnLeft = buttonRect.left;
       const spaceOnRight = viewportWidth - buttonRect.right;
       
-      if (spaceOnLeft < panelWidth && spaceOnRight > panelWidth) {
+      // 修復邏輯：確保對話框完全顯示在視窗內
+      if (spaceOnLeft >= panelWidth) {
+        setPanelPosition('left');
+      } else if (spaceOnRight >= panelWidth) {
         setPanelPosition('right');
       } else {
-        setPanelPosition('left');
+        // 如果兩側都不夠，選擇空間較大的一側
+        setPanelPosition(spaceOnLeft > spaceOnRight ? 'left' : 'right');
       }
     }
   }, [isHovered, isOpen]);
+
+  // 拖動處理函數
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (variant === 'floating' && isOpen) {
+      setIsDragging(true);
+      setDragStart({
+        x: e.clientX - dragPosition.x,
+        y: e.clientY - dragPosition.y
+      });
+    }
+  };
+
+  const handleMouseMove = (e: MouseEvent) => {
+    if (isDragging) {
+      const newX = e.clientX - dragStart.x;
+      const newY = e.clientY - dragStart.y;
+      
+      // 限制拖動範圍在視窗內
+      const maxX = window.innerWidth - 320; // 320px 是對話框寬度
+      const maxY = window.innerHeight - 400; // 400px 是對話框大概高度
+      
+      setDragPosition({
+        x: Math.max(0, Math.min(newX, maxX)),
+        y: Math.max(0, Math.min(newY, maxY))
+      });
+    }
+  };
+
+  const handleMouseUp = () => {
+    setIsDragging(false);
+  };
+
+  useEffect(() => {
+    if (isDragging) {
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+      return () => {
+        document.removeEventListener('mousemove', handleMouseMove);
+        document.removeEventListener('mouseup', handleMouseUp);
+      };
+    }
+  }, [isDragging, dragStart]);
 
   const positionClasses = {
     'top-left': 'top-4 left-4',
@@ -85,7 +134,11 @@ export const FloatingInstructions: React.FC<FloatingInstructionsProps> = ({
           `}
           style={{
             transform: isHovered ? 'translateX(0) scale(1)' : 'translateX(0) scale(0.95)',
-            transformOrigin: panelPosition === 'right' ? 'top right' : 'top left'
+            transformOrigin: panelPosition === 'right' ? 'top right' : 'top left',
+            // 確保對話框不會超出視窗邊界
+            maxWidth: panelPosition === 'right' ? 
+              `${Math.min(320, window.innerWidth - (buttonRef.current?.getBoundingClientRect().right || 0))}px` :
+              `${Math.min(320, buttonRef.current?.getBoundingClientRect().left || 320)}px`
           }}
         >
           <div className="p-4 border-b border-gray-200/50 bg-gradient-to-r from-blue-50 to-cyan-50">
@@ -164,33 +217,42 @@ export const FloatingInstructions: React.FC<FloatingInstructionsProps> = ({
           <div 
             ref={panelRef}
             className={`
-              absolute w-72 sm:w-80 max-w-[95vw] z-[9999]
+              fixed w-72 sm:w-80 max-w-[95vw] z-[9999]
               bg-white/95 backdrop-blur-md rounded-xl shadow-2xl border border-gray-200/50
               transform transition-all duration-300 ease-out
               ${isOpen ? 'opacity-100 scale-100' : 'opacity-0 scale-95 pointer-events-none'}
-              ${position === 'top-right' ? 'top-16' : 
-                position === 'top-left' ? 'top-16' : 
-                position === 'bottom-right' ? 'bottom-16' : 
-                position === 'bottom-left' ? 'bottom-16' : 
-                'top-12'}
-              ${panelPosition === 'right' ? 'right-0' : 'left-0'}
+              ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}
             `}
             style={{
-              transformOrigin: panelPosition === 'right' ? 'top right' : 'top left'
+              left: `${dragPosition.x}px`,
+              top: `${dragPosition.y}px`,
+              transformOrigin: 'top left'
             }}
+            onMouseDown={handleMouseDown}
           >
-            <div className="p-4 border-b border-gray-200/50 bg-gradient-to-r from-blue-50 to-cyan-50">
+            <div className="p-4 border-b border-gray-200/50 bg-gradient-to-r from-blue-50 to-cyan-50 cursor-grab active:cursor-grabbing">
               <div className="flex items-center justify-between">
                 <h3 className="text-lg font-semibold text-gray-800 flex items-center">
                   <BookOpenIcon className="h-5 w-5 text-blue-600 mr-2" />
                   {title}
                 </h3>
-                <button
-                  onClick={() => setIsOpen(false)}
-                  className="p-1 rounded-full hover:bg-gray-100 transition-colors"
-                >
-                  <XMarkIcon className="h-4 w-4 text-gray-500" />
-                </button>
+                <div className="flex items-center space-x-2">
+                  <div className="text-xs text-gray-400 flex items-center">
+                    <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                      <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
+                    </svg>
+                    Drag to move
+                  </div>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setIsOpen(false);
+                    }}
+                    className="p-1 rounded-full hover:bg-gray-100 transition-colors"
+                  >
+                    <XMarkIcon className="h-4 w-4 text-gray-500" />
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -217,7 +279,7 @@ export const FloatingInstructions: React.FC<FloatingInstructionsProps> = ({
             <div className="p-3 bg-gradient-to-r from-blue-50/50 to-cyan-50/50 rounded-b-xl border-t border-gray-200/50">
               <p className="text-xs text-gray-500 text-center flex items-center justify-center">
                 <QuestionMarkCircleIcon className="h-3 w-3 mr-1" />
-                Click outside to close
+                Drag header to move • Click outside to close
               </p>
             </div>
           </div>
