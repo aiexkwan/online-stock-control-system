@@ -478,20 +478,40 @@ export const PerformanceOptimizedForm: React.FC<PerformanceOptimizedFormProps> =
       <ResponsiveContainer maxWidth="xl">
         {/* Auto-fill notification */}
         {isAutoFill && autoFillSource === 'void-pallet' && (
-          <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-            <div className="flex items-center space-x-2">
-              <InformationCircleIcon className="h-5 w-5 text-blue-600" />
-              <div>
-                <div className="text-sm font-medium text-blue-800">
-                  自動填充模式
+          <div className="mb-8 relative overflow-hidden rounded-2xl bg-gradient-to-r from-blue-900/40 via-indigo-900/30 to-blue-900/40 backdrop-blur-sm border border-blue-500/30 p-6 shadow-2xl shadow-blue-900/20">
+            {/* 背景光效 */}
+            <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 via-indigo-500/10 to-blue-500/5"></div>
+            
+            {/* 動態光點 */}
+            <div className="absolute top-2 right-2 w-2 h-2 bg-blue-400 rounded-full animate-pulse"></div>
+            
+            <div className="relative z-10">
+              <div className="flex items-start space-x-4">
+                <div className="flex-shrink-0 w-12 h-12 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-2xl flex items-center justify-center shadow-lg shadow-blue-500/25">
+                  <InformationCircleIcon className="h-6 w-6 text-white" />
                 </div>
-                <div className="text-xs text-blue-600 mt-1">
-                  表單已從 Void Pallet 系統自動填充基本信息。請檢查並完成其他必要欄位，然後點擊「Print Label」生成新標籤。
+                <div className="flex-1">
+                  <div className="text-lg font-semibold bg-gradient-to-r from-blue-200 to-indigo-200 bg-clip-text text-transparent mb-2">
+                    自動填充模式
+                  </div>
+                  <div className="text-sm text-blue-200/90 leading-relaxed">
+                    表單已從 Void Pallet 系統自動填充基本信息。請檢查並完成其他必要欄位，然後點擊「Print Label」生成新標籤。
+                  </div>
                   {urlParams.originalPltNum && (
-                    <span className="block mt-1">
-                      原棧板號碼: <span className="font-mono">{urlParams.originalPltNum}</span>
-                      {urlParams.voidReason && ` | 作廢原因: ${urlParams.voidReason}`}
-                    </span>
+                    <div className="mt-3 p-3 bg-slate-800/40 rounded-xl border border-slate-600/30">
+                      <div className="text-xs text-slate-300 space-y-1">
+                        <div className="flex items-center space-x-2">
+                          <span className="text-slate-400">原棧板號碼:</span>
+                          <span className="font-mono text-blue-300 bg-slate-700/50 px-2 py-1 rounded">{urlParams.originalPltNum}</span>
+                        </div>
+                        {urlParams.voidReason && (
+                          <div className="flex items-center space-x-2">
+                            <span className="text-slate-400">作廢原因:</span>
+                            <span className="text-amber-300">{urlParams.voidReason}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
                   )}
                 </div>
               </div>
@@ -569,60 +589,108 @@ export const PerformanceOptimizedForm: React.FC<PerformanceOptimizedFormProps> =
                 />
 
                 {/* Submit Button */}
-                <button
-                  type="submit"
-                  disabled={!validationState.isValid || isLoading || businessLogic.isAcoOrderExcess || businessLogic.isAcoOrderFulfilled || businessLogic.isAcoOrderIncomplete}
-                  className={`
-                    w-full py-3 px-4 rounded-lg font-semibold transition-all duration-200
-                    flex items-center justify-center space-x-2
-                    ${validationState.isValid && !isLoading && !businessLogic.isAcoOrderExcess && !businessLogic.isAcoOrderFulfilled && !businessLogic.isAcoOrderIncomplete
-                      ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-lg hover:shadow-xl'
-                      : 'bg-gray-600 text-gray-300 cursor-not-allowed'
-                    }
-                  `}
-                >
-                  <PrinterIcon className="h-5 w-5" />
-                  <span>
-                    {isLoading ? 'Processing...' : 
-                     businessLogic.isAcoOrderFulfilled ? 'Order Fulfilled' :
-                     businessLogic.isAcoOrderExcess ? 'Quantity Exceeds Order' : 
-                     businessLogic.isAcoOrderIncomplete ? 'Complete ACO Details' :
-                     'Print Label'}
-                  </span>
-                </button>
+                <div className="relative group">
+                  <button
+                    type="submit"
+                    disabled={!validationState.isValid || isLoading || businessLogic.isAcoOrderExcess || businessLogic.isAcoOrderFulfilled || businessLogic.isAcoOrderIncomplete}
+                    className={`
+                      w-full py-4 px-6 rounded-2xl font-semibold text-lg
+                      transition-all duration-300 ease-out
+                      flex items-center justify-center space-x-3
+                      relative overflow-hidden
+                      ${validationState.isValid && !isLoading && !businessLogic.isAcoOrderExcess && !businessLogic.isAcoOrderFulfilled && !businessLogic.isAcoOrderIncomplete
+                        ? 'bg-gradient-to-r from-blue-600 via-blue-500 to-cyan-500 hover:from-blue-500 hover:via-blue-400 hover:to-cyan-400 text-white shadow-2xl shadow-blue-500/25 hover:shadow-blue-400/40 hover:scale-[1.02] active:scale-[0.98]'
+                        : 'bg-gradient-to-r from-slate-700 to-slate-600 text-slate-300 cursor-not-allowed shadow-lg shadow-slate-900/20'
+                      }
+                    `}
+                  >
+                    {/* 按鈕內部光效 */}
+                    {validationState.isValid && !isLoading && !businessLogic.isAcoOrderExcess && !businessLogic.isAcoOrderFulfilled && !businessLogic.isAcoOrderIncomplete && (
+                      <div className="absolute inset-0 bg-gradient-to-r from-white/10 via-white/5 to-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                    )}
+                    
+                    <div className="relative z-10 flex items-center space-x-3">
+                      <PrinterIcon className={`h-6 w-6 ${isLoading ? 'animate-pulse' : ''}`} />
+                      <span>
+                        {isLoading ? 'Processing...' : 
+                         businessLogic.isAcoOrderFulfilled ? 'Order Fulfilled' :
+                         businessLogic.isAcoOrderExcess ? 'Quantity Exceeds Order' : 
+                         businessLogic.isAcoOrderIncomplete ? 'Complete ACO Details' :
+                         'Print Label'}
+                      </span>
+                    </div>
+                    
+                    {/* 載入動畫 */}
+                    {isLoading && (
+                      <div className="absolute right-4 top-1/2 transform -translate-y-1/2">
+                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                      </div>
+                    )}
+                  </button>
+                </div>
                 
                 {/* ACO Fulfilled Warning */}
                 {businessLogic.isAcoOrderFulfilled && (
-                  <div className="mt-2 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                    <div className="text-sm font-medium text-yellow-800">
-                      ⚠️ Cannot Print Label
-                    </div>
-                    <div className="text-xs text-yellow-600 mt-1">
-                      This ACO order has been fulfilled. No remaining quantity available.
+                  <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-amber-900/40 via-yellow-900/30 to-amber-900/40 backdrop-blur-sm border border-amber-500/30 p-4 shadow-lg shadow-amber-900/20">
+                    <div className="absolute inset-0 bg-gradient-to-r from-amber-500/5 via-yellow-500/10 to-amber-500/5"></div>
+                    <div className="relative z-10">
+                      <div className="flex items-center space-x-3">
+                        <div className="flex-shrink-0 w-8 h-8 bg-amber-500/20 rounded-full flex items-center justify-center">
+                          <span className="text-amber-400 text-lg">⚠️</span>
+                        </div>
+                        <div>
+                          <div className="text-sm font-semibold text-amber-200">
+                            Cannot Print Label
+                          </div>
+                          <div className="text-xs text-amber-300/80 mt-1">
+                            This ACO order has been fulfilled. No remaining quantity available.
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 )}
                 
                 {/* ACO Excess Warning */}
                 {businessLogic.isAcoOrderExcess && !businessLogic.isAcoOrderFulfilled && !businessLogic.isAcoOrderIncomplete && (
-                  <div className="mt-2 p-3 bg-red-50 border border-red-200 rounded-lg">
-                    <div className="text-sm font-medium text-red-800">
-                      ⚠️ Cannot Print Label
-                    </div>
-                    <div className="text-xs text-red-600 mt-1">
-                      The total quantity exceeds the remaining ACO order quantity. Please adjust your input.
+                  <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-red-900/40 via-rose-900/30 to-red-900/40 backdrop-blur-sm border border-red-500/30 p-4 shadow-lg shadow-red-900/20">
+                    <div className="absolute inset-0 bg-gradient-to-r from-red-500/5 via-rose-500/10 to-red-500/5"></div>
+                    <div className="relative z-10">
+                      <div className="flex items-center space-x-3">
+                        <div className="flex-shrink-0 w-8 h-8 bg-red-500/20 rounded-full flex items-center justify-center">
+                          <span className="text-red-400 text-lg">⚠️</span>
+                        </div>
+                        <div>
+                          <div className="text-sm font-semibold text-red-200">
+                            Cannot Print Label
+                          </div>
+                          <div className="text-xs text-red-300/80 mt-1">
+                            The total quantity exceeds the remaining ACO order quantity. Please adjust your input.
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 )}
                 
                 {/* ACO Incomplete Warning */}
                 {businessLogic.isAcoOrderIncomplete && (
-                  <div className="mt-2 p-3 bg-orange-50 border border-orange-200 rounded-lg">
-                    <div className="text-sm font-medium text-orange-800">
-                      ⚠️ Complete ACO Order Details
-                    </div>
-                    <div className="text-xs text-orange-600 mt-1">
-                      Please complete the ACO order search or enter all required order details before printing.
+                  <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-orange-900/40 via-amber-900/30 to-orange-900/40 backdrop-blur-sm border border-orange-500/30 p-4 shadow-lg shadow-orange-900/20">
+                    <div className="absolute inset-0 bg-gradient-to-r from-orange-500/5 via-amber-500/10 to-orange-500/5"></div>
+                    <div className="relative z-10">
+                      <div className="flex items-center space-x-3">
+                        <div className="flex-shrink-0 w-8 h-8 bg-orange-500/20 rounded-full flex items-center justify-center">
+                          <span className="text-orange-400 text-lg">⚠️</span>
+                        </div>
+                        <div>
+                          <div className="text-sm font-semibold text-orange-200">
+                            Complete ACO Order Details
+                          </div>
+                          <div className="text-xs text-orange-300/80 mt-1">
+                            Please complete the ACO order search or enter all required order details before printing.
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 )}

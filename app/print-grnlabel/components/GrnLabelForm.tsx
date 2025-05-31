@@ -29,6 +29,13 @@ const customStyles = `
   .bg-gray-750 {
     background-color: #3a3f4b;
   }
+
+  /* 卡片標題樣式 */
+  .pallet-type-card h2,
+  .package-type-card h2 {
+    font-size: 1.25rem !important;
+    white-space: nowrap;
+  }
 `;
 
 // Import reusable components from QC Label
@@ -464,23 +471,23 @@ export const GrnLabelForm: React.FC = () => {
           });
 
           const pdfLabelProps = await prepareGrnLabelData(grnInput);
-          console.log(`[GrnLabelForm] PDF 標籤屬性準備完成:`, pdfLabelProps);
+          //console.log(`[GrnLabelForm] PDF 標籤屬性準備完成:`, pdfLabelProps);
 
           // 生成 PDF blob（不使用 generateAndUploadPdf）
           const { pdf } = await import('@react-pdf/renderer');
           const { PrintLabelPdf } = await import('@/components/print-label-pdf/PrintLabelPdf');
           
-          console.log(`[GrnLabelForm] 開始生成 PDF blob...`);
+          //console.log(`[GrnLabelForm] 開始生成 PDF blob...`);
           const pdfBlob = await pdf(<PrintLabelPdf {...pdfLabelProps} />).toBlob();
           
           if (!pdfBlob) {
             throw new Error('PDF generation failed to return a blob.');
           }
           
-          console.log(`[GrnLabelForm] PDF blob 生成成功:`, {
-            blobSize: pdfBlob.size,
-            blobType: pdfBlob.type
-          });
+          //console.log(`[GrnLabelForm] PDF blob 生成成功:`, {
+          //  blobSize: pdfBlob.size,
+          //  blobType: pdfBlob.type
+          //});
 
           // 轉換 blob 為 number array 以便傳遞給 server action
           const pdfArrayBuffer = await pdfBlob.arrayBuffer();
@@ -489,10 +496,10 @@ export const GrnLabelForm: React.FC = () => {
 
           // 使用 server action 上傳 PDF
           const fileName = `${palletNum.replace('/', '_')}.pdf`;
-          console.log(`[GrnLabelForm] 即將調用 uploadPdfToStorage...`, {
-            fileName,
-            arrayLength: pdfNumberArray.length
-          });
+          //console.log(`[GrnLabelForm] 即將調用 uploadPdfToStorage...`, {
+          //  fileName,
+          //  arrayLength: pdfNumberArray.length
+          //});
 
           const uploadResult = await uploadPdfToStorage(pdfNumberArray, fileName, 'grn-labels');
 
@@ -610,74 +617,93 @@ export const GrnLabelForm: React.FC = () => {
       {/* Inject custom styles */}
       <style jsx global>{customStyles}</style>
       
-      <ResponsiveLayout className="bg-gray-900 text-white">
+      <ResponsiveLayout>
         <ResponsiveContainer maxWidth="xl">
-          <div className="text-center mb-8">
-            {/* <h1 className="text-3xl font-bold text-orange-500">Material Receiving</h1> */}
-          </div>
-
           <ResponsiveStack direction="responsive" spacing={8}>
             {/* Left Column */}
             <div className="flex-1 space-y-8">
               {/* GRN Detail Card */}
               <ResponsiveCard 
                 title="GRN Detail" 
-                className="bg-gray-800"
                 headerAction={
                   <FloatingInstructions
                     title="GRN Label Instructions"
                     variant="hangover"
                     steps={[
                       {
-                        title: "Fill GRN Details",
-                        description: "Enter GRN Number, Material Supplier Code, and Product Code. System will auto-validate supplier and product information."
+                        title: "Fill In Details",
+                        description: "Enter GRN Number, Material Supplier Code, and Product Code."
                       },
                       {
                         title: "Select Pallet & Package Types",
-                        description: "Choose the appropriate pallet and package types, then enter the quantity count for each type."
+                        description: "Choose the appropriate pallet and package types, and enter quantity count for each type."
                       },
                       {
                         title: "Enter Gross Weight",
-                        description: "Input the gross weight for each pallet. System will automatically calculate net weight."
+                        description: "Input the gross weight for each pallet."
                       },
                       {
                         title: "Print Labels",
-                        description: "Click 'Print GRN Label(s)' button after confirming all information is correct, then enter your clock number."
+                        description: "Click 'Print GRN Label(s)' button after confirming all information, then enter your clock number."
                       }
                     ]}
                   />
                 }
               >
                 <ResponsiveGrid columns={{ sm: 1, md: 2 }} gap={6}>
-                  <div>
-                    <label className="block text-sm font-medium mb-1 text-gray-300">
+                  <div className="group">
+                    <label className="block text-sm font-medium mb-2 text-slate-300 group-focus-within:text-orange-400 transition-colors duration-200">
                       GRN Number <span className="text-red-400">*</span>
                     </label>
-                    <input
-                      type="text"
-                      value={formData.grnNumber}
-                      onChange={e => handleFormChange('grnNumber', e.target.value)}
-                      className="w-full p-2 bg-gray-700 border border-gray-600 rounded-md focus:ring-orange-500 focus:border-orange-500 text-white"
-                      placeholder="Please Enter..."
-                      required
-                    />
+                    <div className="relative">
+                      <input
+                        type="text"
+                        value={formData.grnNumber}
+                        onChange={e => handleFormChange('grnNumber', e.target.value)}
+                        className="w-full px-4 py-3 bg-slate-800/50 border border-slate-600/50 rounded-xl text-white placeholder-slate-400 transition-all duration-300 ease-out focus:outline-none focus:ring-2 focus:ring-orange-400/30 focus:border-orange-400/70 focus:bg-slate-800/70 hover:border-orange-500/50 hover:bg-slate-800/60 backdrop-blur-sm"
+                        placeholder="Please Enter..."
+                        required
+                      />
+                      <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-orange-500/5 via-transparent to-amber-500/5 opacity-0 group-focus-within:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
+                    </div>
                   </div>
 
-                  <div>
-                    <label className="block text-sm font-medium mb-1 text-gray-300">
+                  <div className="group">
+                    <label className="block text-sm font-medium mb-2 text-slate-300 group-focus-within:text-orange-400 transition-colors duration-200">
                       Material Supplier <span className="text-red-400">*</span>
                     </label>
-                    <input
-                      type="text"
-                      value={formData.materialSupplier}
-                      onChange={e => handleFormChange('materialSupplier', e.target.value)}
-                      onBlur={handleSupplierBlur}
-                      className="w-full p-2 bg-gray-700 border border-gray-600 rounded-md focus:ring-orange-500 focus:border-orange-500 text-white"
-                      placeholder="Please Enter..."
-                      required
-                    />
-                    {supplierError && <p className="text-red-500 text-xs mt-1">{supplierError}</p>}
-                    {supplierInfo && <p className="text-green-400 text-xs mt-1">{supplierInfo.supplier_name}</p>}
+                    <div className="relative">
+                      <input
+                        type="text"
+                        value={formData.materialSupplier}
+                        onChange={e => handleFormChange('materialSupplier', e.target.value)}
+                        onBlur={handleSupplierBlur}
+                        className="w-full px-4 py-3 bg-slate-800/50 border border-slate-600/50 rounded-xl text-white placeholder-slate-400 transition-all duration-300 ease-out focus:outline-none focus:ring-2 focus:ring-orange-400/30 focus:border-orange-400/70 focus:bg-slate-800/70 hover:border-orange-500/50 hover:bg-slate-800/60 backdrop-blur-sm"
+                        placeholder="Please Enter..."
+                        required
+                      />
+                      <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-orange-500/5 via-transparent to-amber-500/5 opacity-0 group-focus-within:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
+                    </div>
+                    {supplierError && (
+                      <div className="mt-2 p-2 bg-red-500/10 border border-red-500/20 rounded-lg">
+                        <p className="text-red-400 text-xs flex items-center">
+                          <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                          </svg>
+                          {supplierError}
+                        </p>
+                      </div>
+                    )}
+                    {supplierInfo && (
+                      <div className="mt-2 p-2 bg-green-500/10 border border-green-500/20 rounded-lg">
+                        <p className="text-green-400 text-xs flex items-center">
+                          <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                          </svg>
+                          {supplierInfo.supplier_name}
+                        </p>
+                      </div>
+                    )}
                   </div>
 
                   <div className="md:col-span-2">
@@ -692,9 +718,16 @@ export const GrnLabelForm: React.FC = () => {
                       userId={currentUserId}
                     />
                     {productInfo && (
-                      <p className="text-green-400 text-xs mt-1">
-                        {productInfo.code} - {productInfo.description}
-                      </p>
+                      <div className="mt-2 p-3 bg-green-500/10 border border-green-500/20 rounded-lg">
+                        <p className="text-green-400 text-sm flex items-center">
+                          <svg className="w-4 h-4 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                          </svg>
+                          <span className="font-mono text-green-300">{productInfo.code}</span>
+                          <span className="mx-2 text-green-500">-</span>
+                          <span>{productInfo.description}</span>
+                        </p>
+                      </div>
                     )}
                   </div>
                 </ResponsiveGrid>
@@ -703,42 +736,55 @@ export const GrnLabelForm: React.FC = () => {
               {/* Pallet & Package Type Row */}
               <ResponsiveGrid columns={{ sm: 1, md: 2 }} gap={8}>
                 {/* Pallet Type Card */}
-                <ResponsiveCard title="Pallet Type" className="bg-gray-800">
+                <ResponsiveCard title="Pallet Type" className="pallet-type-card">
                   <div className="space-y-3">
                     {Object.entries(palletType).map(([key, value]) => (
-                      <div key={key} className="flex justify-between items-center">
-                        <label className="text-sm text-gray-300">
-                          {key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
+                      <div key={key} className="group flex justify-between items-center p-1 bg-slate-800/30 rounded-xl border border-slate-600/20 hover:border-orange-500/30 hover:bg-slate-800/50 transition-all duration-300">
+                        <label className="text-xs text-slate-300 font-medium whitespace-nowrap -ml-4">
+                          {key === 'whiteDry' ? 'White Dry' :
+                           key === 'whiteWet' ? 'White Wet' :
+                           key === 'chepDry' ? 'Chep Dry' :
+                           key === 'chepWet' ? 'Chep Wet' :
+                           key === 'euro' ? 'Euro' :
+                           key === 'notIncluded' ? 'Not Included' : key}
                         </label>
-                        <input
-                          type="number"
-                          value={value}
-                          onChange={e => handlePalletTypeChange(key as keyof PalletTypeData, e.target.value)}
-                          className="w-24 p-2 bg-gray-700 border border-gray-600 rounded-md focus:ring-orange-500 focus:border-orange-500 text-center text-white"
-                          placeholder="Qty"
-                          min="0"
-                        />
+                        <div className="relative">
+                          <input
+                            type="number"
+                            value={value}
+                            onChange={e => handlePalletTypeChange(key as keyof PalletTypeData, e.target.value)}
+                            className="w-14 px-2 py-2 bg-slate-700/50 border border-slate-600/50 rounded-lg text-center text-white placeholder-slate-400 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-orange-400/30 focus:border-orange-400/70 hover:border-orange-500/50"
+                            placeholder="Qty"
+                            min="0"
+                          />
+                        </div>
                       </div>
                     ))}
                   </div>
                 </ResponsiveCard>
 
                 {/* Package Type Card */}
-                <ResponsiveCard title="Package Type" className="bg-gray-800">
-                  <div className="space-y-3">
+                <ResponsiveCard title="Package Type" className="package-type-card">
+                  <div className="space-y-4">
                     {Object.entries(packageType).map(([key, value]) => (
-                      <div key={key} className="flex justify-between items-center">
-                        <label className="text-sm text-gray-300">
-                          {key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
+                      <div key={key} className="group flex justify-between items-center p-1 bg-slate-800/30 rounded-xl border border-slate-600/20 hover:border-orange-500/30 hover:bg-slate-800/50 transition-all duration-300">
+                        <label className="text-xs text-slate-300 font-medium whitespace-nowrap -ml-4">
+                          {key === 'still' ? 'Still' :
+                           key === 'bag' ? 'Bag' :
+                           key === 'tote' ? 'Tote' :
+                           key === 'octo' ? 'Octo' :
+                           key === 'notIncluded' ? 'Not Included' : key}
                         </label>
-                        <input
-                          type="number"
-                          value={value}
-                          onChange={e => handlePackageTypeChange(key as keyof PackageTypeData, e.target.value)}
-                          className="w-24 p-2 bg-gray-700 border border-gray-600 rounded-md focus:ring-orange-500 focus:border-orange-500 text-center text-white"
-                          placeholder="Qty"
-                          min="0"
-                        />
+                        <div className="relative">
+                          <input
+                            type="number"
+                            value={value}
+                            onChange={e => handlePackageTypeChange(key as keyof PackageTypeData, e.target.value)}
+                            className="w-14 px-2 py-2 bg-slate-700/50 border border-slate-600/50 rounded-lg text-center text-white placeholder-slate-400 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-orange-400/30 focus:border-orange-400/70 hover:border-orange-500/50"
+                            placeholder="Qty"
+                            min="0"
+                          />
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -748,21 +794,27 @@ export const GrnLabelForm: React.FC = () => {
 
             {/* Right Column */}
             <div className="flex-1 lg:max-w-md">
-              <ResponsiveCard title="Weight Information" className="bg-gray-800 sticky top-8">
+              <ResponsiveCard title="Weight Information" className="sticky top-8">
                 {/* Summary Information */}
-                <div className="mb-6 p-4 bg-gray-700 rounded-lg">
+                <div className="mb-6 p-4 bg-gradient-to-r from-slate-800/60 to-slate-700/40 rounded-xl border border-slate-600/30">
                   <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div>
-                      <span className="text-gray-400">Total Pallets:</span>
-                      <span className="ml-2 text-white font-semibold">{grossWeights.filter(w => w.trim() !== '').length}</span>
+                    <div className="flex items-center justify-between">
+                      <span className="text-slate-400">Total Pallets:</span>
+                      <span className="text-white font-semibold bg-orange-500/20 px-2 py-1 rounded-full">
+                        {grossWeights.filter(w => w.trim() !== '').length}
+                      </span>
                     </div>
-                    <div>
-                      <span className="text-gray-400">Max Pallets:</span>
-                      <span className="ml-2 text-white font-semibold">22</span>
+                    <div className="flex items-center justify-between">
+                      <span className="text-slate-400">Max Pallets:</span>
+                      <span className="text-white font-semibold bg-slate-600/50 px-2 py-1 rounded-full">22</span>
                     </div>
-                    <div className="col-span-2">
-                      <span className="text-gray-400">Status:</span>
-                      <span className={`ml-2 font-semibold ${isFormValid ? 'text-green-400' : 'text-yellow-400'}`}>
+                    <div className="col-span-2 flex items-center justify-between">
+                      <span className="text-slate-400">Status:</span>
+                      <span className={`font-semibold px-3 py-1 rounded-full text-sm ${
+                        isFormValid 
+                          ? 'text-green-300 bg-green-500/20 border border-green-500/30' 
+                          : 'text-amber-300 bg-amber-500/20 border border-amber-500/30'
+                      }`}>
                         {isFormValid ? 'Ready to Print' : 'Incomplete Form'}
                       </span>
                     </div>
@@ -772,8 +824,10 @@ export const GrnLabelForm: React.FC = () => {
                 {/* Weight Input Section */}
                 <div className="mb-6">
                   <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-sm font-medium text-gray-300">Gross Weight / Qty</h3>
-                    <span className="text-xs text-gray-400">
+                    <h3 className="text-sm font-semibold bg-gradient-to-r from-white to-orange-200 bg-clip-text text-transparent">
+                      Gross Weight / Qty
+                    </h3>
+                    <span className="text-xs text-slate-400 bg-slate-700/50 px-3 py-1 rounded-full">
                       {grossWeights.filter(w => w.trim() !== '').length} / 22 pallets
                     </span>
                   </div>
@@ -786,32 +840,32 @@ export const GrnLabelForm: React.FC = () => {
                       return (
                         <div 
                           key={idx} 
-                          className={`flex items-center space-x-3 p-3 rounded-lg transition-all duration-200 ${
+                          className={`flex items-center space-x-3 p-3 rounded-xl transition-all duration-300 ${
                             hasValue 
-                              ? 'bg-gray-700 border border-gray-600' 
+                              ? 'bg-gradient-to-r from-slate-800/60 to-slate-700/40 border border-slate-600/50 hover:border-orange-500/50' 
                               : isLast 
-                                ? 'bg-gray-750 border border-dashed border-gray-600' 
-                                : 'bg-gray-800 border border-gray-700'
+                                ? 'bg-slate-800/30 border border-dashed border-slate-600/50 hover:border-orange-500/30' 
+                                : 'bg-slate-800/20 border border-slate-700/30'
                           }`}
                         >
                           {/* Pallet Number Badge */}
-                          <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${
+                          <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-300 ${
                             hasValue 
-                              ? 'bg-orange-600 text-white' 
+                              ? 'bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-lg shadow-orange-500/25' 
                               : isLast 
-                                ? 'bg-gray-600 text-gray-300 border-2 border-dashed border-gray-500' 
-                                : 'bg-gray-600 text-gray-400'
+                                ? 'bg-slate-600/50 text-slate-300 border-2 border-dashed border-slate-500/50' 
+                                : 'bg-slate-600/30 text-slate-400'
                           }`}>
                             {idx + 1}
                           </div>
                           
                           {/* Pallet Label and Net Weight */}
                           <div className="flex-1 min-w-0 flex items-center space-x-2">
-                            <div className={`text-sm font-medium ${hasValue ? 'text-white' : 'text-gray-400'}`}>
+                            <div className={`text-sm font-medium whitespace-nowrap ${hasValue ? 'text-white' : 'text-slate-400'}`}>
                               {getPalletLabel(idx)}
                             </div>
                             {hasValue && (
-                              <div className="text-xs text-gray-400">
+                              <div className="text-xs text-orange-300 bg-orange-500/10 px-2 py-1 rounded-full whitespace-nowrap">
                                 Net: {(parseFloat(weight) - 
                                   (PALLET_WEIGHT[Object.entries(palletType).find(([, value]) => (parseInt(value) || 0) > 0)?.[0] || 'notIncluded'] || 0) - 
                                   (PACKAGE_WEIGHT[Object.entries(packageType).find(([, value]) => (parseInt(value) || 0) > 0)?.[0] || 'notIncluded'] || 0)
@@ -826,17 +880,17 @@ export const GrnLabelForm: React.FC = () => {
                               type="number"
                               value={weight}
                               onChange={e => handleGrossWeightChange(idx, e.target.value)}
-                              className={`w-16 p-2 text-right text-sm rounded-md border transition-all duration-200 ${
+                              className={`w-16 px-2 py-2 text-right text-sm rounded-lg border transition-all duration-300 ${
                                 hasValue 
-                                  ? 'bg-gray-600 border-gray-500 text-white focus:ring-orange-500 focus:border-orange-500' 
-                                  : 'bg-gray-700 border-gray-600 text-gray-300 focus:ring-orange-500 focus:border-orange-500'
+                                  ? 'bg-slate-700/50 border-slate-600/50 text-white focus:ring-orange-400/30 focus:border-orange-400/70' 
+                                  : 'bg-slate-700/30 border-slate-600/30 text-slate-300 focus:ring-orange-400/30 focus:border-orange-400/70'
                               }`}
                               placeholder={isLast ? "Enter" : "0"}
                               min="0"
                               step="0.1"
                               maxLength={5}
                             />
-                            <span className="text-xs text-gray-500">kg</span>
+                            <span className="text-xs text-slate-500">kg</span>
                           </div>
                           
                           {/* Remove Button for filled entries */}
@@ -849,7 +903,7 @@ export const GrnLabelForm: React.FC = () => {
                                 }
                                 setGrossWeights(newWeights);
                               }}
-                              className="flex-shrink-0 w-6 h-6 rounded-full bg-red-600 hover:bg-red-700 text-white text-xs flex items-center justify-center transition-colors duration-200"
+                              className="flex-shrink-0 w-6 h-6 rounded-full bg-red-500/80 hover:bg-red-500 text-white text-xs flex items-center justify-center transition-all duration-300 hover:scale-110"
                               title="Remove this pallet"
                             >
                               ×
@@ -862,35 +916,47 @@ export const GrnLabelForm: React.FC = () => {
                 </div>
 
                 {/* Action Button */}
-                <button
-                  onClick={handlePrintClick}
-                  disabled={!isFormValid || isProcessing}
-                  className={`w-full p-4 rounded-lg font-semibold text-lg transition-all duration-200 ${
-                    !isFormValid || isProcessing
-                      ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
-                      : 'bg-orange-600 hover:bg-orange-700 text-white shadow-lg hover:shadow-xl transform hover:scale-105'
-                  }`}
-                >
-                  {isProcessing ? (
-                    <div className="flex items-center justify-center space-x-2">
-                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                      <span>Processing Labels...</span>
-                    </div>
-                  ) : (
-                    <div className="flex items-center justify-center space-x-2">
-                      <span>Print GRN Label(s)</span>
-                      {grossWeights.filter(w => w.trim() !== '').length > 0 && (
-                        <span className="bg-orange-700 px-2 py-1 rounded-full text-sm">
-                          {grossWeights.filter(w => w.trim() !== '').length}
-                        </span>
+                <div className="relative group">
+                  <button
+                    onClick={handlePrintClick}
+                    disabled={!isFormValid || isProcessing}
+                    className={`w-full py-4 px-6 rounded-2xl font-semibold text-lg transition-all duration-300 ease-out flex items-center justify-center space-x-3 relative overflow-hidden ${
+                      !isFormValid || isProcessing
+                        ? 'bg-gradient-to-r from-slate-700 to-slate-600 text-slate-300 cursor-not-allowed shadow-lg shadow-slate-900/20'
+                        : 'bg-gradient-to-r from-orange-600 via-orange-500 to-amber-500 hover:from-orange-500 hover:via-orange-400 hover:to-amber-400 text-white shadow-2xl shadow-orange-500/25 hover:shadow-orange-400/40 hover:scale-[1.02] active:scale-[0.98]'
+                    }`}
+                  >
+                    {/* 按鈕內部光效 */}
+                    {!isProcessing && isFormValid && (
+                      <div className="absolute inset-0 bg-gradient-to-r from-white/10 via-white/5 to-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                    )}
+                    
+                    <div className="relative z-10 flex items-center space-x-3">
+                      {isProcessing ? (
+                        <>
+                          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white"></div>
+                          <span>Processing Labels...</span>
+                        </>
+                      ) : (
+                        <>
+                          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                          </svg>
+                          <span>Print GRN Label(s)</span>
+                          {grossWeights.filter(w => w.trim() !== '').length > 0 && (
+                            <span className="bg-orange-600/80 px-2 py-1 rounded-full text-sm font-bold">
+                              {grossWeights.filter(w => w.trim() !== '').length}
+                            </span>
+                          )}
+                        </>
                       )}
                     </div>
-                  )}
-                </button>
+                  </button>
+                </div>
 
                 {/* Progress Bar */}
                 {pdfProgress.total > 0 && (
-                  <div className="mt-4">
+                  <div className="mt-6">
                     <EnhancedProgressBar
                       current={pdfProgress.current}
                       total={pdfProgress.total}
@@ -899,7 +965,6 @@ export const GrnLabelForm: React.FC = () => {
                       variant="compact"
                       showPercentage={true}
                       showItemDetails={true}
-                      className="bg-gray-700 p-4 rounded-lg"
                     />
                   </div>
                 )}

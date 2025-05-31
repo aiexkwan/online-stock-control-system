@@ -127,35 +127,47 @@ export const ResponsiveCard: React.FC<{
 
   return (
     <div className={`
-      bg-gray-800 rounded-lg border border-gray-700
-      ${shadow ? 'shadow-lg hover:shadow-xl transition-shadow duration-200' : ''}
+      relative group
+      bg-gradient-to-br from-slate-800/60 via-slate-800/40 to-blue-900/30
+      backdrop-blur-xl border border-slate-600/30
+      rounded-2xl overflow-hidden
+      ${shadow ? 'shadow-2xl shadow-blue-900/10 hover:shadow-blue-800/20 transition-all duration-300' : ''}
       ${paddingClasses[padding]}
       ${className}
+      hover:border-blue-500/30 hover:bg-gradient-to-br hover:from-slate-800/70 hover:via-slate-800/50 hover:to-blue-900/40
     `}>
-      {(title || subtitle || headerAction) && (
-        <div className="mb-6">
-          {(title || headerAction) && (
-            <div className="flex items-center justify-between mb-2">
-              {title && (
-                <h2 className="text-xl sm:text-2xl font-semibold text-white">
-                  {title}
-                </h2>
-              )}
-              {headerAction && (
-                <div className="flex-shrink-0">
-                  {headerAction}
-                </div>
-              )}
-            </div>
-          )}
-          {subtitle && (
-            <p className="text-sm text-gray-400">
-              {subtitle}
-            </p>
-          )}
-        </div>
-      )}
-      {children}
+      {/* 卡片內部光效 */}
+      <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 via-transparent to-cyan-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+      
+      {/* 頂部邊框光效 */}
+      <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-blue-400/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+      
+      <div className="relative z-10">
+        {(title || subtitle || headerAction) && (
+          <div className="mb-6">
+            {(title || headerAction) && (
+              <div className="flex items-center justify-between mb-2">
+                {title && (
+                  <h2 className="text-xl sm:text-2xl font-semibold bg-gradient-to-r from-white via-blue-100 to-cyan-100 bg-clip-text text-transparent">
+                    {title}
+                  </h2>
+                )}
+                {headerAction && (
+                  <div className="flex-shrink-0">
+                    {headerAction}
+                  </div>
+                )}
+              </div>
+            )}
+            {subtitle && (
+              <p className="text-sm text-slate-400">
+                {subtitle}
+              </p>
+            )}
+          </div>
+        )}
+        {children}
+      </div>
     </div>
   );
 });

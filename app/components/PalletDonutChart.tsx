@@ -139,13 +139,13 @@ export default function PalletDonutChart({
             <TooltipContent className="bg-slate-800 text-white border-slate-600 p-4 rounded-lg shadow-xl">
               <div className="space-y-2">
                 <div className="font-semibold text-center mb-2">Performance Overview</div>
-                <div className="grid grid-cols-2 gap-4 text-sm">
+                <div className="grid grid-cols-2 gap-4 text-xxxs"> 
                   <div className="text-center">
-                    <div className="text-blue-400 font-bold text-lg">{palletsGenerated}</div>
+                    <div className="text-blue-400 font-bold text-xxxs">{palletsGenerated}</div>
                     <div className="text-slate-300">Pallets Generated</div>
                   </div>
                   <div className="text-center">
-                    <div className="text-green-400 font-bold text-lg">{palletsTransferred}</div>
+                    <div className="text-green-400 font-bold text-xxxs">{palletsTransferred}</div>
                     <div className="text-slate-300">Pallets Transferred</div>
             </div>
           </div>
@@ -164,7 +164,7 @@ export default function PalletDonutChart({
           className="text-center"
         >
           <div className="text-blue-400 font-bold text-2xl mb-1">{palletsGenerated}</div>
-          <div className="text-xs text-slate-400 uppercase tracking-wide">Generated</div>
+          <div className="text-xxxs text-slate-400 uppercase tracking-wide">Produced</div>
         </motion.div>
         
         <motion.div 
@@ -174,7 +174,7 @@ export default function PalletDonutChart({
           className="text-center"
         >
           <div className="text-green-400 font-bold text-2xl mb-1">{palletsTransferred}</div>
-          <div className="text-xs text-slate-400 uppercase tracking-wide">Transferred</div>
+          <div className="text-xxxs text-slate-400 uppercase tracking-wide">Transferred</div>
         </motion.div>
       </div>
     </div>

@@ -19,18 +19,16 @@ const publicPaths = [
 const protectedPaths = [
   '/access',
   '/dashboard',
-  '/users',
   '/reports',
   '/view-history',
   '/void-pallet',
   '/tables',
   '/inventory',
-  '/export-report',
   '/history',
   '/products',
   '/productUpdate',
   '/stock-transfer',
-  '/print-label',
+  //'/print-label',
   '/print-grnlabel',
   '/change-password'  // 密碼修改頁面需要認證，用戶必須已登入
 ];

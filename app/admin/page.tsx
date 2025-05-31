@@ -6,6 +6,15 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { 
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 import { createClient } from '@/lib/supabase';
 import { toast } from 'sonner';
 import { 
@@ -40,7 +49,7 @@ const adminMenuItems = [
   {
     id: 'void',
     title: 'Void Pallet',
-    description: 'Void or cancel pallet records',
+    description: 'Cancel records of illegal or damaged pallets',
     icon: NoSymbolIcon,
     path: '/void-pallet',
     color: 'hover:bg-red-900/20 hover:text-red-400',
@@ -49,7 +58,7 @@ const adminMenuItems = [
   {
     id: 'history',
     title: 'View History',
-    description: 'View transaction history records',
+    description: 'View pallet full history records',
     icon: ClockIcon,
     path: '/view-history',
     color: 'hover:bg-blue-900/20 hover:text-blue-400',
@@ -58,65 +67,51 @@ const adminMenuItems = [
   {
     id: 'aco-report',
     title: 'ACO Order Report',
-    description: 'Generate and export ACO order reports',
+    description: 'Export ACO order reports',
     icon: DocumentChartBarIcon,
-    path: '/export-report?type=aco',
+    action: 'generate-report',
+    reportType: 'ACO',
     color: 'hover:bg-green-900/20 hover:text-green-400',
     category: 'Reports'
   },
   {
     id: 'grn-report',
     title: 'GRN Report',
-    description: 'Generate and export GRN reports',
+    description: 'Export GRN reports',
     icon: DocumentTextIcon,
-    path: '/export-report?type=grn',
+    action: 'generate-report',
+    reportType: 'GRN',
     color: 'hover:bg-blue-900/20 hover:text-blue-400',
     category: 'Reports'
   },
   {
     id: 'transaction-report',
     title: 'Transaction Report',
-    description: 'Generate and export transaction reports',
+    description: 'Export transaction reports',
     icon: TableCellsIcon,
-    path: '/export-report?type=transaction',
+    action: 'generate-report',
+    reportType: 'transaction',
     color: 'hover:bg-purple-900/20 hover:text-purple-400',
     category: 'Reports'
   },
   {
     id: 'slate-report',
     title: 'Slate Report',
-    description: 'Generate and export slate reports',
+    description: 'Export slate reports',
     icon: RectangleStackIcon,
-    path: '/export-report?type=slate',
+    action: 'generate-report',
+    reportType: 'slate',
     color: 'hover:bg-orange-900/20 hover:text-orange-400',
     category: 'Reports'
   },
   {
-    id: 'ask',
-    title: 'Ask Database',
-    description: 'Query database information',
-    icon: ChatBubbleLeftRightIcon,
-    path: '/ask-database',
-    color: 'hover:bg-purple-900/20 hover:text-purple-400',
-    category: 'System Tools'
-  },
-  {
     id: 'product',
     title: 'Product Update',
-    description: 'Manage and update product information',
+    description: 'Add and update product information',
     icon: CubeIcon,
     path: '/productUpdate',
     color: 'hover:bg-orange-900/20 hover:text-orange-400',
     category: 'System Tools'
-  },
-  {
-    id: 'access',
-    title: 'Access Update',
-    description: 'Manage user access and permissions',
-    icon: KeyIcon,
-    path: '/users',
-    color: 'hover:bg-indigo-900/20 hover:text-indigo-400',
-    category: 'User Management'
   }
 ];
 
@@ -192,6 +187,23 @@ export default function AdminPanelPage() {
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [searchResults, setSearchResults] = useState<InventoryLocation | null>(null);
   const [searchLoading, setSearchLoading] = useState(false);
+
+  // Report generation states
+  const [reportLoading, setReportLoading] = useState<string | null>(null);
+  const [showReportDialog, setShowReportDialog] = useState(false);
+  const [currentReportType, setCurrentReportType] = useState<string>('');
+  
+  // ACO Report states
+  const [availableAcoOrders, setAvailableAcoOrders] = useState<string[]>([]);
+  const [selectedAcoOrder, setSelectedAcoOrder] = useState<string>('');
+  
+  // GRN Report states
+  const [availableGrnRefs, setAvailableGrnRefs] = useState<string[]>([]);
+  const [selectedGrnRef, setSelectedGrnRef] = useState<string>('');
+  
+  // Transaction Report states
+  const [startDate, setStartDate] = useState<string>('');
+  const [endDate, setEndDate] = useState<string>('');
 
   // Load dashboard statistics
   const loadDashboardStats = async () => {
@@ -436,8 +448,197 @@ export default function AdminPanelPage() {
     setIsDropdownOpen(false);
   };
 
-  const handleItemClick = (path: string) => {
-    router.push(path);
+  // Handle item click with support for different actions
+  const handleItemClick = (item: any) => {
+    if (item.action === 'generate-report' && item.reportType) {
+      handleReportClick(item.reportType);
+    } else if (item.path) {
+      router.push(item.path);
+    }
+  };
+
+  // Handle report click - open dialog for parameter selection
+  const handleReportClick = async (reportType: string) => {
+    setCurrentReportType(reportType);
+    setShowReportDialog(true);
+    
+    // Load data based on report type
+    try {
+      if (reportType === 'aco') {
+        await loadAcoOrders();
+      } else if (reportType === 'grn') {
+        await loadGrnRefs();
+      } else if (reportType === 'transaction') {
+        // Set default date range (last 30 days)
+        const endDate = new Date();
+        const startDate = new Date();
+        startDate.setDate(endDate.getDate());
+        setStartDate(startDate.toISOString().split('T')[0]);
+        setEndDate(endDate.toISOString().split('T')[0]);
+      } else if (reportType === 'slate') {
+        toast.info('Slate report is currently under development');
+        return;
+      }
+    } catch (error) {
+      console.error(`Error loading ${reportType} data:`, error);
+      toast.error(`Failed to load ${reportType} data`);
+    }
+  };
+
+  // Load ACO orders
+  const loadAcoOrders = async () => {
+    try {
+      const { getUniqueAcoOrderRefs } = await import('../actions/reportActions');
+      const orders = await getUniqueAcoOrderRefs();
+      setAvailableAcoOrders(orders);
+      if (orders.length > 0) {
+        setSelectedAcoOrder(orders[orders.length - 1]); // Select latest order
+      }
+    } catch (error) {
+      console.error('Error loading ACO orders:', error);
+      throw error;
+    }
+  };
+
+  // Load GRN refs
+  const loadGrnRefs = async () => {
+    try {
+      const { getUniqueGrnRefs } = await import('../actions/reportActions');
+      const refs = await getUniqueGrnRefs();
+      setAvailableGrnRefs(refs);
+      if (refs.length > 0) {
+        setSelectedGrnRef(refs[refs.length - 1]); // Select latest ref
+      }
+    } catch (error) {
+      console.error('Error loading GRN refs:', error);
+      throw error;
+    }
+  };
+
+  // Generate report with selected parameters
+  const generateReport = async () => {
+    if (!currentReportType) return;
+
+    try {
+      setReportLoading(currentReportType);
+
+      if (currentReportType === 'aco') {
+        if (!selectedAcoOrder) {
+          toast.error('Please select an ACO order');
+          return;
+        }
+        await generateAcoReport(selectedAcoOrder);
+      } else if (currentReportType === 'grn') {
+        if (!selectedGrnRef) {
+          toast.error('Please select GRN reference');
+          return;
+        }
+        await generateGrnReport(selectedGrnRef);
+      } else if (currentReportType === 'transaction') {
+        if (!startDate || !endDate) {
+          toast.error('Please select start and end dates');
+          return;
+        }
+        await generateTransactionReport(startDate, endDate);
+      } else if (currentReportType === 'slate') {
+        toast.info('Slate report is currently under development');
+        return;
+      }
+
+      setShowReportDialog(false);
+      toast.success(`${currentReportType.toUpperCase()} report generated successfully`);
+    } catch (error: any) {
+      console.error(`Error generating ${currentReportType} report:`, error);
+      toast.error(`Failed to generate ${currentReportType} report: ${error.message}`);
+    } finally {
+      setReportLoading(null);
+    }
+  };
+
+  // Generate ACO report
+  const generateAcoReport = async (orderRef: string) => {
+    const { getAcoReportData } = await import('../actions/reportActions');
+    const { exportAcoReport } = await import('../../lib/exportReport');
+    const reportData = await getAcoReportData(orderRef);
+    if (!reportData || reportData.length === 0) {
+      throw new Error('No ACO data available');
+    }
+    await exportAcoReport(reportData, orderRef);
+  };
+
+  // Generate GRN report
+  const generateGrnReport = async (grnRef: string) => {
+    const { getMaterialCodesForGrnRef, getGrnReportData } = await import('../actions/reportActions');
+    const { exportGrnReport } = await import('../../lib/exportReport');
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user?.email) {
+      throw new Error('User email not found');
+    }
+
+    // 獲取該 GRN ref 下的所有 material codes
+    const materialCodes = await getMaterialCodesForGrnRef(grnRef);
+    if (!materialCodes || materialCodes.length === 0) {
+      throw new Error('No material codes found for this GRN reference');
+    }
+
+    let successCount = 0;
+    let errorCount = 0;
+    const errors: string[] = [];
+
+    // 為每個 material code 生成獨立的報告
+    for (const materialCode of materialCodes) {
+      try {
+        const reportData = await getGrnReportData(grnRef, materialCode, user.email);
+        if (reportData) {
+          await exportGrnReport(reportData);
+          successCount++;
+        } else {
+          errorCount++;
+          errors.push(`No data found for material code: ${materialCode}`);
+        }
+      } catch (error: any) {
+        errorCount++;
+        errors.push(`Error generating report for ${materialCode}: ${error.message}`);
+        console.error(`Error generating GRN report for material code ${materialCode}:`, error);
+      }
+    }
+
+    // 顯示結果摘要
+    if (successCount > 0) {
+      toast.success(`${successCount} GRN report(s) generated`);
+    }
+    
+    if (errorCount > 0) {
+      console.warn('GRN Report generation errors:', errors);
+      toast.warning(`${errorCount} report(s) failed to generate. Check console for details.`);
+    }
+
+    if (successCount === 0) {
+      throw new Error('No reports were generated successfully');
+    }
+  };
+
+  // Generate Transaction report
+  const generateTransactionReport = async (startDate: string, endDate: string) => {
+    const { getTransactionReportData } = await import('../actions/reportActions');
+    const { buildTransactionReport } = await import('../../lib/exportReport');
+    const reportData = await getTransactionReportData(startDate, endDate);
+    if (!reportData || reportData.transfers.length === 0) {
+      throw new Error('No transaction data available for the selected date range');
+    }
+    await buildTransactionReport(reportData);
+  };
+
+  // Close report dialog
+  const closeReportDialog = () => {
+    setShowReportDialog(false);
+    setCurrentReportType('');
+    setSelectedAcoOrder('');
+    setSelectedGrnRef('');
+    setAvailableAcoOrders([]);
+    setAvailableGrnRefs([]);
+    setStartDate('');
+    setEndDate('');
   };
 
   // Click outside handler for dropdown
@@ -492,433 +693,790 @@ export default function AdminPanelPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white pt-24">
-      {/* Admin Panel Navigation Bar */}
-      <div className="bg-gray-900/95 backdrop-blur-sm border-b border-gray-700/50 sticky top-24 z-35 -mt-24">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-12">
-            {/* Left side - Empty space or could be used for breadcrumbs */}
-            <div className="flex items-center">
-              {/* Removed Admin Panel title and icon */}
-            </div>
-
-            {/* Center - Navigation Menu */}
-            <div className="hidden md:flex items-center space-x-1">
-              {Object.entries(groupedItems).map(([category, items]) => (
-                <div key={category} className="relative group">
-                  <div className="flex items-center gap-2 px-3 py-1 text-sm text-gray-300 hover:text-white hover:bg-gray-700/50 rounded-lg transition-colors cursor-pointer">
-                    {category}
-                    <ChevronDownIcon className="w-4 h-4 transition-transform group-hover:rotate-180" />
-                  </div>
-                  
-                  {/* Hover Dropdown */}
-                  <div className="absolute top-full left-0 mt-1 bg-slate-800 border border-slate-600 rounded-lg shadow-xl z-50 min-w-[250px] opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
-                    {items.map((item) => {
-                      const IconComponent = item.icon;
-                      return (
-                        <button
-                          key={item.id}
-                          onClick={() => handleItemClick(item.path)}
-                          className={`w-full px-4 py-3 text-left hover:bg-slate-700 transition-colors first:rounded-t-lg last:rounded-b-lg ${item.color}`}
-                        >
-                          <div className="flex items-center gap-3">
-                            <IconComponent className="w-5 h-5" />
-                            <div>
-                              <div className="text-sm font-medium">{item.title}</div>
-                              <div className="text-xs text-slate-400">{item.description}</div>
-                            </div>
-                          </div>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {/* Right side - Mobile menu button */}
-            <div className="md:hidden">
-              <button
-                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                className="p-2 text-gray-300 hover:text-white hover:bg-gray-700/50 rounded-lg transition-colors"
-              >
-                {isDropdownOpen ? (
-                  <XMarkIcon className="w-6 h-6" />
-                ) : (
-                  <Bars3Icon className="w-6 h-6" />
-                )}
-              </button>
-            </div>
-          </div>
-
-          {/* Mobile Navigation Menu */}
-          <AnimatePresence>
-            {isDropdownOpen && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: 'auto' }}
-                exit={{ opacity: 0, height: 0 }}
-                transition={{ duration: 0.3 }}
-                className="md:hidden border-t border-gray-700/50 py-4"
-              >
-                <div className="space-y-4">
-                  {Object.entries(groupedItems).map(([category, items]) => (
-                    <div key={category}>
-                      <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-2">
-                        {category}
-                      </h3>
-                      <div className="space-y-1">
-                        {items.map((item) => {
-                          const IconComponent = item.icon;
-                          return (
-                            <button
-                              key={item.id}
-                              onClick={() => {
-                                handleItemClick(item.path);
-                                setIsDropdownOpen(false);
-                              }}
-                              className={`w-full px-3 py-2 text-left hover:bg-slate-700/50 rounded-lg transition-colors ${item.color}`}
-                            >
-                              <div className="flex items-center gap-3">
-                                <IconComponent className="w-5 h-5" />
-                                <div>
-                                  <div className="text-sm font-medium">{item.title}</div>
-                                  <div className="text-xs text-slate-400">{item.description}</div>
-                                </div>
-                              </div>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-800 text-white relative overflow-hidden">
+      {/* 背景裝飾元素 */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        {/* 動態漸層球體 */}
+        <div className="absolute -top-40 -left-40 w-80 h-80 bg-blue-500/10 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute top-1/4 -right-40 w-96 h-96 bg-cyan-500/8 rounded-full blur-3xl animate-pulse delay-1000"></div>
+        <div className="absolute -bottom-40 left-1/4 w-72 h-72 bg-indigo-500/10 rounded-full blur-3xl animate-pulse delay-2000"></div>
+        <div className="absolute top-1/2 left-1/2 w-64 h-64 bg-purple-500/6 rounded-full blur-3xl animate-pulse delay-3000"></div>
+        
+        {/* 網格背景 */}
+        <div className="absolute inset-0 bg-[linear-gradient(rgba(59,130,246,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(59,130,246,0.03)_1px,transparent_1px)] bg-[size:50px_50px]"></div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        {/* Dashboard Content */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          {/* Today's Generated Pallets */}
-          <Card className="bg-slate-800/50 border-slate-700">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-slate-200">Today's Output</CardTitle>
-              <CubeIcon className="h-4 w-4 text-blue-400" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-white">{stats.dailyDonePallets}</div>
-              <p className="text-xs text-slate-400">Pallets outputed today</p>
-            </CardContent>
-          </Card>
-
-          {/* Today's Transferred Pallets */}
-          <Card className="bg-slate-800/50 border-slate-700">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-slate-200">Today's Booked Out</CardTitle>
-              <TruckIcon className="h-4 w-4 text-green-400" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-white">{stats.dailyTransferredPallets}</div>
-              <p className="text-xs text-slate-400">Pallets booked out today</p>
-            </CardContent>
-          </Card>
-
-          {/* Past 3 Days Generated */}
-          <Card className="bg-slate-800/50 border-slate-700">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-slate-200">Past 3 Days Output</CardTitle>
-              <ChartBarIcon className="h-4 w-4 text-purple-400" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-white">{stats.past3DaysGenerated}</div>
-              <p className="text-xs text-slate-400">Total pallets outputed</p>
-            </CardContent>
-          </Card>
-
-          {/* Past 3 Days Transfer Rate */}
-          <Card className="bg-slate-800/50 border-slate-700">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-slate-200">Booked Out Rate</CardTitle>
-              <CheckCircleIcon className="h-4 w-4 text-orange-400" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-white">
-                {stats.past3DaysGenerated > 0 
-                  ? Math.round((stats.past3DaysTransferredPallets / stats.past3DaysGenerated) * 100)
-                  : 0}%
+      {/* 主要內容區域 */}
+      <div className="relative z-10">
+        {/* Admin Panel Navigation Bar */}
+        <div className="bg-slate-800/40 backdrop-blur-xl border-y border-slate-700/50 sticky top-0 z-30 mb-8">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex items-center justify-between h-16">
+              {/* Left side - Empty space or could be used for breadcrumbs */}
+              <div className="flex items-center">
+                {/* Removed Admin Panel title and icon */}
               </div>
-              <p className="text-xs text-slate-400">Past 3 days Rate</p>
-            </CardContent>
-          </Card>
-        </div>
 
-        {/* Main Dashboard Content */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Donut Chart */}
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-            <Card className="bg-slate-800/50 border-slate-700 backdrop-blur-sm">
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-slate-200">{donutTimeRange} Overview</CardTitle>
-                  
-                  {/* Time Range Dropdown */}
-                  <div className="relative" ref={dropdownRef}>
-                    <button
-                      onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                      className="flex items-center gap-2 px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-lg transition-colors text-xs"
-                    >
-                      <ClockIcon className="w-3 h-3" />
-                      {donutTimeRange}
-                      <ChevronDownIcon className={`w-3 h-3 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} />
-                    </button>
+              {/* Center - Navigation Menu */}
+              <div className="hidden md:flex items-center space-x-1">
+                {Object.entries(groupedItems).map(([category, items]) => (
+                  <div key={category} className="relative group">
+                    <div className="flex items-center gap-2 px-4 py-2 text-sm text-slate-300 hover:text-white hover:bg-slate-700/50 rounded-xl transition-all duration-300 cursor-pointer">
+                      {category}
+                      <ChevronDownIcon className="w-4 h-4 transition-transform group-hover:rotate-180" />
+                    </div>
                     
-                    <AnimatePresence>
-                      {isDropdownOpen && (
-                        <motion.div
-                          initial={{ opacity: 0, y: -10, scale: 0.95 }}
-                          animate={{ opacity: 1, y: 0, scale: 1 }}
-                          exit={{ opacity: 0, y: -10, scale: 0.95 }}
-                          transition={{ duration: 0.2 }}
-                          className="absolute right-0 top-full mt-1 bg-slate-800 border border-slate-600 rounded-lg shadow-xl z-50 min-w-[140px]"
-                        >
-                          {['Today', 'Yesterday', 'Past 3 days', 'Past 7 days'].map((option) => (
-                            <button
-                              key={option}
-                              onClick={() => handleDonutTimeRangeChange(option)}
-                              className={`w-full px-3 py-2 text-left text-xs hover:bg-slate-700 transition-colors first:rounded-t-lg last:rounded-b-lg ${
-                                donutTimeRange === option ? 'bg-slate-700 text-purple-400' : 'text-slate-300'
-                              }`}
-                            >
-                              {option}
-                            </button>
-                          ))}
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent className="flex justify-center">
-                <PalletDonutChart 
-                  palletsDone={stats.past3DaysGenerated}
-                  palletsTransferred={stats.past3DaysTransferredPallets}
-                  loading={statsLoading}
-                />
-              </CardContent>
-            </Card>
-          </motion.div>
-
-          {/* Finished Product */}
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-            <Card className="bg-slate-800/50 border-slate-700 backdrop-blur-sm">
-              <CardContent className="pt-6">
-                <FinishedProduct />
-              </CardContent>
-            </Card>
-          </motion.div>
-
-          {/* Material Received */}
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-            <Card className="bg-slate-800/50 border-slate-700 backdrop-blur-sm">
-              <CardContent className="pt-6">
-                <MaterialReceived />
-              </CardContent>
-            </Card>
-          </motion.div>
-        </div>
-
-        {/* Additional Cards Row */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-8">
-          {/* ACO Order Progress Card */}
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-            <Card className="bg-slate-800/50 border-slate-700 backdrop-blur-sm">
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-slate-200 flex items-center gap-2">
-                    <ClipboardDocumentListIcon className="w-5 h-5 text-orange-400" />
-                    ACO Order Progress
-                  </CardTitle>
-                  
-                  {/* ACO Order Dropdown */}
-                  <div className="relative" ref={acoDropdownRef}>
-                    <button
-                      onClick={() => setIsAcoDropdownOpen(!isAcoDropdownOpen)}
-                      className="flex items-center gap-2 px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-lg transition-colors text-xs"
-                      disabled={acoLoading}
-                    >
-                      <ClipboardDocumentListIcon className="w-3 h-3" />
-                      {selectedOrderRef ? `Order ${selectedOrderRef}` : 'Select Order'}
-                      <ChevronDownIcon className={`w-3 h-3 transition-transform ${isAcoDropdownOpen ? 'rotate-180' : ''}`} />
-                    </button>
-                    
-                    <AnimatePresence>
-                      {isAcoDropdownOpen && (
-                        <motion.div
-                          initial={{ opacity: 0, y: -10, scale: 0.95 }}
-                          animate={{ opacity: 1, y: 0, scale: 1 }}
-                          exit={{ opacity: 0, y: -10, scale: 0.95 }}
-                          transition={{ duration: 0.2 }}
-                          className="absolute right-0 top-full mt-1 bg-slate-800 border border-slate-600 rounded-lg shadow-xl z-50 min-w-[180px] max-h-60 overflow-y-auto"
-                        >
-                          {incompleteOrders.length === 0 ? (
-                            <div className="px-3 py-2 text-xs text-slate-400">
-                              No incomplete orders
+                    {/* Hover Dropdown */}
+                    <div className="absolute top-full left-0 mt-2 bg-slate-800/90 backdrop-blur-xl border border-slate-600/50 rounded-2xl shadow-2xl z-40 min-w-[280px] opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300">
+                      {items.map((item) => {
+                        const IconComponent = item.icon;
+                        return (
+                          <button
+                            key={item.id}
+                            onClick={() => {
+                              handleItemClick(item);
+                              setIsDropdownOpen(false);
+                            }}
+                            className={`w-full px-5 py-4 text-left hover:bg-slate-700/50 transition-all duration-300 first:rounded-t-2xl last:rounded-b-2xl group/item ${item.color}`}
+                            disabled={reportLoading === item.reportType}
+                          >
+                            <div className="flex items-center gap-4">
+                              {reportLoading === item.reportType ? (
+                                <div className="w-5 h-5 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
+                              ) : (
+                                <IconComponent className="w-5 h-5 group-hover/item:scale-110 transition-transform duration-300" />
+                              )}
+                              <div>
+                                <div className="text-sm font-medium">
+                                  {item.title}
+                                </div>
+                                <div className="text-xs text-slate-400">{item.description}</div>
+                              </div>
                             </div>
-                          ) : (
-                            incompleteOrders.map((order) => (
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Right side - Mobile menu button */}
+              <div className="md:hidden">
+                <button
+                  onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                  className="p-3 text-slate-300 hover:text-white hover:bg-slate-700/50 rounded-xl transition-all duration-300"
+                >
+                  {isDropdownOpen ? (
+                    <XMarkIcon className="w-6 h-6" />
+                  ) : (
+                    <Bars3Icon className="w-6 h-6" />
+                  )}
+                </button>
+              </div>
+            </div>
+
+            {/* Mobile Navigation Menu */}
+            <AnimatePresence>
+              {isDropdownOpen && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  transition={{ duration: 0.3 }}
+                  className="md:hidden border-t border-slate-700/50 py-6"
+                >
+                  <div className="space-y-6">
+                    {Object.entries(groupedItems).map(([category, items]) => (
+                      <div key={category}>
+                        <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-3">
+                          {category}
+                        </h3>
+                        <div className="space-y-2">
+                          {items.map((item) => {
+                            const IconComponent = item.icon;
+                            return (
                               <button
-                                key={order.order_ref}
-                                onClick={() => handleAcoOrderSelect(order.order_ref)}
-                                className={`w-full px-3 py-2 text-left text-xs hover:bg-slate-700 transition-colors first:rounded-t-lg last:rounded-b-lg ${
-                                  selectedOrderRef === order.order_ref ? 'bg-slate-700 text-orange-400' : 'text-slate-300'
-                                }`}
+                                key={item.id}
+                                onClick={() => {
+                                  handleItemClick(item);
+                                  setIsDropdownOpen(false);
+                                }}
+                                className={`w-full px-4 py-3 text-left hover:bg-slate-700/50 rounded-xl transition-all duration-300 ${item.color}`}
+                                disabled={reportLoading === item.reportType}
                               >
-                                <div className="flex justify-between items-center">
-                                  <span>Order {order.order_ref}</span>
-                                  <Badge variant="secondary" className="text-xs">
-                                    {order.remain_qty} remain
-                                  </Badge>
+                                <div className="flex items-center gap-4">
+                                  {reportLoading === item.reportType ? (
+                                    <div className="w-5 h-5 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
+                                  ) : (
+                                    <IconComponent className="w-5 h-5" />
+                                  )}
+                                  <div>
+                                    <div className="text-sm font-medium">
+                                      {item.title}
+                                    </div>
+                                    <div className="text-xs text-slate-400">{item.description}</div>
+                                  </div>
                                 </div>
                               </button>
-                            ))
-                          )}
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent>
-                {acoLoading ? (
-                  <div className="space-y-3">
-                    <Skeleton className="h-4 w-full bg-slate-700" />
-                    <Skeleton className="h-4 w-3/4 bg-slate-700" />
-                    <Skeleton className="h-4 w-1/2 bg-slate-700" />
-                  </div>
-                ) : orderProgress.length === 0 ? (
-                  <div className="text-center py-8">
-                    <ClipboardDocumentListIcon className="w-12 h-12 text-slate-600 mx-auto mb-3" />
-                    <p className="text-slate-400">Select an ACO order to view progress</p>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    {orderProgress.map((item, index) => (
-                      <div key={index} className="space-y-2">
-                        <div className="flex justify-between items-center">
-                          <span className="text-sm font-medium text-slate-200">{item.code}</span>
-                          <span className="text-xs text-slate-400">
-                            {item.completed_qty} / {item.required_qty}
-                          </span>
+                            );
+                          })}
                         </div>
-                        <div className="w-full bg-slate-700 rounded-full h-2">
-                          <div 
-                            className="bg-gradient-to-r from-orange-500 to-orange-400 h-2 rounded-full transition-all duration-500 flex items-center justify-end pr-1"
-                            style={{ width: `${item.completion_percentage}%` }}
-                          >
-                            {item.completion_percentage > 20 && (
-                              <span className="text-xs text-white font-medium">
-                                {item.completion_percentage}%
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                        {item.completion_percentage <= 20 && (
-                          <div className="text-right">
-                            <span className="text-xs text-orange-400 font-medium">
-                              {item.completion_percentage}%
-                            </span>
-                          </div>
-                        )}
                       </div>
                     ))}
                   </div>
-                )}
-              </CardContent>
-            </Card>
-          </motion.div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        </div>
 
-          {/* Quick Search Card */}
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-            <Card className="bg-slate-800/50 border-slate-700 backdrop-blur-sm">
-              <CardHeader>
-                <CardTitle className="text-slate-200 flex items-center gap-2">
-                  <MagnifyingGlassIcon className="w-5 h-5 text-blue-400" />
-                  Quick Search
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <form onSubmit={handleSearchSubmit} className="space-y-4">
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      value={searchQuery}
-                      onChange={handleSearchChange}
-                      placeholder="Enter Product Code To Search"
-                      className="flex-1 px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-slate-200 placeholder-slate-400 focus:outline-none focus:border-blue-500 transition-colors"
-                    />
-                    <button
-                      type="submit"
-                      disabled={searchLoading || !searchQuery.trim()}
-                      className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-600 disabled:cursor-not-allowed text-white rounded-lg transition-colors"
-                    >
-                      {searchLoading ? (
-                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                      ) : (
-                        <MagnifyingGlassIcon className="w-4 h-4" />
-                      )}
-                    </button>
-                  </div>
-                </form>
-
-                {searchResults && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="mt-4 space-y-3"
-                  > 
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
+          {/* Dashboard Content */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            {/* Ask Database Main Card - Featured at the top */}
+            <div className="col-span-full mb-8">
+              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+                <div className="relative group">
+                  {/* 卡片背景 */}
+                  <div className="absolute inset-0 bg-gradient-to-r from-purple-900/30 to-indigo-900/30 rounded-3xl blur-xl"></div>
+                  
+                  <div className="relative bg-slate-800/40 backdrop-blur-xl border border-purple-500/30 rounded-3xl p-8 shadow-2xl shadow-purple-900/20 hover:border-purple-400/50 transition-all duration-300">
+                    {/* 卡片內部光效 */}
+                    <div className="absolute inset-0 bg-gradient-to-r from-purple-500/5 via-transparent to-indigo-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-3xl"></div>
                     
-                    <div className="grid grid-cols-2 gap-3 text-xs">
-                      {[
-                        { label: 'Production', value: searchResults.injection, color: 'text-blue-400' },
-                        { label: 'Pipeline', value: searchResults.pipeline, color: 'text-green-400' },
-                        { label: 'Awaiting', value: searchResults.await, color: 'text-yellow-400' },
-                        { label: 'Fold Mill', value: searchResults.fold, color: 'text-purple-400' },
-                        { label: 'Bulk Room', value: searchResults.bulk, color: 'text-orange-400' },
-                        { label: 'Back Car Park', value: searchResults.backcarpark, color: 'text-cyan-400' },
-                        { label: 'Damage', value: searchResults.damage, color: 'text-red-400' },
-                      ].map((location) => (
-                        <div key={location.label} className="flex justify-between items-center py-1 px-2 bg-slate-700/50 rounded">
-                          <span className="text-slate-300">{location.label}:</span>
-                          <span className={`font-medium ${location.color}`}>
-                            {location.value.toLocaleString()}
+                    {/* 頂部邊框光效 */}
+                    <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-purple-400/50 to-transparent opacity-100 rounded-t-3xl"></div>
+                    
+                    <div className="relative z-10">
+                      <div className="flex items-center justify-between mb-6">
+                        <div className="flex items-center gap-4">
+                          <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-indigo-500 rounded-2xl flex items-center justify-center shadow-lg shadow-purple-500/25">
+                            <ChatBubbleLeftRightIcon className="h-6 w-6 text-white" />
+                          </div>
+                          <div>
+                            <h2 className="text-3xl font-bold bg-gradient-to-r from-purple-300 via-indigo-300 to-cyan-300 bg-clip-text text-transparent">Ask Database</h2>
+                            <p className="text-purple-200 mt-1">Query database information with natural language</p>
+                          </div>
+                        </div>
+                        <div className="bg-purple-500/20 border border-purple-400/30 text-purple-200 px-4 py-2 rounded-xl text-sm font-medium">
+                          Coming Soon
+                        </div>
+                      </div>
+                      
+                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                        {/* Left side - Description */}
+                        <div className="space-y-6">
+                          <p className="text-slate-300 leading-relaxed text-lg">
+                            This advanced feature will allow you to query database information using natural language 
+                            or structured queries, making data exploration more intuitive and efficient.
+                          </p>
+                          
+                          <div className="bg-slate-800/50 rounded-2xl p-6 border border-slate-600/30">
+                            <h4 className="text-xl font-semibold text-purple-400 mb-4 flex items-center gap-3">
+                              <span className="w-3 h-3 bg-purple-400 rounded-full animate-pulse"></span>
+                              Planned Features
+                            </h4>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm text-slate-300">
+                              <div className="flex items-center gap-3 p-3 bg-slate-700/30 rounded-xl">
+                                <span className="w-2 h-2 bg-green-400 rounded-full"></span>
+                                Natural language queries
+                              </div>
+                              <div className="flex items-center gap-3 p-3 bg-slate-700/30 rounded-xl">
+                                <span className="w-2 h-2 bg-blue-400 rounded-full"></span>
+                                Real-time data exploration
+                              </div>
+                              <div className="flex items-center gap-3 p-3 bg-slate-700/30 rounded-xl">
+                                <span className="w-2 h-2 bg-orange-400 rounded-full"></span>
+                                Custom report generation
+                              </div>
+                              <div className="flex items-center gap-3 p-3 bg-slate-700/30 rounded-xl">
+                                <span className="w-2 h-2 bg-purple-400 rounded-full"></span>
+                                Data visualization tools
+                              </div>
+                              <div className="flex items-center gap-3 p-3 bg-slate-700/30 rounded-xl">
+                                <span className="w-2 h-2 bg-cyan-400 rounded-full"></span>
+                                Export query results
+                              </div>
+                              <div className="flex items-center gap-3 p-3 bg-slate-700/30 rounded-xl">
+                                <span className="w-2 h-2 bg-pink-400 rounded-full"></span>
+                                Powerful insights
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Right side - Preview/Demo */}
+                        <div className="space-y-6">
+                          <div className="bg-slate-800/50 rounded-2xl p-6 border border-slate-600/30">
+                            <h4 className="text-xl font-semibold text-slate-200 mb-4">Query Preview</h4>
+                            <div className="space-y-4">
+                              <div className="bg-slate-900/50 rounded-xl p-4 border-l-4 border-purple-500">
+                                <p className="text-sm text-slate-300 italic">
+                                  "Show me all pallets generated today"
+                                </p>
+                              </div>
+                              <div className="bg-slate-900/50 rounded-xl p-4 border-l-4 border-blue-500">
+                                <p className="text-sm text-slate-300 italic">
+                                  "What's the inventory level for product MT4545?"
+                                </p>
+                              </div>
+                              <div className="bg-slate-900/50 rounded-xl p-4 border-l-4 border-green-500">
+                                <p className="text-sm text-slate-300 italic">
+                                  "Generate transfer report for last week"
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            </div>
+
+            {/* Today's Generated Pallets */}
+            <div className="relative group">
+              <div className="absolute inset-0 bg-gradient-to-r from-blue-900/30 to-cyan-900/30 rounded-2xl blur-xl"></div>
+              <div className="relative bg-slate-800/40 backdrop-blur-xl border border-blue-500/30 rounded-2xl p-6 shadow-xl shadow-blue-900/20 hover:border-blue-400/50 transition-all duration-300">
+                <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 via-transparent to-cyan-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-2xl"></div>
+                <div className="relative z-10">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-sm font-medium text-slate-200">Today's Output</h3>
+                    <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center">
+                      <CubeIcon className="h-5 w-5 text-white" />
+                    </div>
+                  </div>
+                  <div className="text-3xl font-bold text-white mb-2">{stats.dailyDonePallets}</div>
+                  <p className="text-xs text-slate-400">Pallets outputed today</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Today's Transferred Pallets */}
+            <div className="relative group">
+              <div className="absolute inset-0 bg-gradient-to-r from-green-900/30 to-emerald-900/30 rounded-2xl blur-xl"></div>
+              <div className="relative bg-slate-800/40 backdrop-blur-xl border border-green-500/30 rounded-2xl p-6 shadow-xl shadow-green-900/20 hover:border-green-400/50 transition-all duration-300">
+                <div className="absolute inset-0 bg-gradient-to-r from-green-500/5 via-transparent to-emerald-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-2xl"></div>
+                <div className="relative z-10">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-sm font-medium text-slate-200">Today's Booked Out</h3>
+                    <div className="w-10 h-10 bg-gradient-to-r from-green-500 to-emerald-500 rounded-xl flex items-center justify-center">
+                      <TruckIcon className="h-5 w-5 text-white" />
+                    </div>
+                  </div>
+                  <div className="text-3xl font-bold text-white mb-2">{stats.dailyTransferredPallets}</div>
+                  <p className="text-xs text-slate-400">Pallets booked out today</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Past 3 Days Generated */}
+            <div className="relative group">
+              <div className="absolute inset-0 bg-gradient-to-r from-purple-900/30 to-indigo-900/30 rounded-2xl blur-xl"></div>
+              <div className="relative bg-slate-800/40 backdrop-blur-xl border border-purple-500/30 rounded-2xl p-6 shadow-xl shadow-purple-900/20 hover:border-purple-400/50 transition-all duration-300">
+                <div className="absolute inset-0 bg-gradient-to-r from-purple-500/5 via-transparent to-indigo-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-2xl"></div>
+                <div className="relative z-10">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-sm font-medium text-slate-200">Past 3 Days Output</h3>
+                    <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-indigo-500 rounded-xl flex items-center justify-center">
+                      <ChartBarIcon className="h-5 w-5 text-white" />
+                    </div>
+                  </div>
+                  <div className="text-3xl font-bold text-white mb-2">{stats.past3DaysGenerated}</div>
+                  <p className="text-xs text-slate-400">Total pallets outputed</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Past 3 Days Transfer Rate */}
+            <div className="relative group">
+              <div className="absolute inset-0 bg-gradient-to-r from-orange-900/30 to-amber-900/30 rounded-2xl blur-xl"></div>
+              <div className="relative bg-slate-800/40 backdrop-blur-xl border border-orange-500/30 rounded-2xl p-6 shadow-xl shadow-orange-900/20 hover:border-orange-400/50 transition-all duration-300">
+                <div className="absolute inset-0 bg-gradient-to-r from-orange-500/5 via-transparent to-amber-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-2xl"></div>
+                <div className="relative z-10">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-sm font-medium text-slate-200">Booked Out Rate</h3>
+                    <div className="w-10 h-10 bg-gradient-to-r from-orange-500 to-amber-500 rounded-xl flex items-center justify-center">
+                      <CheckCircleIcon className="h-5 w-5 text-white" />
+                    </div>
+                  </div>
+                  <div className="text-3xl font-bold text-white mb-2">
+                    {stats.past3DaysGenerated > 0 
+                      ? Math.round((stats.past3DaysTransferredPallets / stats.past3DaysGenerated) * 100)
+                      : 0}%
+                  </div>
+                  <p className="text-xs text-slate-400">Past 3 days Rate</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Main Dashboard Content */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* Donut Chart */}
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+              <div className="relative group">
+                {/* 卡片背景 */}
+                <div className="absolute inset-0 bg-gradient-to-r from-slate-800/50 to-blue-900/30 rounded-3xl blur-xl"></div>
+                
+                <div className="relative bg-slate-800/40 backdrop-blur-xl border border-slate-700/50 rounded-3xl p-8 shadow-2xl shadow-blue-900/20 hover:border-blue-500/30 transition-all duration-300">
+                  {/* 卡片內部光效 */}
+                  <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 via-transparent to-cyan-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-3xl"></div>
+                  
+                  {/* 頂部邊框光效 */}
+                  <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-blue-400/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-t-3xl"></div>
+                  
+                  <div className="relative z-10">
+                    <div className="flex items-center justify-between mb-6">
+                      <h2 className="text-xl font-semibold bg-gradient-to-r from-white via-blue-100 to-cyan-100 bg-clip-text text-transparent">
+                        {donutTimeRange} Overview
+                      </h2>
+                      
+                      {/* Time Range Dropdown */}
+                      <div className="relative" ref={dropdownRef}>
+                        <button
+                          onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                          className="flex items-center gap-2 px-4 py-2 bg-slate-700/50 hover:bg-slate-600/50 text-slate-300 hover:text-white rounded-xl transition-all duration-300 text-sm border border-slate-600/30"
+                        >
+                          <ClockIcon className="w-4 h-4" />
+                          {donutTimeRange}
+                          <ChevronDownIcon className={`w-4 h-4 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} />
+                        </button>
+                        
+                        <AnimatePresence>
+                          {isDropdownOpen && (
+                            <motion.div
+                              initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                              animate={{ opacity: 1, y: 0, scale: 1 }}
+                              exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                              transition={{ duration: 0.2 }}
+                              className="absolute right-0 top-full mt-2 bg-slate-800/90 backdrop-blur-xl border border-slate-600/50 rounded-xl shadow-2xl z-50 min-w-[160px]"
+                            >
+                              {['Today', 'Yesterday', 'Past 3 days', 'Past 7 days'].map((option) => (
+                                <button
+                                  key={option}
+                                  onClick={() => handleDonutTimeRangeChange(option)}
+                                  className={`w-full px-4 py-3 text-left text-sm hover:bg-slate-700/50 transition-all duration-300 first:rounded-t-xl last:rounded-b-xl ${
+                                    donutTimeRange === option ? 'bg-slate-700/50 text-purple-400' : 'text-slate-300'
+                                  }`}
+                                >
+                                  {option}
+                                </button>
+                              ))}
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+                      </div>
+                    </div>
+                    
+                    <div className="flex justify-center">
+                      <PalletDonutChart 
+                        palletsDone={stats.past3DaysGenerated}
+                        palletsTransferred={stats.past3DaysTransferredPallets}
+                        loading={statsLoading}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+
+            {/* Finished Product */}
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+              <div className="relative group">
+                {/* 卡片背景 */}
+                <div className="absolute inset-0 bg-gradient-to-r from-slate-800/50 to-green-900/30 rounded-3xl blur-xl"></div>
+                
+                <div className="relative bg-slate-800/40 backdrop-blur-xl border border-slate-700/50 rounded-3xl p-8 shadow-2xl shadow-green-900/20 hover:border-green-500/30 transition-all duration-300">
+                  {/* 卡片內部光效 */}
+                  <div className="absolute inset-0 bg-gradient-to-r from-green-500/5 via-transparent to-emerald-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-3xl"></div>
+                  
+                  {/* 頂部邊框光效 */}
+                  <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-green-400/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-t-3xl"></div>
+                  
+                  <div className="relative z-10">
+                    <FinishedProduct />
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+
+            {/* Material Received */}
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+              <div className="relative group">
+                {/* 卡片背景 */}
+                <div className="absolute inset-0 bg-gradient-to-r from-slate-800/50 to-orange-900/30 rounded-3xl blur-xl"></div>
+                
+                <div className="relative bg-slate-800/40 backdrop-blur-xl border border-slate-700/50 rounded-3xl p-8 shadow-2xl shadow-orange-900/20 hover:border-orange-500/30 transition-all duration-300">
+                  {/* 卡片內部光效 */}
+                  <div className="absolute inset-0 bg-gradient-to-r from-orange-500/5 via-transparent to-amber-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-3xl"></div>
+                  
+                  {/* 頂部邊框光效 */}
+                  <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-orange-400/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-t-3xl"></div>
+                  
+                  <div className="relative z-10">
+                    <MaterialReceived />
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+
+          {/* Additional Cards Row */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-8">
+            {/* ACO Order Progress Card */}
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+              <div className="relative group">
+                {/* 卡片背景 */}
+                <div className="absolute inset-0 bg-gradient-to-r from-slate-800/50 to-orange-900/30 rounded-3xl blur-xl"></div>
+                
+                <div className="relative bg-slate-800/40 backdrop-blur-xl border border-slate-700/50 rounded-3xl p-8 shadow-2xl shadow-orange-900/20 hover:border-orange-500/30 transition-all duration-300">
+                  {/* 卡片內部光效 */}
+                  <div className="absolute inset-0 bg-gradient-to-r from-orange-500/5 via-transparent to-amber-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-3xl"></div>
+                  
+                  {/* 頂部邊框光效 */}
+                  <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-orange-400/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-t-3xl"></div>
+                  
+                  <div className="relative z-10">
+                    <div className="flex items-center justify-between mb-6">
+                      <h2 className="text-xl font-semibold bg-gradient-to-r from-orange-300 via-amber-300 to-yellow-300 bg-clip-text text-transparent flex items-center gap-3">
+                        <ClipboardDocumentListIcon className="w-6 h-6 text-orange-400" />
+                        ACO Order Progress
+                      </h2>
+                      
+                      {/* ACO Order Dropdown */}
+                      <div className="relative" ref={acoDropdownRef}>
+                        <button
+                          onClick={() => setIsAcoDropdownOpen(!isAcoDropdownOpen)}
+                          className="flex items-center gap-2 px-4 py-2 bg-slate-700/50 hover:bg-slate-600/50 text-slate-300 hover:text-white rounded-xl transition-all duration-300 text-sm border border-slate-600/30"
+                          disabled={acoLoading}
+                        >
+                          <ClipboardDocumentListIcon className="w-4 h-4" />
+                          {selectedOrderRef ? `Order ${selectedOrderRef}` : 'Select Order'}
+                          <ChevronDownIcon className={`w-4 h-4 transition-transform ${isAcoDropdownOpen ? 'rotate-180' : ''}`} />
+                        </button>
+                        
+                        <AnimatePresence>
+                          {isAcoDropdownOpen && (
+                            <motion.div
+                              initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                              animate={{ opacity: 1, y: 0, scale: 1 }}
+                              exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                              transition={{ duration: 0.2 }}
+                              className="absolute right-0 top-full mt-2 bg-slate-800/90 backdrop-blur-xl border border-slate-600/50 rounded-xl shadow-2xl z-50 min-w-[200px] max-h-60 overflow-y-auto"
+                            >
+                              {incompleteOrders.length === 0 ? (
+                                <div className="px-4 py-3 text-sm text-slate-400">
+                                  No incomplete orders
+                                </div>
+                              ) : (
+                                incompleteOrders.map((order) => (
+                                  <button
+                                    key={order.order_ref}
+                                    onClick={() => handleAcoOrderSelect(order.order_ref)}
+                                    className={`w-full px-4 py-3 text-left text-sm hover:bg-slate-700/50 transition-all duration-300 first:rounded-t-xl last:rounded-b-xl ${
+                                      selectedOrderRef === order.order_ref ? 'bg-slate-700/50 text-orange-400' : 'text-slate-300'
+                                    }`}
+                                  >
+                                    <div className="flex justify-between items-center">
+                                      <span>Order {order.order_ref}</span>
+                                      <div className="bg-orange-500/20 border border-orange-400/30 text-orange-300 px-2 py-1 rounded-lg text-xs">
+                                        {order.remain_qty} remain
+                                      </div>
+                                    </div>
+                                  </button>
+                                ))
+                              )}
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+                      </div>
+                    </div>
+                    
+                    <div className="min-h-[200px]">
+                      {acoLoading ? (
+                        <div className="space-y-4">
+                          <div className="h-4 bg-slate-700/50 rounded-xl animate-pulse"></div>
+                          <div className="h-4 bg-slate-700/50 rounded-xl animate-pulse w-3/4"></div>
+                          <div className="h-4 bg-slate-700/50 rounded-xl animate-pulse w-1/2"></div>
+                        </div>
+                      ) : orderProgress.length === 0 ? (
+                        <div className="text-center py-12">
+                          <ClipboardDocumentListIcon className="w-16 h-16 text-slate-600 mx-auto mb-4" />
+                          <p className="text-slate-400 text-lg">Select an ACO order to view progress</p>
+                        </div>
+                      ) : (
+                        <div className="space-y-6">
+                          {orderProgress.map((item, index) => (
+                            <div key={index} className="space-y-3">
+                              <div className="flex justify-between items-center">
+                                <span className="text-lg font-medium text-slate-200">{item.code}</span>
+                                <span className="text-sm text-slate-400 bg-slate-700/30 px-3 py-1 rounded-full">
+                                  {item.completed_qty} / {item.required_qty}
+                                </span>
+                              </div>
+                              <div className="w-full bg-slate-700/50 rounded-full h-3 overflow-hidden">
+                                <div 
+                                  className="bg-gradient-to-r from-orange-500 to-amber-400 h-3 rounded-full transition-all duration-700 flex items-center justify-end pr-2"
+                                  style={{ width: `${item.completion_percentage}%` }}
+                                >
+                                  {item.completion_percentage > 25 && (
+                                    <span className="text-xs text-white font-bold">
+                                      {item.completion_percentage}%
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                              {item.completion_percentage <= 25 && (
+                                <div className="text-right">
+                                  <span className="text-sm text-orange-400 font-bold">
+                                    {item.completion_percentage}%
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+
+            {/* Quick Search Card */}
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+              <div className="relative group">
+                {/* 卡片背景 */}
+                <div className="absolute inset-0 bg-gradient-to-r from-slate-800/50 to-blue-900/30 rounded-3xl blur-xl"></div>
+                
+                <div className="relative bg-slate-800/40 backdrop-blur-xl border border-slate-700/50 rounded-3xl p-8 shadow-2xl shadow-blue-900/20 hover:border-blue-500/30 transition-all duration-300">
+                  {/* 卡片內部光效 */}
+                  <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 via-transparent to-cyan-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-3xl"></div>
+                  
+                  {/* 頂部邊框光效 */}
+                  <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-blue-400/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-t-3xl"></div>
+                  
+                  <div className="relative z-10">
+                    <h2 className="text-xl font-semibold bg-gradient-to-r from-blue-300 via-cyan-300 to-blue-200 bg-clip-text text-transparent flex items-center gap-3 mb-6">
+                      <MagnifyingGlassIcon className="w-6 h-6 text-blue-400" />
+                      Quick Search
+                    </h2>
+                    
+                    <form onSubmit={handleSearchSubmit} className="space-y-6">
+                      <div className="flex gap-3">
+                        <input
+                          type="text"
+                          value={searchQuery}
+                          onChange={handleSearchChange}
+                          placeholder="Enter Product Code To Search"
+                          className="flex-1 px-4 py-3 bg-slate-700/50 border border-slate-600/50 rounded-xl text-slate-200 placeholder-slate-400 focus:outline-none focus:border-blue-500/70 focus:bg-slate-700/70 hover:border-blue-500/50 hover:bg-slate-700/60 transition-all duration-300 backdrop-blur-sm"
+                        />
+                        <button
+                          type="submit"
+                          disabled={searchLoading || !searchQuery.trim()}
+                          className="px-6 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 disabled:from-slate-600 disabled:to-slate-600 disabled:cursor-not-allowed text-white rounded-xl transition-all duration-300 font-medium shadow-lg hover:shadow-blue-500/25 hover:scale-105 active:scale-95"
+                        >
+                          {searchLoading ? (
+                            <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                          ) : (
+                            <MagnifyingGlassIcon className="w-5 h-5" />
+                          )}
+                        </button>
+                      </div>
+                    </form>
+
+                    {searchResults && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="mt-6 space-y-4"
+                      > 
+                        
+                        <div className="grid grid-cols-2 gap-3 text-sm">
+                          {[
+                            { label: 'Production', value: searchResults.injection, color: 'text-blue-400', bg: 'bg-blue-500/10', border: 'border-blue-500/30' },
+                            { label: 'Pipeline', value: searchResults.pipeline, color: 'text-green-400', bg: 'bg-green-500/10', border: 'border-green-500/30' },
+                            { label: 'Awaiting', value: searchResults.await, color: 'text-yellow-400', bg: 'bg-yellow-500/10', border: 'border-yellow-500/30' },
+                            { label: 'Fold Mill', value: searchResults.fold, color: 'text-purple-400', bg: 'bg-purple-500/10', border: 'border-purple-500/30' },
+                            { label: 'Bulk Room', value: searchResults.bulk, color: 'text-orange-400', bg: 'bg-orange-500/10', border: 'border-orange-500/30' },
+                            { label: 'Back Car Park', value: searchResults.backcarpark, color: 'text-cyan-400', bg: 'bg-cyan-500/10', border: 'border-cyan-500/30' },
+                            { label: 'Damage', value: searchResults.damage, color: 'text-red-400', bg: 'bg-red-500/10', border: 'border-red-500/30' },
+                          ].map((location) => (
+                            <div key={location.label} className={`flex justify-between items-center py-3 px-4 ${location.bg} border ${location.border} rounded-xl`}>
+                              <span className="text-slate-300 font-medium">{location.label}:</span>
+                              <span className={`font-bold text-lg ${location.color}`}>
+                                {location.value.toLocaleString()}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                        
+                        <div className="flex justify-between items-center py-4 px-6 bg-gradient-to-r from-blue-500/10 to-cyan-500/10 border border-blue-500/30 rounded-xl">
+                          <span className="text-lg font-bold text-slate-200">Total:</span>
+                          <span className="text-2xl font-bold text-blue-400">
+                            {searchResults.total.toLocaleString()}
                           </span>
                         </div>
-                      ))}
-                    </div>
-                    
-                    <div className="flex justify-between items-center py-2 px-3 bg-slate-700 rounded-lg border-l-4 border-blue-500">
-                      <span className="text-sm font-medium text-slate-200">Total:</span>
-                      <span className="text-lg font-bold text-blue-400">
-                        {searchResults.total.toLocaleString()}
-                      </span>
-                    </div>
-                  </motion.div>
-                )}
+                      </motion.div>
+                    )}
 
-                {searchQuery && !searchResults && !searchLoading && (
-                  <div className="mt-4 text-center py-4">
-                    <MagnifyingGlassIcon className="w-8 h-8 text-slate-600 mx-auto mb-2" />
-                    <p className="text-slate-400 text-sm">Enter a product code and click search</p>
+                    {searchQuery && !searchResults && !searchLoading && (
+                      <div className="mt-6 text-center py-8">
+                        <MagnifyingGlassIcon className="w-12 h-12 text-slate-600 mx-auto mb-3" />
+                        <p className="text-slate-400 text-lg">Enter a product code and click search</p>
+                      </div>
+                    )}
                   </div>
-                )}
-              </CardContent>
-            </Card>
-          </motion.div>
+                </div>
+              </div>
+            </motion.div>
+          </div>
         </div>
       </div>
+
+      {/* 底部裝飾 */}
+      <div className="text-center mt-16">
+        <div className="inline-flex items-center space-x-2 text-slate-500 text-sm">
+          <div className="w-1 h-1 bg-slate-500 rounded-full"></div>
+          <span>Pennine Manufacturing Stock Control System</span>
+          <div className="w-1 h-1 bg-slate-500 rounded-full"></div>
+        </div>
+      </div>
+
+      {/* Report Generation Dialog */}
+      <Dialog open={showReportDialog} onOpenChange={closeReportDialog}>
+        <DialogContent className="bg-slate-800/90 backdrop-blur-xl border border-slate-600/50 text-white max-w-lg rounded-2xl shadow-2xl">
+          <div className="relative">
+            {/* 對話框內部光效 */}
+            <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 via-transparent to-purple-500/5 rounded-2xl"></div>
+            
+            <div className="relative z-10">
+              <DialogHeader className="pb-6">
+                <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-blue-300 via-purple-300 to-cyan-300 bg-clip-text text-transparent">
+                  Generate {currentReportType.toUpperCase()} Report
+                </DialogTitle>
+                <DialogDescription className="text-slate-400 text-lg">
+                  Select parameters for your {currentReportType} report
+                </DialogDescription>
+              </DialogHeader>
+
+              <div className="space-y-6 py-6">
+                {/* ACO Report Parameters */}
+                {currentReportType === 'aco' && (
+                  <div className="space-y-4">
+                    <label className="block text-sm font-medium text-slate-200">
+                      ACO Order Reference
+                    </label>
+                    <select
+                      value={selectedAcoOrder}
+                      onChange={(e) => setSelectedAcoOrder(e.target.value)}
+                      className="w-full px-4 py-3 bg-slate-700/50 border border-slate-600/50 rounded-xl text-white focus:outline-none focus:border-blue-500/70 focus:bg-slate-700/70 hover:border-blue-500/50 transition-all duration-300"
+                    >
+                      <option value="">Select ACO Order</option>
+                      {availableAcoOrders.map((order) => (
+                        <option key={order} value={order}>
+                          Order Ref: {order}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+                {/* GRN Report Parameters */}
+                {currentReportType === 'grn' && (
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-slate-200 mb-3">
+                        GRN Reference
+                      </label>
+                      <select
+                        value={selectedGrnRef}
+                        onChange={(e) => setSelectedGrnRef(e.target.value)}
+                        className="w-full px-4 py-3 bg-slate-700/50 border border-slate-600/50 rounded-xl text-white focus:outline-none focus:border-blue-500/70 focus:bg-slate-700/70 hover:border-blue-500/50 transition-all duration-300"
+                      >
+                        <option value="">Select GRN Reference</option>
+                        {availableGrnRefs.map((ref) => (
+                          <option key={ref} value={ref}>
+                            {ref}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    
+                    <div className="text-sm text-slate-400 bg-slate-700/30 border border-slate-600/30 p-4 rounded-xl">
+                      <p>📋 All product codes under this GRN reference will be exported as separate reports.</p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Transaction Report Parameters */}
+                {currentReportType === 'transaction' && (
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-slate-200 mb-3">
+                        From
+                      </label>
+                      <input
+                        type="date"
+                        value={startDate}
+                        onChange={(e) => setStartDate(e.target.value)}
+                        className="w-full px-4 py-3 bg-slate-700/50 border border-slate-600/50 rounded-xl text-white focus:outline-none focus:border-blue-500/70 focus:bg-slate-700/70 hover:border-blue-500/50 transition-all duration-300"
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-slate-200 mb-3">
+                        To
+                      </label>
+                      <input
+                        type="date"
+                        value={endDate}
+                        onChange={(e) => setEndDate(e.target.value)}
+                        className="w-full px-4 py-3 bg-slate-700/50 border border-slate-600/50 rounded-xl text-white focus:outline-none focus:border-blue-500/70 focus:bg-slate-700/70 hover:border-blue-500/50 transition-all duration-300"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* Slate Report Parameters */}
+                {currentReportType === 'slate' && (
+                  <div className="text-center py-8">
+                    <p className="text-slate-400 text-lg">
+                      Slate report functionality is currently under development.
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              <DialogFooter className="flex gap-4 pt-6">
+                <button
+                  onClick={closeReportDialog}
+                  className="px-6 py-3 bg-slate-700/50 hover:bg-slate-600/50 border border-slate-600/50 hover:border-slate-500/70 rounded-xl text-slate-300 hover:text-white font-medium transition-all duration-300"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={generateReport}
+                  disabled={reportLoading === currentReportType || currentReportType === 'slate'}
+                  className="px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 disabled:from-slate-600 disabled:to-slate-600 text-white rounded-xl font-medium transition-all duration-300 shadow-lg hover:shadow-blue-500/25 hover:scale-105 active:scale-95 disabled:hover:scale-100 disabled:cursor-not-allowed"
+                >
+                  {reportLoading === currentReportType ? (
+                    <div className="flex items-center gap-3">
+                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      Generating...
+                    </div>
+                  ) : (
+                    'Generate Report'
+                  )}
+                </button>
+              </DialogFooter>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 } 

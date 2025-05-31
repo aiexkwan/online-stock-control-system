@@ -216,7 +216,7 @@ export default function MaterialReceived() {
       </div>
 
       {/* Summary stats */}
-      {materials.length > 0 && (
+      {/*materials.length > 0 && (
         <div className="flex gap-4 text-xs">
           <Badge variant="secondary" className="bg-slate-700 text-slate-300">
             {materials.length} Materials
@@ -228,7 +228,7 @@ export default function MaterialReceived() {
           TTL Weight/Qty : {materials.reduce((sum, m) => sum + m.total_qty, 0)} 
           </Badge>
         </div>
-      )}
+      )／}
 
       {/* Content Area */}
       {/* Error state */}
@@ -271,13 +271,13 @@ export default function MaterialReceived() {
               <table className="min-w-full">
                 <thead className="sticky top-0 bg-slate-800/90 backdrop-blur-sm border-b border-slate-700">
                   <tr>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
-                      Material Code
+                    <th className="px-4 py-3 text-left text-xxxs font-medium text-slate-400 uppercase tracking-wider">
+                      Code
             </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
-                      TTL Weight/Qty
+                    <th className="px-4 py-3 text-left text-xxxs font-medium text-slate-400 uppercase tracking-wider">
+                      TTL Qty
             </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
+                    <th className="px-4 py-3 text-left text-xxxs font-medium text-slate-400 uppercase tracking-wider">
               TTL Pallet
             </th>
           </tr>
@@ -292,18 +292,18 @@ export default function MaterialReceived() {
                         transition={{ duration: 0.3, delay: index * 0.05 }}
                         className="hover:bg-slate-700/30 transition-colors"
                       >
-                        <td className="px-4 py-3 whitespace-nowrap text-sm">
+                        <td className="px-4 py-3 whitespace-nowrap text-xs">
                           <div className="flex items-center gap-2">
                             <div className="w-2 h-2 bg-green-500 rounded-full opacity-60"></div>
                             <span className="font-medium text-slate-300">{material.material_code}</span>
                           </div>
                         </td>
-                        <td className="px-4 py-3 whitespace-nowrap text-sm">
+                        <td className="px-4 py-3 whitespace-nowrap text-xs">
                           <Badge variant="outline" className="border-slate-600 text-orange-300 text-xs">
                             {material.total_qty.toLocaleString()}
                           </Badge>
                         </td>
-                        <td className="px-4 py-3 whitespace-nowrap text-sm">
+                        <td className="px-4 py-3 whitespace-nowrap text-xs">
                           <Badge variant="outline" className="border-slate-600 text-green-300 text-xs">
                             {material.total_pallets}
                           </Badge>

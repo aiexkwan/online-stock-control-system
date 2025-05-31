@@ -187,30 +187,39 @@ export default function GlobalHeader() {
   return (
     <>
       {/* Header */}
-      <header className="fixed top-0 left-0 right-0 z-40 bg-[#23263a] shadow-lg border-b border-gray-700">
+      <header className="fixed top-0 left-0 right-0 z-40 bg-gradient-to-r from-slate-900 via-blue-900 to-slate-800 shadow-2xl border-b border-blue-500/20 backdrop-blur-xl">
+        {/* 頂部光效 */}
+        <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-blue-400/50 to-transparent"></div>
+        
         <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-24">
             {/* Left side - Menu button with hover dropdown */}
             <div className="flex items-center relative group">
               <button
-                className="p-3 rounded-md text-gray-300 hover:text-white hover:bg-gray-700 transition-colors"
+                className="p-4 rounded-2xl text-slate-300 hover:text-white hover:bg-slate-700/50 transition-all duration-300 border border-slate-600/30 hover:border-blue-500/50 backdrop-blur-sm group"
                 onMouseEnter={() => setIsMenuOpen(true)}
                 onMouseLeave={() => setIsMenuOpen(false)}
               >
-                <Bars3Icon className="h-7 w-7" />
+                <Bars3Icon className="h-7 w-7 group-hover:scale-110 transition-transform duration-300" />
               </button>
 
               {/* Hover Dropdown Menu */}
               <div 
-                className={`absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-xl z-50 min-w-[300px] transition-all duration-200 ${
-                  isMenuOpen ? 'opacity-100 visible' : 'opacity-0 invisible'
+                className={`absolute top-full left-0 mt-3 bg-slate-800/90 backdrop-blur-xl border border-slate-600/50 rounded-2xl shadow-2xl z-[60] min-w-[320px] transition-all duration-300 ${
+                  isMenuOpen ? 'opacity-100 visible translate-y-0' : 'opacity-0 invisible translate-y-2'
                 }`}
                 onMouseEnter={() => setIsMenuOpen(true)}
                 onMouseLeave={() => setIsMenuOpen(false)}
               >
-                <div className="p-4">
-                  <h3 className="text-base font-semibold text-gray-900 mb-3">Navigation</h3>
-                  <nav className="space-y-1">
+                {/* 內部光效 */}
+                <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 via-transparent to-purple-500/5 rounded-2xl"></div>
+                
+                <div className="relative z-10 p-6">
+                  <h3 className="text-lg font-bold bg-gradient-to-r from-blue-300 via-cyan-300 to-blue-200 bg-clip-text text-transparent mb-4 flex items-center gap-2">
+                    <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse"></div>
+                    Menu
+                  </h3>
+                  <nav className="space-y-2">
                     {filteredMenuItems.map((item) => {
                       const IconComponent = item.icon;
                       const isActive = pathname === item.path;
@@ -219,31 +228,38 @@ export default function GlobalHeader() {
                         <button
                           key={item.id}
                           onClick={() => handleMenuClick(item.path)}
-                          className={`w-full flex items-center p-3 rounded-lg transition-colors text-left hover:bg-gray-50 ${
-                            isActive ? 'bg-blue-50 text-blue-700' : 'text-gray-700'
+                          className={`w-full flex items-center p-4 rounded-xl transition-all duration-300 text-left group/item ${
+                            isActive 
+                              ? 'bg-gradient-to-r from-blue-500/20 to-cyan-500/20 border border-blue-400/30 text-blue-300' 
+                              : 'hover:bg-slate-700/50 border border-transparent hover:border-slate-600/30 text-slate-300 hover:text-white'
                           }`}
                         >
-                          <div className={`flex-shrink-0 mr-3 w-9 h-9 rounded-lg flex items-center justify-center ${
-                            isActive ? 'bg-blue-100' : 'bg-gray-100'
+                          <div className={`flex-shrink-0 mr-4 w-12 h-12 rounded-xl flex items-center justify-center transition-all duration-300 ${
+                            isActive 
+                              ? 'bg-gradient-to-r from-blue-500 to-cyan-500 shadow-lg shadow-blue-500/25' 
+                              : 'bg-slate-700/50 group-hover/item:bg-slate-600/50 group-hover/item:scale-110'
                           }`}>
-                            <IconComponent className={`h-5 w-5 ${
-                              isActive ? 'text-blue-600' : 'text-gray-600'
+                            <IconComponent className={`h-6 w-6 ${
+                              isActive ? 'text-white' : 'text-slate-400 group-hover/item:text-white'
                             }`} />
                           </div>
                           <div className="flex-1 min-w-0">
-                            <p className={`text-base font-medium ${
-                              isActive ? 'text-blue-900' : 'text-gray-900'
+                            <p className={`text-base font-semibold ${
+                              isActive ? 'text-blue-200' : 'text-slate-200 group-hover/item:text-white'
                             }`}>
                               {item.title}
                             </p>
                             {item.description && (
-                              <p className={`text-sm ${
-                                isActive ? 'text-blue-600' : 'text-gray-500'
+                              <p className={`text-sm mt-1 ${
+                                isActive ? 'text-blue-300/80' : 'text-slate-400 group-hover/item:text-slate-300'
                               }`}>
                                 {item.description}
                               </p>
                             )}
                           </div>
+                          {isActive && (
+                            <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse"></div>
+                          )}
                         </button>
                       );
                     })}
@@ -254,10 +270,11 @@ export default function GlobalHeader() {
 
             {/* Center - Title and greeting */}
             <div className="flex-1 text-center">
-              <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
+              <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-300 via-purple-300 to-cyan-300 bg-clip-text text-transparent mb-1">
                 {getGreeting()}
               </h1>
-              <p className="text-base text-slate-400">
+              <p className="text-lg text-slate-300 flex items-center justify-center gap-2">
+                <span className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse"></span>
                 Welcome back, {user?.displayName || user?.name || 'User'}
               </p>
             </div>
@@ -266,7 +283,7 @@ export default function GlobalHeader() {
             <div className="flex items-center">
               <button
                 onClick={handleLogout}
-                className="flex items-center gap-2 px-4 py-3 bg-red-600 hover:bg-red-700 border border-red-500 rounded-lg transition-colors text-white text-base"
+                className="flex items-center gap-3 px-6 py-3 bg-gradient-to-r from-red-600 to-red-500 hover:from-red-500 hover:to-red-400 border border-red-500/50 hover:border-red-400/70 rounded-xl transition-all duration-300 text-white text-base font-medium shadow-lg hover:shadow-red-500/25 hover:scale-105 active:scale-95 backdrop-blur-sm"
               >
                 <ArrowRightOnRectangleIcon className="w-5 h-5" />
                 Logout

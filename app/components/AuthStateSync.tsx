@@ -21,15 +21,15 @@ export default function AuthStateSync() {
   
   // 定義需要認證的路由
   const protectedRoutes = [
+    '/access',
+    '/dashboard',
     '/admin',
     '/home',
-    '/users',
     '/reports',
     '/view-history',
     '/void-pallet',
     '/tables',
     '/inventory',
-    '/export-report',
     '/history',
     '/products',
     '/productUpdate',

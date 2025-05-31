@@ -134,13 +134,11 @@ export async function middleware(request: NextRequest) {
         '/access',
         '/dashboard',
         '/change-password',  // 密碼修改頁面需要認證，用戶必須已登入
-        '/users',
         '/reports',
         '/view-history',
         '/void-pallet',
         '/tables',
         '/inventory',
-        '/export-report',
         '/history',
         '/products',
         '/stock-transfer',

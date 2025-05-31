@@ -78,3 +78,14 @@ html {
     @apply bg-background text-foreground;
     }
 } 
+
+/* 隱藏數字輸入欄的 spinner */
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+input[type="number"] {
+  -moz-appearance: textfield;
+} 

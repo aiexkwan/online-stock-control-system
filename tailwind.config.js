@@ -60,7 +60,10 @@ module.exports = {
   				'4': 'hsl(var(--chart-4))',
   				'5': 'hsl(var(--chart-5))'
   			}
-  		}
+  		},
+		fontSize: {
+			'xxxs': '0.6rem', // 8px
+		},
   	}
   },
   plugins: [require("tailwindcss-animate")],

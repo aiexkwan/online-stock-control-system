@@ -5,8 +5,6 @@ import { useRouter } from 'next/navigation';
 import { 
   NoSymbolIcon, 
   ClockIcon, 
-  DocumentArrowDownIcon, 
-  ChatBubbleLeftRightIcon,
   CubeIcon,
   KeyIcon
 } from '@heroicons/react/24/outline';
@@ -62,44 +60,8 @@ export default function AdminPanelPopover({ onClose }: { onClose?: () => void })
         
         <div className="relative">
           <Tabs.Trigger
-            value="export"
-            className="px-3 py-2 text-sm font-medium text-white text-left data-[state=active]:bg-gray-800 data-[state=active]:border-l-4 data-[state=active]:border-blue-500 flex items-center hover:bg-gray-700 transition-colors w-full"
-            onMouseEnter={() => setHovered('export')}
-            onMouseLeave={() => setHovered(null)}
-            onClick={() => handleTabClick('/export-report')}
-          >
-            <DocumentArrowDownIcon className="mr-3 h-4 w-4" />
-            <span className="whitespace-nowrap">Export Report</span>
-          </Tabs.Trigger>
-          {hovered === 'export' && (
-            <div className="absolute left-full top-0 ml-2 bg-gray-900 text-white text-xs rounded shadow-lg px-3 py-2 z-50 whitespace-nowrap">
-              Export data to reports
-            </div>
-          )}
-        </div>
-        
-        <div className="relative">
-          <Tabs.Trigger
-            value="ask"
-            className="px-3 py-2 text-sm font-medium text-white text-left data-[state=active]:bg-gray-800 data-[state=active]:border-l-4 data-[state=active]:border-blue-500 flex items-center hover:bg-gray-700 transition-colors w-full"
-            onMouseEnter={() => setHovered('ask')}
-            onMouseLeave={() => setHovered(null)}
-            onClick={() => handleTabClick('/ask-database')}
-          >
-            <ChatBubbleLeftRightIcon className="mr-3 h-4 w-4" />
-            <span className="whitespace-nowrap">Ask Database</span>
-          </Tabs.Trigger>
-          {hovered === 'ask' && (
-            <div className="absolute left-full top-0 ml-2 bg-gray-900 text-white text-xs rounded shadow-lg px-3 py-2 z-50 whitespace-nowrap">
-              Query database information
-            </div>
-          )}
-        </div>
-        
-        <div className="relative">
-          <Tabs.Trigger
             value="product"
-            className="px-3 py-2 text-sm font-medium text-white text-left data-[state=active]:bg-gray-800 data-[state=active]:border-l-4 data-[state=active]:border-blue-500 flex items-center hover:bg-gray-700 transition-colors w-full"
+            className="px-3 py-2 text-sm font-medium text-white text-left data-[state=active]:bg-gray-800 data-[state=active]:border-l-4 data-[state=active]:border-blue-500 flex items-center hover:bg-gray-700 transition-colors rounded-b-md w-full"
             onMouseEnter={() => setHovered('product')}
             onMouseLeave={() => setHovered(null)}
             onClick={() => handleTabClick('/productUpdate')}
@@ -110,24 +72,6 @@ export default function AdminPanelPopover({ onClose }: { onClose?: () => void })
           {hovered === 'product' && (
             <div className="absolute left-full top-0 ml-2 bg-gray-900 text-white text-xs rounded shadow-lg px-3 py-2 z-50 whitespace-nowrap">
               Manage and update product information
-            </div>
-          )}
-        </div>
-        
-        <div className="relative">
-          <Tabs.Trigger
-            value="access"
-            className="px-3 py-2 text-sm font-medium text-white text-left data-[state=active]:bg-gray-800 data-[state=active]:border-l-4 data-[state=active]:border-blue-500 flex items-center hover:bg-gray-700 transition-colors rounded-b-md w-full"
-            onMouseEnter={() => setHovered('access')}
-            onMouseLeave={() => setHovered(null)}
-            onClick={() => handleTabClick('/users')}
-          >
-            <KeyIcon className="mr-3 h-4 w-4" />
-            <span className="whitespace-nowrap">Access Update</span>
-          </Tabs.Trigger>
-          {hovered === 'access' && (
-            <div className="absolute left-full top-0 ml-2 bg-gray-900 text-white text-xs rounded shadow-lg px-3 py-2 z-50 whitespace-nowrap">
-              Manage user access and permissions
             </div>
           )}
         </div>

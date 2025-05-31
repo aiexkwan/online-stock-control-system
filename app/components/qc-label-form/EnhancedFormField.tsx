@@ -131,21 +131,21 @@ export const EnhancedInput = forwardRef<HTMLInputElement, EnhancedInputProps>(({
   };
 
   const variantClasses = {
-    default: 'bg-gray-900 border-gray-700 focus:border-blue-500',
-    filled: 'bg-gray-800 border-gray-600 focus:border-blue-400',
-    outlined: 'bg-transparent border-gray-600 focus:border-blue-400'
+    default: 'bg-slate-800/50 border-slate-600/50 focus:border-blue-400/70 focus:bg-slate-800/70',
+    filled: 'bg-slate-700/60 border-slate-500/50 focus:border-blue-400/70 focus:bg-slate-700/80',
+    outlined: 'bg-slate-900/30 border-slate-600/40 focus:border-blue-400/70 focus:bg-slate-800/40'
   };
 
   const statusClasses = error 
-    ? 'border-red-500 focus:border-red-500 focus:ring-red-500' 
+    ? 'border-red-400/70 focus:border-red-400/90 focus:ring-red-400/20 bg-red-900/10' 
     : success 
-    ? 'border-green-500 focus:border-green-500 focus:ring-green-500'
+    ? 'border-green-400/70 focus:border-green-400/90 focus:ring-green-400/20 bg-green-900/10'
     : '';
 
   return (
-    <div className="relative">
+    <div className="relative group">
       {leftIcon && (
-        <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
+        <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 group-focus-within:text-blue-400 transition-colors duration-200">
           {leftIcon}
         </div>
       )}
@@ -153,9 +153,11 @@ export const EnhancedInput = forwardRef<HTMLInputElement, EnhancedInputProps>(({
       <input
         ref={ref}
         className={`
-          w-full rounded-lg border text-white transition-all duration-200
-          focus:outline-none focus:ring-2 focus:ring-opacity-50
+          w-full rounded-xl border backdrop-blur-sm text-white placeholder-slate-400
+          transition-all duration-300 ease-out
+          focus:outline-none focus:ring-2 focus:ring-blue-400/30 focus:ring-offset-0
           disabled:opacity-50 disabled:cursor-not-allowed
+          hover:border-blue-500/50 hover:bg-slate-800/60
           ${sizeClasses[size]}
           ${variantClasses[variant]}
           ${statusClasses}
@@ -167,10 +169,13 @@ export const EnhancedInput = forwardRef<HTMLInputElement, EnhancedInputProps>(({
         {...props}
       />
       
+      {/* 輸入框內部光效 */}
+      <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-blue-500/5 via-transparent to-cyan-500/5 opacity-0 group-focus-within:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
+      
       {(rightIcon || loading) && (
-        <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400">
+        <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 group-focus-within:text-blue-400 transition-colors duration-200">
           {loading ? (
-            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-500" />
+            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-400" />
           ) : (
             rightIcon
           )}
@@ -198,47 +203,55 @@ export const EnhancedSelect = forwardRef<HTMLSelectElement, EnhancedSelectProps>
   };
 
   const variantClasses = {
-    default: 'bg-gray-900 border-gray-700 focus:border-blue-500',
-    filled: 'bg-gray-800 border-gray-600 focus:border-blue-400',
-    outlined: 'bg-transparent border-gray-600 focus:border-blue-400'
+    default: 'bg-slate-800/50 border-slate-600/50 focus:border-blue-400/70 focus:bg-slate-800/70',
+    filled: 'bg-slate-700/60 border-slate-500/50 focus:border-blue-400/70 focus:bg-slate-700/80',
+    outlined: 'bg-slate-900/30 border-slate-600/40 focus:border-blue-400/70 focus:bg-slate-800/40'
   };
 
   const statusClasses = error 
-    ? 'border-red-500 focus:border-red-500 focus:ring-red-500' 
+    ? 'border-red-400/70 focus:border-red-400/90 focus:ring-red-400/20 bg-red-900/10' 
     : success 
-    ? 'border-green-500 focus:border-green-500 focus:ring-green-500'
+    ? 'border-green-400/70 focus:border-green-400/90 focus:ring-green-400/20 bg-green-900/10'
     : '';
 
   return (
-    <select
-      ref={ref}
-      className={`
-        w-full rounded-lg border text-white transition-all duration-200
-        focus:outline-none focus:ring-2 focus:ring-opacity-50
-        disabled:opacity-50 disabled:cursor-not-allowed
-        ${sizeClasses[size]}
-        ${variantClasses[variant]}
-        ${statusClasses}
-        ${className}
-      `}
-      disabled={disabled}
-      {...props}
-    >
-      {placeholder && (
-        <option value="" disabled>
-          {placeholder}
-        </option>
-      )}
-      {options.map((option) => (
-        <option 
-          key={option.value} 
-          value={option.value}
-          disabled={option.disabled}
-        >
-          {option.label}
-        </option>
-      ))}
-    </select>
+    <div className="relative group">
+      <select
+        ref={ref}
+        className={`
+          w-full rounded-xl border backdrop-blur-sm text-white
+          transition-all duration-300 ease-out
+          focus:outline-none focus:ring-2 focus:ring-blue-400/30 focus:ring-offset-0
+          disabled:opacity-50 disabled:cursor-not-allowed
+          hover:border-blue-500/50 hover:bg-slate-800/60
+          ${sizeClasses[size]}
+          ${variantClasses[variant]}
+          ${statusClasses}
+          ${className}
+        `}
+        disabled={disabled}
+        {...props}
+      >
+        {placeholder && (
+          <option value="" disabled className="bg-slate-800 text-slate-400">
+            {placeholder}
+          </option>
+        )}
+        {options.map((option) => (
+          <option 
+            key={option.value} 
+            value={option.value}
+            disabled={option.disabled}
+            className="bg-slate-800 text-white"
+          >
+            {option.label}
+          </option>
+        ))}
+      </select>
+      
+      {/* 下拉框內部光效 */}
+      <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-blue-500/5 via-transparent to-cyan-500/5 opacity-0 group-focus-within:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
+    </div>
   );
 });
 
