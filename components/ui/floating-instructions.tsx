@@ -45,19 +45,19 @@ export const FloatingInstructions: React.FC<FloatingInstructionsProps> = ({
   if (variant === 'hangover') {
     return (
       <div 
-        className={`relative inline-block ${className}`}
+        className={`relative inline-block z-[9999] ${className}`}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
       >
         <button
-          className="w-8 h-8 rounded-full bg-blue-600 text-white shadow-lg transition-all duration-300 transform hover:scale-110 flex items-center justify-center group"
+          className="w-8 h-8 rounded-full bg-blue-600 text-white shadow-lg transition-all duration-300 transform hover:scale-110 flex items-center justify-center group relative z-[9999]"
           title="Instructions"
         >
           <InformationCircleIcon className="h-5 w-5 group-hover:animate-pulse" />
         </button>
 
         <div className={`
-          absolute top-10 right-0 w-80 max-w-[90vw] z-50
+          absolute top-10 right-0 w-80 max-w-[90vw] z-[9999]
           bg-white/95 backdrop-blur-md rounded-xl shadow-2xl border border-gray-200/50
           transform transition-all duration-300 ease-out
           ${isHovered ? 'opacity-100 scale-100 pointer-events-auto' : 'opacity-0 scale-95 pointer-events-none'}
@@ -100,12 +100,12 @@ export const FloatingInstructions: React.FC<FloatingInstructionsProps> = ({
   }
 
   return (
-    <div className={`fixed ${positionClasses[position]} z-50 ${className}`}>
+    <div className={`fixed ${positionClasses[position]} z-[9999] ${className}`}>
       <button
         onClick={() => setIsOpen(!isOpen)}
         className={`
           w-12 h-12 rounded-full shadow-lg transition-all duration-300 transform hover:scale-110
-          flex items-center justify-center group
+          flex items-center justify-center group relative z-[9999]
           ${isOpen 
             ? 'bg-blue-600 text-white shadow-blue-500/25' 
             : 'bg-white/90 backdrop-blur-sm text-blue-600 hover:bg-blue-50 shadow-gray-500/25'
@@ -123,12 +123,12 @@ export const FloatingInstructions: React.FC<FloatingInstructionsProps> = ({
       {isOpen && (
         <>
           <div 
-            className="fixed inset-0 bg-black/20 backdrop-blur-sm -z-10"
+            className="fixed inset-0 bg-black/20 backdrop-blur-sm z-[9998]"
             onClick={() => setIsOpen(false)}
           />
           
           <div className={`
-            absolute ${panelPositionClasses[position]} w-80 max-w-[90vw]
+            absolute ${panelPositionClasses[position]} w-80 max-w-[90vw] z-[9999]
             bg-white/95 backdrop-blur-md rounded-xl shadow-2xl border border-gray-200/50
             transform transition-all duration-300 ease-out
             ${isOpen ? 'opacity-100 scale-100' : 'opacity-0 scale-95 pointer-events-none'}
