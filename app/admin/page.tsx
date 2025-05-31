@@ -36,7 +36,8 @@ import {
   RectangleStackIcon,
   CogIcon,
   Bars3Icon,
-  XMarkIcon
+  XMarkIcon,
+  CloudArrowUpIcon
 } from '@heroicons/react/24/outline';
 import { useAuth } from '@/app/hooks/useAuth';
 
@@ -44,6 +45,7 @@ import { useAuth } from '@/app/hooks/useAuth';
 import FinishedProduct from '@/app/components/PrintHistory';
 import MaterialReceived from '@/app/components/GrnHistory';
 import PalletDonutChart from '@/app/components/PalletDonutChart';
+import UploadFilesDialog from '@/app/components/admin-panel-menu/UploadFilesDialog';
 
 const adminMenuItems = [
   {
@@ -111,6 +113,15 @@ const adminMenuItems = [
     icon: CubeIcon,
     path: '/productUpdate',
     color: 'hover:bg-orange-900/20 hover:text-orange-400',
+    category: 'System Tools'
+  },
+  {
+    id: 'upload-files',
+    title: 'Upload Files',
+    description: 'Upload files to the system',
+    icon: CloudArrowUpIcon,
+    action: 'open-upload-dialog',
+    color: 'hover:bg-purple-900/20 hover:text-purple-400',
     category: 'System Tools'
   }
 ];
@@ -204,6 +215,9 @@ export default function AdminPanelPage() {
   // Transaction Report states
   const [startDate, setStartDate] = useState<string>('');
   const [endDate, setEndDate] = useState<string>('');
+
+  // Upload Files states
+  const [showUploadDialog, setShowUploadDialog] = useState(false);
 
   // Load dashboard statistics
   const loadDashboardStats = async () => {
@@ -452,6 +466,8 @@ export default function AdminPanelPage() {
   const handleItemClick = (item: any) => {
     if (item.action === 'generate-report' && item.reportType) {
       handleReportClick(item.reportType);
+    } else if (item.action === 'open-upload-dialog') {
+      setShowUploadDialog(true);
     } else if (item.path) {
       router.push(item.path);
     }
@@ -1477,6 +1493,12 @@ export default function AdminPanelPage() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Upload Files Dialog */}
+      <UploadFilesDialog
+        isOpen={showUploadDialog}
+        onOpenChange={setShowUploadDialog}
+      />
     </div>
   );
 } 
