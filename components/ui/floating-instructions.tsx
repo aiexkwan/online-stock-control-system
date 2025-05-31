@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { InformationCircleIcon, XMarkIcon } from '@heroicons/react/24/outline';
 
 interface InstructionStep {
@@ -25,6 +25,27 @@ export const FloatingInstructions: React.FC<FloatingInstructionsProps> = ({
 }) => {
   const [isHovered, setIsHovered] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
+  const [panelPosition, setPanelPosition] = useState<'left' | 'right'>('right');
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if ((isHovered || isOpen) && buttonRef.current && panelRef.current) {
+      const buttonRect = buttonRef.current.getBoundingClientRect();
+      const panelWidth = 320; // w-80 = 320px
+      const viewportWidth = window.innerWidth;
+      
+      // 檢查右側是否有足夠空間
+      const spaceOnRight = viewportWidth - buttonRect.right;
+      const spaceOnLeft = buttonRect.left;
+      
+      if (spaceOnRight < panelWidth && spaceOnLeft > panelWidth) {
+        setPanelPosition('left');
+      } else {
+        setPanelPosition('right');
+      }
+    }
+  }, [isHovered, isOpen]);
 
   const positionClasses = {
     'top-left': 'top-4 left-4',
@@ -32,14 +53,6 @@ export const FloatingInstructions: React.FC<FloatingInstructionsProps> = ({
     'bottom-left': 'bottom-4 left-4',
     'bottom-right': 'bottom-4 right-4',
     'relative': 'relative'
-  };
-
-  const panelPositionClasses = {
-    'top-left': 'top-16 left-0',
-    'top-right': 'top-16 right-0',
-    'bottom-left': 'bottom-16 left-0',
-    'bottom-right': 'bottom-16 right-0',
-    'relative': 'top-12 right-0'
   };
 
   if (variant === 'hangover') {
@@ -50,18 +63,27 @@ export const FloatingInstructions: React.FC<FloatingInstructionsProps> = ({
         onMouseLeave={() => setIsHovered(false)}
       >
         <button
+          ref={buttonRef}
           className="w-8 h-8 rounded-full bg-blue-600 text-white shadow-lg transition-all duration-300 transform hover:scale-110 flex items-center justify-center group relative z-[9999]"
           title="Instructions"
         >
           <InformationCircleIcon className="h-5 w-5 group-hover:animate-pulse" />
         </button>
 
-        <div className={`
-          absolute top-10 right-0 w-80 max-w-[90vw] z-[9999]
-          bg-white/95 backdrop-blur-md rounded-xl shadow-2xl border border-gray-200/50
-          transform transition-all duration-300 ease-out
-          ${isHovered ? 'opacity-100 scale-100 pointer-events-auto' : 'opacity-0 scale-95 pointer-events-none'}
-        `}>
+        <div 
+          ref={panelRef}
+          className={`
+            absolute top-10 w-72 sm:w-80 max-w-[95vw] z-[9999]
+            bg-white/95 backdrop-blur-md rounded-xl shadow-2xl border border-gray-200/50
+            transform transition-all duration-300 ease-out
+            ${isHovered ? 'opacity-100 scale-100 pointer-events-auto' : 'opacity-0 scale-95 pointer-events-none'}
+            ${panelPosition === 'right' ? 'right-0' : 'left-0'}
+          `}
+          style={{
+            transform: isHovered ? 'translateX(0) scale(1)' : 'translateX(0) scale(0.95)',
+            transformOrigin: panelPosition === 'right' ? 'top right' : 'top left'
+          }}
+        >
           <div className="p-4 border-b border-gray-200/50">
             <h3 className="text-lg font-semibold text-gray-800 flex items-center">
               <InformationCircleIcon className="h-5 w-5 text-blue-600 mr-2" />
@@ -69,7 +91,7 @@ export const FloatingInstructions: React.FC<FloatingInstructionsProps> = ({
             </h3>
           </div>
 
-          <div className="p-4 max-h-96 overflow-y-auto">
+          <div className="p-4 max-h-80 sm:max-h-96 overflow-y-auto">
             <div className="space-y-4">
               {steps.map((step, index) => (
                 <div key={index} className="flex items-start space-x-3">
@@ -102,6 +124,7 @@ export const FloatingInstructions: React.FC<FloatingInstructionsProps> = ({
   return (
     <div className={`fixed ${positionClasses[position]} z-[9999] ${className}`}>
       <button
+        ref={buttonRef}
         onClick={() => setIsOpen(!isOpen)}
         className={`
           w-12 h-12 rounded-full shadow-lg transition-all duration-300 transform hover:scale-110
@@ -127,12 +150,24 @@ export const FloatingInstructions: React.FC<FloatingInstructionsProps> = ({
             onClick={() => setIsOpen(false)}
           />
           
-          <div className={`
-            absolute ${panelPositionClasses[position]} w-80 max-w-[90vw] z-[9999]
-            bg-white/95 backdrop-blur-md rounded-xl shadow-2xl border border-gray-200/50
-            transform transition-all duration-300 ease-out
-            ${isOpen ? 'opacity-100 scale-100' : 'opacity-0 scale-95 pointer-events-none'}
-          `}>
+          <div 
+            ref={panelRef}
+            className={`
+              absolute w-72 sm:w-80 max-w-[95vw] z-[9999]
+              bg-white/95 backdrop-blur-md rounded-xl shadow-2xl border border-gray-200/50
+              transform transition-all duration-300 ease-out
+              ${isOpen ? 'opacity-100 scale-100' : 'opacity-0 scale-95 pointer-events-none'}
+              ${position === 'top-right' ? 'top-16' : 
+                position === 'top-left' ? 'top-16' : 
+                position === 'bottom-right' ? 'bottom-16' : 
+                position === 'bottom-left' ? 'bottom-16' : 
+                'top-12'}
+              ${panelPosition === 'right' ? 'right-0' : 'left-0'}
+            `}
+            style={{
+              transformOrigin: panelPosition === 'right' ? 'top right' : 'top left'
+            }}
+          >
             <div className="p-4 border-b border-gray-200/50">
               <div className="flex items-center justify-between">
                 <h3 className="text-lg font-semibold text-gray-800 flex items-center">
@@ -148,7 +183,7 @@ export const FloatingInstructions: React.FC<FloatingInstructionsProps> = ({
               </div>
             </div>
 
-            <div className="p-4 max-h-96 overflow-y-auto">
+            <div className="p-4 max-h-80 sm:max-h-96 overflow-y-auto">
               <div className="space-y-4">
                 {steps.map((step, index) => (
                   <div key={index} className="flex items-start space-x-3">
