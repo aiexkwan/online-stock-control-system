@@ -94,29 +94,9 @@ const adminMenuItems = [
     category: 'Export Reports'
   },
   {
-    id: 'code-list-report',
-    title: 'Export Code List',
-    description: 'Export complete product code list',
-    icon: DocumentTextIcon,
-    action: 'generate-report',
-    reportType: 'code-list',
-    color: 'hover:bg-cyan-900/20 hover:text-cyan-400',
-    category: 'Export Reports'
-  },
-  {
-    id: 'inventory-transaction-report',
-    title: 'Export Inventory Transaction',
-    description: 'Export inventory transaction records',
-    icon: TableCellsIcon,
-    action: 'generate-report',
-    reportType: 'inventory-transaction',
-    color: 'hover:bg-indigo-900/20 hover:text-indigo-400',
-    category: 'Export Reports'
-  },
-  {
     id: 'all-data-report',
     title: 'Export All Data',
-    description: 'Export complete database backup',
+    description: 'Export selected database tables',
     icon: DocumentChartBarIcon,
     action: 'generate-report',
     reportType: 'all-data',
@@ -250,6 +230,10 @@ export default function AdminPanelPage() {
   // Transaction Report states
   const [startDate, setStartDate] = useState<string>('');
   const [endDate, setEndDate] = useState<string>('');
+
+  // All Data Export states
+  const [selectedTables, setSelectedTables] = useState<string[]>([]);
+  const [needsDateRange, setNeedsDateRange] = useState<boolean>(false);
 
   // Upload Files states
   const [showUploadDialog, setShowUploadDialog] = useState(false);
@@ -571,6 +555,16 @@ export default function AdminPanelPage() {
 
   // Handle report click - open dialog for parameter selection
   const handleReportClick = async (reportType: string) => {
+    // Reset all states first
+    setSelectedTables([]);
+    setNeedsDateRange(false);
+    setStartDate('');
+    setEndDate('');
+    setSelectedAcoOrder('');
+    setSelectedGrnRef('');
+    setAvailableAcoOrders([]);
+    setAvailableGrnRefs([]);
+    
     setCurrentReportType(reportType);
     setShowReportDialog(true);
     
@@ -591,21 +585,9 @@ export default function AdminPanelPage() {
         toast.info('Slate report is currently under development');
         setShowReportDialog(false);
         return;
-      } else if (reportType === 'code-list') {
-        // Code list report doesn't need parameters, generate immediately
-        toast.info("Code list report functionality will be implemented");
-        setShowReportDialog(false);
-        return;
-      } else if (reportType === 'inventory-transaction') {
-        // Set default date range (last 30 days)
-        const endDate = new Date();
-        const startDate = new Date();
-        startDate.setDate(endDate.getDate() - 30);
-        setStartDate(startDate.toISOString().split('T')[0]);
-        setEndDate(endDate.toISOString().split('T')[0]);
       } else if (reportType === 'all-data') {
-        // All data export doesn't need parameters, but show confirmation
-        // Will be handled in generateReport function
+        // All data export - will show table selection dialog
+        // No need to set default dates here
       }
     } catch (error) {
       console.error(`Error loading ${reportType} data:`, error);
@@ -671,19 +653,16 @@ export default function AdminPanelPage() {
       } else if (currentReportType === 'slate') {
         toast.info('Slate report is currently under development');
         return;
-      } else if (currentReportType === 'code-list') {
-        toast.info("Code list report functionality will be implemented");
-      } else if (currentReportType === 'inventory-transaction') {
-        if (!startDate || !endDate) {
-          toast.error('Please select start and end dates');
+      } else if (currentReportType === 'all-data') {
+        if (!selectedTables || selectedTables.length === 0) {
+          toast.error('Please select at least one table to export');
           return;
         }
-        toast.info("Inventory transaction report functionality will be implemented");
-      } else if (currentReportType === 'all-data') {
-        toast.info("All data export functionality will be implemented");
+        await generateAllDataReport();
       }
 
-      setShowReportDialog(false);
+      // Close dialog and reset states after successful generation
+      closeReportDialog();
       toast.success(`${currentReportType.toUpperCase()} report generated successfully`);
     } catch (error: any) {
       console.error(`Error generating ${currentReportType} report:`, error);
@@ -767,6 +746,106 @@ export default function AdminPanelPage() {
     await buildTransactionReport(reportData);
   };
 
+  // Generate All Data report
+  const generateAllDataReport = async () => {
+    try {
+      for (const tableName of selectedTables) {
+        let query = supabase.from(tableName).select('*');
+        
+        // Add date range filter for tables that need it
+        if (needsDateRange && (tableName === 'record_history' || tableName === 'record_inventory')) {
+          if (!startDate || !endDate) {
+            toast.error('Please select start and end dates for time-based tables');
+            return;
+          }
+          
+          const timeField = tableName === 'record_history' ? 'time' : 'latest_update';
+          query = query
+            .gte(timeField, startDate)
+            .lte(timeField, endDate + 'T23:59:59');
+        }
+        
+        // Determine sort field based on table and execute query
+        let data, error;
+        let sortField = 'id'; // default
+        
+        if (tableName === 'record_palletinfo') {
+          sortField = 'generate_time';
+        } else if (tableName === 'data_code') {
+          sortField = 'code';
+        } else if (tableName === 'report_void') {
+          sortField = 'time';
+        } else if (tableName === 'record_history') {
+          sortField = 'time';
+        } else if (tableName === 'record_inventory') {
+          sortField = 'latest_update';
+        }
+        
+        try {
+          const result = await query.order(sortField, { ascending: true });
+          data = result.data;
+          error = result.error;
+        } catch (sortError) {
+          // If sorting fails, try without sorting
+          console.warn(`Sorting by ${sortField} failed for ${tableName}, trying without sort:`, sortError);
+          const result = await query;
+          data = result.data;
+          error = result.error;
+        }
+        
+        if (error) {
+          console.warn(`Error fetching ${tableName}:`, error);
+          continue;
+        }
+        
+        if (!data || data.length === 0) {
+          toast.warning(`No data found for table: ${tableName}`);
+          continue;
+        }
+        
+        // Generate CSV content
+        const headers = Object.keys(data[0]);
+        const csvContent = [
+          headers.join(','),
+          ...data.map(row => 
+            headers.map(header => {
+              const value = row[header];
+              if (value === null || value === undefined) return '';
+              if (typeof value === 'string' && value.includes(',')) {
+                return `"${value.replace(/"/g, '""')}"`;
+              }
+              return String(value);
+            }).join(',')
+          )
+        ].join('\n');
+        
+        // Download CSV file
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        link.setAttribute('href', url);
+        
+        const dateRange = needsDateRange && (tableName === 'record_history' || tableName === 'record_inventory') 
+          ? `_${startDate}_to_${endDate}` 
+          : '';
+        link.setAttribute('download', `${tableName}${dateRange}_${new Date().toISOString().split('T')[0]}.csv`);
+        
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        // Small delay between downloads
+        await new Promise(resolve => setTimeout(resolve, 500));
+      }
+      
+      toast.success(`Successfully exported ${selectedTables.length} table(s)`);
+    } catch (error) {
+      console.error('Error generating all data report:', error);
+      throw error;
+    }
+  };
+
   // Close report dialog
   const closeReportDialog = () => {
     setShowReportDialog(false);
@@ -777,6 +856,9 @@ export default function AdminPanelPage() {
     setAvailableGrnRefs([]);
     setStartDate('');
     setEndDate('');
+    // Reset All Data Export states
+    setSelectedTables([]);
+    setNeedsDateRange(false);
   };
 
   // Click outside handler for dropdown
@@ -1585,6 +1667,131 @@ export default function AdminPanelPage() {
                     <p className="text-slate-400 text-lg">
                       Slate report functionality is currently under development.
                     </p>
+                  </div>
+                )}
+
+                {/* All Data Export Parameters */}
+                {currentReportType === 'all-data' && (
+                  <div className="space-y-6">
+                    <div>
+                      <label className="block text-sm font-medium text-slate-200 mb-3">
+                        Select Tables to Export
+                      </label>
+                      <div className="space-y-3">
+                        {[
+                          { value: 'record_palletinfo', label: 'Pallet Information', description: 'Pallet information records' },
+                          { value: 'data_code', label: 'Code List', description: 'Product code list' },
+                          { value: 'report_void', label: 'Voided Inventory', description: 'Voided inventory records' },
+                          { value: 'record_history', label: 'Operation History', description: 'Operation history records', needsDate: true },
+                          { value: 'record_inventory', label: 'Full Inventory', description: 'Complete inventory records', needsDate: true }
+                        ].map((table) => (
+                          <label key={table.value} className="flex items-center space-x-3 p-3 bg-slate-700/30 border border-slate-600/30 rounded-xl hover:bg-slate-700/50 transition-all duration-300 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={selectedTables.includes(table.value)}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setSelectedTables([...selectedTables, table.value]);
+                                  // Check if any selected table needs date range
+                                  const hasDateTable = [...selectedTables, table.value].some(t => 
+                                    t === 'record_history' || t === 'record_inventory'
+                                  );
+                                  setNeedsDateRange(hasDateTable);
+                                } else {
+                                  const newTables = selectedTables.filter(t => t !== table.value);
+                                  setSelectedTables(newTables);
+                                  // Check if remaining tables need date range
+                                  const hasDateTable = newTables.some(t => 
+                                    t === 'record_history' || t === 'record_inventory'
+                                  );
+                                  setNeedsDateRange(hasDateTable);
+                                }
+                              }}
+                              className="w-4 h-4 text-emerald-600 bg-slate-700 border-slate-500 rounded focus:ring-emerald-500 focus:ring-2"
+                            />
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2">
+                                <span className="text-slate-200 font-medium">{table.label}</span>
+                                {table.needsDate && (
+                                  <span className="text-xs bg-orange-500/20 text-orange-300 px-2 py-1 rounded-full border border-orange-400/30">
+                                    Requires Date Range
+                                  </span>
+                                )}
+                              </div>
+                              <p className="text-sm text-slate-400">{table.description}</p>
+                            </div>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Date Range for time-based tables */}
+                    {needsDateRange && (
+                      <div className="space-y-4 p-4 bg-orange-500/10 border border-orange-400/30 rounded-xl">
+                        <div className="flex items-center gap-2 mb-3">
+                          <div className="w-2 h-2 bg-orange-400 rounded-full"></div>
+                          <span className="text-orange-300 font-medium">Date Range Settings</span>
+                        </div>
+                        
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-sm font-medium text-slate-200 mb-2">
+                              Start Date
+                            </label>
+                            <input
+                              type="date"
+                              value={startDate}
+                              onChange={(e) => {
+                                setStartDate(e.target.value);
+                                // Validate date range (max 1 month)
+                                if (endDate && e.target.value) {
+                                  const start = new Date(e.target.value);
+                                  const end = new Date(endDate);
+                                  const diffTime = Math.abs(end.getTime() - start.getTime());
+                                  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                                  if (diffDays > 31) {
+                                    toast.warning('Date range cannot exceed one month');
+                                  }
+                                }
+                              }}
+                              className="w-full px-3 py-2 bg-slate-700/50 border border-slate-600/50 rounded-lg text-white text-sm focus:outline-none focus:border-orange-500/70 focus:bg-slate-700/70 hover:border-orange-500/50 transition-all duration-300"
+                            />
+                          </div>
+                          
+                          <div>
+                            <label className="block text-sm font-medium text-slate-200 mb-2">
+                              End Date
+                            </label>
+                            <input
+                              type="date"
+                              value={endDate}
+                              onChange={(e) => {
+                                setEndDate(e.target.value);
+                                // Validate date range (max 1 month)
+                                if (startDate && e.target.value) {
+                                  const start = new Date(startDate);
+                                  const end = new Date(e.target.value);
+                                  const diffTime = Math.abs(end.getTime() - start.getTime());
+                                  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                                  if (diffDays > 31) {
+                                    toast.warning('Date range cannot exceed one month');
+                                  }
+                                }
+                              }}
+                              className="w-full px-3 py-2 bg-slate-700/50 border border-slate-600/50 rounded-lg text-white text-sm focus:outline-none focus:border-orange-500/70 focus:bg-slate-700/70 hover:border-orange-500/50 transition-all duration-300"
+                            />
+                          </div>
+                        </div>
+                        
+                        <div className="text-xs text-orange-300 bg-orange-500/10 p-3 rounded-lg border border-orange-400/20">
+                          <p>📅 Operation History and Full Inventory tables require date range, maximum one month of data can be selected</p>
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="text-sm text-slate-400 bg-slate-700/30 border border-slate-600/30 p-4 rounded-xl">
+                      <p>📋 Selected tables will be exported separately in CSV format, one file per table</p>
+                    </div>
                   </div>
                 )}
               </div>
