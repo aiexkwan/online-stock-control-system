@@ -3,6 +3,46 @@
 ## 概述
 Void Pallet 系統允許用戶作廢棧板並處理特殊情況，如 ACO 訂單棧板和 Material GRN 棧板。該系統已完全重建，採用現代化架構、完整的 Supabase Auth 整合、全面的特殊棧板處理功能，以及**智能自動重印系統**。
 
+## 🎨 最新 UI/UX 優化 (v2.5)
+
+### 現代化設計風格
+採用與 `/stock-transfer` 一致的最新系統設計風格：
+
+#### 🌟 **視覺設計特色**
+- **漸層背景**: 從深藍到紅橙的動態漸層背景
+- **玻璃擬態效果**: 半透明卡片配合背景模糊效果
+- **動態光效**: 懸停時的邊框光效和內部光暈
+- **動畫元素**: 脈衝動畫的裝飾球體和平滑過渡效果
+- **網格背景**: 微妙的網格紋理增加深度感
+
+#### 🔍 **智能搜索優化**
+- **自動格式檢測**: 自動識別 pallet number (`/`) 或 series (`-`) 格式
+- **即時搜索**: 無需手動點擊搜索按鈕，選擇即搜索
+- **統一搜索組件**: 使用 `UnifiedSearch` 組件提供一致體驗
+- **QR 掃描整合**: 內建 QR 掃描功能，支援移動設備
+- **自動聚焦**: 頁面載入和操作完成後自動聚焦搜索欄
+
+#### 🎯 **用戶體驗改進**
+- **簡化流程**: 移除多餘的搜索步驟，直接顯示結果
+- **狀態反饋**: 清晰的成功/錯誤/警告消息顯示
+- **響應式設計**: 適配各種螢幕尺寸
+- **無縫操作**: 完成操作後自動重置並準備下一次操作
+- **Instructions 整合**: 右上角懸停式操作指南
+
+#### 🎨 **設計系統統一**
+```css
+/* 主要色彩方案 */
+背景漸層: slate-900 → blue-900 → slate-800
+主要色調: red-500 → orange-500 (void 操作主題)
+卡片背景: slate-800/40 + backdrop-blur-xl
+邊框光效: red-400/50 → transparent
+```
+
+### 📱 **響應式佈局**
+- **桌面版**: 寬敞的卡片佈局，最大寬度 5xl
+- **平板版**: 自適應網格系統
+- **手機版**: 垂直堆疊，觸控友好的按鈕尺寸
+
 ## 🚀 自動重印優化系統
 
 ### 概述
@@ -188,17 +228,17 @@ function mapLocationToDbField(location: string): string {
 
 ```
 app/void-pallet/
-├── page.tsx                    # 主頁面 (重建)
+├── page.tsx                    # 主頁面 (v2.5 現代化重寫)
 ├── types.ts                    # 類型定義 (新)
 ├── actions.ts                  # Server Actions (重構)
 ├── hooks/
 │   └── useVoidPallet.ts        # 主要業務邏輯 Hook (新)
 └── components/
-    ├── SearchSection.tsx       # 搜尋區域組件 (新)
-    ├── PalletInfoCard.tsx      # 棧板信息顯示卡片 (新)
-    ├── VoidForm.tsx            # 作廢操作表單 (新)
-    ├── ErrorHandler.tsx        # 錯誤處理組件 (新)
-    └── ReprintInfoDialog.tsx   # 自動重印詢問視窗 (新)
+    ├── ReprintInfoDialog.tsx   # 自動重印詢問視窗 (新)
+    ├── ErrorHandler.tsx        # 錯誤處理組件 (保留)
+    ├── PalletInfoCard.tsx      # 棧板信息顯示卡片 (保留)
+    ├── SearchSection.tsx       # 搜尋區域組件 (保留)
+    └── VoidForm.tsx            # 作廢操作表單 (保留)
 ```
 
 ### 🎨 新增 UI 組件
@@ -206,7 +246,9 @@ app/void-pallet/
 components/ui/
 ├── badge.tsx                   # Badge 組件 (新)
 ├── label.tsx                   # Label 組件 (新)
-└── dialog.tsx                  # Dialog 組件 (用於重印詢問)
+├── dialog.tsx                  # Dialog 組件 (用於重印詢問)
+├── unified-search.tsx          # 統一搜索組件 (整合)
+└── floating-instructions.tsx   # 懸浮指令組件 (整合)
 ```
 
 ### 🔗 API 端點
@@ -218,8 +260,10 @@ app/api/
 
 ## 功能特性
 
-### 1. 棧板搜尋
+### 1. 棧板搜尋 (v2.5 優化)
+- **智能格式檢測**: 自動識別 pallet number 或 series 格式
 - **QR 碼支援**: 掃描 QR 碼或手動輸入
+- **即時搜索**: 選擇即搜索，無需手動點擊按鈕
 - **驗證**: 檢查棧板存在性和當前狀態
 - **位置檢索**: 從 `record_history` 表獲取最新位置
 - **狀態檢查**: 防止作廢已作廢/損壞的棧板
@@ -343,7 +387,22 @@ async function deleteGRNRecord(pltNum: string)
 
 ### 🔧 已應用的關鍵修正
 
-#### 1. 庫存扣減位置修正
+#### 1. UI/UX 現代化 (v2.5) - 2025-01-31
+**重大改進**:
+- ✅ **設計風格統一**: 採用與 `/stock-transfer` 一致的現代化設計
+- ✅ **智能搜索**: 自動格式檢測，無需手動搜索按鈕
+- ✅ **統一設計**: 與 `/stock-transfer` 一致的視覺風格
+- ✅ **響應式優化**: 適配各種設備和螢幕尺寸
+- ✅ **動畫效果**: 平滑過渡和懸停效果
+- ✅ **Instructions 整合**: 右上角懸浮式操作指南
+
+**技術實現**:
+- 使用 `UnifiedSearch` 組件統一搜索體驗
+- 整合 `FloatingInstructions` 組件
+- 採用玻璃擬態設計和動態光效
+- 實現自動聚焦和操作完成後重置
+
+#### 2. 庫存扣減位置修正
 **問題**: 所有作廢數量都錯誤地從 `injection` 欄位扣減，不管實際棧板位置。
 
 **解決方案**: 
@@ -352,7 +411,7 @@ async function deleteGRNRecord(pltNum: string)
 - 確保從棧板實際位置扣減庫存
 - 更新 `Fold Mill` → `fold` 映射
 
-#### 2. 資料庫欄位修正
+#### 3. 資料庫欄位修正
 **已解決的問題**:
 - ❌ `column record_palletinfo.creation_date does not exist`
 - ❌ `record_palletinfo.user_id` 欄位未找到
@@ -366,7 +425,7 @@ async function deleteGRNRecord(pltNum: string)
 - ✅ `time` → `latest_update`
 - ✅ 移除 `remark`, `void_qty` 不存在的欄位
 
-#### 3. 用戶身份驗證簡化
+#### 4. 用戶身份驗證簡化
 **問題**: 現有用戶出現 "Unable to get user clock number" 錯誤。
 
 **根本原因**: 複雜的身份驗證邏輯，包含多個後備方法。
@@ -377,14 +436,14 @@ async function deleteGRNRecord(pltNum: string)
 - 統一資料庫用戶 ID 來源
 - 為未註冊用戶提供清晰錯誤消息
 
-#### 4. ACO 模式匹配修正
+#### 5. ACO 模式匹配修正
 **問題**: 冒號前有空格的 ACO 參考未被檢測。
 
 **範例**: `"ACO Ref : 123456"` 不匹配 `/ACO\s+Ref:\s*(\d+)/i`
 
 **解決方案**: 更新模式為 `/ACO\s+Ref\s*:\s*(\d+)/i` 支援靈活空格。
 
-#### 5. Material GRN 處理實現
+#### 6. Material GRN 處理實現
 **新功能**: Material GRN 棧板的完整 GRN 記錄管理。
 
 **實現**:
@@ -433,8 +492,15 @@ async function deleteGRNRecord(pltNum: string)
 
 ## 使用範例
 
-### 基本作廢操作
+### 基本作廢操作 (v2.5 優化流程)
 ```typescript
+// 1. 用戶輸入棧板號碼或掃描 QR 碼
+// 2. 系統自動檢測格式並搜索
+// 3. 顯示棧板信息
+// 4. 選擇作廢原因和輸入密碼
+// 5. 執行作廢操作
+// 6. 自動重置並準備下一次操作
+
 const result = await voidPalletAction({
   palletInfo: {
     plt_num: "270525/9",
@@ -516,7 +582,8 @@ const result = await processDamageAction({
 // 2. 30 單位加入損壞庫存
 // 3. 從 'bulk' 欄位扣減 70 單位  
 // 4. requiresReprint: true 剩餘 70 單位
-// 5. 自動跳轉到 print-label 頁面
+// 5. 顯示自動重印詢問視窗
+// 6. 用戶確認後自動重印新標籤
 ```
 
 ## 維護和開發
@@ -538,6 +605,12 @@ const result = await processDamageAction({
 1. 更新 `actions.ts` 中的 `getInventoryColumn()` 函數
 2. 添加映射到 `locationMap` 對象
 3. 使用新位置的實際棧板測試
+
+#### UI/UX 改進
+1. 修改 `app/void-pallet/page.tsx` 中的設計元素
+2. 更新 CSS 類別和動畫效果
+3. 測試響應式佈局
+4. 確保與系統設計風格一致
 
 ### 🔮 未來增強
 
@@ -595,6 +668,11 @@ const result = await processDamageAction({
 - **解決方案**: 檢查棧板位置的 `getInventoryColumn()` 映射
 - **後備**: 系統默認為 `injection` 欄位
 
+#### 搜索功能問題 (v2.5)
+- **原因**: 格式檢測失敗或搜索組件問題
+- **解決方案**: 檢查輸入格式是否包含 `/` 或 `-`
+- **後備**: 手動選擇搜索類型
+
 ## 系統需求
 
 ### 🔧 技術需求
@@ -613,7 +691,15 @@ const result = await processDamageAction({
 
 ### 📅 版本歷史
 
-#### v2.4 (當前) - 2025-01-28
+#### v2.5 (當前) - 2025-01-31
+- ✅ **UI/UX 現代化**: 完全重寫頁面，採用最新系統設計風格
+- ✅ **智能搜索**: 自動格式檢測，無需手動搜索按鈕
+- ✅ **統一設計**: 與 `/stock-transfer` 一致的視覺風格
+- ✅ **響應式優化**: 適配各種設備和螢幕尺寸
+- ✅ **動畫效果**: 平滑過渡和懸停效果
+- ✅ **Instructions 整合**: 右上角懸浮式操作指南
+
+#### v2.4 - 2025-01-28
 - ✅ **PDF 標籤格式修正**: Q.C. Done By 欄位現在正確顯示用戶 ID
 - ✅ **用戶身份追蹤**: 自動重印標籤包含正確的操作者信息
 - ✅ **標籤一致性**: 確保所有自動重印標籤格式與手動列印一致
@@ -654,8 +740,8 @@ const result = await processDamageAction({
 
 ---
 
-**文檔最後更新**: 2025-01-28  
-**系統版本**: v2.4 (完整 + 增強 + PDF 修正)  
+**文檔最後更新**: 2025-01-31  
+**系統版本**: v2.5 (現代化 UI/UX + 智能搜索)  
 **維護者**: 開發團隊  
 
 **注意**: 此文檔作為所有 Void Pallet 系統功能、架構和維護程序的完整參考。
