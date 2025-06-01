@@ -52,6 +52,14 @@ export default function VoidPalletPage() {
   // 處理錯誤狀態消息
   useEffect(() => {
     if (state.error) {
+      // 不再為 "already voided" 錯誤顯示狀態消息，因為已經用 toast 處理
+      const errorMessage = state.error.message.toLowerCase();
+      if (errorMessage.includes('already voided') || 
+          errorMessage.includes('voided') ||
+          errorMessage.includes('已作廢')) {
+        return; // 不顯示狀態消息
+      }
+      
       setStatusMessage({
         type: 'error',
         message: state.error.message
@@ -60,6 +68,11 @@ export default function VoidPalletPage() {
       setStatusMessage(null);
     }
   }, [state.error]);
+
+  // 監聽 searchInput 的變化，同步更新 searchValue
+  useEffect(() => {
+    setSearchValue(state.searchInput);
+  }, [state.searchInput]);
 
   // Handle search selection with auto-detection
   const handleSearchSelect = useCallback(async (result: any) => {
@@ -463,7 +476,7 @@ export default function VoidPalletPage() {
           <div className="text-center mt-12">
             <div className="inline-flex items-center space-x-2 text-slate-500 text-sm">
               <div className="w-1 h-1 bg-slate-500 rounded-full"></div>
-              <span>Pennine Manufacturing Void Pallet System</span>
+              <span>Pennine Manufacturing Stock Control System</span>
               <div className="w-1 h-1 bg-slate-500 rounded-full"></div>
             </div>
           </div>

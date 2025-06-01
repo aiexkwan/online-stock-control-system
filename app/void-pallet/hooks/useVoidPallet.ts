@@ -94,9 +94,25 @@ export function useVoidPallet() {
         });
         toast.success(`Pallet found: ${result.data.plt_num}`);
       } else {
+        // 檢查是否為 "already voided" 錯誤
+        const errorMessage = result.error || 'Pallet search failed';
+        if (errorMessage.toLowerCase().includes('already voided') || 
+            errorMessage.toLowerCase().includes('voided') ||
+            errorMessage.toLowerCase().includes('已作廢')) {
+          // 使用 toast 顯示錯誤並重置輸入欄位
+          toast.error('Pallet is already voided');
+          updateState({ 
+            isSearching: false,
+            searchInput: '',
+            foundPallet: null 
+          });
+          return;
+        }
+        
+        // 其他錯誤使用原有的錯誤處理
         setError({
           type: 'search',
-          message: result.error || 'Pallet search failed',
+          message: errorMessage,
           isBlocking: true,
           timestamp: new Date()
         });
@@ -259,9 +275,9 @@ export function useVoidPallet() {
 
   // Enhanced reprint flow functions
   const shouldShowReprintDialog = useCallback((voidReason: string, result: any): boolean => {
-    // Check if this is one of the three special cases that need reprint info
-    const specialCases = ['Damage', 'Wrong Qty', 'Wrong Product Code'];
-    return specialCases.includes(voidReason) && result.success;
+    // 只有在選擇了特定的作廢原因後才顯示重印對話框
+    const reprintReasons = ['Wrong Label', 'Wrong Qty', 'Wrong Product Code', 'Damage'];
+    return reprintReasons.includes(voidReason) && result.success;
   }, []);
 
   const getReprintType = useCallback((voidReason: string): 'damage' | 'wrong_qty' | 'wrong_code' => {
