@@ -11,48 +11,10 @@ import {
   type QcInventoryPayload
 } from '@/app/actions/qcActions';
 
-// 檢查環境變數
-// if (!process.env.NEXT_PUBLIC_SUPABASE_URL) {
-//   console.error('[auto-reprint-label] NEXT_PUBLIC_SUPABASE_URL 未設置');
-// }
-
-// if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
-//   console.error('[auto-reprint-label] SUPABASE_SERVICE_ROLE_KEY 未設置');
-// }
-
-// 創建 Supabase 服務端客戶端的函數
-function createSupabaseAdmin() {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  
-  if (!supabaseUrl) {
-    throw new Error('NEXT_PUBLIC_SUPABASE_URL environment variable is not set');
-  }
-  
-  if (!serviceRoleKey) {
-    throw new Error('SUPABASE_SERVICE_ROLE_KEY environment variable is not set');
-  }
-  
-  return createClient(
-    supabaseUrl,
-    serviceRoleKey,
-    {
-      auth: {
-        autoRefreshToken: false,
-        persistSession: false
-      },
-      db: {
-        schema: 'public'
-      },
-      global: {
-        headers: {
-          'apikey': serviceRoleKey,
-          'Authorization': `Bearer ${serviceRoleKey}`
-        }
-      }
-    }
-  );
-}
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+);
 
 export const runtime = 'nodejs';
 
@@ -68,63 +30,9 @@ interface AutoReprintRequest {
 }
 
 /**
- * Get user ID from data_id table by email
- */
-async function getUserIdFromEmail(email: string): Promise<number | null> {
-  try {
-    console.log(`[Auto Reprint] Looking up user ID for email: ${email}`);
-    
-    const supabase = createSupabaseAdmin();
-    const { data, error } = await supabase
-      .from('data_id')
-      .select('id, name, email')
-      .eq('email', email)
-      .single();
-
-    console.log(`[Auto Reprint] Query result:`, { data, error });
-
-    if (error) {
-      if (error.code === 'PGRST116') {
-        // No user found with this email
-        console.log(`[Auto Reprint] No user found for email: ${email}`);
-        return null;
-      }
-      throw error;
-    }
-
-    const userId = data?.id;
-    console.log(`[Auto Reprint] Found user ID: ${userId} for email: ${email}`);
-    
-    return userId || null;
-  } catch (error: any) {
-    console.error('[Auto Reprint] Error getting user ID from email:', error);
-    return null;
-  }
-}
-
-/**
- * Get current user ID from Supabase Auth
- */
-async function getCurrentUserId(): Promise<string | null> {
-  try {
-    // Create a client for auth operations
-    const authClient = createSupabaseAdmin();
-
-    // Note: In server-side API routes, we need to get user info from the request
-    // For now, we'll return null and handle this in the calling function
-    console.log('[Auto Reprint] getCurrentUserId called - server-side context');
-    return null;
-  } catch (error: any) {
-    console.error('[Auto Reprint] Error getting current user ID:', error);
-    return null;
-  }
-}
-
-/**
  * Get product information from database
  */
 async function getProductInfo(productCode: string) {
-  const supabase = createSupabaseAdmin();
   const { data, error } = await supabase.rpc('get_product_details_by_code', { 
     p_code: productCode 
   });
@@ -168,49 +76,45 @@ function mapLocationToDbField(location: string): string {
 
 export async function POST(request: NextRequest) {
   try {
+    console.log('[Auto Reprint API] Starting auto reprint process...');
     const data: AutoReprintRequest = await request.json();
     
-    console.log('[Auto Reprint] Starting auto reprint process:', data);
+    console.log('[Auto Reprint API] Received request data:', data);
 
     // Validate input
     if (!data.productCode || !data.quantity || !data.operatorClockNum) {
+      console.error('[Auto Reprint API] Missing required fields:', {
+        productCode: !!data.productCode,
+        quantity: !!data.quantity,
+        operatorClockNum: !!data.operatorClockNum
+      });
       return NextResponse.json(
         { success: false, error: 'Missing required fields' },
         { status: 400 }
       );
     }
 
-    // Create Supabase admin client for this request
-    const supabase = createSupabaseAdmin();
-
     // Get product information
+    console.log(`[Auto Reprint API] Getting product info for: ${data.productCode}`);
     const productInfo = await getProductInfo(data.productCode);
-    console.log('[Auto Reprint] Product info retrieved:', productInfo);
+    console.log('[Auto Reprint API] Product info retrieved:', productInfo);
 
     // Generate pallet number and series
+    console.log('[Auto Reprint API] Generating pallet number and series...');
     const palletNumbers = await generatePalletNumbers(supabase, 1);
     const series = await generateMultipleUniqueSeries(1, supabase);
     
     if (palletNumbers.length === 0 || series.length === 0) {
+      console.error('[Auto Reprint API] Failed to generate pallet number or series');
       throw new Error('Failed to generate pallet number or series');
     }
 
     const palletNum = palletNumbers[0];
     const seriesValue = series[0];
-
-    // Get user ID for Q.C. Done By field
-    // Since operatorClockNum is passed from the void pallet action, we can use it directly
-    let qcUserId = data.operatorClockNum;
-    
-    // If operatorClockNum is 'unknown', try to get from current session
-    if (data.operatorClockNum === 'unknown') {
-      console.log('[Auto Reprint] Operator clock number is unknown, using fallback');
-      qcUserId = '-'; // Fallback to '-' if we can't determine the user
-    }
-
-    console.log(`[Auto Reprint] Using Q.C. Done By: ${qcUserId}`);
+    console.log(`[Auto Reprint API] Generated pallet: ${palletNum}, series: ${seriesValue}`);
 
     // Prepare database records
+    console.log('[Auto Reprint API] Preparing database records...');
     const palletInfoRecord: QcPalletInfoPayload = {
       plt_num: palletNum,
       series: seriesValue,
@@ -236,7 +140,7 @@ export async function POST(request: NextRequest) {
     
     // 根據原棧板位置設置對應的庫存欄位
     const mappedLocation = mapLocationToDbField(data.originalLocation);
-    console.log(`[Auto Reprint] Location mapping: "${data.originalLocation}" -> "${mappedLocation}"`);
+    console.log(`[Auto Reprint API] Location mapping: "${data.originalLocation}" -> "${mappedLocation}"`);
     inventoryRecord[mappedLocation] = data.quantity;
 
     const databasePayload: QcDatabaseEntryPayload = {
@@ -246,36 +150,44 @@ export async function POST(request: NextRequest) {
     };
 
     // Insert database records
+    console.log('[Auto Reprint API] Inserting database records...');
     const dbResult = await createQcDatabaseEntriesWithTransaction(databasePayload, data.operatorClockNum);
     if (dbResult.error) {
+      console.error('[Auto Reprint API] Database operation failed:', dbResult.error);
       throw new Error(`Database operation failed: ${dbResult.error}`);
     }
+    console.log('[Auto Reprint API] Database records inserted successfully');
 
-    // Prepare PDF data with correct user ID for Q.C. Done By
+    // Prepare PDF data
+    console.log('[Auto Reprint API] Preparing PDF data...');
     const qcInputData: QcInputData = {
       productCode: productInfo.code,
       productDescription: productInfo.description,
       quantity: data.quantity,
       series: seriesValue,
       palletNum: palletNum,
-      operatorClockNum: '-', // Operator Clock Num 保持為 "-"
-      qcClockNum: qcUserId,   // Q.C. Done By 使用用戶 ID
+      operatorClockNum: data.operatorClockNum,
+      qcClockNum: data.operatorClockNum,
       workOrderNumber: '-',
       productType: productInfo.type || 'Standard'
     };
 
     const qcLabelData = await prepareQcLabelData(qcInputData);
+    console.log('[Auto Reprint API] PDF data prepared');
 
     // Generate and upload PDF
+    console.log('[Auto Reprint API] Generating PDF...');
     const { publicUrl, blob } = await generateAndUploadPdf({
       pdfProps: qcLabelData,
       supabaseClient: supabase
     });
 
-    console.log('[Auto Reprint] Successfully generated pallet:', palletNum);
+    console.log(`[Auto Reprint API] PDF generated successfully. Size: ${blob.size} bytes`);
+    console.log(`[Auto Reprint API] Public URL: ${publicUrl}`);
 
     // Return PDF as response
     const pdfBuffer = await blob.arrayBuffer();
+    console.log(`[Auto Reprint API] Returning PDF buffer of size: ${pdfBuffer.byteLength} bytes`);
     
     return new NextResponse(pdfBuffer, {
       headers: {
@@ -288,7 +200,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error: any) {
-    console.error('[Auto Reprint] Error in auto reprint process:', error);
+    console.error('[Auto Reprint API] Error in auto reprint process:', error);
     return NextResponse.json(
       { 
         success: false, 

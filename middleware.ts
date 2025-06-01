@@ -142,7 +142,7 @@ export async function middleware(request: NextRequest) {
         '/history',
         '/products',
         '/stock-transfer',
-        '/print-label',
+        //'/print-label',
         '/print-grnlabel',
         '/debug-test'
       ];

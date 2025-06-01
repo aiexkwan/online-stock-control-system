@@ -34,7 +34,7 @@ export default function AuthStateSync() {
     '/products',
     '/productUpdate',
     '/stock-transfer',
-    '/print-label',
+    //'/print-label',
     '/print-grnlabel',
     '/change-password'
   ];

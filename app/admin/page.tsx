@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -46,26 +46,13 @@ import FinishedProduct from '@/app/components/PrintHistory';
 import MaterialReceived from '@/app/components/GrnHistory';
 import PalletDonutChart from '@/app/components/PalletDonutChart';
 import UploadFilesDialog from '@/app/components/admin-panel-menu/UploadFilesDialog';
+import VoidPalletDialog from '@/app/components/admin-panel-menu/VoidPalletDialog';
+import ViewHistoryDialog from '@/app/components/admin-panel-menu/ViewHistoryDialog';
+import ProductUpdateDialog from '@/app/components/admin-panel-menu/ProductUpdateDialog';
+import { ReprintInfoDialog } from '@/app/void-pallet/components/ReprintInfoDialog';
+import { useVoidPallet } from '@/app/void-pallet/hooks/useVoidPallet';
 
 const adminMenuItems = [
-  {
-    id: 'void',
-    title: 'Void Pallet',
-    description: 'Cancel records of illegal or damaged pallets',
-    icon: NoSymbolIcon,
-    path: '/void-pallet',
-    color: 'hover:bg-red-900/20 hover:text-red-400',
-    category: 'System Tools'
-  },
-  {
-    id: 'history',
-    title: 'View History',
-    description: 'View pallet full history records',
-    icon: ClockIcon,
-    path: '/view-history',
-    color: 'hover:bg-blue-900/20 hover:text-blue-400',
-    category: 'System Tools'
-  },
   {
     id: 'aco-report',
     title: 'ACO Order Report',
@@ -107,18 +94,66 @@ const adminMenuItems = [
     category: 'Export Reports'
   },
   {
+    id: 'code-list-report',
+    title: 'Export Code List',
+    description: 'Export complete product code list',
+    icon: DocumentTextIcon,
+    action: 'generate-report',
+    reportType: 'code-list',
+    color: 'hover:bg-cyan-900/20 hover:text-cyan-400',
+    category: 'Export Reports'
+  },
+  {
+    id: 'inventory-transaction-report',
+    title: 'Export Inventory Transaction',
+    description: 'Export inventory transaction records',
+    icon: TableCellsIcon,
+    action: 'generate-report',
+    reportType: 'inventory-transaction',
+    color: 'hover:bg-indigo-900/20 hover:text-indigo-400',
+    category: 'Export Reports'
+  },
+  {
+    id: 'all-data-report',
+    title: 'Export All Data',
+    description: 'Export complete database backup',
+    icon: DocumentChartBarIcon,
+    action: 'generate-report',
+    reportType: 'all-data',
+    color: 'hover:bg-emerald-900/20 hover:text-emerald-400',
+    category: 'Export Reports'
+  },
+  {
+    id: 'void',
+    title: 'Void Pallet',
+    description: 'Cancel records of illegal or damaged pallets',
+    icon: NoSymbolIcon,
+    action: 'open-void-dialog',
+    color: 'hover:bg-red-900/20 hover:text-red-400',
+    category: 'System Tools'
+  },
+  {
+    id: 'history',
+    title: 'View History',
+    description: 'View pallet full history records',
+    icon: ClockIcon,
+    action: 'open-history-dialog',
+    color: 'hover:bg-blue-900/20 hover:text-blue-400',
+    category: 'System Tools'
+  },
+  {
     id: 'product',
     title: 'Product Update',
     description: 'Add and update product information',
     icon: CubeIcon,
-    path: '/productUpdate',
+    action: 'open-product-dialog',
     color: 'hover:bg-orange-900/20 hover:text-orange-400',
     category: 'System Tools'
   },
   {
     id: 'upload-files',
     title: 'Upload Files',
-    description: 'Upload files to the database (Stock Picture, Product Spec Document)',
+    description: 'Upload Stock Picture, Product Spec Document to database',
     icon: CloudArrowUpIcon,
     action: 'open-upload-dialog',
     color: 'hover:bg-purple-900/20 hover:text-purple-400',
@@ -218,6 +253,61 @@ export default function AdminPanelPage() {
 
   // Upload Files states
   const [showUploadDialog, setShowUploadDialog] = useState(false);
+
+  // Void Pallet Dialog states
+  const [showVoidDialog, setShowVoidDialog] = useState(false);
+
+  // View History Dialog states
+  const [showHistoryDialog, setShowHistoryDialog] = useState(false);
+
+  // Product Update Dialog states
+  const [showProductDialog, setShowProductDialog] = useState(false);
+
+  // Reprint Dialog states
+  const [showReprintDialog, setShowReprintDialog] = useState(false);
+  const [reprintData, setReprintData] = useState<any>(null);
+
+  // Void Pallet Hook for reprint functionality
+  const {
+    state: voidState,
+    handleReprintInfoConfirm,
+    handleReprintInfoCancel,
+    getReprintType,
+  } = useVoidPallet();
+
+  // Handle reprint needed callback from VoidPalletDialog
+  const handleReprintNeeded = useCallback((reprintInfo: any) => {
+    console.log('Reprint needed:', reprintInfo);
+    setReprintData(reprintInfo);
+    setShowReprintDialog(true);
+  }, []);
+
+  // Handle reprint confirm
+  const handleReprintConfirm = useCallback(async (reprintInfo: any) => {
+    try {
+      // 構造正確的 ReprintInfoInput 格式
+      const reprintInfoInput = {
+        type: reprintData.type,
+        originalPalletInfo: reprintData.palletInfo,
+        correctedProductCode: reprintInfo.correctedProductCode,
+        correctedQuantity: reprintInfo.correctedQuantity,
+        remainingQuantity: reprintData.reprintInfo?.remainingQuantity
+      };
+      
+      console.log('Calling handleReprintInfoConfirm with:', reprintInfoInput);
+      await handleReprintInfoConfirm(reprintInfoInput);
+      setShowReprintDialog(false);
+      setReprintData(null);
+    } catch (error) {
+      console.error('Reprint failed:', error);
+    }
+  }, [handleReprintInfoConfirm, reprintData]);
+
+  // Handle reprint cancel
+  const handleReprintCancel = useCallback(() => {
+    setShowReprintDialog(false);
+    setReprintData(null);
+  }, []);
 
   // Load dashboard statistics
   const loadDashboardStats = async () => {
@@ -468,6 +558,12 @@ export default function AdminPanelPage() {
       handleReportClick(item.reportType);
     } else if (item.action === 'open-upload-dialog') {
       setShowUploadDialog(true);
+    } else if (item.action === 'open-void-dialog') {
+      setShowVoidDialog(true);
+    } else if (item.action === 'open-history-dialog') {
+      setShowHistoryDialog(true);
+    } else if (item.action === 'open-product-dialog') {
+      setShowProductDialog(true);
     } else if (item.path) {
       router.push(item.path);
     }
@@ -488,12 +584,28 @@ export default function AdminPanelPage() {
         // Set default date range (last 30 days)
         const endDate = new Date();
         const startDate = new Date();
-        startDate.setDate(endDate.getDate());
+        startDate.setDate(endDate.getDate() - 30);
         setStartDate(startDate.toISOString().split('T')[0]);
         setEndDate(endDate.toISOString().split('T')[0]);
       } else if (reportType === 'slate') {
         toast.info('Slate report is currently under development');
+        setShowReportDialog(false);
         return;
+      } else if (reportType === 'code-list') {
+        // Code list report doesn't need parameters, generate immediately
+        toast.info("Code list report functionality will be implemented");
+        setShowReportDialog(false);
+        return;
+      } else if (reportType === 'inventory-transaction') {
+        // Set default date range (last 30 days)
+        const endDate = new Date();
+        const startDate = new Date();
+        startDate.setDate(endDate.getDate() - 30);
+        setStartDate(startDate.toISOString().split('T')[0]);
+        setEndDate(endDate.toISOString().split('T')[0]);
+      } else if (reportType === 'all-data') {
+        // All data export doesn't need parameters, but show confirmation
+        // Will be handled in generateReport function
       }
     } catch (error) {
       console.error(`Error loading ${reportType} data:`, error);
@@ -559,6 +671,16 @@ export default function AdminPanelPage() {
       } else if (currentReportType === 'slate') {
         toast.info('Slate report is currently under development');
         return;
+      } else if (currentReportType === 'code-list') {
+        toast.info("Code list report functionality will be implemented");
+      } else if (currentReportType === 'inventory-transaction') {
+        if (!startDate || !endDate) {
+          toast.error('Please select start and end dates');
+          return;
+        }
+        toast.info("Inventory transaction report functionality will be implemented");
+      } else if (currentReportType === 'all-data') {
+        toast.info("All data export functionality will be implemented");
       }
 
       setShowReportDialog(false);
@@ -1499,6 +1621,38 @@ export default function AdminPanelPage() {
         isOpen={showUploadDialog}
         onOpenChange={setShowUploadDialog}
       />
+
+      {/* Void Pallet Dialog */}
+      <VoidPalletDialog
+        isOpen={showVoidDialog}
+        onClose={() => setShowVoidDialog(false)}
+        onReprintNeeded={handleReprintNeeded}
+      />
+
+      {/* View History Dialog */}
+      <ViewHistoryDialog
+        isOpen={showHistoryDialog}
+        onClose={() => setShowHistoryDialog(false)}
+      />
+
+      {/* Product Update Dialog */}
+      <ProductUpdateDialog
+        isOpen={showProductDialog}
+        onClose={() => setShowProductDialog(false)}
+      />
+
+      {/* Reprint Info Dialog */}
+      {showReprintDialog && reprintData && (
+        <ReprintInfoDialog
+          isOpen={showReprintDialog}
+          onClose={handleReprintCancel}
+          onConfirm={handleReprintConfirm}
+          type={reprintData.type}
+          palletInfo={reprintData.palletInfo}
+          remainingQuantity={reprintData.reprintInfo?.remainingQuantity}
+          isProcessing={voidState.isAutoReprinting}
+        />
+      )}
     </div>
   );
 } 

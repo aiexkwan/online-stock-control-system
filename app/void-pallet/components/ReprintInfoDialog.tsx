@@ -1,12 +1,11 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { AlertCircle, Package, Hash, Printer } from 'lucide-react';
+import { AlertCircle, Package, Hash, Printer, X } from 'lucide-react';
 import { ReprintInfoInput, PalletInfo } from '../types';
 
 interface ReprintInfoDialogProps {
@@ -126,131 +125,158 @@ export function ReprintInfoDialog({
 
   const config = getDialogConfig();
 
+  if (!isOpen) return null;
+
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <div className="flex items-center gap-3">
-            {config.icon}
-            <div className="flex-1">
-              <DialogTitle className="text-lg font-semibold">
-                {config.title}
-              </DialogTitle>
-              <Badge variant={config.badgeVariant} className="mt-1">
-                {config.badge}
-              </Badge>
-            </div>
-          </div>
-          <DialogDescription>
-            {config.description}
-          </DialogDescription>
-        </DialogHeader>
-
-        <div className="space-y-4">
-          {/* Original Pallet Info */}
-          <div className="bg-gray-50 p-3 rounded-lg space-y-2">
-            <h4 className="font-medium text-sm">Original Pallet Information</h4>
-            <div className="grid grid-cols-2 gap-2 text-sm">
-              <div>
-                <span className="text-gray-500">Pallet:</span>
-                <span className="ml-2 font-mono">{palletInfo.plt_num}</span>
-              </div>
-              <div>
-                <span className="text-gray-500">Code:</span>
-                <span className="ml-2 font-mono">{palletInfo.product_code}</span>
-              </div>
-              <div>
-                <span className="text-gray-500">Quantity:</span>
-                <span className="ml-2">{palletInfo.product_qty}</span>
-              </div>
-              <div>
-                <span className="text-gray-500">Location:</span>
-                <span className="ml-2">{palletInfo.plt_loc || 'Unknown'}</span>
+    <>
+      {/* Backdrop with higher z-index */}
+      <div 
+        className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[60]" 
+        onClick={onClose}
+        style={{ zIndex: 60 }}
+      />
+      
+      {/* Dialog with highest z-index */}
+      <div 
+        className="fixed inset-0 z-[70] flex items-center justify-center p-4"
+        style={{ zIndex: 70 }}
+      >
+        <div className="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+          {/* Header */}
+          <div className="flex items-center justify-between p-6 border-b">
+            <div className="flex items-center gap-3">
+              {config.icon}
+              <div className="flex-1">
+                <h2 className="text-lg font-semibold text-gray-900">
+                  {config.title}
+                </h2>
+                <Badge variant={config.badgeVariant} className="mt-1">
+                  {config.badge}
+                </Badge>
               </div>
             </div>
+            <button
+              onClick={onClose}
+              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              disabled={isProcessing}
+            >
+              <X className="w-4 h-4" />
+            </button>
           </div>
 
-          {/* Input Fields */}
-          <div className="space-y-3">
-            {(type === 'wrong_qty' || type === 'damage') && (
-              <div>
-                <Label htmlFor="quantity">
-                  {type === 'damage' ? 'Remaining Quantity' : 'Correct Quantity'}
-                </Label>
-                <Input
-                  id="quantity"
-                  type="number"
-                  value={correctedQuantity}
-                  onChange={(e) => setCorrectedQuantity(e.target.value)}
-                  placeholder="Enter quantity"
-                  min="1"
-                  max={type === 'damage' ? palletInfo.product_qty : undefined}
-                  disabled={type === 'damage'} // Read-only for damage
-                  className={errors.quantity ? 'border-red-500' : ''}
-                />
-                {errors.quantity && (
-                  <p className="text-sm text-red-500 mt-1">{errors.quantity}</p>
-                )}
-              </div>
-            )}
-
-            {type === 'wrong_code' && (
-              <div>
-                <Label htmlFor="productCode">Correct Product Code</Label>
-                <Input
-                  id="productCode"
-                  type="text"
-                  value={correctedProductCode}
-                  onChange={(e) => setCorrectedProductCode(e.target.value.toUpperCase())}
-                  placeholder="Enter correct product code"
-                  className={errors.productCode ? 'border-red-500' : ''}
-                />
-                {errors.productCode && (
-                  <p className="text-sm text-red-500 mt-1">{errors.productCode}</p>
-                )}
-              </div>
-            )}
-          </div>
-
-          {/* Auto Reprint Notice */}
-          <div className="bg-blue-50 border border-blue-200 p-3 rounded-lg">
-            <div className="flex items-center gap-2">
-              <Printer className="h-4 w-4 text-blue-600" />
-              <span className="text-sm font-medium text-blue-800">Auto Reprint</span>
-            </div>
-            <p className="text-sm text-blue-700 mt-1">
-              A new pallet label will be automatically generated and printed after confirmation.
+          {/* Content */}
+          <div className="p-6 space-y-4">
+            <p className="text-sm text-gray-600">
+              {config.description}
             </p>
+
+            {/* Original Pallet Info */}
+            <div className="bg-gray-50 p-3 rounded-lg space-y-2">
+              <h4 className="font-medium text-sm text-gray-900">Original Pallet Information</h4>
+              <div className="grid grid-cols-2 gap-2 text-sm">
+                <div>
+                  <span className="text-gray-500">Pallet:</span>
+                  <span className="ml-2 font-mono text-gray-900">{palletInfo.plt_num}</span>
+                </div>
+                <div>
+                  <span className="text-gray-500">Code:</span>
+                  <span className="ml-2 font-mono text-gray-900">{palletInfo.product_code}</span>
+                </div>
+                <div>
+                  <span className="text-gray-500">Quantity:</span>
+                  <span className="ml-2 text-gray-900">{palletInfo.product_qty}</span>
+                </div>
+                <div>
+                  <span className="text-gray-500">Location:</span>
+                  <span className="ml-2 text-gray-900">{palletInfo.plt_loc || 'Unknown'}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Input Fields */}
+            <div className="space-y-3">
+              {(type === 'wrong_qty' || type === 'damage') && (
+                <div>
+                  <Label htmlFor="quantity" className="text-black font-medium">
+                    {type === 'damage' ? 'Remaining Quantity' : 'Correct Quantity'}
+                  </Label>
+                  <Input
+                    id="quantity"
+                    type="number"
+                    value={correctedQuantity}
+                    onChange={(e) => setCorrectedQuantity(e.target.value)}
+                    placeholder="Enter quantity"
+                    min="1"
+                    max={type === 'damage' ? palletInfo.product_qty : undefined}
+                    disabled={type === 'damage'} // Read-only for damage
+                    className={`text-black ${errors.quantity ? 'border-red-500' : ''}`}
+                  />
+                  {errors.quantity && (
+                    <p className="text-sm text-red-500 mt-1">{errors.quantity}</p>
+                  )}
+                </div>
+              )}
+
+              {type === 'wrong_code' && (
+                <div>
+                  <Label htmlFor="productCode" className="text-black font-medium">Correct Product Code</Label>
+                  <Input
+                    id="productCode"
+                    type="text"
+                    value={correctedProductCode}
+                    onChange={(e) => setCorrectedProductCode(e.target.value.toUpperCase())}
+                    placeholder="Enter correct product code"
+                    className={`text-black ${errors.productCode ? 'border-red-500' : ''}`}
+                  />
+                  {errors.productCode && (
+                    <p className="text-sm text-red-500 mt-1">{errors.productCode}</p>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Auto Reprint Notice */}
+            <div className="bg-blue-50 border border-blue-200 p-3 rounded-lg">
+              <div className="flex items-center gap-2">
+                <Printer className="h-4 w-4 text-blue-600" />
+                <span className="text-sm font-medium text-blue-800">Auto Reprint</span>
+              </div>
+              <p className="text-sm text-blue-700 mt-1">
+                A new pallet label will be automatically generated and printed after confirmation.
+              </p>
+            </div>
+          </div>
+
+          {/* Footer */}
+          <div className="flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2 p-6 border-t bg-gray-50">
+            <Button
+              variant="outline"
+              onClick={onClose}
+              disabled={isProcessing}
+              className="mb-2 sm:mb-0 text-black border-gray-300 hover:bg-gray-100"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleConfirm}
+              disabled={isProcessing}
+              className="bg-blue-600 hover:bg-blue-700 text-white"
+            >
+              {isProcessing ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
+                  Processing...
+                </>
+              ) : (
+                <>
+                  <Printer className="h-4 w-4 mr-2" />
+                  Confirm & Auto Reprint
+                </>
+              )}
+            </Button>
           </div>
         </div>
-
-        <DialogFooter>
-          <Button
-            variant="outline"
-            onClick={onClose}
-            disabled={isProcessing}
-          >
-            Cancel
-          </Button>
-          <Button
-            onClick={handleConfirm}
-            disabled={isProcessing}
-            className="bg-blue-600 hover:bg-blue-700"
-          >
-            {isProcessing ? (
-              <>
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
-                Processing...
-              </>
-            ) : (
-              <>
-                <Printer className="h-4 w-4 mr-2" />
-                Confirm & Auto Reprint
-              </>
-            )}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+      </div>
+    </>
   );
 } 

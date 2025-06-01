@@ -431,23 +431,23 @@ export default function VoidPalletPage() {
                     </div>
                   </div>
                 </div>
-              </div>
-            )}
+            </div>
+          )}
 
-            {/* Loading state */}
-            {(state.isSearching || state.isProcessing) && !state.error && (
-              <div className="flex justify-center items-center py-12">
-                <div className="text-center">
+          {/* Loading state */}
+          {(state.isSearching || state.isProcessing) && !state.error && (
+            <div className="flex justify-center items-center py-12">
+              <div className="text-center">
                   <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-b-4 border-red-500 mx-auto"></div>
-                  <p className="mt-4 text-lg text-gray-400">
-                    {state.isSearching ? 'Searching pallet...' : 'Processing void operation...'}
-                  </p>
-                </div>
+                <p className="mt-4 text-lg text-gray-400">
+                  {state.isSearching ? 'Searching pallet...' : 'Processing void operation...'}
+                </p>
               </div>
-            )}
+            </div>
+          )}
 
-            {/* Empty state */}
-            {!state.foundPallet && !state.isSearching && !state.error && (
+          {/* Empty state */}
+          {!state.foundPallet && !state.isSearching && !state.error && (
               <div className="relative group">
                 {/* 卡片背景 */}
                 <div className="absolute inset-0 bg-gradient-to-r from-slate-800/50 to-red-900/30 rounded-3xl blur-xl"></div>
@@ -460,16 +460,16 @@ export default function VoidPalletPage() {
                     <div className="text-slate-500">
                       <svg className="mx-auto h-16 w-16 mb-6 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                      </svg>
+                </svg>
                       <h3 className="text-xl font-medium mb-3 text-slate-400">Start searching for pallet</h3>
                       <p className="text-slate-500">
-                        Use the search function above to find the pallet to void
-                      </p>
+                  Use the search function above to find the pallet to void
+                </p>
                     </div>
                   </div>
-                </div>
               </div>
-            )}
+            </div>
+          )}
           </div>
 
           {/* 底部裝飾 */}

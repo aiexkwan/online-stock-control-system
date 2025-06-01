@@ -269,7 +269,7 @@ export const UploadFilesDialog: React.FC<UploadFilesDialogProps> = ({
                 Upload Files
               </DialogTitle>
               <DialogDescription className="text-slate-400 text-lg">
-                Upload documents and images to the system
+                Upload documents and images to database
               </DialogDescription>
             </DialogHeader>
 

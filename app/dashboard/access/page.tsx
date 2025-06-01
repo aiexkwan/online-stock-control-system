@@ -13,7 +13,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { 
   ExclamationTriangleIcon,
   ArrowRightOnRectangleIcon,
-  ClockIcon,
+  ClockIcon, 
   CubeIcon,
   TruckIcon,
   CheckCircleIcon,
@@ -207,7 +207,7 @@ export default function ModernDashboard() {
           clockNumber: clockNumber,
           displayName: displayName
         });
-        
+
         // Load history records
         await loadHistoryRecords();
         
@@ -265,7 +265,7 @@ export default function ModernDashboard() {
 
   // Error state
   if (error) {
-  return (
+    return (
       <div className="min-h-screen flex items-center justify-center">
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
@@ -287,7 +287,7 @@ export default function ModernDashboard() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto p-6">
+      <div className="max-w-7xl mx-auto p-6">
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -316,7 +316,7 @@ export default function ModernDashboard() {
                 <div className="text-center py-8">
                   <ClockIcon className="w-12 h-12 text-slate-600 mx-auto mb-3" />
                   <p className="text-slate-400">No history records found</p>
-                </div>
+            </div>
               ) : (
                 <div className="overflow-hidden">
                   {/* Table Header */}
@@ -330,7 +330,7 @@ export default function ModernDashboard() {
                   {/* Scrollable Table Body - Show first 30 by default, max 150 */}
                   <div className="overflow-y-auto bg-slate-800/30 rounded-b-lg" style={{ maxHeight: '30rem' }}>
                     {historyRecords.slice(0, 150).map((record, index) => (
-                      <motion.div
+                          <motion.div
                         key={record.id}
                         initial={{ opacity: 0, x: -20 }}
                         animate={{ opacity: 1, x: 0 }}
@@ -345,21 +345,21 @@ export default function ModernDashboard() {
                           {record.product_description}
                         </div>
                         <div className="text-slate-400 font-mono">{record.id}</div>
-                      </motion.div>
-                    ))}
-                  </div>
-                  
+            </motion.div>
+                        ))}
+                      </div>
+                      
                   {/* Show record count info */}
                   <div className="mt-3 text-xs text-slate-400 text-center">
                     Showing {Math.min(historyRecords.length, 30)} of {historyRecords.length} records
                     {historyRecords.length > 30 && ' (scroll to see more)'}
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </motion.div>
         </motion.div>
-      </motion.div>
     </div>
   );
 } 
