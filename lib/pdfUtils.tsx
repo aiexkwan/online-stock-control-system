@@ -318,7 +318,7 @@ export async function mergeAndPrintPdfs(
         iframe.contentWindow?.focus(); // Focus on the iframe's content
         console.log('[mergeAndPrintPdfs] Attempting to call print() on iframe contentWindow.');
         iframe.contentWindow?.print(); // Trigger print dialog
-        toast.info('Initiating print dialog for merged PDF...'); // Info toast
+        //toast.info('Initiating print dialog for merged PDF...'); // Info toast
 
         // Clean up after a delay. Adjust delay if print dialog closes too soon.
         // Some browsers might need more time, or print might be cancelled.

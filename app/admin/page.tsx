@@ -118,7 +118,7 @@ const adminMenuItems = [
   {
     id: 'upload-files',
     title: 'Upload Files',
-    description: 'Upload files to the system',
+    description: 'Upload files to the database (Stock Picture, Product Spec Document)',
     icon: CloudArrowUpIcon,
     action: 'open-upload-dialog',
     color: 'hover:bg-purple-900/20 hover:text-purple-400',
@@ -884,7 +884,7 @@ export default function AdminPanelPage() {
                         {/* Left side - Description */}
                         <div className="space-y-6">
                           <p className="text-slate-300 leading-relaxed text-lg">
-                            This advanced feature will allow you to query database information using natural language 
+                            Allow you to communicate with database using natural language 
                             or structured queries, making data exploration more intuitive and efficient.
                           </p>
                           
@@ -934,7 +934,7 @@ export default function AdminPanelPage() {
                               </div>
                               <div className="bg-slate-900/50 rounded-xl p-4 border-l-4 border-blue-500">
                                 <p className="text-sm text-slate-300 italic">
-                                  "What's the inventory level for product MT4545?"
+                                  "What's the inventory level for product XXXXXX?"
                                 </p>
                               </div>
                               <div className="bg-slate-900/50 rounded-xl p-4 border-l-4 border-green-500">

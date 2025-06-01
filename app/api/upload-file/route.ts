@@ -1,14 +1,51 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase';
+import { createClient } from '@supabase/supabase-js';
+
+// 創建 Supabase 服務端客戶端的函數
+function createSupabaseAdmin() {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  
+  if (!supabaseUrl) {
+    throw new Error('NEXT_PUBLIC_SUPABASE_URL environment variable is not set');
+  }
+  
+  if (!serviceRoleKey) {
+    throw new Error('SUPABASE_SERVICE_ROLE_KEY environment variable is not set');
+  }
+  
+  return createClient(
+    supabaseUrl,
+    serviceRoleKey,
+    {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false
+      },
+      db: {
+        schema: 'public'
+      },
+      global: {
+        headers: {
+          'apikey': serviceRoleKey,
+          'Authorization': `Bearer ${serviceRoleKey}`
+        }
+      }
+    }
+  );
+}
 
 export async function POST(request: NextRequest) {
   try {
+    console.log('[Upload File API] 接收文件上傳請求...');
+    
     const formData = await request.formData();
     const file = formData.get('file') as File;
     const folder = formData.get('folder') as string;
     const fileName = formData.get('fileName') as string;
 
     if (!file || !folder || !fileName) {
+      console.error('[Upload File API] 缺少必要字段:', { file: !!file, folder, fileName });
       return NextResponse.json(
         { error: 'Missing required fields: file, folder, or fileName' },
         { status: 400 }
@@ -18,6 +55,7 @@ export async function POST(request: NextRequest) {
     // 驗證文件夾
     const allowedFolders = ['stockPic', 'productSpec'];
     if (!allowedFolders.includes(folder)) {
+      console.error('[Upload File API] 無效的文件夾:', folder);
       return NextResponse.json(
         { error: 'Invalid folder. Allowed folders: stockPic, productSpec' },
         { status: 400 }
@@ -32,6 +70,7 @@ export async function POST(request: NextRequest) {
     };
 
     if (!fileValidation[folder as keyof typeof fileValidation].includes(fileExtension)) {
+      console.error('[Upload File API] 無效的文件格式:', { folder, fileExtension });
       return NextResponse.json(
         { error: `Invalid file format for ${folder}. Allowed: ${fileValidation[folder as keyof typeof fileValidation].join(', ')}` },
         { status: 400 }
@@ -41,44 +80,87 @@ export async function POST(request: NextRequest) {
     // 驗證文件大小 (10MB)
     const maxFileSize = 10 * 1024 * 1024;
     if (file.size > maxFileSize) {
+      console.error('[Upload File API] 文件過大:', file.size);
       return NextResponse.json(
         { error: 'File size must be less than 10MB' },
         { status: 400 }
       );
     }
 
-    // 創建 Supabase 客戶端
-    const supabase = createClient();
+    console.log('[Upload File API] 文件信息:', {
+      fileName,
+      fileSize: file.size,
+      fileType: file.type,
+      folder
+    });
+
+    // 創建服務端客戶端（使用 Service Role Key 繞過 RLS）
+    const supabaseAdmin = createSupabaseAdmin();
 
     // 構建文件路徑
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
     const fileNameWithTimestamp = `${timestamp}_${fileName}`;
     const filePath = `${folder}/${fileNameWithTimestamp}`;
 
+    console.log('[Upload File API] 準備上傳到路徑:', filePath);
+
     // 將文件轉換為 ArrayBuffer
     const arrayBuffer = await file.arrayBuffer();
     const uint8Array = new Uint8Array(arrayBuffer);
 
     // 上傳到 Supabase Storage
-    const { data, error } = await supabase.storage
+    const { data, error } = await supabaseAdmin.storage
       .from('documents')
       .upload(filePath, uint8Array, {
         contentType: file.type,
-        upsert: false
+        upsert: false,
+        cacheControl: '3600'
       });
 
     if (error) {
-      console.error('Supabase upload error:', error);
+      console.error('[Upload File API] Supabase 上傳錯誤:', error);
+      
+      // 如果是 RLS 錯誤，提供更詳細的錯誤信息
+      if (error.message.includes('row-level security') || error.message.includes('RLS')) {
+        return NextResponse.json(
+          { 
+            error: 'Storage access denied. Please check bucket permissions.',
+            details: error.message 
+          },
+          { status: 403 }
+        );
+      }
+      
       return NextResponse.json(
         { error: `Upload failed: ${error.message}` },
         { status: 500 }
       );
     }
 
+    if (!data || !data.path) {
+      console.error('[Upload File API] 上傳成功但沒有返回路徑');
+      return NextResponse.json(
+        { error: 'Upload succeeded but no path returned' },
+        { status: 500 }
+      );
+    }
+
+    console.log('[Upload File API] 文件上傳成功，路徑:', data.path);
+
     // 獲取公開 URL
-    const { data: urlData } = supabase.storage
+    const { data: urlData } = supabaseAdmin.storage
       .from('documents')
       .getPublicUrl(filePath);
+
+    if (!urlData || !urlData.publicUrl) {
+      console.error('[Upload File API] 無法獲取公共 URL');
+      return NextResponse.json(
+        { error: 'Failed to get public URL' },
+        { status: 500 }
+      );
+    }
+
+    console.log('[Upload File API] 公共 URL 生成成功:', urlData.publicUrl);
 
     return NextResponse.json({
       success: true,
@@ -94,10 +176,10 @@ export async function POST(request: NextRequest) {
       }
     });
 
-  } catch (error) {
-    console.error('Upload API error:', error);
+  } catch (error: any) {
+    console.error('[Upload File API] 意外錯誤:', error);
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: `Internal server error: ${error.message}` },
       { status: 500 }
     );
   }
