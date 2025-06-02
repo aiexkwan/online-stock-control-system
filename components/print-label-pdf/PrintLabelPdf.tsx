@@ -13,6 +13,7 @@ export interface PrintLabelPdfProps {
   qrCodeDataUrl?: string;
   productType?: string;
   labelType?: string;
+  labelMode?: 'qty' | 'weight';
   qcWorkOrderNumber?: string;
   qcWorkOrderName?: string;
   grnNumber?: string;
@@ -171,6 +172,7 @@ function LabelBlock(props: PrintLabelPdfProps) {
     qrCodeDataUrl,
     productType,
     labelType,
+    labelMode,
     qcWorkOrderNumber,
     qcWorkOrderName,
     grnNumber,
@@ -178,7 +180,13 @@ function LabelBlock(props: PrintLabelPdfProps) {
   } = props;
 
   const isGrnLabel = labelType === 'GRN';
-  const quantityHeaderText = isGrnLabel ? 'Quantity / Weight' : 'Quantity';
+  
+  // Update quantity header text based on label mode for GRN labels
+  let quantityHeaderText = 'Quantity'; // Default for QC labels
+  if (isGrnLabel) {
+    quantityHeaderText = labelMode === 'qty' ? 'Quantity' : 'Weight';
+  }
+  
   const qcClockNumHeaderText = isGrnLabel ? 'Received By' : 'Q.C. Done By';
 
   let displayWorkOrderHeader = "Work Order Number"; // Default header

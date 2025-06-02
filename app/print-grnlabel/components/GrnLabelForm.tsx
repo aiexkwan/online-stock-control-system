@@ -93,6 +93,11 @@ interface FormData {
   productCode: string;
 }
 
+// Add new interface for label mode
+interface LabelMode {
+  mode: 'qty' | 'weight';
+}
+
 interface PalletTypeData {
   whiteDry: string;
   whiteWet: string;
@@ -152,6 +157,9 @@ export const GrnLabelForm: React.FC = () => {
     materialSupplier: '',
     productCode: '',
   });
+
+  // Add label mode state
+  const [labelMode, setLabelMode] = useState<LabelMode>({ mode: 'weight' });
 
   // Product and supplier info
   const [productInfo, setProductInfo] = useState<GrnProductInfo | null>(null);
@@ -270,6 +278,47 @@ export const GrnLabelForm: React.FC = () => {
     validateSupplier(e.target.value);
   }, [validateSupplier]);
 
+  // Handle label mode change
+  const handleLabelModeChange = useCallback((mode: 'qty' | 'weight') => {
+    setLabelMode({ mode });
+    
+    if (mode === 'qty') {
+      // Set Not Included = 1 for both pallet and package types
+      setPalletType({
+        whiteDry: '',
+        whiteWet: '',
+        chepDry: '',
+        chepWet: '',
+        euro: '',
+        notIncluded: '1',
+      });
+      setPackageType({
+        still: '',
+        bag: '',
+        tote: '',
+        octo: '',
+        notIncluded: '1',
+      });
+    } else {
+      // Reset both pallet and package types when switching to weight mode
+      setPalletType({
+        whiteDry: '',
+        whiteWet: '',
+        chepDry: '',
+        chepWet: '',
+        euro: '',
+        notIncluded: '',
+      });
+      setPackageType({
+        still: '',
+        bag: '',
+        tote: '',
+        octo: '',
+        notIncluded: '',
+      });
+    }
+  }, []);
+
   const handlePalletTypeChange = useCallback((key: keyof PalletTypeData, value: string) => {
     setPalletType({
       whiteDry: '',
@@ -308,8 +357,10 @@ export const GrnLabelForm: React.FC = () => {
     formData.grnNumber.trim() !== '' &&
     formData.materialSupplier.trim() !== '' &&
     formData.productCode.trim() !== '' &&
-    Object.values(palletType).some(v => v.trim() !== '') &&
-    Object.values(packageType).some(v => v.trim() !== '') &&
+    (labelMode.mode === 'qty' || (
+      Object.values(palletType).some(v => v.trim() !== '') &&
+      Object.values(packageType).some(v => v.trim() !== '')
+    )) &&
     grossWeights.some(v => v.trim() !== '') &&
     productInfo &&
     supplierInfo;
@@ -468,6 +519,7 @@ export const GrnLabelForm: React.FC = () => {
             series: series,
             palletNum: palletNum,
             receivedBy: clockNumber,
+            labelMode: labelMode.mode, // Pass the selected label mode
           };
 
           console.log(`[GrnLabelForm] 準備生成 PDF ${i + 1}/${numberOfPalletsToProcess}`, {
@@ -562,6 +614,7 @@ export const GrnLabelForm: React.FC = () => {
       setGrossWeights(['']);
       setFormData(prev => ({ ...prev, productCode: '' }));
       setProductInfo(null);
+      setLabelMode({ mode: 'weight' }); // Reset to default weight mode
       setPalletType({
         whiteDry: '',
         whiteWet: '',
@@ -591,6 +644,7 @@ export const GrnLabelForm: React.FC = () => {
     setGrossWeights(['']);
     setFormData(prev => ({ ...prev, productCode: '' }));
     setProductInfo(null);
+    setLabelMode({ mode: 'weight' }); // Reset to default weight mode
     setPalletType({
       whiteDry: '',
       whiteWet: '',
@@ -713,71 +767,148 @@ export const GrnLabelForm: React.FC = () => {
                       </div>
                     )}
                   </div>
+
+                  {/* Label Mode Selection */}
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium mb-3 text-slate-300">
+                      Count Method<span className="text-red-400">*</span>
+                    </label>
+                    <div className="flex space-x-4">
+                      <label className="flex items-center space-x-3 cursor-pointer group">
+                        <div className="relative">
+                          <input
+                            type="radio"
+                            name="labelMode"
+                            value="qty"
+                            checked={labelMode.mode === 'qty'}
+                            onChange={() => handleLabelModeChange('qty')}
+                            className="sr-only"
+                          />
+                          <div className={`w-5 h-5 rounded-full border-2 transition-all duration-300 ${
+                            labelMode.mode === 'qty'
+                              ? 'border-orange-500 bg-orange-500'
+                              : 'border-slate-500 bg-transparent group-hover:border-orange-400'
+                          }`}>
+                            {labelMode.mode === 'qty' && (
+                              <div className="w-2 h-2 bg-white rounded-full absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2"></div>
+                            )}
+                          </div>
+                        </div>
+                        <span className={`text-sm font-medium transition-colors duration-300 ${
+                          labelMode.mode === 'qty' ? 'text-orange-400' : 'text-slate-300 group-hover:text-orange-300'
+                        }`}>
+                          Quantity
+                        </span>
+                      </label>
+
+                      <label className="flex items-center space-x-3 cursor-pointer group">
+                        <div className="relative">
+                          <input
+                            type="radio"
+                            name="labelMode"
+                            value="weight"
+                            checked={labelMode.mode === 'weight'}
+                            onChange={() => handleLabelModeChange('weight')}
+                            className="sr-only"
+                          />
+                          <div className={`w-5 h-5 rounded-full border-2 transition-all duration-300 ${
+                            labelMode.mode === 'weight'
+                              ? 'border-orange-500 bg-orange-500'
+                              : 'border-slate-500 bg-transparent group-hover:border-orange-400'
+                          }`}>
+                            {labelMode.mode === 'weight' && (
+                              <div className="w-2 h-2 bg-white rounded-full absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2"></div>
+                            )}
+                          </div>
+                        </div>
+                        <span className={`text-sm font-medium transition-colors duration-300 ${
+                          labelMode.mode === 'weight' ? 'text-orange-400' : 'text-slate-300 group-hover:text-orange-300'
+                        }`}>
+                          Weight
+                        </span>
+                      </label>
+                    </div>
+                    
+                    {/* Mode Description */}
+                    <div className="mt-2 p-2 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+                      <p className="text-blue-300 text-xs">
+                        {labelMode.mode === 'qty' 
+                          ? '📦 Quantity mode: Pallet & Package types will be set to "Not Included". Label will show "Quantity".'
+                          : '⚖️ Weight mode: You can select specific Pallet & Package types. Label will show "Weight".'
+                        }
+                      </p>
+                    </div>
+                  </div>
                 </ResponsiveGrid>
               </ResponsiveCard>
 
-              {/* Pallet & Package Type Row */}
-              <ResponsiveGrid columns={{ sm: 1, md: 2 }} gap={8}>
-                {/* Pallet Type Card */}
-                <ResponsiveCard title="Pallet Type" className="pallet-type-card">
-                  <div className="space-y-3">
-                    {Object.entries(palletType).map(([key, value]) => (
-                      <div key={key} className="group flex justify-between items-center p-1 bg-slate-800/30 rounded-xl border border-slate-600/20 hover:border-orange-500/30 hover:bg-slate-800/50 transition-all duration-300">
-                        <label className="text-xs text-slate-300 font-medium whitespace-nowrap pl-1">
-                          {key === 'whiteDry' ? 'White Dry' :
-                           key === 'whiteWet' ? 'White Wet' :
-                           key === 'chepDry' ? 'Chep Dry' :
-                           key === 'chepWet' ? 'Chep Wet' :
-                           key === 'euro' ? 'Euro' :
-                           key === 'notIncluded' ? 'Not Included' : key}
-                        </label>
-                        <div className="relative">
-                          <input
-                            type="number"
-                            value={value}
-                            onChange={e => handlePalletTypeChange(key as keyof PalletTypeData, e.target.value)}
-                            className="w-14 px-2 py-2 bg-slate-700/50 border border-slate-600/50 rounded-lg text-center text-white placeholder-slate-400 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-orange-400/30 focus:border-orange-400/70 hover:border-orange-500/50"
-                            placeholder="Qty"
-                            min="0"
-                          />
+              {/* Pallet & Package Type Row - Only show in Weight mode */}
+              {labelMode.mode === 'weight' && (
+                <ResponsiveGrid columns={{ sm: 1, md: 2 }} gap={8}>
+                  {/* Pallet Type Card */}
+                  <ResponsiveCard title="Pallet Type" className="pallet-type-card">
+                    <div className="space-y-3">
+                      {Object.entries(palletType).map(([key, value]) => (
+                        <div key={key} className="group flex justify-between items-center p-1 bg-slate-800/30 rounded-xl border border-slate-600/20 hover:border-orange-500/30 hover:bg-slate-800/50 transition-all duration-300">
+                          <label className="text-xs text-slate-300 font-medium whitespace-nowrap pl-1">
+                            {key === 'whiteDry' ? 'White Dry' :
+                             key === 'whiteWet' ? 'White Wet' :
+                             key === 'chepDry' ? 'Chep Dry' :
+                             key === 'chepWet' ? 'Chep Wet' :
+                             key === 'euro' ? 'Euro' :
+                             key === 'notIncluded' ? 'Not Included' : key}
+                          </label>
+                          <div className="relative">
+                            <input
+                              type="number"
+                              value={value}
+                              onChange={e => handlePalletTypeChange(key as keyof PalletTypeData, e.target.value)}
+                              className="w-14 px-2 py-2 bg-slate-700/50 border border-slate-600/50 rounded-lg text-center text-white placeholder-slate-400 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-orange-400/30 focus:border-orange-400/70 hover:border-orange-500/50"
+                              placeholder="Qty"
+                              min="0"
+                            />
+                          </div>
                         </div>
-                      </div>
-                    ))}
-                  </div>
-                </ResponsiveCard>
+                      ))}
+                    </div>
+                  </ResponsiveCard>
 
-                {/* Package Type Card */}
-                <ResponsiveCard title="Package Type" className="package-type-card">
-                  <div className="space-y-4">
-                    {Object.entries(packageType).map(([key, value]) => (
-                      <div key={key} className="group flex justify-between items-center p-1 bg-slate-800/30 rounded-xl border border-slate-600/20 hover:border-orange-500/30 hover:bg-slate-800/50 transition-all duration-300">
-                        <label className="text-xs text-slate-300 font-medium whitespace-nowrap pl-1">
-                          {key === 'still' ? 'Still' :
-                           key === 'bag' ? 'Bag' :
-                           key === 'tote' ? 'Tote' :
-                           key === 'octo' ? 'Octo' :
-                           key === 'notIncluded' ? 'Not Included' : key}
-                        </label>
-                        <div className="relative">
-                          <input
-                            type="number"
-                            value={value}
-                            onChange={e => handlePackageTypeChange(key as keyof PackageTypeData, e.target.value)}
-                            className="w-14 px-2 py-2 bg-slate-700/50 border border-slate-600/50 rounded-lg text-center text-white placeholder-slate-400 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-orange-400/30 focus:border-orange-400/70 hover:border-orange-500/50"
-                            placeholder="Qty"
-                            min="0"
-                          />
+                  {/* Package Type Card */}
+                  <ResponsiveCard title="Package Type" className="package-type-card">
+                    <div className="space-y-4">
+                      {Object.entries(packageType).map(([key, value]) => (
+                        <div key={key} className="group flex justify-between items-center p-1 bg-slate-800/30 rounded-xl border border-slate-600/20 hover:border-orange-500/30 hover:bg-slate-800/50 transition-all duration-300">
+                          <label className="text-xs text-slate-300 font-medium whitespace-nowrap pl-1">
+                            {key === 'still' ? 'Still' :
+                             key === 'bag' ? 'Bag' :
+                             key === 'tote' ? 'Tote' :
+                             key === 'octo' ? 'Octo' :
+                             key === 'notIncluded' ? 'Not Included' : key}
+                          </label>
+                          <div className="relative">
+                            <input
+                              type="number"
+                              value={value}
+                              onChange={e => handlePackageTypeChange(key as keyof PackageTypeData, e.target.value)}
+                              className="w-14 px-2 py-2 bg-slate-700/50 border border-slate-600/50 rounded-lg text-center text-white placeholder-slate-400 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-orange-400/30 focus:border-orange-400/70 hover:border-orange-500/50"
+                              placeholder="Qty"
+                              min="0"
+                            />
+                          </div>
                         </div>
-                      </div>
-                    ))}
-                  </div>
-                </ResponsiveCard>
-              </ResponsiveGrid>
+                      ))}
+                    </div>
+                  </ResponsiveCard>
+                </ResponsiveGrid>
+              )}
             </div>
 
             {/* Right Column */}
             <div className="flex-1 lg:max-w-md">
-              <ResponsiveCard title="Weight Information" className="sticky top-8">
+              <ResponsiveCard 
+                title={labelMode.mode === 'qty' ? 'Quantity Information' : 'Weight Information'} 
+                className="sticky top-8"
+              >
                 {/* Summary Information */}
                 <div className="mb-6 p-4 bg-gradient-to-r from-slate-800/60 to-slate-700/40 rounded-xl border border-slate-600/30">
                   <div className="grid grid-cols-2 gap-4 text-sm">
@@ -792,6 +923,16 @@ export const GrnLabelForm: React.FC = () => {
                       <span className="text-white font-semibold bg-slate-600/50 px-2 py-1 rounded-full">22</span>
                     </div>
                     <div className="col-span-2 flex items-center justify-between">
+                      <span className="text-slate-400">Mode:</span>
+                      <span className={`font-semibold px-3 py-1 rounded-full text-sm ${
+                        labelMode.mode === 'qty'
+                          ? 'text-blue-300 bg-blue-500/20 border border-blue-500/30'
+                          : 'text-purple-300 bg-purple-500/20 border border-purple-500/30'
+                      }`}>
+                        {labelMode.mode === 'qty' ? '📦 Quantity' : '⚖️ Weight'}
+                      </span>
+                    </div>
+                    <div className="col-span-2 flex items-center justify-between">
                       <span className="text-slate-400">Status:</span>
                       <span className={`font-semibold px-3 py-1 rounded-full text-sm ${
                         isFormValid 
@@ -804,11 +945,11 @@ export const GrnLabelForm: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Weight Input Section */}
+                {/* Weight/Quantity Input Section */}
                 <div className="mb-6">
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="text-sm font-semibold bg-gradient-to-r from-white to-orange-200 bg-clip-text text-transparent">
-                      Gross Weight / Qty
+                      {labelMode.mode === 'qty' ? 'Quantity' : 'Gross Weight / Qty'}
                     </h3>
                     <span className="text-xs text-slate-400 bg-slate-700/50 px-3 py-1 rounded-full">
                       {grossWeights.filter(w => w.trim() !== '').length} / 22 pallets
@@ -842,12 +983,12 @@ export const GrnLabelForm: React.FC = () => {
                             {idx + 1}
                           </div>
                           
-                          {/* Pallet Label and Net Weight */}
+                          {/* Pallet Label and Net Weight/Quantity */}
                           <div className="flex-1 min-w-0 flex items-center space-x-2">
                             <div className={`text-sm font-medium whitespace-nowrap ${hasValue ? 'text-white' : 'text-slate-400'}`}>
                               {getPalletLabel(idx)}
                             </div>
-                            {hasValue && (
+                            {hasValue && labelMode.mode === 'weight' && (
                               <div className="text-xs text-orange-300 bg-orange-500/10 px-2 py-1 rounded-full whitespace-nowrap">
                                 Net: {(parseFloat(weight) - 
                                   (PALLET_WEIGHT[Object.entries(palletType).find(([, value]) => (parseInt(value) || 0) > 0)?.[0] || 'notIncluded'] || 0) - 
@@ -855,9 +996,14 @@ export const GrnLabelForm: React.FC = () => {
                                 ).toFixed(1)}kg
                               </div>
                             )}
+                            {hasValue && labelMode.mode === 'qty' && (
+                              <div className="text-xs text-blue-300 bg-blue-500/10 px-2 py-1 rounded-full whitespace-nowrap">
+                                Qty: {parseFloat(weight).toFixed(0)}
+                              </div>
+                            )}
                           </div>
                           
-                          {/* Weight Input */}
+                          {/* Weight/Quantity Input */}
                           <div className="flex-shrink-0 flex items-center space-x-1">
                             <input
                               type="number"
@@ -870,10 +1016,12 @@ export const GrnLabelForm: React.FC = () => {
                               }`}
                               placeholder={isLast ? "Enter" : "0"}
                               min="0"
-                              step="0.1"
+                              step={labelMode.mode === 'qty' ? "1" : "0.1"}
                               maxLength={5}
                             />
-                            <span className="text-xs text-slate-500">kg</span>
+                            <span className="text-xs text-slate-500">
+                              {labelMode.mode === 'qty' ? 'pcs' : 'kg'}
+                            </span>
                           </div>
                           
                           {/* Remove Button for filled entries */}

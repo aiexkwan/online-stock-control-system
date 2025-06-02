@@ -39,6 +39,7 @@ export interface GrnInputData {
   series: string;
   palletNum: string;
   receivedBy: string; // User ID or clock number of the person receiving
+  labelMode?: 'qty' | 'weight'; // Add label mode to control PDF display
   // dateForLabel?: Date; // Optional: if a specific date needs to be on the label, otherwise current date is used
 }
 
@@ -66,6 +67,7 @@ export async function prepareGrnLabelData(input: GrnInputData): Promise<PrintLab
     qrCodeDataUrl,
     productType: input.productType || undefined,
     labelType: 'GRN',
+    labelMode: input.labelMode || 'weight', // Pass label mode to PDF component
     // Pass through raw/original inputs from the form
     grnNumber: input.grnNumber,
     grnMaterialSupplier: input.materialSupplier,

@@ -48,7 +48,7 @@ import PalletDonutChart from '@/app/components/PalletDonutChart';
 import UploadFilesDialog from '@/app/components/admin-panel-menu/UploadFilesDialog';
 import VoidPalletDialog from '@/app/components/admin-panel-menu/VoidPalletDialog';
 import ViewHistoryDialog from '@/app/components/admin-panel-menu/ViewHistoryDialog';
-import ProductUpdateDialog from '@/app/components/admin-panel-menu/ProductUpdateDialog';
+import DatabaseUpdateDialog from '@/app/components/admin-panel-menu/DatabaseUpdateDialog';
 import { ReprintInfoDialog } from '@/app/void-pallet/components/ReprintInfoDialog';
 import { useVoidPallet } from '@/app/void-pallet/hooks/useVoidPallet';
 
@@ -122,11 +122,11 @@ const adminMenuItems = [
     category: 'System Tools'
   },
   {
-    id: 'product',
-    title: 'Product Update',
-    description: 'Add and update product information',
+    id: 'database',
+    title: 'Database Update',
+    description: 'Add and update database information',
     icon: CubeIcon,
-    action: 'open-product-dialog',
+    action: 'open-update-dialog',
     color: 'hover:bg-orange-900/20 hover:text-orange-400',
     category: 'System Tools'
   },
@@ -252,8 +252,8 @@ export default function AdminPanelPage() {
   // View History Dialog states
   const [showHistoryDialog, setShowHistoryDialog] = useState(false);
 
-  // Product Update Dialog states
-  const [showProductDialog, setShowProductDialog] = useState(false);
+  // Database Update Dialog states
+  const [showUpdateDialog, setShowUpdateDialog] = useState(false);
 
   // Reprint Dialog states
   const [showReprintDialog, setShowReprintDialog] = useState(false);
@@ -637,8 +637,8 @@ export default function AdminPanelPage() {
       setShowVoidDialog(true);
     } else if (item.action === 'open-history-dialog') {
       setShowHistoryDialog(true);
-    } else if (item.action === 'open-product-dialog') {
-      setShowProductDialog(true);
+    } else if (item.action === 'open-update-dialog') {
+      setShowUpdateDialog(true);
     } else if (item.path) {
       router.push(item.path);
     }
@@ -1949,10 +1949,10 @@ export default function AdminPanelPage() {
         onClose={() => setShowHistoryDialog(false)}
       />
 
-      {/* Product Update Dialog */}
-      <ProductUpdateDialog
-        isOpen={showProductDialog}
-        onClose={() => setShowProductDialog(false)}
+      {/* Database Update Dialog */}
+      <DatabaseUpdateDialog
+        isOpen={showUpdateDialog}
+        onClose={() => setShowUpdateDialog(false)}
       />
 
       {/* Reprint Info Dialog */}

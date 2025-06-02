@@ -62,7 +62,7 @@ export default function StockTransferPage() {
   }, [focusSearchInput]);
 
   // Calculate target location (pure function - no side effects)
-  // Removed terminal location restrictions - pallets can move from any location
+  // Updated workflow: Await → Production → Fold Mill → Production (cycle)
   const calculateTargetLocation = useCallback((palletInfo: PalletInfo): { location: string | null; error?: string } => {
     const { product_code, current_plt_loc } = palletInfo;
     const fromLocation = current_plt_loc || 'Await';
@@ -75,15 +75,23 @@ export default function StockTransferPage() {
       };
     }
 
-    // Apply standard movement rules regardless of current location
+    // New workflow rules:
+    // 1st move: Await → Production (for all products)
+    // 2nd move: Production → Fold Mill (for all products)
+    // 3rd move: Fold Mill → Production (for all products, creating a cycle)
     if (fromLocation === 'Await') {
-      return { location: product_code.startsWith('Z') ? 'Production' : 'Fold Mill' };
+      // First move: Always go to Production
+      return { location: 'Production' };
+    } else if (fromLocation === 'Production') {
+      // Second move: Always go to Fold Mill
+      return { location: 'Fold Mill' };
     } else if (fromLocation === 'Fold Mill') {
-      return { location: product_code.startsWith('U') ? 'PipeLine' : 'Production' };
+      // Third move: Always go back to Production (creating a cycle)
+      return { location: 'Production' };
     } else {
-      // For all other locations, apply the same rules as from 'Await'
-      // This allows movement from any location (including previous terminal locations)
-      return { location: product_code.startsWith('Z') ? 'Production' : 'Fold Mill' };
+      // For other locations (PipeLine, Pre-Book, Bulk, Back Car Park, etc.)
+      // Apply the same rule as from Await (go to Production)
+      return { location: 'Production' };
     }
   }, []);
 
