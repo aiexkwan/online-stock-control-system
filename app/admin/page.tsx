@@ -743,7 +743,23 @@ export default function AdminPanelPage() {
     if (!reportData || reportData.transfers.length === 0) {
       throw new Error('No transaction data available for the selected date range');
     }
-    await buildTransactionReport(reportData);
+    
+    // Get the Excel buffer and trigger download
+    const buffer = await buildTransactionReport(reportData);
+    const blob = new Blob([buffer], { 
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' 
+    });
+    
+    // Create download link
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `Transaction_Report_${startDate}_to_${endDate}.xlsx`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   };
 
   // Generate All Data report

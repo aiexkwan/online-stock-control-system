@@ -98,8 +98,14 @@ export async function POST(request: NextRequest) {
     const supabaseAdmin = createSupabaseAdmin();
 
     // 構建文件路徑
-    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-    const fileNameWithTimestamp = `${timestamp}_${fileName}`;
+    const now = new Date();
+    const day = String(now.getDate()).padStart(2, '0');
+    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+                       'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const month = monthNames[now.getMonth()];
+    const year = now.getFullYear();
+    const datePrefix = `${day}-${month}-${year}`;
+    const fileNameWithTimestamp = `${datePrefix}_${fileName}`;
     const filePath = `${folder}/${fileNameWithTimestamp}`;
 
     console.log('[Upload File API] 準備上傳到路徑:', filePath);

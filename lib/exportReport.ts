@@ -751,12 +751,15 @@ export async function buildTransactionReport(reportData?: TransactionReportData)
       // 填充產品資訊
       row.getCell('Z').value = transfer.product_code; // Product Code
       row.getCell('AB').value = transfer.quantity; // Qty
+      row.getCell('AB').font = { size: 14 };
       row.getCell('AD').value = transfer.totalPallets; // 🆕 相同條件的總板數
+      row.getCell('AD').font = { size: 14 };
       // AF 欄位留空（Pallet Reference No）
       
       // 🆕 修改 AH 欄：顯示操作員姓名和 clock number，格式為 "Alex[換行]（5997）"
       const operatorDisplayText = `${transfer.operator_name}\n（${transfer.operator_id}）`;
       row.getCell('AH').value = operatorDisplayText; // Operator Name + Clock Number
+      row.getCell('AH').font = { size: 12 };
       row.getCell('AH').alignment = { 
         vertical: 'middle', 
         horizontal: 'center', 
