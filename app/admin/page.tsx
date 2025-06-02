@@ -153,8 +153,12 @@ const groupedItems = adminMenuItems.reduce((acc, item) => {
 interface DashboardStats {
   dailyDonePallets: number;
   dailyTransferredPallets: number;
+  yesterdayDonePallets: number;
+  yesterdayTransferredPallets: number;
   past3DaysGenerated: number;
   past3DaysTransferredPallets: number;
+  past7DaysGenerated: number;
+  past7DaysTransferredPallets: number;
 }
 
 interface AcoOrder {
@@ -194,8 +198,12 @@ export default function AdminPanelPage() {
   const [stats, setStats] = useState<DashboardStats>({
     dailyDonePallets: 0,
     dailyTransferredPallets: 0,
+    yesterdayDonePallets: 0,
+    yesterdayTransferredPallets: 0,
     past3DaysGenerated: 0,
     past3DaysTransferredPallets: 0,
+    past7DaysGenerated: 0,
+    past7DaysTransferredPallets: 0,
   });
   const [donutTimeRange, setDonutTimeRange] = useState<string>('Past 3 days');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -293,93 +301,176 @@ export default function AdminPanelPage() {
     setReprintData(null);
   }, []);
 
+  // Helper function to get data based on selected time range
+  const getDonutChartData = () => {
+    switch (donutTimeRange) {
+      case 'Today':
+        return {
+          palletsDone: stats.dailyDonePallets,
+          palletsTransferred: stats.dailyTransferredPallets
+        };
+      case 'Yesterday':
+        return {
+          palletsDone: stats.yesterdayDonePallets,
+          palletsTransferred: stats.yesterdayTransferredPallets
+        };
+      case 'Past 7 days':
+        return {
+          palletsDone: stats.past7DaysGenerated,
+          palletsTransferred: stats.past7DaysTransferredPallets
+        };
+      case 'Past 3 days':
+      default:
+        return {
+          palletsDone: stats.past3DaysGenerated,
+          palletsTransferred: stats.past3DaysTransferredPallets
+        };
+    }
+  };
+
   // Load dashboard statistics
   const loadDashboardStats = async () => {
     try {
       setStatsLoading(true);
       
       const today = new Date();
-      const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate()).toISOString();
-      const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59, 999).toISOString();
       
-      // Get past 3 days start time
+      // Define time ranges
+      const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate()).toISOString();
+      const todayEnd = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59, 999).toISOString();
+      
+      const yesterday = new Date(today);
+      yesterday.setDate(today.getDate() - 1);
+      const yesterdayStart = new Date(yesterday.getFullYear(), yesterday.getMonth(), yesterday.getDate()).toISOString();
+      const yesterdayEnd = new Date(yesterday.getFullYear(), yesterday.getMonth(), yesterday.getDate(), 23, 59, 59, 999).toISOString();
+      
       const past3DaysStart = new Date(today);
       past3DaysStart.setDate(today.getDate() - 3);
       past3DaysStart.setHours(0, 0, 0, 0);
       
-      // Daily stats
-      const [dailyDoneResult, dailyTransferredResult, past3DaysGeneratedResult, past3DaysTransferredResult] = await Promise.all([
-        // Daily pallets done (Generated) - exclude Material GRN records
+      const past7DaysStart = new Date(today);
+      past7DaysStart.setDate(today.getDate() - 7);
+      past7DaysStart.setHours(0, 0, 0, 0);
+
+      // Load all data in parallel
+      const [
+        todayDoneResult,
+        todayPalletsResult,
+        yesterdayDoneResult,
+        yesterdayPalletsResult,
+        past3DaysDoneResult,
+        past3DaysPalletsResult,
+        past7DaysDoneResult,
+        past7DaysPalletsResult
+      ] = await Promise.all([
+        // Today's generated pallets
         supabase
           .from('record_palletinfo')
           .select('*', { count: 'exact', head: true })
-          .gte('generate_time', startOfDay)
-          .lte('generate_time', endOfDay)
+          .gte('generate_time', todayStart)
+          .lte('generate_time', todayEnd)
           .not('plt_remark', 'ilike', '%Material GRN-%'),
-
-        // Daily pallets transferred - exclude Material GRN records
+        
+        // Today's pallets for transfer calculation
         supabase
           .from('record_palletinfo')
           .select('plt_num')
-          .gte('generate_time', startOfDay)
-          .lte('generate_time', endOfDay)
+          .gte('generate_time', todayStart)
+          .lte('generate_time', todayEnd)
           .not('plt_remark', 'ilike', '%Material GRN-%'),
-
-        // Past 3 days generated - exclude Material GRN records
+        
+        // Yesterday's generated pallets
+        supabase
+          .from('record_palletinfo')
+          .select('*', { count: 'exact', head: true })
+          .gte('generate_time', yesterdayStart)
+          .lte('generate_time', yesterdayEnd)
+          .not('plt_remark', 'ilike', '%Material GRN-%'),
+        
+        // Yesterday's pallets for transfer calculation
+        supabase
+          .from('record_palletinfo')
+          .select('plt_num')
+          .gte('generate_time', yesterdayStart)
+          .lte('generate_time', yesterdayEnd)
+          .not('plt_remark', 'ilike', '%Material GRN-%'),
+        
+        // Past 3 days generated pallets
         supabase
           .from('record_palletinfo')
           .select('*', { count: 'exact', head: true })
           .gte('generate_time', past3DaysStart.toISOString())
           .not('plt_remark', 'ilike', '%Material GRN-%'),
-
-        // Past 3 days pallets for transfer calculation - exclude Material GRN records
+        
+        // Past 3 days pallets for transfer calculation
         supabase
           .from('record_palletinfo')
           .select('plt_num')
           .gte('generate_time', past3DaysStart.toISOString())
+          .not('plt_remark', 'ilike', '%Material GRN-%'),
+        
+        // Past 7 days generated pallets
+        supabase
+          .from('record_palletinfo')
+          .select('*', { count: 'exact', head: true })
+          .gte('generate_time', past7DaysStart.toISOString())
+          .not('plt_remark', 'ilike', '%Material GRN-%'),
+        
+        // Past 7 days pallets for transfer calculation
+        supabase
+          .from('record_palletinfo')
+          .select('plt_num')
+          .gte('generate_time', past7DaysStart.toISOString())
           .not('plt_remark', 'ilike', '%Material GRN-%')
       ]);
 
-      if (dailyDoneResult.error || dailyTransferredResult.error || past3DaysGeneratedResult.error || past3DaysTransferredResult.error) throw new Error('Error loading statistics');
+      // Check for errors
+      const results = [
+        todayDoneResult, todayPalletsResult, yesterdayDoneResult, yesterdayPalletsResult,
+        past3DaysDoneResult, past3DaysPalletsResult, past7DaysDoneResult, past7DaysPalletsResult
+      ];
+      
+      if (results.some(result => result.error)) {
+        throw new Error('Error loading statistics');
+      }
 
-      // Calculate transferred counts
-      let dailyTransferredCount = 0;
-      if (dailyTransferredResult.data && dailyTransferredResult.data.length > 0) {
-        const todayPalletNums = dailyTransferredResult.data.map(p => p.plt_num);
+      // Helper function to calculate transferred pallets
+      const calculateTransferredPallets = async (palletNums: string[]) => {
+        if (!palletNums || palletNums.length === 0) return 0;
         
         const transferredResult = await supabase
           .from('record_transfer')
           .select('plt_num')
-          .in('plt_num', todayPalletNums);
+          .in('plt_num', palletNums);
 
         if (transferredResult.error) throw transferredResult.error;
         
         const uniqueTransferredPallets = new Set(transferredResult.data?.map(r => r.plt_num) || []);
-        dailyTransferredCount = uniqueTransferredPallets.size;
-      }
+        return uniqueTransferredPallets.size;
+      };
 
-      const past3DaysGenerated = past3DaysGeneratedResult.count || 0;
-
-      let past3DaysTransferredCount = 0;
-      if (past3DaysTransferredResult.data && past3DaysTransferredResult.data.length > 0) {
-        const past3DaysPalletNums = past3DaysTransferredResult.data.map(p => p.plt_num);
-        
-        const past3DaysTransferredQueryResult = await supabase
-          .from('record_transfer')
-          .select('plt_num')
-          .in('plt_num', past3DaysPalletNums);
-
-        if (past3DaysTransferredQueryResult.error) throw past3DaysTransferredQueryResult.error;
-        
-        const uniquePast3DaysTransferredPallets = new Set(past3DaysTransferredQueryResult.data?.map(r => r.plt_num) || []);
-        past3DaysTransferredCount = uniquePast3DaysTransferredPallets.size;
-      }
+      // Calculate transferred counts for all time ranges
+      const [
+        todayTransferredCount,
+        yesterdayTransferredCount,
+        past3DaysTransferredCount,
+        past7DaysTransferredCount
+      ] = await Promise.all([
+        calculateTransferredPallets(todayPalletsResult.data?.map(p => p.plt_num) || []),
+        calculateTransferredPallets(yesterdayPalletsResult.data?.map(p => p.plt_num) || []),
+        calculateTransferredPallets(past3DaysPalletsResult.data?.map(p => p.plt_num) || []),
+        calculateTransferredPallets(past7DaysPalletsResult.data?.map(p => p.plt_num) || [])
+      ]);
 
       setStats({
-        dailyDonePallets: dailyDoneResult.count || 0,
-        dailyTransferredPallets: dailyTransferredCount,
-        past3DaysGenerated: past3DaysGenerated,
+        dailyDonePallets: todayDoneResult.count || 0,
+        dailyTransferredPallets: todayTransferredCount,
+        yesterdayDonePallets: yesterdayDoneResult.count || 0,
+        yesterdayTransferredPallets: yesterdayTransferredCount,
+        past3DaysGenerated: past3DaysDoneResult.count || 0,
         past3DaysTransferredPallets: past3DaysTransferredCount,
+        past7DaysGenerated: past7DaysDoneResult.count || 0,
+        past7DaysTransferredPallets: past7DaysTransferredCount,
       });
 
     } catch (err: any) {
@@ -1309,8 +1400,8 @@ export default function AdminPanelPage() {
                     
                     <div className="flex justify-center">
                       <PalletDonutChart 
-                        palletsDone={stats.past3DaysGenerated}
-                        palletsTransferred={stats.past3DaysTransferredPallets}
+                        palletsDone={getDonutChartData().palletsDone}
+                        palletsTransferred={getDonutChartData().palletsTransferred}
                         loading={statsLoading}
                       />
                     </div>
