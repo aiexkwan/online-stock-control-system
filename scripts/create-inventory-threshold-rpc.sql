@@ -1,5 +1,6 @@
 -- 創建庫存閾值過濾查詢的 RPC 函數
--- 返回庫存總量低於指定閾值的產品
+-- 返回當前實際庫存總量低於指定閾值的產品
+-- 修復：正確計算每個位置的當前庫存總量
 
 DROP FUNCTION IF EXISTS get_products_below_inventory_threshold(bigint);
 
@@ -26,32 +27,46 @@ BEGIN
     RETURN QUERY
     SELECT 
         ri.product_code,
-        COALESCE(ri.injection, 0) + 
-        COALESCE(ri.pipeline, 0) + 
-        COALESCE(ri.prebook, 0) + 
-        COALESCE(ri.await, 0) + 
-        COALESCE(ri.fold, 0) + 
-        COALESCE(ri.bulk, 0) + 
-        COALESCE(ri.backcarpark, 0) AS total_inventory,
-        COALESCE(ri.injection, 0) AS injection_qty,
-        COALESCE(ri.pipeline, 0) AS pipeline_qty,
-        COALESCE(ri.prebook, 0) AS prebook_qty,
-        COALESCE(ri.await, 0) AS await_qty,
-        COALESCE(ri.fold, 0) AS fold_qty,
-        COALESCE(ri.bulk, 0) AS bulk_qty,
-        COALESCE(ri.backcarpark, 0) AS backcarpark_qty
+        -- 計算當前實際庫存總量：每個位置的當前庫存總和
+        COALESCE(SUM(ri.injection), 0) + 
+        COALESCE(SUM(ri.pipeline), 0) + 
+        COALESCE(SUM(ri.prebook), 0) + 
+        COALESCE(SUM(ri.await), 0) + 
+        COALESCE(SUM(ri.fold), 0) + 
+        COALESCE(SUM(ri.bulk), 0) + 
+        COALESCE(SUM(ri.backcarpark), 0) AS total_inventory,
+        -- 每個位置的當前庫存總量
+        COALESCE(SUM(ri.injection), 0) AS injection_qty,
+        COALESCE(SUM(ri.pipeline), 0) AS pipeline_qty,
+        COALESCE(SUM(ri.prebook), 0) AS prebook_qty,
+        COALESCE(SUM(ri.await), 0) AS await_qty,
+        COALESCE(SUM(ri.fold), 0) AS fold_qty,
+        COALESCE(SUM(ri.bulk), 0) AS bulk_qty,
+        COALESCE(SUM(ri.backcarpark), 0) AS backcarpark_qty
     FROM record_inventory ri
     WHERE ri.product_code IS NOT NULL 
     AND ri.product_code != ''
-    AND (
-        COALESCE(ri.injection, 0) + 
-        COALESCE(ri.pipeline, 0) + 
-        COALESCE(ri.prebook, 0) + 
-        COALESCE(ri.await, 0) + 
-        COALESCE(ri.fold, 0) + 
-        COALESCE(ri.bulk, 0) + 
-        COALESCE(ri.backcarpark, 0)
+    GROUP BY ri.product_code  -- 按產品代碼分組
+    HAVING (
+        -- 只返回總庫存低於閾值的產品
+        COALESCE(SUM(ri.injection), 0) + 
+        COALESCE(SUM(ri.pipeline), 0) + 
+        COALESCE(SUM(ri.prebook), 0) + 
+        COALESCE(SUM(ri.await), 0) + 
+        COALESCE(SUM(ri.fold), 0) + 
+        COALESCE(SUM(ri.bulk), 0) + 
+        COALESCE(SUM(ri.backcarpark), 0)
     ) < threshold_value
+    AND (
+        -- 確保總庫存是正數（過濾掉計算錯誤的負數庫存）
+        COALESCE(SUM(ri.injection), 0) + 
+        COALESCE(SUM(ri.pipeline), 0) + 
+        COALESCE(SUM(ri.prebook), 0) + 
+        COALESCE(SUM(ri.await), 0) + 
+        COALESCE(SUM(ri.fold), 0) + 
+        COALESCE(SUM(ri.bulk), 0) + 
+        COALESCE(SUM(ri.backcarpark), 0)
+    ) >= 0
     ORDER BY total_inventory ASC;  -- 最低庫存優先
 END;
 $$;
@@ -61,8 +76,9 @@ GRANT EXECUTE ON FUNCTION get_products_below_inventory_threshold(bigint) TO anon
 GRANT EXECUTE ON FUNCTION get_products_below_inventory_threshold(bigint) TO authenticated;
 
 -- 測試函數
-SELECT 'Products below 100:' AS test_case;
-SELECT * FROM get_products_below_inventory_threshold(100);
+SELECT 'Products below 100 (Fixed):' AS test_case;
+SELECT * FROM get_products_below_inventory_threshold(100) LIMIT 10;
 
-SELECT 'Products below 50:' AS test_case;
-SELECT * FROM get_products_below_inventory_threshold(50); 
+SELECT 'Products below 5000 (to include Z01ATM1):' AS test_case;
+SELECT * FROM get_products_below_inventory_threshold(5000) 
+WHERE product_code = 'Z01ATM1'; 

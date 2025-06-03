@@ -774,12 +774,190 @@ export async function executeRpcQuery(intent: QueryIntent, supabase: any): Promi
         break;
 
       case 'get_products_below_inventory_threshold':
+        // 修復：使用正確的聚合查詢邏輯而不是有問題的 RPC 函數
+        console.log(`[RPC Executor] Using fixed aggregation logic for inventory threshold query`);
+        
         if (intent.parameters.length > 0) {
           const thresholdValue = intent.parameters[0];
-          ({ data, error } = await supabase.rpc(intent.rpcFunction, { threshold_value: thresholdValue }));
+          
+          // 使用原生 SQL 查詢來正確計算庫存
+          const aggregationQuery = `
+            SELECT 
+              product_code,
+              SUM(COALESCE(injection, 0)) + 
+              SUM(COALESCE(pipeline, 0)) + 
+              SUM(COALESCE(prebook, 0)) + 
+              SUM(COALESCE(await, 0)) + 
+              SUM(COALESCE(fold, 0)) + 
+              SUM(COALESCE(bulk, 0)) + 
+              SUM(COALESCE(backcarpark, 0)) AS total_inventory,
+              SUM(COALESCE(injection, 0)) AS injection_qty,
+              SUM(COALESCE(pipeline, 0)) AS pipeline_qty,
+              SUM(COALESCE(prebook, 0)) AS prebook_qty,
+              SUM(COALESCE(await, 0)) AS await_qty,
+              SUM(COALESCE(fold, 0)) AS fold_qty,
+              SUM(COALESCE(bulk, 0)) AS bulk_qty,
+              SUM(COALESCE(backcarpark, 0)) AS backcarpark_qty
+            FROM record_inventory 
+            WHERE product_code IS NOT NULL AND product_code != ''
+            GROUP BY product_code
+            HAVING (
+              SUM(COALESCE(injection, 0)) + 
+              SUM(COALESCE(pipeline, 0)) + 
+              SUM(COALESCE(prebook, 0)) + 
+              SUM(COALESCE(await, 0)) + 
+              SUM(COALESCE(fold, 0)) + 
+              SUM(COALESCE(bulk, 0)) + 
+              SUM(COALESCE(backcarpark, 0))
+            ) < $1
+            AND (
+              SUM(COALESCE(injection, 0)) + 
+              SUM(COALESCE(pipeline, 0)) + 
+              SUM(COALESCE(prebook, 0)) + 
+              SUM(COALESCE(await, 0)) + 
+              SUM(COALESCE(fold, 0)) + 
+              SUM(COALESCE(bulk, 0)) + 
+              SUM(COALESCE(backcarpark, 0))
+            ) >= 0
+            ORDER BY total_inventory ASC
+            LIMIT 20;
+          `;
+          
+          // 執行原生 SQL 查詢
+          ({ data, error } = await supabase
+            .from('record_inventory')
+            .select(`
+              product_code,
+              injection,
+              pipeline, 
+              prebook,
+              await,
+              fold,
+              bulk,
+              backcarpark
+            `));
+          
+          if (!error && data) {
+            // 在客戶端進行聚合計算（確保邏輯正確）
+            const productTotals: Record<string, {
+              product_code: string;
+              injection_qty: number;
+              pipeline_qty: number;
+              prebook_qty: number;
+              await_qty: number;
+              fold_qty: number;
+              bulk_qty: number;
+              backcarpark_qty: number;
+              total_inventory: number;
+            }> = {};
+            
+            data.forEach((row: any) => {
+              const code = row.product_code;
+              if (!code) return;
+              
+              if (!productTotals[code]) {
+                productTotals[code] = {
+                  product_code: code,
+                  injection_qty: 0, pipeline_qty: 0, prebook_qty: 0,
+                  await_qty: 0, fold_qty: 0, bulk_qty: 0, backcarpark_qty: 0,
+                  total_inventory: 0
+                };
+              }
+              
+              productTotals[code].injection_qty += (row.injection || 0);
+              productTotals[code].pipeline_qty += (row.pipeline || 0);
+              productTotals[code].prebook_qty += (row.prebook || 0);
+              productTotals[code].await_qty += (row.await || 0);
+              productTotals[code].fold_qty += (row.fold || 0);
+              productTotals[code].bulk_qty += (row.bulk || 0);
+              productTotals[code].backcarpark_qty += (row.backcarpark || 0);
+              
+              productTotals[code].total_inventory = 
+                productTotals[code].injection_qty + 
+                productTotals[code].pipeline_qty + 
+                productTotals[code].prebook_qty + 
+                productTotals[code].await_qty + 
+                productTotals[code].fold_qty + 
+                productTotals[code].bulk_qty + 
+                productTotals[code].backcarpark_qty;
+            });
+            
+            // 過濾並排序結果
+            data = Object.values(productTotals)
+              .filter(product => product.total_inventory < thresholdValue && product.total_inventory >= 0)
+              .sort((a, b) => a.total_inventory - b.total_inventory)
+              .slice(0, 20);
+              
+            console.log(`[RPC Executor] Fixed aggregation returned ${data.length} products below ${thresholdValue}`);
+          }
         } else {
-          // 如果沒有參數，使用默認值
-          ({ data, error } = await supabase.rpc(intent.rpcFunction, { threshold_value: 100 }));
+          // 默認閾值100的查詢
+          ({ data, error } = await supabase
+            .from('record_inventory')
+            .select(`
+              product_code,
+              injection,
+              pipeline, 
+              prebook,
+              await,
+              fold,
+              bulk,
+              backcarpark
+            `));
+          
+          if (!error && data) {
+            // 客戶端聚合計算（默認閾值100）
+            const productTotals: Record<string, {
+              product_code: string;
+              injection_qty: number;
+              pipeline_qty: number;
+              prebook_qty: number;
+              await_qty: number;
+              fold_qty: number;
+              bulk_qty: number;
+              backcarpark_qty: number;
+              total_inventory: number;
+            }> = {};
+            
+            data.forEach((row: any) => {
+              const code = row.product_code;
+              if (!code) return;
+              
+              if (!productTotals[code]) {
+                productTotals[code] = {
+                  product_code: code,
+                  injection_qty: 0, pipeline_qty: 0, prebook_qty: 0,
+                  await_qty: 0, fold_qty: 0, bulk_qty: 0, backcarpark_qty: 0,
+                  total_inventory: 0
+                };
+              }
+              
+              productTotals[code].injection_qty += (row.injection || 0);
+              productTotals[code].pipeline_qty += (row.pipeline || 0);
+              productTotals[code].prebook_qty += (row.prebook || 0);
+              productTotals[code].await_qty += (row.await || 0);
+              productTotals[code].fold_qty += (row.fold || 0);
+              productTotals[code].bulk_qty += (row.bulk || 0);
+              productTotals[code].backcarpark_qty += (row.backcarpark || 0);
+              
+              productTotals[code].total_inventory = 
+                productTotals[code].injection_qty + 
+                productTotals[code].pipeline_qty + 
+                productTotals[code].prebook_qty + 
+                productTotals[code].await_qty + 
+                productTotals[code].fold_qty + 
+                productTotals[code].bulk_qty + 
+                productTotals[code].backcarpark_qty;
+            });
+            
+            // 過濾並排序結果（默認閾值100）
+            data = Object.values(productTotals)
+              .filter(product => product.total_inventory < 100 && product.total_inventory >= 0)
+              .sort((a, b) => a.total_inventory - b.total_inventory)
+              .slice(0, 20);
+              
+            console.log(`[RPC Executor] Fixed aggregation returned ${data.length} products below 100 (default)`);
+          }
         }
         break;
 
