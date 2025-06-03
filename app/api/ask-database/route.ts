@@ -403,6 +403,7 @@ ${index + 1}. Question: ${entry.question}
   // 處理不同類型的查詢結果
   let resultDisplay = '';
   let totalRecords = 0;
+  let isMultipleResults = false;
   
   if (typeof queryResult.data === 'number') {
     // 簡單數值返回 (如計數函數)
@@ -410,8 +411,9 @@ ${index + 1}. Question: ${entry.question}
     totalRecords = 1;
   } else if (Array.isArray(queryResult.data)) {
     // 數組返回 (如表格函數)
-    resultDisplay = JSON.stringify(queryResult.data.slice(0, 5) || [], null, 2);
+    resultDisplay = JSON.stringify(queryResult.data.slice(0, 10) || [], null, 2);
     totalRecords = queryResult.data.length;
+    isMultipleResults = queryResult.data.length > 1;
   } else if (typeof queryResult.data === 'object' && queryResult.data !== null) {
     // 對象返回
     resultDisplay = JSON.stringify(queryResult.data, null, 2);
@@ -424,6 +426,36 @@ ${index + 1}. Question: ${entry.question}
   // 生成日期範圍信息
   const dateRangeInfo = generateDateRangeInfo(intent.timeframe);
 
+  // 檢測查詢類型以決定格式
+  const isListQuery = intent.type === 'inventory_ranking' || 
+                     intent.type === 'inventory_threshold' || 
+                     intent.type === 'latest' ||
+                     (isMultipleResults && totalRecords > 2);
+
+  const formatInstructions = isListQuery ? 
+    `IMPORTANT: When returning multiple items (like lists, rankings, or thresholds), use LINE-BY-LINE format for better readability:
+
+GOOD FORMAT EXAMPLES:
+For ranking queries: "According to records, top 5 products by inventory:
+- 1. Z01ATM1: 6,626 units
+- 2. MEP9090150: 1,234 units  
+- 3. MT4545: 890 units
+- 4. ABC123: 567 units
+- 5. XYZ789: 432 units"
+
+For threshold queries: "According to records, 3 products have inventory below 100:
+- MHCOL2: 1 unit
+- ABC123: 45 units
+- XYZ789: 67 units"
+
+For transfer/history queries: "According to records, today's transfers:
+- Pallet A123: Production → Awaiting
+- Pallet B456: Awaiting → Fold Mill
+- Pallet C789: Fold Mill → Bulk Room"
+
+BAD FORMAT (avoid): "Top 5 products: 1. Z01ATM1: 6,626 units, 2. MEP9090150: 1,234 units, 3. MT4545: 890 units, 4. ABC123: 567 units, 5. XYZ789: 432 units according to records."` :
+    `Keep the response concise and in single line format when appropriate.`;
+
   return `You are a concise database assistant. Provide brief, direct answers without unnecessary explanations.
 
 IMPORTANT RESPONSE GUIDELINES:
@@ -435,9 +467,12 @@ IMPORTANT RESPONSE GUIDELINES:
 6. Use simple language: "according to records" instead of "according to the NewPennine pallet management system"
 7. For time-range queries (week/month/yesterday), include the specific date range in parentheses
 
+${formatInstructions}
+
 User Question: "${question}"
 
 RPC Function Used: ${intent.rpcFunction}
+Query Type: ${intent.type}
 Query Result: ${resultDisplay}
 Total Records: ${totalRecords}
 Execution Time: ${queryResult.executionTime}ms
@@ -448,21 +483,11 @@ Previous Conversation Context:${contextHistory}
 Provide a brief, direct answer that:
 - States the result clearly
 - For time-range queries, includes the date range like "This week(01/06/2025 - 07/06/2025)"
+- Uses line-by-line format for multiple results (rankings, lists, thresholds)
+- Uses single-line format for simple counts or single results
 - Includes relevant details only if they help answer the question
 - Avoids system descriptions and operational explanations
 - Uses concise language
-
-Example of good concise answers with date ranges:
-- "This week(01/06/2025 - 07/06/2025), 16 transfers were made involving 15 unique pallets according to records."
-- "Yesterday(06/06/2025), 15 pallets were generated."
-- "This month(June 2025), 245 pallets were generated according to records."
-- "Today, 10 pallets were generated according to records." (no date range needed for 'today')
-
-For inventory ranking queries, provide clear product rankings:
-- "Top 5 products by inventory: 1. MEP123456: 1,500 units, 2. ABC789012: 1,200 units, 3. XYZ345678: 900 units, 4. DEF901234: 750 units, 5. GHI567890: 600 units according to records."
-
-For inventory threshold queries, list products below the threshold:
-- "3 products have inventory below 100: MEP123456 (45 units), ABC789012 (23 units), XYZ345678 (67 units) according to records."
 
 Answer:`;
 }
@@ -533,115 +558,108 @@ function generateFallbackResponseForRpc(question: string, queryResult: any, inte
   const dataCount = Array.isArray(queryResult.data) ? queryResult.data.length : 1;
   const executionTime = queryResult.executionTime || 0;
   
-  if (dataCount === 0 || queryResult.data === null || queryResult.data === undefined) {
-    return `Based on your query "${question}", no data was found using the ${intent.rpcFunction} function. This could be because:
-1. No data exists for the specified criteria
-2. The time period you asked about has no records
-3. The product code or location might not exist
-
-The query executed successfully in ${executionTime}ms. You might want to try adjusting your search criteria or checking a different time period.`;
+  // 處理不同類型的查詢結果
+  if (typeof queryResult.data === 'number') {
+    // 簡單數值回應 (計數查詢)
+    return `${queryResult.data} according to records.`;
   }
   
-  // 根據意圖類型生成不同的回應
-  switch (intent.type) {
-    case 'count':
-      // 處理不同類型的計數返回值
-      let count = 0;
-      
-      // 1. 簡單計數函數 (如 get_today_pallet_count) 返回直接的數字
-      if (typeof queryResult.data === 'number') {
-        count = queryResult.data;
-      }
-      // 2. 表格函數返回對象數組
-      else if (Array.isArray(queryResult.data) && queryResult.data.length > 0) {
-        const firstRow = queryResult.data[0];
-        count = firstRow?.count || firstRow?.pallet_count || firstRow?.total_quantity || 0;
-      }
-      // 3. 單個對象
-      else if (typeof queryResult.data === 'object' && queryResult.data !== null) {
-        count = queryResult.data.count || queryResult.data.pallet_count || queryResult.data.total_quantity || 0;
+  if (Array.isArray(queryResult.data)) {
+    const data = queryResult.data;
+    
+    // 庫存閾值查詢 - 使用多行格式
+    if (intent.type === 'inventory_threshold') {
+      if (data.length === 0) {
+        const threshold = intent.parameters?.[0] || 100;
+        return `No products have inventory below ${threshold} according to records.`;
       }
       
-      return `Based on your query "${question}", I found ${count} pallets. The query executed successfully in ${executionTime}ms using the ${intent.rpcFunction} function.`;
-      
-    case 'transfer':
-      // 處理轉移統計返回值
-      let transferInfo = '';
-      
-      if (Array.isArray(queryResult.data) && queryResult.data.length > 0) {
-        const transferData = queryResult.data[0];
-        const transferCount = transferData?.transfer_count || 0;
-        const uniquePallets = transferData?.unique_pallets || 0;
-        
-        transferInfo = `${transferCount} transfer records involving ${uniquePallets} unique pallets`;
-      } else if (typeof queryResult.data === 'object' && queryResult.data !== null) {
-        const transferCount = queryResult.data.transfer_count || 0;
-        const uniquePallets = queryResult.data.unique_pallets || 0;
-        
-        transferInfo = `${transferCount} transfer records involving ${uniquePallets} unique pallets`;
-      } else {
-        transferInfo = 'transfer data';
+      if (data.length === 1) {
+        const product = data[0];
+        return `1 product has inventory below ${intent.parameters?.[0] || 100}: ${product.product_code} (${product.total_inventory} units) according to records.`;
       }
       
-      return `Based on your query "${question}", I found ${transferInfo}. The query executed successfully in ${executionTime}ms.`;
+      // 多個產品 - 使用多行格式
+      const threshold = intent.parameters?.[0] || 100;
+      const productList = data.slice(0, 10).map((product: any, index: number) => 
+        `- ${product.product_code}: ${product.total_inventory} units`
+      ).join('\n');
       
-    case 'inventory_ranking':
-      // 處理庫存排名返回值
-      if (Array.isArray(queryResult.data) && queryResult.data.length > 0) {
-        const topProducts = queryResult.data.slice(0, 5);
-        let rankingInfo = `Top ${topProducts.length} products by inventory:\n`;
-        
-        topProducts.forEach((product: any, index: number) => {
-          const rank = index + 1;
-          const productCode = product.product_code || 'Unknown';
-          const totalInventory = product.total_inventory || 0;
-          rankingInfo += `${rank}. ${productCode}: ${totalInventory} units\n`;
-        });
-        
-        return `Based on your query "${question}", here are the ${rankingInfo}Query executed successfully in ${executionTime}ms.`;
-      } else {
-        return `Based on your query "${question}", no inventory ranking data was found. Query executed in ${executionTime}ms.`;
+      return `According to records, ${data.length} products have inventory below ${threshold}:\n${productList}`;
+    }
+    
+    // 庫存排名查詢 - 使用多行格式
+    if (intent.type === 'inventory_ranking') {
+      if (data.length === 0) {
+        return `No inventory data available according to records.`;
       }
       
-    case 'inventory_threshold':
-      // 處理庫存閾值返回值
-      if (Array.isArray(queryResult.data) && queryResult.data.length > 0) {
-        const lowInventoryProducts = queryResult.data;
-        let thresholdInfo = `${lowInventoryProducts.length} products with low inventory:\n`;
-        
-        lowInventoryProducts.forEach((product: any, index: number) => {
-          const productCode = product.product_code || 'Unknown';
-          const totalInventory = product.total_inventory || 0;
-          thresholdInfo += `- ${productCode}: ${totalInventory} units\n`;
-        });
-        
-        return `Based on your query "${question}", ${thresholdInfo}Query executed successfully in ${executionTime}ms.`;
-      } else {
-        return `Based on your query "${question}", no products found below the specified inventory threshold. Query executed in ${executionTime}ms.`;
+      if (data.length === 1) {
+        const product = data[0];
+        return `Top product by inventory: ${product.product_code} (${product.total_inventory} units) according to records.`;
       }
       
-    case 'weight':
-      const weightData = Array.isArray(queryResult.data) ? queryResult.data[0] : queryResult.data;
-      if (weightData) {
-        return `Based on your query "${question}", I found ${weightData.pallet_count || 0} pallets with a total net weight of ${weightData.total_net_weight || 0} and gross weight of ${weightData.total_gross_weight || 0}. Query executed in ${executionTime}ms.`;
-      }
-      break;
+      // 多個產品 - 使用多行格式  
+      const limit = intent.parameters?.[0] || 5;
+      const productList = data.slice(0, limit).map((product: any, index: number) => 
+        `- ${index + 1}. ${product.product_code}: ${product.total_inventory} units`
+      ).join('\n');
       
-    case 'product':
-      const productData = Array.isArray(queryResult.data) ? queryResult.data[0] : queryResult.data;
-      if (productData) {
-        return `Based on your query "${question}", I found ${productData.pallet_count || 0} pallets with a total quantity of ${productData.total_quantity || 0} units. Query executed in ${executionTime}ms.`;
+      return `According to records, top ${Math.min(data.length, limit)} products by inventory:\n${productList}`;
+    }
+    
+    // 最新托盤查詢 - 使用多行格式
+    if (intent.type === 'latest') {
+      if (data.length === 0) {
+        return `No recent pallets found according to records.`;
       }
-      break;
       
-    case 'location':
-      if (dataCount > 1) {
-        return `Based on your query "${question}", I found inventory data for ${dataCount} different locations. The query executed successfully in ${executionTime}ms. You can see the detailed breakdown in the results below.`;
+      if (data.length === 1) {
+        const pallet = data[0];
+        return `Latest pallet: ${pallet.plt_num} (${pallet.product_code}) according to records.`;
       }
-      break;
+      
+      // 多個托盤 - 使用多行格式
+      const palletList = data.slice(0, 10).map((pallet: any, index: number) => 
+        `- ${pallet.plt_num}: ${pallet.product_code} (${new Date(pallet.latest_update).toLocaleDateString()})`
+      ).join('\n');
+      
+      return `According to records, latest pallets:\n${palletList}`;
+    }
+    
+    // 轉移查詢 - 使用多行格式  
+    if (intent.type === 'transfer' && data.length > 2) {
+      const transferList = data.slice(0, 10).map((transfer: any, index: number) => 
+        `- ${transfer.plt_num || transfer.pallet_id}: ${transfer.from_location || transfer.source} → ${transfer.to_location || transfer.destination}`
+      ).join('\n');
+      
+      return `According to records, recent transfers:\n${transferList}`;
+    }
+    
+    // 其他多項結果 - 檢查是否需要多行格式
+    if (data.length > 3 && data[0].product_code) {
+      const productList = data.slice(0, 10).map((item: any, index: number) => 
+        `- ${item.product_code}: ${item.total_inventory || item.count || item.quantity || 'N/A'} units`
+      ).join('\n');
+      
+      return `According to records, query results:\n${productList}`;
+    }
+    
+    // 默認格式（少於3項或無明確結構）
+    if (data.length === 1) {
+      return `1 result found according to records.`;
+    }
+    
+    return `${data.length} results found according to records.`;
   }
   
-  return `Based on your query "${question}", I found ${dataCount} record(s). The query executed successfully in ${executionTime}ms using the ${intent.rpcFunction} function. You can view the detailed results below.`;
+  // 對象類型的單一結果
+  if (typeof queryResult.data === 'object' && queryResult.data !== null) {
+    return `Query completed successfully according to records.`;
+  }
+  
+  // 默認回應
+  return `Query completed in ${executionTime}ms according to records.`;
 }
 
 // 生成緩存鍵
