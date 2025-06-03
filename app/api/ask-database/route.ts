@@ -461,6 +461,9 @@ Example of good concise answers with date ranges:
 For inventory ranking queries, provide clear product rankings:
 - "Top 5 products by inventory: 1. MEP123456: 1,500 units, 2. ABC789012: 1,200 units, 3. XYZ345678: 900 units, 4. DEF901234: 750 units, 5. GHI567890: 600 units according to records."
 
+For inventory threshold queries, list products below the threshold:
+- "3 products have inventory below 100: MEP123456 (45 units), ABC789012 (23 units), XYZ345678 (67 units) according to records."
+
 Answer:`;
 }
 
@@ -598,6 +601,23 @@ The query executed successfully in ${executionTime}ms. You might want to try adj
         return `Based on your query "${question}", here are the ${rankingInfo}Query executed successfully in ${executionTime}ms.`;
       } else {
         return `Based on your query "${question}", no inventory ranking data was found. Query executed in ${executionTime}ms.`;
+      }
+      
+    case 'inventory_threshold':
+      // 處理庫存閾值返回值
+      if (Array.isArray(queryResult.data) && queryResult.data.length > 0) {
+        const lowInventoryProducts = queryResult.data;
+        let thresholdInfo = `${lowInventoryProducts.length} products with low inventory:\n`;
+        
+        lowInventoryProducts.forEach((product: any, index: number) => {
+          const productCode = product.product_code || 'Unknown';
+          const totalInventory = product.total_inventory || 0;
+          thresholdInfo += `- ${productCode}: ${totalInventory} units\n`;
+        });
+        
+        return `Based on your query "${question}", ${thresholdInfo}Query executed successfully in ${executionTime}ms.`;
+      } else {
+        return `Based on your query "${question}", no products found below the specified inventory threshold. Query executed in ${executionTime}ms.`;
       }
       
     case 'weight':

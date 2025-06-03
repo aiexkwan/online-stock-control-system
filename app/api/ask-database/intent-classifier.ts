@@ -2,7 +2,7 @@
 // 完全取代 OpenAI SQL 生成
 
 export interface QueryIntent {
-  type: 'count' | 'stats' | 'location' | 'weight' | 'product' | 'transfer' | 'latest' | 'unknown' | 'inventory_ranking';
+  type: 'count' | 'stats' | 'location' | 'weight' | 'product' | 'transfer' | 'latest' | 'unknown' | 'inventory_ranking' | 'inventory_threshold';
   timeframe: 'today' | 'yesterday' | 'day_before_yesterday' | 'week' | 'month' | 'all';
   filters: {
     includeGrn?: boolean;
@@ -161,7 +161,7 @@ function identifyQueryTypeAndMapRpc(
     return mapTransferQuery(timeframe);
   }
   
-  // 2. 庫存排名查詢 (新增)
+  // 2. 庫存排名查詢
   if ((lowerQ.includes('top') && lowerQ.includes('inventory')) || 
       (lowerQ.includes('highest') && lowerQ.includes('inventory')) ||
       (lowerQ.includes('top') && lowerQ.includes('products')) ||
@@ -173,42 +173,52 @@ function identifyQueryTypeAndMapRpc(
     return mapInventoryRankingQuery(lowerQ);
   }
   
-  // 3. 計數查詢 (最常見)
+  // 3. 庫存閾值查詢 (新增)
+  if ((lowerQ.includes('inventory') || lowerQ.includes('stock') || lowerQ.includes('庫存')) &&
+      (lowerQ.includes('below') || lowerQ.includes('under') || lowerQ.includes('less than') ||
+       lowerQ.includes('lower than') || lowerQ.includes('< ') || lowerQ.includes('<=') ||
+       lowerQ.includes('低於') || lowerQ.includes('少於') || lowerQ.includes('不足') ||
+       lowerQ.includes('小於'))) {
+    
+    return mapInventoryThresholdQuery(lowerQ);
+  }
+  
+  // 4. 計數查詢 (最常見)
   if (lowerQ.includes('多少') || lowerQ.includes('how many') || lowerQ.includes('count') || 
       lowerQ.includes('數量') || lowerQ.includes('幾多') || lowerQ.includes('幾個')) {
     
     return mapCountQuery(timeframe, grnFilters, productCode, location);
   }
   
-  // 4. 重量查詢
+  // 5. 重量查詢
   if (lowerQ.includes('重量') || lowerQ.includes('weight') || lowerQ.includes('淨重') || 
       lowerQ.includes('毛重') || lowerQ.includes('net') || lowerQ.includes('gross')) {
     
     return mapWeightQuery(timeframe, grnFilters);
   }
   
-  // 5. 產品統計查詢
+  // 6. 產品統計查詢
   if ((lowerQ.includes('統計') || lowerQ.includes('stats') || lowerQ.includes('總計') || 
        lowerQ.includes('total')) && productCode) {
     
     return mapProductStatsQuery(timeframe, productCode, grnFilters);
   }
   
-  // 6. 位置查詢
+  // 7. 位置查詢
   if (lowerQ.includes('位置') || lowerQ.includes('location') || lowerQ.includes('在哪') || 
       lowerQ.includes('where') || location) {
     
     return mapLocationQuery(location);
   }
   
-  // 7. 最新托盤查詢
+  // 8. 最新托盤查詢
   if (lowerQ.includes('最新') || lowerQ.includes('latest') || lowerQ.includes('最近') || 
       lowerQ.includes('recent') || lowerQ.includes('新') || lowerQ.includes('last')) {
     
     return mapLatestQuery(timeframe, productCode);
   }
   
-  // 8. 默認回退到計數查詢
+  // 9. 默認回退到計數查詢
   console.log('[Intent Classifier] No specific type detected, defaulting to count query');
   return mapCountQuery(timeframe, grnFilters, productCode, location);
 }
@@ -595,6 +605,53 @@ function mapInventoryRankingQuery(question?: string): QueryIntent {
   };
 }
 
+// 庫存閾值查詢映射
+function mapInventoryThresholdQuery(question?: string): QueryIntent {
+  // 從問題中提取閾值
+  let threshold = 100; // 默認閾值
+  
+  if (question) {
+    // 匹配各種閾值表達方式
+    const thresholdPatterns = [
+      /below\s+(\d+)/i,          // "below 100"
+      /under\s+(\d+)/i,          // "under 50"
+      /less\s+than\s+(\d+)/i,    // "less than 100"
+      /lower\s+than\s+(\d+)/i,   // "lower than 50"
+      /inventory\s+<\s*(\d+)/i,  // "inventory < 100"
+      /inventory\s+<=\s*(\d+)/i, // "inventory <= 100"
+      /低於\s*(\d+)/,            // "低於100"
+      /少於\s*(\d+)/,            // "少於50"
+      /不足\s*(\d+)/,            // "不足100"
+      /小於\s*(\d+)/,            // "小於100"
+      /(\d+)\s*以下/,            // "100以下"
+      /(\d+)\s*以內/             // "100以內"
+    ];
+    
+    for (const pattern of thresholdPatterns) {
+      const match = question.match(pattern);
+      if (match && match[1]) {
+        const extractedThreshold = parseInt(match[1], 10);
+        if (extractedThreshold > 0) {
+          threshold = extractedThreshold;
+          break;
+        }
+      }
+    }
+  }
+  
+  return {
+    type: 'inventory_threshold',
+    timeframe: 'all',
+    rpcFunction: 'get_products_below_inventory_threshold',
+    confidence: 0.9,
+    description: `Products with inventory below ${threshold}`,
+    filters: {
+      limit: threshold
+    },
+    parameters: [threshold]
+  };
+}
+
 // 轉移查詢映射
 function mapTransferQuery(timeframe: QueryIntent['timeframe']): QueryIntent {
   
@@ -713,6 +770,16 @@ export async function executeRpcQuery(intent: QueryIntent, supabase: any): Promi
         } else {
           // 如果沒有參數，使用默認值
           ({ data, error } = await supabase.rpc(intent.rpcFunction, { limit_count: 5 }));
+        }
+        break;
+
+      case 'get_products_below_inventory_threshold':
+        if (intent.parameters.length > 0) {
+          const thresholdValue = intent.parameters[0];
+          ({ data, error } = await supabase.rpc(intent.rpcFunction, { threshold_value: thresholdValue }));
+        } else {
+          // 如果沒有參數，使用默認值
+          ({ data, error } = await supabase.rpc(intent.rpcFunction, { threshold_value: 100 }));
         }
         break;
 
