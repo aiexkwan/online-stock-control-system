@@ -53,6 +53,7 @@ import AskDatabaseDialog from '@/app/components/admin-panel-menu/AskDatabaseDial
 import { ReprintInfoDialog } from '@/app/void-pallet/components/ReprintInfoDialog';
 import { useVoidPallet } from '@/app/void-pallet/hooks/useVoidPallet';
 import { useAskDatabasePermission } from '@/app/hooks/useAuth';
+import AskDatabaseInlineCard from '@/app/components/AskDatabaseInlineCard';
 
 const adminMenuItems = [
   {
@@ -1183,90 +1184,17 @@ export default function AdminPanelPage() {
                       <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-purple-400/50 to-transparent opacity-100 rounded-t-3xl"></div>
                       
                       <div className="relative z-10">
-                        <div className="flex items-center justify-between mb-6">
-                          <div className="flex items-center gap-4">
-                            <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-indigo-500 rounded-2xl flex items-center justify-center shadow-lg shadow-purple-500/25">
-                              <ChatBubbleLeftRightIcon className="h-6 w-6 text-white" />
-                            </div>
-                            <div>
-                              <h2 className="text-3xl font-bold bg-gradient-to-r from-purple-300 via-indigo-300 to-cyan-300 bg-clip-text text-transparent">Ask Database</h2>
-                              <p className="text-purple-200 mt-1">Query database information with natural language</p>
-                            </div>
+                        <div className="flex items-center gap-4 mb-6">
+                          <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-indigo-500 rounded-2xl flex items-center justify-center shadow-lg shadow-purple-500/25">
+                            <ChatBubbleLeftRightIcon className="h-6 w-6 text-white" />
                           </div>
-                          <button
-                            onClick={() => setShowAskDatabaseDialog(true)}
-                            className="bg-purple-500/20 border border-purple-400/30 text-purple-200 px-4 py-2 rounded-xl text-sm font-medium cursor-pointer hover:bg-purple-500/30 transition-colors"
-                          >
-                            立即體驗
-                          </button>
+                          <div>
+                            <h2 className="text-2xl font-bold bg-gradient-to-r from-purple-300 via-indigo-300 to-cyan-300 bg-clip-text text-transparent">Ask Me Anything</h2>
+                            <p className="text-purple-200 text-sm">What can I help you today?</p>
+                          </div>
                         </div>
                         
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                          {/* Left side - Description */}
-                          <div className="space-y-6">
-                            <p className="text-slate-300 leading-relaxed text-lg">
-                              Allow you to communicate with database using natural language 
-                              or structured queries, making data exploration more intuitive and efficient.
-                            </p>
-                            
-                            <div className="bg-slate-800/50 rounded-2xl p-6 border border-slate-600/30">
-                              <h4 className="text-xl font-semibold text-purple-400 mb-4 flex items-center gap-3">
-                                <span className="w-3 h-3 bg-purple-400 rounded-full animate-pulse"></span>
-                                Available Features
-                              </h4>
-                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm text-slate-300">
-                                <div className="flex items-center gap-3 p-3 bg-slate-700/30 rounded-xl">
-                                  <span className="w-2 h-2 bg-green-400 rounded-full"></span>
-                                  Natural language queries
-                                </div>
-                                <div className="flex items-center gap-3 p-3 bg-slate-700/30 rounded-xl">
-                                  <span className="w-2 h-2 bg-blue-400 rounded-full"></span>
-                                  Real-time data exploration
-                                </div>
-                                <div className="flex items-center gap-3 p-3 bg-slate-700/30 rounded-xl">
-                                  <span className="w-2 h-2 bg-orange-400 rounded-full"></span>
-                                  Smart SQL generation
-                                </div>
-                                <div className="flex items-center gap-3 p-3 bg-slate-700/30 rounded-xl">
-                                  <span className="w-2 h-2 bg-purple-400 rounded-full"></span>
-                                  Intelligent caching
-                                </div>
-                                <div className="flex items-center gap-3 p-3 bg-slate-700/30 rounded-xl">
-                                  <span className="w-2 h-2 bg-cyan-400 rounded-full"></span>
-                                  Query result display
-                                </div>
-                                <div className="flex items-center gap-3 p-3 bg-slate-700/30 rounded-xl">
-                                  <span className="w-2 h-2 bg-pink-400 rounded-full"></span>
-                                  Conversation history
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* Right side - Preview/Demo */}
-                          <div className="space-y-6">
-                            <div className="bg-slate-800/50 rounded-2xl p-6 border border-slate-600/30">
-                              <h4 className="text-xl font-semibold text-slate-200 mb-4">Query Examples</h4>
-                              <div className="space-y-4">
-                                <div className="bg-slate-900/50 rounded-xl p-4 border-l-4 border-purple-500">
-                                  <p className="text-sm text-slate-300 italic">
-                                    "今天生成了多少個托盤？"
-                                  </p>
-                                </div>
-                                <div className="bg-slate-900/50 rounded-xl p-4 border-l-4 border-blue-500">
-                                  <p className="text-sm text-slate-300 italic">
-                                    "顯示庫存最多的前5個產品"
-                                  </p>
-                                </div>
-                                <div className="bg-slate-900/50 rounded-xl p-4 border-l-4 border-green-500">
-                                  <p className="text-sm text-slate-300 italic">
-                                    "本週的轉移記錄有哪些？"
-                                  </p>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
+                        <AskDatabaseInlineCard />
                       </div>
                     </div>
                   </div>

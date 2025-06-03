@@ -4,7 +4,10 @@ import { NextResponse, type NextRequest } from 'next/server';
 
 // 認證中間件 - 處理用戶會話和路由保護
 export async function middleware(request: NextRequest) {
-  console.log(`[Supabase SSR Middleware] Path: ${request.nextUrl.pathname}`);
+  // 只在開發環境記錄路徑，生產環境減少日誌
+  if (process.env.NODE_ENV === 'development') {
+    console.log(`[Supabase SSR Middleware] Path: ${request.nextUrl.pathname}`);
+  }
   
   // 讓根路由由 app/page.tsx 處理重定向
   
@@ -34,9 +37,15 @@ export async function middleware(request: NextRequest) {
   const isPublicRoute = publicRoutes.some(route => request.nextUrl.pathname.startsWith(route));
   
   if (isPublicRoute) {
-    console.log(`[Supabase SSR Middleware] Public route: ${request.nextUrl.pathname}, skipping auth check.`);
+    // 只在開發環境記錄公開路由
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`[Supabase SSR Middleware] Public route: ${request.nextUrl.pathname}, skipping auth check.`);
+    }
     return response; // 直接放行公開路由
   }
+  
+  // 用於追蹤是否已經記錄過 cookie 檢查
+  let cookieLoggedForThisRequest = false;
   
   // 創建 Supabase client
   const supabase = createServerClient(
@@ -46,11 +55,21 @@ export async function middleware(request: NextRequest) {
       cookies: {
         get(name: string) {
           const cookie = request.cookies.get(name);
-          console.log(`[Supabase SSR Middleware] Getting cookie: ${name}, value: ${cookie?.value}`);
+          // 只在開發環境且第一次檢查主要認證 cookie 時記錄
+          if (process.env.NODE_ENV === 'development' && 
+              name.includes('auth-token') && 
+              !name.match(/\.\d+$/) && 
+              !cookieLoggedForThisRequest) {
+            console.log(`[Supabase SSR Middleware] Checking auth cookie for: ${request.nextUrl.pathname}`);
+            cookieLoggedForThisRequest = true;
+          }
           return cookie?.value;
         },
         set(name: string, value: string, options: CookieOptions) {
-          console.log(`[Supabase SSR Middleware] Setting cookie: ${name}, value: ${value}`);
+          // 只記錄重要的 cookie 設置操作
+          if (name.includes('auth-token') && !name.match(/\.\d+$/)) {
+            console.log(`[Supabase SSR Middleware] Setting auth cookie: ${name}`);
+          }
           
           // 設置 request cookie
           request.cookies.set({
@@ -144,7 +163,8 @@ export async function middleware(request: NextRequest) {
         '/stock-transfer',
         //'/print-label',
         '/print-grnlabel',
-        '/debug-test'
+        '/debug-test',
+        '/admin'  // 添加 admin 路由
       ];
       
       // 檢查當前路徑是否需要認證
@@ -161,10 +181,18 @@ export async function middleware(request: NextRequest) {
         return NextResponse.redirect(redirectUrl);
       }
     } else {
-      // 用戶已認證
-      console.log(`[Supabase SSR Middleware] User authenticated: ${user.id}`);
+      // 用戶已認證 - 只在首次訪問或重要頁面時記錄
+      const shouldLogAuth = process.env.NODE_ENV === 'development' && 
+                           (request.nextUrl.pathname === '/admin' || 
+                            request.nextUrl.pathname === '/access' ||
+                            !request.headers.get('referer')); // 首次訪問（沒有 referer）
+      
+      if (shouldLogAuth) {
+        console.log(`[Supabase SSR Middleware] User authenticated: ${user.id} for ${request.nextUrl.pathname}`);
+      }
       // 將用戶 ID 添加到回應 header，方便客戶端同步
       response.headers.set('X-User-ID', user.id);
+      response.headers.set('X-User-Logged', 'true');
     }
 
     return response;

@@ -25,6 +25,12 @@
 | debug_log         | ts               | timestamp with time zone | YES         | now()             | null                     |
 | debug_log         | msg              | text                     | YES         | null              | null                     |
 | debug_log         | UUID             | uuid                     | NO          | gen_random_uuid() | null                     |
+| query_record      | uuid             | uuid                     | NO          | gen_random_uuid() | null                     |
+| query_record      | created_at       | timestamp with time zone | NO          | now()             | null                     |
+| query_record      | query            | text                     | YES         | null              | null                     |
+| query_record      | answer           | text                     | YES         | null              | null                     |
+| query_record      | user             | text                     | YES         | null              | null                     |
+| query_record      | token            | bigint                   | YES         | null              | null                     |
 | record_aco        | uuid             | uuid                     | NO          | gen_random_uuid() | null                     |
 | record_aco        | order_ref        | integer                  | NO          | null              | null                     |
 | record_aco        | code             | text                     | NO          | null              | null                     |
@@ -100,3 +106,11 @@
 | report_log        | uuid             | uuid                     | NO          | gen_random_uuid() | null                     |
 | report_log        | error            | text                     | NO          | null              | null                     |
 | report_log        | error_info       | text                     | NO          | null              | null                     |
+| report_log        | state            | boolean                  | NO          | false             | null                     |
+| report_log        | user_id          | integer                  | NO          | null              | null                     |
+| report_log        | time             | timestamp with time zone | NO          | now()             | null                     |
+| report_void       | uuid             | uuid                     | NO          | gen_random_uuid() | null                     |
+| report_void       | time             | timestamp with time zone | NO          | now()             | null                     |
+| report_void       | plt_num          | text                     | NO          | null              | null                     |
+| report_void       | reason           | text                     | NO          | null              | null                     |
+| report_void       | damage_qty       | integer                  | NO          | null              | null                     |
