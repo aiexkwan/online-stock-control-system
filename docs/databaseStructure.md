@@ -31,8 +31,6 @@
 | query_record      | answer           | text                     | YES         | null              | null                     |
 | query_record      | user             | text                     | YES         | null              | null                     |
 | query_record      | token            | bigint                   | YES         | null              | null                     |
-| query_record      | sql              | text                     | YES         | null              | null                     |
-| query_record      | target           | text                     | YES         | null              | null                     |
 | record_aco        | uuid             | uuid                     | NO          | gen_random_uuid() | null                     |
 | record_aco        | order_ref        | integer                  | NO          | null              | null                     |
 | record_aco        | code             | text                     | NO          | null              | null                     |
@@ -56,6 +54,7 @@
 | record_grn        | package          | text                     | NO          | null              | null                     |
 | record_grn        | pallet_count     | numeric                  | NO          | 0.0               | null                     |
 | record_grn        | package_count    | numeric                  | NO          | 0.0               | null                     |
+| record_grn        | creat_time       | timestamp with time zone | YES         | now()             | null                     |
 | record_history    | time             | timestamp with time zone | NO          | now()             | null                     |
 | record_history    | id               | integer                  | YES         | null              | null                     |
 | record_history    | action           | text                     | NO          | null              | null                     |

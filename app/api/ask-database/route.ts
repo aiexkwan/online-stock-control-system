@@ -1,18 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import OpenAI from 'openai';
 import { createClient } from '@/app/utils/supabase/server';
 import { LRUCache } from 'lru-cache';
 import { classifyUserIntent, executeRpcQuery, QueryIntent } from './intent-classifier';
-
-// 初始化 OpenAI 客戶端 (僅用於自然語言回應生成)
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
-
-// 檢查 API 密鑰是否存在
-if (!process.env.OPENAI_API_KEY) {
-  console.error('[Ask Database] OPENAI_API_KEY environment variable is not set');
-}
+import { generateAnswer } from './answer-generator';
 
 // 允許使用 Ask Database 功能的用戶
 const ALLOWED_USERS = [
@@ -48,14 +38,14 @@ interface ConversationEntry {
   intent: QueryIntent;
 }
 
-// 🚀 RPC 優化模式啟用 - 完全取代 OpenAI SQL 生成
-console.log('[Ask Database] 🚀 RPC OPTIMIZATION MODE ENABLED - Build 2025-01-02-RPC');
-console.log('[Ask Database] ✅ OpenAI SQL generation DISABLED - Using RPC functions only');
-console.log('[Ask Database] ✅ OpenAI used for natural language response generation only');
+// 🚀 完全本地化模式啟用 - 零外部API依賴
+console.log('[Ask Database] 🚀 FULL LOCAL MODE ENABLED - Build 2025-01-03-ZERO-API');
+console.log('[Ask Database] ✅ Zero external API dependencies - Fully local processing');
+console.log('[Ask Database] ✅ Local English answer generator with British style');
 queryCache.clear();
 conversationCache.clear();
 userNameCache.clear();
-console.log('[Ask Database] All caches cleared - RPC optimization applied');
+console.log('[Ask Database] All caches cleared - Full local optimization applied');
 
 export async function POST(request: NextRequest) {
   const startTime = Date.now();
@@ -97,7 +87,7 @@ export async function POST(request: NextRequest) {
       console.log('[Ask Database] 🎯 Cache hit - returning cached result');
       
       // 異步保存聊天記錄（不等待完成）
-      saveQueryRecordAsync(question, cachedResult.answer, userName, cachedResult.tokenUsage);
+      saveQueryRecordAsync(question, cachedResult.answer, userName, 0);
       
       return NextResponse.json({
         ...cachedResult,
@@ -126,15 +116,10 @@ export async function POST(request: NextRequest) {
       executionTime: queryResult.executionTime
     });
 
-    // 5. 生成自然語言回應 (保留 OpenAI，但更快)
-    console.log('[Ask Database] 📝 Generating natural language response...');
-    const { response, tokenUsage } = await generateNaturalLanguageResponseForRpc(
-      question,
-      queryResult,
-      intent,
-      conversationHistory
-    );
-    console.log('[Ask Database] Response generated');
+    // 5. 生成自然語言回應 (使用本地英式回答生成器)
+    console.log('[Ask Database] 📝 Generating English response with local generator...');
+    const response = generateAnswer(intent, queryResult, question);
+    console.log('[Ask Database] English response generated locally');
 
     const result = {
       question,
@@ -150,8 +135,8 @@ export async function POST(request: NextRequest) {
       cached: false,
       timestamp: new Date().toISOString(),
       responseTime: Date.now() - startTime,
-      mode: 'RPC_OPTIMIZED', // 標識使用 RPC 模式
-      tokenUsage: tokenUsage
+      mode: 'FULL_LOCAL_ZERO_API', // 標識使用完全本地化零API依賴模式
+      tokenUsage: 0 // 不再使用OpenAI，所以token為0
     };
 
     // 6. 並行執行緩存保存、會話歷史保存和聊天記錄保存
@@ -169,7 +154,7 @@ export async function POST(request: NextRequest) {
         intent: intent
       })),
       // 保存聊天記錄到數據庫
-      saveQueryRecordAsync(question, response, userName, tokenUsage)
+      saveQueryRecordAsync(question, response, userName, 0) // 0 tokens used
     ];
 
     // 不等待保存操作完成，直接返回結果以提高響應速度
@@ -194,7 +179,7 @@ export async function POST(request: NextRequest) {
     
     if (error.message?.includes('RPC function')) {
       errorMessage = 'Database query failed, please try to rephrase your question';
-    } else if (error.message?.includes('OpenAI')) {
+    } else if (error.message?.includes('answer generation')) {
       errorMessage = 'Response generation failed, but query was successful';
     } else if (error.message?.includes('permission') || error.message?.includes('auth')) {
       errorMessage = 'Permission verification failed, please log in again';
@@ -207,7 +192,7 @@ export async function POST(request: NextRequest) {
         error: errorMessage,
         details: process.env.NODE_ENV === 'development' ? error.message : undefined,
         responseTime: Date.now() - startTime,
-        mode: 'RPC_OPTIMIZED'
+        mode: 'FULL_LOCAL_ZERO_API'
       },
       { status: 500 }
     );
@@ -331,368 +316,6 @@ async function checkUserPermission(): Promise<boolean> {
   }
 }
 
-// 🚀 新的自然語言回應生成函數 (針對 RPC 結果優化)
-async function generateNaturalLanguageResponseForRpc(
-  question: string,
-  queryResult: any,
-  intent: QueryIntent,
-  conversationHistory: ConversationEntry[]
-): Promise<{ response: string; tokenUsage: number }> {
-  try {
-    console.log('[generateNaturalLanguageResponseForRpc] Building optimized prompt...');
-    const prompt = buildRpcResponsePrompt(question, queryResult, intent, conversationHistory);
-    
-    console.log('[generateNaturalLanguageResponseForRpc] Calling OpenAI API...');
-    const response = await openai.chat.completions.create({
-      model: 'gpt-4o',
-      messages: [{ role: 'user', content: prompt }],
-      temperature: 0.3,
-      max_tokens: 800, // 減少 token 使用
-    });
-
-    if (!response.choices || response.choices.length === 0) {
-      console.warn('[generateNaturalLanguageResponseForRpc] No response from OpenAI, using fallback');
-      return {
-        response: generateFallbackResponseForRpc(question, queryResult, intent),
-        tokenUsage: 0
-      };
-    }
-
-    const responseContent = response.choices[0].message.content;
-    if (!responseContent || responseContent.trim().length === 0) {
-      console.warn('[generateNaturalLanguageResponseForRpc] Empty response from OpenAI, using fallback');
-      return {
-        response: generateFallbackResponseForRpc(question, queryResult, intent),
-        tokenUsage: 0
-      };
-    }
-
-    // 獲取 token 使用量
-    const tokenUsage = response.usage?.total_tokens || 0;
-    console.log('[generateNaturalLanguageResponseForRpc] Response generated successfully, tokens used:', tokenUsage);
-    
-    return {
-      response: responseContent,
-      tokenUsage: tokenUsage
-    };
-    
-  } catch (error: any) {
-    console.error('[generateNaturalLanguageResponseForRpc] Error:', error);
-    console.log('[generateNaturalLanguageResponseForRpc] Using fallback response');
-    return {
-      response: generateFallbackResponseForRpc(question, queryResult, intent),
-      tokenUsage: 0
-    };
-  }
-}
-
-// 構建 RPC 結果的回應提示
-function buildRpcResponsePrompt(
-  question: string,
-  queryResult: any,
-  intent: QueryIntent,
-  conversationHistory: ConversationEntry[]
-): string {
-  // 準備對話歷史上下文
-  const contextHistory = conversationHistory.slice(-2).map((entry, index) => `
-${index + 1}. Question: ${entry.question}
-   RPC Function: ${entry.rpcFunction}
-   Answer: ${entry.answer}
-`).join('');
-
-  // 處理不同類型的查詢結果
-  let resultDisplay = '';
-  let totalRecords = 0;
-  let isMultipleResults = false;
-  
-  if (typeof queryResult.data === 'number') {
-    // 簡單數值返回 (如計數函數)
-    resultDisplay = queryResult.data.toString();
-    totalRecords = 1;
-  } else if (Array.isArray(queryResult.data)) {
-    // 數組返回 (如表格函數)
-    resultDisplay = JSON.stringify(queryResult.data.slice(0, 10) || [], null, 2);
-    totalRecords = queryResult.data.length;
-    isMultipleResults = queryResult.data.length > 1;
-  } else if (typeof queryResult.data === 'object' && queryResult.data !== null) {
-    // 對象返回
-    if (intent.rpcFunction === 'get_qc_history_by_user') {
-      // 特別處理 QC 歷史查詢
-      resultDisplay = `QC History Summary:
-- Total QC Operations: ${queryResult.data.total_pallets}
-- Unique Pallets: ${queryResult.data.unique_pallets}
-- User ID: ${queryResult.data.user_id}
-- Timeframe: ${queryResult.data.timeframe}
-- Records Count: ${queryResult.data.records?.length || 0}`;
-    } else {
-      resultDisplay = JSON.stringify(queryResult.data, null, 2);
-    }
-    totalRecords = 1;
-  } else {
-    resultDisplay = 'No data returned';
-    totalRecords = 0;
-  }
-
-  // 生成日期範圍信息
-  const dateRangeInfo = generateDateRangeInfo(intent.timeframe);
-
-  // 檢測查詢類型以決定格式
-  const isListQuery = intent.type === 'inventory_ranking' || 
-                     intent.type === 'inventory_threshold' || 
-                     intent.type === 'latest' ||
-                     (isMultipleResults && totalRecords > 2);
-
-  const formatInstructions = isListQuery ? 
-    `IMPORTANT: When returning multiple items (like lists, rankings, or thresholds), use LINE-BY-LINE format for better readability:
-
-GOOD FORMAT EXAMPLES:
-For ranking queries: "According to records, top 5 products by inventory:
-- 1. Z01ATM1: 6,626 units
-- 2. MEP9090150: 1,234 units  
-- 3. MT4545: 890 units
-- 4. ABC123: 567 units
-- 5. XYZ789: 432 units"
-
-For threshold queries: "According to records, 3 products have inventory below 100:
-- MHCOL2: 1 unit
-- ABC123: 45 units
-- XYZ789: 67 units"
-
-For transfer/history queries: "According to records, today's transfers:
-- Pallet A123: Production → Awaiting
-- Pallet B456: Awaiting → Fold Mill
-- Pallet C789: Fold Mill → Bulk Room"
-
-For QC history queries: "According to records, 11 QC operations were performed by user 5997 this week on 10 unique pallets."
-
-BAD FORMAT (avoid): "Top 5 products: 1. Z01ATM1: 6,626 units, 2. MEP9090150: 1,234 units, 3. MT4545: 890 units, 4. ABC123: 567 units, 5. XYZ789: 432 units according to records."` :
-    `Keep the response concise and in single line format when appropriate.`;
-
-  return `You are a concise database assistant. Provide brief, direct answers without unnecessary explanations.
-
-IMPORTANT RESPONSE GUIDELINES:
-1. Be concise and direct - avoid lengthy explanations
-2. Don't mention "NewPennine pallet management system" - user already knows they're in the system
-3. Don't explain system operations, efficiency, or supply chain concepts
-4. Don't add motivational phrases like "feel free to ask" or "crucial for tracking"
-5. Focus only on answering the specific question asked
-6. Use simple language: "according to records" instead of "according to the NewPennine pallet management system"
-7. For time-range queries (week/month/yesterday), include the specific date range in parentheses
-
-${formatInstructions}
-
-User Question: "${question}"
-
-RPC Function Used: ${intent.rpcFunction}
-Query Type: ${intent.type}
-Query Result: ${resultDisplay}
-Total Records: ${totalRecords}
-Execution Time: ${queryResult.executionTime}ms
-Time Range Info: ${dateRangeInfo}
-
-Previous Conversation Context:${contextHistory}
-
-Provide a brief, direct answer that:
-- States the result clearly
-- For time-range queries, includes the date range like "This week(01/06/2025 - 07/06/2025)"
-- Uses line-by-line format for multiple results (rankings, lists, thresholds)
-- Uses single-line format for simple counts or single results
-- Includes relevant details only if they help answer the question
-- Avoids system descriptions and operational explanations
-- Uses concise language
-
-Answer:`;
-}
-
-// 生成日期範圍信息的輔助函數
-function generateDateRangeInfo(timeframe: QueryIntent['timeframe']): string {
-  const now = new Date();
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  
-  switch (timeframe) {
-    case 'yesterday': {
-      const yesterday = new Date(today);
-      yesterday.setDate(today.getDate() - 1);
-      return `Yesterday: ${formatDate(yesterday)}`;
-    }
-    
-    case 'week': {
-      // 計算本週的開始日期（週一）
-      const dayOfWeek = today.getDay();
-      const daysToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // 週日是0，週一是1
-      const weekStart = new Date(today);
-      weekStart.setDate(today.getDate() - daysToMonday);
-      
-      const weekEnd = new Date(weekStart);
-      weekEnd.setDate(weekStart.getDate() + 6);
-      
-      return `This week: ${formatDate(weekStart)} - ${formatDate(weekEnd)}`;
-    }
-    
-    case 'month': {
-      const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
-      const monthEnd = new Date(today.getFullYear(), today.getMonth() + 1, 0);
-      
-      return `This month: ${formatDate(monthStart)} - ${formatDate(monthEnd)} (${getMonthName(today.getMonth())} ${today.getFullYear()})`;
-    }
-    
-    case 'day_before_yesterday': {
-      const dayBefore = new Date(today);
-      dayBefore.setDate(today.getDate() - 2);
-      return `Day before yesterday: ${formatDate(dayBefore)}`;
-    }
-    
-    case 'today':
-    default:
-      return `Today: ${formatDate(today)}`;
-  }
-}
-
-// 格式化日期的輔助函數
-function formatDate(date: Date): string {
-  const day = String(date.getDate()).padStart(2, '0');
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const year = date.getFullYear();
-  return `${day}/${month}/${year}`;
-}
-
-// 獲取月份名稱的輔助函數
-function getMonthName(monthIndex: number): string {
-  const months = [
-    'January', 'February', 'March', 'April', 'May', 'June',
-    'July', 'August', 'September', 'October', 'November', 'December'
-  ];
-  return months[monthIndex];
-}
-
-// RPC 結果的備用回應生成函數
-function generateFallbackResponseForRpc(question: string, queryResult: any, intent: QueryIntent): string {
-  const dataCount = Array.isArray(queryResult.data) ? queryResult.data.length : 1;
-  const executionTime = queryResult.executionTime || 0;
-  
-  // 處理不同類型的查詢結果
-  if (typeof queryResult.data === 'number') {
-    // 簡單數值回應 (計數查詢)
-    return `${queryResult.data} according to records.`;
-  }
-  
-  if (Array.isArray(queryResult.data)) {
-    const data = queryResult.data;
-    
-    // 庫存閾值查詢 - 使用多行格式
-    if (intent.type === 'inventory_threshold') {
-      if (data.length === 0) {
-        const threshold = intent.parameters?.[0] || 100;
-        return `No products have inventory below ${threshold} according to records.`;
-      }
-      
-      if (data.length === 1) {
-        const product = data[0];
-        return `1 product has inventory below ${intent.parameters?.[0] || 100}: ${product.product_code} (${product.total_inventory} units) according to records.`;
-      }
-      
-      // 多個產品 - 使用多行格式
-      const threshold = intent.parameters?.[0] || 100;
-      const productList = data.slice(0, 10).map((product: any, index: number) => 
-        `- ${product.product_code}: ${product.total_inventory} units`
-      ).join('\n');
-      
-      return `According to records, ${data.length} products have inventory below ${threshold}:\n${productList}`;
-    }
-    
-    // 庫存排名查詢 - 使用多行格式
-    if (intent.type === 'inventory_ranking') {
-      if (data.length === 0) {
-        return `No inventory data available according to records.`;
-      }
-      
-      if (data.length === 1) {
-        const product = data[0];
-        return `Top product by inventory: ${product.product_code} (${product.total_inventory} units) according to records.`;
-      }
-      
-      // 多個產品 - 使用多行格式  
-      const limit = intent.parameters?.[0] || 5;
-      const productList = data.slice(0, limit).map((product: any, index: number) => 
-        `- ${index + 1}. ${product.product_code}: ${product.total_inventory} units`
-      ).join('\n');
-      
-      return `According to records, top ${Math.min(data.length, limit)} products by inventory:\n${productList}`;
-    }
-    
-    // 最新托盤查詢 - 使用多行格式
-    if (intent.type === 'latest') {
-      if (data.length === 0) {
-        return `No recent pallets found according to records.`;
-      }
-      
-      if (data.length === 1) {
-        const pallet = data[0];
-        return `Latest pallet: ${pallet.plt_num} (${pallet.product_code}) according to records.`;
-      }
-      
-      // 多個托盤 - 使用多行格式
-      const palletList = data.slice(0, 10).map((pallet: any, index: number) => 
-        `- ${pallet.plt_num}: ${pallet.product_code} (${new Date(pallet.latest_update).toLocaleDateString()})`
-      ).join('\n');
-      
-      return `According to records, latest pallets:\n${palletList}`;
-    }
-    
-    // 轉移查詢 - 使用多行格式  
-    if (intent.type === 'transfer' && data.length > 2) {
-      const transferList = data.slice(0, 10).map((transfer: any, index: number) => 
-        `- ${transfer.plt_num || transfer.pallet_id}: ${transfer.from_location || transfer.source} → ${transfer.to_location || transfer.destination}`
-      ).join('\n');
-      
-      return `According to records, recent transfers:\n${transferList}`;
-    }
-    
-    // 其他多項結果 - 檢查是否需要多行格式
-    if (data.length > 3 && data[0].product_code) {
-      const productList = data.slice(0, 10).map((item: any, index: number) => 
-        `- ${item.product_code}: ${item.total_inventory || item.count || item.quantity || 'N/A'} units`
-      ).join('\n');
-      
-      return `According to records, query results:\n${productList}`;
-    }
-    
-    // 默認格式（少於3項或無明確結構）
-    if (data.length === 1) {
-      return `1 result found according to records.`;
-    }
-    
-    return `${data.length} results found according to records.`;
-  }
-  
-  // 對象類型的單一結果
-  if (typeof queryResult.data === 'object' && queryResult.data !== null) {
-    // 檢查是否為 QC 歷史查詢結果
-    if (intent.rpcFunction === 'get_qc_history_by_user' && 
-        queryResult.data.total_pallets !== undefined) {
-      const qcData = queryResult.data;
-      const totalOperations = qcData.total_pallets;
-      const uniquePallets = qcData.unique_pallets;
-      const userId = qcData.user_id;
-      
-      if (totalOperations === 0) {
-        return `No QC operations found for user ${userId} according to records.`;
-      }
-      
-      if (totalOperations === 1) {
-        return `1 QC operation performed by user ${userId} according to records.`;
-      }
-      
-      return `${totalOperations} QC operations performed by user ${userId} on ${uniquePallets} unique pallets according to records.`;
-    }
-    
-    return `Query completed successfully according to records.`;
-  }
-  
-  // 默認回應
-  return `Query completed in ${executionTime}ms according to records.`;
-}
-
 // 生成緩存鍵
 function generateCacheKey(question: string, conversationHistory?: ConversationEntry[]): string {
   // 將會話歷史的關鍵信息納入緩存鍵
@@ -735,9 +358,9 @@ export async function GET(request: NextRequest) {
     
     // 檢查環境變數
     const envCheck = {
-      openaiApiKey: !!process.env.OPENAI_API_KEY,
       supabaseUrl: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
       supabaseAnonKey: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+      localMode: true // 完全本地模式
     };
     
     // 檢查用戶認證
@@ -773,23 +396,6 @@ export async function GET(request: NextRequest) {
       };
     } catch (dbError) {
       console.log('[Ask Database Status] DB check failed:', dbError);
-    }
-    
-    // 檢查 OpenAI 連接（簡單測試）
-    let openaiCheck = { configured: false, accessible: false };
-    if (process.env.OPENAI_API_KEY) {
-      openaiCheck.configured = true;
-      try {
-        // 簡單的 API 測試
-        const testResponse = await openai.chat.completions.create({
-          model: 'gpt-4o',
-          messages: [{ role: 'user', content: 'Hello' }],
-          max_tokens: 5,
-        });
-        openaiCheck.accessible = !!testResponse.choices?.[0]?.message?.content;
-      } catch (openaiError) {
-        console.log('[Ask Database Status] OpenAI check failed:', openaiError);
-      }
     }
     
     let dataAnalysis = null;
@@ -847,12 +453,16 @@ export async function GET(request: NextRequest) {
     
     const status = {
       timestamp: new Date().toISOString(),
-      mode: 'RPC_OPTIMIZED',
-      version: '2025-01-02-RPC',
+      mode: 'FULL_LOCAL_ZERO_API',
+      version: '2025-01-03-ZERO-API',
       environment: envCheck,
       user: userCheck,
       database: dbCheck,
-      openai: openaiCheck,
+      answerGenerator: {
+        type: 'local_british_style',
+        externalApiDependency: false,
+        tokenCost: 0
+      },
       cache: {
         size: queryCache.size,
         maxSize: 3000,
@@ -862,7 +472,9 @@ export async function GET(request: NextRequest) {
         rpcOptimization: true,
         sqlGeneration: false,
         intentClassification: true,
-        enhancedCaching: true
+        enhancedCaching: true,
+        localAnswerGeneration: true,
+        zeroApiDependency: true
       },
       dataAnalysis: dataAnalysis
     };
@@ -872,7 +484,7 @@ export async function GET(request: NextRequest) {
   } catch (error: any) {
     console.error('[Ask Database Status] Error:', error);
     return NextResponse.json(
-      { error: 'Status check failed', details: error.message, mode: 'RPC_OPTIMIZED' },
+      { error: 'Status check failed', details: error.message, mode: 'FULL_LOCAL_ZERO_API' },
       { status: 500 }
     );
   }
