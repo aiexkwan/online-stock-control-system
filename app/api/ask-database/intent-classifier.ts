@@ -195,42 +195,50 @@ function identifyQueryTypeAndMapRpc(
     return mapProductInventoryQuery(productCode);
   }
   
-  // 5. 計數查詢 (最常見)
+  // 5. QC 歷史查詢 (新增)
+  if ((lowerQ.includes('qc') || lowerQ.includes('quality control') || lowerQ.includes('品控')) &&
+      (lowerQ.includes('by') || lowerQ.includes('用戶') || lowerQ.includes('user')) &&
+      /\b\d{4}\b/.test(lowerQ)) { // 匹配4位數字的用戶ID
+    
+    return mapQcHistoryQuery(lowerQ, timeframe);
+  }
+  
+  // 6. 計數查詢 (最常見)
   if (lowerQ.includes('多少') || lowerQ.includes('how many') || lowerQ.includes('count') || 
       lowerQ.includes('數量') || lowerQ.includes('幾多') || lowerQ.includes('幾個')) {
     
     return mapCountQuery(timeframe, grnFilters, productCode, location);
   }
   
-  // 6. 重量查詢
+  // 7. 重量查詢
   if (lowerQ.includes('重量') || lowerQ.includes('weight') || lowerQ.includes('淨重') || 
       lowerQ.includes('毛重') || lowerQ.includes('net') || lowerQ.includes('gross')) {
     
     return mapWeightQuery(timeframe, grnFilters);
   }
   
-  // 7. 產品統計查詢
+  // 8. 產品統計查詢
   if ((lowerQ.includes('統計') || lowerQ.includes('stats') || lowerQ.includes('總計') || 
        lowerQ.includes('total')) && productCode) {
     
     return mapProductStatsQuery(timeframe, productCode, grnFilters);
   }
   
-  // 8. 位置查詢
+  // 9. 位置查詢
   if (lowerQ.includes('位置') || lowerQ.includes('location') || lowerQ.includes('在哪') || 
       lowerQ.includes('where') || location) {
     
     return mapLocationQuery(location);
   }
   
-  // 9. 最新托盤查詢
+  // 10. 最新托盤查詢
   if (lowerQ.includes('最新') || lowerQ.includes('latest') || lowerQ.includes('最近') || 
       lowerQ.includes('recent') || lowerQ.includes('新') || lowerQ.includes('last')) {
     
     return mapLatestQuery(timeframe, productCode);
   }
   
-  // 10. 默認回退到計數查詢
+  // 11. 默認回退到計數查詢
   console.log('[Intent Classifier] No specific type detected, defaulting to count query');
   return mapCountQuery(timeframe, grnFilters, productCode, location);
 }
@@ -508,6 +516,23 @@ function mapProductInventoryQuery(productCode: string): QueryIntent {
     parameters: [productCode],
     confidence: 0.95,
     description: `Current inventory quantity for product ${productCode}`
+  };
+}
+
+// QC 歷史查詢映射 (新增)
+function mapQcHistoryQuery(question: string, timeframe: QueryIntent['timeframe']): QueryIntent {
+  // 提取用戶 ID (4位數字)
+  const userIdMatch = question.match(/\b(\d{4})\b/);
+  const userId = userIdMatch ? userIdMatch[1] : '';
+  
+  return {
+    type: 'transfer', // 重用 transfer 類型，因為這也是歷史記錄查詢
+    timeframe: timeframe,
+    filters: {}, // 空的 filters，用戶ID在parameters中
+    rpcFunction: 'get_qc_history_by_user',
+    parameters: [userId, timeframe],
+    confidence: 0.9,
+    description: `QC history for user ${userId} in timeframe ${timeframe}`
   };
 }
 
@@ -1054,6 +1079,111 @@ export async function executeRpcQuery(intent: QueryIntent, supabase: any): Promi
           }
         } else {
           throw new Error('Product code parameter is required for get_product_current_inventory');
+        }
+        break;
+
+      case 'get_qc_history_by_user':
+        // 查詢 record_history 表
+        console.log(`[RPC Executor] Getting QC history for user: ${intent.parameters[0]} in timeframe: ${intent.parameters[1]}`);
+        
+        if (intent.parameters.length > 1) {
+          const userId = intent.parameters[0];
+          const timeframe = intent.parameters[1];
+          
+          // 計算時間範圍
+          const now = new Date();
+          let startDate: string, endDate: string;
+          
+          if (timeframe === 'week') {
+            // 計算本週開始和結束日期
+            const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            const dayOfWeek = today.getDay();
+            const daysToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+            const weekStart = new Date(today);
+            weekStart.setDate(today.getDate() - daysToMonday);
+            const weekEnd = new Date(weekStart);
+            weekEnd.setDate(weekStart.getDate() + 6);
+            weekEnd.setHours(23, 59, 59, 999);
+            
+            startDate = weekStart.toISOString();
+            endDate = weekEnd.toISOString();
+          } else if (timeframe === 'today') {
+            const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            const todayEnd = new Date(today);
+            todayEnd.setHours(23, 59, 59, 999);
+            
+            startDate = today.toISOString();
+            endDate = todayEnd.toISOString();
+          } else {
+            // 默認為今天
+            const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            const todayEnd = new Date(today);
+            todayEnd.setHours(23, 59, 59, 999);
+            
+            startDate = today.toISOString();
+            endDate = todayEnd.toISOString();
+          }
+          
+          // 定義 QC 相關的 action 類型（根據用戶說明）
+          const qcActions = [
+            'GRN Receiving',
+            'Stock Transfer', 
+            'Finished QC',
+            'Auto Reprint',
+            'Void Pallet',
+            'Partially Damaged'
+          ];
+          
+          // 執行查詢獲取該用戶的 QC 歷史記錄
+          ({ data, error } = await supabase
+            .from('record_history')
+            .select(`
+              plt_num,
+              action,
+              time,
+              id
+            `)
+            .eq('id', userId)
+            .gte('time', startDate)
+            .lte('time', endDate)
+            .in('action', qcActions));
+          
+          if (!error && data) {
+            // 計算托盤數量（去重）
+            const uniquePallets = new Set(data.map((row: any) => row.plt_num));
+            const totalPallets = uniquePallets.size;
+            const totalRecords = data.length;
+            
+            // 返回統計結果
+            data = {
+              total_pallets: totalRecords, // 使用總記錄數，因為每條記錄代表一次QC操作
+              unique_pallets: totalPallets, // 也保留唯一托盤數供參考
+              user_id: userId,
+              timeframe: timeframe,
+              start_date: startDate,
+              end_date: endDate,
+              records: data,
+              actions: qcActions
+            };
+            
+            console.log(`[RPC Executor] QC history for user ${userId} in timeframe ${timeframe}: ${totalRecords} QC operations on ${totalPallets} unique pallets`);
+          } else {
+            // 用戶不存在或沒有 QC 歷史記錄
+            data = {
+              total_pallets: 0,
+              unique_pallets: 0,
+              user_id: userId,
+              timeframe: timeframe,
+              start_date: startDate,
+              end_date: endDate,
+              records: [],
+              actions: qcActions
+            };
+            error = null; // 重置錯誤，因為這是正常情況
+            console.log(`[RPC Executor] No QC history found for user ${userId} in timeframe ${timeframe}`);
+          }
+        } else {
+          throw new Error('User ID and timeframe parameters are required for get_qc_history_by_user');
         }
         break;
 

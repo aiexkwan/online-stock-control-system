@@ -416,7 +416,17 @@ ${index + 1}. Question: ${entry.question}
     isMultipleResults = queryResult.data.length > 1;
   } else if (typeof queryResult.data === 'object' && queryResult.data !== null) {
     // 對象返回
-    resultDisplay = JSON.stringify(queryResult.data, null, 2);
+    if (intent.rpcFunction === 'get_qc_history_by_user') {
+      // 特別處理 QC 歷史查詢
+      resultDisplay = `QC History Summary:
+- Total QC Operations: ${queryResult.data.total_pallets}
+- Unique Pallets: ${queryResult.data.unique_pallets}
+- User ID: ${queryResult.data.user_id}
+- Timeframe: ${queryResult.data.timeframe}
+- Records Count: ${queryResult.data.records?.length || 0}`;
+    } else {
+      resultDisplay = JSON.stringify(queryResult.data, null, 2);
+    }
     totalRecords = 1;
   } else {
     resultDisplay = 'No data returned';
@@ -452,6 +462,8 @@ For transfer/history queries: "According to records, today's transfers:
 - Pallet A123: Production → Awaiting
 - Pallet B456: Awaiting → Fold Mill
 - Pallet C789: Fold Mill → Bulk Room"
+
+For QC history queries: "According to records, 11 QC operations were performed by user 5997 this week on 10 unique pallets."
 
 BAD FORMAT (avoid): "Top 5 products: 1. Z01ATM1: 6,626 units, 2. MEP9090150: 1,234 units, 3. MT4545: 890 units, 4. ABC123: 567 units, 5. XYZ789: 432 units according to records."` :
     `Keep the response concise and in single line format when appropriate.`;
@@ -655,6 +667,25 @@ function generateFallbackResponseForRpc(question: string, queryResult: any, inte
   
   // 對象類型的單一結果
   if (typeof queryResult.data === 'object' && queryResult.data !== null) {
+    // 檢查是否為 QC 歷史查詢結果
+    if (intent.rpcFunction === 'get_qc_history_by_user' && 
+        queryResult.data.total_pallets !== undefined) {
+      const qcData = queryResult.data;
+      const totalOperations = qcData.total_pallets;
+      const uniquePallets = qcData.unique_pallets;
+      const userId = qcData.user_id;
+      
+      if (totalOperations === 0) {
+        return `No QC operations found for user ${userId} according to records.`;
+      }
+      
+      if (totalOperations === 1) {
+        return `1 QC operation performed by user ${userId} according to records.`;
+      }
+      
+      return `${totalOperations} QC operations performed by user ${userId} on ${uniquePallets} unique pallets according to records.`;
+    }
+    
     return `Query completed successfully according to records.`;
   }
   

@@ -31,6 +31,8 @@
 | query_record      | answer           | text                     | YES         | null              | null                     |
 | query_record      | user             | text                     | YES         | null              | null                     |
 | query_record      | token            | bigint                   | YES         | null              | null                     |
+| query_record      | sql              | text                     | YES         | null              | null                     |
+| query_record      | target           | text                     | YES         | null              | null                     |
 | record_aco        | uuid             | uuid                     | NO          | gen_random_uuid() | null                     |
 | record_aco        | order_ref        | integer                  | NO          | null              | null                     |
 | record_aco        | code             | text                     | NO          | null              | null                     |
