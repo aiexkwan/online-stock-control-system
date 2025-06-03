@@ -100,11 +100,14 @@ function identifyGrnFilters(lowerQ: string): { includeGrn?: boolean; excludeGrn?
 function identifyProductCode(question: string): string | undefined {
   // 匹配常見的產品代碼格式
   const productPatterns = [
-    /\b([A-Z]{2,4}\d{2,6}[A-Z]?)\b/g, // MEP123456, ABC1234A 等
-    /\b(MEP[A-Z0-9]+)\b/gi, // MEP 開頭的產品代碼
-    /產品代碼[：:\s]*([A-Z0-9]+)/gi, // 中文產品代碼
-    /product[:\s]+([A-Z0-9]+)/gi, // 英文產品代碼
-    /code[:\s]+([A-Z0-9]+)/gi, // code: XXX
+    /\b([A-Za-z]{2,4}\d{2,6}[A-Za-z]?)\b/g, // MEP123456, ABC1234A, mhcol2 等（支持大小寫）
+    /\b(MEP[A-Za-z0-9]+)\b/gi, // MEP 開頭的產品代碼
+    /\b(MH[A-Za-z0-9]+)\b/gi, // MH 開頭的產品代碼（如 MHCOL2）
+    /產品代碼[：:\s]*([A-Za-z0-9]+)/gi, // 中文產品代碼
+    /product[:\s]+([A-Za-z0-9]+)/gi, // 英文產品代碼
+    /code[:\s]+([A-Za-z0-9]+)/gi, // code: XXX
+    /\bfor\s+([A-Za-z]{2,4}\d{1,6}[A-Za-z]?)\b/gi, // "for mhcol2" 格式
+    /\bof\s+([A-Za-z]{2,4}\d{1,6}[A-Za-z]?)\b/gi, // "of mhcol2" 格式
   ];
   
   for (const pattern of productPatterns) {
@@ -112,7 +115,7 @@ function identifyProductCode(question: string): string | undefined {
     if (matches && matches.length > 0) {
       // 提取第一個匹配的產品代碼
       const match = matches[0];
-      const cleanCode = match.replace(/^(產品代碼|product|code)[：:\s]*/gi, '').trim();
+      const cleanCode = match.replace(/^(產品代碼|product|code|for|of)[：:\s]*/gi, '').trim();
       if (cleanCode.length >= 3) {
         return cleanCode.toUpperCase();
       }
@@ -183,42 +186,51 @@ function identifyQueryTypeAndMapRpc(
     return mapInventoryThresholdQuery(lowerQ);
   }
   
-  // 4. 計數查詢 (最常見)
+  // 4. 產品庫存查詢 (新增 - 提高優先級)
+  if (productCode && 
+      (lowerQ.includes('qty') || lowerQ.includes('quantity') || lowerQ.includes('inventory') || 
+       lowerQ.includes('stock') || lowerQ.includes('數量') || lowerQ.includes('庫存') ||
+       lowerQ.includes('total') || lowerQ.includes('units') || lowerQ.includes('current'))) {
+    
+    return mapProductInventoryQuery(productCode);
+  }
+  
+  // 5. 計數查詢 (最常見)
   if (lowerQ.includes('多少') || lowerQ.includes('how many') || lowerQ.includes('count') || 
       lowerQ.includes('數量') || lowerQ.includes('幾多') || lowerQ.includes('幾個')) {
     
     return mapCountQuery(timeframe, grnFilters, productCode, location);
   }
   
-  // 5. 重量查詢
+  // 6. 重量查詢
   if (lowerQ.includes('重量') || lowerQ.includes('weight') || lowerQ.includes('淨重') || 
       lowerQ.includes('毛重') || lowerQ.includes('net') || lowerQ.includes('gross')) {
     
     return mapWeightQuery(timeframe, grnFilters);
   }
   
-  // 6. 產品統計查詢
+  // 7. 產品統計查詢
   if ((lowerQ.includes('統計') || lowerQ.includes('stats') || lowerQ.includes('總計') || 
        lowerQ.includes('total')) && productCode) {
     
     return mapProductStatsQuery(timeframe, productCode, grnFilters);
   }
   
-  // 7. 位置查詢
+  // 8. 位置查詢
   if (lowerQ.includes('位置') || lowerQ.includes('location') || lowerQ.includes('在哪') || 
       lowerQ.includes('where') || location) {
     
     return mapLocationQuery(location);
   }
   
-  // 8. 最新托盤查詢
+  // 9. 最新托盤查詢
   if (lowerQ.includes('最新') || lowerQ.includes('latest') || lowerQ.includes('最近') || 
       lowerQ.includes('recent') || lowerQ.includes('新') || lowerQ.includes('last')) {
     
     return mapLatestQuery(timeframe, productCode);
   }
   
-  // 9. 默認回退到計數查詢
+  // 10. 默認回退到計數查詢
   console.log('[Intent Classifier] No specific type detected, defaulting to count query');
   return mapCountQuery(timeframe, grnFilters, productCode, location);
 }
@@ -484,6 +496,19 @@ function mapProductStatsQuery(
   
   // 其他時間範圍回退到計數查詢
   return mapCountQuery(timeframe, grnFilters, productCode);
+}
+
+// 產品庫存查詢映射 (新增)
+function mapProductInventoryQuery(productCode: string): QueryIntent {
+  return {
+    type: 'inventory_threshold',
+    timeframe: 'all',
+    filters: { productCode },
+    rpcFunction: 'get_product_current_inventory',
+    parameters: [productCode],
+    confidence: 0.95,
+    description: `Current inventory quantity for product ${productCode}`
+  };
 }
 
 // 位置查詢映射
@@ -958,6 +983,77 @@ export async function executeRpcQuery(intent: QueryIntent, supabase: any): Promi
               
             console.log(`[RPC Executor] Fixed aggregation returned ${data.length} products below 100 (default)`);
           }
+        }
+        break;
+
+      case 'get_product_current_inventory':
+        // 獲取特定產品的當前庫存總量
+        console.log(`[RPC Executor] Getting current inventory for product: ${intent.parameters[0]}`);
+        
+        if (intent.parameters.length > 0) {
+          const productCode = intent.parameters[0].toUpperCase();
+          
+          // 執行查詢獲取該產品的所有庫存記錄
+          ({ data, error } = await supabase
+            .from('record_inventory')
+            .select(`
+              product_code,
+              injection,
+              pipeline, 
+              prebook,
+              await,
+              fold,
+              bulk,
+              backcarpark
+            `)
+            .eq('product_code', productCode));
+          
+          if (!error && data) {
+            // 計算該產品的總庫存
+            let totalInventory = 0;
+            let injection_qty = 0, pipeline_qty = 0, prebook_qty = 0;
+            let await_qty = 0, fold_qty = 0, bulk_qty = 0, backcarpark_qty = 0;
+            
+            data.forEach((row: any) => {
+              injection_qty += (row.injection || 0);
+              pipeline_qty += (row.pipeline || 0);
+              prebook_qty += (row.prebook || 0);
+              await_qty += (row.await || 0);
+              fold_qty += (row.fold || 0);
+              bulk_qty += (row.bulk || 0);
+              backcarpark_qty += (row.backcarpark || 0);
+            });
+            
+            totalInventory = injection_qty + pipeline_qty + prebook_qty + 
+                           await_qty + fold_qty + bulk_qty + backcarpark_qty;
+            
+            // 返回單一產品的庫存信息
+            data = [{
+              product_code: productCode,
+              total_inventory: totalInventory,
+              injection_qty,
+              pipeline_qty,
+              prebook_qty,
+              await_qty,
+              fold_qty,
+              bulk_qty,
+              backcarpark_qty
+            }];
+            
+            console.log(`[RPC Executor] Product ${productCode} current inventory: ${totalInventory} units`);
+          } else {
+            // 產品不存在或沒有庫存記錄
+            data = [{
+              product_code: productCode,
+              total_inventory: 0,
+              injection_qty: 0, pipeline_qty: 0, prebook_qty: 0,
+              await_qty: 0, fold_qty: 0, bulk_qty: 0, backcarpark_qty: 0
+            }];
+            error = null; // 重置錯誤，因為這是正常情況
+            console.log(`[RPC Executor] Product ${productCode} not found or has no inventory`);
+          }
+        } else {
+          throw new Error('Product code parameter is required for get_product_current_inventory');
         }
         break;
 
