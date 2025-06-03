@@ -49,8 +49,10 @@ import UploadFilesDialog from '@/app/components/admin-panel-menu/UploadFilesDial
 import VoidPalletDialog from '@/app/components/admin-panel-menu/VoidPalletDialog';
 import ViewHistoryDialog from '@/app/components/admin-panel-menu/ViewHistoryDialog';
 import DatabaseUpdateDialog from '@/app/components/admin-panel-menu/DatabaseUpdateDialog';
+import AskDatabaseDialog from '@/app/components/admin-panel-menu/AskDatabaseDialog';
 import { ReprintInfoDialog } from '@/app/void-pallet/components/ReprintInfoDialog';
 import { useVoidPallet } from '@/app/void-pallet/hooks/useVoidPallet';
+import { useAskDatabasePermission } from '@/app/hooks/useAuth';
 
 const adminMenuItems = [
   {
@@ -192,6 +194,7 @@ interface InventoryLocation {
 export default function AdminPanelPage() {
   const router = useRouter();
   const { isAuthenticated, loading } = useAuth();
+  const hasAskDatabasePermission = useAskDatabasePermission();
   const supabase = createClient();
   
   const [statsLoading, setStatsLoading] = useState(true);
@@ -254,6 +257,9 @@ export default function AdminPanelPage() {
 
   // Database Update Dialog states
   const [showUpdateDialog, setShowUpdateDialog] = useState(false);
+
+  // Ask Database Dialog states
+  const [showAskDatabaseDialog, setShowAskDatabaseDialog] = useState(false);
 
   // Reprint Dialog states
   const [showReprintDialog, setShowReprintDialog] = useState(false);
@@ -1162,96 +1168,101 @@ export default function AdminPanelPage() {
           {/* Dashboard Content */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             {/* Ask Database Main Card - Featured at the top */}
-            <div className="col-span-full mb-8">
-              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-                <div className="relative group">
-                  {/* 卡片背景 */}
-                  <div className="absolute inset-0 bg-gradient-to-r from-purple-900/30 to-indigo-900/30 rounded-3xl blur-xl"></div>
-                  
-                  <div className="relative bg-slate-800/40 backdrop-blur-xl border border-purple-500/30 rounded-3xl p-8 shadow-2xl shadow-purple-900/20 hover:border-purple-400/50 transition-all duration-300">
-                    {/* 卡片內部光效 */}
-                    <div className="absolute inset-0 bg-gradient-to-r from-purple-500/5 via-transparent to-indigo-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-3xl"></div>
+            {hasAskDatabasePermission && (
+              <div className="col-span-full mb-8">
+                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+                  <div className="relative group">
+                    {/* 卡片背景 */}
+                    <div className="absolute inset-0 bg-gradient-to-r from-purple-900/30 to-indigo-900/30 rounded-3xl blur-xl"></div>
                     
-                    {/* 頂部邊框光效 */}
-                    <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-purple-400/50 to-transparent opacity-100 rounded-t-3xl"></div>
-                    
-                    <div className="relative z-10">
-                      <div className="flex items-center justify-between mb-6">
-                        <div className="flex items-center gap-4">
-                          <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-indigo-500 rounded-2xl flex items-center justify-center shadow-lg shadow-purple-500/25">
-                            <ChatBubbleLeftRightIcon className="h-6 w-6 text-white" />
-                          </div>
-                          <div>
-                            <h2 className="text-3xl font-bold bg-gradient-to-r from-purple-300 via-indigo-300 to-cyan-300 bg-clip-text text-transparent">Ask Database</h2>
-                            <p className="text-purple-200 mt-1">Query database information with natural language</p>
-                          </div>
-                        </div>
-                        <div className="bg-purple-500/20 border border-purple-400/30 text-purple-200 px-4 py-2 rounded-xl text-sm font-medium">
-                          Coming Soon
-                        </div>
-                      </div>
+                    <div className="relative bg-slate-800/40 backdrop-blur-xl border border-purple-500/30 rounded-3xl p-8 shadow-2xl shadow-purple-900/20 hover:border-purple-400/50 transition-all duration-300">
+                      {/* 卡片內部光效 */}
+                      <div className="absolute inset-0 bg-gradient-to-r from-purple-500/5 via-transparent to-indigo-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-3xl"></div>
                       
-                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                        {/* Left side - Description */}
-                        <div className="space-y-6">
-                          <p className="text-slate-300 leading-relaxed text-lg">
-                            Allow you to communicate with database using natural language 
-                            or structured queries, making data exploration more intuitive and efficient.
-                          </p>
-                          
-                          <div className="bg-slate-800/50 rounded-2xl p-6 border border-slate-600/30">
-                            <h4 className="text-xl font-semibold text-purple-400 mb-4 flex items-center gap-3">
-                              <span className="w-3 h-3 bg-purple-400 rounded-full animate-pulse"></span>
-                              Planned Features
-                            </h4>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm text-slate-300">
-                              <div className="flex items-center gap-3 p-3 bg-slate-700/30 rounded-xl">
-                                <span className="w-2 h-2 bg-green-400 rounded-full"></span>
-                                Natural language queries
-                              </div>
-                              <div className="flex items-center gap-3 p-3 bg-slate-700/30 rounded-xl">
-                                <span className="w-2 h-2 bg-blue-400 rounded-full"></span>
-                                Real-time data exploration
-                              </div>
-                              <div className="flex items-center gap-3 p-3 bg-slate-700/30 rounded-xl">
-                                <span className="w-2 h-2 bg-orange-400 rounded-full"></span>
-                                Custom report generation
-                              </div>
-                              <div className="flex items-center gap-3 p-3 bg-slate-700/30 rounded-xl">
-                                <span className="w-2 h-2 bg-purple-400 rounded-full"></span>
-                                Data visualization tools
-                              </div>
-                              <div className="flex items-center gap-3 p-3 bg-slate-700/30 rounded-xl">
-                                <span className="w-2 h-2 bg-cyan-400 rounded-full"></span>
-                                Export query results
-                              </div>
-                              <div className="flex items-center gap-3 p-3 bg-slate-700/30 rounded-xl">
-                                <span className="w-2 h-2 bg-pink-400 rounded-full"></span>
-                                Powerful insights
+                      {/* 頂部邊框光效 */}
+                      <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-purple-400/50 to-transparent opacity-100 rounded-t-3xl"></div>
+                      
+                      <div className="relative z-10">
+                        <div className="flex items-center justify-between mb-6">
+                          <div className="flex items-center gap-4">
+                            <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-indigo-500 rounded-2xl flex items-center justify-center shadow-lg shadow-purple-500/25">
+                              <ChatBubbleLeftRightIcon className="h-6 w-6 text-white" />
+                            </div>
+                            <div>
+                              <h2 className="text-3xl font-bold bg-gradient-to-r from-purple-300 via-indigo-300 to-cyan-300 bg-clip-text text-transparent">Ask Database</h2>
+                              <p className="text-purple-200 mt-1">Query database information with natural language</p>
+                            </div>
+                          </div>
+                          <button
+                            onClick={() => setShowAskDatabaseDialog(true)}
+                            className="bg-purple-500/20 border border-purple-400/30 text-purple-200 px-4 py-2 rounded-xl text-sm font-medium cursor-pointer hover:bg-purple-500/30 transition-colors"
+                          >
+                            立即體驗
+                          </button>
+                        </div>
+                        
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                          {/* Left side - Description */}
+                          <div className="space-y-6">
+                            <p className="text-slate-300 leading-relaxed text-lg">
+                              Allow you to communicate with database using natural language 
+                              or structured queries, making data exploration more intuitive and efficient.
+                            </p>
+                            
+                            <div className="bg-slate-800/50 rounded-2xl p-6 border border-slate-600/30">
+                              <h4 className="text-xl font-semibold text-purple-400 mb-4 flex items-center gap-3">
+                                <span className="w-3 h-3 bg-purple-400 rounded-full animate-pulse"></span>
+                                Available Features
+                              </h4>
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm text-slate-300">
+                                <div className="flex items-center gap-3 p-3 bg-slate-700/30 rounded-xl">
+                                  <span className="w-2 h-2 bg-green-400 rounded-full"></span>
+                                  Natural language queries
+                                </div>
+                                <div className="flex items-center gap-3 p-3 bg-slate-700/30 rounded-xl">
+                                  <span className="w-2 h-2 bg-blue-400 rounded-full"></span>
+                                  Real-time data exploration
+                                </div>
+                                <div className="flex items-center gap-3 p-3 bg-slate-700/30 rounded-xl">
+                                  <span className="w-2 h-2 bg-orange-400 rounded-full"></span>
+                                  Smart SQL generation
+                                </div>
+                                <div className="flex items-center gap-3 p-3 bg-slate-700/30 rounded-xl">
+                                  <span className="w-2 h-2 bg-purple-400 rounded-full"></span>
+                                  Intelligent caching
+                                </div>
+                                <div className="flex items-center gap-3 p-3 bg-slate-700/30 rounded-xl">
+                                  <span className="w-2 h-2 bg-cyan-400 rounded-full"></span>
+                                  Query result display
+                                </div>
+                                <div className="flex items-center gap-3 p-3 bg-slate-700/30 rounded-xl">
+                                  <span className="w-2 h-2 bg-pink-400 rounded-full"></span>
+                                  Conversation history
+                                </div>
                               </div>
                             </div>
                           </div>
-                        </div>
 
-                        {/* Right side - Preview/Demo */}
-                        <div className="space-y-6">
-                          <div className="bg-slate-800/50 rounded-2xl p-6 border border-slate-600/30">
-                            <h4 className="text-xl font-semibold text-slate-200 mb-4">Query Preview</h4>
-                            <div className="space-y-4">
-                              <div className="bg-slate-900/50 rounded-xl p-4 border-l-4 border-purple-500">
-                                <p className="text-sm text-slate-300 italic">
-                                  "Show me all pallets generated today"
-                                </p>
-                              </div>
-                              <div className="bg-slate-900/50 rounded-xl p-4 border-l-4 border-blue-500">
-                                <p className="text-sm text-slate-300 italic">
-                                  "What's the inventory level for product XXXXXX?"
-                                </p>
-                              </div>
-                              <div className="bg-slate-900/50 rounded-xl p-4 border-l-4 border-green-500">
-                                <p className="text-sm text-slate-300 italic">
-                                  "Generate transfer report for last week"
-                                </p>
+                          {/* Right side - Preview/Demo */}
+                          <div className="space-y-6">
+                            <div className="bg-slate-800/50 rounded-2xl p-6 border border-slate-600/30">
+                              <h4 className="text-xl font-semibold text-slate-200 mb-4">Query Examples</h4>
+                              <div className="space-y-4">
+                                <div className="bg-slate-900/50 rounded-xl p-4 border-l-4 border-purple-500">
+                                  <p className="text-sm text-slate-300 italic">
+                                    "今天生成了多少個托盤？"
+                                  </p>
+                                </div>
+                                <div className="bg-slate-900/50 rounded-xl p-4 border-l-4 border-blue-500">
+                                  <p className="text-sm text-slate-300 italic">
+                                    "顯示庫存最多的前5個產品"
+                                  </p>
+                                </div>
+                                <div className="bg-slate-900/50 rounded-xl p-4 border-l-4 border-green-500">
+                                  <p className="text-sm text-slate-300 italic">
+                                    "本週的轉移記錄有哪些？"
+                                  </p>
+                                </div>
                               </div>
                             </div>
                           </div>
@@ -1259,9 +1270,9 @@ export default function AdminPanelPage() {
                       </div>
                     </div>
                   </div>
-                </div>
-              </motion.div>
-            </div>
+                </motion.div>
+              </div>
+            )}
 
             {/* Today's Generated Pallets */}
             <div className="relative group">
@@ -1953,6 +1964,12 @@ export default function AdminPanelPage() {
       <DatabaseUpdateDialog
         isOpen={showUpdateDialog}
         onClose={() => setShowUpdateDialog(false)}
+      />
+
+      {/* Ask Database Dialog */}
+      <AskDatabaseDialog
+        isOpen={showAskDatabaseDialog}
+        onClose={() => setShowAskDatabaseDialog(false)}
       />
 
       {/* Reprint Info Dialog */}

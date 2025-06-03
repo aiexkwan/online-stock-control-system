@@ -207,4 +207,30 @@ export function useCurrentUserClockNumber(): {
   console.log('[useCurrentUserClockNumber] Current state:', { clockNumber, loading, error });
 
   return { clockNumber, loading, error };
-} 
+}
+
+export const useAskDatabasePermission = () => {
+  const { user } = useAuth();
+  const [hasPermission, setHasPermission] = useState(false);
+
+  useEffect(() => {
+    const checkPermission = async () => {
+      if (!user?.email) {
+        setHasPermission(false);
+        return;
+      }
+
+      // 檢查是否為允許的用戶
+      const allowedUsers = [
+        'gtatlock@pennineindustries.com',
+        'akwan@pennineindustries.com'
+      ];
+
+      setHasPermission(allowedUsers.includes(user.email));
+    };
+
+    checkPermission();
+  }, [user]);
+
+  return hasPermission;
+}; 
