@@ -29,40 +29,43 @@ export default function ReceiveInventoryPage() {
   const [errorMessage, setErrorMessage] = useState('');
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const clockNumber = localStorage.getItem('loggedInUserClockNumber');
-      if (clockNumber) {
-        setUserId(clockNumber);
-      } else {
-        console.warn('[ReceivePage] loggedInUserClockNumber not found in localStorage.');
-        setUserId(null); // Or handle appropriately
+    const getUserId = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        
+        if (user?.email) {
+          // Extract clock number from email (format: clocknumber@pennine.com)
+          const clockNumber = user.email.split('@')[0];
+          setUserId(clockNumber);
+        } else {
+          console.warn('[ReceivePage] No authenticated user found.');
+          router.push('/main-login');
+        }
+      } catch (error) {
+        console.error('Error getting user ID:', error);
+        router.push('/main-login');
       }
-    }
-  }, []);
+    };
+
+    getUserId();
+  }, [supabase, router]);
 
   useEffect(() => {
     // 載入用戶數據 (權限檢查)
     const loadUserDataAndPermissions = async () => {
-      if (typeof window !== 'undefined') {
-        const clockNumber = localStorage.getItem('loggedInUserClockNumber');
-        if (clockNumber) {
-          // TODO: Fetch permissions for clockNumber from data_id table
-          // This needs to be replaced with actual permission fetching and checking.
-          // The original logic was: const userData = JSON.parse(userStr);
-          // if (!userData.permissions.receive && !userData.permissions.qc) { router.push('/'); }
-          // Permission check placeholder - user access logged
-          // For now, if a clockNumber is present, we let them proceed.
-          // Actual permission enforcement needs to query backend based on clockNumber.
-        } else {
-          // console.warn('[ReceivePage] loggedInUserClockNumber not found for permission check.');
-          router.push('/main-login'); // Redirect if not logged in at all
-        }
+      if (userId) {
+        // TODO: Fetch permissions for userId from data_id table
+        // This needs to be replaced with actual permission fetching and checking.
+        // For now, if a userId is present, we let them proceed.
+        // Actual permission enforcement needs to query backend based on userId.
       }
     };
     
-    loadUserDataAndPermissions(); 
-    fetchProducts();
-  }, [router]);
+    if (userId) {
+      loadUserDataAndPermissions(); 
+      fetchProducts();
+    }
+  }, [userId]);
 
   // 過濾產品列表
   useEffect(() => {

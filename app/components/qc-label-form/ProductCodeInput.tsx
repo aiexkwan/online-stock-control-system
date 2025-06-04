@@ -9,6 +9,7 @@ interface ProductInfo {
   description: string;
   standard_qty: string;
   type: string;
+  remark?: string;
 }
 
 interface ProductCodeInputProps {

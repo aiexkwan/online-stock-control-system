@@ -1,117 +1,1526 @@
-| table_name        | column_name      | data_type                | is_nullable | column_default    | character_maximum_length |
-| ----------------- | ---------------- | ------------------------ | ----------- | ----------------- | ------------------------ |
-| data_code         | code             | text                     | NO          | null              | null                     |
-| data_code         | description      | text                     | NO          | null              | null                     |
-| data_code         | colour           | text                     | NO          | 'Black'::text     | null                     |
-| data_code         | standard_qty     | integer                  | NO          | 1                 | null                     |
-| data_code         | type             | text                     | NO          | '-'::text         | null                     |
-| data_id           | name             | text                     | NO          | null              | null                     |
-| data_id           | id               | integer                  | NO          | null              | null                     |
-| data_id           | uuid             | uuid                     | NO          | gen_random_uuid() | null                     |
-| data_id           | email            | text                     | YES         | ''::text          | null                     |
-| data_slateinfo    | product_code     | text                     | NO          | null              | null                     |
-| data_slateinfo    | description      | text                     | YES         | null              | null                     |
-| data_slateinfo    | tool_num         | text                     | YES         | null              | null                     |
-| data_slateinfo    | weight           | text                     | YES         | null              | null                     |
-| data_slateinfo    | thickness_top    | text                     | YES         | null              | null                     |
-| data_slateinfo    | thickness_bottom | text                     | YES         | null              | null                     |
-| data_slateinfo    | length           | text                     | YES         | null              | null                     |
-| data_slateinfo    | width            | text                     | YES         | null              | null                     |
-| data_slateinfo    | hole_to_bottom   | text                     | YES         | null              | null                     |
-| data_slateinfo    | colour           | text                     | YES         | null              | null                     |
-| data_slateinfo    | shapes           | text                     | YES         | null              | null                     |
-| data_supplier     | supplier_code    | text                     | NO          | null              | null                     |
-| data_supplier     | supplier_name    | text                     | YES         | null              | null                     |
-| debug_log         | ts               | timestamp with time zone | YES         | now()             | null                     |
-| debug_log         | msg              | text                     | YES         | null              | null                     |
-| debug_log         | UUID             | uuid                     | NO          | gen_random_uuid() | null                     |
-| query_record      | uuid             | uuid                     | NO          | gen_random_uuid() | null                     |
-| query_record      | created_at       | timestamp with time zone | NO          | now()             | null                     |
-| query_record      | query            | text                     | YES         | null              | null                     |
-| query_record      | answer           | text                     | YES         | null              | null                     |
-| query_record      | user             | text                     | YES         | null              | null                     |
-| query_record      | token            | bigint                   | YES         | null              | null                     |
-| record_aco        | uuid             | uuid                     | NO          | gen_random_uuid() | null                     |
-| record_aco        | order_ref        | integer                  | NO          | null              | null                     |
-| record_aco        | code             | text                     | NO          | null              | null                     |
-| record_aco        | required_qty     | integer                  | NO          | null              | null                     |
-| record_aco        | remain_qty       | integer                  | NO          | null              | null                     |
-| record_aco        | latest_update    | timestamp with time zone | NO          | now()             | null                     |
-| record_aco_detail | uuid             | uuid                     | NO          | gen_random_uuid() | null                     |
-| record_aco_detail | plt_num          | text                     | NO          | null              | null                     |
-| record_aco_detail | weight           | integer                  | YES         | null              | null                     |
-| record_aco_detail | length           | integer                  | YES         | null              | null                     |
-| record_aco_detail | width            | integer                  | YES         | null              | null                     |
-| record_aco_detail | height           | integer                  | YES         | null              | null                     |
-| record_grn        | grn_ref          | integer                  | YES         | null              | null                     |
-| record_grn        | plt_num          | text                     | YES         | null              | null                     |
-| record_grn        | sup_code         | text                     | NO          | null              | null                     |
-| record_grn        | material_code    | text                     | NO          | null              | null                     |
-| record_grn        | gross_weight     | integer                  | NO          | null              | null                     |
-| record_grn        | net_weight       | integer                  | NO          | null              | null                     |
-| record_grn        | uuid             | uuid                     | NO          | gen_random_uuid() | null                     |
-| record_grn        | pallet           | text                     | NO          | null              | null                     |
-| record_grn        | package          | text                     | NO          | null              | null                     |
-| record_grn        | pallet_count     | numeric                  | NO          | 0.0               | null                     |
-| record_grn        | package_count    | numeric                  | NO          | 0.0               | null                     |
-| record_grn        | creat_time       | timestamp with time zone | YES         | now()             | null                     |
-| record_history    | time             | timestamp with time zone | NO          | now()             | null                     |
-| record_history    | id               | integer                  | YES         | null              | null                     |
-| record_history    | action           | text                     | NO          | null              | null                     |
-| record_history    | plt_num          | text                     | YES         | null              | null                     |
-| record_history    | loc              | text                     | YES         | null              | null                     |
-| record_history    | remark           | text                     | NO          | null              | null                     |
-| record_history    | uuid             | uuid                     | NO          | gen_random_uuid() | null                     |
-| record_inventory  | product_code     | text                     | NO          | ''::text          | null                     |
-| record_inventory  | injection        | bigint                   | YES         | '0'::bigint       | null                     |
-| record_inventory  | pipeline         | bigint                   | YES         | '0'::bigint       | null                     |
-| record_inventory  | prebook          | bigint                   | YES         | '0'::bigint       | null                     |
-| record_inventory  | await            | bigint                   | YES         | '0'::bigint       | null                     |
-| record_inventory  | fold             | bigint                   | YES         | '0'::bigint       | null                     |
-| record_inventory  | bulk             | bigint                   | YES         | '0'::bigint       | null                     |
-| record_inventory  | backcarpark      | bigint                   | YES         | '0'::bigint       | null                     |
-| record_inventory  | uuid             | uuid                     | NO          | gen_random_uuid() | null                     |
-| record_inventory  | latest_update    | timestamp with time zone | NO          | now()             | null                     |
-| record_inventory  | plt_num          | text                     | NO          | null              | null                     |
-| record_inventory  | damage           | bigint                   | NO          | '0'::bigint       | null                     |
-| record_palletinfo | generate_time    | timestamp with time zone | NO          | now()             | null                     |
-| record_palletinfo | plt_num          | text                     | NO          | null              | null                     |
-| record_palletinfo | product_code     | text                     | NO          | null              | null                     |
-| record_palletinfo | series           | text                     | NO          | null              | null                     |
-| record_palletinfo | plt_remark       | text                     | YES         | ''::text          | null                     |
-| record_palletinfo | product_qty      | bigint                   | YES         | '0'::bigint       | null                     |
-| record_slate      | code             | text                     | NO          | ''::text          | null                     |
-| record_slate      | plt_num          | text                     | NO          | ''::text          | null                     |
-| record_slate      | setter           | text                     | NO          | ''::text          | null                     |
-| record_slate      | mach_num         | text                     | NO          | ''::text          | null                     |
-| record_slate      | material         | text                     | NO          | ''::text          | null                     |
-| record_slate      | batch_num        | text                     | NO          | ''::text          | null                     |
-| record_slate      | weight           | integer                  | NO          | null              | null                     |
-| record_slate      | t_thick          | integer                  | NO          | null              | null                     |
-| record_slate      | b_thick          | integer                  | NO          | null              | null                     |
-| record_slate      | length           | integer                  | NO          | null              | null                     |
-| record_slate      | width            | integer                  | NO          | null              | null                     |
-| record_slate      | centre_hole      | integer                  | NO          | null              | null                     |
-| record_slate      | colour           | text                     | NO          | ''::text          | null                     |
-| record_slate      | shape            | text                     | NO          | ''::text          | null                     |
-| record_slate      | flame_test       | integer                  | NO          | null              | null                     |
-| record_slate      | remark           | text                     | YES         | ''::text          | null                     |
-| record_slate      | uuid             | uuid                     | NO          | gen_random_uuid() | null                     |
-| record_slate      | first_off        | date                     | YES         | null              | null                     |
-| record_transfer   | tran_date        | timestamp with time zone | NO          | now()             | null                     |
-| record_transfer   | f_loc            | text                     | NO          | null              | null                     |
-| record_transfer   | t_loc            | text                     | NO          | null              | null                     |
-| record_transfer   | plt_num          | text                     | NO          | null              | null                     |
-| record_transfer   | operator_id      | integer                  | NO          | null              | null                     |
-| record_transfer   | uuid             | uuid                     | NO          | gen_random_uuid() | null                     |
-| report_log        | uuid             | uuid                     | NO          | gen_random_uuid() | null                     |
-| report_log        | error            | text                     | NO          | null              | null                     |
-| report_log        | error_info       | text                     | NO          | null              | null                     |
-| report_log        | state            | boolean                  | NO          | false             | null                     |
-| report_log        | user_id          | integer                  | NO          | null              | null                     |
-| report_log        | time             | timestamp with time zone | NO          | now()             | null                     |
-| report_void       | uuid             | uuid                     | NO          | gen_random_uuid() | null                     |
-| report_void       | time             | timestamp with time zone | NO          | now()             | null                     |
-| report_void       | plt_num          | text                     | NO          | null              | null                     |
-| report_void       | reason           | text                     | NO          | null              | null                     |
-| report_void       | damage_qty       | integer                  | NO          | null              | null                     |
+[
+  {
+    "table_name": "data_code",
+    "column_name": "code",
+    "data_type": "text",
+    "is_nullable": "NO",
+    "column_default": null,
+    "character_maximum_length": null,
+    "is_primary_key": "YES",
+    "is_foreign_key": "NO",
+    "foreign_table_name": null,
+    "foreign_column_name": null
+  },
+  {
+    "table_name": "data_code",
+    "column_name": "description",
+    "data_type": "text",
+    "is_nullable": "NO",
+    "column_default": null,
+    "character_maximum_length": null,
+    "is_primary_key": "NO",
+    "is_foreign_key": "NO",
+    "foreign_table_name": null,
+    "foreign_column_name": null
+  },
+  {
+    "table_name": "data_code",
+    "column_name": "colour",
+    "data_type": "text",
+    "is_nullable": "NO",
+    "column_default": "'Black'::text",
+    "character_maximum_length": null,
+    "is_primary_key": "NO",
+    "is_foreign_key": "NO",
+    "foreign_table_name": null,
+    "foreign_column_name": null
+  },
+  {
+    "table_name": "data_code",
+    "column_name": "standard_qty",
+    "data_type": "integer",
+    "is_nullable": "NO",
+    "column_default": "1",
+    "character_maximum_length": null,
+    "is_primary_key": "NO",
+    "is_foreign_key": "NO",
+    "foreign_table_name": null,
+    "foreign_column_name": null
+  },
+  {
+    "table_name": "data_code",
+    "column_name": "type",
+    "data_type": "text",
+    "is_nullable": "NO",
+    "column_default": "'-'::text",
+    "character_maximum_length": null,
+    "is_primary_key": "NO",
+    "is_foreign_key": "NO",
+    "foreign_table_name": null,
+    "foreign_column_name": null
+  },
+  {
+    "table_name": "data_code",
+    "column_name": "remark",
+    "data_type": "text",
+    "is_nullable": "YES",
+    "column_default": "'-'::text",
+    "character_maximum_length": null,
+    "is_primary_key": "NO",
+    "is_foreign_key": "NO",
+    "foreign_table_name": null,
+    "foreign_column_name": null
+  },
+  {
+    "table_name": "data_id",
+    "column_name": "name",
+    "data_type": "text",
+    "is_nullable": "NO",
+    "column_default": null,
+    "character_maximum_length": null,
+    "is_primary_key": "NO",
+    "is_foreign_key": "NO",
+    "foreign_table_name": null,
+    "foreign_column_name": null
+  },
+  {
+    "table_name": "data_id",
+    "column_name": "id",
+    "data_type": "integer",
+    "is_nullable": "NO",
+    "column_default": null,
+    "character_maximum_length": null,
+    "is_primary_key": "YES",
+    "is_foreign_key": "NO",
+    "foreign_table_name": null,
+    "foreign_column_name": null
+  },
+  {
+    "table_name": "data_id",
+    "column_name": "uuid",
+    "data_type": "uuid",
+    "is_nullable": "NO",
+    "column_default": "gen_random_uuid()",
+    "character_maximum_length": null,
+    "is_primary_key": "NO",
+    "is_foreign_key": "NO",
+    "foreign_table_name": null,
+    "foreign_column_name": null
+  },
+  {
+    "table_name": "data_id",
+    "column_name": "email",
+    "data_type": "text",
+    "is_nullable": "YES",
+    "column_default": "''::text",
+    "character_maximum_length": null,
+    "is_primary_key": "NO",
+    "is_foreign_key": "NO",
+    "foreign_table_name": null,
+    "foreign_column_name": null
+  },
+  {
+    "table_name": "data_slateinfo",
+    "column_name": "product_code",
+    "data_type": "text",
+    "is_nullable": "NO",
+    "column_default": null,
+    "character_maximum_length": null,
+    "is_primary_key": "NO",
+    "is_foreign_key": "NO",
+    "foreign_table_name": null,
+    "foreign_column_name": null
+  },
+  {
+    "table_name": "data_slateinfo",
+    "column_name": "description",
+    "data_type": "text",
+    "is_nullable": "YES",
+    "column_default": null,
+    "character_maximum_length": null,
+    "is_primary_key": "NO",
+    "is_foreign_key": "NO",
+    "foreign_table_name": null,
+    "foreign_column_name": null
+  },
+  {
+    "table_name": "data_slateinfo",
+    "column_name": "tool_num",
+    "data_type": "text",
+    "is_nullable": "YES",
+    "column_default": null,
+    "character_maximum_length": null,
+    "is_primary_key": "NO",
+    "is_foreign_key": "NO",
+    "foreign_table_name": null,
+    "foreign_column_name": null
+  },
+  {
+    "table_name": "data_slateinfo",
+    "column_name": "weight",
+    "data_type": "text",
+    "is_nullable": "YES",
+    "column_default": null,
+    "character_maximum_length": null,
+    "is_primary_key": "NO",
+    "is_foreign_key": "NO",
+    "foreign_table_name": null,
+    "foreign_column_name": null
+  },
+  {
+    "table_name": "data_slateinfo",
+    "column_name": "thickness_top",
+    "data_type": "text",
+    "is_nullable": "YES",
+    "column_default": null,
+    "character_maximum_length": null,
+    "is_primary_key": "NO",
+    "is_foreign_key": "NO",
+    "foreign_table_name": null,
+    "foreign_column_name": null
+  },
+  {
+    "table_name": "data_slateinfo",
+    "column_name": "thickness_bottom",
+    "data_type": "text",
+    "is_nullable": "YES",
+    "column_default": null,
+    "character_maximum_length": null,
+    "is_primary_key": "NO",
+    "is_foreign_key": "NO",
+    "foreign_table_name": null,
+    "foreign_column_name": null
+  },
+  {
+    "table_name": "data_slateinfo",
+    "column_name": "length",
+    "data_type": "text",
+    "is_nullable": "YES",
+    "column_default": null,
+    "character_maximum_length": null,
+    "is_primary_key": "NO",
+    "is_foreign_key": "NO",
+    "foreign_table_name": null,
+    "foreign_column_name": null
+  },
+  {
+    "table_name": "data_slateinfo",
+    "column_name": "width",
+    "data_type": "text",
+    "is_nullable": "YES",
+    "column_default": null,
+    "character_maximum_length": null,
+    "is_primary_key": "NO",
+    "is_foreign_key": "NO",
+    "foreign_table_name": null,
+    "foreign_column_name": null
+  },
+  {
+    "table_name": "data_slateinfo",
+    "column_name": "hole_to_bottom",
+    "data_type": "text",
+    "is_nullable": "YES",
+    "column_default": null,
+    "character_maximum_length": null,
+    "is_primary_key": "NO",
+    "is_foreign_key": "NO",
+    "foreign_table_name": null,
+    "foreign_column_name": null
+  },
+  {
+    "table_name": "data_slateinfo",
+    "column_name": "colour",
+    "data_type": "text",
+    "is_nullable": "YES",
+    "column_default": null,
+    "character_maximum_length": null,
+    "is_primary_key": "NO",
+    "is_foreign_key": "NO",
+    "foreign_table_name": null,
+    "foreign_column_name": null
+  },
+  {
+    "table_name": "data_slateinfo",
+    "column_name": "shapes",
+    "data_type": "text",
+    "is_nullable": "YES",
+    "column_default": null,
+    "character_maximum_length": null,
+    "is_primary_key": "NO",
+    "is_foreign_key": "NO",
+    "foreign_table_name": null,
+    "foreign_column_name": null
+  },
+  {
+    "table_name": "data_supplier",
+    "column_name": "supplier_code",
+    "data_type": "text",
+    "is_nullable": "NO",
+    "column_default": null,
+    "character_maximum_length": null,
+    "is_primary_key": "YES",
+    "is_foreign_key": "NO",
+    "foreign_table_name": null,
+    "foreign_column_name": null
+  },
+  {
+    "table_name": "data_supplier",
+    "column_name": "supplier_name",
+    "data_type": "text",
+    "is_nullable": "YES",
+    "column_default": null,
+    "character_maximum_length": null,
+    "is_primary_key": "NO",
+    "is_foreign_key": "NO",
+    "foreign_table_name": null,
+    "foreign_column_name": null
+  },
+  {
+    "table_name": "debug_log",
+    "column_name": "ts",
+    "data_type": "timestamp with time zone",
+    "is_nullable": "YES",
+    "column_default": "now()",
+    "character_maximum_length": null,
+    "is_primary_key": "NO",
+    "is_foreign_key": "NO",
+    "foreign_table_name": null,
+    "foreign_column_name": null
+  },
+  {
+    "table_name": "debug_log",
+    "column_name": "msg",
+    "data_type": "text",
+    "is_nullable": "YES",
+    "column_default": null,
+    "character_maximum_length": null,
+    "is_primary_key": "NO",
+    "is_foreign_key": "NO",
+    "foreign_table_name": null,
+    "foreign_column_name": null
+  },
+  {
+    "table_name": "debug_log",
+    "column_name": "UUID",
+    "data_type": "uuid",
+    "is_nullable": "NO",
+    "column_default": "gen_random_uuid()",
+    "character_maximum_length": null,
+    "is_primary_key": "YES",
+    "is_foreign_key": "NO",
+    "foreign_table_name": null,
+    "foreign_column_name": null
+  },
+  {
+    "table_name": "query_record",
+    "column_name": "uuid",
+    "data_type": "uuid",
+    "is_nullable": "NO",
+    "column_default": "gen_random_uuid()",
+    "character_maximum_length": null,
+    "is_primary_key": "YES",
+    "is_foreign_key": "NO",
+    "foreign_table_name": null,
+    "foreign_column_name": null
+  },
+  {
+    "table_name": "query_record",
+    "column_name": "created_at",
+    "data_type": "timestamp with time zone",
+    "is_nullable": "NO",
+    "column_default": "now()",
+    "character_maximum_length": null,
+    "is_primary_key": "NO",
+    "is_foreign_key": "NO",
+    "foreign_table_name": null,
+    "foreign_column_name": null
+  },
+  {
+    "table_name": "query_record",
+    "column_name": "query",
+    "data_type": "text",
+    "is_nullable": "YES",
+    "column_default": null,
+    "character_maximum_length": null,
+    "is_primary_key": "NO",
+    "is_foreign_key": "NO",
+    "foreign_table_name": null,
+    "foreign_column_name": null
+  },
+  {
+    "table_name": "query_record",
+    "column_name": "answer",
+    "data_type": "text",
+    "is_nullable": "YES",
+    "column_default": null,
+    "character_maximum_length": null,
+    "is_primary_key": "NO",
+    "is_foreign_key": "NO",
+    "foreign_table_name": null,
+    "foreign_column_name": null
+  },
+  {
+    "table_name": "query_record",
+    "column_name": "user",
+    "data_type": "text",
+    "is_nullable": "YES",
+    "column_default": null,
+    "character_maximum_length": null,
+    "is_primary_key": "NO",
+    "is_foreign_key": "NO",
+    "foreign_table_name": null,
+    "foreign_column_name": null
+  },
+  {
+    "table_name": "query_record",
+    "column_name": "token",
+    "data_type": "bigint",
+    "is_nullable": "YES",
+    "column_default": null,
+    "character_maximum_length": null,
+    "is_primary_key": "NO",
+    "is_foreign_key": "NO",
+    "foreign_table_name": null,
+    "foreign_column_name": null
+  },
+  {
+    "table_name": "record_aco",
+    "column_name": "uuid",
+    "data_type": "uuid",
+    "is_nullable": "NO",
+    "column_default": "gen_random_uuid()",
+    "character_maximum_length": null,
+    "is_primary_key": "YES",
+    "is_foreign_key": "NO",
+    "foreign_table_name": null,
+    "foreign_column_name": null
+  },
+  {
+    "table_name": "record_aco",
+    "column_name": "order_ref",
+    "data_type": "integer",
+    "is_nullable": "NO",
+    "column_default": null,
+    "character_maximum_length": null,
+    "is_primary_key": "NO",
+    "is_foreign_key": "NO",
+    "foreign_table_name": null,
+    "foreign_column_name": null
+  },
+  {
+    "table_name": "record_aco",
+    "column_name": "code",
+    "data_type": "text",
+    "is_nullable": "NO",
+    "column_default": null,
+    "character_maximum_length": null,
+    "is_primary_key": "NO",
+    "is_foreign_key": "YES",
+    "foreign_table_name": "data_code",
+    "foreign_column_name": "code"
+  },
+  {
+    "table_name": "record_aco",
+    "column_name": "required_qty",
+    "data_type": "integer",
+    "is_nullable": "NO",
+    "column_default": null,
+    "character_maximum_length": null,
+    "is_primary_key": "NO",
+    "is_foreign_key": "NO",
+    "foreign_table_name": null,
+    "foreign_column_name": null
+  },
+  {
+    "table_name": "record_aco",
+    "column_name": "remain_qty",
+    "data_type": "integer",
+    "is_nullable": "NO",
+    "column_default": null,
+    "character_maximum_length": null,
+    "is_primary_key": "NO",
+    "is_foreign_key": "NO",
+    "foreign_table_name": null,
+    "foreign_column_name": null
+  },
+  {
+    "table_name": "record_aco",
+    "column_name": "latest_update",
+    "data_type": "time without time zone",
+    "is_nullable": "NO",
+    "column_default": "now()",
+    "character_maximum_length": null,
+    "is_primary_key": "NO",
+    "is_foreign_key": "NO",
+    "foreign_table_name": null,
+    "foreign_column_name": null
+  },
+  {
+    "table_name": "record_aco_detail",
+    "column_name": "uuid",
+    "data_type": "uuid",
+    "is_nullable": "NO",
+    "column_default": "gen_random_uuid()",
+    "character_maximum_length": null,
+    "is_primary_key": "NO",
+    "is_foreign_key": "NO",
+    "foreign_table_name": null,
+    "foreign_column_name": null
+  },
+  {
+    "table_name": "record_aco_detail",
+    "column_name": "plt_num",
+    "data_type": "text",
+    "is_nullable": "NO",
+    "column_default": null,
+    "character_maximum_length": null,
+    "is_primary_key": "YES",
+    "is_foreign_key": "YES",
+    "foreign_table_name": "record_palletinfo",
+    "foreign_column_name": "plt_num"
+  },
+  {
+    "table_name": "record_aco_detail",
+    "column_name": "weight",
+    "data_type": "integer",
+    "is_nullable": "YES",
+    "column_default": null,
+    "character_maximum_length": null,
+    "is_primary_key": "NO",
+    "is_foreign_key": "NO",
+    "foreign_table_name": null,
+    "foreign_column_name": null
+  },
+  {
+    "table_name": "record_aco_detail",
+    "column_name": "length",
+    "data_type": "integer",
+    "is_nullable": "YES",
+    "column_default": null,
+    "character_maximum_length": null,
+    "is_primary_key": "NO",
+    "is_foreign_key": "NO",
+    "foreign_table_name": null,
+    "foreign_column_name": null
+  },
+  {
+    "table_name": "record_aco_detail",
+    "column_name": "width",
+    "data_type": "integer",
+    "is_nullable": "YES",
+    "column_default": null,
+    "character_maximum_length": null,
+    "is_primary_key": "NO",
+    "is_foreign_key": "NO",
+    "foreign_table_name": null,
+    "foreign_column_name": null
+  },
+  {
+    "table_name": "record_aco_detail",
+    "column_name": "height",
+    "data_type": "integer",
+    "is_nullable": "YES",
+    "column_default": null,
+    "character_maximum_length": null,
+    "is_primary_key": "NO",
+    "is_foreign_key": "NO",
+    "foreign_table_name": null,
+    "foreign_column_name": null
+  },
+  {
+    "table_name": "record_aco_detail",
+    "column_name": "created_at",
+    "data_type": "time without time zone",
+    "is_nullable": "YES",
+    "column_default": "now()",
+    "character_maximum_length": null,
+    "is_primary_key": "NO",
+    "is_foreign_key": "NO",
+    "foreign_table_name": null,
+    "foreign_column_name": null
+  },
+  {
+    "table_name": "record_grn",
+    "column_name": "grn_ref",
+    "data_type": "integer",
+    "is_nullable": "YES",
+    "column_default": null,
+    "character_maximum_length": null,
+    "is_primary_key": "NO",
+    "is_foreign_key": "NO",
+    "foreign_table_name": null,
+    "foreign_column_name": null
+  },
+  {
+    "table_name": "record_grn",
+    "column_name": "plt_num",
+    "data_type": "text",
+    "is_nullable": "YES",
+    "column_default": null,
+    "character_maximum_length": null,
+    "is_primary_key": "NO",
+    "is_foreign_key": "YES",
+    "foreign_table_name": "record_palletinfo",
+    "foreign_column_name": "plt_num"
+  },
+  {
+    "table_name": "record_grn",
+    "column_name": "sup_code",
+    "data_type": "text",
+    "is_nullable": "NO",
+    "column_default": null,
+    "character_maximum_length": null,
+    "is_primary_key": "NO",
+    "is_foreign_key": "YES",
+    "foreign_table_name": "data_supplier",
+    "foreign_column_name": "supplier_code"
+  },
+  {
+    "table_name": "record_grn",
+    "column_name": "material_code",
+    "data_type": "text",
+    "is_nullable": "NO",
+    "column_default": null,
+    "character_maximum_length": null,
+    "is_primary_key": "NO",
+    "is_foreign_key": "YES",
+    "foreign_table_name": "data_code",
+    "foreign_column_name": "code"
+  },
+  {
+    "table_name": "record_grn",
+    "column_name": "gross_weight",
+    "data_type": "integer",
+    "is_nullable": "NO",
+    "column_default": null,
+    "character_maximum_length": null,
+    "is_primary_key": "NO",
+    "is_foreign_key": "NO",
+    "foreign_table_name": null,
+    "foreign_column_name": null
+  },
+  {
+    "table_name": "record_grn",
+    "column_name": "net_weight",
+    "data_type": "integer",
+    "is_nullable": "NO",
+    "column_default": null,
+    "character_maximum_length": null,
+    "is_primary_key": "NO",
+    "is_foreign_key": "NO",
+    "foreign_table_name": null,
+    "foreign_column_name": null
+  },
+  {
+    "table_name": "record_grn",
+    "column_name": "uuid",
+    "data_type": "uuid",
+    "is_nullable": "NO",
+    "column_default": "gen_random_uuid()",
+    "character_maximum_length": null,
+    "is_primary_key": "YES",
+    "is_foreign_key": "NO",
+    "foreign_table_name": null,
+    "foreign_column_name": null
+  },
+  {
+    "table_name": "record_grn",
+    "column_name": "pallet",
+    "data_type": "text",
+    "is_nullable": "NO",
+    "column_default": null,
+    "character_maximum_length": null,
+    "is_primary_key": "NO",
+    "is_foreign_key": "NO",
+    "foreign_table_name": null,
+    "foreign_column_name": null
+  },
+  {
+    "table_name": "record_grn",
+    "column_name": "package",
+    "data_type": "text",
+    "is_nullable": "NO",
+    "column_default": null,
+    "character_maximum_length": null,
+    "is_primary_key": "NO",
+    "is_foreign_key": "NO",
+    "foreign_table_name": null,
+    "foreign_column_name": null
+  },
+  {
+    "table_name": "record_grn",
+    "column_name": "pallet_count",
+    "data_type": "numeric",
+    "is_nullable": "NO",
+    "column_default": "0.0",
+    "character_maximum_length": null,
+    "is_primary_key": "NO",
+    "is_foreign_key": "NO",
+    "foreign_table_name": null,
+    "foreign_column_name": null
+  },
+  {
+    "table_name": "record_grn",
+    "column_name": "package_count",
+    "data_type": "numeric",
+    "is_nullable": "NO",
+    "column_default": "0.0",
+    "character_maximum_length": null,
+    "is_primary_key": "NO",
+    "is_foreign_key": "NO",
+    "foreign_table_name": null,
+    "foreign_column_name": null
+  },
+  {
+    "table_name": "record_grn",
+    "column_name": "creat_time",
+    "data_type": "timestamp with time zone",
+    "is_nullable": "YES",
+    "column_default": "now()",
+    "character_maximum_length": null,
+    "is_primary_key": "NO",
+    "is_foreign_key": "NO",
+    "foreign_table_name": null,
+    "foreign_column_name": null
+  },
+  {
+    "table_name": "record_history",
+    "column_name": "time",
+    "data_type": "timestamp with time zone",
+    "is_nullable": "NO",
+    "column_default": "now()",
+    "character_maximum_length": null,
+    "is_primary_key": "NO",
+    "is_foreign_key": "NO",
+    "foreign_table_name": null,
+    "foreign_column_name": null
+  },
+  {
+    "table_name": "record_history",
+    "column_name": "id",
+    "data_type": "integer",
+    "is_nullable": "YES",
+    "column_default": null,
+    "character_maximum_length": null,
+    "is_primary_key": "NO",
+    "is_foreign_key": "YES",
+    "foreign_table_name": "data_id",
+    "foreign_column_name": "id"
+  },
+  {
+    "table_name": "record_history",
+    "column_name": "action",
+    "data_type": "text",
+    "is_nullable": "NO",
+    "column_default": null,
+    "character_maximum_length": null,
+    "is_primary_key": "NO",
+    "is_foreign_key": "NO",
+    "foreign_table_name": null,
+    "foreign_column_name": null
+  },
+  {
+    "table_name": "record_history",
+    "column_name": "plt_num",
+    "data_type": "text",
+    "is_nullable": "YES",
+    "column_default": null,
+    "character_maximum_length": null,
+    "is_primary_key": "NO",
+    "is_foreign_key": "YES",
+    "foreign_table_name": "record_palletinfo",
+    "foreign_column_name": "plt_num"
+  },
+  {
+    "table_name": "record_history",
+    "column_name": "loc",
+    "data_type": "text",
+    "is_nullable": "YES",
+    "column_default": null,
+    "character_maximum_length": null,
+    "is_primary_key": "NO",
+    "is_foreign_key": "NO",
+    "foreign_table_name": null,
+    "foreign_column_name": null
+  },
+  {
+    "table_name": "record_history",
+    "column_name": "remark",
+    "data_type": "text",
+    "is_nullable": "NO",
+    "column_default": null,
+    "character_maximum_length": null,
+    "is_primary_key": "NO",
+    "is_foreign_key": "NO",
+    "foreign_table_name": null,
+    "foreign_column_name": null
+  },
+  {
+    "table_name": "record_history",
+    "column_name": "uuid",
+    "data_type": "uuid",
+    "is_nullable": "NO",
+    "column_default": "gen_random_uuid()",
+    "character_maximum_length": null,
+    "is_primary_key": "YES",
+    "is_foreign_key": "NO",
+    "foreign_table_name": null,
+    "foreign_column_name": null
+  },
+  {
+    "table_name": "record_inventory",
+    "column_name": "product_code",
+    "data_type": "text",
+    "is_nullable": "NO",
+    "column_default": "''::text",
+    "character_maximum_length": null,
+    "is_primary_key": "NO",
+    "is_foreign_key": "YES",
+    "foreign_table_name": "data_code",
+    "foreign_column_name": "code"
+  },
+  {
+    "table_name": "record_inventory",
+    "column_name": "injection",
+    "data_type": "bigint",
+    "is_nullable": "YES",
+    "column_default": "'0'::bigint",
+    "character_maximum_length": null,
+    "is_primary_key": "NO",
+    "is_foreign_key": "NO",
+    "foreign_table_name": null,
+    "foreign_column_name": null
+  },
+  {
+    "table_name": "record_inventory",
+    "column_name": "pipeline",
+    "data_type": "bigint",
+    "is_nullable": "YES",
+    "column_default": "'0'::bigint",
+    "character_maximum_length": null,
+    "is_primary_key": "NO",
+    "is_foreign_key": "NO",
+    "foreign_table_name": null,
+    "foreign_column_name": null
+  },
+  {
+    "table_name": "record_inventory",
+    "column_name": "prebook",
+    "data_type": "bigint",
+    "is_nullable": "YES",
+    "column_default": "'0'::bigint",
+    "character_maximum_length": null,
+    "is_primary_key": "NO",
+    "is_foreign_key": "NO",
+    "foreign_table_name": null,
+    "foreign_column_name": null
+  },
+  {
+    "table_name": "record_inventory",
+    "column_name": "await",
+    "data_type": "bigint",
+    "is_nullable": "YES",
+    "column_default": "'0'::bigint",
+    "character_maximum_length": null,
+    "is_primary_key": "NO",
+    "is_foreign_key": "NO",
+    "foreign_table_name": null,
+    "foreign_column_name": null
+  },
+  {
+    "table_name": "record_inventory",
+    "column_name": "fold",
+    "data_type": "bigint",
+    "is_nullable": "YES",
+    "column_default": "'0'::bigint",
+    "character_maximum_length": null,
+    "is_primary_key": "NO",
+    "is_foreign_key": "NO",
+    "foreign_table_name": null,
+    "foreign_column_name": null
+  },
+  {
+    "table_name": "record_inventory",
+    "column_name": "bulk",
+    "data_type": "bigint",
+    "is_nullable": "YES",
+    "column_default": "'0'::bigint",
+    "character_maximum_length": null,
+    "is_primary_key": "NO",
+    "is_foreign_key": "NO",
+    "foreign_table_name": null,
+    "foreign_column_name": null
+  },
+  {
+    "table_name": "record_inventory",
+    "column_name": "backcarpark",
+    "data_type": "bigint",
+    "is_nullable": "YES",
+    "column_default": "'0'::bigint",
+    "character_maximum_length": null,
+    "is_primary_key": "NO",
+    "is_foreign_key": "NO",
+    "foreign_table_name": null,
+    "foreign_column_name": null
+  },
+  {
+    "table_name": "record_inventory",
+    "column_name": "uuid",
+    "data_type": "uuid",
+    "is_nullable": "NO",
+    "column_default": "gen_random_uuid()",
+    "character_maximum_length": null,
+    "is_primary_key": "YES",
+    "is_foreign_key": "NO",
+    "foreign_table_name": null,
+    "foreign_column_name": null
+  },
+  {
+    "table_name": "record_inventory",
+    "column_name": "latest_update",
+    "data_type": "timestamp with time zone",
+    "is_nullable": "NO",
+    "column_default": "now()",
+    "character_maximum_length": null,
+    "is_primary_key": "NO",
+    "is_foreign_key": "NO",
+    "foreign_table_name": null,
+    "foreign_column_name": null
+  },
+  {
+    "table_name": "record_inventory",
+    "column_name": "plt_num",
+    "data_type": "text",
+    "is_nullable": "NO",
+    "column_default": null,
+    "character_maximum_length": null,
+    "is_primary_key": "NO",
+    "is_foreign_key": "YES",
+    "foreign_table_name": "record_palletinfo",
+    "foreign_column_name": "plt_num"
+  },
+  {
+    "table_name": "record_inventory",
+    "column_name": "damage",
+    "data_type": "bigint",
+    "is_nullable": "NO",
+    "column_default": "'0'::bigint",
+    "character_maximum_length": null,
+    "is_primary_key": "NO",
+    "is_foreign_key": "NO",
+    "foreign_table_name": null,
+    "foreign_column_name": null
+  },
+  {
+    "table_name": "record_palletinfo",
+    "column_name": "generate_time",
+    "data_type": "timestamp with time zone",
+    "is_nullable": "NO",
+    "column_default": "now()",
+    "character_maximum_length": null,
+    "is_primary_key": "NO",
+    "is_foreign_key": "NO",
+    "foreign_table_name": null,
+    "foreign_column_name": null
+  },
+  {
+    "table_name": "record_palletinfo",
+    "column_name": "plt_num",
+    "data_type": "text",
+    "is_nullable": "NO",
+    "column_default": null,
+    "character_maximum_length": null,
+    "is_primary_key": "YES",
+    "is_foreign_key": "NO",
+    "foreign_table_name": null,
+    "foreign_column_name": null
+  },
+  {
+    "table_name": "record_palletinfo",
+    "column_name": "product_code",
+    "data_type": "text",
+    "is_nullable": "NO",
+    "column_default": null,
+    "character_maximum_length": null,
+    "is_primary_key": "NO",
+    "is_foreign_key": "YES",
+    "foreign_table_name": "data_code",
+    "foreign_column_name": "code"
+  },
+  {
+    "table_name": "record_palletinfo",
+    "column_name": "series",
+    "data_type": "text",
+    "is_nullable": "NO",
+    "column_default": null,
+    "character_maximum_length": null,
+    "is_primary_key": "NO",
+    "is_foreign_key": "NO",
+    "foreign_table_name": null,
+    "foreign_column_name": null
+  },
+  {
+    "table_name": "record_palletinfo",
+    "column_name": "plt_remark",
+    "data_type": "text",
+    "is_nullable": "YES",
+    "column_default": "''::text",
+    "character_maximum_length": null,
+    "is_primary_key": "NO",
+    "is_foreign_key": "NO",
+    "foreign_table_name": null,
+    "foreign_column_name": null
+  },
+  {
+    "table_name": "record_palletinfo",
+    "column_name": "product_qty",
+    "data_type": "bigint",
+    "is_nullable": "YES",
+    "column_default": "'0'::bigint",
+    "character_maximum_length": null,
+    "is_primary_key": "NO",
+    "is_foreign_key": "NO",
+    "foreign_table_name": null,
+    "foreign_column_name": null
+  },
+  {
+    "table_name": "record_slate",
+    "column_name": "code",
+    "data_type": "text",
+    "is_nullable": "NO",
+    "column_default": "''::text",
+    "character_maximum_length": null,
+    "is_primary_key": "NO",
+    "is_foreign_key": "YES",
+    "foreign_table_name": "data_code",
+    "foreign_column_name": "code"
+  },
+  {
+    "table_name": "record_slate",
+    "column_name": "plt_num",
+    "data_type": "text",
+    "is_nullable": "NO",
+    "column_default": "''::text",
+    "character_maximum_length": null,
+    "is_primary_key": "NO",
+    "is_foreign_key": "YES",
+    "foreign_table_name": "record_palletinfo",
+    "foreign_column_name": "plt_num"
+  },
+  {
+    "table_name": "record_slate",
+    "column_name": "setter",
+    "data_type": "text",
+    "is_nullable": "NO",
+    "column_default": "''::text",
+    "character_maximum_length": null,
+    "is_primary_key": "NO",
+    "is_foreign_key": "NO",
+    "foreign_table_name": null,
+    "foreign_column_name": null
+  },
+  {
+    "table_name": "record_slate",
+    "column_name": "mach_num",
+    "data_type": "text",
+    "is_nullable": "NO",
+    "column_default": "''::text",
+    "character_maximum_length": null,
+    "is_primary_key": "NO",
+    "is_foreign_key": "NO",
+    "foreign_table_name": null,
+    "foreign_column_name": null
+  },
+  {
+    "table_name": "record_slate",
+    "column_name": "material",
+    "data_type": "text",
+    "is_nullable": "NO",
+    "column_default": "''::text",
+    "character_maximum_length": null,
+    "is_primary_key": "NO",
+    "is_foreign_key": "NO",
+    "foreign_table_name": null,
+    "foreign_column_name": null
+  },
+  {
+    "table_name": "record_slate",
+    "column_name": "batch_num",
+    "data_type": "text",
+    "is_nullable": "NO",
+    "column_default": "''::text",
+    "character_maximum_length": null,
+    "is_primary_key": "NO",
+    "is_foreign_key": "NO",
+    "foreign_table_name": null,
+    "foreign_column_name": null
+  },
+  {
+    "table_name": "record_slate",
+    "column_name": "weight",
+    "data_type": "integer",
+    "is_nullable": "NO",
+    "column_default": null,
+    "character_maximum_length": null,
+    "is_primary_key": "NO",
+    "is_foreign_key": "NO",
+    "foreign_table_name": null,
+    "foreign_column_name": null
+  },
+  {
+    "table_name": "record_slate",
+    "column_name": "t_thick",
+    "data_type": "integer",
+    "is_nullable": "NO",
+    "column_default": null,
+    "character_maximum_length": null,
+    "is_primary_key": "NO",
+    "is_foreign_key": "NO",
+    "foreign_table_name": null,
+    "foreign_column_name": null
+  },
+  {
+    "table_name": "record_slate",
+    "column_name": "b_thick",
+    "data_type": "integer",
+    "is_nullable": "NO",
+    "column_default": null,
+    "character_maximum_length": null,
+    "is_primary_key": "NO",
+    "is_foreign_key": "NO",
+    "foreign_table_name": null,
+    "foreign_column_name": null
+  },
+  {
+    "table_name": "record_slate",
+    "column_name": "length",
+    "data_type": "integer",
+    "is_nullable": "NO",
+    "column_default": null,
+    "character_maximum_length": null,
+    "is_primary_key": "NO",
+    "is_foreign_key": "NO",
+    "foreign_table_name": null,
+    "foreign_column_name": null
+  },
+  {
+    "table_name": "record_slate",
+    "column_name": "width",
+    "data_type": "integer",
+    "is_nullable": "NO",
+    "column_default": null,
+    "character_maximum_length": null,
+    "is_primary_key": "NO",
+    "is_foreign_key": "NO",
+    "foreign_table_name": null,
+    "foreign_column_name": null
+  },
+  {
+    "table_name": "record_slate",
+    "column_name": "centre_hole",
+    "data_type": "integer",
+    "is_nullable": "NO",
+    "column_default": null,
+    "character_maximum_length": null,
+    "is_primary_key": "NO",
+    "is_foreign_key": "NO",
+    "foreign_table_name": null,
+    "foreign_column_name": null
+  },
+  {
+    "table_name": "record_slate",
+    "column_name": "colour",
+    "data_type": "text",
+    "is_nullable": "NO",
+    "column_default": "''::text",
+    "character_maximum_length": null,
+    "is_primary_key": "NO",
+    "is_foreign_key": "NO",
+    "foreign_table_name": null,
+    "foreign_column_name": null
+  },
+  {
+    "table_name": "record_slate",
+    "column_name": "shape",
+    "data_type": "text",
+    "is_nullable": "NO",
+    "column_default": "''::text",
+    "character_maximum_length": null,
+    "is_primary_key": "NO",
+    "is_foreign_key": "NO",
+    "foreign_table_name": null,
+    "foreign_column_name": null
+  },
+  {
+    "table_name": "record_slate",
+    "column_name": "flame_test",
+    "data_type": "integer",
+    "is_nullable": "NO",
+    "column_default": null,
+    "character_maximum_length": null,
+    "is_primary_key": "NO",
+    "is_foreign_key": "NO",
+    "foreign_table_name": null,
+    "foreign_column_name": null
+  },
+  {
+    "table_name": "record_slate",
+    "column_name": "remark",
+    "data_type": "text",
+    "is_nullable": "YES",
+    "column_default": "''::text",
+    "character_maximum_length": null,
+    "is_primary_key": "NO",
+    "is_foreign_key": "NO",
+    "foreign_table_name": null,
+    "foreign_column_name": null
+  },
+  {
+    "table_name": "record_slate",
+    "column_name": "uuid",
+    "data_type": "uuid",
+    "is_nullable": "NO",
+    "column_default": "gen_random_uuid()",
+    "character_maximum_length": null,
+    "is_primary_key": "YES",
+    "is_foreign_key": "NO",
+    "foreign_table_name": null,
+    "foreign_column_name": null
+  },
+  {
+    "table_name": "record_slate",
+    "column_name": "first_off",
+    "data_type": "date",
+    "is_nullable": "YES",
+    "column_default": null,
+    "character_maximum_length": null,
+    "is_primary_key": "NO",
+    "is_foreign_key": "NO",
+    "foreign_table_name": null,
+    "foreign_column_name": null
+  },
+  {
+    "table_name": "record_transfer",
+    "column_name": "tran_date",
+    "data_type": "timestamp with time zone",
+    "is_nullable": "NO",
+    "column_default": "now()",
+    "character_maximum_length": null,
+    "is_primary_key": "NO",
+    "is_foreign_key": "NO",
+    "foreign_table_name": null,
+    "foreign_column_name": null
+  },
+  {
+    "table_name": "record_transfer",
+    "column_name": "f_loc",
+    "data_type": "text",
+    "is_nullable": "NO",
+    "column_default": null,
+    "character_maximum_length": null,
+    "is_primary_key": "NO",
+    "is_foreign_key": "NO",
+    "foreign_table_name": null,
+    "foreign_column_name": null
+  },
+  {
+    "table_name": "record_transfer",
+    "column_name": "t_loc",
+    "data_type": "text",
+    "is_nullable": "NO",
+    "column_default": null,
+    "character_maximum_length": null,
+    "is_primary_key": "NO",
+    "is_foreign_key": "NO",
+    "foreign_table_name": null,
+    "foreign_column_name": null
+  },
+  {
+    "table_name": "record_transfer",
+    "column_name": "plt_num",
+    "data_type": "text",
+    "is_nullable": "NO",
+    "column_default": null,
+    "character_maximum_length": null,
+    "is_primary_key": "NO",
+    "is_foreign_key": "YES",
+    "foreign_table_name": "record_palletinfo",
+    "foreign_column_name": "plt_num"
+  },
+  {
+    "table_name": "record_transfer",
+    "column_name": "operator_id",
+    "data_type": "integer",
+    "is_nullable": "NO",
+    "column_default": null,
+    "character_maximum_length": null,
+    "is_primary_key": "NO",
+    "is_foreign_key": "YES",
+    "foreign_table_name": "data_id",
+    "foreign_column_name": "id"
+  },
+  {
+    "table_name": "record_transfer",
+    "column_name": "uuid",
+    "data_type": "uuid",
+    "is_nullable": "NO",
+    "column_default": "gen_random_uuid()",
+    "character_maximum_length": null,
+    "is_primary_key": "YES",
+    "is_foreign_key": "NO",
+    "foreign_table_name": null,
+    "foreign_column_name": null
+  },
+  {
+    "table_name": "report_log",
+    "column_name": "uuid",
+    "data_type": "uuid",
+    "is_nullable": "NO",
+    "column_default": "gen_random_uuid()",
+    "character_maximum_length": null,
+    "is_primary_key": "YES",
+    "is_foreign_key": "NO",
+    "foreign_table_name": null,
+    "foreign_column_name": null
+  },
+  {
+    "table_name": "report_log",
+    "column_name": "error",
+    "data_type": "text",
+    "is_nullable": "NO",
+    "column_default": null,
+    "character_maximum_length": null,
+    "is_primary_key": "NO",
+    "is_foreign_key": "NO",
+    "foreign_table_name": null,
+    "foreign_column_name": null
+  },
+  {
+    "table_name": "report_log",
+    "column_name": "error_info",
+    "data_type": "text",
+    "is_nullable": "NO",
+    "column_default": null,
+    "character_maximum_length": null,
+    "is_primary_key": "NO",
+    "is_foreign_key": "NO",
+    "foreign_table_name": null,
+    "foreign_column_name": null
+  },
+  {
+    "table_name": "report_log",
+    "column_name": "state",
+    "data_type": "boolean",
+    "is_nullable": "NO",
+    "column_default": "false",
+    "character_maximum_length": null,
+    "is_primary_key": "NO",
+    "is_foreign_key": "NO",
+    "foreign_table_name": null,
+    "foreign_column_name": null
+  },
+  {
+    "table_name": "report_log",
+    "column_name": "user_id",
+    "data_type": "integer",
+    "is_nullable": "NO",
+    "column_default": null,
+    "character_maximum_length": null,
+    "is_primary_key": "NO",
+    "is_foreign_key": "YES",
+    "foreign_table_name": "data_id",
+    "foreign_column_name": "id"
+  },
+  {
+    "table_name": "report_log",
+    "column_name": "time",
+    "data_type": "timestamp with time zone",
+    "is_nullable": "NO",
+    "column_default": "now()",
+    "character_maximum_length": null,
+    "is_primary_key": "NO",
+    "is_foreign_key": "NO",
+    "foreign_table_name": null,
+    "foreign_column_name": null
+  },
+  {
+    "table_name": "report_void",
+    "column_name": "uuid",
+    "data_type": "uuid",
+    "is_nullable": "NO",
+    "column_default": "gen_random_uuid()",
+    "character_maximum_length": null,
+    "is_primary_key": "YES",
+    "is_foreign_key": "NO",
+    "foreign_table_name": null,
+    "foreign_column_name": null
+  },
+  {
+    "table_name": "report_void",
+    "column_name": "time",
+    "data_type": "timestamp with time zone",
+    "is_nullable": "NO",
+    "column_default": "now()",
+    "character_maximum_length": null,
+    "is_primary_key": "NO",
+    "is_foreign_key": "NO",
+    "foreign_table_name": null,
+    "foreign_column_name": null
+  },
+  {
+    "table_name": "report_void",
+    "column_name": "plt_num",
+    "data_type": "text",
+    "is_nullable": "NO",
+    "column_default": null,
+    "character_maximum_length": null,
+    "is_primary_key": "NO",
+    "is_foreign_key": "YES",
+    "foreign_table_name": "record_palletinfo",
+    "foreign_column_name": "plt_num"
+  },
+  {
+    "table_name": "report_void",
+    "column_name": "reason",
+    "data_type": "text",
+    "is_nullable": "NO",
+    "column_default": null,
+    "character_maximum_length": null,
+    "is_primary_key": "NO",
+    "is_foreign_key": "NO",
+    "foreign_table_name": null,
+    "foreign_column_name": null
+  },
+  {
+    "table_name": "report_void",
+    "column_name": "damage_qty",
+    "data_type": "integer",
+    "is_nullable": "NO",
+    "column_default": null,
+    "character_maximum_length": null,
+    "is_primary_key": "NO",
+    "is_foreign_key": "NO",
+    "foreign_table_name": null,
+    "foreign_column_name": null
+  },
+  {
+    "table_name": "stock_level",
+    "column_name": "uuid",
+    "data_type": "uuid",
+    "is_nullable": "NO",
+    "column_default": "gen_random_uuid()",
+    "character_maximum_length": null,
+    "is_primary_key": "YES",
+    "is_foreign_key": "NO",
+    "foreign_table_name": null,
+    "foreign_column_name": null
+  },
+  {
+    "table_name": "stock_level",
+    "column_name": "stock",
+    "data_type": "text",
+    "is_nullable": "NO",
+    "column_default": "''::text",
+    "character_maximum_length": null,
+    "is_primary_key": "NO",
+    "is_foreign_key": "YES",
+    "foreign_table_name": "data_code",
+    "foreign_column_name": "code"
+  },
+  {
+    "table_name": "stock_level",
+    "column_name": "description",
+    "data_type": "text",
+    "is_nullable": "NO",
+    "column_default": null,
+    "character_maximum_length": null,
+    "is_primary_key": "NO",
+    "is_foreign_key": "NO",
+    "foreign_table_name": null,
+    "foreign_column_name": null
+  },
+  {
+    "table_name": "stock_level",
+    "column_name": "stock_level",
+    "data_type": "bigint",
+    "is_nullable": "NO",
+    "column_default": null,
+    "character_maximum_length": null,
+    "is_primary_key": "NO",
+    "is_foreign_key": "NO",
+    "foreign_table_name": null,
+    "foreign_column_name": null
+  },
+  {
+    "table_name": "stock_level",
+    "column_name": "update_time",
+    "data_type": "timestamp with time zone",
+    "is_nullable": "NO",
+    "column_default": "now()",
+    "character_maximum_length": null,
+    "is_primary_key": "NO",
+    "is_foreign_key": "NO",
+    "foreign_table_name": null,
+    "foreign_column_name": null
+  },
+  {
+    "table_name": "work_level",
+    "column_name": "uuid",
+    "data_type": "uuid",
+    "is_nullable": "NO",
+    "column_default": "gen_random_uuid()",
+    "character_maximum_length": null,
+    "is_primary_key": "YES",
+    "is_foreign_key": "NO",
+    "foreign_table_name": null,
+    "foreign_column_name": null
+  },
+  {
+    "table_name": "work_level",
+    "column_name": "id",
+    "data_type": "integer",
+    "is_nullable": "NO",
+    "column_default": null,
+    "character_maximum_length": null,
+    "is_primary_key": "NO",
+    "is_foreign_key": "YES",
+    "foreign_table_name": "data_id",
+    "foreign_column_name": "id"
+  },
+  {
+    "table_name": "work_level",
+    "column_name": "QC",
+    "data_type": "bigint",
+    "is_nullable": "NO",
+    "column_default": "'0'::bigint",
+    "character_maximum_length": null,
+    "is_primary_key": "NO",
+    "is_foreign_key": "NO",
+    "foreign_table_name": null,
+    "foreign_column_name": null
+  },
+  {
+    "table_name": "work_level",
+    "column_name": "Move",
+    "data_type": "bigint",
+    "is_nullable": "NO",
+    "column_default": "'0'::bigint",
+    "character_maximum_length": null,
+    "is_primary_key": "NO",
+    "is_foreign_key": "NO",
+    "foreign_table_name": null,
+    "foreign_column_name": null
+  },
+  {
+    "table_name": "work_level",
+    "column_name": "latest_update",
+    "data_type": "timestamp with time zone",
+    "is_nullable": "NO",
+    "column_default": "now()",
+    "character_maximum_length": null,
+    "is_primary_key": "NO",
+    "is_foreign_key": "NO",
+    "foreign_table_name": null,
+    "foreign_column_name": null
+  }
+]

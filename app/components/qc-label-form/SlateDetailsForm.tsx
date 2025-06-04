@@ -6,14 +6,12 @@ import { SlateDetail } from './types';
 interface SlateDetailsFormProps {
   slateDetail: SlateDetail;
   onSlateDetailChange: (field: keyof SlateDetail, value: string) => void;
-  availableFirstOffDates: string[];
   disabled?: boolean;
 }
 
 export const SlateDetailsForm: React.FC<SlateDetailsFormProps> = React.memo(({
   slateDetail,
   onSlateDetailChange,
-  availableFirstOffDates,
   disabled = false
 }) => {
   const handleFieldChange = (field: keyof SlateDetail, value: string) => {
@@ -48,7 +46,7 @@ export const SlateDetailsForm: React.FC<SlateDetailsFormProps> = React.memo(({
         {/* Required field notice */}
         <div className="mt-4 p-3 bg-green-100 border border-green-200 rounded-md">
           <p className="text-sm text-green-700">
-            <span className="font-medium">Note:</span> Batch Number is required.
+            <span className="font-medium">Note:</span> Batch Number is required and will be recorded in the pallet remark.
           </p>
         </div>
       </div>

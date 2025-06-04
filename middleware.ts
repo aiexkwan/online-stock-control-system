@@ -27,7 +27,7 @@ export async function middleware(request: NextRequest) {
     return response; 
   }
 
-  // 公開路由 - 主登入頁面、密碼重設頁面和 API 路由不需要認證
+  // 公開路由 - 只有主登入頁面、密碼重設頁面和 API 路由不需要認證
   // 注意：/_next/static, /_next/image, /favicon.ico 通常由 matcher 排除
   const publicRoutes = [
     '/main-login',
@@ -148,32 +148,9 @@ export async function middleware(request: NextRequest) {
     }
 
     if (!user) {
-      // 需要認證的頁面列表 - 除了公開路由外的所有頁面都需要認證
-      const protectedRoutes = [
-        '/access',
-        '/dashboard',
-        '/change-password',  // 密碼修改頁面需要認證，用戶必須已登入
-        '/reports',
-        '/view-history',
-        '/void-pallet',
-        '/tables',
-        '/inventory',
-        '/history',
-        '/products',
-        '/stock-transfer',
-        //'/print-label',
-        '/print-grnlabel',
-        '/debug-test',
-        '/admin'  // 添加 admin 路由
-      ];
-      
-      // 檢查當前路徑是否需要認證
-      const needsAuth = protectedRoutes.some(route => 
-        request.nextUrl.pathname.startsWith(route)
-      );
-      
-      // 如果不在 /main-login 頁面且需要認證，則重定向到登入頁面
-      if (request.nextUrl.pathname !== '/main-login' && needsAuth) {
+      // 除了公開路由外，所有其他路由都需要認證
+      // 如果不在 /main-login 頁面且不是公開路由，則重定向到登入頁面
+      if (request.nextUrl.pathname !== '/main-login' && !isPublicRoute) {
         console.log('[Supabase SSR Middleware] Protected route requires authentication, redirecting to main-login from:', request.nextUrl.pathname);
         const redirectUrl = new URL('/main-login', request.url);
         redirectUrl.searchParams.set('from', request.nextUrl.pathname);

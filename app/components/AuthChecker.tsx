@@ -9,7 +9,7 @@ interface AuthCheckerProps {
   children: React.ReactNode;
 }
 
-// 定義公開路由列表 - 主登入頁面和密碼重設頁面是公開的
+// 定義公開路由列表 - 只有主登入頁面和密碼重設頁面是公開的
 const publicPaths = [
   '/main-login',
   '/new-password'  // 密碼重設頁面需要公開，用戶通過電郵連結訪問
@@ -52,16 +52,7 @@ export default function AuthChecker({ children }: AuthCheckerProps) {
         return;
       }
 
-      // 檢查是否是受保護路由
-      const isProtectedRoute = protectedPaths.some(path => pathname.startsWith(path));
-      if (!isProtectedRoute) {
-        console.log('[AuthChecker] Not a protected route, allowing access');
-        setIsAuthChecked(true);
-        setIsAuthenticated(true);
-        return;
-      }
-
-      // 對於受保護路由，檢查認證狀態
+      // 除了公開路由外，所有其他路由都需要認證
       try {
         console.log('[AuthChecker] Checking user authentication...');
         const user = await unifiedAuth.getCurrentUser();
@@ -111,8 +102,8 @@ export default function AuthChecker({ children }: AuthCheckerProps) {
     );
   }
 
-  // 如果未認證且是受保護路由，顯示載入畫面（等待重定向）
-  if (!isAuthenticated && protectedPaths.some(path => pathname.startsWith(path))) {
+  // 如果未認證且不是公開路由，顯示載入畫面（等待重定向）
+  if (!isAuthenticated && !publicPaths.some(path => pathname.startsWith(path))) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-[#181c2f]">
         <div className="animate-pulse text-white text-lg">Redirecting to login...</div>

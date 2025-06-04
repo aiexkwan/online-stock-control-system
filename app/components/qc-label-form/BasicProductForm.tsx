@@ -6,12 +6,14 @@ import ProductInfoDisplay from './ProductInfoDisplay';
 import FormField from './FormField';
 import { getFieldError } from './hooks/useFormValidation';
 import { FormValidation } from './types';
+import RemarkFormatter from './RemarkFormatter';
 
 interface ProductInfo {
   code: string;
   description: string;
   standard_qty: string;
   type: string;
+  remark?: string;
 }
 
 interface BasicProductFormProps {
@@ -44,6 +46,14 @@ export const BasicProductForm: React.FC<BasicProductFormProps> = React.memo(({
   disabled = false
 }) => {
   const isSlateProduct = productInfo?.type === 'Slate';
+  const countValue = parseInt(count) || 0;
+  const isCountExceeded = countValue > 5;
+  
+  // Check if remark should be displayed
+  const shouldShowNotice = productInfo?.remark && 
+    productInfo.remark !== 'Null' && 
+    productInfo.remark !== '-' && 
+    productInfo.remark.trim() !== '';
 
   return (
     <div className="space-y-4">
@@ -59,6 +69,25 @@ export const BasicProductForm: React.FC<BasicProductFormProps> = React.memo(({
 
       {/* Product Info Display */}
       <ProductInfoDisplay productInfo={productInfo} />
+
+      {/* Notice/Remark Information */}
+      {shouldShowNotice && (
+        <div className="bg-black border-2 border-red-500 rounded-md p-4 animate-pulse">
+          <div className="flex items-start space-x-3">
+            <div className="flex-shrink-0 mt-1">
+              <svg className="h-5 w-5 text-red-500 animate-bounce" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+              </svg>
+            </div>
+            <div className="flex-1">
+              <h4 className="text-red-500 font-semibold text-sm mb-3">Reminder</h4>
+              <div className="text-red-400 text-sm font-medium leading-relaxed">
+                <RemarkFormatter remarkText={productInfo?.remark || ''} />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Quantity Input */}
       <FormField
@@ -87,34 +116,49 @@ export const BasicProductForm: React.FC<BasicProductFormProps> = React.memo(({
         />
       </FormField>
 
-      {/* Count Input */}
+      {/* Count Input with Maximum Limit */}
       <FormField
         label="Count of Pallet"
         required={true}
-        hint={isSlateProduct ? "Auto-set to 1 for Slate" : undefined}
-        error={validation ? getFieldError(validation, 'count') : undefined}
+        hint={isSlateProduct ? "Auto-set to 1 for Slate" : "Maximum 5 pallets allowed"}
+        error={
+          isCountExceeded 
+            ? "Maximum 5 pallets allowed for printing" 
+            : (validation ? getFieldError(validation, 'count') : undefined)
+        }
       >
         <input
           type="text"
           inputMode="numeric"
           pattern="[0-9]*"
           className={`w-full rounded-md bg-gray-900 border text-white px-3 py-2 focus:outline-none focus:ring-2 ${
-            validation && getFieldError(validation, 'count')
+            isCountExceeded
+              ? 'border-red-500 focus:ring-red-500'
+              : validation && getFieldError(validation, 'count')
               ? 'border-red-500 focus:ring-red-500'
               : 'border-gray-700 focus:ring-blue-500'
           } ${isSlateProduct ? 'opacity-50 cursor-not-allowed' : ''}`}
           value={isSlateProduct ? '1' : count}
           onChange={(e) => {
             if (!isSlateProduct) {
-              // Only allow numeric input
+              // Only allow numeric input and enforce maximum of 5
               const numericValue = e.target.value.replace(/[^0-9]/g, '');
-              onCountChange(numericValue);
+              const numValue = parseInt(numericValue) || 0;
+              if (numValue <= 5) {
+                onCountChange(numericValue);
+              }
             }
           }}
           disabled={disabled || isSlateProduct}
           required
-          placeholder={isSlateProduct ? "Auto-set to 1" : "Numbers only"}
+          placeholder={isSlateProduct ? "Auto-set to 1" : "Max 5 pallets"}
+          max="5"
         />
+        {isCountExceeded && (
+          <div className="text-red-500 text-xs mt-1 font-semibold animate-pulse">
+            ⚠️ Printing limit exceeded! Maximum 5 pages allowed
+          </div>
+        )}
       </FormField>
 
       {/* Operator Input */}

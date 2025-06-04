@@ -5,7 +5,6 @@ import { useRouter, usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { createClient } from '@/lib/supabase';
 import { toast } from 'sonner';
-import { clearLocalAuthData } from '@/app/utils/auth-sync';
 import { useAuth } from '@/app/hooks/useAuth';
 
 // Icons
@@ -150,7 +149,7 @@ export default function GlobalHeader() {
   // Handle logout
   const handleLogout = async () => {
     try {
-      // 直接使用客戶端 Supabase 登出，不調用 Server Action
+      // 直接使用客戶端 Supabase 登出
       const { error } = await supabase.auth.signOut();
       if (error) {
         console.error('[Header] Logout error:', error);
@@ -158,8 +157,19 @@ export default function GlobalHeader() {
         return;
       }
       
-      // 清除本地認證數據
-      clearLocalAuthData();
+      // 清除本地存儲的認證數據
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('loggedInUserClockNumber');
+        // Clear any other auth-related localStorage items
+        const keysToRemove = [];
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          if (key && (key.includes('auth') || key.includes('supabase'))) {
+            keysToRemove.push(key);
+          }
+        }
+        keysToRemove.forEach(key => localStorage.removeItem(key));
+      }
       
       // 顯示成功訊息
       toast.success('You have logged out');

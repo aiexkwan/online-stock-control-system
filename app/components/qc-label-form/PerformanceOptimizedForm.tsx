@@ -181,12 +181,10 @@ const AcoSection = React.memo<{
 const SlateSection = React.memo<{
   slateDetail: SlateDetail;
   onSlateDetailChange: (field: keyof SlateDetail, value: string) => void;
-  availableFirstOffDates: string[];
   disabled?: boolean;
 }>(({
   slateDetail,
   onSlateDetailChange,
-  availableFirstOffDates,
   disabled = false
 }) => {
   const handleSlateDetailChange = useCallback((field: keyof SlateDetail, value: string) => {
@@ -204,7 +202,6 @@ const SlateSection = React.memo<{
       <SlateDetailsForm
         slateDetail={slateDetail}
         onSlateDetailChange={handleSlateDetailChange}
-        availableFirstOffDates={availableFirstOffDates}
         disabled={disabled}
       />
     </AccordionItem>
@@ -286,20 +283,7 @@ export const PerformanceOptimizedForm: React.FC<PerformanceOptimizedFormProps> =
     acoNewProductCode: '',
     acoNewOrderQty: '',
     slateDetail: {
-      firstOffDate: '',
-      batchNumber: '',
-      setterName: '',
-      material: '',
-      weight: '',
-      topThickness: '',
-      bottomThickness: '',
-      length: '',
-      width: '',
-      centreHole: '',
-      colour: '',
-      shapes: '',
-      flameTest: '',
-      remark: ''
+      batchNumber: ''
     },
     pdfProgress: {
       current: 0,
@@ -311,7 +295,6 @@ export const PerformanceOptimizedForm: React.FC<PerformanceOptimizedFormProps> =
     productError: null,
     acoOrderDetailErrors: [],
     acoRemain: null,
-    availableFirstOffDates: [],
     availableAcoOrderRefs: []
   });
 
@@ -406,6 +389,12 @@ export const PerformanceOptimizedForm: React.FC<PerformanceOptimizedFormProps> =
     }
   }, [productInfo?.type, formData.count, handleInputChange]);
 
+  // Check if count exceeds limit
+  const isCountExceeded = useMemo(() => {
+    const countValue = parseInt(formData.count) || 0;
+    return countValue > 5;
+  }, [formData.count]);
+
   // Business logic hook
   const businessLogic = useQcLabelBusiness({
     formData,
@@ -475,21 +464,21 @@ export const PerformanceOptimizedForm: React.FC<PerformanceOptimizedFormProps> =
                 </div>
                 <div className="flex-1">
                   <div className="text-lg font-semibold bg-gradient-to-r from-blue-200 to-indigo-200 bg-clip-text text-transparent mb-2">
-                    自動填充模式
+                    Auto-Fill Mode
                   </div>
                   <div className="text-sm text-blue-200/90 leading-relaxed">
-                    表單已從 Void Pallet 系統自動填充基本信息。請檢查並完成其他必要欄位，然後點擊「Print Label」生成新標籤。
+                    Form has been automatically filled with basic information from the Void Pallet system. Please review and complete other required fields, then click "Print Label" to generate new labels.
                   </div>
                   {urlParams.originalPltNum && (
                     <div className="mt-3 p-3 bg-slate-800/40 rounded-xl border border-slate-600/30">
                       <div className="text-xs text-slate-300 space-y-1">
                         <div className="flex items-center space-x-2">
-                          <span className="text-slate-400">原棧板號碼:</span>
+                          <span className="text-slate-400">Original Pallet Number:</span>
                           <span className="font-mono text-blue-300 bg-slate-700/50 px-2 py-1 rounded">{urlParams.originalPltNum}</span>
                         </div>
                         {urlParams.voidReason && (
                           <div className="flex items-center space-x-2">
-                            <span className="text-slate-400">作廢原因:</span>
+                            <span className="text-slate-400">Void Reason:</span>
                             <span className="text-amber-300">{urlParams.voidReason}</span>
                           </div>
                         )}
@@ -552,7 +541,6 @@ export const PerformanceOptimizedForm: React.FC<PerformanceOptimizedFormProps> =
                     <SlateSection
                       slateDetail={formData.slateDetail}
                       onSlateDetailChange={businessLogic.handleSlateDetailChange}
-                      availableFirstOffDates={formData.availableFirstOffDates}
                       disabled={isLoading}
                     />
                   )}
@@ -575,20 +563,20 @@ export const PerformanceOptimizedForm: React.FC<PerformanceOptimizedFormProps> =
                 <div className="relative group">
                   <button
                     type="submit"
-                    disabled={!validationState.isValid || isLoading || businessLogic.isAcoOrderExcess || businessLogic.isAcoOrderFulfilled || businessLogic.isAcoOrderIncomplete}
+                    disabled={!validationState.isValid || isLoading || businessLogic.isAcoOrderExcess || businessLogic.isAcoOrderFulfilled || businessLogic.isAcoOrderIncomplete || isCountExceeded}
                     className={`
                       w-full py-4 px-6 rounded-2xl font-semibold text-lg
                       transition-all duration-300 ease-out
                       flex items-center justify-center space-x-3
                       relative overflow-hidden
-                      ${validationState.isValid && !isLoading && !businessLogic.isAcoOrderExcess && !businessLogic.isAcoOrderFulfilled && !businessLogic.isAcoOrderIncomplete
+                      ${validationState.isValid && !isLoading && !businessLogic.isAcoOrderExcess && !businessLogic.isAcoOrderFulfilled && !businessLogic.isAcoOrderIncomplete && !isCountExceeded
                         ? 'bg-gradient-to-r from-blue-600 via-blue-500 to-cyan-500 hover:from-blue-500 hover:via-blue-400 hover:to-cyan-400 text-white shadow-2xl shadow-blue-500/25 hover:shadow-blue-400/40 hover:scale-[1.02] active:scale-[0.98]'
                         : 'bg-gradient-to-r from-slate-700 to-slate-600 text-slate-300 cursor-not-allowed shadow-lg shadow-slate-900/20'
                       }
                     `}
                   >
                     {/* 按鈕內部光效 */}
-                    {validationState.isValid && !isLoading && !businessLogic.isAcoOrderExcess && !businessLogic.isAcoOrderFulfilled && !businessLogic.isAcoOrderIncomplete && (
+                    {validationState.isValid && !isLoading && !businessLogic.isAcoOrderExcess && !businessLogic.isAcoOrderFulfilled && !businessLogic.isAcoOrderIncomplete && !isCountExceeded && (
                       <div className="absolute inset-0 bg-gradient-to-r from-white/10 via-white/5 to-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                     )}
                     
@@ -599,6 +587,7 @@ export const PerformanceOptimizedForm: React.FC<PerformanceOptimizedFormProps> =
                          businessLogic.isAcoOrderFulfilled ? 'Order Fulfilled' :
                          businessLogic.isAcoOrderExcess ? 'Quantity Exceeds Order' : 
                          businessLogic.isAcoOrderIncomplete ? 'Complete ACO Details' :
+                         isCountExceeded ? 'Print Limit Exceeded' :
                          'Print Label'}
                       </span>
                     </div>
@@ -671,6 +660,28 @@ export const PerformanceOptimizedForm: React.FC<PerformanceOptimizedFormProps> =
                           </div>
                           <div className="text-xs text-orange-300/80 mt-1">
                             Please complete the ACO order search or enter all required order details before printing.
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Count Limit Exceeded Warning */}
+                {isCountExceeded && (
+                  <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-red-900/40 via-red-900/30 to-red-900/40 backdrop-blur-sm border border-red-500/30 p-4 shadow-lg shadow-red-900/20">
+                    <div className="absolute inset-0 bg-gradient-to-r from-red-500/5 via-red-500/10 to-red-500/5"></div>
+                    <div className="relative z-10">
+                      <div className="flex items-center space-x-3">
+                        <div className="flex-shrink-0 w-8 h-8 bg-red-500/20 rounded-full flex items-center justify-center">
+                          <span className="text-red-400 text-lg">🚫</span>
+                        </div>
+                        <div>
+                          <div className="text-sm font-semibold text-red-200">
+                            Print Limit Exceeded
+                          </div>
+                          <div className="text-xs text-red-300/80 mt-1">
+                            Maximum 5 pallet labels allowed. Please adjust Count of Pallet to 5 or below.
                           </div>
                         </div>
                       </div>

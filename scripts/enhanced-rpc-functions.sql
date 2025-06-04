@@ -76,6 +76,31 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 -- 2. 產品相關函數
 -- ============================================================================
 
+-- 先刪除現有的函數（如果存在）
+DROP FUNCTION IF EXISTS get_product_details_by_code(text);
+
+-- 根據產品代碼獲取產品詳細資訊 (包含 remark)
+CREATE OR REPLACE FUNCTION get_product_details_by_code(p_code TEXT)
+RETURNS TABLE(
+    code TEXT,
+    description TEXT,
+    standard_qty TEXT,
+    type TEXT,
+    remark TEXT
+) AS $$
+BEGIN
+    RETURN QUERY
+    SELECT 
+        dc.code,
+        dc.description,
+        dc.standard_qty::TEXT,
+        dc.type,
+        COALESCE(dc.remark, '-') as remark
+    FROM data_code dc
+    WHERE UPPER(dc.code) = UPPER(p_code);
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
 -- 產品托盤統計 (所有時間)
 CREATE OR REPLACE FUNCTION get_product_pallet_stats(product_code_param TEXT)
 RETURNS TABLE(pallet_count BIGINT, total_quantity BIGINT, latest_date TIMESTAMP) AS $$
@@ -475,6 +500,7 @@ GRANT EXECUTE ON FUNCTION get_yesterday_non_grn_pallet_count() TO authenticated;
 GRANT EXECUTE ON FUNCTION get_today_grn_pallet_count() TO authenticated;
 GRANT EXECUTE ON FUNCTION get_yesterday_grn_pallet_count() TO authenticated;
 
+GRANT EXECUTE ON FUNCTION get_product_details_by_code(TEXT) TO authenticated;
 GRANT EXECUTE ON FUNCTION get_product_pallet_stats(TEXT) TO authenticated;
 GRANT EXECUTE ON FUNCTION get_today_product_stats(TEXT) TO authenticated;
 GRANT EXECUTE ON FUNCTION get_yesterday_product_stats(TEXT) TO authenticated;

@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { createClient } from '../../lib/supabase';
+import { createClient } from '@/app/utils/supabase/client';
 import { toast } from 'sonner';
-import { AuthUtils } from '../utils/auth-utils';
 
 interface Product {
   id: number;
@@ -31,15 +30,9 @@ interface UseStockMovementOptions {
   maxRetries?: number;
 }
 
-export function useStockMovement(options: UseStockMovementOptions = {}) {
-  const {
-    enableCache = true,
-    debounceMs = 300,
-    maxRetries = 3
-  } = options;
-
-  const supabase = createClient();
+export const useStockMovement = () => {
   const [isLoading, setIsLoading] = useState(false);
+  const supabase = createClient();
   const [products, setProducts] = useState<Product[]>([]);
   const [activityLog, setActivityLog] = useState<ActivityLogEntry[]>([]);
   const [userId, setUserId] = useState<string | null>(null);
@@ -49,11 +42,26 @@ export function useStockMovement(options: UseStockMovementOptions = {}) {
   const debounceTimer = useRef<NodeJS.Timeout>();
   const retryCount = useRef<number>(0);
 
+  const getCurrentUserId = useCallback(async (): Promise<string | null> => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (user?.email) {
+        // Extract clock number from email (format: clocknumber@pennine.com)
+        return user.email.split('@')[0];
+      }
+      return null;
+    } catch (error) {
+      console.error('Error getting current user ID:', error);
+      return null;
+    }
+  }, [supabase]);
+
   // Initialize user ID from Supabase Auth
   useEffect(() => {
     const initializeUser = async () => {
       try {
-        const clockNumber = await AuthUtils.getCurrentUserClockNumber();
+        const clockNumber = await getCurrentUserId();
         if (clockNumber) {
           setUserId(clockNumber);
         } else {
@@ -66,7 +74,7 @@ export function useStockMovement(options: UseStockMovementOptions = {}) {
     };
     
     initializeUser();
-  }, []);
+  }, [getCurrentUserId]);
 
   // Debounced search function
   const debouncedSearch = useCallback((searchTerm: string, callback: (term: string) => void) => {

@@ -135,7 +135,7 @@ const PACKAGE_WEIGHT: Record<string, number> = {
 
 export const GrnLabelForm: React.FC = () => {
   // 移除模塊級別的客戶端實例，改為在需要時創建服務端客戶端
-  // const supabase = createClient();
+  const supabase = createClient();
 
   // Adapter function to convert QC Label ProductInfo to GRN ProductInfo
   const adaptProductInfo = useCallback((qcProductInfo: any): GrnProductInfo | null => {
@@ -205,9 +205,11 @@ export const GrnLabelForm: React.FC = () => {
   useEffect(() => {
     const initializeUser = async () => {
       try {
-        const { AuthUtils } = await import('../../utils/auth-utils');
-        const clockNumber = await AuthUtils.getCurrentUserClockNumber();
-        if (clockNumber) {
+        const { data: { user } } = await supabase.auth.getUser();
+        
+        if (user?.email) {
+          // Extract clock number from email (format: clocknumber@pennine.com)
+          const clockNumber = user.email.split('@')[0];
           setCurrentUserId(clockNumber);
         } else {
           toast.error('User session not found. Please log in again.');

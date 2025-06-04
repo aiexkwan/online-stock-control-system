@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import { useCurrentUserClockNumber } from '../../hooks/useAuth';
+import { getCurrentUserClockNumber } from '../../hooks/useAuth';
 import { 
   VoidPalletState, 
   PalletInfo, 
@@ -18,7 +18,9 @@ import {
   searchPalletAction, 
   voidPalletAction, 
   processDamageAction,
-  logErrorAction 
+  logErrorAction,
+  voidPalletWithPassword,
+  logHistoryAction
 } from '../actions';
 
 const initialState: VoidPalletState = {
@@ -44,7 +46,6 @@ const initialState: VoidPalletState = {
 export function useVoidPallet() {
   const router = useRouter();
   const [state, setState] = useState<VoidPalletState>(initialState);
-  const { clockNumber: currentUserClockNumber } = useCurrentUserClockNumber();
 
   // Helper function to update state
   const updateState = useCallback((updates: Partial<VoidPalletState>) => {
@@ -65,9 +66,10 @@ export function useVoidPallet() {
       console.error(`[VoidPallet] ${error.type}: ${error.message}`);
       
       // Log error to database (logErrorAction will handle user ID lookup automatically)
+      const currentUserClockNumber = getCurrentUserClockNumber();
       logErrorAction(currentUserClockNumber || 'unknown', `${error.type}: ${error.message}`);
     }
-  }, [updateState, currentUserClockNumber]);
+  }, [updateState]);
 
   // Clear error
   const clearError = useCallback(() => {
@@ -328,6 +330,7 @@ export function useVoidPallet() {
       let operatorClockNum: string | null = null;
       
       // 方法1: 使用 hook 獲取的 clock number
+      const currentUserClockNumber = getCurrentUserClockNumber();
       if (currentUserClockNumber && currentUserClockNumber !== 'unknown') {
         operatorClockNum = currentUserClockNumber;
         console.log('[Auto Reprint] Using clock number from hook:', operatorClockNum);
@@ -519,11 +522,16 @@ export function useVoidPallet() {
       console.log('[Auto Reprint] Process completed, resetting state...');
       updateState({ isAutoReprinting: false });
     }
-  }, [state.voidReason, updateState, resetState, setError, currentUserClockNumber]);
+  }, [state.voidReason, updateState, resetState, setError]);
 
   const handleReprintInfoCancel = useCallback(() => {
     updateState({ showReprintInfoDialog: false, reprintInfo: null });
   }, [updateState]);
+
+  // Get current user clock number from localStorage
+  const getCurrentClockNumber = useCallback(() => {
+    return getCurrentUserClockNumber();
+  }, []);
 
   return {
     // State

@@ -5,23 +5,11 @@ export interface ProductInfo {
   description: string;
   standard_qty: string;
   type: string;
+  remark?: string;
 }
 
 export interface SlateDetail {
-  firstOffDate: string;
   batchNumber: string;
-  setterName: string;
-  material: string;
-  weight: string;
-  topThickness: string;
-  bottomThickness: string;
-  length: string;
-  width: string;
-  centreHole: string;
-  colour: string;
-  shapes: string;
-  flameTest: string;
-  remark: string;
 }
 
 export interface AcoOrderDetail {
@@ -68,7 +56,6 @@ export interface FormData {
   
   // Other states
   acoRemain: string | null;
-  availableFirstOffDates: string[];
   availableAcoOrderRefs: number[];
 }
 

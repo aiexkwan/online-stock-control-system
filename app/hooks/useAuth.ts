@@ -114,99 +114,13 @@ export function useCurrentUserId(): string | null {
   return null;
 }
 
-/**
- * Hook to get current user's clock number with database lookup fallback
- */
-export function useCurrentUserClockNumber(): {
-  clockNumber: string | null;
-  loading: boolean;
-  error: string | null;
-} {
-  const { user, loading: authLoading } = useAuth();
-  const [clockNumber, setClockNumber] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const supabase = createClient();
-
-  useEffect(() => {
-    const getClockNumber = async () => {
-      console.log('[useCurrentUserClockNumber] Starting clock number lookup...');
-      console.log('[useCurrentUserClockNumber] Auth loading:', authLoading);
-      console.log('[useCurrentUserClockNumber] User:', user);
-      
-      if (authLoading) {
-        console.log('[useCurrentUserClockNumber] Auth still loading, waiting...');
-        return;
-      }
-      
-      if (!user) {
-        console.log('[useCurrentUserClockNumber] No user found');
-        setClockNumber(null);
-        setError('No authenticated user');
-        setLoading(false);
-        return;
-      }
-
-      try {
-        console.log('[useCurrentUserClockNumber] User email:', user.email);
-        console.log('[useCurrentUserClockNumber] User metadata:', user.user_metadata);
-        
-        // First try to get from user metadata
-        if (user.user_metadata?.clock_number) {
-          const clockNum = user.user_metadata.clock_number.toString();
-          console.log('[useCurrentUserClockNumber] Found clock number in metadata:', clockNum);
-          setClockNumber(clockNum);
-          setError(null);
-          setLoading(false);
-          return;
-        }
-
-        console.log('[useCurrentUserClockNumber] No clock number in metadata, trying database lookup...');
-
-        // Fallback: lookup by email in data table
-        if (user.email) {
-          const { data, error: dbError } = await supabase
-            .from('data_id')
-            .select('id')
-            .eq('email', user.email)
-            .single();
-
-          console.log('[useCurrentUserClockNumber] Database query result:', { data, error: dbError });
-
-          if (dbError) {
-            console.error('[useCurrentUserClockNumber] Database error:', dbError);
-            setError(`Failed to lookup clock number: ${dbError.message}`);
-            setClockNumber(null);
-          } else if (data?.id) {
-            const clockNum = data.id.toString();
-            console.log('[useCurrentUserClockNumber] Found clock number in database:', clockNum);
-            setClockNumber(clockNum);
-            setError(null);
-          } else {
-            console.log('[useCurrentUserClockNumber] No clock number found in database');
-            setError('No clock number found for user');
-            setClockNumber(null);
-          }
-        } else {
-          console.log('[useCurrentUserClockNumber] No email found for user');
-          setError('No email found for user');
-          setClockNumber(null);
-        }
-      } catch (err: any) {
-        console.error('[useCurrentUserClockNumber] Error getting clock number:', err);
-        setError(err.message);
-        setClockNumber(null);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    getClockNumber();
-  }, [user, authLoading, supabase]);
-
-  console.log('[useCurrentUserClockNumber] Current state:', { clockNumber, loading, error });
-
-  return { clockNumber, loading, error };
+// 獲取當前用戶的 clock number
+export function getCurrentUserClockNumber(): string | null {
+  if (typeof window === 'undefined') return null;
+  
+  // 從 localStorage 獲取 clock number
+  const clockNumber = localStorage.getItem('loggedInUserClockNumber');
+  return clockNumber;
 }
 
 export const useAskDatabasePermission = () => {

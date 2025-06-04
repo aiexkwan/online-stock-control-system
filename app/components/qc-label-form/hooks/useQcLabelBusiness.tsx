@@ -41,76 +41,32 @@ export const useQcLabelBusiness = ({
     return createClient();
   }, []);
 
-  // Get logged in user ID
+  // Get logged in user ID from Supabase Auth
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const clockNumber = localStorage.getItem('loggedInUserClockNumber');
-      if (clockNumber) {
-        setFormData(prev => ({ ...prev, userId: clockNumber }));
+    const getUserId = async () => {
+      try {
+        const supabase = createClientSupabase();
+        const { data: { user } } = await supabase.auth.getUser();
+        
+        if (user?.email) {
+          // Extract clock number from email (format: clocknumber@pennine.com)
+          const clockNumber = user.email.split('@')[0];
+          setFormData(prev => ({ ...prev, userId: clockNumber }));
+        }
+      } catch (error) {
+        console.error('Error getting user ID:', error);
       }
-    }
-  }, [setFormData]);
+    };
 
-  // Fetch available first-off dates for Slate products
+    getUserId();
+  }, [setFormData, createClientSupabase]);
+
+  // Fetch available first-off dates for Slate products - REMOVED (no longer needed)
+  // Only batch number is required for Slate products now
   useEffect(() => {
-    if (productInfo?.type === 'Slate') {
-      const fetchFirstOffDates = async () => {
-        try {
-          const supabaseClient = createClientSupabase();
-          const { data, error } = await supabaseClient
-            .from('record_slate')
-            .select('first_off');
-
-          if (error) {
-            console.error('Error fetching first-off dates:', error);
-            toast.error('Error fetching historical first-off dates for Slate.');
-            setFormData(prev => ({ ...prev, availableFirstOffDates: [] }));
-          } else if (data) {
-            const dates = data.map((item: { first_off: string | null }) => item.first_off).filter((date: string | null) => date) as string[];
-            const uniqueSortedDates = Array.from(new Set(dates)).sort();
-            setFormData(prev => ({ ...prev, availableFirstOffDates: uniqueSortedDates }));
-          }
-        } catch (error) {
-          console.error('Error fetching first-off dates:', error);
-          toast.error('Error fetching first-off dates.');
-        }
-      };
-      
-      const fetchSlateInfo = async () => {
-        try {
-          const supabaseClient = createClientSupabase();
-          const { data, error } = await supabaseClient
-            .from('data_slateinfo')
-            .select('shapes, colour')
-            .eq('code', productInfo.code)
-            .single();
-
-          if (error) {
-            console.error('Error fetching slate info:', error);
-            // Don't show error toast as this is optional data
-          } else if (data) {
-            // Pre-fill shapes and colour from data_slateinfo
-            setFormData(prev => ({
-              ...prev,
-              slateDetail: {
-                ...prev.slateDetail,
-                shapes: data.shapes || '',
-                colour: data.colour || ''
-              }
-            }));
-            console.log('Pre-filled Slate info:', data);
-          }
-        } catch (error) {
-          console.error('Error fetching slate info:', error);
-        }
-      };
-      
-      fetchFirstOffDates();
-      fetchSlateInfo();
-    } else {
-      setFormData(prev => ({ ...prev, availableFirstOffDates: [] }));
-    }
-  }, [productInfo?.type, productInfo?.code, createClientSupabase, setFormData]);
+    // No additional data fetching needed for Slate products
+    // Only batch number input is required
+  }, [productInfo?.type, productInfo?.code, setFormData]);
 
   // Fetch available ACO order refs
   useEffect(() => {
@@ -260,7 +216,7 @@ export const useQcLabelBusiness = ({
           acoOrderDetails: [{ code: productInfo.code, qty: '' }], // Pre-fill with current product code
           acoOrderDetailErrors: [''] // Initialize with one empty error
         }));
-        toast.info(`New ACO Order detected for product ${productInfo.code}. Please enter order details.`);
+        toast.info(`New ACO Order. Please enter order details.`);
       } else {
         // Existing order - calculate total remaining quantity for this specific product
         console.log('[useQcLabelBusiness] Existing ACO order found for this product:', data);
@@ -380,9 +336,9 @@ export const useQcLabelBusiness = ({
     //toast.success('New product row added. You can now enter additional products for this ACO order.');
   }, [setFormData]);
 
-  // Slate batch number change handler
+  // Slate batch number change handler - simplified to only handle batch number
   const handleSlateBatchNumberChange = useCallback((batchNumber: string) => {
-    // Update batch number
+    // Only update batch number, no auto-fill material
     setFormData(prev => ({
       ...prev,
       slateDetail: {
@@ -390,30 +346,14 @@ export const useQcLabelBusiness = ({
         batchNumber: batchNumber
       }
     }));
-
-    // Auto-fill material based on batch number
-    if (batchNumber.length >= 2) {
-      const firstTwoDigits = batchNumber.substring(0, 2);
-      const materialValue = `Mix Material ${firstTwoDigits}`;
-      
-      setFormData(prev => ({
-        ...prev,
-        slateDetail: {
-          ...prev.slateDetail,
-          batchNumber: batchNumber,
-          material: materialValue
-        }
-      }));
-      
-      console.log(`Auto-filled material: ${materialValue} from batch number: ${batchNumber}`);
-    }
   }, [setFormData]);
 
-  // General Slate detail change handler
+  // General Slate detail change handler - simplified
   const handleSlateDetailChange = useCallback((field: keyof SlateDetail, value: string) => {
     if (field === 'batchNumber') {
       handleSlateBatchNumberChange(value);
     } else {
+      // For other fields, just update normally without special logic
       setFormData(prev => ({
         ...prev,
         slateDetail: {
@@ -571,11 +511,21 @@ export const useQcLabelBusiness = ({
                   !formData.acoOrderDetailErrors[idx]) {
                 const requiredQty = parseInt(detail.qty.trim(), 10);
                 if (!isNaN(requiredQty) && requiredQty > 0) {
+                  // Calculate remain_qty correctly: only subtract quantity for the current product being printed
+                  const currentProductQuantityUsed = detail.code.trim() === productInfo.code ? (quantity * count) : 0;
+                  
                   acoRecords.push({
                     order_ref: parseInt(formData.acoOrderRef.trim(), 10),
                     code: detail.code.trim(),
                     required_qty: requiredQty,
-                    remain_qty: requiredQty - (quantity * count) // Subtract total quantity for all pallets
+                    remain_qty: requiredQty - currentProductQuantityUsed // Only subtract if this is the current product
+                  });
+                  
+                  console.log(`[useQcLabelBusiness] Creating ACO record for ${detail.code.trim()}:`, {
+                    required_qty: requiredQty,
+                    quantity_used: currentProductQuantityUsed,
+                    remain_qty: requiredQty - currentProductQuantityUsed,
+                    is_current_product: detail.code.trim() === productInfo.code
                   });
                 }
               }
@@ -700,7 +650,116 @@ export const useQcLabelBusiness = ({
 
         try {
           await mergeAndPrintPdfs(pdfArrayBuffers, printFileName);
+          // ============================================================================
+          // NEW FUNCTIONALITY: Update stock_level and work_level after successful print
+          // ============================================================================
+          try {
+            console.log('[useQcLabelBusiness] Updating stock and work levels...');
+            
+            // Calculate total quantity for all pallets
+            const totalQuantity = quantity * count;
+            
+            // Get user ID from clock number
+            const userIdNum = parseInt(clockNumber, 10);
+            
+            if (isNaN(userIdNum)) {
+              console.error('Invalid user ID (clock number):', clockNumber);
+              toast.warning('Print successful, but failed to update work records due to invalid user ID.');
+            } else {
+              // Call the new API endpoint for stock and work level updates
+              const response = await fetch('/api/print-label-updates', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  productCode: productInfo.code,
+                  quantity: totalQuantity,
+                  userId: userIdNum,
+                  palletCount: count,
+                  description: productInfo.description
+                }),
+              });
+
+              const updateResult = await response.json();
+
+              if (updateResult.success) {
+                console.log('[useQcLabelBusiness] Stock and work levels updated successfully:', updateResult);
+                //toast.success('Stock and work levels updated successfully.');
+              } else {
+                console.error('[useQcLabelBusiness] Failed to update stock/work levels:', updateResult.error);
+                toast.warning(`Print successful, but failed to update records: ${updateResult.error}`);
+              }
+            }
+          } catch (updateError: any) {
+            console.error('[useQcLabelBusiness] Error updating stock/work levels:', updateError);
+            toast.warning(`Print successful, but failed to update stock/work records: ${updateError.message}`);
+          }
+          
+          // ============================================================================
+          // ACO ORDER ENHANCEMENT: Update ACO order with latest_update and check completion
+          // ============================================================================
+          console.log('[useQcLabelBusiness] ACO Enhancement Check:', {
+            productType: productInfo.type,
+            isNewRef: formData.acoNewRef,
+            orderRef: formData.acoOrderRef.trim(),
+            shouldTrigger: productInfo.type === 'ACO' && !formData.acoNewRef && formData.acoOrderRef.trim()
+          });
+          
+          if (productInfo.type === 'ACO' && !formData.acoNewRef && formData.acoOrderRef.trim()) {
+            try {
+              console.log('[useQcLabelBusiness] Processing ACO order enhancement...');
+              
+              const totalQuantity = quantity * count;
+              const orderRefNum = parseInt(formData.acoOrderRef.trim(), 10);
+              
+              // Call the enhanced ACO order update API
+              const acoResponse = await fetch('/api/aco-order-updates', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  orderRef: orderRefNum,
+                  productCode: productInfo.code,
+                  quantityUsed: totalQuantity
+                }),
+              });
+
+              const acoResult = await acoResponse.json();
+
+              if (acoResult.success) {
+                console.log('[useQcLabelBusiness] ACO order updated successfully:', acoResult);
+                
+                if (acoResult.orderCompleted) {
+                  // Order completed - show special notification
+                  toast.success(`🎉 ACO Order ${orderRefNum} has been completed! Email notification sent.`);
+                  
+                  if (acoResult.emailNotification?.success) {
+                    console.log('[useQcLabelBusiness] Email notification sent successfully');
+                  } else {
+                    console.warn('[useQcLabelBusiness] Email notification failed:', acoResult.emailNotification?.error);
+                    toast.warning('Order completed but email notification failed.');
+                  }
+                } else {
+                  // Order updated but not completed
+                  const remainingQty = acoResult.totalRemainingInOrder;
+                  toast.success(`ACO Order ${orderRefNum} updated. Remaining quantity: ${remainingQty}`);
+                }
+              } else {
+                console.error('[useQcLabelBusiness] Failed to update ACO order:', acoResult.error);
+                toast.warning(`Print successful, but ACO order update failed: ${acoResult.error}`);
+              }
+            } catch (acoError: any) {
+              console.error('[useQcLabelBusiness] Error processing ACO order enhancement:', acoError);
+              toast.warning(`Print successful, but ACO order processing failed: ${acoError.message}`);
+            }
+          }
+          // ============================================================================
+          
+          // Final success message
           toast.success(`${collectedPdfBlobs.length} QC label(s) generated and ready for printing.`);
+          
         } catch (printError: any) {
           toast.error(`PDF Printing Error: ${printError.message}`);
         }
@@ -729,7 +788,6 @@ export const useQcLabelBusiness = ({
           acoOrderDetailErrors: [],
           acoSearchLoading: false,
           availableAcoOrderRefs: [],
-          availableFirstOffDates: [],
           productError: null,
           isLoading: false,
           pdfProgress: {
@@ -738,20 +796,7 @@ export const useQcLabelBusiness = ({
             status: []
           },
           slateDetail: {
-            firstOffDate: '',
-            batchNumber: '',
-            setterName: '',
-            material: '',
-            weight: '',
-            topThickness: '',
-            bottomThickness: '',
-            length: '',
-            width: '',
-            centreHole: '',
-            colour: '',
-            shapes: '',
-            flameTest: '',
-            remark: ''
+            batchNumber: ''
           }
         }));
         
