@@ -226,7 +226,7 @@ async function generateSQLWithOpenAI(question: string, conversationHistory: Conv
     }
 
     // 構建對話上下文
-    const messages: any[] = [
+    const messages: Array<{role: 'system' | 'user' | 'assistant', content: string}> = [
       {
         role: 'system',
         content: enhancedPrompt
@@ -255,10 +255,9 @@ async function generateSQLWithOpenAI(question: string, conversationHistory: Conv
     });
 
     console.log('[OpenAI SQL] Sending request to OpenAI...');
-    // @ts-ignore - OpenAI types issue
-    const response = await (openai.chat.completions as any).create({
+    const response = await openai.chat.completions.create({
       model: 'gpt-4o',
-      messages,
+      messages: messages as any,
       temperature: 0.1,
       max_tokens: 1000,
     });
@@ -347,7 +346,7 @@ async function executeSQLQuery(sql: string): Promise<{ data: any[]; rowCount: nu
 // 使用 OpenAI 生成自然語言回應
 async function generateAnswerWithOpenAI(question: string, sql: string, queryResult: any): Promise<{ answer: string; additionalTokens: number }> {
   try {
-    const messages = [
+    const messages: Array<{role: 'system' | 'user' | 'assistant', content: string}> = [
       {
         role: 'system',
         content: `You are a helpful database assistant for Pennine Manufacturing Industries. 
@@ -379,7 +378,7 @@ Please provide a natural English response to the user's question based on these 
     console.log('[OpenAI Answer] Generating natural language response...');
     const response = await openai.chat.completions.create({
       model: 'gpt-4o',
-      messages,
+      messages: messages as any,
       temperature: 0.3,
       max_tokens: 800,
     });
