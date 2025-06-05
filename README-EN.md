@@ -1,80 +1,95 @@
-# Pennine Industries Stock Control System
+# Pennine Manufacturing Stock Control System
 
-A comprehensive stock control and management system built with Next.js 14, TypeScript, and Supabase. This system provides real-time inventory tracking, pallet management, label printing, and administrative tools for Pennine Industries.
+### Overview
+A comprehensive stock control and management system built with Next.js 14, TypeScript, and Supabase. This system provides real-time inventory tracking, pallet management, label printing, AI-powered order analysis, and administrative tools for Pennine Manufacturing Industries.
 
-## 🚀 Key Features
+### Key Features
 
-### **Home Dashboard**
-- Real-time inventory overview with interactive charts
-- History log with enhanced display (25% larger viewing area)
-- User-friendly interface with improved navigation
+#### **QC Label Printing System**
+- **Multi-Product Support**: Regular products, ACO orders, and Slate products
+- **Automated Processing**: Pallet number and series generation
+- **PDF Generation**: High-quality label output with automatic storage
+- **Batch Processing**: Multiple pallet label generation with progress tracking
+- **Error Handling**: Comprehensive error management and recovery
 
-### **Label Printing System**
-- **QC Label Printing**: Support for regular products, ACO orders, and Slate products
-- **GRN Label Printing**: Material receipt label generation
-- **PDF Generation**: High-quality label output with barcode support
-- **Batch Processing**: Multiple pallet label generation
+#### **GRN Label Printing System**
+- **Material Receipt Management**: Complete GRN workflow
+- **Weight Calculation**: Automatic net weight calculation (up to 22 pallets)
+- **Supplier Validation**: Real-time supplier code verification
+- **Atomic Operations**: Database consistency with RPC functions
+- **Professional Labels**: Industrial-grade receipt labels
 
-### **Stock Management**
-- **Stock Transfer**: Location-based inventory movement
-- **Inventory Tracking**: Real-time stock levels across multiple locations
-- **Void Pallet**: Pallet cancellation and management
-- **History Tracking**: Complete audit trail of all operations
+#### **Stock Transfer System**
+- **Automated Transfers**: One-click pallet movement
+- **Smart Location Calculation**: Predefined business rules
+- **QR Code Support**: Barcode scanning integration
+- **Real-time Updates**: Instant inventory adjustments
+- **Transfer History**: Complete audit trail
 
-### **Admin Panel**
-- **Dual Header Design**: Global navigation + dedicated admin navigation
-- **Transparent Navigation**: Seamless integration with page content
-- **Hover-based Interactions**: Intuitive dropdown menus without clicking
-- **Dashboard Analytics**: Real-time statistics and performance metrics
+#### **Admin Panel & Dashboard**
+- **Real-time Statistics**: Daily, weekly production metrics
+- **ACO Order Tracking**: Order progress monitoring
+- **Quick Inventory Search**: Instant stock level queries
+- **Report Generation**: ACO, GRN, Transaction, Slate reports
+- **Data Export**: Comprehensive database export tools
+
+#### **AI-Powered Features**
+- **PDF Order Analysis**: Automatic order data extraction
+- **Duplicate Detection**: Smart duplicate record checking
+- **Natural Language Queries**: AI database querying
+- **Document Processing**: Intelligent PDF content analysis
+
+#### **System Tools**
+- **File Upload**: PDF document processing
+- **Pallet Voiding**: Advanced cancellation with reprint options
+- **History Tracking**: Complete operation timeline
+- **Database Updates**: Product master data management
 - **User Management**: Role-based access control
-- **Report Generation**: ACO, GRN, Transaction, and Slate reports
 
-### **Enhanced UI/UX**
-- **50% Larger GlobalHeader**: Improved readability and accessibility
-- **Hover-based Navigation**: Floating dropdown menus for better UX
-- **Responsive Design**: Optimized for desktop, tablet, and mobile
-- **Dark Theme**: Professional appearance with consistent styling
-
-## 🛠 Technology Stack
+### 🛠 Technology Stack
 
 - **Frontend**: Next.js 14, React 18, TypeScript
-- **Styling**: Tailwind CSS, Framer Motion
-- **Backend**: Supabase (PostgreSQL, Auth, Real-time)
-- **PDF Generation**: React-PDF, jsPDF
-- **UI Components**: Radix UI, Lucide Icons
-- **State Management**: React Hooks, Context API
-- **Authentication**: Supabase Auth with role-based access
+- **Styling**: Tailwind CSS, Framer Motion, Glassmorphism design
+- **Backend**: Supabase (PostgreSQL, Auth, Real-time, Storage)
+- **AI Integration**: OpenAI GPT-4o for document analysis
+- **PDF Processing**: pdf2pic, GraphicsMagick, Ghostscript
+- **UI Components**: Radix UI, Heroicons
+- **State Management**: React Hooks, Custom business logic hooks
+- **Authentication**: Supabase Auth with role-based permissions
 
-## 📁 Project Structure
+### Project Structure
 
 ```
-online-stock-control-system/
+NewPennine/
 ├── app/
-│   ├── home/                    # Main dashboard (formerly /dashboard/access)
-│   ├── admin/                   # Admin panel with dual header design
 │   ├── print-label/            # QC label printing system
 │   ├── print-grnlabel/         # GRN label printing
-│   ├── stock-transfer/         # Stock movement management
-│   ├── void-pallet/            # Pallet cancellation
-│   ├── users/                  # User management
-│   ├── products/               # Product catalog
-│   ├── tables/                 # Database structure viewer
-│   └── components/             # Shared components
+│   ├── stock-transfer/         # Automated stock movement
+│   ├── admin/                  # Comprehensive admin panel
+│   ├── components/             # Shared components
+│   │   ├── qc-label-form/      # QC label components
+│   │   ├── admin-panel-menu/   # Admin dialog components
+│   │   └── print-label-pdf/    # PDF generation components
+│   ├── api/                    # API endpoints
+│   │   ├── analyze-order-pdf/  # AI PDF analysis
+│   │   ├── export-report/      # Report generation
+│   │   └── print-label-pdf/    # Label PDF generation
+│   └── hooks/                  # Business logic hooks
 ├── components/
 │   ├── ui/                     # UI component library
-│   ├── GlobalHeader.tsx        # Enhanced global navigation
-│   └── products/               # Product-related components
-├── docs/                       # Comprehensive documentation
-├── lib/                        # Utility libraries
-└── public/                     # Static assets
+│   ├── qr-scanner/            # QR code scanning
+│   └── products/              # Product management
+├── docs/                      # Comprehensive documentation
+├── lib/                       # Utility libraries
+└── public/                    # Static assets
 ```
 
-## 🔧 Installation & Setup
+### Installation & Setup
 
 1. **Clone the repository**
    ```bash
    git clone <repository-url>
-   cd online-stock-control-system
+   cd NewPennine
    ```
 
 2. **Install dependencies**
@@ -82,73 +97,105 @@ online-stock-control-system/
    npm install
    ```
 
-3. **Environment setup**
+3. **Install system dependencies**
    ```bash
-   cp .env.example .env.local
-   # Configure your Supabase credentials
+   # macOS
+   brew install graphicsmagick ghostscript
+   
+   # Ubuntu/Debian
+   sudo apt-get install graphicsmagick ghostscript
    ```
 
-4. **Run development server**
+4. **Environment setup**
+   ```bash
+   cp .env.example .env.local
+   # Configure your credentials:
+   # - Supabase URL and Service Role Key
+   # - OpenAI API Key for PDF analysis
+   ```
+
+5. **Run development server**
    ```bash
    npm run dev
    ```
 
-5. **Build for production**
+6. **Build for production**
    ```bash
    npm run build
    npm start
    ```
 
-## 🔐 Authentication & Security
+### Authentication & Security
 
 - **Supabase Authentication**: Secure user login with email/password
-- **Role-based Access**: Different permission levels (Admin, QC, Receive, etc.)
+- **Role-based Access**: Multiple permission levels (Admin, QC, Receive, etc.)
 - **Session Management**: Automatic session handling and cleanup
 - **Route Protection**: Middleware-based route protection
+- **Operation Logging**: Complete audit trail for all actions
 
-## 📊 Database Schema
+### Database Schema
 
 The system uses PostgreSQL through Supabase with the following main tables:
 - `record_palletinfo`: Pallet information and tracking
-- `record_history`: Complete audit trail
+- `record_history`: Complete audit trail of all operations
 - `record_transfer`: Stock movement records
-- `record_inventory`: Real-time inventory levels
-- `data_id`: User management and permissions
+- `record_inventory`: Real-time inventory levels by location
+- `record_aco`: ACO order management and tracking
+- `record_grn`: GRN receipt records with weight information
 - `data_code`: Product catalog and specifications
+- `data_supplier`: Supplier information and validation
+- `data_id`: User management and permissions
+- `data_order`: AI-extracted order data
 
-## 🚀 Recent Updates (v4.0.0)
+### AI Features
 
-### **Path Restructuring**
-- Renamed `/dashboard/access` to `/home` for better user understanding
-- Updated all navigation and authentication checks
-- Maintained backward compatibility with redirects
+#### **PDF Order Analysis**
+- **Document Processing**: Automatic PDF to image conversion
+- **AI Vision Analysis**: OpenAI GPT-4o for data extraction
+- **Smart Parsing**: Intelligent order information recognition
+- **Duplicate Prevention**: Automatic duplicate record detection
+- **Data Validation**: Comprehensive data integrity checks
 
-### **GlobalHeader Enhancements**
-- Increased height by 50% (`h-16` → `h-24`) for better visibility
-- Implemented hover-based hamburger menu (no clicking required)
-- Improved text sizing and icon scaling
-- Removed complex sidebar animations for simpler dropdown menus
+#### **Ask Me Anything - Intelligent Database Queries**
+- **Natural Language Queries**: Support for Chinese and English natural language questions
+- **OpenAI SQL Generation**: Uses GPT-4o with docs/openAIprompt instructions to generate precise SQL queries
+- **Intelligent Answer Generation**: OpenAI analyzes query results and generates professional British-style responses
+- **Conversation Memory**: Supports contextual conversations, remembering previous query history
+- **Secure Execution**: All SQL queries are security-validated, allowing only SELECT operations
+- **Real-time Caching**: Intelligent caching mechanism improves query response speed
+- **Token Tracking**: Complete OpenAI API usage monitoring
 
-### **Admin Panel Improvements**
-- Removed "Admin Panel" title and icon for cleaner design
-- Transparent background navigation bar
-- Seamless integration with GlobalHeader
-- Hover-based sub-menu interactions
+### Recent Updates
 
-### **Home Page UI Improvements**
-- History Log height increased by 25% for more data visibility
-- Enhanced scrolling and pagination functionality
-- Better information density
+#### **AI Integration**
+- Implemented OpenAI GPT-4o for PDF document analysis
+- Added intelligent order data extraction
+- Smart duplicate detection and prevention
+- Automated data insertion with validation
 
-## 📖 Documentation
+#### **System Optimization**
+- Enhanced PDF processing pipeline
+- Improved error handling and recovery
+- Optimized database operations
+- Better user experience with progress tracking
+
+#### **Security Enhancements**
+- Strengthened authentication system
+- Improved session management
+- Enhanced data validation
+- Better error logging and monitoring
+
+### 📖 Documentation
 
 Comprehensive documentation is available in the `/docs` folder:
-- [Dashboard Documentation](./docs/dashboard.md)
-- [Admin Panel Guide](./docs/adminPanel.md)
-- [Global Layout System](./docs/globalLayout.md)
-- [Project Details](./docs/projectDetail.md)
+- [QC Label Printing](./docs/print_QC_Label.md)
+- [GRN Label Printing](./docs/print_GRN_Label.md)
+- [Stock Transfer System](./docs/stock_transfer.md)
+- [Admin Panel Guide](./docs/admin_panel.md)
+- [User Manual](./docs/userManual.md)
+- [Database Structure](./docs/databaseStructure.md)
 
-## 🤝 Contributing
+### Contributing
 
 1. Fork the repository
 2. Create a feature branch (`git checkout -b feature/amazing-feature`)
@@ -156,17 +203,17 @@ Comprehensive documentation is available in the `/docs` folder:
 4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
 
-## 📄 License
+### License
 
-This project is proprietary software developed for Pennine Manufacturing.
+This project is proprietary software developed for Pennine Manufacturing Industries.
 
-## 🔍 System Requirements
+## System Requirements
 
 - Node.js 18+
 - Modern web browser (Chrome, Firefox, Safari, Edge)
 - Internet connection for Supabase integration
 
-## 🚨 Troubleshooting
+## Troubleshooting
 
 ### Common Issues
 
@@ -182,7 +229,7 @@ This project is proprietary software developed for Pennine Manufacturing.
 - Ensure all dependencies are up to date
 - Verify environment configuration
 
-## 🎯 Performance Features
+## Performance Features
 
 - **Optimized Rendering**: React.memo and useMemo for efficient re-renders
 - **Code Splitting**: Lazy loading for better initial load times
@@ -190,7 +237,7 @@ This project is proprietary software developed for Pennine Manufacturing.
 - **Real-time Updates**: Supabase real-time subscriptions for live data
 - **Error Boundaries**: Graceful error handling and recovery
 
-## 🔧 Development Tools
+## Development Tools
 
 - **TypeScript**: Full type safety and better developer experience
 - **ESLint**: Code quality and consistency

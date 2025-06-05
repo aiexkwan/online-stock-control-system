@@ -1,103 +1,165 @@
-# 列印 QC 標籤 (正常流程)
+# QC 標籤列印系統
 
 ## 概述
 
-本文件說明在系統中列印正常產品 QC 標籤的工作流程。此流程涉及使用者介面操作、後端邏輯處理、PDF 產生以及資料庫互動。
+QC 標籤列印系統是用於生成和列印產品品質控制標籤的核心功能模組。系統支援正常產品、ACO 產品和 Slate 產品的標籤生成，具備自動化的棧板號碼生成、系列號生成、PDF 文件處理和庫存管理功能。
 
-## 相關頁面及組件
+## 系統架構
 
 ### 主要頁面
-- `/print-label`: 列印 QC 標籤的主頁面。
+- `/print-label`: QC 標籤列印的主頁面，提供完整的標籤生成工作流程
 
-### 核心組件
-位於 `app/components/qc-label-form/`：
-- `PerformanceOptimizedForm.tsx`: 主表單組件，處理使用者輸入和流程控制。
-- `ProductSection`: 用於輸入產品資訊的區塊。
-- `ProgressSection`: 顯示標籤列印進度的區塊。
-- `ClockNumberConfirmDialog.tsx`: 用於操作員身份確認的對話框。
-- `EnhancedFormField.tsx`: 包含 `EnhancedInput` 和 `EnhancedSelect`，用於表單輸入欄位。
-- `EnhancedProgressBar.tsx`: 進度條組件。
-- `ResponsiveLayout.tsx`: 卡片組件佈局。
+### 核心組件結構
 
-### 核心業務邏輯 Hook
-- `app/components/qc-label-form/hooks/useQcLabelBusiness.ts`: 包含 QC 標籤生成的核心業務邏輯，例如：
-    - 產品資訊查詢
-    - Pallet Number 和 Series Number 生成
-    - PDF 資料準備
-    - 資料庫操作（插入 `record_palletinfo` 和 `record_history`）
-    - 列印進度追蹤與錯誤處理
+#### 主表單組件
+- `app/components/qc-label-form/PerformanceOptimizedForm.tsx`: 主表單組件，負責使用者輸入處理和流程控制
+- `app/components/qc-label-form/ProductSection.tsx`: 產品資訊輸入區塊
+- `app/components/qc-label-form/ProgressSection.tsx`: 標籤列印進度顯示區塊
 
-### UI 優化相關文件
-- `docs/print-label-ui-optimization.md`: 詳細描述了 `/print-label` 頁面的視覺效果提升，包括：
-    - 深藍色/深色主題設計
-    - 玻璃擬態 (Glassmorphism) 設計風格
-    - 動態背景元素與漸層效果
-    - 卡片、輸入欄位、按鈕的樣式優化
-    - 警告卡片和自動填充通知的設計
+#### 對話框組件
+- `app/components/qc-label-form/ClockNumberConfirmDialog.tsx`: 操作員身份確認對話框
+- `app/components/qc-label-form/ErrorBoundary.tsx`: 錯誤邊界處理組件
+
+#### 表單元件
+- `app/components/qc-label-form/EnhancedFormField.tsx`: 包含 EnhancedInput 和 EnhancedSelect 的增強表單欄位
+- `app/components/qc-label-form/EnhancedProgressBar.tsx`: 現代化進度條組件
+- `app/components/qc-label-form/ResponsiveLayout.tsx`: 響應式卡片佈局組件
+
+#### 業務邏輯 Hooks
+- `app/components/qc-label-form/hooks/useQcLabelBusiness.tsx`: QC 標籤生成的核心業務邏輯
+- `app/components/qc-label-form/hooks/useFormValidation.tsx`: 表單驗證邏輯
+- `app/components/qc-label-form/hooks/useErrorHandler.tsx`: 統一錯誤處理機制
+
+#### 服務層
+- `app/components/qc-label-form/services/ErrorHandler.ts`: 錯誤處理服務
+- `app/components/qc-label-form/services/`: 其他業務服務
+
+## 數據流向
+
+### 資料庫表結構
+- `record_palletinfo`: 棧板基本資訊儲存
+- `record_history`: 操作歷史記錄
+- `data_code`: 產品代碼資料
+- `record_inventory`: 庫存數量管理
+- `data_id`: 操作員身份驗證
+
+### 儲存系統
+- Supabase Storage `qc-labels` bucket: QC 標籤 PDF 檔案儲存
+- Supabase Storage `pallet-label-pdf` bucket: 棧板標籤 PDF 檔案儲存
 
 ## 工作流程
 
-1.  **使用者輸入**:
-    *   操作員在 `/print-label` 頁面的 `PerformanceOptimizedForm` 中輸入產品代碼、數量等資訊。
-    *   系統會進行表單驗證。
+### 1. 使用者輸入階段
+- 操作員在 PerformanceOptimizedForm 中輸入產品代碼、數量等資訊
+- 系統進行即時表單驗證
+- 支援 ACO 和 Slate 產品的特殊欄位輸入
 
-2.  **身份確認**:
-    *   提交表單前，系統會彈出 `ClockNumberConfirmDialog` 要求操作員輸入工號進行身份驗證。
+### 2. 身份驗證階段
+- 提交表單前彈出 ClockNumberConfirmDialog
+- 要求操作員輸入工號進行身份驗證
+- 驗證通過後啟動標籤生成流程
 
-3.  **資料準備**:
-    *   驗證成功後，`useQcLabelBusiness` Hook 開始處理。
-    *   `generatePalletNumbers()`: 產生棧板號碼，格式為 `ddMMyy/N`。
-    *   `generateMultipleUniqueSeries()`: 產生系列號，格式為 `ddMMyy-XXXXXX`。
-    *   `prepareQcLabelData()`: 準備用於產生 PDF 的標籤資料。
+### 3. 資料準備階段
+useQcLabelBusiness Hook 執行以下操作：
+- `generatePalletNumbers()`: 生成棧板號碼，格式為 `ddMMyy/N`
+- `generateMultipleUniqueSeries()`: 生成系列號，格式為 `ddMMyy-XXXXXX`
+- `prepareQcLabelData()`: 準備 PDF 生成所需的標籤資料
 
-4.  **批量處理與資料庫操作**:
-    *   系統會逐個處理需要列印的每個棧板。
-    *   對於每個棧板：
-        *   **插入 `record_palletinfo`**: 記錄棧板的基本資訊。
-        *   **插入 `record_history`**: 記錄此次操作的歷史。
-        *   **更新庫存**: 根據產品類型自動處理庫存更新 (對於正常產品，流程可能涉及標準庫存扣減)。
+### 4. 批量處理階段
+系統逐個處理每個棧板：
+- 插入 `record_palletinfo` 記錄棧板基本資訊
+- 插入 `record_history` 記錄操作歷史
+- 根據產品類型自動處理庫存更新
 
-5.  **PDF 產生與上傳**:
-    *   `generateAndUploadPdf()`:
-        *   根據準備好的資料產生 QC 標籤的 PDF 檔案。
-        *   將產生的 PDF 自動上傳到 Supabase Storage 中的 `qc-labels` 路徑下。
+### 5. PDF 生成與儲存階段
+- `generateAndUploadPdf()` 根據準備的資料生成 QC 標籤 PDF
+- 自動上傳 PDF 到 Supabase Storage 的 `qc-labels` 路徑
+- 支援多個 PDF 的合併處理
 
-6.  **列印觸發**:
-    *   `mergeAndPrintPdfs()`: (如果有多個 PDF) 合併 PDF 並觸發瀏覽器的列印對話框。
-    *   使用者確認後，標籤將被列印。
+### 6. 列印觸發階段
+- `mergeAndPrintPdfs()` 合併多個 PDF（如需要）
+- 觸發瀏覽器列印對話框
+- 使用者確認後執行實際列印
 
-7.  **進度顯示與錯誤處理**:
-    *   `ProgressSection` 和 `EnhancedProgressBar` 會即時顯示每個棧板的處理狀態 (例如：處理中、成功、失敗)。
-    *   `useErrorHandler.ts` 和 `ErrorHandler.ts` 服務提供統一的錯誤處理機制：
-        *   錯誤分級 (Critical/High/Medium/Low)。
-        *   向使用者顯示友好的錯誤訊息。
-        *   在資料庫中記錄錯誤。
+### 7. 進度監控與錯誤處理
+- ProgressSection 和 EnhancedProgressBar 即時顯示處理狀態
+- 錯誤分級處理（Critical/High/Medium/Low）
+- 友好的錯誤訊息顯示
+- 錯誤記錄到資料庫
 
-## 技術實現細節
+## 技術實現
 
-### 前端
--   **React 組件化架構**: 頁面和功能被拆分為可重用的組件。
--   **Tailwind CSS**: 用於快速建構現代化的使用者介面，實現了玻璃擬態、漸層、光效等視覺效果。
--   **Hooks**: `useQcLabelBusiness` 封裝了主要的業務邏輯，`useFormValidation` 處理表單驗證。
+### 前端技術
+- React 組件化架構設計
+- Tailwind CSS 現代化 UI 框架
+- 玻璃擬態設計風格
+- 響應式設計支援
+- TypeScript 類型安全
 
-### 後端/資料庫
--   **Supabase**: 用作後端服務，包括：
-    *   **Database**: 儲存棧板資訊 (`record_palletinfo`)、操作歷史 (`record_history`)、產品資料 (`data_code`) 等。
-    *   **Storage**: 儲存產生的 QC 標籤 PDF 檔案。
--   **PDF 產生**: 透過後端 API 服務 (可能位於 `app/api/print-label-pdf/`) 或客戶端 PDF產生邏輯實現。
+### 後端整合
+- Supabase 作為後端服務
+- 資料庫操作透過 Supabase Client
+- 檔案儲存使用 Supabase Storage
+- PDF 生成透過專用 API 服務
 
-## 介面風格與使用者體驗 (參考 `docs/print-label-ui-optimization.md`)
+### UI 設計特色
+- 深藍色/深色主題
+- 動態漸層背景與網格紋理
+- 半透明背景與背景模糊效果
+- 邊框光效與懸停互動
+- 現代化按鈕設計與載入動畫
+- 清晰的視覺回饋系統
 
--   **主題**: 深藍色/深色主題，配合玻璃擬態效果。
--   **背景**: 動態漸層背景與網格紋理。
--   **卡片與表單**: 半透明背景、背景模糊、邊框光效、懸停與聚焦互動效果。
--   **按鈕**: 漸層背景、懸停縮放與光效、載入動畫。
--   **進度條**: 現代化設計，清晰展示狀態。
--   **響應式設計**: 適應不同螢幕尺寸，支援觸控操作。
--   **視覺回饋**: 清晰的載入狀態、成功/錯誤提示。
+## API 端點
 
-## 注意事項
+### PDF 生成 API
+- `app/api/print-label-pdf/`: QC 標籤 PDF 生成服務
+- 支援批量 PDF 生成
+- 自動檔案上傳與管理
 
--   確保 Supabase 環境變數 (`NEXT_PUBLIC_SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`) 已正確設定。
--   確保應用程式有權限讀寫相關資料庫表 (`record_palletinfo`, `record_history`, `data_code`)。
--   確保 Supabase Storage 中的 `pallet-label-pdf` (或 `qc-labels`) bucket 已建立並設定正確權限。 
+### 資料查詢 API
+- 產品代碼驗證
+- 庫存數量查詢
+- 操作員身份驗證
+
+## 配置要求
+
+### 環境變數
+- `NEXT_PUBLIC_SUPABASE_URL`: Supabase 專案 URL
+- `SUPABASE_SERVICE_ROLE_KEY`: Supabase 服務角色金鑰
+
+### 權限設定
+- 資料庫表讀寫權限
+- Supabase Storage bucket 存取權限
+- PDF 生成服務權限
+
+## 支援的產品類型
+
+### 正常產品
+- 標準 QC 標籤格式
+- 自動庫存扣減
+- 標準棧板號碼生成
+
+### ACO 產品
+- 包含訂單參考資訊
+- 特殊標籤格式
+- 客戶特定要求處理
+
+### Slate 產品
+- Slate 專用標籤格式
+- 特殊產品描述處理
+- 客製化標籤內容
+
+## 效能優化
+
+### 前端優化
+- 組件懶載入
+- 表單狀態優化
+- 進度條效能優化
+- 錯誤邊界保護
+
+### 後端優化
+- 批量資料庫操作
+- PDF 生成快取
+- 檔案上傳優化
+- 查詢效能優化 

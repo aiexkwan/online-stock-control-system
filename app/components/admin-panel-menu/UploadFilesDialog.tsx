@@ -496,6 +496,7 @@ export const UploadFilesDialog: React.FC<UploadFilesDialogProps> = ({
       const formData = new FormData();
       formData.append('file', orderPDFState.selectedFile);
       formData.append('uploadedBy', currentUserId.toString());
+      formData.append('saveToStorage', 'true'); // 保存 PDF 到 orderpdf bucket
 
       // 模擬分析進度
       const progressInterval = setInterval(() => {
@@ -890,7 +891,7 @@ export const UploadFilesDialog: React.FC<UploadFilesDialogProps> = ({
                       <div className="flex items-center justify-between text-sm">
                         <span className="text-slate-300 flex items-center">
                           <SparklesIcon className="h-4 w-4 mr-2 text-blue-400" />
-                          AI is analyzing PDF content...
+                          Analyzing PDF content...
                         </span>
                         <span className="text-blue-400">{orderPDFState.analysisProgress}%</span>
                       </div>

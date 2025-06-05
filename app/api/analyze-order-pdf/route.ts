@@ -51,6 +51,58 @@ function createOpenAIClient() {
   });
 }
 
+// PDF 轉圖像函數（使用 pdf2pic 或類似庫）
+async function convertPdfToImages(pdfBuffer: Buffer): Promise<string[]> {
+  const fs = require('fs');
+  const path = require('path');
+  
+  try {
+    // 注意：這裡需要安裝 pdf2pic 或 pdf-poppler 等庫
+    // npm install pdf2pic
+    const pdf2pic = require('pdf2pic');
+    
+    const convert = pdf2pic.fromBuffer(pdfBuffer, {
+      density: 300,           // 高解析度
+      saveFilename: "page",
+      savePath: "/tmp",
+      format: "png",
+      width: 2480,           // A4 寬度 @ 300 DPI
+      height: 3508           // A4 高度 @ 300 DPI
+    });
+    
+    const results = await convert.bulk(-1); // 轉換所有頁面
+    
+    console.log(`[PDF to Images] 轉換結果: ${results.length} 個文件`);
+    
+    // 將圖像轉為 base64
+    const base64Images: string[] = [];
+    for (const result of results) {
+      if (result.base64) {
+        // 如果已經有 base64，直接使用
+        base64Images.push(result.base64);
+      } else if (result.path) {
+        // 如果有文件路徑，讀取文件並轉換為 base64
+        try {
+          const imageBuffer = fs.readFileSync(result.path);
+          const base64String = imageBuffer.toString('base64');
+          base64Images.push(base64String);
+          
+          // 清理臨時文件
+          fs.unlinkSync(result.path);
+        } catch (fileError) {
+          console.error('[PDF to Images] 讀取文件錯誤:', fileError);
+        }
+      }
+    }
+    
+    console.log(`[PDF to Images] 成功轉換 ${base64Images.length} 個圖像為 base64`);
+    return base64Images;
+  } catch (error) {
+    console.error('[PDF to Images] 轉換錯誤:', error);
+    throw new Error('Failed to convert PDF to images');
+  }
+}
+
 // 定義訂單數據接口
 interface OrderData {
   account_num: number;
@@ -72,7 +124,7 @@ export async function POST(request: NextRequest) {
     const formData = await request.formData();
     const file = formData.get('file') as File;
     const uploadedBy = formData.get('uploadedBy') as string;
-    const saveToStorage = formData.get('saveToStorage') as string; // 可選：是否保存到 Storage
+    const saveToStorage = formData.get('saveToStorage') as string;
     
     if (!file) {
       console.error('[Analyze Order PDF API] 沒有找到文件');
@@ -100,9 +152,9 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
     
-    // 轉換文件為 base64 用於 OpenAI 分析
+    // 轉換文件為 Buffer
     const arrayBuffer = await file.arrayBuffer();
-    const base64 = Buffer.from(arrayBuffer).toString('base64');
+    const pdfBuffer = Buffer.from(arrayBuffer);
     
     // 可選：保存文件到 Storage
     let storageInfo = null;
@@ -124,7 +176,6 @@ export async function POST(request: NextRequest) {
         
         if (uploadError) {
           console.error('[Analyze Order PDF API] Storage 上傳錯誤:', uploadError);
-          // 不中斷分析流程，只記錄錯誤
         } else {
           const { data: urlData } = supabaseAdmin.storage
             .from('orderpdf')
@@ -140,18 +191,26 @@ export async function POST(request: NextRequest) {
         }
       } catch (storageError) {
         console.error('[Analyze Order PDF API] Storage 操作錯誤:', storageError);
-        // 不中斷分析流程
       }
     }
     
-    console.log('[Analyze Order PDF API] 文件轉換完成，準備發送到 OpenAI...');
+    console.log('[Analyze Order PDF API] 開始將 PDF 轉換為圖像...');
+    
+    // 將 PDF 轉換為圖像
+    const imageBase64Array = await convertPdfToImages(pdfBuffer);
+    
+    if (imageBase64Array.length === 0) {
+      throw new Error('No images extracted from PDF');
+    }
+    
+    console.log(`[Analyze Order PDF API] PDF 轉換完成，共 ${imageBase64Array.length} 頁圖像`);
     
     // 創建 OpenAI 客戶端
     const openai = createOpenAIClient();
     
     // 構建詳細的 prompt
     const prompt = `
-You are a professional data extraction specialist with expertise in analyzing business documents. Please analyze the uploaded PDF document and extract order information according to the following database schema.
+You are a professional data extraction specialist with expertise in analyzing business documents. Please analyze the uploaded document images and extract order information according to the following database schema.
 
 **CRITICAL REQUIREMENTS:**
 
@@ -188,12 +247,10 @@ You are a professional data extraction specialist with expertise in analyzing bu
    - Numeric fields: Use 0
    - Text fields: Use "NOT_FOUND"
 
-5. **Common Document Types to Handle:**
-   - Purchase Orders
-   - Sales Orders
-   - Invoices
-   - Order Confirmations
-   - Quotations
+5. **Multi-page Analysis:**
+   - Analyze ALL provided images as they represent different pages of the same document
+   - Look for continuation of data across pages
+   - Combine information from all pages to create complete records
 
 **OUTPUT FORMAT:**
 Return ONLY a valid JSON array. Each object represents one order line item.
@@ -214,15 +271,36 @@ Example format:
 ]
 
 **IMPORTANT:** 
-- Analyze the entire document carefully
-- Look for tables, line items, and structured data
+- Analyze all document images carefully
+- Look for tables, line items, and structured data across all pages
 - Pay attention to headers and labels
 - Extract all order lines if multiple products are listed
 - Ensure numeric values are properly converted
 - Double-check currency conversions
 
-Please analyze the PDF document now and extract the order data.
+Please analyze the document images now and extract the order data.
 `;
+    
+    // 構建消息內容，包含所有圖像
+    const messageContent: any[] = [
+      {
+        type: "text",
+        text: prompt
+      }
+    ];
+    
+    // 添加所有頁面的圖像
+    for (let i = 0; i < imageBase64Array.length; i++) {
+      messageContent.push({
+        type: "image_url",
+        image_url: {
+          url: `data:image/png;base64,${imageBase64Array[i]}`,
+          detail: "high"
+        }
+      });
+    }
+    
+    console.log('[Analyze Order PDF API] 發送到 OpenAI，包含', imageBase64Array.length, '張圖像...');
     
     // 發送到 OpenAI API
     const response = await openai.chat.completions.create({
@@ -230,19 +308,7 @@ Please analyze the PDF document now and extract the order data.
       messages: [
         {
           role: "user",
-          content: [
-            {
-              type: "text",
-              text: prompt
-            },
-            {
-              type: "image_url",
-              image_url: {
-                url: `data:application/pdf;base64,${base64}`,
-                detail: "high"
-              }
-            }
-          ]
+          content: messageContent
         }
       ],
       max_tokens: 4000,
@@ -303,8 +369,59 @@ Please analyze the PDF document now and extract the order data.
     // 創建服務端客戶端
     const supabaseAdmin = createSupabaseAdmin();
     
+    // 檢查是否已存在相同的訂單記錄（基於 order_ref 和 product_code）
+    console.log('[Analyze Order PDF API] 檢查重複記錄...');
+    const duplicateChecks = await Promise.all(
+      orderData.map(async (order) => {
+        const { data: existingRecords, error } = await supabaseAdmin
+          .from('data_order')
+          .select('uuid, order_ref, product_code')
+          .eq('order_ref', order.order_ref)
+          .eq('product_code', order.product_code);
+        
+        if (error) {
+          console.error('[Analyze Order PDF API] 重複檢查錯誤:', error);
+          return { isDuplicate: false, order };
+        }
+        
+        return { 
+          isDuplicate: existingRecords && existingRecords.length > 0, 
+          order,
+          existingRecords 
+        };
+      })
+    );
+    
+    // 過濾掉重複的記錄
+    const newOrders = duplicateChecks.filter(check => !check.isDuplicate).map(check => check.order);
+    const duplicateOrders = duplicateChecks.filter(check => check.isDuplicate);
+    
+    if (duplicateOrders.length > 0) {
+      console.log(`[Analyze Order PDF API] 發現 ${duplicateOrders.length} 個重複記錄，將跳過插入`);
+      duplicateOrders.forEach((dup, index) => {
+        console.log(`[Analyze Order PDF API] 重複記錄 ${index + 1}: Order ${dup.order.order_ref}, Product ${dup.order.product_code}`);
+      });
+    }
+    
+    if (newOrders.length === 0) {
+      console.log('[Analyze Order PDF API] 所有記錄都已存在，無需插入新記錄');
+      return NextResponse.json({
+        success: true,
+        message: 'All records already exist in database',
+        extractedData: orderData,
+        insertedRecords: [],
+        duplicateRecords: duplicateOrders.map(d => d.order),
+        recordCount: 0,
+        duplicateCount: duplicateOrders.length,
+        storageInfo: storageInfo,
+        pagesProcessed: imageBase64Array.length
+      });
+    }
+    
+    console.log(`[Analyze Order PDF API] 將插入 ${newOrders.length} 個新記錄`);
+    
     // 插入數據到 data_order 表
-    const insertPromises = orderData.map(async (order, index) => {
+    const insertPromises = newOrders.map(async (order, index) => {
       try {
         const orderWithUploader = {
           ...order,
@@ -339,9 +456,12 @@ Please analyze the PDF document now and extract the order data.
       success: true,
       extractedData: orderData,
       insertedRecords: insertResults.flat(),
+      duplicateRecords: duplicateOrders.map(d => d.order),
       recordCount: insertResults.length,
+      duplicateCount: duplicateOrders.length,
       storageInfo: storageInfo,
-      message: `Successfully extracted and saved ${insertResults.length} order records`
+      pagesProcessed: imageBase64Array.length,
+      message: `Successfully extracted and saved ${insertResults.length} new order records from ${imageBase64Array.length} pages${duplicateOrders.length > 0 ? ` (${duplicateOrders.length} duplicates skipped)` : ''}`
     });
     
   } catch (error: any) {

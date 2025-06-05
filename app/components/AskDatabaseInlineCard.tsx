@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
-import { Loader2, Send, Clock, Zap, Database } from 'lucide-react';
+import { Loader2, Send, Clock, Zap, Database, Brain } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface QueryResult {
@@ -97,13 +97,26 @@ export default function AskDatabaseInlineCard() {
 
   const exampleQuestions = [
     "How many pallets were generated today?",
-    "Show top 5 products with highest inventory",
-    "What transfer records were made this week?",
-    "Which products have inventory below 100?",
+    "Show the top 5 products with the highest stock",
+    "What are the transfer records for this week?",
+    "Which products have less than 100 units in stock?",
+    "How many GRN receipts were recorded today?",
+    "What is the total stock of MHCOL2 products?"
   ];
 
   return (
     <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center gap-3 mb-4">
+        <div className="flex items-center gap-2">
+          <Brain className="h-6 w-6 text-purple-400" />
+          <h3 className="text-xl font-semibold text-white">Ask Me Anything</h3>
+        </div>
+        <Badge className="bg-purple-500/20 text-purple-300 border-purple-500/30">
+          Trained On Going...
+        </Badge>
+      </div>
+
       {/* Query Input Form */}
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="relative">
@@ -111,7 +124,7 @@ export default function AskDatabaseInlineCard() {
             ref={textareaRef}
             value={question}
             onChange={(e) => setQuestion(e.target.value)}
-            placeholder="Enter your question, e.g.: How many pallets were generated today?"
+            placeholder="Enter your question, e.g. How many pallets were generated today?"
             className="min-h-[80px] bg-slate-700/50 border-slate-600/50 text-white placeholder-slate-400 resize-none focus:border-purple-500/50 focus:ring-purple-500/20"
             disabled={loading}
           />
@@ -184,6 +197,12 @@ export default function AskDatabaseInlineCard() {
                       <Clock className="h-3 w-3 mr-1" />
                       {formatExecutionTime(lastResult.result.executionTime)}
                     </Badge>
+                    {lastResult.tokensUsed > 0 && (
+                      <Badge variant="outline" className="bg-purple-500/20 text-purple-300 border-purple-500/30">
+                        <Brain className="h-3 w-3 mr-1" />
+                        {lastResult.tokensUsed} tokens
+                      </Badge>
+                    )}
                   </div>
                 </div>
                 
@@ -211,7 +230,7 @@ export default function AskDatabaseInlineCard() {
                 {/* SQL Query Display */}
                 {lastResult.sql && (
                   <div className="mt-4">
-                    <h5 className="text-sm font-medium text-slate-300 mb-2">Generated SQL:</h5>
+                    <h5 className="text-sm font-medium text-slate-300 mb-2">Generated SQL Query:</h5>
                     <div className="bg-slate-900/50 rounded-lg p-3 border border-slate-700/50">
                       <code className="text-xs text-green-300 font-mono">
                         {lastResult.sql}

@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/app/utils/supabase/server';
 import { LRUCache } from 'lru-cache';
-import { classifyUserIntent, executeRpcQuery, QueryIntent } from './intent-classifier';
-import { generateAnswer } from './answer-generator';
+import OpenAI from 'openai';
+import type { ChatCompletionMessageParam } from 'openai/resources/chat/completions';
 
 // 允許使用 Ask Database 功能的用戶
 const ALLOWED_USERS = [
@@ -10,19 +10,24 @@ const ALLOWED_USERS = [
   'akwan@pennineindustries.com'
 ];
 
-// 初始化緩存 - 優化緩存策略
-const queryCache = new LRUCache<string, any>({
-  max: 3000, // 增加緩存容量 (RPC 查詢更標準化，緩存效果更好)
-  ttl: 4 * 3600 * 1000, // 延長到4小時 (RPC 結果更穩定)
+// 初始化 OpenAI 客戶端
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
 });
 
-// 會話歷史緩存 (sessionId -> conversation history)
+// 初始化緩存
+const queryCache = new LRUCache<string, any>({
+  max: 1000,
+  ttl: 2 * 3600 * 1000, // 2小時
+});
+
+// 會話歷史緩存
 const conversationCache = new LRUCache<string, ConversationEntry[]>({
-  max: 300, // 增加會話緩存容量
+  max: 300,
   ttl: 24 * 60 * 60 * 1000, // 24小時
 });
 
-// 用戶名稱緩存 (email -> name)
+// 用戶名稱緩存
 const userNameCache = new LRUCache<string, string>({
   max: 500,
   ttl: 24 * 60 * 60 * 1000, // 24小時
@@ -32,20 +37,28 @@ const userNameCache = new LRUCache<string, string>({
 interface ConversationEntry {
   timestamp: string;
   question: string;
-  rpcFunction: string;
+  sql: string;
   answer: string;
   result: any;
-  intent: QueryIntent;
 }
 
-// 🚀 完全本地化模式啟用 - 零外部API依賴
-console.log('[Ask Database] 🚀 FULL LOCAL MODE ENABLED - Build 2025-01-03-ZERO-API');
-console.log('[Ask Database] ✅ Zero external API dependencies - Fully local processing');
-console.log('[Ask Database] ✅ Local English answer generator with British style');
-queryCache.clear();
-conversationCache.clear();
-userNameCache.clear();
-console.log('[Ask Database] All caches cleared - Full local optimization applied');
+interface QueryResult {
+  question: string;
+  sql: string;
+  result: {
+    data: any[];
+    rowCount: number;
+    executionTime: number;
+  };
+  answer: string;
+  complexity: 'simple' | 'medium' | 'complex';
+  tokensUsed: number;
+  cached: boolean;
+  timestamp: string;
+}
+
+console.log('[Ask Database] 🚀 OpenAI SQL Generation Mode - Build 2025-01-03');
+console.log('[Ask Database] ✅ Using OpenAI for SQL generation and natural language responses');
 
 export async function POST(request: NextRequest) {
   const startTime = Date.now();
@@ -53,7 +66,7 @@ export async function POST(request: NextRequest) {
   let userName: string | null = null;
   
   try {
-    console.log('[Ask Database] 🚀 RPC Mode - Request received');
+    console.log('[Ask Database] 🚀 OpenAI Mode - Request received');
     
     const { question, sessionId } = await request.json();
     console.log('[Ask Database] Question:', question);
@@ -80,14 +93,14 @@ export async function POST(request: NextRequest) {
     console.log('[Ask Database] User info:', { email: userEmail, name: userName });
     console.log('[Ask Database] Permission granted, conversation history length:', conversationHistory.length);
 
-    // 2. 檢查緩存 (包含會話上下文的緩存鍵)
+    // 2. 檢查緩存
     const cacheKey = generateCacheKey(question, conversationHistory);
     const cachedResult = queryCache.get(cacheKey);
     if (cachedResult) {
       console.log('[Ask Database] 🎯 Cache hit - returning cached result');
       
-      // 異步保存聊天記錄（不等待完成）
-      saveQueryRecordAsync(question, cachedResult.answer, userName, 0);
+      // 異步保存聊天記錄
+      saveQueryRecordAsync(question, cachedResult.answer, userName, cachedResult.tokensUsed);
       
       return NextResponse.json({
         ...cachedResult,
@@ -98,71 +111,59 @@ export async function POST(request: NextRequest) {
     }
     console.log('[Ask Database] Cache miss');
 
-    // 3. 🚀 新流程：智能意圖識別 (取代 OpenAI SQL 生成)
-    console.log('[Ask Database] 🧠 Starting intent classification...');
-    const intent = classifyUserIntent(question);
-    console.log('[Ask Database] Intent classified:', {
-      type: intent.type,
-      rpcFunction: intent.rpcFunction,
-      confidence: intent.confidence,
-      description: intent.description
-    });
+    // 3. 使用 OpenAI 生成 SQL 查詢
+    console.log('[Ask Database] 🧠 Generating SQL with OpenAI...');
+    const { sql, tokensUsed } = await generateSQLWithOpenAI(question, conversationHistory, userEmail);
+    console.log('[Ask Database] Generated SQL:', sql);
+    console.log('[Ask Database] Tokens used:', tokensUsed);
 
-    // 4. 🚀 直接執行 RPC 函數 (取代 SQL 執行)
-    console.log('[Ask Database] 🚀 Executing RPC function...');
-    const queryResult = await executeRpcQuery(intent, createClient());
-    console.log('[Ask Database] RPC result:', {
-      rowCount: Array.isArray(queryResult.data) ? queryResult.data.length : 1,
+    // 4. 執行 SQL 查詢
+    console.log('[Ask Database] 🚀 Executing SQL query...');
+    const queryResult = await executeSQLQuery(sql);
+    console.log('[Ask Database] SQL result:', {
+      rowCount: queryResult.data.length,
       executionTime: queryResult.executionTime
     });
 
-    // 5. 生成自然語言回應 (使用本地英式回答生成器)
-    console.log('[Ask Database] 📝 Generating English response with local generator...');
-    const response = generateAnswer(intent, queryResult, question);
-    console.log('[Ask Database] English response generated locally');
+    // 5. 使用 OpenAI 生成自然語言回應
+    console.log('[Ask Database] 📝 Generating natural language response with OpenAI...');
+    const { answer, additionalTokens } = await generateAnswerWithOpenAI(question, sql, queryResult);
+    console.log('[Ask Database] Natural language response generated');
 
-    const result = {
+    const totalTokens = tokensUsed + additionalTokens;
+    const complexity = determineComplexity(sql, queryResult.data.length);
+
+    const result: QueryResult = {
       question,
-      intent: {
-        type: intent.type,
-        rpcFunction: intent.rpcFunction,
-        confidence: intent.confidence,
-        description: intent.description
-      },
+      sql,
       result: queryResult,
-      answer: response,
-      executionTime: queryResult.executionTime,
+      answer,
+      complexity,
+      tokensUsed: totalTokens,
       cached: false,
       timestamp: new Date().toISOString(),
-      responseTime: Date.now() - startTime,
-      mode: 'FULL_LOCAL_ZERO_API', // 標識使用完全本地化零API依賴模式
-      tokenUsage: 0 // 不再使用OpenAI，所以token為0
     };
 
     // 6. 並行執行緩存保存、會話歷史保存和聊天記錄保存
     console.log('[Ask Database] 💾 Saving results...');
     const saveOperations = [
-      // 緩存結果
       Promise.resolve(queryCache.set(cacheKey, result)),
-      // 保存會話歷史
       Promise.resolve(saveConversationHistory(sessionId, {
-      timestamp: result.timestamp,
-      question,
-        rpcFunction: intent.rpcFunction,
-      answer: response,
-      result: queryResult,
-        intent: intent
+        timestamp: result.timestamp,
+        question,
+        sql,
+        answer,
+        result: queryResult,
       })),
-      // 保存聊天記錄到數據庫
-      saveQueryRecordAsync(question, response, userName, 0) // 0 tokens used
+      saveQueryRecordAsync(question, answer, userName, totalTokens)
     ];
 
-    // 不等待保存操作完成，直接返回結果以提高響應速度
+    // 不等待保存操作完成，直接返回結果
     Promise.all(saveOperations).catch(error => {
       console.error('[Ask Database] Save operations failed:', error);
     });
 
-    console.log('[Ask Database] 🎉 RPC request completed successfully in', Date.now() - startTime, 'ms');
+    console.log('[Ask Database] 🎉 OpenAI request completed successfully in', Date.now() - startTime, 'ms');
     return NextResponse.json(result);
 
   } catch (error: any) {
@@ -177,10 +178,10 @@ export async function POST(request: NextRequest) {
     // 根據錯誤類型提供更具體的錯誤訊息
     let errorMessage = 'Query processing failed, please try again later';
     
-    if (error.message?.includes('RPC function')) {
-      errorMessage = 'Database query failed, please try to rephrase your question';
-    } else if (error.message?.includes('answer generation')) {
-      errorMessage = 'Response generation failed, but query was successful';
+    if (error.message?.includes('SQL')) {
+      errorMessage = 'SQL query generation failed, please try to rephrase your question';
+    } else if (error.message?.includes('OpenAI')) {
+      errorMessage = 'AI service temporarily unavailable, please try again later';
     } else if (error.message?.includes('permission') || error.message?.includes('auth')) {
       errorMessage = 'Permission verification failed, please log in again';
     } else if (error.message?.includes('timeout')) {
@@ -192,25 +193,275 @@ export async function POST(request: NextRequest) {
         error: errorMessage,
         details: process.env.NODE_ENV === 'development' ? error.message : undefined,
         responseTime: Date.now() - startTime,
-        mode: 'FULL_LOCAL_ZERO_API'
+        mode: 'OPENAI_SQL_GENERATION'
       },
       { status: 500 }
     );
   }
 }
 
-// 獲取用戶信息（包括用戶名）
+// 使用 OpenAI 生成 SQL 查詢
+async function generateSQLWithOpenAI(question: string, conversationHistory: ConversationEntry[], userEmail: string | null): Promise<{ sql: string; tokensUsed: number }> {
+  try {
+    // 讀取 OpenAI prompt
+    const fs = require('fs');
+    const path = require('path');
+    const promptPath = path.join(process.cwd(), 'docs', 'openAIprompt');
+    const promptContent = fs.readFileSync(promptPath, 'utf8');
+
+    // 獲取同日對話歷史
+    const dailyHistory = await getDailyQueryHistory(userEmail);
+    
+    // 構建包含同日歷史的 prompt
+    let enhancedPrompt = promptContent;
+    
+    if (dailyHistory.length > 0) {
+      enhancedPrompt += '\n\n### Previous Q&A history:\n';
+      dailyHistory.forEach((entry: { question: string; answer: string }, index: number) => {
+        enhancedPrompt += `User: ${entry.question}\n`;
+        enhancedPrompt += `AI: ${entry.answer}\n`;
+        if (index < dailyHistory.length - 1) enhancedPrompt += '\n';
+      });
+      enhancedPrompt += '\n---\n**Current question:**\n';
+    }
+
+    // 構建對話上下文
+    const messages: any[] = [
+      {
+        role: 'system',
+        content: enhancedPrompt
+      }
+    ];
+
+    // 添加會話歷史（最近3次對話）
+    if (conversationHistory.length > 0) {
+      const recentHistory = conversationHistory.slice(-3);
+      for (const entry of recentHistory) {
+        messages.push({
+          role: 'user',
+          content: entry.question
+        });
+        messages.push({
+          role: 'assistant',
+          content: `\`\`\`sql\n${entry.sql}\n\`\`\``
+        });
+      }
+    }
+
+    // 添加當前問題
+    messages.push({
+      role: 'user',
+      content: question
+    });
+
+    console.log('[OpenAI SQL] Sending request to OpenAI...');
+    // @ts-ignore - OpenAI types issue
+    const response = await (openai.chat.completions as any).create({
+      model: 'gpt-4o',
+      messages,
+      temperature: 0.1,
+      max_tokens: 1000,
+    });
+
+    const content = response.choices[0]?.message?.content;
+    const tokensUsed = response.usage?.total_tokens || 0;
+
+    if (!content) {
+      throw new Error('OpenAI returned empty response');
+    }
+
+    // 提取 SQL 查詢 - 支援多種格式
+    let sql = '';
+    
+    // 嘗試匹配 ```sql 格式
+    let sqlMatch = content.match(/```sql\n([\s\S]*?)\n```/);
+    if (sqlMatch) {
+      sql = sqlMatch[1].trim();
+    } else {
+      // 嘗試匹配 ``` 格式
+      sqlMatch = content.match(/```\n([\s\S]*?)\n```/);
+      if (sqlMatch) {
+        sql = sqlMatch[1].trim();
+      } else {
+        // 嘗試匹配單行 SQL
+        sqlMatch = content.match(/SELECT[\s\S]*?;?$/i);
+        if (sqlMatch) {
+          sql = sqlMatch[0].trim();
+        } else {
+          console.error('[OpenAI SQL] Raw OpenAI response:', content);
+          throw new Error('No SQL query found in OpenAI response');
+        }
+      }
+    }
+
+    if (!sql) {
+      throw new Error('Empty SQL query extracted from OpenAI response');
+    }
+    
+    // 驗證 SQL 是否為 SELECT 查詢
+    if (!sql.toLowerCase().trim().startsWith('select')) {
+      throw new Error('Only SELECT queries are allowed');
+    }
+
+    console.log('[OpenAI SQL] SQL generated successfully');
+    return { sql, tokensUsed };
+
+  } catch (error: any) {
+    console.error('[OpenAI SQL] Error:', error);
+    throw new Error(`SQL generation failed: ${error.message}`);
+  }
+}
+
+// 執行 SQL 查詢
+async function executeSQLQuery(sql: string): Promise<{ data: any[]; rowCount: number; executionTime: number }> {
+  const supabase = createClient();
+  const startTime = Date.now();
+
+  try {
+    console.log('[SQL Execution] Executing query:', sql);
+    
+    const { data, error } = await supabase.rpc('execute_sql_query', { query_text: sql });
+    
+    const executionTime = Date.now() - startTime;
+
+    if (error) {
+      console.error('[SQL Execution] Error:', error);
+      throw new Error(`SQL execution failed: ${error.message}`);
+    }
+
+    const resultData = Array.isArray(data) ? data : [];
+    console.log('[SQL Execution] Query executed successfully, rows:', resultData.length);
+
+    return {
+      data: resultData,
+      rowCount: resultData.length,
+      executionTime
+    };
+
+  } catch (error: any) {
+    console.error('[SQL Execution] Error:', error);
+    throw new Error(`Database query failed: ${error.message}`);
+  }
+}
+
+// 使用 OpenAI 生成自然語言回應
+async function generateAnswerWithOpenAI(question: string, sql: string, queryResult: any): Promise<{ answer: string; additionalTokens: number }> {
+  try {
+    const messages = [
+      {
+        role: 'system',
+        content: `You are a helpful database assistant for Pennine Manufacturing Industries. 
+        Your task is to analyze SQL query results and provide clear, natural English responses.
+        
+        Guidelines:
+        - Always respond in English only, regardless of the user's question language
+        - Use a friendly, professional tone with slight British style
+        - Be concise but informative
+        - If no data is found, say "No matching record found."
+        - For numerical results, present them clearly
+        - For lists, format them nicely with bullet points or numbered lists
+        - Don't mention technical details like SQL or database tables`
+      },
+      {
+        role: 'user',
+        content: `User question: ${question}
+
+SQL query executed: ${sql}
+
+Query results: ${JSON.stringify(queryResult.data, null, 2)}
+
+Number of rows returned: ${queryResult.rowCount}
+
+Please provide a natural English response to the user's question based on these results.`
+      }
+    ];
+
+    console.log('[OpenAI Answer] Generating natural language response...');
+    const response = await openai.chat.completions.create({
+      model: 'gpt-4o',
+      messages,
+      temperature: 0.3,
+      max_tokens: 800,
+    });
+
+    const answer = response.choices[0]?.message?.content;
+    const tokensUsed = response.usage?.total_tokens || 0;
+
+    if (!answer) {
+      throw new Error('OpenAI returned empty answer');
+    }
+
+    console.log('[OpenAI Answer] Natural language response generated successfully');
+    return { answer: answer.trim(), additionalTokens: tokensUsed };
+
+  } catch (error: any) {
+    console.error('[OpenAI Answer] Error:', error);
+    // 如果 OpenAI 回應生成失敗，提供基本回應
+    return { 
+      answer: `Query executed successfully. Found ${queryResult.rowCount} result${queryResult.rowCount !== 1 ? 's' : ''}.`,
+      additionalTokens: 0
+    };
+  }
+}
+
+// 判斷查詢複雜度
+function determineComplexity(sql: string, resultCount: number): 'simple' | 'medium' | 'complex' {
+  const lowerSql = sql.toLowerCase();
+  
+  if (lowerSql.includes('join') || lowerSql.includes('subquery') || lowerSql.includes('union')) {
+    return 'complex';
+  }
+  
+  if (lowerSql.includes('group by') || lowerSql.includes('order by') || lowerSql.includes('having')) {
+    return 'medium';
+  }
+  
+  return 'simple';
+}
+
+// 獲取同日查詢歷史
+async function getDailyQueryHistory(userEmail: string | null): Promise<Array<{ question: string; answer: string }>> {
+  if (!userEmail) return [];
+  
+  try {
+    const supabase = createClient();
+    const today = new Date().toISOString().split('T')[0];
+    
+    const { data, error } = await supabase
+      .from('query_record')
+      .select('query, answer')
+      .eq('user', userEmail)
+      .gte('created_at', today + 'T00:00:00')
+      .lt('created_at', today + 'T23:59:59')
+      .order('created_at', { ascending: true })
+      .limit(10); // 限制最多10條歷史記錄
+    
+    if (error) {
+      console.error('[getDailyQueryHistory] Error:', error);
+      return [];
+    }
+    
+    return (data || []).map(record => ({
+      question: record.query,
+      answer: record.answer
+    }));
+  } catch (error) {
+    console.error('[getDailyQueryHistory] Error:', error);
+    return [];
+  }
+}
+
+// 獲取用戶信息
 async function getUserInfo(): Promise<{ email: string | null; name: string | null }> {
   const supabase = createClient();
   
   try {
-    // 在開發環境中，如果沒有認證用戶，使用一個真實的測試用戶
+    // 在開發環境中，如果沒有認證用戶，使用測試用戶
     if (process.env.NODE_ENV === 'development') {
-    const { data: { user } } = await supabase.auth.getUser();
-    
-    if (!user?.email) {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user?.email) {
         console.log('[getUserInfo] Development mode: No authenticated user, using test user');
-        // 使用第一個真實用戶作為測試用戶
         const { data: testUser, error } = await supabase
           .from('data_id')
           .select('name, email')
@@ -249,7 +500,6 @@ async function getUserInfo(): Promise<{ email: string | null; name: string | nul
 
     if (error || !userData) {
       console.log('[getUserInfo] User not found in data_id table:', user.email, 'Error:', error?.message);
-      // 使用email作為fallback，但仍然是真實用戶
       return { email: user.email, name: user.email };
     }
 
@@ -264,9 +514,8 @@ async function getUserInfo(): Promise<{ email: string | null; name: string | nul
   }
 }
 
-// 異步保存聊天記錄到 query_record 表
+// 異步保存聊天記錄
 async function saveQueryRecordAsync(query: string, answer: string, user: string | null, tokenUsage: number = 0): Promise<void> {
-  // 不阻塞主流程，異步執行
   setImmediate(async () => {
     try {
       const supabase = createClient();
@@ -293,7 +542,7 @@ async function saveQueryRecordAsync(query: string, answer: string, user: string 
 
 // 用戶權限檢查
 async function checkUserPermission(): Promise<boolean> {
-  // 開發環境下跳過權限檢查（用於深度調試）
+  // 開發環境下跳過權限檢查
   if (process.env.NODE_ENV === 'development') {
     console.log('[checkUserPermission] Development mode: skipping auth check for debugging');
     return true;
@@ -308,7 +557,6 @@ async function checkUserPermission(): Promise<boolean> {
       return false;
     }
 
-    // 檢查是否為允許的用戶
     return ALLOWED_USERS.includes(user.email);
   } catch (error) {
     console.error('Permission check error:', error);
@@ -318,13 +566,12 @@ async function checkUserPermission(): Promise<boolean> {
 
 // 生成緩存鍵
 function generateCacheKey(question: string, conversationHistory?: ConversationEntry[]): string {
-  // 將會話歷史的關鍵信息納入緩存鍵
   const historyKey = conversationHistory && conversationHistory.length > 0 
-    ? conversationHistory.slice(-2).map(entry => `${entry.question}:${entry.rpcFunction}`).join('|')
+    ? conversationHistory.slice(-2).map(entry => `${entry.question}:${entry.sql}`).join('|')
     : '';
   
   const fullKey = `${question}|${historyKey}`;
-  return `rpc:${Buffer.from(fullKey).toString('base64')}`;
+  return `openai:${Buffer.from(fullKey).toString('base64')}`;
 }
 
 // 獲取會話歷史
@@ -352,7 +599,7 @@ export async function GET(request: NextRequest) {
   try {
     const supabase = createClient();
     
-    // 檢查URL參數，如果包含debug=true，提供詳細的數據分析
+    // 檢查URL參數
     const url = new URL(request.url);
     const debug = url.searchParams.get('debug') === 'true';
     
@@ -360,7 +607,7 @@ export async function GET(request: NextRequest) {
     const envCheck = {
       supabaseUrl: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
       supabaseAnonKey: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-      localMode: true // 完全本地模式
+      openaiApiKey: !!process.env.OPENAI_API_KEY,
     };
     
     // 檢查用戶認證
@@ -398,85 +645,35 @@ export async function GET(request: NextRequest) {
       console.log('[Ask Database Status] DB check failed:', dbError);
     }
     
-    let dataAnalysis = null;
-    
-    // 如果debug=true，提供詳細的數據分析
-    if (debug && userCheck.hasPermission) {
-      try {
-        const today = new Date().toISOString().split('T')[0];
-        
-        // 查詢今天的托盤總數
-        const { data: allPallets, error: allError } = await supabase
-          .from('record_palletinfo')
-          .select('plt_num, plt_remark, generate_time')
-          .gte('generate_time', today + 'T00:00:00')
-          .lt('generate_time', today + 'T23:59:59');
-          
-        if (!allError) {
-          // 分析GRN相關數據
-          const grnPallets = allPallets?.filter(p => 
-            p.plt_remark && p.plt_remark.includes('Material GRN')
-          ) || [];
-          
-          const nonGrnPallets = allPallets?.filter(p => 
-            !p.plt_remark || !p.plt_remark.includes('Material GRN')
-          ) || [];
-          
-          dataAnalysis = {
-            today: today,
-            totalPallets: allPallets?.length || 0,
-            grnPallets: grnPallets.length,
-            nonGrnPallets: nonGrnPallets.length,
-            sampleData: {
-              allPallets: allPallets?.slice(0, 5).map(p => ({
-                plt_num: p.plt_num,
-                plt_remark: p.plt_remark,
-                generate_time: p.generate_time,
-                isGrn: p.plt_remark?.includes('Material GRN') || false
-              })) || [],
-              grnSample: grnPallets.slice(0, 3).map(p => ({
-                plt_num: p.plt_num,
-                plt_remark: p.plt_remark
-              })),
-              nonGrnSample: nonGrnPallets.slice(0, 3).map(p => ({
-                plt_num: p.plt_num,
-                plt_remark: p.plt_remark
-              }))
-            }
-          };
-        }
-      } catch (dataError: any) {
-        console.log('[Ask Database Status] Data analysis failed:', dataError);
-        dataAnalysis = { error: dataError.message };
-      }
-    }
-    
     const status = {
       timestamp: new Date().toISOString(),
-      mode: 'FULL_LOCAL_ZERO_API',
-      version: '2025-01-03-ZERO-API',
+      mode: 'OPENAI_SQL_GENERATION',
+      version: '2025-01-03-OPENAI',
       environment: envCheck,
       user: userCheck,
       database: dbCheck,
-      answerGenerator: {
-        type: 'local_british_style',
-        externalApiDependency: false,
-        tokenCost: 0
+      sqlGeneration: {
+        type: 'openai_gpt4o',
+        model: 'gpt-4o',
+        promptSource: 'docs/openAIprompt'
+      },
+      answerGeneration: {
+        type: 'openai_natural_language',
+        model: 'gpt-4o',
+        style: 'british_professional'
       },
       cache: {
         size: queryCache.size,
-        maxSize: 3000,
-        ttl: '4 hours'
+        maxSize: 1000,
+        ttl: '2 hours'
       },
       features: {
-        rpcOptimization: true,
-        sqlGeneration: false,
-        intentClassification: true,
-        enhancedCaching: true,
-        localAnswerGeneration: true,
-        zeroApiDependency: true
-      },
-      dataAnalysis: dataAnalysis
+        openaiIntegration: true,
+        sqlGeneration: true,
+        naturalLanguageResponse: true,
+        conversationHistory: true,
+        caching: true
+      }
     };
     
     return NextResponse.json(status);
@@ -484,7 +681,7 @@ export async function GET(request: NextRequest) {
   } catch (error: any) {
     console.error('[Ask Database Status] Error:', error);
     return NextResponse.json(
-      { error: 'Status check failed', details: error.message, mode: 'FULL_LOCAL_ZERO_API' },
+      { error: 'Status check failed', details: error.message, mode: 'OPENAI_SQL_GENERATION' },
       { status: 500 }
     );
   }

@@ -5,73 +5,87 @@
 ## English
 
 ### Overview
-A comprehensive stock control and management system built with Next.js 14, TypeScript, and Supabase. This system provides real-time inventory tracking, pallet management, label printing, and administrative tools for Pennine Industries.
+A comprehensive stock control and management system built with Next.js 14, TypeScript, and Supabase. This system provides real-time inventory tracking, pallet management, label printing, AI-powered order analysis, and administrative tools for Pennine Manufacturing Industries.
 
 ### 🚀 Key Features
 
-#### **Home Dashboard**
-- Real-time inventory overview with interactive charts
-- History log with enhanced display (25% larger viewing area)
-- User-friendly interface with improved navigation
+#### **QC Label Printing System**
+- **Multi-Product Support**: Regular products, ACO orders, and Slate products
+- **Automated Processing**: Pallet number and series generation
+- **PDF Generation**: High-quality label output with automatic storage
+- **Batch Processing**: Multiple pallet label generation with progress tracking
+- **Error Handling**: Comprehensive error management and recovery
 
-#### **Label Printing System**
-- **QC Label Printing**: Support for regular products, ACO orders, and Slate products
-- **GRN Label Printing**: Material receipt label generation
-- **PDF Generation**: High-quality label output with barcode support
-- **Batch Processing**: Multiple pallet label generation
+#### **GRN Label Printing System**
+- **Material Receipt Management**: Complete GRN workflow
+- **Weight Calculation**: Automatic net weight calculation (up to 22 pallets)
+- **Supplier Validation**: Real-time supplier code verification
+- **Atomic Operations**: Database consistency with RPC functions
+- **Professional Labels**: Industrial-grade receipt labels
 
-#### **Stock Management**
-- **Stock Transfer**: Location-based inventory movement
-- **Inventory Tracking**: Real-time stock levels across multiple locations
-- **Void Pallet**: Pallet cancellation and management
-- **History Tracking**: Complete audit trail of all operations
+#### **Stock Transfer System**
+- **Automated Transfers**: One-click pallet movement
+- **Smart Location Calculation**: Predefined business rules
+- **QR Code Support**: Barcode scanning integration
+- **Real-time Updates**: Instant inventory adjustments
+- **Transfer History**: Complete audit trail
 
-#### **Admin Panel**
-- **Dual Header Design**: Global navigation + dedicated admin navigation
-- **Transparent Navigation**: Seamless integration with page content
-- **Hover-based Interactions**: Intuitive dropdown menus without clicking
-- **Dashboard Analytics**: Real-time statistics and performance metrics
+#### **Admin Panel & Dashboard**
+- **Real-time Statistics**: Daily, weekly production metrics
+- **ACO Order Tracking**: Order progress monitoring
+- **Quick Inventory Search**: Instant stock level queries
+- **Report Generation**: ACO, GRN, Transaction, Slate reports
+- **Data Export**: Comprehensive database export tools
+
+#### **AI-Powered Features**
+- **PDF Order Analysis**: Automatic order data extraction
+- **Duplicate Detection**: Smart duplicate record checking
+- **Natural Language Queries**: AI database querying
+- **Document Processing**: Intelligent PDF content analysis
+
+#### **System Tools**
+- **File Upload**: PDF document processing
+- **Pallet Voiding**: Advanced cancellation with reprint options
+- **History Tracking**: Complete operation timeline
+- **Database Updates**: Product master data management
 - **User Management**: Role-based access control
-- **Report Generation**: ACO, GRN, Transaction, and Slate reports
-
-#### **Enhanced UI/UX**
-- **50% Larger GlobalHeader**: Improved readability and accessibility
-- **Hover-based Navigation**: Floating dropdown menus for better UX
-- **Responsive Design**: Optimized for desktop, tablet, and mobile
-- **Dark Theme**: Professional appearance with consistent styling
 
 ### 🛠 Technology Stack
 
 - **Frontend**: Next.js 14, React 18, TypeScript
-- **Styling**: Tailwind CSS, Framer Motion
-- **Backend**: Supabase (PostgreSQL, Auth, Real-time)
-- **PDF Generation**: React-PDF, jsPDF
-- **UI Components**: Radix UI, Lucide Icons
-- **State Management**: React Hooks, Context API
-- **Authentication**: Supabase Auth with role-based access
+- **Styling**: Tailwind CSS, Framer Motion, Glassmorphism design
+- **Backend**: Supabase (PostgreSQL, Auth, Real-time, Storage)
+- **AI Integration**: OpenAI GPT-4o for document analysis
+- **PDF Processing**: pdf2pic, GraphicsMagick, Ghostscript
+- **UI Components**: Radix UI, Heroicons
+- **State Management**: React Hooks, Custom business logic hooks
+- **Authentication**: Supabase Auth with role-based permissions
 
 ### 📁 Project Structure
 
 ```
-online-stock-control-system/
+NewPennine/
 ├── app/
-│   ├── home/                    # Main dashboard (formerly /dashboard/access)
-│   ├── admin/                   # Admin panel with dual header design
 │   ├── print-label/            # QC label printing system
 │   ├── print-grnlabel/         # GRN label printing
-│   ├── stock-transfer/         # Stock movement management
-│   ├── void-pallet/            # Pallet cancellation
-│   ├── users/                  # User management
-│   ├── products/               # Product catalog
-│   ├── tables/                 # Database structure viewer
-│   └── components/             # Shared components
+│   ├── stock-transfer/         # Automated stock movement
+│   ├── admin/                  # Comprehensive admin panel
+│   ├── components/             # Shared components
+│   │   ├── qc-label-form/      # QC label components
+│   │   ├── admin-panel-menu/   # Admin dialog components
+│   │   └── print-label-pdf/    # PDF generation components
+│   ├── api/                    # API endpoints
+│   │   ├── analyze-order-pdf/  # AI PDF analysis
+│   │   ├── export-report/      # Report generation
+│   │   └── print-label-pdf/    # Label PDF generation
+│   └── hooks/                  # Business logic hooks
 ├── components/
 │   ├── ui/                     # UI component library
-│   ├── GlobalHeader.tsx        # Enhanced global navigation
-│   └── products/               # Product-related components
-├── docs/                       # Comprehensive documentation
-├── lib/                        # Utility libraries
-└── public/                     # Static assets
+│   ├── qr-scanner/            # QR code scanning
+│   └── products/              # Product management
+├── docs/                      # Comprehensive documentation
+├── lib/                       # Utility libraries
+└── public/                    # Static assets
 ```
 
 ### 🔧 Installation & Setup
@@ -79,7 +93,7 @@ online-stock-control-system/
 1. **Clone the repository**
    ```bash
    git clone <repository-url>
-   cd online-stock-control-system
+   cd NewPennine
    ```
 
 2. **Install dependencies**
@@ -87,18 +101,29 @@ online-stock-control-system/
    npm install
    ```
 
-3. **Environment setup**
+3. **Install system dependencies**
    ```bash
-   cp .env.example .env.local
-   # Configure your Supabase credentials
+   # macOS
+   brew install graphicsmagick ghostscript
+   
+   # Ubuntu/Debian
+   sudo apt-get install graphicsmagick ghostscript
    ```
 
-4. **Run development server**
+4. **Environment setup**
+   ```bash
+   cp .env.example .env.local
+   # Configure your credentials:
+   # - Supabase URL and Service Role Key
+   # - OpenAI API Key for PDF analysis
+   ```
+
+5. **Run development server**
    ```bash
    npm run dev
    ```
 
-5. **Build for production**
+6. **Build for production**
    ```bash
    npm run build
    npm start
@@ -107,51 +132,69 @@ online-stock-control-system/
 ### 🔐 Authentication & Security
 
 - **Supabase Authentication**: Secure user login with email/password
-- **Role-based Access**: Different permission levels (Admin, QC, Receive, etc.)
+- **Role-based Access**: Multiple permission levels (Admin, QC, Receive, etc.)
 - **Session Management**: Automatic session handling and cleanup
 - **Route Protection**: Middleware-based route protection
+- **Operation Logging**: Complete audit trail for all actions
 
 ### 📊 Database Schema
 
 The system uses PostgreSQL through Supabase with the following main tables:
 - `record_palletinfo`: Pallet information and tracking
-- `record_history`: Complete audit trail
+- `record_history`: Complete audit trail of all operations
 - `record_transfer`: Stock movement records
-- `record_inventory`: Real-time inventory levels
-- `data_id`: User management and permissions
+- `record_inventory`: Real-time inventory levels by location
+- `record_aco`: ACO order management and tracking
+- `record_grn`: GRN receipt records with weight information
 - `data_code`: Product catalog and specifications
+- `data_supplier`: Supplier information and validation
+- `data_id`: User management and permissions
+- `data_order`: AI-extracted order data
 
-### 🚀 Recent Updates (v4.0.0)
+### 🤖 AI Features
 
-#### **Path Restructuring**
-- Renamed `/dashboard/access` to `/home` for better user understanding
-- Updated all navigation and authentication checks
-- Maintained backward compatibility with redirects
+#### **PDF Order Analysis**
+- **Document Processing**: Automatic PDF to image conversion
+- **AI Vision Analysis**: OpenAI GPT-4o for data extraction
+- **Smart Parsing**: Intelligent order information recognition
+- **Duplicate Prevention**: Automatic duplicate record detection
+- **Data Validation**: Comprehensive data integrity checks
 
-#### **GlobalHeader Enhancements**
-- Increased height by 50% (`h-16` → `h-24`) for better visibility
-- Implemented hover-based hamburger menu (no clicking required)
-- Improved text sizing and icon scaling
-- Removed complex sidebar animations for simpler dropdown menus
+#### **Natural Language Database Queries**
+- **AI Query Generation**: Convert natural language to SQL
+- **Permission Control**: Role-based query access
+- **Result Formatting**: User-friendly data presentation
+- **Query History**: Track and manage query usage
 
-#### **Admin Panel Improvements**
-- Removed "Admin Panel" title and icon for cleaner design
-- Transparent background navigation bar
-- Seamless integration with GlobalHeader
-- Hover-based sub-menu interactions
+### 🚀 Recent Updates
 
-#### **Home Page UI Improvements**
-- History Log height increased by 25% for more data visibility
-- Enhanced scrolling and pagination functionality
-- Better information density
+#### **AI Integration**
+- Implemented OpenAI GPT-4o for PDF document analysis
+- Added intelligent order data extraction
+- Smart duplicate detection and prevention
+- Automated data insertion with validation
+
+#### **System Optimization**
+- Enhanced PDF processing pipeline
+- Improved error handling and recovery
+- Optimized database operations
+- Better user experience with progress tracking
+
+#### **Security Enhancements**
+- Strengthened authentication system
+- Improved session management
+- Enhanced data validation
+- Better error logging and monitoring
 
 ### 📖 Documentation
 
 Comprehensive documentation is available in the `/docs` folder:
-- [Dashboard Documentation](./docs/dashboard.md)
-- [Admin Panel Guide](./docs/adminPanel.md)
-- [Global Layout System](./docs/globalLayout.md)
-- [Project Details](./docs/projectDetail.md)
+- [QC Label Printing](./docs/print_QC_Label.md)
+- [GRN Label Printing](./docs/print_GRN_Label.md)
+- [Stock Transfer System](./docs/stock_transfer.md)
+- [Admin Panel Guide](./docs/admin_panel.md)
+- [User Manual](./docs/userManual.md)
+- [Database Structure](./docs/databaseStructure.md)
 
 ### 🤝 Contributing
 
@@ -163,7 +206,7 @@ Comprehensive documentation is available in the `/docs` folder:
 
 ### 📄 License
 
-This project is proprietary software developed for Pennine Industries.
+This project is proprietary software developed for Pennine Manufacturing Industries.
 
 ---
 
@@ -171,81 +214,95 @@ This project is proprietary software developed for Pennine Industries.
 # Pennine Manufacturing 庫存控制系統
 
 ### 概述
-基於 Next.js 14、TypeScript 和 Supabase 構建的綜合庫存控制和管理系統。該系統為賓尼工業提供實時庫存追蹤、棧板管理、標籤列印和管理工具。
+基於 Next.js 14、TypeScript 和 Supabase 構建的綜合庫存控制和管理系統。該系統為 Pennine Manufacturing Industries 提供實時庫存追蹤、棧板管理、標籤列印、AI 驅動的訂單分析和管理工具。
 
-### 🚀 主要功能
+### 主要功能
 
-#### **主頁儀表板**
-- 帶有互動圖表的實時庫存概覽
-- 增強顯示的歷史記錄（顯示區域增加 25%）
-- 改進導航的用戶友好界面
+#### **QC 標籤列印系統**
+- **多產品支援**：正常產品、ACO 訂單和 Slate 產品
+- **自動化處理**：棧板號碼和系列號生成
+- **PDF 生成**：高品質標籤輸出與自動儲存
+- **批量處理**：多個棧板標籤生成與進度追蹤
+- **錯誤處理**：全面的錯誤管理和恢復機制
 
-#### **標籤列印系統**
-- **QC 標籤列印**：支援普通產品、ACO 訂單和 Slate 產品
-- **GRN 標籤列印**：物料收貨標籤生成
-- **PDF 生成**：支援條碼的高品質標籤輸出
-- **批量處理**：多個棧板標籤生成
+#### **GRN 標籤列印系統**
+- **物料收貨管理**：完整的 GRN 工作流程
+- **重量計算**：自動淨重計算（最多 22 個棧板）
+- **供應商驗證**：即時供應商代碼驗證
+- **原子性操作**：使用 RPC 函數確保資料庫一致性
+- **專業標籤**：工業級收貨標籤
 
-#### **庫存管理**
-- **庫存轉移**：基於位置的庫存移動
-- **庫存追蹤**：跨多個位置的實時庫存水平
-- **作廢棧板**：棧板取消和管理
-- **歷史追蹤**：所有操作的完整審計軌跡
+#### **庫存轉移系統**
+- **自動化轉移**：一鍵式棧板移動
+- **智能位置計算**：預定義業務規則
+- **QR Code 支援**：條碼掃描整合
+- **即時更新**：瞬間庫存調整
+- **轉移歷史**：完整的審計軌跡
 
-#### **管理面板**
-- **雙 Header 設計**：全局導航 + 專用管理導航
-- **透明導航**：與頁面內容無縫整合
-- **懸停式交互**：無需點擊的直觀下拉選單
-- **儀表板分析**：實時統計和性能指標
-- **用戶管理**：基於角色的訪問控制
-- **報告生成**：ACO、GRN、交易和 Slate 報告
+#### **管理面板與儀表板**
+- **即時統計**：每日、每週生產指標
+- **ACO 訂單追蹤**：訂單進度監控
+- **快速庫存搜尋**：即時庫存水平查詢
+- **報表生成**：ACO、GRN、交易、Slate 報表
+- **資料匯出**：全面的資料庫匯出工具
 
-#### **增強的 UI/UX**
-- **50% 更大的 GlobalHeader**：改善可讀性和可訪問性
-- **懸停式導航**：更好用戶體驗的浮動下拉選單
-- **響應式設計**：針對桌面、平板和手機優化
-- **深色主題**：一致樣式的專業外觀
+#### **AI 驅動功能**
+- **PDF 訂單分析**：自動訂單資料提取
+- **重複檢測**：智能重複記錄檢查
+- **自然語言查詢**：AI 資料庫查詢
+- **文件處理**：智能 PDF 內容分析
 
-### 🛠 技術棧
+#### **系統工具**
+- **檔案上傳**：PDF 文件處理
+- **棧板作廢**：進階取消功能與重印選項
+- **歷史追蹤**：完整的操作時間軸
+- **資料庫更新**：產品主檔資料管理
+- **使用者管理**：基於角色的存取控制
+
+### 技術棧
 
 - **前端**：Next.js 14、React 18、TypeScript
-- **樣式**：Tailwind CSS、Framer Motion
-- **後端**：Supabase（PostgreSQL、Auth、實時）
-- **PDF 生成**：React-PDF、jsPDF
-- **UI 組件**：Radix UI、Lucide Icons
-- **狀態管理**：React Hooks、Context API
-- **身份驗證**：Supabase Auth 與基於角色的訪問
+- **樣式**：Tailwind CSS、Framer Motion、玻璃擬態設計
+- **後端**：Supabase（PostgreSQL、Auth、即時、儲存）
+- **AI 整合**：OpenAI GPT-4o 用於文件分析
+- **PDF 處理**：pdf2pic、GraphicsMagick、Ghostscript
+- **UI 組件**：Radix UI、Heroicons
+- **狀態管理**：React Hooks、自訂業務邏輯 hooks
+- **身份驗證**：Supabase Auth 與基於角色的權限
 
-### 📁 專案結構
+### 專案結構
 
 ```
-online-stock-control-system/
+NewPennine/
 ├── app/
-│   ├── home/                    # 主儀表板（原 /dashboard/access）
-│   ├── admin/                   # 雙 header 設計的管理面板
 │   ├── print-label/            # QC 標籤列印系統
 │   ├── print-grnlabel/         # GRN 標籤列印
-│   ├── stock-transfer/         # 庫存移動管理
-│   ├── void-pallet/            # 棧板取消
-│   ├── users/                  # 用戶管理
-│   ├── products/               # 產品目錄
-│   ├── tables/                 # 數據庫結構查看器
-│   └── components/             # 共享組件
+│   ├── stock-transfer/         # 自動化庫存移動
+│   ├── admin/                  # 綜合管理面板
+│   ├── components/             # 共享組件
+│   │   ├── qc-label-form/      # QC 標籤組件
+│   │   ├── admin-panel-menu/   # 管理對話框組件
+│   │   └── print-label-pdf/    # PDF 生成組件
+│   ├── api/                    # API 端點
+│   │   ├── analyze-order-pdf/  # AI PDF 分析
+│   │   ├── export-report/      # 報表生成
+│   │   └── print-label-pdf/    # 標籤 PDF 生成
+│   └── hooks/                  # 業務邏輯 hooks
 ├── components/
 │   ├── ui/                     # UI 組件庫
-│   ├── GlobalHeader.tsx        # 增強的全局導航
-│   └── products/               # 產品相關組件
-├── docs/                       # 綜合文檔
-├── lib/                        # 工具庫
-└── public/                     # 靜態資源
+│   ├── qr-scanner/            # QR 碼掃描
+│   └── products/              # 產品管理
+├── docs/                      # 綜合文檔
+├── lib/                       # 工具庫
+└── public/                    # 靜態資源
 ```
 
-### 🔧 安裝與設置
+### 安裝與設置
 
 1. **克隆倉庫**
    ```bash
    git clone <repository-url>
-   cd online-stock-control-system
+   cd NewPennine
    ```
 
 2. **安裝依賴**
@@ -253,73 +310,105 @@ online-stock-control-system/
    npm install
    ```
 
-3. **環境設置**
+3. **安裝系統依賴**
    ```bash
-   cp .env.example .env.local
-   # 配置您的 Supabase 憑證
+   # macOS
+   brew install graphicsmagick ghostscript
+   
+   # Ubuntu/Debian
+   sudo apt-get install graphicsmagick ghostscript
    ```
 
-4. **運行開發服務器**
+4. **環境設置**
+   ```bash
+   cp .env.example .env.local
+   # 配置您的憑證：
+   # - Supabase URL 和 Service Role Key
+   # - OpenAI API Key 用於 PDF 分析
+   ```
+
+5. **運行開發服務器**
    ```bash
    npm run dev
    ```
 
-5. **生產構建**
+6. **生產構建**
    ```bash
    npm run build
    npm start
    ```
 
-### 🔐 身份驗證與安全
+### 身份驗證與安全
 
 - **Supabase 身份驗證**：使用電子郵件/密碼的安全用戶登錄
-- **基於角色的訪問**：不同權限級別（管理員、QC、接收等）
+- **基於角色的存取**：多種權限級別（管理員、QC、接收等）
 - **會話管理**：自動會話處理和清理
 - **路由保護**：基於中間件的路由保護
+- **操作日誌**：所有操作的完整審計軌跡
 
-### 📊 數據庫架構
+### 資料庫架構
 
 系統通過 Supabase 使用 PostgreSQL，主要表格包括：
-- `record_palletinfo`：棧板信息和追蹤
-- `record_history`：完整審計軌跡
+- `record_palletinfo`：棧板資訊和追蹤
+- `record_history`：所有操作的完整審計軌跡
 - `record_transfer`：庫存移動記錄
-- `record_inventory`：實時庫存水平
-- `data_id`：用戶管理和權限
+- `record_inventory`：按位置的即時庫存水平
+- `record_aco`：ACO 訂單管理和追蹤
+- `record_grn`：包含重量資訊的 GRN 收貨記錄
 - `data_code`：產品目錄和規格
+- `data_supplier`：供應商資訊和驗證
+- `data_id`：使用者管理和權限
+- `data_order`：AI 提取的訂單資料
 
-### 🚀 最新更新 (v4.0.0)
+### AI 功能
 
-#### **路徑重構**
-- 將 `/dashboard/access` 重命名為 `/home`，提升用戶理解度
-- 更新所有導航和身份驗證檢查
-- 通過重定向保持向後兼容性
+#### **PDF 訂單分析**
+- **文件處理**：自動 PDF 轉圖像轉換
+- **AI 視覺分析**：OpenAI GPT-4o 用於資料提取
+- **智能解析**：智能訂單資訊識別
+- **重複預防**：自動重複記錄檢測
+- **資料驗證**：全面的資料完整性檢查
 
-#### **GlobalHeader 增強**
-- 高度增加 50%（`h-16` → `h-24`）以提高可見性
-- 實現懸停式漢堡選單（無需點擊）
-- 改進文字大小和圖標縮放
-- 移除複雜的側邊欄動畫，改為簡單的下拉選單
+#### **Ask Me Anything - 智能資料庫查詢**
+- **自然語言查詢**：支援中文和英文自然語言問題
+- **OpenAI SQL 生成**：使用 GPT-4o 根據 docs/openAIprompt 指示生成精確的 SQL 查詢
+- **智能回答生成**：OpenAI 分析查詢結果並生成專業的英式風格回答
+- **會話記憶**：支援上下文對話，記住之前的查詢歷史
+- **安全執行**：所有 SQL 查詢經過安全驗證，僅允許 SELECT 操作
+- **實時緩存**：智能緩存機制提高查詢響應速度
+- **Token 追蹤**：完整的 OpenAI API 使用量監控
 
-#### **管理面板改進**
-- 移除 "Admin Panel" 標題和圖標，設計更簡潔
-- 透明背景導航欄
-- 與 GlobalHeader 無縫整合
-- 懸停式子選單交互
+### 最新更新
 
-#### **主頁 UI 改進**
-- 歷史記錄高度增加 25%，提高數據可見性
-- 增強滾動和分頁功能
-- 更好的信息密度
+#### **AI 整合**
+- 實施 OpenAI GPT-4o 用於 PDF 文件分析
+- 新增智能訂單資料提取
+- 智能重複檢測和預防
+- 自動化資料插入與驗證
 
-### 📖 文檔
+#### **系統優化**
+- 增強 PDF 處理管道
+- 改進錯誤處理和恢復
+- 優化資料庫操作
+- 更好的使用者體驗與進度追蹤
+
+#### **安全增強**
+- 強化身份驗證系統
+- 改進會話管理
+- 增強資料驗證
+- 更好的錯誤日誌和監控
+
+### 文檔
 
 `/docs` 文件夾中提供了綜合文檔：
-- [儀表板文檔](./docs/dashboard.md)
-- [管理面板指南](./docs/adminPanel.md)
-- [全局佈局系統](./docs/globalLayout.md)
-- [專案詳情](./docs/projectDetail.md)
+- [QC 標籤列印](./docs/print_QC_Label.md)
+- [GRN 標籤列印](./docs/print_GRN_Label.md)
+- [庫存轉移系統](./docs/stock_transfer.md)
+- [管理面板指南](./docs/admin_panel.md)
+- [使用者手冊](./docs/userManual.md)
+- [資料庫結構](./docs/databaseStructure.md)
 
-### 🤝 貢獻
+### 貢獻
 
 1. Fork 倉庫
 2. 創建功能分支（`git checkout -b feature/amazing-feature`）
@@ -327,6 +416,6 @@ online-stock-control-system/
 4. 推送到分支（`git push origin feature/amazing-feature`）
 5. 打開 Pull Request
 
-### 📄 許可證
+### 許可證
 
-本專案是為Pennine Manufacturing的專有軟件。
+本專案是為 Pennine Manufacturing Industries 開發的專有軟件。
