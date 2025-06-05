@@ -127,7 +127,7 @@ const adminMenuItems = [
   {
     id: 'database',
     title: 'Database Update',
-    description: 'Add and update database information',
+    description: 'Update database information',
     icon: CubeIcon,
     action: 'open-update-dialog',
     color: 'hover:bg-orange-900/20 hover:text-orange-400',
@@ -136,7 +136,7 @@ const adminMenuItems = [
   {
     id: 'upload-files',
     title: 'Upload Files',
-    description: 'Upload Stock Picture, Product Spec Document to database',
+    description: 'Upload to database',
     icon: CloudArrowUpIcon,
     action: 'open-upload-dialog',
     color: 'hover:bg-purple-900/20 hover:text-purple-400',

@@ -101,29 +101,10 @@ export default function StockTransferPage() {
       setStatusMessage(null);
       
       const searchValue = result.data.value;
-      // Don't update searchValue here to avoid infinite loop
-      // The UnifiedSearch component will handle the value update
+      // Get the detected search type from the result data
+      const searchType = result.data.searchType || 'pallet_num'; // Default to pallet_num if not provided
       
-      // Only support exact pallet number or series search
-      // Pallet numbers typically contain "/" (e.g., "260525/1")
-      // Series typically contain "-" (e.g., "260525-5UNXGE")
-      let searchType: 'series' | 'pallet_num';
-      
-      if (searchValue.includes('/')) {
-        searchType = 'pallet_num';
-      } else if (searchValue.includes('-')) {
-        searchType = 'series';
-      } else {
-        // For unclear format, show error message
-        setStatusMessage({
-          type: 'error',
-          message: 'Please enter complete pallet number (e.g., 250525/13) or series number (e.g., 260525-5UNXGE)'
-        });
-        setCurrentStep(0);
-        return;
-      }
-      
-      // Search pallet information (exact match only)
+      // Search pallet information using the detected type
       const palletInfo = await searchPalletInfo(searchType, searchValue);
       
       if (palletInfo) {
@@ -307,12 +288,13 @@ export default function StockTransferPage() {
                     <UnifiedSearch
                       ref={searchInputRef}
                       searchType="pallet"
-                      placeholder="Scan QR code or enter complete pallet number (e.g., 250525/13)"
+                      placeholder="Enter pallet number or series - auto-detection enabled"
                       onSelect={handleSearchSelect}
                       value={searchValue}
                       onChange={setSearchValue}
                       isLoading={isLoading}
                       disabled={isLoading}
+                      enableAutoDetection={true}
                     />
                   </div>
                 </div>

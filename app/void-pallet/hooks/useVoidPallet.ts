@@ -173,13 +173,26 @@ export function useVoidPallet() {
   }, [updateState]);
 
   // Enhanced reprint flow functions
-  const shouldShowReprintDialog = useCallback((voidReason: string, result: any): boolean => {
+  const shouldShowReprintDialog = useCallback((voidReason: string, result: any, palletInfo: PalletInfo): boolean => {
+    // 🔥 修改：檢查是否為 ACO pallet
+    const isACOPallet = palletInfo.plt_remark?.includes('ACO Ref');
+    
+    // 🔥 修改：ACO pallet 不顯示重印對話框
+    if (isACOPallet) {
+      return false;
+    }
+    
+    // 🔥 修改：完全損壞不顯示重印對話框
+    if (voidReason === 'Damage' && result.remainingQty === 0) {
+      return false;
+    }
+    
     // 只有在選擇了特定的作廢原因後才顯示重印對話框
     const reprintReasons = ['Wrong Label', 'Wrong Qty', 'Wrong Product Code', 'Damage'];
     return reprintReasons.includes(voidReason) && result.success;
   }, []);
 
-  const getReprintType = useCallback((voidReason: string): 'damage' | 'wrong_qty' | 'wrong_code' => {
+  const getReprintType = useCallback((voidReason: string): 'damage' | 'wrong_qty' | 'wrong_code' | 'wrong_label' => {
     switch (voidReason) {
       case 'Damage':
         return 'damage';
@@ -188,7 +201,7 @@ export function useVoidPallet() {
       case 'Wrong Product Code':
         return 'wrong_code';
       case 'Wrong Label':
-        return 'damage'; // Wrong Label 使用與 damage 相同的處理邏輯
+        return 'wrong_label';
       default:
         return 'damage'; // fallback
     }
@@ -228,7 +241,7 @@ export function useVoidPallet() {
         toast.success(result.message || 'Pallet voided successfully');
 
         // Check if we need to show reprint info dialog for special cases
-        if (shouldShowReprintDialog(state.voidReason, result)) {
+        if (shouldShowReprintDialog(state.voidReason, result, state.foundPallet)) {
           const reprintType = getReprintType(state.voidReason);
           const reprintInfo: ReprintInfoInput = {
             type: reprintType,

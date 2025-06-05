@@ -66,25 +66,33 @@ export function SearchSection({
 
       {/* Search input area */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="md:col-span-2">
+        <div className="md:col-span-2 relative">
           <Input
             type="text"
             value={searchInput}
             onChange={(e) => onSearchInputChange(e.target.value)}
             onKeyDown={onKeyDown}
-            onClick={() => {
-              if (isMobile && searchType === 'qr' && !isDisabled) {
-                onShowScanner(true);
-              }
-            }}
             placeholder={
               searchType === 'qr' 
-                ? (isMobile ? "Tap to scan QR Code" : "Scan or enter QR Code")
+                ? "Scan or enter QR Code"
                 : "Enter pallet number"
             }
-            className="w-full bg-gray-700 border-gray-600 placeholder-gray-400 text-white focus:ring-orange-500 focus:border-orange-500 text-lg p-4"
+            className="w-full bg-gray-700 border-gray-600 placeholder-gray-400 text-white focus:ring-orange-500 focus:border-orange-500 text-lg p-4 pr-12"
             disabled={isSearching || isDisabled}
           />
+          {/* QR Scanner Button - only show for QR search type */}
+          {searchType === 'qr' && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => onShowScanner(true)}
+              className="absolute right-2 top-1/2 transform -translate-y-1/2 h-8 w-8 p-0 hover:bg-gray-600 text-orange-400"
+              disabled={isSearching || isDisabled}
+            >
+              <QrCodeIcon className="h-4 w-4" />
+            </Button>
+          )}
         </div>
         <div>
           <Button
@@ -117,7 +125,7 @@ export function SearchSection({
       <div className="text-center text-sm text-gray-400">
         {searchType === 'qr' ? (
           <p>
-            {isMobile ? 'Tap input field to open camera scanner' : 'Use scanner to scan QR Code on pallet'}
+            Use QR scanner button or manually enter QR code
           </p>
         ) : (
           <p>Enter complete pallet number to search</p>

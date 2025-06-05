@@ -32,7 +32,45 @@ interface UnifiedSearchProps {
   disabled?: boolean;
   value?: string;
   onChange?: (value: string) => void;
+  enableAutoDetection?: boolean;
 }
+
+// Auto detection function for search type
+const detectSearchType = (input: string): 'series' | 'pallet_num' | 'unknown' => {
+  const trimmedInput = input.trim();
+  
+  if (!trimmedInput) return 'unknown';
+  
+  // Pallet number pattern: typically contains "/" (e.g., "250525/13", "260525/1")
+  if (trimmedInput.includes('/')) {
+    return 'pallet_num';
+  }
+  
+  // Series pattern: typically contains "-" (e.g., "260525-5UNXGE", "250525-ABC123")
+  if (trimmedInput.includes('-')) {
+    return 'series';
+  }
+  
+  // If no clear pattern, try to guess based on length and format
+  // Series are usually longer and may contain letters
+  // Pallet numbers are usually shorter and numeric with date prefix
+  
+  // Check if it's all numeric (could be incomplete pallet number)
+  if (/^\d+$/.test(trimmedInput)) {
+    // If it's 6 digits, likely a date prefix for pallet (DDMMYY)
+    if (trimmedInput.length === 6) {
+      return 'pallet_num'; // Incomplete pallet number
+    }
+    return 'unknown';
+  }
+  
+  // If it contains letters and is longer, likely a series
+  if (/[A-Za-z]/.test(trimmedInput) && trimmedInput.length > 6) {
+    return 'series';
+  }
+  
+  return 'unknown';
+};
 
 export const UnifiedSearch = React.forwardRef<HTMLInputElement, UnifiedSearchProps>(({
   searchType,
@@ -44,12 +82,14 @@ export const UnifiedSearch = React.forwardRef<HTMLInputElement, UnifiedSearchPro
   enableQrScanner = true,
   disabled = false,
   value = "",
-  onChange
+  onChange,
+  enableAutoDetection = false
 }, ref) => {
   const [searchQuery, setSearchQuery] = useState(value);
   const [showResults, setShowResults] = useState(false);
   const [showQrScanner, setShowQrScanner] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);
+  const [detectedType, setDetectedType] = useState<'series' | 'pallet_num' | 'unknown'>('unknown');
   
   const inputRef = useRef<HTMLInputElement>(null);
   const resultsRef = useRef<HTMLDivElement>(null);
@@ -63,6 +103,14 @@ export const UnifiedSearch = React.forwardRef<HTMLInputElement, UnifiedSearchPro
     }
   }, [value, searchQuery]);
 
+  // Auto detect search type when input changes
+  useEffect(() => {
+    if (enableAutoDetection && searchQuery) {
+      const detected = detectSearchType(searchQuery);
+      setDetectedType(detected);
+    }
+  }, [searchQuery, enableAutoDetection]);
+
   // Handle search logic with useMemo to prevent infinite loops
   const filteredResults = React.useMemo(() => {
     if (!searchQuery.trim()) {
@@ -73,7 +121,7 @@ export const UnifiedSearch = React.forwardRef<HTMLInputElement, UnifiedSearchPro
     const query = searchQuery; // 保持原始大小寫，避免搜尋失敗
     const queryLower = searchQuery.toLowerCase(); // 僅用於產品搜尋的大小寫不敏感比較
 
-    // Product search
+    // Product search - only show dropdown for product search
     if ((searchType === 'product' || searchType === 'both') && products.length > 0) {
       const productResults = products
         .filter(product => 
@@ -92,28 +140,22 @@ export const UnifiedSearch = React.forwardRef<HTMLInputElement, UnifiedSearchPro
       results.push(...productResults);
     }
 
-    // Pallet search (can be extended for actual pallet search logic)
-    if (searchType === 'pallet' || searchType === 'both') {
-      // If input looks like pallet number (with /) or series (with -)
-      if (/^[A-Z0-9\/-]+$/i.test(query)) {
-        results.push({
-          id: `pallet-${query}`,
-          title: `Search Pallet: ${query}`,
-          subtitle: 'Click to search pallet information',
-          metadata: 'Pallet Search',
-          data: { type: 'pallet', value: query }
-        });
-      }
-    }
+    // For pallet search, don't show dropdown results - handle via onBlur instead
+    // This removes the "Search pallet: xxxxxx" popup interface
 
     return results;
   }, [searchQuery, searchType, products]);
 
   // Update show results when filtered results change
   useEffect(() => {
-    setShowResults(filteredResults.length > 0);
+    // Only show results for product search, not for pallet search
+    if (searchType === 'pallet') {
+      setShowResults(false);
+    } else {
+      setShowResults(filteredResults.length > 0);
+    }
     setSelectedIndex(-1);
-  }, [filteredResults]);
+  }, [filteredResults, searchType]);
 
   // Handle selection
   const handleSelect = useCallback((result: SearchResult) => {
@@ -142,9 +184,93 @@ export const UnifiedSearch = React.forwardRef<HTMLInputElement, UnifiedSearchPro
     onSearch?.(newValue);
   };
 
+  // Handle blur event for pallet search - trigger search when user leaves the input field
+  const handleBlur = useCallback(() => {
+    if (searchType === 'pallet' && searchQuery.trim()) {
+      // Auto detect search type if enabled
+      let finalSearchType: 'series' | 'pallet_num' = 'pallet_num';
+      
+      if (enableAutoDetection) {
+        const detected = detectSearchType(searchQuery);
+        if (detected === 'series') {
+          finalSearchType = 'series';
+        } else if (detected === 'pallet_num') {
+          finalSearchType = 'pallet_num';
+        } else {
+          // If unknown, try to make a best guess or show error
+          if (searchQuery.includes('/')) {
+            finalSearchType = 'pallet_num';
+          } else if (searchQuery.includes('-')) {
+            finalSearchType = 'series';
+          } else {
+            // For unclear format, default to pallet_num but let the backend handle validation
+            finalSearchType = 'pallet_num';
+          }
+        }
+      }
+      
+      // Auto trigger pallet search on blur
+      const palletResult: SearchResult = {
+        id: `pallet-${searchQuery}`,
+        title: searchQuery,
+        subtitle: 'Pallet Search',
+        metadata: `Auto Search on Blur (${finalSearchType})`,
+        data: { 
+          type: 'pallet', 
+          value: searchQuery,
+          searchType: finalSearchType // Pass detected search type
+        }
+      };
+      onSelect(palletResult);
+    }
+    // Hide results when losing focus
+    setShowResults(false);
+    setSelectedIndex(-1);
+  }, [searchType, searchQuery, onSelect, enableAutoDetection]);
+
   // Handle keyboard navigation
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
-    if (!showResults) return;
+    if (!showResults) {
+      // For pallet search, allow Enter key to trigger search even without dropdown
+      if (e.key === 'Enter' && searchType === 'pallet' && searchQuery.trim()) {
+        e.preventDefault();
+        
+        // Auto detect search type if enabled
+        let finalSearchType: 'series' | 'pallet_num' = 'pallet_num';
+        
+        if (enableAutoDetection) {
+          const detected = detectSearchType(searchQuery);
+          if (detected === 'series') {
+            finalSearchType = 'series';
+          } else if (detected === 'pallet_num') {
+            finalSearchType = 'pallet_num';
+          } else {
+            // If unknown, try to make a best guess
+            if (searchQuery.includes('/')) {
+              finalSearchType = 'pallet_num';
+            } else if (searchQuery.includes('-')) {
+              finalSearchType = 'series';
+            } else {
+              finalSearchType = 'pallet_num';
+            }
+          }
+        }
+        
+        const palletResult: SearchResult = {
+          id: `pallet-${searchQuery}`,
+          title: searchQuery,
+          subtitle: 'Pallet Search',
+          metadata: `Enter Key Search (${finalSearchType})`,
+          data: { 
+            type: 'pallet', 
+            value: searchQuery,
+            searchType: finalSearchType // Pass detected search type
+          }
+        };
+        onSelect(palletResult);
+      }
+      return;
+    }
 
     switch (e.key) {
       case 'ArrowDown':
@@ -171,7 +297,7 @@ export const UnifiedSearch = React.forwardRef<HTMLInputElement, UnifiedSearchPro
         inputRef.current?.blur();
         break;
     }
-  }, [showResults, filteredResults, selectedIndex, handleSelect]);
+  }, [showResults, filteredResults, selectedIndex, handleSelect, searchType, searchQuery, onSelect, enableAutoDetection]);
 
   // Handle QR scan
   const handleQrScan = useCallback((scannedValue: string) => {
@@ -182,26 +308,65 @@ export const UnifiedSearch = React.forwardRef<HTMLInputElement, UnifiedSearchPro
     
     // Auto trigger search
     if (searchType === 'pallet' || searchType === 'both') {
+      // Auto detect search type for QR scanned value
+      let finalSearchType: 'series' | 'pallet_num' = 'series'; // QR codes are usually series
+      
+      if (enableAutoDetection) {
+        const detected = detectSearchType(scannedValue);
+        if (detected === 'series') {
+          finalSearchType = 'series';
+        } else if (detected === 'pallet_num') {
+          finalSearchType = 'pallet_num';
+        } else {
+          // For QR codes, default to series
+          finalSearchType = 'series';
+        }
+      }
+      
       const palletResult: SearchResult = {
         id: `pallet-${scannedValue}`,
         title: scannedValue,
         subtitle: 'QR Scan Result',
-        metadata: 'Pallet Search',
-        data: { type: 'pallet', value: scannedValue }
+        metadata: `Pallet Search (${finalSearchType})`,
+        data: { 
+          type: 'pallet', 
+          value: scannedValue,
+          searchType: finalSearchType // Pass detected search type
+        }
       };
       onSelect(palletResult);
     }
-  }, [searchType, onChange, onSearch, onSelect]);
+  }, [searchType, onChange, onSearch, onSelect, enableAutoDetection]);
 
   // Clear search
   const handleClear = useCallback(() => {
     setSearchQuery('');
     setShowResults(false);
     setSelectedIndex(-1);
+    setDetectedType('unknown');
     onChange?.('');
     onSearch?.('');
     inputRef.current?.focus();
   }, [onChange, onSearch]);
+
+  // Generate dynamic placeholder with detection info
+  const getDynamicPlaceholder = useCallback(() => {
+    if (!enableAutoDetection || !searchQuery) {
+      return placeholder;
+    }
+    
+    const baseText = placeholder.split(' - ')[0] || placeholder;
+    
+    if (detectedType === 'series') {
+      return `${baseText} - detected: Series Number`;
+    } else if (detectedType === 'pallet_num') {
+      return `${baseText} - detected: Pallet Number`;
+    } else if (searchQuery.trim()) {
+      return `${baseText} - type unclear, will auto-detect`;
+    }
+    
+    return placeholder;
+  }, [placeholder, enableAutoDetection, searchQuery, detectedType]);
 
   return (
     <div className="relative w-full">
@@ -231,15 +396,17 @@ export const UnifiedSearch = React.forwardRef<HTMLInputElement, UnifiedSearchPro
           value={searchQuery}
           onChange={handleInputChange}
           onKeyDown={handleKeyDown}
-          onFocus={() => filteredResults.length > 0 && setShowResults(true)}
-          placeholder={isMobile && enableQrScanner ? "Tap to scan or enter search" : placeholder}
-          className="pl-10 pr-20 bg-gray-700 border-gray-600 text-white placeholder-gray-400 focus:ring-blue-400 focus:border-blue-400"
-          disabled={disabled}
-          onClick={() => {
-            if (isMobile && enableQrScanner && !disabled) {
-              setShowQrScanner(true);
+          onBlur={handleBlur}
+          onFocus={() => {
+            // Only show results for product search, not pallet search
+            if (searchType !== 'pallet' && filteredResults.length > 0) {
+              setShowResults(true);
             }
           }}
+          placeholder={getDynamicPlaceholder()}
+          className="pl-10 pr-20 bg-gray-700 border-gray-600 text-white placeholder-gray-400 focus:ring-blue-400 focus:border-blue-400"
+          disabled={disabled}
+          // Remove automatic camera activation on mobile click for search field
         />
         
         <div className="absolute inset-y-0 right-0 flex items-center space-x-1 pr-2">
@@ -271,8 +438,21 @@ export const UnifiedSearch = React.forwardRef<HTMLInputElement, UnifiedSearchPro
         </div>
       </div>
 
-      {/* Search Results Dropdown */}
-      {showResults && filteredResults.length > 0 && (
+      {/* Auto Detection Indicator */}
+      {enableAutoDetection && searchQuery && detectedType !== 'unknown' && (
+        <div className="absolute top-full left-0 right-0 mt-1 z-30">
+          <div className={`text-xs px-2 py-1 rounded-md ${
+            detectedType === 'series' 
+              ? 'bg-green-500/20 text-green-400 border border-green-500/30' 
+              : 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
+          }`}>
+            Auto-detected: {detectedType === 'series' ? 'Series Number' : 'Pallet Number'}
+          </div>
+        </div>
+      )}
+
+      {/* Search Results Dropdown - Only for product search */}
+      {showResults && filteredResults.length > 0 && searchType !== 'pallet' && (
         <Card className="absolute z-50 w-full mt-1 max-h-60 overflow-y-auto shadow-lg border border-gray-600 bg-gray-800">
           <CardContent className="p-0">
             {filteredResults.map((result, index) => (

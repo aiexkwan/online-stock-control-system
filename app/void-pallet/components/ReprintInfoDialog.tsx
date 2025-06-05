@@ -12,7 +12,7 @@ interface ReprintInfoDialogProps {
   isOpen: boolean;
   onClose: () => void;
   onConfirm: (reprintInfo: ReprintInfoInput) => void;
-  type: 'damage' | 'wrong_qty' | 'wrong_code';
+  type: 'damage' | 'wrong_qty' | 'wrong_code' | 'wrong_label';
   palletInfo: PalletInfo;
   remainingQuantity?: number; // For damage cases
   isProcessing?: boolean;
@@ -45,6 +45,9 @@ export function ReprintInfoDialog({
         setCorrectedQuantity(palletInfo.product_qty.toString());
       } else if (type === 'wrong_code') {
         setCorrectedProductCode(palletInfo.product_code);
+      } else if (type === 'wrong_label') {
+        setCorrectedQuantity(palletInfo.product_qty.toString());
+        setCorrectedProductCode(palletInfo.product_code);
       }
     }
   }, [isOpen, type, palletInfo, remainingQuantity]);
@@ -52,7 +55,7 @@ export function ReprintInfoDialog({
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
 
-    if (type === 'wrong_qty' || type === 'damage') {
+    if (type === 'wrong_qty' || type === 'damage' || type === 'wrong_label') {
       const qty = parseInt(correctedQuantity);
       if (!correctedQuantity.trim() || isNaN(qty) || qty <= 0) {
         newErrors.quantity = 'Please enter a valid quantity greater than 0';
@@ -62,11 +65,11 @@ export function ReprintInfoDialog({
       }
     }
 
-    if (type === 'wrong_code') {
+    if (type === 'wrong_code' || type === 'wrong_label') {
       if (!correctedProductCode.trim()) {
         newErrors.productCode = 'Please enter a valid product code';
       }
-      if (correctedProductCode.trim() === palletInfo.product_code) {
+      if (type === 'wrong_code' && correctedProductCode.trim() === palletInfo.product_code) {
         newErrors.productCode = 'New product code must be different from original';
       }
     }
@@ -89,6 +92,9 @@ export function ReprintInfoDialog({
       reprintInfo.correctedQuantity = parseInt(correctedQuantity);
     } else if (type === 'wrong_code') {
       reprintInfo.correctedProductCode = correctedProductCode.trim();
+    } else if (type === 'wrong_label') {
+      reprintInfo.correctedProductCode = correctedProductCode.trim();
+      reprintInfo.correctedQuantity = parseInt(correctedQuantity);
     }
 
     onConfirm(reprintInfo);
@@ -118,6 +124,14 @@ export function ReprintInfoDialog({
           description: 'Please enter the correct product code for the new pallet.',
           icon: <Package className="h-5 w-5 text-green-500" />,
           badge: 'Wrong Code',
+          badgeVariant: 'secondary' as const
+        };
+      case 'wrong_label':
+        return {
+          title: 'Correct Label Information and Reprint',
+          description: 'Please verify and correct the product code and quantity for the new pallet label.',
+          icon: <Printer className="h-5 w-5 text-purple-500" />,
+          badge: 'Wrong Label',
           badgeVariant: 'secondary' as const
         };
     }
@@ -195,10 +209,32 @@ export function ReprintInfoDialog({
 
             {/* Input Fields */}
             <div className="space-y-3">
-              {(type === 'wrong_qty' || type === 'damage') && (
+              {/* Product Code Input - 🔥 新增：wrong_label 也需要 product code 輸入 */}
+              {(type === 'wrong_code' || type === 'wrong_label') && (
+                <div>
+                  <Label htmlFor="productCode" className="text-black font-medium">
+                    {type === 'wrong_label' ? 'Product Code' : 'Correct Product Code'}
+                  </Label>
+                  <Input
+                    id="productCode"
+                    type="text"
+                    value={correctedProductCode}
+                    onChange={(e) => setCorrectedProductCode(e.target.value.toUpperCase())}
+                    placeholder="Enter product code"
+                    className={`text-black ${errors.productCode ? 'border-red-500' : ''}`}
+                  />
+                  {errors.productCode && (
+                    <p className="text-sm text-red-500 mt-1">{errors.productCode}</p>
+                  )}
+                </div>
+              )}
+
+              {/* Quantity Input - 🔥 修改：wrong_label 也需要 quantity 輸入 */}
+              {(type === 'wrong_qty' || type === 'damage' || type === 'wrong_label') && (
                 <div>
                   <Label htmlFor="quantity" className="text-black font-medium">
-                    {type === 'damage' ? 'Remaining Quantity' : 'Correct Quantity'}
+                    {type === 'damage' ? 'Remaining Quantity' : 
+                     type === 'wrong_label' ? 'Quantity' : 'Correct Quantity'}
                   </Label>
                   <Input
                     id="quantity"
@@ -213,23 +249,6 @@ export function ReprintInfoDialog({
                   />
                   {errors.quantity && (
                     <p className="text-sm text-red-500 mt-1">{errors.quantity}</p>
-                  )}
-                </div>
-              )}
-
-              {type === 'wrong_code' && (
-                <div>
-                  <Label htmlFor="productCode" className="text-black font-medium">Correct Product Code</Label>
-                  <Input
-                    id="productCode"
-                    type="text"
-                    value={correctedProductCode}
-                    onChange={(e) => setCorrectedProductCode(e.target.value.toUpperCase())}
-                    placeholder="Enter correct product code"
-                    className={`text-black ${errors.productCode ? 'border-red-500' : ''}`}
-                  />
-                  {errors.productCode && (
-                    <p className="text-sm text-red-500 mt-1">{errors.productCode}</p>
                   )}
                 </div>
               )}

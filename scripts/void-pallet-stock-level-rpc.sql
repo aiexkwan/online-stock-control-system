@@ -57,11 +57,9 @@ BEGIN
         WHERE stock = p_product_code;
         
         IF p_quantity > 0 THEN
-            v_result := 'UPDATED: Product ' || p_product_code || ' stock level decreased by ' || p_quantity || 
-                       ' (from ' || v_existing_record.stock_level || ' to ' || v_new_stock_level || ') - ' || v_operation_desc;
+            v_result := p_product_code || ' - from ' || v_existing_record.stock_level || ' to ' || v_new_stock_level;
         ELSE
-            v_result := 'UPDATED: Product ' || p_product_code || ' stock level increased by ' || ABS(p_quantity) || 
-                       ' (from ' || v_existing_record.stock_level || ' to ' || v_new_stock_level || ') - ' || v_operation_desc;
+            v_result := p_product_code || ' - from ' || v_existing_record.stock_level || ' to ' || v_new_stock_level;
         END IF;
     ELSE
         -- 如果沒有現有記錄，先獲取產品描述
@@ -84,13 +82,7 @@ BEGIN
             NOW()
         );
         
-        IF p_quantity > 0 THEN
-            v_result := 'INSERTED: New stock record for Product ' || p_product_code || 
-                       ' with negative quantity ' || v_new_stock_level || ' (no previous stock found) - ' || v_operation_desc;
-        ELSE
-            v_result := 'INSERTED: New stock record for Product ' || p_product_code || 
-                       ' with quantity ' || v_new_stock_level || ' (no previous stock found) - ' || v_operation_desc;
-        END IF;
+        v_result := p_product_code || ' - new record with ' || v_new_stock_level;
     END IF;
     
     RETURN v_result;

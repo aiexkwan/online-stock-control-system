@@ -80,24 +80,28 @@ export default function VoidPalletPage() {
     if (result.data.type === 'pallet') {
       const searchValue = result.data.value;
       
-      // Auto-detect search type based on format
-      let searchType: 'pallet_num' = 'pallet_num'; // 簡化為只支援 pallet_num
+      // Get the detected search type from the result data
+      const detectedSearchType = result.data.searchType;
       
-      if (searchValue.includes('/')) {
-        searchType = 'pallet_num';
-      } else if (searchValue.includes('-')) {
-        // Series 搜索也使用 pallet_num 類型
+      // Map the detected type to void-pallet's search type
+      // void-pallet uses 'qr' for series and 'pallet_num' for pallet numbers
+      let searchType: 'qr' | 'pallet_num' = 'pallet_num';
+      
+      if (detectedSearchType === 'series') {
+        searchType = 'qr'; // void-pallet uses 'qr' for series search
+      } else if (detectedSearchType === 'pallet_num') {
         searchType = 'pallet_num';
       } else {
-        setStatusMessage({
-          type: 'error',
-          message: 'Please enter complete pallet number (e.g., 250525/13) or series number (e.g., 260525-5UNXGE)'
-        });
-        return;
+        // Fallback: try to detect manually
+        if (searchValue.includes('-')) {
+          searchType = 'qr'; // Series
+        } else {
+          searchType = 'pallet_num'; // Pallet number
+        }
       }
       
       // Update search type and perform search
-      updateState({ searchType });
+      updateState({ searchType, searchInput: searchValue });
       await searchPallet(searchValue, searchType);
     }
   }, [searchPallet, updateState]);
@@ -254,12 +258,13 @@ export default function VoidPalletPage() {
                   <UnifiedSearch
                     ref={searchInputRef}
                     searchType="pallet"
-                    placeholder="Scan QR code or enter pallet number/series (e.g., 250525/13 or 260525-5UNXGE)"
+                    placeholder="Enter pallet number or series - auto-detection enabled"
                     onSelect={handleSearchSelect}
                     value={searchValue}
                     onChange={setSearchValue}
                     isLoading={state.isSearching}
                     disabled={state.isSearching || state.isProcessing}
+                    enableAutoDetection={true}
                   />
                 </div>
               </div>

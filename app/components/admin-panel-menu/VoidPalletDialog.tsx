@@ -317,7 +317,7 @@ export default function VoidPalletDialog({ isOpen, onClose, onReprintNeeded }: V
                       onChange={handleInputChange}
                       onBlur={handleInputBlur}
                       onKeyDown={handleKeyDown}
-                      placeholder={isMobile ? "Tap to scan or enter pallet number/series" : "Enter pallet number/series (e.g., 250525/13 or 260525-5UNXGE)"}
+                      placeholder={isMobile ? "Tap to scan or enter pallet number/series" : "Enter pallet number or series"}
                       className="w-full pl-10 pr-20 py-3 bg-slate-700/50 border border-slate-600/50 rounded-xl text-white placeholder-slate-400 focus:ring-2 focus:ring-red-400 focus:border-red-400 transition-all duration-300"
                       disabled={state.isSearching || state.isProcessing}
                       onClick={() => {
@@ -351,7 +351,7 @@ export default function VoidPalletDialog({ isOpen, onClose, onReprintNeeded }: V
                   </div>
                   
                   <p className="text-xs text-slate-400 mt-2">
-                    Press 'Enter' or 'Tap' after entering to search
+                    Press 'Enter' after entering to search
                   </p>
                 </div>
               </div>
@@ -532,7 +532,7 @@ export default function VoidPalletDialog({ isOpen, onClose, onReprintNeeded }: V
                   </svg>
                   <h4 className="text-lg font-medium mb-2 text-slate-400">Start searching for pallet</h4>
                   <p className="text-slate-500">
-                    Enter pallet number or series in the search box above
+                    Please enter pallet number or series
                   </p>
                 </div>
               </div>

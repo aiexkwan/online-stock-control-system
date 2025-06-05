@@ -120,7 +120,7 @@ export async function POST(request: NextRequest) {
       series: seriesValue,
       product_code: productInfo.code,
       product_qty: data.quantity,
-      plt_remark: `Auto-reprinted from ${data.originalPltNum} | Reason: ${data.reason}`
+      plt_remark: `Auto-reprinted from ${data.originalPltNum}`
     };
 
     const historyRecord: QcHistoryPayload = {
@@ -129,7 +129,7 @@ export async function POST(request: NextRequest) {
       action: 'Auto Reprint',
       plt_num: palletNum,
       loc: data.targetLocation || 'Pipeline',
-      remark: `Auto-reprinted from ${data.originalPltNum} | Reason: ${data.reason}`
+      remark: `Auto-reprinted from ${data.originalPltNum}`
     };
 
     // 創建動態庫存記錄

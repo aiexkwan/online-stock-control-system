@@ -256,7 +256,7 @@ async function getLatestPalletLocation(plt_num: string): Promise<string | null> 
 }
 
 /**
- * Search pallet information - using pure SQL syntax
+ * Search pallet information - using pure SQL syntax with auto-detection support
  */
 export async function searchPalletAction(params: SearchParams): Promise<SearchResult> {
   try {
@@ -271,47 +271,111 @@ export async function searchPalletAction(params: SearchParams): Promise<SearchRe
       .select('plt_num, product_code, product_qty, series, plt_remark, generate_time');
 
     // Build query based on search type
+    // Auto-detect if searchType is 'qr' (which maps to series search)
     if (searchType === 'qr') {
-      // QR Code search (series)
-      query = query.eq('series', searchValue.trim());
+      // QR Code search (series) - try both series and plt_num fields
+      // First try series field
+      const { data: seriesData, error: seriesError } = await query.eq('series', searchValue.trim()).single();
+      
+      if (!seriesError && seriesData) {
+        // Found by series, proceed with this data
+        const latestLocation = await getLatestPalletLocation(seriesData.plt_num);
+        
+        // Check if pallet is already voided
+        if (latestLocation === 'Voided' || latestLocation === 'Damaged') {
+          return { success: false, error: `Pallet is already ${latestLocation.toLowerCase()}` };
+        }
+
+        const palletInfo: PalletInfo = {
+          plt_num: seriesData.plt_num,
+          product_code: seriesData.product_code,
+          product_qty: seriesData.product_qty,
+          series: seriesData.series,
+          plt_remark: seriesData.plt_remark,
+          plt_loc: latestLocation,
+          creation_date: seriesData.generate_time,
+          user_id: undefined,
+        };
+
+        return { success: true, data: palletInfo };
+      }
+      
+      // If not found by series, try plt_num as fallback
+      const { data: pltData, error: pltError } = await supabase
+        .from('record_palletinfo')
+        .select('plt_num, product_code, product_qty, series, plt_remark, generate_time')
+        .eq('plt_num', searchValue.trim())
+        .single();
+        
+      if (pltError) {
+        if (pltError.code === 'PGRST116') {
+          return { success: false, error: 'Pallet not found' };
+        }
+        throw pltError;
+      }
+      
+      if (!pltData) {
+        return { success: false, error: 'Pallet not found' };
+      }
+      
+      // Get latest location from record_history
+      const latestLocation = await getLatestPalletLocation(pltData.plt_num);
+
+      // Check if pallet is already voided
+      if (latestLocation === 'Voided' || latestLocation === 'Damaged') {
+        return { success: false, error: `Pallet is already ${latestLocation.toLowerCase()}` };
+      }
+
+      const palletInfo: PalletInfo = {
+        plt_num: pltData.plt_num,
+        product_code: pltData.product_code,
+        product_qty: pltData.product_qty,
+        series: pltData.series,
+        plt_remark: pltData.plt_remark,
+        plt_loc: latestLocation,
+        creation_date: pltData.generate_time,
+        user_id: undefined,
+      };
+
+      return { success: true, data: palletInfo };
     } else {
       // Pallet number search
       query = query.eq('plt_num', searchValue.trim());
-    }
+      
+      const { data, error } = await query.single();
 
-    const { data, error } = await query.single();
+      if (error) {
+        if (error.code === 'PGRST116') {
+          return { success: false, error: 'Pallet not found' };
+        }
+        throw error;
+      }
 
-    if (error) {
-      if (error.code === 'PGRST116') {
+      if (!data) {
         return { success: false, error: 'Pallet not found' };
       }
-      throw error;
+
+      // Get latest location from record_history
+      const latestLocation = await getLatestPalletLocation(data.plt_num);
+
+      // Check if pallet is already voided
+      if (latestLocation === 'Voided' || latestLocation === 'Damaged') {
+        return { success: false, error: `Pallet is already ${latestLocation.toLowerCase()}` };
+      }
+
+      const palletInfo: PalletInfo = {
+        plt_num: data.plt_num,
+        product_code: data.product_code,
+        product_qty: data.product_qty,
+        series: data.series,
+        plt_remark: data.plt_remark,
+        plt_loc: latestLocation,
+        creation_date: data.generate_time,
+        user_id: undefined, // user_id field doesn't exist in record_palletinfo
+      };
+
+      return { success: true, data: palletInfo };
     }
-
-    if (!data) {
-      return { success: false, error: 'Pallet not found' };
-    }
-
-    // Get latest location from record_history
-    const latestLocation = await getLatestPalletLocation(data.plt_num);
-
-    // Check if pallet is already voided
-    if (latestLocation === 'Voided' || latestLocation === 'Damaged') {
-      return { success: false, error: `Pallet is already ${latestLocation.toLowerCase()}` };
-    }
-
-    const palletInfo: PalletInfo = {
-      plt_num: data.plt_num,
-      product_code: data.product_code,
-      product_qty: data.product_qty,
-      series: data.series,
-      plt_remark: data.plt_remark,
-      plt_loc: latestLocation,
-      creation_date: data.generate_time,
-      user_id: undefined, // user_id field doesn't exist in record_palletinfo
-    };
-
-    return { success: true, data: palletInfo };
 
   } catch (error: any) {
     console.error('Error searching pallet:', error);
@@ -694,6 +758,17 @@ export async function processDamageAction(params: Omit<VoidParams, 'userId'>): P
       };
     }
 
+    // 🔥 新增：檢查 ACO pallet 是否支援部分損壞
+    const acoCheck = isACOOrderPallet(palletInfo.plt_remark);
+    const isPartialDamage = damageQuantity < palletInfo.product_qty;
+    
+    if (acoCheck.isACO && isPartialDamage) {
+      return {
+        success: false,
+        error: 'ACO Order Pallets do not support partial damage. If damaged, the entire pallet must be voided.'
+      };
+    }
+
     // 1. Use Supabase Auth to verify password and get user information
     const passwordResult = await verifyPasswordWithSupabaseAuth(password);
     if (!passwordResult.success || !passwordResult.clockNumber) {
@@ -756,18 +831,19 @@ export async function processDamageAction(params: Omit<VoidParams, 'userId'>): P
       };
     }
 
-    // 🚀 新增：同步更新 stock_level 表
+    // 🚀 優化：同步更新 stock_level 表 - 減去整個 pallet qty（因為後續 reprint 會再更新）
     try {
       console.log('[Damage Processing] Updating stock_level for product:', {
         product_code: palletInfo.product_code,
-        quantity: palletInfo.product_qty,
+        total_quantity: palletInfo.product_qty, // 減去整個 pallet 數量
+        damage_quantity: damageQuantity,
         operation: 'damage'
       });
 
       const { data: stockResult, error: stockError } = await supabase
         .rpc('update_stock_level_void', {
           p_product_code: palletInfo.product_code,
-          p_quantity: palletInfo.product_qty,
+          p_quantity: palletInfo.product_qty, // 🔥 關鍵修改：減去整個 pallet 數量，因為後續 reprint 會再更新
           p_operation: 'damage'
         });
 
@@ -778,18 +854,27 @@ export async function processDamageAction(params: Omit<VoidParams, 'userId'>): P
           clockNumber,
           'Stock Level Update Failed',
           palletInfo.plt_num,
-          'Voided',
+          newLocation,
           `Stock level update failed: ${stockError.message}`
         );
       } else {
         console.log('[Damage Processing] Stock level updated successfully:', stockResult);
+        
+        // 🔥 優化 remark 格式
+        let optimizedRemark = '';
+        if (isFullDamage) {
+          optimizedRemark = `Stock level updated: ME${palletInfo.product_code.slice(-8)} - from ${palletInfo.product_qty} to 0`;
+        } else {
+          optimizedRemark = `Stock level updated: ME${palletInfo.product_code.slice(-8)} - from ${palletInfo.product_qty} to 0 (will be restored by reprint)`;
+        }
+        
         // 記錄成功的庫存更新
         await recordHistoryAction(
           clockNumber,
           'Stock Level Updated',
           palletInfo.plt_num,
-          'Voided',
-          `Stock level updated: ${stockResult}`
+          newLocation,
+          optimizedRemark
         );
       }
     } catch (stockUpdateError: any) {
@@ -799,18 +884,30 @@ export async function processDamageAction(params: Omit<VoidParams, 'userId'>): P
         clockNumber,
         'Stock Level Update Error',
         palletInfo.plt_num,
-        'Voided',
+        newLocation,
         `Stock level update error: ${stockUpdateError.message}`
       );
     }
 
-    // 4. Record history with appropriate location status
+    // 4. Record history with appropriate location status and optimized remark
+    let historyRemark = '';
+    if (isFullDamage) {
+      historyRemark = `Damage: ${damageQuantity}/${palletInfo.product_qty}, Remaining: 0`;
+    } else {
+      // 🔥 優化 remark 格式 - 添加 "Replaced By" 信息
+      const currentDate = new Date();
+      const dateStr = String(currentDate.getDate()).padStart(2, '0') + 
+                     String(currentDate.getMonth() + 1).padStart(2, '0') + 
+                     String(currentDate.getFullYear()).slice(-2);
+      historyRemark = `Damage: ${damageQuantity}/${palletInfo.product_qty}, Remaining: ${remainingQty} Replaced By ${dateStr}/XX`;
+    }
+    
     await recordHistoryAction(
       clockNumber,
       isFullDamage ? 'Fully Damaged' : 'Partially Damaged',
       palletInfo.plt_num,
       newLocation,
-      `Damage: ${damageQuantity}/${palletInfo.product_qty}, Remaining: ${remainingQty}`
+      historyRemark
     );
 
     // 5. Record void report
@@ -824,7 +921,6 @@ export async function processDamageAction(params: Omit<VoidParams, 'userId'>): P
       });
 
     // 6. Handle ACO Order Pallet if applicable
-    const acoCheck = isACOOrderPallet(palletInfo.plt_remark);
     if (acoCheck.isACO && acoCheck.refNumber) {
       console.log(`Processing ACO Order Pallet (Damage): ref=${acoCheck.refNumber}, code=${palletInfo.product_code}, qty=${palletInfo.product_qty}`);
       
@@ -885,12 +981,13 @@ export async function processDamageAction(params: Omit<VoidParams, 'userId'>): P
       }
     }
 
-    // 8. Return result
-    if (isFullDamage) {
+    // 8. Return result - 🔥 修改：ACO pallet 或完全損壞不需要重印
+    if (isFullDamage || acoCheck.isACO) {
       return { 
         success: true, 
-        message: `Pallet ${palletInfo.plt_num} fully damaged. No reprint needed.`,
-        remainingQty: 0
+        message: `Pallet ${palletInfo.plt_num} ${isFullDamage ? 'fully damaged' : 'voided'}. No reprint needed.`,
+        remainingQty: 0,
+        requiresReprint: false // 🔥 明確設定不需要重印
       };
     } else {
       return { 

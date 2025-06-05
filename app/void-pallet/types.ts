@@ -162,11 +162,12 @@ export const ERROR_TYPES = {
 
 // New interfaces for enhanced reprint flow
 export interface ReprintInfoInput {
-  type: 'damage' | 'wrong_qty' | 'wrong_code';
+  type: 'damage' | 'wrong_qty' | 'wrong_code' | 'wrong_label';
   originalPalletInfo: PalletInfo;
   // For damage: remainingQty is calculated
   // For wrong_qty: user inputs correct quantity
   // For wrong_code: user inputs correct product code
+  // For wrong_label: user inputs both correct product code and quantity
   correctedQuantity?: number;
   correctedProductCode?: string;
   remainingQuantity?: number; // For damage cases

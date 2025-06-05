@@ -19,6 +19,7 @@ import {
   ChartBarIcon
 } from '@heroicons/react/24/outline';
 import { getPalletHistoryAndStockInfo, ViewHistoryResult } from '../../actions/viewHistoryActions';
+import { UnifiedSearch } from '@/components/ui/unified-search';
 
 interface ViewHistoryDialogProps {
   isOpen: boolean;
@@ -49,63 +50,75 @@ export default function ViewHistoryDialog({ isOpen, onClose }: ViewHistoryDialog
   }, [resetState, onClose]);
 
   // 搜尋處理
-  const handleSearch = useCallback(async () => {
-    if (!searchValue.trim()) {
-      setStatusMessage({
-        type: 'error',
-        message: 'Please enter a pallet number or series'
-      });
-      return;
-    }
-
-    setIsLoading(true);
-    setStatusMessage(null);
-    
-    let searchType: 'series' | 'palletNum';
-    
-    // 判斷搜尋類型
-    if (searchValue.includes('/')) {
-      searchType = 'palletNum';
-    } else if (searchValue.includes('-')) {
-      searchType = 'series';
-    } else {
-      setStatusMessage({
-        type: 'error',
-        message: 'Please enter complete pallet number (e.g., 250525/13) or series number (e.g., 260525-5UNXGE)'
-      });
-      setIsLoading(false);
-      return;
-    }
-    
-    try {
-      const result = await getPalletHistoryAndStockInfo({ type: searchType, value: searchValue.trim() });
-      setSearchResult(result);
+  const handleSearch = useCallback(async (result: any) => {
+    if (result.data.type === 'pallet') {
+      const searchValue = result.data.value;
+      const detectedSearchType = result.data.searchType;
       
-      if (result.error) {
+      if (!searchValue.trim()) {
         setStatusMessage({
           type: 'error',
-          message: result.error
+          message: 'Please enter a pallet number or series'
         });
-      } else if (!result.palletInfo) {
-        setStatusMessage({
-          type: 'warning',
-          message: `No records found for ${searchType === 'series' ? 'Series' : 'Pallet Number'}: ${searchValue}`
-        });
-      } else {
-        setStatusMessage({
-          type: 'success',
-          message: `Found records for ${searchType === 'series' ? 'Series' : 'Pallet Number'}: ${searchValue}`
-        });
+        return;
       }
-    } catch (error) {
-      setStatusMessage({
-        type: 'error',
-        message: 'An unexpected error occurred during the search.'
-      });
-    } finally {
-      setIsLoading(false);
+
+      setIsLoading(true);
+      setStatusMessage(null);
+      
+      // Map detected type to ViewHistory search type
+      let searchType: 'series' | 'palletNum';
+      
+      if (detectedSearchType === 'series') {
+        searchType = 'series';
+      } else if (detectedSearchType === 'pallet_num') {
+        searchType = 'palletNum';
+      } else {
+        // Fallback detection
+        if (searchValue.includes('/')) {
+          searchType = 'palletNum';
+        } else if (searchValue.includes('-')) {
+          searchType = 'series';
+        } else {
+          setStatusMessage({
+            type: 'error',
+            message: 'Please enter complete pallet number (e.g., 250525/13) or series number (e.g., 260525-5UNXGE)'
+          });
+          setIsLoading(false);
+          return;
+        }
+      }
+      
+      try {
+        const result = await getPalletHistoryAndStockInfo({ type: searchType, value: searchValue.trim() });
+        setSearchResult(result);
+        
+        if (result.error) {
+          setStatusMessage({
+            type: 'error',
+            message: result.error
+          });
+        } else if (!result.palletInfo) {
+          setStatusMessage({
+            type: 'warning',
+            message: `No records found for ${searchType === 'series' ? 'Series' : 'Pallet Number'}: ${searchValue}`
+          });
+        } else {
+          setStatusMessage({
+            type: 'success',
+            message: `Found records for ${searchType === 'series' ? 'Series' : 'Pallet Number'}: ${searchValue}`
+          });
+        }
+      } catch (error) {
+        setStatusMessage({
+          type: 'error',
+          message: 'An unexpected error occurred during the search.'
+        });
+      } finally {
+        setIsLoading(false);
+      }
     }
-  }, [searchValue]);
+  }, []);
 
   // 新搜尋
   const handleNewSearch = useCallback(() => {
@@ -120,13 +133,6 @@ export default function ViewHistoryDialog({ isOpen, onClose }: ViewHistoryDialog
       return new Date(dateString).toLocaleString();
     } catch (e) {
       return dateString;
-    }
-  };
-
-  // 處理 Enter 鍵
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !isLoading) {
-      handleSearch();
     }
   };
 
@@ -186,34 +192,17 @@ export default function ViewHistoryDialog({ isOpen, onClose }: ViewHistoryDialog
                         <Label htmlFor="search" className="text-slate-200 font-medium">
                           Pallet Number / Series
                         </Label>
-                        <div className="flex gap-3 mt-2">
-                          <Input
-                            id="search"
-                            type="text"
+                        <div className="mt-2">
+                          <UnifiedSearch
+                            searchType="pallet"
+                            placeholder="Enter pallet number"
+                            onSelect={handleSearch}
                             value={searchValue}
-                            onChange={(e) => setSearchValue(e.target.value.toUpperCase())}
-                            onKeyPress={handleKeyPress}
-                            placeholder="Enter pallet number (e.g., 250525/13) or series (e.g., 260525-5UNXGE)"
-                            className="flex-1 bg-slate-700/50 border-slate-600/50 text-slate-200 placeholder-slate-400 focus:border-blue-500/70 focus:bg-slate-700/70 hover:border-blue-500/50 hover:bg-slate-700/60 transition-all duration-300"
+                            onChange={setSearchValue}
+                            isLoading={isLoading}
                             disabled={isLoading}
+                            enableAutoDetection={true}
                           />
-                          <Button
-                            onClick={handleSearch}
-                            disabled={isLoading || !searchValue.trim()}
-                            className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 disabled:from-slate-600 disabled:to-slate-600 text-white px-6 shadow-lg hover:shadow-blue-500/25 hover:scale-105 active:scale-95 transition-all duration-300"
-                          >
-                            {isLoading ? (
-                              <>
-                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
-                                Searching...
-                              </>
-                            ) : (
-                              <>
-                                <MagnifyingGlassIcon className="h-4 w-4 mr-2" />
-                                Search
-                              </>
-                            )}
-                          </Button>
                         </div>
                       </div>
                     </div>
@@ -490,7 +479,7 @@ export default function ViewHistoryDialog({ isOpen, onClose }: ViewHistoryDialog
                     <div className="relative z-10">
                       <CubeIcon className="w-16 h-16 text-slate-600 mx-auto mb-4" />
                       <p className="text-xl text-slate-300 mb-2">Ready to Search</p>
-                      <p className="text-slate-400">Enter pallet number or series to start searching</p>
+                      <p className="text-slate-400">Please enter pallet number or series</p>
                     </div>
                   </div>
                 </div>
