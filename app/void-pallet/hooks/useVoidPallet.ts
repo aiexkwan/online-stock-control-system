@@ -3,7 +3,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import { getCurrentUserClockNumber } from '../../hooks/useAuth';
+import { getCurrentUserClockNumber, getCurrentUserClockNumberAsync } from '../../hooks/useAuth';
 import { 
   VoidPalletState, 
   PalletInfo, 
@@ -18,9 +18,7 @@ import {
   searchPalletAction, 
   voidPalletAction, 
   processDamageAction,
-  logErrorAction,
-  voidPalletWithPassword,
-  logHistoryAction
+  logErrorAction
 } from '../actions';
 
 const initialState: VoidPalletState = {
@@ -65,9 +63,13 @@ export function useVoidPallet() {
       // Log error to console for debugging
       console.error(`[VoidPallet] ${error.type}: ${error.message}`);
       
-      // Log error to database (logErrorAction will handle user ID lookup automatically)
-      const currentUserClockNumber = getCurrentUserClockNumber();
-      logErrorAction(currentUserClockNumber || 'unknown', `${error.type}: ${error.message}`);
+      // Log error to database (使用異步方式獲取 clock number)
+      getCurrentUserClockNumberAsync().then(clockNumber => {
+        logErrorAction(clockNumber || 'unknown', `${error.type}: ${error.message}`);
+      }).catch(err => {
+        console.warn('[VoidPallet] Failed to get clock number for error logging:', err);
+        logErrorAction('unknown', `${error.type}: ${error.message}`);
+      });
     }
   }, [updateState]);
 
@@ -326,61 +328,17 @@ export function useVoidPallet() {
       
       console.log('[Auto Reprint] Browser compatibility check passed');
 
-      // 獲取 operator clock number - 使用多種方法確保成功
+      // 獲取 operator clock number - 只使用 Supabase Auth
       let operatorClockNum: string | null = null;
       
-      // 方法1: 使用 hook 獲取的 clock number
-      const currentUserClockNumber = getCurrentUserClockNumber();
-      if (currentUserClockNumber && currentUserClockNumber !== 'unknown') {
-        operatorClockNum = currentUserClockNumber;
-        console.log('[Auto Reprint] Using clock number from hook:', operatorClockNum);
-      }
+      // 使用異步函數獲取 clock number
+      console.log('[Auto Reprint] Getting clock number via async method...');
+      operatorClockNum = await getCurrentUserClockNumberAsync();
       
-      // 方法2: 從 localStorage 獲取（備用方案）
-      if (!operatorClockNum) {
-        const storedClockNumber = localStorage.getItem('loggedInUserClockNumber');
-        if (storedClockNumber && storedClockNumber !== 'unknown') {
-          operatorClockNum = storedClockNumber;
-          console.log('[Auto Reprint] Using stored clock number from localStorage:', operatorClockNum);
-        }
-      }
-      
-      // 方法3: 通過 email 查詢數據庫
-      if (!operatorClockNum) {
-        const storedEmail = localStorage.getItem('loggedInUserEmail');
-        if (storedEmail) {
-          console.log('[Auto Reprint] Trying to lookup clock number by stored email:', storedEmail);
-          
-          try {
-            const { createClient } = await import('@supabase/supabase-js');
-            const supabase = createClient(
-              process.env.NEXT_PUBLIC_SUPABASE_URL!,
-              process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-            );
-            
-            const { data, error } = await supabase
-              .from('data_id')
-              .select('id')
-              .eq('email', storedEmail)
-              .single();
-              
-            console.log('[Auto Reprint] Database query result:', { data, error });
-              
-            if (!error && data && data.id) {
-              operatorClockNum = data.id.toString();
-              console.log('[Auto Reprint] Got clock number from database:', operatorClockNum);
-              
-              // 儲存到 localStorage 以供下次使用
-              if (operatorClockNum) {
-                localStorage.setItem('loggedInUserClockNumber', operatorClockNum);
-              }
-            } else {
-              console.error('[Auto Reprint] Database query failed:', error);
-            }
-          } catch (dbError) {
-            console.error('[Auto Reprint] Database lookup error:', dbError);
-          }
-        }
+      if (operatorClockNum) {
+        console.log('[Auto Reprint] Got clock number from async method:', operatorClockNum);
+      } else {
+        console.error('[Auto Reprint] Failed to get clock number from async method');
       }
       
       // 檢查是否成功獲取 clock number
@@ -527,11 +485,6 @@ export function useVoidPallet() {
   const handleReprintInfoCancel = useCallback(() => {
     updateState({ showReprintInfoDialog: false, reprintInfo: null });
   }, [updateState]);
-
-  // Get current user clock number from localStorage
-  const getCurrentClockNumber = useCallback(() => {
-    return getCurrentUserClockNumber();
-  }, []);
 
   return {
     // State

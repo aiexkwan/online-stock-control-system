@@ -2,14 +2,6 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { createClient } from '@/app/utils/supabase/client';
 import { toast } from 'sonner';
 
-interface Product {
-  id: number;
-  name: string;
-  sku: string;
-  quantity: number;
-  location: string;
-}
-
 interface PalletInfo {
   plt_num: string;
   product_code: string;
@@ -30,17 +22,20 @@ interface UseStockMovementOptions {
   maxRetries?: number;
 }
 
-export const useStockMovement = () => {
+export const useStockMovement = (options: UseStockMovementOptions = {}) => {
+  const {
+    enableCache = true,
+    debounceMs = 300,
+    maxRetries = 3
+  } = options;
+
   const [isLoading, setIsLoading] = useState(false);
   const supabase = createClient();
-  const [products, setProducts] = useState<Product[]>([]);
   const [activityLog, setActivityLog] = useState<ActivityLogEntry[]>([]);
   const [userId, setUserId] = useState<string | null>(null);
   
   // Cache and performance optimization
-  const productsCache = useRef<{ data: Product[]; timestamp: number } | null>(null);
   const debounceTimer = useRef<NodeJS.Timeout>();
-  const retryCount = useRef<number>(0);
 
   const getCurrentUserId = useCallback(async (): Promise<string | null> => {
     try {
@@ -85,59 +80,6 @@ export const useStockMovement = () => {
       callback(searchTerm);
     }, debounceMs);
   }, [debounceMs]);
-
-  // Cache validation function
-  const isCacheValid = useCallback(() => {
-    if (!enableCache || !productsCache.current) return false;
-    const cacheAge = Date.now() - productsCache.current.timestamp;
-    return cacheAge < 5 * 60 * 1000; // 5 minute cache
-  }, [enableCache]);
-
-  // Fetch products list (with cache)
-  const fetchProducts = useCallback(async (forceRefresh = false) => {
-    if (!forceRefresh && isCacheValid()) {
-      setProducts(productsCache.current!.data);
-      return productsCache.current!.data;
-    }
-
-    try {
-      setIsLoading(true);
-      const { data, error } = await supabase
-        .from('products')
-        .select('*')
-        .order('name', { ascending: true });
-      
-      if (error) throw error;
-      
-      const productData = data || [];
-      setProducts(productData);
-      
-      if (enableCache) {
-        productsCache.current = {
-          data: productData,
-          timestamp: Date.now()
-        };
-      }
-      
-      retryCount.current = 0; // Reset retry count
-      return productData;
-    } catch (error) {
-      console.error('Failed to fetch products:', error);
-      
-      // Retry logic
-      if (retryCount.current < maxRetries) {
-        retryCount.current++;
-        toast.warning(`Failed to fetch products, retrying (${retryCount.current}/${maxRetries})`);
-        setTimeout(() => fetchProducts(forceRefresh), 1000 * retryCount.current);
-      } else {
-        toast.error('Failed to fetch products, please check network connection');
-        retryCount.current = 0;
-      }
-      return [];
-    } finally {
-      setIsLoading(false);
-    }
-  }, [supabase, isCacheValid, enableCache, maxRetries]);
 
   // Search pallet information
   const searchPalletInfo = useCallback(async (
@@ -320,6 +262,31 @@ export const useStockMovement = () => {
 
       addActivityLog(`Pallet ${pltNum} moved successfully: ${fromLocation} → ${toLocation}`, 'success');
       toast.success(`Pallet ${pltNum} moved to ${toLocation}`);
+      
+      // 🚀 新增：更新 work_level 表的 move 欄位
+      try {
+        console.log('[useStockMovement] 更新員工 Move 工作量記錄...', {
+          operatorId: operatorIdNum,
+          moveCount: 1
+        });
+
+        const { data: workLevelData, error: workLevelError } = await supabase.rpc('update_work_level_move', {
+          p_user_id: operatorIdNum,
+          p_move_count: 1
+        });
+
+        if (workLevelError) {
+          console.error('[useStockMovement] Work level move 更新失敗:', workLevelError);
+          // 移除活動日誌顯示，只保留控制台日誌
+        } else {
+          console.log('[useStockMovement] Work level move 更新成功:', workLevelData);
+          // 移除活動日誌顯示，只保留控制台日誌
+        }
+      } catch (workLevelError: any) {
+        console.error('[useStockMovement] Work level move 更新異常:', workLevelError);
+        // 移除活動日誌顯示，只保留控制台日誌
+      }
+      
       return true;
     } catch (error: any) {
       console.error('Stock transfer failed:', error);
@@ -336,96 +303,6 @@ export const useStockMovement = () => {
       setIsLoading(false);
     }
   }, [userId, supabase]);
-
-  // Execute inventory operation (receive, issue, transfer)
-  const executeInventoryOperation = useCallback(async (
-    operationType: 'receive' | 'issue' | 'transfer',
-    productId: number,
-    quantity: number,
-    fromLocation?: string,
-    toLocation?: string,
-    notes?: string
-  ): Promise<boolean> => {
-    if (!userId) {
-      toast.error('User ID not found, cannot execute operation');
-      return false;
-    }
-
-    const selectedProduct = products.find(p => p.id === productId);
-    if (!selectedProduct) {
-      toast.error('Selected product not found');
-      return false;
-    }
-
-    try {
-      setIsLoading(true);
-      
-      // Create inventory movement record
-      const movementData = {
-        product_id: productId,
-        quantity,
-        type: operationType,
-        from_location: operationType === 'receive' ? '' : fromLocation,
-        to_location: operationType === 'issue' ? '' : (operationType === 'transfer' ? toLocation : fromLocation),
-        created_by: userId,
-        notes: notes || ''
-      };
-      
-      const { error: movementError } = await supabase
-        .from('inventory_movements')
-        .insert([movementData]);
-      
-      if (movementError) throw movementError;
-      
-      // Update product quantity and location
-      let newQuantity = selectedProduct.quantity;
-      let newLocation = selectedProduct.location;
-      
-      if (operationType === 'receive') {
-        newQuantity += quantity;
-      } else if (operationType === 'issue') {
-        newQuantity -= quantity;
-      } else if (operationType === 'transfer') {
-        newLocation = toLocation || selectedProduct.location;
-      }
-      
-      const { error: updateError } = await supabase
-        .from('products')
-        .update({
-          quantity: newQuantity,
-          location: newLocation,
-          last_updated: new Date().toISOString()
-        })
-        .eq('id', productId);
-      
-      if (updateError) throw updateError;
-      
-      // Refresh product list
-      await fetchProducts(true);
-      
-      // Record operation log
-      const operationNames = {
-        receive: 'Received',
-        issue: 'Issued',
-        transfer: 'Transferred'
-      };
-      
-      addActivityLog(
-        `${operationNames[operationType]} ${quantity} units of ${selectedProduct.name}`,
-        'success'
-      );
-      
-      toast.success(`${operationNames[operationType]} operation completed successfully`);
-      return true;
-    } catch (error: any) {
-      console.error('Inventory operation failed:', error);
-      addActivityLog(`Operation failed: ${error.message}`, 'error');
-      toast.error(`Operation failed: ${error.message}`);
-      return false;
-    } finally {
-      setIsLoading(false);
-    }
-  }, [userId, products, supabase, fetchProducts]);
 
   // Add activity log
   const addActivityLog = useCallback((message: string, type: 'success' | 'error' | 'info') => {
@@ -454,21 +331,14 @@ export const useStockMovement = () => {
   return {
     // State
     isLoading,
-    products,
     activityLog,
     userId,
     
     // Methods
-    fetchProducts,
     searchPalletInfo,
     executeStockTransfer,
-    executeInventoryOperation,
     addActivityLog,
     clearActivityLog,
-    debouncedSearch,
-    
-    // Utility methods
-    refreshCache: () => fetchProducts(true),
-    isCacheValid
+    debouncedSearch
   };
-} 
+}; 

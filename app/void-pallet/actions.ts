@@ -516,6 +516,54 @@ export async function voidPalletAction(params: Omit<VoidParams, 'userId'>): Prom
       };
     }
 
+    // 🚀 新增：同步更新 stock_level 表
+    try {
+      console.log('[Void Pallet] Updating stock_level for product:', {
+        product_code: palletInfo.product_code,
+        quantity: palletInfo.product_qty,
+        operation: 'void'
+      });
+
+      const { data: stockResult, error: stockError } = await supabase
+        .rpc('update_stock_level_void', {
+          p_product_code: palletInfo.product_code,
+          p_quantity: palletInfo.product_qty,
+          p_operation: 'void'
+        });
+
+      if (stockError) {
+        console.warn('[Void Pallet] Stock level update failed:', stockError);
+        // 記錄警告但不中斷主要流程
+        await recordHistoryAction(
+          clockNumber,
+          'Stock Level Update Failed',
+          palletInfo.plt_num,
+          'Voided',
+          `Stock level update failed: ${stockError.message}`
+        );
+      } else {
+        console.log('[Void Pallet] Stock level updated successfully:', stockResult);
+        // 記錄成功的庫存更新
+        await recordHistoryAction(
+          clockNumber,
+          'Stock Level Updated',
+          palletInfo.plt_num,
+          'Voided',
+          `Stock level updated: ${stockResult}`
+        );
+      }
+    } catch (stockUpdateError: any) {
+      console.warn('[Void Pallet] Stock level update error:', stockUpdateError);
+      // 記錄錯誤但不中斷主要流程
+      await recordHistoryAction(
+        clockNumber,
+        'Stock Level Update Error',
+        palletInfo.plt_num,
+        'Voided',
+        `Stock level update error: ${stockUpdateError.message}`
+      );
+    }
+
     // 4. Record history with new location 'Voided'
     await recordHistoryAction(
       clockNumber,
@@ -658,6 +706,9 @@ export async function processDamageAction(params: Omit<VoidParams, 'userId'>): P
     const clockNumber = passwordResult.clockNumber;
     const remainingQty = palletInfo.product_qty - damageQuantity;
     const isFullDamage = remainingQty === 0;
+    
+    // 確定新的位置狀態
+    const newLocation = isFullDamage ? 'Damaged' : 'Voided (Partial)';
 
     // 2. Update original pallet (only remark and quantity, plt_loc is now managed in record_history)
     const { error: updateError } = await supabase
@@ -705,8 +756,55 @@ export async function processDamageAction(params: Omit<VoidParams, 'userId'>): P
       };
     }
 
+    // 🚀 新增：同步更新 stock_level 表
+    try {
+      console.log('[Damage Processing] Updating stock_level for product:', {
+        product_code: palletInfo.product_code,
+        quantity: palletInfo.product_qty,
+        operation: 'damage'
+      });
+
+      const { data: stockResult, error: stockError } = await supabase
+        .rpc('update_stock_level_void', {
+          p_product_code: palletInfo.product_code,
+          p_quantity: palletInfo.product_qty,
+          p_operation: 'damage'
+        });
+
+      if (stockError) {
+        console.warn('[Damage Processing] Stock level update failed:', stockError);
+        // 記錄警告但不中斷主要流程
+        await recordHistoryAction(
+          clockNumber,
+          'Stock Level Update Failed',
+          palletInfo.plt_num,
+          'Voided',
+          `Stock level update failed: ${stockError.message}`
+        );
+      } else {
+        console.log('[Damage Processing] Stock level updated successfully:', stockResult);
+        // 記錄成功的庫存更新
+        await recordHistoryAction(
+          clockNumber,
+          'Stock Level Updated',
+          palletInfo.plt_num,
+          'Voided',
+          `Stock level updated: ${stockResult}`
+        );
+      }
+    } catch (stockUpdateError: any) {
+      console.warn('[Damage Processing] Stock level update error:', stockUpdateError);
+      // 記錄錯誤但不中斷主要流程
+      await recordHistoryAction(
+        clockNumber,
+        'Stock Level Update Error',
+        palletInfo.plt_num,
+        'Voided',
+        `Stock level update error: ${stockUpdateError.message}`
+      );
+    }
+
     // 4. Record history with appropriate location status
-    const newLocation = isFullDamage ? 'Damaged' : 'Voided (Partial)';
     await recordHistoryAction(
       clockNumber,
       isFullDamage ? 'Fully Damaged' : 'Partially Damaged',

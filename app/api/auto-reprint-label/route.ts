@@ -158,6 +158,31 @@ export async function POST(request: NextRequest) {
     }
     console.log('[Auto Reprint API] Database records inserted successfully');
 
+    // 🚀 新增：更新 stock_level 表
+    try {
+      console.log('[Auto Reprint API] Updating stock_level for product:', {
+        product_code: productInfo.code,
+        quantity: data.quantity,
+        operation: 'auto_reprint'
+      });
+
+      const { data: stockResult, error: stockError } = await supabase.rpc('update_stock_level_void', {
+        p_product_code: productInfo.code,
+        p_quantity: -data.quantity, // 負數表示增加庫存（因為是重印新托盤）
+        p_operation: 'auto_reprint'
+      });
+
+      if (stockError) {
+        console.warn('[Auto Reprint API] Stock level update failed:', stockError);
+        // 記錄警告但不中斷主要流程
+      } else {
+        console.log('[Auto Reprint API] Stock level updated successfully:', stockResult);
+      }
+    } catch (stockUpdateError: any) {
+      console.warn('[Auto Reprint API] Stock level update error:', stockUpdateError);
+      // 記錄錯誤但不中斷主要流程
+    }
+
     // Prepare PDF data
     console.log('[Auto Reprint API] Preparing PDF data...');
     const qcInputData: QcInputData = {

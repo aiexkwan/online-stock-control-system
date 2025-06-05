@@ -155,19 +155,9 @@ export const useFormValidation = (input: ValidationInput): FormValidation => {
 
     // Slate specific validation
     if (rules.validateSlateFields) {
-      if (!input.slateDetail.firstOffDate) {
-        errors.push('First-Off Date is required for Slate products.');
-        fieldErrors.slateFirstOffDate = 'First-Off Date is required.';
-      }
-
       if (!input.slateDetail.batchNumber.trim()) {
         errors.push('Batch Number is required for Slate products.');
         fieldErrors.slateBatchNumber = 'Batch Number is required.';
-      }
-
-      if (!input.slateDetail.setterName.trim()) {
-        errors.push('Setter Name is required for Slate products.');
-        fieldErrors.slateSetterName = 'Setter Name is required.';
       }
     }
 

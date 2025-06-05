@@ -114,10 +114,10 @@ export function StatusMessage({ type, message, onDismiss }: StatusMessageProps) 
       textColor: "text-green-400"
     },
     error: {
-      container: "border-red-400 bg-gray-800",
+      container: "border-red-500 bg-black animate-pulse",
       icon: XCircle,
-      iconColor: "text-red-400",
-      textColor: "text-red-400"
+      iconColor: "text-red-500 animate-pulse",
+      textColor: "text-red-500 font-bold animate-pulse"
     },
     warning: {
       container: "border-yellow-400 bg-gray-800",
@@ -137,7 +137,7 @@ export function StatusMessage({ type, message, onDismiss }: StatusMessageProps) 
   const IconComponent = style.icon;
 
   return (
-    <Card className={`${style.container} mb-4 text-white`}>
+    <Card className={`${style.container} mb-4 text-white shadow-lg ${type === 'error' ? 'shadow-red-500/50' : ''}`}>
       <CardContent className="flex items-center justify-between py-3">
         <div className="flex items-center space-x-3">
           <IconComponent className={`w-5 h-5 ${style.iconColor}`} />
@@ -148,7 +148,7 @@ export function StatusMessage({ type, message, onDismiss }: StatusMessageProps) 
             variant="ghost"
             size="sm"
             onClick={onDismiss}
-            className={`${style.textColor} hover:bg-gray-700`}
+            className={`${style.textColor} hover:bg-gray-700 ${type === 'error' ? 'hover:bg-red-900/30' : ''}`}
           >
             <XCircle className="w-4 h-4" />
           </Button>

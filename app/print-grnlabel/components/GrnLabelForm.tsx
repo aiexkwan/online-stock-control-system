@@ -498,7 +498,7 @@ export const GrnLabelForm: React.FC = () => {
           const actionResult = await createGrnDatabaseEntries({
             palletInfo: palletInfoData,
             grnRecord: grnRecordData
-          }, clockNumber);
+          }, clockNumber, labelMode.mode);
 
           if (actionResult.error) {
             toast.error(`Pallet ${i + 1} DB Error: ${actionResult.error}. Skipping PDF.`);
@@ -508,6 +508,12 @@ export const GrnLabelForm: React.FC = () => {
             }));
             anyFailure = true;
             continue;
+          }
+
+          // 🚀 新增：顯示 GRN workflow 警告（如果有）
+          if (actionResult.warning) {
+            console.warn(`[GrnLabelForm] Pallet ${i + 1} GRN workflow warning:`, actionResult.warning);
+            toast.warning(`Pallet ${i + 1}: ${actionResult.warning}`);
           }
 
           // Generate PDF using admin client

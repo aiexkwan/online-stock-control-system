@@ -19,13 +19,8 @@ const publicPaths = [
 const protectedPaths = [
   '/access',
   '/dashboard',
-  '/reports',
-  '/view-history',
   '/void-pallet',
-  '/tables',
-  '/inventory',
   '/history',
-  '/products',
   '/productUpdate',
   '/stock-transfer',
   //'/print-label',

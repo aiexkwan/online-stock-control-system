@@ -114,13 +114,51 @@ export function useCurrentUserId(): string | null {
   return null;
 }
 
-// 獲取當前用戶的 clock number
+// 獲取當前用戶的 clock number（同步版本，僅用於向後兼容）
 export function getCurrentUserClockNumber(): string | null {
-  if (typeof window === 'undefined') return null;
-  
-  // 從 localStorage 獲取 clock number
-  const clockNumber = localStorage.getItem('loggedInUserClockNumber');
-  return clockNumber;
+  // 不再使用 localStorage，返回 null 讓調用者使用異步版本
+  return null;
+}
+
+// 異步獲取當前用戶的 clock number（通過 email 查詢 data_id 表）
+export async function getCurrentUserClockNumberAsync(): Promise<string | null> {
+  try {
+    const supabase = createClient();
+    
+    // 1. 獲取當前用戶
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    
+    if (userError || !user?.email) {
+      console.warn('[getCurrentUserClockNumberAsync] No authenticated user or email found');
+      return null;
+    }
+    
+    // 2. 通過 email 查詢 data_id 表獲取 clock number (id)
+    const { data, error } = await supabase
+      .from('data_id')
+      .select('id, name, email')
+      .eq('email', user.email)
+      .single();
+    
+    if (error) {
+      if (error.code === 'PGRST116') {
+        console.warn(`[getCurrentUserClockNumberAsync] No user found for email: ${user.email}`);
+        return null;
+      }
+      throw error;
+    }
+    
+    if (data?.id) {
+      const clockNumber = data.id.toString();
+      console.log(`[getCurrentUserClockNumberAsync] Found clock number: ${clockNumber} for email: ${user.email}`);
+      return clockNumber;
+    }
+    
+    return null;
+  } catch (error: any) {
+    console.error('[getCurrentUserClockNumberAsync] Error getting clock number:', error);
+    return null;
+  }
 }
 
 export const useAskDatabasePermission = () => {

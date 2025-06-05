@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Toaster } from 'sonner';
+import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
+import { Button } from '../../components/ui/button';
 import { UnifiedSearch } from '../../components/ui/unified-search';
 import { useVoidPallet } from './hooks/useVoidPallet';
 import { ReprintInfoDialog } from './components/ReprintInfoDialog';
@@ -205,8 +206,6 @@ export default function VoidPalletPage() {
             </div>
           </div>
 
-          <Toaster richColors position="top-center" />
-          
           {/* Status Messages */}
           {statusMessage && (
             <div className={`mb-8 p-4 rounded-xl border ${

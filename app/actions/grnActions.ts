@@ -82,7 +82,8 @@ export interface GrnDatabaseEntryPayload {
 
 export async function createGrnDatabaseEntries(
   payload: GrnDatabaseEntryPayload, 
-  operatorClockNumberStr: string // New parameter
+  operatorClockNumberStr: string, // New parameter
+  labelMode: 'weight' | 'qty' = 'weight' // 新增參數：標籤模式
 ): Promise<{ data?: string; error?: string; warning?: string }> {
 
   const clockValidation = clockNumberSchema.safeParse(operatorClockNumberStr);
@@ -136,7 +137,73 @@ export async function createGrnDatabaseEntries(
       return { error: `Database operation failed: ${rpcError.message}` }; // Generic fallback
     }
 
-    return { data: rpcData as string };
+    // 🚀 新功能：調用 GRN workflow 優化函數
+    try {
+      console.log('[grnActions] 調用 GRN workflow 優化函數...', {
+        grnRef: payload.grnRecord.grn_ref,
+        labelMode,
+        operatorId: operatorIdForFunction,
+        productCode: payload.grnRecord.material_code,
+        grossWeight: payload.grnRecord.gross_weight,
+        netWeight: payload.grnRecord.net_weight
+      });
+
+      const workflowParams: any = {
+        p_grn_ref: payload.grnRecord.grn_ref,
+        p_label_mode: labelMode,
+        p_user_id: operatorIdForFunction,
+        p_product_code: payload.grnRecord.material_code,
+        p_product_description: null,
+        p_grn_count: 1
+      };
+
+      // 根據標籤模式添加相應參數
+      if (labelMode === 'weight') {
+        workflowParams.p_gross_weight = payload.grnRecord.gross_weight;
+        workflowParams.p_net_weight = payload.grnRecord.net_weight;
+        workflowParams.p_quantity = null;
+      } else if (labelMode === 'qty') {
+        workflowParams.p_gross_weight = null;
+        workflowParams.p_net_weight = null;
+        workflowParams.p_quantity = payload.palletInfo.product_qty;
+      }
+
+      const { data: workflowData, error: workflowError } = await supabaseAdmin.rpc('update_grn_workflow', workflowParams);
+
+      if (workflowError) {
+        console.error('[grnActions] GRN workflow 更新失敗:', workflowError);
+        // 不中斷主流程，只記錄警告
+        return { 
+          data: rpcData as string, 
+          warning: `GRN workflow update failed: ${workflowError.message}` 
+        };
+      }
+
+      if (workflowData && !workflowData.success) {
+        console.warn('[grnActions] GRN workflow 更新部分失敗:', workflowData);
+        const failureDetails = [
+          workflowData.grn_level_result?.includes('ERROR:') ? 'GRN Level' : null,
+          workflowData.work_level_result?.includes('ERROR:') ? 'Work Level' : null,
+          workflowData.stock_level_result?.includes('ERROR:') ? 'Stock Level' : null
+        ].filter(Boolean).join(', ');
+        
+        return { 
+          data: rpcData as string, 
+          warning: `GRN workflow partially failed (${failureDetails}): ${workflowData.grn_level_result || workflowData.work_level_result || workflowData.stock_level_result}` 
+        };
+      }
+
+      console.log('[grnActions] GRN workflow 更新成功:', workflowData);
+      return { data: rpcData as string };
+
+    } catch (workflowError: any) {
+      console.error('[grnActions] GRN workflow 更新異常:', workflowError);
+      // 不中斷主流程，只記錄警告
+      return { 
+        data: rpcData as string, 
+        warning: `GRN workflow update exception: ${workflowError.message}` 
+      };
+    }
 
   } catch (error: any) {
     console.error('[grnActions] Unexpected error in createGrnDatabaseEntries (RPC call):', error);

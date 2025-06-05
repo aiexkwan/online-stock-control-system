@@ -99,8 +99,8 @@ BEGIN
         AND DATE(latest_update) = today_date;
     ELSE
         -- 新增今天的記錄
-        INSERT INTO work_level (id, QC, Move, latest_update)
-        VALUES (p_user_id, p_pallet_count, 0, NOW());
+        INSERT INTO work_level (id, QC, Move, grn, latest_update)
+        VALUES (p_user_id, p_pallet_count, 0, 0, NOW());
     END IF;
     
     RETURN TRUE;

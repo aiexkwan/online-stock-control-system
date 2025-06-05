@@ -1,5 +1,29 @@
 [
   {
+    "table_name": "API",
+    "column_name": "name",
+    "data_type": "text",
+    "is_nullable": "NO",
+    "column_default": null,
+    "character_maximum_length": null,
+    "is_primary_key": "NO",
+    "is_foreign_key": "NO",
+    "foreign_table_name": null,
+    "foreign_column_name": null
+  },
+  {
+    "table_name": "API",
+    "column_name": "value",
+    "data_type": "text",
+    "is_nullable": "NO",
+    "column_default": null,
+    "character_maximum_length": null,
+    "is_primary_key": "NO",
+    "is_foreign_key": "NO",
+    "foreign_table_name": null,
+    "foreign_column_name": null
+  },
+  {
     "table_name": "data_code",
     "column_name": "code",
     "data_type": "text",
@@ -312,6 +336,78 @@
     "foreign_column_name": null
   },
   {
+    "table_name": "grn_level",
+    "column_name": "uuid",
+    "data_type": "uuid",
+    "is_nullable": "NO",
+    "column_default": "gen_random_uuid()",
+    "character_maximum_length": null,
+    "is_primary_key": "YES",
+    "is_foreign_key": "NO",
+    "foreign_table_name": null,
+    "foreign_column_name": null
+  },
+  {
+    "table_name": "grn_level",
+    "column_name": "latest_update",
+    "data_type": "timestamp with time zone",
+    "is_nullable": "NO",
+    "column_default": "now()",
+    "character_maximum_length": null,
+    "is_primary_key": "NO",
+    "is_foreign_key": "NO",
+    "foreign_table_name": null,
+    "foreign_column_name": null
+  },
+  {
+    "table_name": "grn_level",
+    "column_name": "total_gross",
+    "data_type": "bigint",
+    "is_nullable": "NO",
+    "column_default": "'0'::bigint",
+    "character_maximum_length": null,
+    "is_primary_key": "NO",
+    "is_foreign_key": "NO",
+    "foreign_table_name": null,
+    "foreign_column_name": null
+  },
+  {
+    "table_name": "grn_level",
+    "column_name": "total_unit",
+    "data_type": "bigint",
+    "is_nullable": "NO",
+    "column_default": "'0'::bigint",
+    "character_maximum_length": null,
+    "is_primary_key": "NO",
+    "is_foreign_key": "NO",
+    "foreign_table_name": null,
+    "foreign_column_name": null
+  },
+  {
+    "table_name": "grn_level",
+    "column_name": "grn_ref",
+    "data_type": "integer",
+    "is_nullable": "YES",
+    "column_default": "0",
+    "character_maximum_length": null,
+    "is_primary_key": "NO",
+    "is_foreign_key": "NO",
+    "foreign_table_name": null,
+    "foreign_column_name": null
+  },
+  {
+    "table_name": "grn_level",
+    "column_name": "total_net",
+    "data_type": "bigint",
+    "is_nullable": "YES",
+    "column_default": "'0'::bigint",
+    "character_maximum_length": null,
+    "is_primary_key": "NO",
+    "is_foreign_key": "NO",
+    "foreign_table_name": null,
+    "foreign_column_name": null
+  },
+  {
     "table_name": "query_record",
     "column_name": "uuid",
     "data_type": "uuid",
@@ -446,7 +542,7 @@
   {
     "table_name": "record_aco",
     "column_name": "latest_update",
-    "data_type": "time without time zone",
+    "data_type": "timestamp with time zone",
     "is_nullable": "NO",
     "column_default": "now()",
     "character_maximum_length": null,
@@ -1489,7 +1585,7 @@
   },
   {
     "table_name": "work_level",
-    "column_name": "QC",
+    "column_name": "qc",
     "data_type": "bigint",
     "is_nullable": "NO",
     "column_default": "'0'::bigint",
@@ -1501,7 +1597,7 @@
   },
   {
     "table_name": "work_level",
-    "column_name": "Move",
+    "column_name": "move",
     "data_type": "bigint",
     "is_nullable": "NO",
     "column_default": "'0'::bigint",
@@ -1517,6 +1613,18 @@
     "data_type": "timestamp with time zone",
     "is_nullable": "NO",
     "column_default": "now()",
+    "character_maximum_length": null,
+    "is_primary_key": "NO",
+    "is_foreign_key": "NO",
+    "foreign_table_name": null,
+    "foreign_column_name": null
+  },
+  {
+    "table_name": "work_level",
+    "column_name": "grn",
+    "data_type": "bigint",
+    "is_nullable": "NO",
+    "column_default": null,
     "character_maximum_length": null,
     "is_primary_key": "NO",
     "is_foreign_key": "NO",

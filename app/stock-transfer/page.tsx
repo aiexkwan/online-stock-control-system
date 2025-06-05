@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Toaster } from 'sonner';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
 import { 
@@ -146,18 +145,21 @@ export default function StockTransferPage() {
           // Set error message using useEffect to avoid setState during render
           setTimeout(() => {
             setStatusMessage({
-              type: 'warning',
-              message: targetResult.error!
+              type: 'error',
+              message: `❌ TRANSFER BLOCKED: ${targetResult.error}`
             });
           }, 0);
         }
       } else {
+        // 🚀 新增：搜索失敗時設置錯誤狀態消息
+        setStatusMessage({
+          type: 'error',
+          message: `❌ SEARCH FAILED: ${searchType === 'series' ? 'Series' : 'Pallet'} "${searchValue}" not found in system. Please verify the number and try again.`
+        });
         setCurrentStep(0);
       }
     }
   }, [searchPalletInfo, calculateTargetLocation]);
-
-
 
   // Handle clock number confirmation
   const handleClockNumberConfirm = async (clockNumber: string) => {
@@ -189,6 +191,11 @@ export default function StockTransferPage() {
       // 自動聚焦到搜尋欄位以便快速執行下一個操作
       focusSearchInput();
     } else {
+      // 🚀 新增：設置錯誤狀態消息，觸發黑色背景紅色字體閃爍效果
+      setStatusMessage({
+        type: 'error',
+        message: `❌ TRANSFER FAILED: Pallet ${palletInfo.plt_num} could not be moved to ${targetLocation}. Please check the error details in the Transfer Log and try again.`
+      });
       setCurrentStep(3);
     }
     
@@ -266,8 +273,6 @@ export default function StockTransferPage() {
             </div>
           </div>
 
-          <Toaster richColors position="top-center" />
-          
           {/* Status Messages */}
           {statusMessage && (
             <StatusMessage
@@ -426,21 +431,25 @@ export default function StockTransferPage() {
                             activity.type === 'success'
                               ? 'bg-green-500/10 border-green-500/30 text-green-300'
                               : activity.type === 'error'
-                              ? 'bg-red-500/10 border-red-500/30 text-red-300'
+                              ? 'bg-black border-red-500 text-red-500 font-bold animate-pulse shadow-lg shadow-red-500/30'
                               : 'bg-blue-500/10 border-blue-500/30 text-blue-300'
                           }`}
                         >
                           <div className={`w-2 h-2 rounded-full mt-2 flex-shrink-0 ${
                             activity.type === 'success' ? 'bg-green-400' :
-                            activity.type === 'error' ? 'bg-red-400' : 'bg-blue-400'
+                            activity.type === 'error' ? 'bg-red-500 animate-pulse' : 'bg-blue-400'
                           }`}></div>
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center justify-between mb-1">
-                              <span className="text-xs font-mono text-slate-400">
+                              <span className={`text-xs font-mono ${
+                                activity.type === 'error' ? 'text-red-400' : 'text-slate-400'
+                              }`}>
                                 {activity.timestamp || new Date().toLocaleTimeString()}
                               </span>
                             </div>
-                            <p className="text-sm leading-relaxed">{activity.message}</p>
+                            <p className={`text-sm leading-relaxed ${
+                              activity.type === 'error' ? 'font-bold' : ''
+                            }`}>{activity.message}</p>
                           </div>
                         </div>
                       ))
