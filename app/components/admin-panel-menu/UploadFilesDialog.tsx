@@ -19,9 +19,12 @@ import {
   CheckCircleIcon,
   ExclamationTriangleIcon,
   FolderOpenIcon,
-  DocumentPlusIcon
+  DocumentPlusIcon,
+  SparklesIcon,
+  EyeIcon
 } from '@heroicons/react/24/outline';
 import { toast } from 'sonner';
+import { createClient } from '@/app/utils/supabase/client';
 
 interface UploadFilesDialogProps {
   isOpen: boolean;
@@ -43,6 +46,10 @@ interface OrderPDFUploadState {
   isUploading: boolean;
   uploadProgress: number;
   error: string | null;
+  isAnalyzing: boolean;
+  analysisProgress: number;
+  extractedData: any[] | null;
+  showPreview: boolean;
 }
 
 const fileValidation = {
@@ -59,6 +66,7 @@ export const UploadFilesDialog: React.FC<UploadFilesDialogProps> = ({
   onOpenChange
 }) => {
   const [activeTab, setActiveTab] = useState<TabType>('files');
+  const [currentUserId, setCurrentUserId] = useState<number | null>(null);
   
   const [uploadState, setUploadState] = useState<UploadState>({
     selectedFile: null,
@@ -74,12 +82,115 @@ export const UploadFilesDialog: React.FC<UploadFilesDialogProps> = ({
     orderNumber: '',
     isUploading: false,
     uploadProgress: 0,
-    error: null
+    error: null,
+    isAnalyzing: false,
+    analysisProgress: 0,
+    extractedData: null,
+    showPreview: false
   });
 
   const [isDragOver, setIsDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const orderPDFInputRef = useRef<HTMLInputElement>(null);
+
+  // 獲取當前用戶 ID
+  React.useEffect(() => {
+    const getCurrentUser = async () => {
+      try {
+        const supabase = createClient();
+        const { data: { user }, error: authError } = await supabase.auth.getUser();
+        
+        if (authError) {
+          console.error('[UploadFilesDialog] Auth error:', authError);
+          return;
+        }
+        
+        if (user) {
+          console.log('[UploadFilesDialog] Current user:', user.email, 'UUID:', user.id);
+          
+          // 直接使用 supabase client 查詢 data_id 表（通過 RLS）
+          try {
+            // 首先嘗試通過 UUID 查詢
+            const { data: userData, error } = await supabase
+              .from('data_id')
+              .select('id')
+              .eq('uuid', user.id)
+              .single();
+            
+            if (error) {
+              console.error('[UploadFilesDialog] Error fetching user data by UUID:', error);
+              
+              // 如果 UUID 查詢失敗，嘗試使用 email 查詢
+              const { data: userDataByEmail, error: emailError } = await supabase
+                .from('data_id')
+                .select('id')
+                .eq('email', user.email)
+                .single();
+              
+              if (emailError) {
+                console.error('[UploadFilesDialog] Error fetching user data by email:', emailError);
+                setOrderPDFState(prev => ({
+                  ...prev,
+                  error: 'Unable to identify user in system. Please contact administrator.'
+                }));
+                return;
+              }
+              
+              if (userDataByEmail) {
+                console.log('[UploadFilesDialog] User ID found by email:', userDataByEmail.id);
+                setCurrentUserId(userDataByEmail.id);
+              } else {
+                console.warn('[UploadFilesDialog] No user data found by email');
+                setOrderPDFState(prev => ({
+                  ...prev,
+                  error: 'User not found in system. Please contact administrator.'
+                }));
+              }
+            } else if (userData) {
+              console.log('[UploadFilesDialog] User ID found by UUID:', userData.id);
+              setCurrentUserId(userData.id);
+            } else {
+              console.warn('[UploadFilesDialog] No user data found by UUID');
+              // 嘗試 email 查詢作為備用
+              const { data: userDataByEmail, error: emailError } = await supabase
+                .from('data_id')
+                .select('id')
+                .eq('email', user.email)
+                .single();
+              
+              if (!emailError && userDataByEmail) {
+                console.log('[UploadFilesDialog] User ID found by email (fallback):', userDataByEmail.id);
+                setCurrentUserId(userDataByEmail.id);
+              } else {
+                setOrderPDFState(prev => ({
+                  ...prev,
+                  error: 'User not found in system. Please contact administrator.'
+                }));
+              }
+            }
+          } catch (queryError) {
+            console.error('[UploadFilesDialog] Query error:', queryError);
+            setOrderPDFState(prev => ({
+              ...prev,
+              error: 'Database query failed. Please try again later.'
+            }));
+          }
+        } else {
+          console.warn('[UploadFilesDialog] No authenticated user');
+        }
+      } catch (error) {
+        console.error('[UploadFilesDialog] Unexpected error:', error);
+        setOrderPDFState(prev => ({
+          ...prev,
+          error: 'Authentication error. Please try logging in again.'
+        }));
+      }
+    };
+    
+    if (isOpen) {
+      getCurrentUser();
+    }
+  }, [isOpen]);
 
   // 重置狀態
   const resetState = useCallback(() => {
@@ -96,7 +207,11 @@ export const UploadFilesDialog: React.FC<UploadFilesDialogProps> = ({
       orderNumber: '',
       isUploading: false,
       uploadProgress: 0,
-      error: null
+      error: null,
+      isAnalyzing: false,
+      analysisProgress: 0,
+      extractedData: null,
+      showPreview: false
     });
     setIsDragOver(false);
     setActiveTab('files');
@@ -104,11 +219,11 @@ export const UploadFilesDialog: React.FC<UploadFilesDialogProps> = ({
 
   // 關閉對話框
   const handleClose = useCallback(() => {
-    if (!uploadState.isUploading && !orderPDFState.isUploading) {
+    if (!uploadState.isUploading && !orderPDFState.isUploading && !orderPDFState.isAnalyzing) {
       resetState();
       onOpenChange(false);
     }
-  }, [uploadState.isUploading, orderPDFState.isUploading, resetState, onOpenChange]);
+  }, [uploadState.isUploading, orderPDFState.isUploading, orderPDFState.isAnalyzing, resetState, onOpenChange]);
 
   // 驗證文件
   const validateFile = useCallback((file: File): { isValid: boolean; error?: string } => {
@@ -204,7 +319,9 @@ export const UploadFilesDialog: React.FC<UploadFilesDialogProps> = ({
     setOrderPDFState(prev => ({
       ...prev,
       selectedFile: file,
-      error: null
+      error: null,
+      extractedData: null,
+      showPreview: false
     }));
   }, [validatePDFFile]);
 
@@ -347,7 +464,97 @@ export const UploadFilesDialog: React.FC<UploadFilesDialogProps> = ({
     }
   }, [uploadState.selectedFile, uploadState.selectedFolder, uploadState.fileName, handleClose]);
 
-  // 上傳 Order PDF
+  // 分析 Order PDF
+  const handleAnalyzeOrderPDF = useCallback(async () => {
+    if (!orderPDFState.selectedFile) {
+      setOrderPDFState(prev => ({
+        ...prev,
+        error: 'Please select a PDF file first'
+      }));
+      return;
+    }
+    
+    if (!currentUserId) {
+      setOrderPDFState(prev => ({
+        ...prev,
+        error: 'User authentication required. Please refresh the page and try again.'
+      }));
+      return;
+    }
+
+    console.log('[UploadFilesDialog] Starting PDF analysis with user ID:', currentUserId);
+
+    setOrderPDFState(prev => ({ 
+      ...prev, 
+      isAnalyzing: true, 
+      analysisProgress: 0,
+      error: null 
+    }));
+
+    try {
+      // 創建 FormData
+      const formData = new FormData();
+      formData.append('file', orderPDFState.selectedFile);
+      formData.append('uploadedBy', currentUserId.toString());
+
+      // 模擬分析進度
+      const progressInterval = setInterval(() => {
+        setOrderPDFState(prev => ({
+          ...prev,
+          analysisProgress: Math.min(prev.analysisProgress + 5, 90)
+        }));
+      }, 300);
+
+      console.log('[Order PDF Analysis] 開始分析 PDF...');
+
+      // 發送到 analyze-order-pdf API
+      const response = await fetch('/api/analyze-order-pdf', {
+        method: 'POST',
+        body: formData
+      });
+
+      clearInterval(progressInterval);
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || `Server error: ${response.status}`);
+      }
+
+      // 完成分析
+      setOrderPDFState(prev => ({ 
+        ...prev, 
+        analysisProgress: 100,
+        extractedData: result.extractedData,
+        showPreview: true
+      }));
+      
+      // 短暫延遲顯示完成狀態
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      console.log('[Order PDF Analysis] 分析完成:', result);
+      
+      toast.success(`PDF 分析完成！提取了 ${result.recordCount} 條訂單記錄`);
+      
+      // 重置分析狀態但保留數據預覽
+      setOrderPDFState(prev => ({ 
+        ...prev, 
+        isAnalyzing: false,
+        analysisProgress: 0
+      }));
+      
+    } catch (error) {
+      console.error('[Order PDF Analysis] 分析錯誤:', error);
+      setOrderPDFState(prev => ({
+        ...prev,
+        error: error instanceof Error ? error.message : 'Analysis failed. Please try again.',
+        isAnalyzing: false,
+        analysisProgress: 0
+      }));
+    }
+  }, [orderPDFState.selectedFile, currentUserId]);
+
+  // 上傳 Order PDF（舊版本，保留作為備用）
   const handleOrderPDFUpload = useCallback(async () => {
     if (!orderPDFState.selectedFile || !orderPDFState.orderNumber.trim()) {
       setOrderPDFState(prev => ({
@@ -363,8 +570,8 @@ export const UploadFilesDialog: React.FC<UploadFilesDialogProps> = ({
       // 創建 FormData
       const formData = new FormData();
       formData.append('file', orderPDFState.selectedFile);
-      formData.append('orderNumber', orderPDFState.orderNumber);
-      formData.append('uploadType', 'orderPdf');
+      formData.append('fileName', `${orderPDFState.orderNumber}.pdf`);
+      formData.append('storagePath', 'orderpdf');
 
       // 模擬上傳進度
       const progressInterval = setInterval(() => {
@@ -374,7 +581,7 @@ export const UploadFilesDialog: React.FC<UploadFilesDialogProps> = ({
         }));
       }, 200);
 
-      // 上傳文件到新的 API endpoint
+      // 上傳文件到 upload-pdf API
       const response = await fetch('/api/upload-pdf', {
         method: 'POST',
         body: formData
@@ -395,7 +602,7 @@ export const UploadFilesDialog: React.FC<UploadFilesDialogProps> = ({
       await new Promise(resolve => setTimeout(resolve, 500));
 
       toast.success(`Order PDF uploaded successfully! Order: ${orderPDFState.orderNumber}`);
-      console.log('Order PDF upload result:', result.data);
+      console.log('Order PDF upload result:', result);
       
       handleClose();
     } catch (error) {
@@ -413,7 +620,7 @@ export const UploadFilesDialog: React.FC<UploadFilesDialogProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="bg-slate-800/90 backdrop-blur-xl border border-slate-600/50 text-white max-w-2xl rounded-2xl shadow-2xl">
+      <DialogContent className="bg-slate-800/90 backdrop-blur-xl border border-slate-600/50 text-white max-w-4xl rounded-2xl shadow-2xl max-h-[90vh] overflow-y-auto">
         <div className="relative">
           {/* 對話框內部光效 */}
           <div className="absolute inset-0 bg-gradient-to-r from-purple-500/5 via-transparent to-blue-500/5 rounded-2xl"></div>
@@ -450,7 +657,7 @@ export const UploadFilesDialog: React.FC<UploadFilesDialogProps> = ({
                     : 'text-slate-300 hover:text-white hover:bg-slate-600/50'
                 }`}
               >
-                <DocumentPlusIcon className="h-4 w-4 mr-2" />
+                <SparklesIcon className="h-4 w-4 mr-2" />
                 Upload Order PDF
               </button>
             </div>
@@ -605,7 +812,7 @@ export const UploadFilesDialog: React.FC<UploadFilesDialogProps> = ({
                   )}
                 </>
               ) : (
-                // Order PDF 上傳內容
+                // AI Order Analysis 內容
                 <>
                   {/* Order PDF 拖拽區域 */}
                   <div
@@ -647,13 +854,13 @@ export const UploadFilesDialog: React.FC<UploadFilesDialogProps> = ({
                         </>
                       ) : (
                         <>
-                          <DocumentPlusIcon className="h-16 w-16 text-slate-400 mx-auto" />
+                          <SparklesIcon className="h-16 w-16 text-slate-400 mx-auto" />
                           <div>
                             <p className="text-lg font-semibold text-slate-300">
                               Drag and drop Order PDF here, or click to select
                             </p>
                             <p className="text-sm text-slate-400 mt-2">
-                              Only PDF files are supported (Max 10MB)
+                              Order PDF will be analyze and extract order data automatically (Max 10MB)
                             </p>
                           </div>
                         </>
@@ -673,47 +880,74 @@ export const UploadFilesDialog: React.FC<UploadFilesDialogProps> = ({
                     </motion.div>
                   )}
 
-                  {/* Order Number 輸入 */}
-                  <AnimatePresence>
-                    {orderPDFState.selectedFile && (
-                      <motion.div
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: 'auto' }}
-                        exit={{ opacity: 0, height: 0 }}
-                        className="space-y-4"
-                      >
-                        <div>
-                          <label className="block text-sm font-medium text-slate-200 mb-3">
-                            Order Number
-                          </label>
-                          <input
-                            type="text"
-                            value={orderPDFState.orderNumber}
-                            onChange={handleOrderNumberChange}
-                            className="w-full px-4 py-3 bg-slate-700/50 border border-slate-600/50 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:border-blue-500/70 focus:bg-slate-700/70 hover:border-blue-500/50 transition-all duration-300"
-                            placeholder="Enter order number (e.g., ORD-2025-001)"
-                          />
-                        </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-
-                  {/* Order PDF 上傳進度 */}
-                  {orderPDFState.isUploading && (
+                  {/* AI 分析進度 */}
+                  {orderPDFState.isAnalyzing && (
                     <motion.div
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
                       className="space-y-3"
                     >
                       <div className="flex items-center justify-between text-sm">
-                        <span className="text-slate-300">Uploading Order PDF...</span>
-                        <span className="text-blue-400">{orderPDFState.uploadProgress}%</span>
+                        <span className="text-slate-300 flex items-center">
+                          <SparklesIcon className="h-4 w-4 mr-2 text-blue-400" />
+                          AI is analyzing PDF content...
+                        </span>
+                        <span className="text-blue-400">{orderPDFState.analysisProgress}%</span>
                       </div>
                       <div className="w-full bg-slate-700 rounded-full h-2">
                         <div 
                           className="bg-gradient-to-r from-blue-500 to-cyan-500 h-2 rounded-full transition-all duration-300"
-                          style={{ width: `${orderPDFState.uploadProgress}%` }}
+                          style={{ width: `${orderPDFState.analysisProgress}%` }}
                         />
+                      </div>
+                    </motion.div>
+                  )}
+
+                  {/* 提取數據預覽 */}
+                  {orderPDFState.extractedData && orderPDFState.showPreview && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="space-y-4"
+                    >
+                      <div className="flex items-center justify-between">
+                        <h3 className="text-lg font-semibold text-green-400 flex items-center">
+                          <CheckCircleIcon className="h-5 w-5 mr-2" />
+                          Extracted Order Data ({orderPDFState.extractedData.length} records)
+                        </h3>
+                        <button
+                          onClick={() => setOrderPDFState(prev => ({ ...prev, showPreview: !prev.showPreview }))}
+                          className="text-slate-400 hover:text-white transition-colors"
+                        >
+                          <EyeIcon className="h-5 w-5" />
+                        </button>
+                      </div>
+                      
+                      <div className="bg-slate-700/30 rounded-xl p-4 max-h-60 overflow-y-auto">
+                        <div className="space-y-3">
+                          {orderPDFState.extractedData.map((order, index) => (
+                            <div key={index} className="bg-slate-600/30 rounded-lg p-3 text-sm">
+                              <div className="grid grid-cols-2 gap-2">
+                                <div><span className="text-slate-400">Account:</span> <span className="text-white">{order.account_num}</span></div>
+                                <div><span className="text-slate-400">Order Ref:</span> <span className="text-white">{order.order_ref}</span></div>
+                                <div><span className="text-slate-400">Customer Ref:</span> <span className="text-white">{order.customer_ref}</span></div>
+                                <div><span className="text-slate-400">Product Code:</span> <span className="text-white">{order.product_code}</span></div>
+                                <div className="col-span-2"><span className="text-slate-400">Product:</span> <span className="text-white">{order.product_desc}</span></div>
+                                <div><span className="text-slate-400">Quantity:</span> <span className="text-white">{order.product_qty}</span></div>
+                                <div><span className="text-slate-400">Unit Price:</span> <span className="text-white">£{(order.unit_price / 100).toFixed(2)}</span></div>
+                                <div className="col-span-2"><span className="text-slate-400">Invoice To:</span> <span className="text-white">{order.invoice_to}</span></div>
+                                <div className="col-span-2"><span className="text-slate-400">Delivery:</span> <span className="text-white">{order.delivery_add}</span></div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center justify-center p-4 bg-green-500/10 border border-green-500/30 rounded-xl">
+                        <CheckCircleIcon className="h-5 w-5 text-green-400 mr-2" />
+                        <span className="text-green-300 text-sm">
+                          Data has been successfully extracted and saved to database!
+                        </span>
                       </div>
                     </motion.div>
                   )}
@@ -724,10 +958,10 @@ export const UploadFilesDialog: React.FC<UploadFilesDialogProps> = ({
             <DialogFooter className="flex gap-4 pt-6">
               <button
                 onClick={handleClose}
-                disabled={uploadState.isUploading || orderPDFState.isUploading}
+                disabled={uploadState.isUploading || orderPDFState.isUploading || orderPDFState.isAnalyzing}
                 className="px-6 py-3 bg-slate-700/50 hover:bg-slate-600/50 border border-slate-600/50 hover:border-slate-500/70 rounded-xl text-slate-300 hover:text-white font-medium transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Cancel
+                {orderPDFState.extractedData ? 'Close' : 'Cancel'}
               </button>
               
               {activeTab === 'files' ? (
@@ -752,21 +986,29 @@ export const UploadFilesDialog: React.FC<UploadFilesDialogProps> = ({
                 </button>
               ) : (
                 <button
-                  onClick={handleOrderPDFUpload}
+                  onClick={handleAnalyzeOrderPDF}
                   disabled={
                     !orderPDFState.selectedFile || 
-                    !orderPDFState.orderNumber.trim() || 
-                    orderPDFState.isUploading
+                    orderPDFState.isAnalyzing ||
+                    orderPDFState.extractedData !== null
                   }
                   className="px-6 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 disabled:from-slate-600 disabled:to-slate-600 text-white rounded-xl font-medium transition-all duration-300 shadow-lg hover:shadow-blue-500/25 hover:scale-105 active:scale-95 disabled:hover:scale-100 disabled:cursor-not-allowed"
                 >
-                  {orderPDFState.isUploading ? (
+                  {orderPDFState.isAnalyzing ? (
                     <div className="flex items-center gap-3">
                       <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                      Uploading...
+                      Analyzing PDF ...
+                    </div>
+                  ) : orderPDFState.extractedData ? (
+                    <div className="flex items-center gap-2">
+                      <CheckCircleIcon className="h-5 w-5" />
+                      Analysis Complete
                     </div>
                   ) : (
-                    'Upload Order PDF'
+                    <div className="flex items-center gap-2">
+                      <SparklesIcon className="h-5 w-5" />
+                      Start Upload
+                    </div>
                   )}
                 </button>
               )}

@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
     const formData = await request.formData();
     const file = formData.get('file') as File;
     const fileName = formData.get('fileName') as string;
-    const storagePath = formData.get('storagePath') as string || 'pallet-label-pdf';
+    const storagePath = formData.get('storagePath') as string || 'orderpdf';
     
     if (!file) {
       console.error('[Upload PDF API] 沒有找到文件');
@@ -63,11 +63,19 @@ export async function POST(request: NextRequest) {
       storagePath
     });
     
+    // 驗證文件類型
+    if (file.type !== 'application/pdf') {
+      console.error('[Upload PDF API] 無效的文件類型:', file.type);
+      return NextResponse.json({ 
+        error: `Invalid file type: ${file.type}. Only PDF files are allowed.` 
+      }, { status: 400 });
+    }
+    
     // 轉換文件為 Blob
     const arrayBuffer = await file.arrayBuffer();
     const blob = new Blob([arrayBuffer], { type: 'application/pdf' });
     
-    console.log('[Upload PDF API] 文件轉換完成，準備上傳到 Supabase Storage...');
+    console.log('[Upload PDF API] 文件轉換完成，準備上傳到 Supabase Storage bucket:', storagePath);
     
     // 創建服務端客戶端
     const supabaseAdmin = createSupabaseAdmin();
@@ -114,7 +122,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       publicUrl: urlData.publicUrl,
-      path: uploadData.path
+      path: uploadData.path,
+      bucket: storagePath
     });
     
   } catch (error: any) {

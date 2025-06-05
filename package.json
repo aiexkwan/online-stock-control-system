@@ -55,6 +55,7 @@
     "node-fetch": "^3.3.2",
     "openai": "^5.0.2",
     "pdf-lib": "^1.17.1",
+    "pdf-poppler": "^0.2.1",
     "puppeteer": "^24.8.2",
     "qrcode": "^1.5.4",
     "qrcode.react": "^4.2.0",
