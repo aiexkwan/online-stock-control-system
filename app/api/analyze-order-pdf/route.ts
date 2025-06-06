@@ -125,6 +125,54 @@ async function extractTextFromPDF(pdfBuffer: Buffer): Promise<string> {
         
         const textContent = pdfBuffer.toString('latin1', 0, Math.min(pdfBuffer.length, 100000));
         
+        // 首先檢查是否是 PDFsharp 生成的 PDF
+        if (textContent.includes('PDFsharp')) {
+          console.log('[PDF Text Extraction] 檢測到 PDFsharp PDF，使用專用解碼器...');
+          
+          // 查找 BT...ET 文本塊（PDF 文本對象）
+          const textBlocks = textContent.match(/BT[\s\S]*?ET/g);
+          if (textBlocks && textBlocks.length > 0) {
+            let decodedText = '';
+            
+            for (const block of textBlocks) {
+              // 查找 Tj 操作符（顯示文本）
+              const tjMatches = block.match(/\(([^)]*)\)\s*Tj/g);
+              if (tjMatches) {
+                for (const tj of tjMatches) {
+                  const text = tj.match(/\(([^)]*)\)/);
+                  if (text && text[1]) {
+                    decodedText += text[1] + ' ';
+                  }
+                }
+              }
+              
+              // 查找 TJ 操作符（顯示文本數組）
+              const tjArrayMatches = block.match(/\[([^\]]*)\]\s*TJ/g);
+              if (tjArrayMatches) {
+                for (const tjArray of tjArrayMatches) {
+                  const textArray = tjArray.match(/\(([^)]*)\)/g);
+                  if (textArray) {
+                    for (const text of textArray) {
+                      const cleanText = text.slice(1, -1);
+                      if (cleanText.length > 0) {
+                        decodedText += cleanText + ' ';
+                      }
+                    }
+                  }
+                }
+              }
+            }
+            
+            // 檢查解碼的文本是否可讀（包含英文字母和數字）
+            const readableText = decodedText.replace(/[^\x20-\x7E]/g, ''); // 只保留可打印 ASCII 字符
+            if (readableText.length > 50) {
+              console.log('[PDF Text Extraction] PDFsharp 解碼成功，文本長度:', readableText.length);
+              console.log('[PDF Text Extraction] 解碼文本預覽:', readableText.substring(0, 500));
+              return readableText;
+            }
+          }
+        }
+        
         // 嘗試找到 PDF 中的文本流 - 改進的正則表達式
         const textMatches = textContent.match(/\(([^)]+)\)/g);
         if (textMatches && textMatches.length > 0) {
@@ -135,10 +183,16 @@ async function extractTextFromPDF(pdfBuffer: Buffer): Promise<string> {
             .replace(/\\(\d{3})/g, (match, octal) => String.fromCharCode(parseInt(octal, 8)))
             .replace(/\\/g, '');
           
-          if (extractedText.length > 100) {
-            console.log('[PDF Text Extraction] 基本模式匹配成功，文本長度:', extractedText.length);
+          // 檢查提取的文本是否可讀
+          const readableText = extractedText.replace(/[^\x20-\x7E]/g, '');
+          if (readableText.length > 100) {
+            console.log('[PDF Text Extraction] 基本模式匹配成功，可讀文本長度:', readableText.length);
+            console.log('[PDF Text Extraction] 提取的文本預覽:', readableText.substring(0, 500));
+            return readableText;
+          } else if (extractedText.length > 100) {
+            console.log('[PDF Text Extraction] 基本模式匹配成功但包含亂碼，文本長度:', extractedText.length);
             console.log('[PDF Text Extraction] 提取的文本預覽:', extractedText.substring(0, 500));
-            return extractedText;
+            // 繼續嘗試其他方法而不是直接返回亂碼
           }
         }
         
@@ -155,10 +209,11 @@ async function extractTextFromPDF(pdfBuffer: Buffer): Promise<string> {
             }
           }
           
-          if (streamText.length > 100) {
-            console.log('[PDF Text Extraction] 流提取成功，文本長度:', streamText.length);
-            console.log('[PDF Text Extraction] 提取的文本預覽:', streamText.substring(0, 500));
-            return streamText;
+          const readableStreamText = streamText.replace(/[^\x20-\x7E]/g, '');
+          if (readableStreamText.length > 100) {
+            console.log('[PDF Text Extraction] 流提取成功，可讀文本長度:', readableStreamText.length);
+            console.log('[PDF Text Extraction] 提取的文本預覽:', readableStreamText.substring(0, 500));
+            return readableStreamText;
           }
         }
         
