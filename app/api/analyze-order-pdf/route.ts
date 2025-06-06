@@ -581,15 +581,15 @@ Extract all line items if multiple products exist. Remember: ONLY return the JSO
       console.log('[Analyze Order PDF API] 文本預覽（前500字符）:', extractedText.substring(0, 500));
     } else {
       // 圖像模式：添加所有頁面的圖像
-      for (let i = 0; i < imageBase64Array.length; i++) {
-        messageContent.push({
-          type: "image_url",
-          image_url: {
-            url: `data:image/png;base64,${imageBase64Array[i]}`,
-            detail: "high"
-          }
-        });
-      }
+    for (let i = 0; i < imageBase64Array.length; i++) {
+      messageContent.push({
+        type: "image_url",
+        image_url: {
+          url: `data:image/png;base64,${imageBase64Array[i]}`,
+          detail: "high"
+        }
+      });
+    }
       console.log('[Analyze Order PDF API] 使用圖像模式發送到 OpenAI，包含', imageBase64Array.length, '張圖像...');
     }
     
@@ -674,7 +674,7 @@ Extract all line items if multiple products exist. Remember: ONLY return the JSO
         }
       } else if (cleanContent.startsWith('[')) {
         // 直接解析為數組
-        orderData = JSON.parse(cleanContent);
+      orderData = JSON.parse(cleanContent);
       } else {
         // 如果不是標準 JSON 格式，嘗試其他方法
         console.error('[Analyze Order PDF API] 內容不是有效的 JSON 格式');
@@ -805,6 +805,33 @@ Extract all line items if multiple products exist. Remember: ONLY return the JSO
     
     console.log(`[Analyze Order PDF API] 將插入 ${newOrders.length} 個新記錄`);
     
+    // 檢查產品代碼是否存在於 data_code 表中
+    const productCodes = [...new Set(newOrders.map(order => order.product_code))];
+    console.log('[Analyze Order PDF API] 檢查產品代碼:', productCodes);
+    
+    try {
+      const { data: existingCodes, error: codeCheckError } = await supabaseAdmin
+        .from('data_code')
+        .select('code')
+        .in('code', productCodes);
+      
+      if (codeCheckError) {
+        console.error('[Analyze Order PDF API] 產品代碼檢查錯誤:', codeCheckError);
+      } else {
+        const existingCodeSet = new Set(existingCodes?.map(c => c.code) || []);
+        const missingCodes = productCodes.filter(code => !existingCodeSet.has(code));
+        
+        if (missingCodes.length > 0) {
+          console.warn('[Analyze Order PDF API] 以下產品代碼在 data_code 表中不存在:', missingCodes);
+          console.warn('[Analyze Order PDF API] 這可能會導致外鍵約束錯誤');
+        } else {
+          console.log('[Analyze Order PDF API] 所有產品代碼都存在於 data_code 表中');
+        }
+      }
+    } catch (codeCheckError) {
+      console.error('[Analyze Order PDF API] 產品代碼檢查失敗:', codeCheckError);
+    }
+    
     // 插入數據到 data_order 表
     const insertPromises = newOrders.map(async (order, index) => {
       try {
@@ -822,14 +849,28 @@ Extract all line items if multiple products exist. Remember: ONLY return the JSO
         
         if (error) {
           console.error(`[Analyze Order PDF API] 插入記錄 ${index + 1} 錯誤:`, error);
+          console.error(`[Analyze Order PDF API] 錯誤詳情:`, {
+            code: error.code,
+            message: error.message,
+            details: error.details,
+            hint: error.hint
+          });
           throw error;
         }
         
         console.log(`[Analyze Order PDF API] 記錄 ${index + 1} 插入成功:`, data);
         return data;
-      } catch (insertError) {
+      } catch (insertError: any) {
         console.error(`[Analyze Order PDF API] 記錄 ${index + 1} 插入失敗:`, insertError);
-        throw new Error(`Failed to insert record ${index + 1}: ${insertError instanceof Error ? insertError.message : 'Unknown error'}`);
+        console.error(`[Analyze Order PDF API] 插入錯誤類型:`, insertError.constructor.name);
+        console.error(`[Analyze Order PDF API] 插入錯誤詳情:`, {
+          message: insertError.message,
+          code: insertError.code,
+          details: insertError.details,
+          hint: insertError.hint,
+          stack: insertError.stack?.split('\n').slice(0, 3).join('\n')
+        });
+        throw new Error(`Failed to insert record ${index + 1}: ${insertError.message || 'Unknown error'}`);
       }
     });
     
