@@ -587,33 +587,50 @@ Customer Reference: CUS-2024-001
     
     // 構建詳細的 prompt
     const prompt = `
-You are a professional data extraction specialist. Analyze the provided document and extract order information.
+You are an expert order data extraction system. Extract order information from the provided document.
 
-**CRITICAL INSTRUCTIONS:**
-1. Return ONLY a valid JSON array - no explanations, no markdown, no additional text
-2. Start your response with [ and end with ]
-3. Do not include any text before or after the JSON array
-4. Do not wrap the response in markdown code blocks
+**ABSOLUTE REQUIREMENTS:**
+1. Return ONLY a JSON array starting with [ and ending with ]
+2. NO explanations, NO markdown, NO additional text whatsoever
+3. Each order line item must be a separate object in the array
+4. Use exact field names as specified below
 
-Database Schema:
-- account_num (number) - Account number
-- order_ref (number) - Order reference number
-- customer_ref (number) - Customer reference number
-- invoice_to (string) - Invoice address
-- delivery_add (string) - Delivery address
-- product_code (string) - Product code/SKU
-- product_desc (string) - Product description
-- product_qty (number) - Quantity
-- unit_price (number) - Price in pence/cents (£12.50 = 1250)
+**REQUIRED JSON STRUCTURE:**
+[
+  {
+    "account_num": number,
+    "order_ref": number, 
+    "customer_ref": number,
+    "invoice_to": "string",
+    "delivery_add": "string", 
+    "product_code": "string",
+    "product_desc": "string",
+    "product_qty": number,
+    "unit_price": number
+  }
+]
 
-If data is missing, use these defaults:
-- Numbers: 0
-- Text: "NOT_FOUND"
+**FIELD EXTRACTION RULES:**
+- account_num: Customer account number (if not found, use 0)
+- order_ref: Order/PO number (if not found, use 0)
+- customer_ref: Customer reference number (if not found, use 0)
+- invoice_to: Billing/invoice address (if not found, use "NOT_FOUND")
+- delivery_add: Delivery/shipping address (if not found, use "NOT_FOUND")
+- product_code: Product SKU/code (if not found, use "NOT_FOUND")
+- product_desc: Product description (if not found, use "NOT_FOUND")
+- product_qty: Quantity ordered (if not found, use 0)
+- unit_price: Price per unit in pence/cents (£12.50 = 1250, $5.99 = 599)
 
-Example of the EXACT format required:
-[{"account_num":12345,"order_ref":67890,"customer_ref":11111,"invoice_to":"ABC Ltd","delivery_add":"123 Street","product_code":"PROD001","product_desc":"Product Name","product_qty":10,"unit_price":1250}]
+**IMPORTANT NOTES:**
+- Extract EACH line item as a separate object
+- Convert all prices to smallest currency unit (pence/cents)
+- Look for terms like: Order Number, PO Number, Account, Customer, Bill To, Ship To, Deliver To, SKU, Part Number, Description, Qty, Quantity, Price, Unit Price
+- If multiple products exist, create multiple objects in the array
 
-Extract all line items if multiple products exist. Remember: ONLY return the JSON array, nothing else.`;
+**EXAMPLE OUTPUT:**
+[{"account_num":12345,"order_ref":67890,"customer_ref":11111,"invoice_to":"ABC Ltd, 123 Main St","delivery_add":"XYZ Warehouse, 456 Oak Ave","product_code":"SKU001","product_desc":"Steel Bracket","product_qty":10,"unit_price":1250}]
+
+Return ONLY the JSON array. No other text.`;
     
     // 構建消息內容，包含所有圖像
     const messageContent: any[] = [
