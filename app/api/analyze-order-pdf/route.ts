@@ -625,9 +625,10 @@ Extract all line items if multiple products exist. Remember: ONLY return the JSO
     
     // 解析 JSON 回應
     let orderData: OrderData[];
+    let cleanContent: string = ''; // 在外部聲明以便在 catch 塊中訪問
     try {
       // 嘗試多種清理方式
-      let cleanContent = extractedContent.trim();
+      cleanContent = extractedContent.trim();
       
       // 移除 markdown 代碼塊標記
       cleanContent = cleanContent.replace(/```json\s*/gi, '').replace(/```\s*/g, '');
@@ -722,9 +723,11 @@ Extract all line items if multiple products exist. Remember: ONLY return the JSO
         }
       });
       
-    } catch (parseError) {
+    } catch (parseError: any) {
       console.error('[Analyze Order PDF API] JSON 解析錯誤:', parseError);
-      console.error('[Analyze Order PDF API] 清理後的內容:', extractedContent.substring(0, 500));
+      console.error('[Analyze Order PDF API] 錯誤類型:', parseError.constructor.name);
+      console.error('[Analyze Order PDF API] 錯誤堆棧:', parseError.stack);
+      console.error('[Analyze Order PDF API] 清理後的內容（前1000字符）:', cleanContent?.substring(0, 1000));
       
       // 如果是文本模式且解析失敗，返回更詳細的錯誤信息
       if (useTextMode) {
@@ -732,14 +735,16 @@ Extract all line items if multiple products exist. Remember: ONLY return the JSO
           error: 'Failed to parse extracted data',
           details: parseError instanceof Error ? parseError.message : 'Unknown parsing error',
           hint: 'The PDF text extraction may not have captured structured data properly. Try uploading a clearer PDF.',
-          rawContent: extractedContent.substring(0, 1000) // 只返回前1000字符避免太大
+          errorType: parseError.constructor.name,
+          contentPreview: extractedContent?.substring(0, 500) // 返回內容預覽以幫助調試
         }, { status: 500 });
       }
       
       return NextResponse.json({ 
         error: 'Failed to parse extracted data',
         details: parseError instanceof Error ? parseError.message : 'Unknown parsing error',
-        rawContent: extractedContent.substring(0, 1000)
+        errorType: parseError.constructor.name,
+        contentPreview: extractedContent?.substring(0, 500)
       }, { status: 500 });
     }
     
