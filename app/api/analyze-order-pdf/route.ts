@@ -430,8 +430,9 @@ export async function POST(request: NextRequest) {
     const file = formData.get('file') as File;
     const uploadedBy = formData.get('uploadedBy') as string;
     const saveToStorage = formData.get('saveToStorage') as string;
+    const testMode = formData.get('testMode') as string; // 新增測試模式
     
-    if (!file) {
+    if (!file && testMode !== 'true') {
       console.error('[Analyze Order PDF API] 沒有找到文件');
       return NextResponse.json({ error: 'No file provided' }, { status: 400 });
     }
@@ -442,95 +443,123 @@ export async function POST(request: NextRequest) {
     }
     
     console.log('[Analyze Order PDF API] 文件信息:', {
-      fileName: file.name,
-      fileSize: file.size,
-      fileType: file.type,
+      fileName: file?.name || 'TEST_MODE',
+      fileSize: file?.size || 0,
+      fileType: file?.type || 'TEST_MODE',
       uploadedBy,
-      saveToStorage: saveToStorage === 'true'
+      saveToStorage: saveToStorage === 'true',
+      testMode: testMode === 'true'
     });
     
-    // 驗證文件類型
-    if (file.type !== 'application/pdf') {
-      console.error('[Analyze Order PDF API] 無效的文件類型:', file.type);
-      return NextResponse.json({ 
-        error: `Invalid file type: ${file.type}. Only PDF files are allowed.` 
-      }, { status: 400 });
-    }
-    
-    // 轉換文件為 Buffer
-    const arrayBuffer = await file.arrayBuffer();
-    const pdfBuffer = Buffer.from(arrayBuffer);
-    
-    // 可選：保存文件到 Storage
-    let storageInfo = null;
-    if (saveToStorage === 'true') {
-      try {
-        console.log('[Analyze Order PDF API] 保存文件到 orderpdf bucket...');
-        
-        const supabaseAdmin = createSupabaseAdmin();
-        const fileName = `order-${Date.now()}-${file.name}`;
-        const blob = new Blob([arrayBuffer], { type: 'application/pdf' });
-        
-        const { data: uploadData, error: uploadError } = await supabaseAdmin.storage
-          .from('orderpdf')
-          .upload(fileName, blob, {
-            cacheControl: '3600',
-            upsert: true,
-            contentType: 'application/pdf',
-          });
-        
-        if (uploadError) {
-          console.error('[Analyze Order PDF API] Storage 上傳錯誤:', uploadError);
-        } else {
-          const { data: urlData } = supabaseAdmin.storage
-            .from('orderpdf')
-            .getPublicUrl(uploadData.path);
-          
-          storageInfo = {
-            path: uploadData.path,
-            publicUrl: urlData.publicUrl,
-            bucket: 'orderpdf'
-          };
-          
-          console.log('[Analyze Order PDF API] 文件保存成功:', storageInfo);
-        }
-      } catch (storageError) {
-        console.error('[Analyze Order PDF API] Storage 操作錯誤:', storageError);
-      }
-    }
-    
-    console.log('[Analyze Order PDF API] 開始將 PDF 轉換為圖像...');
-    
-    // 嘗試將 PDF 轉換為圖像，如果失敗則使用文本提取
-    let imageBase64Array: string[] = [];
+    // 測試模式：跳過 PDF 處理，直接使用測試文本
     let extractedText: string = '';
-    let useTextMode = false;
+    let useTextMode = true;
+    let imageBase64Array: string[] = [];
+    let storageInfo = null; // 聲明 storageInfo 變數
     
-    try {
-      imageBase64Array = await convertPdfToImages(pdfBuffer);
-      console.log(`[Analyze Order PDF API] PDF 轉換完成，共 ${imageBase64Array.length} 頁圖像`);
-    } catch (conversionError: any) {
-      console.warn('[Analyze Order PDF API] 圖像轉換失敗，嘗試文本提取:', conversionError.message);
+    if (testMode === 'true') {
+      console.log('[Analyze Order PDF API] 測試模式：使用硬編碼文本');
+      extractedText = `
+Order Reference: 12345
+Customer: ABC Manufacturing Ltd
+Invoice Address: ABC Manufacturing Ltd, 123 Business Park, London, UK
+Delivery Address: ABC Warehouse, 456 Industrial Estate, Manchester, UK
+
+Line Items:
+1. Product Code: PROD001, Description: Steel Brackets, Quantity: 100, Unit Price: £2.50
+2. Product Code: PROD002, Description: Aluminum Sheets, Quantity: 50, Unit Price: £15.75
+3. Product Code: PROD003, Description: Copper Pipes, Quantity: 25, Unit Price: £8.90
+
+Total Order Value: £1,472.50
+Account Number: 98765
+Customer Reference: CUS-2024-001
+      `;
+      console.log('[Analyze Order PDF API] 測試文本長度:', extractedText.length);
+    } else {
+      // 正常 PDF 處理邏輯
+      if (!file) {
+        return NextResponse.json({ error: 'No file provided' }, { status: 400 });
+      }
       
-      // 如果圖像轉換失敗，直接使用文本提取模式
-      try {
-        extractedText = await extractTextFromPDF(pdfBuffer);
-        useTextMode = true;
-        console.log('[Analyze Order PDF API] 切換到文本提取模式，提取字符數:', extractedText.length);
-      } catch (textError: any) {
-        console.error('[Analyze Order PDF API] 文本提取也失敗:', textError.message);
+      // 驗證文件類型
+      if (file.type !== 'application/pdf') {
+        console.error('[Analyze Order PDF API] 無效的文件類型:', file.type);
         return NextResponse.json({ 
-          error: `PDF processing failed: Unable to convert to images or extract text. ${textError.message}`,
-          details: 'Both image conversion and text extraction methods failed'
+          error: `Invalid file type: ${file.type}. Only PDF files are allowed.` 
+        }, { status: 400 });
+      }
+      
+      // 轉換文件為 Buffer
+      const arrayBuffer = await file.arrayBuffer();
+      const pdfBuffer = Buffer.from(arrayBuffer);
+      
+      // 可選：保存文件到 Storage
+      if (saveToStorage === 'true') {
+        try {
+          console.log('[Analyze Order PDF API] 保存文件到 orderpdf bucket...');
+          
+          const supabaseAdmin = createSupabaseAdmin();
+          const fileName = `order-${Date.now()}-${file.name}`;
+          const blob = new Blob([arrayBuffer], { type: 'application/pdf' });
+          
+          const { data: uploadData, error: uploadError } = await supabaseAdmin.storage
+            .from('orderpdf')
+            .upload(fileName, blob, {
+              cacheControl: '3600',
+              upsert: true,
+              contentType: 'application/pdf',
+            });
+          
+          if (uploadError) {
+            console.error('[Analyze Order PDF API] Storage 上傳錯誤:', uploadError);
+          } else {
+            const { data: urlData } = supabaseAdmin.storage
+              .from('orderpdf')
+              .getPublicUrl(uploadData.path);
+            
+            storageInfo = {
+              path: uploadData.path,
+              publicUrl: urlData.publicUrl,
+              bucket: 'orderpdf'
+            };
+            
+            console.log('[Analyze Order PDF API] 文件保存成功:', storageInfo);
+          }
+        } catch (storageError) {
+          console.error('[Analyze Order PDF API] Storage 操作錯誤:', storageError);
+        }
+      }
+      
+      console.log('[Analyze Order PDF API] 開始將 PDF 轉換為圖像...');
+      
+      // 嘗試將 PDF 轉換為圖像，如果失敗則使用文本提取
+      try {
+        imageBase64Array = await convertPdfToImages(pdfBuffer);
+        useTextMode = false;
+        console.log(`[Analyze Order PDF API] PDF 轉換完成，共 ${imageBase64Array.length} 頁圖像`);
+      } catch (conversionError: any) {
+        console.warn('[Analyze Order PDF API] 圖像轉換失敗，嘗試文本提取:', conversionError.message);
+        
+        // 如果圖像轉換失敗，直接使用文本提取模式
+        try {
+          extractedText = await extractTextFromPDF(pdfBuffer);
+          useTextMode = true;
+          console.log('[Analyze Order PDF API] 切換到文本提取模式，提取字符數:', extractedText.length);
+        } catch (textError: any) {
+          console.error('[Analyze Order PDF API] 文本提取也失敗:', textError.message);
+          return NextResponse.json({ 
+            error: `PDF processing failed: Unable to convert to images or extract text. ${textError.message}`,
+            details: 'Both image conversion and text extraction methods failed'
+          }, { status: 500 });
+        }
+      }
+      
+      if (!useTextMode && imageBase64Array.length === 0) {
+        return NextResponse.json({ 
+          error: 'No content extracted from PDF',
+          details: 'PDF conversion resulted in no images and text extraction was not attempted'
         }, { status: 500 });
       }
-    }
-    
-    if (!useTextMode && imageBase64Array.length === 0) {
-      return NextResponse.json({ 
-        error: 'No content extracted from PDF',
-        details: 'PDF conversion resulted in no images and text extraction was not attempted'
-      }, { status: 500 });
     }
     
     // 創建 OpenAI 客戶端
