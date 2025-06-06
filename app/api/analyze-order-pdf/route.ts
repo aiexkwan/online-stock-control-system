@@ -214,46 +214,65 @@ async function extractTextFromPDF(pdfBuffer: Buffer): Promise<string> {
         // 動態導入 pdfjs-dist legacy build（不需要 canvas）
         const pdfjsLib = await import('pdfjs-dist/legacy/build/pdf');
         
-        // 設置 worker
-        pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
+        // 設置 worker - 使用本地 worker 而不是 CDN
+        pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.js';
+        
+        console.log('[PDF Text Extraction] pdfjs-dist 版本:', pdfjsLib.version);
         
         // 將 Buffer 轉換為 Uint8Array
         const uint8Array = new Uint8Array(pdfBuffer);
         
-        // 加載 PDF 文檔
+        // 加載 PDF 文檔 - 使用更寬鬆的設置
         const loadingTask = pdfjsLib.getDocument({
           data: uint8Array,
           useSystemFonts: true,
-          disableFontFace: true, // 禁用字體加載以避免 canvas 依賴
-          isEvalSupported: false, // 禁用 eval 以提高安全性
+          disableFontFace: true,
+          isEvalSupported: false,
+          useWorkerFetch: false,
+          disableAutoFetch: true,
+          disableStream: true,
+          verbosity: 0, // 減少日誌輸出
         });
         
-        const pdfDoc = await loadingTask.promise;
+        // 設置超時
+        const timeoutPromise = new Promise((_, reject) => {
+          setTimeout(() => reject(new Error('PDF loading timeout')), 30000); // 30秒超時
+        });
+        
+        const pdfDoc = await Promise.race([loadingTask.promise, timeoutPromise]) as any;
         console.log('[PDF Text Extraction] PDF 加載成功，頁數:', pdfDoc.numPages);
         
         let fullText = '';
         
-        // 逐頁提取文本
-        for (let pageNum = 1; pageNum <= pdfDoc.numPages; pageNum++) {
+        // 逐頁提取文本 - 限制最多處理 10 頁
+        const maxPages = Math.min(pdfDoc.numPages, 10);
+        for (let pageNum = 1; pageNum <= maxPages; pageNum++) {
           try {
-            const page = await pdfDoc.getPage(pageNum);
-            const textContent = await page.getTextContent();
+            const pageTimeoutPromise = new Promise((_, reject) => {
+              setTimeout(() => reject(new Error(`Page ${pageNum} timeout`)), 10000); // 每頁10秒超時
+            });
+            
+            const page = await Promise.race([pdfDoc.getPage(pageNum), pageTimeoutPromise]) as any;
+            const textContent = await Promise.race([page.getTextContent(), pageTimeoutPromise]) as any;
             
             // 將文本項目組合成字符串
             const pageText = textContent.items
-              .map((item: any) => item.str)
+              .map((item: any) => item.str || '')
+              .filter((str: string) => str.trim().length > 0)
               .join(' ');
             
             fullText += pageText + '\n';
+            console.log(`[PDF Text Extraction] 頁面 ${pageNum} 文本長度:`, pageText.length);
           } catch (pageError) {
             console.warn(`[PDF Text Extraction] 頁面 ${pageNum} 提取失敗:`, pageError);
+            // 繼續處理下一頁，不中斷整個過程
           }
         }
         
         console.log('[PDF Text Extraction] pdfjs-dist 提取成功，文本長度:', fullText.length);
         
         if (!fullText || fullText.trim().length === 0) {
-          throw new Error('No text content found in PDF');
+          throw new Error('No text content found in PDF using pdfjs-dist');
         }
         
         return fullText;
@@ -262,24 +281,50 @@ async function extractTextFromPDF(pdfBuffer: Buffer): Promise<string> {
         
         // 如果 pdfjs-dist 失敗，嘗試基本的文本提取
         console.log('[PDF Text Extraction] 嘗試基本文本提取...');
-        const textContent = pdfBuffer.toString('utf8', 0, Math.min(pdfBuffer.length, 50000));
-        
-        // 嘗試找到 PDF 中的文本流
-        const textMatches = textContent.match(/\(([^)]+)\)/g);
-        if (textMatches && textMatches.length > 0) {
-          const extractedText = textMatches
-            .map(match => match.slice(1, -1))
-            .join(' ')
-            .replace(/\\(\d{3})/g, (match, octal) => String.fromCharCode(parseInt(octal, 8)))
-            .replace(/\\/g, '');
+        try {
+          const textContent = pdfBuffer.toString('utf8', 0, Math.min(pdfBuffer.length, 100000));
           
-          if (extractedText.length > 100) {
-            console.log('[PDF Text Extraction] 基本提取成功，文本長度:', extractedText.length);
-            return extractedText;
+          // 嘗試找到 PDF 中的文本流
+          const textMatches = textContent.match(/\(([^)]+)\)/g);
+          if (textMatches && textMatches.length > 0) {
+            const extractedText = textMatches
+              .map(match => match.slice(1, -1))
+              .join(' ')
+              .replace(/\\(\d{3})/g, (match, octal) => String.fromCharCode(parseInt(octal, 8)))
+              .replace(/\\/g, '');
+            
+            if (extractedText.length > 100) {
+              console.log('[PDF Text Extraction] 基本提取成功，文本長度:', extractedText.length);
+              return extractedText;
+            }
           }
+          
+          // 最後嘗試：直接搜索可能的文本模式
+          const patterns = [
+            /Picking\s+List[:\s]*(\d+)/i,
+            /Account\s+No[:\s]*(\w+)/i,
+            /Customer[s]?\s+Ref[:\s]*([^\n\r]+)/i,
+            /Item\s+Code[:\s]*([^\n\r]+)/i,
+          ];
+          
+          let foundText = '';
+          for (const pattern of patterns) {
+            const match = textContent.match(pattern);
+            if (match) {
+              foundText += match[0] + '\n';
+            }
+          }
+          
+          if (foundText.length > 50) {
+            console.log('[PDF Text Extraction] 模式匹配提取成功，文本長度:', foundText.length);
+            return foundText;
+          }
+          
+          throw new Error('No extractable text found in PDF');
+        } catch (basicError) {
+          console.error('[PDF Text Extraction] 基本提取也失敗:', basicError);
+          throw new Error(`All PDF text extraction methods failed: ${parseError.message}`);
         }
-        
-        throw new Error(`PDF parsing failed: ${parseError.message}`);
       }
     }
     
