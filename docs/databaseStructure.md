@@ -170,7 +170,7 @@
   {
     "table_name": "data_order",
     "column_name": "account_num",
-    "data_type": "bigint",
+    "data_type": "text",
     "is_nullable": "NO",
     "column_default": null,
     "character_maximum_length": null,
@@ -182,19 +182,7 @@
   {
     "table_name": "data_order",
     "column_name": "order_ref",
-    "data_type": "bigint",
-    "is_nullable": "NO",
-    "column_default": null,
-    "character_maximum_length": null,
-    "is_primary_key": "NO",
-    "is_foreign_key": "NO",
-    "foreign_table_name": null,
-    "foreign_column_name": null
-  },
-  {
-    "table_name": "data_order",
-    "column_name": "customer_ref",
-    "data_type": "bigint",
+    "data_type": "text",
     "is_nullable": "NO",
     "column_default": null,
     "character_maximum_length": null,
@@ -235,9 +223,9 @@
     "column_default": null,
     "character_maximum_length": null,
     "is_primary_key": "NO",
-    "is_foreign_key": "YES",
-    "foreign_table_name": "data_code",
-    "foreign_column_name": "code"
+    "is_foreign_key": "NO",
+    "foreign_table_name": null,
+    "foreign_column_name": null
   },
   {
     "table_name": "data_order",
@@ -254,7 +242,7 @@
   {
     "table_name": "data_order",
     "column_name": "product_qty",
-    "data_type": "bigint",
+    "data_type": "text",
     "is_nullable": "NO",
     "column_default": null,
     "character_maximum_length": null,
@@ -266,7 +254,7 @@
   {
     "table_name": "data_order",
     "column_name": "unit_price",
-    "data_type": "bigint",
+    "data_type": "text",
     "is_nullable": "NO",
     "column_default": null,
     "character_maximum_length": null,
@@ -278,8 +266,20 @@
   {
     "table_name": "data_order",
     "column_name": "uploaded_by",
-    "data_type": "integer",
+    "data_type": "text",
     "is_nullable": "NO",
+    "column_default": null,
+    "character_maximum_length": null,
+    "is_primary_key": "NO",
+    "is_foreign_key": "NO",
+    "foreign_table_name": null,
+    "foreign_column_name": null
+  },
+  {
+    "table_name": "data_order",
+    "column_name": "customer_ref",
+    "data_type": "text",
+    "is_nullable": "YES",
     "column_default": null,
     "character_maximum_length": null,
     "is_primary_key": "NO",
