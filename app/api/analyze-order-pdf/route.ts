@@ -139,7 +139,7 @@ async function extractTextFromPDF(pdfBuffer: Buffer): Promise<string> {
             for (const block of textBlocks) {
               // 查找 Tj 操作符（顯示文本）
               const tjMatches = block.match(/\(([^)]*)\)\s*Tj/g);
-              if (tjMatches) {
+              if (tjMatches && tjMatches.length > 0) {
                 console.log(`[PDF Text Extraction] 找到 ${tjMatches.length} 個 Tj 操作符`);
                 for (const tj of tjMatches) {
                   const text = tj.match(/\(([^)]*)\)/);
@@ -151,11 +151,11 @@ async function extractTextFromPDF(pdfBuffer: Buffer): Promise<string> {
               
               // 查找 TJ 操作符（顯示文本數組）
               const tjArrayMatches = block.match(/\[([^\]]*)\]\s*TJ/g);
-              if (tjArrayMatches) {
+              if (tjArrayMatches && tjArrayMatches.length > 0) {
                 console.log(`[PDF Text Extraction] 找到 ${tjArrayMatches.length} 個 TJ 操作符`);
                 for (const tjArray of tjArrayMatches) {
                   const textArray = tjArray.match(/\(([^)]*)\)/g);
-                  if (textArray) {
+                  if (textArray && textArray.length > 0) {
                     for (const text of textArray) {
                       const cleanText = text.slice(1, -1);
                       if (cleanText.length > 0) {
@@ -168,7 +168,7 @@ async function extractTextFromPDF(pdfBuffer: Buffer): Promise<string> {
               
               // 嘗試其他 PDF 文本操作符
               const showTextMatches = block.match(/\(([^)]*)\)\s*(Tj|TJ|'|")/g);
-              if (showTextMatches) {
+              if (showTextMatches && showTextMatches.length > 0) {
                 console.log(`[PDF Text Extraction] 找到 ${showTextMatches.length} 個文本顯示操作符`);
                 for (const match of showTextMatches) {
                   const text = match.match(/\(([^)]*)\)/);
@@ -249,7 +249,7 @@ async function extractTextFromPDF(pdfBuffer: Buffer): Promise<string> {
             const cleanStream = stream.replace(/stream\s*|\s*endstream/g, '');
             // 嘗試解碼文本流
             const textInStream = cleanStream.match(/\(([^)]+)\)/g);
-            if (textInStream) {
+            if (textInStream && textInStream.length > 0) {
               streamText += textInStream.map(t => t.slice(1, -1)).join(' ') + ' ';
             }
           }
@@ -259,50 +259,6 @@ async function extractTextFromPDF(pdfBuffer: Buffer): Promise<string> {
             console.log('[PDF Text Extraction] 流提取成功，可讀文本長度:', readableStreamText.length);
             console.log('[PDF Text Extraction] 提取的文本預覽:', readableStreamText.substring(0, 500));
             return readableStreamText;
-          }
-        }
-        
-        // 新增：專門處理 PDFsharp 生成的 PDF
-        console.log('[PDF Text Extraction] 嘗試 PDFsharp 專用解碼...');
-        
-        // 查找 BT...ET 文本塊（PDF 文本對象）
-        const textBlocks = textContent.match(/BT[\s\S]*?ET/g);
-        if (textBlocks && textBlocks.length > 0) {
-          let decodedText = '';
-          
-          for (const block of textBlocks) {
-            // 查找 Tj 操作符（顯示文本）
-            const tjMatches = block.match(/\(([^)]*)\)\s*Tj/g);
-            if (tjMatches) {
-              for (const tj of tjMatches) {
-                const text = tj.match(/\(([^)]*)\)/);
-                if (text && text[1]) {
-                  decodedText += text[1] + ' ';
-                }
-              }
-            }
-            
-            // 查找 TJ 操作符（顯示文本數組）
-            const tjArrayMatches = block.match(/\[([^\]]*)\]\s*TJ/g);
-            if (tjArrayMatches) {
-              for (const tjArray of tjArrayMatches) {
-                const textArray = tjArray.match(/\(([^)]*)\)/g);
-                if (textArray) {
-                  for (const text of textArray) {
-                    const cleanText = text.slice(1, -1);
-                    if (cleanText.length > 0) {
-                      decodedText += cleanText + ' ';
-                    }
-                  }
-                }
-              }
-            }
-          }
-          
-          if (decodedText.length > 50) {
-            console.log('[PDF Text Extraction] PDFsharp 解碼成功，文本長度:', decodedText.length);
-            console.log('[PDF Text Extraction] 解碼文本預覽:', decodedText.substring(0, 500));
-            return decodedText;
           }
         }
         
@@ -319,7 +275,7 @@ async function extractTextFromPDF(pdfBuffer: Buffer): Promise<string> {
         let foundText = '';
         for (const pattern of patterns) {
           const matches = textContent.match(new RegExp(pattern.source, 'gi'));
-          if (matches) {
+          if (matches && matches.length > 0) {
             foundText += matches.join('\n') + '\n';
           }
         }
@@ -429,7 +385,7 @@ async function extractTextFromPDF(pdfBuffer: Buffer): Promise<string> {
       for (const obj of objMatches) {
         // 在對象中搜索文本
         const objTextMatches = obj.match(/\(([^)]{3,})\)/g);
-        if (objTextMatches) {
+        if (objTextMatches && objTextMatches.length > 0) {
           for (const match of objTextMatches) {
             const text = match.slice(1, -1);
             const alphanumericRatio = (text.match(/[a-zA-Z0-9\s]/g) || []).length / text.length;
