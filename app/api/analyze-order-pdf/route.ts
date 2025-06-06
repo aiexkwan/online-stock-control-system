@@ -566,31 +566,50 @@ export async function POST(request: NextRequest) {
     
     console.log('[Analyze Order PDF API] 開始 PDF 處理...');
     
-    // 步驟 1: 嘗試將 PDF 轉換為圖像（優先方法）
+    // 檢測運行環境
+    const isVercel = process.env.VERCEL || process.env.VERCEL_ENV;
+    
+    // 步驟 1: 根據環境選擇處理方式
     let imageBase64Array: string[] = [];
     let extractedText: string = '';
     let processingMode = '';
     
-    try {
-      imageBase64Array = await convertPdfToImages(pdfBuffer);
-      processingMode = 'image_analysis';
-      console.log(`[Analyze Order PDF API] PDF 轉圖像成功，共 ${imageBase64Array.length} 頁`);
-    } catch (imageError: any) {
-      console.warn('[Analyze Order PDF API] 圖像轉換失敗，嘗試文本提取:', imageError.message);
-      
-      // 步驟 2: 如果圖像轉換失敗，使用文本提取
+    if (isVercel) {
+      // Vercel 環境：直接使用文本提取，不嘗試圖像轉換
+      console.log('[Analyze Order PDF API] Vercel 環境：直接使用文本提取模式');
       try {
         extractedText = await extractTextFromPDF(pdfBuffer);
         processingMode = 'text_extraction';
         console.log('[Analyze Order PDF API] 文本提取成功，字符數:', extractedText.length);
       } catch (textError: any) {
-        console.error('[Analyze Order PDF API] 所有 PDF 處理方法都失敗:', textError.message);
+        console.error('[Analyze Order PDF API] 文本提取失敗:', textError.message);
         return NextResponse.json({ 
-          error: 'PDF processing failed',
-          details: `Unable to process PDF: ${textError.message}`,
-          imageError: imageError.message,
-          textError: textError.message
+          error: 'PDF text extraction failed in Vercel',
+          details: textError.message
         }, { status: 500 });
+      }
+    } else {
+      // 本地環境：優先嘗試圖像轉換
+      try {
+        imageBase64Array = await convertPdfToImages(pdfBuffer);
+        processingMode = 'image_analysis';
+        console.log(`[Analyze Order PDF API] PDF 轉圖像成功，共 ${imageBase64Array.length} 頁`);
+      } catch (imageError: any) {
+        console.warn('[Analyze Order PDF API] 圖像轉換失敗，嘗試文本提取:', imageError.message);
+        
+        try {
+          extractedText = await extractTextFromPDF(pdfBuffer);
+          processingMode = 'text_extraction';
+          console.log('[Analyze Order PDF API] 文本提取成功，字符數:', extractedText.length);
+        } catch (textError: any) {
+          console.error('[Analyze Order PDF API] 所有 PDF 處理方法都失敗:', textError.message);
+          return NextResponse.json({ 
+            error: 'PDF processing failed',
+            details: `Unable to process PDF: ${textError.message}`,
+            imageError: imageError.message,
+            textError: textError.message
+          }, { status: 500 });
+        }
       }
     }
     
@@ -673,6 +692,7 @@ If the text appears garbled or unclear, try to identify key patterns and numbers
       messageContent[0].text += textWithContext;
       console.log('[Analyze Order PDF API] 使用文本模式，文本長度:', extractedText.length);
       console.log('[Analyze Order PDF API] 文本內容預覽:', extractedText.substring(0, 500));
+      console.log('[Analyze Order PDF API] 文本內容（完整）:', extractedText);
     }
     
     // 發送到 OpenAI API
