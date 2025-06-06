@@ -480,19 +480,26 @@ export async function POST(request: NextRequest) {
       }
       
       extractedText = `
-Order Reference: 12345
-Customer: ABC Manufacturing Ltd
-Invoice Address: ABC Manufacturing Ltd, 123 Business Park, London, UK
-Delivery Address: ABC Warehouse, 456 Industrial Estate, Manchester, UK
+Picking List: 280836
+Account No: 98765
+Customers Ref: DSPO-0360425
 
-Line Items:
-1. Product Code: ${testProductCodes[0] || '1001'}, Description: Steel Brackets, Quantity: 100, Unit Price: £2.50
-2. Product Code: ${testProductCodes[1] || '1002'}, Description: Aluminum Sheets, Quantity: 50, Unit Price: £15.75
-3. Product Code: ${testProductCodes[2] || '1003'}, Description: Copper Pipes, Quantity: 25, Unit Price: £8.90
+Invoice To:
+ABC Manufacturing Ltd
+123 Business Park
+London, UK
+
+Delivery Address:
+ABC Warehouse
+456 Industrial Estate
+Manchester, UK
+
+Item Code    Description                    Qty Req    Unit Price
+${testProductCodes[0] || '1001'}         Steel Brackets                 100        £2.50
+${testProductCodes[1] || '1002'}         Aluminum Sheets                50         £15.75
+${testProductCodes[2] || '1003'}         Copper Pipes                   25         £8.90
 
 Total Order Value: £1,472.50
-Account Number: 98765
-Customer Reference: CUS-2024-001
       `;
       console.log('[Analyze Order PDF API] 測試文本長度:', extractedText.length);
     } else {
@@ -500,58 +507,58 @@ Customer Reference: CUS-2024-001
       if (!file) {
         return NextResponse.json({ error: 'No file provided' }, { status: 400 });
       }
-      
-      // 驗證文件類型
-      if (file.type !== 'application/pdf') {
-        console.error('[Analyze Order PDF API] 無效的文件類型:', file.type);
-        return NextResponse.json({ 
-          error: `Invalid file type: ${file.type}. Only PDF files are allowed.` 
-        }, { status: 400 });
-      }
-      
-      // 轉換文件為 Buffer
-      const arrayBuffer = await file.arrayBuffer();
-      const pdfBuffer = Buffer.from(arrayBuffer);
-      
-      // 可選：保存文件到 Storage
-      if (saveToStorage === 'true') {
-        try {
-          console.log('[Analyze Order PDF API] 保存文件到 orderpdf bucket...');
-          
-          const supabaseAdmin = createSupabaseAdmin();
-          const fileName = `order-${Date.now()}-${file.name}`;
-          const blob = new Blob([arrayBuffer], { type: 'application/pdf' });
-          
-          const { data: uploadData, error: uploadError } = await supabaseAdmin.storage
+    
+    // 驗證文件類型
+    if (file.type !== 'application/pdf') {
+      console.error('[Analyze Order PDF API] 無效的文件類型:', file.type);
+      return NextResponse.json({ 
+        error: `Invalid file type: ${file.type}. Only PDF files are allowed.` 
+      }, { status: 400 });
+    }
+    
+    // 轉換文件為 Buffer
+    const arrayBuffer = await file.arrayBuffer();
+    const pdfBuffer = Buffer.from(arrayBuffer);
+    
+    // 可選：保存文件到 Storage
+    if (saveToStorage === 'true') {
+      try {
+        console.log('[Analyze Order PDF API] 保存文件到 orderpdf bucket...');
+        
+        const supabaseAdmin = createSupabaseAdmin();
+        const fileName = `order-${Date.now()}-${file.name}`;
+        const blob = new Blob([arrayBuffer], { type: 'application/pdf' });
+        
+        const { data: uploadData, error: uploadError } = await supabaseAdmin.storage
+          .from('orderpdf')
+          .upload(fileName, blob, {
+            cacheControl: '3600',
+            upsert: true,
+            contentType: 'application/pdf',
+          });
+        
+        if (uploadError) {
+          console.error('[Analyze Order PDF API] Storage 上傳錯誤:', uploadError);
+        } else {
+          const { data: urlData } = supabaseAdmin.storage
             .from('orderpdf')
-            .upload(fileName, blob, {
-              cacheControl: '3600',
-              upsert: true,
-              contentType: 'application/pdf',
-            });
+            .getPublicUrl(uploadData.path);
           
-          if (uploadError) {
-            console.error('[Analyze Order PDF API] Storage 上傳錯誤:', uploadError);
-          } else {
-            const { data: urlData } = supabaseAdmin.storage
-              .from('orderpdf')
-              .getPublicUrl(uploadData.path);
-            
-            storageInfo = {
-              path: uploadData.path,
-              publicUrl: urlData.publicUrl,
-              bucket: 'orderpdf'
-            };
-            
-            console.log('[Analyze Order PDF API] 文件保存成功:', storageInfo);
-          }
-        } catch (storageError) {
-          console.error('[Analyze Order PDF API] Storage 操作錯誤:', storageError);
+          storageInfo = {
+            path: uploadData.path,
+            publicUrl: urlData.publicUrl,
+            bucket: 'orderpdf'
+          };
+          
+          console.log('[Analyze Order PDF API] 文件保存成功:', storageInfo);
         }
+      } catch (storageError) {
+        console.error('[Analyze Order PDF API] Storage 操作錯誤:', storageError);
       }
-      
-      console.log('[Analyze Order PDF API] 開始將 PDF 轉換為圖像...');
-      
+    }
+    
+    console.log('[Analyze Order PDF API] 開始將 PDF 轉換為圖像...');
+    
       // 嘗試將 PDF 轉換為圖像，如果失敗則使用文本提取
       try {
         imageBase64Array = await convertPdfToImages(pdfBuffer);
@@ -587,50 +594,40 @@ Customer Reference: CUS-2024-001
     
     // 構建詳細的 prompt
     const prompt = `
-You are an expert order data extraction system. Extract order information from the provided document.
+You are a professional data extraction specialist. Analyze the provided UK order "Picking List" and extract order information based on the following instructions.
 
-**ABSOLUTE REQUIREMENTS:**
-1. Return ONLY a JSON array starting with [ and ending with ]
-2. NO explanations, NO markdown, NO additional text whatsoever
-3. Each order line item must be a separate object in the array
-4. Use exact field names as specified below
+**CRITICAL INSTRUCTIONS:**
+1. Return ONLY a valid JSON array - no explanations, no markdown, no additional text.
+2. Start your response with [ and end with ].
+3. Do not include any text before or after the JSON array.
+4. Do not wrap the response in markdown code blocks.
 
-**REQUIRED JSON STRUCTURE:**
-[
-  {
-    "account_num": number,
-    "order_ref": number, 
-    "customer_ref": number,
-    "invoice_to": "string",
-    "delivery_add": "string", 
-    "product_code": "string",
-    "product_desc": "string",
-    "product_qty": number,
-    "unit_price": number
-  }
-]
+**Database Schema:**
+- account_num (number) - Account number (extract from "Account No" field, if not a pure number, set as 0)
+- order_ref (number) - Picking List number (after "Picking List", remove leading zeros)
+- customer_ref (string) - Customer reference (extract from "Customers Ref" field, always keep the original string, e.g. DSPO-0360425, PO0034637, or numbers)
+- invoice_to (string) - Invoice To address (extract the company or person, if more than one line, join together)
+- delivery_add (string) - Delivery Address (extract full delivery address block, combine lines if needed)
+- product_code (string) - Product code/SKU (from "Item Code")
+- product_desc (string) - Product description (from "Description")
+- product_qty (number) - Quantity (from "Qty Req" column)
+- unit_price (number) - Price in pence/cents (£12.50 = 1250, if blank or 0, return 0)
 
-**FIELD EXTRACTION RULES:**
-- account_num: Customer account number (if not found, use 0)
-- order_ref: Order/PO number (if not found, use 0)
-- customer_ref: Customer reference number (if not found, use 0)
-- invoice_to: Billing/invoice address (if not found, use "NOT_FOUND")
-- delivery_add: Delivery/shipping address (if not found, use "NOT_FOUND")
-- product_code: Product SKU/code (if not found, use "NOT_FOUND")
-- product_desc: Product description (if not found, use "NOT_FOUND")
-- product_qty: Quantity ordered (if not found, use 0)
-- unit_price: Price per unit in pence/cents (£12.50 = 1250, $5.99 = 599)
+**CRITICAL:**
+- For each actual product line item (each product row), output one JSON object.
+- **Do NOT extract or include any row/line where:**
+  - The code or description refers to transport, delivery, pallet charge, or is a system/remark line (e.g. lines like "Trans", "TransDPD", "TransC", "Pallet Qty", or any technical/instructional remark between product rows).
+  - Any non-product/instructional line such as "Fibre Associates Have A Maximum Pallet Height...", "limited stock off available", "Pallet Qty", "These Are The Plastic Type Clips..." and similar extra remarks should be ignored.
+- **Only extract rows with a valid product code and product description.**
+- For all text fields, combine multi-line or split fields as one string.
+- If data is missing, use these defaults:
+  - Numbers: 0
+  - Text: "NOT_FOUND"
 
-**IMPORTANT NOTES:**
-- Extract EACH line item as a separate object
-- Convert all prices to smallest currency unit (pence/cents)
-- Look for terms like: Order Number, PO Number, Account, Customer, Bill To, Ship To, Deliver To, SKU, Part Number, Description, Qty, Quantity, Price, Unit Price
-- If multiple products exist, create multiple objects in the array
+**Example of the EXACT format required:**
+[{"account_num":12345,"order_ref":67890,"customer_ref":"DSPO-0360425","invoice_to":"ABC Ltd","delivery_add":"123 Street","product_code":"PROD001","product_desc":"Product Name","product_qty":10,"unit_price":1250}]
 
-**EXAMPLE OUTPUT:**
-[{"account_num":12345,"order_ref":67890,"customer_ref":11111,"invoice_to":"ABC Ltd, 123 Main St","delivery_add":"XYZ Warehouse, 456 Oak Ave","product_code":"SKU001","product_desc":"Steel Bracket","product_qty":10,"unit_price":1250}]
-
-Return ONLY the JSON array. No other text.`;
+Extract all product line items if multiple products exist. **REMEMBER: ONLY return the JSON array, nothing else.**`;
     
     // 構建消息內容，包含所有圖像
     const messageContent: any[] = [
@@ -774,7 +771,7 @@ Return ONLY the JSON array. No other text.`;
       } else if (cleanContent.startsWith('[')) {
         // 直接解析為數組
         console.log('[Analyze Order PDF API] 嘗試直接解析為數組...');
-        orderData = JSON.parse(cleanContent);
+      orderData = JSON.parse(cleanContent);
         console.log('[Analyze Order PDF API] 數組解析成功，長度:', orderData.length);
       } else {
         // 如果不是標準 JSON 格式，嘗試其他方法
