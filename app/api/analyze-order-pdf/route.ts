@@ -459,6 +459,26 @@ export async function POST(request: NextRequest) {
     
     if (testMode === 'true') {
       console.log('[Analyze Order PDF API] 測試模式：使用硬編碼文本');
+      
+      // 先獲取一些真實存在的產品代碼
+      let testProductCodes = ['1001', '1002', '1003']; // 默認值
+      try {
+        const supabaseAdmin = createSupabaseAdmin();
+        const { data: existingCodes, error } = await supabaseAdmin
+          .from('data_code')
+          .select('code')
+          .limit(3);
+        
+        if (!error && existingCodes && existingCodes.length > 0) {
+          testProductCodes = existingCodes.map(item => item.code);
+          console.log('[Analyze Order PDF API] 使用真實產品代碼:', testProductCodes);
+        } else {
+          console.warn('[Analyze Order PDF API] 無法獲取產品代碼，使用默認值');
+        }
+      } catch (codeError) {
+        console.warn('[Analyze Order PDF API] 產品代碼查詢失敗，使用默認值:', codeError);
+      }
+      
       extractedText = `
 Order Reference: 12345
 Customer: ABC Manufacturing Ltd
@@ -466,9 +486,9 @@ Invoice Address: ABC Manufacturing Ltd, 123 Business Park, London, UK
 Delivery Address: ABC Warehouse, 456 Industrial Estate, Manchester, UK
 
 Line Items:
-1. Product Code: PROD001, Description: Steel Brackets, Quantity: 100, Unit Price: £2.50
-2. Product Code: PROD002, Description: Aluminum Sheets, Quantity: 50, Unit Price: £15.75
-3. Product Code: PROD003, Description: Copper Pipes, Quantity: 25, Unit Price: £8.90
+1. Product Code: ${testProductCodes[0] || '1001'}, Description: Steel Brackets, Quantity: 100, Unit Price: £2.50
+2. Product Code: ${testProductCodes[1] || '1002'}, Description: Aluminum Sheets, Quantity: 50, Unit Price: £15.75
+3. Product Code: ${testProductCodes[2] || '1003'}, Description: Copper Pipes, Quantity: 25, Unit Price: £8.90
 
 Total Order Value: £1,472.50
 Account Number: 98765
