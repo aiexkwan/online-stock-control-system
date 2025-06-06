@@ -630,60 +630,98 @@ Extract all line items if multiple products exist. Remember: ONLY return the JSO
       // 嘗試多種清理方式
       cleanContent = extractedContent.trim();
       
+      console.log('[Analyze Order PDF API] 開始解析 JSON，原始內容類型:', typeof extractedContent);
+      console.log('[Analyze Order PDF API] 原始內容是否為字符串:', typeof extractedContent === 'string');
+      console.log('[Analyze Order PDF API] 原始內容前100字符:', extractedContent.substring(0, 100));
+      console.log('[Analyze Order PDF API] 原始內容後100字符:', extractedContent.substring(Math.max(0, extractedContent.length - 100)));
+      
       // 移除 markdown 代碼塊標記
       cleanContent = cleanContent.replace(/```json\s*/gi, '').replace(/```\s*/g, '');
       
       // 移除可能的 BOM 或其他不可見字符
       cleanContent = cleanContent.replace(/^\uFEFF/, '').replace(/[\u200B-\u200D\uFEFF]/g, '');
       
+      console.log('[Analyze Order PDF API] 清理後內容前100字符:', cleanContent.substring(0, 100));
+      console.log('[Analyze Order PDF API] 清理後內容後100字符:', cleanContent.substring(Math.max(0, cleanContent.length - 100)));
+      
       // 如果內容包含多餘的文字說明，嘗試提取 JSON 部分
       const jsonMatch = cleanContent.match(/(\[[\s\S]*\]|\{[\s\S]*\})/);
       if (jsonMatch) {
+        console.log('[Analyze Order PDF API] 找到 JSON 匹配，使用匹配的部分');
         cleanContent = jsonMatch[1];
       }
       
-      console.log('[Analyze Order PDF API] 清理後的內容:', cleanContent.substring(0, 500));
+      console.log('[Analyze Order PDF API] 最終清理後的內容長度:', cleanContent.length);
+      console.log('[Analyze Order PDF API] 最終清理後的內容:', cleanContent.substring(0, 1000)); // 顯示更多內容
+      
+      // 檢查內容是否為空
+      if (!cleanContent || cleanContent.trim().length === 0) {
+        throw new Error('Cleaned content is empty');
+      }
+      
+      // 檢查內容是否看起來像 JSON
+      if (!cleanContent.startsWith('[') && !cleanContent.startsWith('{')) {
+        console.error('[Analyze Order PDF API] 內容不以 [ 或 { 開始，可能不是 JSON');
+        throw new Error(`Content does not appear to be JSON. Starts with: "${cleanContent.substring(0, 50)}"`);
+      }
       
       // 如果內容被包裹在對象中，嘗試提取數組
       if (cleanContent.startsWith('{')) {
         try {
+          console.log('[Analyze Order PDF API] 嘗試解析為對象...');
           const parsed = JSON.parse(cleanContent);
-          console.log('[Analyze Order PDF API] 解析為對象，鍵:', Object.keys(parsed));
+          console.log('[Analyze Order PDF API] 解析為對象成功，鍵:', Object.keys(parsed));
           
           if (parsed.orders && Array.isArray(parsed.orders)) {
+            console.log('[Analyze Order PDF API] 找到 orders 數組，長度:', parsed.orders.length);
             orderData = parsed.orders;
           } else if (parsed.data && Array.isArray(parsed.data)) {
+            console.log('[Analyze Order PDF API] 找到 data 數組，長度:', parsed.data.length);
             orderData = parsed.data;
           } else if (parsed.items && Array.isArray(parsed.items)) {
+            console.log('[Analyze Order PDF API] 找到 items 數組，長度:', parsed.items.length);
             orderData = parsed.items;
           } else if (parsed.records && Array.isArray(parsed.records)) {
+            console.log('[Analyze Order PDF API] 找到 records 數組，長度:', parsed.records.length);
             orderData = parsed.records;
           } else {
             // 查找任何數組屬性
             const arrayProp = Object.keys(parsed).find(key => Array.isArray(parsed[key]));
             if (arrayProp) {
-              console.log('[Analyze Order PDF API] 找到數組屬性:', arrayProp);
+              console.log('[Analyze Order PDF API] 找到數組屬性:', arrayProp, '長度:', parsed[arrayProp].length);
               orderData = parsed[arrayProp];
             } else {
+              console.error('[Analyze Order PDF API] 對象中沒有找到數組屬性');
+              console.error('[Analyze Order PDF API] 對象結構:', JSON.stringify(parsed, null, 2).substring(0, 500));
               throw new Error('No array found in response object');
             }
           }
-        } catch (e) {
-          console.error('[Analyze Order PDF API] 嘗試解析對象失敗:', e);
-          throw new Error('Response is wrapped in object but cannot extract array');
+        } catch (objectParseError: any) {
+          console.error('[Analyze Order PDF API] 對象解析失敗:', objectParseError.message);
+          console.error('[Analyze Order PDF API] 對象解析錯誤詳情:', {
+            name: objectParseError.name,
+            message: objectParseError.message,
+            stack: objectParseError.stack?.split('\n').slice(0, 3).join('\n')
+          });
+          throw new Error(`Response is wrapped in object but cannot extract array: ${objectParseError.message}`);
         }
       } else if (cleanContent.startsWith('[')) {
         // 直接解析為數組
-      orderData = JSON.parse(cleanContent);
+        console.log('[Analyze Order PDF API] 嘗試直接解析為數組...');
+        orderData = JSON.parse(cleanContent);
+        console.log('[Analyze Order PDF API] 數組解析成功，長度:', orderData.length);
       } else {
         // 如果不是標準 JSON 格式，嘗試其他方法
         console.error('[Analyze Order PDF API] 內容不是有效的 JSON 格式');
-        throw new Error('Response is not valid JSON format');
+        console.error('[Analyze Order PDF API] 內容開始字符:', cleanContent.charAt(0));
+        console.error('[Analyze Order PDF API] 內容結束字符:', cleanContent.charAt(cleanContent.length - 1));
+        throw new Error(`Response is not valid JSON format. Starts with: "${cleanContent.charAt(0)}", ends with: "${cleanContent.charAt(cleanContent.length - 1)}"`);
       }
       
       if (!Array.isArray(orderData)) {
         console.error('[Analyze Order PDF API] 解析結果不是數組:', typeof orderData);
-        throw new Error('Response is not an array');
+        console.error('[Analyze Order PDF API] 解析結果:', orderData);
+        throw new Error(`Response is not an array, got: ${typeof orderData}`);
       }
       
       if (orderData.length === 0) {
@@ -726,8 +764,13 @@ Extract all line items if multiple products exist. Remember: ONLY return the JSO
     } catch (parseError: any) {
       console.error('[Analyze Order PDF API] JSON 解析錯誤:', parseError);
       console.error('[Analyze Order PDF API] 錯誤類型:', parseError.constructor.name);
+      console.error('[Analyze Order PDF API] 錯誤名稱:', parseError.name);
+      console.error('[Analyze Order PDF API] 錯誤消息:', parseError.message);
       console.error('[Analyze Order PDF API] 錯誤堆棧:', parseError.stack);
-      console.error('[Analyze Order PDF API] 清理後的內容（前1000字符）:', cleanContent?.substring(0, 1000));
+      console.error('[Analyze Order PDF API] 原始提取內容長度:', extractedContent?.length || 0);
+      console.error('[Analyze Order PDF API] 原始提取內容（完整）:', extractedContent);
+      console.error('[Analyze Order PDF API] 清理後的內容長度:', cleanContent?.length || 0);
+      console.error('[Analyze Order PDF API] 清理後的內容（完整）:', cleanContent);
       
       // 如果是文本模式且解析失敗，返回更詳細的錯誤信息
       if (useTextMode) {
@@ -736,7 +779,11 @@ Extract all line items if multiple products exist. Remember: ONLY return the JSO
           details: parseError instanceof Error ? parseError.message : 'Unknown parsing error',
           hint: 'The PDF text extraction may not have captured structured data properly. Try uploading a clearer PDF.',
           errorType: parseError.constructor.name,
-          contentPreview: extractedContent?.substring(0, 500) // 返回內容預覽以幫助調試
+          errorName: parseError.name,
+          originalContent: extractedContent,
+          cleanedContent: cleanContent,
+          contentLength: extractedContent?.length || 0,
+          processingMode: 'text_extraction'
         }, { status: 500 });
       }
       
@@ -744,7 +791,11 @@ Extract all line items if multiple products exist. Remember: ONLY return the JSO
         error: 'Failed to parse extracted data',
         details: parseError instanceof Error ? parseError.message : 'Unknown parsing error',
         errorType: parseError.constructor.name,
-        contentPreview: extractedContent?.substring(0, 500)
+        errorName: parseError.name,
+        originalContent: extractedContent,
+        cleanedContent: cleanContent,
+        contentLength: extractedContent?.length || 0,
+        processingMode: useTextMode ? 'text_extraction' : 'image_analysis'
       }, { status: 500 });
     }
     
