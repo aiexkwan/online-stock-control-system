@@ -214,13 +214,15 @@ async function extractTextFromPDF(pdfBuffer: Buffer): Promise<string> {
         // 動態導入 pdfjs-dist legacy build（不需要 canvas）
         const pdfjsLib = await import('pdfjs-dist/legacy/build/pdf');
         
-        // 設置 worker - 使用本地 worker 而不是 CDN
-        pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.js';
+        // 設置 worker - 使用 CDN worker 確保在 Vercel 中可用
+        pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
         
         console.log('[PDF Text Extraction] pdfjs-dist 版本:', pdfjsLib.version);
+        console.log('[PDF Text Extraction] Worker 路徑:', pdfjsLib.GlobalWorkerOptions.workerSrc);
         
         // 將 Buffer 轉換為 Uint8Array
         const uint8Array = new Uint8Array(pdfBuffer);
+        console.log('[PDF Text Extraction] Uint8Array 大小:', uint8Array.length);
         
         // 加載 PDF 文檔 - 使用更寬鬆的設置
         const loadingTask = pdfjsLib.getDocument({
@@ -231,14 +233,16 @@ async function extractTextFromPDF(pdfBuffer: Buffer): Promise<string> {
           useWorkerFetch: false,
           disableAutoFetch: true,
           disableStream: true,
-          verbosity: 0, // 減少日誌輸出
+          verbosity: 1, // 增加日誌輸出以便調試
+          standardFontDataUrl: `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/`,
         });
         
         // 設置超時
         const timeoutPromise = new Promise((_, reject) => {
-          setTimeout(() => reject(new Error('PDF loading timeout')), 30000); // 30秒超時
+          setTimeout(() => reject(new Error('PDF loading timeout')), 45000); // 增加到45秒
         });
         
+        console.log('[PDF Text Extraction] 開始加載 PDF...');
         const pdfDoc = await Promise.race([loadingTask.promise, timeoutPromise]) as any;
         console.log('[PDF Text Extraction] PDF 加載成功，頁數:', pdfDoc.numPages);
         
@@ -248,28 +252,44 @@ async function extractTextFromPDF(pdfBuffer: Buffer): Promise<string> {
         const maxPages = Math.min(pdfDoc.numPages, 10);
         for (let pageNum = 1; pageNum <= maxPages; pageNum++) {
           try {
+            console.log(`[PDF Text Extraction] 處理頁面 ${pageNum}...`);
+            
             const pageTimeoutPromise = new Promise((_, reject) => {
-              setTimeout(() => reject(new Error(`Page ${pageNum} timeout`)), 10000); // 每頁10秒超時
+              setTimeout(() => reject(new Error(`Page ${pageNum} timeout`)), 15000); // 每頁15秒超時
             });
             
             const page = await Promise.race([pdfDoc.getPage(pageNum), pageTimeoutPromise]) as any;
+            console.log(`[PDF Text Extraction] 頁面 ${pageNum} 加載成功`);
+            
             const textContent = await Promise.race([page.getTextContent(), pageTimeoutPromise]) as any;
+            console.log(`[PDF Text Extraction] 頁面 ${pageNum} 文本內容項目數:`, textContent.items?.length || 0);
             
             // 將文本項目組合成字符串
             const pageText = textContent.items
-              .map((item: any) => item.str || '')
-              .filter((str: string) => str.trim().length > 0)
+              .map((item: any) => {
+                const str = item.str || '';
+                const transform = item.transform || [];
+                // 添加位置信息以保持文本結構
+                return str.trim();
+              })
+              .filter((str: string) => str.length > 0)
               .join(' ');
             
-            fullText += pageText + '\n';
-            console.log(`[PDF Text Extraction] 頁面 ${pageNum} 文本長度:`, pageText.length);
+            if (pageText.length > 0) {
+              fullText += pageText + '\n';
+              console.log(`[PDF Text Extraction] 頁面 ${pageNum} 文本長度:`, pageText.length);
+              console.log(`[PDF Text Extraction] 頁面 ${pageNum} 文本預覽:`, pageText.substring(0, 200));
+            } else {
+              console.warn(`[PDF Text Extraction] 頁面 ${pageNum} 沒有提取到文本`);
+            }
           } catch (pageError) {
-            console.warn(`[PDF Text Extraction] 頁面 ${pageNum} 提取失敗:`, pageError);
+            console.error(`[PDF Text Extraction] 頁面 ${pageNum} 提取失敗:`, pageError);
             // 繼續處理下一頁，不中斷整個過程
           }
         }
         
-        console.log('[PDF Text Extraction] pdfjs-dist 提取成功，文本長度:', fullText.length);
+        console.log('[PDF Text Extraction] pdfjs-dist 提取完成，總文本長度:', fullText.length);
+        console.log('[PDF Text Extraction] 提取的文本預覽（前500字符）:', fullText.substring(0, 500));
         
         if (!fullText || fullText.trim().length === 0) {
           throw new Error('No text content found in PDF using pdfjs-dist');
@@ -626,15 +646,15 @@ Extract all product line items if multiple products exist. **REMEMBER: ONLY retu
     
     if (processingMode === 'image_analysis') {
       // 圖像模式：添加所有頁面的圖像
-      for (let i = 0; i < imageBase64Array.length; i++) {
-        messageContent.push({
-          type: "image_url",
-          image_url: {
-            url: `data:image/png;base64,${imageBase64Array[i]}`,
-            detail: "high"
-          }
-        });
-      }
+    for (let i = 0; i < imageBase64Array.length; i++) {
+      messageContent.push({
+        type: "image_url",
+        image_url: {
+          url: `data:image/png;base64,${imageBase64Array[i]}`,
+          detail: "high"
+        }
+      });
+    }
       console.log('[Analyze Order PDF API] 使用圖像模式，包含', imageBase64Array.length, '張圖像');
     } else {
       // 文本模式：添加提取的文本
@@ -669,6 +689,14 @@ Extract all product line items if multiple products exist. **REMEMBER: ONLY retu
     }
     
     console.log('[Analyze Order PDF API] OpenAI 原始回應:', extractedContent);
+    console.log('[Analyze Order PDF API] OpenAI 回應長度:', extractedContent.length);
+    console.log('[Analyze Order PDF API] 處理模式:', processingMode);
+    
+    // 如果是文本提取模式，記錄提取的文本內容
+    if (processingMode === 'text_extraction') {
+      console.log('[Analyze Order PDF API] 提取的文本內容（前1000字符）:', extractedText.substring(0, 1000));
+      console.log('[Analyze Order PDF API] 提取的文本總長度:', extractedText.length);
+    }
     
     // 步驟 4: 直接解析 OpenAI 回應（最小處理）
     let orderData: OrderData[];
@@ -721,21 +749,21 @@ Extract all product line items if multiple products exist. **REMEMBER: ONLY retu
         }
         
         return data;
-      });
-      
-      const insertResults = await Promise.all(insertPromises);
-      
+    });
+    
+    const insertResults = await Promise.all(insertPromises);
+    
       console.log('[Analyze Order PDF API] 所有記錄插入成功');
-      
-      return NextResponse.json({
-        success: true,
+    
+    return NextResponse.json({
+      success: true,
         message: `Successfully processed PDF and inserted ${insertResults.length} records`,
-        extractedData: orderData,
-        insertedRecords: insertResults.flat(),
-        recordCount: insertResults.length,
+      extractedData: orderData,
+      insertedRecords: insertResults.flat(),
+      recordCount: insertResults.length,
         processingMode: processingMode,
         pagesProcessed: processingMode === 'image_analysis' ? imageBase64Array.length : 1,
-        storageInfo: storageInfo,
+      storageInfo: storageInfo,
         openaiResponse: {
           model: response.model,
           usage: response.usage
