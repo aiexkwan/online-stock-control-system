@@ -273,9 +273,21 @@ export async function POST(request: NextRequest) {
     
     const openai = createOpenAIClient();
     
-    // 定義 OpenAI prompt
-    const prompt = `
-You are a professional data extraction specialist. Analyze the provided UK order "Picking List" and extract order information.
+    // 讀取 OpenAI prompt 文件
+    console.log('[Analyze Order PDF API] 讀取 OpenAI prompt...');
+    const fs = require('fs');
+    const path = require('path');
+    const promptPath = path.join(process.cwd(), 'docs', 'openAI_pdf_prompt');
+    let prompt = '';
+    
+    try {
+      prompt = fs.readFileSync(promptPath, 'utf8');
+      console.log('[Analyze Order PDF API] 成功讀取 prompt 文件');
+    } catch (promptError: any) {
+      console.warn('[Analyze Order PDF API] 無法讀取 prompt 文件，使用默認 prompt:', promptError.message);
+      // 使用默認 prompt 作為後備
+      prompt = `
+You are a professional data extraction specialist for Pennine Manufacturing Picking List. Analyze the following raw text (extracted from a PDF) and accurately extract all order line items and key header fields.
 
 **CRITICAL INSTRUCTIONS:**
 1. Return ONLY a valid JSON array - no explanations, no markdown, no additional text.
@@ -307,6 +319,7 @@ You are a professional data extraction specialist. Analyze the provided UK order
 [{"account_num":1504,"order_ref":280833,"customer_ref":"PO0034637","invoice_to":"Company Name Address","delivery_add":"Delivery Address","product_code":"ME6045150","product_desc":"Product Description","product_qty":1,"unit_price":1500}]
 
 **REMEMBER: Extract ALL product line items. If no clear data found, return []**`;
+    }
     
     // 構建 OpenAI 消息
     const messageContent: any[] = [

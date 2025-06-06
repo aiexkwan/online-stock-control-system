@@ -1,6 +1,4 @@
-You are a professional data extraction specialist.  
-The following is raw text extracted from a PDF picking list. The text may not contain perfect line breaks, and fields may be concatenated in a single line.  
-Extract all order line items based on the following rules:
+You are a professional data extraction specialist for Pennine Manufacturing Picking List. Analyze the following raw text (extracted from a PDF) and accurately extract all order line items and key header fields.
 
 **CRITICAL INSTRUCTIONS:**
 1. Return ONLY a valid JSON array - no explanations, no markdown, no additional text.
@@ -9,26 +7,39 @@ Extract all order line items based on the following rules:
 4. Do not wrap the response in markdown code blocks.
 
 **Extraction Rules:**
-- Each product line starts with a product code (such as "MEL4545A", "S3027D", "D1001") immediately followed by description, numbers, and price.
-- **Use keywords like "Item Code" as a section start. Extract all lines after "Item Code" that start with an uppercase code (no spaces), until you reach non-product keywords such as "Pallet Qty", "Trans", "Parcel", "Notes", "VAT", or similar.**
-- Exclude any rows for "Trans", "TransDPD", "TransC", "Pallet Qty", "Parcel", or delivery charges—**ONLY extract real products.**
 
-**Database Schema:**
-- account_num (number) - Account number (extract from "Account No" field, numbers only; if not present, use 0)
-- order_ref (number) - Picking List number (after "Picking List", remove leading zeros)
-- customer_ref (string) - Customer reference (from "Customers Ref", keep full string)
-- invoice_to (string) - Invoice To address (combine lines as needed, from "Invoice To" section)
-- delivery_add (string) - Delivery Address (combine lines as needed, from "Delivery Address" section)
-- product_code (string) - Product code (first uppercase alphanumeric word in each product line)
-- product_desc (string) - Product description (the string after product_code until numbers start)
-- product_qty (number) - Quantity (last number in the product line)
-- unit_price (number) - Price in pence/cents (£12.50 = 1250, if blank or 0, return 0)
+- For header fields (account_num, customer_ref, invoice_to, delivery_add):
 
-**Defaults for missing data:**
-- Numbers: 0
-- Text: "NOT_FOUND"
+  - "account_num": Look for the line containing "Account No:" and extract the string immediately after "Account No:" up to "Customers Ref:". If not found, use 0.
+  - "customer_ref": Look for the line containing "Customers Ref:" and extract the string after "Customers Ref:" up to the next field or line break. If not found, use "NOT_FOUND".
+  - "invoice_to": Starting from the "Invoice To:" field, collect all subsequent lines up to the next major header (such as "Driver", "Booked In", "Email", "Tel", or "Delivery Address"). Combine as a single string.
+  - "delivery_add": Starting from the "Delivery Address:" field, collect all subsequent lines up to the next major header (such as "Invoice To", "Driver", "Booked In", "Email", or "Tel"). Combine as a single string.
+
+- For each product line item:
+  - Only extract rows between the "Item Code" section and before the first "Pallet Qty", "Trans", "TransDPD", "Parcel", "Notes", or similar keyword.
+  - A product line must start with a product code (uppercase letter/number, can include dashes), followed by description, numbers, and price.
+  - Product code is the first word in the line (pattern: starts with A-Z or 0-9).
+  - Description is the string between the product code and the first number.
+  - product_qty is the **last number in the line** (usually after unit price or at the end).
+  - unit_price is the **number before the quantity**. (£12.50 = 1250, if blank/0, return 0).
+  - Exclude any row where the code/description contains: "Trans", "TransDPD", "TransC", "Pallet Qty", "Parcel", or any notes/instructional text.
+  - Exclude any line that does not fit the typical product pattern (code + description + numbers).
+
+- If any data is missing, use these defaults:
+  - Numbers: 0
+  - Text: "NOT_FOUND"
 
 **Example Output Format:**
-[{"account_num":10395,"order_ref":280834,"customer_ref":"PO0040036","invoice_to":"Drainfast Limited","delivery_add":"Quarter Mile Drive, Berkswell, Petersfield, Hampshire, CV7 7BW","product_code":"MEL4545A","product_desc":"450x450x320mm EasyLiner (assembled)","product_qty":48,"unit_price":1054}]
+[{"account_num":"3428","order_ref":280832,"customer_ref":"NOT_FOUND","invoice_to":"Torrent Water Management Ltd, Darwin Drive, Sherwood Energy Village, Ollerton, Nottinghamshire, NG22 9GW","delivery_add":"Morrison Utilities? M Group, Overton Reservoir, Banbury Lane, Banbury, OX17 2QY","product_code":"MHL10","product_desc":"M12 100mm Stainless Steel Through Bolts","product_qty":16,"unit_price":320},{"account_num":"3428","order_ref":280832,"customer_ref":"NOT_FOUND","invoice_to":"Torrent Water Management Ltd, Darwin Drive, Sherwood Energy Village, Ollerton, Nottinghamshire, NG22 9GW","delivery_add":"Morrison Utilities? M Group, Overton Reservoir, Banbury Lane, Banbury, OX17 2QY","product_code":"MHL21Y","product_desc":"Yellow PBT 181-210cm + stays/nuts/bolts","product_qty":1,"unit_price":10800}]
 
 Extract all valid product line items and return ONLY the JSON array.
+
+**Do not include any lines that are for transport charges, pallet quantity, notes, parcels, or other non-product records.**
+
+**If product description is broken over multiple lines, merge them as one description.**
+
+**If there are extra lines in the product section that do not fit the pattern (e.g. Pallet Qty, Trans, Notes), skip them.**
+
+**order_ref** is the number after "Picking List", remove leading zeros.
+
+**If there are multiple email or tel lines, keep only the first occurrence for each in invoice_to or delivery_add.**
