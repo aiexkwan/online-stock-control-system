@@ -99,10 +99,9 @@ async function extractTextFromPDF(pdfBuffer: Buffer): Promise<string> {
       
       const pdfParse = (await import('pdf-parse')).default;
       
-      // 使用 pdf-parse 提取文本 - 修復配置問題
+      // 使用 pdf-parse 提取文本
       const pdfData = await pdfParse(pdfBuffer, {
         max: 0, // 最大頁數，0 表示所有頁面
-        // 移除可能導致問題的配置選項
       });
       
       console.log('[PDF Text Extraction] pdf-parse 提取成功');
@@ -119,332 +118,45 @@ async function extractTextFromPDF(pdfBuffer: Buffer): Promise<string> {
     } catch (parseError: any) {
       console.error('[PDF Text Extraction] pdf-parse 失敗:', parseError.message);
       
-      // 方法 2: 使用基本的文本模式匹配（更可靠的備用方案）
+      // 方法 2: 基本文本提取作為備用
       try {
-        console.log('[PDF Text Extraction] 嘗試基本文本模式匹配...');
+        console.log('[PDF Text Extraction] 嘗試基本文本提取...');
         
-        const textContent = pdfBuffer.toString('latin1', 0, Math.min(pdfBuffer.length, 100000));
+        const textContent = pdfBuffer.toString('latin1', 0, Math.min(pdfBuffer.length, 50000));
         
-        // 首先檢查是否是 PDFsharp 生成的 PDF
-        if (textContent.includes('PDFsharp')) {
-          console.log('[PDF Text Extraction] 檢測到 PDFsharp PDF，使用專用解碼器...');
-          
-          // 查找 BT...ET 文本塊（PDF 文本對象）
-          const textBlocks = textContent.match(/BT[\s\S]*?ET/g);
-          if (textBlocks && textBlocks.length > 0) {
-            let decodedText = '';
-            
-            console.log(`[PDF Text Extraction] 找到 ${textBlocks.length} 個文本塊`);
-            
-            for (const block of textBlocks) {
-              // 查找 Tj 操作符（顯示文本）
-              const tjMatches = block.match(/\(([^)]*)\)\s*Tj/g);
-              if (tjMatches && tjMatches.length > 0) {
-                console.log(`[PDF Text Extraction] 找到 ${tjMatches.length} 個 Tj 操作符`);
-                for (const tj of tjMatches) {
-                  const text = tj.match(/\(([^)]*)\)/);
-                  if (text && text[1]) {
-                    decodedText += text[1] + ' ';
-                  }
-                }
-              }
-              
-              // 查找 TJ 操作符（顯示文本數組）
-              const tjArrayMatches = block.match(/\[([^\]]*)\]\s*TJ/g);
-              if (tjArrayMatches && tjArrayMatches.length > 0) {
-                console.log(`[PDF Text Extraction] 找到 ${tjArrayMatches.length} 個 TJ 操作符`);
-                for (const tjArray of tjArrayMatches) {
-                  const textArray = tjArray.match(/\(([^)]*)\)/g);
-                  if (textArray && textArray.length > 0) {
-                    for (const text of textArray) {
-                      const cleanText = text.slice(1, -1);
-                      if (cleanText.length > 0) {
-                        decodedText += cleanText + ' ';
-                      }
-                    }
-                  }
-                }
-              }
-              
-              // 嘗試其他 PDF 文本操作符
-              const showTextMatches = block.match(/\(([^)]*)\)\s*(Tj|TJ|'|")/g);
-              if (showTextMatches && showTextMatches.length > 0) {
-                console.log(`[PDF Text Extraction] 找到 ${showTextMatches.length} 個文本顯示操作符`);
-                for (const match of showTextMatches) {
-                  const text = match.match(/\(([^)]*)\)/);
-                  if (text && text[1]) {
-                    decodedText += text[1] + ' ';
-                  }
-                }
-              }
-            }
-            
-            console.log('[PDF Text Extraction] PDFsharp 解碼原始結果長度:', decodedText.length);
-            console.log('[PDF Text Extraction] PDFsharp 解碼原始內容:', decodedText.substring(0, 200));
-            
-            // 檢查解碼的文本是否可讀（包含英文字母和數字）
-            const readableText = decodedText.replace(/[^\x20-\x7E]/g, ''); // 只保留可打印 ASCII 字符
-            if (readableText.length > 50) {
-              console.log('[PDF Text Extraction] PDFsharp 解碼成功，可讀文本長度:', readableText.length);
-              console.log('[PDF Text Extraction] 解碼文本預覽:', readableText.substring(0, 500));
-              return readableText;
-            } else {
-              console.log('[PDF Text Extraction] PDFsharp 解碼結果不可讀，繼續嘗試其他方法');
-            }
-          } else {
-            console.log('[PDF Text Extraction] 沒有找到 BT...ET 文本塊');
-          }
-          
-          // 嘗試直接搜索文本內容（不依賴 BT...ET 塊）
-          console.log('[PDF Text Extraction] 嘗試直接文本搜索...');
-          const directTextMatches = textContent.match(/\(([^)]{3,})\)/g);
-          if (directTextMatches && directTextMatches.length > 0) {
-            let directText = '';
-            for (const match of directTextMatches) {
-              const text = match.slice(1, -1);
-              // 過濾掉明顯的亂碼（包含太多非字母數字字符）
-              const alphanumericRatio = (text.match(/[a-zA-Z0-9\s]/g) || []).length / text.length;
-              if (alphanumericRatio > 0.5 && text.length > 2) {
-                directText += text + ' ';
-              }
-            }
-            
-            const cleanDirectText = directText.replace(/[^\x20-\x7E]/g, '');
-            if (cleanDirectText.length > 100) {
-              console.log('[PDF Text Extraction] 直接文本搜索成功，可讀文本長度:', cleanDirectText.length);
-              console.log('[PDF Text Extraction] 直接文本內容:', cleanDirectText.substring(0, 500));
-              return cleanDirectText;
-            }
-          }
-        }
-        
-        // 嘗試找到 PDF 中的文本流 - 改進的正則表達式
+        // 搜索基本的文本模式
         const textMatches = textContent.match(/\(([^)]+)\)/g);
         if (textMatches && textMatches.length > 0) {
           const extractedText = textMatches
             .map(match => match.slice(1, -1))
-            .filter(text => text.length > 1) // 過濾掉單字符
+            .filter(text => text.length > 1)
             .join(' ')
             .replace(/\\(\d{3})/g, (match, octal) => String.fromCharCode(parseInt(octal, 8)))
             .replace(/\\/g, '');
           
-          // 檢查提取的文本是否可讀
           const readableText = extractedText.replace(/[^\x20-\x7E]/g, '');
-          if (readableText.length > 100) {
-            console.log('[PDF Text Extraction] 基本模式匹配成功，可讀文本長度:', readableText.length);
+          if (readableText.length > 50) {
+            console.log('[PDF Text Extraction] 基本文本提取成功，可讀文本長度:', readableText.length);
             console.log('[PDF Text Extraction] 提取的文本預覽:', readableText.substring(0, 500));
             return readableText;
-          } else if (extractedText.length > 100) {
-            console.log('[PDF Text Extraction] 基本模式匹配成功但包含亂碼，文本長度:', extractedText.length);
-            console.log('[PDF Text Extraction] 提取的文本預覽:', extractedText.substring(0, 500));
-            // 繼續嘗試其他方法而不是直接返回亂碼
           }
         }
         
-        // 嘗試另一種 PDF 文本提取方法
-        const streamMatches = textContent.match(/stream[\s\S]*?endstream/g);
-        if (streamMatches && streamMatches.length > 0) {
-          let streamText = '';
-          for (const stream of streamMatches) {
-            const cleanStream = stream.replace(/stream\s*|\s*endstream/g, '');
-            // 嘗試解碼文本流
-            const textInStream = cleanStream.match(/\(([^)]+)\)/g);
-            if (textInStream && textInStream.length > 0) {
-              streamText += textInStream.map(t => t.slice(1, -1)).join(' ') + ' ';
-            }
-          }
-          
-          const readableStreamText = streamText.replace(/[^\x20-\x7E]/g, '');
-          if (readableStreamText.length > 100) {
-            console.log('[PDF Text Extraction] 流提取成功，可讀文本長度:', readableStreamText.length);
-            console.log('[PDF Text Extraction] 提取的文本預覽:', readableStreamText.substring(0, 500));
-            return readableStreamText;
-          }
-        }
+        // 如果基本提取也失敗，返回一個指示性消息
+        console.warn('[PDF Text Extraction] 所有文本提取方法都失敗，返回空內容');
+        return 'PDF_TEXT_EXTRACTION_FAILED';
         
-        // 搜索特定的訂單模式
-        const patterns = [
-          /Picking\s+List[:\s]*(\d+)/i,
-          /Account\s+No[:\s]*(\w+)/i,
-          /Customer[s]?\s+Ref[:\s]*([^\n\r]+)/i,
-          /Item\s+Code[:\s]*([^\n\r]+)/i,
-          /Description[:\s]*([^\n\r]+)/i,
-          /Qty[:\s]*(\d+)/i,
-        ];
-        
-        let foundText = '';
-        for (const pattern of patterns) {
-          const matches = textContent.match(new RegExp(pattern.source, 'gi'));
-          if (matches && matches.length > 0) {
-            foundText += matches.join('\n') + '\n';
-          }
-        }
-        
-        if (foundText.length > 50) {
-          console.log('[PDF Text Extraction] 模式匹配提取成功，文本長度:', foundText.length);
-          console.log('[PDF Text Extraction] 提取的文本:', foundText);
-          return foundText;
-        }
-        
-        throw new Error('No extractable text found using pattern matching');
-        
-      } catch (basicError) {
-        console.error('[PDF Text Extraction] 基本提取失敗:', basicError);
-        
-        // 方法 3: 使用 pdf-lib 作為最後備用（僅提取基本信息）
-        try {
-          console.log('[PDF Text Extraction] 嘗試使用 pdf-lib 作為最後備用...');
-          
-          const { PDFDocument } = await import('pdf-lib');
-          
-          // 加載 PDF 文檔
-          const pdfDoc = await PDFDocument.load(pdfBuffer);
-          const pageCount = pdfDoc.getPageCount();
-          
-          console.log(`[PDF Text Extraction] pdf-lib 加載成功，頁數: ${pageCount}`);
-          
-          // pdf-lib 主要用於 PDF 操作，不是文本提取
-          // 我們可以獲取一些基本信息，但無法直接提取文本
-          const title = pdfDoc.getTitle() || '';
-          const subject = pdfDoc.getSubject() || '';
-          const keywordsRaw = pdfDoc.getKeywords();
-          const keywords = Array.isArray(keywordsRaw) ? keywordsRaw : [];
-          
-          let extractedInfo = '';
-          if (title) extractedInfo += `Title: ${title}\n`;
-          if (subject) extractedInfo += `Subject: ${subject}\n`;
-          if (keywords.length > 0) extractedInfo += `Keywords: ${keywords.join(', ')}\n`;
-          
-          if (extractedInfo.length > 0) {
-            console.log('[PDF Text Extraction] pdf-lib 提取到基本信息:', extractedInfo);
-            console.warn('[PDF Text Extraction] 警告：只提取到 PDF 元數據，沒有實際內容');
-            return extractedInfo;
-          }
-          
-          throw new Error('No extractable content found using pdf-lib');
-          
-        } catch (pdfLibError: any) {
-          console.error('[PDF Text Extraction] pdf-lib 也失敗:', pdfLibError.message);
-          throw new Error(`All PDF text extraction methods failed. pdf-parse: ${parseError.message}, basic: ${basicError}, pdf-lib: ${pdfLibError.message}`);
-        }
+      } catch (basicError: any) {
+        console.error('[PDF Text Extraction] 基本文本提取也失敗:', basicError.message);
+        throw new Error(`All PDF text extraction methods failed: ${parseError.message}`);
       }
     }
-    
-    // 嘗試更激進的文本提取方法
-    console.log('[PDF Text Extraction] 嘗試激進文本提取...');
-    
-    // 方法 1: 使用不同編碼
-    const encodings = ['latin1', 'utf8', 'ascii'];
-    for (const encoding of encodings) {
-      try {
-        const encodedContent = pdfBuffer.toString(encoding as BufferEncoding, 0, Math.min(pdfBuffer.length, 50000));
-        
-        // 搜索所有可能的文本模式
-        const allTextMatches = encodedContent.match(/\(([^)]{2,})\)/g);
-        if (allTextMatches && allTextMatches.length > 10) {
-          let extractedText = '';
-          const seenTexts = new Set(); // 避免重複
-          
-          for (const match of allTextMatches) {
-            const text = match.slice(1, -1);
-            
-            // 跳過已經見過的文本
-            if (seenTexts.has(text)) continue;
-            seenTexts.add(text);
-            
-            // 檢查是否包含有用信息
-            if (text.match(/\d{6}/) || // 6位數字（可能是訂單號）
-                text.match(/^[A-Z]{2,}\d+/) || // 字母+數字（產品代碼）
-                text.match(/Account|Customer|Picking|List|Item|Code|Description|Qty|Price/i) || // 關鍵字
-                text.match(/^[A-Z][a-z]+\s+[A-Z][a-z]+/) || // 公司名稱格式
-                text.match(/^\d+\.\d+$/) || // 價格格式
-                text.match(/^\d+$/) && text.length >= 3) { // 3位以上數字
-              
-              extractedText += text + ' ';
-            }
-          }
-          
-          if (extractedText.length > 200) {
-            console.log(`[PDF Text Extraction] ${encoding} 編碼提取成功，文本長度:`, extractedText.length);
-            console.log('[PDF Text Extraction] 提取的關鍵信息:', extractedText.substring(0, 800));
-            return extractedText;
-          }
-        }
-      } catch (encodingError) {
-        console.log(`[PDF Text Extraction] ${encoding} 編碼失敗:`, encodingError);
-      }
-    }
-    
-    // 方法 2: 搜索特定的 PDF 對象
-    console.log('[PDF Text Extraction] 搜索 PDF 對象...');
-    const baseTextContent = pdfBuffer.toString('latin1', 0, Math.min(pdfBuffer.length, 100000));
-    const objMatches = baseTextContent.match(/\d+\s+\d+\s+obj[\s\S]*?endobj/g);
-    if (objMatches && objMatches.length > 0) {
-      let objText = '';
-      
-      for (const obj of objMatches) {
-        // 在對象中搜索文本
-        const objTextMatches = obj.match(/\(([^)]{3,})\)/g);
-        if (objTextMatches && objTextMatches.length > 0) {
-          for (const match of objTextMatches) {
-            const text = match.slice(1, -1);
-            const alphanumericRatio = (text.match(/[a-zA-Z0-9\s]/g) || []).length / text.length;
-            if (alphanumericRatio > 0.6) {
-              objText += text + ' ';
-            }
-          }
-        }
-      }
-      
-      if (objText.length > 200) {
-        console.log('[PDF Text Extraction] PDF 對象搜索成功，文本長度:', objText.length);
-        console.log('[PDF Text Extraction] 對象文本內容:', objText.substring(0, 500));
-        return objText;
-      }
-    }
-    
-    // 方法 3: 十六進制解碼嘗試
-    console.log('[PDF Text Extraction] 嘗試十六進制解碼...');
-    const hexMatches = baseTextContent.match(/<([0-9A-Fa-f]{4,})>/g);
-    if (hexMatches && hexMatches.length > 0) {
-      let hexText = '';
-      
-      for (const hexMatch of hexMatches) {
-        try {
-          const hexString = hexMatch.slice(1, -1);
-          let decodedText = '';
-          
-          // 嘗試將十六進制轉換為文本
-          for (let i = 0; i < hexString.length; i += 2) {
-            const hexPair = hexString.substr(i, 2);
-            const charCode = parseInt(hexPair, 16);
-            if (charCode >= 32 && charCode <= 126) { // 可打印 ASCII
-              decodedText += String.fromCharCode(charCode);
-            }
-          }
-          
-          if (decodedText.length > 2) {
-            hexText += decodedText + ' ';
-          }
-        } catch (hexError) {
-          // 忽略解碼錯誤
-        }
-      }
-      
-      if (hexText.length > 100) {
-        console.log('[PDF Text Extraction] 十六進制解碼成功，文本長度:', hexText.length);
-        console.log('[PDF Text Extraction] 十六進制文本內容:', hexText.substring(0, 500));
-        return hexText;
-      }
-    }
-    
-    throw new Error('No extractable text found using aggressive text extraction methods');
     
   } catch (error: any) {
     console.error('[PDF Text Extraction] 文本提取失敗:', error);
     console.error('[PDF Text Extraction] 錯誤詳情:', {
       message: error.message,
-      stack: error.stack?.split('\n').slice(0, 3).join('\n') // 只顯示前3行堆棧
+      stack: error.stack?.split('\n').slice(0, 3).join('\n')
     });
     throw new Error(`Failed to extract text from PDF: ${error.message}`);
   }
