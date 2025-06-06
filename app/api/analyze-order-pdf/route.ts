@@ -51,23 +51,15 @@ function createOpenAIClient() {
   });
 }
 
-// PDF 轉圖像函數（使用 pdf-lib 進行 PDF 操作）
+// PDF 轉圖像函數（Serverless 環境不支持）
 async function convertPdfToImages(pdfBuffer: Buffer): Promise<string[]> {
   try {
-    console.log('[PDF to Images] 開始使用 pdf-lib 轉換 PDF 到圖像...');
+    console.log('[PDF to Images] 檢查 PDF 轉圖像支持...');
+    console.log('[PDF to Images] Buffer 大小:', pdfBuffer.length, 'bytes');
     
-    // 使用 pdf-lib 處理 PDF
-    const { PDFDocument } = await import('pdf-lib');
-    
-    // 加載 PDF 文檔
-    const pdfDoc = await PDFDocument.load(pdfBuffer);
-    const pageCount = pdfDoc.getPageCount();
-    
-    console.log(`[PDF to Images] PDF 包含 ${pageCount} 頁`);
-    
-    // 注意：pdf-lib 本身不能直接轉換為圖像
-    // 在 serverless 環境中，我們跳過圖像轉換，直接使用文本提取
-    console.log('[PDF to Images] pdf-lib 不支持直接圖像轉換，使用文本提取模式');
+    // 在 serverless 環境中，PDF 轉圖像需要額外的系統依賴
+    // 直接跳過圖像轉換，使用文本提取模式
+    console.log('[PDF to Images] Serverless 環境不支持 PDF 轉圖像，使用文本提取模式');
     throw new Error('PDF_TEXT_EXTRACTION_NEEDED');
     
   } catch (error: any) {
@@ -82,83 +74,59 @@ async function convertPdfToImages(pdfBuffer: Buffer): Promise<string[]> {
   }
 }
 
-// PDF 文本提取函數（使用 pdf-parse）
+// PDF 文本提取函數（使用 pdf-parse，修復版）
 async function extractTextFromPDF(pdfBuffer: Buffer): Promise<string> {
   try {
     console.log('[PDF Text Extraction] 開始使用 pdf-parse 提取 PDF 文本...');
     console.log('[PDF Text Extraction] Buffer 大小:', pdfBuffer.length, 'bytes');
+    console.log('[PDF Text Extraction] Buffer 類型:', typeof pdfBuffer);
+    console.log('[PDF Text Extraction] 是否為 Buffer:', Buffer.isBuffer(pdfBuffer));
     
     // 確保傳入的是 Buffer 對象
     if (!Buffer.isBuffer(pdfBuffer)) {
       throw new Error('Invalid buffer provided to extractTextFromPDF');
     }
     
-    // 方法 1: 使用 pdf-parse（主要方法）
-    try {
-      console.log('[PDF Text Extraction] 嘗試使用 pdf-parse...');
-      
-      const pdfParse = (await import('pdf-parse')).default;
-      
-      // 使用 pdf-parse 提取文本
-      const pdfData = await pdfParse(pdfBuffer, {
-        max: 0, // 最大頁數，0 表示所有頁面
-      });
-      
-      console.log('[PDF Text Extraction] pdf-parse 提取成功');
-      console.log('[PDF Text Extraction] 頁數:', pdfData.numpages);
-      console.log('[PDF Text Extraction] 文本長度:', pdfData.text.length);
-      console.log('[PDF Text Extraction] 文本預覽（前500字符）:', pdfData.text.substring(0, 500));
-      
-      if (!pdfData.text || pdfData.text.trim().length === 0) {
-        throw new Error('No text content found in PDF using pdf-parse');
-      }
-      
-      return pdfData.text;
-      
-    } catch (parseError: any) {
-      console.error('[PDF Text Extraction] pdf-parse 失敗:', parseError.message);
-      
-      // 方法 2: 基本文本提取作為備用
-      try {
-        console.log('[PDF Text Extraction] 嘗試基本文本提取...');
-        
-        const textContent = pdfBuffer.toString('latin1', 0, Math.min(pdfBuffer.length, 50000));
-        
-        // 搜索基本的文本模式
-        const textMatches = textContent.match(/\(([^)]+)\)/g);
-        if (textMatches && textMatches.length > 0) {
-          const extractedText = textMatches
-            .map(match => match.slice(1, -1))
-            .filter(text => text.length > 1)
-            .join(' ')
-            .replace(/\\(\d{3})/g, (match, octal) => String.fromCharCode(parseInt(octal, 8)))
-            .replace(/\\/g, '');
-          
-          const readableText = extractedText.replace(/[^\x20-\x7E]/g, '');
-          if (readableText.length > 50) {
-            console.log('[PDF Text Extraction] 基本文本提取成功，可讀文本長度:', readableText.length);
-            console.log('[PDF Text Extraction] 提取的文本預覽:', readableText.substring(0, 500));
-            return readableText;
-          }
-        }
-        
-        // 如果基本提取也失敗，返回一個指示性消息
-        console.warn('[PDF Text Extraction] 所有文本提取方法都失敗，返回空內容');
-        return 'PDF_TEXT_EXTRACTION_FAILED';
-        
-      } catch (basicError: any) {
-        console.error('[PDF Text Extraction] 基本文本提取也失敗:', basicError.message);
-        throw new Error(`All PDF text extraction methods failed: ${parseError.message}`);
-      }
+    // 使用 pdf-parse 提取文本
+    console.log('[PDF Text Extraction] 嘗試使用 pdf-parse 處理上傳的 PDF Buffer...');
+    
+    // 動態導入 pdf-parse，使用 require 方式避免 ES6 模塊問題
+    const pdfParse = require('pdf-parse');
+    
+    // 明確告訴 pdf-parse 我們要處理的是 Buffer，不是文件路徑
+    console.log('[PDF Text Extraction] 調用 pdf-parse(buffer) - 處理內存中的 PDF 數據');
+    const pdfData = await pdfParse(pdfBuffer);
+    
+    console.log('[PDF Text Extraction] pdf-parse 提取成功');
+    console.log('[PDF Text Extraction] 頁數:', pdfData.numpages);
+    console.log('[PDF Text Extraction] 文本長度:', pdfData.text.length);
+    console.log('[PDF Text Extraction] 文本預覽（前500字符）:', pdfData.text.substring(0, 500));
+    
+    if (pdfData.text && pdfData.text.trim().length > 0) {
+      console.log('[PDF Text Extraction] 成功從上傳的 PDF 提取文本');
+      return pdfData.text.trim();
+    } else {
+      console.warn('[PDF Text Extraction] pdf-parse 返回空文本');
+      return 'PDF_TEXT_EXTRACTION_FAILED - No readable text found in PDF';
     }
     
   } catch (error: any) {
-    console.error('[PDF Text Extraction] 文本提取失敗:', error);
+    console.error('[PDF Text Extraction] pdf-parse 處理失敗:', error);
     console.error('[PDF Text Extraction] 錯誤詳情:', {
       message: error.message,
+      code: error.code,
+      path: error.path,
       stack: error.stack?.split('\n').slice(0, 3).join('\n')
     });
-    throw new Error(`Failed to extract text from PDF: ${error.message}`);
+    
+    // 如果是測試文件錯誤，說明庫有問題，但我們已經創建了假文件
+    if (error.code === 'ENOENT' && error.path && error.path.includes('test')) {
+      console.error('[PDF Text Extraction] pdf-parse 庫仍然嘗試讀取測試文件，這是庫的問題');
+      console.error('[PDF Text Extraction] 我們應該處理上傳的 Buffer，不是文件路徑');
+    }
+    
+    // 返回失敗指示
+    return 'PDF_TEXT_EXTRACTION_FAILED - Unable to extract text using pdf-parse';
   }
 }
 
