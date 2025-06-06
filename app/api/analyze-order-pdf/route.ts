@@ -601,7 +601,7 @@ export async function POST(request: NextRequest) {
     
     // 定義 OpenAI prompt
     const prompt = `
-You are a professional data extraction specialist. Analyze the provided UK order "Picking List" and extract order information based on the following instructions.
+You are a professional data extraction specialist. Analyze the provided UK order "Picking List" and extract order information.
 
 **CRITICAL INSTRUCTIONS:**
 1. Return ONLY a valid JSON array - no explanations, no markdown, no additional text.
@@ -609,32 +609,30 @@ You are a professional data extraction specialist. Analyze the provided UK order
 3. Do not include any text before or after the JSON array.
 4. Do not wrap the response in markdown code blocks.
 
+**IMPORTANT: If you cannot find clear order data, return an empty array: []**
+
 **Database Schema:**
-- account_num (number) - Account number (extract from "Account No" field, if not a pure number, set as 0)
-- order_ref (number) - Picking List number (after "Picking List", remove leading zeros)
-- customer_ref (string) - Customer reference (extract from "Customers Ref" field, always keep the original string, e.g. DSPO-0360425, PO0034637, or numbers)
-- invoice_to (string) - Invoice To address (extract the company or person, if more than one line, join together)
-- delivery_add (string) - Delivery Address (extract full delivery address block, combine lines if needed)
-- product_code (string) - Product code/SKU (from "Item Code")
-- product_desc (string) - Product description (from "Description")
-- product_qty (number) - Quantity (from "Qty Req" column)
-- unit_price (number) - Price in pence/cents (£12.50 = 1250, if blank or 0, return 0)
+- account_num (number) - Account number (extract from "Account No" field, if not found set as 0)
+- order_ref (number) - Picking List number (extract from "Picking List" field, remove leading zeros, if not found set as 0)
+- customer_ref (string) - Customer reference (extract from "Customers Ref" or "Customer Ref" field, keep original format like "PO0034637", "DSPO-0360425")
+- invoice_to (string) - Invoice To address (extract company name and address, combine multiple lines)
+- delivery_add (string) - Delivery Address (extract full delivery address, combine multiple lines)
+- product_code (string) - Product code/SKU (from "Item Code" or similar field)
+- product_desc (string) - Product description (from "Description" field)
+- product_qty (number) - Quantity (from "Qty Req" or "Quantity" field)
+- unit_price (number) - Price in pence/cents (£12.50 = 1250, if blank set as 0)
 
-**CRITICAL:**
-- For each actual product line item (each product row), output one JSON object.
-- **Do NOT extract or include any row/line where:**
-  - The code or description refers to transport, delivery, pallet charge, or is a system/remark line (e.g. lines like "Trans", "TransDPD", "TransC", "Pallet Qty", or any technical/instructional remark between product rows).
-  - Any non-product/instructional line such as "Fibre Associates Have A Maximum Pallet Height...", "limited stock off available", "Pallet Qty", "These Are The Plastic Type Clips..." and similar extra remarks should be ignored.
-- **Only extract rows with a valid product code and product description.**
-- For all text fields, combine multi-line or split fields as one string.
-- If data is missing, use these defaults:
-  - Numbers: 0
-  - Text: "NOT_FOUND"
+**EXTRACTION RULES:**
+- Look for patterns like "Picking List: 280833", "Account No: 1504", "Customers Ref: PO0034637"
+- For product lines, look for item codes, descriptions, quantities, and prices
+- Skip transport, delivery charges, pallet charges, and system remarks
+- Only extract actual product items with valid codes and descriptions
+- If data is missing, use defaults: Numbers = 0, Text = "NOT_FOUND"
 
-**Example of the EXACT format required:**
-[{"account_num":12345,"order_ref":67890,"customer_ref":"DSPO-0360425","invoice_to":"ABC Ltd","delivery_add":"123 Street","product_code":"PROD001","product_desc":"Product Name","product_qty":10,"unit_price":1250}]
+**Example format:**
+[{"account_num":1504,"order_ref":280833,"customer_ref":"PO0034637","invoice_to":"Company Name Address","delivery_add":"Delivery Address","product_code":"ME6045150","product_desc":"Product Description","product_qty":1,"unit_price":1500}]
 
-Extract all product line items if multiple products exist. **REMEMBER: ONLY return the JSON array, nothing else.**`;
+**REMEMBER: Extract ALL product line items. If no clear data found, return []**`;
     
     // 構建 OpenAI 消息
     const messageContent: any[] = [
@@ -646,20 +644,35 @@ Extract all product line items if multiple products exist. **REMEMBER: ONLY retu
     
     if (processingMode === 'image_analysis') {
       // 圖像模式：添加所有頁面的圖像
-    for (let i = 0; i < imageBase64Array.length; i++) {
-      messageContent.push({
-        type: "image_url",
-        image_url: {
-          url: `data:image/png;base64,${imageBase64Array[i]}`,
-          detail: "high"
-        }
-      });
-    }
+      for (let i = 0; i < imageBase64Array.length; i++) {
+        messageContent.push({
+          type: "image_url",
+          image_url: {
+            url: `data:image/png;base64,${imageBase64Array[i]}`,
+            detail: "high"
+          }
+        });
+      }
       console.log('[Analyze Order PDF API] 使用圖像模式，包含', imageBase64Array.length, '張圖像');
     } else {
-      // 文本模式：添加提取的文本
-      messageContent[0].text += `\n\n**DOCUMENT TEXT:**\n${extractedText}`;
+      // 文本模式：添加提取的文本，並提供更多上下文
+      const textWithContext = `
+**DOCUMENT TEXT CONTENT:**
+${extractedText}
+
+**ANALYSIS INSTRUCTIONS:**
+Please carefully analyze the above text content to extract order information. Look for:
+- Picking List number
+- Account number  
+- Customer reference
+- Invoice and delivery addresses
+- Product items with codes, descriptions, quantities, and prices
+
+If the text appears garbled or unclear, try to identify key patterns and numbers that match the expected format.`;
+      
+      messageContent[0].text += textWithContext;
       console.log('[Analyze Order PDF API] 使用文本模式，文本長度:', extractedText.length);
+      console.log('[Analyze Order PDF API] 文本內容預覽:', extractedText.substring(0, 500));
     }
     
     // 發送到 OpenAI API
