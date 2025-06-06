@@ -579,6 +579,43 @@ export async function POST(request: NextRequest) {
     
     const openai = createOpenAIClient();
     
+    // 定義 OpenAI prompt
+    const prompt = `
+You are a professional data extraction specialist. Analyze the provided UK order "Picking List" and extract order information based on the following instructions.
+
+**CRITICAL INSTRUCTIONS:**
+1. Return ONLY a valid JSON array - no explanations, no markdown, no additional text.
+2. Start your response with [ and end with ].
+3. Do not include any text before or after the JSON array.
+4. Do not wrap the response in markdown code blocks.
+
+**Database Schema:**
+- account_num (number) - Account number (extract from "Account No" field, if not a pure number, set as 0)
+- order_ref (number) - Picking List number (after "Picking List", remove leading zeros)
+- customer_ref (string) - Customer reference (extract from "Customers Ref" field, always keep the original string, e.g. DSPO-0360425, PO0034637, or numbers)
+- invoice_to (string) - Invoice To address (extract the company or person, if more than one line, join together)
+- delivery_add (string) - Delivery Address (extract full delivery address block, combine lines if needed)
+- product_code (string) - Product code/SKU (from "Item Code")
+- product_desc (string) - Product description (from "Description")
+- product_qty (number) - Quantity (from "Qty Req" column)
+- unit_price (number) - Price in pence/cents (£12.50 = 1250, if blank or 0, return 0)
+
+**CRITICAL:**
+- For each actual product line item (each product row), output one JSON object.
+- **Do NOT extract or include any row/line where:**
+  - The code or description refers to transport, delivery, pallet charge, or is a system/remark line (e.g. lines like "Trans", "TransDPD", "TransC", "Pallet Qty", or any technical/instructional remark between product rows).
+  - Any non-product/instructional line such as "Fibre Associates Have A Maximum Pallet Height...", "limited stock off available", "Pallet Qty", "These Are The Plastic Type Clips..." and similar extra remarks should be ignored.
+- **Only extract rows with a valid product code and product description.**
+- For all text fields, combine multi-line or split fields as one string.
+- If data is missing, use these defaults:
+  - Numbers: 0
+  - Text: "NOT_FOUND"
+
+**Example of the EXACT format required:**
+[{"account_num":12345,"order_ref":67890,"customer_ref":"DSPO-0360425","invoice_to":"ABC Ltd","delivery_add":"123 Street","product_code":"PROD001","product_desc":"Product Name","product_qty":10,"unit_price":1250}]
+
+Extract all product line items if multiple products exist. **REMEMBER: ONLY return the JSON array, nothing else.**`;
+    
     // 構建 OpenAI 消息
     const messageContent: any[] = [
       {
