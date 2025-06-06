@@ -93,14 +93,15 @@ async function extractTextFromPDF(pdfBuffer: Buffer): Promise<string> {
     }
     
     // 使用正確的 pdf-parse 導入方式，避免測試文件問題
-    console.log('[PDF Text Extraction] 使用 pdf-parse/lib/pdf-parse.js 直接導入...');
+    console.log('[PDF Text Extraction] 使用 pdf-parse 正確導入方式...');
     
-    // 使用直接導入 pdf-parse 核心庫，避免測試代碼
-    const pdfParse = require('pdf-parse/lib/pdf-parse.js');
+    // 使用兼容的導入方式
+    const pkg = require('pdf-parse');
+    const pdfParse = pkg.default || pkg;
     
     // 直接處理 Buffer，不使用任何配置選項
     console.log('[PDF Text Extraction] 調用 pdf-parse 處理 Buffer...');
-    const pdfData = await pdfParse.default(pdfBuffer);
+    const pdfData = await pdfParse(pdfBuffer);
     
     console.log('[PDF Text Extraction] pdf-parse 提取成功');
     console.log('[PDF Text Extraction] 頁數:', pdfData.numpages);
