@@ -60,6 +60,16 @@ async function convertPdfToImages(pdfBuffer: Buffer): Promise<string[]> {
   try {
     console.log('[PDF to Images] 開始轉換 PDF 到圖像...');
     
+    // 檢測運行環境
+    const isWindows = process.platform === 'win32';
+    const isVercel = process.env.VERCEL || process.env.VERCEL_ENV;
+    
+    // 在 Vercel 環境中，直接使用文本提取模式
+    if (isVercel) {
+      console.log('[PDF to Images] 在 Vercel 環境中運行，跳過圖像轉換，使用文本提取模式...');
+      throw new Error('PDF_TEXT_EXTRACTION_NEEDED');
+    }
+    
     // 使用系統臨時目錄而不是 /tmp（Windows 兼容）
     const tempDir = os.tmpdir();
     const tempPdfPath = path.join(tempDir, `temp-pdf-${Date.now()}.pdf`);
@@ -77,21 +87,29 @@ async function convertPdfToImages(pdfBuffer: Buffer): Promise<string[]> {
       const { promisify } = require('util');
       const execAsync = promisify(exec);
       
-      // 設置本地 Poppler 二進制文件路徑
-      const projectRoot = process.cwd();
-      const popplerPath = path.join(projectRoot, 'poppler', 'poppler-24.08.0', 'Library', 'bin');
+      let pdftocairoPath: string;
       
-      // 檢查 Poppler 路徑是否存在
-      if (!fs.existsSync(popplerPath)) {
-        console.error('[PDF to Images] Poppler 路徑不存在:', popplerPath);
-        throw new Error('Poppler binaries not found');
-      }
-      
-      // 檢查 pdftocairo.exe 是否存在
-      const pdftocairoPath = path.join(popplerPath, 'pdftocairo.exe');
-      if (!fs.existsSync(pdftocairoPath)) {
-        console.error('[PDF to Images] pdftocairo.exe 不存在:', pdftocairoPath);
-        throw new Error('pdftocairo.exe not found');
+      if (isWindows) {
+        // Windows 開發環境
+        const projectRoot = process.cwd();
+        const popplerPath = path.join(projectRoot, 'poppler', 'poppler-24.08.0', 'Library', 'bin');
+        pdftocairoPath = path.join(popplerPath, 'pdftocairo.exe');
+        
+        if (!fs.existsSync(pdftocairoPath)) {
+          console.error('[PDF to Images] pdftocairo.exe 不存在:', pdftocairoPath);
+          throw new Error('pdftocairo.exe not found');
+        }
+      } else {
+        // Linux/Mac 開發環境
+        pdftocairoPath = 'pdftocairo';
+        
+        // 檢查 pdftocairo 是否可用
+        try {
+          await execAsync('which pdftocairo');
+        } catch (e) {
+          console.warn('[PDF to Images] pdftocairo 不可用，使用文本提取模式');
+          throw new Error('PDF_TEXT_EXTRACTION_NEEDED');
+        }
       }
       
       console.log('[PDF to Images] 使用 pdftocairo 路徑:', pdftocairoPath);
@@ -100,7 +118,10 @@ async function convertPdfToImages(pdfBuffer: Buffer): Promise<string[]> {
       const outputPrefix = path.join(tempDir, `pdf-page-${Date.now()}`);
       
       // 構建命令
-      const command = `"${pdftocairoPath}" -png -r 150 "${tempPdfPath}" "${outputPrefix}"`;
+      const command = isWindows 
+        ? `"${pdftocairoPath}" -png -r 150 "${tempPdfPath}" "${outputPrefix}"`
+        : `${pdftocairoPath} -png -r 150 "${tempPdfPath}" "${outputPrefix}"`;
+      
       console.log('[PDF to Images] 執行命令:', command);
       
       // 執行命令
@@ -181,7 +202,33 @@ async function extractTextFromPDF(pdfBuffer: Buffer): Promise<string> {
       throw new Error('Invalid buffer provided to extractTextFromPDF');
     }
     
-    // 使用 pdftocairo 的文本提取功能作為備用方案
+    // 檢測運行環境
+    const isWindows = process.platform === 'win32';
+    const isVercel = process.env.VERCEL || process.env.VERCEL_ENV;
+    
+    // 在 Vercel 環境中，使用 pdf-parse
+    if (isVercel) {
+      console.log('[PDF Text Extraction] 在 Vercel 環境中運行，使用 pdf-parse...');
+      
+      try {
+        const pdfParse = require('pdf-parse');
+        const data = await pdfParse(pdfBuffer);
+        
+        console.log('[PDF Text Extraction] pdf-parse 提取成功，頁數:', data.numpages);
+        console.log('[PDF Text Extraction] 文本長度:', data.text.length);
+        
+        if (!data.text || data.text.trim().length === 0) {
+          throw new Error('No text content found in PDF');
+        }
+        
+        return data.text;
+      } catch (parseError: any) {
+        console.error('[PDF Text Extraction] pdf-parse 失敗:', parseError.message);
+        throw new Error(`PDF parsing failed: ${parseError.message}`);
+      }
+    }
+    
+    // 本地環境使用 pdftotext（如果可用）
     const fs = require('fs');
     const path = require('path');
     const os = require('os');
@@ -189,15 +236,34 @@ async function extractTextFromPDF(pdfBuffer: Buffer): Promise<string> {
     const { promisify } = require('util');
     const execAsync = promisify(exec);
     
-    // 設置本地 Poppler 二進制文件路徑
-    const projectRoot = process.cwd();
-    const popplerPath = path.join(projectRoot, 'poppler', 'poppler-24.08.0', 'Library', 'bin');
-    const pdftotextPath = path.join(popplerPath, 'pdftotext.exe');
+    let pdftotextPath: string;
     
-    // 檢查 pdftotext.exe 是否存在
-    if (!fs.existsSync(pdftotextPath)) {
-      console.error('[PDF Text Extraction] pdftotext.exe 不存在:', pdftotextPath);
-      throw new Error('pdftotext.exe not found');
+    if (isWindows) {
+      // Windows 環境
+      const projectRoot = process.cwd();
+      const popplerPath = path.join(projectRoot, 'poppler', 'poppler-24.08.0', 'Library', 'bin');
+      pdftotextPath = path.join(popplerPath, 'pdftotext.exe');
+      
+      if (!fs.existsSync(pdftotextPath)) {
+        console.warn('[PDF Text Extraction] pdftotext.exe 不存在，使用 pdf-parse 作為後備');
+        // 如果本地也沒有 pdftotext，使用 pdf-parse
+        const pdfParse = require('pdf-parse');
+        const data = await pdfParse(pdfBuffer);
+        return data.text;
+      }
+    } else {
+      // Linux/Mac 環境
+      pdftotextPath = 'pdftotext';
+      
+      // 檢查 pdftotext 是否可用
+      try {
+        await execAsync('which pdftotext');
+      } catch (e) {
+        console.warn('[PDF Text Extraction] pdftotext 不可用，使用 pdf-parse 作為後備');
+        const pdfParse = require('pdf-parse');
+        const data = await pdfParse(pdfBuffer);
+        return data.text;
+      }
     }
     
     // 創建臨時文件
@@ -210,7 +276,10 @@ async function extractTextFromPDF(pdfBuffer: Buffer): Promise<string> {
     
     try {
       // 使用 pdftotext 提取文本
-      const command = `"${pdftotextPath}" -enc UTF-8 "${tempPdfPath}" "${tempTxtPath}"`;
+      const command = isWindows 
+        ? `"${pdftotextPath}" -enc UTF-8 "${tempPdfPath}" "${tempTxtPath}"`
+        : `${pdftotextPath} -enc UTF-8 "${tempPdfPath}" "${tempTxtPath}"`;
+      
       console.log('[PDF Text Extraction] 執行命令:', command);
       
       const { stdout, stderr } = await execAsync(command);
