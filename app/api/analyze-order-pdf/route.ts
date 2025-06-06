@@ -162,6 +162,50 @@ async function extractTextFromPDF(pdfBuffer: Buffer): Promise<string> {
           }
         }
         
+        // 新增：專門處理 PDFsharp 生成的 PDF
+        console.log('[PDF Text Extraction] 嘗試 PDFsharp 專用解碼...');
+        
+        // 查找 BT...ET 文本塊（PDF 文本對象）
+        const textBlocks = textContent.match(/BT[\s\S]*?ET/g);
+        if (textBlocks && textBlocks.length > 0) {
+          let decodedText = '';
+          
+          for (const block of textBlocks) {
+            // 查找 Tj 操作符（顯示文本）
+            const tjMatches = block.match(/\(([^)]*)\)\s*Tj/g);
+            if (tjMatches) {
+              for (const tj of tjMatches) {
+                const text = tj.match(/\(([^)]*)\)/);
+                if (text && text[1]) {
+                  decodedText += text[1] + ' ';
+                }
+              }
+            }
+            
+            // 查找 TJ 操作符（顯示文本數組）
+            const tjArrayMatches = block.match(/\[([^\]]*)\]\s*TJ/g);
+            if (tjArrayMatches) {
+              for (const tjArray of tjArrayMatches) {
+                const textArray = tjArray.match(/\(([^)]*)\)/g);
+                if (textArray) {
+                  for (const text of textArray) {
+                    const cleanText = text.slice(1, -1);
+                    if (cleanText.length > 0) {
+                      decodedText += cleanText + ' ';
+                    }
+                  }
+                }
+              }
+            }
+          }
+          
+          if (decodedText.length > 50) {
+            console.log('[PDF Text Extraction] PDFsharp 解碼成功，文本長度:', decodedText.length);
+            console.log('[PDF Text Extraction] 解碼文本預覽:', decodedText.substring(0, 500));
+            return decodedText;
+          }
+        }
+        
         // 搜索特定的訂單模式
         const patterns = [
           /Picking\s+List[:\s]*(\d+)/i,
