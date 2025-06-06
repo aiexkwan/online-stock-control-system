@@ -54,6 +54,19 @@ const nextConfig = {
       };
     }
 
+    if (isServer) {
+      // 在服務器端構建時，將 canvas 模塊設置為外部依賴
+      config.externals = [...(config.externals || []), { canvas: 'canvas' }];
+      
+      // 為 pdfjs-dist 添加 fallback
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        canvas: false,
+        fs: false,
+        path: false,
+      };
+    }
+
     return config;
   },
   // 添加 Supabase WebSocket 域名到允許列表

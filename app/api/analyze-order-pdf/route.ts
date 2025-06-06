@@ -206,15 +206,15 @@ async function extractTextFromPDF(pdfBuffer: Buffer): Promise<string> {
     const isWindows = process.platform === 'win32';
     const isVercel = process.env.VERCEL || process.env.VERCEL_ENV;
     
-    // 在 Vercel 環境中，使用 pdfjs-dist
+    // 在 Vercel 環境中，使用 pdfjs-dist legacy build（不需要 canvas）
     if (isVercel) {
-      console.log('[PDF Text Extraction] 在 Vercel 環境中運行，使用 pdfjs-dist...');
+      console.log('[PDF Text Extraction] 在 Vercel 環境中運行，使用 pdfjs-dist legacy build...');
       
       try {
-        // 動態導入 pdfjs-dist
-        const pdfjsLib = await import('pdfjs-dist');
+        // 動態導入 pdfjs-dist legacy build（不需要 canvas）
+        const pdfjsLib = await import('pdfjs-dist/legacy/build/pdf');
         
-        // 設置 worker（在 serverless 環境中使用 legacy build）
+        // 設置 worker
         pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
         
         // 將 Buffer 轉換為 Uint8Array
@@ -224,6 +224,8 @@ async function extractTextFromPDF(pdfBuffer: Buffer): Promise<string> {
         const loadingTask = pdfjsLib.getDocument({
           data: uint8Array,
           useSystemFonts: true,
+          disableFontFace: true, // 禁用字體加載以避免 canvas 依賴
+          isEvalSupported: false, // 禁用 eval 以提高安全性
         });
         
         const pdfDoc = await loadingTask.promise;
@@ -233,15 +235,19 @@ async function extractTextFromPDF(pdfBuffer: Buffer): Promise<string> {
         
         // 逐頁提取文本
         for (let pageNum = 1; pageNum <= pdfDoc.numPages; pageNum++) {
-          const page = await pdfDoc.getPage(pageNum);
-          const textContent = await page.getTextContent();
-          
-          // 將文本項目組合成字符串
-          const pageText = textContent.items
-            .map((item: any) => item.str)
-            .join(' ');
-          
-          fullText += pageText + '\n';
+          try {
+            const page = await pdfDoc.getPage(pageNum);
+            const textContent = await page.getTextContent();
+            
+            // 將文本項目組合成字符串
+            const pageText = textContent.items
+              .map((item: any) => item.str)
+              .join(' ');
+            
+            fullText += pageText + '\n';
+          } catch (pageError) {
+            console.warn(`[PDF Text Extraction] 頁面 ${pageNum} 提取失敗:`, pageError);
+          }
         }
         
         console.log('[PDF Text Extraction] pdfjs-dist 提取成功，文本長度:', fullText.length);
@@ -253,6 +259,26 @@ async function extractTextFromPDF(pdfBuffer: Buffer): Promise<string> {
         return fullText;
       } catch (parseError: any) {
         console.error('[PDF Text Extraction] pdfjs-dist 失敗:', parseError.message);
+        
+        // 如果 pdfjs-dist 失敗，嘗試基本的文本提取
+        console.log('[PDF Text Extraction] 嘗試基本文本提取...');
+        const textContent = pdfBuffer.toString('utf8', 0, Math.min(pdfBuffer.length, 50000));
+        
+        // 嘗試找到 PDF 中的文本流
+        const textMatches = textContent.match(/\(([^)]+)\)/g);
+        if (textMatches && textMatches.length > 0) {
+          const extractedText = textMatches
+            .map(match => match.slice(1, -1))
+            .join(' ')
+            .replace(/\\(\d{3})/g, (match, octal) => String.fromCharCode(parseInt(octal, 8)))
+            .replace(/\\/g, '');
+          
+          if (extractedText.length > 100) {
+            console.log('[PDF Text Extraction] 基本提取成功，文本長度:', extractedText.length);
+            return extractedText;
+          }
+        }
+        
         throw new Error(`PDF parsing failed: ${parseError.message}`);
       }
     }
@@ -276,11 +302,16 @@ async function extractTextFromPDF(pdfBuffer: Buffer): Promise<string> {
       if (!fs.existsSync(pdftotextPath)) {
         console.warn('[PDF Text Extraction] pdftotext.exe 不存在，使用 pdfjs-dist 作為後備');
         // 如果本地也沒有 pdftotext，使用 pdfjs-dist
-        const pdfjsLib = await import('pdfjs-dist');
+        const pdfjsLib = await import('pdfjs-dist/legacy/build/pdf');
         pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
         
         const uint8Array = new Uint8Array(pdfBuffer);
-        const loadingTask = pdfjsLib.getDocument({ data: uint8Array, useSystemFonts: true });
+        const loadingTask = pdfjsLib.getDocument({ 
+          data: uint8Array, 
+          useSystemFonts: true,
+          disableFontFace: true,
+          isEvalSupported: false,
+        });
         const pdfDoc = await loadingTask.promise;
         
         let fullText = '';
@@ -301,11 +332,16 @@ async function extractTextFromPDF(pdfBuffer: Buffer): Promise<string> {
         await execAsync('which pdftotext');
       } catch (e) {
         console.warn('[PDF Text Extraction] pdftotext 不可用，使用 pdfjs-dist 作為後備');
-        const pdfjsLib = await import('pdfjs-dist');
+        const pdfjsLib = await import('pdfjs-dist/legacy/build/pdf');
         pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
         
         const uint8Array = new Uint8Array(pdfBuffer);
-        const loadingTask = pdfjsLib.getDocument({ data: uint8Array, useSystemFonts: true });
+        const loadingTask = pdfjsLib.getDocument({ 
+          data: uint8Array, 
+          useSystemFonts: true,
+          disableFontFace: true,
+          isEvalSupported: false,
+        });
         const pdfDoc = await loadingTask.promise;
         
         let fullText = '';
