@@ -624,6 +624,18 @@
     "foreign_column_name": null
   },
   {
+    "table_name": "query_record",
+    "column_name": "sql_query",
+    "data_type": "text",
+    "is_nullable": "NO",
+    "column_default": "'-'::text",
+    "character_maximum_length": null,
+    "is_primary_key": "NO",
+    "is_foreign_key": "NO",
+    "foreign_table_name": null,
+    "foreign_column_name": null
+  },
+  {
     "table_name": "record_aco",
     "column_name": "uuid",
     "data_type": "uuid",

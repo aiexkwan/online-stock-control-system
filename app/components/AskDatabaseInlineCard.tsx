@@ -1,11 +1,11 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
-import { Loader2, Send, Clock, Zap, Database, Brain } from 'lucide-react';
+import { Loader2, Send, Clock, Zap, Brain, User, Bot } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface QueryResult {
@@ -23,12 +23,34 @@ interface QueryResult {
   timestamp: string;
 }
 
+interface ChatMessage {
+  id: string;
+  type: 'user' | 'ai';
+  content: string;
+  timestamp: string;
+  metadata?: {
+    complexity?: string;
+    executionTime?: number;
+    tokensUsed?: number;
+    cached?: boolean;
+  };
+}
+
 export default function AskDatabaseInlineCard() {
   const [question, setQuestion] = useState('');
   const [loading, setLoading] = useState(false);
-  const [lastResult, setLastResult] = useState<QueryResult | null>(null);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [sessionId] = useState(() => `session_${Date.now()}`);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
+
+  const scrollToTop = () => {
+    messagesContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  useEffect(() => {
+    scrollToTop();
+  }, [messages]);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -36,6 +58,17 @@ export default function AskDatabaseInlineCard() {
 
     setLoading(true);
     const currentQuestion = question;
+    const userMessageId = `user_${Date.now()}`;
+    
+    // Add user message immediately
+    const userMessage: ChatMessage = {
+      id: userMessageId,
+      type: 'user',
+      content: currentQuestion,
+      timestamp: new Date().toISOString(),
+    };
+    
+    setMessages(prev => [...prev, userMessage]);
     setQuestion('');
 
     try {
@@ -60,22 +93,34 @@ export default function AskDatabaseInlineCard() {
 
       const result: QueryResult = await response.json();
       console.log('[AskDatabaseInlineCard] Success result:', result);
-      setLastResult(result);
+      
+      // Add AI response message
+      const aiMessage: ChatMessage = {
+        id: `ai_${Date.now()}`,
+        type: 'ai',
+        content: result.answer,
+        timestamp: result.timestamp,
+        metadata: {
+          complexity: result.complexity,
+          executionTime: result.result.executionTime,
+          tokensUsed: result.tokensUsed,
+          cached: result.cached,
+        }
+      };
+      
+      setMessages(prev => [...prev, aiMessage]);
     } catch (error: any) {
       console.error('[AskDatabaseInlineCard] Request failed:', error);
       
-      // Add error message to result
-      const errorResult: QueryResult = {
-        question: currentQuestion,
-        sql: '',
-        result: { data: [], rowCount: 0, executionTime: 0 },
-        answer: `Query failed: ${error.message}`,
-        complexity: 'simple',
-        tokensUsed: 0,
-        cached: false,
+      // Add error message
+      const errorMessage: ChatMessage = {
+        id: `error_${Date.now()}`,
+        type: 'ai',
+        content: `Sorry, I encountered an error: ${error.message}`,
         timestamp: new Date().toISOString(),
       };
-      setLastResult(errorResult);
+      
+      setMessages(prev => [...prev, errorMessage]);
     } finally {
       setLoading(false);
     }
@@ -104,156 +149,188 @@ export default function AskDatabaseInlineCard() {
     "What is the total stock of MHCOL2 products?"
   ];
 
+  const clearChat = () => {
+    setMessages([]);
+  };
+
   return (
-    <div className="space-y-6">
+    <div className="flex flex-col h-full max-h-[600px]">
       {/* Header */}
-      <div className="flex items-center gap-3 mb-4">
-        <div className="flex items-center gap-2">
-          <Brain className="h-6 w-6 text-purple-400" />
-          <h3 className="text-xl font-semibold text-white">Ask Me Anything</h3>
+      <div className="flex items-center justify-between p-4 border-b border-slate-700/50">
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
+            <Brain className="h-6 w-6 text-purple-400" />
+            <h3 className="text-xl font-semibold text-white">Ask Me Anything</h3>
+          </div>
+          <Badge className="bg-purple-500/20 text-purple-300 border-purple-500/30">
+           Pennine Assistant
+          </Badge>
         </div>
-        <Badge className="bg-purple-500/20 text-purple-300 border-purple-500/30">
-          Trained On Going...
-        </Badge>
+        {messages.length > 0 && (
+          <Button
+            onClick={clearChat}
+            variant="outline"
+            size="sm"
+            className="bg-slate-700/50 border-slate-600/50 text-slate-300 hover:bg-slate-600/50 hover:text-white"
+          >
+            Clear Chat
+          </Button>
+        )}
       </div>
 
-      {/* Query Input Form */}
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="relative">
-          <Textarea
-            ref={textareaRef}
-            value={question}
-            onChange={(e) => setQuestion(e.target.value)}
-            placeholder="Enter your question, e.g. How many pallets were generated today?"
-            className="min-h-[80px] bg-slate-700/50 border-slate-600/50 text-white placeholder-slate-400 resize-none focus:border-purple-500/50 focus:ring-purple-500/20"
-            disabled={loading}
-          />
-          <Button
-            type="submit"
-            disabled={!question.trim() || loading}
-            className="absolute bottom-3 right-3 bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {loading ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Send className="h-4 w-4" />
-            )}
-          </Button>
-        </div>
-      </form>
-
-      {/* Example Questions */}
-      {!lastResult && (
-        <div className="space-y-3">
-          <h4 className="text-sm font-medium text-slate-300">Quick Query Examples:</h4>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-            {exampleQuestions.map((example, index) => (
-              <button
-                key={index}
-                onClick={() => setQuestion(example)}
-                className="p-3 text-left bg-slate-700/30 hover:bg-slate-700/50 rounded-lg border border-slate-600/30 hover:border-purple-500/50 transition-all duration-200 text-slate-300 hover:text-white text-sm"
-                disabled={loading}
-              >
-                {example}
-              </button>
-            ))}
+      {/* Chat Messages Area */}
+      <div ref={messagesContainerRef} className="flex-1 overflow-y-auto p-4 space-y-4 min-h-[300px]">
+        {messages.length === 0 && (
+          <div className="space-y-4">
+            <div className="text-center text-slate-400 py-8">
+              <Brain className="h-12 w-12 mx-auto mb-4 text-purple-400/50" />
+              <p className="text-lg font-medium mb-2">Start a conversation</p>
+              <p className="text-sm">Ask me anything about your database</p>
+            </div>
+            
+            {/* Example Questions */}
+            <div className="space-y-3">
+              <h4 className="text-sm font-medium text-slate-300">Quick Query Examples:</h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                {exampleQuestions.map((example, index) => (
+                  <button
+                    key={index}
+                    onClick={() => setQuestion(example)}
+                    className="p-3 text-left bg-slate-700/30 hover:bg-slate-700/50 rounded-lg border border-slate-600/30 hover:border-purple-500/50 transition-all duration-200 text-slate-300 hover:text-white text-sm"
+                    disabled={loading}
+                  >
+                    {example}
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* Query Result */}
-      <AnimatePresence>
-        {lastResult && (
+        <AnimatePresence>
+          {messages.map((message) => (
+            <motion.div
+              key={message.id}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
+            >
+              <div className={`flex gap-3 max-w-[80%] ${message.type === 'user' ? 'flex-row-reverse' : 'flex-row'}`}>
+                {/* Avatar */}
+                <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${
+                  message.type === 'user' 
+                    ? 'bg-blue-500/20 text-blue-300' 
+                    : 'bg-purple-500/20 text-purple-300'
+                }`}>
+                  {message.type === 'user' ? (
+                    <User className="h-4 w-4" />
+                  ) : (
+                    <Bot className="h-4 w-4" />
+                  )}
+                </div>
+
+                {/* Message Content */}
+                <div className={`flex flex-col ${message.type === 'user' ? 'items-end' : 'items-start'}`}>
+                  <div className={`rounded-2xl px-4 py-3 max-w-full ${
+                    message.type === 'user'
+                      ? 'bg-blue-600/80 text-white rounded-br-md'
+                      : 'bg-slate-700/80 text-slate-100 rounded-bl-md'
+                  }`}>
+                    <p className="text-sm leading-relaxed whitespace-pre-wrap">
+                      {message.content}
+                    </p>
+                  </div>
+                  
+                  {/* Message Metadata */}
+                  <div className={`flex items-center gap-2 mt-1 text-xs text-slate-400 ${
+                    message.type === 'user' ? 'flex-row-reverse' : 'flex-row'
+                  }`}>
+                    <span>{new Date(message.timestamp).toLocaleTimeString()}</span>
+                    
+                    {message.metadata && (
+                      <>
+                        {message.metadata.cached && (
+                          <Badge variant="secondary" className="bg-blue-500/20 text-blue-300 border-blue-500/30 text-xs">
+                            <Zap className="h-2 w-2 mr-1" />
+                            Cached
+                          </Badge>
+                        )}
+                        {message.metadata.complexity && (
+                          <Badge className={`${getComplexityColor(message.metadata.complexity)} text-xs`}>
+                            {message.metadata.complexity}
+                          </Badge>
+                        )}
+                        {message.metadata.executionTime && (
+                          <Badge variant="outline" className="bg-slate-700/50 text-slate-300 border-slate-600/50 text-xs">
+                            <Clock className="h-2 w-2 mr-1" />
+                            {formatExecutionTime(message.metadata.executionTime)}
+                          </Badge>
+                        )}
+                      </>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          ))}
+        </AnimatePresence>
+
+        {/* Loading indicator */}
+        {loading && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            className="space-y-4"
+            className="flex justify-start"
           >
-            {/* Question Display */}
-            <div className="bg-purple-600/20 border border-purple-500/30 rounded-xl p-4">
-              <p className="text-white font-medium">Question: {lastResult.question}</p>
-            </div>
-
-            {/* Answer Display */}
-            <Card className="bg-slate-800/50 border-slate-700/50">
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between mb-3">
-                  <h4 className="text-lg font-semibold text-slate-200 flex items-center gap-2">
-                    <Database className="h-5 w-5 text-purple-400" />
-                    Query Result
-                  </h4>
-                  <div className="flex items-center gap-2">
-                    {lastResult.cached && (
-                      <Badge variant="secondary" className="bg-blue-500/20 text-blue-300 border-blue-500/30">
-                        <Zap className="h-3 w-3 mr-1" />
-                        Cached
-                      </Badge>
-                    )}
-                    <Badge className={getComplexityColor(lastResult.complexity)}>
-                      {lastResult.complexity}
-                    </Badge>
-                    <Badge variant="outline" className="bg-slate-700/50 text-slate-300 border-slate-600/50">
-                      <Clock className="h-3 w-3 mr-1" />
-                      {formatExecutionTime(lastResult.result.executionTime)}
-                    </Badge>
-                    {lastResult.tokensUsed > 0 && (
-                      <Badge variant="outline" className="bg-purple-500/20 text-purple-300 border-purple-500/30">
-                        <Brain className="h-3 w-3 mr-1" />
-                        {lastResult.tokensUsed} tokens
-                      </Badge>
-                    )}
-                  </div>
+            <div className="flex gap-3 max-w-[80%]">
+              <div className="flex-shrink-0 w-8 h-8 rounded-full bg-purple-500/20 text-purple-300 flex items-center justify-center">
+                <Bot className="h-4 w-4" />
+              </div>
+              <div className="bg-slate-700/80 text-slate-100 rounded-2xl rounded-bl-md px-4 py-3">
+                <div className="flex items-center gap-2">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <span className="text-sm">Thinking...</span>
                 </div>
-                
-                <div className="bg-slate-900/50 rounded-lg p-4 border border-slate-700/50">
-                  <p className="text-slate-200 leading-relaxed whitespace-pre-wrap">
-                    {lastResult.answer}
-                  </p>
-                </div>
-
-                {/* Data Preview */}
-                {lastResult.result.data && lastResult.result.data.length > 0 && (
-                  <div className="mt-4">
-                    <h5 className="text-sm font-medium text-slate-300 mb-2">
-                      Data Preview ({lastResult.result.rowCount} rows)
-                    </h5>
-                    <div className="bg-slate-900/50 rounded-lg p-3 border border-slate-700/50 max-h-40 overflow-auto">
-                      <pre className="text-xs text-slate-300">
-                        {JSON.stringify(lastResult.result.data.slice(0, 3), null, 2)}
-                        {lastResult.result.data.length > 3 && '\n...'}
-                      </pre>
-                    </div>
-                  </div>
-                )}
-
-                {/* SQL Query Display */}
-                {lastResult.sql && (
-                  <div className="mt-4">
-                    <h5 className="text-sm font-medium text-slate-300 mb-2">Generated SQL Query:</h5>
-                    <div className="bg-slate-900/50 rounded-lg p-3 border border-slate-700/50">
-                      <code className="text-xs text-green-300 font-mono">
-                        {lastResult.sql}
-                      </code>
-                    </div>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
-            {/* Clear Result Button */}
-            <div className="flex justify-center">
-              <Button
-                onClick={() => setLastResult(null)}
-                variant="outline"
-                className="bg-slate-700/50 border-slate-600/50 text-slate-300 hover:bg-slate-600/50 hover:text-white"
-              >
-                Clear Result
-              </Button>
+              </div>
             </div>
           </motion.div>
         )}
-      </AnimatePresence>
+      </div>
+
+      {/* Input Area */}
+      <div className="border-t border-slate-700/50 p-4">
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="relative">
+            <Textarea
+              ref={textareaRef}
+              value={question}
+              onChange={(e) => setQuestion(e.target.value)}
+              placeholder="Type your question here..."
+              className="min-h-[60px] bg-slate-700/50 border-slate-600/50 text-white placeholder-slate-400 resize-none focus:border-purple-500/50 focus:ring-purple-500/20 pr-12"
+              disabled={loading}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault();
+                  handleSubmit(e as any);
+                }
+              }}
+            />
+            <Button
+              type="submit"
+              disabled={!question.trim() || loading}
+              className="absolute bottom-2 right-2 bg-purple-500 hover:bg-purple-600 text-white p-2 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
+              size="sm"
+            >
+              {loading ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Send className="h-4 w-4" />
+              )}
+            </Button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 } 

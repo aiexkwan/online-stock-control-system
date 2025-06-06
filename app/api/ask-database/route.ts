@@ -7,7 +7,9 @@ import type { ChatCompletionMessageParam } from 'openai/resources/chat/completio
 // 允許使用 Ask Database 功能的用戶
 const ALLOWED_USERS = [
   'gtatlock@pennineindustries.com',
-  'akwan@pennineindustries.com'
+  'akwan@pennineindustries.com',
+  'grobinson@pennineindustries.com',
+  'alyon@pennineindustries.com'
 ];
 
 // 初始化 OpenAI 客戶端
@@ -100,7 +102,7 @@ export async function POST(request: NextRequest) {
       console.log('[Ask Database] 🎯 Cache hit - returning cached result');
       
       // 異步保存聊天記錄
-      saveQueryRecordAsync(question, cachedResult.answer, userName, cachedResult.tokensUsed);
+      saveQueryRecordAsync(question, cachedResult.answer, userName, cachedResult.tokensUsed, cachedResult.sql);
       
       return NextResponse.json({
         ...cachedResult,
@@ -155,7 +157,7 @@ export async function POST(request: NextRequest) {
         answer,
         result: queryResult,
       })),
-      saveQueryRecordAsync(question, answer, userName, totalTokens)
+      saveQueryRecordAsync(question, answer, userName, totalTokens, sql)
     ];
 
     // 不等待保存操作完成，直接返回結果
@@ -514,7 +516,7 @@ async function getUserInfo(): Promise<{ email: string | null; name: string | nul
 }
 
 // 異步保存聊天記錄
-async function saveQueryRecordAsync(query: string, answer: string, user: string | null, tokenUsage: number = 0): Promise<void> {
+async function saveQueryRecordAsync(query: string, answer: string, user: string | null, tokenUsage: number = 0, sqlQuery: string = ''): Promise<void> {
   setImmediate(async () => {
     try {
       const supabase = createClient();
@@ -525,7 +527,8 @@ async function saveQueryRecordAsync(query: string, answer: string, user: string 
           query: query,
           answer: answer,
           user: user || 'Unknown User',
-          token: tokenUsage
+          token: tokenUsage,
+          sql_query: sqlQuery
         });
 
       if (error) {
