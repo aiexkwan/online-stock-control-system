@@ -74,10 +74,10 @@ async function convertPdfToImages(pdfBuffer: Buffer): Promise<string[]> {
   }
 }
 
-// PDF 文本提取函數（使用 pdf-parse，修復版）
+// PDF 文本提取函數（使用 pdfjs-dist，完全避免文件系統操作）
 async function extractTextFromPDF(pdfBuffer: Buffer): Promise<string> {
   try {
-    console.log('[PDF Text Extraction] 開始使用 pdf-parse 提取 PDF 文本...');
+    console.log('[PDF Text Extraction] 開始使用 pdfjs-dist 提取 PDF 文本...');
     console.log('[PDF Text Extraction] Buffer 大小:', pdfBuffer.length, 'bytes');
     console.log('[PDF Text Extraction] Buffer 類型:', typeof pdfBuffer);
     console.log('[PDF Text Extraction] 是否為 Buffer:', Buffer.isBuffer(pdfBuffer));
@@ -87,46 +87,84 @@ async function extractTextFromPDF(pdfBuffer: Buffer): Promise<string> {
       throw new Error('Invalid buffer provided to extractTextFromPDF');
     }
     
-    // 使用 pdf-parse 提取文本
-    console.log('[PDF Text Extraction] 嘗試使用 pdf-parse 處理上傳的 PDF Buffer...');
+    // 驗證 Buffer 不為空
+    if (pdfBuffer.length === 0) {
+      throw new Error('Empty PDF buffer provided');
+    }
     
-    // 動態導入 pdf-parse，使用 require 方式避免 ES6 模塊問題
-    const pdfParse = require('pdf-parse');
+    // 使用 pdfjs-dist 進行純內存處理
+    console.log('[PDF Text Extraction] 使用 pdfjs-dist 處理 PDF Buffer...');
     
-    // 明確告訴 pdf-parse 我們要處理的是 Buffer，不是文件路徑
-    console.log('[PDF Text Extraction] 調用 pdf-parse(buffer) - 處理內存中的 PDF 數據');
-    const pdfData = await pdfParse(pdfBuffer);
+    // 動態導入 pdfjs-dist
+    const pdfjsLib = require('pdfjs-dist/legacy/build/pdf.js');
     
-    console.log('[PDF Text Extraction] pdf-parse 提取成功');
-    console.log('[PDF Text Extraction] 頁數:', pdfData.numpages);
-    console.log('[PDF Text Extraction] 文本長度:', pdfData.text.length);
-    console.log('[PDF Text Extraction] 文本預覽（前500字符）:', pdfData.text.substring(0, 500));
+    // 禁用 worker 以避免 serverless 環境問題
+    pdfjsLib.GlobalWorkerOptions.workerSrc = null;
     
-    if (pdfData.text && pdfData.text.trim().length > 0) {
+    // 從 Buffer 加載 PDF 文檔
+    console.log('[PDF Text Extraction] 從 Buffer 加載 PDF 文檔...');
+    const loadingTask = pdfjsLib.getDocument({
+      data: new Uint8Array(pdfBuffer),
+      verbosity: 0, // 減少日誌輸出
+      disableFontFace: true,
+      disableRange: true,
+      disableStream: true,
+      disableAutoFetch: true
+    });
+    
+    const pdfDocument = await loadingTask.promise;
+    console.log('[PDF Text Extraction] PDF 文檔加載成功，頁數:', pdfDocument.numPages);
+    
+    let fullText = '';
+    
+    // 提取每一頁的文本
+    for (let pageNum = 1; pageNum <= pdfDocument.numPages; pageNum++) {
+      try {
+        console.log(`[PDF Text Extraction] 處理第 ${pageNum} 頁...`);
+        const page = await pdfDocument.getPage(pageNum);
+        const textContent = await page.getTextContent();
+        
+        // 組合文本項目
+        const pageText = textContent.items
+          .map((item: any) => item.str || '')
+          .join(' ')
+          .trim();
+        
+        if (pageText) {
+          fullText += pageText + '\n';
+          console.log(`[PDF Text Extraction] 第 ${pageNum} 頁文本長度:`, pageText.length);
+        }
+      } catch (pageError: any) {
+        console.warn(`[PDF Text Extraction] 第 ${pageNum} 頁處理失敗:`, pageError.message);
+        continue; // 繼續處理下一頁
+      }
+    }
+    
+    // 清理文本
+    fullText = fullText.trim();
+    
+    console.log('[PDF Text Extraction] pdfjs-dist 提取成功');
+    console.log('[PDF Text Extraction] 總文本長度:', fullText.length);
+    console.log('[PDF Text Extraction] 文本預覽（前500字符）:', fullText.substring(0, 500));
+    
+    if (fullText.length > 0) {
       console.log('[PDF Text Extraction] 成功從上傳的 PDF 提取文本');
-      return pdfData.text.trim();
+      return fullText;
     } else {
-      console.warn('[PDF Text Extraction] pdf-parse 返回空文本');
-      return 'PDF_TEXT_EXTRACTION_FAILED - No readable text found in PDF';
+      console.warn('[PDF Text Extraction] pdfjs-dist 返回空文本');
+      throw new Error('No readable text found in PDF');
     }
     
   } catch (error: any) {
-    console.error('[PDF Text Extraction] pdf-parse 處理失敗:', error);
+    console.error('[PDF Text Extraction] pdfjs-dist 處理失敗:', error);
     console.error('[PDF Text Extraction] 錯誤詳情:', {
       message: error.message,
-      code: error.code,
-      path: error.path,
+      name: error.name,
       stack: error.stack?.split('\n').slice(0, 3).join('\n')
     });
     
-    // 如果是測試文件錯誤，說明庫有問題，但我們已經創建了假文件
-    if (error.code === 'ENOENT' && error.path && error.path.includes('test')) {
-      console.error('[PDF Text Extraction] pdf-parse 庫仍然嘗試讀取測試文件，這是庫的問題');
-      console.error('[PDF Text Extraction] 我們應該處理上傳的 Buffer，不是文件路徑');
-    }
-    
-    // 返回失敗指示
-    return 'PDF_TEXT_EXTRACTION_FAILED - Unable to extract text using pdf-parse';
+    // 絕對不使用任何文件系統操作或測試文件
+    throw new Error(`PDF text extraction failed: ${error.message}`);
   }
 }
 
