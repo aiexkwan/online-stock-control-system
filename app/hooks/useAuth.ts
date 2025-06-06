@@ -172,13 +172,13 @@ export const useAskDatabasePermission = () => {
         return;
       }
 
-      // 檢查是否為允許的用戶
-      const allowedUsers = [
-        'gtatlock@pennineindustries.com',
-        'akwan@pennineindustries.com'
+      // 檢查是否為被禁止的用戶（黑名單）
+      const blockedUsers = [
+        'warehouse@pennineindustries.com',
+        'production@pennineindustries.com'
       ];
 
-      setHasPermission(allowedUsers.includes(user.email));
+      setHasPermission(!blockedUsers.includes(user.email));
     };
 
     checkPermission();

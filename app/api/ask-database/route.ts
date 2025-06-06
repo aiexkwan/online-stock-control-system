@@ -4,12 +4,10 @@ import { LRUCache } from 'lru-cache';
 import OpenAI from 'openai';
 import type { ChatCompletionMessageParam } from 'openai/resources/chat/completions';
 
-// 允許使用 Ask Database 功能的用戶
-const ALLOWED_USERS = [
-  'gtatlock@pennineindustries.com',
-  'akwan@pennineindustries.com',
-  'grobinson@pennineindustries.com',
-  'alyon@pennineindustries.com'
+// 不允許使用 Ask Database 功能的用戶（黑名單）
+const BLOCKED_USERS = [
+  'warehouse@pennineindustries.com',
+  'production@pennineindustries.com'
 ];
 
 // 初始化 OpenAI 客戶端
@@ -559,7 +557,7 @@ async function checkUserPermission(): Promise<boolean> {
       return false;
     }
 
-    return ALLOWED_USERS.includes(user.email);
+    return !BLOCKED_USERS.includes(user.email);
   } catch (error) {
     console.error('Permission check error:', error);
     return false;
@@ -624,7 +622,7 @@ export async function GET(request: NextRequest) {
         userCheck = {
           authenticated: true,
           email: user.email,
-          hasPermission: ALLOWED_USERS.includes(user.email)
+          hasPermission: !BLOCKED_USERS.includes(user.email)
         };
       }
     } catch (authError) {
