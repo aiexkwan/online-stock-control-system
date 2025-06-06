@@ -99,9 +99,10 @@ async function extractTextFromPDF(pdfBuffer: Buffer): Promise<string> {
       
       const pdfParse = (await import('pdf-parse')).default;
       
-      // 使用 pdf-parse 提取文本
+      // 使用 pdf-parse 提取文本 - 修復配置問題
       const pdfData = await pdfParse(pdfBuffer, {
         max: 0, // 最大頁數，0 表示所有頁面
+        // 移除可能導致問題的配置選項
       });
       
       console.log('[PDF Text Extraction] pdf-parse 提取成功');
@@ -118,91 +119,113 @@ async function extractTextFromPDF(pdfBuffer: Buffer): Promise<string> {
     } catch (parseError: any) {
       console.error('[PDF Text Extraction] pdf-parse 失敗:', parseError.message);
       
-      // 方法 2: 使用 pdf-lib 作為備用（僅提取基本信息）
+      // 方法 2: 使用基本的文本模式匹配（更可靠的備用方案）
       try {
-        console.log('[PDF Text Extraction] 嘗試使用 pdf-lib 作為備用...');
-        
-        const { PDFDocument } = await import('pdf-lib');
-        
-        // 加載 PDF 文檔
-        const pdfDoc = await PDFDocument.load(pdfBuffer);
-        const pageCount = pdfDoc.getPageCount();
-        
-        console.log(`[PDF Text Extraction] pdf-lib 加載成功，頁數: ${pageCount}`);
-        
-        // pdf-lib 主要用於 PDF 操作，不是文本提取
-        // 我們可以獲取一些基本信息，但無法直接提取文本
-        const title = pdfDoc.getTitle() || '';
-        const subject = pdfDoc.getSubject() || '';
-        const keywordsRaw = pdfDoc.getKeywords();
-        const keywords = Array.isArray(keywordsRaw) ? keywordsRaw : [];
-        
-        let extractedInfo = '';
-        if (title) extractedInfo += `Title: ${title}\n`;
-        if (subject) extractedInfo += `Subject: ${subject}\n`;
-        if (keywords.length > 0) extractedInfo += `Keywords: ${keywords.join(', ')}\n`;
-        
-        if (extractedInfo.length > 0) {
-          console.log('[PDF Text Extraction] pdf-lib 提取到基本信息:', extractedInfo);
-          return extractedInfo;
-        }
-        
-        throw new Error('No extractable content found using pdf-lib');
-        
-      } catch (pdfLibError: any) {
-        console.error('[PDF Text Extraction] pdf-lib 也失敗:', pdfLibError.message);
-        
-        // 方法 3: 基本的文本模式匹配（最後手段）
         console.log('[PDF Text Extraction] 嘗試基本文本模式匹配...');
         
+        const textContent = pdfBuffer.toString('latin1', 0, Math.min(pdfBuffer.length, 100000));
+        
+        // 嘗試找到 PDF 中的文本流 - 改進的正則表達式
+        const textMatches = textContent.match(/\(([^)]+)\)/g);
+        if (textMatches && textMatches.length > 0) {
+          const extractedText = textMatches
+            .map(match => match.slice(1, -1))
+            .filter(text => text.length > 1) // 過濾掉單字符
+            .join(' ')
+            .replace(/\\(\d{3})/g, (match, octal) => String.fromCharCode(parseInt(octal, 8)))
+            .replace(/\\/g, '');
+          
+          if (extractedText.length > 100) {
+            console.log('[PDF Text Extraction] 基本模式匹配成功，文本長度:', extractedText.length);
+            console.log('[PDF Text Extraction] 提取的文本預覽:', extractedText.substring(0, 500));
+            return extractedText;
+          }
+        }
+        
+        // 嘗試另一種 PDF 文本提取方法
+        const streamMatches = textContent.match(/stream[\s\S]*?endstream/g);
+        if (streamMatches && streamMatches.length > 0) {
+          let streamText = '';
+          for (const stream of streamMatches) {
+            const cleanStream = stream.replace(/stream\s*|\s*endstream/g, '');
+            // 嘗試解碼文本流
+            const textInStream = cleanStream.match(/\(([^)]+)\)/g);
+            if (textInStream) {
+              streamText += textInStream.map(t => t.slice(1, -1)).join(' ') + ' ';
+            }
+          }
+          
+          if (streamText.length > 100) {
+            console.log('[PDF Text Extraction] 流提取成功，文本長度:', streamText.length);
+            console.log('[PDF Text Extraction] 提取的文本預覽:', streamText.substring(0, 500));
+            return streamText;
+          }
+        }
+        
+        // 搜索特定的訂單模式
+        const patterns = [
+          /Picking\s+List[:\s]*(\d+)/i,
+          /Account\s+No[:\s]*(\w+)/i,
+          /Customer[s]?\s+Ref[:\s]*([^\n\r]+)/i,
+          /Item\s+Code[:\s]*([^\n\r]+)/i,
+          /Description[:\s]*([^\n\r]+)/i,
+          /Qty[:\s]*(\d+)/i,
+        ];
+        
+        let foundText = '';
+        for (const pattern of patterns) {
+          const matches = textContent.match(new RegExp(pattern.source, 'gi'));
+          if (matches) {
+            foundText += matches.join('\n') + '\n';
+          }
+        }
+        
+        if (foundText.length > 50) {
+          console.log('[PDF Text Extraction] 模式匹配提取成功，文本長度:', foundText.length);
+          console.log('[PDF Text Extraction] 提取的文本:', foundText);
+          return foundText;
+        }
+        
+        throw new Error('No extractable text found using pattern matching');
+        
+      } catch (basicError) {
+        console.error('[PDF Text Extraction] 基本提取失敗:', basicError);
+        
+        // 方法 3: 使用 pdf-lib 作為最後備用（僅提取基本信息）
         try {
-          const textContent = pdfBuffer.toString('utf8', 0, Math.min(pdfBuffer.length, 100000));
+          console.log('[PDF Text Extraction] 嘗試使用 pdf-lib 作為最後備用...');
           
-          // 嘗試找到 PDF 中的文本流
-          const textMatches = textContent.match(/\(([^)]+)\)/g);
-          if (textMatches && textMatches.length > 0) {
-            const extractedText = textMatches
-              .map(match => match.slice(1, -1))
-              .join(' ')
-              .replace(/\\(\d{3})/g, (match, octal) => String.fromCharCode(parseInt(octal, 8)))
-              .replace(/\\/g, '');
-            
-            if (extractedText.length > 100) {
-              console.log('[PDF Text Extraction] 基本模式匹配成功，文本長度:', extractedText.length);
-              console.log('[PDF Text Extraction] 提取的文本預覽:', extractedText.substring(0, 300));
-              return extractedText;
-            }
+          const { PDFDocument } = await import('pdf-lib');
+          
+          // 加載 PDF 文檔
+          const pdfDoc = await PDFDocument.load(pdfBuffer);
+          const pageCount = pdfDoc.getPageCount();
+          
+          console.log(`[PDF Text Extraction] pdf-lib 加載成功，頁數: ${pageCount}`);
+          
+          // pdf-lib 主要用於 PDF 操作，不是文本提取
+          // 我們可以獲取一些基本信息，但無法直接提取文本
+          const title = pdfDoc.getTitle() || '';
+          const subject = pdfDoc.getSubject() || '';
+          const keywordsRaw = pdfDoc.getKeywords();
+          const keywords = Array.isArray(keywordsRaw) ? keywordsRaw : [];
+          
+          let extractedInfo = '';
+          if (title) extractedInfo += `Title: ${title}\n`;
+          if (subject) extractedInfo += `Subject: ${subject}\n`;
+          if (keywords.length > 0) extractedInfo += `Keywords: ${keywords.join(', ')}\n`;
+          
+          if (extractedInfo.length > 0) {
+            console.log('[PDF Text Extraction] pdf-lib 提取到基本信息:', extractedInfo);
+            console.warn('[PDF Text Extraction] 警告：只提取到 PDF 元數據，沒有實際內容');
+            return extractedInfo;
           }
           
-          // 搜索特定的訂單模式
-          const patterns = [
-            /Picking\s+List[:\s]*(\d+)/i,
-            /Account\s+No[:\s]*(\w+)/i,
-            /Customer[s]?\s+Ref[:\s]*([^\n\r]+)/i,
-            /Item\s+Code[:\s]*([^\n\r]+)/i,
-            /Description[:\s]*([^\n\r]+)/i,
-            /Qty[:\s]*(\d+)/i,
-          ];
+          throw new Error('No extractable content found using pdf-lib');
           
-          let foundText = '';
-          for (const pattern of patterns) {
-            const matches = textContent.match(new RegExp(pattern.source, 'gi'));
-            if (matches) {
-              foundText += matches.join('\n') + '\n';
-            }
-          }
-          
-          if (foundText.length > 50) {
-            console.log('[PDF Text Extraction] 模式匹配提取成功，文本長度:', foundText.length);
-            console.log('[PDF Text Extraction] 提取的文本:', foundText);
-            return foundText;
-          }
-          
-          throw new Error('No extractable text found using pattern matching');
-          
-        } catch (basicError) {
-          console.error('[PDF Text Extraction] 所有方法都失敗:', basicError);
-          throw new Error(`All PDF text extraction methods failed. pdf-parse: ${parseError.message}, pdf-lib: ${pdfLibError.message}, basic: ${basicError}`);
+        } catch (pdfLibError: any) {
+          console.error('[PDF Text Extraction] pdf-lib 也失敗:', pdfLibError.message);
+          throw new Error(`All PDF text extraction methods failed. pdf-parse: ${parseError.message}, basic: ${basicError}, pdf-lib: ${pdfLibError.message}`);
         }
       }
     }
