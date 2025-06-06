@@ -51,133 +51,24 @@ function createOpenAIClient() {
   });
 }
 
-// PDF 轉圖像函數（使用 pdf-poppler 作為主要方法，pdf2pic 作為備用）
+// PDF 轉圖像函數（使用 pdf-lib 進行 PDF 操作）
 async function convertPdfToImages(pdfBuffer: Buffer): Promise<string[]> {
-  const fs = require('fs');
-  const path = require('path');
-  const os = require('os');
-  
   try {
-    console.log('[PDF to Images] 開始轉換 PDF 到圖像...');
+    console.log('[PDF to Images] 開始使用 pdf-lib 轉換 PDF 到圖像...');
     
-    // 檢測運行環境
-    const isWindows = process.platform === 'win32';
-    const isVercel = process.env.VERCEL || process.env.VERCEL_ENV;
+    // 使用 pdf-lib 處理 PDF
+    const { PDFDocument } = await import('pdf-lib');
     
-    // 在 Vercel 環境中，直接使用文本提取模式
-    if (isVercel) {
-      console.log('[PDF to Images] 在 Vercel 環境中運行，跳過圖像轉換，使用文本提取模式...');
-      throw new Error('PDF_TEXT_EXTRACTION_NEEDED');
-    }
+    // 加載 PDF 文檔
+    const pdfDoc = await PDFDocument.load(pdfBuffer);
+    const pageCount = pdfDoc.getPageCount();
     
-    // 使用系統臨時目錄而不是 /tmp（Windows 兼容）
-    const tempDir = os.tmpdir();
-    const tempPdfPath = path.join(tempDir, `temp-pdf-${Date.now()}.pdf`);
+    console.log(`[PDF to Images] PDF 包含 ${pageCount} 頁`);
     
-    // 寫入臨時 PDF 文件
-    fs.writeFileSync(tempPdfPath, pdfBuffer);
-    console.log('[PDF to Images] 臨時 PDF 文件創建:', tempPdfPath);
-    
-    let base64Images: string[] = [];
-    
-    try {
-      // 方法 1: 直接使用 pdftocairo 命令行工具
-      console.log('[PDF to Images] 嘗試使用 pdftocairo 命令行...');
-      const { exec } = require('child_process');
-      const { promisify } = require('util');
-      const execAsync = promisify(exec);
-      
-      let pdftocairoPath: string;
-      
-      if (isWindows) {
-        // Windows 開發環境
-        const projectRoot = process.cwd();
-        const popplerPath = path.join(projectRoot, 'poppler', 'poppler-24.08.0', 'Library', 'bin');
-        pdftocairoPath = path.join(popplerPath, 'pdftocairo.exe');
-        
-        if (!fs.existsSync(pdftocairoPath)) {
-          console.error('[PDF to Images] pdftocairo.exe 不存在:', pdftocairoPath);
-          throw new Error('pdftocairo.exe not found');
-        }
-      } else {
-        // Linux/Mac 開發環境
-        pdftocairoPath = 'pdftocairo';
-        
-        // 檢查 pdftocairo 是否可用
-        try {
-          await execAsync('which pdftocairo');
-        } catch (e) {
-          console.warn('[PDF to Images] pdftocairo 不可用，使用文本提取模式');
-          throw new Error('PDF_TEXT_EXTRACTION_NEEDED');
-        }
-      }
-      
-      console.log('[PDF to Images] 使用 pdftocairo 路徑:', pdftocairoPath);
-      
-      // 生成輸出文件前綴
-      const outputPrefix = path.join(tempDir, `pdf-page-${Date.now()}`);
-      
-      // 構建命令
-      const command = isWindows 
-        ? `"${pdftocairoPath}" -png -r 150 "${tempPdfPath}" "${outputPrefix}"`
-        : `${pdftocairoPath} -png -r 150 "${tempPdfPath}" "${outputPrefix}"`;
-      
-      console.log('[PDF to Images] 執行命令:', command);
-      
-      // 執行命令
-      const { stdout, stderr } = await execAsync(command);
-      
-      if (stderr) {
-        console.warn('[PDF to Images] pdftocairo 警告:', stderr);
-      }
-      
-      console.log('[PDF to Images] pdftocairo 輸出:', stdout);
-      
-      // 查找生成的 PNG 文件
-      const files = fs.readdirSync(tempDir);
-      const pngFiles = files
-        .filter((file: string) => file.startsWith(path.basename(outputPrefix)) && file.endsWith('.png'))
-        .map((file: string) => path.join(tempDir, file))
-        .sort(); // 確保頁面順序正確
-      
-      console.log(`[PDF to Images] 找到 ${pngFiles.length} 個 PNG 文件`);
-      
-      // 讀取生成的圖像文件並轉換為 base64
-      for (const pngPath of pngFiles) {
-        try {
-          const imageBuffer = fs.readFileSync(pngPath);
-          const base64String = imageBuffer.toString('base64');
-          base64Images.push(base64String);
-          
-          // 清理臨時圖像文件
-          fs.unlinkSync(pngPath);
-        } catch (fileError: any) {
-          console.error('[PDF to Images] 讀取圖像文件錯誤:', fileError.message);
-        }
-      }
-      
-      if (base64Images.length === 0) {
-        throw new Error('No images generated from PDF');
-      }
-      
-    } catch (popplerError: any) {
-      console.warn('[PDF to Images] pdftocairo 失敗，嘗試備用方法:', popplerError.message);
-      
-      // 直接拋出 PDF_TEXT_EXTRACTION_NEEDED 錯誤，跳過 PDF-lib
-      throw new Error('PDF_TEXT_EXTRACTION_NEEDED');
-    }
-    
-    // 清理臨時 PDF 文件
-    try {
-      if (fs.existsSync(tempPdfPath)) {
-        fs.unlinkSync(tempPdfPath);
-      }
-    } catch (cleanupError: any) {
-      console.warn('[PDF to Images] 清理臨時文件失敗:', cleanupError.message);
-    }
-    
-    console.log(`[PDF to Images] 成功轉換 ${base64Images.length} 個圖像為 base64`);
-    return base64Images;
+    // 注意：pdf-lib 本身不能直接轉換為圖像
+    // 在 serverless 環境中，我們跳過圖像轉換，直接使用文本提取
+    console.log('[PDF to Images] pdf-lib 不支持直接圖像轉換，使用文本提取模式');
+    throw new Error('PDF_TEXT_EXTRACTION_NEEDED');
     
   } catch (error: any) {
     console.error('[PDF to Images] 轉換錯誤:', error);
@@ -191,10 +82,10 @@ async function convertPdfToImages(pdfBuffer: Buffer): Promise<string[]> {
   }
 }
 
-// 新增：PDF 文本提取函數（備用方案）
+// PDF 文本提取函數（使用 pdf-parse）
 async function extractTextFromPDF(pdfBuffer: Buffer): Promise<string> {
   try {
-    console.log('[PDF Text Extraction] 開始提取 PDF 文本...');
+    console.log('[PDF Text Extraction] 開始使用 pdf-parse 提取 PDF 文本...');
     console.log('[PDF Text Extraction] Buffer 大小:', pdfBuffer.length, 'bytes');
     
     // 確保傳入的是 Buffer 對象
@@ -202,105 +93,68 @@ async function extractTextFromPDF(pdfBuffer: Buffer): Promise<string> {
       throw new Error('Invalid buffer provided to extractTextFromPDF');
     }
     
-    // 檢測運行環境
-    const isWindows = process.platform === 'win32';
-    const isVercel = process.env.VERCEL || process.env.VERCEL_ENV;
-    
-    // 在 Vercel 環境中，使用 pdfjs-dist legacy build（不需要 canvas）
-    if (isVercel) {
-      console.log('[PDF Text Extraction] 在 Vercel 環境中運行，使用 pdfjs-dist legacy build...');
+    // 方法 1: 使用 pdf-parse（主要方法）
+    try {
+      console.log('[PDF Text Extraction] 嘗試使用 pdf-parse...');
       
+      const pdfParse = (await import('pdf-parse')).default;
+      
+      // 使用 pdf-parse 提取文本
+      const pdfData = await pdfParse(pdfBuffer, {
+        max: 0, // 最大頁數，0 表示所有頁面
+      });
+      
+      console.log('[PDF Text Extraction] pdf-parse 提取成功');
+      console.log('[PDF Text Extraction] 頁數:', pdfData.numpages);
+      console.log('[PDF Text Extraction] 文本長度:', pdfData.text.length);
+      console.log('[PDF Text Extraction] 文本預覽（前500字符）:', pdfData.text.substring(0, 500));
+      
+      if (!pdfData.text || pdfData.text.trim().length === 0) {
+        throw new Error('No text content found in PDF using pdf-parse');
+      }
+      
+      return pdfData.text;
+      
+    } catch (parseError: any) {
+      console.error('[PDF Text Extraction] pdf-parse 失敗:', parseError.message);
+      
+      // 方法 2: 使用 pdf-lib 作為備用（僅提取基本信息）
       try {
-        // 動態導入 pdfjs-dist legacy build（不需要 canvas）
-        const pdfjsLib = await import('pdfjs-dist/legacy/build/pdf');
+        console.log('[PDF Text Extraction] 嘗試使用 pdf-lib 作為備用...');
         
-        // 設置 worker - 使用 CDN worker 確保在 Vercel 中可用
-        pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
+        const { PDFDocument } = await import('pdf-lib');
         
-        console.log('[PDF Text Extraction] pdfjs-dist 版本:', pdfjsLib.version);
-        console.log('[PDF Text Extraction] Worker 路徑:', pdfjsLib.GlobalWorkerOptions.workerSrc);
+        // 加載 PDF 文檔
+        const pdfDoc = await PDFDocument.load(pdfBuffer);
+        const pageCount = pdfDoc.getPageCount();
         
-        // 將 Buffer 轉換為 Uint8Array
-        const uint8Array = new Uint8Array(pdfBuffer);
-        console.log('[PDF Text Extraction] Uint8Array 大小:', uint8Array.length);
+        console.log(`[PDF Text Extraction] pdf-lib 加載成功，頁數: ${pageCount}`);
         
-        // 加載 PDF 文檔 - 使用更寬鬆的設置
-        const loadingTask = pdfjsLib.getDocument({
-          data: uint8Array,
-          useSystemFonts: true,
-          disableFontFace: true,
-          isEvalSupported: false,
-          useWorkerFetch: false,
-          disableAutoFetch: true,
-          disableStream: true,
-          verbosity: 1, // 增加日誌輸出以便調試
-          standardFontDataUrl: `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/`,
-        });
+        // pdf-lib 主要用於 PDF 操作，不是文本提取
+        // 我們可以獲取一些基本信息，但無法直接提取文本
+        const title = pdfDoc.getTitle() || '';
+        const subject = pdfDoc.getSubject() || '';
+        const keywordsRaw = pdfDoc.getKeywords();
+        const keywords = Array.isArray(keywordsRaw) ? keywordsRaw : [];
         
-        // 設置超時
-        const timeoutPromise = new Promise((_, reject) => {
-          setTimeout(() => reject(new Error('PDF loading timeout')), 45000); // 增加到45秒
-        });
+        let extractedInfo = '';
+        if (title) extractedInfo += `Title: ${title}\n`;
+        if (subject) extractedInfo += `Subject: ${subject}\n`;
+        if (keywords.length > 0) extractedInfo += `Keywords: ${keywords.join(', ')}\n`;
         
-        console.log('[PDF Text Extraction] 開始加載 PDF...');
-        const pdfDoc = await Promise.race([loadingTask.promise, timeoutPromise]) as any;
-        console.log('[PDF Text Extraction] PDF 加載成功，頁數:', pdfDoc.numPages);
-        
-        let fullText = '';
-        
-        // 逐頁提取文本 - 限制最多處理 10 頁
-        const maxPages = Math.min(pdfDoc.numPages, 10);
-        for (let pageNum = 1; pageNum <= maxPages; pageNum++) {
-          try {
-            console.log(`[PDF Text Extraction] 處理頁面 ${pageNum}...`);
-            
-            const pageTimeoutPromise = new Promise((_, reject) => {
-              setTimeout(() => reject(new Error(`Page ${pageNum} timeout`)), 15000); // 每頁15秒超時
-            });
-            
-            const page = await Promise.race([pdfDoc.getPage(pageNum), pageTimeoutPromise]) as any;
-            console.log(`[PDF Text Extraction] 頁面 ${pageNum} 加載成功`);
-            
-            const textContent = await Promise.race([page.getTextContent(), pageTimeoutPromise]) as any;
-            console.log(`[PDF Text Extraction] 頁面 ${pageNum} 文本內容項目數:`, textContent.items?.length || 0);
-            
-            // 將文本項目組合成字符串
-            const pageText = textContent.items
-              .map((item: any) => {
-                const str = item.str || '';
-                const transform = item.transform || [];
-                // 添加位置信息以保持文本結構
-                return str.trim();
-              })
-              .filter((str: string) => str.length > 0)
-              .join(' ');
-            
-            if (pageText.length > 0) {
-              fullText += pageText + '\n';
-              console.log(`[PDF Text Extraction] 頁面 ${pageNum} 文本長度:`, pageText.length);
-              console.log(`[PDF Text Extraction] 頁面 ${pageNum} 文本預覽:`, pageText.substring(0, 200));
-            } else {
-              console.warn(`[PDF Text Extraction] 頁面 ${pageNum} 沒有提取到文本`);
-            }
-          } catch (pageError) {
-            console.error(`[PDF Text Extraction] 頁面 ${pageNum} 提取失敗:`, pageError);
-            // 繼續處理下一頁，不中斷整個過程
-          }
+        if (extractedInfo.length > 0) {
+          console.log('[PDF Text Extraction] pdf-lib 提取到基本信息:', extractedInfo);
+          return extractedInfo;
         }
         
-        console.log('[PDF Text Extraction] pdfjs-dist 提取完成，總文本長度:', fullText.length);
-        console.log('[PDF Text Extraction] 提取的文本預覽（前500字符）:', fullText.substring(0, 500));
+        throw new Error('No extractable content found using pdf-lib');
         
-        if (!fullText || fullText.trim().length === 0) {
-          throw new Error('No text content found in PDF using pdfjs-dist');
-        }
+      } catch (pdfLibError: any) {
+        console.error('[PDF Text Extraction] pdf-lib 也失敗:', pdfLibError.message);
         
-        return fullText;
-      } catch (parseError: any) {
-        console.error('[PDF Text Extraction] pdfjs-dist 失敗:', parseError.message);
+        // 方法 3: 基本的文本模式匹配（最後手段）
+        console.log('[PDF Text Extraction] 嘗試基本文本模式匹配...');
         
-        // 如果 pdfjs-dist 失敗，嘗試基本的文本提取
-        console.log('[PDF Text Extraction] 嘗試基本文本提取...');
         try {
           const textContent = pdfBuffer.toString('utf8', 0, Math.min(pdfBuffer.length, 100000));
           
@@ -314,152 +168,42 @@ async function extractTextFromPDF(pdfBuffer: Buffer): Promise<string> {
               .replace(/\\/g, '');
             
             if (extractedText.length > 100) {
-              console.log('[PDF Text Extraction] 基本提取成功，文本長度:', extractedText.length);
+              console.log('[PDF Text Extraction] 基本模式匹配成功，文本長度:', extractedText.length);
+              console.log('[PDF Text Extraction] 提取的文本預覽:', extractedText.substring(0, 300));
               return extractedText;
             }
           }
           
-          // 最後嘗試：直接搜索可能的文本模式
+          // 搜索特定的訂單模式
           const patterns = [
             /Picking\s+List[:\s]*(\d+)/i,
             /Account\s+No[:\s]*(\w+)/i,
             /Customer[s]?\s+Ref[:\s]*([^\n\r]+)/i,
             /Item\s+Code[:\s]*([^\n\r]+)/i,
+            /Description[:\s]*([^\n\r]+)/i,
+            /Qty[:\s]*(\d+)/i,
           ];
           
           let foundText = '';
           for (const pattern of patterns) {
-            const match = textContent.match(pattern);
-            if (match) {
-              foundText += match[0] + '\n';
+            const matches = textContent.match(new RegExp(pattern.source, 'gi'));
+            if (matches) {
+              foundText += matches.join('\n') + '\n';
             }
           }
           
           if (foundText.length > 50) {
             console.log('[PDF Text Extraction] 模式匹配提取成功，文本長度:', foundText.length);
+            console.log('[PDF Text Extraction] 提取的文本:', foundText);
             return foundText;
           }
           
-          throw new Error('No extractable text found in PDF');
+          throw new Error('No extractable text found using pattern matching');
+          
         } catch (basicError) {
-          console.error('[PDF Text Extraction] 基本提取也失敗:', basicError);
-          throw new Error(`All PDF text extraction methods failed: ${parseError.message}`);
+          console.error('[PDF Text Extraction] 所有方法都失敗:', basicError);
+          throw new Error(`All PDF text extraction methods failed. pdf-parse: ${parseError.message}, pdf-lib: ${pdfLibError.message}, basic: ${basicError}`);
         }
-      }
-    }
-    
-    // 本地環境使用 pdftotext（如果可用）
-    const fs = require('fs');
-    const path = require('path');
-    const os = require('os');
-    const { exec } = require('child_process');
-    const { promisify } = require('util');
-    const execAsync = promisify(exec);
-    
-    let pdftotextPath: string;
-    
-    if (isWindows) {
-      // Windows 環境
-      const projectRoot = process.cwd();
-      const popplerPath = path.join(projectRoot, 'poppler', 'poppler-24.08.0', 'Library', 'bin');
-      pdftotextPath = path.join(popplerPath, 'pdftotext.exe');
-      
-      if (!fs.existsSync(pdftotextPath)) {
-        console.warn('[PDF Text Extraction] pdftotext.exe 不存在，使用 pdfjs-dist 作為後備');
-        // 如果本地也沒有 pdftotext，使用 pdfjs-dist
-        const pdfjsLib = await import('pdfjs-dist/legacy/build/pdf');
-        pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
-        
-        const uint8Array = new Uint8Array(pdfBuffer);
-        const loadingTask = pdfjsLib.getDocument({ 
-          data: uint8Array, 
-          useSystemFonts: true,
-          disableFontFace: true,
-          isEvalSupported: false,
-        });
-        const pdfDoc = await loadingTask.promise;
-        
-        let fullText = '';
-        for (let i = 1; i <= pdfDoc.numPages; i++) {
-          const page = await pdfDoc.getPage(i);
-          const textContent = await page.getTextContent();
-          fullText += textContent.items.map((item: any) => item.str).join(' ') + '\n';
-        }
-        
-        return fullText;
-      }
-    } else {
-      // Linux/Mac 環境
-      pdftotextPath = 'pdftotext';
-      
-      // 檢查 pdftotext 是否可用
-      try {
-        await execAsync('which pdftotext');
-      } catch (e) {
-        console.warn('[PDF Text Extraction] pdftotext 不可用，使用 pdfjs-dist 作為後備');
-        const pdfjsLib = await import('pdfjs-dist/legacy/build/pdf');
-        pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
-        
-        const uint8Array = new Uint8Array(pdfBuffer);
-        const loadingTask = pdfjsLib.getDocument({ 
-          data: uint8Array, 
-          useSystemFonts: true,
-          disableFontFace: true,
-          isEvalSupported: false,
-        });
-        const pdfDoc = await loadingTask.promise;
-        
-        let fullText = '';
-        for (let i = 1; i <= pdfDoc.numPages; i++) {
-          const page = await pdfDoc.getPage(i);
-          const textContent = await page.getTextContent();
-          fullText += textContent.items.map((item: any) => item.str).join(' ') + '\n';
-        }
-        
-        return fullText;
-      }
-    }
-    
-    // 創建臨時文件
-    const tempDir = os.tmpdir();
-    const tempPdfPath = path.join(tempDir, `temp-pdf-text-${Date.now()}.pdf`);
-    const tempTxtPath = path.join(tempDir, `temp-pdf-text-${Date.now()}.txt`);
-    
-    // 寫入臨時 PDF 文件
-    fs.writeFileSync(tempPdfPath, pdfBuffer);
-    
-    try {
-      // 使用 pdftotext 提取文本
-      const command = isWindows 
-        ? `"${pdftotextPath}" -enc UTF-8 "${tempPdfPath}" "${tempTxtPath}"`
-        : `${pdftotextPath} -enc UTF-8 "${tempPdfPath}" "${tempTxtPath}"`;
-      
-      console.log('[PDF Text Extraction] 執行命令:', command);
-      
-      const { stdout, stderr } = await execAsync(command);
-      
-      if (stderr) {
-        console.warn('[PDF Text Extraction] pdftotext 警告:', stderr);
-      }
-      
-      // 讀取提取的文本
-      const fullText = fs.readFileSync(tempTxtPath, 'utf8');
-      
-      console.log('[PDF Text Extraction] 文本提取成功，字符數:', fullText.length);
-      
-      if (!fullText || fullText.trim().length === 0) {
-        throw new Error('No text content found in PDF');
-      }
-      
-      return fullText;
-      
-    } finally {
-      // 清理臨時文件
-      try {
-        if (fs.existsSync(tempPdfPath)) fs.unlinkSync(tempPdfPath);
-        if (fs.existsSync(tempTxtPath)) fs.unlinkSync(tempTxtPath);
-      } catch (cleanupError) {
-        console.warn('[PDF Text Extraction] 清理臨時文件失敗:', cleanupError);
       }
     }
     
