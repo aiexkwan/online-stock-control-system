@@ -374,6 +374,116 @@ async function extractTextFromPDF(pdfBuffer: Buffer): Promise<string> {
       }
     }
     
+    // 嘗試更激進的文本提取方法
+    console.log('[PDF Text Extraction] 嘗試激進文本提取...');
+    
+    // 方法 1: 使用不同編碼
+    const encodings = ['latin1', 'utf8', 'ascii'];
+    for (const encoding of encodings) {
+      try {
+        const encodedContent = pdfBuffer.toString(encoding as BufferEncoding, 0, Math.min(pdfBuffer.length, 50000));
+        
+        // 搜索所有可能的文本模式
+        const allTextMatches = encodedContent.match(/\(([^)]{2,})\)/g);
+        if (allTextMatches && allTextMatches.length > 10) {
+          let extractedText = '';
+          const seenTexts = new Set(); // 避免重複
+          
+          for (const match of allTextMatches) {
+            const text = match.slice(1, -1);
+            
+            // 跳過已經見過的文本
+            if (seenTexts.has(text)) continue;
+            seenTexts.add(text);
+            
+            // 檢查是否包含有用信息
+            if (text.match(/\d{6}/) || // 6位數字（可能是訂單號）
+                text.match(/^[A-Z]{2,}\d+/) || // 字母+數字（產品代碼）
+                text.match(/Account|Customer|Picking|List|Item|Code|Description|Qty|Price/i) || // 關鍵字
+                text.match(/^[A-Z][a-z]+\s+[A-Z][a-z]+/) || // 公司名稱格式
+                text.match(/^\d+\.\d+$/) || // 價格格式
+                text.match(/^\d+$/) && text.length >= 3) { // 3位以上數字
+              
+              extractedText += text + ' ';
+            }
+          }
+          
+          if (extractedText.length > 200) {
+            console.log(`[PDF Text Extraction] ${encoding} 編碼提取成功，文本長度:`, extractedText.length);
+            console.log('[PDF Text Extraction] 提取的關鍵信息:', extractedText.substring(0, 800));
+            return extractedText;
+          }
+        }
+      } catch (encodingError) {
+        console.log(`[PDF Text Extraction] ${encoding} 編碼失敗:`, encodingError);
+      }
+    }
+    
+    // 方法 2: 搜索特定的 PDF 對象
+    console.log('[PDF Text Extraction] 搜索 PDF 對象...');
+    const baseTextContent = pdfBuffer.toString('latin1', 0, Math.min(pdfBuffer.length, 100000));
+    const objMatches = baseTextContent.match(/\d+\s+\d+\s+obj[\s\S]*?endobj/g);
+    if (objMatches && objMatches.length > 0) {
+      let objText = '';
+      
+      for (const obj of objMatches) {
+        // 在對象中搜索文本
+        const objTextMatches = obj.match(/\(([^)]{3,})\)/g);
+        if (objTextMatches) {
+          for (const match of objTextMatches) {
+            const text = match.slice(1, -1);
+            const alphanumericRatio = (text.match(/[a-zA-Z0-9\s]/g) || []).length / text.length;
+            if (alphanumericRatio > 0.6) {
+              objText += text + ' ';
+            }
+          }
+        }
+      }
+      
+      if (objText.length > 200) {
+        console.log('[PDF Text Extraction] PDF 對象搜索成功，文本長度:', objText.length);
+        console.log('[PDF Text Extraction] 對象文本內容:', objText.substring(0, 500));
+        return objText;
+      }
+    }
+    
+    // 方法 3: 十六進制解碼嘗試
+    console.log('[PDF Text Extraction] 嘗試十六進制解碼...');
+    const hexMatches = baseTextContent.match(/<([0-9A-Fa-f]{4,})>/g);
+    if (hexMatches && hexMatches.length > 0) {
+      let hexText = '';
+      
+      for (const hexMatch of hexMatches) {
+        try {
+          const hexString = hexMatch.slice(1, -1);
+          let decodedText = '';
+          
+          // 嘗試將十六進制轉換為文本
+          for (let i = 0; i < hexString.length; i += 2) {
+            const hexPair = hexString.substr(i, 2);
+            const charCode = parseInt(hexPair, 16);
+            if (charCode >= 32 && charCode <= 126) { // 可打印 ASCII
+              decodedText += String.fromCharCode(charCode);
+            }
+          }
+          
+          if (decodedText.length > 2) {
+            hexText += decodedText + ' ';
+          }
+        } catch (hexError) {
+          // 忽略解碼錯誤
+        }
+      }
+      
+      if (hexText.length > 100) {
+        console.log('[PDF Text Extraction] 十六進制解碼成功，文本長度:', hexText.length);
+        console.log('[PDF Text Extraction] 十六進制文本內容:', hexText.substring(0, 500));
+        return hexText;
+      }
+    }
+    
+    throw new Error('No extractable text found using aggressive text extraction methods');
+    
   } catch (error: any) {
     console.error('[PDF Text Extraction] 文本提取失敗:', error);
     console.error('[PDF Text Extraction] 錯誤詳情:', {
