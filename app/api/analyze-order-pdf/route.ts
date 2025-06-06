@@ -457,7 +457,7 @@ async function extractTextFromPDF(pdfBuffer: Buffer): Promise<string> {
 interface OrderData {
   account_num: number;
   order_ref: number;
-  customer_ref: number;
+  customer_ref: string;
   invoice_to: string;
   delivery_add: string;
   product_code: string;
