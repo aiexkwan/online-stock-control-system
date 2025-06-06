@@ -51,55 +51,202 @@ function createOpenAIClient() {
   });
 }
 
-// PDF 轉圖像函數（使用 pdf2pic 或類似庫）
+// PDF 轉圖像函數（使用 pdf-poppler 作為主要方法，pdf2pic 作為備用）
 async function convertPdfToImages(pdfBuffer: Buffer): Promise<string[]> {
   const fs = require('fs');
   const path = require('path');
+  const os = require('os');
   
   try {
-    // 注意：這裡需要安裝 pdf2pic 或 pdf-poppler 等庫
-    // npm install pdf2pic
-    const pdf2pic = require('pdf2pic');
+    console.log('[PDF to Images] 開始轉換 PDF 到圖像...');
     
-    const convert = pdf2pic.fromBuffer(pdfBuffer, {
-      density: 300,           // 高解析度
-      saveFilename: "page",
-      savePath: "/tmp",
-      format: "png",
-      width: 2480,           // A4 寬度 @ 300 DPI
-      height: 3508           // A4 高度 @ 300 DPI
-    });
+    // 使用系統臨時目錄而不是 /tmp（Windows 兼容）
+    const tempDir = os.tmpdir();
+    const tempPdfPath = path.join(tempDir, `temp-pdf-${Date.now()}.pdf`);
     
-    const results = await convert.bulk(-1); // 轉換所有頁面
+    // 寫入臨時 PDF 文件
+    fs.writeFileSync(tempPdfPath, pdfBuffer);
+    console.log('[PDF to Images] 臨時 PDF 文件創建:', tempPdfPath);
     
-    console.log(`[PDF to Images] 轉換結果: ${results.length} 個文件`);
+    let base64Images: string[] = [];
     
-    // 將圖像轉為 base64
-    const base64Images: string[] = [];
-    for (const result of results) {
-      if (result.base64) {
-        // 如果已經有 base64，直接使用
-        base64Images.push(result.base64);
-      } else if (result.path) {
-        // 如果有文件路徑，讀取文件並轉換為 base64
+    try {
+      // 方法 1: 直接使用 pdftocairo 命令行工具
+      console.log('[PDF to Images] 嘗試使用 pdftocairo 命令行...');
+      const { exec } = require('child_process');
+      const { promisify } = require('util');
+      const execAsync = promisify(exec);
+      
+      // 設置本地 Poppler 二進制文件路徑
+      const projectRoot = process.cwd();
+      const popplerPath = path.join(projectRoot, 'poppler', 'poppler-24.08.0', 'Library', 'bin');
+      
+      // 檢查 Poppler 路徑是否存在
+      if (!fs.existsSync(popplerPath)) {
+        console.error('[PDF to Images] Poppler 路徑不存在:', popplerPath);
+        throw new Error('Poppler binaries not found');
+      }
+      
+      // 檢查 pdftocairo.exe 是否存在
+      const pdftocairoPath = path.join(popplerPath, 'pdftocairo.exe');
+      if (!fs.existsSync(pdftocairoPath)) {
+        console.error('[PDF to Images] pdftocairo.exe 不存在:', pdftocairoPath);
+        throw new Error('pdftocairo.exe not found');
+      }
+      
+      console.log('[PDF to Images] 使用 pdftocairo 路徑:', pdftocairoPath);
+      
+      // 生成輸出文件前綴
+      const outputPrefix = path.join(tempDir, `pdf-page-${Date.now()}`);
+      
+      // 構建命令
+      const command = `"${pdftocairoPath}" -png -r 150 "${tempPdfPath}" "${outputPrefix}"`;
+      console.log('[PDF to Images] 執行命令:', command);
+      
+      // 執行命令
+      const { stdout, stderr } = await execAsync(command);
+      
+      if (stderr) {
+        console.warn('[PDF to Images] pdftocairo 警告:', stderr);
+      }
+      
+      console.log('[PDF to Images] pdftocairo 輸出:', stdout);
+      
+      // 查找生成的 PNG 文件
+      const files = fs.readdirSync(tempDir);
+      const pngFiles = files
+        .filter((file: string) => file.startsWith(path.basename(outputPrefix)) && file.endsWith('.png'))
+        .map((file: string) => path.join(tempDir, file))
+        .sort(); // 確保頁面順序正確
+      
+      console.log(`[PDF to Images] 找到 ${pngFiles.length} 個 PNG 文件`);
+      
+      // 讀取生成的圖像文件並轉換為 base64
+      for (const pngPath of pngFiles) {
         try {
-          const imageBuffer = fs.readFileSync(result.path);
+          const imageBuffer = fs.readFileSync(pngPath);
           const base64String = imageBuffer.toString('base64');
           base64Images.push(base64String);
           
-          // 清理臨時文件
-          fs.unlinkSync(result.path);
-        } catch (fileError) {
-          console.error('[PDF to Images] 讀取文件錯誤:', fileError);
+          // 清理臨時圖像文件
+          fs.unlinkSync(pngPath);
+        } catch (fileError: any) {
+          console.error('[PDF to Images] 讀取圖像文件錯誤:', fileError.message);
         }
       }
+      
+      if (base64Images.length === 0) {
+        throw new Error('No images generated from PDF');
+      }
+      
+    } catch (popplerError: any) {
+      console.warn('[PDF to Images] pdftocairo 失敗，嘗試備用方法:', popplerError.message);
+      
+      // 直接拋出 PDF_TEXT_EXTRACTION_NEEDED 錯誤，跳過 PDF-lib
+      throw new Error('PDF_TEXT_EXTRACTION_NEEDED');
+    }
+    
+    // 清理臨時 PDF 文件
+    try {
+      if (fs.existsSync(tempPdfPath)) {
+        fs.unlinkSync(tempPdfPath);
+      }
+    } catch (cleanupError: any) {
+      console.warn('[PDF to Images] 清理臨時文件失敗:', cleanupError.message);
     }
     
     console.log(`[PDF to Images] 成功轉換 ${base64Images.length} 個圖像為 base64`);
     return base64Images;
-  } catch (error) {
+    
+  } catch (error: any) {
     console.error('[PDF to Images] 轉換錯誤:', error);
-    throw new Error('Failed to convert PDF to images');
+    
+    // 如果是特殊的文本提取標記，重新拋出
+    if (error.message === 'PDF_TEXT_EXTRACTION_NEEDED') {
+      throw error;
+    }
+    
+    throw new Error(`Failed to convert PDF to images: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  }
+}
+
+// 新增：PDF 文本提取函數（備用方案）
+async function extractTextFromPDF(pdfBuffer: Buffer): Promise<string> {
+  try {
+    console.log('[PDF Text Extraction] 開始提取 PDF 文本...');
+    console.log('[PDF Text Extraction] Buffer 大小:', pdfBuffer.length, 'bytes');
+    
+    // 確保傳入的是 Buffer 對象
+    if (!Buffer.isBuffer(pdfBuffer)) {
+      throw new Error('Invalid buffer provided to extractTextFromPDF');
+    }
+    
+    // 使用 pdftocairo 的文本提取功能作為備用方案
+    const fs = require('fs');
+    const path = require('path');
+    const os = require('os');
+    const { exec } = require('child_process');
+    const { promisify } = require('util');
+    const execAsync = promisify(exec);
+    
+    // 設置本地 Poppler 二進制文件路徑
+    const projectRoot = process.cwd();
+    const popplerPath = path.join(projectRoot, 'poppler', 'poppler-24.08.0', 'Library', 'bin');
+    const pdftotextPath = path.join(popplerPath, 'pdftotext.exe');
+    
+    // 檢查 pdftotext.exe 是否存在
+    if (!fs.existsSync(pdftotextPath)) {
+      console.error('[PDF Text Extraction] pdftotext.exe 不存在:', pdftotextPath);
+      throw new Error('pdftotext.exe not found');
+    }
+    
+    // 創建臨時文件
+    const tempDir = os.tmpdir();
+    const tempPdfPath = path.join(tempDir, `temp-pdf-text-${Date.now()}.pdf`);
+    const tempTxtPath = path.join(tempDir, `temp-pdf-text-${Date.now()}.txt`);
+    
+    // 寫入臨時 PDF 文件
+    fs.writeFileSync(tempPdfPath, pdfBuffer);
+    
+    try {
+      // 使用 pdftotext 提取文本
+      const command = `"${pdftotextPath}" -enc UTF-8 "${tempPdfPath}" "${tempTxtPath}"`;
+      console.log('[PDF Text Extraction] 執行命令:', command);
+      
+      const { stdout, stderr } = await execAsync(command);
+      
+      if (stderr) {
+        console.warn('[PDF Text Extraction] pdftotext 警告:', stderr);
+      }
+      
+      // 讀取提取的文本
+      const fullText = fs.readFileSync(tempTxtPath, 'utf8');
+      
+      console.log('[PDF Text Extraction] 文本提取成功，字符數:', fullText.length);
+      
+      if (!fullText || fullText.trim().length === 0) {
+        throw new Error('No text content found in PDF');
+      }
+      
+      return fullText;
+      
+    } finally {
+      // 清理臨時文件
+      try {
+        if (fs.existsSync(tempPdfPath)) fs.unlinkSync(tempPdfPath);
+        if (fs.existsSync(tempTxtPath)) fs.unlinkSync(tempTxtPath);
+      } catch (cleanupError) {
+        console.warn('[PDF Text Extraction] 清理臨時文件失敗:', cleanupError);
+      }
+    }
+    
+  } catch (error: any) {
+    console.error('[PDF Text Extraction] 文本提取失敗:', error);
+    console.error('[PDF Text Extraction] 錯誤詳情:', {
+      message: error.message,
+      stack: error.stack?.split('\n').slice(0, 3).join('\n') // 只顯示前3行堆棧
+    });
+    throw new Error(`Failed to extract text from PDF: ${error.message}`);
   }
 }
 
@@ -196,14 +343,37 @@ export async function POST(request: NextRequest) {
     
     console.log('[Analyze Order PDF API] 開始將 PDF 轉換為圖像...');
     
-    // 將 PDF 轉換為圖像
-    const imageBase64Array = await convertPdfToImages(pdfBuffer);
+    // 嘗試將 PDF 轉換為圖像，如果失敗則使用文本提取
+    let imageBase64Array: string[] = [];
+    let extractedText: string = '';
+    let useTextMode = false;
     
-    if (imageBase64Array.length === 0) {
-      throw new Error('No images extracted from PDF');
+    try {
+      imageBase64Array = await convertPdfToImages(pdfBuffer);
+      console.log(`[Analyze Order PDF API] PDF 轉換完成，共 ${imageBase64Array.length} 頁圖像`);
+    } catch (conversionError: any) {
+      console.warn('[Analyze Order PDF API] 圖像轉換失敗，嘗試文本提取:', conversionError.message);
+      
+      // 如果圖像轉換失敗，直接使用文本提取模式
+      try {
+        extractedText = await extractTextFromPDF(pdfBuffer);
+        useTextMode = true;
+        console.log('[Analyze Order PDF API] 切換到文本提取模式，提取字符數:', extractedText.length);
+      } catch (textError: any) {
+        console.error('[Analyze Order PDF API] 文本提取也失敗:', textError.message);
+        return NextResponse.json({ 
+          error: `PDF processing failed: Unable to convert to images or extract text. ${textError.message}`,
+          details: 'Both image conversion and text extraction methods failed'
+        }, { status: 500 });
+      }
     }
     
-    console.log(`[Analyze Order PDF API] PDF 轉換完成，共 ${imageBase64Array.length} 頁圖像`);
+    if (!useTextMode && imageBase64Array.length === 0) {
+      return NextResponse.json({ 
+        error: 'No content extracted from PDF',
+        details: 'PDF conversion resulted in no images and text extraction was not attempted'
+      }, { status: 500 });
+    }
     
     // 創建 OpenAI 客戶端
     const openai = createOpenAIClient();
@@ -289,18 +459,23 @@ Please analyze the document images now and extract the order data.
       }
     ];
     
-    // 添加所有頁面的圖像
-    for (let i = 0; i < imageBase64Array.length; i++) {
-      messageContent.push({
-        type: "image_url",
-        image_url: {
-          url: `data:image/png;base64,${imageBase64Array[i]}`,
-          detail: "high"
-        }
-      });
+    if (useTextMode) {
+      // 文本模式：添加提取的文本
+      messageContent[0].text += `\n\n**DOCUMENT TEXT:**\n${extractedText}`;
+      console.log('[Analyze Order PDF API] 使用文本模式發送到 OpenAI...');
+    } else {
+      // 圖像模式：添加所有頁面的圖像
+      for (let i = 0; i < imageBase64Array.length; i++) {
+        messageContent.push({
+          type: "image_url",
+          image_url: {
+            url: `data:image/png;base64,${imageBase64Array[i]}`,
+            detail: "high"
+          }
+        });
+      }
+      console.log('[Analyze Order PDF API] 使用圖像模式發送到 OpenAI，包含', imageBase64Array.length, '張圖像...');
     }
-    
-    console.log('[Analyze Order PDF API] 發送到 OpenAI，包含', imageBase64Array.length, '張圖像...');
     
     // 發送到 OpenAI API
     const response = await openai.chat.completions.create({
@@ -414,7 +589,8 @@ Please analyze the document images now and extract the order data.
         recordCount: 0,
         duplicateCount: duplicateOrders.length,
         storageInfo: storageInfo,
-        pagesProcessed: imageBase64Array.length
+        pagesProcessed: useTextMode ? 1 : imageBase64Array.length,
+        processingMode: useTextMode ? 'text_extraction' : 'image_analysis'
       });
     }
     
@@ -460,8 +636,9 @@ Please analyze the document images now and extract the order data.
       recordCount: insertResults.length,
       duplicateCount: duplicateOrders.length,
       storageInfo: storageInfo,
-      pagesProcessed: imageBase64Array.length,
-      message: `Successfully extracted and saved ${insertResults.length} new order records from ${imageBase64Array.length} pages${duplicateOrders.length > 0 ? ` (${duplicateOrders.length} duplicates skipped)` : ''}`
+      pagesProcessed: useTextMode ? 1 : imageBase64Array.length,
+      processingMode: useTextMode ? 'text_extraction' : 'image_analysis',
+      message: `Successfully extracted and saved ${insertResults.length} new order records using ${useTextMode ? 'text extraction' : `image analysis (${imageBase64Array.length} pages)`}${duplicateOrders.length > 0 ? ` (${duplicateOrders.length} duplicates skipped)` : ''}`
     });
     
   } catch (error: any) {

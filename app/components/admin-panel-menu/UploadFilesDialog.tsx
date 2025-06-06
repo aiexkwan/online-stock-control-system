@@ -535,7 +535,7 @@ export const UploadFilesDialog: React.FC<UploadFilesDialogProps> = ({
 
       console.log('[Order PDF Analysis] 分析完成:', result);
       
-      toast.success(`PDF 分析完成！提取了 ${result.recordCount} 條訂單記錄`);
+      toast.success(`PDF Analysis Complete! Extracted ${result.recordCount} order records`);
       
       // 重置分析狀態但保留數據預覽
       setOrderPDFState(prev => ({ 

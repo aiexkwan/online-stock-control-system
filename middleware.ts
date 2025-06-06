@@ -27,12 +27,14 @@ export async function middleware(request: NextRequest) {
     return response; 
   }
 
-  // 公開路由 - 只有主登入頁面、密碼重設頁面和 API 路由不需要認證
+  // 公開路由 - 只有主登入頁面、密碼重設頁面和特定的 API 路由不需要認證
   // 注意：/_next/static, /_next/image, /favicon.ico 通常由 matcher 排除
   const publicRoutes = [
     '/main-login',
     '/new-password',  // 密碼重設頁面需要公開，用戶通過電郵連結訪問
-    '/api'  // API 路由保持公開以支援功能調用
+    // 只有特定的 API 路由需要公開訪問
+    '/api/auth',      // 認證相關 API
+    '/api/health'     // 健康檢查 API（如果有的話）
   ];
   const isPublicRoute = publicRoutes.some(route => request.nextUrl.pathname.startsWith(route));
   
