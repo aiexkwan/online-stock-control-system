@@ -540,7 +540,11 @@ export async function POST(request: NextRequest) {
     const prompt = `
 You are a professional data extraction specialist. Analyze the provided document and extract order information.
 
-**IMPORTANT: Return ONLY a valid JSON array with no additional text, explanations, or markdown formatting.**
+**CRITICAL INSTRUCTIONS:**
+1. Return ONLY a valid JSON array - no explanations, no markdown, no additional text
+2. Start your response with [ and end with ]
+3. Do not include any text before or after the JSON array
+4. Do not wrap the response in markdown code blocks
 
 Database Schema:
 - account_num (number) - Account number
@@ -557,10 +561,10 @@ If data is missing, use these defaults:
 - Numbers: 0
 - Text: "NOT_FOUND"
 
-Example output:
+Example of the EXACT format required:
 [{"account_num":12345,"order_ref":67890,"customer_ref":11111,"invoice_to":"ABC Ltd","delivery_add":"123 Street","product_code":"PROD001","product_desc":"Product Name","product_qty":10,"unit_price":1250}]
 
-Extract all line items if multiple products exist.`;
+Extract all line items if multiple products exist. Remember: ONLY return the JSON array, nothing else.`;
     
     // 構建消息內容，包含所有圖像
     const messageContent: any[] = [
@@ -595,7 +599,7 @@ Extract all line items if multiple products exist.`;
       messages: [
         {
           role: "system",
-          content: "You are a data extraction specialist. Always return valid JSON arrays only, with no additional text or formatting."
+          content: "You are a JSON-only data extraction bot. You must ONLY output valid JSON arrays. Never include explanations, markdown formatting, or any text outside the JSON. Your entire response must be parseable by JSON.parse()."
         },
         {
           role: "user",
@@ -616,6 +620,8 @@ Extract all line items if multiple products exist.`;
     }
     
     console.log('[Analyze Order PDF API] 原始提取內容:', extractedContent);
+    console.log('[Analyze Order PDF API] 內容長度:', extractedContent.length);
+    console.log('[Analyze Order PDF API] 前500字符:', extractedContent.substring(0, 500));
     
     // 解析 JSON 回應
     let orderData: OrderData[];
@@ -626,18 +632,36 @@ Extract all line items if multiple products exist.`;
       // 移除 markdown 代碼塊標記
       cleanContent = cleanContent.replace(/```json\s*/gi, '').replace(/```\s*/g, '');
       
+      // 移除可能的 BOM 或其他不可見字符
+      cleanContent = cleanContent.replace(/^\uFEFF/, '').replace(/[\u200B-\u200D\uFEFF]/g, '');
+      
+      // 如果內容包含多餘的文字說明，嘗試提取 JSON 部分
+      const jsonMatch = cleanContent.match(/(\[[\s\S]*\]|\{[\s\S]*\})/);
+      if (jsonMatch) {
+        cleanContent = jsonMatch[1];
+      }
+      
+      console.log('[Analyze Order PDF API] 清理後的內容:', cleanContent.substring(0, 500));
+      
       // 如果內容被包裹在對象中，嘗試提取數組
-      if (cleanContent.startsWith('{') && cleanContent.includes('"orders"')) {
+      if (cleanContent.startsWith('{')) {
         try {
           const parsed = JSON.parse(cleanContent);
+          console.log('[Analyze Order PDF API] 解析為對象，鍵:', Object.keys(parsed));
+          
           if (parsed.orders && Array.isArray(parsed.orders)) {
             orderData = parsed.orders;
           } else if (parsed.data && Array.isArray(parsed.data)) {
             orderData = parsed.data;
+          } else if (parsed.items && Array.isArray(parsed.items)) {
+            orderData = parsed.items;
+          } else if (parsed.records && Array.isArray(parsed.records)) {
+            orderData = parsed.records;
           } else {
             // 查找任何數組屬性
             const arrayProp = Object.keys(parsed).find(key => Array.isArray(parsed[key]));
             if (arrayProp) {
+              console.log('[Analyze Order PDF API] 找到數組屬性:', arrayProp);
               orderData = parsed[arrayProp];
             } else {
               throw new Error('No array found in response object');
@@ -647,9 +671,13 @@ Extract all line items if multiple products exist.`;
           console.error('[Analyze Order PDF API] 嘗試解析對象失敗:', e);
           throw new Error('Response is wrapped in object but cannot extract array');
         }
-      } else {
+      } else if (cleanContent.startsWith('[')) {
         // 直接解析為數組
         orderData = JSON.parse(cleanContent);
+      } else {
+        // 如果不是標準 JSON 格式，嘗試其他方法
+        console.error('[Analyze Order PDF API] 內容不是有效的 JSON 格式');
+        throw new Error('Response is not valid JSON format');
       }
       
       if (!Array.isArray(orderData)) {
@@ -663,6 +691,7 @@ Extract all line items if multiple products exist.`;
       }
       
       console.log(`[Analyze Order PDF API] 成功解析 ${orderData.length} 條記錄`);
+      console.log('[Analyze Order PDF API] 第一條記錄樣本:', JSON.stringify(orderData[0], null, 2));
       
       // 驗證每個訂單記錄的必要欄位
       orderData.forEach((order, index) => {
