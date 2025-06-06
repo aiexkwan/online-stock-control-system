@@ -110,63 +110,31 @@ export const UploadFilesDialog: React.FC<UploadFilesDialogProps> = ({
           
           // 直接使用 supabase client 查詢 data_id 表（通過 RLS）
           try {
-            // 首先嘗試通過 UUID 查詢
-            const { data: userData, error } = await supabase
+            // 直接使用 email 查詢，因為 UUID 查詢可能受到 RLS 限制
+            const { data: userDataByEmail, error: emailError } = await supabase
               .from('data_id')
               .select('id')
-              .eq('uuid', user.id)
+              .eq('email', user.email)
               .single();
             
-            if (error) {
-              console.error('[UploadFilesDialog] Error fetching user data by UUID:', error);
-              
-              // 如果 UUID 查詢失敗，嘗試使用 email 查詢
-              const { data: userDataByEmail, error: emailError } = await supabase
-                .from('data_id')
-                .select('id')
-                .eq('email', user.email)
-                .single();
-              
-              if (emailError) {
-                console.error('[UploadFilesDialog] Error fetching user data by email:', emailError);
-                setOrderPDFState(prev => ({
-                  ...prev,
-                  error: 'Unable to identify user in system. Please contact administrator.'
-                }));
-                return;
-              }
-              
-              if (userDataByEmail) {
-                console.log('[UploadFilesDialog] User ID found by email:', userDataByEmail.id);
-                setCurrentUserId(userDataByEmail.id);
-              } else {
-                console.warn('[UploadFilesDialog] No user data found by email');
-                setOrderPDFState(prev => ({
-                  ...prev,
-                  error: 'User not found in system. Please contact administrator.'
-                }));
-              }
-            } else if (userData) {
-              console.log('[UploadFilesDialog] User ID found by UUID:', userData.id);
-              setCurrentUserId(userData.id);
+            if (emailError) {
+              console.error('[UploadFilesDialog] Error fetching user data by email:', emailError);
+              setOrderPDFState(prev => ({
+                ...prev,
+                error: 'Unable to identify user in system. Please contact administrator.'
+              }));
+              return;
+            }
+            
+            if (userDataByEmail) {
+              console.log('[UploadFilesDialog] User ID found by email:', userDataByEmail.id);
+              setCurrentUserId(userDataByEmail.id);
             } else {
-              console.warn('[UploadFilesDialog] No user data found by UUID');
-              // 嘗試 email 查詢作為備用
-              const { data: userDataByEmail, error: emailError } = await supabase
-                .from('data_id')
-                .select('id')
-                .eq('email', user.email)
-                .single();
-              
-              if (!emailError && userDataByEmail) {
-                console.log('[UploadFilesDialog] User ID found by email (fallback):', userDataByEmail.id);
-                setCurrentUserId(userDataByEmail.id);
-              } else {
-                setOrderPDFState(prev => ({
-                  ...prev,
-                  error: 'User not found in system. Please contact administrator.'
-                }));
-              }
+              console.warn('[UploadFilesDialog] No user data found by email');
+              setOrderPDFState(prev => ({
+                ...prev,
+                error: 'User not found in system. Please contact administrator.'
+              }));
             }
           } catch (queryError) {
             console.error('[UploadFilesDialog] Query error:', queryError);
