@@ -74,7 +74,7 @@ async function convertPdfToImages(pdfBuffer: Buffer): Promise<string[]> {
   }
 }
 
-// PDF 文本提取函數（使用 pdf-parse，Vercel 兼容版本）
+// PDF 文本提取函數（使用 pdf-parse 正確導入方式）
 async function extractTextFromPDF(pdfBuffer: Buffer): Promise<string> {
   try {
     console.log('[PDF Text Extraction] 開始使用 pdf-parse 提取 PDF 文本...');
@@ -92,108 +92,36 @@ async function extractTextFromPDF(pdfBuffer: Buffer): Promise<string> {
       throw new Error('Empty PDF buffer provided');
     }
     
-    // 檢測是否為 Vercel 環境
-    const isVercel = process.env.VERCEL || process.env.VERCEL_ENV;
+    // 使用正確的 pdf-parse 導入方式，避免測試文件問題
+    console.log('[PDF Text Extraction] 使用 pdf-parse/lib/pdf-parse.js 直接導入...');
     
-    if (isVercel) {
-      // Vercel 環境：使用 pdf-lib 進行文本提取（更可靠）
-      console.log('[PDF Text Extraction] Vercel 環境：使用 pdf-lib 提取文本...');
-      
-      try {
-        const { PDFDocument } = require('pdf-lib');
-        const pdfDoc = await PDFDocument.load(pdfBuffer);
-        const pages = pdfDoc.getPages();
-        
-        let fullText = '';
-        for (let i = 0; i < pages.length; i++) {
-          const page = pages[i];
-          // pdf-lib 本身不直接支持文本提取，但我們可以嘗試獲取基本信息
-          console.log(`[PDF Text Extraction] 處理第 ${i + 1} 頁，尺寸: ${page.getWidth()}x${page.getHeight()}`);
-        }
-        
-        // 如果 pdf-lib 無法提取文本，嘗試使用簡化的 pdf-parse
-        console.log('[PDF Text Extraction] pdf-lib 無法直接提取文本，嘗試簡化的 pdf-parse...');
-        
-        // 使用最簡單的 pdf-parse 調用
-        const pdfParse = require('pdf-parse');
-        
-        // 嘗試使用最小配置
-        const pdfData = await pdfParse(pdfBuffer, {
-          // 最小配置，避免任何可能的文件操作
-          normalizeWhitespace: false,
-          disableCombineTextItems: false,
-          // 不使用任何外部資源
-          max: 0 // 不限制頁數
-        });
-        
-        if (pdfData && pdfData.text && pdfData.text.trim().length > 0) {
-          console.log('[PDF Text Extraction] Vercel 環境下 pdf-parse 成功');
-          console.log('[PDF Text Extraction] 文本長度:', pdfData.text.length);
-          return pdfData.text.trim();
-        } else {
-          throw new Error('No text extracted in Vercel environment');
-        }
-        
-      } catch (vercelError: any) {
-        console.error('[PDF Text Extraction] Vercel 環境處理失敗:', vercelError.message);
-        
-        // 最後嘗試：返回基本的 PDF 信息作為文本
-        const basicInfo = `PDF File Analysis:
-File Size: ${pdfBuffer.length} bytes
-PDF Header: ${pdfBuffer.slice(0, 8).toString()}
-This PDF requires manual processing due to serverless limitations.
-Please check the uploaded file in storage for manual review.`;
-        
-        console.log('[PDF Text Extraction] 返回基本 PDF 信息');
-        return basicInfo;
-      }
-      
+    // 使用直接導入 pdf-parse 核心庫，避免測試代碼
+    const pdfParse = require('pdf-parse/lib/pdf-parse.js');
+    
+    // 直接處理 Buffer，不使用任何配置選項
+    console.log('[PDF Text Extraction] 調用 pdf-parse 處理 Buffer...');
+    const pdfData = await pdfParse.default(pdfBuffer);
+    
+    console.log('[PDF Text Extraction] pdf-parse 提取成功');
+    console.log('[PDF Text Extraction] 頁數:', pdfData.numpages);
+    console.log('[PDF Text Extraction] 文本長度:', pdfData.text.length);
+    console.log('[PDF Text Extraction] 文本預覽（前500字符）:', pdfData.text.substring(0, 500));
+    
+    if (pdfData.text && pdfData.text.trim().length > 0) {
+      console.log('[PDF Text Extraction] 成功從上傳的 PDF 提取文本');
+      return pdfData.text.trim();
     } else {
-      // 本地環境：正常使用 pdf-parse
-      console.log('[PDF Text Extraction] 本地環境：使用 pdf-parse...');
-      
-      const pdfParse = require('pdf-parse');
-      
-      const pdfData = await pdfParse(pdfBuffer, {
-        normalizeWhitespace: false,
-        disableCombineTextItems: false
-      });
-      
-      console.log('[PDF Text Extraction] pdf-parse 提取成功');
-      console.log('[PDF Text Extraction] 頁數:', pdfData.numpages);
-      console.log('[PDF Text Extraction] 文本長度:', pdfData.text.length);
-      console.log('[PDF Text Extraction] 文本預覽（前500字符）:', pdfData.text.substring(0, 500));
-      
-      if (pdfData.text && pdfData.text.trim().length > 0) {
-        console.log('[PDF Text Extraction] 成功從上傳的 PDF 提取文本');
-        return pdfData.text.trim();
-      } else {
-        console.warn('[PDF Text Extraction] pdf-parse 返回空文本');
-        throw new Error('No readable text found in PDF');
-      }
+      console.warn('[PDF Text Extraction] pdf-parse 返回空文本');
+      throw new Error('No readable text found in PDF');
     }
     
   } catch (error: any) {
-    console.error('[PDF Text Extraction] PDF 處理失敗:', error);
+    console.error('[PDF Text Extraction] pdf-parse 處理失敗:', error);
     console.error('[PDF Text Extraction] 錯誤詳情:', {
       message: error.message,
-      code: error.code,
-      path: error.path,
+      name: error.name,
       stack: error.stack?.split('\n').slice(0, 3).join('\n')
     });
-    
-    // 在 Vercel 環境中，如果所有方法都失敗，返回錯誤信息
-    const isVercel = process.env.VERCEL || process.env.VERCEL_ENV;
-    if (isVercel) {
-      const fallbackText = `PDF Processing Failed in Serverless Environment:
-Error: ${error.message}
-File Size: ${pdfBuffer.length} bytes
-Please manually review the uploaded PDF file.
-This may be due to PDF format compatibility issues in serverless environment.`;
-      
-      console.log('[PDF Text Extraction] Vercel 環境返回錯誤信息作為文本');
-      return fallbackText;
-    }
     
     throw new Error(`PDF text extraction failed: ${error.message}`);
   }
