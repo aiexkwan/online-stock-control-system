@@ -538,76 +538,29 @@ export async function POST(request: NextRequest) {
     
     // 構建詳細的 prompt
     const prompt = `
-You are a professional data extraction specialist with expertise in analyzing business documents. Please analyze the uploaded document images and extract order information according to the following database schema.
+You are a professional data extraction specialist. Analyze the provided document and extract order information.
 
-**CRITICAL REQUIREMENTS:**
+**IMPORTANT: Return ONLY a valid JSON array with no additional text, explanations, or markdown formatting.**
 
-1. **Database Schema for "data_order" table:**
-   - account_num (bigint) - Account number or customer account ID
-   - order_ref (bigint) - Order reference number or order ID
-   - customer_ref (bigint) - Customer reference number or customer PO number
-   - invoice_to (text) - Invoice address, company name, or billing address
-   - delivery_add (text) - Delivery address or shipping address
-   - product_code (text) - Product code, SKU, or item number
-   - product_desc (text) - Product description or item description
-   - product_qty (bigint) - Product quantity ordered
-   - unit_price (bigint) - Unit price in smallest currency unit (pence/cents)
+Database Schema:
+- account_num (number) - Account number
+- order_ref (number) - Order reference number
+- customer_ref (number) - Customer reference number
+- invoice_to (string) - Invoice address
+- delivery_add (string) - Delivery address
+- product_code (string) - Product code/SKU
+- product_desc (string) - Product description
+- product_qty (number) - Quantity
+- unit_price (number) - Price in pence/cents (£12.50 = 1250)
 
-2. **Data Extraction Rules:**
-   - ALL fields are REQUIRED and must be filled
-   - For numeric fields: Extract only numbers, remove formatting
-   - For unit_price: Convert to smallest currency unit (£12.50 → 1250, $5.99 → 599)
-   - For text fields: Clean whitespace but preserve essential information
-   - If multiple line items exist, create separate records for each
+If data is missing, use these defaults:
+- Numbers: 0
+- Text: "NOT_FOUND"
 
-3. **Field Mapping Guidelines:**
-   - account_num: Look for "Account", "Customer ID", "Account No", "Acc No"
-   - order_ref: Look for "Order No", "Order Ref", "PO Number", "Order ID"
-   - customer_ref: Look for "Customer Ref", "Your Ref", "Customer PO", "Ref No"
-   - invoice_to: Look for "Bill To", "Invoice Address", "Customer Name"
-   - delivery_add: Look for "Ship To", "Delivery Address", "Delivery To"
-   - product_code: Look for "Code", "SKU", "Item No", "Product Code", "Part No"
-   - product_desc: Look for "Description", "Item", "Product", "Details"
-   - product_qty: Look for "Qty", "Quantity", "Units", "Amount"
-   - unit_price: Look for "Price", "Unit Price", "Rate", "Cost"
+Example output:
+[{"account_num":12345,"order_ref":67890,"customer_ref":11111,"invoice_to":"ABC Ltd","delivery_add":"123 Street","product_code":"PROD001","product_desc":"Product Name","product_qty":10,"unit_price":1250}]
 
-4. **Fallback Values (only if data cannot be found):**
-   - Numeric fields: Use 0
-   - Text fields: Use "NOT_FOUND"
-
-5. **Multi-page Analysis:**
-   - Analyze ALL provided images as they represent different pages of the same document
-   - Look for continuation of data across pages
-   - Combine information from all pages to create complete records
-
-**OUTPUT FORMAT:**
-Return ONLY a valid JSON array. Each object represents one order line item.
-
-Example format:
-[
-  {
-    "account_num": 12345,
-    "order_ref": 67890,
-    "customer_ref": 11111,
-    "invoice_to": "ABC Company Ltd, 123 Business Street, London, UK",
-    "delivery_add": "XYZ Warehouse, 456 Industrial Road, Manchester, UK",
-    "product_code": "SLATE001",
-    "product_desc": "Welsh Slate 600x400mm Natural Grey",
-    "product_qty": 100,
-    "unit_price": 1250
-  }
-]
-
-**IMPORTANT:** 
-- Analyze all document images carefully
-- Look for tables, line items, and structured data across all pages
-- Pay attention to headers and labels
-- Extract all order lines if multiple products are listed
-- Ensure numeric values are properly converted
-- Double-check currency conversions
-
-Please analyze the document images now and extract the order data.
-`;
+Extract all line items if multiple products exist.`;
     
     // 構建消息內容，包含所有圖像
     const messageContent: any[] = [
@@ -621,6 +574,7 @@ Please analyze the document images now and extract the order data.
       // 文本模式：添加提取的文本
       messageContent[0].text += `\n\n**DOCUMENT TEXT:**\n${extractedText}`;
       console.log('[Analyze Order PDF API] 使用文本模式發送到 OpenAI...');
+      console.log('[Analyze Order PDF API] 文本預覽（前500字符）:', extractedText.substring(0, 500));
     } else {
       // 圖像模式：添加所有頁面的圖像
       for (let i = 0; i < imageBase64Array.length; i++) {
@@ -640,6 +594,10 @@ Please analyze the document images now and extract the order data.
       model: "gpt-4o",
       messages: [
         {
+          role: "system",
+          content: "You are a data extraction specialist. Always return valid JSON arrays only, with no additional text or formatting."
+        },
+        {
           role: "user",
           content: messageContent
         }
@@ -657,43 +615,102 @@ Please analyze the document images now and extract the order data.
       return NextResponse.json({ error: 'No content extracted from PDF' }, { status: 500 });
     }
     
-    console.log('[Analyze Order PDF API] 提取的內容:', extractedContent);
+    console.log('[Analyze Order PDF API] 原始提取內容:', extractedContent);
     
     // 解析 JSON 回應
     let orderData: OrderData[];
     try {
-      // 清理回應內容，移除可能的 markdown 格式
-      const cleanContent = extractedContent.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
-      orderData = JSON.parse(cleanContent);
+      // 嘗試多種清理方式
+      let cleanContent = extractedContent.trim();
+      
+      // 移除 markdown 代碼塊標記
+      cleanContent = cleanContent.replace(/```json\s*/gi, '').replace(/```\s*/g, '');
+      
+      // 如果內容被包裹在對象中，嘗試提取數組
+      if (cleanContent.startsWith('{') && cleanContent.includes('"orders"')) {
+        try {
+          const parsed = JSON.parse(cleanContent);
+          if (parsed.orders && Array.isArray(parsed.orders)) {
+            orderData = parsed.orders;
+          } else if (parsed.data && Array.isArray(parsed.data)) {
+            orderData = parsed.data;
+          } else {
+            // 查找任何數組屬性
+            const arrayProp = Object.keys(parsed).find(key => Array.isArray(parsed[key]));
+            if (arrayProp) {
+              orderData = parsed[arrayProp];
+            } else {
+              throw new Error('No array found in response object');
+            }
+          }
+        } catch (e) {
+          console.error('[Analyze Order PDF API] 嘗試解析對象失敗:', e);
+          throw new Error('Response is wrapped in object but cannot extract array');
+        }
+      } else {
+        // 直接解析為數組
+        orderData = JSON.parse(cleanContent);
+      }
       
       if (!Array.isArray(orderData)) {
+        console.error('[Analyze Order PDF API] 解析結果不是數組:', typeof orderData);
         throw new Error('Response is not an array');
       }
+      
+      if (orderData.length === 0) {
+        console.warn('[Analyze Order PDF API] 解析結果為空數組');
+        throw new Error('No order data extracted from PDF');
+      }
+      
+      console.log(`[Analyze Order PDF API] 成功解析 ${orderData.length} 條記錄`);
       
       // 驗證每個訂單記錄的必要欄位
       orderData.forEach((order, index) => {
         const requiredFields: (keyof OrderData)[] = ['account_num', 'order_ref', 'customer_ref', 'invoice_to', 'delivery_add', 'product_code', 'product_desc', 'product_qty', 'unit_price'];
         for (const field of requiredFields) {
           if (order[field] === undefined || order[field] === null) {
-            throw new Error(`Missing required field '${field}' in record ${index + 1}`);
+            console.warn(`[Analyze Order PDF API] 記錄 ${index + 1} 缺少欄位 '${field}'，使用默認值`);
+            // 使用默認值
+            if (['account_num', 'order_ref', 'customer_ref', 'product_qty', 'unit_price'].includes(field)) {
+              (order as any)[field] = 0;
+            } else {
+              (order as any)[field] = 'NOT_FOUND';
+            }
           }
         }
         
         // 確保數字欄位是數字類型
         const numericFields: (keyof OrderData)[] = ['account_num', 'order_ref', 'customer_ref', 'product_qty', 'unit_price'];
         for (const field of numericFields) {
-          if (typeof order[field] !== 'number') {
-            (order as any)[field] = parseInt(String(order[field])) || 0;
+          const value = order[field];
+          if (typeof value === 'string') {
+            // 嘗試解析字符串為數字
+            const parsed = parseInt(value.toString().replace(/[^\d]/g, ''));
+            (order as any)[field] = isNaN(parsed) ? 0 : parsed;
+          } else if (typeof value !== 'number') {
+            (order as any)[field] = 0;
           }
         }
       });
       
     } catch (parseError) {
       console.error('[Analyze Order PDF API] JSON 解析錯誤:', parseError);
+      console.error('[Analyze Order PDF API] 清理後的內容:', extractedContent.substring(0, 500));
+      
+      // 如果是文本模式且解析失敗，返回更詳細的錯誤信息
+      if (useTextMode) {
+        return NextResponse.json({ 
+          error: 'Failed to parse extracted data',
+          details: parseError instanceof Error ? parseError.message : 'Unknown parsing error',
+          hint: 'The PDF text extraction may not have captured structured data properly. Try uploading a clearer PDF.',
+          rawContent: extractedContent.substring(0, 1000) // 只返回前1000字符避免太大
+        }, { status: 500 });
+      }
+      
       return NextResponse.json({ 
         error: 'Failed to parse extracted data',
         details: parseError instanceof Error ? parseError.message : 'Unknown parsing error',
-        rawContent: extractedContent
+        rawContent: extractedContent.substring(0, 1000)
       }, { status: 500 });
     }
     
