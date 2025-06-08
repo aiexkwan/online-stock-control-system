@@ -2,16 +2,16 @@
 
 import { createClient } from '@supabase/supabase-js';
 import { z } from 'zod';
-import { generatePalletNumbers } from '@/lib/palletNumUtils';
+
 import { generateMultipleUniqueSeries } from '@/lib/seriesUtils';
 
 // 詳細的環境變數檢查（生產環境可以注釋掉）
 // console.log('[qcActions] 環境變數檢查:');
-// console.log('[qcActions] NEXT_PUBLIC_SUPABASE_URL:', process.env.NEXT_PUBLIC_SUPABASE_URL ? '✓ 已設置' : '✗ 未設置');
+// console.log('[qcActions] SUPABASE_URL:', process.env.SUPABASE_URL ? '✓ 已設置' : '✗ 未設置');
 // console.log('[qcActions] SUPABASE_SERVICE_ROLE_KEY:', process.env.SUPABASE_SERVICE_ROLE_KEY ? '✓ 已設置' : '✗ 未設置');
 
-if (!process.env.NEXT_PUBLIC_SUPABASE_URL) {
-  console.error('[qcActions] 錯誤: NEXT_PUBLIC_SUPABASE_URL 未設置');
+if (!process.env.SUPABASE_URL) {
+  console.error('[qcActions] 錯誤: SUPABASE_URL 未設置');
 }
 
 if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
@@ -21,11 +21,11 @@ if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
 // 創建 Supabase 客戶端的函數
 function createSupabaseAdmin() {
   // 確保環境變數存在
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseUrl = process.env.SUPABASE_URL;
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
   
   if (!supabaseUrl) {
-    throw new Error('NEXT_PUBLIC_SUPABASE_URL environment variable is not set');
+    throw new Error('SUPABASE_URL environment variable is not set');
   }
   
   if (!serviceRoleKey) {
@@ -443,8 +443,20 @@ export async function generatePalletNumbersAndSeries(count: number): Promise<{
     
     const supabaseAdmin = createSupabaseAdmin();
     
-    // Generate pallet numbers
-    const palletNumbers = await generatePalletNumbers(supabaseAdmin, count);
+    // 🔥 使用新的原子性棧板號碼生成函數
+    const { data: palletNumbers, error: palletError } = await supabaseAdmin.rpc('generate_atomic_pallet_numbers_v2', {
+      count: count
+    });
+    
+    if (palletError) {
+      console.error('[qcActions] 原子性棧板號碼生成失敗:', palletError);
+      throw new Error(`Failed to generate atomic pallet numbers: ${palletError.message}`);
+    }
+    
+    if (!palletNumbers || !Array.isArray(palletNumbers)) {
+      throw new Error('Invalid pallet numbers returned from atomic function');
+    }
+    
     // console.log('[qcActions] 生成的棧板號碼:', palletNumbers);
     
     // Generate series

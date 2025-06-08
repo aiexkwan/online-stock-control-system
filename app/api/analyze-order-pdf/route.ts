@@ -331,15 +331,15 @@ You are a professional data extraction specialist for Pennine Manufacturing Pick
     
     if (processingMode === 'image_analysis') {
       // 圖像模式：添加所有頁面的圖像
-      for (let i = 0; i < imageBase64Array.length; i++) {
-        messageContent.push({
-          type: "image_url",
-          image_url: {
-            url: `data:image/png;base64,${imageBase64Array[i]}`,
-            detail: "high"
-          }
-        });
-      }
+    for (let i = 0; i < imageBase64Array.length; i++) {
+      messageContent.push({
+        type: "image_url",
+        image_url: {
+          url: `data:image/png;base64,${imageBase64Array[i]}`,
+          detail: "high"
+        }
+      });
+    }
       console.log('[Analyze Order PDF API] 使用圖像模式，包含', imageBase64Array.length, '張圖像');
     } else {
       // 文本模式：添加提取的文本，並提供更多上下文
@@ -431,7 +431,7 @@ If the text appears garbled or unclear, try to identify key patterns and numbers
     const supabaseAdmin = createSupabaseAdmin();
     
     try {
-      const insertPromises = orderData.map(async (order, index) => {
+    const insertPromises = orderData.map(async (order, index) => {
         const orderWithUploader = {
           ...order,
           uploaded_by: parseInt(uploadedBy)

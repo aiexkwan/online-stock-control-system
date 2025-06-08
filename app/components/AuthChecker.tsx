@@ -12,7 +12,8 @@ interface AuthCheckerProps {
 // 定義公開路由列表 - 只有主登入頁面和密碼重設頁面是公開的
 const publicPaths = [
   '/main-login',
-  '/new-password'  // 密碼重設頁面需要公開，用戶通過電郵連結訪問
+  '/new-password',  // 密碼重設頁面需要公開，用戶通過電郵連結訪問
+  '/print-label/html-preview'  // HTML 標籤預覽頁面（用於測試和預覽）
 ];
 
 // 定義受保護路由列表 - 除了公開路由外的所有頁面都需要認證

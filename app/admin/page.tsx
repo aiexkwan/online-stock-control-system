@@ -40,6 +40,7 @@ import {
   CloudArrowUpIcon
 } from '@heroicons/react/24/outline';
 import { useAuth } from '@/app/hooks/useAuth';
+import MotionBackground from '../components/MotionBackground';
 
 // Import dashboard components
 import FinishedProduct from '@/app/components/PrintHistory';
@@ -210,8 +211,16 @@ export default function AdminPanelPage() {
     past7DaysTransferredPallets: 0,
   });
   const [donutTimeRange, setDonutTimeRange] = useState<string>('Past 3 days');
+  const [outputTimeRange, setOutputTimeRange] = useState<string>('Today');
+  const [bookedOutTimeRange, setBookedOutTimeRange] = useState<string>('Today');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [isTimeRangeDropdownOpen, setIsTimeRangeDropdownOpen] = useState(false);
+  const [isOutputDropdownOpen, setIsOutputDropdownOpen] = useState(false);
+  const [isBookedOutDropdownOpen, setIsBookedOutDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const timeRangeDropdownRef = useRef<HTMLDivElement>(null);
+  const outputDropdownRef = useRef<HTMLDivElement>(null);
+  const bookedOutDropdownRef = useRef<HTMLDivElement>(null);
 
   // ACO Orders state
   const [incompleteOrders, setIncompleteOrders] = useState<AcoOrder[]>([]);
@@ -631,7 +640,50 @@ export default function AdminPanelPage() {
   // Handle donut chart time range change
   const handleDonutTimeRangeChange = (timeRange: string) => {
     setDonutTimeRange(timeRange);
-    setIsDropdownOpen(false);
+    setIsTimeRangeDropdownOpen(false);
+  };
+
+  const handleOutputTimeRangeChange = (timeRange: string) => {
+    setOutputTimeRange(timeRange);
+    setIsOutputDropdownOpen(false);
+  };
+
+  const handleBookedOutTimeRangeChange = (timeRange: string) => {
+    setBookedOutTimeRange(timeRange);
+    setIsBookedOutDropdownOpen(false);
+  };
+
+  // Helper function to get output data based on selected time range
+  const getOutputData = () => {
+    switch (outputTimeRange) {
+      case 'Today':
+        return stats.dailyDonePallets;
+      case 'Yesterday':
+        return stats.yesterdayDonePallets;
+      case 'Past 3 days':
+        return stats.past3DaysGenerated;
+      case 'This week':
+        return stats.past7DaysGenerated;
+      default:
+        return stats.dailyDonePallets;
+    }
+  };
+
+  // Helper function to get booked out data based on selected time range
+  const getBookedOutData = (timeRange?: string) => {
+    const selectedRange = timeRange || bookedOutTimeRange;
+    switch (selectedRange) {
+      case 'Today':
+        return stats.dailyTransferredPallets;
+      case 'Yesterday':
+        return stats.yesterdayTransferredPallets;
+      case 'Past 3 days':
+        return stats.past3DaysTransferredPallets;
+      case 'This week':
+        return stats.past7DaysTransferredPallets;
+      default:
+        return stats.dailyTransferredPallets;
+    }
   };
 
   // Handle item click with support for different actions
@@ -981,6 +1033,15 @@ export default function AdminPanelPage() {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setIsDropdownOpen(false);
       }
+      if (timeRangeDropdownRef.current && !timeRangeDropdownRef.current.contains(event.target as Node)) {
+        setIsTimeRangeDropdownOpen(false);
+      }
+      if (outputDropdownRef.current && !outputDropdownRef.current.contains(event.target as Node)) {
+        setIsOutputDropdownOpen(false);
+      }
+      if (bookedOutDropdownRef.current && !bookedOutDropdownRef.current.contains(event.target as Node)) {
+        setIsBookedOutDropdownOpen(false);
+      }
       if (acoDropdownRef.current && !acoDropdownRef.current.contains(event.target as Node)) {
         setIsAcoDropdownOpen(false);
       }
@@ -1027,21 +1088,9 @@ export default function AdminPanelPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-800 text-white relative overflow-hidden">
-      {/* 背景裝飾元素 */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        {/* 動態漸層球體 */}
-        <div className="absolute -top-40 -left-40 w-80 h-80 bg-blue-500/10 rounded-full blur-3xl animate-pulse"></div>
-        <div className="absolute top-1/4 -right-40 w-96 h-96 bg-cyan-500/8 rounded-full blur-3xl animate-pulse delay-1000"></div>
-        <div className="absolute -bottom-40 left-1/4 w-72 h-72 bg-indigo-500/10 rounded-full blur-3xl animate-pulse delay-2000"></div>
-        <div className="absolute top-1/2 left-1/2 w-64 h-64 bg-purple-500/6 rounded-full blur-3xl animate-pulse delay-3000"></div>
-        
-        {/* 網格背景 */}
-        <div className="absolute inset-0 bg-[linear-gradient(rgba(59,130,246,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(59,130,246,0.03)_1px,transparent_1px)] bg-[size:50px_50px]"></div>
-      </div>
-
+    <MotionBackground>
       {/* 主要內容區域 */}
-      <div className="relative z-10">
+      <div className="text-white">
         {/* Admin Panel Navigation Bar */}
         <div className="bg-slate-800/40 backdrop-blur-xl border-y border-slate-700/50 sticky top-0 z-30 mb-8">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -1167,34 +1216,36 @@ export default function AdminPanelPage() {
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
           {/* Dashboard Content */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            {/* Ask Database Main Card - Featured at the top */}
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-8">
+            {/* Ask Database Main Card - Left Side */}
             {hasAskDatabasePermission && (
-              <div className="col-span-full mb-8">
+              <div className="lg:col-span-3">
                 <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-                  <div className="relative group">
+                  <div className="relative group h-full">
                     {/* 卡片背景 */}
-                    <div className="absolute inset-0 bg-gradient-to-r from-purple-900/30 to-indigo-900/30 rounded-3xl blur-xl"></div>
+                    <div className="absolute inset-0 bg-gradient-to-r from-purple-900/30 to-indigo-900/30 rounded-2xl blur-xl"></div>
                     
-                    <div className="relative bg-slate-800/40 backdrop-blur-xl border border-purple-500/30 rounded-3xl p-8 shadow-2xl shadow-purple-900/20 hover:border-purple-400/50 transition-all duration-300">
+                    <div className="relative bg-slate-800/40 backdrop-blur-xl border border-purple-500/30 rounded-2xl p-6 shadow-2xl shadow-purple-900/20 hover:border-purple-400/50 transition-all duration-300 h-full">
                       {/* 卡片內部光效 */}
-                      <div className="absolute inset-0 bg-gradient-to-r from-purple-500/5 via-transparent to-indigo-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-3xl"></div>
+                      <div className="absolute inset-0 bg-gradient-to-r from-purple-500/5 via-transparent to-indigo-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-2xl"></div>
                       
                       {/* 頂部邊框光效 */}
-                      <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-purple-400/50 to-transparent opacity-100 rounded-t-3xl"></div>
+                      <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-purple-400/50 to-transparent opacity-100 rounded-t-2xl"></div>
                       
-                      <div className="relative z-10">
-                        <div className="flex items-center gap-4 mb-6">
-                          <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-indigo-500 rounded-2xl flex items-center justify-center shadow-lg shadow-purple-500/25">
-                            <ChatBubbleLeftRightIcon className="h-6 w-6 text-white" />
+                      <div className="relative z-10 h-full flex flex-col">
+                        <div className="flex items-center gap-3 mb-4">
+                          <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-indigo-500 rounded-xl flex items-center justify-center shadow-lg shadow-purple-500/25">
+                            <ChatBubbleLeftRightIcon className="h-5 w-5 text-white" />
                           </div>
                           <div>
-                            <h2 className="text-2xl font-bold bg-gradient-to-r from-purple-300 via-indigo-300 to-cyan-300 bg-clip-text text-transparent">Ask Me Anything</h2>
-                            <p className="text-purple-200 text-sm">What can I help you today?</p>
+                            <h2 className="text-xl font-bold bg-gradient-to-r from-purple-300 via-indigo-300 to-cyan-300 bg-clip-text text-transparent">Ask Me Anything</h2>
+                            {/* <p className="text-purple-200 text-xs">What can I help you today?</p> */}
                           </div>
                         </div>
                         
+                        <div className="flex-1">
                         <AskDatabaseInlineCard />
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -1202,129 +1253,175 @@ export default function AdminPanelPage() {
               </div>
             )}
 
-            {/* Today's Generated Pallets */}
-            <div className="relative group">
+            {/* Statistics Cards - Right Side */}
+            <div className={`${hasAskDatabasePermission ? 'lg:col-span-1' : 'lg:col-span-4'} relative z-20`}>
+              <div className="flex flex-col gap-3 h-full">
+                {/* Today's Output - 1 unit */}
+                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="flex-1">
+                  <div className="relative group h-full">
               <div className="absolute inset-0 bg-gradient-to-r from-blue-900/30 to-cyan-900/30 rounded-2xl blur-xl"></div>
-              <div className="relative bg-slate-800/40 backdrop-blur-xl border border-blue-500/30 rounded-2xl p-6 shadow-xl shadow-blue-900/20 hover:border-blue-400/50 transition-all duration-300">
-                <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 via-transparent to-cyan-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-2xl"></div>
-                <div className="relative z-10">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-sm font-medium text-slate-200">Today's Output</h3>
-                    <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center">
-                      <CubeIcon className="h-5 w-5 text-white" />
+                    <div className="relative bg-slate-800/40 backdrop-blur-xl border border-blue-500/30 rounded-xl p-3 shadow-xl shadow-blue-900/20 hover:border-blue-400/50 transition-all duration-300 h-full">
+                      <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 via-transparent to-cyan-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-xl"></div>
+                      <div className="relative z-10 h-full flex flex-col">
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center gap-2">
+                            <div className="w-7 h-7 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-lg flex items-center justify-center shadow-lg shadow-blue-500/25">
+                              <CubeIcon className="h-4 w-4 text-white" />
+                    </div>
+                            <h3 className="text-sm font-medium text-slate-200">Output</h3>
+            </div>
+
+                          {/* Output Date Range Dropdown */}
+                          <div className="relative z-50" ref={outputDropdownRef}>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setIsOutputDropdownOpen(!isOutputDropdownOpen);
+                              }}
+                              className="flex items-center gap-1 px-2 py-1 bg-slate-700/50 hover:bg-slate-600/50 text-slate-300 hover:text-white rounded-md transition-all duration-300 text-xs border border-slate-600/30"
+                            >
+                              <ClockIcon className="w-3 h-3" />
+                              {outputTimeRange}
+                              <ChevronDownIcon className={`w-3 h-3 transition-transform ${isOutputDropdownOpen ? 'rotate-180' : ''}`} />
+                            </button>
+                            
+                            <AnimatePresence>
+                              {isOutputDropdownOpen && (
+                                <motion.div
+                                  initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                                  exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                                  transition={{ duration: 0.2 }}
+                                  className="absolute right-0 top-full mt-1 bg-slate-900/98 backdrop-blur-xl border border-slate-600/50 rounded-xl shadow-2xl z-[99999] min-w-[100px]"
+                                >
+                                  {['Today', 'Yesterday', 'Past 3 days', 'This week'].map((option) => (
+                                    <button
+                                      key={option}
+                                      onClick={() => handleOutputTimeRangeChange(option)}
+                                      className={`w-full px-3 py-2 text-left text-xs hover:bg-slate-700/50 transition-all duration-300 first:rounded-t-xl last:rounded-b-xl ${
+                                        outputTimeRange === option ? 'bg-slate-700/50 text-blue-400' : 'text-slate-300'
+                                      }`}
+                                    >
+                                      {option}
+                                    </button>
+                                  ))}
+                                </motion.div>
+                              )}
+                            </AnimatePresence>
                     </div>
                   </div>
-                  <div className="text-3xl font-bold text-white mb-2">{stats.dailyDonePallets}</div>
-                  <p className="text-xs text-slate-400">Pallets outputed today</p>
+                        <div className="flex-1 flex items-center justify-center">
+                          <div className="text-5xl font-bold text-white">{getOutputData()}</div>
                 </div>
               </div>
             </div>
-
-            {/* Today's Transferred Pallets */}
-            <div className="relative group">
-              <div className="absolute inset-0 bg-gradient-to-r from-green-900/30 to-emerald-900/30 rounded-2xl blur-xl"></div>
-              <div className="relative bg-slate-800/40 backdrop-blur-xl border border-green-500/30 rounded-2xl p-6 shadow-xl shadow-green-900/20 hover:border-green-400/50 transition-all duration-300">
-                <div className="absolute inset-0 bg-gradient-to-r from-green-500/5 via-transparent to-emerald-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-2xl"></div>
-                <div className="relative z-10">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-sm font-medium text-slate-200">Today's Booked Out</h3>
-                    <div className="w-10 h-10 bg-gradient-to-r from-green-500 to-emerald-500 rounded-xl flex items-center justify-center">
-                      <TruckIcon className="h-5 w-5 text-white" />
-                    </div>
                   </div>
-                  <div className="text-3xl font-bold text-white mb-2">{stats.dailyTransferredPallets}</div>
-                  <p className="text-xs text-slate-400">Pallets booked out today</p>
-                </div>
-              </div>
+                </motion.div>
+
+                {/* Today's Booked Out - 1 unit */}
+                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="flex-1">
+                  <div className="relative group h-full">
+                    <div className="absolute inset-0 bg-gradient-to-r from-green-900/30 to-emerald-900/30 rounded-2xl blur-xl"></div>
+                    <div className="relative bg-slate-800/40 backdrop-blur-xl border border-green-500/30 rounded-xl p-3 shadow-xl shadow-green-900/20 hover:border-green-400/50 transition-all duration-300 h-full">
+                      <div className="absolute inset-0 bg-gradient-to-r from-green-500/5 via-transparent to-emerald-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-xl"></div>
+                      <div className="relative z-10 h-full flex flex-col">
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center gap-2">
+                            <div className="w-7 h-7 bg-gradient-to-r from-green-500 to-emerald-500 rounded-lg flex items-center justify-center shadow-lg shadow-green-500/25">
+                              <TruckIcon className="h-4 w-4 text-white" />
+                    </div>
+                            <h3 className="text-sm font-medium text-slate-200">Booked Out</h3>
             </div>
 
-            {/* Past 3 Days Generated */}
-            <div className="relative group">
-              <div className="absolute inset-0 bg-gradient-to-r from-purple-900/30 to-indigo-900/30 rounded-2xl blur-xl"></div>
-              <div className="relative bg-slate-800/40 backdrop-blur-xl border border-purple-500/30 rounded-2xl p-6 shadow-xl shadow-purple-900/20 hover:border-purple-400/50 transition-all duration-300">
-                <div className="absolute inset-0 bg-gradient-to-r from-purple-500/5 via-transparent to-indigo-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-2xl"></div>
-                <div className="relative z-10">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-sm font-medium text-slate-200">Past 3 Days Output</h3>
-                    <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-indigo-500 rounded-xl flex items-center justify-center">
-                      <ChartBarIcon className="h-5 w-5 text-white" />
+                          {/* Booked Out Date Range Dropdown */}
+                          <div className="relative z-50" ref={bookedOutDropdownRef}>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setIsBookedOutDropdownOpen(!isBookedOutDropdownOpen);
+                              }}
+                              className="flex items-center gap-1 px-2 py-1 bg-slate-700/50 hover:bg-slate-600/50 text-slate-300 hover:text-white rounded-md transition-all duration-300 text-xs border border-slate-600/30"
+                            >
+                              <ClockIcon className="w-3 h-3" />
+                              {bookedOutTimeRange}
+                              <ChevronDownIcon className={`w-3 h-3 transition-transform ${isBookedOutDropdownOpen ? 'rotate-180' : ''}`} />
+                            </button>
+                            
+                            <AnimatePresence>
+                              {isBookedOutDropdownOpen && (
+                                <motion.div
+                                  initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                                  exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                                  transition={{ duration: 0.2 }}
+                                  className="absolute right-0 top-full mt-1 bg-slate-900/98 backdrop-blur-xl border border-slate-600/50 rounded-xl shadow-2xl z-[99999] min-w-[100px]"
+                                >
+                                  {['Today', 'Yesterday', 'Past 3 days', 'This week'].map((option) => (
+                                    <button
+                                      key={option}
+                                      onClick={() => handleBookedOutTimeRangeChange(option)}
+                                      className={`w-full px-3 py-2 text-left text-xs hover:bg-slate-700/50 transition-all duration-300 first:rounded-t-xl last:rounded-b-xl ${
+                                        bookedOutTimeRange === option ? 'bg-slate-700/50 text-green-400' : 'text-slate-300'
+                                      }`}
+                                    >
+                                      <div className="flex items-center justify-between">
+                                        <span>{option}</span>
+                                        <span className="text-xs text-slate-400">{getBookedOutData(option)}</span>
                     </div>
+                                    </button>
+                                  ))}
+                                </motion.div>
+                              )}
+                            </AnimatePresence>
                   </div>
-                  <div className="text-3xl font-bold text-white mb-2">{stats.past3DaysGenerated}</div>
-                  <p className="text-xs text-slate-400">Total pallets outputed</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Past 3 Days Transfer Rate */}
-            <div className="relative group">
-              <div className="absolute inset-0 bg-gradient-to-r from-orange-900/30 to-amber-900/30 rounded-2xl blur-xl"></div>
-              <div className="relative bg-slate-800/40 backdrop-blur-xl border border-orange-500/30 rounded-2xl p-6 shadow-xl shadow-orange-900/20 hover:border-orange-400/50 transition-all duration-300">
-                <div className="absolute inset-0 bg-gradient-to-r from-orange-500/5 via-transparent to-amber-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-2xl"></div>
-                <div className="relative z-10">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-sm font-medium text-slate-200">Booked Out Rate</h3>
-                    <div className="w-10 h-10 bg-gradient-to-r from-orange-500 to-amber-500 rounded-xl flex items-center justify-center">
-                      <CheckCircleIcon className="h-5 w-5 text-white" />
-                    </div>
                   </div>
-                  <div className="text-3xl font-bold text-white mb-2">
-                    {stats.past3DaysGenerated > 0 
-                      ? Math.round((stats.past3DaysTransferredPallets / stats.past3DaysGenerated) * 100)
-                      : 0}%
-                  </div>
-                  <p className="text-xs text-slate-400">Past 3 days Rate</p>
+                        <div className="flex-1 flex items-center justify-center">
+                          <div className="text-5xl font-bold text-white">{getBookedOutData()}</div>
                 </div>
               </div>
             </div>
           </div>
+                </motion.div>
 
-          {/* Main Dashboard Content */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Donut Chart */}
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-              <div className="relative group">
-                {/* 卡片背景 */}
-                <div className="absolute inset-0 bg-gradient-to-r from-slate-800/50 to-blue-900/30 rounded-3xl blur-xl"></div>
-                
-                <div className="relative bg-slate-800/40 backdrop-blur-xl border border-slate-700/50 rounded-3xl p-8 shadow-2xl shadow-blue-900/20 hover:border-blue-500/30 transition-all duration-300">
-                  {/* 卡片內部光效 */}
-                  <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 via-transparent to-cyan-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-3xl"></div>
-                  
-                  {/* 頂部邊框光效 */}
-                  <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-blue-400/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-t-3xl"></div>
-                  
-                  <div className="relative z-10">
-                    <div className="flex items-center justify-between mb-6">
-                      <h2 className="text-xl font-semibold bg-gradient-to-r from-white via-blue-100 to-cyan-100 bg-clip-text text-transparent">
-                        {donutTimeRange} Overview
-                      </h2>
+                {/* Overview Chart - 2 units */}
+                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="flex-[2]">
+                  <div className="relative group z-30 h-full">
+                    <div className="absolute inset-0 bg-gradient-to-r from-slate-800/50 to-blue-900/30 rounded-xl blur-xl"></div>
+                    <div className="relative bg-slate-800/40 backdrop-blur-xl border border-slate-700/50 rounded-xl p-4 shadow-xl shadow-blue-900/20 hover:border-blue-500/30 transition-all duration-300 z-30 h-full">
+                      <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 via-transparent to-cyan-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-xl"></div>
+                      <div className="relative z-30 h-full flex items-center justify-center">
+                        {/* Absolute positioned header */}
+                        <div className="absolute top-0 left-0 right-0 flex items-center justify-between z-40">
+                          <h3 className="text-sm font-medium text-slate-200">{donutTimeRange} Overview</h3>
                       
                       {/* Time Range Dropdown */}
-                      <div className="relative" ref={dropdownRef}>
+                          <div className="relative z-50" ref={timeRangeDropdownRef}>
                         <button
-                          onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                          className="flex items-center gap-2 px-4 py-2 bg-slate-700/50 hover:bg-slate-600/50 text-slate-300 hover:text-white rounded-xl transition-all duration-300 text-sm border border-slate-600/30"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setIsTimeRangeDropdownOpen(!isTimeRangeDropdownOpen);
+                              }}
+                              className="flex items-center gap-1 px-2 py-1 bg-slate-700/50 hover:bg-slate-600/50 text-slate-300 hover:text-white rounded-lg transition-all duration-300 text-xs border border-slate-600/30"
                         >
-                          <ClockIcon className="w-4 h-4" />
+                              <ClockIcon className="w-3 h-3" />
                           {donutTimeRange}
-                          <ChevronDownIcon className={`w-4 h-4 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} />
+                              <ChevronDownIcon className={`w-3 h-3 transition-transform ${isTimeRangeDropdownOpen ? 'rotate-180' : ''}`} />
                         </button>
                         
                         <AnimatePresence>
-                          {isDropdownOpen && (
+                              {isTimeRangeDropdownOpen && (
                             <motion.div
-                              initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                                  initial={{ opacity: 0, y: 10, scale: 0.95 }}
                               animate={{ opacity: 1, y: 0, scale: 1 }}
-                              exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                                  exit={{ opacity: 0, y: 10, scale: 0.95 }}
                               transition={{ duration: 0.2 }}
-                              className="absolute right-0 top-full mt-2 bg-slate-800/90 backdrop-blur-xl border border-slate-600/50 rounded-xl shadow-2xl z-50 min-w-[160px]"
+                                  className="absolute right-0 top-full mt-1 bg-slate-900/98 backdrop-blur-xl border border-slate-600/50 rounded-xl shadow-2xl z-[99999] min-w-[120px]"
                             >
                               {['Today', 'Yesterday', 'Past 3 days', 'Past 7 days'].map((option) => (
                                 <button
                                   key={option}
                                   onClick={() => handleDonutTimeRangeChange(option)}
-                                  className={`w-full px-4 py-3 text-left text-sm hover:bg-slate-700/50 transition-all duration-300 first:rounded-t-xl last:rounded-b-xl ${
+                                      className={`w-full px-3 py-2 text-left text-xs hover:bg-slate-700/50 transition-all duration-300 first:rounded-t-xl last:rounded-b-xl ${
                                     donutTimeRange === option ? 'bg-slate-700/50 text-purple-400' : 'text-slate-300'
                                   }`}
                                 >
@@ -1337,7 +1434,8 @@ export default function AdminPanelPage() {
                       </div>
                     </div>
                     
-                    <div className="flex justify-center">
+                        {/* Centered donut chart */}
+                        <div className="w-24 h-24">
                       <PalletDonutChart 
                         palletsDone={getDonutChartData().palletsDone}
                         palletsTransferred={getDonutChartData().palletsTransferred}
@@ -1348,6 +1446,12 @@ export default function AdminPanelPage() {
                 </div>
               </div>
             </motion.div>
+              </div>
+            </div>
+          </div>
+
+          {/* Main Dashboard Content */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
 
             {/* Finished Product */}
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
@@ -1912,6 +2016,6 @@ export default function AdminPanelPage() {
           isProcessing={voidState.isAutoReprinting}
         />
       )}
-    </div>
+    </MotionBackground>
   );
-} 
+}

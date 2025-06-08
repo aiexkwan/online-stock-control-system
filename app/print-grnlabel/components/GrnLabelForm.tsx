@@ -408,7 +408,7 @@ export const GrnLabelForm: React.FC = () => {
       const collectedPdfBlobs: Blob[] = [];
       let anyFailure = false;
 
-      // 使用服務端 action 生成棧板號碼和系列號
+      // 🔥 改用與 QC Label 相同的棧板號碼生成方式
       const generationResult = await generateGrnPalletNumbersAndSeries(numberOfPalletsToProcess);
       
       if (generationResult.error) {
@@ -423,6 +423,9 @@ export const GrnLabelForm: React.FC = () => {
         toast.error('Failed to generate unique pallet numbers or series. Please try again.');
         return;
       }
+
+      console.log('[GrnLabelForm] 預先生成的棧板號碼:', generatedPalletNumbersList);
+      console.log('[GrnLabelForm] 預先生成的系列號:', uniqueSeriesNumbersList);
 
       // Process each pallet
       for (let i = 0; i < numberOfPalletsToProcess; i++) {
@@ -472,7 +475,7 @@ export const GrnLabelForm: React.FC = () => {
           continue;
         }
 
-        // Create database entries
+        // Create database entries with pre-generated pallet number
         const palletInfoData: GrnPalletInfoPayload = {
           plt_num: palletNum,
           series: series,
@@ -485,7 +488,7 @@ export const GrnLabelForm: React.FC = () => {
           grn_ref: formData.grnNumber,
           material_code: productInfo.code,
           sup_code: supplierInfo.supplier_code,
-          plt_num: palletNum,
+          plt_num: palletNum, // 使用預先生成的棧板號碼
           gross_weight: currentGrossWeight,
           net_weight: netWeight,
           pallet_count: palletCountForGrnRecord,

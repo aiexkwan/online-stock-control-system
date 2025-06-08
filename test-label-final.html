@@ -1,0 +1,275 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Pallet Label Preview</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: Arial, sans-serif;
+      background: white;
+      padding: 0;
+      margin: 0;
+    }
+    
+    .page {
+      width: 210mm;
+      height: 297mm;
+      background: white;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 0;
+    }
+    
+    .label {
+      width: 210mm;
+      height: 145mm;
+      padding: 14px;
+      position: relative;
+      background: white;
+      border: none;
+    }
+    
+    .logo {
+      position: absolute;
+      top: 14px;
+      left: 14px;
+      width: 180px;
+      height: 48px;
+    }
+    
+    .qr-code {
+      position: absolute;
+      top: 14px;
+      right: 14px;
+      width: 140px;
+      height: 140px;
+    }
+    
+    .center-text {
+      text-align: center;
+      font-size: 16px;
+      margin-top: 30px;
+      margin-bottom: 10px;
+      text-decoration: underline;
+    }
+    
+    .center-content {
+      text-align: center;
+      font-size: 24px;
+      font-weight: bold;
+      margin-bottom: 18px;
+    }
+    
+    .description-title {
+      text-align: center;
+      font-size: 16px;
+      text-decoration: underline;
+      margin-bottom: 10px;
+      margin-top: 20px;
+    }
+    
+    .description-content {
+      text-align: center;
+      font-size: 24px;
+      font-weight: bold;
+      margin-bottom: 40px;
+    }
+    
+    /* 完全無邊框表格 - 匹配 PrintLabelPdf */
+    .main-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+      border: none;
+    }
+    
+    .main-table-header-row {
+      background-color: #f0f0f0;
+      height: 36px;
+    }
+    
+    .main-table-header {
+      padding: 4px;
+      font-size: 14px;
+      font-weight: bold;
+      text-align: center;
+      border: none;
+      background-color: #f0f0f0;
+      height: 36px;
+      vertical-align: middle;
+    }
+    
+    .main-table-data-row {
+      height: 48px;
+    }
+    
+    .main-table-cell {
+      padding: 4px;
+      font-size: 22px;
+      text-align: center;
+      border: none;
+      height: 48px;
+      vertical-align: middle;
+    }
+    
+    /* 工單號碼區域 - 完全匹配 PrintLabelPdf */
+    .work-order-table {
+      width: 100%;
+      margin-top: 6px;
+      margin-bottom: 4px;
+      border-collapse: collapse;
+      border: none;
+    }
+    
+    .work-order-table td {
+      padding: 4px;
+      font-size: 24px;
+      text-align: center;
+      border: none;
+      height: 48px;
+      vertical-align: middle;
+    }
+    
+    .pallet-num {
+      position: absolute;
+      bottom: 4px;
+      right: 14px;
+      font-weight: normal;
+      font-size: 12px;
+      text-align: right;
+    }
+    
+    .dashed-line {
+      width: 100%;
+      height: 1px;
+      background-color: #ccc;
+      margin: 8px 0;
+    }
+    
+    @media print {
+      body { margin: 0; }
+      .page { margin: 0; }
+      .label { border: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <!-- 第一個標籤 -->
+    <div class="label">
+      <!-- Logo -->
+      <img 
+        src="https://bbmkuiplnzvpudszrend.supabase.co/storage/v1/object/public/web-ui/P_Logo_DB.PNG" 
+        class="logo"
+        alt="Company Logo"
+      />
+      
+      <!-- QR Code -->
+      <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIwAAACMCAYAAACuwEE+AAAAAklEQVR4AewaftIAAAM+SURBVO3Bi21cCQwEwR5i80+5zwFwhaPxBH08VfEPqv6noepgqDoYqg6GqoOh6mCoOnjxgST8BCoXSfhsKpsk/AQqm6HqYKg6GKoOhqqDoergxV9Q+QpJuEjCRmWThHdUPpPKV0jCxVB1MFQdDFUHQ9XBUHXw4kFJeILKE1Q2SdioXCVho/KEJDxB5QlD1cFQdTBUHQxVB0PVwYt/kMomCe+obFT+JUPVwVB1MFQdDFUHQ9XBi18sCRuVjcpVEjYqv9FQdTBUHQxVB0PVwVB18OJBKt+JyiYJT1H5TCrfyVB1MFQdDFUHQ9XBUHXw4i8k4SdIwkZlk4R3VDZJ2KhcJOEnGKoOhqqDoepgqDoYqg7iH/xjkrBReScJG5V/yVB1MFQdDFUHQ9XBUHXw4gNJ2KhskrBR2SRho7JJwkblQmWThHdUvkISNioXSdioXAxVB0PVwVB1MFQdDFUHLz6gsknCE1Q2SdiobJKwUdkkYaPyVZJwkYSvMFQdDFUHQ9XBUHUwVB28+EASnpCEjcpFEj5TEt5R2SRho/IElYskfKah6mCoOhiqDoaqg6HqYKg6ePEXVJ6QhI3KRRKeoHKlsknChcpXSMJGZTNUHQxVB0PVwVB1MFQdvPiAyiYJFypPSMJ3k4SNyhOS8JlULoaqg6HqYKg6GKoOhqqD+Ae/VBI+m8oTknChsknCRmWThI3KZqg6GKoOhqqDoepgqDp48YEk/AQqG5WLJDwlCU9Q+U6GqoOh6mCoOhiqDoaqgxd/QeUrJOEJSfjpkrBR2SThCUPVwVB1MFQdDFUHQ9XBiwcl4QkqT0jCRmWThHdUNknYqHwmlU0SNipPGKoOhqqDoepgqDoYqg5e/GIqFypXKpskbFQ2SdiobJKwUdkkYaNyMVQdDFUHQ9XBUHUwVB28+MWSsFHZJOEdlU0SNiqbJGxUNknYqFyobJKwUdkMVQdD1cFQdTBUHQxVBy8epPKdqFyovJOEjcomCRdJ2Kg8IQlPGKoOhqqDoepgqDoYqg5e/IUk/ARJuFB5R+VCZZOEjcomCRuVTRI2KpskXAxVB0PVwVB1MFQdDFUH8Q+q/qeh6mCoOhiqDoaqg6Hq4D9mMisfN1IVmgAAAABJRU5ErkJggg==" class="qr-code" alt="QR Code" />
+      
+      <!-- Product Code 標題 -->
+      <div class="center-text">Product Code</div>
+      <!-- Product Code 內容 -->
+      <div class="center-content">MEP9090150</div>
+      
+      <!-- Description 標題 -->
+      <div class="description-title">Description</div>
+      <!-- Description 內容 -->
+      <div class="description-content">900x900x150mm EcoPlus</div>
+      
+      <!-- Main Table - 完全無邊框 -->
+      <table class="main-table">
+        <!-- Header Row -->
+        <tr class="main-table-header-row">
+          <td class="main-table-header">Quantity</td>
+          <td class="main-table-header">Date</td>
+          <td class="main-table-header">Operator Clock Num</td>
+          <td class="main-table-header">Q.C. Done By</td>
+        </tr>
+        <!-- Data Row -->
+        <tr class="main-table-data-row">
+          <td class="main-table-cell">12</td>
+          <td class="main-table-cell">08-Jun-2025</td>
+          <td class="main-table-cell">5997</td>
+          <td class="main-table-cell">5997</td>
+        </tr>
+      </table>
+      
+      <!-- Work Order Table - 匹配 PrintLabelPdf -->
+      <table class="work-order-table">
+        <tr>
+          <td>Work Order Number</td>
+          <td>-</td>
+        </tr>
+      </table>
+      
+      <!-- Pallet Number -->
+      <div class="pallet-num">Pallet Num : 080625/35</div>
+    </div>
+    
+    <!-- 虛線分隔 -->
+    <div class="dashed-line"></div>
+    
+    <!-- 第二個標籤（重複） -->
+    <div class="label">
+      <!-- Logo -->
+      <img 
+        src="https://bbmkuiplnzvpudszrend.supabase.co/storage/v1/object/public/web-ui/P_Logo_DB.PNG" 
+        class="logo"
+        alt="Company Logo"
+      />
+      
+      <!-- QR Code -->
+      <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIwAAACMCAYAAACuwEE+AAAAAklEQVR4AewaftIAAAM+SURBVO3Bi21cCQwEwR5i80+5zwFwhaPxBH08VfEPqv6noepgqDoYqg6GqoOh6mCoOnjxgST8BCoXSfhsKpsk/AQqm6HqYKg6GKoOhqqDoergxV9Q+QpJuEjCRmWThHdUPpPKV0jCxVB1MFQdDFUHQ9XBUHXw4kFJeILKE1Q2SdioXCVho/KEJDxB5QlD1cFQdTBUHQxVB0PVwYt/kMomCe+obFT+JUPVwVB1MFQdDFUHQ9XBi18sCRuVjcpVEjYqv9FQdTBUHQxVB0PVwVB18OJBKt+JyiYJT1H5TCrfyVB1MFQdDFUHQ9XBUHXw4i8k4SdIwkZlk4R3VDZJ2KhcJOEnGKoOhqqDoepgqDoYqg7iH/xjkrBReScJG5V/yVB1MFQdDFUHQ9XBUHXw4gNJ2KhskrBR2SRho7JJwkblQmWThHdUvkISNioXSdioXAxVB0PVwVB1MFQdDFUHLz6gsknCE1Q2SdiobJKwUdkkYaPyVZJwkYSvMFQdDFUHQ9XBUHUwVB28+EASnpCEjcpFEj5TEt5R2SRho/IElYskfKah6mCoOhiqDoaqg6HqYKg6ePEXVJ6QhI3KRRKeoHKlsknChcpXSMJGZTNUHQxVB0PVwVB1MFQdvPiAyiYJFypPSMJ3k4SNyhOS8JlULoaqg6HqYKg6GKoOhqqD+Ae/VBI+m8oTknChsknCRmWThI3KZqg6GKoOhqqDoepgqDp48YEk/AQqG5WLJDwlCU9Q+U6GqoOh6mCoOhiqDoaqgxd/QeUrJOEJSfjpkrBR2SThCUPVwVB1MFQdDFUHQ9XBiwcl4QkqT0jCRmWThHdUNknYqHwmlU0SNipPGKoOhqqDoepgqDoYqg5e/GIqFypXKpskbFQ2SdiobJKwUdkkYaNyMVQdDFUHQ9XBUHUwVB28+MWSsFHZJOEdlU0SNiqbJGxUNknYqFyobJKwUdkMVQdD1cFQdTBUHQxVBy8epPKdqFyovJOEjcomCRdJ2Kg8IQlPGKoOhqqDoepgqDoYqg5e/IUk/ARJuFB5R+VCZZOEjcomCRuVTRI2KpskXAxVB0PVwVB1MFQdDFUH8Q+q/qeh6mCoOhiqDoaqg6Hq4D9mMisfN1IVmgAAAABJRU5ErkJggg==" class="qr-code" alt="QR Code" />
+      
+      <!-- Product Code 標題 -->
+      <div class="center-text">Product Code</div>
+      <!-- Product Code 內容 -->
+      <div class="center-content">MEP9090150</div>
+      
+      <!-- Description 標題 -->
+      <div class="description-title">Description</div>
+      <!-- Description 內容 -->
+      <div class="description-content">900x900x150mm EcoPlus</div>
+      
+      <!-- Main Table - 完全無邊框 -->
+      <table class="main-table">
+        <!-- Header Row -->
+        <tr class="main-table-header-row">
+          <td class="main-table-header">Quantity</td>
+          <td class="main-table-header">Date</td>
+          <td class="main-table-header">Operator Clock Num</td>
+          <td class="main-table-header">Q.C. Done By</td>
+        </tr>
+        <!-- Data Row -->
+        <tr class="main-table-data-row">
+          <td class="main-table-cell">12</td>
+          <td class="main-table-cell">08-Jun-2025</td>
+          <td class="main-table-cell">5997</td>
+          <td class="main-table-cell">5997</td>
+        </tr>
+      </table>
+      
+      <!-- Work Order Table - 匹配 PrintLabelPdf -->
+      <table class="work-order-table">
+        <tr>
+          <td>Work Order Number</td>
+          <td>-</td>
+        </tr>
+      </table>
+      
+      <!-- Pallet Number -->
+      <div class="pallet-num">Pallet Num : 080625/35</div>
+    </div>
+  </div>
+</body>
+</html>

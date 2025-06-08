@@ -58,7 +58,7 @@ export default function PalletDonutChart({
   return (
     <div className="flex items-center justify-center w-full">
       {/* Center - Donut Chart */}
-      <div className="flex-shrink-0 mr-8">
+      <div className="flex-shrink-0">
     <TooltipProvider>
       <Tooltip>
         <TooltipTrigger asChild>
@@ -153,29 +153,6 @@ export default function PalletDonutChart({
         </TooltipContent>
       </Tooltip>
     </TooltipProvider>
-      </div>
-
-      {/* Right side - Statistics */}
-      <div className="flex flex-col space-y-6">
-        <motion.div 
-          initial={{ opacity: 0, x: 20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.5, delay: 0.3 }}
-          className="text-center"
-        >
-          <div className="text-blue-400 font-bold text-2xl mb-1">{palletsGenerated}</div>
-          <div className="text-xxxs text-slate-400 uppercase tracking-wide">Produced</div>
-        </motion.div>
-        
-        <motion.div 
-          initial={{ opacity: 0, x: 20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.5, delay: 0.4 }}
-          className="text-center"
-        >
-          <div className="text-green-400 font-bold text-2xl mb-1">{palletsTransferred}</div>
-          <div className="text-xxxs text-slate-400 uppercase tracking-wide">Transferred</div>
-        </motion.div>
       </div>
     </div>
   );

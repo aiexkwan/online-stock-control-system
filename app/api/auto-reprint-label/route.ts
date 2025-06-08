@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { generatePalletNumbers } from '@/lib/palletNumUtils';
 import { generateMultipleUniqueSeries } from '@/lib/seriesUtils';
-import { prepareQcLabelData, generateAndUploadPdf, type QcInputData } from '@/lib/pdfUtils';
+import { type QcInputData } from '@/lib/pdfUtils';
 import { 
   createQcDatabaseEntriesWithTransaction,
   type QcDatabaseEntryPayload,
@@ -12,7 +11,7 @@ import {
 } from '@/app/actions/qcActions';
 
 const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
@@ -99,14 +98,27 @@ export async function POST(request: NextRequest) {
     const productInfo = await getProductInfo(data.productCode);
     console.log('[Auto Reprint API] Product info retrieved:', productInfo);
 
-    // Generate pallet number and series
+    // Generate pallet number and series using atomic function
     console.log('[Auto Reprint API] Generating pallet number and series...');
-    const palletNumbers = await generatePalletNumbers(supabase, 1);
+    const { data: palletNumbers, error: palletError } = await supabase.rpc('generate_atomic_pallet_numbers_v2', {
+      count: 1
+    });
+    
+    if (palletError) {
+      console.error('[Auto Reprint API] 原子性棧板號碼生成失敗:', palletError);
+      throw new Error(`Failed to generate atomic pallet numbers: ${palletError.message}`);
+    }
+    
+    if (!palletNumbers || !Array.isArray(palletNumbers) || palletNumbers.length === 0) {
+      console.error('[Auto Reprint API] Invalid pallet numbers returned from atomic function');
+      throw new Error('Failed to generate pallet number');
+    }
+    
     const series = await generateMultipleUniqueSeries(1, supabase);
     
-    if (palletNumbers.length === 0 || series.length === 0) {
-      console.error('[Auto Reprint API] Failed to generate pallet number or series');
-      throw new Error('Failed to generate pallet number or series');
+    if (series.length === 0) {
+      console.error('[Auto Reprint API] Failed to generate series');
+      throw new Error('Failed to generate series');
     }
 
     const palletNum = palletNumbers[0];
@@ -183,29 +195,77 @@ export async function POST(request: NextRequest) {
       // 記錄錯誤但不中斷主要流程
     }
 
-    // Prepare PDF data
-    console.log('[Auto Reprint API] Preparing PDF data...');
-    const qcInputData: QcInputData = {
+    // Generate PDF using Puppeteer API route (避免服務器端 React 組件問題)
+    console.log('[Auto Reprint API] Generating PDF using Puppeteer API...');
+    
+    const pdfData = {
       productCode: productInfo.code,
-      productDescription: productInfo.description,
+      description: productInfo.description,
       quantity: data.quantity,
-      series: seriesValue,
-      palletNum: palletNum,
+      date: new Date().toLocaleDateString('en-GB', { 
+        day: '2-digit', 
+        month: 'short', 
+        year: 'numeric' 
+      }).replace(/ /g, '-'),
       operatorClockNum: data.operatorClockNum,
       qcClockNum: data.operatorClockNum,
       workOrderNumber: '-',
-      productType: productInfo.type || 'Standard'
+      palletNum: palletNum,
+      qrValue: seriesValue
     };
 
-    const qcLabelData = await prepareQcLabelData(qcInputData);
-    console.log('[Auto Reprint API] PDF data prepared');
+    console.log('[Auto Reprint API] PDF data prepared:', pdfData);
 
-    // Generate and upload PDF
-    console.log('[Auto Reprint API] Generating PDF...');
-    const { publicUrl, blob } = await generateAndUploadPdf({
-      pdfProps: qcLabelData,
-      supabaseClient: supabase
+    // 使用內部 API 調用
+    const baseUrl = new URL(request.url).origin;
+    const pdfApiUrl = `${baseUrl}/api/print-label-pdf`;
+    console.log('[Auto Reprint API] Calling PDF API at:', pdfApiUrl);
+    
+    const pdfResponse = await fetch(pdfApiUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(pdfData),
     });
+
+    if (!pdfResponse.ok) {
+      const errorText = await pdfResponse.text();
+      console.error('[Auto Reprint API] PDF generation failed:', errorText);
+      throw new Error(`PDF generation failed: ${pdfResponse.status} ${errorText}`);
+    }
+
+    const blob = await pdfResponse.blob();
+    console.log('[Auto Reprint API] PDF generated successfully, size:', blob.size);
+
+    // Upload PDF to Supabase storage
+    const fileName = `${palletNum.replace(/\//g, '_')}.pdf`;
+    const { data: uploadData, error: uploadError } = await supabase.storage
+      .from('pallet-label-pdf')
+      .upload(fileName, blob, {
+        cacheControl: '3600',
+        upsert: true,
+        contentType: 'application/pdf',
+      });
+
+    if (uploadError) {
+      console.error('[Auto Reprint API] Upload failed:', uploadError);
+      throw new Error(`Upload failed: ${uploadError.message}`);
+    }
+
+    if (!uploadData?.path) {
+      throw new Error('Upload succeeded but no path was returned');
+    }
+
+    const { data: urlData } = supabase.storage
+      .from('pallet-label-pdf')
+      .getPublicUrl(uploadData.path);
+
+    if (!urlData?.publicUrl) {
+      throw new Error('Failed to get public URL');
+    }
+
+    const publicUrl = urlData.publicUrl;
 
     console.log(`[Auto Reprint API] PDF generated successfully. Size: ${blob.size} bytes`);
     console.log(`[Auto Reprint API] Public URL: ${publicUrl}`);

@@ -1,218 +1,180 @@
-# AI Coding Rules for Supabase + Next.js WMS Project
+# Supabase + Next.js WMS 專案 AI Coding 規則（繁體中文版）
 
-##  Project Background
+## 專案背景
 
-This project is a WMS (Warehouse Management System) to a modern, web-based application using:
-- Next.js (App Router)
-- React
-- Supabase (PostgreSQL)
-- Tailwind CSS
-- Shadcn UI / Radix UI
-- Deployed via GitHub + Vercel
+本系統為現代化倉庫管理系統（WMS），以 Web 應用（Next.js App Router + React）結合 Supabase（PostgreSQL）、Tailwind CSS、Shadcn UI / Radix UI，並於 GitHub + Vercel 部署。主要功能包括：
 
-The system covers 
-
-- Stock tracking(By QR Code)
-- Pallet movement
-- Material receiving(GRN records)
-- Generate reporting(.csv, .xls)
-- Inbound and outbound
-- Scanning and access control (with scanner, mobile devices including : Smart Phone(iOS, Android), tablet.
+- 庫存追蹤（支援 QR Code）
+- 棧板移動
+- 收貨登記（GRN 記錄）
+- 報表產生（CSV、XLS）
+- 出入倉管理
+- 掃描器、手機、平板多設備支援
+- 自然語言資料查詢（Ask Me Anything）
 
 ---
 
-##  Mandatory Instructions
+## 強制規則
 
-1.  **Use only existing Supabase tables and columns**  
-   DO NOT create new tables or columns. 
-   DO NOT assuming any name of tables, columns or headers.
-   Using MCP Tool to check table detail and structure if required and available.
+1. **只可使用現有 Supabase 資料表與欄位**
+   - 禁止新增任何資料表或欄位
+   - 不可自行假設資料表、欄位、型別名稱
+   - 如有疑問，必須用 MCP 工具查核
 
-2.  **Code only in English**  
-   All variables, UI text, comments, and prompts must be in English. 
-   The system is used by native English speakers.
+2. **所有程式碼、變數、UI、註解、Prompt 一律用英文書寫**
+   - 用戶以英語為主
 
-3.  **Respect given instructions only**  
-   DO NOT run or generate code for tasks not explicitly instructed by the user.
+3. **只執行明確指示之任務**
+   - 禁止產生未被要求之功能或推測邏輯
 
-4.  **Web UI must support all major browsers**  
-   Ensure full compatibility with Chrome, Safari, Edge, and Firefox (desktop and mobile).
+4. **Web UI 必須兼容所有主流瀏覽器及移動設備**
+   - Chrome、Safari、Edge、Firefox（桌面及手機）
 
-5. Support mobile device
-   Smart Phone(iOS, Android), tablet
+5. **唔好隨意建立新文檔**
+   - 只可建立有規定的文檔（見下文文檔分類）
 
 ---
 
-## Project Structure & Naming
+## 專案結構與命名
 
-- Use lowercase-with-dashes for folders (e.g., `components/stock-summary`)
-- Each module should contain:
-  - Main component (named export)
+- 資料夾採 kebab-case（例：`components/stock-summary`）
+- 每個模組包含：
+  - Main component（命名匯出）
   - Subcomponents
   - Helpers
   - Constants
-  - Types (interfaces only)
+  - Types（只用 interface）
+
+### 測試檔案規範
+
+- **如有需要，可臨時創建 test／測試用檔案（如：unit test、debug script）**
+- **所有 test 檔必須於用完或測試結束後及時刪除，嚴禁殘留於正式 repo、主分支或上 production**
+- test 檔案命名建議明確標示（如：`xxx.test.ts`, `temp-debug.ts`）
+- 禁止將生產資料或敏感 key 寫入 test 檔
+---
+
+## 文檔歸類及說明
+
+### 主要功能說明文檔
+
+- `fn_admin_panel.md` ：admin_panel 頁面功能說明
+- `fn_print_GRN_Label.md` ：print_GRN_Label 頁面功能說明
+- `fn_print_QC_Label.md` ：print_QC_Label 頁面功能說明
+- `fn_stock_transfer.md` ：stock_transfer 頁面功能說明
+- `fn_ask_me_anything.md` ：ask-me-anything 卡片功能說明
+
+### 改進記錄文檔
+
+- `history_admin_panel.md` ：admin_panel 頁面改進記錄
+- `history_print_GRN_Label.md` ：print_GRN_Label 頁面改進記錄
+- `history_print_QC_Label.md` ：print_QC_Label 頁面改進記錄
+- `history_stock_transfer.md` ：stock_transfer 頁面改進記錄
+- `history_ask_me_anything.md` ：ask-me-anything 卡片改進記錄
+
+### SQL / RPC 函數統一記錄
+
+- `sql_rpc_library.md` ：所有 SQL／RPC 函數統一記錄與說明，方便後續查詢和維護
 
 ---
 
-## 🧾 TypeScript Style
+## TypeScript 樣式規範
 
-- Use TypeScript in all files
-- Prefer `interface` over `type`; avoid `enum` (use maps instead)
-- Use descriptive variable names (e.g., `isLoading`, `hasError`, `palletInfo`)
-- Functional components only; avoid classes
-
----
-
-## ⚛ React / Next.js Guidelines
-
-- Use **App Router** only (no Pages Router)
-- Prefer **Server Components** and **Server Actions**
-- Avoid `use client` unless DOM manipulation is required
-- Wrap client components in `<Suspense fallback={...} />`
-- Manage URL state with [`nuqs`](https://nuqs.vercel.app/)
+- 全部檔案用 TypeScript
+- 優先用 interface，不用 enum（用 map 取代）
+- 變數需具描述性（如 isLoading, palletInfo）
+- 只用函數式元件，不用 class
 
 ---
 
-##  UI and Styling
+## React / Next.js 規則
 
-- Use Shadcn UI for components
-- Use Tailwind CSS (mobile-first responsive design)
-- Use Radix UI for behavior (dropdowns, dialogs, etc.)
-- Validate forms with `zod`
-- Animate with `tailwindcss-animate` or `framer-motion`
-
----
-
-##  Performance & Optimization
-
-- Minimize `useEffect`, `useState`, `use client`
-- Use `dynamic()` import for non-critical components
-- Optimize images: use WebP, set width/height, lazy load
-- Use Server Components for data-heavy modules
+- 只用 App Router（不用 Page Router）
+- 優先用 Server Components / Server Actions
+- 非必要禁止 `use client`
+- Client component 必須用 `<Suspense fallback={...} />` 包裹
+- URL 狀態管理用 [`nuqs`](https://nuqs.vercel.app/)
 
 ---
 
-# Historylog Policy
-- For any to-do issue, record in toDoList.md and sort later
-- For every fixed issue, record issues and soluction detail, docuement/code involved in solvedIssue.md
+## UI 與樣式規範
+
+- 全面用 Shadcn UI 組件
+- Tailwind CSS（Mobile-first 響應式）
+- 行為元件（dropdown, dialog）用 Radix UI
+- 表單驗證用 zod
+- 動畫用 tailwindcss-animate 或 framer-motion
 
 ---
-## 📚 Supabase Database Schema (Read-Only Reference)
 
-⚠️ Do **not** create or assume new tables or columns.  
- Use only the fields listed below. Refer to MCP Tool if uncertain.
+## 效能優化建議
+
+- 減少 useEffect、useState、use client 用量
+- 非關鍵元件用 dynamic() lazy import
+- 圖片只用 WebP，設寬高、lazy load
+- 資料量大必須用 Server Component
+
+## Supabase 資料庫結構（只讀）
+
+- 只可用現有資料表與欄位，不得假設
+- 欄位詳見 MCP Tool 或 [databaseStructure.md]
+- 關鍵資料表如：data_code, record_palletinfo, record_history, record_grn, record_inventory, data_supplier, data_id, query_record 等
+- 所有欄位關聯（PK/FK）請參考 databaseStructure.md
 
 ---
-| table_name        | column_name      | data_type                | is_nullable | column_default    | character_maximum_length |
-| ----------------- | ---------------- | ------------------------ | ----------- | ----------------- | ------------------------ |
-| data_code         | code             | text                     | NO          | null              | null                     |
-| data_code         | description      | text                     | NO          | null              | null                     |
-| data_code         | colour           | text                     | NO          | 'Black'::text     | null                     |
-| data_code         | standard_qty     | integer                  | NO          | 1                 | null                     |
-| data_code         | type             | text                     | NO          | '-'::text         | null                     |
-| data_id           | name             | text                     | NO          | null              | null                     |
-| data_id           | id               | integer                  | NO          | null              | null                     |
-| data_id           | uuid             | uuid                     | NO          | gen_random_uuid() | null                     |
-| data_id           | email            | text                     | YES         | ''::text          | null                     |
-| data_slateinfo    | product_code     | text                     | NO          | null              | null                     |
-| data_slateinfo    | description      | text                     | YES         | null              | null                     |
-| data_slateinfo    | tool_num         | text                     | YES         | null              | null                     |
-| data_slateinfo    | weight           | text                     | YES         | null              | null                     |
-| data_slateinfo    | thickness_top    | text                     | YES         | null              | null                     |
-| data_slateinfo    | thickness_bottom | text                     | YES         | null              | null                     |
-| data_slateinfo    | length           | text                     | YES         | null              | null                     |
-| data_slateinfo    | width            | text                     | YES         | null              | null                     |
-| data_slateinfo    | hole_to_bottom   | text                     | YES         | null              | null                     |
-| data_slateinfo    | colour           | text                     | YES         | null              | null                     |
-| data_slateinfo    | shapes           | text                     | YES         | null              | null                     |
-| data_supplier     | supplier_code    | text                     | NO          | null              | null                     |
-| data_supplier     | supplier_name    | text                     | YES         | null              | null                     |
-| debug_log         | ts               | timestamp with time zone | YES         | now()             | null                     |
-| debug_log         | msg              | text                     | YES         | null              | null                     |
-| debug_log         | UUID             | uuid                     | NO          | gen_random_uuid() | null                     |
-| record_aco        | uuid             | uuid                     | NO          | gen_random_uuid() | null                     |
-| record_aco        | order_ref        | integer                  | NO          | null              | null                     |
-| record_aco        | code             | text                     | NO          | null              | null                     |
-| record_aco        | required_qty     | integer                  | NO          | null              | null                     |
-| record_aco        | remain_qty       | integer                  | NO          | null              | null                     |
-| record_aco        | latest_update    | timestamp with time zone | NO          | now()             | null                     |
-| record_aco_detail | uuid             | uuid                     | NO          | gen_random_uuid() | null                     |
-| record_aco_detail | plt_num          | text                     | NO          | null              | null                     |
-| record_aco_detail | weight           | integer                  | YES         | null              | null                     |
-| record_aco_detail | length           | integer                  | YES         | null              | null                     |
-| record_aco_detail | width            | integer                  | YES         | null              | null                     |
-| record_aco_detail | height           | integer                  | YES         | null              | null                     |
-| record_grn        | grn_ref          | integer                  | YES         | null              | null                     |
-| record_grn        | plt_num          | text                     | YES         | null              | null                     |
-| record_grn        | sup_code         | text                     | NO          | null              | null                     |
-| record_grn        | material_code    | text                     | NO          | null              | null                     |
-| record_grn        | gross_weight     | integer                  | NO          | null              | null                     |
-| record_grn        | net_weight       | integer                  | NO          | null              | null                     |
-| record_grn        | uuid             | uuid                     | NO          | gen_random_uuid() | null                     |
-| record_grn        | pallet           | text                     | NO          | null              | null                     |
-| record_grn        | package          | text                     | NO          | null              | null                     |
-| record_grn        | pallet_count     | numeric                  | NO          | 0.0               | null                     |
-| record_grn        | package_count    | numeric                  | NO          | 0.0               | null                     |
-| record_history    | time             | timestamp with time zone | NO          | now()             | null                     |
-| record_history    | id               | integer                  | YES         | null              | null                     |
-| record_history    | action           | text                     | NO          | null              | null                     |
-| record_history    | plt_num          | text                     | YES         | null              | null                     |
-| record_history    | loc              | text                     | YES         | null              | null                     |
-| record_history    | remark           | text                     | NO          | null              | null                     |
-| record_history    | uuid             | uuid                     | NO          | gen_random_uuid() | null                     |
-| record_inventory  | product_code     | text                     | NO          | ''::text          | null                     |
-| record_inventory  | injection        | bigint                   | YES         | '0'::bigint       | null                     |
-| record_inventory  | pipeline         | bigint                   | YES         | '0'::bigint       | null                     |
-| record_inventory  | prebook          | bigint                   | YES         | '0'::bigint       | null                     |
-| record_inventory  | await            | bigint                   | YES         | '0'::bigint       | null                     |
-| record_inventory  | fold             | bigint                   | YES         | '0'::bigint       | null                     |
-| record_inventory  | bulk             | bigint                   | YES         | '0'::bigint       | null                     |
-| record_inventory  | backcarpark      | bigint                   | YES         | '0'::bigint       | null                     |
-| record_inventory  | uuid             | uuid                     | NO          | gen_random_uuid() | null                     |
-| record_inventory  | latest_update    | timestamp with time zone | NO          | now()             | null                     |
-| record_inventory  | plt_num          | text                     | NO          | null              | null                     |
-| record_inventory  | damage           | bigint                   | NO          | '0'::bigint       | null                     |
-| record_palletinfo | generate_time    | timestamp with time zone | NO          | now()             | null                     |
-| record_palletinfo | plt_num          | text                     | NO          | null              | null                     |
-| record_palletinfo | product_code     | text                     | NO          | null              | null                     |
-| record_palletinfo | series           | text                     | NO          | null              | null                     |
-| record_palletinfo | plt_remark       | text                     | YES         | ''::text          | null                     |
-| record_palletinfo | product_qty      | bigint                   | YES         | '0'::bigint       | null                     |
-| record_slate      | code             | text                     | NO          | ''::text          | null                     |
-| record_slate      | plt_num          | text                     | NO          | ''::text          | null                     |
-| record_slate      | setter           | text                     | NO          | ''::text          | null                     |
-| record_slate      | mach_num         | text                     | NO          | ''::text          | null                     |
-| record_slate      | material         | text                     | NO          | ''::text          | null                     |
-| record_slate      | batch_num        | text                     | NO          | ''::text          | null                     |
-| record_slate      | weight           | integer                  | NO          | null              | null                     |
-| record_slate      | t_thick          | integer                  | NO          | null              | null                     |
-| record_slate      | b_thick          | integer                  | NO          | null              | null                     |
-| record_slate      | length           | integer                  | NO          | null              | null                     |
-| record_slate      | width            | integer                  | NO          | null              | null                     |
-| record_slate      | centre_hole      | integer                  | NO          | null              | null                     |
-| record_slate      | colour           | text                     | NO          | ''::text          | null                     |
-| record_slate      | shape            | text                     | NO          | ''::text          | null                     |
-| record_slate      | flame_test       | integer                  | NO          | null              | null                     |
-| record_slate      | remark           | text                     | YES         | ''::text          | null                     |
-| record_slate      | uuid             | uuid                     | NO          | gen_random_uuid() | null                     |
-| record_slate      | first_off        | date                     | YES         | null              | null                     |
-| record_transfer   | tran_date        | timestamp with time zone | NO          | now()             | null                     |
-| record_transfer   | f_loc            | text                     | NO          | null              | null                     |
-| record_transfer   | t_loc            | text                     | NO          | null              | null                     |
-| record_transfer   | plt_num          | text                     | NO          | null              | null                     |
-| record_transfer   | operator_id      | integer                  | NO          | null              | null                     |
-| record_transfer   | uuid             | uuid                     | NO          | gen_random_uuid() | null                     |
-| report_log        | uuid             | uuid                     | NO          | gen_random_uuid() | null                     |
-| report_log        | error            | text                     | NO          | null              | null                     |
-| report_log        | error_info       | text                     | NO          | null              | null                     |
+
+## 自然語言查詢 / AI 查詢規則
+
+- Ask Me Anything（AMA）查詢系統接 GPT-4o
+- SQL 僅允許 SELECT，RPC `execute_query` 執行
+- 查詢記錄於 query_record（內容：查詢、結果、user、token 數、SQL）
+- 權限控管依 data_id/email、資料表權限、操作日誌
+
 ---
 
-### MCP Tool
-- MCP tools are available
-- Use Browser MCP to tun test and check console 
-- Use Supabase MCP to check and verify table structure and data
+## 現有業務模組總覽
 
-##  Final Reminder
+- **管理面板**：系統監控、權限、報表、檔案上傳、作廢、查詢等
+- **GRN/QC 標籤列印**：自動生成/合併/上傳 PDF，資料來源 record_grn/record_palletinfo
+- **庫存轉移**：一鍵搜尋/自動判斷/即時操作
+- **所有流程、查詢、列印、權限管理皆嚴格依現有資料表，不可更改結構**
 
-> This project is an enterprise-grade inventory control system. Follow all instructions exactly. Do not guess field mappings or generate unrequested logic. Use clean, declarative, modular TypeScript code optimized for clarity, performance, and multi-browser compatibility.
+---
+
+## 開發部署注意
+
+- 正確設定 `.env`（專案預設值，通常已存在且無需重複創建）
+  - `.env` 用於共用、不敏感的設定（如 NEXT_PUBLIC_SUPABASE_URL），一律保證已存在，無需嘗試自動或重複建立
+- **敏感或本機開發專用設定請寫於 `.env.local`**
+  - `.env.local` 只用作你本機測試，永遠不會 commit 或同步到 Git
+  - 例如：`OPENAI_API_KEY`, `SUPABASE_SERVICE_ROLE_KEY`
+- **嚴禁將 Supabase Anon Key、Service Role Key 或任何敏感 KEY/Token 硬編碼於代碼內**
+  - 所有 API KEY 必須只可經 `.env` 或 `.env.local` 引用，**任何形式（如直接寫在程式、config、repo）都不允許**
+  - 程式只可用 `process.env.XXX` 調用
+- **線上正式環境請直接在 Vercel（或 Supabase）Dashboard 設定環境變數**
+  - Vercel 及所有遠端部署，不會讀取你本機的 `.env.local`
+  - 必須在 Dashboard 內手動補齊所有必要 KEY
+- **Cursor、CI/CD、雲端開發空間等協作工具預設查詢唔到 `.env.local`，只會依賴 repo 內 `.env` 或 dashboard 上環境變數設定**
+- 切勿將敏感 KEY commit 上 repo
+
+## .env／.env.local 實際操作建議
+
+- **`.env`：** 只需保證存在及正確設定，無需自動生成或覆蓋
+- **`.env.local`：** 個人開發機本地編輯，不上傳
+- **Vercel/Supabase dashboard：** 每次有新 KEY，必須手動同步
+- **所有敏感 KEY 只可存在 `.env/.env.local`，嚴禁直接出現在任何 .ts, .js, .tsx, .json 或 config 代碼**
+
+---
+
+## 版本控制與 Git 操作規範
+
+- **嚴禁在未經明確用戶或管理員指示下，自行 push 任何代碼到 GitHub 或其他遠端代碼倉庫**
+  - 包括所有自動化腳本、AI 生成、plugin、extension 觸發的 git push 行為
+  - 只可於用戶/專案負責人明確同意下，手動進行 push、merge、release 等操作
+  - 任何自動 push 功能必須事前取得書面批准及安全審核
+- 所有敏感變更、重大新功能或設定變動，須事前通報相關人員、確認無誤才可推送
+
+---
+
+## 最後提醒
+
+> 本專案為企業級 WMS 系統，所有代碼、流程、UI、查詢等必須嚴格依本規則，不可自行臆測資料結構或新增欄位。所有 TypeScript 代碼需確保清晰、效能、跨瀏覽器兼容、模組化。

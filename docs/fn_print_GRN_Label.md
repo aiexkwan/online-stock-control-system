@@ -95,9 +95,9 @@ GRN（Goods Received Note）標籤列印系統是用於記錄和管理收貨資�
 - `historyRecordData`: record_history 表記錄
 - `inventoryRecordData`: record_inventory 表記錄
 
-#### 原子性資料庫操作
-- 呼叫 `createGrnDatabaseEntries` 執行原子性寫入
-- 使用 Supabase RPC `create_grn_entries_atomic`
+#### 資料庫操作
+- 呼叫 `createGrnDatabaseEntries` 執行資料庫寫入
+- 直接插入各個資料庫表（record_palletinfo、record_grn、record_inventory、record_history）
 - 確保資料一致性
 
 ### 6. PDF 生成階段
@@ -161,7 +161,6 @@ GRN（Goods Received Note）標籤列印系統是用於記錄和管理收貨資�
 
 ### 資料庫操作 API
 - `createGrnDatabaseEntries`: GRN 資料庫記錄創建
-- `create_grn_entries_atomic`: 原子性 RPC 函數
 
 ### PDF 生成 API
 - GRN 標籤 PDF 生成服務
@@ -223,7 +222,7 @@ GRN（Goods Received Note）標籤列印系統是用於記錄和管理收貨資�
 - 必填欄位缺失提示
 
 ### 資料庫錯誤處理
-- 原子性操作失敗回滾
+- 資料庫操作失敗處理
 - 重複記錄檢查
 - 資料完整性驗證
 - 錯誤日誌記錄

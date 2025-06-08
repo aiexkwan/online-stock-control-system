@@ -32,9 +32,12 @@ export async function middleware(request: NextRequest) {
   const publicRoutes = [
     '/main-login',
     '/new-password',  // 密碼重設頁面需要公開，用戶通過電郵連結訪問
+    '/print-label/html-preview',  // HTML 標籤預覽頁面（用於測試和預覽）
     // 只有特定的 API 路由需要公開訪問
     '/api/auth',      // 認證相關 API
-    '/api/health'     // 健康檢查 API（如果有的話）
+    '/api/health',    // 健康檢查 API（如果有的話）
+    '/api/print-label-pdf',  // PDF 生成 API（用於內部調用）
+    '/api/print-label-html'  // HTML 標籤預覽 API（用於測試和預覽）
   ];
   const isPublicRoute = publicRoutes.some(route => request.nextUrl.pathname.startsWith(route));
   

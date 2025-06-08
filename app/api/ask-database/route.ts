@@ -149,11 +149,11 @@ export async function POST(request: NextRequest) {
     const saveOperations = [
       Promise.resolve(queryCache.set(cacheKey, result)),
       Promise.resolve(saveConversationHistory(sessionId, {
-        timestamp: result.timestamp,
-        question,
+      timestamp: result.timestamp,
+      question,
         sql,
         answer,
-        result: queryResult,
+      result: queryResult,
       })),
       saveQueryRecordAsync(question, answer, userName, totalTokens, sql)
     ];
@@ -457,9 +457,9 @@ async function getUserInfo(): Promise<{ email: string | null; name: string | nul
   try {
     // 在開發環境中，如果沒有認證用戶，使用測試用戶
     if (process.env.NODE_ENV === 'development') {
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      if (!user?.email) {
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user?.email) {
         console.log('[getUserInfo] Development mode: No authenticated user, using test user');
         const { data: testUser, error } = await supabase
           .from('data_id')

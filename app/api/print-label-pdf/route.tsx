@@ -1,12 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
-import puppeteer from 'puppeteer';
 
-export const runtime = 'nodejs'; // 確保 Vercel 用 node 環境
+export const runtime = 'nodejs';
 
 export async function POST(request: NextRequest) {
-  try {
+  // 在開始時讀取並保存 data
     const data = await request.json();
-    // 組裝 query string
+    console.log('[Print Label PDF API] Received data:', data);
+
+  try {
+    // 直接使用 Puppeteer 方法，因為我們已經有工作的 HTML API
+    const puppeteer = await import('puppeteer');
+    
     const params = new URLSearchParams({
       productCode: data.productCode,
       description: data.description,
@@ -14,23 +18,23 @@ export async function POST(request: NextRequest) {
       date: data.date,
       operatorClockNum: data.operatorClockNum,
       qcClockNum: data.qcClockNum,
-      workOrderNumber: data.workOrderNumber,
+      workOrderNumber: data.workOrderNumber || '-',
       palletNum: data.palletNum,
-      qrValue: data.qrValue || data.productCode,
+      qrValue: data.qrValue || `${data.productCode}-${data.palletNum}`,
     }).toString();
 
-    // 動態取得 Vercel domain
     const host = request.headers.get('host');
     const protocol = host?.startsWith('localhost') ? 'http' : 'https';
-    const url = `${protocol}://${host}/print-label/html-preview?${params}`;
+    const url = `${protocol}://${host}/api/print-label-html?${params}`;
 
-    const browser = await puppeteer.launch({
+    console.log('[Print Label PDF API] Generating PDF from URL:', url);
+
+    const browser = await puppeteer.default.launch({
       args: ['--no-sandbox', '--disable-setuid-sandbox'],
     });
     const page = await browser.newPage();
     await page.goto(url, { waitUntil: 'networkidle0' });
 
-    // 產生 PDF
     const pdfBuffer = await page.pdf({
       format: 'A4',
       printBackground: true,
@@ -39,16 +43,18 @@ export async function POST(request: NextRequest) {
 
     await browser.close();
 
+    console.log('[Print Label PDF API] PDF generated successfully, size:', pdfBuffer.length);
+
     return new NextResponse(pdfBuffer, {
       headers: {
         'Content-Type': 'application/pdf',
-        'Content-Disposition': 'attachment; filename=label.pdf',
+        'Content-Disposition': 'attachment; filename=pallet-label.pdf',
       },
     });
   } catch (error) {
-    console.error('Puppeteer PDF error:', error);
+    console.error('[Print Label PDF API] Error:', error);
     return NextResponse.json(
-      { error: 'Failed to generate PDF' },
+      { error: 'Failed to generate PDF', details: (error as Error).message },
       { status: 500 }
     );
   }

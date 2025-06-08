@@ -4,6 +4,7 @@ import React from 'react';
 import { Toaster } from 'sonner';
 import AuthChecker from './AuthChecker';
 import GlobalHeader from '@/components/GlobalHeader';
+import MotionBackground from './MotionBackground';
 
 interface ClientLayoutProps {
   children: React.ReactNode;
@@ -32,10 +33,10 @@ export default function ClientLayout({ children }: ClientLayoutProps) {
         {/* Global header */}
         <GlobalHeader />
         
-        {/* Main content */}
-        <main className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-800">
+        {/* Main content with motion background */}
+        <MotionBackground className="text-white">
           {children}
-        </main>
+        </MotionBackground>
       </AuthChecker>
     </>
   );

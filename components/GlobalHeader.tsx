@@ -188,9 +188,10 @@ export default function GlobalHeader() {
     setIsMenuOpen(false);
   };
 
-  // Don't render on login pages
+  // Don't render on login pages and access page
   const isLoginPage = pathname?.startsWith('/main-login') || pathname === '/';
-  if (isLoginPage || !isAuthenticated) {
+  const isAccessPage = pathname === '/access';
+  if (isLoginPage || isAccessPage || !isAuthenticated) {
     return null;
   }
 

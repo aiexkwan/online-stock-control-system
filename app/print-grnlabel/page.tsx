@@ -6,20 +6,9 @@ import FloatingInstructions from '@/components/ui/floating-instructions';
 
 export default function PrintGrnLabelPage() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-800 text-white relative overflow-hidden">
-      {/* 背景裝飾元素 */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        {/* 動態漸層球體 - 橙色主題 */}
-        <div className="absolute -top-40 -right-40 w-80 h-80 bg-orange-500/10 rounded-full blur-3xl animate-pulse"></div>
-        <div className="absolute top-1/2 -left-40 w-96 h-96 bg-amber-500/8 rounded-full blur-3xl animate-pulse delay-1000"></div>
-        <div className="absolute -bottom-40 right-1/3 w-72 h-72 bg-yellow-500/10 rounded-full blur-3xl animate-pulse delay-2000"></div>
-        
-        {/* 網格背景 */}
-        <div className="absolute inset-0 bg-[linear-gradient(rgba(251,146,60,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(251,146,60,0.03)_1px,transparent_1px)] bg-[size:50px_50px]"></div>
-      </div>
-
+    <div className="min-h-screen">
       {/* 主要內容區域 */}
-      <div className="relative z-10">
+      <div className="relative">
         <div className="container mx-auto px-4 py-8">
           {/* 頁面標題區域 */}
           <div className="text-center mb-12">

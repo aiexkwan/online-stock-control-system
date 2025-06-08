@@ -160,7 +160,7 @@ export default function AskDatabaseInlineCard() {
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2">
             <Brain className="h-6 w-6 text-purple-400" />
-            <h3 className="text-xl font-semibold text-white">Ask Me Anything</h3>
+            <h3 className="text-xl font-semibold text-white">Chat with Database</h3>
           </div>
           <Badge className="bg-purple-500/20 text-purple-300 border-purple-500/30">
            Pennine Assistant

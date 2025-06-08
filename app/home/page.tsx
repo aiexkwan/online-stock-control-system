@@ -40,6 +40,14 @@ interface HistoryRecord {
   uuid: string;
 }
 
+interface AcoOrder {
+  order_ref: number;
+  code: string;
+  required_qty: number;
+  remain_qty: number;
+  latest_update: string;
+}
+
 export default function ModernDashboard() {
   const router = useRouter();
   const supabase = createClient();
@@ -49,6 +57,8 @@ export default function ModernDashboard() {
   const [error, setError] = useState<string | null>(null);
   const [historyRecords, setHistoryRecords] = useState<HistoryRecord[]>([]);
   const [historyLoading, setHistoryLoading] = useState(true);
+  const [incompleteOrders, setIncompleteOrders] = useState<AcoOrder[]>([]);
+  const [acoLoading, setAcoLoading] = useState(true);
 
   // Extract clock number from email
   const extractClockNumber = (email: string): string => {
@@ -74,6 +84,27 @@ export default function ModernDashboard() {
     } catch (err) {
       console.error('[Dashboard] Error fetching user name:', err);
       return email.split('@')[0];
+    }
+  };
+
+  // Load incomplete ACO orders
+  const loadIncompleteAcoOrders = async () => {
+    try {
+      setAcoLoading(true);
+      const { data, error } = await supabase
+        .from('record_aco')
+        .select('*')
+        .gt('remain_qty', 0)
+        .order('order_ref', { ascending: false });
+
+      if (error) throw error;
+
+      setIncompleteOrders(data || []);
+    } catch (err: any) {
+      console.error('[Dashboard] Error loading ACO orders:', err);
+      toast.error(`Failed to load ACO orders: ${err.message}`);
+    } finally {
+      setAcoLoading(false);
     }
   };
 
@@ -207,8 +238,11 @@ export default function ModernDashboard() {
           displayName: displayName
         });
         
-        // Load history records
-        await loadHistoryRecords();
+        // Load data in parallel
+        await Promise.all([
+          loadHistoryRecords(),
+          loadIncompleteAcoOrders()
+        ]);
         
       } catch (err: any) {
         console.error('[Dashboard] Authentication error:', err);
@@ -286,11 +320,117 @@ export default function ModernDashboard() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto p-6">
+    <div className="max-w-7xl mx-auto p-6 space-y-6">
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
       >
+        {/* ACO Order Progress Card */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="max-w-6xl mx-auto mb-6"
+        >
+          <Card className="bg-slate-800/50 border-slate-700 backdrop-blur-sm">
+            <CardHeader>
+              <CardTitle className="text-slate-200 flex items-center gap-2">
+                <ClipboardDocumentListIcon className="w-5 h-5 text-orange-400" />
+                ACO Order Progress
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {acoLoading ? (
+                <div className="space-y-3">
+                  {[...Array(3)].map((_, i) => (
+                    <Skeleton key={i} className="h-16 w-full bg-slate-700" />
+                  ))}
+                </div>
+              ) : incompleteOrders.length === 0 ? (
+                <div className="text-center py-8">
+                  <CheckCircleIcon className="w-12 h-12 text-green-500 mx-auto mb-3" />
+                  <p className="text-slate-400">All ACO orders completed</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {/* Group orders by order_ref */}
+                  {Object.entries(
+                    incompleteOrders.reduce((groups, order) => {
+                      if (!groups[order.order_ref]) {
+                        groups[order.order_ref] = [];
+                      }
+                      groups[order.order_ref].push(order);
+                      return groups;
+                    }, {} as Record<number, AcoOrder[]>)
+                  ).map(([orderRef, orders]) => {
+                    const totalRequired = orders.reduce((sum, order) => sum + order.required_qty, 0);
+                    const totalRemaining = orders.reduce((sum, order) => sum + order.remain_qty, 0);
+                    const totalCompleted = totalRequired - totalRemaining;
+                    const completionPercentage = Math.round((totalCompleted / totalRequired) * 100);
+                    
+                    return (
+                      <motion.div
+                        key={orderRef}
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        className="bg-slate-700/30 rounded-lg p-4 border border-slate-600/30"
+                      >
+                        <div className="flex items-center justify-between mb-3">
+                          <h3 className="text-lg font-semibold text-orange-300">
+                            Order {orderRef}
+                          </h3>
+                          <div className="flex items-center gap-3">
+                            <span className="text-sm text-slate-400">
+                              {totalCompleted} / {totalRequired} completed
+                            </span>
+                            <div className="bg-orange-500/20 border border-orange-400/30 text-orange-300 px-3 py-1 rounded-lg text-sm font-medium">
+                              {completionPercentage}%
+                            </div>
+                          </div>
+                        </div>
+                        
+                        {/* Progress bar */}
+                        <div className="w-full bg-slate-600/50 rounded-full h-2 mb-4">
+                          <div 
+                            className="bg-gradient-to-r from-orange-500 to-amber-500 h-2 rounded-full transition-all duration-300"
+                            style={{ width: `${completionPercentage}%` }}
+                          />
+                        </div>
+                        
+                        {/* Product details */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                          {orders.map((order, index) => {
+                            const productCompletionPercentage = Math.round(((order.required_qty - order.remain_qty) / order.required_qty) * 100);
+                            
+                            return (
+                              <div key={index} className="bg-slate-800/50 rounded-lg p-3 border border-slate-600/20">
+                                <div className="flex items-center justify-between mb-2">
+                                  <span className="text-slate-200 font-medium">{order.code}</span>
+                                  <span className="text-xs text-slate-400">
+                                    {productCompletionPercentage}%
+                                  </span>
+                                </div>
+                                <div className="text-sm text-slate-400 mb-2">
+                                  Required: {order.required_qty} | Remaining: {order.remain_qty}
+                                </div>
+                                <div className="w-full bg-slate-600/50 rounded-full h-1">
+                                  <div 
+                                    className="bg-gradient-to-r from-blue-500 to-cyan-500 h-1 rounded-full transition-all duration-300"
+                                    style={{ width: `${productCompletionPercentage}%` }}
+                                  />
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </motion.div>
+                    );
+                  })}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </motion.div>
+
         {/* History Log Card */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
