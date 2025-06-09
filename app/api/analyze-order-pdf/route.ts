@@ -3,52 +3,75 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import OpenAI from 'openai';
+import crypto from 'crypto';
+
+// 簡單的內存緩存（生產環境建議使用 Redis）
+const fileCache = new Map<string, any>();
+const CACHE_EXPIRY = 30 * 60 * 1000; // 30分鐘
+
+// 生成文件哈希值
+function generateFileHash(buffer: Buffer): string {
+  return crypto.createHash('md5').update(buffer).digest('hex');
+}
+
+// 檢查緩存
+function getCachedResult(fileHash: string): any | null {
+  const cached = fileCache.get(fileHash);
+  if (cached && Date.now() - cached.timestamp < CACHE_EXPIRY) {
+    return cached.data;
+  }
+  if (cached) {
+    fileCache.delete(fileHash); // 清除過期緩存
+  }
+  return null;
+}
+
+// 設置緩存
+function setCachedResult(fileHash: string, data: any): void {
+  fileCache.set(fileHash, {
+    data,
+    timestamp: Date.now()
+  });
+}
+
+// 清理過期緩存
+function cleanExpiredCache(): void {
+  const now = Date.now();
+  for (const [key, value] of fileCache.entries()) {
+    if (now - value.timestamp > CACHE_EXPIRY) {
+      fileCache.delete(key);
+    }
+  }
+}
 
 // 創建 Supabase 服務端客戶端的函數
 function createSupabaseAdmin() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
   
-  if (!supabaseUrl) {
-    throw new Error('NEXT_PUBLIC_SUPABASE_URL environment variable is not set');
+  if (!supabaseUrl || !serviceRoleKey) {
+    throw new Error('Missing Supabase environment variables');
   }
   
-  if (!serviceRoleKey) {
-    throw new Error('SUPABASE_SERVICE_ROLE_KEY environment variable is not set');
-  }
-  
-  return createClient(
-    supabaseUrl,
-    serviceRoleKey,
-    {
-      auth: {
-        autoRefreshToken: false,
-        persistSession: false
-      },
-      db: {
-        schema: 'public'
-      },
-      global: {
-        headers: {
-          'apikey': serviceRoleKey,
-          'Authorization': `Bearer ${serviceRoleKey}`
-        }
+  return createClient(supabaseUrl, serviceRoleKey, {
+    auth: { autoRefreshToken: false, persistSession: false },
+    db: { schema: 'public' },
+    global: {
+      headers: {
+        'apikey': serviceRoleKey,
+        'Authorization': `Bearer ${serviceRoleKey}`
       }
     }
-  );
+  });
 }
 
 // 創建 OpenAI 客戶端
 function createOpenAIClient() {
   const apiKey = process.env.OPENAI_API_KEY;
-  
   if (!apiKey) {
     throw new Error('OPENAI_API_KEY environment variable is not set');
   }
-  
-  return new OpenAI({
-    apiKey: apiKey,
-  });
+  return new OpenAI({ apiKey });
 }
 
 // PDF 轉圖像函數（Serverless 環境不支持）
@@ -74,119 +97,203 @@ async function convertPdfToImages(pdfBuffer: Buffer): Promise<string[]> {
   }
 }
 
-// PDF 文本提取函數（使用 pdf-parse 正確導入方式）
+// PDF 文本提取函數（簡化版）
 async function extractTextFromPDF(pdfBuffer: Buffer): Promise<string> {
   try {
-    console.log('[PDF Text Extraction] 開始使用 pdf-parse 提取 PDF 文本...');
-    console.log('[PDF Text Extraction] Buffer 大小:', pdfBuffer.length, 'bytes');
-    console.log('[PDF Text Extraction] Buffer 類型:', typeof pdfBuffer);
-    console.log('[PDF Text Extraction] 是否為 Buffer:', Buffer.isBuffer(pdfBuffer));
-    
-    // 確保傳入的是 Buffer 對象
-    if (!Buffer.isBuffer(pdfBuffer)) {
-      throw new Error('Invalid buffer provided to extractTextFromPDF');
+    if (!Buffer.isBuffer(pdfBuffer) || pdfBuffer.length === 0) {
+      throw new Error('Invalid PDF buffer');
     }
     
-    // 驗證 Buffer 不為空
-    if (pdfBuffer.length === 0) {
-      throw new Error('Empty PDF buffer provided');
-    }
-    
-    // 使用正確的 pdf-parse 導入方式，避免測試文件問題
-    console.log('[PDF Text Extraction] 使用 pdf-parse 正確導入方式...');
-    
-    // 使用兼容的導入方式
     const pkg = require('pdf-parse');
     const pdfParse = pkg.default || pkg;
-    
-    // 直接處理 Buffer，不使用任何配置選項
-    console.log('[PDF Text Extraction] 調用 pdf-parse 處理 Buffer...');
     const pdfData = await pdfParse(pdfBuffer);
     
-    console.log('[PDF Text Extraction] pdf-parse 提取成功');
-    console.log('[PDF Text Extraction] 頁數:', pdfData.numpages);
-    console.log('[PDF Text Extraction] 文本長度:', pdfData.text.length);
-    console.log('[PDF Text Extraction] 文本預覽（前500字符）:', pdfData.text.substring(0, 500));
-    
-    if (pdfData.text && pdfData.text.trim().length > 0) {
-      console.log('[PDF Text Extraction] 成功從上傳的 PDF 提取文本');
-      return pdfData.text.trim();
-    } else {
-      console.warn('[PDF Text Extraction] pdf-parse 返回空文本');
+    if (!pdfData.text || pdfData.text.trim().length === 0) {
       throw new Error('No readable text found in PDF');
     }
     
+    return pdfData.text.trim();
   } catch (error: any) {
-    console.error('[PDF Text Extraction] pdf-parse 處理失敗:', error);
-    console.error('[PDF Text Extraction] 錯誤詳情:', {
-      message: error.message,
-      name: error.name,
-      stack: error.stack?.split('\n').slice(0, 3).join('\n')
-    });
-    
     throw new Error(`PDF text extraction failed: ${error.message}`);
   }
 }
 
-// 定義訂單數據接口
+// 定義訂單數據接口（簡化版）
 interface OrderData {
-  account_num: number;
   order_ref: number;
-  customer_ref: string;
-  invoice_to: string;
-  delivery_add: string;
   product_code: string;
   product_desc: string;
   product_qty: number;
-  unit_price: number;
   uploaded_by: number;
+}
+
+// GET 方法：清理緩存和獲取緩存狀態
+export async function GET(request: NextRequest) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const action = searchParams.get('action');
+    
+    if (action === 'clear-cache') {
+      const beforeSize = fileCache.size;
+      fileCache.clear();
+      console.log(`[PDF Analysis] Cache cleared: ${beforeSize} entries removed`);
+      
+      return NextResponse.json({
+        success: true,
+        message: `Cache cleared successfully. ${beforeSize} entries removed.`,
+        cacheSize: fileCache.size
+      });
+    }
+    
+    if (action === 'cache-status') {
+      cleanExpiredCache();
+      const cacheEntries = Array.from(fileCache.entries()).map(([hash, value]) => ({
+        hash: hash.substring(0, 8) + '...',
+        age: Math.round((Date.now() - value.timestamp) / 1000 / 60), // 分鐘
+        recordCount: value.data.orderData?.length || 0
+      }));
+      
+      return NextResponse.json({
+        success: true,
+        cacheSize: fileCache.size,
+        entries: cacheEntries,
+        expiryMinutes: CACHE_EXPIRY / 1000 / 60
+      });
+    }
+    
+    return NextResponse.json({
+      success: true,
+      message: 'PDF Analysis API is running',
+      availableActions: ['clear-cache', 'cache-status']
+    });
+    
+  } catch (error: any) {
+    return NextResponse.json({ 
+      error: 'Failed to process request',
+      details: error.message
+    }, { status: 500 });
+  }
 }
 
 export async function POST(request: NextRequest) {
   try {
-    console.log('[Analyze Order PDF API] 接收 PDF 分析請求...');
+    console.log('[PDF Analysis] Starting PDF analysis request');
     
     const formData = await request.formData();
     const file = formData.get('file') as File;
     const uploadedBy = formData.get('uploadedBy') as string;
     const saveToStorage = formData.get('saveToStorage') as string;
     
-    if (!file) {
-      console.error('[Analyze Order PDF API] 沒有找到文件');
-      return NextResponse.json({ error: 'No file provided' }, { status: 400 });
+    // 基本驗證
+    if (!file || !uploadedBy) {
+      return NextResponse.json({ 
+        error: !file ? 'No file provided' : 'No uploadedBy provided' 
+      }, { status: 400 });
     }
     
-    if (!uploadedBy) {
-      console.error('[Analyze Order PDF API] 沒有提供上傳者ID');
-      return NextResponse.json({ error: 'No uploadedBy provided' }, { status: 400 });
-    }
-    
-    console.log('[Analyze Order PDF API] 文件信息:', {
-      fileName: file.name,
-      fileSize: file.size,
-      fileType: file.type,
-      uploadedBy,
-      saveToStorage: saveToStorage === 'true'
-    });
-    
-    // 驗證文件類型
     if (file.type !== 'application/pdf') {
-      console.error('[Analyze Order PDF API] 無效的文件類型:', file.type);
       return NextResponse.json({ 
         error: `Invalid file type: ${file.type}. Only PDF files are allowed.` 
       }, { status: 400 });
     }
     
-    // 轉換文件為 Buffer
+    console.log(`[PDF Analysis] Processing: ${file.name} (${file.size} bytes)`);
+    
+    // 轉換文件為 Buffer 並生成哈希值
     const arrayBuffer = await file.arrayBuffer();
     const pdfBuffer = Buffer.from(arrayBuffer);
+    const fileHash = generateFileHash(pdfBuffer);
     
-    // 可選：保存文件到 Storage
+    // 🔥 檢查緩存，避免重複處理
+    const cachedResult = getCachedResult(fileHash);
+    if (cachedResult) {
+      console.log(`[PDF Analysis] Cache hit: ${fileHash.substring(0, 8)}... (${cachedResult.orderData?.length || 0} records)`);
+      
+      // 如果需要保存到存儲，仍然執行存儲操作
+      let storageInfo = null;
+      if (saveToStorage === 'true') {
+        try {
+          const supabaseAdmin = createSupabaseAdmin();
+          const fileName = `order-${Date.now()}-${file.name}`;
+          const blob = new Blob([arrayBuffer], { type: 'application/pdf' });
+          
+          const { data: uploadData, error: uploadError } = await supabaseAdmin.storage
+            .from('orderpdf')
+            .upload(fileName, blob, {
+              cacheControl: '3600',
+              upsert: true,
+              contentType: 'application/pdf',
+            });
+          
+          if (!uploadError) {
+            const { data: urlData } = supabaseAdmin.storage
+              .from('orderpdf')
+              .getPublicUrl(uploadData.path);
+            
+            storageInfo = {
+              path: uploadData.path,
+              publicUrl: urlData.publicUrl,
+              bucket: 'orderpdf'
+            };
+          }
+        } catch (storageError) {
+          console.warn('[PDF Analysis] Storage operation failed');
+        }
+      }
+      
+      // 重新插入數據庫（因為 uploaded_by 可能不同）
+      if (cachedResult.orderData && cachedResult.orderData.length > 0) {
+        try {
+          const supabaseAdmin = createSupabaseAdmin();
+          const insertData = cachedResult.orderData.map((order: any) => ({
+            ...order,
+            uploaded_by: parseInt(uploadedBy)
+          }));
+          
+          const { data: insertResults, error: insertError } = await supabaseAdmin
+            .from('data_order')
+            .insert(insertData)
+            .select();
+          
+          if (insertError) {
+            throw insertError;
+          }
+          
+          console.log(`[PDF Analysis] Cached data inserted: ${insertResults.length} records`);
+          
+          return NextResponse.json({
+            success: true,
+            message: `Successfully processed PDF (cached) and inserted ${insertResults.length} records`,
+            recordCount: insertResults.length,
+            extractedData: cachedResult.orderData, // 🔥 返回緩存的數據
+            insertedRecords: insertResults,
+            storageInfo: storageInfo,
+            cached: true,
+            usage: cachedResult.usage
+          });
+          
+        } catch (insertError: any) {
+          console.error('[PDF Analysis] Database insertion failed:', insertError.message);
+          return NextResponse.json({ 
+            error: 'Database insertion failed',
+            details: insertError.message
+          }, { status: 500 });
+        }
+      } else {
+        return NextResponse.json({
+          success: true,
+          message: 'PDF processed (cached) but no valid records found',
+          recordCount: 0,
+          storageInfo: storageInfo,
+          cached: true
+        });
+      }
+    }
+    
+    // 可選：保存文件到 Storage（簡化版）
     let storageInfo = null;
     if (saveToStorage === 'true') {
       try {
-        console.log('[Analyze Order PDF API] 保存文件到 orderpdf bucket...');
-        
         const supabaseAdmin = createSupabaseAdmin();
         const fileName = `order-${Date.now()}-${file.name}`;
         const blob = new Blob([arrayBuffer], { type: 'application/pdf' });
@@ -199,9 +306,7 @@ export async function POST(request: NextRequest) {
             contentType: 'application/pdf',
           });
         
-        if (uploadError) {
-          console.error('[Analyze Order PDF API] Storage 上傳錯誤:', uploadError);
-        } else {
+        if (!uploadError) {
           const { data: urlData } = supabaseAdmin.storage
             .from('orderpdf')
             .getPublicUrl(uploadData.path);
@@ -211,277 +316,153 @@ export async function POST(request: NextRequest) {
             publicUrl: urlData.publicUrl,
             bucket: 'orderpdf'
           };
-          
-          console.log('[Analyze Order PDF API] 文件保存成功:', storageInfo);
+          console.log('[PDF Analysis] File saved to storage');
         }
       } catch (storageError) {
-        console.error('[Analyze Order PDF API] Storage 操作錯誤:', storageError);
+        console.warn('[PDF Analysis] Storage operation failed');
       }
     }
     
-    console.log('[Analyze Order PDF API] 開始 PDF 處理...');
-    
-    // 檢測運行環境
-    const isVercel = process.env.VERCEL || process.env.VERCEL_ENV;
-    
-    // 步驟 1: 根據環境選擇處理方式
-    let imageBase64Array: string[] = [];
-    let extractedText: string = '';
-    let processingMode = '';
-    
-    if (isVercel) {
-      // Vercel 環境：直接使用文本提取，不嘗試圖像轉換
-      console.log('[Analyze Order PDF API] Vercel 環境：直接使用文本提取模式');
-      try {
-        extractedText = await extractTextFromPDF(pdfBuffer);
-        processingMode = 'text_extraction';
-        console.log('[Analyze Order PDF API] 文本提取成功，字符數:', extractedText.length);
-      } catch (textError: any) {
-        console.error('[Analyze Order PDF API] 文本提取失敗:', textError.message);
-        return NextResponse.json({ 
-          error: 'PDF text extraction failed in Vercel',
-          details: textError.message
-        }, { status: 500 });
-      }
-    } else {
-      // 本地環境：優先嘗試圖像轉換
-      try {
-        imageBase64Array = await convertPdfToImages(pdfBuffer);
-        processingMode = 'image_analysis';
-        console.log(`[Analyze Order PDF API] PDF 轉圖像成功，共 ${imageBase64Array.length} 頁`);
-      } catch (imageError: any) {
-        console.warn('[Analyze Order PDF API] 圖像轉換失敗，嘗試文本提取:', imageError.message);
-        
-        try {
-          extractedText = await extractTextFromPDF(pdfBuffer);
-          processingMode = 'text_extraction';
-          console.log('[Analyze Order PDF API] 文本提取成功，字符數:', extractedText.length);
-        } catch (textError: any) {
-          console.error('[Analyze Order PDF API] 所有 PDF 處理方法都失敗:', textError.message);
-          return NextResponse.json({ 
-            error: 'PDF processing failed',
-            details: `Unable to process PDF: ${textError.message}`,
-            imageError: imageError.message,
-            textError: textError.message
-          }, { status: 500 });
-        }
-      }
+    // PDF 文本提取
+    let extractedText: string;
+    try {
+      extractedText = await extractTextFromPDF(pdfBuffer);
+      console.log(`[PDF Analysis] Text extracted: ${extractedText.length} chars`);
+    } catch (textError: any) {
+      console.error('[PDF Analysis] Text extraction failed:', textError.message);
+      return NextResponse.json({ 
+        error: 'PDF text extraction failed',
+        details: textError.message
+      }, { status: 500 });
     }
-    
-    // 步驟 3: 發送到 OpenAI（系統不做任何數據處理）
-    console.log('[Analyze Order PDF API] 發送到 OpenAI 進行完全處理...');
-    
-    const openai = createOpenAIClient();
     
     // 讀取 OpenAI prompt 文件
-    console.log('[Analyze Order PDF API] 讀取 OpenAI prompt...');
-    const fs = require('fs');
-    const path = require('path');
-    const promptPath = path.join(process.cwd(), 'docs', 'openAI_pdf_prompt');
     let prompt = '';
-    
     try {
+      const fs = require('fs');
+      const path = require('path');
+      const promptPath = path.join(process.cwd(), 'docs', 'openAI_pdf_prompt');
       prompt = fs.readFileSync(promptPath, 'utf8');
-      console.log('[Analyze Order PDF API] 成功讀取 prompt 文件');
+      console.log('[PDF Analysis] Prompt loaded from file');
     } catch (promptError: any) {
-      console.warn('[Analyze Order PDF API] 無法讀取 prompt 文件，使用默認 prompt:', promptError.message);
-      // 使用默認 prompt 作為後備
-      prompt = `
-You are a professional data extraction specialist for Pennine Manufacturing Picking List. Analyze the following raw text (extracted from a PDF) and accurately extract all order line items and key header fields.
-
-**CRITICAL INSTRUCTIONS:**
-1. Return ONLY a valid JSON array - no explanations, no markdown, no additional text.
-2. Start your response with [ and end with ].
-3. Do not include any text before or after the JSON array.
-4. Do not wrap the response in markdown code blocks.
-
-**IMPORTANT: If you cannot find clear order data, return an empty array: []**
-
-**Database Schema:**
-- account_num (number) - Account number (extract from "Account No" field, if not found set as 0)
-- order_ref (number) - Picking List number (extract from "Picking List" field, remove leading zeros, if not found set as 0)
-- customer_ref (string) - Customer reference (extract from "Customers Ref" or "Customer Ref" field, keep original format like "PO0034637", "DSPO-0360425")
-- invoice_to (string) - Invoice To address (extract company name and address, combine multiple lines)
-- delivery_add (string) - Delivery Address (extract full delivery address, combine multiple lines)
-- product_code (string) - Product code/SKU (from "Item Code" or similar field)
-- product_desc (string) - Product description (from "Description" field)
-- product_qty (number) - Quantity (from "Qty Req" or "Quantity" field)
-- unit_price (number) - Price in pence/cents (£12.50 = 1250, if blank set as 0)
-
-**EXTRACTION RULES:**
-- Look for patterns like "Picking List: 280833", "Account No: 1504", "Customers Ref: PO0034637"
-- For product lines, look for item codes, descriptions, quantities, and prices
-- Skip transport, delivery charges, pallet charges, and system remarks
-- Only extract actual product items with valid codes and descriptions
-- If data is missing, use defaults: Numbers = 0, Text = "NOT_FOUND"
-
-**Example format:**
-[{"account_num":1504,"order_ref":280833,"customer_ref":"PO0034637","invoice_to":"Company Name Address","delivery_add":"Delivery Address","product_code":"ME6045150","product_desc":"Product Description","product_qty":1,"unit_price":1500}]
-
-**REMEMBER: Extract ALL product line items. If no clear data found, return []**`;
+      console.error('[PDF Analysis] Failed to read prompt file:', promptError.message);
+      return NextResponse.json({ 
+        error: 'Failed to load prompt file',
+        details: promptError.message
+      }, { status: 500 });
     }
     
-    // 構建 OpenAI 消息
-    const messageContent: any[] = [
-      {
-        type: "text",
-        text: prompt
-      }
-    ];
+    // 🔥 傳送完整文本內容
+    const messageContent = `${prompt}\n\n**DOCUMENT TEXT:**\n${extractedText}`;
     
-    if (processingMode === 'image_analysis') {
-      // 圖像模式：添加所有頁面的圖像
-    for (let i = 0; i < imageBase64Array.length; i++) {
-      messageContent.push({
-        type: "image_url",
-        image_url: {
-          url: `data:image/png;base64,${imageBase64Array[i]}`,
-          detail: "high"
-        }
-      });
-    }
-      console.log('[Analyze Order PDF API] 使用圖像模式，包含', imageBase64Array.length, '張圖像');
-    } else {
-      // 文本模式：添加提取的文本，並提供更多上下文
-      const textWithContext = `
-**DOCUMENT TEXT CONTENT:**
-${extractedText}
-
-**ANALYSIS INSTRUCTIONS:**
-Please carefully analyze the above text content to extract order information. Look for:
-- Picking List number
-- Account number  
-- Customer reference
-- Invoice and delivery addresses
-- Product items with codes, descriptions, quantities, and prices
-
-If the text appears garbled or unclear, try to identify key patterns and numbers that match the expected format.`;
-      
-      messageContent[0].text += textWithContext;
-      console.log('[Analyze Order PDF API] 使用文本模式，文本長度:', extractedText.length);
-      console.log('[Analyze Order PDF API] 文本內容預覽:', extractedText.substring(0, 500));
-      console.log('[Analyze Order PDF API] 文本內容（完整）:', extractedText);
-    }
+    console.log('[PDF Analysis] Sending to OpenAI');
     
-    // 發送到 OpenAI API
+    // 發送到 OpenAI API（優化版）
+    const openai = createOpenAIClient();
     const response = await openai.chat.completions.create({
       model: "gpt-4o",
       messages: [
         {
           role: "system",
-          content: "You are a JSON-only data extraction bot. You must ONLY output valid JSON arrays. Never include explanations, markdown formatting, or any text outside the JSON. Your entire response must be parseable by JSON.parse()."
+          content: "You are a JSON-only data extraction bot. Return ONLY valid JSON arrays. No explanations or markdown."
         },
         {
           role: "user",
           content: messageContent
         }
       ],
-      max_tokens: 4000,
+      max_tokens: 2000, // 🔥 減少 max_tokens 節省成本
       temperature: 0.1
     });
     
-    console.log('[Analyze Order PDF API] OpenAI 回應接收完成');
-    
     const extractedContent = response.choices[0]?.message?.content;
-    
     if (!extractedContent) {
-      console.error('[Analyze Order PDF API] OpenAI 沒有返回內容');
       return NextResponse.json({ error: 'No content extracted from OpenAI' }, { status: 500 });
     }
     
-    console.log('[Analyze Order PDF API] OpenAI 原始回應:', extractedContent);
-    console.log('[Analyze Order PDF API] OpenAI 回應長度:', extractedContent.length);
-    console.log('[Analyze Order PDF API] 處理模式:', processingMode);
+    console.log(`[PDF Analysis] OpenAI response: ${extractedContent.length} chars, tokens: ${response.usage?.total_tokens || 'unknown'}`);
     
-    // 如果是文本提取模式，記錄提取的文本內容
-    if (processingMode === 'text_extraction') {
-      console.log('[Analyze Order PDF API] 提取的文本內容（前1000字符）:', extractedText.substring(0, 1000));
-      console.log('[Analyze Order PDF API] 提取的文本總長度:', extractedText.length);
-    }
-    
-    // 步驟 4: 直接解析 OpenAI 回應（最小處理）
+    // 解析 OpenAI 回應（簡化版）
     let orderData: OrderData[];
     try {
-      // 只做最基本的清理
-      let cleanContent = extractedContent.trim();
-      cleanContent = cleanContent.replace(/```json\s*/gi, '').replace(/```\s*/g, '');
-      cleanContent = cleanContent.replace(/^\uFEFF/, '');
+      let cleanContent = extractedContent.trim()
+        .replace(/```json\s*/gi, '')
+        .replace(/```\s*/g, '')
+        .replace(/^\uFEFF/, '');
       
-      // 直接解析，不做複雜的處理
       orderData = JSON.parse(cleanContent);
       
       if (!Array.isArray(orderData)) {
-        throw new Error('OpenAI response is not an array');
+        throw new Error('Response is not an array');
       }
       
-      console.log(`[Analyze Order PDF API] OpenAI 返回 ${orderData.length} 條記錄`);
+      console.log(`[PDF Analysis] Parsed ${orderData.length} records`);
       
     } catch (parseError: any) {
-      console.error('[Analyze Order PDF API] OpenAI 回應解析失敗:', parseError);
+      console.error('[PDF Analysis] Parse error:', parseError.message);
       return NextResponse.json({ 
         error: 'Failed to parse OpenAI response',
-        details: parseError.message,
-        originalContent: extractedContent
+        details: parseError.message
       }, { status: 500 });
     }
     
-    // 步驟 5: 直接插入數據庫（不做驗證）
-    console.log('[Analyze Order PDF API] 直接插入數據庫...');
-    
-    const supabaseAdmin = createSupabaseAdmin();
-    
-    try {
-    const insertPromises = orderData.map(async (order, index) => {
-        const orderWithUploader = {
-          ...order,
-          uploaded_by: parseInt(uploadedBy)
-        };
-        
-        console.log(`[Analyze Order PDF API] 插入記錄 ${index + 1}:`, orderWithUploader);
-        
-        const { data, error } = await supabaseAdmin
-          .from('data_order')
-          .insert(orderWithUploader)
-          .select();
-        
-        if (error) {
-          console.error(`[Analyze Order PDF API] 插入記錄 ${index + 1} 錯誤:`, error);
-          throw error;
-        }
-        
-        return data;
+    // 🔥 緩存結果
+    setCachedResult(fileHash, {
+      orderData,
+      usage: response.usage
     });
     
-    const insertResults = await Promise.all(insertPromises);
-    
-      console.log('[Analyze Order PDF API] 所有記錄插入成功');
-    
-    return NextResponse.json({
-      success: true,
-        message: `Successfully processed PDF and inserted ${insertResults.length} records`,
-      extractedData: orderData,
-      insertedRecords: insertResults.flat(),
-      recordCount: insertResults.length,
-        processingMode: processingMode,
-        pagesProcessed: processingMode === 'image_analysis' ? imageBase64Array.length : 1,
-      storageInfo: storageInfo,
-        openaiResponse: {
-          model: response.model,
-          usage: response.usage
+    // 數據庫插入（優化版）
+    if (orderData.length > 0) {
+      try {
+        const supabaseAdmin = createSupabaseAdmin();
+        const insertData = orderData.map(order => ({
+          ...order,
+          uploaded_by: parseInt(uploadedBy)
+        }));
+        
+        const { data: insertResults, error: insertError } = await supabaseAdmin
+          .from('data_order')
+          .insert(insertData)
+          .select();
+        
+        if (insertError) {
+          throw insertError;
         }
+        
+        console.log(`[PDF Analysis] Successfully inserted ${insertResults.length} records`);
+        
+        return NextResponse.json({
+          success: true,
+          message: `Successfully processed PDF and inserted ${insertResults.length} records`,
+          recordCount: insertResults.length,
+          extractedData: orderData, // 🔥 返回提取的數據
+          insertedRecords: insertResults,
+          storageInfo: storageInfo,
+          cached: false,
+          usage: response.usage // 🔥 返回 token 使用情況
+        });
+        
+      } catch (insertError: any) {
+        console.error('[PDF Analysis] Database insertion failed:', insertError.message);
+        return NextResponse.json({ 
+          error: 'Database insertion failed',
+          details: insertError.message
+        }, { status: 500 });
+      }
+    } else {
+      console.log('[PDF Analysis] No records to insert');
+      return NextResponse.json({
+        success: true,
+        message: 'PDF processed but no valid records found',
+        recordCount: 0,
+        storageInfo: storageInfo,
+        cached: false
       });
-      
-    } catch (insertError: any) {
-      console.error('[Analyze Order PDF API] 數據庫插入失敗:', insertError);
-      return NextResponse.json({ 
-        error: 'Database insertion failed',
-        details: insertError.message,
-        extractedData: orderData
-      }, { status: 500 });
     }
     
   } catch (error: any) {
-    console.error('[Analyze Order PDF API] 系統錯誤:', error);
+    console.error('[PDF Analysis] System error:', error.message);
     return NextResponse.json({ 
       error: 'System error',
       details: error.message

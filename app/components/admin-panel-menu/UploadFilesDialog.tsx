@@ -21,7 +21,7 @@ import {
   FolderOpenIcon,
   DocumentPlusIcon,
   SparklesIcon,
-  EyeIcon
+      EyeIcon
 } from '@heroicons/react/24/outline';
 import { toast } from 'sonner';
 import { createClient } from '@/app/utils/supabase/client';
@@ -170,17 +170,17 @@ export const UploadFilesDialog: React.FC<UploadFilesDialogProps> = ({
       uploadProgress: 0,
       error: null
     });
-    setOrderPDFState({
-      selectedFile: null,
-      orderNumber: '',
-      isUploading: false,
-      uploadProgress: 0,
-      error: null,
-      isAnalyzing: false,
-      analysisProgress: 0,
-      extractedData: null,
-      showPreview: false
-    });
+          setOrderPDFState({
+        selectedFile: null,
+        orderNumber: '',
+        isUploading: false,
+        uploadProgress: 0,
+        error: null,
+        isAnalyzing: false,
+        analysisProgress: 0,
+        extractedData: null,
+        showPreview: false
+      });
     setIsDragOver(false);
     setActiveTab('files');
   }, []);
@@ -432,6 +432,8 @@ export const UploadFilesDialog: React.FC<UploadFilesDialogProps> = ({
     }
   }, [uploadState.selectedFile, uploadState.selectedFolder, uploadState.fileName, handleClose]);
 
+
+
   // 分析 Order PDF
   const handleAnalyzeOrderPDF = useCallback(async () => {
     if (!orderPDFState.selectedFile) {
@@ -452,12 +454,12 @@ export const UploadFilesDialog: React.FC<UploadFilesDialogProps> = ({
 
     console.log('[UploadFilesDialog] Starting PDF analysis with user ID:', currentUserId);
 
-    setOrderPDFState(prev => ({ 
-      ...prev, 
-      isAnalyzing: true, 
-      analysisProgress: 0,
-      error: null 
-    }));
+      setOrderPDFState(prev => ({ 
+    ...prev, 
+    isAnalyzing: true, 
+    analysisProgress: 0,
+    error: null
+  }));
 
     try {
       // 創建 FormData
@@ -490,27 +492,27 @@ export const UploadFilesDialog: React.FC<UploadFilesDialogProps> = ({
         throw new Error(result.error || `Server error: ${response.status}`);
       }
 
-      // 完成分析
-      setOrderPDFState(prev => ({ 
-        ...prev, 
-        analysisProgress: 100,
-        extractedData: result.extractedData,
-        showPreview: true
-      }));
+          // 完成分析
+    setOrderPDFState(prev => ({ 
+      ...prev, 
+      analysisProgress: 100,
+      extractedData: result.extractedData || result.insertedRecords || [],
+      showPreview: true
+    }));
       
       // 短暫延遲顯示完成狀態
       await new Promise(resolve => setTimeout(resolve, 500));
 
-      console.log('[Order PDF Analysis] 分析完成:', result);
-      
-      toast.success(`PDF Analysis Complete! Extracted ${result.recordCount} order records`);
-      
-      // 重置分析狀態但保留數據預覽
-      setOrderPDFState(prev => ({ 
-        ...prev, 
-        isAnalyzing: false,
-        analysisProgress: 0
-      }));
+          console.log('[Order PDF Analysis] 分析完成:', result);
+    
+    toast.success(`PDF Analysis Complete! Extracted ${result.recordCount} records`);
+    
+    // 重置分析狀態但保留數據預覽
+    setOrderPDFState(prev => ({ 
+      ...prev, 
+      isAnalyzing: false,
+      analysisProgress: 0
+    }));
       
     } catch (error) {
       console.error('[Order PDF Analysis] 分析錯誤:', error);
@@ -586,6 +588,8 @@ export const UploadFilesDialog: React.FC<UploadFilesDialogProps> = ({
   }, [orderPDFState.selectedFile, orderPDFState.orderNumber, handleClose]);
 
   const availableFolders = uploadState.selectedFile ? getAvailableFolders(uploadState.selectedFile) : [];
+
+
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
@@ -781,9 +785,9 @@ export const UploadFilesDialog: React.FC<UploadFilesDialogProps> = ({
                   )}
                 </>
               ) : (
-                // AI Order Analysis 內容
-                <>
-                  {/* Order PDF 拖拽區域 */}
+                                  // AI Order Analysis 內容
+                  <>
+                    {/* Order PDF 拖拽區域 */}
                   <div
                     className={`
                       relative border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all duration-300
@@ -872,51 +876,126 @@ export const UploadFilesDialog: React.FC<UploadFilesDialogProps> = ({
                     </motion.div>
                   )}
 
-                  {/* 提取數據預覽 */}
+                  {/* 導入資料及結果卡片 */}
                   {orderPDFState.extractedData && orderPDFState.showPreview && (
                     <motion.div
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
-                      className="space-y-4"
+                      className="space-y-6"
                     >
-                      <div className="flex items-center justify-between">
-                        <h3 className="text-lg font-semibold text-green-400 flex items-center">
-                          <CheckCircleIcon className="h-5 w-5 mr-2" />
-                          Extracted Order Data ({orderPDFState.extractedData.length} records)
-                        </h3>
-                        <button
-                          onClick={() => setOrderPDFState(prev => ({ ...prev, showPreview: !prev.showPreview }))}
-                          className="text-slate-400 hover:text-white transition-colors"
-                        >
-                          <EyeIcon className="h-5 w-5" />
-                        </button>
-                      </div>
-                      
-                      <div className="bg-slate-700/30 rounded-xl p-4 max-h-60 overflow-y-auto">
-                        <div className="space-y-3">
-                          {orderPDFState.extractedData.map((order, index) => (
-                            <div key={index} className="bg-slate-600/30 rounded-lg p-3 text-sm">
-                              <div className="grid grid-cols-2 gap-2">
-                                <div><span className="text-slate-400">Account:</span> <span className="text-white">{order.account_num}</span></div>
-                                <div><span className="text-slate-400">Order Ref:</span> <span className="text-white">{order.order_ref}</span></div>
-                                <div><span className="text-slate-400">Customer Ref:</span> <span className="text-white">{order.customer_ref}</span></div>
-                                <div><span className="text-slate-400">Product Code:</span> <span className="text-white">{order.product_code}</span></div>
-                                <div className="col-span-2"><span className="text-slate-400">Product:</span> <span className="text-white">{order.product_desc}</span></div>
-                                <div><span className="text-slate-400">Quantity:</span> <span className="text-white">{order.product_qty}</span></div>
-                                <div><span className="text-slate-400">Unit Price:</span> <span className="text-white">£{(order.unit_price / 100).toFixed(2)}</span></div>
-                                <div className="col-span-2"><span className="text-slate-400">Invoice To:</span> <span className="text-white">{order.invoice_to}</span></div>
-                                <div className="col-span-2"><span className="text-slate-400">Delivery:</span> <span className="text-white">{order.delivery_add}</span></div>
-                              </div>
+                      {/* 導入資料卡片 */}
+                      <div className="bg-gradient-to-br from-blue-500/10 to-cyan-500/10 border border-blue-500/30 rounded-xl p-6">
+                        <div className="flex items-center justify-between mb-4">
+                          <h3 className="text-lg font-semibold text-blue-400 flex items-center">
+                            <DocumentIcon className="h-5 w-5 mr-2" />
+                            Data Import Summary
+                          </h3>
+                          <div className="text-sm text-blue-300 bg-blue-500/20 px-3 py-1 rounded-full">
+                            {orderPDFState.extractedData.length} rows of data extracted
+                          </div>
+                        </div>
+                        
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                          <div className="bg-slate-700/30 rounded-lg p-3">
+                            <div className="text-slate-400 mb-1">File Name</div>
+                            <div className="text-white font-medium truncate">
+                              {orderPDFState.selectedFile?.name || 'Unknown'}
                             </div>
-                          ))}
+                          </div>
+                          <div className="bg-slate-700/30 rounded-lg p-3">
+                            <div className="text-slate-400 mb-1">File Size</div>
+                            <div className="text-white font-medium">
+                              {orderPDFState.selectedFile ? 
+                                `${(orderPDFState.selectedFile.size / 1024).toFixed(1)} KB` : 
+                                'Unknown'
+                              }
+                            </div>
+                          </div>
+                          <div className="bg-slate-700/30 rounded-lg p-3">
+                            <div className="text-slate-400 mb-1">Processing Time</div>
+                            <div className="text-white font-medium">
+                              {new Date().toLocaleTimeString('zh-TW')}
+                            </div>
+                          </div>
+                          <div className="bg-slate-700/30 rounded-lg p-3">
+                            <div className="text-slate-400 mb-1">Status</div>
+                            <div className="text-green-400 font-medium flex items-center">
+                              <CheckCircleIcon className="h-4 w-4 mr-1" />
+                              Completed
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* 提取數據預覽 */}
+                      <div className="bg-gradient-to-br from-green-500/10 to-emerald-500/10 border border-green-500/30 rounded-xl p-6">
+                        <div className="flex items-center justify-between mb-4">
+                          <h3 className="text-lg font-semibold text-green-400 flex items-center">
+                            <CheckCircleIcon className="h-5 w-5 mr-2" />
+                            Extracted Order Data
+                          </h3>
+                          <button
+                            onClick={() => setOrderPDFState(prev => ({ ...prev, showPreview: !prev.showPreview }))}
+                            className="text-slate-400 hover:text-white transition-colors p-2 hover:bg-slate-700/50 rounded-lg"
+                          >
+                            <EyeIcon className="h-5 w-5" />
+                          </button>
+                        </div>
+                        
+                        <div className="bg-slate-700/30 rounded-xl p-4 max-h-80 overflow-y-auto">
+                          <div className="space-y-3">
+                            {orderPDFState.extractedData.map((order, index) => (
+                              <div key={index} className="bg-slate-600/40 rounded-lg p-4 border border-slate-500/30">
+                                
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                                  <div className="space-y-2">
+                                    <div>
+                                      <span className="text-slate-400">Order Number:</span>
+                                      <span className="text-white font-medium ml-2">{order.order_ref}</span>
+                                    </div>
+                                    <div>
+                                      <span className="text-slate-400">Product Code:</span>
+                                      <span className="text-cyan-300 font-mono ml-2">{order.product_code}</span>
+                                    </div>
+                                  </div>
+                                  
+                                  <div className="space-y-2">
+                                    <div>
+                                      <span className="text-slate-400">Quantity:</span>
+                                      <span className="text-yellow-300 font-medium ml-2">{order.product_qty}</span>
+                                    </div>
+                                  </div>
+                                  
+                                  <div className="md:col-span-2">
+                                    <div>
+                                      <span className="text-slate-400">Product Description:</span>
+                                      <span className="text-white ml-2">{order.product_desc}</span>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
                         </div>
                       </div>
                       
-                      <div className="flex items-center justify-center p-4 bg-green-500/10 border border-green-500/30 rounded-xl">
-                        <CheckCircleIcon className="h-5 w-5 text-green-400 mr-2" />
-                        <span className="text-green-300 text-sm">
-                          Data has been successfully extracted and saved to database!
-                        </span>
+                      {/* 成功狀態卡片 */}
+                      <div className="bg-gradient-to-r from-green-500/20 to-emerald-500/20 border border-green-500/40 rounded-xl p-6">
+                        <div className="flex items-center justify-center">
+                          <div className="flex items-center space-x-3">
+                            <div className="flex-shrink-0">
+                              <CheckCircleIcon className="h-8 w-8 text-green-400" />
+                            </div>
+                            <div>
+                              <h4 className="text-lg font-semibold text-green-300">
+                                Data Import Success!
+                              </h4>
+                              <p className="text-green-200 text-sm">
+                                Successfully extracted and saved {orderPDFState.extractedData.length} order records to the database
+                              </p>
+                            </div>
+                          </div>
+                        </div>
                       </div>
                     </motion.div>
                   )}
