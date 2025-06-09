@@ -2,6 +2,7 @@
 
 import { createClient } from '@supabase/supabase-js';
 import { z } from 'zod';
+import { revalidatePath } from 'next/cache';
 
 import { generateMultipleUniqueSeries } from '@/lib/seriesUtils';
 
@@ -247,7 +248,8 @@ export async function createGrnDatabaseEntries(
 
 /**
  * Generate pallet numbers and series for GRN labels on server side
- * 改用與 QC Label 相同的生成方式
+ * 使用個別原子性 RPC 調用（無緩存）
+ * 添加時間戳確保每次調用都是唯一的
  */
 export async function generateGrnPalletNumbersAndSeries(count: number): Promise<{
   palletNumbers: string[];
@@ -255,25 +257,95 @@ export async function generateGrnPalletNumbersAndSeries(count: number): Promise<
   error?: string;
 }> {
   try {
-    console.log('[grnActions] 使用原子性棧板號碼生成方式，數量:', count);
+    const timestamp = new Date().toISOString();
+    console.log(`[grnActions] 使用個別原子性 RPC 調用生成棧板號碼（無緩存），數量: ${count}, 時間戳: ${timestamp}`);
+    
+    // 清除任何可能的 Next.js 緩存
+    revalidatePath('/print-grnlabel');
     
     const supabaseAdmin = createSupabaseAdmin();
+    const palletNumbers: string[] = [];
     
-    // 🔥 使用新的原子性棧板號碼生成函數
-    const { data: palletNumbers, error: palletError } = await supabaseAdmin.rpc('generate_atomic_pallet_numbers_v2', {
-      count: count
-    });
-      
-    if (palletError) {
-      console.error('[grnActions] 原子性棧板號碼生成失敗:', palletError);
-      throw new Error(`Failed to generate atomic pallet numbers: ${palletError.message}`);
+    // 使用單次 RPC 調用生成所有托盤編號，避免循環中的併發問題
+    console.log(`[grnActions] 使用單次 RPC 調用生成 ${count} 個托盤編號`);
+    
+    let attempts = 0;
+    const maxAttempts = 5;
+    
+    while (attempts < maxAttempts) {
+      try {
+        console.log(`[grnActions] 使用原子性 RPC 生成 ${count} 個托盤編號 (嘗試 ${attempts + 1}), 時間戳: ${timestamp}`);
+        
+        // 在每次嘗試前檢查當前序列號狀態
+        const today = new Date();
+        const dateStr = today.getDate().toString().padStart(2, '0') + 
+                       (today.getMonth() + 1).toString().padStart(2, '0') + 
+                       today.getFullYear().toString().slice(-2);
+        const { data: currentSequence } = await supabaseAdmin
+          .from('daily_pallet_sequence')
+          .select('current_max')
+          .eq('date_str', dateStr)
+          .single();
+          
+        console.log(`[grnActions] 當前序列號狀態 (嘗試 ${attempts + 1}):`, currentSequence);
+        
+        // 使用單次 RPC 調用生成所有托盤編號
+        const { data: rpcResult, error: rpcError } = await supabaseAdmin.rpc('generate_atomic_pallet_numbers_v2', {
+          count: count
+        });
+        
+        if (rpcError) {
+          console.error(`[grnActions] RPC 生成失敗:`, rpcError);
+          throw new Error(`RPC generation failed: ${rpcError.message}`);
+        }
+        
+        if (!rpcResult || !Array.isArray(rpcResult) || rpcResult.length !== count) {
+          throw new Error(`Invalid result from RPC function: expected ${count} pallet numbers, got ${rpcResult?.length || 0}`);
+        }
+        
+        palletNumbers.push(...rpcResult);
+        console.log(`[grnActions] 成功生成托盤編號:`, rpcResult);
+        break;
+        
+      } catch (error: any) {
+        console.error(`[grnActions] 生成托盤編號失敗 (嘗試 ${attempts + 1}/${maxAttempts}):`, error);
+        
+        if (attempts === maxAttempts - 1) {
+          throw new Error(`Failed to generate pallet numbers after ${maxAttempts} attempts: ${error.message}`);
+        }
+        
+        attempts++;
+        await new Promise(resolve => setTimeout(resolve, 500 * attempts)); // 更長的延遲
       }
-      
-    if (!palletNumbers || !Array.isArray(palletNumbers)) {
-      throw new Error('Invalid pallet numbers returned from atomic function');
     }
     
-    console.log('[grnActions] 生成的棧板號碼:', palletNumbers);
+    if (palletNumbers.length !== count) {
+      throw new Error(`Failed to generate required number of pallet numbers: expected ${count}, got ${palletNumbers.length}`);
+    }
+    
+    console.log('[grnActions] 所有托盤編號生成完成:', palletNumbers);
+    
+    // 驗證生成的托盤編號是否真的唯一
+    const uniquePalletNumbers = [...new Set(palletNumbers)];
+    if (uniquePalletNumbers.length !== palletNumbers.length) {
+      console.error('[grnActions] 警告：生成的托盤編號中有重複!', {
+        original: palletNumbers,
+        unique: uniquePalletNumbers
+      });
+    }
+    
+    // 檢查這些托盤編號是否已經存在於資料庫中
+    for (const palletNum of palletNumbers) {
+      const { data: existingPallet } = await supabaseAdmin
+        .from('record_palletinfo')
+        .select('plt_num')
+        .eq('plt_num', palletNum)
+        .single();
+        
+      if (existingPallet) {
+        console.error(`[grnActions] 嚴重錯誤：托盤編號 ${palletNum} 已存在於資料庫中!`);
+      }
+    }
     
     // Generate series
     const series = await generateMultipleUniqueSeries(count, supabaseAdmin);

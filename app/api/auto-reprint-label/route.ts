@@ -98,22 +98,26 @@ export async function POST(request: NextRequest) {
     const productInfo = await getProductInfo(data.productCode);
     console.log('[Auto Reprint API] Product info retrieved:', productInfo);
 
-    // Generate pallet number and series using atomic function
-    console.log('[Auto Reprint API] Generating pallet number and series...');
-    console.log('[Auto Reprint API] Using generate_atomic_pallet_numbers_v2 function');
-    const { data: palletNumbers, error: palletError } = await supabase.rpc('generate_atomic_pallet_numbers_v2', {
-      count: 1
-    });
+    // Generate pallet number and series using direct query (no cache)
+    console.log('[Auto Reprint API] Generating pallet number and series using direct query...');
+    console.log('[Auto Reprint API] Using generatePalletNumbersDirectQuery function');
     
-    if (palletError) {
-      console.error('[Auto Reprint API] 原子性棧板號碼生成失敗:', palletError);
-      throw new Error(`Failed to generate atomic pallet numbers: ${palletError.message}`);
+    // Import the direct query function
+    const { generatePalletNumbersDirectQuery } = await import('@/app/actions/qcActions');
+    
+    const generationResult = await generatePalletNumbersDirectQuery(1);
+    
+    if (generationResult.error) {
+      console.error('[Auto Reprint API] 直接查詢棧板號碼生成失敗:', generationResult.error);
+      throw new Error(`Failed to generate pallet numbers: ${generationResult.error}`);
     }
     
-    if (!palletNumbers || !Array.isArray(palletNumbers) || palletNumbers.length === 0) {
-      console.error('[Auto Reprint API] Invalid pallet numbers returned from atomic function');
+    if (!generationResult.palletNumbers || generationResult.palletNumbers.length === 0) {
+      console.error('[Auto Reprint API] Invalid pallet numbers returned from direct query');
       throw new Error('Failed to generate pallet number');
     }
+    
+    const palletNumbers = generationResult.palletNumbers;
     
     const series = await generateMultipleUniqueSeries(1, supabase);
     

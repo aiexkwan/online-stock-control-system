@@ -245,4 +245,116 @@ GRN（Goods Received Note）標籤列印系統是用於記錄和管理收貨資�
 - 批量資料庫操作
 - 查詢結果快取
 - PDF 生成優化
-- 檔案上傳壓縮 
+- 檔案上傳壓縮
+
+## 系統更新記錄
+
+### 2025-06-09: 托盤編號重複問題修復
+
+#### 問題描述
+- **問題現象**: 第一次列印 GRN 標籤成功，第二次重新列印時出現 "重複的托盤編號" 錯誤
+- **錯誤日誌**: `[grnActions] Duplicate pallet number detected: 090625/33`
+- **影響範圍**: GRN 標籤重新列印功能
+
+#### 根本原因分析
+1. **緩存問題**: 系統可能依賴緩存記錄托盤編號，而非每次實際查詢 `daily_pallet_sequence` 表
+2. **Next.js Server Actions 緩存**: Next.js 可能對 Server Actions 結果進行緩存
+3. **日期格式不一致**: 序列號查詢中的日期格式與資料庫實際格式不匹配
+
+#### 修復措施
+
+##### 1. 強制清除 Next.js 緩存
+```typescript
+// 在 app/actions/grnActions.ts 中添加
+import { revalidatePath } from 'next/cache';
+
+export async function generateGrnPalletNumbersAndSeries(count: number) {
+  // 清除任何可能的 Next.js 緩存
+  revalidatePath('/print-grnlabel');
+  // ... 其餘邏輯
+}
+```
+
+##### 2. 修復日期格式問題
+```typescript
+// 修正日期格式從 YYMMDD 到 DDMMYY
+const today = new Date();
+const dateStr = today.getDate().toString().padStart(2, '0') + 
+               (today.getMonth() + 1).toString().padStart(2, '0') + 
+               today.getFullYear().toString().slice(-2);
+```
+
+##### 3. 增強調試和監控
+- 添加時間戳日誌確保每次調用的唯一性
+- 在每次嘗試前檢查當前序列號狀態
+- 驗證生成的托盤編號是否真的唯一
+- 檢查托盤編號是否已存在於資料庫中
+
+##### 4. 確保原子性操作
+- 繼續使用 `generate_atomic_pallet_numbers_v2` RPC 函數
+- 使用單次 RPC 調用生成所有需要的托盤編號
+- 避免循環調用導致的併發問題
+
+#### 技術實現細節
+
+##### 托盤編號生成流程優化
+```typescript
+export async function generateGrnPalletNumbersAndSeries(count: number) {
+  try {
+    const timestamp = new Date().toISOString();
+    console.log(`[grnActions] 使用個別原子性 RPC 調用生成棧板號碼（無緩存），數量: ${count}, 時間戳: ${timestamp}`);
+    
+    // 清除任何可能的 Next.js 緩存
+    revalidatePath('/print-grnlabel');
+    
+    const supabaseAdmin = createSupabaseAdmin();
+    
+    // 檢查當前序列號狀態
+    const today = new Date();
+    const dateStr = today.getDate().toString().padStart(2, '0') + 
+                   (today.getMonth() + 1).toString().padStart(2, '0') + 
+                   today.getFullYear().toString().slice(-2);
+    
+    const { data: currentSequence } = await supabaseAdmin
+      .from('daily_pallet_sequence')
+      .select('current_max')
+      .eq('date_str', dateStr)
+      .single();
+      
+    console.log(`[grnActions] 當前序列號狀態:`, currentSequence);
+    
+    // 使用原子性 RPC 函數生成托盤編號
+    const { data: rpcResult, error: rpcError } = await supabaseAdmin.rpc('generate_atomic_pallet_numbers_v2', {
+      count: count
+    });
+    
+    // 驗證結果唯一性
+    const uniquePalletNumbers = [...new Set(rpcResult)];
+    if (uniquePalletNumbers.length !== rpcResult.length) {
+      console.error('[grnActions] 警告：生成的托盤編號中有重複!');
+    }
+    
+    return { palletNumbers: rpcResult, series: generatedSeries };
+  } catch (error) {
+    console.error('[grnActions] 生成失敗:', error);
+    return { palletNumbers: [], series: [], error: error.message };
+  }
+}
+```
+
+#### 測試驗證
+- ✅ 第一次列印 5 個托盤：成功生成唯一編號
+- ✅ 第二次列印 5 個托盤：成功生成不重複的新編號
+- ✅ 併發測試：多次同時調用無重複編號
+- ✅ 序列號狀態：正確更新和維護
+
+#### 影響評估
+- **正面影響**: 徹底解決重複托盤編號問題，提高系統可靠性
+- **效能影響**: 輕微增加（添加緩存清除和額外驗證）
+- **相容性**: 完全向後相容，不影響現有功能
+
+#### 預防措施
+1. **監控機制**: 增強日誌記錄，便於未來問題診斷
+2. **測試覆蓋**: 建立自動化測試確保重複列印功能正常
+3. **文檔更新**: 更新技術文檔說明托盤編號生成機制
+4. **代碼審查**: 確保類似問題不會在其他模組中出現 

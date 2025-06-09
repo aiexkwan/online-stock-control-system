@@ -1,45 +1,599 @@
-You are a professional data extraction specialist for Pennine Manufacturing Picking List. Analyze the following raw text (extracted from a PDF) and accurately extract all order line items and key header fields.
+你是一個專業的 PDF 訂單資料抽取專家。請根據以下規則，從傳入的 PDF 文字內容內精準抽取每一個訂單 line item（可能有多行產品），每個 line item 必須獨立回傳一個 JSON object，所有結果以 JSON array 方式回傳（[]），絕對禁止額外文字、說明、code block 或 markdown。
 
-**CRITICAL INSTRUCTIONS:**
-1. Return ONLY a valid JSON array - no explanations, no markdown, no additional text.
-2. Start your response with [ and end with ].
-3. Do not include any text before or after the JSON array.
-4. Do not wrap the response in markdown code blocks.
+【資料庫結構】
+欄位	類型	說明
+account_num	text	帳戶號碼
+order_ref	text	訂單參考
+customer_ref	text	客戶參考
+invoice_to	text	發票地址
+delivery_add	text	送貨地址
+product_code	text	產品代碼
+product_desc	text	產品描述
+product_qty	text	產品數量
+unit_price	text	單價
 
-**Extraction Rules:**
+【抽取規則（必須遵守）】
+order_ref：全文開首出現的8位數字，去除前置零。
 
-- For header fields (account_num, customer_ref, invoice_to, delivery_add):
+account_num：只可係 "Account No:" 後面、"Customers Ref:" 前面的內容。
 
-  - "account_num": Look for the line containing "Account No:" and extract the string immediately after "Account No:" up to "Customers Ref:". If not found, use 0.
-  - "customer_ref": Look for the line containing "Customers Ref:" and extract the string after "Customers Ref:" up to the next field or line break. If not found, use "NOT_FOUND".
-  - "invoice_to": Starting from the "Invoice To:" field, collect all subsequent lines up to the next major header (such as "Driver", "Booked In", "Email", "Tel", or "Delivery Address"). Combine as a single string.
-  - "delivery_add": Starting from the "Delivery Address:" field, collect all subsequent lines up to the next major header (such as "Invoice To", "Driver", "Booked In", "Email", or "Tel"). Combine as a single string.
+customer_ref：只可係 "Customers Ref:" 之後，緊貼內容。
 
-- For each product line item:
-  - Only extract rows between the "Item Code" section and before the first "Pallet Qty", "Trans", "TransDPD", "Parcel", "Notes", or similar keyword.
-  - A product line must start with a product code (uppercase letter/number, can include dashes), followed by description, numbers, and price.
-  - Product code is the first word in the line (pattern: starts with A-Z or 0-9).
-  - Description is the string between the product code and the first number.
-  - product_qty is the **last number in the line** (usually after unit price or at the end).
-  - unit_price is the **number before the quantity**. (£12.50 = 1250, if blank/0, return 0).
-  - Exclude any row where the code/description contains: "Trans", "TransDPD", "TransC", "Pallet Qty", "Parcel", or any notes/instructional text.
-  - Exclude any line that does not fit the typical product pattern (code + description + numbers).
+invoice_to：由公司名開始，合併全部地址資料，最後必須係一個英國 postcode（例如 "XXX XXX" 結尾）。中間每一行用逗號分隔。
 
-- If any data is missing, use these defaults:
-  - Numbers: 0
-  - Text: "NOT_FOUND"
+delivery_add：通常包括人名/地點，遇到 Tel/Email/Notes 或新 section 即止。
 
-**Example Output Format:**
-[{"account_num":"3428","order_ref":280832,"customer_ref":"NOT_FOUND","invoice_to":"Torrent Water Management Ltd, Darwin Drive, Sherwood Energy Village, Ollerton, Nottinghamshire, NG22 9GW","delivery_add":"Morrison Utilities? M Group, Overton Reservoir, Banbury Lane, Banbury, OX17 2QY","product_code":"MHL10","product_desc":"M12 100mm Stainless Steel Through Bolts","product_qty":16,"unit_price":320},{"account_num":"3428","order_ref":280832,"customer_ref":"NOT_FOUND","invoice_to":"Torrent Water Management Ltd, Darwin Drive, Sherwood Energy Village, Ollerton, Nottinghamshire, NG22 9GW","delivery_add":"Morrison Utilities? M Group, Overton Reservoir, Banbury Lane, Banbury, OX17 2QY","product_code":"MHL21Y","product_desc":"Yellow PBT 181-210cm + stays/nuts/bolts","product_qty":1,"unit_price":10800}]
+product_code：每條產品行開頭首段英數（如 "MHCOL2"）。
 
-Extract all valid product line items and return ONLY the JSON array.
+product_desc：產品碼之後至第一個數字前所有內容，多行要合併（如有）。
 
-**Do not include any lines that are for transport charges, pallet quantity, notes, parcels, or other non-product records.**
+product_qty：每條產品行最後一個明顯數字（通常係數量）。
 
-**If product description is broken over multiple lines, merge them as one description.**
+unit_price：產品描述之後、數量之前出現的數值（如有多個，通常係最後一個小數點後兩位數）。
 
-**If there are extra lines in the product section that do not fit the pattern (e.g. Pallet Qty, Trans, Notes), skip them.**
+如有多件產品，必須每條獨立 JSON object。
 
-**order_ref** is the number after "Picking List", remove leading zeros.
+嚴禁 account_num/customer_ref 混淆，只能依據原文 keyword。
 
-**If there are multiple email or tel lines, keep only the first occurrence for each in invoice_to or delivery_add.**
+必須略過所有 “pack size”、“weight (kg)”、“Pallet Qty”、“Transport charge”等非產品資料。
+
+如有缺漏，用 "NOT_FOUND" 或 0 填充。
+
+【回傳格式範例】
+json
+複製
+編輯
+[
+  {
+    "order_ref": "280858",
+    "account_num": "00010831",
+    "customer_ref": "RO138852",
+    "invoice_to": "Bernard Exton Sales Ltd, 72 Cargill Road, Earlsfield, London, SW18 3DZ",
+    "delivery_add": "Richard Howe, 8 Green Willows, Lavenham, CO10 9SP",
+    "product_code": "RS503X",
+    "product_desc": "Pennine Slate Standard - Grey (Box of 16)",
+    "product_qty": 1,
+    "unit_price": 26.88
+  }
+]
+
+**例子 1
+
+- 文本內容
+0000280835
+Document Date:
+04/06/2025
+Entered By: Checked By:
+Requested Delivery Date:
+04/06/2025
+00010645
+Account No:DSPO-0360503Customers Ref:
+Delivery Address:
+Pallet Information
+Invoice To:
+Driver
+Joe Blair
+Number of Pallets
+170 Rooks Nest Road
+CMOStores.com Ltd
+Burrington Business Pard
+Pallet Spaces
+Tel No:
+Stanley
+Burrington Way
+Weight
+PL5 3LX
+WF3 4DW
+Pack
+Devon
+Booked In
+Wakefield
+Plymouth
+Tel:
+Site Tel No:
+07842 602 884
+invoices@cmostores.com
+Email:
+jyinstallations@yahoo.co.
+[Analyze Order PDF API] 文本內容（完整）: Picking List
+0000280835
+Document Date:
+04/06/2025
+Entered By: Checked By:
+Requested Delivery Date:
+04/06/2025
+00010645
+Account No:DSPO-0360503Customers Ref:
+Delivery Address:
+Pallet Information
+Invoice To:
+Driver
+Joe Blair
+Number of Pallets
+170 Rooks Nest Road
+CMOStores.com Ltd
+Burrington Business Pard
+Pallet Spaces
+Tel No:
+Stanley
+Burrington Way
+Weight
+PL5 3LX
+WF3 4DW
+Pack
+Devon
+Booked In
+Wakefield
+Plymouth
+Tel:
+Site Tel No:
+07842 602 884
+invoices@cmostores.com
+Email:
+jyinstallations@yahoo.co.uk
+Price Band ID:27284051
+Priority:
+Credit Position: Live (CPA Checked)Account Balance: 97,407.57
+Item Code
+ Pack
+Size
+Description
+Weight
+(Kg)
+Unit
+Price
+ Qty Req
+Picked
+by
+Qty
+ Picked
+Qty
+  Loaded
+S3027D1EnviroCrate Connectors (Double)00.001
+S3027S1EnviroCrate Connectors (Single)00.001
+SA40-101Envirocrate Heavy 40-10043.002
+Pallet Qty 6
+Trans1Transport Charge for Delivery040.001
+Parcel 4
+Parcel 2
+Parcel 1
+Parcel 3
+Height
+Length
+Height
+Parcel 5
+LengthHeight
+Height
+Length
+Height
+Length
+Weight
+Weight
+Width
+Weight
+Weight
+Width
+Length
+Width
+Weight
+Width
+Width
+Notes:Nett126.00
+VAT25.20
+TOTAL151.20
+Total Number Of Pages:1
+Requested Delivery Date:04/06/2025Actual Delivery Date:Driver:No Of Pallets:Amended On Sage:
+Is A Balance Order Required:
+0Total Weight Of Order (Kg):
+
+- 應返回json
+
+[
+  {
+    "order_ref": "280835",
+    "account_num": "00010645",
+    "customer_ref": "DSPO-0360503",
+    "invoice_to": "CMOStores.com Ltd, Burrington Business Pard, Burrington Way, Plymouth, PL5 3LX",
+    "delivery_add": "Joe Blair, 170 Rooks Nest Road, Stanley, WF3 4DW",
+    "product_code": "S3027D",
+    "product_desc": "EnviroCrate Connectors (Double)",
+    "product_qty": 1,
+    "unit_price": 0.00
+  },
+  {
+    "order_ref": "280835",
+    "account_num": "00010645",
+    "customer_ref": "DSPO-0360503",
+    "invoice_to": "CMOStores.com Ltd, Burrington Business Pard, Burrington Way, Plymouth, PL5 3LX",
+    "delivery_add": "Joe Blair, 170 Rooks Nest Road, Stanley, WF3 4DW",
+    "product_code": "S3027S",
+    "product_desc": "EnviroCrate Connectors (Single)",
+    "product_qty": 1,
+    "unit_price": 0.00
+  },
+  {
+    "order_ref": "280835",
+    "account_num": "00010645",
+    "customer_ref": "DSPO-0360503",
+    "invoice_to": "CMOStores.com Ltd, Burrington Business Pard, Burrington Way, Plymouth, PL5 3LX",
+    "delivery_add": "Joe Blair, 170 Rooks Nest Road, Stanley, WF3 4DW",
+    "product_code": "SA40-10",
+    "product_desc": "Envirocrate Heavy 40-100",
+    "product_qty": 2,
+    "unit_price": 43.00
+  }
+]
+
+**例子 2
+
+- 文本內容
+
+0000280836
+Document Date:
+04/06/2025
+Entered By: Checked By:
+Requested Delivery Date:
+09/06/2025
+00009767
+Account No:472167Customers Ref:
+Delivery Address:
+Pallet Information
+Invoice To:
+Driver
+Beesley & Fildes Ltd
+Number of Pallets
+Warrington Road
+Beesley & Fildes Limited
+Wilson Road
+Pallet Spaces
+Tel No:
+Mickle Trafford
+Huyton
+Weight
+L36 6AF
+CH2 4EB
+Pack
+Booked In
+Chester
+Merseyside
+Tel:44 0151 426 6455
+Site Tel No:
+01244 300 287
+pl@beesleyandfildes.co.uk
+Email:
+Price Band ID:131949
+Priority:
+Credit Position: Live (CPA Checked)Account Balance: 19,293.53
+Item Code
+ Pack
+Size
+Description
+Weight
+(Kg)
+Unit
+Price
+ Qty Req
+Picked
+by
+Qty
+ Picked
+Qty
+  Loaded
+D10011EasyFlow 1000x125x78mm Line Drain
+(Black)
+4863.92360
+120 per pallet - pallet dimensions are 1250x1020x1140 - can double stack
+Pallet Qty 120
+D103110EasyFlow End Cap with Knockout235.12100
+Pallet Qty 600
+Trans1Transport Charge for Delivery0100.0
+0
+1
+Parcel 4
+Parcel 2
+Parcel 1
+Parcel 3
+Height
+Length
+Height
+Parcel 5
+LengthHeight
+Height
+Length
+Height
+Length
+Weight
+Weight
+Width
+Weight
+Weight
+Width
+Length
+Width
+Weight
+Width
+Width
+Notes:Nett2023.20
+VAT404.64
+TOTAL2427.84
+Total Number Of Pages:1
+Requested Delivery Date:09/06/2025Actual Delivery Date:Driver:No Of Pallets:Amended On Sage:
+Is A Balance Order Required:
+509Total Weight Of Order (Kg):
+
+- 應返回json
+
+[
+  {
+    "order_ref": "280836",
+    "account_num": "00009767",
+    "customer_ref": "472167",
+    "invoice_to": "Beesley & Fildes Limited, Wilson Road, Huyton, Merseyside, L36 6AF",     
+    "delivery_add": "Beesley & Fildes Ltd, Warrington Road, Mickle Trafford, Chester, CH2 4EB",
+    "product_code": "D1001",
+    "product_desc": "EasyFlow 1000x125x78mm Line Drain (Black)",
+    "product_qty": 360,
+    "unit_price": 3.92
+  },
+  {
+    "order_ref": "280836",
+    "account_num": "00009767",
+    "customer_ref": "472167",
+    "invoice_to": "Beesley & Fildes Limited, Wilson Road, Huyton, Merseyside, L36 6AF",     
+    "delivery_add": "Beesley & Fildes Ltd, Warrington Road, Mickle Trafford, Chester, CH2 4EB",
+    "product_code": "D1031",
+    "product_desc": "EasyFlow End Cap with Knockout",
+    "product_qty": 100,
+    "unit_price": 5.12
+  }
+]
+
+**例子 3
+
+- 文本內容
+
+0000280834
+Document Date:
+04/06/2025
+Entered By: Checked By:
+Requested Delivery Date:
+11/06/2025
+00010395
+Account No:PO0040036Customers Ref:
+Delivery Address:
+Pallet Information
+Invoice To:
+Driver
+Drainfast Ltd
+Number of Pallets
+Quarter Mile Drive
+Drainfast Limited
+Vision House
+Pallet Spaces
+Tel No:
+Truggist Lane
+Bedford Road
+Weight
+GU32 3QB
+CV7 7BW
+Pack
+** NO DELS AFTER 3PM**
+Booked In
+Berkswell
+Petersfield, Hampshire
+Tel:44 01730 774000
+Site Tel No:
+07730 207 886 - Paul McNamara
+accounts@drainfast.co.uk
+Email:
+Price Band ID:1005
+Priority:
+Credit Position: Live (Euler Checked)Account Balance: 46,299.33
+Item Code
+ Pack
+Size
+Description
+Weight
+(Kg)
+Unit
+Price
+ Qty Req
+Picked
+by
+Qty
+ Picked
+Qty
+  Loaded
+MEL4545A1450x450x320mm EasyLiner (assembled)15610.5448
+Pallet Qty 24
+Trans1Transport Charge for Delivery0104.0
+0
+1
+Parcel 4
+Parcel 2
+Parcel 1
+Parcel 3
+Height
+Length
+Height
+Parcel 5
+LengthHeight
+Height
+Length
+Height
+Length
+Weight
+Weight
+Width
+Weight
+Weight
+Width
+Length
+Width
+Weight
+Width
+Width
+Notes:Nett609.92
+VAT121.98
+TOTAL731.90
+Total Number Of Pages:1
+Requested Delivery Date:11/06/2025Actual Delivery Date:Driver:No Of Pallets:Amended On Sage:
+Is A Balance Order Required:
+156Total Weight Of Order (Kg):
+
+- 應返回json
+
+[
+  {
+    "order_ref": "280834",
+    "account_num": "00010395",
+    "customer_ref": "PO0040036",
+    "invoice_to": "Drainfast Limited, Vision House, Bedford Road, Petersfield, Hampshire, GU32 3QB",
+    "delivery_add": "Drainfast Ltd, Quarter Mile Drive, Truggist Lane, Berkswell, CV7 7BW", 
+    "product_code": "MEL4545A",
+    "product_desc": "450x450x320mm EasyLiner (assembled)",
+    "product_qty": 48,
+    "unit_price": 10.54
+  }
+]
+
+**例子 4
+
+- 文本內容
+
+0000280833
+Document Date:
+04/06/2025
+Entered By: Checked By:
+Requested Delivery Date:
+06/06/2025
+00010504
+Account No:PO0034637Customers Ref:
+Delivery Address:
+Pallet Information
+Invoice To:
+Driver
+Bam Site Compound
+Number of Pallets
+Gadebridge Park
+Plaspipes Ltd
+ 12 DAVID ROAD
+Pallet Spaces
+Tel No:
+Hemel Hempstead
+ POYLE INDUSTRIAL ESTATE
+Weight
+SL3 0DG
+HP1 1LS
+Pack
+Booked In
+Hertfordshire
+ COLNBROOK
+Tel:44 01784 450 629
+Site Tel No:
+07824 492 746 - Dick Taylor
+accounts@plaspipes.c
+[Analyze Order PDF API] 文本內容（完整）: Picking List
+0000280833
+Document Date:
+04/06/2025
+Entered By: Checked By:
+Requested Delivery Date:
+06/06/2025
+00010504
+Account No:PO0034637Customers Ref:
+Delivery Address:
+Pallet Information
+Invoice To:
+Driver
+Bam Site Compound
+Number of Pallets
+Gadebridge Park
+Plaspipes Ltd
+ 12 DAVID ROAD
+Pallet Spaces
+Tel No:
+Hemel Hempstead
+ POYLE INDUSTRIAL ESTATE
+Weight
+SL3 0DG
+HP1 1LS
+Pack
+Booked In
+Hertfordshire
+ COLNBROOK
+Tel:44 01784 450 629
+Site Tel No:
+07824 492 746 - Dick Taylor
+accounts@plaspipes.co.uk.
+Email:
+Price Band ID:1005
+Priority:
+Credit Position: Live (CPA Checked)Account Balance: 3,342.00
+Item Code
+ Pack
+Size
+Description
+Weight
+(Kg)
+Unit
+Price
+ Qty Req
+Picked
+by
+Qty
+ Picked
+Qty
+  Loaded
+ME60451501Ecolite 600x450x150 Manhole Ring815.001
+If by Haulier use std 4 way pallet:32/ Pallet (2/ Layer, 12 Layers/Pallet + 8 extra )(126 x 109 x 200cm H)
+limited stock off available
+Pallet Qty 32
+Trans1Transport Charge for Delivery048.001
+Parcel 4
+Parcel 2
+Parcel 1
+Parcel 3
+Height
+Length
+Height
+Parcel 5
+LengthHeight
+Height
+Length
+Height
+Length
+Weight
+Weight
+Width
+Weight
+Weight
+Width
+Length
+Width
+Weight
+Width
+Width
+Notes:Nett63.00
+VAT12.60
+TOTAL75.60
+Total Number Of Pages:1
+Requested Delivery Date:06/06/2025Actual Delivery Date:Driver:No Of Pallets:Amended On Sage:
+Is A Balance Order Required:
+8Total Weight Of Order (Kg):
+
+- 應返回json
+
+ [
+  {
+    "order_ref": "280833",
+    "account_num": "00010504",
+    "customer_ref": "PO0034637",
+    "invoice_to": "Plaspipes Ltd, 12 DAVID ROAD, POYLE INDUSTRIAL ESTATE, COLNBROOK, SL3 0DG",
+    "delivery_add": "Bam Site Compound, Gadebridge Park, Hemel Hempstead, Hertfordshire, HP1 1LS",
+    "product_code": "ME6045150",
+    "product_desc": "Ecolite 600x450x150 Manhole Ring",
+    "product_qty": 1,
+    "unit_price": 15.00
+  }
+]

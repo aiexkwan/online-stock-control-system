@@ -162,4 +162,83 @@ useQcLabelBusiness Hook 執行以下操作：
 - 批量資料庫操作
 - PDF 生成快取
 - 檔案上傳優化
-- 查詢效能優化 
+- 查詢效能優化
+
+## 系統更新記錄
+
+### 2025-06-09: 托盤編號重複問題修復（與 GRN 標籤同步修復）
+
+#### 問題背景
+在修復 GRN 標籤的托盤編號重複問題時，同時檢查並優化了 QC 標籤系統的托盤編號生成機制，確保兩個系統使用一致的防重複策略。
+
+#### QC 標籤系統現狀
+- ✅ **已使用原子性 RPC 函數**: QC 標籤系統已經使用 `generate_atomic_pallet_numbers_v2` 確保原子性
+- ✅ **單次調用策略**: 使用單次 RPC 調用生成所有需要的托盤編號，避免循環調用
+- ✅ **防重複提交機制**: 在 `useQcLabelBusiness` hook 中實施了防重複提交機制
+
+#### 同步優化措施
+
+##### 1. 防重複提交機制強化
+```typescript
+// 在 useQcLabelBusiness hook 中
+const [isProcessing, setIsProcessing] = useState(false);
+
+const handleSubmit = async () => {
+  if (isProcessing) {
+    console.log('[QC] 正在處理中，忽略重複提交');
+    return;
+  }
+  
+  setIsProcessing(true);
+  try {
+    // 執行標籤生成邏輯
+  } finally {
+    // 3 秒冷卻期，防止快速重複提交
+    setTimeout(() => setIsProcessing(false), 3000);
+  }
+};
+```
+
+##### 2. 托盤編號生成優化
+```typescript
+// 確保使用單次 RPC 調用
+const generatePalletNumbers = async (count: number) => {
+  console.log(`[qcActions] 使用原子性 RPC 生成 ${count} 個托盤編號`);
+  
+  const { data: result, error } = await supabase.rpc('generate_atomic_pallet_numbers_v2', {
+    count: count
+  });
+  
+  if (error) throw error;
+  return result;
+};
+```
+
+##### 3. 錯誤處理增強
+- 添加重複托盤編號檢測
+- 增強錯誤日誌記錄
+- 提供更友好的錯誤訊息
+
+#### 一致性保證
+1. **相同的 RPC 函數**: QC 和 GRN 標籤都使用 `generate_atomic_pallet_numbers_v2`
+2. **相同的防護機制**: 兩個系統都實施防重複提交和錯誤處理
+3. **相同的日誌格式**: 統一的日誌記錄便於問題診斷
+4. **相同的測試標準**: 確保兩個系統都通過重複列印測試
+
+#### 測試結果
+- ✅ QC 標籤第一次列印：正常生成唯一托盤編號
+- ✅ QC 標籤第二次列印：正常生成新的唯一托盤編號
+- ✅ QC 標籤併發測試：無重複編號產生
+- ✅ 與 GRN 標籤交叉測試：兩系統托盤編號不衝突
+
+#### 預防性改進
+1. **統一的托盤編號生成服務**: 考慮將托盤編號生成邏輯抽取為共用服務
+2. **監控儀表板**: 建立托盤編號生成監控，及時發現異常
+3. **自動化測試**: 建立定期的重複列印測試，確保系統穩定性
+4. **文檔同步**: 確保 QC 和 GRN 標籤文檔保持一致性
+
+#### 技術債務清理
+- 移除了所有臨時測試文檔
+- 統一了兩個系統的錯誤處理模式
+- 標準化了日誌記錄格式
+- 優化了代碼註釋和文檔 

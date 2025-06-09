@@ -184,14 +184,6 @@ This document serves as a unified record of all SQL/RPC functions in the WMS sys
 
 ---
 
-## 🔧 Legacy Functions (V1)
-
-### generate_atomic_pallet_numbers(count INTEGER)
-- **Purpose**: Original atomic pallet generation (V1)
-- **Status**: ⚠️ Deprecated - Use V2 instead
-- **Location**: `scripts/create-atomic-pallet-number-generator.sql`
-- **Note**: Has table locking issues, replaced by V2
-
 ---
 
 ## 🛠️ Utility Functions

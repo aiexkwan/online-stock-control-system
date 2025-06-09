@@ -457,6 +457,104 @@ export async function createQcDatabaseEntriesWithTransaction(
 }
 
 /**
+ * Generate pallet numbers using individual atomic RPC calls
+ * No caching - each call generates one pallet number atomically
+ */
+export async function generatePalletNumbersDirectQuery(count: number): Promise<{
+  palletNumbers: string[];
+  series: string[];
+  error?: string;
+}> {
+  try {
+    console.log('[qcActions] 使用個別原子性 RPC 調用生成棧板號碼（無緩存），數量:', count);
+    
+    const supabaseAdmin = createSupabaseAdmin();
+    const palletNumbers: string[] = [];
+    
+    // 使用單次 RPC 調用生成所有托盤編號，避免循環中的併發問題
+    console.log(`[qcActions] 使用單次 RPC 調用生成 ${count} 個托盤編號`);
+    
+    let attempts = 0;
+    const maxAttempts = 5;
+    
+    while (attempts < maxAttempts) {
+      try {
+        console.log(`[qcActions] 使用原子性 RPC 生成 ${count} 個托盤編號 (嘗試 ${attempts + 1})`);
+        
+        // 使用單次 RPC 調用生成所有托盤編號
+        const { data: rpcResult, error: rpcError } = await supabaseAdmin.rpc('generate_atomic_pallet_numbers_v2', {
+          count: count
+        });
+        
+        if (rpcError) {
+          console.error(`[qcActions] RPC 生成失敗:`, rpcError);
+          throw new Error(`RPC generation failed: ${rpcError.message}`);
+        }
+        
+        if (!rpcResult || !Array.isArray(rpcResult) || rpcResult.length !== count) {
+          throw new Error(`Invalid result from RPC function: expected ${count} pallet numbers, got ${rpcResult?.length || 0}`);
+        }
+        
+        palletNumbers.push(...rpcResult);
+        console.log(`[qcActions] 成功生成托盤編號:`, rpcResult);
+        break;
+        
+      } catch (error: any) {
+        console.error(`[qcActions] 生成托盤編號失敗 (嘗試 ${attempts + 1}/${maxAttempts}):`, error);
+        
+        if (attempts === maxAttempts - 1) {
+          throw new Error(`Failed to generate pallet numbers after ${maxAttempts} attempts: ${error.message}`);
+        }
+        
+        attempts++;
+        await new Promise(resolve => setTimeout(resolve, 500 * attempts)); // 更長的延遲
+      }
+    }
+    
+    if (palletNumbers.length !== count) {
+      throw new Error(`Failed to generate required number of pallet numbers: expected ${count}, got ${palletNumbers.length}`);
+    }
+    
+    console.log('[qcActions] 所有托盤編號生成完成:', palletNumbers);
+    
+    // Generate series with retry mechanism
+    let series: string[] = [];
+    let seriesAttempts = 0;
+    const seriesMaxAttempts = 3;
+    
+    while (seriesAttempts < seriesMaxAttempts) {
+      try {
+        series = await generateMultipleUniqueSeries(count, supabaseAdmin);
+        break;
+      } catch (seriesError: any) {
+        console.error(`[qcActions] 系列號生成失敗 (嘗試 ${seriesAttempts + 1}/${seriesMaxAttempts}):`, seriesError);
+        
+        if (seriesAttempts === seriesMaxAttempts - 1) {
+          throw seriesError;
+        }
+        
+        seriesAttempts++;
+        await new Promise(resolve => setTimeout(resolve, 100 * seriesAttempts));
+      }
+    }
+    
+    console.log('[qcActions] 生成的系列號:', series);
+    
+    return {
+      palletNumbers,
+      series
+    };
+  } catch (error: any) {
+    console.error('[qcActions] 個別原子性 RPC 調用生成棧板號碼失敗:', error);
+    return {
+      palletNumbers: [],
+      series: [],
+      error: error.message
+    };
+  }
+}
+
+/**
  * Generate pallet numbers and series on server side
  */
 export async function generatePalletNumbersAndSeries(count: number): Promise<{

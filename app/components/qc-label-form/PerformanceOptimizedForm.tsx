@@ -561,29 +561,29 @@ export const PerformanceOptimizedForm: React.FC<PerformanceOptimizedFormProps> =
 
                 {/* Submit Button */}
                 <div className="relative group">
-                  <button
-                    type="submit"
-                    disabled={!validationState.isValid || isLoading || businessLogic.isAcoOrderExcess || businessLogic.isAcoOrderFulfilled || businessLogic.isAcoOrderIncomplete || isCountExceeded}
+                                  <button
+                  type="submit"
+                  disabled={!validationState.isValid || isLoading || businessLogic.isProcessing || businessLogic.isAcoOrderExcess || businessLogic.isAcoOrderFulfilled || businessLogic.isAcoOrderIncomplete || isCountExceeded}
                     className={`
                       w-full py-4 px-6 rounded-2xl font-semibold text-lg
                       transition-all duration-300 ease-out
                       flex items-center justify-center space-x-3
                       relative overflow-hidden
-                      ${validationState.isValid && !isLoading && !businessLogic.isAcoOrderExcess && !businessLogic.isAcoOrderFulfilled && !businessLogic.isAcoOrderIncomplete && !isCountExceeded
+                      ${validationState.isValid && !isLoading && !businessLogic.isProcessing && !businessLogic.isAcoOrderExcess && !businessLogic.isAcoOrderFulfilled && !businessLogic.isAcoOrderIncomplete && !isCountExceeded
                         ? 'bg-gradient-to-r from-blue-600 via-blue-500 to-cyan-500 hover:from-blue-500 hover:via-blue-400 hover:to-cyan-400 text-white shadow-2xl shadow-blue-500/25 hover:shadow-blue-400/40 hover:scale-[1.02] active:scale-[0.98]'
                         : 'bg-gradient-to-r from-slate-700 to-slate-600 text-slate-300 cursor-not-allowed shadow-lg shadow-slate-900/20'
                       }
                     `}
                   >
                     {/* 按鈕內部光效 */}
-                    {validationState.isValid && !isLoading && !businessLogic.isAcoOrderExcess && !businessLogic.isAcoOrderFulfilled && !businessLogic.isAcoOrderIncomplete && !isCountExceeded && (
+                    {validationState.isValid && !isLoading && !businessLogic.isProcessing && !businessLogic.isAcoOrderExcess && !businessLogic.isAcoOrderFulfilled && !businessLogic.isAcoOrderIncomplete && !isCountExceeded && (
                       <div className="absolute inset-0 bg-gradient-to-r from-white/10 via-white/5 to-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                     )}
                     
                     <div className="relative z-10 flex items-center space-x-3">
                       <PrinterIcon className={`h-6 w-6 ${isLoading ? 'animate-pulse' : ''}`} />
                       <span>
-                        {isLoading ? 'Processing...' : 
+                        {isLoading || businessLogic.isProcessing ? 'Processing...' : 
                          businessLogic.isAcoOrderFulfilled ? 'Order Fulfilled' :
                          businessLogic.isAcoOrderExcess ? 'Quantity Exceeds Order' : 
                          businessLogic.isAcoOrderIncomplete ? 'Complete ACO Details' :
@@ -593,7 +593,7 @@ export const PerformanceOptimizedForm: React.FC<PerformanceOptimizedFormProps> =
                     </div>
                     
                     {/* 載入動畫 */}
-                    {isLoading && (
+                    {(isLoading || businessLogic.isProcessing) && (
                       <div className="absolute right-4 top-1/2 transform -translate-y-1/2">
                         <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
                       </div>

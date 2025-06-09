@@ -48,7 +48,7 @@
 
 ### 測試檔案規範
 
-- **如有需要，可臨時創建 test／測試用檔案（如：unit test、debug script）**
+- **如有需要，可臨時創建 test／測試 用檔案（如：unit test、debug script、check-**.js）**
 - **所有 test 檔必須於用完或測試結束後及時刪除，嚴禁殘留於正式 repo、主分支或上 production**
 - test 檔案命名建議明確標示（如：`xxx.test.ts`, `temp-debug.ts`）
 - 禁止將生產資料或敏感 key 寫入 test 檔

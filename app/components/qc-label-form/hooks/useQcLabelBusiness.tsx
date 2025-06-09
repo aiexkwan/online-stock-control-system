@@ -12,7 +12,7 @@ import {
   createQcDatabaseEntriesWithTransaction,
   uploadPdfToStorage,
   updateAcoOrderRemainQty,
-  generatePalletNumbersAndSeries,
+  generatePalletNumbersDirectQuery,
   type QcDatabaseEntryPayload,
   type QcPalletInfoPayload,
   type QcHistoryPayload,
@@ -367,6 +367,10 @@ export const useQcLabelBusiness = ({
   // Clock number confirmation state
   const [isClockConfirmOpen, setIsClockConfirmOpen] = useState(false);
   const [printEventToProceed, setPrintEventToProceed] = useState<React.FormEvent | null>(null);
+  
+  // State for preventing duplicate submissions
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [lastSubmissionTime, setLastSubmissionTime] = useState<number>(0);
 
   // Main print logic
   const handlePrintLabel = useCallback(async (e: React.FormEvent) => {
@@ -381,12 +385,33 @@ export const useQcLabelBusiness = ({
   const handleClockNumberConfirm = useCallback(async (clockNumber: string) => {
     setIsClockConfirmOpen(false);
     
+    // Prevent duplicate submissions
+    const currentTime = Date.now();
+    const timeSinceLastSubmission = currentTime - lastSubmissionTime;
+    
+    if (isProcessing) {
+      toast.warning('Processing in progress. Please wait...');
+      setPrintEventToProceed(null);
+      return;
+    }
+    
+    if (timeSinceLastSubmission < 3000) { // 3 seconds cooldown
+      toast.warning('Please wait a moment before submitting again to prevent duplicate pallet numbers.');
+      setPrintEventToProceed(null);
+      return;
+    }
+    
+    // Set processing state
+    setIsProcessing(true);
+    setLastSubmissionTime(currentTime);
+    
     // 安全處理字符串轉換
     const quantityStr = String(formData.quantity || '');
     const countStr = String(formData.count || '');
     
     if (!productInfo || !formData.productCode.trim() || !quantityStr.trim() || !countStr.trim()) {
       toast.error('Product info, quantity, or count is missing.');
+      setIsProcessing(false);
       setPrintEventToProceed(null);
       return;
     }
@@ -396,6 +421,7 @@ export const useQcLabelBusiness = ({
 
     if (isNaN(quantity) || quantity <= 0 || isNaN(count) || count <= 0) {
       toast.error('Please enter valid quantity and count values.');
+      setIsProcessing(false);
       setPrintEventToProceed(null);
       return;
     }
@@ -411,8 +437,8 @@ export const useQcLabelBusiness = ({
         }
       }));
 
-      // 使用服務端 action 生成棧板號碼和系列號
-      console.log('[useQcLabelBusiness] 使用服務端 action 生成棧板號碼和系列號...');
+      // 使用直接查詢數據庫的方式生成棧板號碼和系列號（無緩存）
+      console.log('[useQcLabelBusiness] 使用直接查詢數據庫生成棧板號碼和系列號（無緩存）...');
       
       let generationResult;
       let retryCount = 0;
@@ -420,7 +446,7 @@ export const useQcLabelBusiness = ({
       
       // Retry mechanism for pallet number generation
       while (retryCount < maxRetries) {
-        generationResult = await generatePalletNumbersAndSeries(count);
+        generationResult = await generatePalletNumbersDirectQuery(count);
         
         if (!generationResult.error) {
           break; // Success, exit retry loop
@@ -435,6 +461,7 @@ export const useQcLabelBusiness = ({
           await new Promise(resolve => setTimeout(resolve, 1000 * retryCount));
         } else {
           toast.error(`Failed to generate pallet numbers after ${maxRetries} attempts: ${generationResult.error}`);
+          setIsProcessing(false);
           setPrintEventToProceed(null);
           return;
         }
@@ -444,6 +471,7 @@ export const useQcLabelBusiness = ({
 
       if (generatedPalletNumbers.length !== count || generatedSeries.length !== count) {
         toast.error('Failed to generate unique pallet numbers or series. Please try again.');
+        setIsProcessing(false);
         setPrintEventToProceed(null);
         return;
       }
@@ -581,9 +609,11 @@ export const useQcLabelBusiness = ({
             // Check if it's a duplicate pallet number error
             if (dbResult.error.includes('already exists') || dbResult.error.includes('duplicate')) {
               console.error(`[useQcLabelBusiness] Duplicate pallet number detected for ${palletNum}:`, dbResult.error);
-              toast.error(`Duplicate pallet number ${palletNum} detected. Please try again to generate new pallet numbers.`);
+              console.error(`[useQcLabelBusiness] This indicates a race condition or stale pallet number. Stopping all processing.`);
               
-              // Stop processing and reset form to allow retry
+              toast.error(`Duplicate pallet number ${palletNum} detected. This may be due to rapid clicking or a system issue. Please wait a moment and try again.`);
+              
+              // Stop processing immediately and reset form to allow retry
               setFormData(prev => ({
                 ...prev,
                 pdfProgress: {
@@ -592,6 +622,7 @@ export const useQcLabelBusiness = ({
                   status: []
                 }
               }));
+              setIsProcessing(false);
               setPrintEventToProceed(null);
               return;
             }
@@ -847,6 +878,7 @@ export const useQcLabelBusiness = ({
       console.error('Error during print process:', error);
       toast.error(`Print process failed: ${error.message}`);
     } finally {
+      setIsProcessing(false);
       setPrintEventToProceed(null);
     }
   }, [productInfo, formData, setFormData, onProductInfoReset, createClientSupabase]);
@@ -945,6 +977,9 @@ export const useQcLabelBusiness = ({
 
     // Clock number confirmation state
     isClockConfirmOpen,
+
+    // Processing state
+    isProcessing,
 
     // Computed values
     canSearchAco,
