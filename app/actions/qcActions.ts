@@ -345,6 +345,8 @@ export async function createQcDatabaseEntriesWithTransaction(
 
     if (existingPallet) {
       console.error('[qcActions] Duplicate pallet number detected:', payload.palletInfo.plt_num);
+      console.error('[qcActions] Attempted to create pallet with data:', JSON.stringify(payload.palletInfo, null, 2));
+      console.error('[qcActions] Call stack trace:', new Error().stack);
       return { error: `Pallet number ${payload.palletInfo.plt_num} already exists. Please try again to generate a new pallet number.` };
     }
 

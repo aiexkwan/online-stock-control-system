@@ -22,7 +22,7 @@ export async function generateAtomicPalletNumbers(
 
   console.log(`[atomicPalletUtils] 調用原子性 RPC 函數生成 ${count} 個棧板號碼...`);
 
-  const { data, error } = await supabaseClient.rpc('generate_atomic_pallet_numbers', {
+  const { data, error } = await supabaseClient.rpc('generate_atomic_pallet_numbers_v2', {
     count: count
   });
 

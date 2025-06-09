@@ -100,6 +100,7 @@ export async function POST(request: NextRequest) {
 
     // Generate pallet number and series using atomic function
     console.log('[Auto Reprint API] Generating pallet number and series...');
+    console.log('[Auto Reprint API] Using generate_atomic_pallet_numbers_v2 function');
     const { data: palletNumbers, error: palletError } = await supabase.rpc('generate_atomic_pallet_numbers_v2', {
       count: 1
     });
@@ -124,6 +125,7 @@ export async function POST(request: NextRequest) {
     const palletNum = palletNumbers[0];
     const seriesValue = series[0];
     console.log(`[Auto Reprint API] Generated pallet: ${palletNum}, series: ${seriesValue}`);
+    console.log(`[Auto Reprint API] About to create database records with pallet: ${palletNum}`);
 
     // Prepare database records
     console.log('[Auto Reprint API] Preparing database records...');
