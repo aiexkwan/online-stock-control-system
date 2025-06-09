@@ -422,16 +422,18 @@ export function useVoidPallet() {
         console.log(`[Auto Reprint] Success! New pallet: ${newPalletNumber}`);
         console.log(`[Auto Reprint] QC input data:`, qcInputData);
 
-        // Generate PDF using same logic as QC Label
-        const { prepareQcLabelData } = await import('@/lib/pdfUtils');
+        // Generate PDF using exactly the same logic as QC Label
+        console.log('[Auto Reprint] Generating PDF using QC Label logic...');
+        const { prepareQcLabelData, mergeAndPrintPdfs } = await import('@/lib/pdfUtils');
         const { pdf } = await import('@react-pdf/renderer');
         const { PrintLabelPdf } = await import('@/components/print-label-pdf/PrintLabelPdf');
-        const React = await import('react');
         
         console.log('[Auto Reprint] Preparing QC label data...');
         const pdfLabelProps = await prepareQcLabelData(qcInputData);
         
         console.log('[Auto Reprint] Generating PDF blob...');
+        // Use createElement to avoid JSX syntax in .ts file
+        const React = await import('react');
         const pdfElement = React.createElement(PrintLabelPdf, pdfLabelProps);
         const pdfBlob = await pdf(pdfElement).toBlob();
         
@@ -441,13 +443,10 @@ export function useVoidPallet() {
 
         console.log(`[Auto Reprint] PDF blob generated, size: ${pdfBlob.size} bytes`);
 
-        // Convert blob to ArrayBuffer for printing (same as QC Label)
+        // Convert blob to ArrayBuffer for printing (exact same as QC Label)
         const pdfArrayBuffer = await pdfBlob.arrayBuffer();
         
-        // Import mergeAndPrintPdfs function dynamically
-        const { mergeAndPrintPdfs } = await import('@/lib/pdfUtils');
-        
-        // Auto-print the PDF (same as QC Label)
+        // Auto-print the PDF (exact same as QC Label)
         await mergeAndPrintPdfs([pdfArrayBuffer], fileName);
         
         console.log('[Auto Reprint] Auto-print triggered successfully');
