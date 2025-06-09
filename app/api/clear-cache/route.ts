@@ -1,0 +1,85 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { revalidatePath, revalidateTag } from 'next/cache';
+
+export async function POST(request: NextRequest) {
+  try {
+    console.log('[clear-cache] 開始清除 Next.js 緩存...');
+    
+    // 清除特定路徑的緩存
+    const pathsToRevalidate = [
+      '/print-label',
+      '/print-grnlabel',
+      '/admin',
+      '/dashboard',
+      '/'
+    ];
+    
+    for (const path of pathsToRevalidate) {
+      try {
+        revalidatePath(path);
+        console.log(`[clear-cache] 已清除路徑緩存: ${path}`);
+      } catch (error) {
+        console.warn(`[clear-cache] 清除路徑緩存失敗 ${path}:`, error);
+      }
+    }
+    
+    // 清除特定標籤的緩存
+    const tagsToRevalidate = [
+      'pallet-generation',
+      'qc-labels',
+      'grn-labels',
+      'database-queries'
+    ];
+    
+    for (const tag of tagsToRevalidate) {
+      try {
+        revalidateTag(tag);
+        console.log(`[clear-cache] 已清除標籤緩存: ${tag}`);
+      } catch (error) {
+        console.warn(`[clear-cache] 清除標籤緩存失敗 ${tag}:`, error);
+      }
+    }
+    
+    // 在 Vercel 環境中添加額外的緩存清除
+    if (process.env.VERCEL_ENV) {
+      console.log('[clear-cache] Vercel 環境檢測，執行額外清除...');
+      
+      // 強制清除所有可能的緩存
+      try {
+        revalidatePath('/', 'layout');
+        console.log('[clear-cache] 已清除根布局緩存');
+      } catch (error) {
+        console.warn('[clear-cache] 清除根布局緩存失敗:', error);
+      }
+    }
+    
+    return NextResponse.json({
+      success: true,
+      message: 'Cache cleared successfully',
+      timestamp: new Date().toISOString(),
+      environment: {
+        nodeEnv: process.env.NODE_ENV,
+        vercelEnv: process.env.VERCEL_ENV
+      }
+    });
+    
+  } catch (error: any) {
+    console.error('[clear-cache] 緩存清除失敗:', error);
+    return NextResponse.json({
+      success: false,
+      error: 'Cache clearing failed',
+      message: error.message
+    }, { status: 500 });
+  }
+}
+
+export async function GET(request: NextRequest) {
+  return NextResponse.json({
+    message: 'Cache clearing endpoint',
+    usage: 'Send POST request to clear Next.js cache',
+    environment: {
+      nodeEnv: process.env.NODE_ENV,
+      vercelEnv: process.env.VERCEL_ENV
+    }
+  });
+} 

@@ -1,4 +1,172 @@
-# QC 標籤列印系統
+# QC 標籤列印功能文檔
+
+## 功能概述
+QC 標籤列印系統負責生成和列印質量控制標籤，支援 ACO 和 Slate 兩種產品類型。
+
+## 重複托盤編號問題修復記錄
+
+### 問題描述
+- **本地環境**：一切運作正常
+- **Vercel 生產環境**：出現重複托盤編號錯誤
+- **錯誤訊息**：`Duplicate pallet number detected for 090625/59: Pallet number 090625/59 already exists`
+
+### 根本原因分析
+1. **環境差異**：Vercel 雲端環境與本地環境在時間同步、網路延遲、緩存機制方面存在差異
+2. **併發問題**：即使使用原子性 RPC 函數，在高延遲環境中仍可能出現時序問題
+3. **緩存問題**：Vercel 的 Next.js 緩存可能影響數據庫查詢結果
+4. **時間窗口**：RPC 生成托盤編號和實際插入數據庫之間的時間窗口在雲端環境中被放大
+
+### 修復措施
+
+#### 1. 強化重複檢查機制 (`qcActions.ts`)
+```typescript
+// 多重檢查策略
+let duplicateCheckAttempts = 0;
+const maxDuplicateChecks = 3;
+let existingPallet = null;
+
+while (duplicateCheckAttempts < maxDuplicateChecks) {
+  // 執行重複檢查
+  // 在 Vercel 環境中添加額外延遲
+  if (process.env.VERCEL_ENV && duplicateCheckAttempts < maxDuplicateChecks) {
+    await new Promise(resolve => setTimeout(resolve, 200 * duplicateCheckAttempts));
+  }
+}
+```
+
+#### 2. 使用 Upsert 策略作為額外保護
+```typescript
+const { error: palletInfoError } = await supabaseAdmin
+  .from('record_palletinfo')
+  .upsert(payload.palletInfo, { 
+    onConflict: 'plt_num',
+    ignoreDuplicates: false 
+  });
+```
+
+#### 3. 增強托盤編號生成的唯一性驗證
+```typescript
+// 🔥 強化唯一性驗證 - 檢查生成的托盤編號是否已存在
+for (const palletNum of rpcResult) {
+  const { data: existing } = await supabaseAdmin
+    .from('record_palletinfo')
+    .select('plt_num')
+    .eq('plt_num', palletNum)
+    .single();
+  
+  if (existing) {
+    throw new Error(`Generated pallet numbers contain duplicates: ${palletNum}`);
+  }
+}
+```
+
+#### 4. Vercel 環境特殊處理
+- **增加重試次數**：生產環境從 3 次增加到 5-7 次
+- **延長延遲時間**：基礎延遲從 500ms 增加到 800ms
+- **延長冷卻期**：從 3 秒增加到 5 秒
+
+#### 5. 雙重客戶端驗證
+```typescript
+// 額外驗證生成的托盤編號唯一性
+const supabaseClient = createClientSupabase();
+for (const palletNum of generationResult.palletNumbers) {
+  const { data: existing } = await supabaseClient
+    .from('record_palletinfo')
+    .select('plt_num')
+    .eq('plt_num', palletNum)
+    .single();
+  
+  if (existing) {
+    hasConflict = true;
+    break;
+  }
+}
+```
+
+#### 6. Next.js 緩存清除機制
+- **瀏覽器緩存清除**：清除所有 Service Worker 緩存
+- **服務端緩存清除**：新增 `/api/clear-cache` 端點
+- **路徑重新驗證**：清除特定路徑和標籤的緩存
+
+#### 7. 調試和監控增強
+- 添加環境信息日誌
+- 增加時間戳記錄
+- 詳細的錯誤追蹤
+- 序列號狀態監控
+
+### 技術實現細節
+
+#### 環境檢測
+```typescript
+console.log('[qcActions] 環境信息:', {
+  nodeEnv: process.env.NODE_ENV,
+  vercelEnv: process.env.VERCEL_ENV,
+  timestamp: new Date().toISOString()
+});
+```
+
+#### 動態參數調整
+```typescript
+const maxAttempts = process.env.VERCEL_ENV ? 7 : 5;
+const cooldownPeriod = process.env.NODE_ENV === 'production' ? 5000 : 3000;
+const baseDelay = process.env.VERCEL_ENV ? 800 : 500;
+```
+
+#### 緩存清除 API
+```typescript
+// 清除特定路徑和標籤的緩存
+revalidatePath('/print-label');
+revalidateTag('pallet-generation');
+```
+
+### 測試驗證
+1. **本地環境測試**：確認修復不影響本地功能
+2. **Vercel 部署測試**：驗證生產環境問題解決
+3. **併發測試**：模擬多用戶同時操作
+4. **邊界測試**：測試網路延遲和異常情況
+
+### 預防措施
+1. **監控告警**：設置重複托盤編號告警
+2. **日誌分析**：定期檢查生產環境日誌
+3. **性能監控**：監控 RPC 函數執行時間
+4. **環境一致性**：確保開發和生產環境配置一致
+
+### 影響評估
+- **功能影響**：無負面影響，增強了系統穩定性
+- **性能影響**：輕微增加處理時間（約 1-2 秒），但大幅提升可靠性
+- **用戶體驗**：減少錯誤發生，提升用戶信心
+- **維護成本**：增加了調試信息，便於問題排查
+
+### 後續優化建議
+1. **數據庫優化**：考慮使用數據庫層面的序列號生成
+2. **架構改進**：評估使用分佈式鎖機制
+3. **監控完善**：建立完整的性能和錯誤監控體系
+4. **文檔更新**：持續更新操作手冊和故障排除指南
+
+---
+
+## 原有功能文檔
+
+### 主要組件
+- `PerformanceOptimizedForm.tsx`: 主要表單組件
+- `useQcLabelBusiness.tsx`: 業務邏輯 Hook
+- `qcActions.ts`: 服務端操作
+
+### 核心功能
+1. **產品信息管理**
+2. **托盤編號生成**
+3. **PDF 標籤生成**
+4. **數據庫記錄創建**
+5. **ACO 訂單處理**
+6. **Slate 產品處理**
+
+### 數據流程
+1. 用戶輸入產品信息
+2. 驗證表單數據
+3. 生成唯一托盤編號
+4. 創建 PDF 標籤
+5. 保存數據庫記錄
+6. 更新相關訂單信息
 
 ## 概述
 

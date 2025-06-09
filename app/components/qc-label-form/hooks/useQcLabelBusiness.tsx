@@ -395,8 +395,11 @@ export const useQcLabelBusiness = ({
       return;
     }
     
-    if (timeSinceLastSubmission < 3000) { // 3 seconds cooldown
-      toast.warning('Please wait a moment before submitting again to prevent duplicate pallet numbers.');
+    // 🔥 在 Vercel 環境中增加更長的冷卻期
+    const cooldownPeriod = process.env.NODE_ENV === 'production' ? 5000 : 3000; // 生產環境 5 秒
+    
+    if (timeSinceLastSubmission < cooldownPeriod) {
+      toast.warning(`Please wait ${Math.ceil((cooldownPeriod - timeSinceLastSubmission) / 1000)} more seconds before submitting again to prevent duplicate pallet numbers.`);
       setPrintEventToProceed(null);
       return;
     }
@@ -404,6 +407,41 @@ export const useQcLabelBusiness = ({
     // Set processing state
     setIsProcessing(true);
     setLastSubmissionTime(currentTime);
+    
+    // 🔥 清除 Next.js 緩存（針對 Vercel 環境）
+    if (typeof window !== 'undefined' && process.env.NODE_ENV === 'production') {
+      try {
+        // 清除瀏覽器緩存
+        if ('caches' in window) {
+          const cacheNames = await caches.keys();
+          await Promise.all(
+            cacheNames.map(cacheName => caches.delete(cacheName))
+          );
+          console.log('[useQcLabelBusiness] 瀏覽器緩存已清除');
+        }
+        
+        // 調用服務端緩存清除 API
+        try {
+          const cacheResponse = await fetch('/api/clear-cache', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            }
+          });
+          
+          if (cacheResponse.ok) {
+            console.log('[useQcLabelBusiness] 服務端緩存清除成功');
+          } else {
+            console.warn('[useQcLabelBusiness] 服務端緩存清除失敗:', await cacheResponse.text());
+          }
+        } catch (apiError) {
+          console.warn('[useQcLabelBusiness] 服務端緩存清除 API 調用失敗:', apiError);
+        }
+        
+      } catch (cacheError) {
+        console.warn('[useQcLabelBusiness] 緩存清除失敗:', cacheError);
+      }
+    }
     
     // 安全處理字符串轉換
     const quantityStr = String(formData.quantity || '');
@@ -437,19 +475,50 @@ export const useQcLabelBusiness = ({
         }
       }));
 
+      // 🔥 在生產環境中添加額外的唯一性檢查
+      console.log('[useQcLabelBusiness] 開始托盤編號生成，環境:', {
+        nodeEnv: process.env.NODE_ENV,
+        timestamp: new Date().toISOString(),
+        userAgent: typeof window !== 'undefined' ? window.navigator.userAgent : 'server'
+      });
+
       // 使用直接查詢數據庫的方式生成棧板號碼和系列號（無緩存）
       console.log('[useQcLabelBusiness] 使用直接查詢數據庫生成棧板號碼和系列號（無緩存）...');
       
       let generationResult;
       let retryCount = 0;
-      const maxRetries = 3;
+      const maxRetries = process.env.NODE_ENV === 'production' ? 5 : 3; // 生產環境更多重試
       
       // Retry mechanism for pallet number generation
       while (retryCount < maxRetries) {
         generationResult = await generatePalletNumbersDirectQuery(count);
         
         if (!generationResult.error) {
-          break; // Success, exit retry loop
+          // 🔥 額外驗證生成的托盤編號唯一性
+          console.log('[useQcLabelBusiness] 執行客戶端唯一性驗證...');
+          const supabaseClient = createClientSupabase();
+          let hasConflict = false;
+          
+          for (const palletNum of generationResult.palletNumbers) {
+            const { data: existing } = await supabaseClient
+              .from('record_palletinfo')
+              .select('plt_num')
+              .eq('plt_num', palletNum)
+              .single();
+            
+            if (existing) {
+              console.error('[useQcLabelBusiness] 客戶端檢測到重複托盤編號:', palletNum);
+              hasConflict = true;
+              break;
+            }
+          }
+          
+          if (!hasConflict) {
+            break; // Success, exit retry loop
+          } else {
+            console.warn('[useQcLabelBusiness] 客戶端檢測到衝突，重新生成...');
+            generationResult = { error: 'Client-side duplicate detection' };
+          }
         }
         
         retryCount++;
@@ -458,7 +527,8 @@ export const useQcLabelBusiness = ({
         if (retryCount < maxRetries) {
           toast.warning(`Pallet generation failed (attempt ${retryCount}/${maxRetries}). Retrying...`);
           // Wait before retry with exponential backoff
-          await new Promise(resolve => setTimeout(resolve, 1000 * retryCount));
+          const delay = process.env.NODE_ENV === 'production' ? 2000 * retryCount : 1000 * retryCount;
+          await new Promise(resolve => setTimeout(resolve, delay));
         } else {
           toast.error(`Failed to generate pallet numbers after ${maxRetries} attempts: ${generationResult.error}`);
           setIsProcessing(false);
