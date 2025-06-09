@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { getCurrentUserClockNumber, getCurrentUserClockNumberAsync } from '../../hooks/useAuth';
@@ -432,10 +432,8 @@ export function useVoidPallet() {
         const pdfLabelProps = await prepareQcLabelData(qcInputData);
         
         console.log('[Auto Reprint] Generating PDF blob...');
-        // Use createElement to avoid JSX syntax in .ts file
-        const React = await import('react');
-        const pdfElement = React.createElement(PrintLabelPdf, pdfLabelProps);
-        const pdfBlob = await pdf(pdfElement).toBlob();
+        // Use JSX syntax now that this is a .tsx file
+        const pdfBlob = await pdf(<PrintLabelPdf {...pdfLabelProps} />).toBlob();
         
         if (!pdfBlob) {
           throw new Error('PDF generation failed to return a blob.');
