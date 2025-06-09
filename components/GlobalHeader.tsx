@@ -66,6 +66,13 @@ const menuItems: MenuItem[] = [
     description: 'Transfer stock between locations'
   },
   {
+    id: 'order-loading',
+    title: 'Order Loading',
+    path: '/order-loading',
+    icon: ChartBarIcon,
+    description: 'Order loading management'
+  },
+  {
     id: 'admin',
     title: 'Admin Panel',
     path: '/admin',
@@ -89,10 +96,15 @@ export default function GlobalHeader() {
       return menuItems; // Admin sees all menu items
     }
     
-    // Filter menu items based on allowed paths
-    return menuItems.filter(item => 
-      userRole.allowedPaths.includes(item.path)
-    );
+    // Special handling for Order Loading - visible to all except production@pennineindustries.com
+    const filteredItems = menuItems.filter(item => {
+      if (item.id === 'order-loading') {
+        return user?.email !== 'production@pennineindustries.com';
+      }
+      return userRole.allowedPaths.includes(item.path);
+    });
+    
+    return filteredItems;
   };
 
   const filteredMenuItems = getFilteredMenuItems();

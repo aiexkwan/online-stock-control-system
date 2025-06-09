@@ -25,7 +25,7 @@ export const getUserRole = (email: string): UserRole => {
   } else if (email === 'warehouse@pennineindustries.com') {
     return {
       type: 'warehouse', 
-      allowedPaths: ['/stock-transfer', '/home'],
+      allowedPaths: ['/stock-transfer', '/order-loading', '/home'],
       defaultPath: '/stock-transfer'
     };
   } else {
