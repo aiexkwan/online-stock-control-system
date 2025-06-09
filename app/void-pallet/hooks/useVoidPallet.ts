@@ -426,12 +426,14 @@ export function useVoidPallet() {
         const { prepareQcLabelData } = await import('@/lib/pdfUtils');
         const { pdf } = await import('@react-pdf/renderer');
         const { PrintLabelPdf } = await import('@/components/print-label-pdf/PrintLabelPdf');
+        const React = await import('react');
         
         console.log('[Auto Reprint] Preparing QC label data...');
         const pdfLabelProps = await prepareQcLabelData(qcInputData);
         
         console.log('[Auto Reprint] Generating PDF blob...');
-        const pdfBlob = await pdf(<PrintLabelPdf {...pdfLabelProps} />).toBlob();
+        const pdfElement = React.createElement(PrintLabelPdf, pdfLabelProps);
+        const pdfBlob = await pdf(pdfElement).toBlob();
         
         if (!pdfBlob) {
           throw new Error('PDF generation failed to return a blob.');
