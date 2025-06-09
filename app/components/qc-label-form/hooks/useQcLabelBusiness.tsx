@@ -440,7 +440,7 @@ export const useQcLabelBusiness = ({
         }
       }
       
-      const { palletNumbers: generatedPalletNumbers, series: generatedSeries } = generationResult;
+      const { palletNumbers: generatedPalletNumbers, series: generatedSeries } = generationResult!;
 
       if (generatedPalletNumbers.length !== count || generatedSeries.length !== count) {
         toast.error('Failed to generate unique pallet numbers or series. Please try again.');
