@@ -14,65 +14,20 @@ D1041 - EasyFlow Garage Pack (3m=2 endcaps=adaptor)
 LOFT01 - Loft Props (Small) Pack of 48
 LOFT02 - Loft Props (Large) Pack of 24
 MA10n10x1 - Atlas Chamber - 1050mm x 1050mm (1 Ring)
-MA45N45X1 - Atlas Chamber - 450mm x 450mm (1 Ring)
-MA60N45X1 - Atlas Chamber - 600mm x 450mm (1 Ring)
-MA60N60X1 - Atlas Chamber - 600mm x 600mm (1 Ring)
-MA90N45X1 - Atlas Chamber - 900mm x 450mm (1 Ring)
-MA90N60X1 - Atlas Chamber - 900mm x 600mm (1 Ring)
-MA90n90x1 - Atlas Chamber - 900mm x 900mm (1 Ring)
 ME151525 - Ecolite150x150x25 Manhole Ring
 ME1717150 - Ecolite 170x170x150mm Manhole Ring
-ME2323150 - Ecolite 230x230x150mm Manhole Ring
-ME3030150 - Ecolite 300x300x150 Manhole Ring
-ME4328100 - Ecolite 430x280x100  Manhole Ring
-ME4328150 - Ecolite 430x280x150 Manhole Ring
-ME432875 - Ecolite 430x280x75  Manhole Ring
-ME4328B1 - Ecolite 430x280x40mm Base - Central Hole
-ME4328B2 - Ecolite 430x280x40mm Base - Offset hole
-ME4545150 - Ecolite 450x450x150 Manhole Ring
-ME6045150 - Ecolite 600x450x150 Manhole Ring
-ME6060150 - Ecolite 600 x 600 x 150 Manhole Ring
-ME6060150 - Ecolite 600x600x150 Manhole Ring
 ME6060150B - Ecolite 600 x 600 x 150 Manhole Ring + Base Fitted
-ME7560150 - Ecolite 750x600x150 Manhole Ring
-ME7575150 - Ecolite 750x750x150 Manhole Ring
 MEBASEX - TopHat/Universal Ecolite Base with Central Hole
 MEL30 - Pair of 300x320mm EasyLiner sides
 MEL3030A - 300x300x320mm EasyLiner (assembled)
-MEL45 - Pair of 450x320mm EasyLiner sides
-MEL4545A - 450x450x320mm EasyLiner (assembled)
-MEL60 - Pair of 600x320mm EasyLiner sides
-MEL6045A - 600x450x320mm EasyLiner (assembled)
-MEL6060A - 600x600x320mm EasyLiner (assembled)
 MEP100100150 - 1000x1000x150mm EcoPlus
 MEP10068150 - 1000x675x150mm EcoPlus
-MEP120100150 - 1200x1000x150mm EcoPlus
-MEP120120150 - 1200x1200x150mm EcoPlus
-MEP120120S - 1200x1200x150mm EcoPlus With Steel Reinforcing
-MEP12060150 - 1200x600x150mm EcoPlus
-MEP120675150 - 1200x675x150mm EcoPlus
-MEP12068150 - 1200x675x150mm EcoPlus
-MEP12068S - 1200x675x150mm EcoPlus With Steel Reinforcing
-MEP12075150 - 1200x750x150mm EcoPlus
-MEP12090150 - 1200x900x150mm EcoPlus
-MEP12090S - 1200x900x150mm EcoPlus With Steel Reinforcing
-MEP13090150 - 1300x900x150mm EcoPlus
-MEP13590150 - 1350x900x150mm EcoPlus
-MEP13590S - 1350x900x150mm EcoPlus With Steel Reinforcing
 MEP150150150 - 1500x1500x150mm EcoPlus
 MEP15075150 - 1500x750x150mm EcoPlus
 MEP15075S - 1500x750x150mm EcoPlus with Steel Reinforcing
-MEP8080150 - 800x800x150mm EcoPlus
-MEP8383150 - 825x825x150mm EcoPlus
-MEP9060150 - 900x600x150mm EcoPlus
-MEP9075150 - 900x750x150mm EcoPlus
-MEP9090150 - 900x900x150mm EcoPlus
 MEP9090S - 900x900x150mm EcoPlus With Steel Reinforcing
 MEPC225 - Ecoplus 225mm Corner With 2 Inserts
-MEPC375 - Ecoplus 375mm Corner With 2 Inserts
-MEPC450 - Ecoplus 450mm Corner With 2 Inserts
 MEPS250 - Ecoplus 250mm Straight
-MEPS450 - Ecoplus 450mm Straight With 1 Insert
 MH45n45x4 - Easystack Chamber - 450mm x 450mm (4 Ring)
 MH45r45x4 - Easystack Chamber - 450mm x 450mm (4 Rings) D400
 MH75N68X5 - EasyStack Chamber - 750mm x 675mm (5 Ring)
@@ -87,36 +42,11 @@ MHL10 - M12 100mm Stainless Steel Through Bolts
 MHL12Y - Yellow PBT Ladder up to 120cm + stays/nuts/bolts
 MHL15Y - Yellow PBT 121 - 150cm + stays/nuts/bolts
 MHL18Y - Yellow PBT Ladder 121-180CM + stays/nuts/bolts
-MHL21G - Grey Nylon 181-210cm + stays/nuts/bolts
-MHL21Y - Yellow PBT 181-210cm + stays/nuts/bolts
-MHL24Y - Yellow PBT Ladder 181-240 + stays/nuts/bolts
-MHL27Y - Yellow PBT 241-270cm + stays/nuts/bolts
-MHL2Y - EasyLadder Yellow PBT 60cm Ladder Extensions
-MHL30G - Grey Nylon Ladder 241-300cm+ stays/nuts/bolts
-MHL30Y - Yellow PBT Ladder 241-300 + stays/nuts/bolts
-MHL33G - Grey Nylon 301-330cm + stays/nuts/bolts
-MHL33Y - Yellow PBT 301-330cm + stays/nuts/bolts
-MHL36G - Grey Nylon Ladder 301-360cm + stays/nuts/bolts
-MHL36Y - Yellow PBT Ladder 301-360cm+ stays/nuts/bolts
-MHL39G - Grey Nylon Ladder 361-390cm + stays/nuts/bolts
-MHL39Y - Yellow PBT Ladder 361-390cm + stays/nuts/bolts
-MHL42G - Grey Nylon Ladder 361-420cm + stays/nuts/bolts
-MHL42Y - Yellow PBT Ladder 391-420cm + stays/nuts/bolts
-MHL45G - Grey Nylon 421-450cm +stays/nuts/bolts
-MHL45Y - Yellow PBT 421-450cm +stays/nuts/bolts
-MHL48Y - Yellow PBT 421-480cm + stays/nuts/bolts
-MHL51Y - Yellow PBT 481-510cm + stays/nuts/bolts
-MHL60Y - Yellow PBT Ladder 541-600cm + stays/nuts/bolts
 MHL7Y - EasyLadder Yellow PBT Pair of Rigid Stay + Tapers(x4)
 MHSTEPF - Step Iron Fitted To Chamber
 MHWEDGE15 - Ezybrixx 4 Full Wedges  (150mm)
-MHWEDGE30 - Ezybrixx 4 Full Wedges  (300mm)
 ML3030X - 300x300mm Composite Lid B125
-ML4545X - 450x450mm Composite Lid B125
-ML6060X - 600x600mm Composite Lid B125
-ML7575X - 750x750mm Composite Lid B125
 ML9060B - 900x600mm Composite Lid & Galv. Frame B125
-ML9090B - 900x900mm Composite Lid & Galv. Frame B125
 ML9090F - 900x900mm Galvanised Frame
 ML9090X - 900x900mm Composite Lid B125
 MLC4328A - Composite Hydrant Cover And Frame Black Badged Air Valve
@@ -124,60 +54,17 @@ MLC4328HY - Composite Hydrant Cover And Frame Yellow Badged Fire Hydrant
 MLC4328M - Composite Hydrant Cover And Frame Black Badged Meter
 MLC4328W - Composite Hydrant Cover And Frame Black Badged Wash Out
 MP3030 - 300mm x 300mm Manhole Premier Rings
-MP4530 - 450mm x 300mm Manhole Premier Rings
-MP4545 - 450mm x 450mm Manhole Premier Rings
-MP6045 - 600mm x 450mm Manhole Premier Rings
-MP6060 - 600mm x 600mm Manhole Premier Rings
 MSTACK30 - 30cm Manhole Side Titan-Heavy Duty (315/P)
-MSTACK45 - 45cm Manhole Side Titan-Heavy Duty (240/P)
-MSTACK60 - 60cm Manhole Side Titan-Heavy Duty
-MSTACK90 - 90cm Manhole Side Titan-Heavy Duty (120/p)
 MSU120120 - 1200 x 1200 x 150mm Supastack
 MSU120120X10 - 1200 x 1200 x 1500mm SupaStack (10 Rings)
 MSU120120x4 - 1200 x 1200 x 600mm SupaStack (4 Rings)
-MSU120120x5 - 1200 x 1200 x 750mm SupaStack (5 Rings)
-MSU120120x7 - 1200 x 1200 x 1050mm SupaStack (7 Rings)
-MSU120120x8 - 1200 x 1200 x 1200mm SupaStack (8 Rings)
-MSU12090X7 - 1200 x 900 x 1050mm Supastack (7 Rings)
-MSU13590X6 - 1350 x 900 x 900mm Supastack (6 Rings)
-MSU13590X7 - 1350 x 900 x 1050mm SupaStack (7 Rings) w/ Galv Channel On The Top Ring
-MSU140110X5 - 1400 x 1100 x 750mm Supastack (5 Rings)
-MSU150150 - 1500 x 1500 x 150mm Supastack
 MSU150150R - 1500 x 1500 x 150mm Supastack - Reinf. (5mm)
-MSU150150X10 - 1500 x 1500 x 1500mm Supastack (10 Rings)
-MSU150150x13 - 1500 x 1500 x 1950mm Supastack (13 Rings)
-MSU150150x4 - 1500 x 1500 x 600mm SupaStack (4 Ring) w/ Galv Channel On Top Ring
-MSU150150X6 - 1500 x 1500 x 900mm Supastack (6 Rings)
-MSU150150x7 - 1500 x 1500 x 1050mm Supastack (7 Rings)
-MSU15075X5 - 1500 x 750 x 750 Supastack (5 Rings)
 MSU15090 - 1500 x 900 x 150mm Supastack
-MSU16075X10 - 1600 x 750 x 1500mm Supastack (10 Rings)
-MSU172140X5 - 1725 x 1400  x 750mm Supastack (5 Rings)
-MSU180180 - 1800 x 1800 x 150mm Supastack
-MSU200200 - 2000 x 2000 x 150mm Supastack
 MSU200200R - 2000 x 2000 x 150mm Supastack - Reinf. (5mm)
 MSU200200X10 - 2000 x 2000 x 1500mm Supastack (10 Rings)
-MSU200200X4 - 2000 x 2000 x 600mm Supastack (4 Rings)
-MSU20090X7 - 2000 x 900 x 1050mm SupaStack (7 Rings) w/ Galv Channel On The Top Ring
-MSU222152X7 - 2225 X 1525 X 1050MM SupaStack (7 rings) with galv channel on the top ring)
-MSU245172X5 - 2450 x 1725  x 750mm Supastack (5 Rings)
-MSU250120X10 - 2500 x 1200 x 1500mm SupaStack (10 Rings) w/ Galv Channel On Top
-MSU6060 - 600 x 600 x 150mm Supastack
 MSU6060x4 - 600 x 600 x 600mm SupaStack (4 Rings)
 MSU7575 - 750 x 750 x 150mm Supastack
-MSU7575X12 - 750 x 750 x 1800mm Supastack (12 Rings)
-MSU8568x4 - 850 x 675 x 600mm SupStack (4 Rings) With Galv Channel On The Top Ring
-MSU9090 - 900 x 900 x 150mm Supastack
-MSU9090X10 - 900 x 900 x 1500mm SupaStack (10 Rings)
-MSU9090X11 - 900 x 900 x 1650 SupaStack (11Rings) with Galv Channel On The Top Ring
-MSU9090X16 - 900 x 900 x 2400 SupaStack (16Rings) with Galv Channel On The Top Ring
-MSU9090X7 - 900 x 900 x 1050mm SupaStack (7 Rings)
-MSU9090X8 - 900 x 900 x 1200mm SupaStack (8 Rings)
 MT3030 - 300mm x 300mm  Manhole Ring Titan-Heavy Duty
-MT4545 - 450mm x 450mm  Manhole Ring Titan-Heavy Duty
-MT6045 - 600mm x 450mm  Manhole Ring Titan-Heavy Duty
-MT6060 - 600mm x 600mm  Manhole Ring Titan-Heavy Duty
-MT9090 - 900mm x 900mm  Manhole Ring Titan-Heavy Duty
 POST99 - Marker Post Grey 990mm HT & Aerial Duct
 RS301X - Verge Trim Black
 RS503X - Pennine Slate Standard - Grey (Box of 16)
@@ -195,29 +82,19 @@ T101 - Greenfix Greenlok Spikes Pack of 300
 TAV1 - Easyseal Connector
 X01A2891 - Sub Assembly Ecolite 600x150 Straight
 
-
-
 【抽取規則（必須遵守）】
 order_ref：全文開首出現的8位數字，去除前置零。
-
 product_code：每條產品行開頭首段英數（如 "MHCOL2"）。
-
 product_desc：產品碼之後至第一個數字前所有內容，多行要合併（如有）。
-
 product_qty：每條產品行最後一個明顯數字（通常係數量，最後一個小數點後兩位數之後既數字）。
-
 如有多件產品，必須每條獨立 JSON object。
-
-嚴禁 account_num/customer_ref 混淆，只能依據原文 keyword。
-
-必須略過所有 “pack size”、“weight (kg)”、“Pallet Qty”、“Transport charge”等非產品資料。
+- 嚴禁 account_num/customer_ref 混淆，只能依據原文 keyword。
+- 必須略過所有 “pack size”、“weight (kg)”、“Pallet Qty”、“Transport charge”等非產品資料。
 
 如有缺漏，用 "NOT_FOUND" 或 0 填充。
 
 【回傳格式範例】
 json
-複製
-編輯
 [
   {
     "order_ref": "280858",
@@ -231,132 +108,14 @@ json
 
 - 文本內容
 0000280835
-Document Date:
-04/06/2025
-Entered By: Checked By:
-Requested Delivery Date:
-04/06/2025
-00010645
-Account No:DSPO-0360503Customers Ref:
-Delivery Address:
-Pallet Information
-Invoice To:
-Driver
-Joe Blair
-Number of Pallets
-170 Rooks Nest Road
-CMOStores.com Ltd
-Burrington Business Pard
-Pallet Spaces
-Tel No:
-Stanley
-Burrington Way
-Weight
-PL5 3LX
-WF3 4DW
-Pack
-Devon
-Booked In
-Wakefield
-Plymouth
-Tel:
-Site Tel No:
-07842 602 884
-invoices@cmostores.com
-Email:
-jyinstallations@yahoo.co.
-[Analyze Order PDF API] 文本內容（完整）: Picking List
-0000280835
-Document Date:
-04/06/2025
-Entered By: Checked By:
-Requested Delivery Date:
-04/06/2025
-00010645
-Account No:DSPO-0360503Customers Ref:
-Delivery Address:
-Pallet Information
-Invoice To:
-Driver
-Joe Blair
-Number of Pallets
-170 Rooks Nest Road
-CMOStores.com Ltd
-Burrington Business Pard
-Pallet Spaces
-Tel No:
-Stanley
-Burrington Way
-Weight
-PL5 3LX
-WF3 4DW
-Pack
-Devon
-Booked In
-Wakefield
-Plymouth
-Tel:
-Site Tel No:
-07842 602 884
-invoices@cmostores.com
-Email:
-jyinstallations@yahoo.co.uk
-Price Band ID:27284051
-Priority:
-Credit Position: Live (CPA Checked)Account Balance: 97,407.57
-Item Code
- Pack
-Size
-Description
-Weight
-(Kg)
-Unit
-Price
- Qty Req
-Picked
-by
-Qty
- Picked
-Qty
+...（略）...
   Loaded
 S3027D1EnviroCrate Connectors (Double)00.001
 S3027S1EnviroCrate Connectors (Single)00.001
 SA40-101Envirocrate Heavy 40-10043.002
-Pallet Qty 6
-Trans1Transport Charge for Delivery040.001
-Parcel 4
-Parcel 2
-Parcel 1
-Parcel 3
-Height
-Length
-Height
-Parcel 5
-LengthHeight
-Height
-Length
-Height
-Length
-Weight
-Weight
-Width
-Weight
-Weight
-Width
-Length
-Width
-Weight
-Width
-Width
-Notes:Nett126.00
-VAT25.20
-TOTAL151.20
-Total Number Of Pages:1
-Requested Delivery Date:04/06/2025Actual Delivery Date:Driver:No Of Pallets:Amended On Sage:
-Is A Balance Order Required:
-0Total Weight Of Order (Kg):
+...（略）...
 
-- 應返回json
+- 返回json
 
 [
   {
@@ -384,55 +143,7 @@ Is A Balance Order Required:
 - 文本內容
 
 0000280836
-Document Date:
-04/06/2025
-Entered By: Checked By:
-Requested Delivery Date:
-09/06/2025
-00009767
-Account No:472167Customers Ref:
-Delivery Address:
-Pallet Information
-Invoice To:
-Driver
-Beesley & Fildes Ltd
-Number of Pallets
-Warrington Road
-Beesley & Fildes Limited
-Wilson Road
-Pallet Spaces
-Tel No:
-Mickle Trafford
-Huyton
-Weight
-L36 6AF
-CH2 4EB
-Pack
-Booked In
-Chester
-Merseyside
-Tel:44 0151 426 6455
-Site Tel No:
-01244 300 287
-pl@beesleyandfildes.co.uk
-Email:
-Price Band ID:131949
-Priority:
-Credit Position: Live (CPA Checked)Account Balance: 19,293.53
-Item Code
- Pack
-Size
-Description
-Weight
-(Kg)
-Unit
-Price
- Qty Req
-Picked
-by
-Qty
- Picked
-Qty
+...（略）...
   Loaded
 D10011EasyFlow 1000x125x78mm Line Drain
 (Black)
@@ -441,42 +152,9 @@ D10011EasyFlow 1000x125x78mm Line Drain
 Pallet Qty 120
 D103110EasyFlow End Cap with Knockout235.12100
 Pallet Qty 600
-Trans1Transport Charge for Delivery0100.0
-0
-1
-Parcel 4
-Parcel 2
-Parcel 1
-Parcel 3
-Height
-Length
-Height
-Parcel 5
-LengthHeight
-Height
-Length
-Height
-Length
-Weight
-Weight
-Width
-Weight
-Weight
-Width
-Length
-Width
-Weight
-Width
-Width
-Notes:Nett2023.20
-VAT404.64
-TOTAL2427.84
-Total Number Of Pages:1
-Requested Delivery Date:09/06/2025Actual Delivery Date:Driver:No Of Pallets:Amended On Sage:
-Is A Balance Order Required:
-509Total Weight Of Order (Kg):
+...（略）...
 
-- 應返回json
+- 返回json
 
 [
   {
@@ -498,95 +176,13 @@ Is A Balance Order Required:
 - 文本內容
 
 0000280834
-Document Date:
-04/06/2025
-Entered By: Checked By:
-Requested Delivery Date:
-11/06/2025
-00010395
-Account No:PO0040036Customers Ref:
-Delivery Address:
-Pallet Information
-Invoice To:
-Driver
-Drainfast Ltd
-Number of Pallets
-Quarter Mile Drive
-Drainfast Limited
-Vision House
-Pallet Spaces
-Tel No:
-Truggist Lane
-Bedford Road
-Weight
-GU32 3QB
-CV7 7BW
-Pack
-** NO DELS AFTER 3PM**
-Booked In
-Berkswell
-Petersfield, Hampshire
-Tel:44 01730 774000
-Site Tel No:
-07730 207 886 - Paul McNamara
-accounts@drainfast.co.uk
-Email:
-Price Band ID:1005
-Priority:
-Credit Position: Live (Euler Checked)Account Balance: 46,299.33
-Item Code
- Pack
-Size
-Description
-Weight
-(Kg)
-Unit
-Price
- Qty Req
-Picked
-by
-Qty
- Picked
-Qty
+...（略）...
   Loaded
 MEL4545A1450x450x320mm EasyLiner (assembled)15610.5448
 Pallet Qty 24
-Trans1Transport Charge for Delivery0104.0
-0
-1
-Parcel 4
-Parcel 2
-Parcel 1
-Parcel 3
-Height
-Length
-Height
-Parcel 5
-LengthHeight
-Height
-Length
-Height
-Length
-Weight
-Weight
-Width
-Weight
-Weight
-Width
-Length
-Width
-Weight
-Width
-Width
-Notes:Nett609.92
-VAT121.98
-TOTAL731.90
-Total Number Of Pages:1
-Requested Delivery Date:11/06/2025Actual Delivery Date:Driver:No Of Pallets:Amended On Sage:
-Is A Balance Order Required:
-156Total Weight Of Order (Kg):
+...（略）...
 
-- 應返回json
+- 返回json
 
 [
   {
@@ -602,124 +198,13 @@ Is A Balance Order Required:
 - 文本內容
 
 0000280833
-Document Date:
-04/06/2025
-Entered By: Checked By:
-Requested Delivery Date:
-06/06/2025
-00010504
-Account No:PO0034637Customers Ref:
-Delivery Address:
-Pallet Information
-Invoice To:
-Driver
-Bam Site Compound
-Number of Pallets
-Gadebridge Park
-Plaspipes Ltd
- 12 DAVID ROAD
-Pallet Spaces
-Tel No:
-Hemel Hempstead
- POYLE INDUSTRIAL ESTATE
-Weight
-SL3 0DG
-HP1 1LS
-Pack
-Booked In
-Hertfordshire
- COLNBROOK
-Tel:44 01784 450 629
-Site Tel No:
-07824 492 746 - Dick Taylor
-accounts@plaspipes.c
-[Analyze Order PDF API] 文本內容（完整）: Picking List
-0000280833
-Document Date:
-04/06/2025
-Entered By: Checked By:
-Requested Delivery Date:
-06/06/2025
-00010504
-Account No:PO0034637Customers Ref:
-Delivery Address:
-Pallet Information
-Invoice To:
-Driver
-Bam Site Compound
-Number of Pallets
-Gadebridge Park
-Plaspipes Ltd
- 12 DAVID ROAD
-Pallet Spaces
-Tel No:
-Hemel Hempstead
- POYLE INDUSTRIAL ESTATE
-Weight
-SL3 0DG
-HP1 1LS
-Pack
-Booked In
-Hertfordshire
- COLNBROOK
-Tel:44 01784 450 629
-Site Tel No:
-07824 492 746 - Dick Taylor
-accounts@plaspipes.co.uk.
-Email:
-Price Band ID:1005
-Priority:
-Credit Position: Live (CPA Checked)Account Balance: 3,342.00
-Item Code
- Pack
-Size
-Description
-Weight
-(Kg)
-Unit
-Price
- Qty Req
-Picked
-by
-Qty
- Picked
-Qty
+...（略）...
   Loaded
 ME60451501Ecolite 600x450x150 Manhole Ring815.001
 If by Haulier use std 4 way pallet:32/ Pallet (2/ Layer, 12 Layers/Pallet + 8 extra )(126 x 109 x 200cm H)
 limited stock off available
 Pallet Qty 32
-Trans1Transport Charge for Delivery048.001
-Parcel 4
-Parcel 2
-Parcel 1
-Parcel 3
-Height
-Length
-Height
-Parcel 5
-LengthHeight
-Height
-Length
-Height
-Length
-Weight
-Weight
-Width
-Weight
-Weight
-Width
-Length
-Width
-Weight
-Width
-Width
-Notes:Nett63.00
-VAT12.60
-TOTAL75.60
-Total Number Of Pages:1
-Requested Delivery Date:06/06/2025Actual Delivery Date:Driver:No Of Pallets:Amended On Sage:
-Is A Balance Order Required:
+...（略）...
 8Total Weight Of Order (Kg):
 
 - 應返回json
@@ -738,98 +223,14 @@ Is A Balance Order Required:
 - 文本內容
 
 0000280884
-Document Date:
-09/06/2025
-Entered By: Checked By:
-Requested Delivery Date:
-09/06/2025
-00010650
-Account No:70664Customers Ref:
-Delivery Address:
-Pallet Information
-Invoice To:
-Driver
-Smiths (Gloucester) Ltd
-Number of Pallets
-The Pavillions (Former)
-Civils Store Ltd - Head Office
-Office B, Millbrook Depot
-Pallet Spaces
-Tel No:
-Clydach Vale
-Yellingmill Lane
-Weight
-Rhondda Cynon Taf
-BA4 4JT
-CF40 2ZA
-Pack
-Somerset
-Booked In
-TonyPandy
-Shepton Mallet
-Tel:01749 823057
-Site Tel No:
-07779 780 750
-accounts@civilsstore.co.uk
-Email:
-Price Band ID:1005
-Priority:
-Credit Position: Live (CPA Checked)Account Balance: 6,920.64
-Item Code
- Pack
-Size
-Description
-Weight
-(Kg)
-Unit
-Price
- Qty Req
-Picked
-by
-Qty
- Picked
-Qty
+...（略）...
   Loaded
 MEL601Pair of 600x320mm EasyLiner sides3268.52160
 Pallet Qty 96
-TransG1Transport Included in Price of Goods00.001
-TransND1******** NEXT DAY ******* DELIVERY
-REQUIRED ****************
-00.001
-Parcel 4
-Parcel 2
-Parcel 1
-Parcel 3
-Height
-Length
-Height
-Parcel 5
-LengthHeight
-Height
-Length
-Height
-Length
-Weight
-Weight
-Width
-Weight
-Weight
-Width
-Length
-Width
-Weight
-Width
-Width
-Notes:Nett1363.20
-VAT272.64
-TOTAL1635.84
-Total Number Of Pages:1
-Requested Delivery Date:09/06/2025Actual Delivery Date:Driver:No Of Pallets:Amended On Sage:
-Is A Balance Order
-Required:
+...（略）...
 326Total Weight Of Order (Kg):
 
-- 應返回json
+- 返回json
 
 [
   {
