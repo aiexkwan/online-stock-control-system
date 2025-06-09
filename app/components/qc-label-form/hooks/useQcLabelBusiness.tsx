@@ -493,7 +493,7 @@ export const useQcLabelBusiness = ({
       while (retryCount < maxRetries) {
         generationResult = await generatePalletNumbersDirectQuery(count);
         
-        if (!generationResult.error) {
+        if (!generationResult.error && generationResult.palletNumbers && generationResult.series) {
           // 🔥 額外驗證生成的托盤編號唯一性
           console.log('[useQcLabelBusiness] 執行客戶端唯一性驗證...');
           const supabaseClient = createClientSupabase();
@@ -517,7 +517,7 @@ export const useQcLabelBusiness = ({
             break; // Success, exit retry loop
           } else {
             console.warn('[useQcLabelBusiness] 客戶端檢測到衝突，重新生成...');
-            generationResult = { error: 'Client-side duplicate detection' };
+            generationResult = { palletNumbers: [], series: [], error: 'Client-side duplicate detection' };
           }
         }
         
@@ -539,7 +539,7 @@ export const useQcLabelBusiness = ({
       
       const { palletNumbers: generatedPalletNumbers, series: generatedSeries } = generationResult!;
 
-      if (generatedPalletNumbers.length !== count || generatedSeries.length !== count) {
+      if (!generatedPalletNumbers || !generatedSeries || generatedPalletNumbers.length !== count || generatedSeries.length !== count) {
         toast.error('Failed to generate unique pallet numbers or series. Please try again.');
         setIsProcessing(false);
         setPrintEventToProceed(null);
