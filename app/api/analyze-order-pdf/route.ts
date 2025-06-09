@@ -118,13 +118,195 @@ async function extractTextFromPDF(pdfBuffer: Buffer): Promise<string> {
   }
 }
 
-// 定義訂單數據接口（簡化版）
+// 🔥 策略 2：PDF 文本智能預處理函數
+function preprocessPdfText(rawText: string): string {
+  console.log(`[PDF Preprocessing] Original text length: ${rawText.length} chars`);
+  
+  // 1. 提取訂單參考號碼（通常在文檔開頭）
+  const orderRefMatch = rawText.match(/\b\d{8,10}\b/);
+  const orderRef = orderRefMatch ? orderRefMatch[0] : '';
+  
+  // 2. 定位產品表格區域的關鍵標識
+  const tableStartMarkers = [
+    'Item Code',
+    'Product Code', 
+    'Code',
+    'Description',
+    'Qty',
+    'Pack Size',
+    'Weight'
+  ];
+  
+  const tableEndMarkers = [
+    'Total Weight',
+    'Total Number Of Pages',
+    'Notes:',
+    'Nett',
+    'VAT',
+    'TOTAL',
+    'Parcel 1',
+    'Parcel 2',
+    'Height',
+    'Length',
+    'Width'
+  ];
+  
+  // 3. 找到表格開始位置
+  let tableStart = -1;
+  for (const marker of tableStartMarkers) {
+    const index = rawText.indexOf(marker);
+    if (index !== -1 && (tableStart === -1 || index < tableStart)) {
+      tableStart = index;
+    }
+  }
+  
+  // 4. 找到表格結束位置
+  let tableEnd = rawText.length;
+  for (const marker of tableEndMarkers) {
+    const index = rawText.indexOf(marker, tableStart);
+    if (index !== -1 && index < tableEnd) {
+      tableEnd = index;
+    }
+  }
+  
+  // 5. 提取和過濾產品行
+  let coreContent = '';
+  
+  // 添加訂單參考號碼
+  if (orderRef) {
+    coreContent += `Order Reference: ${orderRef}\n\n`;
+  }
+  
+  // 添加表格內容並進行智能過濾
+  if (tableStart !== -1) {
+    const tableContent = rawText.substring(tableStart, tableEnd);
+    
+    // 🔥 智能產品行識別和過濾
+    const productLines = extractProductLines(tableContent);
+    if (productLines.length > 0) {
+      coreContent += `Product Items:\n${productLines.join('\n')}`;
+    } else {
+      // 備用：使用原始表格內容但進行基本清理
+      coreContent += `Product Table:\n${tableContent}`;
+    }
+  } else {
+    // 如果找不到表格標識，嘗試直接識別產品行
+    console.log('[PDF Preprocessing] Table markers not found, attempting direct product line extraction');
+    const productLines = extractProductLines(rawText);
+    if (productLines.length > 0) {
+      coreContent += `Order Reference: ${orderRef}\n\nProduct Items:\n${productLines.join('\n')}`;
+    } else {
+      // 最後備用策略：使用原始文本但進行清理
+      coreContent = rawText;
+    }
+  }
+  
+  // 6. 清理和優化文本
+  let processedText = coreContent
+    // 移除多餘的空行
+    .replace(/\n\s*\n\s*\n/g, '\n\n')
+    // 移除行首行尾空格
+    .replace(/^\s+|\s+$/gm, '')
+    // 移除重複的空格
+    .replace(/\s{2,}/g, ' ')
+    // 移除常見的無關內容
+    .replace(/Tel:\s*\d+[\d\s\-\+\(\)]*\n?/gi, '')
+    .replace(/Email:\s*[\w\.\-]+@[\w\.\-]+\n?/gi, '')
+    .replace(/Price Band ID:\s*\d+\n?/gi, '')
+    .replace(/Priority:\s*\n?/gi, '')
+    .replace(/Credit Position:.*?\n?/gi, '')
+    .replace(/Account Balance:.*?\n?/gi, '')
+    .replace(/Document Date:.*?\n?/gi, '')
+    .replace(/Requested Delivery Date:.*?\n?/gi, '')
+    .replace(/Entered By:.*?\n?/gi, '')
+    .replace(/Checked By:.*?\n?/gi, '')
+    // 移除地址相關內容
+    .replace(/\b[A-Z]{1,2}\d{1,2}\s?\d[A-Z]{2}\b/g, '') // 英國郵編
+    .replace(/\bPL\d+\s+\d[A-Z]{2}\b/g, '') // 特定郵編格式
+    .replace(/\bWF\d+\s+\d[A-Z]{2}\b/g, '') // WF 郵編
+    .replace(/\bHP\d+\s+\d[A-Z]{2}\b/g, '') // HP 郵編
+    .replace(/\bSL\d+\s+\d[A-Z]{2}\b/g, '') // SL 郵編
+    // 移除常見的無關詞組
+    .replace(/Invoice To:/gi, '')
+    .replace(/Delivery Address:/gi, '')
+    .replace(/Pallet Information/gi, '')
+    .replace(/Driver/gi, '')
+    .replace(/Number of Pallets/gi, '')
+    .replace(/Pallet Spaces/gi, '')
+    .replace(/Weight/gi, '')
+    .replace(/Pack/gi, '')
+    .replace(/Booked In/gi, '')
+    .replace(/Site Tel No:/gi, '')
+    .trim();
+  
+  console.log(`[PDF Preprocessing] Processed text length: ${processedText.length} chars`);
+  console.log(`[PDF Preprocessing] Reduction: ${((rawText.length - processedText.length) / rawText.length * 100).toFixed(1)}%`);
+  
+  return processedText;
+}
+
+// 🔥 輔助函數：智能提取產品行
+function extractProductLines(text: string): string[] {
+  const lines = text.split('\n');
+  const productLines: string[] = [];
+  
+  // 常見產品代碼模式
+  const productCodePatterns = [
+    /^[A-Z]{1,4}\d+[A-Z]*\d*/, // 如 ME6045150, S3027D, MSU120120
+    /^[A-Z]+\d+/, // 如 LOFT01, Trans
+    /^\d+[A-Z]*/, // 如 5072
+  ];
+  
+  for (const line of lines) {
+    const trimmedLine = line.trim();
+    
+    // 跳過空行和標題行
+    if (!trimmedLine || 
+        trimmedLine.includes('Item Code') ||
+        trimmedLine.includes('Description') ||
+        trimmedLine.includes('Pack Size') ||
+        trimmedLine.includes('Weight (Kg)') ||
+        trimmedLine.includes('Unit Price') ||
+        trimmedLine.includes('Qty Req') ||
+        trimmedLine.includes('Picked by') ||
+        trimmedLine.includes('Qty Picked') ||
+        trimmedLine.includes('Qty Loaded')) {
+      continue;
+    }
+    
+    // 檢查是否為產品行
+    const isProductLine = productCodePatterns.some(pattern => pattern.test(trimmedLine));
+    
+    if (isProductLine) {
+      // 進一步清理產品行
+      const cleanedLine = trimmedLine
+        .replace(/\s{2,}/g, ' ') // 移除多餘空格
+        .replace(/^\s+|\s+$/g, ''); // 移除首尾空格
+      
+      if (cleanedLine.length > 3) { // 確保不是太短的行
+        productLines.push(cleanedLine);
+      }
+    }
+  }
+  
+  console.log(`[PDF Preprocessing] Extracted ${productLines.length} product lines`);
+  return productLines;
+}
+
+// 定義訂單數據接口（優化版 - 添加 token 欄位）
 interface OrderData {
   order_ref: number;
   product_code: string;
   product_desc: string;
   product_qty: number;
   uploaded_by: number;
+  token?: number; // 🔥 新增 token 欄位
+}
+
+// 計算每個訂單記錄的 token 分配
+function calculateTokenPerRecord(totalTokens: number, recordCount: number): number {
+  if (recordCount === 0) return 0;
+  return Math.ceil(totalTokens / recordCount);
 }
 
 // GET 方法：清理緩存和獲取緩存狀態
@@ -245,9 +427,15 @@ export async function POST(request: NextRequest) {
       if (cachedResult.orderData && cachedResult.orderData.length > 0) {
         try {
           const supabaseAdmin = createSupabaseAdmin();
+          
+          // 🔥 計算每個記錄的 token 分配（使用緩存的 usage 資訊）
+          const totalTokens = cachedResult.usage?.total_tokens || 0;
+          const tokenPerRecord = calculateTokenPerRecord(totalTokens, cachedResult.orderData.length);
+          
           const insertData = cachedResult.orderData.map((order: any) => ({
             ...order,
-            uploaded_by: parseInt(uploadedBy)
+            uploaded_by: parseInt(uploadedBy),
+            token: tokenPerRecord // 🔥 添加 token 消耗記錄
           }));
           
           const { data: insertResults, error: insertError } = await supabaseAdmin
@@ -259,7 +447,7 @@ export async function POST(request: NextRequest) {
             throw insertError;
           }
           
-          console.log(`[PDF Analysis] Cached data inserted: ${insertResults.length} records`);
+          console.log(`[PDF Analysis] Cached data inserted: ${insertResults.length} records, ${tokenPerRecord} tokens per record`);
           
           return NextResponse.json({
             success: true,
@@ -269,7 +457,8 @@ export async function POST(request: NextRequest) {
             insertedRecords: insertResults,
             storageInfo: storageInfo,
             cached: true,
-            usage: cachedResult.usage
+            usage: cachedResult.usage,
+            tokenPerRecord: tokenPerRecord // 🔥 返回每個記錄的 token 消耗
           });
           
         } catch (insertError: any) {
@@ -325,9 +514,17 @@ export async function POST(request: NextRequest) {
     
     // PDF 文本提取
     let extractedText: string;
+    let rawText: string; // 🔥 聲明 rawText 變數在更廣的作用域
+    let textReductionPercentage: string = '0'; // 🔥 文本減少百分比
+    
     try {
-      extractedText = await extractTextFromPDF(pdfBuffer);
-      console.log(`[PDF Analysis] Text extracted: ${extractedText.length} chars`);
+      rawText = await extractTextFromPDF(pdfBuffer);
+      console.log(`[PDF Analysis] Raw text extracted: ${rawText.length} chars`);
+      
+      // 🔥 應用策略 2：智能文本預處理
+      extractedText = preprocessPdfText(rawText);
+      textReductionPercentage = ((rawText.length - extractedText.length) / rawText.length * 100).toFixed(1);
+      console.log(`[PDF Analysis] Preprocessed text: ${extractedText.length} chars (${textReductionPercentage}% reduction)`);
     } catch (textError: any) {
       console.error('[PDF Analysis] Text extraction failed:', textError.message);
       return NextResponse.json({ 
@@ -406,19 +603,28 @@ export async function POST(request: NextRequest) {
       }, { status: 500 });
     }
     
-    // 🔥 緩存結果
+    // 🔥 緩存結果（包含預處理資訊）
     setCachedResult(fileHash, {
       orderData,
-      usage: response.usage
+      usage: response.usage,
+      originalTextLength: rawText.length, // 🔥 記錄原始文本長度
+      processedTextLength: extractedText.length, // 🔥 記錄預處理後文本長度
+      textReduction: textReductionPercentage // 🔥 記錄文本減少百分比
     });
     
-    // 數據庫插入（優化版）
+    // 數據庫插入（優化版 - 添加 token 記錄）
     if (orderData.length > 0) {
       try {
         const supabaseAdmin = createSupabaseAdmin();
+        
+        // 🔥 計算每個記錄的 token 分配
+        const totalTokens = response.usage?.total_tokens || 0;
+        const tokenPerRecord = calculateTokenPerRecord(totalTokens, orderData.length);
+        
         const insertData = orderData.map(order => ({
           ...order,
-          uploaded_by: parseInt(uploadedBy)
+          uploaded_by: parseInt(uploadedBy),
+          token: tokenPerRecord // 🔥 添加 token 消耗記錄
         }));
         
         const { data: insertResults, error: insertError } = await supabaseAdmin
@@ -430,7 +636,7 @@ export async function POST(request: NextRequest) {
           throw insertError;
         }
         
-        console.log(`[PDF Analysis] Successfully inserted ${insertResults.length} records`);
+        console.log(`[PDF Analysis] Successfully inserted ${insertResults.length} records, ${tokenPerRecord} tokens per record, total: ${totalTokens} tokens`);
         
         return NextResponse.json({
           success: true,
@@ -440,7 +646,15 @@ export async function POST(request: NextRequest) {
           insertedRecords: insertResults,
           storageInfo: storageInfo,
           cached: false,
-          usage: response.usage // 🔥 返回 token 使用情況
+          usage: response.usage, // 🔥 返回 token 使用情況
+          tokenPerRecord: tokenPerRecord, // 🔥 返回每個記錄的 token 消耗
+          totalTokensUsed: totalTokens, // 🔥 返回總 token 消耗
+          textProcessing: { // 🔥 新增文本預處理統計
+            originalLength: rawText.length,
+            processedLength: extractedText.length,
+            reductionPercentage: textReductionPercentage,
+            tokensSaved: Math.round((rawText.length - extractedText.length) / 4) // 估算節省的 tokens (約 4 字符 = 1 token)
+          }
         });
         
       } catch (insertError: any) {
@@ -457,7 +671,15 @@ export async function POST(request: NextRequest) {
         message: 'PDF processed but no valid records found',
         recordCount: 0,
         storageInfo: storageInfo,
-        cached: false
+        cached: false,
+        usage: response.usage, // 🔥 即使沒有記錄也返回 token 使用情況
+        totalTokensUsed: response.usage?.total_tokens || 0,
+        textProcessing: { // 🔥 新增文本預處理統計
+          originalLength: rawText.length,
+          processedLength: extractedText.length,
+          reductionPercentage: textReductionPercentage,
+          tokensSaved: Math.round((rawText.length - extractedText.length) / 4) // 估算節省的 tokens
+        }
       });
     }
     

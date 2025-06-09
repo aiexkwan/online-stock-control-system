@@ -13,6 +13,7 @@ import {
   CheckCircleIcon,
   ExclamationTriangleIcon
 } from '@heroicons/react/24/outline';
+import { loadPalletToOrder } from '@/app/actions/orderLoadingActions';
 
 interface OrderData {
   order_ref: string;
@@ -33,9 +34,12 @@ export default function OrderLoadingPage() {
   const [selectedOrderRef, setSelectedOrderRef] = useState<string | null>(null);
   const [orderData, setOrderData] = useState<OrderData[]>([]);
   const [isLoadingOrders, setIsLoadingOrders] = useState(false);
+  const [searchValue, setSearchValue] = useState('');
+  const [isSearching, setIsSearching] = useState(false);
   
   // Refs
   const idInputRef = useRef<HTMLInputElement>(null);
+  const searchInputRef = useRef<any>(null);
 
   // Auto focus on ID input when page loads
   useEffect(() => {
@@ -46,7 +50,8 @@ export default function OrderLoadingPage() {
 
   // Check if ID exists in data_id table
   const checkIdExists = async (id: string) => {
-    if (!id.trim()) {
+    // Ensure ID is 4 digits
+    if (!id || id.length !== 4 || !/^\d{4}$/.test(id)) {
       setIsIdValid(false);
       setAvailableOrders([]);
       setSelectedOrderRef(null);
@@ -133,27 +138,48 @@ export default function OrderLoadingPage() {
 
   // Handle ID input change
   const handleIdChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    setIdNumber(value);
+    // Only allow digits
+    const value = e.target.value.replace(/\D/g, '');
     
-    // Reset states when ID changes
-    setIsIdValid(false);
-    setAvailableOrders([]);
-    setSelectedOrderRef(null);
-    setOrderData([]);
+    // Limit to 4 digits maximum
+    const truncatedValue = value.slice(0, 4);
+    setIdNumber(truncatedValue);
+    
+    // Reset states if necessary
+    if (isIdValid) {
+      setIsIdValid(false);
+      setAvailableOrders([]);
+      setSelectedOrderRef(null);
+      setOrderData([]);
+    }
+    
+    // Automatically check ID if 4 digits are entered
+    if (truncatedValue.length === 4) {
+      checkIdExists(truncatedValue);
+    }
   };
 
   // Handle ID input blur (when user finishes typing)
   const handleIdBlur = () => {
-    if (idNumber.trim()) {
-      checkIdExists(idNumber.trim());
+    // Only check if ID is 4 digits
+    if (idNumber.length === 4) {
+      checkIdExists(idNumber);
+    } else if (idNumber.length > 0 && idNumber.length < 4) {
+      // Show warning if digits are less than 4
+      toast.warning('ID must be 4 digits');
     }
   };
 
   // Handle Enter key press in ID input
-  const handleIdKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter' && idNumber.trim()) {
-      checkIdExists(idNumber.trim());
+  const handleIdKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      // Only check if ID is 4 digits
+      if (idNumber.length === 4) {
+        checkIdExists(idNumber);
+      } else if (idNumber.length > 0 && idNumber.length < 4) {
+        // Show warning if digits are less than 4
+        toast.warning('ID must be 4 digits');
+      }
     }
   };
 
@@ -161,13 +187,58 @@ export default function OrderLoadingPage() {
   const handleOrderSelect = (orderRef: string) => {
     setSelectedOrderRef(orderRef);
     fetchOrderData(orderRef);
+    
+    // Auto focus on search input after order selection
+    setTimeout(() => {
+      if (searchInputRef.current) {
+        searchInputRef.current.focus();
+      }
+    }, 100);
   };
 
   // Handle search selection (same as stock-transfer)
-  const handleSearchSelect = (result: any) => {
-    // This will be implemented similar to stock-transfer's pallet search
-    console.log('Search result:', result);
-    toast.success(`Search result: ${result.data.value}`);
+  const handleSearchSelect = async (result: any) => {
+    if (!selectedOrderRef) {
+      toast.error('Please select an order first');
+      return;
+    }
+
+    setIsSearching(true);
+    try {
+      const response = await loadPalletToOrder(selectedOrderRef, result.data.value);
+      
+      if (response.success) {
+        toast.success(response.message);
+        
+        // Refresh order data
+        await fetchOrderData(selectedOrderRef);
+        
+        // Show loaded pallet details
+        if (response.data) {
+          toast.success(
+            `Loaded: ${response.data.productCode} - Qty: ${response.data.productQty}`,
+            {
+              description: `Total loaded: ${response.data.updatedLoadedQty}`
+            }
+          );
+        }
+        
+        // Clear search value after successful scan
+        setSearchValue('');
+        
+        // Refocus on search input
+        if (searchInputRef.current) {
+          searchInputRef.current.focus();
+        }
+      } else {
+        toast.error(response.message);
+      }
+    } catch (error) {
+      console.error('Error loading pallet:', error);
+      toast.error('Failed to load pallet');
+    } finally {
+      setIsSearching(false);
+    }
   };
 
   return (
@@ -176,7 +247,7 @@ export default function OrderLoadingPage() {
         {/* Page Header */}
         <div className="mb-8">
           <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-300 via-cyan-300 to-blue-200 bg-clip-text text-transparent mb-2">
-            Order Loading Management
+            Order Loading
           </h1>
           <p className="text-slate-400 text-lg">
             Manage order loading process
@@ -203,8 +274,9 @@ export default function OrderLoadingPage() {
                       value={idNumber}
                       onChange={handleIdChange}
                       onBlur={handleIdBlur}
-                      onKeyPress={handleIdKeyPress}
-                      placeholder="Enter ID number..."
+                      onKeyDown={handleIdKeyDown}
+                      placeholder="Enter 4-digit ID..."
+                      maxLength={4}
                       className="w-full px-4 py-3 bg-slate-700/50 border border-slate-600/50 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all duration-300"
                       disabled={isCheckingId}
                     />
@@ -215,22 +287,16 @@ export default function OrderLoadingPage() {
                     )}
                   </div>
                   
-                  {/* ID Status Indicator */}
-                  {idNumber && !isCheckingId && (
-                    <div className={`flex items-center space-x-2 text-sm ${
-                      isIdValid ? 'text-green-400' : 'text-red-400'
-                    }`}>
-                      {isIdValid ? (
-                        <>
-                          <CheckCircleIcon className="h-5 w-5" />
-                          <span>ID verified successfully</span>
-                        </>
-                      ) : (
-                        <>
-                          <ExclamationTriangleIcon className="h-5 w-5" />
-                          <span>ID does not exist</span>
-                        </>
-                      )}
+                  {/* ID format hint */}
+                  <p className="text-xs text-slate-400">
+                    Please enter your 4-digit employee ID
+                  </p>
+                  
+                  {/* ID Status Indicator - Only show error state */}
+                  {idNumber.length === 4 && !isCheckingId && !isIdValid && (
+                    <div className="flex items-center space-x-2 text-sm text-red-400">
+                      <ExclamationTriangleIcon className="h-5 w-5" />
+                      <span>ID does not exist</span>
                     </div>
                   )}
                 </div>
@@ -321,15 +387,20 @@ export default function OrderLoadingPage() {
                 <CardHeader>
                   <CardTitle className="flex items-center text-slate-200">
                     <MagnifyingGlassIcon className="h-6 w-6 mr-2 text-purple-400" />
-                    Pallet Search
+                    Scan As You Load
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <UnifiedSearch
+                    ref={searchInputRef}
                     searchType="pallet"
                     onSelect={handleSearchSelect}
                     placeholder="Search Pallet number or Series..."
                     enableAutoDetection={true}
+                    value={searchValue}
+                    onChange={setSearchValue}
+                    isLoading={isSearching}
+                    disabled={isSearching}
                   />
                 </CardContent>
               </Card>
