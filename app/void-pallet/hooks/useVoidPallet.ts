@@ -377,11 +377,12 @@ export function useVoidPallet() {
 
       console.log(`[Auto Reprint] Calling API with params:`, autoReprintParams);
 
-      // Call auto reprint API with timeout
+      // Call auto reprint API (same as QC Label approach)
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
 
       try {
+        console.log('[Auto Reprint] Calling API...');
         const response = await fetch('/api/auto-reprint-label', {
           method: 'POST',
           headers: {
@@ -399,9 +400,9 @@ export function useVoidPallet() {
         if (!response.ok) {
           let errorMessage = 'Auto reprint failed';
           try {
-            const errorData = await response.json();
-            errorMessage = errorData.error || errorMessage;
-            console.error('[Auto Reprint] API error response:', errorData);
+            const errorText = await response.text();
+            errorMessage = `HTTP ${response.status}: ${errorText}`;
+            console.error('[Auto Reprint] API error response:', errorText);
           } catch (parseError) {
             console.error('[Auto Reprint] Failed to parse error response:', parseError);
             errorMessage = `HTTP ${response.status}: ${response.statusText}`;
@@ -409,65 +410,48 @@ export function useVoidPallet() {
           throw new Error(errorMessage);
         }
 
-        // Get success message and new pallet number from headers
-        const newPalletNum = response.headers.get('X-New-Pallet-Number');
-        const successMessage = response.headers.get('X-Success-Message');
-
-        console.log(`[Auto Reprint] Success! New pallet: ${newPalletNum}`);
-        console.log(`[Auto Reprint] Success message: ${successMessage}`);
-
-        // Download the PDF
-        console.log('[Auto Reprint] Starting PDF download...');
-        const blob = await response.blob();
-        console.log(`[Auto Reprint] PDF blob size: ${blob.size} bytes`);
-        console.log(`[Auto Reprint] PDF blob type: ${blob.type}`);
+        // Parse JSON response
+        const result = await response.json();
         
-        if (blob.size === 0) {
-          throw new Error('Received empty PDF file');
+        if (!result.success) {
+          throw new Error(result.error || 'Auto reprint failed');
         }
 
-        // 檢查 blob 類型
-        if (!blob.type.includes('pdf') && !blob.type.includes('application/octet-stream')) {
-          console.warn(`[Auto Reprint] Unexpected blob type: ${blob.type}`);
+        const { newPalletNumber, fileName, qcInputData } = result.data;
+
+        console.log(`[Auto Reprint] Success! New pallet: ${newPalletNumber}`);
+        console.log(`[Auto Reprint] QC input data:`, qcInputData);
+
+        // Generate PDF using same logic as QC Label
+        const { prepareQcLabelData } = await import('@/lib/pdfUtils');
+        const { pdf } = await import('@react-pdf/renderer');
+        const { PrintLabelPdf } = await import('@/components/print-label-pdf/PrintLabelPdf');
+        const React = await import('react');
+        
+        console.log('[Auto Reprint] Preparing QC label data...');
+        const pdfLabelProps = await prepareQcLabelData(qcInputData);
+        
+        console.log('[Auto Reprint] Generating PDF blob...');
+        const pdfElement = React.createElement(PrintLabelPdf, pdfLabelProps);
+        const pdfBlob = await pdf(pdfElement).toBlob();
+        
+        if (!pdfBlob) {
+          throw new Error('PDF generation failed to return a blob.');
         }
 
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.style.display = 'none';
-        a.href = url;
-        a.download = newPalletNum ? `${newPalletNum.replace(/\//g, '_')}.pdf` : `auto-reprint-${Date.now()}.pdf`;
-        
-        // 確保元素被添加到 DOM
-        document.body.appendChild(a);
-        
-        console.log(`[Auto Reprint] Triggering download for file: ${a.download}`);
-        console.log(`[Auto Reprint] Download URL: ${url}`);
-        
-        // 嘗試觸發下載
-        try {
-          a.click();
-          console.log('[Auto Reprint] Download click triggered successfully');
-        } catch (clickError) {
-          console.error('[Auto Reprint] Error triggering download click:', clickError);
-          // 備用方法：直接打開 URL
-          window.open(url, '_blank');
-          console.log('[Auto Reprint] Fallback: opened URL in new tab');
-        }
-        
-        // Clean up
-        setTimeout(() => {
-          try {
-            window.URL.revokeObjectURL(url);
-            if (document.body.contains(a)) {
-              document.body.removeChild(a);
-            }
-            console.log('[Auto Reprint] Download cleanup completed');
-          } catch (cleanupError) {
-            console.error('[Auto Reprint] Error during cleanup:', cleanupError);
-          }
-        }, 1000); // 增加延遲時間
+        console.log(`[Auto Reprint] PDF blob generated, size: ${pdfBlob.size} bytes`);
 
-        toast.success(successMessage || `New pallet ${newPalletNum} created and printed successfully`);
+        // Convert blob to ArrayBuffer for printing (same as QC Label)
+        const pdfArrayBuffer = await pdfBlob.arrayBuffer();
+        
+        // Import mergeAndPrintPdfs function dynamically
+        const { mergeAndPrintPdfs } = await import('@/lib/pdfUtils');
+        
+        // Auto-print the PDF (same as QC Label)
+        await mergeAndPrintPdfs([pdfArrayBuffer], fileName);
+        
+        console.log('[Auto Reprint] Auto-print triggered successfully');
+        toast.success(`New pallet ${newPalletNumber} created and sent to printer successfully`);
         
         // Reset state
         resetState();

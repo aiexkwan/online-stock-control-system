@@ -861,12 +861,7 @@ export async function processDamageAction(params: Omit<VoidParams, 'userId'>): P
         console.log('[Damage Processing] Stock level updated successfully:', stockResult);
         
         // 🔥 優化 remark 格式
-        let optimizedRemark = '';
-        if (isFullDamage) {
-          optimizedRemark = `Stock level updated: ME${palletInfo.product_code.slice(-8)} - from ${palletInfo.product_qty} to 0`;
-        } else {
-          optimizedRemark = `Stock level updated: ME${palletInfo.product_code.slice(-8)} - from ${palletInfo.product_qty} to 0 (will be restored by reprint)`;
-        }
+        const optimizedRemark = `Stock level updated: ${palletInfo.product_code} - from ${palletInfo.product_qty} to 0`;
         
         // 記錄成功的庫存更新
         await recordHistoryAction(

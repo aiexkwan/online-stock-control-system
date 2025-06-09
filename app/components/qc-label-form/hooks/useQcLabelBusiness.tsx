@@ -413,12 +413,31 @@ export const useQcLabelBusiness = ({
 
       // 使用服務端 action 生成棧板號碼和系列號
       console.log('[useQcLabelBusiness] 使用服務端 action 生成棧板號碼和系列號...');
-      const generationResult = await generatePalletNumbersAndSeries(count);
       
-      if (generationResult.error) {
-        toast.error(`Failed to generate pallet numbers: ${generationResult.error}`);
-        setPrintEventToProceed(null);
-        return;
+      let generationResult;
+      let retryCount = 0;
+      const maxRetries = 3;
+      
+      // Retry mechanism for pallet number generation
+      while (retryCount < maxRetries) {
+        generationResult = await generatePalletNumbersAndSeries(count);
+        
+        if (!generationResult.error) {
+          break; // Success, exit retry loop
+        }
+        
+        retryCount++;
+        console.warn(`[useQcLabelBusiness] Pallet generation attempt ${retryCount} failed:`, generationResult.error);
+        
+        if (retryCount < maxRetries) {
+          toast.warning(`Pallet generation failed (attempt ${retryCount}/${maxRetries}). Retrying...`);
+          // Wait before retry with exponential backoff
+          await new Promise(resolve => setTimeout(resolve, 1000 * retryCount));
+        } else {
+          toast.error(`Failed to generate pallet numbers after ${maxRetries} attempts: ${generationResult.error}`);
+          setPrintEventToProceed(null);
+          return;
+        }
       }
       
       const { palletNumbers: generatedPalletNumbers, series: generatedSeries } = generationResult;
@@ -559,6 +578,24 @@ export const useQcLabelBusiness = ({
           const dbResult = await createQcDatabaseEntriesWithTransaction(dbPayload, clockNumber, acoUpdateInfo);
           
           if (dbResult.error) {
+            // Check if it's a duplicate pallet number error
+            if (dbResult.error.includes('already exists') || dbResult.error.includes('duplicate')) {
+              console.error(`[useQcLabelBusiness] Duplicate pallet number detected for ${palletNum}:`, dbResult.error);
+              toast.error(`Duplicate pallet number ${palletNum} detected. Please try again to generate new pallet numbers.`);
+              
+              // Stop processing and reset form to allow retry
+              setFormData(prev => ({
+                ...prev,
+                pdfProgress: {
+                  current: 0,
+                  total: 0,
+                  status: []
+                }
+              }));
+              setPrintEventToProceed(null);
+              return;
+            }
+            
             throw new Error(`Database operation failed: ${dbResult.error}`);
           }
 

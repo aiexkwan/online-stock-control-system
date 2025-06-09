@@ -330,6 +330,24 @@ export async function createQcDatabaseEntriesWithTransaction(
     
     // 1. Insert pallet info record first (required by foreign key constraints)
     // console.log('[qcActions] 插入 pallet info 記錄...');
+    
+    // Check for duplicate pallet number before inserting
+    const { data: existingPallet, error: checkError } = await supabaseAdmin
+      .from('record_palletinfo')
+      .select('plt_num')
+      .eq('plt_num', payload.palletInfo.plt_num)
+      .single();
+
+    if (checkError && checkError.code !== 'PGRST116') { // PGRST116 means no rows found, which is what we want
+      console.error('[qcActions] Error checking for duplicate pallet:', checkError);
+      throw new Error(`Failed to check for duplicate pallet: ${checkError.message}`);
+    }
+
+    if (existingPallet) {
+      console.error('[qcActions] Duplicate pallet number detected:', payload.palletInfo.plt_num);
+      return { error: `Pallet number ${payload.palletInfo.plt_num} already exists. Please try again to generate a new pallet number.` };
+    }
+
     const { error: palletInfoError } = await supabaseAdmin
       .from('record_palletinfo')
       .insert(payload.palletInfo);
@@ -337,6 +355,12 @@ export async function createQcDatabaseEntriesWithTransaction(
     if (palletInfoError) {
       console.error('[qcActions] Error inserting pallet info:', palletInfoError);
       console.error('[qcActions] Pallet info payload:', payload.palletInfo);
+      
+      // 檢查是否是重複主鍵錯誤
+      if (palletInfoError.message && palletInfoError.message.includes('duplicate key value violates unique constraint')) {
+        console.error('[qcActions] Duplicate pallet number constraint violation');
+        return { error: `Pallet number ${payload.palletInfo.plt_num} already exists. Please try again to generate a new pallet number.` };
+      }
       
       // 檢查是否是 API key 相關錯誤
       if (palletInfoError.message && palletInfoError.message.toLowerCase().includes('api key')) {
@@ -443,24 +467,70 @@ export async function generatePalletNumbersAndSeries(count: number): Promise<{
     
     const supabaseAdmin = createSupabaseAdmin();
     
-    // 🔥 使用新的原子性棧板號碼生成函數
-    const { data: palletNumbers, error: palletError } = await supabaseAdmin.rpc('generate_atomic_pallet_numbers_v2', {
-      count: count
-    });
+    // 🔥 使用新的原子性棧板號碼生成函數，帶重試機制
+    let palletNumbers: string[] = [];
+    let attempts = 0;
+    const maxAttempts = 3;
     
-    if (palletError) {
-      console.error('[qcActions] 原子性棧板號碼生成失敗:', palletError);
-      throw new Error(`Failed to generate atomic pallet numbers: ${palletError.message}`);
-    }
-    
-    if (!palletNumbers || !Array.isArray(palletNumbers)) {
-      throw new Error('Invalid pallet numbers returned from atomic function');
+    while (attempts < maxAttempts) {
+      try {
+        const { data, error: palletError } = await supabaseAdmin.rpc('generate_atomic_pallet_numbers_v2', {
+          count: count
+        });
+        
+        if (palletError) {
+          console.error(`[qcActions] 原子性棧板號碼生成失敗 (嘗試 ${attempts + 1}/${maxAttempts}):`, palletError);
+          
+          if (attempts === maxAttempts - 1) {
+            throw new Error(`Failed to generate atomic pallet numbers after ${maxAttempts} attempts: ${palletError.message}`);
+          }
+          
+          attempts++;
+          await new Promise(resolve => setTimeout(resolve, 100 * attempts)); // 遞增延遲
+          continue;
+        }
+        
+        if (!data || !Array.isArray(data)) {
+          throw new Error('Invalid pallet numbers returned from atomic function');
+        }
+        
+        palletNumbers = data;
+        break;
+        
+      } catch (rpcError: any) {
+        console.error(`[qcActions] RPC 調用錯誤 (嘗試 ${attempts + 1}/${maxAttempts}):`, rpcError);
+        
+        if (attempts === maxAttempts - 1) {
+          throw rpcError;
+        }
+        
+        attempts++;
+        await new Promise(resolve => setTimeout(resolve, 100 * attempts)); // 遞增延遲
+      }
     }
     
     // console.log('[qcActions] 生成的棧板號碼:', palletNumbers);
     
-    // Generate series
-    const series = await generateMultipleUniqueSeries(count, supabaseAdmin);
+    // Generate series with retry mechanism
+    let series: string[] = [];
+    attempts = 0;
+    
+    while (attempts < maxAttempts) {
+      try {
+        series = await generateMultipleUniqueSeries(count, supabaseAdmin);
+        break;
+      } catch (seriesError: any) {
+        console.error(`[qcActions] 系列號生成失敗 (嘗試 ${attempts + 1}/${maxAttempts}):`, seriesError);
+        
+        if (attempts === maxAttempts - 1) {
+          throw seriesError;
+        }
+        
+        attempts++;
+        await new Promise(resolve => setTimeout(resolve, 100 * attempts)); // 遞增延遲
+      }
+    }
+    
     // console.log('[qcActions] 生成的系列號:', series);
     
     return {

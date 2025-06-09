@@ -170,6 +170,51 @@ export async function POST(request: NextRequest) {
     }
     console.log('[Auto Reprint API] Database records inserted successfully');
 
+    // 🚀 新增：更新原始棧板的歷史記錄，將 "XX" 替換為實際的新棧板號
+    try {
+      console.log('[Auto Reprint API] Updating original pallet history record...');
+      
+      // 查找原始棧板的 "Partially Damaged" 記錄
+      const { data: historyRecords, error: findError } = await supabase
+        .from('record_history')
+        .select('*')
+        .eq('plt_num', data.originalPltNum)
+        .eq('action', 'Partially Damaged')
+        .order('time', { ascending: false })
+        .limit(1);
+
+      if (findError) {
+        console.warn('[Auto Reprint API] Failed to find original history record:', findError);
+      } else if (historyRecords && historyRecords.length > 0) {
+        const originalRecord = historyRecords[0];
+        console.log('[Auto Reprint API] Found original history record:', originalRecord);
+        
+        // 更新 remark，將 "XX" 替換為實際的新棧板號
+        if (originalRecord.remark && originalRecord.remark.includes('/XX')) {
+          const updatedRemark = originalRecord.remark.replace('/XX', `/${palletNum.split('/')[1]}`);
+          
+          const { error: updateError } = await supabase
+            .from('record_history')
+            .update({ remark: updatedRemark })
+            .eq('uuid', originalRecord.uuid);
+
+          if (updateError) {
+            console.warn('[Auto Reprint API] Failed to update original history record:', updateError);
+          } else {
+            console.log('[Auto Reprint API] Successfully updated original history record:', {
+              original_remark: originalRecord.remark,
+              updated_remark: updatedRemark
+            });
+          }
+        }
+      } else {
+        console.log('[Auto Reprint API] No "Partially Damaged" history record found for original pallet');
+      }
+    } catch (historyUpdateError: any) {
+      console.warn('[Auto Reprint API] Error updating original history record:', historyUpdateError);
+      // 不中斷主要流程
+    }
+
     // 🚀 新增：更新 stock_level 表
     try {
       console.log('[Auto Reprint API] Updating stock_level for product:', {
@@ -195,93 +240,37 @@ export async function POST(request: NextRequest) {
       // 記錄錯誤但不中斷主要流程
     }
 
-    // Generate PDF using Puppeteer API route (避免服務器端 React 組件問題)
-    console.log('[Auto Reprint API] Generating PDF using Puppeteer API...');
+    // Return success data for client-side PDF generation (same as QC Label)
+    console.log('[Auto Reprint API] Preparing data for client-side PDF generation...');
     
-    const pdfData = {
+    // Prepare QC input data (same format as QC Label)
+    const qcInputData = {
       productCode: productInfo.code,
-      description: productInfo.description,
+      productDescription: productInfo.description,
       quantity: data.quantity,
-      date: new Date().toLocaleDateString('en-GB', { 
-        day: '2-digit', 
-        month: 'short', 
-        year: 'numeric' 
-      }).replace(/ /g, '-'),
+      series: seriesValue,
+      palletNum: palletNum,
       operatorClockNum: data.operatorClockNum,
       qcClockNum: data.operatorClockNum,
-      workOrderNumber: '-',
-      palletNum: palletNum,
-      qrValue: seriesValue
+      workOrderNumber: '-', // Auto-reprint doesn't have work order
+      workOrderName: undefined,
+      productType: productInfo.type
     };
 
-    console.log('[Auto Reprint API] PDF data prepared:', pdfData);
+    console.log('[Auto Reprint API] QC input data prepared:', qcInputData);
 
-    // 使用內部 API 調用
-    const baseUrl = new URL(request.url).origin;
-    const pdfApiUrl = `${baseUrl}/api/print-label-pdf`;
-    console.log('[Auto Reprint API] Calling PDF API at:', pdfApiUrl);
+    // Return QC input data for client-side PDF generation (same as QC Label)
+    console.log(`[Auto Reprint API] Returning QC input data for client-side PDF generation`);
     
-    const pdfResponse = await fetch(pdfApiUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(pdfData),
-    });
-
-    if (!pdfResponse.ok) {
-      const errorText = await pdfResponse.text();
-      console.error('[Auto Reprint API] PDF generation failed:', errorText);
-      throw new Error(`PDF generation failed: ${pdfResponse.status} ${errorText}`);
-    }
-
-    const blob = await pdfResponse.blob();
-    console.log('[Auto Reprint API] PDF generated successfully, size:', blob.size);
-
-    // Upload PDF to Supabase storage
-    const fileName = `${palletNum.replace(/\//g, '_')}.pdf`;
-    const { data: uploadData, error: uploadError } = await supabase.storage
-      .from('pallet-label-pdf')
-      .upload(fileName, blob, {
-        cacheControl: '3600',
-        upsert: true,
-        contentType: 'application/pdf',
-      });
-
-    if (uploadError) {
-      console.error('[Auto Reprint API] Upload failed:', uploadError);
-      throw new Error(`Upload failed: ${uploadError.message}`);
-    }
-
-    if (!uploadData?.path) {
-      throw new Error('Upload succeeded but no path was returned');
-    }
-
-    const { data: urlData } = supabase.storage
-      .from('pallet-label-pdf')
-      .getPublicUrl(uploadData.path);
-
-    if (!urlData?.publicUrl) {
-      throw new Error('Failed to get public URL');
-    }
-
-    const publicUrl = urlData.publicUrl;
-
-    console.log(`[Auto Reprint API] PDF generated successfully. Size: ${blob.size} bytes`);
-    console.log(`[Auto Reprint API] Public URL: ${publicUrl}`);
-
-    // Return PDF as response
-    const pdfBuffer = await blob.arrayBuffer();
-    console.log(`[Auto Reprint API] Returning PDF buffer of size: ${pdfBuffer.byteLength} bytes`);
-    
-    return new NextResponse(pdfBuffer, {
-      headers: {
-        'Content-Type': 'application/pdf',
-        'Content-Disposition': `attachment; filename=${palletNum.replace(/\//g, '_')}.pdf`,
-        'X-New-Pallet-Number': palletNum,
-        'X-Success-Message': `New pallet ${palletNum} created and printed successfully`,
-        'X-Public-URL': publicUrl
-      },
+    return NextResponse.json({
+      success: true,
+      message: `New pallet ${palletNum} created successfully`,
+      data: {
+        newPalletNumber: palletNum,
+        fileName: `${palletNum.replace(/\//g, '_')}.pdf`,
+        qcInputData: qcInputData, // Same data format as QC Label
+        autoprint: true
+      }
     });
 
   } catch (error: any) {
