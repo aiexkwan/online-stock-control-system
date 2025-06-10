@@ -4,10 +4,45 @@ import { NextResponse, type NextRequest } from 'next/server';
 
 // 認證中間件 - 處理用戶會話和路由保護
 export async function middleware(request: NextRequest) {
-  // 記錄所有路徑，用於調試 API 路由問題
-  console.log(`[Supabase SSR Middleware] Path: ${request.nextUrl.pathname} (ENV: ${process.env.NODE_ENV})`);
+  // 強制記錄所有路徑，用於調試 API 路由問題
+  console.log(`[Supabase SSR Middleware] Processing path: ${request.nextUrl.pathname} (Method: ${request.method}, ENV: ${process.env.NODE_ENV})`);
   
-  // 讓根路由由 app/page.tsx 處理重定向
+  // 公開路由 - 只有主登入頁面、密碼重設頁面和特定的 API 路由不需要認證
+  // 注意：/_next/static, /_next/image, /favicon.ico 通常由 matcher 排除
+  const publicRoutes = [
+    '/main-login',
+    '/new-password',  // 密碼重設頁面需要公開，用戶通過電郵連結訪問
+    '/print-label/html-preview',  // HTML 標籤預覽頁面（用於測試和預覽）
+    // 只有特定的 API 路由需要公開訪問
+    '/api/auth',      // 認證相關 API
+    '/api/health',    // 健康檢查 API（如果有的話）
+    '/api/print-label-pdf',  // PDF 生成 API（用於內部調用）
+    '/api/print-label-html',  // HTML 標籤預覽 API（用於測試和預覽）
+    '/api/send-order-email'   // 訂單郵件發送 API（用於內部調用）
+  ];
+  
+  // 檢查是否為公開路由，並添加詳細日誌
+  const isPublicRoute = publicRoutes.some(route => {
+    const matches = request.nextUrl.pathname.startsWith(route);
+    if (matches) {
+      console.log(`[Supabase SSR Middleware] Route "${request.nextUrl.pathname}" matches public route "${route}"`);
+    }
+    return matches;
+  });
+  
+  // 強制記錄路由匹配結果
+  console.log(`[Supabase SSR Middleware] Path: ${request.nextUrl.pathname}, Is Public: ${isPublicRoute}`);
+  
+  if (isPublicRoute) {
+    console.log(`[Supabase SSR Middleware] Public route confirmed: ${request.nextUrl.pathname}, skipping auth check.`);
+    // 創建基礎回應
+    let response = NextResponse.next({
+      request: {
+        headers: request.headers,
+      },
+    });
+    return response; // 直接放行公開路由
+  }
   
   // 創建基礎回應
   let response = NextResponse.next({
@@ -25,27 +60,6 @@ export async function middleware(request: NextRequest) {
     return response; 
   }
 
-  // 公開路由 - 只有主登入頁面、密碼重設頁面和特定的 API 路由不需要認證
-  // 注意：/_next/static, /_next/image, /favicon.ico 通常由 matcher 排除
-  const publicRoutes = [
-    '/main-login',
-    '/new-password',  // 密碼重設頁面需要公開，用戶通過電郵連結訪問
-    '/print-label/html-preview',  // HTML 標籤預覽頁面（用於測試和預覽）
-    // 只有特定的 API 路由需要公開訪問
-    '/api/auth',      // 認證相關 API
-    '/api/health',    // 健康檢查 API（如果有的話）
-    '/api/print-label-pdf',  // PDF 生成 API（用於內部調用）
-    '/api/print-label-html',  // HTML 標籤預覽 API（用於測試和預覽）
-    '/api/send-order-email'   // 訂單郵件發送 API（用於內部調用）
-  ];
-  const isPublicRoute = publicRoutes.some(route => request.nextUrl.pathname.startsWith(route));
-  
-  if (isPublicRoute) {
-    // 記錄公開路由，用於調試
-    console.log(`[Supabase SSR Middleware] Public route: ${request.nextUrl.pathname}, skipping auth check.`);
-    return response; // 直接放行公開路由
-  }
-  
   // 用於追蹤是否已經記錄過 cookie 檢查
   let cookieLoggedForThisRequest = false;
   
