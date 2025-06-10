@@ -33,6 +33,10 @@ export async function OPTIONS() {
 export async function POST(request: NextRequest) {
   try {
     console.log('=== Order Created Email API Started ===');
+    console.log('🌍 Environment:', process.env.NODE_ENV);
+    console.log('🌐 Request URL:', request.url);
+    console.log('📍 Request method:', request.method);
+    console.log('🔗 Request headers:', Object.fromEntries(request.headers.entries()));
 
     // 驗證 API Key
     console.log('🔍 Checking RESEND_API_KEY availability...');

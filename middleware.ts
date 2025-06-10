@@ -4,10 +4,8 @@ import { NextResponse, type NextRequest } from 'next/server';
 
 // 認證中間件 - 處理用戶會話和路由保護
 export async function middleware(request: NextRequest) {
-  // 只在開發環境記錄路徑，生產環境減少日誌
-  if (process.env.NODE_ENV === 'development') {
-    console.log(`[Supabase SSR Middleware] Path: ${request.nextUrl.pathname}`);
-  }
+  // 記錄所有路徑，用於調試 API 路由問題
+  console.log(`[Supabase SSR Middleware] Path: ${request.nextUrl.pathname} (ENV: ${process.env.NODE_ENV})`);
   
   // 讓根路由由 app/page.tsx 處理重定向
   
@@ -43,10 +41,8 @@ export async function middleware(request: NextRequest) {
   const isPublicRoute = publicRoutes.some(route => request.nextUrl.pathname.startsWith(route));
   
   if (isPublicRoute) {
-    // 只在開發環境記錄公開路由
-    if (process.env.NODE_ENV === 'development') {
-      console.log(`[Supabase SSR Middleware] Public route: ${request.nextUrl.pathname}, skipping auth check.`);
-    }
+    // 記錄公開路由，用於調試
+    console.log(`[Supabase SSR Middleware] Public route: ${request.nextUrl.pathname}, skipping auth check.`);
     return response; // 直接放行公開路由
   }
   
