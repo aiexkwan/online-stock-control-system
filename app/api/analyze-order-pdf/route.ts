@@ -9,6 +9,15 @@ import crypto from 'crypto';
 const fileCache = new Map<string, any>();
 const CACHE_EXPIRY = 30 * 60 * 1000; // 30分鐘
 
+// 🔥 需要插入到 record_aco 的 product_code 列表
+const ACO_PRODUCT_CODES = [
+  "MHALFWG", "MHALFWG15", "MHALFWG20", "MHALFWG30", "MHALFWG38", 
+  "MHALFWG45", "MHALFWG60", "MHCONKIT", "MHCONR", "MHEASY15", 
+  "MHEASY60", "MHEASYA", "MHEASYB", "MHLACO12Y", "MHLACO18Y", 
+  "MHLACO24Y", "MHLACO6Y", "MHWEDGE", "MHWEDGE15", "MHWEDGE20", 
+  "MHWEDGE30", "MHWEDGE38", "MHWEDGE45", "MHWEDGE60"
+];
+
 // 生成文件哈希值
 function generateFileHash(buffer: Buffer): string {
   return crypto.createHash('md5').update(buffer).digest('hex');
@@ -449,12 +458,105 @@ export async function POST(request: NextRequest) {
           
           console.log(`[PDF Analysis] Cached data inserted: ${insertResults.length} records, ${tokenPerRecord} tokens per record`);
           
+          // 🔥 檢查是否有需要插入到 record_aco 的 product_code（快取版本）
+          const acoRecords = insertResults.filter(record => 
+            ACO_PRODUCT_CODES.includes(record.product_code)
+          );
+          
+          let acoInsertResults = null;
+          if (acoRecords.length > 0) {
+            try {
+              const acoInsertData = acoRecords.map(record => ({
+                order_ref: record.order_ref,
+                code: record.product_code,
+                required_qty: record.product_qty,
+                remain_qty: record.product_qty
+                // latest_update 欄位留空，由 Supabase 預填
+              }));
+              
+              const { data: acoResults, error: acoError } = await supabaseAdmin
+                .from('record_aco')
+                .insert(acoInsertData)
+                .select();
+              
+              if (acoError) {
+                console.error('[PDF Analysis] ACO insertion failed (cached):', acoError.message);
+              } else {
+                acoInsertResults = acoResults;
+                console.log(`[PDF Analysis] Successfully inserted ${acoResults.length} ACO records (cached)`);
+              }
+            } catch (acoError: any) {
+              console.error('[PDF Analysis] ACO insertion error (cached):', acoError.message);
+            }
+          }
+          
+          // 🔥 發送訂單創建郵件通知（快取版本）
+          let emailResult = null;
+          try {
+            console.log('[PDF Analysis] Sending order created email notification (cached)...');
+            
+            const emailRequestBody = {
+              orderData: insertResults.map(record => ({
+                order_ref: record.order_ref,
+                product_code: record.product_code,
+                product_desc: record.product_desc,
+                product_qty: record.product_qty
+              })),
+              from: 'ordercreated@pennine.cc',
+              pdfAttachment: {
+                filename: file.name,
+                content: pdfBuffer.toString('base64')
+              }
+            };
+            
+            console.log('[PDF Analysis] Email request body:', JSON.stringify(emailRequestBody, null, 2));
+            
+            // Call our new API route to send email
+            const emailResponse = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/api/send-order-email`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify(emailRequestBody)
+            });
+            
+            const emailData = emailResponse.ok ? await emailResponse.json() : null;
+            const emailError = !emailResponse.ok ? new Error(`HTTP ${emailResponse.status}`) : null;
+
+            if (emailError) {
+              console.error('[PDF Analysis] Error sending order created email (cached):', emailError);
+              console.error('[PDF Analysis] Full error object:', JSON.stringify(emailError, null, 2));
+              emailResult = {
+                success: false,
+                error: emailError.message
+              };
+            } else {
+              console.log('[PDF Analysis] Order created email sent successfully (cached):', emailData);
+              emailResult = {
+                success: true,
+                message: emailData.message,
+                emailId: emailData.emailId,
+                recipients: emailData.recipients
+              };
+            }
+            
+          } catch (emailError: any) {
+            console.error('[PDF Analysis] Error invoking email function (cached):', emailError);
+            console.error('[PDF Analysis] Full error details:', emailError);
+            emailResult = {
+              success: false,
+              error: `Email service error: ${emailError.message}`
+            };
+          }
+          
           return NextResponse.json({
             success: true,
-            message: `Successfully processed PDF (cached) and inserted ${insertResults.length} records`,
+            message: `Successfully processed PDF (cached) and inserted ${insertResults.length} records${acoInsertResults ? ` and ${acoInsertResults.length} ACO records` : ''}`,
             recordCount: insertResults.length,
             extractedData: cachedResult.orderData, // 🔥 返回緩存的數據
             insertedRecords: insertResults,
+            acoRecords: acoInsertResults, // 🔥 返回 ACO 插入結果
+            emailNotification: emailResult, // 🔥 返回郵件發送結果
             storageInfo: storageInfo,
             cached: true,
             usage: cachedResult.usage,
@@ -638,12 +740,105 @@ export async function POST(request: NextRequest) {
         
         console.log(`[PDF Analysis] Successfully inserted ${insertResults.length} records, ${tokenPerRecord} tokens per record, total: ${totalTokens} tokens`);
         
+        // 🔥 檢查是否有需要插入到 record_aco 的 product_code
+        const acoRecords = insertResults.filter(record => 
+          ACO_PRODUCT_CODES.includes(record.product_code)
+        );
+        
+        let acoInsertResults = null;
+        if (acoRecords.length > 0) {
+          try {
+            const acoInsertData = acoRecords.map(record => ({
+              order_ref: record.order_ref,
+              code: record.product_code,
+              required_qty: record.product_qty,
+              remain_qty: record.product_qty
+              // latest_update 欄位留空，由 Supabase 預填
+            }));
+            
+            const { data: acoResults, error: acoError } = await supabaseAdmin
+              .from('record_aco')
+              .insert(acoInsertData)
+              .select();
+            
+            if (acoError) {
+              console.error('[PDF Analysis] ACO insertion failed:', acoError.message);
+            } else {
+              acoInsertResults = acoResults;
+              console.log(`[PDF Analysis] Successfully inserted ${acoResults.length} ACO records`);
+            }
+          } catch (acoError: any) {
+            console.error('[PDF Analysis] ACO insertion error:', acoError.message);
+          }
+        }
+        
+        // 🔥 發送訂單創建郵件通知
+        let emailResult = null;
+        try {
+          console.log('[PDF Analysis] Sending order created email notification...');
+          
+          const emailRequestBody = {
+            orderData: insertResults.map(record => ({
+              order_ref: record.order_ref,
+              product_code: record.product_code,
+              product_desc: record.product_desc,
+              product_qty: record.product_qty
+            })),
+            from: 'ordercreated@pennine.cc',
+            pdfAttachment: {
+              filename: file.name,
+              content: pdfBuffer.toString('base64')
+            }
+          };
+          
+                     console.log('[PDF Analysis] Email request body:', JSON.stringify(emailRequestBody, null, 2));
+           
+           // Call our new API route to send email
+           const emailResponse = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/api/send-order-email`, {
+             method: 'POST',
+             headers: {
+               'Content-Type': 'application/json',
+             },
+             body: JSON.stringify(emailRequestBody)
+           });
+           
+           const emailData = emailResponse.ok ? await emailResponse.json() : null;
+           const emailError = !emailResponse.ok ? new Error(`HTTP ${emailResponse.status}`) : null;
+
+          if (emailError) {
+            console.error('[PDF Analysis] Error sending order created email:', emailError);
+            console.error('[PDF Analysis] Full error object:', JSON.stringify(emailError, null, 2));
+            emailResult = {
+              success: false,
+              error: emailError.message
+            };
+          } else {
+            console.log('[PDF Analysis] Order created email sent successfully:', emailData);
+            emailResult = {
+              success: true,
+              message: emailData.message,
+              emailId: emailData.emailId,
+              recipients: emailData.recipients
+            };
+          }
+          
+        } catch (emailError: any) {
+          console.error('[PDF Analysis] Error invoking email function:', emailError);
+          console.error('[PDF Analysis] Full error details:', emailError);
+          emailResult = {
+            success: false,
+            error: `Email service error: ${emailError.message}`
+          };
+        }
+        
         return NextResponse.json({
           success: true,
-          message: `Successfully processed PDF and inserted ${insertResults.length} records`,
+          message: `Successfully processed PDF and inserted ${insertResults.length} records${acoInsertResults ? ` and ${acoInsertResults.length} ACO records` : ''}`,
           recordCount: insertResults.length,
           extractedData: orderData, // 🔥 返回提取的數據
           insertedRecords: insertResults,
+          acoRecords: acoInsertResults, // 🔥 返回 ACO 插入結果
+          emailNotification: emailResult, // 🔥 返回郵件發送結果
           storageInfo: storageInfo,
           cached: false,
           usage: response.usage, // 🔥 返回 token 使用情況

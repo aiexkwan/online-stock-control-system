@@ -37,7 +37,8 @@ export async function middleware(request: NextRequest) {
     '/api/auth',      // 認證相關 API
     '/api/health',    // 健康檢查 API（如果有的話）
     '/api/print-label-pdf',  // PDF 生成 API（用於內部調用）
-    '/api/print-label-html'  // HTML 標籤預覽 API（用於測試和預覽）
+    '/api/print-label-html',  // HTML 標籤預覽 API（用於測試和預覽）
+    '/api/send-order-email'   // 訂單郵件發送 API（用於內部調用）
   ];
   const isPublicRoute = publicRoutes.some(route => request.nextUrl.pathname.startsWith(route));
   

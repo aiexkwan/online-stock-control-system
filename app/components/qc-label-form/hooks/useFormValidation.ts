@@ -34,7 +34,6 @@ interface ValidationRules {
   validateBasicFields: boolean;
   validateAcoFields: boolean;
   validateSlateFields: boolean;
-  validateNewAcoOrder: boolean;
 }
 
 export const useFormValidation = (input: ValidationInput): FormValidation => {
@@ -46,8 +45,7 @@ export const useFormValidation = (input: ValidationInput): FormValidation => {
     const rules: ValidationRules = {
       validateBasicFields: true,
       validateAcoFields: input.productInfo?.type === 'ACO',
-      validateSlateFields: input.productInfo?.type === 'Slate',
-      validateNewAcoOrder: input.acoNewRef && input.productInfo?.type === 'ACO'
+      validateSlateFields: input.productInfo?.type === 'Slate'
     };
 
     // Basic field validation
@@ -119,39 +117,7 @@ export const useFormValidation = (input: ValidationInput): FormValidation => {
       }
     }
 
-    // New ACO Order validation
-    if (rules.validateNewAcoOrder) {
-      if (!input.acoNewProductCode.trim()) {
-        errors.push('New ACO Product Code cannot be empty.');
-        fieldErrors.acoNewProductCode = 'Product code required.';
-      }
 
-      if (!input.acoNewOrderQty.trim() || parseInt(input.acoNewOrderQty, 10) <= 0) {
-        errors.push('New ACO Order Quantity must be a positive number.');
-        fieldErrors.acoNewOrderQty = 'Valid quantity required.';
-      }
-
-      // Validate ACO order details
-      const filledOrderDetails = input.acoOrderDetails.filter(
-        detail => detail.code.trim() || detail.qty.trim()
-      );
-
-      if (filledOrderDetails.length === 0) {
-        errors.push('At least one ACO order detail is required.');
-        fieldErrors.acoOrderDetails = 'Order details required.';
-      } else {
-        filledOrderDetails.forEach((detail, index) => {
-          if (!detail.code.trim()) {
-            errors.push(`ACO Order Detail #${index + 1}: Product code is required.`);
-            fieldErrors[`acoOrderDetail_${index}_code`] = 'Product code required.';
-          }
-          if (!detail.qty.trim() || parseInt(detail.qty.trim(), 10) <= 0) {
-            errors.push(`ACO Order Detail #${index + 1}: Valid quantity is required.`);
-            fieldErrors[`acoOrderDetail_${index}_qty`] = 'Valid quantity required.';
-          }
-        });
-      }
-    }
 
     // Slate specific validation
     if (rules.validateSlateFields) {

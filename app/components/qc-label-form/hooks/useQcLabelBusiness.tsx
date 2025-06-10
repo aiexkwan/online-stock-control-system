@@ -207,16 +207,14 @@ export const useQcLabelBusiness = ({
       }
 
       if (!data || data.length === 0) {
-        // New ACO order - no matching order_ref + product_code combination found
-        console.log('[useQcLabelBusiness] New ACO order detected for this product');
+        // No matching order found - order must be uploaded via PDF first
+        console.log('[useQcLabelBusiness] No ACO order found for this product');
         setFormData(prev => ({ 
           ...prev, 
-          acoNewRef: true,
-          acoRemain: `New Order Detected for ${productInfo.code}. Please Enter Order Details Below.`,
-          acoOrderDetails: [{ code: productInfo.code, qty: '' }], // Pre-fill with current product code
-          acoOrderDetailErrors: [''] // Initialize with one empty error
+          acoNewRef: false,
+          acoRemain: `No Order Found for ${productInfo.code}. Please upload order via PDF first.`
         }));
-        toast.info(`New ACO Order. Please enter order details.`);
+        toast.warning(`No ACO order found for ${productInfo.code}. Please upload order via PDF first.`);
       } else {
         // Existing order - calculate total remaining quantity for this specific product
         console.log('[useQcLabelBusiness] Existing ACO order found for this product:', data);
@@ -619,36 +617,8 @@ export const useQcLabelBusiness = ({
           const slateRecords: QcSlateRecordPayload[] = [];
 
           // Handle product type specific records
-          if (productInfo.type === 'ACO' && formData.acoNewRef && formData.acoOrderRef.trim() && !acoRecordsCreated) {
-            // Create ACO records only once for the first pallet
-            formData.acoOrderDetails.forEach((detail, idx) => {
-              // Only create records for valid products (no errors and both fields filled)
-              if (detail.code.trim() && 
-                  detail.qty.trim() && 
-                  !formData.acoOrderDetailErrors[idx]) {
-                const requiredQty = parseInt(detail.qty.trim(), 10);
-                if (!isNaN(requiredQty) && requiredQty > 0) {
-                  // Calculate remain_qty correctly: only subtract quantity for the current product being printed
-                  const currentProductQuantityUsed = detail.code.trim() === productInfo.code ? (quantity * count) : 0;
-                  
-                  acoRecords.push({
-                    order_ref: parseInt(formData.acoOrderRef.trim(), 10),
-                    code: detail.code.trim(),
-                    required_qty: requiredQty,
-                    remain_qty: requiredQty - currentProductQuantityUsed // Only subtract if this is the current product
-                  });
-                  
-                  console.log(`[useQcLabelBusiness] Creating ACO record for ${detail.code.trim()}:`, {
-                    required_qty: requiredQty,
-                    quantity_used: currentProductQuantityUsed,
-                    remain_qty: requiredQty - currentProductQuantityUsed,
-                    is_current_product: detail.code.trim() === productInfo.code
-                  });
-                }
-              }
-            });
-            acoRecordsCreated = true; // Mark as created to avoid duplicates
-          } else if (productInfo.type === 'Slate') {
+          // ACO records are now created during PDF upload, not here
+          if (productInfo.type === 'Slate') {
             // Slate products no longer write to record_slate table
             // Only write to the main tables: record_pallet_info, record_history, record_inventory
           }

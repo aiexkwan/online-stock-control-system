@@ -914,7 +914,7 @@ export const UploadFilesDialog: React.FC<UploadFilesDialogProps> = ({
                           <div className="bg-slate-700/30 rounded-lg p-3">
                             <div className="text-slate-400 mb-1">Processing Time</div>
                             <div className="text-white font-medium">
-                              {new Date().toLocaleTimeString('zh-TW')}
+                              {new Date().toLocaleTimeString('en-US')}
                             </div>
                           </div>
                           <div className="bg-slate-700/30 rounded-lg p-3">

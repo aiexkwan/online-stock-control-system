@@ -2,9 +2,24 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY')
 
+interface OrderItem {
+  order_ref: number
+  product_code: string
+  product_desc: string
+  product_qty: number
+}
+
 interface EmailRequest {
-  orderRef: number
-  to?: string
+  // For ACO completion email
+  orderRef?: number
+  
+  // For order created email
+  orderData?: OrderItem[]
+  
+  // Common fields
+  emailType?: 'aco-completion' | 'order-created'
+  to?: string | string[]
+  cc?: string[]
   from?: string
 }
 
@@ -20,7 +35,7 @@ serve(async (req) => {
   }
 
   try {
-    console.log('=== ACO Email Function Started ===')
+    console.log('=== Pennine Email Function Started ===')
     console.log('Request method:', req.method)
     console.log('Request headers:', Object.fromEntries(req.headers.entries()))
     
@@ -60,85 +75,231 @@ serve(async (req) => {
       )
     }
 
-    const { orderRef, to, from }: EmailRequest = requestBody
+    const { orderRef, orderData, emailType, to, cc, from }: EmailRequest = requestBody
 
-    // Validate required fields
-    if (!orderRef) {
-      console.error('❌ Order reference is missing')
-      return new Response(
-        JSON.stringify({ 
-          success: false, 
-          error: 'Order reference is required' 
-        }),
-        { 
-          status: 400, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
-      )
+    // Determine email type
+    const type = emailType || (orderRef ? 'aco-completion' : 'order-created')
+    
+    console.log('📧 Email type determined:', type)
+
+    // Validate required fields based on email type
+    if (type === 'aco-completion') {
+      if (!orderRef) {
+        console.error('❌ Order reference is missing for ACO completion email')
+        return new Response(
+          JSON.stringify({ 
+            success: false, 
+            error: 'Order reference is required for ACO completion email' 
+          }),
+          { 
+            status: 400, 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+          }
+        )
+      }
+    } else if (type === 'order-created') {
+      if (!orderData || !Array.isArray(orderData) || orderData.length === 0) {
+        console.error('❌ Order data is missing or empty for order created email')
+        return new Response(
+          JSON.stringify({ 
+            success: false, 
+            error: 'Order data is required and must be a non-empty array for order created email' 
+          }),
+          { 
+            status: 400, 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+          }
+        )
+      }
     }
 
     // Set default email addresses
-    // pennine.cc domain is now verified in Resend
-    const fromEmail = from || 'orders@pennine.cc'  // Now using verified pennine.cc domain
+    const fromEmail = from || (type === 'order-created' ? 'ordercreated@pennine.cc' : 'orders@pennine.cc')
     
-    // Use production business emails since domain is verified
-    const toEmail = to || 'alyon@pennineindustries.com';
-    const ccEmails = ['akwan@pennineindustries.com', 'gtatlock@pennineindustries.com', 'grobinson@pennineindustries.com'];
+    let toEmails: string[]
+    let ccEmails: string[]
+    
+    if (type === 'order-created') {
+      // Determine email recipients based on product codes
+      const hasUProducts = orderData!.some(item => item.product_code.startsWith('U'))
+      const hasNonUProducts = orderData!.some(item => !item.product_code.startsWith('U'))
+      
+      if (hasUProducts && hasNonUProducts) {
+        // Mixed U and non-U products
+        toEmails = Array.isArray(to) ? to : ['grobinson@pennineindustries.com', 'gtatlock@pennineindustries.com']
+        ccEmails = cc || ['akwan@pennineindustries.com', 'alyon@pennineindustries.com']
+      } else if (hasUProducts) {
+        // Only U products
+        toEmails = Array.isArray(to) ? to : [typeof to === 'string' ? to : 'grobinson@pennineindustries.com']
+        ccEmails = cc || ['akwan@pennineindustries.com', 'alyon@pennineindustries.com', 'gtatlock@pennineindustries.com']
+      } else {
+        // Normal case (no U products)
+        toEmails = Array.isArray(to) ? to : [typeof to === 'string' ? to : 'alyon@pennineindustries.com']
+        ccEmails = cc || ['akwan@pennineindustries.com', 'gtatlock@pennineindustries.com', 'grobinson@pennineindustries.com']
+      }
+    } else {
+      // ACO completion email (existing logic)
+      toEmails = Array.isArray(to) ? to : [typeof to === 'string' ? to : 'alyon@pennineindustries.com']
+      ccEmails = cc || ['akwan@pennineindustries.com', 'gtatlock@pennineindustries.com', 'grobinson@pennineindustries.com']
+    }
     
     console.log('📧 Email details:', {
-      orderRef,
+      type,
       from: fromEmail,
-      to: toEmail,
+      to: toEmails,
       cc: ccEmails,
-      note: 'Using verified pennine.cc domain'
+      orderRef: orderRef || 'N/A',
+      orderCount: orderData?.length || 0
     })
 
-    // Prepare email content
-    const emailData = {
-      from: fromEmail,
-      to: [toEmail],
-      cc: ccEmails,
-      subject: 'ACO Order Completed',
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2 style="color: #333; border-bottom: 2px solid #007bff; padding-bottom: 10px;">
-            ACO Order Completion Notification
-          </h2>
-          
-          <div style="background-color: #f8f9fa; padding: 20px; border-radius: 5px; margin: 20px 0;">
-            <p style="font-size: 16px; margin: 0;">
-              <strong>ACO order has been completed.</strong>
-            </p>
-            <p style="font-size: 18px; color: #007bff; margin: 10px 0 0 0;">
-              <strong>Reference Number: ${orderRef}</strong>
-            </p>
+    let emailData: any
+
+    if (type === 'order-created') {
+      // Generate order created email
+      const orderRefs = [...new Set(orderData!.map(item => item.order_ref))]
+      const hasUProducts = orderData!.some(item => item.product_code.startsWith('U'))
+      
+      const orderSummaryHtml = orderData!.map(item => `
+        <tr style="border-bottom: 1px solid #ddd;">
+          <td style="padding: 12px; text-align: left; font-family: 'Courier New', monospace; background-color: #f8f9fa; font-weight: bold;">${item.product_code}</td>
+          <td style="padding: 12px; text-align: left;">${item.product_desc}</td>
+          <td style="padding: 12px; text-align: center; font-weight: bold; color: #007bff;">${item.product_qty}</td>
+        </tr>
+      `).join('')
+
+      emailData = {
+        from: fromEmail,
+        to: toEmails,
+        cc: ccEmails,
+        subject: `New Order Created - ${orderRefs.join(', ')}`,
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; background-color: #ffffff;">
+            <div style="background: linear-gradient(135deg, #007bff 0%, #0056b3 100%); color: white; padding: 30px; text-align: center;">
+              <h1 style="margin: 0; font-size: 28px; font-weight: bold;">New Order Created</h1>
+              <p style="margin: 10px 0 0 0; font-size: 16px; opacity: 0.9;">
+                Order Reference${orderRefs.length > 1 ? 's' : ''}: <strong>${orderRefs.join(', ')}</strong>
+              </p>
+            </div>
+            
+            <div style="padding: 30px;">
+              <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 25px; border-left: 4px solid #007bff;">
+                <h2 style="color: #333; margin: 0 0 15px 0; font-size: 20px;">Order Summary</h2>
+                <p style="color: #666; margin: 0; font-size: 14px;">
+                  A new order has been uploaded and processed through the PDF analysis system.
+                </p>
+                <p style="color: #666; margin: 5px 0 0 0; font-size: 14px;">
+                  <strong>Total Items:</strong> ${orderData!.length} | 
+                  <strong>Total Quantity:</strong> ${orderData!.reduce((sum, item) => sum + item.product_qty, 0)}
+                </p>
+              </div>
+              
+              <h3 style="color: #333; margin: 25px 0 15px 0; font-size: 18px; border-bottom: 2px solid #007bff; padding-bottom: 8px;">
+                Product Details
+              </h3>
+              
+              <div style="overflow-x: auto; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                <table style="width: 100%; border-collapse: collapse; background-color: white;">
+                  <thead>
+                    <tr style="background: linear-gradient(135deg, #007bff 0%, #0056b3 100%); color: white;">
+                      <th style="padding: 15px; text-align: left; font-weight: bold; font-size: 14px;">Product Code</th>
+                      <th style="padding: 15px; text-align: left; font-weight: bold; font-size: 14px;">Description</th>
+                      <th style="padding: 15px; text-align: center; font-weight: bold; font-size: 14px;">Quantity</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${orderSummaryHtml}
+                  </tbody>
+                </table>
+              </div>
+                            
+              <div style="background-color: #e8f4fd; border: 1px solid #bee5eb; border-radius: 8px; padding: 20px; margin: 25px 0;">
+                <h4 style="color: #0c5460; margin: 0 0 10px 0; font-size: 16px;">📋 Next Steps</h4>
+                <ul style="color: #0c5460; margin: 0; padding-left: 20px; font-size: 14px;">
+                  <li>Review the order details in the Stock Control System</li>
+                  <li>Verify product availability and delivery requirements</li>
+                  <li>Process the order according to standard procedures</li>
+                </ul>
+              </div>
+            </div>
+            
+            <div style="background-color: #f8f9fa; padding: 20px; text-align: center; border-top: 1px solid #dee2e6;">
+              <p style="color: #999; font-size: 12px; margin: 0;">
+                This is an automated notification from the Pennine Stock Control System<br>
+                Generated on ${new Date().toLocaleString('en-GB', { 
+                  timeZone: 'Europe/London',
+                  year: 'numeric',
+                  month: '2-digit',
+                  day: '2-digit',
+                  hour: '2-digit',
+                  minute: '2-digit',
+                  second: '2-digit'
+                })}
+              </p>
+            </div>
           </div>
-          
-          <div style="margin: 20px 0;">
-            <p style="color: #666; font-size: 14px;">
-              This is an automated notification from the Pennine Stock Control System.
-            </p>
-            <p style="color: #666; font-size: 14px;">
-              Please check the system for detailed order information.
-            </p>
+        `,
+        text: `
+New Order Created - ${orderRefs.join(', ')}
+
+Order Summary:
+${orderData!.map(item => 
+  `${item.product_code}: ${item.product_desc} (Qty: ${item.product_qty})`
+).join('\n')}
+
+Total Items: ${orderData!.length}
+Total Quantity: ${orderData!.reduce((sum, item) => sum + item.product_qty, 0)}
+
+This is an automated notification from the Pennine Stock Control System.
+        `
+      }
+    } else {
+      // Generate ACO completion email (existing logic)
+      emailData = {
+        from: fromEmail,
+        to: toEmails,
+        cc: ccEmails,
+        subject: 'ACO Order Completed',
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <h2 style="color: #333; border-bottom: 2px solid #007bff; padding-bottom: 10px;">
+              ACO Order Completion Notification
+            </h2>
+            
+            <div style="background-color: #f8f9fa; padding: 20px; border-radius: 5px; margin: 20px 0;">
+              <p style="font-size: 16px; margin: 0;">
+                <strong>ACO order has been completed.</strong>
+              </p>
+              <p style="font-size: 18px; color: #007bff; margin: 10px 0 0 0;">
+                <strong>Reference Number: ${orderRef}</strong>
+              </p>
+            </div>
+            
+            <div style="margin: 20px 0;">
+              <p style="color: #666; font-size: 14px;">
+                This is an automated notification from the Pennine Stock Control System.
+              </p>
+              <p style="color: #666; font-size: 14px;">
+                Please check the system for detailed order information.
+              </p>
+            </div>
+            
+            <div style="border-top: 1px solid #ddd; padding-top: 20px; margin-top: 30px;">
+              <p style="color: #999; font-size: 12px; text-align: center;">
+                Pennine Industries Stock Control System<br>
+                Generated on ${new Date().toLocaleString('en-GB', { 
+                  timeZone: 'Europe/London',
+                  year: 'numeric',
+                  month: '2-digit',
+                  day: '2-digit',
+                  hour: '2-digit',
+                  minute: '2-digit'
+                })}
+              </p>
+            </div>
           </div>
-          
-          <div style="border-top: 1px solid #ddd; padding-top: 20px; margin-top: 30px;">
-            <p style="color: #999; font-size: 12px; text-align: center;">
-              Pennine Industries Stock Control System<br>
-              Generated on ${new Date().toLocaleString('en-GB', { 
-                timeZone: 'Europe/London',
-                year: 'numeric',
-                month: '2-digit',
-                day: '2-digit',
-                hour: '2-digit',
-                minute: '2-digit'
-              })}
-            </p>
-          </div>
-        </div>
-      `,
-      text: `ACO order has been completed. Reference Number: ${orderRef}`
+        `,
+        text: `ACO order has been completed. Reference Number: ${orderRef}`
+      }
     }
 
     console.log('📤 Sending email to Resend API...')
@@ -184,11 +345,20 @@ serve(async (req) => {
 
     console.log('✅ Email sent successfully:', result)
 
+    const successMessage = type === 'order-created' 
+      ? `Order created email sent for ${[...new Set(orderData!.map(item => item.order_ref))].length} order(s)`
+      : `ACO completion email sent for order ${orderRef}`
+
     return new Response(
       JSON.stringify({ 
         success: true, 
-        message: `ACO completion email sent for order ${orderRef}`,
-        emailId: result.id
+        message: successMessage,
+        emailId: result.id,
+        emailType: type,
+        recipients: {
+          to: toEmails,
+          cc: ccEmails
+        }
       }),
       { 
         status: 200, 
@@ -197,18 +367,12 @@ serve(async (req) => {
     )
 
   } catch (error) {
-    console.error('💥 Unexpected error in send-aco-completion-email function:', error)
-    console.error('💥 Error stack:', error.stack)
-    
+    console.error('💥 Unexpected error in email function:', error)
     return new Response(
       JSON.stringify({ 
         success: false, 
         error: 'Internal server error',
-        details: {
-          message: error.message,
-          name: error.name,
-          stack: error.stack
-        }
+        details: error.message
       }),
       { 
         status: 500, 

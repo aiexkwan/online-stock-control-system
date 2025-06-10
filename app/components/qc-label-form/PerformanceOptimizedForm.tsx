@@ -46,10 +46,6 @@ interface PerformanceOptimizedFormProps {
 
 interface AcoHandlers {
   onAcoOrderRefChange: (value: string) => void;
-  onAcoNewRefChange: (checked: boolean) => void;
-  onAcoOrderDetailChange: (idx: number, field: 'code' | 'qty', value: string) => void;
-  onValidateAcoOrderDetailCode: (code: string, idx: number) => void;
-  onAcoOrderDetailUpdate: () => void;
   onAcoSearch: () => void;
 }
 
@@ -342,26 +338,7 @@ export const PerformanceOptimizedForm: React.FC<PerformanceOptimizedFormProps> =
       newErrors.acoOrderRef = 'ACO Order Reference is required';
     }
 
-    // ACO new order validation
-    if (productInfo?.type === 'ACO' && formData.acoNewRef) {
-      const validOrderDetails = formData.acoOrderDetails.filter((detail, idx) => 
-        detail.code.trim() && 
-        detail.qty.trim() && 
-        !formData.acoOrderDetailErrors[idx] && // No validation errors
-        !isNaN(parseInt(detail.qty.trim())) && 
-        parseInt(detail.qty.trim()) > 0
-      );
-      
-      if (validOrderDetails.length === 0) {
-        newErrors.acoOrderDetails = 'At least one valid ACO product detail is required for new ACO orders';
-      }
-      
-      // Check if there are any validation errors in the order details
-      const hasValidationErrors = formData.acoOrderDetailErrors.some(error => error.trim() !== '');
-      if (hasValidationErrors) {
-        newErrors.acoOrderDetails = 'Please fix all product code validation errors before proceeding';
-      }
-    }
+
 
     // Slate specific validation
     if (productInfo?.type === 'Slate') {
@@ -414,10 +391,7 @@ export const PerformanceOptimizedForm: React.FC<PerformanceOptimizedFormProps> =
   // Memoized ACO handlers
   const acoHandlers = useMemo(() => ({
     onAcoOrderRefChange: (value: string) => handleInputChange('acoOrderRef', value),
-    onAcoSearch: businessLogic.handleAcoSearch,
-    onAcoOrderDetailChange: businessLogic.handleAcoOrderDetailChange,
-    onAcoOrderDetailUpdate: businessLogic.handleAcoOrderDetailUpdate,
-    onValidateAcoOrderDetailCode: businessLogic.validateAcoProductCode
+    onAcoSearch: businessLogic.handleAcoSearch
   }), [handleInputChange, businessLogic]);
 
   const handleSubmit = useCallback((e: React.FormEvent) => {
@@ -526,12 +500,12 @@ export const PerformanceOptimizedForm: React.FC<PerformanceOptimizedFormProps> =
                       acoSearchLoading={formData.acoSearchLoading}
                       canSearchAco={businessLogic.canSearchAco}
                       onAcoSearch={acoHandlers.onAcoSearch}
-                      acoNewRef={formData.acoNewRef}
-                      acoOrderDetails={formData.acoOrderDetails}
-                      acoOrderDetailErrors={formData.acoOrderDetailErrors}
-                      onAcoOrderDetailChange={acoHandlers.onAcoOrderDetailChange}
-                      onAcoOrderDetailUpdate={acoHandlers.onAcoOrderDetailUpdate}
-                      onValidateAcoOrderDetailCode={acoHandlers.onValidateAcoOrderDetailCode}
+                      acoNewRef={false}
+                      acoOrderDetails={[]}
+                      acoOrderDetailErrors={[]}
+                      onAcoOrderDetailChange={() => {}}
+                      onAcoOrderDetailUpdate={() => {}}
+                      onValidateAcoOrderDetailCode={() => {}}
                       isAcoOrderExcess={businessLogic.isAcoOrderExcess}
                       disabled={isLoading}
                     />
