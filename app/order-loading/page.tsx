@@ -14,6 +14,7 @@ import {
   ExclamationTriangleIcon
 } from '@heroicons/react/24/outline';
 import { loadPalletToOrder } from '@/app/actions/orderLoadingActions';
+import MotionBackground from '../components/MotionBackground';
 
 interface OrderData {
   order_ref: string;
@@ -242,172 +243,174 @@ export default function OrderLoadingPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-800 pt-24 pb-8">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Page Header */}
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-300 via-cyan-300 to-blue-200 bg-clip-text text-transparent mb-2">
-            Order Loading
-          </h1>
-          <p className="text-slate-400 text-lg">
-            Manage order loading process
-          </p>
-        </div>
+    <MotionBackground>
+      <div className="pt-24 pb-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          {/* Page Header */}
+          <div className="mb-8">
+            <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-300 via-cyan-300 to-blue-200 bg-clip-text text-transparent mb-2">
+              Order Loading
+            </h1>
+            <p className="text-slate-400 text-lg">
+              Manage order loading process
+            </p>
+          </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Left Column - ID Input and Order Selection */}
-          <div className="space-y-6">
-            {/* ID Input Card */}
-            <Card className="bg-slate-800/50 border-slate-700/50 backdrop-blur-sm">
-              <CardHeader>
-                <CardTitle className="flex items-center text-slate-200">
-                  <UserIcon className="h-6 w-6 mr-2 text-blue-400" />
-                  Enter ID Number
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="relative">
-                    <input
-                      ref={idInputRef}
-                      type="text"
-                      value={idNumber}
-                      onChange={handleIdChange}
-                      onBlur={handleIdBlur}
-                      onKeyDown={handleIdKeyDown}
-                      placeholder="Enter 4-digit ID..."
-                      maxLength={4}
-                      className="w-full px-4 py-3 bg-slate-700/50 border border-slate-600/50 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all duration-300"
-                      disabled={isCheckingId}
-                    />
-                    {isCheckingId && (
-                      <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                        <div className="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            {/* Left Column - ID Input and Order Selection */}
+            <div className="space-y-6">
+              {/* ID Input Card */}
+              <Card className="bg-slate-800/50 border-slate-700/50 backdrop-blur-sm">
+                <CardHeader>
+                  <CardTitle className="flex items-center text-slate-200">
+                    <UserIcon className="h-6 w-6 mr-2 text-blue-400" />
+                    Enter ID Number
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div className="relative">
+                      <input
+                        ref={idInputRef}
+                        type="text"
+                        value={idNumber}
+                        onChange={handleIdChange}
+                        onBlur={handleIdBlur}
+                        onKeyDown={handleIdKeyDown}
+                        placeholder="Enter 4-digit ID..."
+                        maxLength={4}
+                        className="w-full px-4 py-3 bg-slate-700/50 border border-slate-600/50 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all duration-300"
+                        disabled={isCheckingId}
+                      />
+                      {isCheckingId && (
+                        <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                          <div className="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                        </div>
+                      )}
+                    </div>
+                    
+                    {/* ID format hint */}
+                    <p className="text-xs text-slate-400">
+                      Please enter your 4-digit employee ID
+                    </p>
+                    
+                    {/* ID Status Indicator - Only show error state */}
+                    {idNumber.length === 4 && !isCheckingId && !isIdValid && (
+                      <div className="flex items-center space-x-2 text-sm text-red-400">
+                        <ExclamationTriangleIcon className="h-5 w-5" />
+                        <span>ID does not exist</span>
                       </div>
                     )}
                   </div>
-                  
-                  {/* ID format hint */}
-                  <p className="text-xs text-slate-400">
-                    Please enter your 4-digit employee ID
-                  </p>
-                  
-                  {/* ID Status Indicator - Only show error state */}
-                  {idNumber.length === 4 && !isCheckingId && !isIdValid && (
-                    <div className="flex items-center space-x-2 text-sm text-red-400">
-                      <ExclamationTriangleIcon className="h-5 w-5" />
-                      <span>ID does not exist</span>
-                    </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Order Selection Card */}
-            {isIdValid && availableOrders.length > 0 && (
-              <Card className="bg-slate-800/50 border-slate-700/50 backdrop-blur-sm">
-                <CardHeader>
-                  <CardTitle className="flex items-center text-slate-200">
-                    <ClipboardDocumentListIcon className="h-6 w-6 mr-2 text-green-400" />
-                    Choose order below
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <select
-                    value={selectedOrderRef || ''}
-                    onChange={(e) => handleOrderSelect(e.target.value)}
-                    className="w-full px-4 py-3 bg-slate-700/50 border border-slate-600/50 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-500/50 transition-all duration-300"
-                  >
-                    <option value="">Please select an order...</option>
-                    {availableOrders.map((orderRef) => (
-                      <option key={orderRef} value={orderRef}>
-                        Order #{orderRef}
-                      </option>
-                    ))}
-                  </select>
                 </CardContent>
               </Card>
-            )}
-          </div>
 
-          {/* Right Column - Order Information and Search */}
-          <div className="space-y-6">
-            {/* Order Information Card */}
-            {selectedOrderRef && (
-              <Card className="bg-slate-800/50 border-slate-700/50 backdrop-blur-sm">
-                <CardHeader>
-                                   <CardTitle className="flex items-center text-slate-200">
-                   <ClipboardDocumentListIcon className="h-6 w-6 mr-2 text-cyan-400" />
-                   Order Information - Order #{selectedOrderRef}
-                 </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {isLoadingOrders ? (
-                    <div className="flex items-center justify-center py-8">
-                      <div className="w-8 h-8 border-2 border-cyan-500 border-t-transparent rounded-full animate-spin"></div>
-                      <span className="ml-3 text-slate-400">Loading order data...</span>
-                    </div>
-                  ) : orderData.length > 0 ? (
-                    <div className="space-y-4">
-                      {orderData.map((order, index) => (
-                        <div key={index} className="bg-slate-700/30 rounded-lg p-4 border border-slate-600/30">
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-                            <div>
-                              <span className="text-slate-400">Product Code:</span>
-                              <span className="text-cyan-300 font-mono ml-2">{order.product_code}</span>
-                            </div>
-                            <div>
-                              <span className="text-slate-400">Product Qty:</span>
-                              <span className="text-yellow-300 font-medium ml-2">{order.product_qty}</span>
-                            </div>
-                            <div>
-                              <span className="text-slate-400">Loaded Qty:</span>
-                              <span className="text-green-300 font-medium ml-2">{order.loaded_qty}</span>
-                            </div>
-                            <div className="md:col-span-2">
-                              <span className="text-slate-400">Product Description:</span>
-                              <span className="text-white ml-2">{order.product_desc}</span>
+              {/* Order Selection Card */}
+              {isIdValid && availableOrders.length > 0 && (
+                <Card className="bg-slate-800/50 border-slate-700/50 backdrop-blur-sm">
+                  <CardHeader>
+                    <CardTitle className="flex items-center text-slate-200">
+                      <ClipboardDocumentListIcon className="h-6 w-6 mr-2 text-green-400" />
+                      Choose order below
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <select
+                      value={selectedOrderRef || ''}
+                      onChange={(e) => handleOrderSelect(e.target.value)}
+                      className="w-full px-4 py-3 bg-slate-700/50 border border-slate-600/50 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-500/50 transition-all duration-300"
+                    >
+                      <option value="">Please select an order...</option>
+                      {availableOrders.map((orderRef) => (
+                        <option key={orderRef} value={orderRef}>
+                          Order #{orderRef}
+                        </option>
+                      ))}
+                    </select>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+
+            {/* Right Column - Order Information and Search */}
+            <div className="space-y-6">
+              {/* Order Information Card */}
+              {selectedOrderRef && (
+                <Card className="bg-slate-800/50 border-slate-700/50 backdrop-blur-sm">
+                  <CardHeader>
+                    <CardTitle className="flex items-center text-slate-200">
+                      <ClipboardDocumentListIcon className="h-6 w-6 mr-2 text-cyan-400" />
+                      Order Information - Order #{selectedOrderRef}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {isLoadingOrders ? (
+                      <div className="flex items-center justify-center py-8">
+                        <div className="w-8 h-8 border-2 border-cyan-500 border-t-transparent rounded-full animate-spin"></div>
+                        <span className="ml-3 text-slate-400">Loading order data...</span>
+                      </div>
+                    ) : orderData.length > 0 ? (
+                      <div className="space-y-4">
+                        {orderData.map((order, index) => (
+                          <div key={index} className="bg-slate-700/30 rounded-lg p-4 border border-slate-600/30">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                              <div>
+                                <span className="text-slate-400">Product Code:</span>
+                                <span className="text-cyan-300 font-mono ml-2">{order.product_code}</span>
+                              </div>
+                              <div>
+                                <span className="text-slate-400">Product Qty:</span>
+                                <span className="text-yellow-300 font-medium ml-2">{order.product_qty}</span>
+                              </div>
+                              <div>
+                                <span className="text-slate-400">Loaded Qty:</span>
+                                <span className="text-green-300 font-medium ml-2">{order.loaded_qty}</span>
+                              </div>
+                              <div className="md:col-span-2">
+                                <span className="text-slate-400">Product Description:</span>
+                                <span className="text-white ml-2">{order.product_desc}</span>
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                                          <div className="text-center py-8 text-slate-400">
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-8 text-slate-400">
                         No order data found
                       </div>
-                  )}
-                </CardContent>
-              </Card>
-            )}
+                    )}
+                  </CardContent>
+                </Card>
+              )}
 
-            {/* Search Card */}
-            {selectedOrderRef && (
-              <Card className="bg-slate-800/50 border-slate-700/50 backdrop-blur-sm">
-                <CardHeader>
-                  <CardTitle className="flex items-center text-slate-200">
-                    <MagnifyingGlassIcon className="h-6 w-6 mr-2 text-purple-400" />
-                    Scan As You Load
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <UnifiedSearch
-                    ref={searchInputRef}
-                    searchType="pallet"
-                    onSelect={handleSearchSelect}
-                    placeholder="Search Pallet number or Series..."
-                    enableAutoDetection={true}
-                    value={searchValue}
-                    onChange={setSearchValue}
-                    isLoading={isSearching}
-                    disabled={isSearching}
-                  />
-                </CardContent>
-              </Card>
-            )}
+              {/* Search Card */}
+              {selectedOrderRef && (
+                <Card className="bg-slate-800/50 border-slate-700/50 backdrop-blur-sm">
+                  <CardHeader>
+                    <CardTitle className="flex items-center text-slate-200">
+                      <MagnifyingGlassIcon className="h-6 w-6 mr-2 text-purple-400" />
+                      Scan As You Load
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <UnifiedSearch
+                      ref={searchInputRef}
+                      searchType="pallet"
+                      onSelect={handleSearchSelect}
+                      placeholder="Search Pallet number or Series..."
+                      enableAutoDetection={true}
+                      value={searchValue}
+                      onChange={setSearchValue}
+                      isLoading={isSearching}
+                      disabled={isSearching}
+                    />
+                  </CardContent>
+                </Card>
+              )}
+            </div>
           </div>
         </div>
       </div>
-    </div>
+    </MotionBackground>
   );
 } 

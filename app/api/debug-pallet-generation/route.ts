@@ -60,7 +60,7 @@ export async function GET(request: NextRequest) {
     let rpcTestError = null;
     
     try {
-      const { data: rpcData, error: rpcError } = await supabase.rpc('generate_atomic_pallet_numbers_v2', {
+      const { data: rpcData, error: rpcError } = await supabase.rpc('generate_atomic_pallet_numbers_v3', {
         count: 1
       });
       rpcTestResult = rpcData;
@@ -130,7 +130,7 @@ export async function POST(request: NextRequest) {
     });
     
     // 測試生成托盤編號
-    const { data: palletNumbers, error: generateError } = await supabase.rpc('generate_atomic_pallet_numbers_v2', {
+    const { data: palletNumbers, error: generateError } = await supabase.rpc('generate_atomic_pallet_numbers_v3', {
       count: count
     });
     

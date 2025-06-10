@@ -290,7 +290,7 @@ export async function generateGrnPalletNumbersAndSeries(count: number): Promise<
         console.log(`[grnActions] 當前序列號狀態 (嘗試 ${attempts + 1}):`, currentSequence);
         
         // 使用單次 RPC 調用生成所有托盤編號
-        const { data: rpcResult, error: rpcError } = await supabaseAdmin.rpc('generate_atomic_pallet_numbers_v2', {
+        const { data: rpcResult, error: rpcError } = await supabaseAdmin.rpc('generate_atomic_pallet_numbers_v3', {
           count: count
         });
         

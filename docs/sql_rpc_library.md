@@ -4,7 +4,7 @@ This document serves as a unified record of all SQL/RPC functions in the WMS sys
 
 ## 🔥 Atomic Pallet Number Generation Functions
 
-### generate_atomic_pallet_numbers_v2(count INTEGER)
+### generate_atomic_pallet_numbers_v3(count INTEGER)
 - **Purpose**: Generate unique pallet numbers atomically to prevent race conditions
 - **Parameters**: 
   - `count`: Number of pallet numbers to generate (max 50)
@@ -13,6 +13,83 @@ This document serves as a unified record of all SQL/RPC functions in the WMS sys
 - **Usage**: Replaces old `generatePalletNumbers` function to solve duplicate key issues
 - **Dependencies**: `daily_pallet_sequence` table
 - **Status**: ✅ Active - Currently used in QC/GRN/Auto-reprint
+
+**新增特性 (v3)**:
+- 🔧 總是檢查實際的 record_palletinfo 表中的最大號碼
+- 🔧 使用實際最大值與序列值中的較大者確保同步
+- 🔧 同步更新序列表為正確的值
+- 🔒 使用 INSERT ... ON CONFLICT 來原子性地更新序列
+- 增強的錯誤處理和日誌記錄
+
+**使用示例**:
+```sql
+SELECT * FROM generate_atomic_pallet_numbers_v3(5);
+```
+
+**函數實現**:
+```sql
+DECLARE
+    current_date_str TEXT;
+    result TEXT[] := ARRAY[]::TEXT[];
+    i INTEGER;
+    start_num INTEGER;
+    existing_max INTEGER;
+    sequence_max INTEGER;
+BEGIN
+    -- 檢查輸入參數
+    IF count <= 0 THEN
+        RETURN ARRAY[]::TEXT[];
+    END IF;
+    
+    IF count > 50 THEN
+        RAISE EXCEPTION 'Cannot generate more than 50 pallet numbers at once';
+    END IF;
+    
+    -- 獲取當前日期字符串 (DDMMYY 格式)
+    current_date_str := TO_CHAR(CURRENT_DATE, 'DDMMYY');
+    
+    -- 🔒 使用 INSERT ... ON CONFLICT 來原子性地更新序列
+    INSERT INTO daily_pallet_sequence (date_str, current_max)
+    VALUES (current_date_str, 0)
+    ON CONFLICT (date_str) DO NOTHING;
+    
+    -- 🔧 總是檢查實際的 record_palletinfo 表中的最大號碼
+    SELECT COALESCE(MAX(
+        CASE 
+            WHEN plt_num LIKE current_date_str || '/%' 
+            THEN CAST(SPLIT_PART(plt_num, '/', 2) AS INTEGER)
+            ELSE 0 
+        END
+    ), 0) INTO existing_max
+    FROM record_palletinfo
+    WHERE plt_num LIKE current_date_str || '/%';
+    
+    -- 獲取序列表中的當前值
+    SELECT current_max INTO sequence_max
+    FROM daily_pallet_sequence
+    WHERE date_str = current_date_str;
+    
+    -- 🔧 使用實際最大值與序列值中的較大者
+    start_num := GREATEST(existing_max, COALESCE(sequence_max, 0));
+    
+    -- 🔧 同步更新序列表為正確的值
+    UPDATE daily_pallet_sequence 
+    SET current_max = start_num + count,
+        last_updated = NOW()
+    WHERE date_str = current_date_str;
+    
+    -- 生成連續的棧板號碼
+    FOR i IN 1..count LOOP
+        result := array_append(result, current_date_str || '/' || (start_num + i));
+    END LOOP;
+    
+    -- 記錄生成日誌
+    RAISE NOTICE 'Generated % pallet numbers for date % (actual_max: %, sequence_max: %): % to %', 
+        count, current_date_str, existing_max, sequence_max, start_num + 1, start_num + count;
+    
+    RETURN result;
+END;
+```
 
 ### daily_pallet_sequence Table
 - **Purpose**: Sequence management table for atomic pallet number generation

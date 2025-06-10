@@ -72,8 +72,8 @@ async function checkPalletNumbers() {
     
     // 測試原子性棧板號生成函數
     console.log('\n🧪 測試原子性棧板號生成函數...');
-    const { data: generatedPallets, error: generateError } = await supabase.rpc('generate_atomic_pallet_numbers_v2', {
-      count: 1
+    const { data: generatedPallets, error: generateError } = await supabase.rpc('generate_atomic_pallet_numbers_v3', {
+      count: testCount
     });
     
     if (generateError) {

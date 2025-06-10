@@ -28,14 +28,14 @@ async function verifyOldFunctionsRemoved() {
   // 測試新函數仍然正常
   console.log('\n🧪 測試新函數...');
   try {
-    const { data, error } = await supabase.rpc('generate_atomic_pallet_numbers_v2', { count: 1 });
+    const { data, error } = await supabase.rpc('generate_atomic_pallet_numbers_v3', { count: 1 });
     if (error) {
-      console.error('❌ generate_atomic_pallet_numbers_v2 函數有問題:', error);
+      console.error('❌ generate_atomic_pallet_numbers_v3 函數有問題:', error);
     } else {
-      console.log('✅ generate_atomic_pallet_numbers_v2 函數正常:', data);
+      console.log('✅ generate_atomic_pallet_numbers_v3 函數正常:', data);
     }
   } catch (err) {
-    console.error('❌ generate_atomic_pallet_numbers_v2 函數調用失敗:', err);
+    console.error('❌ generate_atomic_pallet_numbers_v3 函數調用失敗:', err);
   }
 }
 
