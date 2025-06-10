@@ -23,20 +23,33 @@ const RESEND_API_KEY = process.env.RESEND_API_KEY;
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS'
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  // 強制標記為公開API路由，繞過認證
+  'X-Public-Route': 'true',
+  'X-Skip-Auth': 'true'
 };
 
 export async function OPTIONS() {
+  console.log('📋 [send-order-email] OPTIONS request received');
   return new Response('ok', { headers: corsHeaders });
 }
 
 export async function POST(request: NextRequest) {
+  // 強制標記此請求為公開路由
+  const responseHeaders = {
+    ...corsHeaders,
+    'X-Route-Status': 'public-api-accessed'
+  };
+
   try {
-    console.log('=== Order Created Email API Started ===');
+    console.log('=== 📧 Order Created Email API Started ===');
+    console.log('🔍 [send-order-email] API Route Hit - Bypassing Auth');
     console.log('🌍 Environment:', process.env.NODE_ENV);
     console.log('🌐 Request URL:', request.url);
     console.log('📍 Request method:', request.method);
-    console.log('🔗 Request headers:', Object.fromEntries(request.headers.entries()));
+    console.log('🔗 User-Agent:', request.headers.get('user-agent'));
+    console.log('🔗 Referer:', request.headers.get('referer'));
+    console.log('🔗 Host:', request.headers.get('host'));
 
     // 驗證 API Key
     console.log('🔍 Checking RESEND_API_KEY availability...');
@@ -53,7 +66,7 @@ export async function POST(request: NextRequest) {
         },
         { 
           status: 500, 
-          headers: corsHeaders
+          headers: responseHeaders
         }
       );
     }
@@ -72,7 +85,7 @@ export async function POST(request: NextRequest) {
         },
         { 
           status: 400, 
-          headers: corsHeaders
+          headers: responseHeaders
         }
       );
     }
@@ -89,7 +102,7 @@ export async function POST(request: NextRequest) {
         },
         { 
           status: 400, 
-          headers: corsHeaders
+          headers: responseHeaders
         }
       );
     }
@@ -260,7 +273,7 @@ This is an automated notification from the Pennine Stock Control System.
         },
         { 
           status: 500, 
-          headers: corsHeaders
+          headers: responseHeaders
         }
       );
     }
@@ -283,7 +296,7 @@ This is an automated notification from the Pennine Stock Control System.
         },
         { 
           status: 500, 
-          headers: corsHeaders
+          headers: responseHeaders
         }
       );
     }
@@ -301,10 +314,10 @@ This is an automated notification from the Pennine Stock Control System.
         },
         resendResponse: result
       },
-      { 
-        status: 200, 
-        headers: corsHeaders
-      }
+              { 
+          status: 200, 
+          headers: responseHeaders
+        }
     );
 
   } catch (error: any) {
@@ -315,10 +328,10 @@ This is an automated notification from the Pennine Stock Control System.
         error: 'Internal server error',
         details: error.message
       },
-      { 
-        status: 500, 
-        headers: corsHeaders
-      }
+              { 
+          status: 500, 
+          headers: responseHeaders
+        }
     );
   }
 } 

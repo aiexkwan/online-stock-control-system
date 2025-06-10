@@ -490,10 +490,13 @@ export async function POST(request: NextRequest) {
             }
           }
           
-          // 🔥 發送訂單創建郵件通知（快取版本）
+          // 🔥 發送訂單創建郵件通知（快取版本）- 使用內部服務
           let emailResult = null;
           try {
             console.log('[PDF Analysis] Sending order created email notification (cached)...');
+            
+            // 使用內部郵件服務，完全繞過中間件和API路由問題
+            const { sendOrderCreatedEmail } = await import('../../services/emailService');
             
             const emailRequestBody = {
               orderData: insertResults.map(record => ({
@@ -509,61 +512,20 @@ export async function POST(request: NextRequest) {
               }
             };
             
-            console.log('[PDF Analysis] Email request body:', JSON.stringify(emailRequestBody, null, 2));
+            console.log('[PDF Analysis] Calling internal email service (cached)...');
             
-            // Call our new API route to send email
-            const baseUrl = process.env.VERCEL_URL 
-              ? `https://${process.env.VERCEL_URL}` 
-              : process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
+            const emailData = await sendOrderCreatedEmail(emailRequestBody);
             
-            const emailResponse = await fetch(`${baseUrl}/api/send-order-email`, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify(emailRequestBody)
-            });
-            
-            let emailData = null;
-            let emailError = null;
-            
-            if (emailResponse.ok) {
-              try {
-                emailData = await emailResponse.json();
-              } catch (parseError) {
-                console.error('[PDF Analysis] Failed to parse email API response:', parseError);
-                emailError = new Error('Failed to parse email API response');
-              }
-            } else {
-              console.error('[PDF Analysis] Email API returned non-200 status:', emailResponse.status);
-              try {
-                const errorBody = await emailResponse.text();
-                console.error('[PDF Analysis] Email API error body:', errorBody);
-                emailError = new Error(`HTTP ${emailResponse.status}: ${errorBody}`);
-              } catch (textError) {
-                emailError = new Error(`HTTP ${emailResponse.status}`);
-              }
-            }
-
-            if (emailError) {
-              console.error('[PDF Analysis] Error sending order created email (cached):', emailError);
-              console.error('[PDF Analysis] Full error object:', JSON.stringify(emailError, null, 2));
-              emailResult = {
-                success: false,
-                error: emailError.message
-              };
-            } else {
-              console.log('[PDF Analysis] Order created email sent successfully (cached):', emailData);
-              emailResult = {
-                success: true,
-                message: emailData.message,
-                emailId: emailData.emailId,
-                recipients: emailData.recipients
-              };
-            }
+            console.log('[PDF Analysis] Order created email sent successfully (cached):', emailData);
+            emailResult = {
+              success: true,
+              message: emailData.message,
+              emailId: emailData.emailId,
+              recipients: emailData.recipients
+            };
             
           } catch (emailError: any) {
-            console.error('[PDF Analysis] Error invoking email function (cached):', emailError);
+            console.error('[PDF Analysis] Error sending order created email (cached):', emailError);
             console.error('[PDF Analysis] Full error details:', emailError);
             emailResult = {
               success: false,
@@ -794,10 +756,13 @@ export async function POST(request: NextRequest) {
           }
         }
         
-        // 🔥 發送訂單創建郵件通知
+        // 🔥 發送訂單創建郵件通知 - 使用內部服務
         let emailResult = null;
         try {
           console.log('[PDF Analysis] Sending order created email notification...');
+          
+          // 使用內部郵件服務，完全繞過中間件和API路由問題
+          const { sendOrderCreatedEmail } = await import('../../services/emailService');
           
           const emailRequestBody = {
             orderData: insertResults.map(record => ({
@@ -813,61 +778,20 @@ export async function POST(request: NextRequest) {
             }
           };
           
-                     console.log('[PDF Analysis] Email request body:', JSON.stringify(emailRequestBody, null, 2));
-           
-           // Call our new API route to send email
-           const baseUrl = process.env.VERCEL_URL 
-             ? `https://${process.env.VERCEL_URL}` 
-             : process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
-           
-           const emailResponse = await fetch(`${baseUrl}/api/send-order-email`, {
-             method: 'POST',
-             headers: {
-               'Content-Type': 'application/json',
-             },
-             body: JSON.stringify(emailRequestBody)
-           });
-           
-           let emailData = null;
-           let emailError = null;
-           
-           if (emailResponse.ok) {
-             try {
-               emailData = await emailResponse.json();
-             } catch (parseError) {
-               console.error('[PDF Analysis] Failed to parse email API response:', parseError);
-               emailError = new Error('Failed to parse email API response');
-             }
-           } else {
-             console.error('[PDF Analysis] Email API returned non-200 status:', emailResponse.status);
-             try {
-               const errorBody = await emailResponse.text();
-               console.error('[PDF Analysis] Email API error body:', errorBody);
-               emailError = new Error(`HTTP ${emailResponse.status}: ${errorBody}`);
-             } catch (textError) {
-               emailError = new Error(`HTTP ${emailResponse.status}`);
-             }
-           }
-
-          if (emailError) {
-            console.error('[PDF Analysis] Error sending order created email:', emailError);
-            console.error('[PDF Analysis] Full error object:', JSON.stringify(emailError, null, 2));
-            emailResult = {
-              success: false,
-              error: emailError.message
-            };
-          } else {
-            console.log('[PDF Analysis] Order created email sent successfully:', emailData);
-            emailResult = {
-              success: true,
-              message: emailData.message,
-              emailId: emailData.emailId,
-              recipients: emailData.recipients
-            };
-          }
+          console.log('[PDF Analysis] Calling internal email service...');
+          
+          const emailData = await sendOrderCreatedEmail(emailRequestBody);
+          
+          console.log('[PDF Analysis] Order created email sent successfully:', emailData);
+          emailResult = {
+            success: true,
+            message: emailData.message,
+            emailId: emailData.emailId,
+            recipients: emailData.recipients
+          };
           
         } catch (emailError: any) {
-          console.error('[PDF Analysis] Error invoking email function:', emailError);
+          console.error('[PDF Analysis] Error sending order created email:', emailError);
           console.error('[PDF Analysis] Full error details:', emailError);
           emailResult = {
             success: false,
