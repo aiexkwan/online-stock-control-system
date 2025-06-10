@@ -3,36 +3,41 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import MotionBackground from '@/app/components/MotionBackground';
+import StockTakeNav from '../components/StockTakeNav';
 import { ClipboardDocumentCheckIcon } from '@heroicons/react/24/outline';
 
 export default function CycleCountPage() {
   return (
     <MotionBackground>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="bg-slate-800/30 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-8 shadow-xl"
-        >
-          <div className="flex flex-col items-center">
-            <ClipboardDocumentCheckIcon className="h-16 w-16 text-blue-400 mb-4" />
-            <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-300 via-purple-300 to-cyan-300 bg-clip-text text-transparent mb-6">
-              Cycle Count
-            </h1>
-            <p className="text-slate-300 max-w-2xl text-center mb-8">
-              Perform inventory cycle counting to maintain accurate stock levels.
-            </p>
-            
-            <div className="w-full max-w-3xl bg-slate-800/50 border border-slate-600/50 rounded-xl p-6 shadow-lg">
-              <div className="flex items-center justify-center h-40">
-                <p className="text-slate-400 text-center">
-                  Cycle count functionality will be implemented here.
-                </p>
+      <div className="text-white">
+        <StockTakeNav />
+        
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            className="bg-slate-800/30 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-8 shadow-xl"
+          >
+            <div className="flex flex-col items-center">
+              <ClipboardDocumentCheckIcon className="h-16 w-16 text-blue-400 mb-4" />
+              <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-300 via-purple-300 to-cyan-300 bg-clip-text text-transparent mb-6">
+                Cycle Count
+              </h1>
+              <p className="text-slate-300 max-w-2xl text-center mb-8">
+                Perform inventory cycle counting to maintain accurate stock levels.
+              </p>
+              
+              <div className="w-full max-w-3xl bg-slate-800/50 border border-slate-600/50 rounded-xl p-6 shadow-lg">
+                <div className="flex items-center justify-center h-40">
+                  <p className="text-slate-400 text-center">
+                    Cycle count functionality will be implemented here.
+                  </p>
+                </div>
               </div>
             </div>
-          </div>
-        </motion.div>
+          </motion.div>
+        </div>
       </div>
     </MotionBackground>
   );

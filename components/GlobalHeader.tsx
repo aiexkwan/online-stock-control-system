@@ -76,7 +76,7 @@ const menuItems: MenuItem[] = [
   {
     id: 'stock-take',
     title: 'Stock Take',
-    path: '/stock-take',
+    path: '/stock-take/cycle-count',
     icon: ClipboardDocumentCheckIcon,
     description: 'Inventory counting and reconciliation'
   },
