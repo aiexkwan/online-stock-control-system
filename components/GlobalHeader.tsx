@@ -17,7 +17,8 @@ import {
   DocumentTextIcon,
   PrinterIcon,
   ClockIcon,
-  ChartBarIcon
+  ChartBarIcon,
+  ClipboardDocumentCheckIcon
 } from '@heroicons/react/24/outline';
 
 interface MenuItem {
@@ -71,6 +72,13 @@ const menuItems: MenuItem[] = [
     path: '/order-loading',
     icon: ChartBarIcon,
     description: 'Order loading management'
+  },
+  {
+    id: 'stock-take',
+    title: 'Stock Take',
+    path: '/stock-take',
+    icon: ClipboardDocumentCheckIcon,
+    description: 'Inventory counting and reconciliation'
   },
   {
     id: 'admin',
