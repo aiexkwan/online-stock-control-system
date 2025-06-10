@@ -3,6 +3,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 // import { emailToClockNumber } from './app/utils/authUtils'; // 可能不再需要在中間件中直接使用
 
 // 認證中間件 - 處理用戶會話和路由保護
+// 更新：修復 API 路由匹配問題 - 2025-01-09
 export async function middleware(request: NextRequest) {
   // 強制記錄所有路徑，用於調試 API 路由問題
   console.log(`[Supabase SSR Middleware] Processing path: ${request.nextUrl.pathname} (Method: ${request.method}, ENV: ${process.env.NODE_ENV})`);
