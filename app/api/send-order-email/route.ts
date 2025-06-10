@@ -35,6 +35,11 @@ export async function POST(request: NextRequest) {
     console.log('=== Order Created Email API Started ===');
 
     // 驗證 API Key
+    console.log('🔍 Checking RESEND_API_KEY availability...');
+    console.log('RESEND_API_KEY exists:', !!RESEND_API_KEY);
+    console.log('RESEND_API_KEY length:', RESEND_API_KEY?.length || 0);
+    console.log('RESEND_API_KEY prefix:', RESEND_API_KEY?.substring(0, 10) || 'N/A');
+    
     if (!RESEND_API_KEY) {
       console.error('❌ RESEND_API_KEY is not set in environment variables');
       return NextResponse.json(
@@ -85,8 +90,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 設置郵件地址
-    const fromEmail = from || 'ordercreated@pennine.cc';
+    // 設置郵件地址 - 使用已驗證的域名
+    const fromEmail = from || 'orders@pennine.cc';
     
     // 根據產品代碼智能分配收件人
     const hasUProducts = orderData.some(item => item.product_code.startsWith('U'));
@@ -208,6 +213,14 @@ This is an automated notification from the Pennine Stock Control System.
     }
 
     console.log('📤 Sending email to Resend API...');
+    console.log('📤 Email data preview:', {
+      from: emailData.from,
+      to: emailData.to,
+      cc: emailData.cc,
+      subject: emailData.subject,
+      hasAttachments: !!emailData.attachments,
+      attachmentCount: emailData.attachments?.length || 0
+    });
 
     // 發送郵件使用 Resend API
     const response = await fetch('https://api.resend.com/emails', {
@@ -220,9 +233,33 @@ This is an automated notification from the Pennine Stock Control System.
     });
 
     console.log('📨 Resend API response status:', response.status);
+    console.log('📨 Resend API response headers:', Object.fromEntries(response.headers.entries()));
 
-    const result = await response.json();
-    console.log('📨 Resend API response body:', result);
+    let result;
+    try {
+      result = await response.json();
+      console.log('📨 Resend API response body:', result);
+    } catch (jsonError) {
+      console.error('❌ Failed to parse Resend API response as JSON:', jsonError);
+      const textResult = await response.text();
+      console.log('📨 Resend API response as text:', textResult);
+      
+      return NextResponse.json(
+        { 
+          success: false, 
+          error: 'Failed to parse email service response',
+          details: {
+            status: response.status,
+            statusText: response.statusText,
+            rawResponse: textResult
+          }
+        },
+        { 
+          status: 500, 
+          headers: corsHeaders
+        }
+      );
+    }
 
     if (!response.ok) {
       console.error('❌ Resend API error:', {
@@ -253,11 +290,12 @@ This is an automated notification from the Pennine Stock Control System.
       { 
         success: true, 
         message: `Order created email sent for ${orderRefs.length} order(s)`,
-        emailId: result.id,
+        emailId: result.id || result.data?.id || 'unknown',
         recipients: {
           to: toEmails,
           cc: ccEmails
-        }
+        },
+        resendResponse: result
       },
       { 
         status: 200, 

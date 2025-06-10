@@ -524,8 +524,26 @@ export async function POST(request: NextRequest) {
               body: JSON.stringify(emailRequestBody)
             });
             
-            const emailData = emailResponse.ok ? await emailResponse.json() : null;
-            const emailError = !emailResponse.ok ? new Error(`HTTP ${emailResponse.status}`) : null;
+            let emailData = null;
+            let emailError = null;
+            
+            if (emailResponse.ok) {
+              try {
+                emailData = await emailResponse.json();
+              } catch (parseError) {
+                console.error('[PDF Analysis] Failed to parse email API response:', parseError);
+                emailError = new Error('Failed to parse email API response');
+              }
+            } else {
+              console.error('[PDF Analysis] Email API returned non-200 status:', emailResponse.status);
+              try {
+                const errorBody = await emailResponse.text();
+                console.error('[PDF Analysis] Email API error body:', errorBody);
+                emailError = new Error(`HTTP ${emailResponse.status}: ${errorBody}`);
+              } catch (textError) {
+                emailError = new Error(`HTTP ${emailResponse.status}`);
+              }
+            }
 
             if (emailError) {
               console.error('[PDF Analysis] Error sending order created email (cached):', emailError);
@@ -810,8 +828,26 @@ export async function POST(request: NextRequest) {
              body: JSON.stringify(emailRequestBody)
            });
            
-           const emailData = emailResponse.ok ? await emailResponse.json() : null;
-           const emailError = !emailResponse.ok ? new Error(`HTTP ${emailResponse.status}`) : null;
+           let emailData = null;
+           let emailError = null;
+           
+           if (emailResponse.ok) {
+             try {
+               emailData = await emailResponse.json();
+             } catch (parseError) {
+               console.error('[PDF Analysis] Failed to parse email API response:', parseError);
+               emailError = new Error('Failed to parse email API response');
+             }
+           } else {
+             console.error('[PDF Analysis] Email API returned non-200 status:', emailResponse.status);
+             try {
+               const errorBody = await emailResponse.text();
+               console.error('[PDF Analysis] Email API error body:', errorBody);
+               emailError = new Error(`HTTP ${emailResponse.status}: ${errorBody}`);
+             } catch (textError) {
+               emailError = new Error(`HTTP ${emailResponse.status}`);
+             }
+           }
 
           if (emailError) {
             console.error('[PDF Analysis] Error sending order created email:', emailError);
