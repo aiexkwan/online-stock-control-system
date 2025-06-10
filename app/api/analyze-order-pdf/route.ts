@@ -512,7 +512,11 @@ export async function POST(request: NextRequest) {
             console.log('[PDF Analysis] Email request body:', JSON.stringify(emailRequestBody, null, 2));
             
             // Call our new API route to send email
-            const emailResponse = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/api/send-order-email`, {
+            const baseUrl = process.env.VERCEL_URL 
+              ? `https://${process.env.VERCEL_URL}` 
+              : process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
+            
+            const emailResponse = await fetch(`${baseUrl}/api/send-order-email`, {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
@@ -794,7 +798,11 @@ export async function POST(request: NextRequest) {
                      console.log('[PDF Analysis] Email request body:', JSON.stringify(emailRequestBody, null, 2));
            
            // Call our new API route to send email
-           const emailResponse = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/api/send-order-email`, {
+           const baseUrl = process.env.VERCEL_URL 
+             ? `https://${process.env.VERCEL_URL}` 
+             : process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
+           
+           const emailResponse = await fetch(`${baseUrl}/api/send-order-email`, {
              method: 'POST',
              headers: {
                'Content-Type': 'application/json',
