@@ -9,13 +9,15 @@ interface QRScannerProps {
   onClose: () => void;
   onScan: (result: string) => void;
   title?: string;
+  hint?: string;
 }
 
 export const QRScanner: React.FC<QRScannerProps> = ({ 
   open, 
   onClose, 
   onScan, 
-  title = "QR Code Scanner" 
+  title = "QR Code Scanner",
+  hint
 }) => {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -62,17 +64,17 @@ export const QRScanner: React.FC<QRScannerProps> = ({
         return;
       }
 
-      // 設置 canvas 尺寸
+      // Set canvas dimensions
       canvas.width = video.videoWidth;
       canvas.height = video.videoHeight;
 
-      // 將視頻幀繪製到 canvas
+      // Draw video frame to canvas
       context.drawImage(video, 0, 0, canvas.width, canvas.height);
       
-      // 獲取圖像數據
+      // Get image data
       const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
       
-      // 使用 jsQR 掃描
+      // Scan with jsQR
       const code = jsQR(imageData.data, imageData.width, imageData.height, {
         inversionAttempts: "dontInvert",
       });
@@ -155,9 +157,17 @@ export const QRScanner: React.FC<QRScannerProps> = ({
                    addLog('❌ Video element still not available after 600ms');
                    return;
                  }
+                 if (!stream) {
+                   addLog('❌ Stream is null after waiting');
+                   return;
+                 }
                  addLog('✅ Video element available after extended wait, continuing setup...');
                  setupVideo(stream);
                }, 500);
+               return;
+             }
+             if (!stream) {
+               addLog('❌ Stream is null');
                return;
              }
              addLog('✅ Video element now available, continuing setup...');
@@ -166,7 +176,11 @@ export const QRScanner: React.FC<QRScannerProps> = ({
            return;
          }
 
-         setupVideo(stream);
+         if (stream) {
+           setupVideo(stream);
+         } else {
+           addLog('❌ Stream is null after camera initialization');
+         }
        } catch (error: any) {
          addLog(`❌ Camera error: ${error.name} - ${error.message}`);
          setStatus(`❌ Error: ${error.message}`);
@@ -301,10 +315,10 @@ export const QRScanner: React.FC<QRScannerProps> = ({
 
   if (!open) return null;
 
-  // 添加渲染日誌
+  // Add rendering log
   React.useEffect(() => {
     if (open) {
-      addLog('🎨 組件開始渲染...');
+      addLog('🎨 Component started rendering...');
     }
   }, [open]);
 
@@ -340,6 +354,11 @@ export const QRScanner: React.FC<QRScannerProps> = ({
               {showVideo && isScanning && (
                 <div className="absolute top-2 left-2 bg-green-600 text-white px-2 py-1 rounded text-sm">
                   🔍 Scanning...
+                </div>
+              )}
+              {hint && (
+                <div className="absolute bottom-2 left-0 right-0 text-center text-white bg-black bg-opacity-50 py-2">
+                  {hint}
                 </div>
               )}
             </div>
@@ -386,7 +405,7 @@ export const QRScanner: React.FC<QRScannerProps> = ({
 
         <div className="mt-4 flex justify-end">
           <Button onClick={onClose} variant="destructive">
-            關閉
+            Close
           </Button>
         </div>
       </div>

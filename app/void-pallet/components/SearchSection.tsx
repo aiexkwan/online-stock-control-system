@@ -3,7 +3,7 @@
 import React from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { QrScanner } from '@/components/qr-scanner/qr-scanner';
+import { QRScanner } from '@/components/qr-scanner/qr-scanner';
 import { QrCodeIcon, NumberedListIcon } from '@heroicons/react/24/outline';
 
 interface SearchSectionProps {
@@ -113,7 +113,7 @@ export function SearchSection({
       </div>
 
       {/* QR Scanner */}
-      <QrScanner
+      <QRScanner
         open={showScanner}
         onClose={() => onShowScanner(false)}
         onScan={onQRScan}
