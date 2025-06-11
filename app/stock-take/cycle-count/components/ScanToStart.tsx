@@ -9,6 +9,7 @@ import { DirectQrScanner } from '@/components/qr-scanner/direct-qr-scanner';
 import { Html5QrScanner } from '@/components/qr-scanner/html5-qr-scanner';
 import { SafariOptimizedScanner } from '@/components/qr-scanner/safari-optimized-scanner';
 import { MinimalCameraTest } from '@/components/qr-scanner/minimal-camera-test';
+import { WorkingQrScanner } from '@/components/qr-scanner/working-qr-scanner';
 import { TestCamera } from '@/components/qr-scanner/test-camera';
 
 interface ScanToStartProps {
@@ -23,6 +24,7 @@ export default function ScanToStart({ onScanSuccess, isLoading = false }: ScanTo
   const [showHtml5Scanner, setShowHtml5Scanner] = useState(false);
   const [showSafariScanner, setShowSafariScanner] = useState(false);
   const [showMinimalTest, setShowMinimalTest] = useState(false);
+  const [showWorkingScanner, setShowWorkingScanner] = useState(false);
   const [showTestCamera, setShowTestCamera] = useState(false);
 
   // 處理掃描結果
@@ -33,6 +35,7 @@ export default function ScanToStart({ onScanSuccess, isLoading = false }: ScanTo
     setShowHtml5Scanner(false);
     setShowSafariScanner(false);
     setShowMinimalTest(false);
+    setShowWorkingScanner(false);
     setShowTestCamera(false);
     onScanSuccess(result);
   };
@@ -45,6 +48,7 @@ export default function ScanToStart({ onScanSuccess, isLoading = false }: ScanTo
     setShowHtml5Scanner(false);
     setShowSafariScanner(false);
     setShowMinimalTest(false);
+    setShowWorkingScanner(false);
     setShowTestCamera(false);
   };
 
@@ -106,6 +110,26 @@ export default function ScanToStart({ onScanSuccess, isLoading = false }: ScanTo
                 <>
                   <CameraIcon className="h-6 w-6" />
                   🚨 Minimal Test
+                </>
+              )}
+            </motion.button>
+
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => setShowWorkingScanner(true)}
+              disabled={isLoading}
+              className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 disabled:from-gray-600 disabled:to-gray-700 text-white font-semibold py-4 px-8 rounded-xl transition-all duration-200 flex items-center gap-3 shadow-lg disabled:cursor-not-allowed"
+            >
+              {isLoading ? (
+                <>
+                  <div className="h-6 w-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  Processing...
+                </>
+              ) : (
+                <>
+                  <CameraIcon className="h-6 w-6" />
+                  ✅ Working Scanner
                 </>
               )}
             </motion.button>
@@ -236,6 +260,7 @@ export default function ScanToStart({ onScanSuccess, isLoading = false }: ScanTo
             <h3 className="text-sm font-semibold text-white mb-2">Scanner Options:</h3>
             <ul className="text-sm text-slate-400 space-y-1">
               <li>• <strong>🚨 Minimal Test:</strong> <span className="text-red-400">最簡化測試 - 繞過所有權限問題</span></li>
+              <li>• <strong>✅ Working Scanner:</strong> <span className="text-green-400">基於成功測試的完整掃描器</span></li>
               <li>• <strong>Safari Scanner 📱✨:</strong> <span className="text-green-400">Optimized for iPhone/Safari</span></li>
               <li>• <strong>Test Camera 🧪:</strong> Shows camera + simulate scan</li>
               <li>• <strong>HTML5 Scanner 🚀:</strong> Pure HTML5 - No external libraries</li>
@@ -322,6 +347,17 @@ export default function ScanToStart({ onScanSuccess, isLoading = false }: ScanTo
           onClose={handleCloseScanner}
           onScan={handleScan}
           title="🚨 Minimal Camera Test - 最簡化測試"
+        />
+      )}
+
+      {/* 基於成功測試的掃描器 */}
+      {showWorkingScanner && (
+        <WorkingQrScanner
+          open={showWorkingScanner}
+          onClose={handleCloseScanner}
+          onScan={handleScan}
+          title="✅ Working QR Scanner - 基於成功測試"
+          hint="使用與獨立測試相同的相機配置，應該能夠正常工作"
         />
       )}
     </>
