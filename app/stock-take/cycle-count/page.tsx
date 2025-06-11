@@ -8,7 +8,9 @@ import StockTakeNav from '../components/StockTakeNav';
 import ScanToStart from './components/ScanToStart';
 import RemainToCount from './components/RemainToCount';
 import NumberPad from './components/NumberPad';
+import BasicCameraTest from './components/BasicCameraTest';
 import CameraTest from './components/CameraTest';
+import ManualInput from './components/ManualInput';
 import { ClipboardDocumentCheckIcon } from '@heroicons/react/24/outline';
 
 // 定義狀態類型
@@ -29,6 +31,8 @@ export default function CycleCountPage() {
   const [showNumberPad, setShowNumberPad] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [showCameraTest, setShowCameraTest] = useState(false);
+  const [showBasicCameraTest, setShowBasicCameraTest] = useState(false);
+  const [showManualInput, setShowManualInput] = useState(false);
 
   // 處理 QR 掃描成功
   const handleScanSuccess = async (qrCode: string) => {
@@ -210,6 +214,23 @@ export default function CycleCountPage() {
               )}
             </AnimatePresence>
 
+            {/* Basic Camera Test 區域 */}
+            <AnimatePresence>
+              {showBasicCameraTest && (
+                <BasicCameraTest />
+              )}
+            </AnimatePresence>
+
+            {/* Manual Input 區域 */}
+            <AnimatePresence>
+              {showManualInput && (
+                <ManualInput 
+                  onScanSuccess={handleScanSuccess}
+                  isLoading={isLoading}
+                />
+              )}
+            </AnimatePresence>
+
             {/* Remain To Count 區域 */}
             <AnimatePresence>
               {countData && state === 'counting' && (
@@ -232,6 +253,26 @@ export default function CycleCountPage() {
                 className="bg-yellow-600 hover:bg-yellow-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors"
               >
                 {showCameraTest ? 'Hide Camera Test' : 'Test Camera'}
+              </motion.button>
+
+              {/* 基礎診斷按鈕 */}
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => setShowBasicCameraTest(!showBasicCameraTest)}
+                className="bg-orange-600 hover:bg-orange-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors"
+              >
+                {showBasicCameraTest ? 'Hide Diagnostics' : 'Camera Diagnostics'}
+              </motion.button>
+
+              {/* 手動輸入按鈕 */}
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => setShowManualInput(!showManualInput)}
+                className="bg-purple-600 hover:bg-purple-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors"
+              >
+                {showManualInput ? 'Hide Manual Input' : 'Manual Input'}
               </motion.button>
 
               {/* 重新開始按鈕 */}

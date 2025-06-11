@@ -5,6 +5,9 @@ import { motion } from 'framer-motion';
 import { QrCodeIcon, CameraIcon } from '@heroicons/react/24/outline';
 import { QrScanner } from '@/components/qr-scanner/qr-scanner';
 import { SimpleQrScanner } from '@/components/qr-scanner/simple-qr-scanner';
+import { DirectQrScanner } from '@/components/qr-scanner/direct-qr-scanner';
+import { Html5QrScanner } from '@/components/qr-scanner/html5-qr-scanner';
+import { TestCamera } from '@/components/qr-scanner/test-camera';
 
 interface ScanToStartProps {
   onScanSuccess: (qrCode: string) => void;
@@ -14,11 +17,17 @@ interface ScanToStartProps {
 export default function ScanToStart({ onScanSuccess, isLoading = false }: ScanToStartProps) {
   const [showScanner, setShowScanner] = useState(false);
   const [showSimpleScanner, setShowSimpleScanner] = useState(false);
+  const [showDirectScanner, setShowDirectScanner] = useState(false);
+  const [showHtml5Scanner, setShowHtml5Scanner] = useState(false);
+  const [showTestCamera, setShowTestCamera] = useState(false);
 
   // 處理掃描結果
   const handleScan = (result: string) => {
     setShowScanner(false);
     setShowSimpleScanner(false);
+    setShowDirectScanner(false);
+    setShowHtml5Scanner(false);
+    setShowTestCamera(false);
     onScanSuccess(result);
   };
 
@@ -26,6 +35,9 @@ export default function ScanToStart({ onScanSuccess, isLoading = false }: ScanTo
   const handleCloseScanner = () => {
     setShowScanner(false);
     setShowSimpleScanner(false);
+    setShowDirectScanner(false);
+    setShowHtml5Scanner(false);
+    setShowTestCamera(false);
   };
 
   return (
@@ -73,6 +85,66 @@ export default function ScanToStart({ onScanSuccess, isLoading = false }: ScanTo
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
+              onClick={() => setShowTestCamera(true)}
+              disabled={isLoading}
+              className="bg-gradient-to-r from-yellow-600 to-orange-600 hover:from-yellow-700 hover:to-orange-700 disabled:from-gray-600 disabled:to-gray-700 text-white font-semibold py-4 px-8 rounded-xl transition-all duration-200 flex items-center gap-3 shadow-lg disabled:cursor-not-allowed"
+            >
+              {isLoading ? (
+                <>
+                  <div className="h-6 w-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  Processing...
+                </>
+              ) : (
+                <>
+                  <CameraIcon className="h-6 w-6" />
+                  Test Camera 🧪
+                </>
+              )}
+            </motion.button>
+
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => setShowHtml5Scanner(true)}
+              disabled={isLoading}
+              className="bg-gradient-to-r from-pink-600 to-rose-600 hover:from-pink-700 hover:to-rose-700 disabled:from-gray-600 disabled:to-gray-700 text-white font-semibold py-4 px-8 rounded-xl transition-all duration-200 flex items-center gap-3 shadow-lg disabled:cursor-not-allowed"
+            >
+              {isLoading ? (
+                <>
+                  <div className="h-6 w-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  Processing...
+                </>
+              ) : (
+                <>
+                  <CameraIcon className="h-6 w-6" />
+                  HTML5 Scanner 🚀
+                </>
+              )}
+            </motion.button>
+
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => setShowDirectScanner(true)}
+              disabled={isLoading}
+              className="bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 disabled:from-gray-600 disabled:to-gray-700 text-white font-semibold py-4 px-8 rounded-xl transition-all duration-200 flex items-center gap-3 shadow-lg disabled:cursor-not-allowed"
+            >
+              {isLoading ? (
+                <>
+                  <div className="h-6 w-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  Processing...
+                </>
+              ) : (
+                <>
+                  <CameraIcon className="h-6 w-6" />
+                  Direct Scanner ⭐
+                </>
+              )}
+            </motion.button>
+
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
               onClick={() => setShowScanner(true)}
               disabled={isLoading}
               className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 disabled:from-gray-600 disabled:to-gray-700 text-white font-semibold py-4 px-8 rounded-xl transition-all duration-200 flex items-center gap-3 shadow-lg disabled:cursor-not-allowed"
@@ -85,7 +157,7 @@ export default function ScanToStart({ onScanSuccess, isLoading = false }: ScanTo
               ) : (
                 <>
                   <CameraIcon className="h-6 w-6" />
-                  Start Scanning
+                  Advanced Scanner
                 </>
               )}
             </motion.button>
@@ -115,8 +187,11 @@ export default function ScanToStart({ onScanSuccess, isLoading = false }: ScanTo
           <div className="mt-8 bg-slate-900/50 border border-slate-600/50 rounded-lg p-4 max-w-md">
             <h3 className="text-sm font-semibold text-white mb-2">Scanner Options:</h3>
             <ul className="text-sm text-slate-400 space-y-1">
-              <li>• <strong>Start Scanning:</strong> Advanced scanner with device selection</li>
-              <li>• <strong>Simple Scanner:</strong> Basic scanner if the first one doesn't work</li>
+              <li>• <strong>Test Camera 🧪:</strong> Shows camera + simulate scan</li>
+              <li>• <strong>HTML5 Scanner 🚀:</strong> Pure HTML5 - No external libraries</li>
+              <li>• <strong>Direct Scanner ⭐:</strong> Direct camera access</li>
+              <li>• <strong>Advanced Scanner:</strong> Full-featured with device selection</li>
+              <li>• <strong>Simple Scanner:</strong> Basic fallback option</li>
               <li>• Ensure good lighting for scanning</li>
               <li>• Allow camera permissions when prompted</li>
             </ul>
@@ -124,13 +199,46 @@ export default function ScanToStart({ onScanSuccess, isLoading = false }: ScanTo
         </div>
       </motion.div>
 
+      {/* 測試相機 */}
+      {showTestCamera && (
+        <TestCamera
+          open={showTestCamera}
+          onClose={handleCloseScanner}
+          onScan={handleScan}
+          title="Test Camera"
+          hint="This will show if camera access works"
+        />
+      )}
+
+      {/* HTML5 QR 掃描器 */}
+      {showHtml5Scanner && (
+        <Html5QrScanner
+          open={showHtml5Scanner}
+          onClose={handleCloseScanner}
+          onScan={handleScan}
+          title="HTML5 QR Scanner"
+          hint="Position the QR code within the viewfinder"
+        />
+      )}
+
+      {/* 直接 QR 掃描器 */}
+      {showDirectScanner && (
+        <DirectQrScanner
+          open={showDirectScanner}
+          onClose={handleCloseScanner}
+          onScan={handleScan}
+          title="Direct QR Scanner"
+          hint="Position the QR code within the viewfinder"
+        />
+      )}
+
       {/* QR 掃描器 */}
       {showScanner && (
         <QrScanner
           open={showScanner}
           onClose={handleCloseScanner}
           onScan={handleScan}
-          title="Scan Pallet QR Code"
+          title="Advanced QR Scanner"
           hint="Position the QR code within the viewfinder"
         />
       )}
