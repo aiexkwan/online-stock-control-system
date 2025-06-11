@@ -78,18 +78,38 @@ export const WorkingQrScanner: React.FC<WorkingQrScannerProps> = ({
           return;
         }
 
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-          setCameraActive(true);
-          addLog('📺 視頻流已連接');
+                 if (videoRef.current) {
+           videoRef.current.srcObject = stream;
+           addLog('📺 視頻流已連接');
 
-          videoRef.current.onloadedmetadata = () => {
-            if (videoRef.current && !stopped) {
-              addLog(`🎥 視頻準備就緒: ${videoRef.current.videoWidth}x${videoRef.current.videoHeight}`);
-              startScanning();
-            }
-          };
-        }
+           videoRef.current.onloadedmetadata = () => {
+             if (videoRef.current && !stopped) {
+               addLog(`🎥 視頻準備就緒: ${videoRef.current.videoWidth}x${videoRef.current.videoHeight}`);
+               setCameraActive(true);
+               startScanning();
+             }
+           };
+
+           // 備用方案：如果 onloadedmetadata 沒有觸發，使用 oncanplay
+           videoRef.current.oncanplay = () => {
+             if (videoRef.current && !stopped && !cameraActive) {
+               addLog(`🎬 視頻可以播放 (備用)`);
+               setCameraActive(true);
+               startScanning();
+             }
+           };
+
+           // 強制觸發檢查 - 有時候事件不會自動觸發
+           setTimeout(() => {
+             if (videoRef.current && !stopped && !cameraActive) {
+               if (videoRef.current.readyState >= 1) { // HAVE_METADATA
+                 addLog(`🔧 強制觸發視頻準備 (readyState: ${videoRef.current.readyState})`);
+                 setCameraActive(true);
+                 startScanning();
+               }
+             }
+           }, 2000);
+         }
 
       } catch (error: any) {
         addLog(`❌ 相機啟動失敗: ${error.name} - ${error.message}`);
@@ -215,14 +235,21 @@ export const WorkingQrScanner: React.FC<WorkingQrScannerProps> = ({
           <div className="bg-black rounded-lg p-4 flex items-center justify-center relative" style={{ minHeight: '350px' }}>
             {cameraActive ? (
               <>
-                <video
-                  ref={videoRef}
-                  autoPlay
-                  muted
-                  playsInline
-                  className="max-w-full max-h-[300px] object-contain rounded"
-                  style={{ transform: 'scaleX(-1)' }}
-                />
+                                 <video
+                   ref={videoRef}
+                   autoPlay
+                   muted
+                   playsInline
+                   controls={false}
+                   className="max-w-full max-h-[300px] object-contain rounded"
+                   style={{ transform: 'scaleX(-1)' }}
+                   onError={(e) => {
+                     console.error('Video error:', e);
+                     addLog(`❌ 視頻錯誤: ${e.type}`);
+                   }}
+                   onPlay={() => addLog('▶️ 視頻開始播放')}
+                   onPlaying={() => addLog('🎭 視頻正在播放')}
+                 />
                 <canvas ref={canvasRef} className="hidden" />
                 
                 {/* 掃描框 */}
