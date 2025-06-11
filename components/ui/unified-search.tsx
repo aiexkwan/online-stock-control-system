@@ -3,7 +3,7 @@ import { Search, QrCode, X, Loader2 } from 'lucide-react';
 import { Button } from './button';
 import { Input } from './input';
 import { Card, CardContent } from './card';
-import { QrScanner } from '../qr-scanner/qr-scanner';
+import { QRScanner } from '../qr-scanner/qr-scanner';
 
 interface Product {
   id: number;
@@ -477,10 +477,10 @@ export const UnifiedSearch = React.forwardRef<HTMLInputElement, UnifiedSearchPro
 
       {/* QR Scanner */}
       {showQrScanner && (
-        <QrScanner
-          open={showQrScanner}
-          onScan={handleQrScan}
-          onClose={() => setShowQrScanner(false)}
+          <QRScanner
+            open={showQrScanner}
+            onScan={handleQrScan}
+            onClose={() => setShowQrScanner(false)}
           title="Scan QR Code"
           hint="Align QR code within the frame"
         />
