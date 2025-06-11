@@ -11,6 +11,7 @@ import NumberPad from './components/NumberPad';
 import BasicCameraTest from './components/BasicCameraTest';
 import CameraTest from './components/CameraTest';
 import ManualInput from './components/ManualInput';
+import DetailedDiagnostic from './components/DetailedDiagnostic';
 import { ClipboardDocumentCheckIcon } from '@heroicons/react/24/outline';
 
 // 定義狀態類型
@@ -33,6 +34,7 @@ export default function CycleCountPage() {
   const [showCameraTest, setShowCameraTest] = useState(false);
   const [showBasicCameraTest, setShowBasicCameraTest] = useState(false);
   const [showManualInput, setShowManualInput] = useState(false);
+  const [showDetailedDiagnostic, setShowDetailedDiagnostic] = useState(false);
 
   // 處理 QR 掃描成功
   const handleScanSuccess = async (qrCode: string) => {
@@ -231,6 +233,13 @@ export default function CycleCountPage() {
               )}
             </AnimatePresence>
 
+            {/* Detailed Diagnostic 區域 */}
+            <AnimatePresence>
+              {showDetailedDiagnostic && (
+                <DetailedDiagnostic />
+              )}
+            </AnimatePresence>
+
             {/* Remain To Count 區域 */}
             <AnimatePresence>
               {countData && state === 'counting' && (
@@ -273,6 +282,16 @@ export default function CycleCountPage() {
                 className="bg-purple-600 hover:bg-purple-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors"
               >
                 {showManualInput ? 'Hide Manual Input' : 'Manual Input'}
+              </motion.button>
+
+              {/* 詳細診斷按鈕 */}
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => setShowDetailedDiagnostic(!showDetailedDiagnostic)}
+                className="bg-red-600 hover:bg-red-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors"
+              >
+                {showDetailedDiagnostic ? 'Hide Detailed Diagnostic' : 'Detailed Diagnostic'}
               </motion.button>
 
               {/* 重新開始按鈕 */}
