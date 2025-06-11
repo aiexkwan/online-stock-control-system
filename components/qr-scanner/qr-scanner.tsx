@@ -27,6 +27,7 @@ export const QrScanner: React.FC<QrScannerProps> = ({ open, onClose, onScan, tit
     }
 
     let stopped = false;
+    let timeoutId: NodeJS.Timeout;
     
     const startScanner = async () => {
       if (!videoRef.current) return;
@@ -34,21 +35,19 @@ export const QrScanner: React.FC<QrScannerProps> = ({ open, onClose, onScan, tit
       try {
         setState('initializing');
         
+        // 設置超時機制
+        timeoutId = setTimeout(() => {
+          if (!stopped) {
+            setState('error');
+            setErrorMessage('Camera initialization timeout. Please try again.');
+          }
+        }, 10000); // 10秒超時
+        
         // 檢查是否支持相機
         if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-          throw new Error('Camera not supported on this device');
-        }
-
-        // 請求相機權限
-        try {
-          await navigator.mediaDevices.getUserMedia({ video: true });
-        } catch (permissionError: any) {
-          if (permissionError.name === 'NotAllowedError') {
-            setState('permission-denied');
-            setErrorMessage('Camera permission denied. Please allow camera access and try again.');
-            return;
-          }
-          throw permissionError;
+          setState('error');
+          setErrorMessage('Camera not supported on this device');
+          return;
         }
 
         const codeReader = new BrowserMultiFormatReader();
@@ -82,11 +81,12 @@ export const QrScanner: React.FC<QrScannerProps> = ({ open, onClose, onScan, tit
           return;
         }
 
-        // 開始掃描
+        // 直接開始掃描，讓 zxing 處理權限請求
         const controls = await codeReader.decodeFromVideoDevice(deviceId, videoRef.current, (result, err) => {
           if (result && !stopped) {
             stopped = true;
             if (controls) controls.stop();
+            if (timeoutId) clearTimeout(timeoutId);
             onScan(result.getText());
             onClose();
           }
@@ -97,13 +97,16 @@ export const QrScanner: React.FC<QrScannerProps> = ({ open, onClose, onScan, tit
         });
         
         scannerRef.current = { codeReader, controls };
+        if (timeoutId) clearTimeout(timeoutId);
         setState('ready');
         
       } catch (err: any) {
         console.error('Camera scanning error:', err);
+        if (timeoutId) clearTimeout(timeoutId);
         setState('error');
         
         if (err.name === 'NotAllowedError') {
+          setState('permission-denied');
           setErrorMessage('Camera permission denied. Please allow camera access in your browser settings.');
         } else if (err.name === 'NotFoundError') {
           setErrorMessage('No camera found. Please ensure your device has a camera.');
@@ -121,6 +124,7 @@ export const QrScanner: React.FC<QrScannerProps> = ({ open, onClose, onScan, tit
 
     return () => {
       stopped = true;
+      if (timeoutId) clearTimeout(timeoutId);
       if (scannerRef.current?.controls) {
         try {
           scannerRef.current.controls.stop();

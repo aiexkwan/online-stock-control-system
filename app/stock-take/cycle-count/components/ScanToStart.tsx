@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { QrCodeIcon, CameraIcon } from '@heroicons/react/24/outline';
 import { QrScanner } from '@/components/qr-scanner/qr-scanner';
+import { SimpleQrScanner } from '@/components/qr-scanner/simple-qr-scanner';
 
 interface ScanToStartProps {
   onScanSuccess: (qrCode: string) => void;
@@ -12,16 +13,19 @@ interface ScanToStartProps {
 
 export default function ScanToStart({ onScanSuccess, isLoading = false }: ScanToStartProps) {
   const [showScanner, setShowScanner] = useState(false);
+  const [showSimpleScanner, setShowSimpleScanner] = useState(false);
 
   // 處理掃描結果
   const handleScan = (result: string) => {
     setShowScanner(false);
+    setShowSimpleScanner(false);
     onScanSuccess(result);
   };
 
   // 關閉掃描器
   const handleCloseScanner = () => {
     setShowScanner(false);
+    setShowSimpleScanner(false);
   };
 
   return (
@@ -65,33 +69,55 @@ export default function ScanToStart({ onScanSuccess, isLoading = false }: ScanTo
           </div>
 
           {/* 掃描按鈕 */}
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={() => setShowScanner(true)}
-            disabled={isLoading}
-            className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 disabled:from-gray-600 disabled:to-gray-700 text-white font-semibold py-4 px-8 rounded-xl transition-all duration-200 flex items-center gap-3 shadow-lg disabled:cursor-not-allowed"
-          >
-            {isLoading ? (
-              <>
-                <div className="h-6 w-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                Processing...
-              </>
-            ) : (
-              <>
-                <CameraIcon className="h-6 w-6" />
-                Start Scanning
-              </>
-            )}
-          </motion.button>
+          <div className="flex flex-col sm:flex-row gap-4">
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => setShowScanner(true)}
+              disabled={isLoading}
+              className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 disabled:from-gray-600 disabled:to-gray-700 text-white font-semibold py-4 px-8 rounded-xl transition-all duration-200 flex items-center gap-3 shadow-lg disabled:cursor-not-allowed"
+            >
+              {isLoading ? (
+                <>
+                  <div className="h-6 w-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  Processing...
+                </>
+              ) : (
+                <>
+                  <CameraIcon className="h-6 w-6" />
+                  Start Scanning
+                </>
+              )}
+            </motion.button>
+
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => setShowSimpleScanner(true)}
+              disabled={isLoading}
+              className="bg-gradient-to-r from-green-600 to-teal-600 hover:from-green-700 hover:to-teal-700 disabled:from-gray-600 disabled:to-gray-700 text-white font-semibold py-4 px-8 rounded-xl transition-all duration-200 flex items-center gap-3 shadow-lg disabled:cursor-not-allowed"
+            >
+              {isLoading ? (
+                <>
+                  <div className="h-6 w-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  Processing...
+                </>
+              ) : (
+                <>
+                  <CameraIcon className="h-6 w-6" />
+                  Simple Scanner
+                </>
+              )}
+            </motion.button>
+          </div>
 
           {/* 提示信息 */}
           <div className="mt-8 bg-slate-900/50 border border-slate-600/50 rounded-lg p-4 max-w-md">
-            <h3 className="text-sm font-semibold text-white mb-2">Instructions:</h3>
+            <h3 className="text-sm font-semibold text-white mb-2">Scanner Options:</h3>
             <ul className="text-sm text-slate-400 space-y-1">
+              <li>• <strong>Start Scanning:</strong> Advanced scanner with device selection</li>
+              <li>• <strong>Simple Scanner:</strong> Basic scanner if the first one doesn't work</li>
               <li>• Ensure good lighting for scanning</li>
-              <li>• Hold the device steady</li>
-              <li>• Keep QR code within the frame</li>
               <li>• Allow camera permissions when prompted</li>
             </ul>
           </div>
@@ -105,6 +131,17 @@ export default function ScanToStart({ onScanSuccess, isLoading = false }: ScanTo
           onClose={handleCloseScanner}
           onScan={handleScan}
           title="Scan Pallet QR Code"
+          hint="Position the QR code within the viewfinder"
+        />
+      )}
+
+      {/* 簡單 QR 掃描器 */}
+      {showSimpleScanner && (
+        <SimpleQrScanner
+          open={showSimpleScanner}
+          onClose={handleCloseScanner}
+          onScan={handleScan}
+          title="Simple QR Scanner"
           hint="Position the QR code within the viewfinder"
         />
       )}
