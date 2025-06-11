@@ -35,7 +35,7 @@ export const SimpleQrScanner: React.FC<SimpleQrScannerProps> = ({ open, onClose,
       streamRef.current = null;
     }
     if (scannerRef.current) {
-      scannerRef.current.reset();
+      // BrowserMultiFormatReader 沒有 reset 方法，直接設為 null
       scannerRef.current = null;
     }
     setIsReady(false);
@@ -90,8 +90,8 @@ export const SimpleQrScanner: React.FC<SimpleQrScannerProps> = ({ open, onClose,
       const codeReader = new BrowserMultiFormatReader();
       scannerRef.current = codeReader;
 
-      // 開始掃描
-      codeReader.decodeFromVideoElement(videoRef.current, (result, err) => {
+      // 開始掃描 - 使用正確的 API
+      codeReader.decodeFromVideoDevice(undefined, videoRef.current, (result, err) => {
         if (result) {
           onScan(result.getText());
           onClose();
