@@ -14,6 +14,7 @@ export async function middleware(request: NextRequest) {
     '/main-login',
     '/new-password',  // 密碼重設頁面需要公開，用戶通過電郵連結訪問
     '/print-label/html-preview',  // HTML 標籤預覽頁面（用於測試和預覽）
+    '/camera-debug',  // 相機調試頁面 - 用於排除身份驗證干擾
     // 只有特定的 API 路由需要公開訪問
     '/api/auth',      // 認證相關 API
     '/api/health',    // 健康檢查 API（如果有的話）
@@ -21,7 +22,7 @@ export async function middleware(request: NextRequest) {
     '/api/print-label-html',  // HTML 標籤預覽 API（用於測試和預覽）
     '/api/send-order-email'   // 訂單郵件發送 API（用於內部調用）
   ];
-  
+
   // 檢查是否為公開路由，並添加詳細日誌
   const isPublicRoute = publicRoutes.some(route => {
     const matches = request.nextUrl.pathname.startsWith(route);
