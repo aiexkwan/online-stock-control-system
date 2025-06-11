@@ -10,6 +10,7 @@ import { Html5QrScanner } from '@/components/qr-scanner/html5-qr-scanner';
 import { SafariOptimizedScanner } from '@/components/qr-scanner/safari-optimized-scanner';
 import { MinimalCameraTest } from '@/components/qr-scanner/minimal-camera-test';
 import { WorkingQrScanner } from '@/components/qr-scanner/working-qr-scanner';
+import { DebugWorkingScanner } from '@/components/qr-scanner/debug-working-scanner';
 import { TestCamera } from '@/components/qr-scanner/test-camera';
 
 interface ScanToStartProps {
@@ -25,6 +26,7 @@ export default function ScanToStart({ onScanSuccess, isLoading = false }: ScanTo
   const [showSafariScanner, setShowSafariScanner] = useState(false);
   const [showMinimalTest, setShowMinimalTest] = useState(false);
   const [showWorkingScanner, setShowWorkingScanner] = useState(false);
+  const [showDebugScanner, setShowDebugScanner] = useState(false);
   const [showTestCamera, setShowTestCamera] = useState(false);
 
   // 處理掃描結果
@@ -36,6 +38,7 @@ export default function ScanToStart({ onScanSuccess, isLoading = false }: ScanTo
     setShowSafariScanner(false);
     setShowMinimalTest(false);
     setShowWorkingScanner(false);
+    setShowDebugScanner(false);
     setShowTestCamera(false);
     onScanSuccess(result);
   };
@@ -49,6 +52,7 @@ export default function ScanToStart({ onScanSuccess, isLoading = false }: ScanTo
     setShowSafariScanner(false);
     setShowMinimalTest(false);
     setShowWorkingScanner(false);
+    setShowDebugScanner(false);
     setShowTestCamera(false);
   };
 
@@ -94,6 +98,26 @@ export default function ScanToStart({ onScanSuccess, isLoading = false }: ScanTo
 
           {/* 掃描按鈕 */}
           <div className="flex flex-col sm:flex-row gap-4">
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => setShowDebugScanner(true)}
+              disabled={isLoading}
+              className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 disabled:from-gray-600 disabled:to-gray-700 text-white font-semibold py-4 px-8 rounded-xl transition-all duration-200 flex items-center gap-3 shadow-lg disabled:cursor-not-allowed"
+            >
+              {isLoading ? (
+                <>
+                  <div className="h-6 w-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  Processing...
+                </>
+              ) : (
+                <>
+                  <CameraIcon className="h-6 w-6" />
+                  🔧 Debug Scanner
+                </>
+              )}
+            </motion.button>
+
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
@@ -259,6 +283,7 @@ export default function ScanToStart({ onScanSuccess, isLoading = false }: ScanTo
           <div className="mt-8 bg-slate-900/50 border border-slate-600/50 rounded-lg p-4 max-w-md">
             <h3 className="text-sm font-semibold text-white mb-2">Scanner Options:</h3>
             <ul className="text-sm text-slate-400 space-y-1">
+              <li>• <strong>🔧 Debug Scanner:</strong> <span className="text-purple-400">詳細調試 - 查看所有視頻事件</span></li>
               <li>• <strong>🚨 Minimal Test:</strong> <span className="text-red-400">最簡化測試 - 繞過所有權限問題</span></li>
               <li>• <strong>✅ Working Scanner:</strong> <span className="text-green-400">基於成功測試的完整掃描器</span></li>
               <li>• <strong>Safari Scanner 📱✨:</strong> <span className="text-green-400">Optimized for iPhone/Safari</span></li>
@@ -358,6 +383,16 @@ export default function ScanToStart({ onScanSuccess, isLoading = false }: ScanTo
           onScan={handleScan}
           title="✅ Working QR Scanner - 基於成功測試"
           hint="使用與獨立測試相同的相機配置，應該能夠正常工作"
+        />
+      )}
+
+      {/* 調試掃描器 */}
+      {showDebugScanner && (
+        <DebugWorkingScanner
+          open={showDebugScanner}
+          onClose={handleCloseScanner}
+          onScan={handleScan}
+          title="🔧 Debug Working Scanner - 詳細調試"
         />
       )}
     </>
