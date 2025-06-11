@@ -37,7 +37,9 @@ import {
   CogIcon,
   Bars3Icon,
   XMarkIcon,
-  CloudArrowUpIcon
+  CloudArrowUpIcon,
+  FolderOpenIcon,
+  SparklesIcon
 } from '@heroicons/react/24/outline';
 import { useAuth } from '@/app/hooks/useAuth';
 import MotionBackground from '../components/MotionBackground';
@@ -47,6 +49,8 @@ import FinishedProduct from '@/app/components/PrintHistory';
 import MaterialReceived from '@/app/components/GrnHistory';
 import PalletDonutChart from '@/app/components/PalletDonutChart';
 import UploadFilesDialog from '@/app/components/admin-panel-menu/UploadFilesDialog';
+import { UploadFilesOnlyDialog } from '@/app/components/admin-panel-menu/UploadFilesOnlyDialog';
+import { UploadOrderPDFDialog } from '@/app/components/admin-panel-menu/UploadOrderPDFDialog';
 import VoidPalletDialog from '@/app/components/admin-panel-menu/VoidPalletDialog';
 import ViewHistoryDialog from '@/app/components/admin-panel-menu/ViewHistoryDialog';
 import DatabaseUpdateDialog from '@/app/components/admin-panel-menu/DatabaseUpdateDialog';
@@ -135,13 +139,31 @@ const adminMenuItems = [
     category: 'System Tools'
   },
   {
-    id: 'upload-files',
+    id: 'upload-files-only',
     title: 'Upload Files',
-    description: 'Upload to database',
-    icon: CloudArrowUpIcon,
-    action: 'open-upload-dialog',
+    description: 'Upload documents and images to database',
+    icon: FolderOpenIcon,
+    action: 'open-upload-files-only-dialog',
     color: 'hover:bg-purple-900/20 hover:text-purple-400',
-    category: 'System Tools'
+    category: 'Document Upload'
+  },
+  {
+    id: 'upload-order-pdf',
+    title: 'Upload Order PDF',
+    description: 'Upload and analyze order PDF with AI',
+    icon: SparklesIcon,
+    action: 'open-upload-order-pdf-dialog',
+    color: 'hover:bg-blue-900/20 hover:text-blue-400',
+    category: 'Document Upload'
+  },
+  {
+    id: 'product-spec-doc',
+    title: 'Product Spec Doc',
+    description: 'Manage product specification documents',
+    icon: DocumentTextIcon,
+    action: 'open-product-spec-dialog',
+    color: 'hover:bg-cyan-900/20 hover:text-cyan-400',
+    category: 'Document Upload'
   }
 ];
 
@@ -258,6 +280,15 @@ export default function AdminPanelPage() {
 
   // Upload Files states
   const [showUploadDialog, setShowUploadDialog] = useState(false);
+
+  // Upload Files Only states
+  const [showUploadFilesOnlyDialog, setShowUploadFilesOnlyDialog] = useState(false);
+
+  // Upload Order PDF states
+  const [showUploadOrderPDFDialog, setShowUploadOrderPDFDialog] = useState(false);
+
+  // Product Spec Doc states
+  const [showProductSpecDialog, setShowProductSpecDialog] = useState(false);
 
   // Void Pallet Dialog states
   const [showVoidDialog, setShowVoidDialog] = useState(false);
@@ -692,6 +723,12 @@ export default function AdminPanelPage() {
       handleReportClick(item.reportType);
     } else if (item.action === 'open-upload-dialog') {
       setShowUploadDialog(true);
+    } else if (item.action === 'open-upload-files-only-dialog') {
+      setShowUploadFilesOnlyDialog(true);
+    } else if (item.action === 'open-upload-order-pdf-dialog') {
+      setShowUploadOrderPDFDialog(true);
+    } else if (item.action === 'open-product-spec-dialog') {
+      setShowProductSpecDialog(true);
     } else if (item.action === 'open-void-dialog') {
       setShowVoidDialog(true);
     } else if (item.action === 'open-history-dialog') {
@@ -1978,6 +2015,60 @@ export default function AdminPanelPage() {
         isOpen={showUploadDialog}
         onOpenChange={setShowUploadDialog}
       />
+
+      {/* Upload Files Only Dialog */}
+      <UploadFilesOnlyDialog
+        isOpen={showUploadFilesOnlyDialog}
+        onOpenChange={setShowUploadFilesOnlyDialog}
+      />
+
+      {/* Upload Order PDF Dialog */}
+      <UploadOrderPDFDialog
+        isOpen={showUploadOrderPDFDialog}
+        onOpenChange={setShowUploadOrderPDFDialog}
+      />
+
+      {/* Product Spec Doc Dialog */}
+      <Dialog open={showProductSpecDialog} onOpenChange={setShowProductSpecDialog}>
+        <DialogContent className="max-w-4xl max-h-[90vh] bg-slate-900/95 backdrop-blur-xl border border-blue-500/30 text-white overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-blue-300 via-indigo-300 to-purple-300 bg-clip-text text-transparent flex items-center gap-3">
+              <DocumentTextIcon className="w-7 h-7 text-blue-400" />
+              Product Specification Documents
+            </DialogTitle>
+            <DialogDescription className="text-slate-400 text-lg">
+              Manage product specification documents and related files
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-6 py-6">
+            {/* Placeholder content */}
+            <div className="text-center py-12">
+              <DocumentTextIcon className="w-20 h-20 text-slate-600 mx-auto mb-6" />
+              <h3 className="text-xl font-semibold text-slate-300 mb-3">
+                Product Spec Doc Management
+              </h3>
+              <p className="text-slate-400 mb-6 max-w-md mx-auto">
+                This feature is under development. It will allow you to upload, manage, and organize product specification documents.
+              </p>
+              <div className="bg-blue-500/10 border border-blue-400/30 rounded-xl p-4 max-w-lg mx-auto">
+                <p className="text-blue-300 text-sm">
+                  📋 Coming soon: Upload PDF documents, organize by product codes, search and filter functionality
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter className="flex gap-4 pt-6">
+            <button
+              onClick={() => setShowProductSpecDialog(false)}
+              className="px-6 py-3 bg-slate-700/50 hover:bg-slate-600/50 border border-slate-600/50 hover:border-slate-500/70 rounded-xl text-slate-300 hover:text-white font-medium transition-all duration-300"
+            >
+              Close
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Void Pallet Dialog */}
       <VoidPalletDialog
