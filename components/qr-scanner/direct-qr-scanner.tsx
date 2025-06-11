@@ -81,7 +81,8 @@ export const DirectQrScanner: React.FC<DirectQrScannerProps> = ({
           if (stopped || !videoRef.current || !scannerRef.current) return;
 
           try {
-            const result = await scannerRef.current.decodeFromVideoElement(videoRef.current);
+            // 使用 decodeOnceFromVideoElement 方法，這是正確的 API
+            const result = await scannerRef.current.decodeOnceFromVideoElement(videoRef.current);
             if (result && !stopped) {
               stopped = true;
               onScan(result.getText());
