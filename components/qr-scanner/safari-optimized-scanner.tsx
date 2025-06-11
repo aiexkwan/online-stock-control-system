@@ -287,14 +287,14 @@ export const SafariOptimizedScanner: React.FC<SafariOptimizedScannerProps> = ({
             <p className="text-gray-300 mb-4 max-w-sm">
               Please allow camera access in Safari settings.
             </p>
-            <div className="text-sm text-gray-400 mb-4">
-              <p>For iPhone Safari:</p>
-              <ul className="list-disc list-inside mt-2 space-y-1">
-                <li>Settings > Safari > Camera</li>
-                <li>Allow camera access for this website</li>
-                <li>Refresh the page</li>
-              </ul>
-            </div>
+                         <div className="text-sm text-gray-400 mb-4">
+               <p>For iPhone Safari:</p>
+               <ul className="list-disc list-inside mt-2 space-y-1">
+                 <li>Settings &gt; Safari &gt; Camera</li>
+                 <li>Allow camera access for this website</li>
+                 <li>Refresh the page</li>
+               </ul>
+             </div>
           </div>
         );
 
