@@ -8,6 +8,7 @@ import StockTakeNav from '../components/StockTakeNav';
 import ScanToStart from './components/ScanToStart';
 import RemainToCount from './components/RemainToCount';
 import NumberPad from './components/NumberPad';
+import CameraTest from './components/CameraTest';
 import { ClipboardDocumentCheckIcon } from '@heroicons/react/24/outline';
 
 // 定義狀態類型
@@ -27,6 +28,7 @@ export default function CycleCountPage() {
   const [countData, setCountData] = useState<CountData | null>(null);
   const [showNumberPad, setShowNumberPad] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [showCameraTest, setShowCameraTest] = useState(false);
 
   // 處理 QR 掃描成功
   const handleScanSuccess = async (qrCode: string) => {
@@ -201,6 +203,13 @@ export default function CycleCountPage() {
               )}
             </AnimatePresence>
 
+            {/* Camera Test 區域 */}
+            <AnimatePresence>
+              {showCameraTest && (
+                <CameraTest />
+              )}
+            </AnimatePresence>
+
             {/* Remain To Count 區域 */}
             <AnimatePresence>
               {countData && state === 'counting' && (
@@ -213,13 +222,20 @@ export default function CycleCountPage() {
               )}
             </AnimatePresence>
 
-            {/* 重新開始按鈕 */}
-            {state === 'counting' && (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="text-center"
+            {/* 操作按鈕區域 */}
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              {/* 相機測試按鈕 */}
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => setShowCameraTest(!showCameraTest)}
+                className="bg-yellow-600 hover:bg-yellow-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors"
               >
+                {showCameraTest ? 'Hide Camera Test' : 'Test Camera'}
+              </motion.button>
+
+              {/* 重新開始按鈕 */}
+              {state === 'counting' && (
                 <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
@@ -228,8 +244,8 @@ export default function CycleCountPage() {
                 >
                   Scan Next Pallet
                 </motion.button>
-              </motion.div>
-            )}
+              )}
+            </div>
           </div>
         </div>
 
