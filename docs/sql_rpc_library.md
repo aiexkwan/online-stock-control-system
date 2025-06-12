@@ -332,8 +332,51 @@ END;
 
 ---
 
+## 📊 Stock Take Functions
+
+### validate_stocktake_count(p_product_code TEXT, p_counted_qty BIGINT)
+- **Purpose**: Validate stock count quantity against defined rules
+- **Parameters**:
+  - `p_product_code`: Product code
+  - `p_counted_qty`: Counted quantity
+- **Returns**: JSONB - Validation result with warnings/errors
+- **Features**:
+  - Checks against validation rules in stocktake_validation_rules table
+  - Calculates variance percentage
+  - Returns detailed warnings and errors
+- **Location**: Stock take SQL queries
+- **Status**: ✅ Active - Used in cycle count validation
+
+### process_batch_scan(p_batch_id UUID, p_scans JSONB)
+- **Purpose**: Process multiple stock count scans in batch
+- **Parameters**:
+  - `p_batch_id`: Batch session ID
+  - `p_scans`: Array of scan records in JSONB format
+- **Returns**: JSONB - Processing results with success/error counts
+- **Features**:
+  - Batch processing for improved performance
+  - Individual error handling for each scan
+  - Transaction safety
+- **Location**: Stock take SQL queries
+- **Status**: ✅ Active - Used in batch mode scanning
+
+### refresh_stocktake_reports()
+- **Purpose**: Refresh materialized views for stock take reports
+- **Returns**: void
+- **Features**:
+  - Updates mv_stocktake_variance_report
+  - Improves report query performance
+  - Should be run after major count sessions
+- **Location**: Stock take SQL queries
+- **Status**: ✅ Active - Used for report optimization
+
+---
+
+
+
 ## 🔄 Recent Updates
 
+- **2025-01-11**: Added stock take enhancement functions (validation, batch processing, reporting)
 - **2024-06-25**: Implemented atomic pallet number generation V2
 - **2024-06-25**: Updated all pallet generation calls to use V2 functions
 - **2024-06-25**: Enhanced error handling and performance monitoring 

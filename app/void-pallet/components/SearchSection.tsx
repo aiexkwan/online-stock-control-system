@@ -3,7 +3,7 @@
 import React from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { QRScanner } from '@/components/qr-scanner/qr-scanner';
+import { SimpleQRScanner } from '@/components/qr-scanner/simple-qr-scanner';
 import { QrCodeIcon, NumberedListIcon } from '@heroicons/react/24/outline';
 
 interface SearchSectionProps {
@@ -113,12 +113,11 @@ export function SearchSection({
       </div>
 
       {/* QR Scanner */}
-      <QRScanner
+      <SimpleQRScanner
         open={showScanner}
         onClose={() => onShowScanner(false)}
         onScan={onQRScan}
         title="Scan Pallet QR Code"
-        hint="Align QR Code within the frame to scan"
       />
 
       {/* Search hints */}

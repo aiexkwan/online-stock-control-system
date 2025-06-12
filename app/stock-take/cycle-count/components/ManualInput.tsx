@@ -17,7 +17,7 @@ export default function ManualInput({ onScanSuccess, isLoading }: ManualInputPro
     e.preventDefault();
     
     if (!inputValue.trim()) {
-      setError('請輸入 QR Code 內容');
+      setError('Please enter pallet number');
       return;
     }
 
@@ -31,12 +31,6 @@ export default function ManualInput({ onScanSuccess, isLoading }: ManualInputPro
     if (error) setError('');
   };
 
-  // 示例 QR Code 格式
-  const exampleFormats = [
-    'PLT240001',
-    'PLT240002', 
-    'PLT240003'
-  ];
 
   return (
     <motion.div
@@ -46,20 +40,20 @@ export default function ManualInput({ onScanSuccess, isLoading }: ManualInputPro
     >
       <div className="flex items-center mb-6">
         <PencilSquareIcon className="h-8 w-8 text-green-400 mr-3" />
-        <h2 className="text-xl font-bold text-white">Manual QR Code Input</h2>
+        <h2 className="text-xl font-bold text-white">Manual Pallet Number Input</h2>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <label htmlFor="qr-input" className="block text-sm font-medium text-gray-300 mb-2">
-            輸入 QR Code 內容：
+            Enter Pallet Number:
           </label>
           <input
             id="qr-input"
             type="text"
             value={inputValue}
             onChange={handleInputChange}
-            placeholder="例如: PLT240001"
+            placeholder="e.g.: 241224/01"
             className="w-full px-4 py-3 bg-slate-700/50 border border-slate-600/50 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             disabled={isLoading}
           />
@@ -76,39 +70,22 @@ export default function ManualInput({ onScanSuccess, isLoading }: ManualInputPro
           {isLoading ? (
             <>
               <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
-              處理中...
+              Processing...
             </>
           ) : (
             <>
               <QrCodeIcon className="h-5 w-5 mr-2" />
-              提交 QR Code
+              Submit Pallet Number
             </>
           )}
         </button>
       </form>
 
-      {/* 示例格式 */}
-      <div className="mt-6 p-4 bg-slate-900/30 rounded-lg">
-        <h3 className="text-white font-semibold mb-2">示例格式：</h3>
-        <div className="space-y-2">
-          {exampleFormats.map((format, index) => (
-            <button
-              key={index}
-              onClick={() => setInputValue(format)}
-              className="block w-full text-left text-sm text-gray-300 hover:text-white bg-slate-700/30 hover:bg-slate-700/50 px-3 py-2 rounded transition-colors"
-              disabled={isLoading}
-            >
-              {format}
-            </button>
-          ))}
-        </div>
-      </div>
 
       {/* 說明 */}
       <div className="mt-4 p-3 bg-blue-900/20 border border-blue-700/30 rounded-lg">
         <p className="text-blue-200 text-sm">
-          💡 如果相機無法使用，您可以手動輸入 QR Code 內容進行測試。
-          通常 Pallet Label 的 QR Code 格式為 "PLT" 開頭加上數字。
+          💡 Manual input only accepts pallet numbers. Series can only be read by scanning QR codes.
         </p>
       </div>
     </motion.div>

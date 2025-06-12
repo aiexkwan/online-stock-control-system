@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { QrCodeIcon, CameraIcon } from '@heroicons/react/24/outline';
-import { QRScanner } from '@/components/qr-scanner/qr-scanner';
+import { SimpleQRScanner } from '@/components/qr-scanner/simple-qr-scanner';
 
 interface ScanToStartProps {
   onScanSuccess: (qrCode: string) => void;
@@ -102,11 +102,11 @@ export default function ScanToStart({ onScanSuccess, isLoading = false }: ScanTo
 
       {/* QR Scanner */}
       {showScanner && (
-        <QRScanner
+        <SimpleQRScanner
           open={showScanner}
           onClose={handleCloseScanner}
           onScan={handleScan}
-          title="QR Code Scanner"
+          title="Scan Pallet QR Code"
         />
       )}
     </>

@@ -6,7 +6,7 @@ import { useVoidPallet } from '../../void-pallet/hooks/useVoidPallet';
 import { ReprintInfoDialog } from '../../void-pallet/components/ReprintInfoDialog';
 import { VOID_REASONS } from '../../void-pallet/types';
 import { X, Search, QrCode, Loader2 } from 'lucide-react';
-import { QRScanner } from '../../../components/qr-scanner/qr-scanner';
+import { SimpleQRScanner } from '../../../components/qr-scanner/simple-qr-scanner';
 
 interface VoidPalletDialogProps {
   isOpen: boolean;
@@ -543,12 +543,11 @@ export default function VoidPalletDialog({ isOpen, onClose, onReprintNeeded }: V
 
       {/* QR Scanner */}
       {showQrScanner && (
-        <QRScanner
+        <SimpleQRScanner
           open={showQrScanner}
           onScan={handleQrScan}
           onClose={() => setShowQrScanner(false)}
           title="Scan QR Code"
-          hint="Align QR code within the frame"
         />
       )}
     </>
