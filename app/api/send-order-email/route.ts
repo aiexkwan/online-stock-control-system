@@ -119,16 +119,16 @@ export async function POST(request: NextRequest) {
     
     if (hasUProducts && hasNonUProducts) {
       // 混合 U 和非 U 產品
-      toEmails = Array.isArray(to) ? to : ['grobinson@pennineindustries.com', 'gtatlock@pennineindustries.com'];
-      ccEmails = cc || ['akwan@pennineindustries.com', 'alyon@pennineindustries.com'];
+      toEmails = Array.isArray(to) ? to : ['grobinson@pennineindustries.com'];
+      ccEmails = cc || ['akwan@pennineindustries.com', 'alyon@pennineindustries.com', 'kjones@pennineindustries.com'];
     } else if (hasUProducts) {
       // 僅 U 產品
       toEmails = Array.isArray(to) ? to : [typeof to === 'string' ? to : 'grobinson@pennineindustries.com'];
-      ccEmails = cc || ['akwan@pennineindustries.com', 'alyon@pennineindustries.com', 'gtatlock@pennineindustries.com'];
+      ccEmails = cc || ['akwan@pennineindustries.com', 'alyon@pennineindustries.com', 'kjones@pennineindustries.com'];
     } else {
       // 正常情況（無 U 產品）
       toEmails = Array.isArray(to) ? to : [typeof to === 'string' ? to : 'alyon@pennineindustries.com'];
-      ccEmails = cc || ['akwan@pennineindustries.com', 'gtatlock@pennineindustries.com', 'grobinson@pennineindustries.com'];
+      ccEmails = cc || ['akwan@pennineindustries.com', 'grobinson@pennineindustries.com', 'kjones@pennineindustries.com'];
     }
     
     console.log('📧 Email details:', {

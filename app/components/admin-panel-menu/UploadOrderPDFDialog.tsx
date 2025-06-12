@@ -336,7 +336,7 @@ export const UploadOrderPDFDialog: React.FC<UploadOrderPDFDialogProps> = ({
                 Upload Order PDF
               </DialogTitle>
               <DialogDescription className="text-slate-400 text-lg">
-                Upload and analyze order PDF documents with AI
+                Upload and analyze order PDF documents
               </DialogDescription>
             </DialogHeader>
 

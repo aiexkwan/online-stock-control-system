@@ -65,7 +65,7 @@ const adminMenuItems = [
     id: 'aco-report',
     title: 'ACO Order Report',
     description: 'Export ACO order reports',
-    icon: DocumentChartBarIcon,
+    icon: RectangleStackIcon,
     action: 'generate-report',
     reportType: 'aco',
     color: 'hover:bg-green-900/20 hover:text-green-400',
@@ -75,7 +75,7 @@ const adminMenuItems = [
     id: 'grn-report',
     title: 'GRN Report',
     description: 'Export GRN reports',
-    icon: DocumentTextIcon,
+    icon: RectangleStackIcon,
     action: 'generate-report',
     reportType: 'grn',
     color: 'hover:bg-blue-900/20 hover:text-blue-400',
@@ -105,7 +105,7 @@ const adminMenuItems = [
     id: 'all-data-report',
     title: 'Export All Data',
     description: 'Export selected database tables',
-    icon: DocumentChartBarIcon,
+    icon: RectangleStackIcon,
     action: 'generate-report',
     reportType: 'all-data',
     color: 'hover:bg-emerald-900/20 hover:text-emerald-400',
@@ -141,8 +141,8 @@ const adminMenuItems = [
   {
     id: 'upload-files-only',
     title: 'Upload Files',
-    description: 'Upload documents and images to database',
-    icon: FolderOpenIcon,
+    description: 'Upload documents and images',
+    icon: DocumentTextIcon,
     action: 'open-upload-files-only-dialog',
     color: 'hover:bg-purple-900/20 hover:text-purple-400',
     category: 'Document Upload'
@@ -150,8 +150,8 @@ const adminMenuItems = [
   {
     id: 'upload-order-pdf',
     title: 'Upload Order PDF',
-    description: 'Upload and analyze order PDF with AI',
-    icon: SparklesIcon,
+    description: 'Upload order PDF',
+    icon: DocumentTextIcon,
     action: 'open-upload-order-pdf-dialog',
     color: 'hover:bg-blue-900/20 hover:text-blue-400',
     category: 'Document Upload'
@@ -159,7 +159,7 @@ const adminMenuItems = [
   {
     id: 'product-spec-doc',
     title: 'Product Spec Doc',
-    description: 'Manage product specification documents',
+    description: 'Upload product specification documents',
     icon: DocumentTextIcon,
     action: 'open-product-spec-dialog',
     color: 'hover:bg-cyan-900/20 hover:text-cyan-400',

@@ -126,21 +126,21 @@ serve(async (req) => {
       
       if (hasUProducts && hasNonUProducts) {
         // Mixed U and non-U products
-        toEmails = Array.isArray(to) ? to : ['grobinson@pennineindustries.com', 'gtatlock@pennineindustries.com']
+        toEmails = Array.isArray(to) ? to : ['grobinson@pennineindustries.com', 'kjones@pennineindustries.com']
         ccEmails = cc || ['akwan@pennineindustries.com', 'alyon@pennineindustries.com']
       } else if (hasUProducts) {
         // Only U products
         toEmails = Array.isArray(to) ? to : [typeof to === 'string' ? to : 'grobinson@pennineindustries.com']
-        ccEmails = cc || ['akwan@pennineindustries.com', 'alyon@pennineindustries.com', 'gtatlock@pennineindustries.com']
+        ccEmails = cc || ['akwan@pennineindustries.com', 'alyon@pennineindustries.com', 'kjones@pennineindustries.com']
       } else {
         // Normal case (no U products)
         toEmails = Array.isArray(to) ? to : [typeof to === 'string' ? to : 'alyon@pennineindustries.com']
-        ccEmails = cc || ['akwan@pennineindustries.com', 'gtatlock@pennineindustries.com', 'grobinson@pennineindustries.com']
+        ccEmails = cc || ['akwan@pennineindustries.com', 'kjones@pennineindustries.com', 'grobinson@pennineindustries.com']
       }
     } else {
       // ACO completion email (existing logic)
       toEmails = Array.isArray(to) ? to : [typeof to === 'string' ? to : 'alyon@pennineindustries.com']
-      ccEmails = cc || ['akwan@pennineindustries.com', 'gtatlock@pennineindustries.com', 'grobinson@pennineindustries.com']
+      ccEmails = cc || ['akwan@pennineindustries.com', 'kjones@pennineindustries.com', 'grobinson@pennineindustries.com']
     }
     
     console.log('📧 Email details:', {
