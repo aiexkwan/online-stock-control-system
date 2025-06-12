@@ -81,6 +81,8 @@ SB09 - Top Hat 160mm Flexible With Jubilee Clip
 T101 - Greenfix Greenlok Spikes Pack of 300
 TAV1 - Easyseal Connector
 X01A2891 - Sub Assembly Ecolite 600x150 Straight
+NS - Reinforcing for 1000 x 1000 Supastack
+NS - customer not received any connectors on our order 280640
 
 【抽取規則（必須遵守）】
 order_ref：全文開首出現的8位數字，去除前置零。
@@ -90,6 +92,9 @@ product_qty：每條產品行最後一個明顯數字（通常係數量，最後
 如有多件產品，必須每條獨立 JSON object。
 - 嚴禁 account_num/customer_ref 混淆，只能依據原文 keyword。
 - 必須略過所有 “pack size”、“weight (kg)”、“Pallet Qty”、“Transport charge”等非產品資料。
+'NS'代表'non-stock', 沒有固定product description, 但均固定為"Each"後
+例如：NSEachReinforcing for 1000 x 1000 Supastack 0 0.00 8
+則 product description="Reinforcing for 1000 x 1000 Supastack"
 
 如有缺漏，用 "NOT_FOUND" 或 0 填充。
 
@@ -238,5 +243,35 @@ Pallet Qty 96
     "product_code": "MEL60",
     "product_desc": "Pair of 600x320mm EasyLiner sides",
     "product_qty": 160
+  }
+]
+
+**例子 6
+
+- 文本內容
+
+0000280924
+...（略）...
+  Loaded
+MATLAS901Atlas Pair of 900 mm Sides Including Collars & Connectors517 10.85 168
+Must be Post Mod for ABC (holed)Pallet Qty 42
+NSEachReinforcing for 1000 x 1000 Supastack 0 0.00 8
+...（略）...
+326Total Weight Of Order (Kg):
+
+- 返回json
+
+[
+  {
+    "order_ref": "280924",
+    "product_code": "MATLAS90",
+    "product_desc": "Atlas Pair of 900 mm Sides Including Collars & Connectors",
+    "product_qty": 168
+  }
+  {
+    "order_ref": "280924",
+    "product_code": "NS",
+    "product_desc": "Reinforcing for 1000 x 1000 Supastack",
+    "product_qty": 8
   }
 ]
