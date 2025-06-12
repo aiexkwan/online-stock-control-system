@@ -43,10 +43,12 @@ CREATE TABLE product_document_chunks (
   chunk_index INTEGER NOT NULL,
   chunk_text TEXT NOT NULL,
   metadata JSONB DEFAULT '{}'::jsonb,
-  embedding VECTOR(1536) -- 使用 OpenAI 的嵌入維度
+  embedding VECTOR(1536) -- 使用 OpenAI text-embedding-3-large 的維度
 );
 
 CREATE INDEX idx_product_document_chunks_document_id ON product_document_chunks(document_id);
+-- 添加向量索引以加速相似度搜索
+CREATE INDEX idx_product_document_chunks_embedding ON product_document_chunks USING ivfflat (embedding vector_cosine_ops);
 ```
 
 #### 1.3 啟用向量搜索擴展
@@ -59,7 +61,8 @@ CREATE OR REPLACE FUNCTION match_product_document_chunks(
   query_embedding VECTOR(1536),
   match_threshold FLOAT,
   match_count INT,
-  filter_document_id UUID DEFAULT NULL
+  filter_document_id UUID DEFAULT NULL,
+  filter_product_code TEXT DEFAULT NULL
 )
 RETURNS TABLE (
   id UUID,
@@ -81,8 +84,10 @@ BEGIN
     pdc.metadata,
     1 - (pdc.embedding <=> query_embedding) AS similarity
   FROM product_document_chunks pdc
+  JOIN product_documents pd ON pdc.document_id = pd.id
   WHERE
     (filter_document_id IS NULL OR pdc.document_id = filter_document_id)
+    AND (filter_product_code IS NULL OR pd.product_code = filter_product_code)
     AND 1 - (pdc.embedding <=> query_embedding) > match_threshold
   ORDER BY pdc.embedding <=> query_embedding
   LIMIT match_count;
@@ -125,24 +130,26 @@ $$;
    - 存儲到 Supabase Storage
 
 2. **文檔解析**
-   - 使用適當的庫解析 .doc/.docx 文件（如 mammoth.js 或 docx）
-   - 提取純文本內容
-   - 提取文檔結構和元數據
+   - 使用 mammoth.js 解析 .doc/.docx 文件
+   - 提取純文本內容和結構化資訊
+   - 保留文檔層次結構（標題、段落、列表等）
 
 3. **文本分塊**
-   - 將文檔分割為適當大小的塊（考慮語義完整性）
-   - 處理特殊格式（如表格、列表）
-   - 為每個塊添加元數據（位置、類型等）
+   - 使用語義感知分塊算法，保持上下文完整性
+   - 將文檔分割為最大 8,000 token 的塊（與 OpenAI 嵌入模型限制相容）
+   - 使用重疊分塊策略（50-100個token重疊）以保持上下文連續性
+   - 為每個塊添加元數據（章節、標題層級、類型等）
 
 4. **向量化處理**
-   - 使用 OpenAI 的嵌入 API 生成文本塊的向量表示
-   - 批量處理以優化 API 調用
-   - 錯誤處理和重試機制
+   - 使用 OpenAI text-embedding-3-large 生成嵌入
+   - 實現批量處理（每批最多20個塊）以優化API調用
+   - 添加重試和錯誤處理機制
+   - 存儲向量維度為 1536
 
 5. **數據存儲**
    - 將文檔信息存儲到 `product_documents` 表
    - 將分塊和向量存儲到 `product_document_chunks` 表
-   - 事務處理確保數據一致性
+   - 使用事務確保數據一致性
 
 ### 3. API 設計
 
@@ -176,65 +183,72 @@ POST /api/product-spec/search
 #### 4.1 大文件處理
 - 使用流式處理減少內存消耗
 - 實現分塊上傳機制
-- 設置適當的超時和重試機制
+- 使用 Web Workers 處理前端文檔解析
 
-#### 4.2 圖片處理
-- 提取和存儲文檔中的圖片
-- 使用圖像壓縮減小存儲空間
-- 考慮使用圖像識別提取圖片中的文本（可選）
+#### 4.2 向量化優化
+- 實現批處理以減少 API 調用
+- 使用快取機制避免重複向量化
+- 優化 token 使用（預處理文本，移除無意義內容）
+- 實現處理隊列系統以管理大批量文檔處理
 
-#### 4.3 性能優化
-- 實現後台處理隊列（使用 Next.js API Routes 或獨立服務）
-- 使用緩存減少重複處理
-- 批量處理向量化請求減少 API 調用
+#### 4.3 查詢優化
+- 實現查詢改寫提高搜索質量
+- 添加結果再排序以提升準確性
+- 結合關鍵詞搜索和向量搜索的混合策略
+- 使用產品代碼預過濾縮小搜索範圍
 
-#### 4.4 用戶體驗
-- 實時處理狀態更新
-- 預覽功能
-- 漸進式加載大型文檔
+#### 4.4 成本控制
+- 實現嵌入快取機制
+- 優化分塊策略減少總塊數
+- 監控 API 使用量並設置上限
+- 定期清理和優化向量數據庫
 
 ## 實施計劃
 
-### 階段一：基礎設施搭建
+### 階段一：基礎設施搭建（週 1-2）
 1. 在 Supabase 中創建所需的表和函數
-2. 設置文件存儲和訪問權限
+2. 設置 OpenAI API 和環境變量
 3. 實現基本的文件上傳和存儲功能
+4. 設計和實現錯誤處理和日誌記錄
 
-### 階段二：文檔處理核心功能
-1. 實現 .doc/.docx 文件解析
-2. 開發文本分塊算法
-3. 集成 OpenAI 嵌入 API
-4. 實現向量存儲和檢索功能
+### 階段二：文檔處理核心功能（週 3-4）
+1. 實現 .doc/.docx 文件解析和文本提取
+2. 開發語義感知分塊算法
+3. 實現 OpenAI 嵌入生成和存儲
+4. 創建處理隊列系統
 
-### 階段三：前端界面開發
+### 階段三：前端界面開發（週 5-6）
 1. 改進 ProductSpecDialog 組件
-2. 實現文件上傳和處理狀態顯示
+2. 實現拖放上傳和處理狀態顯示
 3. 開發文檔管理界面
-4. 添加搜索和過濾功能
+4. 添加用戶反饋機制
 
-### 階段四：測試和優化
-1. 進行性能和可靠性測試
-2. 優化大文件處理
-3. 改進錯誤處理和用戶反饋
-4. 實施安全性增強措施
+### 階段四：測試與優化（週 7-8）
+1. 創建測試套件和性能基準
+2. 進行性能和可靠性測試
+3. 優化大文件處理
+4. 改進錯誤處理和用戶反饋
 
-### 階段五：集成到 ask-database 功能
-1. 擴展現有的 ask-database API 以包含向量搜索
-2. 實現混合搜索策略（結合向量搜索和結構化查詢）
-3. 優化搜索結果呈現
-4. 添加用戶反饋機制改進搜索質量
+### 階段五：完善和部署（週 9-10）
+1. 性能和可靠性優化
+2. 實施安全性增強措施
+3. 完善文檔和使用說明
+4. 發布文檔和維護指南
 
 ## 技術選型
 
 1. **文件解析**：
-   - mammoth.js 或 docx（用於 .doc/.docx 文件解析）
+   - mammoth.js（用於 .doc/.docx 文件解析）
    - pdf.js（用於可能的 PDF 支持）
 
 2. **向量化**：
-   - OpenAI Embeddings API (text-embedding-3-large)
+   - OpenAI text-embedding-3-large（1536 維向量）
+   - 上下文長度：8191 tokens
+   - 批處理優化：每批次最多 20 個文本塊
 
 3. **數據庫**：
    - Supabase PostgreSQL 與 pgvector 擴展
+   - 向量索引：IVFFLAT 用於高效相似度搜索
 
 4. **前端**：
    - React 與 Next.js
@@ -243,48 +257,51 @@ POST /api/product-spec/search
    - Framer Motion 用於動畫效果
 
 5. **後端處理**：
-   - Next.js API Routes
-   - 可選：獨立的處理服務（用於長時間運行的任務）
+   - Next.js API Routes 用於標準處理
+   - Edge Functions 用於長時間運行任務
 
 ## 注意事項和挑戰
 
-1. **文件大小限制**：
-   - Next.js 默認的 API 路由有請求體大小限制
-   - 需要配置適當的中間件處理大型文件
-   - 考慮分塊上傳和處理策略
+1. **API 成本管理**：
+   - OpenAI 嵌入 API 成本計算：
+     - text-embedding-3-large: $0.13/百萬 tokens (輸入)
+     - 估計每 100 頁文檔成本：約 $0.5-1.0
+   - 實現批處理和快取策略
+   - 設置使用限制和監控
 
-2. **處理時間**：
-   - 大型文檔處理可能需要較長時間
-   - 實現異步處理和狀態通知機制
-   - 考慮使用 WebSockets 提供實時更新
+2. **處理大型文檔**：
+   - 針對超大文檔（>50MB）實現分段處理
+   - 使用異步工作流減少超時風險
+   - 提供處理進度實時更新
 
-3. **成本控制**：
-   - OpenAI API 調用成本
-   - 實現批處理和緩存策略
-   - 監控和限制 API 使用量
+3. **性能優化**：
+   - 優化向量索引以提高搜索速度
+   - 實現智能緩存策略
+   - 使用批處理減少 API 調用次數
 
-4. **數據安全**：
-   - 確保敏感產品信息的安全
-   - 實現適當的訪問控制
-   - 考慮數據加密需求
+4. **數據隱私與安全**：
+   - 實現細粒度訪問控制
+   - 敏感信息處理指南
+   - 定期安全審計
 
-## 後續擴展
+## 擴展與未來發展
 
 1. **多模態支持**：
    - 添加圖像理解和處理
-   - 支持更多文件格式（PDF、Excel 等）
+   - 提取圖表和圖形中的數據
+   - 結合文本和圖像信息
 
-2. **高級搜索功能**：
-   - 語義搜索增強
-   - 過濾和分面搜索
-   - 相關性調整
+2. **高級語義理解**：
+   - 實現產品屬性自動提取
+   - 創建產品知識圖譜
+   - 增強對技術查詢的理解能力
 
-3. **自動化提取**：
-   - 自動識別和提取產品屬性
-   - 結構化 BOM 信息
-   - 組裝步驟序列化
+3. **自動文檔更新**：
+   - 檢測和處理文檔版本變更
+   - 自動識別和更新修改的部分
+   - 維護文檔版本歷史
 
-4. **協作功能**：
-   - 文檔版本控制
-   - 評論和註釋
-   - 變更追蹤
+4. **擴展文檔類型支持**：
+   - 添加 PDF 文檔處理
+   - 支持 Excel 表格處理
+   - 處理 CAD 文件元數據
