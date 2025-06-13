@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { MAX_PALLET_COUNT, SLATE_DEFAULT_COUNT } from './constants';
 import { useSearchParams } from 'next/navigation';
 import { 
   ResponsiveLayout, 
@@ -50,6 +51,8 @@ interface AcoHandlers {
 }
 
 // Memoized form sections
+// ProductSection is memoized because it receives multiple callback props
+// and renders expensive child components (ProductCodeInput, ProductInfoDisplay)
 const ProductSection = React.memo<{
   productCode: string;
   onProductCodeChange: (value: string) => void;
@@ -108,6 +111,8 @@ const ProductSection = React.memo<{
   );
 });
 
+// AcoSection is memoized because it has many props that don't change frequently
+// and contains complex conditional rendering logic
 const AcoSection = React.memo<{
   acoOrderRef: string;
   onAcoOrderRefChange: (value: string) => void;
@@ -174,6 +179,8 @@ const AcoSection = React.memo<{
   );
 });
 
+// SlateSection is memoized as it receives stable props and renders
+// the SlateDetailsForm which has its own internal state
 const SlateSection = React.memo<{
   slateDetail: SlateDetail;
   onSlateDetailChange: (field: keyof SlateDetail, value: string) => void;
@@ -204,6 +211,8 @@ const SlateSection = React.memo<{
   );
 });
 
+// ProgressSection is memoized because it's rendered with frequently changing
+// progress data but only needs to re-render when actual progress changes
 const ProgressSection = React.memo<{
   current: number;
   total: number;
@@ -361,15 +370,15 @@ export const PerformanceOptimizedForm: React.FC<PerformanceOptimizedFormProps> =
 
   // Auto-set count to 1 for Slate products
   useEffect(() => {
-    if (productInfo?.type === 'Slate' && formData.count !== '1') {
-      handleInputChange('count', '1');
+    if (productInfo?.type === 'Slate' && formData.count !== SLATE_DEFAULT_COUNT) {
+      handleInputChange('count', SLATE_DEFAULT_COUNT);
     }
   }, [productInfo?.type, formData.count, handleInputChange]);
 
   // Check if count exceeds limit
   const isCountExceeded = useMemo(() => {
     const countValue = parseInt(formData.count) || 0;
-    return countValue > 5;
+    return countValue > MAX_PALLET_COUNT;
   }, [formData.count]);
 
   // Business logic hook
@@ -655,7 +664,7 @@ export const PerformanceOptimizedForm: React.FC<PerformanceOptimizedFormProps> =
                             Print Limit Exceeded
                           </div>
                           <div className="text-xs text-red-300/80 mt-1">
-                            Maximum 5 pallet labels allowed. Please adjust Count of Pallet to 5 or below.
+                            Maximum {MAX_PALLET_COUNT} pallet labels allowed. Please adjust Count of Pallet to {MAX_PALLET_COUNT} or below.
                           </div>
                         </div>
                       </div>

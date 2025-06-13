@@ -54,6 +54,7 @@ export const SlateDetailsForm: React.FC<SlateDetailsFormProps> = React.memo(({
   );
 });
 
+// Set display name for debugging
 SlateDetailsForm.displayName = 'SlateDetailsForm';
 
 export default SlateDetailsForm; 

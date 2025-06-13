@@ -110,6 +110,7 @@ export const AcoOrderForm: React.FC<AcoOrderFormProps> = React.memo(({
   );
 });
 
+// Set display name for debugging
 AcoOrderForm.displayName = 'AcoOrderForm';
 
 export default AcoOrderForm; 

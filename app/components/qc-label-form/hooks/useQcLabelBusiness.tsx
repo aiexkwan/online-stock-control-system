@@ -1,6 +1,25 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
+import {
+  MIN_ACO_ORDER_REF_LENGTH,
+  COOLDOWN_PERIOD_PROD,
+  COOLDOWN_PERIOD_DEV,
+  MAX_PALLET_GENERATION_RETRIES_PROD,
+  MAX_PALLET_GENERATION_RETRIES_DEV,
+  RETRY_DELAY_BASE_PROD,
+  RETRY_DELAY_BASE,
+  CLOCK_NUMBER_EMAIL_INDEX,
+  DEFAULT_ACO_PALLET_START_COUNT,
+  ORDINAL_SUFFIX_REMAINDER_10,
+  HUNDRED_MODULO,
+  ORDINAL_SUFFIX_SPECIAL_CASE_11,
+  ORDINAL_SUFFIX_REMAINDER_1,
+  ORDINAL_SUFFIX_SPECIAL_CASE_12,
+  ORDINAL_SUFFIX_REMAINDER_2,
+  ORDINAL_SUFFIX_SPECIAL_CASE_13,
+  ORDINAL_SUFFIX_REMAINDER_3
+} from '../constants';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { createClient } from '@/app/utils/supabase/client';
@@ -50,11 +69,11 @@ export const useQcLabelBusiness = ({
         
         if (user?.email) {
           // Extract clock number from email (format: clocknumber@pennine.com)
-          const clockNumber = user.email.split('@')[0];
+          const clockNumber = user.email.split('@')[CLOCK_NUMBER_EMAIL_INDEX];
           setFormData(prev => ({ ...prev, userId: clockNumber }));
         }
       } catch (error) {
-        console.error('Error getting user ID:', error);
+        // console.error('Error getting user ID:', error); // 保留錯誤日誌供生產環境調試
       }
     };
 
@@ -73,21 +92,18 @@ export const useQcLabelBusiness = ({
     if (productInfo?.type === 'ACO' && productInfo?.code) {
       const fetchAcoOrderRefs = async () => {
         try {
-          console.log('[useQcLabelBusiness] Fetching ACO order refs for product:', productInfo.code);
           const supabaseClient = createClientSupabase();
           const { data, error } = await supabaseClient
             .from('record_aco')
             .select('order_ref, remain_qty, code')
             .eq('code', productInfo.code);
 
-          console.log('[useQcLabelBusiness] ACO query result for product:', { data, error, productCode: productInfo.code });
 
           if (error) {
-            console.error('Error fetching ACO order refs:', error);
+            // console.error('Error fetching ACO order refs:', error); // 保留錯誤日誌供生產環境調試
             toast.error('Error fetching historical ACO order refs.');
             setFormData(prev => ({ ...prev, availableAcoOrderRefs: [] }));
           } else if (data) {
-            console.log('[useQcLabelBusiness] Raw ACO data for product:', data);
             
             // Get all unique order_ref values for this specific product
             // Handle both string and number types for order_ref
@@ -104,7 +120,6 @@ export const useQcLabelBusiness = ({
             
             const allOrderRefs = Array.from(new Set(orderRefs)).sort((a, b) => a - b);
             
-            console.log('[useQcLabelBusiness] Processed order refs for product:', allOrderRefs);
             setFormData(prev => ({ ...prev, availableAcoOrderRefs: allOrderRefs }));
             
             if (allOrderRefs.length > 0) {
@@ -158,8 +173,8 @@ export const useQcLabelBusiness = ({
 
   // ACO Search Logic
   const handleAcoSearch = useCallback(async () => {
-    if (!formData.acoOrderRef.trim() || formData.acoOrderRef.trim().length < 5) {
-      toast.error('ACO Order Ref must be at least 5 characters.');
+    if (!formData.acoOrderRef.trim() || formData.acoOrderRef.trim().length < MIN_ACO_ORDER_REF_LENGTH) {
+      toast.error(`ACO Order Ref must be at least ${MIN_ACO_ORDER_REF_LENGTH} characters.`);
       return;
     }
 
@@ -168,10 +183,6 @@ export const useQcLabelBusiness = ({
       return;
     }
 
-    console.log('[useQcLabelBusiness] Searching for ACO order:', {
-      orderRef: formData.acoOrderRef.trim(),
-      productCode: productInfo.code
-    });
 
     setFormData(prev => ({ 
       ...prev, 
@@ -192,15 +203,9 @@ export const useQcLabelBusiness = ({
         .or(`order_ref.eq.${searchOrderRef},order_ref.eq."${searchOrderRef}"`)
         .eq('code', productInfo.code);
 
-      console.log('[useQcLabelBusiness] ACO search result:', { 
-        data, 
-        error, 
-        searchOrderRef, 
-        productCode: productInfo.code 
-      });
 
       if (error) {
-        console.error('Error searching ACO order:', error);
+        // console.error('Error searching ACO order:', error); // 保留錯誤日誌供生產環境調試
         toast.error('Error searching ACO order.');
         setFormData(prev => ({ ...prev, acoRemain: null }));
         return;
@@ -208,7 +213,6 @@ export const useQcLabelBusiness = ({
 
       if (!data || data.length === 0) {
         // No matching order found - order must be uploaded via PDF first
-        console.log('[useQcLabelBusiness] No ACO order found for this product');
         setFormData(prev => ({ 
           ...prev, 
           acoNewRef: false,
@@ -217,7 +221,6 @@ export const useQcLabelBusiness = ({
         toast.warning(`No ACO order found for ${productInfo.code}. Please upload order via PDF first.`);
       } else {
         // Existing order - calculate total remaining quantity for this specific product
-        console.log('[useQcLabelBusiness] Existing ACO order found for this product:', data);
         const totalRemainQty = data.reduce((sum: number, record: any) => {
           const remainQty = typeof record.remain_qty === 'string' 
             ? parseInt(record.remain_qty, 10) 
@@ -225,7 +228,6 @@ export const useQcLabelBusiness = ({
           return sum + (isNaN(remainQty) ? 0 : remainQty);
         }, 0);
 
-        console.log('[useQcLabelBusiness] Total remaining quantity for this product:', totalRemainQty);
 
         if (totalRemainQty <= 0) {
           setFormData(prev => ({ 
@@ -313,7 +315,7 @@ export const useQcLabelBusiness = ({
         }
       }
     } catch (error) {
-      console.error('Error validating product code:', error);
+      // console.error('Error validating product code:', error); // 保留錯誤日誌供生產環境調試
       setFormData(prev => {
         const newErrors = [...prev.acoOrderDetailErrors];
         newErrors[idx] = 'Error validating product code. Please try again.';
@@ -394,7 +396,7 @@ export const useQcLabelBusiness = ({
     }
     
     // 🔥 在 Vercel 環境中增加更長的冷卻期
-    const cooldownPeriod = process.env.NODE_ENV === 'production' ? 5000 : 3000; // 生產環境 5 秒
+    const cooldownPeriod = process.env.NODE_ENV === 'production' ? COOLDOWN_PERIOD_PROD : COOLDOWN_PERIOD_DEV;
     
     if (timeSinceLastSubmission < cooldownPeriod) {
       toast.warning(`Please wait ${Math.ceil((cooldownPeriod - timeSinceLastSubmission) / 1000)} more seconds before submitting again to prevent duplicate pallet numbers.`);
@@ -415,7 +417,6 @@ export const useQcLabelBusiness = ({
           await Promise.all(
             cacheNames.map(cacheName => caches.delete(cacheName))
           );
-          console.log('[useQcLabelBusiness] 瀏覽器緩存已清除');
         }
         
         // 調用服務端緩存清除 API
@@ -428,16 +429,12 @@ export const useQcLabelBusiness = ({
           });
           
           if (cacheResponse.ok) {
-            console.log('[useQcLabelBusiness] 服務端緩存清除成功');
           } else {
-            console.warn('[useQcLabelBusiness] 服務端緩存清除失敗:', await cacheResponse.text());
           }
         } catch (apiError) {
-          console.warn('[useQcLabelBusiness] 服務端緩存清除 API 調用失敗:', apiError);
         }
         
       } catch (cacheError) {
-        console.warn('[useQcLabelBusiness] 緩存清除失敗:', cacheError);
       }
     }
     
@@ -474,18 +471,12 @@ export const useQcLabelBusiness = ({
       }));
 
       // 🔥 在生產環境中添加額外的唯一性檢查
-      console.log('[useQcLabelBusiness] 開始托盤編號生成，環境:', {
-        nodeEnv: process.env.NODE_ENV,
-        timestamp: new Date().toISOString(),
-        userAgent: typeof window !== 'undefined' ? window.navigator.userAgent : 'server'
-      });
 
       // 使用直接查詢數據庫的方式生成棧板號碼和系列號（無緩存）
-      console.log('[useQcLabelBusiness] 使用直接查詢數據庫生成棧板號碼和系列號（無緩存）...');
       
       let generationResult;
       let retryCount = 0;
-      const maxRetries = process.env.NODE_ENV === 'production' ? 5 : 3; // 生產環境更多重試
+      const maxRetries = process.env.NODE_ENV === 'production' ? MAX_PALLET_GENERATION_RETRIES_PROD : MAX_PALLET_GENERATION_RETRIES_DEV;
       
       // Retry mechanism for pallet number generation
       while (retryCount < maxRetries) {
@@ -493,7 +484,6 @@ export const useQcLabelBusiness = ({
         
         if (!generationResult.error && generationResult.palletNumbers && generationResult.series) {
           // 🔥 額外驗證生成的托盤編號唯一性
-          console.log('[useQcLabelBusiness] 執行客戶端唯一性驗證...');
           const supabaseClient = createClientSupabase();
           let hasConflict = false;
           
@@ -505,7 +495,7 @@ export const useQcLabelBusiness = ({
               .single();
             
             if (existing) {
-              console.error('[useQcLabelBusiness] 客戶端檢測到重複托盤編號:', palletNum);
+              // console.error('[useQcLabelBusiness] 客戶端檢測到重複托盤編號:', palletNum); // 保留錯誤日誌供生產環境調試
               hasConflict = true;
               break;
             }
@@ -514,18 +504,16 @@ export const useQcLabelBusiness = ({
           if (!hasConflict) {
             break; // Success, exit retry loop
           } else {
-            console.warn('[useQcLabelBusiness] 客戶端檢測到衝突，重新生成...');
             generationResult = { palletNumbers: [], series: [], error: 'Client-side duplicate detection' };
           }
         }
         
         retryCount++;
-        console.warn(`[useQcLabelBusiness] Pallet generation attempt ${retryCount} failed:`, generationResult.error);
         
         if (retryCount < maxRetries) {
           toast.warning(`Pallet generation failed (attempt ${retryCount}/${maxRetries}). Retrying...`);
           // Wait before retry with exponential backoff
-          const delay = process.env.NODE_ENV === 'production' ? 2000 * retryCount : 1000 * retryCount;
+          const delay = process.env.NODE_ENV === 'production' ? RETRY_DELAY_BASE_PROD * retryCount : RETRY_DELAY_BASE * retryCount;
           await new Promise(resolve => setTimeout(resolve, delay));
         } else {
           toast.error(`Failed to generate pallet numbers after ${maxRetries} attempts: ${generationResult.error}`);
@@ -648,8 +636,8 @@ export const useQcLabelBusiness = ({
           if (dbResult.error) {
             // Check if it's a duplicate pallet number error
             if (dbResult.error.includes('already exists') || dbResult.error.includes('duplicate')) {
-              console.error(`[useQcLabelBusiness] Duplicate pallet number detected for ${palletNum}:`, dbResult.error);
-              console.error(`[useQcLabelBusiness] This indicates a race condition or stale pallet number. Stopping all processing.`);
+              // console.error(`[useQcLabelBusiness] Duplicate pallet number detected for ${palletNum}:`, dbResult.error); // 保留錯誤日誌供生產環境調試
+              // console.error(`[useQcLabelBusiness] This indicates a race condition or stale pallet number. Stopping all processing.`); // 保留錯誤日誌供生產環境調試
               
               toast.error(`Duplicate pallet number ${palletNum} detected. This may be due to rapid clicking or a system issue. Please wait a moment and try again.`);
               
@@ -725,7 +713,7 @@ export const useQcLabelBusiness = ({
           }
 
         } catch (error: any) {
-          console.error(`Error processing pallet ${i + 1}:`, error);
+          // console.error(`Error processing pallet ${i + 1}:`, error); // 保留錯誤日誌供生產環境調試
           toast.error(`Pallet ${i + 1} (${palletNum}) Error: ${error.message}. Skipping.`);
           
           // Update progress to failed
@@ -762,7 +750,6 @@ export const useQcLabelBusiness = ({
           // NEW FUNCTIONALITY: Update stock_level and work_level after successful print
           // ============================================================================
           try {
-            console.log('[useQcLabelBusiness] Updating stock and work levels...');
             
             // Calculate total quantity for all pallets
             const totalQuantity = quantity * count;
@@ -771,7 +758,7 @@ export const useQcLabelBusiness = ({
             const userIdNum = parseInt(clockNumber, 10);
             
             if (isNaN(userIdNum)) {
-              console.error('Invalid user ID (clock number):', clockNumber);
+              // console.error('Invalid user ID (clock number):', clockNumber); // 保留錯誤日誌供生產環境調試
               toast.warning('Print successful, but failed to update work records due to invalid user ID.');
             } else {
               // Call the new API endpoint for stock and work level updates
@@ -792,31 +779,23 @@ export const useQcLabelBusiness = ({
               const updateResult = await response.json();
 
               if (updateResult.success) {
-                console.log('[useQcLabelBusiness] Stock and work levels updated successfully:', updateResult);
                 //toast.success('Stock and work levels updated successfully.');
               } else {
-                console.error('[useQcLabelBusiness] Failed to update stock/work levels:', updateResult.error);
+                // console.error('[useQcLabelBusiness] Failed to update stock/work levels:', updateResult.error); // 保留錯誤日誌供生產環境調試
                 toast.warning(`Print successful, but failed to update records: ${updateResult.error}`);
               }
             }
           } catch (updateError: any) {
-            console.error('[useQcLabelBusiness] Error updating stock/work levels:', updateError);
+            // console.error('[useQcLabelBusiness] Error updating stock/work levels:', updateError); // 保留錯誤日誌供生產環境調試
             toast.warning(`Print successful, but failed to update stock/work records: ${updateError.message}`);
           }
           
           // ============================================================================
           // ACO ORDER ENHANCEMENT: Update ACO order with latest_update and check completion
           // ============================================================================
-          console.log('[useQcLabelBusiness] ACO Enhancement Check:', {
-            productType: productInfo.type,
-            isNewRef: formData.acoNewRef,
-            orderRef: formData.acoOrderRef.trim(),
-            shouldTrigger: productInfo.type === 'ACO' && !formData.acoNewRef && formData.acoOrderRef.trim()
-          });
           
           if (productInfo.type === 'ACO' && !formData.acoNewRef && formData.acoOrderRef.trim()) {
             try {
-              console.log('[useQcLabelBusiness] Processing ACO order enhancement...');
               
               const totalQuantity = quantity * count;
               const orderRefNum = parseInt(formData.acoOrderRef.trim(), 10);
@@ -837,16 +816,13 @@ export const useQcLabelBusiness = ({
               const acoResult = await acoResponse.json();
 
               if (acoResult.success) {
-                console.log('[useQcLabelBusiness] ACO order updated successfully:', acoResult);
                 
                 if (acoResult.orderCompleted) {
                   // Order completed - show special notification
                   toast.success(`🎉 ACO Order ${orderRefNum} has been completed! Email notification sent.`);
                   
                   if (acoResult.emailNotification?.success) {
-                    console.log('[useQcLabelBusiness] Email notification sent successfully');
                   } else {
-                    console.warn('[useQcLabelBusiness] Email notification failed:', acoResult.emailNotification?.error);
                     toast.warning('Order completed but email notification failed.');
                   }
                 } else {
@@ -855,11 +831,11 @@ export const useQcLabelBusiness = ({
                   toast.success(`ACO Order ${orderRefNum} updated. Remaining quantity: ${remainingQty}`);
                 }
               } else {
-                console.error('[useQcLabelBusiness] Failed to update ACO order:', acoResult.error);
+                // console.error('[useQcLabelBusiness] Failed to update ACO order:', acoResult.error); // 保留錯誤日誌供生產環境調試
                 toast.warning(`Print successful, but ACO order update failed: ${acoResult.error}`);
               }
             } catch (acoError: any) {
-              console.error('[useQcLabelBusiness] Error processing ACO order enhancement:', acoError);
+              // console.error('[useQcLabelBusiness] Error processing ACO order enhancement:', acoError); // 保留錯誤日誌供生產環境調試
               toast.warning(`Print successful, but ACO order processing failed: ${acoError.message}`);
             }
           }
@@ -915,7 +891,7 @@ export const useQcLabelBusiness = ({
       }
 
     } catch (error: any) {
-      console.error('Error during print process:', error);
+      // console.error('Error during print process:', error); // 保留錯誤日誌供生產環境調試
       toast.error(`Print process failed: ${error.message}`);
     } finally {
       setIsProcessing(false);
@@ -1031,16 +1007,16 @@ export const useQcLabelBusiness = ({
 
 // Helper function to generate ordinal numbers (1st, 2nd, 3rd, etc.)
 function getOrdinalSuffix(num: number): string {
-  const j = num % 10;
-  const k = num % 100;
+  const j = num % ORDINAL_SUFFIX_REMAINDER_10;
+  const k = num % HUNDRED_MODULO;
   
-  if (j === 1 && k !== 11) {
+  if (j === ORDINAL_SUFFIX_REMAINDER_1 && k !== ORDINAL_SUFFIX_SPECIAL_CASE_11) {
     return `${num}st`;
   }
-  if (j === 2 && k !== 12) {
+  if (j === ORDINAL_SUFFIX_REMAINDER_2 && k !== ORDINAL_SUFFIX_SPECIAL_CASE_12) {
     return `${num}nd`;
   }
-  if (j === 3 && k !== 13) {
+  if (j === ORDINAL_SUFFIX_REMAINDER_3 && k !== ORDINAL_SUFFIX_SPECIAL_CASE_13) {
     return `${num}rd`;
   }
   return `${num}th`;
@@ -1055,13 +1031,13 @@ async function getAcoPalletCount(supabase: any, acoOrderRef: string): Promise<nu
       .like('remark', `ACO Ref : ${acoOrderRef}%`);
     
     if (error) {
-      console.error('Error fetching ACO pallet count:', error);
+      // console.error('Error fetching ACO pallet count:', error); // 保留錯誤日誌供生產環境調試
       return 1; // Start from 1 if error
     }
     
-    return (data?.length || 0) + 1; // Return the next pallet number
+    return (data?.length || 0) + DEFAULT_ACO_PALLET_START_COUNT; // Return the next pallet number
   } catch (error) {
-    console.error('Error in getAcoPalletCount:', error);
-    return 1; // Start from 1 if error
+    // console.error('Error in getAcoPalletCount:', error); // 保留錯誤日誌供生產環境調試
+    return DEFAULT_ACO_PALLET_START_COUNT; // Start from 1 if error
   }
 }

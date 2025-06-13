@@ -217,6 +217,7 @@ export const ResponsiveStack: React.FC<{
   );
 });
 
+// Set display names for debugging
 ResponsiveLayout.displayName = 'ResponsiveLayout';
 ResponsiveGrid.displayName = 'ResponsiveGrid';
 ResponsiveContainer.displayName = 'ResponsiveContainer';

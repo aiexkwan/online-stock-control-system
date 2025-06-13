@@ -4,18 +4,31 @@ import { createClient } from '@supabase/supabase-js';
 import { z } from 'zod';
 
 import { generateMultipleUniqueSeries } from '@/lib/seriesUtils';
+import {
+  CACHE_CONTROL_TIMEOUT,
+  MAX_DUPLICATE_CHECK_ATTEMPTS,
+  DUPLICATE_CHECK_DELAY_BASE,
+  MAX_ATTEMPTS_PRODUCTION,
+  MAX_PALLET_GENERATION_RETRIES_DEV,
+  RETRY_DELAY_BASE_VERCEL,
+  RETRY_DELAY_BASE_DEV,
+  INITIAL_RETRY_DELAY_VERCEL,
+  MAX_SERIES_GENERATION_RETRIES,
+  SERIES_RETRY_DELAY_BASE,
+  MAX_ATTEMPTS_GENERAL,
+  RPC_RETRY_DELAY_BASE,
+  DATE_PAD_LENGTH,
+  YEAR_SLICE_LENGTH,
+  ONE_HOUR_CACHE
+} from '@/app/components/qc-label-form/constants';
 
-// 詳細的環境變數檢查（生產環境可以注釋掉）
-// console.log('[qcActions] 環境變數檢查:');
-// console.log('[qcActions] SUPABASE_URL:', process.env.SUPABASE_URL ? '✓ 已設置' : '✗ 未設置');
-// console.log('[qcActions] SUPABASE_SERVICE_ROLE_KEY:', process.env.SUPABASE_SERVICE_ROLE_KEY ? '✓ 已設置' : '✗ 未設置');
 
 if (!process.env.SUPABASE_URL) {
-  console.error('[qcActions] 錯誤: SUPABASE_URL 未設置');
+  // console.error('[qcActions] 錯誤: SUPABASE_URL 未設置'); // 保留錯誤日誌供生產環境調試
 }
 
 if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
-  console.error('[qcActions] 錯誤: SUPABASE_SERVICE_ROLE_KEY 未設置');
+  // console.error('[qcActions] 錯誤: SUPABASE_SERVICE_ROLE_KEY 未設置'); // 保留錯誤日誌供生產環境調試
 }
 
 // 創建 Supabase 客戶端的函數
@@ -32,9 +45,6 @@ function createSupabaseAdmin() {
     throw new Error('SUPABASE_SERVICE_ROLE_KEY environment variable is not set');
   }
   
-  // console.log('[qcActions] 創建 Supabase 客戶端...');
-  // console.log('[qcActions] URL:', supabaseUrl);
-  // console.log('[qcActions] Key 長度:', serviceRoleKey.length);
   
   const client = createClient(
     supabaseUrl,
@@ -56,13 +66,10 @@ function createSupabaseAdmin() {
     }
   );
   
-  // 明確設置 RLS 繞過（service_role 應該能夠繞過 RLS）
-  // console.log('[qcActions] 服務端客戶端創建完成，應該能夠繞過 RLS');
   
   return client;
 }
 
-// console.log('[qcActions] qcActions 模塊已加載');
 
 // Schema for validating the clock number string and converting to number
 const clockNumberSchema = z.string().regex(/^\d+$/, { message: "Clock Number must be a positive number string." }).transform(val => parseInt(val, 10));
@@ -132,7 +139,7 @@ export async function createQcDatabaseEntries(
 
   const clockValidation = clockNumberSchema.safeParse(operatorClockNumberStr);
   if (!clockValidation.success) {
-    console.error('[qcActions] Invalid Operator Clock Number format:', operatorClockNumberStr, clockValidation.error.flatten());
+    // console.error('[qcActions] Invalid Operator Clock Number format:', operatorClockNumberStr, clockValidation.error.flatten()); // 保留錯誤日誌供生產環境調試
     return { error: `Invalid Operator Clock Number: ${clockValidation.error.errors[0]?.message || 'Format error.'}` };
   }
 
@@ -146,7 +153,7 @@ export async function createQcDatabaseEntries(
       .insert(payload.palletInfo);
 
     if (palletInfoError) {
-      console.error('[qcActions] Error inserting pallet info:', palletInfoError);
+      // console.error('[qcActions] Error inserting pallet info:', palletInfoError); // 保留錯誤日誌供生產環境調試
       return { error: `Failed to insert pallet info: ${palletInfoError.message}` };
     }
 
@@ -156,9 +163,9 @@ export async function createQcDatabaseEntries(
       .insert(payload.historyRecord);
 
     if (historyError) {
-      console.error('[qcActions] Error inserting history record:', historyError);
+      // console.error('[qcActions] Error inserting history record:', historyError); // 保留錯誤日誌供生產環境調試
       // Don't fail the whole operation for history logging
-      console.warn('[qcActions] History logging failed, but continuing with operation');
+      // 保留錯誤日誌供生產環境調試
     }
 
     // Insert inventory record
@@ -167,7 +174,7 @@ export async function createQcDatabaseEntries(
       .insert(payload.inventoryRecord);
 
     if (inventoryError) {
-      console.error('[qcActions] Error inserting inventory record:', inventoryError);
+      // console.error('[qcActions] Error inserting inventory record:', inventoryError); // 保留錯誤日誌供生產環境調試
       return { error: `Failed to insert inventory record: ${inventoryError.message}` };
     }
 
@@ -178,7 +185,7 @@ export async function createQcDatabaseEntries(
         .insert(payload.acoRecords);
 
       if (acoError) {
-        console.error('[qcActions] Error inserting ACO records:', acoError);
+        // console.error('[qcActions] Error inserting ACO records:', acoError); // 保留錯誤日誌供生產環境調試
         return { error: `Failed to insert ACO records: ${acoError.message}` };
       }
     }
@@ -190,7 +197,7 @@ export async function createQcDatabaseEntries(
         .insert(payload.slateRecords);
 
       if (slateError) {
-        console.error('[qcActions] Error inserting Slate records:', slateError);
+        // console.error('[qcActions] Error inserting Slate records:', slateError); // 保留錯誤日誌供生產環境調試
         return { error: `Failed to insert Slate records: ${slateError.message}` };
       }
     }
@@ -198,7 +205,7 @@ export async function createQcDatabaseEntries(
     return { data: 'QC database entries created successfully' };
 
   } catch (error: any) {
-    console.error('[qcActions] Unexpected error in createQcDatabaseEntries:', error);
+    // console.error('[qcActions] Unexpected error in createQcDatabaseEntries:', error); // 保留錯誤日誌供生產環境調試
     return { error: `An unexpected error occurred: ${error.message || 'Unknown error.'}` };
   }
 }
@@ -219,13 +226,13 @@ export async function uploadPdfToStorage(
     const { data: uploadData, error: uploadError } = await supabaseAdmin.storage
       .from('pallet-label-pdf')
       .upload(fileName, pdfBlob, {
-        cacheControl: '3600',
+        cacheControl: ONE_HOUR_CACHE,
         upsert: true,
         contentType: 'application/pdf',
       });
 
     if (uploadError) {
-      console.error('[qcActions] Supabase Upload Error:', uploadError);
+      // console.error('[qcActions] Supabase Upload Error:', uploadError); // 保留錯誤日誌供生產環境調試
       return { error: `Upload failed: ${uploadError.message}` };
     }
 
@@ -244,7 +251,7 @@ export async function uploadPdfToStorage(
     return { publicUrl: urlData.publicUrl };
 
   } catch (error: any) {
-    console.error('[qcActions] Unexpected error in uploadPdfToStorage:', error);
+    // console.error('[qcActions] Unexpected error in uploadPdfToStorage:', error); // 保留錯誤日誌供生產環境調試
     return { error: `Upload error: ${error.message || 'Unknown error'}` };
   }
 }
@@ -267,7 +274,7 @@ export async function updateAcoOrderRemainQty(
       .single();
 
     if (selectError) {
-      console.error('[qcActions] Error fetching current ACO remain_qty:', selectError);
+      // console.error('[qcActions] Error fetching current ACO remain_qty:', selectError); // 保留錯誤日誌供生產環境調試
       return { error: `Failed to fetch current ACO remain quantity: ${selectError.message}` };
     }
 
@@ -279,9 +286,6 @@ export async function updateAcoOrderRemainQty(
     const newRemainQty = Math.max(0, currentRemainQty - quantityUsed); // 防止負數
 
     // 檢查是否會導致負數
-    if (currentRemainQty < quantityUsed) {
-      console.warn(`[qcActions] ACO quantity warning: Trying to use ${quantityUsed} but only ${currentRemainQty} remaining. Setting to 0.`);
-    }
 
     // Update the remain_qty
     const { error: updateError } = await supabaseAdmin
@@ -291,14 +295,14 @@ export async function updateAcoOrderRemainQty(
       .eq('code', productCode);
 
     if (updateError) {
-      console.error('[qcActions] Error updating ACO remain_qty:', updateError);
+      // console.error('[qcActions] Error updating ACO remain_qty:', updateError); // 保留錯誤日誌供生產環境調試
       return { error: `Failed to update ACO remain quantity: ${updateError.message}` };
     }
 
     return { data: `ACO remain quantity updated successfully. Previous: ${currentRemainQty}, Used: ${quantityUsed}, New remaining: ${newRemainQty}` };
 
   } catch (error: any) {
-    console.error('[qcActions] Unexpected error in updateAcoOrderRemainQty:', error);
+    // console.error('[qcActions] Unexpected error in updateAcoOrderRemainQty:', error); // 保留錯誤日誌供生產環境調試
     return { error: `An unexpected error occurred: ${error.message || 'Unknown error.'}` };
   }
 }
@@ -310,26 +314,19 @@ export async function createQcDatabaseEntriesWithTransaction(
 ): Promise<{ data?: string; error?: string; warning?: string }> {
   const clockValidation = clockNumberSchema.safeParse(operatorClockNumberStr);
   if (!clockValidation.success) {
-    console.error('[qcActions] Invalid Operator Clock Number format:', operatorClockNumberStr, clockValidation.error.flatten());
+    // console.error('[qcActions] Invalid Operator Clock Number format:', operatorClockNumberStr, clockValidation.error.flatten()); // 保留錯誤日誌供生產環境調試
     return { error: `Invalid Operator Clock Number: ${clockValidation.error.errors[0]?.message || 'Format error.'}` };
   }
 
   const supabaseAdmin = createSupabaseAdmin();
 
   try {
-    console.log('[qcActions] 開始事務處理，托盤編號:', payload.palletInfo.plt_num);
-    console.log('[qcActions] 環境信息:', {
-      nodeEnv: process.env.NODE_ENV,
-      vercelEnv: process.env.VERCEL_ENV,
-      timestamp: new Date().toISOString()
-    });
 
     // 🔥 強化的重複檢查機制 - 特別針對 Vercel 環境
-    console.log('[qcActions] 執行強化重複檢查...');
     
     // 多重檢查策略
     let duplicateCheckAttempts = 0;
-    const maxDuplicateChecks = 3;
+    const maxDuplicateChecks = MAX_DUPLICATE_CHECK_ATTEMPTS;
     let existingPallet = null;
     
     while (duplicateCheckAttempts < maxDuplicateChecks) {
@@ -340,17 +337,17 @@ export async function createQcDatabaseEntriesWithTransaction(
         .single();
 
       if (checkError && checkError.code !== 'PGRST116') {
-        console.error('[qcActions] Error checking for duplicate pallet:', checkError);
+        // console.error('[qcActions] Error checking for duplicate pallet:', checkError); // 保留錯誤日誌供生產環境調試
         throw new Error(`Failed to check for duplicate pallet: ${checkError.message}`);
       }
 
       if (checkResult) {
         existingPallet = checkResult;
-        console.error('[qcActions] 重複托盤編號檢測 (嘗試 ' + (duplicateCheckAttempts + 1) + '):', {
-          palletNumber: payload.palletInfo.plt_num,
-          existingGenerateTime: checkResult.generate_time,
-          currentAttemptTime: new Date().toISOString()
-        });
+        // console.error('[qcActions] 重複托盤編號檢測 (嘗試 ' + (duplicateCheckAttempts + 1) + '):', {
+        //   palletNumber: payload.palletInfo.plt_num,
+        //   existingGenerateTime: checkResult.generate_time,
+        //   currentAttemptTime: new Date().toISOString()
+        // }); // 保留錯誤日誌供生產環境調試
         break;
       }
       
@@ -358,19 +355,17 @@ export async function createQcDatabaseEntriesWithTransaction(
       
       // 在 Vercel 環境中添加額外延遲
       if (process.env.VERCEL_ENV && duplicateCheckAttempts < maxDuplicateChecks) {
-        console.log('[qcActions] Vercel 環境檢測，添加延遲重檢...');
-        await new Promise(resolve => setTimeout(resolve, 200 * duplicateCheckAttempts));
+        await new Promise(resolve => setTimeout(resolve, DUPLICATE_CHECK_DELAY_BASE * duplicateCheckAttempts));
       }
     }
 
     if (existingPallet) {
-      console.error('[qcActions] Duplicate pallet number detected:', payload.palletInfo.plt_num);
-      console.error('[qcActions] Attempted to create pallet with data:', JSON.stringify(payload.palletInfo, null, 2));
-      console.error('[qcActions] Call stack trace:', new Error().stack);
+      // console.error('[qcActions] Duplicate pallet number detected:', payload.palletInfo.plt_num); // 保留錯誤日誌供生產環境調試
+      // console.error('[qcActions] Attempted to create pallet with data:', JSON.stringify(payload.palletInfo, null, 2)); // 保留錯誤日誌供生產環境調試
+      // console.error('[qcActions] Call stack trace:', new Error().stack); // 保留錯誤日誌供生產環境調試
       return { error: `Duplicate pallet number detected for ${payload.palletInfo.plt_num}: Pallet number ${payload.palletInfo.plt_num} already exists. Please try again to generate a new pallet number.` };
     }
 
-    console.log('[qcActions] 重複檢查通過，開始插入數據...');
 
     // 🔥 使用 upsert 策略作為額外保護
     const { error: palletInfoError } = await supabaseAdmin
@@ -381,80 +376,70 @@ export async function createQcDatabaseEntriesWithTransaction(
       });
 
     if (palletInfoError) {
-      console.error('[qcActions] Error inserting pallet info:', palletInfoError);
-      console.error('[qcActions] Pallet info payload:', payload.palletInfo);
+      // console.error('[qcActions] Error inserting pallet info:', palletInfoError); // 保留錯誤日誌供生產環境調試
+      // console.error('[qcActions] Pallet info payload:', payload.palletInfo); // 保留錯誤日誌供生產環境調試
       
       // 檢查是否是重複主鍵錯誤
       if (palletInfoError.message && palletInfoError.message.includes('duplicate key value violates unique constraint')) {
-        console.error('[qcActions] Duplicate pallet number constraint violation');
+        // console.error('[qcActions] Duplicate pallet number constraint violation'); // 保留錯誤日誌供生產環境調試
         return { error: `Duplicate pallet number detected for ${payload.palletInfo.plt_num}: Pallet number ${payload.palletInfo.plt_num} already exists. Please try again to generate a new pallet number.` };
       }
       
       // 檢查是否是 API key 相關錯誤
       if (palletInfoError.message && palletInfoError.message.toLowerCase().includes('api key')) {
-        console.error('[qcActions] 檢測到 API key 錯誤 - 這可能是環境變數問題');
+        // console.error('[qcActions] 檢測到 API key 錯誤 - 這可能是環境變數問題'); // 保留錯誤日誌供生產環境調試
         return { error: `API Key Error: ${palletInfoError.message}. 請檢查 SUPABASE_SERVICE_ROLE_KEY 環境變數。` };
       }
       
       throw new Error(`Failed to insert pallet info: ${palletInfoError.message}`);
     }
-    console.log('[qcActions] Pallet info 插入成功');
 
     // 2. Insert history record
-    console.log('[qcActions] 插入 history 記錄...');
     const { error: historyError } = await supabaseAdmin
       .from('record_history')
       .insert(payload.historyRecord);
 
     if (historyError) {
-      console.error('[qcActions] Error inserting history record:', historyError);
+      // console.error('[qcActions] Error inserting history record:', historyError); // 保留錯誤日誌供生產環境調試
       throw new Error(`Failed to insert history record: ${historyError.message}`);
     }
-    console.log('[qcActions] History 記錄插入成功');
 
     // 3. Insert inventory record (depends on pallet info)
-    console.log('[qcActions] 插入 inventory 記錄...');
     const { error: inventoryError } = await supabaseAdmin
       .from('record_inventory')
       .insert(payload.inventoryRecord);
 
     if (inventoryError) {
-      console.error('[qcActions] Error inserting inventory record:', inventoryError);
+      // console.error('[qcActions] Error inserting inventory record:', inventoryError); // 保留錯誤日誌供生產環境調試
       throw new Error(`Failed to insert inventory record: ${inventoryError.message}`);
     }
-    console.log('[qcActions] Inventory 記錄插入成功');
 
     // 4. Insert ACO records if provided
     if (payload.acoRecords && payload.acoRecords.length > 0) {
-      console.log('[qcActions] 插入 ACO 記錄...');
       const { error: acoError } = await supabaseAdmin
         .from('record_aco')
         .insert(payload.acoRecords);
 
       if (acoError) {
-        console.error('[qcActions] Error inserting ACO records:', acoError);
+        // console.error('[qcActions] Error inserting ACO records:', acoError); // 保留錯誤日誌供生產環境調試
         throw new Error(`Failed to insert ACO records: ${acoError.message}`);
       }
-      console.log('[qcActions] ACO 記錄插入成功');
     }
 
     // 5. Insert Slate records if provided
     if (payload.slateRecords && payload.slateRecords.length > 0) {
-      console.log('[qcActions] 插入 Slate 記錄...');
       const { error: slateError } = await supabaseAdmin
         .from('record_slate')
         .insert(payload.slateRecords);
 
       if (slateError) {
-        console.error('[qcActions] Error inserting Slate records:', slateError);
+        // console.error('[qcActions] Error inserting Slate records:', slateError); // 保留錯誤日誌供生產環境調試
         throw new Error(`Failed to insert Slate records: ${slateError.message}`);
       }
-      console.log('[qcActions] Slate 記錄插入成功');
     }
 
     // 6. If ACO update is needed, do it after successful inserts
     if (acoUpdateInfo) {
-      console.log('[qcActions] 更新 ACO 剩餘數量...');
       const updateResult = await updateAcoOrderRemainQty(
         acoUpdateInfo.orderRef,
         acoUpdateInfo.productCode,
@@ -462,22 +447,20 @@ export async function createQcDatabaseEntriesWithTransaction(
       );
       
       if (updateResult.error) {
-        console.error('[qcActions] ACO update failed:', updateResult.error);
+        // console.error('[qcActions] ACO update failed:', updateResult.error); // 保留錯誤日誌供生產環境調試
         throw new Error(`ACO update failed: ${updateResult.error}`);
       }
-      console.log('[qcActions] ACO 更新成功');
     }
 
-    console.log('[qcActions] 所有數據庫操作完成');
     return { data: 'QC database entries created successfully with transaction' };
 
   } catch (error: any) {
-    console.error('[qcActions] Transaction failed, all operations rolled back:', error);
-    console.error('[qcActions] Error details:', {
-      message: error.message,
-      stack: error.stack,
-      name: error.name
-    });
+    // console.error('[qcActions] Transaction failed, all operations rolled back:', error); // 保留錯誤日誌供生產環境調試
+    // console.error('[qcActions] Error details:', {
+    //   message: error.message,
+    //   stack: error.stack,
+    //   name: error.name
+    // }); // 保留錯誤日誌供生產環境調試
     return { error: `Transaction failed: ${error.message || 'Unknown error.'}` };
   }
 }
@@ -492,37 +475,29 @@ export async function generatePalletNumbersDirectQuery(count: number): Promise<{
   error?: string;
 }> {
   try {
-    console.log('[qcActions] 使用個別原子性 RPC 調用生成棧板號碼（無緩存），數量:', count, '時間戳:', new Date().toISOString());
-    console.log('[qcActions] 環境信息:', {
-      nodeEnv: process.env.NODE_ENV,
-      vercelEnv: process.env.VERCEL_ENV
-    });
     
     const supabaseAdmin = createSupabaseAdmin();
     const palletNumbers: string[] = [];
     
     // 使用單次 RPC 調用生成所有托盤編號，避免循環中的併發問題
-    console.log(`[qcActions] 使用單次 RPC 調用生成 ${count} 個托盤編號`);
     
     let attempts = 0;
-    const maxAttempts = process.env.VERCEL_ENV ? 7 : 5; // Vercel 環境增加重試次數
+    const maxAttempts = process.env.VERCEL_ENV ? MAX_ATTEMPTS_PRODUCTION : MAX_PALLET_GENERATION_RETRIES_DEV;
     
     while (attempts < maxAttempts) {
       try {
-        console.log(`[qcActions] 使用原子性 RPC 生成 ${count} 個托盤編號 (嘗試 ${attempts + 1}), 時間戳: ${new Date().toISOString()}`);
         
         // 在 Vercel 環境中添加預延遲
         if (process.env.VERCEL_ENV && attempts > 0) {
-          const delay = 300 * attempts; // 遞增延遲
-          console.log(`[qcActions] Vercel 環境重試延遲: ${delay}ms`);
+          const delay = INITIAL_RETRY_DELAY_VERCEL * attempts; // 遞增延遲
           await new Promise(resolve => setTimeout(resolve, delay));
         }
         
         // 檢查當前序列號狀態（調試用）
         const today = new Date();
-        const day = today.getDate().toString().padStart(2, '0');
-        const month = (today.getMonth() + 1).toString().padStart(2, '0');
-        const year = today.getFullYear().toString().slice(-2);
+        const day = today.getDate().toString().padStart(DATE_PAD_LENGTH, '0');
+        const month = (today.getMonth() + 1).toString().padStart(DATE_PAD_LENGTH, '0');
+        const year = today.getFullYear().toString().slice(YEAR_SLICE_LENGTH);
         const dateStr = `${day}${month}${year}`;
         
         const { data: currentSequence, error: seqError } = await supabaseAdmin
@@ -531,7 +506,6 @@ export async function generatePalletNumbersDirectQuery(count: number): Promise<{
           .eq('date_str', dateStr)
           .single();
         
-        console.log(`[qcActions] 當前序列號狀態 (嘗試 ${attempts + 1}):`, currentSequence);
         
         // 使用單次 RPC 調用生成所有托盤編號
         const { data: rpcResult, error: rpcError } = await supabaseAdmin.rpc('generate_atomic_pallet_numbers_v3', {
@@ -539,7 +513,7 @@ export async function generatePalletNumbersDirectQuery(count: number): Promise<{
         });
         
         if (rpcError) {
-          console.error(`[qcActions] RPC 生成失敗:`, rpcError);
+          // console.error(`[qcActions] RPC 生成失敗:`, rpcError); // 保留錯誤日誌供生產環境調試
           throw new Error(`RPC generation failed: ${rpcError.message}`);
         }
         
@@ -548,7 +522,6 @@ export async function generatePalletNumbersDirectQuery(count: number): Promise<{
         }
         
         // 🔥 強化唯一性驗證 - 檢查生成的托盤編號是否已存在
-        console.log(`[qcActions] 驗證生成的托盤編號唯一性...`);
         const uniquenessChecks = [];
         
         for (const palletNum of rpcResult) {
@@ -567,25 +540,23 @@ export async function generatePalletNumbersDirectQuery(count: number): Promise<{
         
         const duplicates = uniquenessChecks.filter(check => check.exists);
         if (duplicates.length > 0) {
-          console.error(`[qcActions] 檢測到重複托盤編號:`, duplicates);
+          // console.error(`[qcActions] 檢測到重複托盤編號:`, duplicates); // 保留錯誤日誌供生產環境調試
           throw new Error(`Generated pallet numbers contain duplicates: ${duplicates.map(d => d.palletNumber).join(', ')}`);
         }
         
-        console.log(`[qcActions] 唯一性驗證通過`);
         
         palletNumbers.push(...rpcResult);
-        console.log(`[qcActions] 成功生成托盤編號:`, rpcResult);
         break;
         
       } catch (error: any) {
-        console.error(`[qcActions] 生成托盤編號失敗 (嘗試 ${attempts + 1}/${maxAttempts}):`, error);
+        // console.error(`[qcActions] 生成托盤編號失敗 (嘗試 ${attempts + 1}/${maxAttempts}):`, error); // 保留錯誤日誌供生產環境調試
         
         if (attempts === maxAttempts - 1) {
           throw new Error(`Failed to generate pallet numbers after ${maxAttempts} attempts: ${error.message}`);
         }
         
         attempts++;
-        const baseDelay = process.env.VERCEL_ENV ? 800 : 500; // Vercel 環境更長延遲
+        const baseDelay = process.env.VERCEL_ENV ? RETRY_DELAY_BASE_VERCEL : RETRY_DELAY_BASE_DEV;
         await new Promise(resolve => setTimeout(resolve, baseDelay * attempts));
       }
     }
@@ -594,37 +565,35 @@ export async function generatePalletNumbersDirectQuery(count: number): Promise<{
       throw new Error(`Failed to generate required number of pallet numbers: expected ${count}, got ${palletNumbers.length}`);
     }
     
-    console.log('[qcActions] 所有托盤編號生成完成:', palletNumbers);
     
     // Generate series with retry mechanism
     let series: string[] = [];
     let seriesAttempts = 0;
-    const seriesMaxAttempts = 3;
+    const seriesMaxAttempts = MAX_SERIES_GENERATION_RETRIES;
     
     while (seriesAttempts < seriesMaxAttempts) {
       try {
         series = await generateMultipleUniqueSeries(count, supabaseAdmin);
         break;
       } catch (seriesError: any) {
-        console.error(`[qcActions] 系列號生成失敗 (嘗試 ${seriesAttempts + 1}/${seriesMaxAttempts}):`, seriesError);
+        // console.error(`[qcActions] 系列號生成失敗 (嘗試 ${seriesAttempts + 1}/${seriesMaxAttempts}):`, seriesError); // 保留錯誤日誌供生產環境調試
         
         if (seriesAttempts === seriesMaxAttempts - 1) {
           throw seriesError;
         }
         
         seriesAttempts++;
-        await new Promise(resolve => setTimeout(resolve, 100 * seriesAttempts));
+        await new Promise(resolve => setTimeout(resolve, SERIES_RETRY_DELAY_BASE * seriesAttempts));
       }
     }
     
-    console.log('[qcActions] 生成的系列號:', series);
     
     return {
       palletNumbers,
       series
     };
   } catch (error: any) {
-    console.error('[qcActions] 個別原子性 RPC 調用生成棧板號碼失敗:', error);
+    // console.error('[qcActions] 個別原子性 RPC 調用生成棧板號碼失敗:', error); // 保留錯誤日誌供生產環境調試
     return {
       palletNumbers: [],
       series: [],
@@ -642,14 +611,13 @@ export async function generatePalletNumbersAndSeries(count: number): Promise<{
   error?: string;
 }> {
   try {
-    // console.log('[qcActions] 生成棧板號碼和系列號，數量:', count);
     
     const supabaseAdmin = createSupabaseAdmin();
     
     // 🔥 使用新的原子性棧板號碼生成函數，帶重試機制
     let palletNumbers: string[] = [];
     let attempts = 0;
-    const maxAttempts = 3;
+    const maxAttempts = MAX_ATTEMPTS_GENERAL;
     
     while (attempts < maxAttempts) {
       try {
@@ -658,14 +626,14 @@ export async function generatePalletNumbersAndSeries(count: number): Promise<{
         });
         
         if (palletError) {
-          console.error(`[qcActions] 原子性棧板號碼生成失敗 (嘗試 ${attempts + 1}/${maxAttempts}):`, palletError);
+          // console.error(`[qcActions] 原子性棧板號碼生成失敗 (嘗試 ${attempts + 1}/${maxAttempts}):`, palletError); // 保留錯誤日誌供生產環境調試
           
           if (attempts === maxAttempts - 1) {
             throw new Error(`Failed to generate atomic pallet numbers after ${maxAttempts} attempts: ${palletError.message}`);
           }
           
           attempts++;
-          await new Promise(resolve => setTimeout(resolve, 100 * attempts)); // 遞增延遲
+          await new Promise(resolve => setTimeout(resolve, RPC_RETRY_DELAY_BASE * attempts)); // 遞增延遲
           continue;
         }
         
@@ -677,18 +645,17 @@ export async function generatePalletNumbersAndSeries(count: number): Promise<{
         break;
         
       } catch (rpcError: any) {
-        console.error(`[qcActions] RPC 調用錯誤 (嘗試 ${attempts + 1}/${maxAttempts}):`, rpcError);
+        // console.error(`[qcActions] RPC 調用錯誤 (嘗試 ${attempts + 1}/${maxAttempts}):`, rpcError); // 保留錯誤日誌供生產環境調試
         
         if (attempts === maxAttempts - 1) {
           throw rpcError;
         }
         
         attempts++;
-        await new Promise(resolve => setTimeout(resolve, 100 * attempts)); // 遞增延遲
+        await new Promise(resolve => setTimeout(resolve, RPC_RETRY_DELAY_BASE * attempts)); // 遞增延遲
       }
     }
     
-    // console.log('[qcActions] 生成的棧板號碼:', palletNumbers);
     
     // Generate series with retry mechanism
     let series: string[] = [];
@@ -706,18 +673,17 @@ export async function generatePalletNumbersAndSeries(count: number): Promise<{
         }
         
         attempts++;
-        await new Promise(resolve => setTimeout(resolve, 100 * attempts)); // 遞增延遲
+        await new Promise(resolve => setTimeout(resolve, RPC_RETRY_DELAY_BASE * attempts)); // 遞增延遲
       }
     }
     
-    // console.log('[qcActions] 生成的系列號:', series);
     
     return {
       palletNumbers,
       series
     };
   } catch (error: any) {
-    console.error('[qcActions] 生成棧板號碼和系列號失敗:', error);
+    // console.error('[qcActions] 生成棧板號碼和系列號失敗:', error); // 保留錯誤日誌供生產環境調試
     return {
       palletNumbers: [],
       series: [],

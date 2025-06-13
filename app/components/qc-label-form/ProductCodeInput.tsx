@@ -147,6 +147,7 @@ export const ProductCodeInput: React.FC<ProductCodeInputProps> = React.memo(({
   );
 });
 
+// Set display name for debugging
 ProductCodeInput.displayName = 'ProductCodeInput';
 
 export default ProductCodeInput; 

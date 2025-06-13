@@ -184,6 +184,7 @@ export const BasicProductForm: React.FC<BasicProductFormProps> = React.memo(({
   );
 });
 
+// Set display name for debugging
 BasicProductForm.displayName = 'BasicProductForm';
 
 export default BasicProductForm; 

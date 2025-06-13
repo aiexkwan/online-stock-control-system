@@ -54,6 +54,7 @@ export const ProductInfoDisplay: React.FC<ProductInfoDisplayProps> = React.memo(
   );
 });
 
+// Set display name for debugging
 ProductInfoDisplay.displayName = 'ProductInfoDisplay';
 
 export default ProductInfoDisplay; 

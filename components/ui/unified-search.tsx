@@ -438,18 +438,6 @@ export const UnifiedSearch = React.forwardRef<HTMLInputElement, UnifiedSearchPro
         </div>
       </div>
 
-      {/* Auto Detection Indicator */}
-      {enableAutoDetection && searchQuery && detectedType !== 'unknown' && (
-        <div className="absolute top-full left-0 right-0 mt-1 z-30">
-          <div className={`text-xs px-2 py-1 rounded-md ${
-            detectedType === 'series' 
-              ? 'bg-green-500/20 text-green-400 border border-green-500/30' 
-              : 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
-          }`}>
-            Auto-detected: {detectedType === 'series' ? 'Series Number' : 'Pallet Number'}
-          </div>
-        </div>
-      )}
 
       {/* Search Results Dropdown - Only for product search */}
       {showResults && filteredResults.length > 0 && searchType !== 'pallet' && (

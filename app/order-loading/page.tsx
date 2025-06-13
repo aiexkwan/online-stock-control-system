@@ -6,6 +6,14 @@ import { Button } from '../../components/ui/button';
 import { UnifiedSearch } from '../../components/ui/unified-search';
 import { createClient } from '../utils/supabase/client';
 import { toast } from 'sonner';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { MobileButton, MobileInput, MobileCard } from '@/components/ui/mobile';
 import { mobileConfig, cn } from '@/lib/mobile-config';
 import { 
@@ -13,11 +21,11 @@ import {
   ClipboardDocumentListIcon,
   MagnifyingGlassIcon,
   CheckCircleIcon,
-  ExclamationTriangleIcon
+  ExclamationTriangleIcon,
+  XMarkIcon
 } from '@heroicons/react/24/outline';
 import { loadPalletToOrder, undoLoadPallet } from '@/app/actions/orderLoadingActions';
 import MotionBackground from '../components/MotionBackground';
-import BatchLoadPanel from './components/BatchLoadPanel';
 import MobileOrderLoading from './components/MobileOrderLoading';
 
 interface OrderData {
@@ -52,8 +60,10 @@ export default function OrderLoadingPage() {
   const [searchValue, setSearchValue] = useState('');
   const [isSearching, setIsSearching] = useState(false);
   const [recentLoads, setRecentLoads] = useState<any[]>([]);
-  const [showRecentLoads, setShowRecentLoads] = useState(false);
+  const [showRecentLoads, setShowRecentLoads] = useState(true);
   const [orderSearchQuery, setOrderSearchQuery] = useState('');
+  const [showUndoDialog, setShowUndoDialog] = useState(false);
+  const [undoItem, setUndoItem] = useState<any>(null);
   
   // Refs
   const idInputRef = useRef<HTMLInputElement>(null);
@@ -250,6 +260,9 @@ export default function OrderLoadingPage() {
     fetchOrderData(orderRef);
     fetchRecentLoads(orderRef);
     
+    // Reset search value when switching orders
+    setSearchValue('');
+    
     // Auto focus on search input after order selection
     setTimeout(() => {
       if (searchInputRef.current) {
@@ -258,47 +271,65 @@ export default function OrderLoadingPage() {
     }, 100);
   };
 
-  // Fetch recent loading history
+  // Fetch recent loading history from record_history
   const fetchRecentLoads = async (orderRef: string) => {
     try {
       const { data, error } = await supabase
-        .from('order_loading_history')
+        .from('record_history')
         .select('*')
-        .eq('order_ref', orderRef)
-        .eq('action_type', 'load')
-        .order('action_time', { ascending: false })
+        .eq('action', 'Order Load')
+        .like('remark', `%Order: ${orderRef}%`)
+        .order('time', { ascending: false })
         .limit(10);
 
       if (!error && data) {
-        setRecentLoads(data);
+        // Transform data to match expected format
+        const transformedData = data.map(item => {
+          // Extract details from remark
+          const orderMatch = item.remark.match(/Order: ([^,]+)/);
+          const productMatch = item.remark.match(/Product: ([^,]+)/);
+          const qtyMatch = item.remark.match(/Qty: (\d+)/);
+          const byMatch = item.remark.match(/by (.+)$/);
+          
+          return {
+            uuid: item.uuid,
+            order_ref: orderMatch ? orderMatch[1] : orderRef,
+            pallet_num: item.plt_num,
+            product_code: productMatch ? productMatch[1] : '',
+            quantity: qtyMatch ? parseInt(qtyMatch[1]) : 0,
+            action_type: 'load',
+            action_by: byMatch ? byMatch[1] : 'Unknown',
+            action_time: item.time
+          };
+        });
+        setRecentLoads(transformedData);
       }
     } catch (error) {
       console.error('Error fetching recent loads:', error);
     }
   };
 
-  // Handle undo last load
-  const handleUndoLastLoad = async () => {
-    if (recentLoads.length === 0 || !selectedOrderRef) return;
+  // Open undo confirmation dialog
+  const handleUndoClick = (load: any) => {
+    setUndoItem(load);
+    setShowUndoDialog(true);
+  };
 
-    const lastLoad = recentLoads[0];
-    const confirmUndo = window.confirm(
-      `Undo loading of pallet ${lastLoad.pallet_num}?\nProduct: ${lastLoad.product_code}\nQuantity: ${lastLoad.quantity}`
-    );
-
-    if (!confirmUndo) return;
+  // Handle confirmed undo
+  const handleConfirmedUndo = async () => {
+    if (!undoItem || !selectedOrderRef) return;
 
     try {
       // Call undo action
       const result = await undoLoadPallet(
         selectedOrderRef,
-        lastLoad.pallet_num,
-        lastLoad.product_code,
-        lastLoad.quantity
+        undoItem.pallet_num,
+        undoItem.product_code,
+        undoItem.quantity
       );
       
       if (result.success) {
-        toast.success(`✓ Successfully undone: ${lastLoad.pallet_num}`);
+        toast.success(`✓ Successfully undone: ${undoItem.pallet_num}`);
         // Refresh data
         await refreshAllData();
       } else {
@@ -307,6 +338,9 @@ export default function OrderLoadingPage() {
     } catch (error) {
       console.error('Error undoing load:', error);
       toast.error('❌ System error during undo');
+    } finally {
+      setShowUndoDialog(false);
+      setUndoItem(null);
     }
   };
 
@@ -448,9 +482,7 @@ export default function OrderLoadingPage() {
               onSearchChange={setSearchValue}
               onSearchSelect={handleSearchSelect}
               recentLoads={recentLoads}
-              showRecentLoads={showRecentLoads}
-              onToggleRecentLoads={() => setShowRecentLoads(!showRecentLoads)}
-              onUndoLastLoad={handleUndoLastLoad}
+              onUndoClick={handleUndoClick}
               idInputRef={idInputRef}
               searchInputRef={searchInputRef}
             />
@@ -754,26 +786,6 @@ export default function OrderLoadingPage() {
                         <MagnifyingGlassIcon className="h-6 w-6 mr-2 text-purple-400" />
                         Scan As You Load
                       </div>
-                      <div className="flex items-center space-x-2">
-                        {recentLoads.length > 0 && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={handleUndoLastLoad}
-                            className="text-orange-400 border-orange-400/50 hover:bg-orange-400/10"
-                          >
-                            Undo Last
-                          </Button>
-                        )}
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setShowRecentLoads(!showRecentLoads)}
-                          className="text-slate-400 hover:text-white"
-                        >
-                          History ({recentLoads.length})
-                        </Button>
-                      </div>
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
@@ -790,7 +802,7 @@ export default function OrderLoadingPage() {
                     />
                     
                     {/* Recent Loads History */}
-                    {showRecentLoads && recentLoads.length > 0 && (
+                    {recentLoads.length > 0 && (
                       <div className="mt-4 space-y-2">
                         <div className="text-sm font-medium text-slate-400 mb-2">Recent Loads:</div>
                         <div className="max-h-40 overflow-y-auto space-y-2">
@@ -799,16 +811,27 @@ export default function OrderLoadingPage() {
                               key={load.uuid} 
                               className="text-xs bg-slate-700/30 rounded-lg p-2 flex justify-between items-center"
                             >
-                              <div>
+                              <div className="flex-1">
                                 <span className="text-cyan-300 font-mono">{load.pallet_num}</span>
                                 <span className="text-slate-400 mx-2">•</span>
                                 <span className="text-slate-300">{load.product_code}</span>
                                 <span className="text-slate-400 mx-2">•</span>
                                 <span className="text-green-300">Qty: {load.quantity}</span>
                               </div>
-                              <span className="text-slate-500">
-                                {new Date(load.action_time).toLocaleTimeString()}
-                              </span>
+                              <div className="flex items-center space-x-2">
+                                <span className="text-slate-500">
+                                  {new Date(load.action_time).toLocaleTimeString()}
+                                </span>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleUndoClick(load)}
+                                  className="h-6 w-6 p-0 hover:bg-red-500/20 hover:text-red-400"
+                                  title="Undo this load"
+                                >
+                                  <XMarkIcon className="h-4 w-4" />
+                                </Button>
+                              </div>
                             </div>
                           ))}
                         </div>
@@ -817,20 +840,62 @@ export default function OrderLoadingPage() {
                   </CardContent>
                 </Card>
               )}
-              
-              {/* Batch Loading Panel */}
-              {selectedOrderRef && (
-                <BatchLoadPanel 
-                  orderRef={selectedOrderRef} 
-                  onBatchComplete={refreshAllData}
-                />
-              )}
             </div>
           </div>
             </>
           )}
         </div>
       </div>
+      
+      {/* Undo Confirmation Dialog */}
+      <Dialog open={showUndoDialog} onOpenChange={setShowUndoDialog}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Confirm Undo Loading</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to undo this loading operation?
+            </DialogDescription>
+          </DialogHeader>
+          {undoItem && (
+            <div className="py-4 space-y-2">
+              <div className="flex justify-between">
+                <span className="text-slate-500">Pallet:</span>
+                <span className="font-mono text-cyan-300">{undoItem.pallet_num}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-500">Product:</span>
+                <span>{undoItem.product_code}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-500">Quantity:</span>
+                <span className="text-green-300">{undoItem.quantity} units</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-500">Loaded at:</span>
+                <span>{new Date(undoItem.action_time).toLocaleString()}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-500">Loaded by:</span>
+                <span>{undoItem.action_by}</span>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setShowUndoDialog(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleConfirmedUndo}
+            >
+              Confirm Undo
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </MotionBackground>
   );
 } 

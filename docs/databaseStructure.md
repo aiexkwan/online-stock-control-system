@@ -1,47 +1,5 @@
 [
   {
-    "table_name": "API",
-    "table_description": null,
-    "column_name": "name",
-    "column_description": null,
-    "data_type": "text",
-    "is_nullable": "NO",
-    "column_default": null,
-    "character_maximum_length": null,
-    "is_primary_key": "NO",
-    "is_foreign_key": "NO",
-    "foreign_table_name": null,
-    "foreign_column_name": null
-  },
-  {
-    "table_name": "API",
-    "table_description": null,
-    "column_name": "value",
-    "column_description": null,
-    "data_type": "text",
-    "is_nullable": "NO",
-    "column_default": null,
-    "character_maximum_length": null,
-    "is_primary_key": "NO",
-    "is_foreign_key": "NO",
-    "foreign_table_name": null,
-    "foreign_column_name": null
-  },
-  {
-    "table_name": "API",
-    "table_description": null,
-    "column_name": "uuid",
-    "column_description": null,
-    "data_type": "uuid",
-    "is_nullable": "NO",
-    "column_default": "gen_random_uuid()",
-    "character_maximum_length": null,
-    "is_primary_key": "YES",
-    "is_foreign_key": "NO",
-    "foreign_table_name": null,
-    "foreign_column_name": null
-  },
-  {
     "table_name": "daily_pallet_sequence",
     "table_description": "pallet number usage daily record",
     "column_name": "date_str",

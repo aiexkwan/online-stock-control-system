@@ -47,6 +47,7 @@ export const FormField: React.FC<FormFieldProps> = React.memo(({
   );
 });
 
+// Set display name for debugging
 FormField.displayName = 'FormField';
 
 export default FormField; 

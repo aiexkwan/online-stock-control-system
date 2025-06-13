@@ -12,7 +12,7 @@ interface ParsedRemark {
   remarks: string;
 }
 
-export const RemarkFormatter: React.FC<RemarkFormatterProps> = ({ remarkText }) => {
+export const RemarkFormatter: React.FC<RemarkFormatterProps> = React.memo(({ remarkText }) => {
   const parseRemarkText = (text: string): ParsedRemark => {
     // Simplified parsing based on symbols only
     // "-" : New paragraph/section
@@ -103,6 +103,9 @@ export const RemarkFormatter: React.FC<RemarkFormatterProps> = ({ remarkText }) 
       )}
     </div>
   );
-};
+});
+
+// Set display name for debugging
+RemarkFormatter.displayName = 'RemarkFormatter';
 
 export default RemarkFormatter; 

@@ -292,6 +292,7 @@ export const EnhancedProgressBar: React.FC<EnhancedProgressBarProps> = React.mem
   );
 });
 
+// Set display names for debugging
 ProgressStep.displayName = 'ProgressStep';
 EnhancedProgressBar.displayName = 'EnhancedProgressBar';
 

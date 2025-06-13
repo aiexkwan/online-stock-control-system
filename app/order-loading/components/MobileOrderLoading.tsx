@@ -44,9 +44,7 @@ interface MobileOrderLoadingProps {
   
   // Recent Loads
   recentLoads: any[];
-  showRecentLoads: boolean;
-  onToggleRecentLoads: () => void;
-  onUndoLastLoad: () => void;
+  onUndoClick: (load: any) => void;
   
   // Refs
   idInputRef: React.RefObject<HTMLInputElement>;
@@ -74,9 +72,7 @@ export default function MobileOrderLoading({
   onSearchChange,
   onSearchSelect,
   recentLoads,
-  showRecentLoads,
-  onToggleRecentLoads,
-  onUndoLastLoad,
+  onUndoClick,
   idInputRef,
   searchInputRef,
 }: MobileOrderLoadingProps) {
@@ -258,16 +254,6 @@ export default function MobileOrderLoading({
                   <MagnifyingGlassIcon className="h-6 w-6 mr-2 text-purple-400" />
                   <h3 className={mobileConfig.fontSize.h3}>Scan Pallet</h3>
                 </div>
-                {recentLoads.length > 0 && (
-                  <MobileButton
-                    variant="ghost"
-                    size="sm"
-                    onClick={onUndoLastLoad}
-                    className="text-orange-400"
-                  >
-                    Undo Last
-                  </MobileButton>
-                )}
               </div>
               
               <UnifiedSearch
@@ -282,34 +268,32 @@ export default function MobileOrderLoading({
                 disabled={isSearching}
               />
               
-              {/* Recent Loads Toggle */}
-              {recentLoads.length > 0 && (
-                <MobileButton
-                  variant="ghost"
-                  size="sm"
-                  fullWidth
-                  onClick={onToggleRecentLoads}
-                >
-                  {showRecentLoads ? 'Hide' : 'Show'} Recent Loads ({recentLoads.length})
-                </MobileButton>
-              )}
               
               {/* Recent Loads List */}
-              {showRecentLoads && recentLoads.length > 0 && (
+              {recentLoads.length > 0 && (
                 <div className="space-y-2 max-h-40 overflow-y-auto">
                   {recentLoads.slice(0, 5).map((load) => (
                     <div 
                       key={load.uuid} 
                       className="bg-slate-700/30 rounded-lg p-3 flex justify-between items-center"
                     >
-                      <div>
+                      <div className="flex-1">
                         <span className="text-cyan-300 font-mono">{load.pallet_num}</span>
                         <span className="text-slate-400 mx-2">•</span>
                         <span className="text-green-300">Qty: {load.quantity}</span>
                       </div>
-                      <span className={cn(mobileConfig.fontSize.bodySmall, "text-slate-500")}>
-                        {new Date(load.action_time).toLocaleTimeString()}
-                      </span>
+                      <div className="flex items-center space-x-2">
+                        <span className={cn(mobileConfig.fontSize.bodySmall, "text-slate-500")}>
+                          {new Date(load.action_time).toLocaleTimeString()}
+                        </span>
+                        <MobileButton
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => onUndoClick(load)}
+                          className="h-8 w-8 p-0 text-red-400"
+                          icon={<XMarkIcon className="h-5 w-5" />}
+                        />
+                      </div>
                     </div>
                   ))}
                 </div>

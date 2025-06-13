@@ -255,6 +255,7 @@ export const EnhancedSelect = forwardRef<HTMLSelectElement, EnhancedSelectProps>
   );
 });
 
+// Set display names for debugging
 EnhancedFormField.displayName = 'EnhancedFormField';
 EnhancedInput.displayName = 'EnhancedInput';
 EnhancedSelect.displayName = 'EnhancedSelect';

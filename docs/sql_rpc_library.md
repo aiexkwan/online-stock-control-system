@@ -2,6 +2,48 @@
 
 This document serves as a unified record of all SQL/RPC functions in the WMS system for easy reference and maintenance.
 
+## 📦 Order Loading Functions (Atomic Transactions)
+
+### rpc_load_pallet_to_order
+- **Purpose**: Atomically load a pallet to an order with all related updates
+- **Parameters**:
+  - `p_order_ref`: Order reference number
+  - `p_pallet_input`: Pallet number or series to load
+  - `p_user_id`: User ID performing the action (default: 0)
+  - `p_user_name`: User name (default: 'System')
+- **Returns**: JSON with success status and details
+- **Location**: `app/order-loading/sql/rpc_order_loading.sql`
+- **Features**:
+  - ✅ Atomic transaction - all updates succeed or all fail
+  - ✅ Duplicate load prevention
+  - ✅ Quantity validation
+  - ✅ Updates: order quantity, history, stock level, inventory, pallet remarks
+- **Usage**:
+```sql
+SELECT rpc_load_pallet_to_order('ORD123', '260125/1', 1001, 'John Doe');
+```
+
+### rpc_undo_load_pallet
+- **Purpose**: Atomically undo a pallet loading operation
+- **Parameters**:
+  - `p_order_ref`: Order reference number
+  - `p_pallet_num`: Pallet number to undo
+  - `p_product_code`: Product code
+  - `p_quantity`: Quantity to restore
+  - `p_user_id`: User ID performing the action (default: 0)
+  - `p_user_name`: User name (default: 'System')
+- **Returns**: JSON with success status and details
+- **Location**: `app/order-loading/sql/rpc_order_loading.sql`
+- **Features**:
+  - ✅ Atomic rollback of all loading operations
+  - ✅ Restores stock levels and inventory
+  - ✅ Resets pallet status for reloading
+  - ✅ Deletes original load record
+- **Usage**:
+```sql
+SELECT rpc_undo_load_pallet('ORD123', '260125/1', 'PROD001', 100, 1001, 'John Doe');
+```
+
 ## 🔥 Atomic Pallet Number Generation Functions
 
 ### generate_atomic_pallet_numbers_v3(count INTEGER)
