@@ -61,6 +61,7 @@ import { useAskDatabasePermission } from '@/app/hooks/useAuth';
 import AskDatabaseInlineCard from '@/app/components/AskDatabaseInlineCard';
 import { VoidStatisticsCard } from '@/app/components/VoidStatisticsCard';
 import VoidReportDialog from '@/app/components/admin-panel-menu/VoidReportDialog';
+import LoadingReportDialog from '@/app/components/admin-panel-menu/LoadingReportDialog';
 
 const adminMenuItems = [
   {
@@ -120,6 +121,15 @@ const adminMenuItems = [
     icon: DocumentChartBarIcon,
     action: 'open-void-report-dialog',
     color: 'hover:bg-purple-900/20 hover:text-purple-400',
+    category: 'Export Reports'
+  },
+  {
+    id: 'loading-report',
+    title: 'Order Loading Report',
+    description: 'Export order loading reports',
+    icon: TruckIcon,
+    action: 'open-loading-report-dialog',
+    color: 'hover:bg-cyan-900/20 hover:text-cyan-400',
     category: 'Export Reports'
   },
   {
@@ -309,6 +319,7 @@ export default function AdminPanelPage() {
   
   // Void Report Dialog states
   const [showVoidReportDialog, setShowVoidReportDialog] = useState(false);
+  const [showLoadingReportDialog, setShowLoadingReportDialog] = useState(false);
 
   // Database Update Dialog states
   const [showUpdateDialog, setShowUpdateDialog] = useState(false);
@@ -749,6 +760,8 @@ export default function AdminPanelPage() {
       setShowHistoryDialog(true);
     } else if (item.action === 'open-void-report-dialog') {
       setShowVoidReportDialog(true);
+    } else if (item.action === 'open-loading-report-dialog') {
+      setShowLoadingReportDialog(true);
     } else if (item.action === 'open-update-dialog') {
       setShowUpdateDialog(true);
     } else if (item.path) {
@@ -2108,6 +2121,12 @@ export default function AdminPanelPage() {
       <VoidReportDialog
         isOpen={showVoidReportDialog}
         onClose={() => setShowVoidReportDialog(false)}
+      />
+
+      {/* Loading Report Dialog */}
+      <LoadingReportDialog
+        isOpen={showLoadingReportDialog}
+        onClose={() => setShowLoadingReportDialog(false)}
       />
 
       {/* Database Update Dialog */}

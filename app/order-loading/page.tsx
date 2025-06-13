@@ -6,6 +6,8 @@ import { Button } from '../../components/ui/button';
 import { UnifiedSearch } from '../../components/ui/unified-search';
 import { createClient } from '../utils/supabase/client';
 import { toast } from 'sonner';
+import { MobileButton, MobileInput, MobileCard } from '@/components/ui/mobile';
+import { mobileConfig, cn } from '@/lib/mobile-config';
 import { 
   UserIcon, 
   ClipboardDocumentListIcon,
@@ -13,8 +15,10 @@ import {
   CheckCircleIcon,
   ExclamationTriangleIcon
 } from '@heroicons/react/24/outline';
-import { loadPalletToOrder } from '@/app/actions/orderLoadingActions';
+import { loadPalletToOrder, undoLoadPallet } from '@/app/actions/orderLoadingActions';
 import MotionBackground from '../components/MotionBackground';
+import BatchLoadPanel from './components/BatchLoadPanel';
+import MobileOrderLoading from './components/MobileOrderLoading';
 
 interface OrderData {
   order_ref: string;
@@ -22,6 +26,15 @@ interface OrderData {
   product_desc: string;
   product_qty: string;
   loaded_qty: string;
+}
+
+interface OrderSummary {
+  orderRef: string;
+  totalQty: number;
+  loadedQty: number;
+  percentage: number;
+  itemCount: number;
+  completedItems: number;
 }
 
 export default function OrderLoadingPage() {
@@ -32,22 +45,38 @@ export default function OrderLoadingPage() {
   const [isIdValid, setIsIdValid] = useState(false);
   const [isCheckingId, setIsCheckingId] = useState(false);
   const [availableOrders, setAvailableOrders] = useState<string[]>([]);
+  const [orderSummaries, setOrderSummaries] = useState<Map<string, OrderSummary>>(new Map());
   const [selectedOrderRef, setSelectedOrderRef] = useState<string | null>(null);
   const [orderData, setOrderData] = useState<OrderData[]>([]);
   const [isLoadingOrders, setIsLoadingOrders] = useState(false);
   const [searchValue, setSearchValue] = useState('');
   const [isSearching, setIsSearching] = useState(false);
+  const [recentLoads, setRecentLoads] = useState<any[]>([]);
+  const [showRecentLoads, setShowRecentLoads] = useState(false);
+  const [orderSearchQuery, setOrderSearchQuery] = useState('');
   
   // Refs
   const idInputRef = useRef<HTMLInputElement>(null);
   const searchInputRef = useRef<any>(null);
 
-  // Auto focus on ID input when page loads
+  // Auto focus on ID input when page loads and check saved ID
   useEffect(() => {
-    if (idInputRef.current) {
+    // Check if ID is saved in localStorage
+    const savedId = localStorage.getItem('orderLoadingUserId');
+    if (savedId && /^\d{4}$/.test(savedId)) {
+      setIdNumber(savedId);
+      checkIdExists(savedId);
+    } else if (idInputRef.current) {
       idInputRef.current.focus();
     }
   }, []);
+
+  // Save ID to localStorage when validated
+  useEffect(() => {
+    if (isIdValid && idNumber) {
+      localStorage.setItem('orderLoadingUserId', idNumber);
+    }
+  }, [isIdValid, idNumber]);
 
   // Check if ID exists in data_id table
   const checkIdExists = async (id: string) => {
@@ -74,7 +103,7 @@ export default function OrderLoadingPage() {
         setAvailableOrders([]);
         setSelectedOrderRef(null);
         setOrderData([]);
-        toast.error(`ID ${id} does not exist in the system, please check and try again`);
+        toast.error(`❌ ID ${id} not found. Please check your ID number.`);
       } else {
         setIsIdValid(true);
         await fetchAvailableOrders();
@@ -82,18 +111,18 @@ export default function OrderLoadingPage() {
     } catch (error) {
       console.error('Error checking ID:', error);
       setIsIdValid(false);
-      toast.error('Error occurred while checking ID');
+      toast.error('❌ System error. Please try again.');
     } finally {
       setIsCheckingId(false);
     }
   };
 
-  // Fetch available order references from data_order table
+  // Fetch available order references from data_order table with enhanced data
   const fetchAvailableOrders = async () => {
     try {
       const { data, error } = await supabase
         .from('data_order')
-        .select('order_ref')
+        .select('order_ref, product_qty, loaded_qty')
         .order('order_ref', { ascending: true });
 
       if (error) {
@@ -102,9 +131,40 @@ export default function OrderLoadingPage() {
         return;
       }
 
-      // Get unique order references
-      const uniqueOrderRefs = [...new Set(data.map(item => item.order_ref))];
+      // Group by order_ref and calculate completion
+      const orderMap = new Map<string, OrderSummary>();
+      data.forEach(item => {
+        const ref = item.order_ref;
+        if (!orderMap.has(ref)) {
+          orderMap.set(ref, {
+            orderRef: ref,
+            totalQty: 0,
+            loadedQty: 0,
+            percentage: 0,
+            itemCount: 0,
+            completedItems: 0
+          });
+        }
+        const order = orderMap.get(ref)!;
+        const itemQty = parseInt(item.product_qty || '0');
+        const itemLoaded = parseInt(item.loaded_qty || '0');
+        
+        order.totalQty += itemQty;
+        order.loadedQty += itemLoaded;
+        order.itemCount++;
+        if (itemLoaded >= itemQty && itemQty > 0) {
+          order.completedItems++;
+        }
+      });
+
+      // Calculate percentages
+      orderMap.forEach(order => {
+        order.percentage = order.totalQty > 0 ? (order.loadedQty / order.totalQty) * 100 : 0;
+      });
+
+      const uniqueOrderRefs = Array.from(orderMap.keys());
       setAvailableOrders(uniqueOrderRefs);
+      setOrderSummaries(orderMap);
     } catch (error) {
       console.error('Error fetching orders:', error);
       toast.error('Error occurred while fetching order list');
@@ -188,6 +248,7 @@ export default function OrderLoadingPage() {
   const handleOrderSelect = (orderRef: string) => {
     setSelectedOrderRef(orderRef);
     fetchOrderData(orderRef);
+    fetchRecentLoads(orderRef);
     
     // Auto focus on search input after order selection
     setTimeout(() => {
@@ -195,6 +256,69 @@ export default function OrderLoadingPage() {
         searchInputRef.current.focus();
       }
     }, 100);
+  };
+
+  // Fetch recent loading history
+  const fetchRecentLoads = async (orderRef: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('order_loading_history')
+        .select('*')
+        .eq('order_ref', orderRef)
+        .eq('action_type', 'load')
+        .order('action_time', { ascending: false })
+        .limit(10);
+
+      if (!error && data) {
+        setRecentLoads(data);
+      }
+    } catch (error) {
+      console.error('Error fetching recent loads:', error);
+    }
+  };
+
+  // Handle undo last load
+  const handleUndoLastLoad = async () => {
+    if (recentLoads.length === 0 || !selectedOrderRef) return;
+
+    const lastLoad = recentLoads[0];
+    const confirmUndo = window.confirm(
+      `Undo loading of pallet ${lastLoad.pallet_num}?\nProduct: ${lastLoad.product_code}\nQuantity: ${lastLoad.quantity}`
+    );
+
+    if (!confirmUndo) return;
+
+    try {
+      // Call undo action
+      const result = await undoLoadPallet(
+        selectedOrderRef,
+        lastLoad.pallet_num,
+        lastLoad.product_code,
+        lastLoad.quantity
+      );
+      
+      if (result.success) {
+        toast.success(`✓ Successfully undone: ${lastLoad.pallet_num}`);
+        // Refresh data
+        await refreshAllData();
+      } else {
+        toast.error(`❌ Failed to undo: ${result.message}`);
+      }
+    } catch (error) {
+      console.error('Error undoing load:', error);
+      toast.error('❌ System error during undo');
+    }
+  };
+
+  // Refresh all data
+  const refreshAllData = async () => {
+    if (selectedOrderRef) {
+      await Promise.all([
+        fetchOrderData(selectedOrderRef),
+        fetchRecentLoads(selectedOrderRef),
+        fetchAvailableOrders()
+      ]);
+    }
   };
 
   // Handle search selection (same as stock-transfer)
@@ -209,20 +333,24 @@ export default function OrderLoadingPage() {
       const response = await loadPalletToOrder(selectedOrderRef, result.data.value);
       
       if (response.success) {
-        toast.success(response.message);
-        
-        // Refresh order data
-        await fetchOrderData(selectedOrderRef);
-        
-        // Show loaded pallet details
+        // Show success with better formatting
         if (response.data) {
           toast.success(
-            `Loaded: ${response.data.productCode} - Qty: ${response.data.productQty}`,
-            {
-              description: `Total loaded: ${response.data.updatedLoadedQty}`
-            }
+            `✓ Successfully Loaded! Pallet: ${response.data.palletNumber} | Product: ${response.data.productCode} | Qty: ${response.data.productQty} | Total: ${response.data.updatedLoadedQty}`
           );
+        } else {
+          toast.success(response.message);
         }
+        
+        // Show warning if anomaly detected
+        if (response.warning) {
+          setTimeout(() => {
+            toast.warning(response.warning);
+          }, 500);
+        }
+        
+        // Refresh order data and history
+        await refreshAllData();
         
         // Clear search value after successful scan
         setSearchValue('');
@@ -232,7 +360,26 @@ export default function OrderLoadingPage() {
           searchInputRef.current.focus();
         }
       } else {
-        toast.error(response.message);
+        // Show more user-friendly error messages
+        let errorMessage = response.message;
+        
+        if (response.message.includes('Exceeds order quantity')) {
+          errorMessage = response.message; // Already formatted well
+        } else if (response.error === 'EXCEED_ORDER_QTY') {
+          errorMessage = 'Cannot load more than ordered quantity';
+        } else if (response.error === 'NOT_FOUND') {
+          errorMessage = 'Pallet or series not found in system';
+        } else if (response.error === 'INVALID_FORMAT') {
+          errorMessage = 'Invalid scan format. Please scan a valid pallet or series barcode';
+        } else if (response.message.includes('is not in order')) {
+          errorMessage = response.message; // Already clear
+        } else if (response.error === 'DUPLICATE_SCAN') {
+          // Special handling for duplicate scan - use warning instead of error
+          toast.warning(response.message);
+          return;
+        }
+        
+        toast.error(`❌ Loading Failed: ${errorMessage}`);
       }
     } catch (error) {
       console.error('Error loading pallet:', error);
@@ -242,21 +389,76 @@ export default function OrderLoadingPage() {
     }
   };
 
+  // Check if mobile view (simplified check - you might want to use a proper hook)
+  const [isMobile, setIsMobile] = useState(false);
+  
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
   return (
     <MotionBackground>
       <div className="pt-24 pb-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Page Header */}
-          <div className="mb-8">
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-300 via-cyan-300 to-blue-200 bg-clip-text text-transparent mb-2">
+          <div className="mb-6 md:mb-8">
+            <h1 className={cn(mobileConfig.fontSize.h1, "font-bold bg-gradient-to-r from-blue-300 via-cyan-300 to-blue-200 bg-clip-text text-transparent mb-2")}>
               Order Loading
             </h1>
-            <p className="text-slate-400 text-lg">
+            <p className={cn(mobileConfig.fontSize.bodyLarge, "text-slate-400")}>
               Manage order loading process
             </p>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* Mobile View */}
+          {isMobile ? (
+            <MobileOrderLoading
+              idNumber={idNumber}
+              isIdValid={isIdValid}
+              isCheckingId={isCheckingId}
+              onIdChange={handleIdChange}
+              onIdBlur={handleIdBlur}
+              onIdKeyDown={handleIdKeyDown}
+              availableOrders={availableOrders}
+              orderSummaries={orderSummaries}
+              selectedOrderRef={selectedOrderRef}
+              orderSearchQuery={orderSearchQuery}
+              onOrderSearchChange={setOrderSearchQuery}
+              onOrderSelect={handleOrderSelect}
+              onChangeUser={() => {
+                localStorage.removeItem('orderLoadingUserId');
+                setIdNumber('');
+                setIsIdValid(false);
+                setSelectedOrderRef(null);
+                setOrderData([]);
+                if (idInputRef.current) {
+                  idInputRef.current.focus();
+                }
+              }}
+              orderData={orderData}
+              isLoadingOrders={isLoadingOrders}
+              searchValue={searchValue}
+              isSearching={isSearching}
+              onSearchChange={setSearchValue}
+              onSearchSelect={handleSearchSelect}
+              recentLoads={recentLoads}
+              showRecentLoads={showRecentLoads}
+              onToggleRecentLoads={() => setShowRecentLoads(!showRecentLoads)}
+              onUndoLastLoad={handleUndoLastLoad}
+              idInputRef={idInputRef}
+              searchInputRef={searchInputRef}
+            />
+          ) : (
+            // Desktop View (existing code)
+            <>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-8">
             {/* Left Column - ID Input and Order Selection */}
             <div className="space-y-6">
               {/* ID Input Card */}
@@ -309,24 +511,105 @@ export default function OrderLoadingPage() {
               {isIdValid && availableOrders.length > 0 && (
                 <Card className="bg-slate-800/50 border-slate-700/50 backdrop-blur-sm">
                   <CardHeader>
-                    <CardTitle className="flex items-center text-slate-200">
-                      <ClipboardDocumentListIcon className="h-6 w-6 mr-2 text-green-400" />
-                      Choose order below
+                    <CardTitle className="flex items-center justify-between text-slate-200">
+                      <div className="flex items-center">
+                        <ClipboardDocumentListIcon className="h-6 w-6 mr-2 text-green-400" />
+                        Choose order below
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          localStorage.removeItem('orderLoadingUserId');
+                          setIdNumber('');
+                          setIsIdValid(false);
+                          setSelectedOrderRef(null);
+                          setOrderData([]);
+                          if (idInputRef.current) {
+                            idInputRef.current.focus();
+                          }
+                        }}
+                        className="text-slate-400 hover:text-white"
+                      >
+                        Change User
+                      </Button>
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <select
-                      value={selectedOrderRef || ''}
-                      onChange={(e) => handleOrderSelect(e.target.value)}
-                      className="w-full px-4 py-3 bg-slate-700/50 border border-slate-600/50 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-500/50 transition-all duration-300"
-                    >
-                      <option value="">Please select an order...</option>
-                      {availableOrders.map((orderRef) => (
-                        <option key={orderRef} value={orderRef}>
-                          Order #{orderRef}
-                        </option>
-                      ))}
-                    </select>
+                    {/* Order Search */}
+                    <div className="mb-4">
+                      <input
+                        type="text"
+                        placeholder="Search orders..."
+                        value={orderSearchQuery}
+                        onChange={(e) => setOrderSearchQuery(e.target.value)}
+                        className="w-full px-3 py-2 bg-slate-700/50 border border-slate-600/50 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-green-500/50 text-sm"
+                      />
+                    </div>
+                    
+                    <div className="space-y-2 md:space-y-3 max-h-64 md:max-h-96 overflow-y-auto">
+                      {availableOrders
+                        .filter(orderRef => 
+                          orderRef.toLowerCase().includes(orderSearchQuery.toLowerCase())
+                        )
+                        .map((orderRef) => {
+                          const summary = orderSummaries.get(orderRef);
+                          const isSelected = selectedOrderRef === orderRef;
+                          const isComplete = summary && summary.percentage >= 100;
+                          
+                          return (
+                            <button
+                              key={orderRef}
+                              onClick={() => handleOrderSelect(orderRef)}
+                              className={`w-full text-left px-3 py-2 md:px-4 md:py-3 rounded-xl transition-all duration-200 ${
+                                isSelected
+                                  ? 'bg-green-600/20 border-2 border-green-500/50 shadow-lg'
+                                  : isComplete
+                                  ? 'bg-green-900/20 border-2 border-green-700/30 hover:bg-green-800/30'
+                                  : 'bg-slate-700/30 border-2 border-slate-600/30 hover:bg-slate-700/50 hover:border-slate-500/50'
+                              }`}
+                            >
+                              <div className="flex items-center justify-between">
+                                <div className="flex-1">
+                                  <div className="flex items-center gap-2">
+                                    <span className="font-semibold text-white">Order #{orderRef}</span>
+                                    {isComplete && (
+                                      <span className="text-xs bg-green-500/20 text-green-400 px-2 py-0.5 rounded-full">
+                                        ✓ Complete
+                                      </span>
+                                    )}
+                                  </div>
+                                  {summary && (
+                                    <div className="mt-2 space-y-1">
+                                      <div className="text-xs text-slate-400">
+                                        {summary.completedItems}/{summary.itemCount} items • 
+                                        {summary.loadedQty}/{summary.totalQty} units
+                                      </div>
+                                      <div className="w-full bg-slate-600/30 rounded-full h-1.5 overflow-hidden">
+                                        <div 
+                                          className={`h-full transition-all duration-500 ${
+                                            isComplete
+                                              ? 'bg-green-500'
+                                              : summary.percentage > 75
+                                              ? 'bg-yellow-500'
+                                              : summary.percentage > 50
+                                              ? 'bg-orange-500'
+                                              : 'bg-blue-500'
+                                          }`}
+                                          style={{ width: `${summary.percentage}%` }}
+                                        />
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+                                {isSelected && (
+                                  <CheckCircleIcon className="h-5 w-5 text-green-400 flex-shrink-0 ml-2" />
+                                )}
+                              </div>
+                            </button>
+                          );
+                        })}
+                    </div>
                   </CardContent>
                 </Card>
               )}
@@ -334,6 +617,40 @@ export default function OrderLoadingPage() {
 
             {/* Right Column - Order Information and Search */}
             <div className="space-y-6">
+              {/* Order Summary Card */}
+              {selectedOrderRef && orderSummaries.has(selectedOrderRef) && (
+                <Card className="bg-slate-800/50 border-slate-700/50 backdrop-blur-sm">
+                  <CardContent className="p-6">
+                    <div className="grid grid-cols-2 gap-2 md:grid-cols-4 md:gap-4 text-center">
+                      <div className="bg-slate-700/30 rounded-lg p-2 md:p-3">
+                        <div className="text-xl md:text-2xl font-bold text-cyan-300">
+                          {orderSummaries.get(selectedOrderRef)!.percentage.toFixed(0)}%
+                        </div>
+                        <div className="text-xs text-slate-400 mt-1">Overall Progress</div>
+                      </div>
+                      <div className="bg-slate-700/30 rounded-lg p-2 md:p-3">
+                        <div className="text-2xl font-bold text-green-300">
+                          {orderSummaries.get(selectedOrderRef)!.completedItems}
+                        </div>
+                        <div className="text-xs text-slate-400 mt-1">Completed Items</div>
+                      </div>
+                      <div className="bg-slate-700/30 rounded-lg p-2 md:p-3">
+                        <div className="text-2xl font-bold text-yellow-300">
+                          {orderSummaries.get(selectedOrderRef)!.loadedQty}
+                        </div>
+                        <div className="text-xs text-slate-400 mt-1">Units Loaded</div>
+                      </div>
+                      <div className="bg-slate-700/30 rounded-lg p-2 md:p-3">
+                        <div className="text-2xl font-bold text-purple-300">
+                          {orderSummaries.get(selectedOrderRef)!.totalQty}
+                        </div>
+                        <div className="text-xs text-slate-400 mt-1">Total Units</div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+              
               {/* Order Information Card */}
               {selectedOrderRef && (
                 <Card className="bg-slate-800/50 border-slate-700/50 backdrop-blur-sm">
@@ -351,28 +668,73 @@ export default function OrderLoadingPage() {
                       </div>
                     ) : orderData.length > 0 ? (
                       <div className="space-y-4">
-                        {orderData.map((order, index) => (
-                          <div key={index} className="bg-slate-700/30 rounded-lg p-4 border border-slate-600/30">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-                              <div>
-                                <span className="text-slate-400">Product Code:</span>
-                                <span className="text-cyan-300 font-mono ml-2">{order.product_code}</span>
+                        {orderData.map((order, index) => {
+                          const totalQty = parseInt(order.product_qty || '0');
+                          const loadedQty = parseInt(order.loaded_qty || '0');
+                          const percentage = totalQty > 0 ? (loadedQty / totalQty) * 100 : 0;
+                          const isComplete = loadedQty >= totalQty;
+                          const remainingQty = totalQty - loadedQty;
+                          const isNearComplete = percentage >= 90 && percentage < 100;
+                          
+                          return (
+                            <div key={index} className="bg-slate-700/30 rounded-lg p-4 border border-slate-600/30">
+                              {/* Overload Warning */}
+                              {isNearComplete && (
+                                <div className="mb-3 p-2 bg-orange-900/30 border border-orange-600/50 rounded-lg">
+                                  <div className="flex items-center text-orange-400 text-sm">
+                                    <ExclamationTriangleIcon className="h-4 w-4 mr-2" />
+                                    <span>⚠️ Nearly full! Only {remainingQty} units remaining</span>
+                                  </div>
+                                </div>
+                              )}
+                              
+                              {/* Progress Bar */}
+                              <div className="mb-3">
+                                <div className="flex justify-between text-xs mb-1">
+                                  <span className="text-slate-400">
+                                    {loadedQty} / {totalQty} loaded
+                                  </span>
+                                  <span className={isComplete ? 'text-green-400' : isNearComplete ? 'text-orange-400' : 'text-yellow-400'}>
+                                    {percentage.toFixed(0)}%
+                                  </span>
+                                </div>
+                                <div className="w-full bg-slate-600/30 rounded-full h-2 overflow-hidden">
+                                  <div 
+                                    className={`h-full transition-all duration-500 ${
+                                      isComplete 
+                                        ? 'bg-gradient-to-r from-green-500 to-green-400' 
+                                        : percentage > 75 
+                                        ? 'bg-gradient-to-r from-yellow-500 to-yellow-400'
+                                        : percentage > 50
+                                        ? 'bg-gradient-to-r from-orange-500 to-orange-400'
+                                        : 'bg-gradient-to-r from-blue-500 to-blue-400'
+                                    }`}
+                                    style={{ width: `${percentage}%` }}
+                                  />
+                                </div>
                               </div>
-                              <div>
-                                <span className="text-slate-400">Product Qty:</span>
-                                <span className="text-yellow-300 font-medium ml-2">{order.product_qty}</span>
-                              </div>
-                              <div>
-                                <span className="text-slate-400">Loaded Qty:</span>
-                                <span className="text-green-300 font-medium ml-2">{order.loaded_qty}</span>
-                              </div>
-                              <div className="md:col-span-2">
-                                <span className="text-slate-400">Product Description:</span>
-                                <span className="text-white ml-2">{order.product_desc}</span>
+                              
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                                <div>
+                                  <span className="text-slate-400">Product Code:</span>
+                                  <span className="text-cyan-300 font-mono ml-2">{order.product_code}</span>
+                                </div>
+                                <div>
+                                  <span className="text-slate-400">Status:</span>
+                                  <span className={`ml-2 font-medium ${
+                                    isComplete ? 'text-green-400' : 'text-yellow-400'
+                                  }`}>
+                                    {isComplete ? '✓ Complete' : 'In Progress'}
+                                  </span>
+                                </div>
+                                <div className="md:col-span-2">
+                                  <span className="text-slate-400">Product Description:</span>
+                                  <span className="text-white ml-2">{order.product_desc}</span>
+                                </div>
                               </div>
                             </div>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     ) : (
                       <div className="text-center py-8 text-slate-400">
@@ -387,9 +749,31 @@ export default function OrderLoadingPage() {
               {selectedOrderRef && (
                 <Card className="bg-slate-800/50 border-slate-700/50 backdrop-blur-sm">
                   <CardHeader>
-                    <CardTitle className="flex items-center text-slate-200">
-                      <MagnifyingGlassIcon className="h-6 w-6 mr-2 text-purple-400" />
-                      Scan As You Load
+                    <CardTitle className="flex items-center justify-between text-slate-200">
+                      <div className="flex items-center">
+                        <MagnifyingGlassIcon className="h-6 w-6 mr-2 text-purple-400" />
+                        Scan As You Load
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        {recentLoads.length > 0 && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={handleUndoLastLoad}
+                            className="text-orange-400 border-orange-400/50 hover:bg-orange-400/10"
+                          >
+                            Undo Last
+                          </Button>
+                        )}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setShowRecentLoads(!showRecentLoads)}
+                          className="text-slate-400 hover:text-white"
+                        >
+                          History ({recentLoads.length})
+                        </Button>
+                      </div>
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
@@ -404,11 +788,47 @@ export default function OrderLoadingPage() {
                       isLoading={isSearching}
                       disabled={isSearching}
                     />
+                    
+                    {/* Recent Loads History */}
+                    {showRecentLoads && recentLoads.length > 0 && (
+                      <div className="mt-4 space-y-2">
+                        <div className="text-sm font-medium text-slate-400 mb-2">Recent Loads:</div>
+                        <div className="max-h-40 overflow-y-auto space-y-2">
+                          {recentLoads.map((load, index) => (
+                            <div 
+                              key={load.uuid} 
+                              className="text-xs bg-slate-700/30 rounded-lg p-2 flex justify-between items-center"
+                            >
+                              <div>
+                                <span className="text-cyan-300 font-mono">{load.pallet_num}</span>
+                                <span className="text-slate-400 mx-2">•</span>
+                                <span className="text-slate-300">{load.product_code}</span>
+                                <span className="text-slate-400 mx-2">•</span>
+                                <span className="text-green-300">Qty: {load.quantity}</span>
+                              </div>
+                              <span className="text-slate-500">
+                                {new Date(load.action_time).toLocaleTimeString()}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               )}
+              
+              {/* Batch Loading Panel */}
+              {selectedOrderRef && (
+                <BatchLoadPanel 
+                  orderRef={selectedOrderRef} 
+                  onBatchComplete={refreshAllData}
+                />
+              )}
             </div>
           </div>
+            </>
+          )}
         </div>
       </div>
     </MotionBackground>
