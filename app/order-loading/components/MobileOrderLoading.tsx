@@ -9,7 +9,8 @@ import {
   MagnifyingGlassIcon,
   CheckCircleIcon,
   ExclamationTriangleIcon,
-  ArrowLeftIcon
+  ArrowLeftIcon,
+  XMarkIcon
 } from '@heroicons/react/24/outline';
 import { UnifiedSearch } from '@/components/ui/unified-search';
 import { toast } from 'sonner';
@@ -284,15 +285,16 @@ export default function MobileOrderLoading({
                       </div>
                       <div className="flex items-center space-x-2">
                         <span className={cn(mobileConfig.fontSize.bodySmall, "text-slate-500")}>
-                          {new Date(load.action_time).toLocaleTimeString()}
+                          {new Date(load.time).toLocaleTimeString()}
                         </span>
                         <MobileButton
                           variant="ghost"
                           size="sm"
                           onClick={() => onUndoClick(load)}
                           className="h-8 w-8 p-0 text-red-400"
-                          icon={<XMarkIcon className="h-5 w-5" />}
-                        />
+                        >
+                          <XMarkIcon className="h-5 w-5" />
+                        </MobileButton>
                       </div>
                     </div>
                   ))}
