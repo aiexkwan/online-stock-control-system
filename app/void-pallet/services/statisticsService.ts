@@ -76,17 +76,25 @@ export async function getVoidStatistics(
     );
 
     // Calculate statistics
-    const stats: VoidStatistics = {
+    const uniqueProducts = new Set<string>();
+    const stats = {
       summary: {
         totalVoids: 0,
         totalQuantity: 0,
-        uniqueProducts: new Set<string>(),
+        uniqueProducts,
         averagePerDay: 0,
       },
       byReason: new Map<string, { count: number; quantity: number }>(),
       byProduct: new Map<string, { count: number; quantity: number }>(),
       byDate: new Map<string, { count: number; quantity: number }>(),
-      recentVoids: [],
+      recentVoids: [] as Array<{
+        plt_num: string;
+        product_code: string;
+        product_qty: number;
+        reason: string;
+        voided_at: string;
+        voided_by?: string;
+      }>,
     };
 
     // Process each void record
@@ -100,7 +108,7 @@ export async function getVoidStatistics(
       // Update summary
       stats.summary.totalVoids++;
       stats.summary.totalQuantity += quantity;
-      (stats.summary.uniqueProducts as Set<string>).add(pallet.product_code);
+      uniqueProducts.add(pallet.product_code);
 
       // Update by reason
       const reasonStats = stats.byReason.get(record.reason) || { count: 0, quantity: 0 };
@@ -143,8 +151,10 @@ export async function getVoidStatistics(
       success: true,
       data: {
         summary: {
-          ...stats.summary,
-          uniqueProducts: (stats.summary.uniqueProducts as Set<string>).size,
+          totalVoids: stats.summary.totalVoids,
+          totalQuantity: stats.summary.totalQuantity,
+          uniqueProducts: uniqueProducts.size,
+          averagePerDay: stats.summary.averagePerDay,
         },
         byReason: Array.from(stats.byReason.entries())
           .map(([reason, data]) => ({

@@ -280,7 +280,6 @@ export default function MobileOrderLoading({
                 onChange={onSearchChange}
                 isLoading={isSearching}
                 disabled={isSearching}
-                className={mobileConfig.fontSize.input}
               />
               
               {/* Recent Loads Toggle */}

@@ -159,18 +159,18 @@ export default function VoidPalletDialog({ isOpen, onClose, onReprintNeeded }: V
     } else {
       // Single mode - update search type and perform search
       updateState({ searchType });
-      const result = await searchPallet(searchValue, searchType);
+      await searchPallet(searchValue, searchType);
       
-      // Add to search history if successful
-      if (result && !state.error) {
+      // Add to search history if successful (check after search completes)
+      if (state.foundPallet && !state.error) {
         addToSearchHistory({ 
           value: searchValue, 
           type: searchType,
-          palletInfo: state.foundPallet ? {
+          palletInfo: {
             plt_num: state.foundPallet.plt_num,
             product_code: state.foundPallet.product_code,
             product_qty: state.foundPallet.product_qty
-          } : undefined
+          }
         });
       }
     }
@@ -626,27 +626,27 @@ export default function VoidPalletDialog({ isOpen, onClose, onReprintNeeded }: V
                                   key={qty}
                                   type="button"
                                   onClick={() => handleDamageQuantityChange(qty)}
-                                  disabled={state.isProcessing || qty > state.foundPallet.product_qty}
+                                  disabled={state.isProcessing || !state.foundPallet || qty > state.foundPallet.product_qty}
                                   className={`px-3 py-2 rounded-lg font-medium transition-all duration-200 ${
                                     state.damageQuantity === qty
                                       ? 'bg-red-600 text-white shadow-lg shadow-red-600/25'
                                       : 'bg-slate-700/50 text-slate-300 hover:bg-slate-600/50 border border-slate-600/50'
-                                  } ${qty > state.foundPallet.product_qty ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                  } ${!state.foundPallet || qty > state.foundPallet.product_qty ? 'opacity-50 cursor-not-allowed' : ''}`}
                                 >
                                   {qty}
                                 </button>
                               ))}
                               <button
                                 type="button"
-                                onClick={() => handleDamageQuantityChange(state.foundPallet.product_qty)}
+                                onClick={() => state.foundPallet && handleDamageQuantityChange(state.foundPallet.product_qty)}
                                 disabled={state.isProcessing}
                                 className={`px-3 py-2 rounded-lg font-medium transition-all duration-200 ${
-                                  state.damageQuantity === state.foundPallet.product_qty
+                                  state.foundPallet && state.damageQuantity === state.foundPallet.product_qty
                                     ? 'bg-red-600 text-white shadow-lg shadow-red-600/25'
                                     : 'bg-slate-700/50 text-slate-300 hover:bg-slate-600/50 border border-slate-600/50'
                                 }`}
                               >
-                                All ({state.foundPallet.product_qty})
+                                All ({state.foundPallet?.product_qty || 0})
                               </button>
                             </div>
                             
@@ -655,14 +655,14 @@ export default function VoidPalletDialog({ isOpen, onClose, onReprintNeeded }: V
                               <input
                                 type="number"
                                 min="1"
-                                max={state.foundPallet.product_qty}
+                                max={state.foundPallet?.product_qty || 0}
                                 value={state.damageQuantity || ''}
                                 onChange={(e) => handleDamageQuantityChange(parseInt(e.target.value) || 0)}
                                 disabled={state.isProcessing}
-                                placeholder={`Custom quantity (1-${state.foundPallet.product_qty})`}
+                                placeholder={`Custom quantity (1-${state.foundPallet?.product_qty || 0})`}
                                 className="w-full px-3 py-2 bg-slate-700/50 border border-slate-600/50 rounded-lg text-white placeholder-slate-400 focus:ring-2 focus:ring-red-400 focus:border-red-400 transition-all duration-300"
                               />
-                              {state.damageQuantity > 0 && (
+                              {state.damageQuantity > 0 && state.foundPallet && (
                                 <div className="absolute right-3 top-1/2 -translate-y-1/2 text-sm">
                                   <span className={`font-medium ${
                                     state.damageQuantity === state.foundPallet.product_qty 
@@ -676,7 +676,7 @@ export default function VoidPalletDialog({ isOpen, onClose, onReprintNeeded }: V
                             </div>
                             
                             {/* Damage Info Alert */}
-                            {state.damageQuantity > 0 && state.damageQuantity < state.foundPallet.product_qty && (
+                            {state.damageQuantity > 0 && state.foundPallet && state.damageQuantity < state.foundPallet.product_qty && (
                               <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-3">
                                 <p className="text-xs text-blue-300">
                                   Remaining quantity ({state.foundPallet.product_qty - state.damageQuantity}) will require a new label
@@ -792,7 +792,7 @@ export default function VoidPalletDialog({ isOpen, onClose, onReprintNeeded }: V
           });
           
           // Clear completed items if all successful
-          if (result.success && result.summary.failed === 0) {
+          if (result.success && result.summary && result.summary.failed === 0) {
             const completedIds = batchState.items
               .filter(item => item.status === 'completed')
               .map(item => item.id);

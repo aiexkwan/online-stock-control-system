@@ -205,13 +205,13 @@ export async function fetchVoidRecords(filters: VoidReportFilters): Promise<Void
     // Step 6: Apply additional filters
     if (filters.productCode) {
       combinedRecords = combinedRecords.filter(r => 
-        r.product_code.toLowerCase().includes(filters.productCode.toLowerCase())
+        r.product_code?.toLowerCase().includes(filters.productCode!.toLowerCase())
       );
     }
     
     if (filters.voidBy) {
       combinedRecords = combinedRecords.filter(r => 
-        r.user_name.toLowerCase().includes(filters.voidBy.toLowerCase())
+        r.user_name?.toLowerCase().includes(filters.voidBy!.toLowerCase())
       );
     }
 
@@ -296,7 +296,7 @@ export function generateVoidReportPDF(records: VoidRecord[], filters: VoidReport
       format(new Date(record.time), 'dd/MM/yyyy HH:mm'),
       record.plt_num,
       record.product_code || 'N/A',
-      record.product_qty.toString(),
+      (record.product_qty || 0).toString(),
       record.void_qty.toString(),
       record.reason || 'N/A',
       record.user_name || 'Unknown',
@@ -421,7 +421,7 @@ export function generateVoidReportPDF(records: VoidRecord[], filters: VoidReport
     return doc.output('blob');
   } catch (error) {
     console.error('Error generating PDF:', error);
-    throw new Error(`Failed to generate PDF: ${error.message || 'Unknown error'}`);
+    throw new Error(`Failed to generate PDF: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 }
 
@@ -671,7 +671,7 @@ export function generateVoidReportExcel(records: VoidRecord[], filters: VoidRepo
       format(new Date(record.time), 'dd/MM/yyyy HH:mm:ss'),
       record.plt_num,
       record.product_code || 'N/A',
-      record.product_qty.toString(),
+      (record.product_qty || 0).toString(),
       record.void_qty.toString(),
       record.reason || 'N/A',
       record.user_name || 'Unknown',
@@ -702,7 +702,7 @@ export function generateVoidReportExcel(records: VoidRecord[], filters: VoidRepo
     return new Blob([wbout], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
   } catch (error) {
     console.error('Error generating Excel:', error);
-    throw new Error(`Failed to generate Excel: ${error.message || 'Unknown error'}`);
+    throw new Error(`Failed to generate Excel: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 }
 
@@ -825,13 +825,13 @@ export async function fetchVoidRecordsAlternative(filters: VoidReportFilters): P
     // Apply additional filters
     if (filters.productCode) {
       combinedRecords = combinedRecords.filter(r => 
-        r.product_code.toLowerCase().includes(filters.productCode.toLowerCase())
+        r.product_code?.toLowerCase().includes(filters.productCode!.toLowerCase())
       );
     }
     
     if (filters.voidBy) {
       combinedRecords = combinedRecords.filter(r => 
-        r.user_name.toLowerCase().includes(filters.voidBy.toLowerCase())
+        r.user_name?.toLowerCase().includes(filters.voidBy!.toLowerCase())
       );
     }
 

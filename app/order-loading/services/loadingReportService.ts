@@ -294,7 +294,7 @@ export function generateLoadingReportPDF(records: LoadingRecord[], filters: Load
     return doc.output('blob');
   } catch (error) {
     console.error('Error generating PDF:', error);
-    throw new Error(`Failed to generate PDF: ${error.message || 'Unknown error'}`);
+    throw new Error(`Failed to generate PDF: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 }
 
@@ -436,6 +436,6 @@ export function generateLoadingReportExcel(records: LoadingRecord[], filters: Lo
     return new Blob([wbout], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
   } catch (error) {
     console.error('Error generating Excel:', error);
-    throw new Error(`Failed to generate Excel: ${error.message || 'Unknown error'}`);
+    throw new Error(`Failed to generate Excel: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 }

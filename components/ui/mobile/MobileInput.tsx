@@ -3,7 +3,7 @@
 import React, { forwardRef } from 'react';
 import { getMobileInputClass, cn } from '@/lib/mobile-config';
 
-interface MobileInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
+interface MobileInputProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'size'> {
   label?: string;
   error?: string;
   icon?: React.ReactNode;
@@ -31,7 +31,7 @@ export const MobileInput = forwardRef<HTMLInputElement, MobileInputProps>(
             ref={ref}
             className={cn(
               inputClass,
-              icon && 'pl-10',
+              icon ? 'pl-10' : '',
               className
             )}
             {...props}
