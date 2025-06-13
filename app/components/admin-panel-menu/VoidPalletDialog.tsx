@@ -5,8 +5,17 @@ import { toast } from 'sonner';
 import { useVoidPallet } from '../../void-pallet/hooks/useVoidPallet';
 import { ReprintInfoDialog } from '../../void-pallet/components/ReprintInfoDialog';
 import { VOID_REASONS } from '../../void-pallet/types';
-import { X, Search, QrCode, Loader2 } from 'lucide-react';
+import { X, Search, QrCode, Loader2, Clock, ListChecks } from 'lucide-react';
 import { SimpleQRScanner } from '../../../components/qr-scanner/simple-qr-scanner';
+import { SearchHistoryDropdown } from '../../void-pallet/components/SearchHistoryDropdown';
+import { addToSearchHistory } from '../../void-pallet/utils/searchHistory';
+import { SearchSuggestionsDropdown } from '../../void-pallet/components/SearchSuggestionsDropdown';
+import { SearchSuggestion, getSearchSuggestions } from '../../void-pallet/services/searchSuggestionsService';
+import { useBatchVoid } from '../../void-pallet/hooks/useBatchVoid';
+import { BatchVoidPanel } from '../../void-pallet/components/BatchVoidPanel';
+import { BatchVoidForm } from '../../void-pallet/components/BatchVoidForm';
+import { BatchVoidConfirmDialog } from '../../void-pallet/components/BatchVoidConfirmDialog';
+import { Badge } from '@/components/ui/badge';
 
 interface VoidPalletDialogProps {
   isOpen: boolean;
@@ -33,10 +42,27 @@ export default function VoidPalletDialog({ isOpen, onClose, onReprintNeeded }: V
 
   const [searchValue, setSearchValue] = useState('');
   const [showQrScanner, setShowQrScanner] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
+  const [showBatchConfirm, setShowBatchConfirm] = useState(false);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [searchSuggestions, setSearchSuggestions] = useState<SearchSuggestion[]>([]);
+  const [loadingSuggestions, setLoadingSuggestions] = useState(false);
   const [statusMessage, setStatusMessage] = useState<{
     type: 'success' | 'error' | 'warning' | 'info';
     message: string;
   } | null>(null);
+  
+  // Batch void hook
+  const {
+    batchState,
+    toggleMode,
+    addToBatch,
+    toggleItemSelection,
+    selectAll,
+    removeFromBatch,
+    clearBatch,
+    executeBatchVoid,
+  } = useBatchVoid();
 
   // 添加搜尋輸入框的 ref
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -83,17 +109,34 @@ export default function VoidPalletDialog({ isOpen, onClose, onReprintNeeded }: V
     setSearchValue(state.searchInput);
   }, [state.searchInput]);
 
+  // Fetch search suggestions when input changes
+  useEffect(() => {
+    const fetchSuggestions = async () => {
+      if (searchValue.length >= 2) {
+        setLoadingSuggestions(true);
+        const suggestions = await getSearchSuggestions(searchValue);
+        setSearchSuggestions(suggestions);
+        setLoadingSuggestions(false);
+      } else {
+        setSearchSuggestions([]);
+      }
+    };
+
+    const debounceTimer = setTimeout(fetchSuggestions, 300);
+    return () => clearTimeout(debounceTimer);
+  }, [searchValue]);
+
   // 自動搜索函數
   const performAutoSearch = useCallback(async (searchValue: string) => {
     if (!searchValue.trim()) return;
     
     // Auto-detect search type based on format
-    let searchType: 'pallet_num' = 'pallet_num';
+    let searchType: 'qr' | 'pallet_num' = 'pallet_num';
     
     if (searchValue.includes('/')) {
       searchType = 'pallet_num';
     } else if (searchValue.includes('-')) {
-      searchType = 'pallet_num';
+      searchType = 'qr'; // Series format
     } else {
       setStatusMessage({
         type: 'error',
@@ -102,16 +145,44 @@ export default function VoidPalletDialog({ isOpen, onClose, onReprintNeeded }: V
       return;
     }
     
-    // Update search type and perform search
-    updateState({ searchType });
-    await searchPallet(searchValue, searchType);
-  }, [searchPallet, updateState]);
+    // Check if in batch mode
+    if (batchState.mode === 'batch') {
+      // Add to batch
+      const added = await addToBatch(searchValue, searchType);
+      if (added) {
+        // Clear search input for next scan
+        setSearchValue('');
+        updateState({ searchInput: '' });
+        // Add to search history
+        addToSearchHistory({ value: searchValue, type: searchType });
+      }
+    } else {
+      // Single mode - update search type and perform search
+      updateState({ searchType });
+      const result = await searchPallet(searchValue, searchType);
+      
+      // Add to search history if successful
+      if (result && !state.error) {
+        addToSearchHistory({ 
+          value: searchValue, 
+          type: searchType,
+          palletInfo: state.foundPallet ? {
+            plt_num: state.foundPallet.plt_num,
+            product_code: state.foundPallet.product_code,
+            product_qty: state.foundPallet.product_qty
+          } : undefined
+        });
+      }
+    }
+  }, [searchPallet, updateState, batchState.mode, addToBatch, state.error, state.foundPallet]);
 
   // 處理輸入框變化
   const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = e.target.value;
     setSearchValue(newValue);
     updateState({ searchInput: newValue });
+    setShowSuggestions(true);
+    setShowHistory(false);
   }, [updateState]);
 
   // 處理失焦事件 - 自動搜索
@@ -249,14 +320,33 @@ export default function VoidPalletDialog({ isOpen, onClose, onReprintNeeded }: V
 
           {/* Header */}
           <div className="relative z-10 flex items-center justify-between p-6 border-b border-slate-700/50">
-            <h2 className="text-2xl font-bold bg-gradient-to-r from-red-400 via-orange-400 to-yellow-300 bg-clip-text text-transparent flex items-center">
-              <div className="inline-flex items-center justify-center w-8 h-8 bg-gradient-to-r from-red-500 to-orange-500 rounded-lg mr-3 shadow-lg shadow-red-500/25">
-                <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                </svg>
-              </div>
-              Void Pallet
-            </h2>
+            <div className="flex items-center gap-4">
+              <h2 className="text-2xl font-bold bg-gradient-to-r from-red-400 via-orange-400 to-yellow-300 bg-clip-text text-transparent flex items-center">
+                <div className="inline-flex items-center justify-center w-8 h-8 bg-gradient-to-r from-red-500 to-orange-500 rounded-lg mr-3 shadow-lg shadow-red-500/25">
+                  <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  </svg>
+                </div>
+                Void Pallet
+              </h2>
+              
+              {/* Mode Toggle */}
+              <button
+                onClick={toggleMode}
+                className="flex items-center gap-2 px-3 py-1.5 bg-slate-700/50 hover:bg-slate-600/50 text-slate-300 hover:text-white rounded-lg transition-all duration-300 text-sm border border-slate-600/30"
+              >
+                <ListChecks className="h-4 w-4" />
+                {batchState.mode === 'single' ? 'Batch Mode' : 'Single Mode'}
+              </button>
+              
+              {/* Mode Indicator */}
+              {batchState.mode === 'batch' && (
+                <Badge variant="secondary" className="bg-orange-600/20 text-orange-400 border-orange-600/50">
+                  Batch Mode Active
+                </Badge>
+              )}
+            </div>
+            
             <button
               onClick={handleClose}
               className="p-2 hover:bg-slate-700/50 rounded-lg transition-colors"
@@ -317,8 +407,17 @@ export default function VoidPalletDialog({ isOpen, onClose, onReprintNeeded }: V
                       onChange={handleInputChange}
                       onBlur={handleInputBlur}
                       onKeyDown={handleKeyDown}
-                      placeholder={isMobile ? "Tap to scan or enter pallet number/series" : "Enter pallet number or series"}
-                      className="w-full pl-10 pr-20 py-3 bg-slate-700/50 border border-slate-600/50 rounded-xl text-white placeholder-slate-400 focus:ring-2 focus:ring-red-400 focus:border-red-400 transition-all duration-300"
+                      onFocus={() => {
+                        if (!searchValue) {
+                          setShowHistory(true);
+                          setShowSuggestions(false);
+                        } else {
+                          setShowSuggestions(true);
+                          setShowHistory(false);
+                        }
+                      }}
+                      placeholder={batchState.mode === 'batch' ? "Scan to add to batch" : (isMobile ? "Tap to scan or enter pallet number/series" : "Enter pallet number or series")}
+                      className="w-full pl-10 pr-28 py-3 bg-slate-700/50 border border-slate-600/50 rounded-xl text-white placeholder-slate-400 focus:ring-2 focus:ring-red-400 focus:border-red-400 transition-all duration-300"
                       disabled={state.isSearching || state.isProcessing}
                       onClick={() => {
                         if (isMobile && !state.isSearching && !state.isProcessing) {
@@ -341,6 +440,15 @@ export default function VoidPalletDialog({ isOpen, onClose, onReprintNeeded }: V
                       
                       <button
                         type="button"
+                        onClick={() => setShowHistory(!showHistory)}
+                        className="h-6 w-6 p-0 hover:bg-slate-600/50 rounded text-gray-400 hover:text-white transition-colors"
+                        disabled={state.isSearching || state.isProcessing}
+                      >
+                        <Clock className="h-3 w-3" />
+                      </button>
+                      
+                      <button
+                        type="button"
                         onClick={() => setShowQrScanner(true)}
                         className="h-6 w-6 p-0 hover:bg-slate-600/50 rounded text-blue-400 hover:text-blue-300 transition-colors"
                         disabled={state.isSearching || state.isProcessing}
@@ -350,6 +458,33 @@ export default function VoidPalletDialog({ isOpen, onClose, onReprintNeeded }: V
                     </div>
                   </div>
                   
+                  {/* Search History Dropdown */}
+                  <SearchHistoryDropdown
+                    isOpen={showHistory && !searchValue && !showSuggestions}
+                    onSelect={(value, type) => {
+                      setSearchValue(value);
+                      setShowHistory(false);
+                      performAutoSearch(value);
+                    }}
+                    onClose={() => setShowHistory(false)}
+                    currentValue={searchValue}
+                  />
+                  
+                  {/* Search Suggestions Dropdown */}
+                  <SearchSuggestionsDropdown
+                    isOpen={showSuggestions && !showHistory}
+                    suggestions={searchSuggestions}
+                    popularSearches={[]}
+                    onSelect={(value) => {
+                      setSearchValue(value);
+                      setShowSuggestions(false);
+                      performAutoSearch(value);
+                    }}
+                    onClose={() => setShowSuggestions(false)}
+                    loading={loadingSuggestions}
+                    currentValue={searchValue}
+                  />
+                  
                   <p className="text-xs text-slate-400 mt-2">
                     Press 'Enter' after entering to search
                   </p>
@@ -357,8 +492,40 @@ export default function VoidPalletDialog({ isOpen, onClose, onReprintNeeded }: V
               </div>
             </div>
 
-            {/* Pallet Information and Void Form */}
-            {state.foundPallet && !state.error?.isBlocking && (
+            {/* Batch Panel for Batch Mode */}
+            {batchState.mode === 'batch' && (
+              <div className="mb-6">
+                <BatchVoidPanel
+                  items={batchState.items}
+                  onSelectItem={toggleItemSelection}
+                  onSelectAll={selectAll}
+                  onRemoveItem={removeFromBatch}
+                  onClearAll={clearBatch}
+                  isProcessing={batchState.isProcessing}
+                  selectedCount={batchState.selectedCount}
+                />
+                
+                {/* Batch Void Form */}
+                {batchState.items.length > 0 && (
+                  <div className="mt-6">
+                    <BatchVoidForm
+                      voidReason={state.voidReason}
+                      damageQuantity={state.damageQuantity}
+                      password={state.password}
+                      onVoidReasonChange={handleVoidReasonChange}
+                      onDamageQuantityChange={handleDamageQuantityChange}
+                      onPasswordChange={(value) => updateState({ password: value })}
+                      onExecute={() => setShowBatchConfirm(true)}
+                      isProcessing={batchState.isProcessing}
+                      selectedCount={batchState.selectedCount}
+                    />
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Pallet Information and Void Form - Only in Single Mode */}
+            {batchState.mode === 'single' && state.foundPallet && !state.error?.isBlocking && (
               <div className="space-y-6">
                 {/* Pallet Information Display */}
                 <div className="relative group">
@@ -447,20 +614,75 @@ export default function VoidPalletDialog({ isOpen, onClose, onReprintNeeded }: V
 
                         {/* Damage Quantity Input (if applicable) */}
                         {showDamageQuantityInput && (
-                          <div>
-                            <label className="block text-sm font-medium text-slate-300 mb-2">
+                          <div className="space-y-3">
+                            <label className="block text-sm font-medium text-slate-300">
                               Damage Quantity <span className="text-red-400">*</span>
                             </label>
-                            <input
-                              type="number"
-                              min="1"
-                              max={state.foundPallet.product_qty}
-                              value={state.damageQuantity || ''}
-                              onChange={(e) => handleDamageQuantityChange(parseInt(e.target.value) || 0)}
-                              disabled={state.isProcessing}
-                              placeholder={`Enter damage quantity (max: ${state.foundPallet.product_qty})`}
-                              className="w-full px-3 py-2 bg-slate-700/50 border border-slate-600/50 rounded-lg text-white placeholder-slate-400 focus:ring-2 focus:ring-red-400 focus:border-red-400 transition-all duration-300"
-                            />
+                            
+                            {/* Quick Damage Preset Buttons */}
+                            <div className="grid grid-cols-4 gap-2">
+                              {[1, 5, 10].map((qty) => (
+                                <button
+                                  key={qty}
+                                  type="button"
+                                  onClick={() => handleDamageQuantityChange(qty)}
+                                  disabled={state.isProcessing || qty > state.foundPallet.product_qty}
+                                  className={`px-3 py-2 rounded-lg font-medium transition-all duration-200 ${
+                                    state.damageQuantity === qty
+                                      ? 'bg-red-600 text-white shadow-lg shadow-red-600/25'
+                                      : 'bg-slate-700/50 text-slate-300 hover:bg-slate-600/50 border border-slate-600/50'
+                                  } ${qty > state.foundPallet.product_qty ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                >
+                                  {qty}
+                                </button>
+                              ))}
+                              <button
+                                type="button"
+                                onClick={() => handleDamageQuantityChange(state.foundPallet.product_qty)}
+                                disabled={state.isProcessing}
+                                className={`px-3 py-2 rounded-lg font-medium transition-all duration-200 ${
+                                  state.damageQuantity === state.foundPallet.product_qty
+                                    ? 'bg-red-600 text-white shadow-lg shadow-red-600/25'
+                                    : 'bg-slate-700/50 text-slate-300 hover:bg-slate-600/50 border border-slate-600/50'
+                                }`}
+                              >
+                                All ({state.foundPallet.product_qty})
+                              </button>
+                            </div>
+                            
+                            {/* Custom Quantity Input */}
+                            <div className="relative">
+                              <input
+                                type="number"
+                                min="1"
+                                max={state.foundPallet.product_qty}
+                                value={state.damageQuantity || ''}
+                                onChange={(e) => handleDamageQuantityChange(parseInt(e.target.value) || 0)}
+                                disabled={state.isProcessing}
+                                placeholder={`Custom quantity (1-${state.foundPallet.product_qty})`}
+                                className="w-full px-3 py-2 bg-slate-700/50 border border-slate-600/50 rounded-lg text-white placeholder-slate-400 focus:ring-2 focus:ring-red-400 focus:border-red-400 transition-all duration-300"
+                              />
+                              {state.damageQuantity > 0 && (
+                                <div className="absolute right-3 top-1/2 -translate-y-1/2 text-sm">
+                                  <span className={`font-medium ${
+                                    state.damageQuantity === state.foundPallet.product_qty 
+                                      ? 'text-red-400' 
+                                      : 'text-orange-400'
+                                  }`}>
+                                    {state.damageQuantity} / {state.foundPallet.product_qty}
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+                            
+                            {/* Damage Info Alert */}
+                            {state.damageQuantity > 0 && state.damageQuantity < state.foundPallet.product_qty && (
+                              <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-3">
+                                <p className="text-xs text-blue-300">
+                                  Remaining quantity ({state.foundPallet.product_qty - state.damageQuantity}) will require a new label
+                                </p>
+                              </div>
+                            )}
                           </div>
                         )}
 
@@ -540,6 +762,45 @@ export default function VoidPalletDialog({ isOpen, onClose, onReprintNeeded }: V
           </div>
         </div>
       </div>
+
+      {/* Reprint Info Dialog */}
+      {state.showReprintInfoDialog && state.reprintInfo && state.foundPallet && (
+        <ReprintInfoDialog
+          isOpen={state.showReprintInfoDialog}
+          onClose={handleReprintInfoCancel}
+          onConfirm={handleReprintInfoConfirm}
+          type={getReprintType(state.voidReason)}
+          palletInfo={state.foundPallet}
+          remainingQuantity={state.reprintInfo.remainingQuantity}
+          isProcessing={state.isAutoReprinting}
+        />
+      )}
+      
+      {/* Batch Void Confirmation Dialog */}
+      <BatchVoidConfirmDialog
+        open={showBatchConfirm}
+        onOpenChange={setShowBatchConfirm}
+        items={batchState.items}
+        voidReason={state.voidReason}
+        damageQuantity={state.damageQuantity}
+        onConfirm={async () => {
+          setShowBatchConfirm(false);
+          const result = await executeBatchVoid({
+            voidReason: state.voidReason,
+            password: state.password,
+            damageQuantity: state.damageQuantity
+          });
+          
+          // Clear completed items if all successful
+          if (result.success && result.summary.failed === 0) {
+            const completedIds = batchState.items
+              .filter(item => item.status === 'completed')
+              .map(item => item.id);
+            completedIds.forEach(id => removeFromBatch(id));
+          }
+        }}
+        onCancel={() => setShowBatchConfirm(false)}
+      />
 
       {/* QR Scanner */}
       {showQrScanner && (

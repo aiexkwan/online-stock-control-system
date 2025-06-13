@@ -59,6 +59,8 @@ import { ReprintInfoDialog } from '@/app/void-pallet/components/ReprintInfoDialo
 import { useVoidPallet } from '@/app/void-pallet/hooks/useVoidPallet';
 import { useAskDatabasePermission } from '@/app/hooks/useAuth';
 import AskDatabaseInlineCard from '@/app/components/AskDatabaseInlineCard';
+import { VoidStatisticsCard } from '@/app/components/VoidStatisticsCard';
+import VoidReportDialog from '@/app/components/admin-panel-menu/VoidReportDialog';
 
 const adminMenuItems = [
   {
@@ -109,6 +111,15 @@ const adminMenuItems = [
     action: 'generate-report',
     reportType: 'all-data',
     color: 'hover:bg-emerald-900/20 hover:text-emerald-400',
+    category: 'Export Reports'
+  },
+  {
+    id: 'void-report',
+    title: 'Void Report',
+    description: 'Export void pallet reports with filters',
+    icon: DocumentChartBarIcon,
+    action: 'open-void-report-dialog',
+    color: 'hover:bg-purple-900/20 hover:text-purple-400',
     category: 'Export Reports'
   },
   {
@@ -295,6 +306,9 @@ export default function AdminPanelPage() {
 
   // View History Dialog states
   const [showHistoryDialog, setShowHistoryDialog] = useState(false);
+  
+  // Void Report Dialog states
+  const [showVoidReportDialog, setShowVoidReportDialog] = useState(false);
 
   // Database Update Dialog states
   const [showUpdateDialog, setShowUpdateDialog] = useState(false);
@@ -733,6 +747,8 @@ export default function AdminPanelPage() {
       setShowVoidDialog(true);
     } else if (item.action === 'open-history-dialog') {
       setShowHistoryDialog(true);
+    } else if (item.action === 'open-void-report-dialog') {
+      setShowVoidReportDialog(true);
     } else if (item.action === 'open-update-dialog') {
       setShowUpdateDialog(true);
     } else if (item.path) {
@@ -1532,7 +1548,7 @@ export default function AdminPanelPage() {
           </div>
 
           {/* Additional Cards Row */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-8">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-8">
             {/* ACO Order Progress Card */}
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
               <div className="relative group">
@@ -1739,6 +1755,11 @@ export default function AdminPanelPage() {
                   </div>
                 </div>
               </div>
+            </motion.div>
+
+            {/* Void Statistics Card */}
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+              <VoidStatisticsCard />
             </motion.div>
           </div>
         </div>
@@ -2081,6 +2102,12 @@ export default function AdminPanelPage() {
       <ViewHistoryDialog
         isOpen={showHistoryDialog}
         onClose={() => setShowHistoryDialog(false)}
+      />
+
+      {/* Void Report Dialog */}
+      <VoidReportDialog
+        isOpen={showVoidReportDialog}
+        onClose={() => setShowVoidReportDialog(false)}
       />
 
       {/* Database Update Dialog */}

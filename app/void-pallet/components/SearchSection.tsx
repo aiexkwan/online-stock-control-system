@@ -1,10 +1,11 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { SimpleQRScanner } from '@/components/qr-scanner/simple-qr-scanner';
 import { QrCodeIcon, NumberedListIcon } from '@heroicons/react/24/outline';
+import { detectSearchType, getSearchTypeDisplayName } from '../utils/searchDetection';
 
 interface SearchSectionProps {
   searchInput: string;
@@ -34,6 +35,19 @@ export function SearchSection({
   onKeyDown,
 }: SearchSectionProps) {
   const isMobile = typeof window !== 'undefined' && /Mobi|Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
+  
+  // Enhanced search detection state
+  const [detectionResult, setDetectionResult] = useState<ReturnType<typeof detectSearchType> | null>(null);
+  
+  // Update detection when input changes
+  useEffect(() => {
+    if (searchInput.trim()) {
+      const result = detectSearchType(searchInput.trim());
+      setDetectionResult(result);
+    } else {
+      setDetectionResult(null);
+    }
+  }, [searchInput]);
 
   return (
     <div className="space-y-6">
@@ -120,15 +134,42 @@ export function SearchSection({
         title="Scan Pallet QR Code"
       />
 
-      {/* Search hints */}
-      <div className="text-center text-sm text-gray-400">
-        {searchType === 'qr' ? (
-          <p>
-            Use QR scanner button or manually enter QR code
-          </p>
-        ) : (
-          <p>Enter complete pallet number to search</p>
+      {/* Enhanced search hints with detection feedback */}
+      <div className="text-center space-y-2">
+        {/* Detection result */}
+        {detectionResult && searchInput.trim() && (
+          <div className={`text-sm ${
+            detectionResult.confidence >= 70 
+              ? 'text-green-400' 
+              : detectionResult.confidence >= 50 
+              ? 'text-yellow-400' 
+              : 'text-red-400'
+          }`}>
+            <p>
+              {detectionResult.confidence >= 70 
+                ? `✓ Detected: ${getSearchTypeDisplayName(detectionResult.type)}`
+                : detectionResult.confidence >= 50
+                ? `⚠ Possible ${getSearchTypeDisplayName(detectionResult.type)}`
+                : '✗ Format unclear'}
+              {detectionResult.confidence < 100 && detectionResult.suggestions && (
+                <span className="block text-xs mt-1 text-gray-400">
+                  {detectionResult.suggestions[0]}
+                </span>
+              )}
+            </p>
+          </div>
         )}
+        
+        {/* Standard hints */}
+        <div className="text-sm text-gray-400">
+          {searchType === 'qr' ? (
+            <p>
+              Format: DDMMYY-XXXXXX (e.g., 241224-ABC123)
+            </p>
+          ) : (
+            <p>Format: DDMMYY/XX (e.g., 241224/01)</p>
+          )}
+        </div>
       </div>
     </div>
   );

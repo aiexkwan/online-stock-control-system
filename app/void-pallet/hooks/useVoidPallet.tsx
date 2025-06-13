@@ -20,6 +20,8 @@ import {
   processDamageAction,
   logErrorAction
 } from '../actions';
+import { detectSearchType, formatSearchInput, validateSearchFormat } from '../utils/searchDetection';
+import { transformErrorMessage, shouldClearInput, formatErrorForDisplay } from '../utils/errorMessages';
 
 const initialState: VoidPalletState = {
   searchInput: '',
@@ -79,18 +81,39 @@ export function useVoidPallet() {
     updateState({ isInputDisabled: false });
   }, [setError, updateState]);
 
-  // Search pallet
+  // Search pallet with enhanced detection
   const searchPallet = useCallback(async (searchValue: string, searchType: 'qr' | 'pallet_num') => {
     if (!searchValue.trim()) {
       toast.error('Please enter search value');
       return;
     }
 
+    // Enhanced search type detection
+    const detection = detectSearchType(searchValue.trim());
+    
+    // Show detection confidence in console for debugging
+    console.log('[Search Detection]', {
+      input: searchValue,
+      detected: detection.type,
+      confidence: detection.confidence,
+      pattern: detection.pattern
+    });
+
+    // If confidence is low, show warning
+    if (detection.confidence < 50 && detection.suggestions) {
+      toast.warning(detection.suggestions[0]);
+    }
+
+    // Use detected type if confidence is high enough
+    const finalSearchType = detection.confidence >= 70 ? 
+      (detection.type === 'series' ? 'qr' : 'pallet_num') : 
+      searchType;
+
     updateState({ isSearching: true, foundPallet: null });
     clearError();
 
     try {
-      const params: SearchParams = { searchValue: searchValue.trim(), searchType };
+      const params: SearchParams = { searchValue: searchValue.trim(), searchType: finalSearchType };
       const result = await searchPalletAction(params);
 
       if (result.success && result.data) {
@@ -100,29 +123,48 @@ export function useVoidPallet() {
         });
         //toast.success(`Pallet found: ${result.data.plt_num}`);
       } else {
-        // 檢查是否為 "already voided" 錯誤
+        // Enhanced error handling with user-friendly messages
         const errorMessage = result.error || 'Pallet search failed';
-        if (errorMessage.toLowerCase().includes('already voided') || 
-            errorMessage.toLowerCase().includes('voided') ||
-            errorMessage.toLowerCase().includes('已作廢')) {
-          // 使用 toast 顯示錯誤並重置輸入欄位
-          toast.error('Pallet is already voided');
+        const errorConfig = transformErrorMessage(errorMessage);
+        const displayError = formatErrorForDisplay(errorConfig);
+        
+        // Show user-friendly error message
+        if (errorConfig.severity === 'warning') {
+          toast.warning(displayError.title);
+        } else {
+          toast.error(displayError.title);
+        }
+        
+        // Show suggested actions if any
+        if (displayError.actions && displayError.actions.length > 0) {
+          displayError.actions.forEach((action, index) => {
+            setTimeout(() => {
+              toast.info(`💡 ${action}`);
+            }, (index + 1) * 1000);
+          });
+        }
+        
+        // Clear input if needed
+        if (shouldClearInput(errorConfig.code)) {
           updateState({ 
             isSearching: false,
             searchInput: '',
             foundPallet: null 
           });
-          return;
+        } else {
+          updateState({ isSearching: false });
         }
         
-        // 其他錯誤使用原有的錯誤處理
-        setError({
-          type: 'search',
-          message: errorMessage,
-          isBlocking: true,
-          timestamp: new Date()
-        });
-        updateState({ isSearching: false });
+        // Only set blocking error for severe errors
+        if (errorConfig.severity === 'error' && !shouldClearInput(errorConfig.code)) {
+          setError({
+            type: 'search',
+            message: errorConfig.userMessage,
+            details: errorConfig.technicalMessage,
+            isBlocking: true,
+            timestamp: new Date()
+          });
+        }
       }
     } catch (error: any) {
       setError({

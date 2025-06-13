@@ -643,6 +643,7 @@ export async function voidPalletAction(params: Omit<VoidParams, 'userId'>): Prom
       .insert({
         plt_num: palletInfo.plt_num,
         reason: voidReason,
+        damage_qty: null, // Explicitly set to null for non-damage voids
         time: new Date().toISOString(),
       });
 

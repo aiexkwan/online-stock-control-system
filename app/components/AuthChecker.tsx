@@ -20,7 +20,6 @@ const publicPaths = [
 const protectedPaths = [
   '/access',
   '/dashboard',
-  '/void-pallet',
   '/history',
   '/productUpdate',
   '/stock-transfer',
