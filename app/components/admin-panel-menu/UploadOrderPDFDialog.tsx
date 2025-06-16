@@ -19,6 +19,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { toast } from 'sonner';
 import { createClient } from '@/app/utils/supabase/client';
+import { dialogStyles, iconColors } from '@/app/utils/dialogStyles';
 
 interface UploadOrderPDFDialogProps {
   isOpen: boolean;
@@ -324,18 +325,18 @@ export const UploadOrderPDFDialog: React.FC<UploadOrderPDFDialogProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="bg-slate-800/90 backdrop-blur-xl border border-slate-600/50 text-white max-w-4xl rounded-2xl shadow-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className={`${dialogStyles.content} max-w-4xl`}>
         <div className="relative">
           {/* 對話框內部光效 */}
           <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 via-transparent to-cyan-500/5 rounded-2xl"></div>
           
           <div className="relative z-10">
             <DialogHeader className="pb-6">
-              <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-blue-300 via-cyan-300 to-teal-300 bg-clip-text text-transparent flex items-center">
-                <SparklesIcon className="h-6 w-6 text-blue-400 mr-3" />
+              <DialogTitle className={dialogStyles.title}>
+                <SparklesIcon className={`h-6 w-6 ${iconColors.blue}`} />
                 Upload Order PDF
               </DialogTitle>
-              <DialogDescription className="text-slate-400 text-lg">
+              <DialogDescription className={dialogStyles.description}>
                 Upload and analyze order PDF documents
               </DialogDescription>
             </DialogHeader>
@@ -558,7 +559,7 @@ export const UploadOrderPDFDialog: React.FC<UploadOrderPDFDialogProps> = ({
               <button
                 onClick={handleClose}
                 disabled={orderPDFState.isUploading || orderPDFState.isAnalyzing}
-                className="px-6 py-3 bg-slate-700/50 hover:bg-slate-600/50 border border-slate-600/50 hover:border-slate-500/70 rounded-xl text-slate-300 hover:text-white font-medium transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                className={`${dialogStyles.secondaryButton} disabled:opacity-50 disabled:cursor-not-allowed`}
               >
                 {orderPDFState.extractedData ? 'Close' : 'Cancel'}
               </button>
@@ -570,7 +571,7 @@ export const UploadOrderPDFDialog: React.FC<UploadOrderPDFDialogProps> = ({
                   orderPDFState.isAnalyzing ||
                   orderPDFState.extractedData !== null
                 }
-                className="px-6 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 disabled:from-slate-600 disabled:to-slate-600 text-white rounded-xl font-medium transition-all duration-300 shadow-lg hover:shadow-blue-500/25 hover:scale-105 active:scale-95 disabled:hover:scale-100 disabled:cursor-not-allowed"
+                className={`${dialogStyles.primaryButton} disabled:hover:scale-100`}
               >
                 {orderPDFState.isAnalyzing ? (
                   <div className="flex items-center gap-3">

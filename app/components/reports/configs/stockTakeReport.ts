@@ -8,8 +8,8 @@ import { ReportConfig } from '../core/ReportConfig';
 export const stockTakeReportConfig: ReportConfig = {
   id: 'stock-take-report',
   name: 'Stock Take Report',
-  description: 'Compare counted stock quantities against system stock levels',
-  category: 'inventory',
+  description: 'Stock Take Report',
+  category: 'management',
   formats: ['csv', 'pdf', 'excel'], // 新增 PDF 和 Excel 支援
   defaultFormat: 'csv', // 保持 CSV 為默認格式
   

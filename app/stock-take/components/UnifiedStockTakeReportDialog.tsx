@@ -10,6 +10,7 @@ import { ReportBuilder } from '@/app/components/reports/core/ReportBuilder';
 import { useReportGeneration } from '@/app/components/reports/hooks/useReportGeneration';
 import { ReportFormat, FilterValues } from '@/app/components/reports/core/ReportConfig';
 import { useToast } from '@/components/ui/use-toast';
+import { dialogStyles, iconColors } from '@/app/utils/dialogStyles';
 
 interface UnifiedStockTakeReportDialogProps {
   isOpen: boolean;
@@ -80,9 +81,14 @@ export function UnifiedStockTakeReportDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className={`${dialogStyles.content} max-w-2xl`}>
         <DialogHeader>
-          <DialogTitle>Generate Stock Take Report</DialogTitle>
+          <DialogTitle className={dialogStyles.title}>
+            <svg className={`h-6 w-6 ${iconColors.blue}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+            </svg>
+            Generate Stock Take Report
+          </DialogTitle>
         </DialogHeader>
         <ReportBuilder
           config={reportConfig}

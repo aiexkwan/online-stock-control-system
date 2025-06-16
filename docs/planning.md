@@ -2,37 +2,72 @@
 
 ## 當前進行中的任務
 
-### Admin Dashboard 優化 (2025-06-16 開始)
-- [ ] 改善對話框管理 - 使用 Context 或狀態管理庫
-  - [ ] 創建統一的 DialogContext
-  - [ ] 實施對話框狀態管理
-  - [ ] 減少 prop drilling
-- [ ] 添加數據視覺化圖表
-  - [ ] 整合圖表庫 (recharts/chart.js)
-  - [ ] 實施趨勢圖組件
-  - [ ] 添加熱力圖功能
-  - [ ] 創建互動式儀表板
-- [ ] 實施權限細分
-  - [ ] 設計 RBAC 系統架構
-  - [ ] 創建權限管理介面
-  - [ ] 實施功能級別權限控制
-  - [ ] 添加權限檢查 HOC/Hook
-- [ ] 添加自定義儀表板
-  - [ ] 設計小部件系統
-  - [ ] 實施拖放功能
-  - [ ] 創建配置保存機制
-  - [ ] 添加預設布局模板
+### Admin Dashboard 優化 ✅ (2025-06-16 完成)
+- [x] 改善對話框管理 - 使用 Context 或狀態管理庫
+  - [x] 創建統一的 DialogContext
+  - [x] 實施對話框狀態管理
+  - [x] 減少 prop drilling
+- [x] 添加數據視覺化圖表
+  - [x] 整合圖表庫 (recharts)
+  - [x] 實施趨勢圖組件
+  - [x] 創建互動式儀表板
+  - [x] 實現動態圖表切換（1天棒型圖，其他折線圖）
+
+### 自定義儀表板功能研究 (2025-06-16 開始)
+- [ ] 評估拖放庫選項
+  - [ ] react-grid-layout - 功能豐富，支援響應式網格
+  - [ ] react-beautiful-dnd - 流暢動畫，良好的無障礙支援
+  - [ ] react-sortable-hoc - 輕量級，易於整合
+- [ ] 設計小部件註冊系統
+  - [ ] 定義小部件介面 (id, type, config, data)
+  - [ ] 創建小部件工廠模式
+  - [ ] 實施小部件生命週期管理
+- [ ] 規劃配置存儲方案
+  - [ ] localStorage 用於快速原型
+  - [ ] Supabase 用於跨設備同步
+  - [ ] 版本控制和遷移策略
+- [ ] 用戶體驗設計
+  - [ ] 編輯模式 vs 查看模式
+  - [ ] 小部件大小調整和約束
+  - [ ] 預設模板庫
+  - [ ] 導入/導出配置功能
 
 ### 報表系統統一框架 ✅ (2025-06-16 完成)
 - [x] 建立統一報表生成框架
 - [x] 遷移 Void Pallet Report 到統一框架
 - [x] 遷移 Order Loading Report 到統一框架
-- [x] 遷移 Stock Take Report 到統一框架
+- [x] 遷移 Stock Take Report 到統一框架（重新分類為 Management Report）
+- [x] 整合 ACO Order Report, GRN Report, Transaction Report
 - [x] 建立報表儀表板（以 Dialog 方式開啟）
 - [x] 修復 UI 組件相容性問題
 - [x] 統一界面語言為英文
 - [x] 套用系統一致的深色主題風格
+- [x] 移除 Financial 和 Quality 報表分類
 
+### 數據分析儀表板 ✅ (2025-06-16 完成)
+- [x] 創建 Analytics Dashboard 系統
+  - [x] 使用 Zustand 管理狀態
+  - [x] 實現 Finished Transfer 圖表（原 Output vs Booked Out）
+  - [x] 實現 Order Trend 圖表（Summary/Detail 視圖）
+  - [x] 實現 Staff Workload 圖表（Summary/Timeline 視圖）
+- [x] 修正數據庫欄位對應
+  - [x] record_transfer.transfer_time → tran_date
+  - [x] record_aco → data_order 表
+  - [x] record_palletinfo.operation_name → work_level 表
+- [x] UI/UX 優化
+  - [x] 時間範圍選擇器（1d, 7d, 30d, 90d）
+  - [x] Tab 切換不同圖表
+  - [x] 統一深色主題風格
+  - [x] 響應式圖表設計
+
+## 已取消任務
+
+### RBAC 權限系統 ❌ (2025-06-16 取消)
+- ~~設計 RBAC 系統架構~~
+- ~~創建權限管理介面~~
+- ~~實施功能級別權限控制~~
+- ~~添加權限檢查 HOC/Hook~~
+- 取消原因：專案需求變更，優先開發其他功能
 
 ## 已完成任務歸檔
 

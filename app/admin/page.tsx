@@ -6,14 +6,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { 
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { createClient } from '@/lib/supabase';
 import { toast } from 'sonner';
@@ -42,154 +34,24 @@ import {
   SparklesIcon
 } from '@heroicons/react/24/outline';
 import { ReportsButton } from '@/app/components/reports/ReportsButton';
+import { AnalyticsButton } from '@/app/components/analytics/AnalyticsButton';
+import { AnalyticsDashboardDialog } from '@/app/components/analytics/AnalyticsDashboardDialog';
 import { useAuth } from '@/app/hooks/useAuth';
 import MotionBackground from '../components/MotionBackground';
+import { useDialog, useReprintDialog } from '@/app/contexts/DialogContext';
+import { DialogManager } from '@/app/components/admin-panel/DialogManager';
+import { adminMenuItems } from '@/app/components/admin-panel/AdminMenu';
 
 // Import dashboard components
 import FinishedProduct from '@/app/components/PrintHistory';
 import MaterialReceived from '@/app/components/GrnHistory';
 import PalletDonutChart from '@/app/components/PalletDonutChart';
-import UploadFilesDialog from '@/app/components/admin-panel-menu/UploadFilesDialog';
-import { UploadFilesOnlyDialog } from '@/app/components/admin-panel-menu/UploadFilesOnlyDialog';
-import { UploadOrderPDFDialog } from '@/app/components/admin-panel-menu/UploadOrderPDFDialog';
-import VoidPalletDialog from '@/app/components/admin-panel-menu/VoidPalletDialog';
-import ViewHistoryDialog from '@/app/components/admin-panel-menu/ViewHistoryDialog';
-import DatabaseUpdateDialog from '@/app/components/admin-panel-menu/DatabaseUpdateDialog';
-import AskDatabaseDialog from '@/app/components/admin-panel-menu/AskDatabaseDialog';
-import { ReprintInfoDialog } from '@/app/void-pallet/components/ReprintInfoDialog';
 import { useVoidPallet } from '@/app/void-pallet/hooks/useVoidPallet';
 import { useAskDatabasePermission } from '@/app/hooks/useAuth';
 import AskDatabaseInlineCard from '@/app/components/AskDatabaseInlineCard';
 import { VoidStatisticsCard } from '@/app/components/VoidStatisticsCard';
-import VoidReportDialog from '@/app/components/admin-panel-menu/VoidReportDialog';
-import LoadingReportDialog from '@/app/components/admin-panel-menu/LoadingReportDialog';
 
-const adminMenuItems = [
-  {
-    id: 'aco-report',
-    title: 'ACO Order Report',
-    description: 'Export ACO order reports',
-    icon: RectangleStackIcon,
-    action: 'generate-report',
-    reportType: 'aco',
-    color: 'hover:bg-green-900/20 hover:text-green-400',
-    category: 'Export Reports'
-  },
-  {
-    id: 'grn-report',
-    title: 'GRN Report',
-    description: 'Export GRN reports',
-    icon: RectangleStackIcon,
-    action: 'generate-report',
-    reportType: 'grn',
-    color: 'hover:bg-blue-900/20 hover:text-blue-400',
-    category: 'Export Reports'
-  },
-  {
-    id: 'transaction-report',
-    title: 'Transaction Report',
-    description: 'Export transaction reports',
-    icon: TableCellsIcon,
-    action: 'generate-report',
-    reportType: 'transaction',
-    color: 'hover:bg-purple-900/20 hover:text-purple-400',
-    category: 'Export Reports'
-  },
-  {
-    id: 'slate-report',
-    title: 'Slate Report',
-    description: 'Export slate reports',
-    icon: RectangleStackIcon,
-    action: 'generate-report',
-    reportType: 'slate',
-    color: 'hover:bg-orange-900/20 hover:text-orange-400',
-    category: 'Export Reports'
-  },
-  {
-    id: 'all-data-report',
-    title: 'Export All Data',
-    description: 'Export selected database tables',
-    icon: RectangleStackIcon,
-    action: 'generate-report',
-    reportType: 'all-data',
-    color: 'hover:bg-emerald-900/20 hover:text-emerald-400',
-    category: 'Export Reports'
-  },
-  {
-    id: 'void-report',
-    title: 'Void Report',
-    description: 'Export void pallet reports with filters',
-    icon: DocumentChartBarIcon,
-    action: 'open-void-report-dialog',
-    color: 'hover:bg-purple-900/20 hover:text-purple-400',
-    category: 'Export Reports'
-  },
-  {
-    id: 'loading-report',
-    title: 'Order Loading Report',
-    description: 'Export order loading reports',
-    icon: TruckIcon,
-    action: 'open-loading-report-dialog',
-    color: 'hover:bg-cyan-900/20 hover:text-cyan-400',
-    category: 'Export Reports'
-  },
-  {
-    id: 'void',
-    title: 'Void Pallet',
-    description: 'Cancel records of illegal or damaged pallets',
-    icon: NoSymbolIcon,
-    action: 'open-void-dialog',
-    color: 'hover:bg-red-900/20 hover:text-red-400',
-    category: 'System Tools'
-  },
-  {
-    id: 'history',
-    title: 'View History',
-    description: 'View pallet full history records',
-    icon: ClockIcon,
-    action: 'open-history-dialog',
-    color: 'hover:bg-blue-900/20 hover:text-blue-400',
-    category: 'System Tools'
-  },
-  {
-    id: 'database',
-    title: 'Database Update',
-    description: 'Update database information',
-    icon: CubeIcon,
-    action: 'open-update-dialog',
-    color: 'hover:bg-orange-900/20 hover:text-orange-400',
-    category: 'System Tools'
-  },
-  {
-    id: 'upload-files-only',
-    title: 'Upload Files',
-    description: 'Upload documents and images',
-    icon: DocumentTextIcon,
-    action: 'open-upload-files-only-dialog',
-    color: 'hover:bg-purple-900/20 hover:text-purple-400',
-    category: 'Document Upload'
-  },
-  {
-    id: 'upload-order-pdf',
-    title: 'Upload Order PDF',
-    description: 'Upload order PDF',
-    icon: DocumentTextIcon,
-    action: 'open-upload-order-pdf-dialog',
-    color: 'hover:bg-blue-900/20 hover:text-blue-400',
-    category: 'Document Upload'
-  },
-  {
-    id: 'product-spec-doc',
-    title: 'Product Spec Doc',
-    description: 'Upload product specification documents',
-    icon: DocumentTextIcon,
-    action: 'open-product-spec-dialog',
-    color: 'hover:bg-cyan-900/20 hover:text-cyan-400',
-    category: 'Document Upload'
-  }
-];
-
-// 按類別分組
+// 使用從 AdminMenu 導入的 adminMenuItems
 const groupedItems = adminMenuItems.reduce((acc, item) => {
   if (!acc[item.category]) {
     acc[item.category] = [];
@@ -279,58 +141,10 @@ export default function AdminPanelPage() {
   const [searchResults, setSearchResults] = useState<InventoryLocation | null>(null);
   const [searchLoading, setSearchLoading] = useState(false);
 
-  // Report generation states
-  const [reportLoading, setReportLoading] = useState<string | null>(null);
-  const [showReportDialog, setShowReportDialog] = useState(false);
-  const [currentReportType, setCurrentReportType] = useState<string>('');
-  
-  // ACO Report states
-  const [availableAcoOrders, setAvailableAcoOrders] = useState<string[]>([]);
-  const [selectedAcoOrder, setSelectedAcoOrder] = useState<string>('');
-  
-  // GRN Report states
-  const [availableGrnRefs, setAvailableGrnRefs] = useState<string[]>([]);
-  const [selectedGrnRef, setSelectedGrnRef] = useState<string>('');
-  
-  // Transaction Report states
-  const [startDate, setStartDate] = useState<string>('');
-  const [endDate, setEndDate] = useState<string>('');
 
-  // All Data Export states
-  const [selectedTables, setSelectedTables] = useState<string[]>([]);
-  const [needsDateRange, setNeedsDateRange] = useState<boolean>(false);
-
-  // Upload Files states
-  const [showUploadDialog, setShowUploadDialog] = useState(false);
-
-  // Upload Files Only states
-  const [showUploadFilesOnlyDialog, setShowUploadFilesOnlyDialog] = useState(false);
-
-  // Upload Order PDF states
-  const [showUploadOrderPDFDialog, setShowUploadOrderPDFDialog] = useState(false);
-
-  // Product Spec Doc states
-  const [showProductSpecDialog, setShowProductSpecDialog] = useState(false);
-
-  // Void Pallet Dialog states
-  const [showVoidDialog, setShowVoidDialog] = useState(false);
-
-  // View History Dialog states
-  const [showHistoryDialog, setShowHistoryDialog] = useState(false);
-  
-  // Void Report Dialog states
-  const [showVoidReportDialog, setShowVoidReportDialog] = useState(false);
-  const [showLoadingReportDialog, setShowLoadingReportDialog] = useState(false);
-
-  // Database Update Dialog states
-  const [showUpdateDialog, setShowUpdateDialog] = useState(false);
-
-  // Ask Database Dialog states
-  const [showAskDatabaseDialog, setShowAskDatabaseDialog] = useState(false);
-
-  // Reprint Dialog states
-  const [showReprintDialog, setShowReprintDialog] = useState(false);
-  const [reprintData, setReprintData] = useState<any>(null);
+  // Use Dialog Context
+  const { openDialog } = useDialog();
+  const { open: openReprintDialog } = useReprintDialog();
 
   // Void Pallet Hook for reprint functionality
   const {
@@ -343,35 +157,31 @@ export default function AdminPanelPage() {
   // Handle reprint needed callback from VoidPalletDialog
   const handleReprintNeeded = useCallback((reprintInfo: any) => {
     console.log('Reprint needed:', reprintInfo);
-    setReprintData(reprintInfo);
-    setShowReprintDialog(true);
-  }, []);
+    openReprintDialog(reprintInfo);
+  }, [openReprintDialog]);
 
   // Handle reprint confirm
   const handleReprintConfirm = useCallback(async (reprintInfo: any) => {
     try {
       // 構造正確的 ReprintInfoInput 格式
       const reprintInfoInput = {
-        type: reprintData.type,
-        originalPalletInfo: reprintData.palletInfo,
+        type: reprintInfo.type,
+        originalPalletInfo: reprintInfo.palletInfo,
         correctedProductCode: reprintInfo.correctedProductCode,
         correctedQuantity: reprintInfo.correctedQuantity,
-        remainingQuantity: reprintData.reprintInfo?.remainingQuantity
+        remainingQuantity: reprintInfo.reprintInfo?.remainingQuantity
       };
       
       console.log('Calling handleReprintInfoConfirm with:', reprintInfoInput);
       await handleReprintInfoConfirm(reprintInfoInput);
-      setShowReprintDialog(false);
-      setReprintData(null);
     } catch (error) {
       console.error('Reprint failed:', error);
     }
-  }, [handleReprintInfoConfirm, reprintData]);
+  }, [handleReprintInfoConfirm]);
 
   // Handle reprint cancel
   const handleReprintCancel = useCallback(() => {
-    setShowReprintDialog(false);
-    setReprintData(null);
+    // Dialog will be closed by DialogManager
   }, []);
 
   // Helper function to get data based on selected time range
@@ -745,354 +555,31 @@ export default function AdminPanelPage() {
 
   // Handle item click with support for different actions
   const handleItemClick = (item: any) => {
-    if (item.action === 'generate-report' && item.reportType) {
-      handleReportClick(item.reportType);
-    } else if (item.action === 'open-upload-dialog') {
-      setShowUploadDialog(true);
-    } else if (item.action === 'open-upload-files-only-dialog') {
-      setShowUploadFilesOnlyDialog(true);
-    } else if (item.action === 'open-upload-order-pdf-dialog') {
-      setShowUploadOrderPDFDialog(true);
-    } else if (item.action === 'open-product-spec-dialog') {
-      setShowProductSpecDialog(true);
-    } else if (item.action === 'open-void-dialog') {
-      setShowVoidDialog(true);
-    } else if (item.action === 'open-history-dialog') {
-      setShowHistoryDialog(true);
-    } else if (item.action === 'open-void-report-dialog') {
-      setShowVoidReportDialog(true);
-    } else if (item.action === 'open-loading-report-dialog') {
-      setShowLoadingReportDialog(true);
-    } else if (item.action === 'open-update-dialog') {
-      setShowUpdateDialog(true);
-    } else if (item.path) {
-      router.push(item.path);
+    switch (item.action) {
+      case 'void-pallet':
+        openDialog('voidPallet');
+        break;
+      case 'view-history':
+        openDialog('viewHistory');
+        break;
+      case 'database-update':
+        openDialog('databaseUpdate');
+        break;
+      case 'upload-files-only':
+        openDialog('uploadFilesOnly');
+        break;
+      case 'upload-order-pdf':
+        openDialog('uploadOrderPdf');
+        break;
+      case 'product-spec':
+        openDialog('productSpec');
+        break;
+      default:
+        // No default action
     }
   };
 
-  // Handle report click - open dialog for parameter selection
-  const handleReportClick = async (reportType: string) => {
-    // Reset all states first
-    setSelectedTables([]);
-    setNeedsDateRange(false);
-    setStartDate('');
-    setEndDate('');
-    setSelectedAcoOrder('');
-    setSelectedGrnRef('');
-    setAvailableAcoOrders([]);
-    setAvailableGrnRefs([]);
-    
-    setCurrentReportType(reportType);
-    setShowReportDialog(true);
-    
-    // Load data based on report type
-    try {
-      if (reportType === 'aco') {
-        await loadAcoOrders();
-      } else if (reportType === 'grn') {
-        await loadGrnRefs();
-      } else if (reportType === 'transaction') {
-        // Set default date range (last 30 days)
-        const endDate = new Date();
-        const startDate = new Date();
-        startDate.setDate(endDate.getDate() - 30);
-        setStartDate(startDate.toISOString().split('T')[0]);
-        setEndDate(endDate.toISOString().split('T')[0]);
-      } else if (reportType === 'slate') {
-        toast.info('Slate report is currently under development');
-        setShowReportDialog(false);
-        return;
-      } else if (reportType === 'all-data') {
-        // All data export - will show table selection dialog
-        // No need to set default dates here
-      }
-    } catch (error) {
-      console.error(`Error loading ${reportType} data:`, error);
-      toast.error(`Failed to load ${reportType} data`);
-    }
-  };
 
-  // Load ACO orders
-  const loadAcoOrders = async () => {
-    try {
-      const { getUniqueAcoOrderRefs } = await import('../actions/reportActions');
-      const orders = await getUniqueAcoOrderRefs();
-      setAvailableAcoOrders(orders);
-      if (orders.length > 0) {
-        setSelectedAcoOrder(orders[orders.length - 1]); // Select latest order
-      }
-    } catch (error) {
-      console.error('Error loading ACO orders:', error);
-      throw error;
-    }
-  };
-
-  // Load GRN refs
-  const loadGrnRefs = async () => {
-    try {
-      const { getUniqueGrnRefs } = await import('../actions/reportActions');
-      const refs = await getUniqueGrnRefs();
-      setAvailableGrnRefs(refs);
-      if (refs.length > 0) {
-        setSelectedGrnRef(refs[refs.length - 1]); // Select latest ref
-      }
-    } catch (error) {
-      console.error('Error loading GRN refs:', error);
-      throw error;
-    }
-  };
-
-  // Generate report with selected parameters
-  const generateReport = async () => {
-    if (!currentReportType) return;
-
-    try {
-      setReportLoading(currentReportType);
-
-      if (currentReportType === 'aco') {
-        if (!selectedAcoOrder) {
-          toast.error('Please select an ACO order');
-          return;
-        }
-        await generateAcoReport(selectedAcoOrder);
-      } else if (currentReportType === 'grn') {
-        if (!selectedGrnRef) {
-          toast.error('Please select GRN reference');
-          return;
-        }
-        await generateGrnReport(selectedGrnRef);
-      } else if (currentReportType === 'transaction') {
-        if (!startDate || !endDate) {
-          toast.error('Please select start and end dates');
-          return;
-        }
-        await generateTransactionReport(startDate, endDate);
-      } else if (currentReportType === 'slate') {
-        toast.info('Slate report is currently under development');
-        return;
-      } else if (currentReportType === 'all-data') {
-        if (!selectedTables || selectedTables.length === 0) {
-          toast.error('Please select at least one table to export');
-          return;
-        }
-        await generateAllDataReport();
-      }
-
-      // Close dialog and reset states after successful generation
-      closeReportDialog();
-      toast.success(`${currentReportType.toUpperCase()} report generated successfully`);
-    } catch (error: any) {
-      console.error(`Error generating ${currentReportType} report:`, error);
-      toast.error(`Failed to generate ${currentReportType} report: ${error.message}`);
-    } finally {
-      setReportLoading(null);
-    }
-  };
-
-  // Generate ACO report
-  const generateAcoReport = async (orderRef: string) => {
-    const { getAcoReportData } = await import('../actions/reportActions');
-    const { exportAcoReport } = await import('../../lib/exportReport');
-    const reportData = await getAcoReportData(orderRef);
-    if (!reportData || reportData.length === 0) {
-      throw new Error('No ACO data available');
-    }
-    await exportAcoReport(reportData, orderRef);
-  };
-
-  // Generate GRN report
-  const generateGrnReport = async (grnRef: string) => {
-    const { getMaterialCodesForGrnRef, getGrnReportData } = await import('../actions/reportActions');
-    const { exportGrnReport } = await import('../../lib/exportReport');
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user?.email) {
-      throw new Error('User email not found');
-    }
-
-    // 獲取該 GRN ref 下的所有 material codes
-    const materialCodes = await getMaterialCodesForGrnRef(grnRef);
-    if (!materialCodes || materialCodes.length === 0) {
-      throw new Error('No material codes found for this GRN reference');
-    }
-
-    let successCount = 0;
-    let errorCount = 0;
-    const errors: string[] = [];
-
-    // 為每個 material code 生成獨立的報告
-    for (const materialCode of materialCodes) {
-      try {
-        const reportData = await getGrnReportData(grnRef, materialCode, user.email);
-        if (reportData) {
-          await exportGrnReport(reportData);
-          successCount++;
-        } else {
-          errorCount++;
-          errors.push(`No data found for material code: ${materialCode}`);
-        }
-      } catch (error: any) {
-        errorCount++;
-        errors.push(`Error generating report for ${materialCode}: ${error.message}`);
-        console.error(`Error generating GRN report for material code ${materialCode}:`, error);
-      }
-    }
-
-    // 顯示結果摘要
-    if (successCount > 0) {
-      toast.success(`${successCount} GRN report(s) generated`);
-    }
-    
-    if (errorCount > 0) {
-      console.warn('GRN Report generation errors:', errors);
-      toast.warning(`${errorCount} report(s) failed to generate. Check console for details.`);
-    }
-
-    if (successCount === 0) {
-      throw new Error('No reports were generated successfully');
-    }
-  };
-
-  // Generate Transaction report
-  const generateTransactionReport = async (startDate: string, endDate: string) => {
-    const { getTransactionReportData } = await import('../actions/reportActions');
-    const { buildTransactionReport } = await import('../../lib/exportReport');
-    const reportData = await getTransactionReportData(startDate, endDate);
-    if (!reportData || reportData.transfers.length === 0) {
-      throw new Error('No transaction data available for the selected date range');
-    }
-    
-    // Get the Excel buffer and trigger download
-    const buffer = await buildTransactionReport(reportData);
-    const blob = new Blob([buffer], { 
-      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' 
-    });
-    
-    // Create download link
-    const link = document.createElement('a');
-    const url = URL.createObjectURL(blob);
-    link.setAttribute('href', url);
-    link.setAttribute('download', `Transaction_Report_${startDate}_to_${endDate}.xlsx`);
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-  };
-
-  // Generate All Data report
-  const generateAllDataReport = async () => {
-    try {
-      for (const tableName of selectedTables) {
-        let query = supabase.from(tableName).select('*');
-        
-        // Add date range filter for tables that need it
-        if (needsDateRange && (tableName === 'record_history' || tableName === 'record_inventory')) {
-          if (!startDate || !endDate) {
-            toast.error('Please select start and end dates for time-based tables');
-            return;
-          }
-          
-          const timeField = tableName === 'record_history' ? 'time' : 'latest_update';
-          query = query
-            .gte(timeField, startDate)
-            .lte(timeField, endDate + 'T23:59:59');
-        }
-        
-        // Determine sort field based on table and execute query
-        let data, error;
-        let sortField = 'id'; // default
-        
-        if (tableName === 'record_palletinfo') {
-          sortField = 'generate_time';
-        } else if (tableName === 'data_code') {
-          sortField = 'code';
-        } else if (tableName === 'report_void') {
-          sortField = 'time';
-        } else if (tableName === 'record_history') {
-          sortField = 'time';
-        } else if (tableName === 'record_inventory') {
-          sortField = 'latest_update';
-        }
-        
-        try {
-          const result = await query.order(sortField, { ascending: true });
-          data = result.data;
-          error = result.error;
-        } catch (sortError) {
-          // If sorting fails, try without sorting
-          console.warn(`Sorting by ${sortField} failed for ${tableName}, trying without sort:`, sortError);
-          const result = await query;
-          data = result.data;
-          error = result.error;
-        }
-        
-        if (error) {
-          console.warn(`Error fetching ${tableName}:`, error);
-          continue;
-        }
-        
-        if (!data || data.length === 0) {
-          toast.warning(`No data found for table: ${tableName}`);
-          continue;
-        }
-        
-        // Generate CSV content
-        const headers = Object.keys(data[0]);
-        const csvContent = [
-          headers.join(','),
-          ...data.map(row => 
-            headers.map(header => {
-              const value = row[header];
-              if (value === null || value === undefined) return '';
-              if (typeof value === 'string' && value.includes(',')) {
-                return `"${value.replace(/"/g, '""')}"`;
-              }
-              return String(value);
-            }).join(',')
-          )
-        ].join('\n');
-        
-        // Download CSV file
-        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-        const link = document.createElement('a');
-        const url = URL.createObjectURL(blob);
-        link.setAttribute('href', url);
-        
-        const dateRange = needsDateRange && (tableName === 'record_history' || tableName === 'record_inventory') 
-          ? `_${startDate}_to_${endDate}` 
-          : '';
-        link.setAttribute('download', `${tableName}${dateRange}_${new Date().toISOString().split('T')[0]}.csv`);
-        
-        link.style.visibility = 'hidden';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        
-        // Small delay between downloads
-        await new Promise(resolve => setTimeout(resolve, 500));
-      }
-      
-      toast.success(`Successfully exported ${selectedTables.length} table(s)`);
-    } catch (error) {
-      console.error('Error generating all data report:', error);
-      throw error;
-    }
-  };
-
-  // Close report dialog
-  const closeReportDialog = () => {
-    setShowReportDialog(false);
-    setCurrentReportType('');
-    setSelectedAcoOrder('');
-    setSelectedGrnRef('');
-    setAvailableAcoOrders([]);
-    setAvailableGrnRefs([]);
-    setStartDate('');
-    setEndDate('');
-    // Reset All Data Export states
-    setSelectedTables([]);
-    setNeedsDateRange(false);
-  };
 
   // Click outside handler for dropdown
   useEffect(() => {
@@ -1188,14 +675,9 @@ export default function AdminPanelPage() {
                               setIsDropdownOpen(false);
                             }}
                             className={`w-full px-5 py-4 text-left hover:bg-slate-700/50 transition-all duration-300 first:rounded-t-2xl last:rounded-b-2xl group/item ${item.color}`}
-                            disabled={reportLoading === item.reportType}
                           >
                             <div className="flex items-center gap-4">
-                              {reportLoading === item.reportType ? (
-                                <div className="w-5 h-5 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
-                              ) : (
-                                <IconComponent className="w-5 h-5 group-hover/item:scale-110 transition-transform duration-300" />
-                              )}
+                              <IconComponent className="w-5 h-5 group-hover/item:scale-110 transition-transform duration-300" />
                               <div>
                                 <div className="text-sm font-medium">
                                   {item.title}
@@ -1213,6 +695,13 @@ export default function AdminPanelPage() {
 
               {/* Right side - Reports button and Mobile menu button */}
               <div className="flex items-center gap-2">
+                {/* Analytics Button */}
+                <AnalyticsButton 
+                  variant="outline"
+                  size="sm"
+                  className="bg-slate-700/50 border-slate-600/50 hover:bg-slate-600/50 hover:border-slate-500/70 text-slate-300 hover:text-white"
+                />
+                
                 {/* Reports Button - visible on all screen sizes */}
                 <ReportsButton 
                   variant="outline"
@@ -1263,14 +752,9 @@ export default function AdminPanelPage() {
                                   setIsDropdownOpen(false);
                                 }}
                                 className={`w-full px-4 py-3 text-left hover:bg-slate-700/50 rounded-xl transition-all duration-300 ${item.color}`}
-                                disabled={reportLoading === item.reportType}
                               >
                                 <div className="flex items-center gap-4">
-                                  {reportLoading === item.reportType ? (
-                                    <div className="w-5 h-5 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
-                                  ) : (
-                                    <IconComponent className="w-5 h-5" />
-                                  )}
+                                  <IconComponent className="w-5 h-5" />
                                   <div>
                                     <div className="text-sm font-medium">
                                       {item.title}
@@ -1798,372 +1282,17 @@ export default function AdminPanelPage() {
         </div>
       </div>
 
-      {/* Report Generation Dialog */}
-      <Dialog open={showReportDialog} onOpenChange={closeReportDialog}>
-        <DialogContent className="bg-slate-800/90 backdrop-blur-xl border border-slate-600/50 text-white max-w-lg rounded-2xl shadow-2xl">
-          <div className="relative">
-            {/* 對話框內部光效 */}
-            <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 via-transparent to-purple-500/5 rounded-2xl"></div>
-            
-            <div className="relative z-10">
-              <DialogHeader className="pb-6">
-                <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-blue-300 via-purple-300 to-cyan-300 bg-clip-text text-transparent">
-                  Export {currentReportType.toUpperCase()} Report
-                </DialogTitle>
-                <DialogDescription className="text-slate-400 text-lg">
-                  Select parameters for your {currentReportType} report
-                </DialogDescription>
-              </DialogHeader>
 
-              <div className="space-y-6 py-6">
-                {/* ACO Report Parameters */}
-                {currentReportType === 'aco' && (
-                  <div className="space-y-4">
-                    <label className="block text-sm font-medium text-slate-200">
-                      ACO Order Reference
-                    </label>
-                    <select
-                      value={selectedAcoOrder}
-                      onChange={(e) => setSelectedAcoOrder(e.target.value)}
-                      className="w-full px-4 py-3 bg-slate-700/50 border border-slate-600/50 rounded-xl text-white focus:outline-none focus:border-blue-500/70 focus:bg-slate-700/70 hover:border-blue-500/50 transition-all duration-300"
-                    >
-                      <option value="">Select ACO Order</option>
-                      {availableAcoOrders.map((order) => (
-                        <option key={order} value={order}>
-                          Order Ref: {order}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                )}
-
-                {/* GRN Report Parameters */}
-                {currentReportType === 'grn' && (
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-medium text-slate-200 mb-3">
-                        GRN Reference
-                      </label>
-                      <select
-                        value={selectedGrnRef}
-                        onChange={(e) => setSelectedGrnRef(e.target.value)}
-                        className="w-full px-4 py-3 bg-slate-700/50 border border-slate-600/50 rounded-xl text-white focus:outline-none focus:border-blue-500/70 focus:bg-slate-700/70 hover:border-blue-500/50 transition-all duration-300"
-                      >
-                        <option value="">Select GRN Reference</option>
-                        {availableGrnRefs.map((ref) => (
-                          <option key={ref} value={ref}>
-                            {ref}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    
-                    <div className="text-sm text-slate-400 bg-slate-700/30 border border-slate-600/30 p-4 rounded-xl">
-                      <p>📋 All product codes under this GRN reference will be exported as separate reports.</p>
-                    </div>
-                  </div>
-                )}
-
-                {/* Transaction Report Parameters */}
-                {currentReportType === 'transaction' && (
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-medium text-slate-200 mb-3">
-                        Start Date
-                      </label>
-                      <input
-                        type="date"
-                        value={startDate}
-                        onChange={(e) => setStartDate(e.target.value)}
-                        className="w-full px-4 py-3 bg-slate-700/50 border border-slate-600/50 rounded-xl text-white focus:outline-none focus:border-blue-500/70 focus:bg-slate-700/70 hover:border-blue-500/50 transition-all duration-300"
-                      />
-                    </div>
-                    
-                    <div>
-                      <label className="block text-sm font-medium text-slate-200 mb-3">
-                        End Date
-                      </label>
-                      <input
-                        type="date"
-                        value={endDate}
-                        onChange={(e) => setEndDate(e.target.value)}
-                        className="w-full px-4 py-3 bg-slate-700/50 border border-slate-600/50 rounded-xl text-white focus:outline-none focus:border-blue-500/70 focus:bg-slate-700/70 hover:border-blue-500/50 transition-all duration-300"
-                      />
-                    </div>
-                  </div>
-                )}
-
-                {/* Slate Report Parameters */}
-                {currentReportType === 'slate' && (
-                  <div className="text-center py-8">
-                    <p className="text-slate-400 text-lg">
-                      Slate report functionality is currently under development.
-                    </p>
-                  </div>
-                )}
-
-                {/* All Data Export Parameters */}
-                {currentReportType === 'all-data' && (
-                  <div className="space-y-6">
-                    <div>
-                      <label className="block text-sm font-medium text-slate-200 mb-3">
-                        Select Tables to Export
-                      </label>
-                      <div className="space-y-3">
-                        {[
-                          { value: 'record_palletinfo', label: 'Pallet Information', description: 'Pallet information records' },
-                          { value: 'data_code', label: 'Code List', description: 'Product code list' },
-                          { value: 'report_void', label: 'Voided Inventory', description: 'Voided inventory records' },
-                          { value: 'record_history', label: 'Operation History', description: 'Operation history records', needsDate: true },
-                          { value: 'record_inventory', label: 'Full Inventory', description: 'Complete inventory records', needsDate: true }
-                        ].map((table) => (
-                          <label key={table.value} className="flex items-center space-x-3 p-3 bg-slate-700/30 border border-slate-600/30 rounded-xl hover:bg-slate-700/50 transition-all duration-300 cursor-pointer">
-                            <input
-                              type="checkbox"
-                              checked={selectedTables.includes(table.value)}
-                              onChange={(e) => {
-                                if (e.target.checked) {
-                                  setSelectedTables([...selectedTables, table.value]);
-                                  // Check if any selected table needs date range
-                                  const hasDateTable = [...selectedTables, table.value].some(t => 
-                                    t === 'record_history' || t === 'record_inventory'
-                                  );
-                                  setNeedsDateRange(hasDateTable);
-                                } else {
-                                  const newTables = selectedTables.filter(t => t !== table.value);
-                                  setSelectedTables(newTables);
-                                  // Check if remaining tables need date range
-                                  const hasDateTable = newTables.some(t => 
-                                    t === 'record_history' || t === 'record_inventory'
-                                  );
-                                  setNeedsDateRange(hasDateTable);
-                                }
-                              }}
-                              className="w-4 h-4 text-emerald-600 bg-slate-700 border-slate-500 rounded focus:ring-emerald-500 focus:ring-2"
-                            />
-                            <div className="flex-1">
-                              <div className="flex items-center gap-2">
-                                <span className="text-slate-200 font-medium">{table.label}</span>
-                                {table.needsDate && (
-                                  <span className="text-xs bg-orange-500/20 text-orange-300 px-2 py-1 rounded-full border border-orange-400/30">
-                                    Requires Date Range
-                                  </span>
-                                )}
-                              </div>
-                              <p className="text-sm text-slate-400">{table.description}</p>
-                            </div>
-                          </label>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Date Range for time-based tables */}
-                    {needsDateRange && (
-                      <div className="space-y-4 p-4 bg-orange-500/10 border border-orange-400/30 rounded-xl">
-                        <div className="flex items-center gap-2 mb-3">
-                          <div className="w-2 h-2 bg-orange-400 rounded-full"></div>
-                          <span className="text-orange-300 font-medium">Date Range Settings</span>
-                        </div>
-                        
-                        <div className="grid grid-cols-2 gap-4">
-                          <div>
-                            <label className="block text-sm font-medium text-slate-200 mb-2">
-                              Start Date
-                            </label>
-                            <input
-                              type="date"
-                              value={startDate}
-                              onChange={(e) => {
-                                setStartDate(e.target.value);
-                                // Validate date range (max 1 month)
-                                if (endDate && e.target.value) {
-                                  const start = new Date(e.target.value);
-                                  const end = new Date(endDate);
-                                  const diffTime = Math.abs(end.getTime() - start.getTime());
-                                  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-                                  if (diffDays > 31) {
-                                    toast.warning('Date range cannot exceed one month');
-                                  }
-                                }
-                              }}
-                              className="w-full px-3 py-2 bg-slate-700/50 border border-slate-600/50 rounded-lg text-white text-sm focus:outline-none focus:border-orange-500/70 focus:bg-slate-700/70 hover:border-orange-500/50 transition-all duration-300"
-                            />
-                          </div>
-                          
-                          <div>
-                            <label className="block text-sm font-medium text-slate-200 mb-2">
-                              End Date
-                            </label>
-                            <input
-                              type="date"
-                              value={endDate}
-                              onChange={(e) => {
-                                setEndDate(e.target.value);
-                                // Validate date range (max 1 month)
-                                if (startDate && e.target.value) {
-                                  const start = new Date(startDate);
-                                  const end = new Date(e.target.value);
-                                  const diffTime = Math.abs(end.getTime() - start.getTime());
-                                  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-                                  if (diffDays > 31) {
-                                    toast.warning('Date range cannot exceed one month');
-                                  }
-                                }
-                              }}
-                              className="w-full px-3 py-2 bg-slate-700/50 border border-slate-600/50 rounded-lg text-white text-sm focus:outline-none focus:border-orange-500/70 focus:bg-slate-700/70 hover:border-orange-500/50 transition-all duration-300"
-                            />
-                          </div>
-                        </div>
-                        
-                        <div className="text-xs text-orange-300 bg-orange-500/10 p-3 rounded-lg border border-orange-400/20">
-                          <p>📅 Operation History and Full Inventory tables require date range, maximum one month of data can be selected</p>
-                        </div>
-                      </div>
-                    )}
-
-                    <div className="text-sm text-slate-400 bg-slate-700/30 border border-slate-600/30 p-4 rounded-xl">
-                      <p>📋 Selected tables will be exported separately in CSV format, one file per table</p>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              <DialogFooter className="flex gap-4 pt-6">
-                <button
-                  onClick={closeReportDialog}
-                  className="px-6 py-3 bg-slate-700/50 hover:bg-slate-600/50 border border-slate-600/50 hover:border-slate-500/70 rounded-xl text-slate-300 hover:text-white font-medium transition-all duration-300"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={generateReport}
-                  disabled={reportLoading === currentReportType || currentReportType === 'slate'}
-                  className="px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 disabled:from-slate-600 disabled:to-slate-600 text-white rounded-xl font-medium transition-all duration-300 shadow-lg hover:shadow-blue-500/25 hover:scale-105 active:scale-95 disabled:hover:scale-100 disabled:cursor-not-allowed"
-                >
-                  {reportLoading === currentReportType ? (
-                    <div className="flex items-center gap-3">
-                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                      Generating...
-                    </div>
-                  ) : (
-                    'Generate Report'
-                  )}
-                </button>
-              </DialogFooter>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Upload Files Dialog */}
-      <UploadFilesDialog
-        isOpen={showUploadDialog}
-        onOpenChange={setShowUploadDialog}
-      />
-
-      {/* Upload Files Only Dialog */}
-      <UploadFilesOnlyDialog
-        isOpen={showUploadFilesOnlyDialog}
-        onOpenChange={setShowUploadFilesOnlyDialog}
-      />
-
-      {/* Upload Order PDF Dialog */}
-      <UploadOrderPDFDialog
-        isOpen={showUploadOrderPDFDialog}
-        onOpenChange={setShowUploadOrderPDFDialog}
-      />
-
-      {/* Product Spec Doc Dialog */}
-      <Dialog open={showProductSpecDialog} onOpenChange={setShowProductSpecDialog}>
-        <DialogContent className="max-w-4xl max-h-[90vh] bg-slate-900/95 backdrop-blur-xl border border-blue-500/30 text-white overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-blue-300 via-indigo-300 to-purple-300 bg-clip-text text-transparent flex items-center gap-3">
-              <DocumentTextIcon className="w-7 h-7 text-blue-400" />
-              Product Specification Documents
-            </DialogTitle>
-            <DialogDescription className="text-slate-400 text-lg">
-              Manage product specification documents and related files
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="space-y-6 py-6">
-            {/* Placeholder content */}
-            <div className="text-center py-12">
-              <DocumentTextIcon className="w-20 h-20 text-slate-600 mx-auto mb-6" />
-              <h3 className="text-xl font-semibold text-slate-300 mb-3">
-                Product Spec Doc Management
-              </h3>
-              <p className="text-slate-400 mb-6 max-w-md mx-auto">
-                This feature is under development. It will allow you to upload, manage, and organize product specification documents.
-              </p>
-              <div className="bg-blue-500/10 border border-blue-400/30 rounded-xl p-4 max-w-lg mx-auto">
-                <p className="text-blue-300 text-sm">
-                  📋 Coming soon: Upload PDF documents, organize by product codes, search and filter functionality
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <DialogFooter className="flex gap-4 pt-6">
-            <button
-              onClick={() => setShowProductSpecDialog(false)}
-              className="px-6 py-3 bg-slate-700/50 hover:bg-slate-600/50 border border-slate-600/50 hover:border-slate-500/70 rounded-xl text-slate-300 hover:text-white font-medium transition-all duration-300"
-            >
-              Close
-            </button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Void Pallet Dialog */}
-      <VoidPalletDialog
-        isOpen={showVoidDialog}
-        onClose={() => setShowVoidDialog(false)}
+      {/* Dialog Manager - Centralized dialog rendering */}
+      <DialogManager
         onReprintNeeded={handleReprintNeeded}
+        onReprintConfirm={handleReprintConfirm}
+        onReprintCancel={handleReprintCancel}
+        voidState={voidState}
       />
-
-      {/* View History Dialog */}
-      <ViewHistoryDialog
-        isOpen={showHistoryDialog}
-        onClose={() => setShowHistoryDialog(false)}
-      />
-
-      {/* Void Report Dialog */}
-      <VoidReportDialog
-        isOpen={showVoidReportDialog}
-        onClose={() => setShowVoidReportDialog(false)}
-      />
-
-      {/* Loading Report Dialog */}
-      <LoadingReportDialog
-        isOpen={showLoadingReportDialog}
-        onClose={() => setShowLoadingReportDialog(false)}
-      />
-
-      {/* Database Update Dialog */}
-      <DatabaseUpdateDialog
-        isOpen={showUpdateDialog}
-        onClose={() => setShowUpdateDialog(false)}
-      />
-
-      {/* Ask Database Dialog */}
-      <AskDatabaseDialog
-        isOpen={showAskDatabaseDialog}
-        onClose={() => setShowAskDatabaseDialog(false)}
-      />
-
-      {/* Reprint Info Dialog */}
-      {showReprintDialog && reprintData && (
-        <ReprintInfoDialog
-          isOpen={showReprintDialog}
-          onClose={handleReprintCancel}
-          onConfirm={handleReprintConfirm}
-          type={reprintData.type}
-          palletInfo={reprintData.palletInfo}
-          remainingQuantity={reprintData.reprintInfo?.remainingQuantity}
-          isProcessing={voidState.isAutoReprinting}
-        />
-      )}
+      
+      {/* Analytics Dashboard Dialog */}
+      <AnalyticsDashboardDialog />
     </MotionBackground>
   );
 }

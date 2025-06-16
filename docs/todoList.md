@@ -159,25 +159,65 @@
    - [ ] 添加 JSDoc 註釋
 
 ## Admin Dashboard 優化任務 (進行中)
-1. **改善對話框管理**
-   - 使用 Context 或狀態管理庫統一管理對話框狀態
-   - 減少組件間的狀態傳遞
-   - 實施統一的對話框控制機制
+1. **改善對話框管理** ✅ (2025-06-16 完成)
+   - ✅ 建立 DialogContext 統一管理所有對話框狀態
+   - ✅ 創建 DialogManager 組件集中渲染對話框
+   - ✅ 移除 prop drilling，簡化組件結構
+   - ✅ 實施專用的 hooks (useDialog, useReprintDialog 等)
+   - ✅ 統一所有對話框風格為系統深色主題
+   - ✅ 更新報表系統所有對話框樣式
 
-2. **添加數據視覺化圖表**
-   - 添加趨勢圖顯示每日/每週數據變化
-   - 實施熱力圖顯示產品活動
-   - 增加互動式圖表組件
+2. **添加數據視覺化圖表** ✅ (2025-06-16 完成)
+   - ✅ 創建 Analytics Button 組件
+   - ✅ 實現 Analytics Dashboard Dialog
+   - ✅ 開發 Finished Transfer 圖表（原 Output vs Booked Out）
+   - ✅ 開發 Order Trend 圖表（支援 Summary/Detail 視圖）
+   - ✅ 開發 Staff Workload 圖表（使用 work_level 表）
+   - ✅ 整合 Analytics 到 Admin Panel
+   - ✅ 實施動態圖表切換（1天棒型圖，其他折線圖）
+   - ✅ 添加時間範圍選擇器（1天、7天、30天、90天）
+   - ✅ 修正數據庫欄位對應問題
+   - ✅ 統一所有圖表使用深色主題
 
-3. **實施權限細分**
-   - 功能級別的權限控制
-   - 基於角色的訪問控制 (RBAC)
-   - 細化到按鈕級別的權限管理
+3. **實施權限細分** (已取消)
+   - ~~功能級別的權限控制~~
+   - ~~基於角色的訪問控制 (RBAC)~~
+   - ~~細化到按鈕級別的權限管理~~
 
-4. **添加自定義儀表板**
+4. **添加自定義儀表板** (研究中)
    - 用戶可配置的小部件系統
    - 拖放式儀表板布局
    - 保存用戶自定義配置
+   - 研究實施方案：
+     - 使用 react-grid-layout 或 react-beautiful-dnd
+     - 設計小部件註冊系統
+     - 使用 localStorage 或數據庫保存配置
+     - 提供預設模板和重置功能
+
+## 報表系統整合 ✅ (2025-06-16 完成)
+1. **統一報表框架** ✅
+   - [x] 建立統一報表生成框架
+   - [x] 創建 ReportRegistry 管理所有報表配置
+   - [x] 實施 UnifiedReportDialog 基礎組件
+   - [x] 建立報表儀表板（以 Dialog 方式開啟）
+   - [x] 統一所有報表對話框為深色主題
+   - [x] 重新分類 Stock Take Report 為 Management Report
+   - [x] 移除 Financial 和 Quality 報表分類
+
+2. **報表遷移** ✅
+   - [x] 遷移 Void Pallet Report 到統一框架
+   - [x] 遷移 Order Loading Report 到統一框架
+   - [x] 遷移 Stock Take Report 到統一框架
+   - [x] 整合 ACO Order Report 到新系統
+   - [x] 整合 GRN Report 到新系統
+   - [x] 整合 Transaction Report 到新系統
+   - [x] 整合 Export All Data 功能
+
+3. **UI 優化** ✅
+   - [x] 修復 UI 組件相容性問題
+   - [x] 統一界面語言為英文
+   - [x] 套用系統一致的深色主題風格
+   - [x] 移除舊的 Export Reports 按鈕和菜單項目
 
 ## 注意事項
 - 所有新功能必須遵循 CLAUDE.mdc 規範

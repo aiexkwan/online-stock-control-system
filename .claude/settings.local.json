@@ -27,7 +27,17 @@
       "Bash(npm run typecheck:*)",
       "Bash(npm test)",
       "Bash(npm test:*)",
-      "Bash(mv:*)"
+      "Bash(mv:*)",
+      "Bash(npm i:*)",
+      "Bash(sudo npm i -g @anthropic-ai/claude-code)",
+      "Bash(claude doctor)",
+      "Bash(npm run lint)",
+      "Bash(git stash:*)",
+      "Bash(npm run:*)",
+      "Bash(npx mcp query:*)",
+      "Bash(node:*)",
+      "Bash(npx supabase table list:*)",
+      "Bash(npx tsx:*)"
     ],
     "deny": []
   }

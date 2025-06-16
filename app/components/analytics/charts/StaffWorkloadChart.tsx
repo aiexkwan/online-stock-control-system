@@ -1,0 +1,339 @@
+/**
+ * Staff Workload Chart
+ * Shows staff productivity and workload distribution
+ */
+
+'use client';
+
+import React, { useEffect, useState } from 'react';
+import { 
+  BarChart, Bar, LineChart, Line, XAxis, YAxis, 
+  CartesianGrid, Tooltip, Legend, ResponsiveContainer,
+  PieChart, Pie, Cell 
+} from 'recharts';
+import { Loader2 } from 'lucide-react';
+import { createClient } from '@/lib/supabase';
+import { dialogStyles } from '@/app/utils/dialogStyles';
+import { 
+  getStartDate, 
+  getEndDate, 
+  processStaffWorkloadData,
+  StaffWorkloadData,
+  StaffWorkloadTimeData 
+} from '@/app/utils/analyticsDataProcessors';
+
+interface StaffWorkloadChartProps {
+  timeRange: string;
+}
+
+// Define colors for different staff
+const STAFF_COLORS = [
+  '#3B82F6', // Blue
+  '#10B981', // Green
+  '#F59E0B', // Amber
+  '#EF4444', // Red
+  '#8B5CF6', // Purple
+  '#EC4899', // Pink
+  '#14B8A6', // Teal
+  '#F97316', // Orange
+  '#6366F1', // Indigo
+  '#84CC16', // Lime
+];
+
+export function StaffWorkloadChart({ timeRange }: StaffWorkloadChartProps) {
+  const [summaryData, setSummaryData] = useState<StaffWorkloadData[]>([]);
+  const [timelineData, setTimelineData] = useState<StaffWorkloadTimeData[]>([]);
+  const [staffNames, setStaffNames] = useState<string[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [view, setView] = useState<'summary' | 'timeline'>('summary');
+  
+  useEffect(() => {
+    loadData();
+  }, [timeRange]);
+
+  const loadData = async () => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const supabase = createClient();
+      const startDate = getStartDate(timeRange);
+      const endDate = getEndDate();
+      
+      // Fetch work level data with staff names
+      const { data: workData, error: workError } = await supabase
+        .from('work_level')
+        .select(`
+          id,
+          qc,
+          move,
+          grn,
+          latest_update,
+          data_id!inner(name)
+        `)
+        .gte('latest_update', startDate.toISOString())
+        .lte('latest_update', endDate.toISOString());
+      
+      if (workError) throw workError;
+      
+      // Process data
+      const { summary, timeline } = processStaffWorkloadData(workData || [], timeRange);
+      
+      // Extract staff names for timeline
+      const names = Object.keys(timeline[0] || {}).filter(key => key !== 'date').slice(0, 5);
+      
+      setSummaryData(summary);
+      setTimelineData(timeline);
+      setStaffNames(names);
+    } catch (err: any) {
+      console.error('Error loading staff workload data:', err);
+      setError(err.message || 'Failed to load data');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const chartProps = {
+    margin: { top: 20, right: 30, left: 20, bottom: 60 }
+  };
+
+  const tooltipStyle = {
+    backgroundColor: '#1F2937',
+    border: '1px solid #374151',
+    borderRadius: '8px',
+    padding: '8px 12px'
+  };
+
+  const CustomTooltip = ({ active, payload, label }: any) => {
+    if (active && payload && payload.length) {
+      return (
+        <div style={tooltipStyle}>
+          <p className="text-slate-300 font-medium mb-2">{label}</p>
+          {payload.map((entry: any, index: number) => (
+            <p key={index} className="text-sm" style={{ color: entry.color }}>
+              {entry.name}: {entry.value} operations
+            </p>
+          ))}
+        </div>
+      );
+    }
+    return null;
+  };
+
+  const CustomPieLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent, name }: any) => {
+    const RADIAN = Math.PI / 180;
+    const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
+    const x = cx + radius * Math.cos(-midAngle * RADIAN);
+    const y = cy + radius * Math.sin(-midAngle * RADIAN);
+
+    if (percent < 0.05) return null; // Don't show label for small slices
+
+    return (
+      <text 
+        x={x} 
+        y={y} 
+        fill="white" 
+        textAnchor={x > cx ? 'start' : 'end'} 
+        dominantBaseline="central"
+        className="text-xs font-medium"
+      >
+        {`${(percent * 100).toFixed(0)}%`}
+      </text>
+    );
+  };
+
+  if (loading) {
+    return (
+      <div className={dialogStyles.card}>
+        <div className="flex items-center justify-center h-[400px]">
+          <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className={dialogStyles.card}>
+        <div className="flex items-center justify-center h-[400px]">
+          <p className="text-red-400">{error}</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (summaryData.length === 0) {
+    return (
+      <div className={dialogStyles.card}>
+        <div className="flex items-center justify-center h-[400px]">
+          <p className="text-slate-400">No staff data available for this period</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className={dialogStyles.card}>
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-lg font-semibold text-white">
+          Staff Workload Analysis
+        </h3>
+        <div className="flex gap-2">
+          <button
+            onClick={() => setView('summary')}
+            className={`px-3 py-1 rounded-lg text-sm transition-colors ${
+              view === 'summary' 
+                ? 'bg-blue-600 text-white' 
+                : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+            }`}
+          >
+            Summary
+          </button>
+          <button
+            onClick={() => setView('timeline')}
+            className={`px-3 py-1 rounded-lg text-sm transition-colors ${
+              view === 'timeline' 
+                ? 'bg-blue-600 text-white' 
+                : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+            }`}
+          >
+            Timeline
+          </button>
+        </div>
+      </div>
+
+      {view === 'summary' ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Bar chart for top performers */}
+          <div>
+            <h4 className="text-sm font-medium text-slate-400 mb-2">Top Performers</h4>
+            <ResponsiveContainer width="100%" height={350}>
+              <BarChart data={summaryData.slice(0, 10)} {...chartProps}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                <XAxis 
+                  dataKey="name" 
+                  stroke="#9CA3AF"
+                  angle={-45}
+                  textAnchor="end"
+                  height={80}
+                />
+                <YAxis stroke="#9CA3AF" />
+                <Tooltip 
+                  contentStyle={tooltipStyle}
+                  formatter={(value: any) => `${value} operations`}
+                />
+                <Bar 
+                  dataKey="pallets" 
+                  fill="#3B82F6"
+                  radius={[4, 4, 0, 0]}
+                />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+
+          {/* Pie chart for distribution */}
+          <div>
+            <h4 className="text-sm font-medium text-slate-400 mb-2">Workload Distribution</h4>
+            <ResponsiveContainer width="100%" height={350}>
+              <PieChart>
+                <Pie
+                  data={summaryData.slice(0, 8)}
+                  cx="50%"
+                  cy="50%"
+                  labelLine={false}
+                  label={CustomPieLabel}
+                  outerRadius={120}
+                  fill="#8884d8"
+                  dataKey="pallets"
+                >
+                  {summaryData.slice(0, 8).map((entry, index) => (
+                    <Cell 
+                      key={`cell-${index}`} 
+                      fill={STAFF_COLORS[index % STAFF_COLORS.length]} 
+                    />
+                  ))}
+                </Pie>
+                <Tooltip 
+                  contentStyle={tooltipStyle}
+                  formatter={(value: any, name: any) => [`${value} operations`, name]}
+                />
+                <Legend 
+                  verticalAlign="bottom" 
+                  height={36}
+                  formatter={(value: any, entry: any) => `${value} (${entry.payload.percentage}%)`}
+                />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      ) : (
+        <div>
+          <h4 className="text-sm font-medium text-slate-400 mb-2">
+            {timeRange === '1d' ? 'Hourly' : 'Daily'} Production by Staff
+          </h4>
+          <ResponsiveContainer width="100%" height={400}>
+            {timeRange === '1d' ? (
+              <BarChart data={timelineData} {...chartProps}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                <XAxis 
+                  dataKey="date" 
+                  stroke="#9CA3AF"
+                  angle={-45}
+                  textAnchor="end"
+                  height={80}
+                />
+                <YAxis stroke="#9CA3AF" />
+                <Tooltip content={<CustomTooltip />} />
+                <Legend 
+                  wrapperStyle={{ paddingTop: '20px' }}
+                  iconType="rect"
+                />
+                {staffNames.map((name, index) => (
+                  <Bar
+                    key={name}
+                    dataKey={name}
+                    fill={STAFF_COLORS[index % STAFF_COLORS.length]}
+                    stackId="staff"
+                  />
+                ))}
+              </BarChart>
+            ) : (
+              <LineChart data={timelineData} {...chartProps}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                <XAxis 
+                  dataKey="date" 
+                  stroke="#9CA3AF"
+                  angle={-45}
+                  textAnchor="end"
+                  height={80}
+                />
+                <YAxis stroke="#9CA3AF" />
+                <Tooltip content={<CustomTooltip />} />
+                <Legend 
+                  wrapperStyle={{ paddingTop: '20px' }}
+                  iconType="line"
+                />
+                {staffNames.map((name, index) => (
+                  <Line
+                    key={name}
+                    type="monotone"
+                    dataKey={name}
+                    stroke={STAFF_COLORS[index % STAFF_COLORS.length]}
+                    strokeWidth={2}
+                    dot={{ r: 3 }}
+                    activeDot={{ r: 5 }}
+                  />
+                ))}
+              </LineChart>
+            )}
+          </ResponsiveContainer>
+        </div>
+      )}
+
+      <div className="mt-4 text-sm text-slate-400">
+        <p>Total operations: {summaryData.reduce((sum, staff) => sum + staff.pallets, 0)}</p>
+      </div>
+    </div>
+  );
+}

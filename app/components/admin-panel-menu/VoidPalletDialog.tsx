@@ -16,6 +16,7 @@ import { BatchVoidPanel } from '../../void-pallet/components/BatchVoidPanel';
 import { BatchVoidForm } from '../../void-pallet/components/BatchVoidForm';
 import { BatchVoidConfirmDialog } from '../../void-pallet/components/BatchVoidConfirmDialog';
 import { Badge } from '@/components/ui/badge';
+import { dialogStyles, iconColors } from '@/app/utils/dialogStyles';
 
 interface VoidPalletDialogProps {
   isOpen: boolean;
@@ -310,7 +311,7 @@ export default function VoidPalletDialog({ isOpen, onClose, onReprintNeeded }: V
       
       {/* Dialog */}
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-        <div className="bg-gradient-to-br from-slate-900 via-blue-900 to-slate-800 text-white rounded-3xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto relative">
+        <div className={`${dialogStyles.content} max-w-4xl w-full relative`}>
           {/* 背景裝飾元素 */}
           <div className="absolute inset-0 overflow-hidden pointer-events-none rounded-3xl">
             <div className="absolute -top-40 -left-40 w-80 h-80 bg-red-500/10 rounded-full blur-3xl animate-pulse"></div>
@@ -321,7 +322,7 @@ export default function VoidPalletDialog({ isOpen, onClose, onReprintNeeded }: V
           {/* Header */}
           <div className="relative z-10 flex items-center justify-between p-6 border-b border-slate-700/50">
             <div className="flex items-center gap-4">
-              <h2 className="text-2xl font-bold bg-gradient-to-r from-red-400 via-orange-400 to-yellow-300 bg-clip-text text-transparent flex items-center">
+              <h2 className={`${dialogStyles.title} !from-red-400 !via-orange-400 !to-yellow-300`}>
                 <div className="inline-flex items-center justify-center w-8 h-8 bg-gradient-to-r from-red-500 to-orange-500 rounded-lg mr-3 shadow-lg shadow-red-500/25">
                   <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />

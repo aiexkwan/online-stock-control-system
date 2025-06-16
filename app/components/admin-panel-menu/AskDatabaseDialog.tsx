@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Loader2, Send, Database, Clock, Zap } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { dialogStyles, iconColors } from '@/app/utils/dialogStyles';
 
 interface QueryResult {
   question: string;
@@ -135,11 +136,11 @@ API 狀態檢查：
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-6xl max-h-[90vh] overflow-hidden bg-slate-900/95 backdrop-blur-xl border border-purple-500/30">
+      <DialogContent className={`${dialogStyles.content} max-w-6xl !border-purple-500/30`}>
         <DialogHeader>
           <div className="flex items-center justify-between">
-            <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-purple-300 via-indigo-300 to-cyan-300 bg-clip-text text-transparent flex items-center gap-3">
-              <Database className="h-6 w-6 text-purple-400" />
+            <DialogTitle className={`${dialogStyles.title} !from-purple-300 !via-indigo-300 !to-cyan-300`}>
+              <Database className={`h-6 w-6 ${iconColors.purple}`} />
               Ask Database
             </DialogTitle>
             <button

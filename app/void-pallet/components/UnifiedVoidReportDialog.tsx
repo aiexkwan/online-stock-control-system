@@ -11,6 +11,7 @@ import { ReportBuilder } from '@/app/components/reports/core/ReportBuilder';
 import { useReportGeneration } from '@/app/components/reports/hooks/useReportGeneration';
 import { ReportFormat, FilterValues } from '@/app/components/reports/core/ReportConfig';
 import { useToast } from '@/components/ui/use-toast';
+import { dialogStyles, iconColors } from '@/app/utils/dialogStyles';
 
 interface UnifiedVoidReportDialogProps {
   isOpen: boolean;
@@ -61,9 +62,14 @@ export function UnifiedVoidReportDialog({ isOpen, onClose }: UnifiedVoidReportDi
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className={`${dialogStyles.content} max-w-2xl`}>
         <DialogHeader>
-          <DialogTitle>Generate Void Pallet Report</DialogTitle>
+          <DialogTitle className={dialogStyles.title}>
+            <svg className={`h-6 w-6 ${iconColors.red}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+            </svg>
+            Generate Void Pallet Report
+          </DialogTitle>
         </DialogHeader>
         <ReportBuilder
           config={reportConfig}

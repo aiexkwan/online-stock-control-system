@@ -18,6 +18,7 @@ import {
   FolderOpenIcon,
 } from '@heroicons/react/24/outline';
 import { toast } from 'sonner';
+import { dialogStyles, iconColors } from '@/app/utils/dialogStyles';
 
 interface UploadFilesOnlyDialogProps {
   isOpen: boolean;
@@ -255,18 +256,18 @@ export const UploadFilesOnlyDialog: React.FC<UploadFilesOnlyDialogProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="bg-slate-800/90 backdrop-blur-xl border border-slate-600/50 text-white max-w-4xl rounded-2xl shadow-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className={`${dialogStyles.content} max-w-4xl`}>
         <div className="relative">
           {/* 對話框內部光效 */}
           <div className="absolute inset-0 bg-gradient-to-r from-purple-500/5 via-transparent to-blue-500/5 rounded-2xl"></div>
           
           <div className="relative z-10">
             <DialogHeader className="pb-6">
-              <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-purple-300 via-blue-300 to-cyan-300 bg-clip-text text-transparent flex items-center">
-                <FolderOpenIcon className="h-6 w-6 text-purple-400 mr-3" />
+              <DialogTitle className={dialogStyles.title}>
+                <FolderOpenIcon className={`h-6 w-6 ${iconColors.purple}`} />
                 Upload Files
               </DialogTitle>
-              <DialogDescription className="text-slate-400 text-lg">
+              <DialogDescription className={dialogStyles.description}>
                 Upload documents and images to database
               </DialogDescription>
             </DialogHeader>
@@ -422,7 +423,7 @@ export const UploadFilesOnlyDialog: React.FC<UploadFilesOnlyDialogProps> = ({
               <button
                 onClick={handleClose}
                 disabled={uploadState.isUploading}
-                className="px-6 py-3 bg-slate-700/50 hover:bg-slate-600/50 border border-slate-600/50 hover:border-slate-500/70 rounded-xl text-slate-300 hover:text-white font-medium transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                className={`${dialogStyles.secondaryButton} disabled:opacity-50 disabled:cursor-not-allowed`}
               >
                 Cancel
               </button>
@@ -435,7 +436,7 @@ export const UploadFilesOnlyDialog: React.FC<UploadFilesOnlyDialogProps> = ({
                   !uploadState.fileName.trim() || 
                   uploadState.isUploading
                 }
-                className="px-6 py-3 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 disabled:from-slate-600 disabled:to-slate-600 text-white rounded-xl font-medium transition-all duration-300 shadow-lg hover:shadow-purple-500/25 hover:scale-105 active:scale-95 disabled:hover:scale-100 disabled:cursor-not-allowed"
+                className={`${dialogStyles.primaryButton} disabled:hover:scale-100`}
               >
                 {uploadState.isUploading ? (
                   <div className="flex items-center gap-3">

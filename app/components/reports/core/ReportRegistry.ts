@@ -93,6 +93,14 @@ import { orderLoadingReportConfig } from '../configs/orderLoadingReport';
 import { orderLoadingDataSources } from '../dataSources/OrderLoadingDataSource';
 import { stockTakeReportConfig } from '../configs/stockTakeReport';
 import { stockTakeDataSources } from '../dataSources/StockTakeDataSource';
+import { acoOrderReportConfig } from '../configs/acoOrderReport';
+import { acoOrderDataSources } from '../dataSources/AcoOrderDataSource';
+import { grnReportConfig } from '../configs/grnReport';
+import { grnDataSources } from '../dataSources/GrnDataSource';
+import { transactionReportConfig } from '../configs/transactionReport';
+import { transactionDataSources } from '../dataSources/TransactionDataSource';
+import { exportAllDataReportConfig } from '../configs/exportAllDataReport';
+import { exportAllDataSources } from '../dataSources/ExportAllDataSource';
 
 // 自動註冊報表
 if (typeof window !== 'undefined') {
@@ -106,4 +114,16 @@ if (typeof window !== 'undefined') {
   
   // Stock Take Report
   ReportRegistry.register(stockTakeReportConfig, stockTakeDataSources);
+  
+  // ACO Order Report
+  ReportRegistry.register(acoOrderReportConfig, acoOrderDataSources);
+  
+  // GRN Report
+  ReportRegistry.register(grnReportConfig, grnDataSources);
+  
+  // Transaction Report
+  ReportRegistry.register(transactionReportConfig, transactionDataSources);
+  
+  // Export All Data
+  ReportRegistry.register(exportAllDataReportConfig, exportAllDataSources);
 }

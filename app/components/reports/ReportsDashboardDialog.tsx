@@ -24,9 +24,11 @@ import {
   AlertCircle,
   BarChart3,
   Filter,
-  X
+  X,
+  Building2
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { dialogStyles, iconColors } from '@/app/utils/dialogStyles';
 import { ReportRegistry } from '@/app/components/reports/core/ReportRegistry';
 import { RegisteredReport } from '@/app/components/reports/core/ReportConfig';
 
@@ -34,6 +36,10 @@ import { RegisteredReport } from '@/app/components/reports/core/ReportConfig';
 import { UnifiedVoidReportDialog } from '@/app/void-pallet/components/UnifiedVoidReportDialog';
 import { UnifiedLoadingReportDialog } from '@/app/order-loading/components/UnifiedLoadingReportDialog';
 import { UnifiedStockTakeReportDialog } from '@/app/stock-take/components/UnifiedStockTakeReportDialog';
+import { UnifiedAcoReportDialog } from '@/app/components/reports/UnifiedAcoReportDialog';
+import { UnifiedGrnReportDialog } from '@/app/components/reports/UnifiedGrnReportDialog';
+import { UnifiedTransactionReportDialog } from '@/app/components/reports/UnifiedTransactionReportDialog';
+import { UnifiedExportAllDataDialog } from '@/app/components/reports/UnifiedExportAllDataDialog';
 
 interface ReportsDashboardDialogProps {
   isOpen: boolean;
@@ -103,6 +109,8 @@ export function ReportsDashboardDialog({ isOpen, onClose }: ReportsDashboardDial
         return <BarChart3 className="h-4 w-4" />;
       case 'quality':
         return <AlertCircle className="h-4 w-4" />;
+      case 'management':
+        return <Building2 className="h-4 w-4" />;
       default:
         return <FileText className="h-4 w-4" />;
     }
@@ -119,6 +127,8 @@ export function ReportsDashboardDialog({ isOpen, onClose }: ReportsDashboardDial
         return 'bg-purple-500/10 text-purple-500 hover:bg-purple-500/20';
       case 'quality':
         return 'bg-orange-500/10 text-orange-500 hover:bg-orange-500/20';
+      case 'management':
+        return 'bg-indigo-500/10 text-indigo-500 hover:bg-indigo-500/20';
       default:
         return 'bg-gray-500/10 text-gray-500 hover:bg-gray-500/20';
     }
@@ -127,10 +137,13 @@ export function ReportsDashboardDialog({ isOpen, onClose }: ReportsDashboardDial
   return (
     <>
       <Dialog open={isOpen && !selectedReport} onOpenChange={(open) => !open && onClose()}>
-        <DialogContent className="max-w-4xl max-h-[80vh] bg-slate-900 border-slate-700">
+        <DialogContent className={`${dialogStyles.content} max-w-4xl max-h-[80vh]`}>
           <DialogHeader>
-            <DialogTitle className="text-white">Report Center</DialogTitle>
-            <DialogDescription className="text-slate-400">
+            <DialogTitle className={dialogStyles.title}>
+              <BarChart3 className={`h-6 w-6 ${iconColors.blue}`} />
+              Report Center
+            </DialogTitle>
+            <DialogDescription className={dialogStyles.description}>
               Select a report to generate
             </DialogDescription>
           </DialogHeader>
@@ -144,11 +157,11 @@ export function ReportsDashboardDialog({ isOpen, onClose }: ReportsDashboardDial
                   placeholder="Search reports..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 bg-slate-800 border-slate-600 text-white placeholder:text-slate-500"
+                  className={`pl-10 ${dialogStyles.input}`}
                 />
               </div>
               <div className="flex flex-wrap gap-2">
-                {['all', 'operational', 'inventory', 'financial', 'quality'].map(category => (
+                {['all', 'operational', 'inventory', 'management'].map(category => (
                   <Button
                     key={category}
                     variant={selectedCategory === category ? 'default' : 'outline'}
@@ -164,8 +177,7 @@ export function ReportsDashboardDialog({ isOpen, onClose }: ReportsDashboardDial
                     {category === 'all' ? 'All' : 
                      category === 'operational' ? 'Operational' :
                      category === 'inventory' ? 'Inventory' :
-                     category === 'financial' ? 'Financial' :
-                     'Quality'}
+                     'Management'}
                   </Button>
                 ))}
               </div>
@@ -174,7 +186,7 @@ export function ReportsDashboardDialog({ isOpen, onClose }: ReportsDashboardDial
             {/* Report List */}
             <div className="h-[400px] overflow-y-auto pr-4 bg-slate-800/50 rounded-lg p-4 border border-slate-700">
               <div className="space-y-6">
-                {['operational', 'inventory', 'financial', 'quality'].map(category => {
+                {['operational', 'inventory', 'management'].map(category => {
                   const categoryReports = filteredReports.filter(r => r.config.category === category);
                   
                   if (categoryReports.length === 0 && selectedCategory !== 'all') return null;
@@ -259,6 +271,26 @@ export function ReportsDashboardDialog({ isOpen, onClose }: ReportsDashboardDial
       <UnifiedStockTakeReportDialog
         isOpen={dialogStates['stock-take-report'] || false}
         onClose={() => closeReportDialog('stock-take-report')}
+      />
+      
+      <UnifiedAcoReportDialog
+        isOpen={dialogStates['aco-order-report'] || false}
+        onClose={() => closeReportDialog('aco-order-report')}
+      />
+      
+      <UnifiedGrnReportDialog
+        isOpen={dialogStates['grn-report'] || false}
+        onClose={() => closeReportDialog('grn-report')}
+      />
+      
+      <UnifiedTransactionReportDialog
+        isOpen={dialogStates['transaction-report'] || false}
+        onClose={() => closeReportDialog('transaction-report')}
+      />
+      
+      <UnifiedExportAllDataDialog
+        isOpen={dialogStates['export-all-data'] || false}
+        onClose={() => closeReportDialog('export-all-data')}
       />
     </>
   );

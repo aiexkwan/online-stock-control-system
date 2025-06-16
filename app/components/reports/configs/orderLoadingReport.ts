@@ -8,7 +8,7 @@ import { ReportConfig } from '../core/ReportConfig';
 export const orderLoadingReportConfig: ReportConfig = {
   id: 'order-loading-report',
   name: 'Order Loading Report',
-  description: 'Report of loading and unloading activities for orders',
+  description: 'Report of loading for orders',
   category: 'operational',
   formats: ['pdf', 'excel'],
   defaultFormat: 'pdf',

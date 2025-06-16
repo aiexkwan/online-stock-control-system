@@ -20,6 +20,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { getPalletHistoryAndStockInfo, ViewHistoryResult } from '../../actions/viewHistoryActions';
 import { UnifiedSearch } from '@/components/ui/unified-search';
+import { dialogStyles, iconColors } from '@/app/utils/dialogStyles';
 
 interface ViewHistoryDialogProps {
   isOpen: boolean;
@@ -152,7 +153,7 @@ export default function ViewHistoryDialog({ isOpen, onClose }: ViewHistoryDialog
         className="fixed inset-0 z-[70] flex items-center justify-center p-4"
         style={{ zIndex: 70 }}
       >
-        <div className="bg-slate-800/90 backdrop-blur-xl border border-slate-600/50 rounded-2xl shadow-2xl max-w-6xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+        <div className={`${dialogStyles.content} max-w-6xl w-full overflow-hidden flex flex-col`}>
           {/* Header */}
           <div className="flex items-center justify-between p-6 border-b border-slate-600/50">
             <div className="flex items-center gap-3">
@@ -160,7 +161,7 @@ export default function ViewHistoryDialog({ isOpen, onClose }: ViewHistoryDialog
                 <ClockIcon className="h-5 w-5 text-white" />
               </div>
               <div>
-                <h2 className="text-xl font-semibold bg-gradient-to-r from-blue-300 via-cyan-300 to-blue-200 bg-clip-text text-transparent">
+                <h2 className={dialogStyles.title}>
                   View History
                 </h2>
                 <p className="text-sm text-slate-400">Search pallet history and stock information</p>

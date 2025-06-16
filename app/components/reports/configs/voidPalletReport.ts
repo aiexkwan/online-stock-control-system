@@ -8,7 +8,7 @@ import { ReportConfig } from '../core/ReportConfig';
 export const voidPalletReportConfig: ReportConfig = {
   id: 'void-pallet-report',
   name: 'Void Pallet Report',
-  description: 'Report of voided pallets with reasons and statistics',
+  description: 'Report of void stock inventory',
   category: 'operational',
   formats: ['pdf', 'excel'],
   defaultFormat: 'pdf',

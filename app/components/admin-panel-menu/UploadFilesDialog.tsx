@@ -25,6 +25,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { toast } from 'sonner';
 import { createClient } from '@/app/utils/supabase/client';
+import { dialogStyles, iconColors } from '@/app/utils/dialogStyles';
 
 interface UploadFilesDialogProps {
   isOpen: boolean;
@@ -593,30 +594,30 @@ export const UploadFilesDialog: React.FC<UploadFilesDialogProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="bg-slate-800/90 backdrop-blur-xl border border-slate-600/50 text-white max-w-4xl rounded-2xl shadow-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className={`${dialogStyles.content} max-w-4xl`}>
         <div className="relative">
           {/* 對話框內部光效 */}
           <div className="absolute inset-0 bg-gradient-to-r from-purple-500/5 via-transparent to-blue-500/5 rounded-2xl"></div>
           
           <div className="relative z-10">
             <DialogHeader className="pb-6">
-              <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-purple-300 via-blue-300 to-cyan-300 bg-clip-text text-transparent flex items-center">
-                <CloudArrowUpIcon className="h-6 w-6 text-purple-400 mr-3" />
+              <DialogTitle className={dialogStyles.title}>
+                <CloudArrowUpIcon className={`h-6 w-6 ${iconColors.purple}`} />
                 Upload Documents
               </DialogTitle>
-              <DialogDescription className="text-slate-400 text-lg">
+              <DialogDescription className={dialogStyles.description}>
                 Upload documents and images to database
               </DialogDescription>
             </DialogHeader>
 
             {/* Tab Navigation */}
-            <div className="flex space-x-1 mb-6 bg-slate-700/30 p-1 rounded-xl">
+            <div className="flex space-x-1 mb-6 bg-slate-800/50 p-1 rounded-xl border border-slate-700/50">
               <button
                 onClick={() => setActiveTab('files')}
                 className={`flex-1 flex items-center justify-center px-4 py-3 rounded-lg font-medium transition-all duration-300 ${
                   activeTab === 'files'
-                    ? 'bg-purple-600 text-white shadow-lg'
-                    : 'text-slate-300 hover:text-white hover:bg-slate-600/50'
+                    ? dialogStyles.tabActive
+                    : dialogStyles.tabInactive
                 }`}
               >
                 <FolderOpenIcon className="h-4 w-4 mr-2" />
@@ -626,8 +627,8 @@ export const UploadFilesDialog: React.FC<UploadFilesDialogProps> = ({
                 onClick={() => setActiveTab('orderPdf')}
                 className={`flex-1 flex items-center justify-center px-4 py-3 rounded-lg font-medium transition-all duration-300 ${
                   activeTab === 'orderPdf'
-                    ? 'bg-purple-600 text-white shadow-lg'
-                    : 'text-slate-300 hover:text-white hover:bg-slate-600/50'
+                    ? dialogStyles.tabActive
+                    : dialogStyles.tabInactive
                 }`}
               >
                 <SparklesIcon className="h-4 w-4 mr-2" />
@@ -1007,7 +1008,7 @@ export const UploadFilesDialog: React.FC<UploadFilesDialogProps> = ({
               <button
                 onClick={handleClose}
                 disabled={uploadState.isUploading || orderPDFState.isUploading || orderPDFState.isAnalyzing}
-                className="px-6 py-3 bg-slate-700/50 hover:bg-slate-600/50 border border-slate-600/50 hover:border-slate-500/70 rounded-xl text-slate-300 hover:text-white font-medium transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                className={`${dialogStyles.secondaryButton} disabled:opacity-50 disabled:cursor-not-allowed`}
               >
                 {orderPDFState.extractedData ? 'Close' : 'Cancel'}
               </button>
@@ -1021,7 +1022,7 @@ export const UploadFilesDialog: React.FC<UploadFilesDialogProps> = ({
                     !uploadState.fileName.trim() || 
                     uploadState.isUploading
                   }
-                  className="px-6 py-3 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 disabled:from-slate-600 disabled:to-slate-600 text-white rounded-xl font-medium transition-all duration-300 shadow-lg hover:shadow-purple-500/25 hover:scale-105 active:scale-95 disabled:hover:scale-100 disabled:cursor-not-allowed"
+                  className={`${dialogStyles.primaryButton} disabled:hover:scale-100`}
                 >
                   {uploadState.isUploading ? (
                     <div className="flex items-center gap-3">
@@ -1040,7 +1041,7 @@ export const UploadFilesDialog: React.FC<UploadFilesDialogProps> = ({
                     orderPDFState.isAnalyzing ||
                     orderPDFState.extractedData !== null
                   }
-                  className="px-6 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 disabled:from-slate-600 disabled:to-slate-600 text-white rounded-xl font-medium transition-all duration-300 shadow-lg hover:shadow-blue-500/25 hover:scale-105 active:scale-95 disabled:hover:scale-100 disabled:cursor-not-allowed"
+                  className={`${dialogStyles.primaryButton} disabled:hover:scale-100`}
                 >
                   {orderPDFState.isAnalyzing ? (
                     <div className="flex items-center gap-3">

@@ -18,6 +18,7 @@ import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { ReportConfig, FilterValues, ReportFormat } from '../core/ReportConfig';
 import { useToast } from '@/components/ui/use-toast';
+import { dialogStyles } from '@/app/utils/dialogStyles';
 
 interface ReportBuilderProps {
   config: ReportConfig;
@@ -76,7 +77,7 @@ export function ReportBuilder({ config, onGenerate, className }: ReportBuilderPr
       case 'text':
         return (
           <div key={filter.id} className="space-y-2">
-            <Label htmlFor={filter.id}>
+            <Label htmlFor={filter.id} className="text-slate-200">
               {filter.label}
               {filter.required && <span className="text-red-500 ml-1">*</span>}
             </Label>
@@ -86,6 +87,7 @@ export function ReportBuilder({ config, onGenerate, className }: ReportBuilderPr
               value={value}
               onChange={(e) => handleFilterChange(filter.id, e.target.value)}
               placeholder={filter.placeholder}
+              className={dialogStyles.input}
             />
           </div>
         );
@@ -93,7 +95,7 @@ export function ReportBuilder({ config, onGenerate, className }: ReportBuilderPr
       case 'number':
         return (
           <div key={filter.id} className="space-y-2">
-            <Label htmlFor={filter.id}>
+            <Label htmlFor={filter.id} className="text-slate-200">
               {filter.label}
               {filter.required && <span className="text-red-500 ml-1">*</span>}
             </Label>
@@ -105,6 +107,7 @@ export function ReportBuilder({ config, onGenerate, className }: ReportBuilderPr
               placeholder={filter.placeholder}
               min={filter.validation?.min}
               max={filter.validation?.max}
+              className={dialogStyles.input}
             />
           </div>
         );
@@ -121,6 +124,7 @@ export function ReportBuilder({ config, onGenerate, className }: ReportBuilderPr
                 <Button
                   variant="outline"
                   className={cn(
+                    dialogStyles.secondaryButton,
                     "w-full justify-start text-left font-normal",
                     !value && "text-muted-foreground"
                   )}
@@ -153,6 +157,7 @@ export function ReportBuilder({ config, onGenerate, className }: ReportBuilderPr
                   <Button
                     variant="outline"
                     className={cn(
+                      dialogStyles.secondaryButton,
                       "justify-start text-left font-normal",
                       !startDate && "text-muted-foreground"
                     )}
@@ -176,6 +181,7 @@ export function ReportBuilder({ config, onGenerate, className }: ReportBuilderPr
                   <Button
                     variant="outline"
                     className={cn(
+                      dialogStyles.secondaryButton,
                       "justify-start text-left font-normal",
                       !endDate && "text-muted-foreground"
                     )}
@@ -229,15 +235,15 @@ export function ReportBuilder({ config, onGenerate, className }: ReportBuilderPr
   };
 
   return (
-    <Card className={cn("w-full", className)}>
+    <Card className={cn(dialogStyles.card, "w-full", className)}>
       <CardHeader>
-        <CardTitle>{config.name}</CardTitle>
-        <CardDescription>{config.description}</CardDescription>
+        <CardTitle className="text-white">{config.name}</CardTitle>
+        <CardDescription className="text-slate-400">{config.description}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
         {/* Filters Section */}
         <div className="space-y-4">
-          <h3 className="text-lg font-semibold">Report Filters</h3>
+          <h3 className="text-lg font-semibold text-white">Report Filters</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {config.filters.map(renderFilter)}
           </div>
@@ -265,6 +271,7 @@ export function ReportBuilder({ config, onGenerate, className }: ReportBuilderPr
             onClick={handleGenerate}
             disabled={isGenerating}
             size="lg"
+            className={dialogStyles.primaryButton}
           >
             {isGenerating ? (
               <>
