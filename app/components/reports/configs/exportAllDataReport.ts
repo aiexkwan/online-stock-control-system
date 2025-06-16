@@ -10,21 +10,23 @@ export const exportAllDataReportConfig: ReportConfig = {
   description: 'Export selected tables',
   category: 'operational',
   formats: ['excel'], // Using excel to represent CSV export
+  defaultFormat: 'excel',
   sections: [
     {
       id: 'all-data',
       title: 'Database Export',
+      type: 'table',
       dataSource: 'all-data',
-      columns: [], // Dynamic based on selected tables
-      enableSorting: false,
-      enableFiltering: false,
+      config: {
+        columns: [], // Dynamic based on selected tables
+      }
     }
   ],
-  parameters: [
+  filters: [
     {
       id: 'selectedTables',
       label: 'Tables to Export',
-      type: 'multiselect',
+      type: 'multiSelect',
       required: true,
       options: [
         { value: 'record_palletinfo', label: 'Pallet Information' },

@@ -10,8 +10,9 @@ import { UnifiedReportDialog } from '@/app/components/reports/core/UnifiedReport
 import { useToast } from '@/components/ui/use-toast';
 import { createClient } from '@/app/utils/supabase/client';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Select } from '@/components/ui/select';
 import { exportGrnReport } from '@/lib/exportReport';
+import { getMaterialCodesForGrnRef, getGrnReportData } from '@/app/actions/reportActions';
 
 interface UnifiedGrnReportDialogProps {
   isOpen: boolean;
@@ -80,34 +81,31 @@ export function UnifiedGrnReportDialog({ isOpen, onClose }: UnifiedGrnReportDial
     setLoading(true);
     try {
       if (format === 'excel') {
-        // Fetch GRN data
+        // Get current user
         const supabase = createClient();
-        const { data: grnData, error } = await supabase
-          .from('grn_label')
-          .select('*')
-          .eq('grn_ref', selectedGrnRef)
-          .order('material_code', { ascending: true });
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user?.email) {
+          throw new Error('User not authenticated');
+        }
 
-        if (error) throw error;
-
-        // Group by material code
-        const groupedData = grnData.reduce((acc: any, item: any) => {
-          const materialCode = item.material_code;
-          if (!acc[materialCode]) {
-            acc[materialCode] = [];
-          }
-          acc[materialCode].push(item);
-          return acc;
-        }, {});
+        // Get material codes for the selected grn_ref
+        const materialCodes = await getMaterialCodesForGrnRef(selectedGrnRef);
+        
+        if (materialCodes.length === 0) {
+          throw new Error('No materials found for the selected GRN reference');
+        }
 
         // Generate report for each material code
-        for (const [materialCode, items] of Object.entries(groupedData)) {
-          await exportGrnReport(items as any[], selectedGrnRef, materialCode);
+        for (const materialCode of materialCodes) {
+          const reportData = await getGrnReportData(selectedGrnRef, materialCode, user.email);
+          if (reportData) {
+            await exportGrnReport(reportData);
+          }
         }
 
         toast({
           title: "Success",
-          description: `GRN reports generated for ${Object.keys(groupedData).length} material code(s)`,
+          description: `GRN reports generated for ${materialCodes.length} material code(s)`,
         });
       } else {
         // PDF format not supported for GRN reports
@@ -143,24 +141,18 @@ export function UnifiedGrnReportDialog({ isOpen, onClose }: UnifiedGrnReportDial
         <div className="space-y-2">
           <Label htmlFor="grn-ref">GRN Reference</Label>
           <Select
+            id="grn-ref"
             value={selectedGrnRef}
-            onValueChange={setSelectedGrnRef}
+            onChange={(e) => setSelectedGrnRef(e.target.value)}
             disabled={grnRefs.length === 0}
+            className="bg-slate-800 border-slate-600 text-white"
           >
-            <SelectTrigger id="grn-ref" className="bg-slate-800 border-slate-600 text-white">
-              <SelectValue placeholder={grnRefs.length === 0 ? "Loading..." : "Select GRN reference"} />
-            </SelectTrigger>
-            <SelectContent className="bg-slate-800 border-slate-600">
-              {grnRefs.map((ref) => (
-                <SelectItem 
-                  key={ref} 
-                  value={ref}
-                  className="text-white hover:bg-slate-700"
-                >
-                  {ref}
-                </SelectItem>
-              ))}
-            </SelectContent>
+            <option value="">{grnRefs.length === 0 ? "Loading..." : "Select GRN reference"}</option>
+            {grnRefs.map((ref) => (
+              <option key={ref} value={ref}>
+                {ref}
+              </option>
+            ))}
           </Select>
           {grnRefs.length === 0 && (
             <p className="text-sm text-slate-500">No GRN references found</p>

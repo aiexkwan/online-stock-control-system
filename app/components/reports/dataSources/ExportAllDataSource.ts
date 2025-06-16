@@ -8,15 +8,14 @@ import { createClient } from '@/app/utils/supabase/client';
 // Export all data source
 const exportAllDataSource: ReportDataSource = {
   id: 'all-data',
-  name: 'All Data Export',
   
-  async fetchData(filters?: Record<string, any>) {
+  async fetch(filters: Record<string, any>) {
     // This data source is special - it doesn't actually fetch data
     // The export is handled directly in the dialog component
     return [];
   },
   
-  transformData(data: any[]) {
+  transform(data: any[]) {
     // No transformation needed
     return data;
   }

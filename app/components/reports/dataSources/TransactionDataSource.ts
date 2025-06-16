@@ -8,9 +8,8 @@ import { createClient } from '@/app/utils/supabase/client';
 // Transaction data source
 const transactionDataSource: ReportDataSource = {
   id: 'transaction-data',
-  name: 'Transaction Data',
   
-  async fetchData(filters?: Record<string, any>) {
+  async fetch(filters: Record<string, any>) {
     const supabase = createClient();
     const { startDate, endDate } = filters || {};
     
@@ -35,7 +34,7 @@ const transactionDataSource: ReportDataSource = {
     return data || [];
   },
   
-  transformData(data: any[]) {
+  transform(data: any[]) {
     return data.map(item => ({
       transfer_date: item.created_at,
       pallet_number: item.pallet_number,

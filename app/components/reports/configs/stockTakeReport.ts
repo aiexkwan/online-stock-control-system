@@ -9,7 +9,7 @@ export const stockTakeReportConfig: ReportConfig = {
   id: 'stock-take-report',
   name: 'Stock Take Report',
   description: 'Stock Take Report',
-  category: 'management',
+  category: 'operational',
   formats: ['csv', 'pdf', 'excel'], // 新增 PDF 和 Excel 支援
   defaultFormat: 'csv', // 保持 CSV 為默認格式
   

@@ -8,9 +8,8 @@ import { createClient } from '@/app/utils/supabase/client';
 // ACO Order data source
 const acoOrderDataSource: ReportDataSource = {
   id: 'aco-order-data',
-  name: 'ACO Order Data',
   
-  async fetchData(filters?: Record<string, any>) {
+  async fetch(filters: Record<string, any>) {
     const supabase = createClient();
     const acoOrder = filters?.acoOrder;
     
@@ -31,7 +30,7 @@ const acoOrderDataSource: ReportDataSource = {
     return data || [];
   },
   
-  transformData(data: any[]) {
+  transform(data: any[]) {
     return data.map(item => ({
       product_code: item.product_code,
       pallet_number: item.pallet_number,

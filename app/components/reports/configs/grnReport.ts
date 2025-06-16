@@ -10,32 +10,37 @@ export const grnReportConfig: ReportConfig = {
   description: 'Export GRN reports',
   category: 'inventory',
   formats: ['excel'],
+  defaultFormat: 'excel',
   sections: [
     {
       id: 'grn-data',
       title: 'GRN Data',
+      type: 'table',
       dataSource: 'grn-data',
-      columns: [
-        { key: 'grn_ref', label: 'GRN Reference', type: 'string' },
-        { key: 'material_code', label: 'Material Code', type: 'string' },
-        { key: 'material_description', label: 'Description', type: 'string' },
-        { key: 'supplier_name', label: 'Supplier', type: 'string' },
-        { key: 'total_weight', label: 'Total Weight', type: 'number' },
-        { key: 'pallet_count', label: 'Pallet Count', type: 'number' },
-        { key: 'package_type', label: 'Package Type', type: 'string' },
-        { key: 'print_date', label: 'Print Date', type: 'date' },
-      ],
-      enableSorting: true,
-      enableFiltering: true,
+      config: {
+        columns: [
+          { id: 'grn_ref', label: 'GRN Reference', type: 'text' },
+          { id: 'material_code', label: 'Material Code', type: 'text' },
+          { id: 'material_description', label: 'Description', type: 'text' },
+          { id: 'supplier_name', label: 'Supplier', type: 'text' },
+          { id: 'total_weight', label: 'Total Weight', type: 'number' },
+          { id: 'pallet_count', label: 'Pallet Count', type: 'number' },
+          { id: 'package_type', label: 'Package Type', type: 'text' },
+          { id: 'print_date', label: 'Print Date', type: 'date' },
+        ],
+      }
     }
   ],
-  parameters: [
+  filters: [
     {
       id: 'grnRef',
       label: 'GRN Reference',
       type: 'select',
       required: true,
-      options: 'dynamic', // Will be populated from database
+      dataSource: {
+        type: 'rpc',
+        name: 'getUniqueGrnRefs',
+      }
     }
   ],
 };

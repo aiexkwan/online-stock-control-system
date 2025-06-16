@@ -10,26 +10,28 @@ export const transactionReportConfig: ReportConfig = {
   description: 'Export transfer reports with date range',
   category: 'operational',
   formats: ['excel'],
+  defaultFormat: 'excel',
   sections: [
     {
       id: 'transaction-data',
       title: 'Transaction Data',
+      type: 'table',
       dataSource: 'transaction-data',
-      columns: [
-        { key: 'transfer_date', label: 'Transfer Date', type: 'date' },
-        { key: 'pallet_number', label: 'Pallet Number', type: 'string' },
-        { key: 'product_code', label: 'Product Code', type: 'string' },
-        { key: 'quantity', label: 'Quantity', type: 'number' },
-        { key: 'from_location', label: 'From Location', type: 'string' },
-        { key: 'to_location', label: 'To Location', type: 'string' },
-        { key: 'operator', label: 'Operator', type: 'string' },
-        { key: 'transfer_type', label: 'Transfer Type', type: 'string' },
-      ],
-      enableSorting: true,
-      enableFiltering: true,
+      config: {
+        columns: [
+          { id: 'transfer_date', label: 'Transfer Date', type: 'date' },
+          { id: 'pallet_number', label: 'Pallet Number', type: 'text' },
+          { id: 'product_code', label: 'Product Code', type: 'text' },
+          { id: 'quantity', label: 'Quantity', type: 'number' },
+          { id: 'from_location', label: 'From Location', type: 'text' },
+          { id: 'to_location', label: 'To Location', type: 'text' },
+          { id: 'operator', label: 'Operator', type: 'text' },
+          { id: 'transfer_type', label: 'Transfer Type', type: 'text' },
+        ],
+      }
     }
   ],
-  parameters: [
+  filters: [
     {
       id: 'startDate',
       label: 'Start Date',

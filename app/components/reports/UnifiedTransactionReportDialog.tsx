@@ -12,6 +12,7 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { buildTransactionReport } from '@/lib/exportReport';
 import { format } from 'date-fns';
+import { getTransactionReportData } from '@/app/actions/reportActions';
 
 interface UnifiedTransactionReportDialogProps {
   isOpen: boolean;
@@ -46,8 +47,15 @@ export function UnifiedTransactionReportDialog({ isOpen, onClose }: UnifiedTrans
     setLoading(true);
     try {
       if (format === 'excel') {
+        // Fetch transaction data for the date range
+        const reportData = await getTransactionReportData(startDate, endDate);
+        
+        if (!reportData) {
+          throw new Error('No transaction data found for the selected date range');
+        }
+        
         // Generate Excel report
-        await buildTransactionReport(startDate, endDate);
+        await buildTransactionReport(reportData);
         
         toast({
           title: "Success",

@@ -8,9 +8,8 @@ import { createClient } from '@/app/utils/supabase/client';
 // GRN data source
 const grnDataSource: ReportDataSource = {
   id: 'grn-data',
-  name: 'GRN Data',
   
-  async fetchData(filters?: Record<string, any>) {
+  async fetch(filters: Record<string, any>) {
     const supabase = createClient();
     const grnRef = filters?.grnRef;
     
@@ -31,7 +30,7 @@ const grnDataSource: ReportDataSource = {
     return data || [];
   },
   
-  transformData(data: any[]) {
+  transform(data: any[]) {
     // Group by material code for aggregation
     const grouped = data.reduce((acc: any, item: any) => {
       const key = item.material_code;
