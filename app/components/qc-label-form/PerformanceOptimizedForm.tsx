@@ -24,12 +24,14 @@ import { ProductCodeInput } from './ProductCodeInput';
 import { BasicProductForm } from './BasicProductForm';
 import { AcoOrderForm } from './AcoOrderForm';
 import { SlateDetailsForm } from './SlateDetailsForm';
+import { FormPersistenceIndicator } from './FormPersistenceIndicator';
 import { useErrorHandler } from './hooks/useErrorHandler';
 import { useMediaQuery } from './hooks/useMediaQuery';
 
 import { useOptimizedFormHandler } from './hooks/useOptimizedCallback';
 import { useQcLabelBusiness } from './hooks/useQcLabelBusiness';
 import ClockNumberConfirmDialog from './ClockNumberConfirmDialog';
+import { toast } from 'sonner';
 import { 
   CubeIcon, 
   DocumentTextIcon, 
@@ -427,6 +429,42 @@ export const PerformanceOptimizedForm: React.FC<PerformanceOptimizedFormProps> =
       status: formData.pdfProgress.status
     });
   }, [formData.pdfProgress]);
+  
+  // 清理 effect - 當用戶離開頁面時重置表單
+  useEffect(() => {
+    return () => {
+      console.log('[PerformanceOptimizedForm] Cleaning up on unmount');
+      // 重置所有表單數據
+      setFormData({
+        productCode: '',
+        productInfo: null,
+        quantity: '',
+        count: '',
+        operator: '',
+        userId: '',
+        acoOrderRef: '',
+        acoOrderDetails: [],
+        acoNewRef: false,
+        acoNewProductCode: '',
+        acoNewOrderQty: '',
+        slateDetail: { batchNumber: '' },
+        pdfProgress: { current: 0, total: 0, status: [] },
+        isLoading: false,
+        acoSearchLoading: false,
+        productError: null,
+        acoOrderDetailErrors: [],
+        acoRemain: null,
+        availableAcoOrderRefs: []
+      });
+      setProductInfo(null);
+      setPdfProgress({ current: 0, total: 0, status: [] });
+      setErrors({});
+      // 清除保存的數據
+      if (businessLogic.clearSavedData) {
+        businessLogic.clearSavedData();
+      }
+    };
+  }, []);
 
   return (
     <ResponsiveLayout className={className}>
@@ -482,6 +520,17 @@ export const PerformanceOptimizedForm: React.FC<PerformanceOptimizedFormProps> =
           >
             {/* Main Form Section */}
             <div className="flex-1 min-w-0">
+              {/* Form Persistence Indicator */}
+              {businessLogic.lastSaved && (
+                <div className="mb-4">
+                  <FormPersistenceIndicator
+                    lastSaved={businessLogic.lastSaved}
+                    hasSavedData={businessLogic.hasSavedData}
+                    className="text-sm"
+                  />
+                </div>
+              )}
+              
               <ProductSection
                 productCode={formData.productCode}
                 onProductCodeChange={(value) => handleInputChange('productCode', value)}
@@ -671,6 +720,35 @@ export const PerformanceOptimizedForm: React.FC<PerformanceOptimizedFormProps> =
                     </div>
                   </div>
                 )}
+                
+                {/* Streaming Progress */}
+                {businessLogic.streamingStatus.isStreaming && (
+                  <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-blue-900/40 via-cyan-900/30 to-blue-900/40 backdrop-blur-sm border border-blue-500/30 p-4 shadow-lg shadow-blue-900/20 mt-4">
+                    <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 via-cyan-500/10 to-blue-500/5"></div>
+                    <div className="relative z-10">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="text-sm font-semibold text-blue-200">
+                          Streaming PDF Generation
+                        </div>
+                        <button
+                          onClick={businessLogic.cancelStreaming}
+                          className="text-xs text-red-400 hover:text-red-300"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                      <div className="text-xs text-blue-300/80">
+                        Completed: {businessLogic.streamingStatus.completed} / {businessLogic.streamingStatus.total}
+                      </div>
+                      <div className="w-full bg-blue-900/30 rounded-full h-2 mt-2">
+                        <div 
+                          className="bg-gradient-to-r from-blue-500 to-cyan-500 h-2 rounded-full transition-all duration-300"
+                          style={{ width: `${(businessLogic.streamingStatus.completed / businessLogic.streamingStatus.total) * 100}%` }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </ResponsiveStack>
@@ -686,6 +764,7 @@ export const PerformanceOptimizedForm: React.FC<PerformanceOptimizedFormProps> =
           description="Please enter your clock number to proceed with printing the labels."
           isLoading={isLoading}
         />
+        
       </ResponsiveContainer>
     </ResponsiveLayout>
   );

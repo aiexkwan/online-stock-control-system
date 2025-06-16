@@ -1,8 +1,7 @@
 'use client';
 
-import React, { useCallback, useState } from 'react';
-import { createClient } from '@/lib/supabase';
-import { errorHandler } from './services/ErrorHandler';
+import React, { useState, useEffect, useRef } from 'react';
+import { createClient } from '@/app/utils/supabase/client';
 
 interface ProductInfo {
   code: string;
@@ -19,93 +18,150 @@ interface ProductCodeInputProps {
   onQuantityChange?: (quantity: string) => void;
   disabled?: boolean;
   required?: boolean;
-  userId?: string;
+  userId?: string; // Keep for backward compatibility
 }
 
-export const ProductCodeInput: React.FC<ProductCodeInputProps> = React.memo(({
+export const ProductCodeInput: React.FC<ProductCodeInputProps> = ({
   value,
   onChange,
   onProductInfoChange,
   onQuantityChange,
   disabled = false,
   required = true,
-  userId
+  userId // Keep for backward compatibility but not used
 }) => {
   const [productError, setProductError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [lastSearchValue, setLastSearchValue] = useState<string>('');
+  const abortControllerRef = useRef<AbortController | null>(null);
 
-  const handleProductCodeBlur = useCallback(async () => {
-    if (!value.trim()) {
+  // 清理函數
+  useEffect(() => {
+    return () => {
+      // 組件卸載時取消任何進行中的請求
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
+  }, []);
+
+  // 簡化的搜尋函數 - 每次都是獨立搜尋，無需記憶
+  const searchProductCode = async (searchValue: string) => {
+    const trimmedValue = searchValue.trim();
+    
+    // 空值處理
+    if (!trimmedValue) {
       onProductInfoChange(null);
       setProductError(null);
+      setIsLoading(false);
+      setLastSearchValue('');
       return;
     }
 
-    setIsLoading(true);
-    
-    try {
-      const client = createClient();
-      const { data, error } = await client.rpc('get_product_details_by_code', { 
-        p_code: value.trim() 
-      });
+    // 避免重複搜尋相同的值
+    if (trimmedValue === lastSearchValue && !productError) {
+      console.log('[ProductCodeInput] Skipping duplicate search for:', trimmedValue);
+      return;
+    }
 
-      if (error) {
-        console.error('[ProductCodeInput] Error calling RPC get_product_details_by_code:', error);
+    // 取消之前的搜尋
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+
+    // 開始搜尋
+    console.log('[ProductCodeInput] Starting search for:', trimmedValue);
+    setIsLoading(true);
+    setProductError(null);
+    setLastSearchValue(trimmedValue);
+
+    // 創建新的 AbortController
+    const abortController = new AbortController();
+    abortControllerRef.current = abortController;
+
+    try {
+      console.log('[ProductCodeInput] Creating Supabase client...');
+      const client = createClient();
+      
+      console.log('[ProductCodeInput] Executing query for:', trimmedValue);
+      // 直接搜尋 data_code 表 - 使用 ilike 進行不區分大小寫的搜尋
+      const { data, error } = await client
+        .from('data_code')
+        .select('code, description, standard_qty, type, remark')
+        .ilike('code', trimmedValue)
+        .single();
+
+      console.log('[ProductCodeInput] Search result:', { data, error });
+
+      if (error || !data) {
+        // 找不到產品
         onProductInfoChange(null);
-        setProductError('Error fetching product info via RPC.');
-        
-        errorHandler.handleApiError(error, {
-          component: 'ProductCodeInput',
-          action: 'product_search',
-          userId,
-          additionalData: { productCode: value.trim() }
-        }, 'Error fetching product info.');
-      } else if (data && data.length > 0) {
-        const productData = data[0] as ProductInfo;
-        
+        setProductError(`Product Code ${trimmedValue} Not Found`);
+        console.log('[ProductCodeInput] Product not found:', trimmedValue);
+      } else {
+        // 找到產品
+        const productData = data as ProductInfo;
         onProductInfoChange(productData);
-        onChange(productData.code); // Standardize to the code from DB
+        onChange(productData.code); // 使用資料庫中的標準化代碼
         setProductError(null);
+        console.log('[ProductCodeInput] Product found:', productData);
         
-        // Auto-fill quantity if available and callback provided
+        // 自動填充數量（如果有）
         if (productData.standard_qty && onQuantityChange) {
           onQuantityChange(productData.standard_qty);
         }
-      } else {
-        onProductInfoChange(null);
-        setProductError(`Product Code ${value.trim()} Not Found. Please Check Again.`);
-        
-        errorHandler.handleWarning(`Product code ${value.trim()} not found.`, {
-          component: 'ProductCodeInput',
-          action: 'product_search',
-          userId,
-          additionalData: { productCode: value.trim() }
-        }, false); // Don't show toast as we have field-level error
       }
-    } catch (e: any) {
-      console.error('[ProductCodeInput] Exception during product info fetch via RPC:', e);
-      onProductInfoChange(null);
-      setProductError('An unexpected error occurred while fetching product data.');
+    } catch (error: any) {
+      // 如果是取消請求，不處理
+      if (error.name === 'AbortError') {
+        console.log('[ProductCodeInput] Search cancelled');
+        return;
+      }
       
-      errorHandler.handleApiError(e, {
-        component: 'ProductCodeInput',
-        action: 'product_search',
-        userId,
-        additionalData: { productCode: value.trim() }
-      }, 'An unexpected error occurred while fetching product data.');
-    } finally {
-      setIsLoading(false);
-    }
-  }, [value, onChange, onProductInfoChange, onQuantityChange]);
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newValue = e.target.value;
-    onChange(newValue);
-    
-    // Clear related states on input change to avoid showing stale data
-    if (newValue !== value) {
+      console.error('[ProductCodeInput] Search error:', error);
       onProductInfoChange(null);
+      
+      if (error.message === 'Search timeout') {
+        setProductError('Search timeout. Please try again.');
+      } else {
+        setProductError('Search failed. Please try again.');
+      }
+    } finally {
+      // 只有在沒有被取消的情況下才清除 loading 狀態
+      if (abortControllerRef.current === abortController) {
+        setIsLoading(false);
+        console.log('[ProductCodeInput] Search completed, loading state cleared');
+      }
+    }
+  };
+
+  // 處理 blur 事件
+  const handleBlur = () => {
+    if (value.trim()) {
+      searchProductCode(value);
+    }
+  };
+
+  // 處理 Enter 和 Tab 鍵
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if ((e.key === 'Enter' || e.key === 'Tab') && value.trim() && !isLoading) {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+      }
+      searchProductCode(value);
+    }
+  };
+
+  // 處理輸入變更
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    onChange(e.target.value);
+    // 清除錯誤訊息和重置搜尋狀態
+    if (productError) {
       setProductError(null);
+    }
+    // 如果用戶正在輸入，重置最後搜尋值
+    if (e.target.value !== value) {
+      setLastSearchValue('');
     }
   };
 
@@ -124,11 +180,12 @@ export const ProductCodeInput: React.FC<ProductCodeInputProps> = React.memo(({
               : 'border-gray-700'
           } ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
           value={value}
-          onChange={handleInputChange}
-          onBlur={handleProductCodeBlur}
+          onChange={handleChange}
+          onBlur={handleBlur}
+          onKeyDown={handleKeyDown}
           disabled={disabled || isLoading}
           required={required}
-          placeholder={required ? "Required" : "Optional"}
+          placeholder="Enter product code"
         />
         {isLoading && (
           <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
@@ -137,7 +194,6 @@ export const ProductCodeInput: React.FC<ProductCodeInputProps> = React.memo(({
         )}
       </div>
       
-      {/* Error message */}
       {productError && (
         <div className="text-red-500 text-sm font-semibold mt-1">
           {productError}
@@ -145,9 +201,8 @@ export const ProductCodeInput: React.FC<ProductCodeInputProps> = React.memo(({
       )}
     </div>
   );
-});
+};
 
-// Set display name for debugging
 ProductCodeInput.displayName = 'ProductCodeInput';
 
 export default ProductCodeInput; 

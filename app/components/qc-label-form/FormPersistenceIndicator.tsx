@@ -1,0 +1,62 @@
+'use client';
+
+import React from 'react';
+import { CheckCircleIcon, CloudArrowUpIcon } from '@heroicons/react/24/outline';
+
+interface FormPersistenceIndicatorProps {
+  lastSaved: Date | null;
+  hasSavedData: () => boolean;
+  onRestore?: () => void;
+  className?: string;
+}
+
+export const FormPersistenceIndicator: React.FC<FormPersistenceIndicatorProps> = React.memo(({
+  lastSaved,
+  hasSavedData,
+  onRestore,
+  className = ''
+}) => {
+  const formatTime = (date: Date) => {
+    const now = new Date();
+    const diff = now.getTime() - date.getTime();
+    
+    if (diff < 60000) { // 少於 1 分鐘
+      return 'Just now';
+    } else if (diff < 3600000) { // 少於 1 小時
+      const minutes = Math.floor(diff / 60000);
+      return `${minutes} minute${minutes > 1 ? 's' : ''} ago`;
+    } else if (diff < 86400000) { // 少於 1 天
+      const hours = Math.floor(diff / 3600000);
+      return `${hours} hour${hours > 1 ? 's' : ''} ago`;
+    } else {
+      return date.toLocaleDateString();
+    }
+  };
+
+  if (!lastSaved && !hasSavedData()) {
+    return null;
+  }
+
+  return (
+    <div className={`flex items-center gap-2 text-sm text-gray-500 ${className}`}>
+      {lastSaved ? (
+        <>
+          <CheckCircleIcon className="h-4 w-4 text-green-500" />
+          <span>Saved {formatTime(lastSaved)}</span>
+        </>
+      ) : (
+        <>
+          <CloudArrowUpIcon className="h-4 w-4 text-blue-500" />
+          <button
+            onClick={onRestore}
+            className="text-blue-600 hover:text-blue-700 underline"
+          >
+            Restore previous form
+          </button>
+        </>
+      )}
+    </div>
+  );
+});
+
+FormPersistenceIndicator.displayName = 'FormPersistenceIndicator';

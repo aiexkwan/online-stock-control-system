@@ -168,6 +168,19 @@ export async function getPalletHistoryAndStockInfo(
 
     // Fetch stock info if productCodeForSearch is set and no major error yet
     if (productCodeForSearch && !errorMsg) {
+      // First try to get total from stock_level table (pre-aggregated)
+      const { data: stockLevelData, error: stockLevelError } = await supabase
+        .from('stock_level')
+        .select('stock_level, description, update_time')
+        .eq('stock', productCodeForSearch)
+        .single();
+
+      if (stockLevelError && stockLevelError.code !== 'PGRST116') {
+        console.error('Supabase error fetching stock level:', stockLevelError);
+        // Fall back to detailed query if stock_level fails
+      }
+
+      // Get location breakdown from record_inventory for detailed view
       const { data: inventoryEntries, error: stockError } = await supabase
         .from('record_inventory')
         .select('injection, pipeline, prebook, await, fold, bulk, backcarpark') // Select only relevant columns
@@ -189,7 +202,7 @@ export async function getPalletHistoryAndStockInfo(
           fold: 0,
           bulk: 0,
           backcarpark: 0,
-          latest_update: new Date().toISOString(), // Represents the time of aggregation
+          latest_update: stockLevelData?.update_time || new Date().toISOString(), // Use stock_level update time if available
         };
 
         for (const entry of inventoryEntries) {
@@ -201,6 +214,20 @@ export async function getPalletHistoryAndStockInfo(
           totals.bulk = (totals.bulk || 0) + (entry.bulk || 0);
           totals.backcarpark = (totals.backcarpark || 0) + (entry.backcarpark || 0);
         }
+
+        // If we have stock_level data, verify our calculation matches
+        if (stockLevelData && stockLevelData.stock_level !== null) {
+          const calculatedTotal = (totals.injection || 0) + (totals.pipeline || 0) + (totals.prebook || 0) + 
+                                  (totals.await || 0) + (totals.fold || 0) + (totals.bulk || 0) + 
+                                  (totals.backcarpark || 0);
+          
+          if (calculatedTotal !== stockLevelData.stock_level) {
+            console.warn(`Stock level mismatch for ${productCodeForSearch}: calculated=${calculatedTotal}, stock_level=${stockLevelData.stock_level}`);
+            // You may want to use the stock_level value as the authoritative source
+            // or add a 'total' field to show the pre-aggregated value
+          }
+        }
+
         stockInfoData = totals;
       } else {
         // No inventory entries found for this product code, stockInfoData remains null

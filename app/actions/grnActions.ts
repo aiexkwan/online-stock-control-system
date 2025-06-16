@@ -4,7 +4,7 @@ import { createClient } from '@supabase/supabase-js';
 import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
 
-import { generateMultipleUniqueSeries } from '@/lib/seriesUtils';
+// V6 includes series generation, no need for separate series utils
 
 // 創建 Supabase 客戶端的函數
 function createSupabaseAdmin() {
@@ -137,7 +137,7 @@ export async function createGrnDatabaseEntries(
     const inventoryRecord = {
       product_code: payload.grnRecord.material_code,
       plt_num: payload.palletInfo.plt_num,
-      await: payload.grnRecord.net_weight,
+      await_grn: payload.grnRecord.net_weight,  // 改為寫入 await_grn 欄位
       latest_update: new Date().toISOString(),
     };
 
@@ -155,7 +155,7 @@ export async function createGrnDatabaseEntries(
       action: 'GRN Receiving',
       id: operatorIdForFunction.toString(),
       plt_num: payload.palletInfo.plt_num,
-      loc: 'Await',
+      loc: 'Await_grn',  // 改為 Await_grn
       remark: `GRN: ${payload.grnRecord.grn_ref}, Material: ${payload.grnRecord.material_code}`,
       time: new Date().toISOString(),
     };
@@ -247,9 +247,14 @@ export async function createGrnDatabaseEntries(
 }
 
 /**
+ * @deprecated Use generatePalletNumbers from '@/app/utils/palletGeneration' instead
+ * 
  * Generate pallet numbers and series for GRN labels on server side
  * 使用個別原子性 RPC 調用（無緩存）
  * 添加時間戳確保每次調用都是唯一的
+ * 
+ * This function is kept for backward compatibility only.
+ * All new code should use the unified pallet generation utility.
  */
 export async function generateGrnPalletNumbersAndSeries(count: number): Promise<{
   palletNumbers: string[];
@@ -258,16 +263,17 @@ export async function generateGrnPalletNumbersAndSeries(count: number): Promise<
 }> {
   try {
     const timestamp = new Date().toISOString();
-    console.log(`[grnActions] 使用個別原子性 RPC 調用生成棧板號碼（無緩存），數量: ${count}, 時間戳: ${timestamp}`);
+    console.log(`[grnActions] 使用 V6 RPC 調用生成棧板號碼和系列（無緩存），數量: ${count}, 時間戳: ${timestamp}`);
     
     // 清除任何可能的 Next.js 緩存
     revalidatePath('/print-grnlabel');
     
     const supabaseAdmin = createSupabaseAdmin();
     const palletNumbers: string[] = [];
+    const series: string[] = [];
     
     // 使用單次 RPC 調用生成所有托盤編號，避免循環中的併發問題
-    console.log(`[grnActions] 使用單次 RPC 調用生成 ${count} 個托盤編號`);
+    console.log(`[grnActions] 使用 V6 RPC 調用生成 ${count} 個托盤編號和系列`);
     
     let attempts = 0;
     const maxAttempts = 5;
@@ -289,9 +295,10 @@ export async function generateGrnPalletNumbersAndSeries(count: number): Promise<
           
         console.log(`[grnActions] 當前序列號狀態 (嘗試 ${attempts + 1}):`, currentSequence);
         
-        // 使用單次 RPC 調用生成所有托盤編號
-        const { data: rpcResult, error: rpcError } = await supabaseAdmin.rpc('generate_atomic_pallet_numbers_v3', {
-          count: count
+        // 使用 V6 RPC 調用生成所有托盤編號（包含 series）
+        const { data: rpcResult, error: rpcError } = await supabaseAdmin.rpc('generate_atomic_pallet_numbers_v6', {
+          p_count: count,
+          p_session_id: `grn-server-${Date.now()}`
         });
         
         if (rpcError) {
@@ -303,8 +310,13 @@ export async function generateGrnPalletNumbersAndSeries(count: number): Promise<
           throw new Error(`Invalid result from RPC function: expected ${count} pallet numbers, got ${rpcResult?.length || 0}`);
         }
         
-        palletNumbers.push(...rpcResult);
-        console.log(`[grnActions] 成功生成托盤編號:`, rpcResult);
+        // V6 returns objects with pallet_number and series
+        const palletNumbersFromRpc = rpcResult.map(item => item.pallet_number);
+        const seriesFromRpc = rpcResult.map(item => item.series);
+        
+        palletNumbers.push(...palletNumbersFromRpc);
+        series.push(...seriesFromRpc);
+        console.log(`[grnActions] 成功生成托盤編號和系列:`, rpcResult);
         break;
         
       } catch (error: any) {
@@ -347,9 +359,8 @@ export async function generateGrnPalletNumbersAndSeries(count: number): Promise<
       }
     }
     
-    // Generate series
-    const series = await generateMultipleUniqueSeries(count, supabaseAdmin);
-    console.log('[grnActions] 生成的系列號:', series);
+    // V6 already includes series, no need to generate separately
+    console.log('[grnActions] V6 已包含系列號，無需單獨生成');
     
     return {
       palletNumbers,

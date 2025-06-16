@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import { createClient } from '@/lib/supabase';
+import { createClient } from '@/app/utils/supabase/client';
 import { toast } from 'sonner';
 import {
   Dialog,
@@ -37,7 +37,6 @@ export const ClockNumberConfirmDialog: React.FC<ClockNumberConfirmDialogProps> =
   const [isVerifying, setIsVerifying] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const clockNumberInputRef = useRef<HTMLInputElement>(null);
-  const supabase = createClient();
 
   // Focus input when dialog opens
   useEffect(() => {
@@ -74,20 +73,38 @@ export const ClockNumberConfirmDialog: React.FC<ClockNumberConfirmDialogProps> =
 
   const validateClockNumber = async (clockNum: string): Promise<boolean> => {
     try {
-      const { data, error } = await supabase
+      console.log('[ClockNumberConfirmDialog] Validating clock number:', clockNum);
+      
+      // 使用標準 browser client
+      const client = createClient();
+      
+      // 創建超時 Promise
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        setTimeout(() => reject(new Error('Validation timeout')), 10000); // 10 秒超時
+      });
+      
+      // 執行查詢
+      const queryPromise = client
         .from('data_id')
         .select('id, name')
         .eq('id', parseInt(clockNum, 10))
         .single();
+      
+      // 使用 Promise.race 處理超時
+      const { data, error } = await Promise.race([queryPromise, timeoutPromise]);
 
       if (error) {
         console.error('[ClockNumberConfirmDialog] Error validating clock number:', error);
         return false;
       }
 
+      console.log('[ClockNumberConfirmDialog] Validation result:', data);
       return !!data;
-    } catch (error) {
+    } catch (error: any) {
       console.error('[ClockNumberConfirmDialog] Exception during validation:', error);
+      if (error.message === 'Validation timeout') {
+        toast.error('Validation timeout. Please try again.');
+      }
       return false;
     }
   };

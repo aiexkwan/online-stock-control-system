@@ -425,7 +425,7 @@ export function useVoidPallet() {
 
       try {
         console.log('[Auto Reprint] Calling API...');
-        const response = await fetch('/api/auto-reprint-label', {
+        const response = await fetch('/api/auto-reprint-label-v2', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

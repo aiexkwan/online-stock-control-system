@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { generateMultipleUniqueSeries } from '@/lib/seriesUtils';
+// Series generation is now handled by unified pallet generation
 import { type QcInputData } from '@/lib/pdfUtils';
 import { 
   createQcDatabaseEntriesWithTransaction,
@@ -98,33 +98,27 @@ export async function POST(request: NextRequest) {
     const productInfo = await getProductInfo(data.productCode);
     console.log('[Auto Reprint API] Product info retrieved:', productInfo);
 
-    // Generate pallet number and series using direct query (no cache)
-    console.log('[Auto Reprint API] Generating pallet number and series using direct query...');
-    console.log('[Auto Reprint API] Using generatePalletNumbersDirectQuery function');
+    // Generate pallet number and series using unified V6 generation
+    console.log('[Auto Reprint API] Generating pallet number and series using V6 generation...');
+    console.log('[Auto Reprint API] Using unified generatePalletNumbers function');
     
-    // Import the direct query function
-    const { generatePalletNumbersDirectQuery } = await import('@/app/actions/qcActions');
+    // Import the unified generation function
+    const { generatePalletNumbers } = await import('@/app/actions/palletActions');
     
-    const generationResult = await generatePalletNumbersDirectQuery(1);
+    const generationResult = await generatePalletNumbers(1, 'auto-reprint');
     
     if (generationResult.error) {
-      console.error('[Auto Reprint API] 直接查詢棧板號碼生成失敗:', generationResult.error);
+      console.error('[Auto Reprint API] Pallet number generation failed:', generationResult.error);
       throw new Error(`Failed to generate pallet numbers: ${generationResult.error}`);
     }
     
     if (!generationResult.palletNumbers || generationResult.palletNumbers.length === 0) {
-      console.error('[Auto Reprint API] Invalid pallet numbers returned from direct query');
+      console.error('[Auto Reprint API] Invalid pallet numbers returned from generation');
       throw new Error('Failed to generate pallet number');
     }
     
     const palletNumbers = generationResult.palletNumbers;
-    
-    const series = await generateMultipleUniqueSeries(1, supabase);
-    
-    if (series.length === 0) {
-      console.error('[Auto Reprint API] Failed to generate series');
-      throw new Error('Failed to generate series');
-    }
+    const series = generationResult.series;
 
     const palletNum = palletNumbers[0];
     const seriesValue = series[0];

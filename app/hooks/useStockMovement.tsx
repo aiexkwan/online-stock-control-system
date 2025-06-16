@@ -1,14 +1,14 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { createClient } from '@/app/utils/supabase/client';
 import { toast } from 'sonner';
+import { usePalletCache } from './usePalletCache';
+import { usePalletSearch } from './usePalletSearch';
+import { useStockTransfer } from './useStockTransfer';
+import { useActivityLog } from './useActivityLog';
+import type { PalletInfo } from '@/app/services/palletSearchService';
 
-interface PalletInfo {
-  plt_num: string;
-  product_code: string;
-  product_qty: number;
-  plt_remark?: string | null;
-  current_plt_loc?: string | null;
-}
+// 使用統一的 PalletInfo 類型（從服務導入）
+// 這裡的重複定義是為了保持向後兼容
 
 interface ActivityLogEntry {
   message: string;
@@ -16,26 +16,57 @@ interface ActivityLogEntry {
   timestamp: string;
 }
 
+// 樂觀更新的轉移狀態
+interface OptimisticTransfer {
+  id: string;
+  pltNum: string;
+  fromLocation: string;
+  toLocation: string;
+  status: 'pending' | 'success' | 'failed';
+  timestamp: number;
+}
+
 interface UseStockMovementOptions {
   enableCache?: boolean;
   debounceMs?: number;
   maxRetries?: number;
+  cacheOptions?: {
+    ttl?: number;
+    maxSize?: number;
+    preloadPatterns?: string[];
+    enableBackgroundRefresh?: boolean;
+  };
 }
 
 export const useStockMovement = (options: UseStockMovementOptions = {}) => {
   const {
     enableCache = true,
     debounceMs = 300,
-    maxRetries = 3
+    maxRetries = 3,
+    cacheOptions = {}
   } = options;
 
   const [isLoading, setIsLoading] = useState(false);
   const supabase = createClient();
   const [activityLog, setActivityLog] = useState<ActivityLogEntry[]>([]);
   const [userId, setUserId] = useState<string | null>(null);
+  const [optimisticTransfers, setOptimisticTransfers] = useState<OptimisticTransfer[]>([]);
   
   // Cache and performance optimization
   const debounceTimer = useRef<NodeJS.Timeout>();
+  
+  // 使用快取 hook
+  const {
+    searchPalletWithCache,
+    preloadPallets,
+    invalidateCache,
+    getCacheStats
+  } = usePalletCache({
+    ttl: cacheOptions.ttl || 5 * 60 * 1000, // 5分鐘
+    maxSize: cacheOptions.maxSize || 100,
+    preloadPatterns: cacheOptions.preloadPatterns || [],
+    enableBackgroundRefresh: cacheOptions.enableBackgroundRefresh ?? true
+  });
 
   const getCurrentUserId = useCallback(async (): Promise<string | null> => {
     try {
@@ -81,7 +112,7 @@ export const useStockMovement = (options: UseStockMovementOptions = {}) => {
     }, debounceMs);
   }, [debounceMs]);
 
-  // Search pallet information
+  // Search pallet information (with cache support)
   const searchPalletInfo = useCallback(async (
     searchType: 'series' | 'pallet_num',
     searchValue: string
@@ -94,6 +125,15 @@ export const useStockMovement = (options: UseStockMovementOptions = {}) => {
     try {
       setIsLoading(true);
       
+      // 如果啟用快取，使用快取查詢
+      if (enableCache) {
+        const cachedResult = await searchPalletWithCache(searchType, searchValue, true);
+        if (cachedResult) {
+          return cachedResult;
+        }
+      }
+      
+      // 如果未啟用快取或快取未命中，使用原始查詢
       // First, get pallet basic information from record_palletinfo
       let palletData, palletError;
 
@@ -154,7 +194,7 @@ export const useStockMovement = (options: UseStockMovementOptions = {}) => {
     } finally {
       setIsLoading(false);
     }
-  }, [supabase]);
+  }, [supabase, enableCache, searchPalletWithCache]);
 
   // Execute stock transfer
   const executeStockTransfer = useCallback(async (
@@ -179,6 +219,44 @@ export const useStockMovement = (options: UseStockMovementOptions = {}) => {
       toast.error('Invalid operator ID format');
       return false;
     }
+
+    // 生成唯一的轉移 ID
+    const transferId = `${pltNum}-${Date.now()}`;
+    
+    // 檢查是否有待處理的相同托盤操作
+    const hasPendingTransfer = optimisticTransfers.some(
+      t => t.pltNum === pltNum && t.status === 'pending'
+    );
+    
+    if (hasPendingTransfer) {
+      toast.warning(`Pallet ${pltNum} has a pending transfer. Please wait.`);
+      return false;
+    }
+    
+    // 1. 樂觀更新：立即更新 UI
+    const optimisticEntry: OptimisticTransfer = {
+      id: transferId,
+      pltNum,
+      fromLocation,
+      toLocation,
+      status: 'pending',
+      timestamp: Date.now()
+    };
+    
+    setOptimisticTransfers(prev => [...prev, optimisticEntry]);
+    
+    // 2. 立即更新快取（樂觀）
+    if (enableCache) {
+      const cachedPallet = await searchPalletWithCache('pallet_num', pltNum, false);
+      if (cachedPallet) {
+        // 更新快取中的位置
+        invalidateCache(pltNum); // 先使原快取失效
+        // 注意：這裡不預先設置新位置，避免快取不一致
+      }
+    }
+    
+    // 3. 顯示進行中的 toast
+    const toastId = toast.loading(`Moving pallet ${pltNum} to ${toLocation}...`);
 
     try {
       setIsLoading(true);
@@ -212,13 +290,16 @@ export const useStockMovement = (options: UseStockMovementOptions = {}) => {
       }
 
       // 2. Add record to record_transfer table
+      // 統一處理 await_grn 和 await 為 await
+      const normalizedFromLocation = fromLocation === 'Await_grn' ? 'Await' : fromLocation;
+      
       const { error: transferError } = await supabase
         .from('record_transfer')
         .insert([{
           plt_num: pltNum,
           operator_id: operatorIdNum,
           tran_date: new Date().toISOString(),
-          f_loc: fromLocation,
+          f_loc: normalizedFromLocation,
           t_loc: toLocation
         }]);
 
@@ -233,6 +314,7 @@ export const useStockMovement = (options: UseStockMovementOptions = {}) => {
         'PipeLine': 'pipeline', 
         'Pre-Book': 'prebook',
         'Await': 'await',
+        'Await_grn': 'await_grn',
         'Fold Mill': 'fold',
         'Bulk Room': 'bulk',
         'Back Car Park': 'backcarpark'
@@ -260,8 +342,18 @@ export const useStockMovement = (options: UseStockMovementOptions = {}) => {
         throw new Error(`Failed to update inventory: ${inventoryError.message}`);
       }
 
-      addActivityLog(`Pallet ${pltNum} moved successfully: ${fromLocation} → ${toLocation}`, 'success');
-      toast.success(`Pallet ${pltNum} moved to ${toLocation}`);
+      // 4. 成功：更新樂觀狀態
+      setOptimisticTransfers(prev => 
+        prev.map(t => t.id === transferId ? { ...t, status: 'success' } : t)
+      );
+      
+      addActivityLog(`Pallet ${pltNum} successfully moved to ${toLocation}`, 'success');
+      toast.success(`Pallet ${pltNum} moved to ${toLocation}`, { id: toastId });
+      
+      // 使快取失效，確保下次查詢取得最新資料
+      if (enableCache) {
+        invalidateCache(pltNum);
+      }
       
       // 🚀 新增：更新 work_level 表的 move 欄位
       try {
@@ -296,13 +388,24 @@ export const useStockMovement = (options: UseStockMovementOptions = {}) => {
         errorMessage = errorMessage.replace('ATOMIC_TRANSFER_FAILURE:', '').trim();
       }
       
+      // 5. 失敗：更新樂觀狀態並回滾
+      setOptimisticTransfers(prev => 
+        prev.map(t => t.id === transferId ? { ...t, status: 'failed' } : t)
+      );
+      
       addActivityLog(`Pallet ${pltNum} movement failed: ${errorMessage}`, 'error');
-      toast.error(`Movement failed: ${errorMessage}`);
+      toast.error(`Movement failed: ${errorMessage}`, { id: toastId });
+      
+      // 回滾快取（如果需要）
+      if (enableCache) {
+        invalidateCache(pltNum);
+      }
+      
       return false;
     } finally {
       setIsLoading(false);
     }
-  }, [userId, supabase]);
+  }, [userId, supabase, enableCache, invalidateCache, searchPalletWithCache, optimisticTransfers]);
 
   // Add activity log
   const addActivityLog = useCallback((message: string, type: 'success' | 'error' | 'info') => {
@@ -319,6 +422,20 @@ export const useStockMovement = (options: UseStockMovementOptions = {}) => {
     setActivityLog([]);
   }, []);
 
+  // 清理已完成的樂觀轉移
+  useEffect(() => {
+    const cleanup = setInterval(() => {
+      setOptimisticTransfers(prev => 
+        prev.filter(t => 
+          t.status === 'pending' || 
+          (Date.now() - t.timestamp) < 5000 // 保留 5 秒顯示成功/失敗狀態
+        )
+      );
+    }, 1000);
+    
+    return () => clearInterval(cleanup);
+  }, []);
+
   // Cleanup function
   useEffect(() => {
     return () => {
@@ -333,12 +450,18 @@ export const useStockMovement = (options: UseStockMovementOptions = {}) => {
     isLoading,
     activityLog,
     userId,
+    optimisticTransfers,
     
     // Methods
     searchPalletInfo,
     executeStockTransfer,
     addActivityLog,
     clearActivityLog,
-    debouncedSearch
+    debouncedSearch,
+    
+    // Cache methods
+    preloadPallets,
+    invalidateCache,
+    getCacheStats
   };
 }; 

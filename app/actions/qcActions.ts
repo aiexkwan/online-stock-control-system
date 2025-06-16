@@ -466,8 +466,14 @@ export async function createQcDatabaseEntriesWithTransaction(
 }
 
 /**
+ * @deprecated Use generatePalletNumbers from '@/app/utils/palletGeneration' instead
+ * This uses the old V3 RPC function. V6 is now the standard.
+ * 
  * Generate pallet numbers using individual atomic RPC calls
  * No caching - each call generates one pallet number atomically
+ * 
+ * This function is kept for backward compatibility only.
+ * All new code should use the unified pallet generation utility.
  */
 export async function generatePalletNumbersDirectQuery(count: number): Promise<{
   palletNumbers: string[];
@@ -603,6 +609,9 @@ export async function generatePalletNumbersDirectQuery(count: number): Promise<{
 }
 
 /**
+ * @deprecated Use generatePalletNumbers from '@/app/utils/palletGeneration' instead
+ * This function is kept for backward compatibility only.
+ * 
  * Generate pallet numbers and series on server side
  */
 export async function generatePalletNumbersAndSeries(count: number): Promise<{

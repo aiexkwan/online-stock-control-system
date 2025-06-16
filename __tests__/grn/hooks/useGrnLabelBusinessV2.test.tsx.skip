@@ -1,0 +1,349 @@
+import { renderHook, act, waitFor } from '@testing-library/react';
+import { useGrnLabelBusinessV2 } from '@/app/print-grnlabel/hooks/useGrnLabelBusinessV2';
+import { grnErrorHandler } from '@/app/print-grnlabel/services/ErrorHandler';
+import { toast } from 'sonner';
+
+// Mock 相關依賴
+jest.mock('@/app/print-grnlabel/services/ErrorHandler');
+jest.mock('sonner');
+jest.mock('@/app/actions/grnActions', () => ({
+  fetchSupplierInfoByCode: jest.fn(),
+  fetchProductInfoByCode: jest.fn(),
+  generateAtomicPalletNumbersV3: jest.fn(),
+  savePalletData: jest.fn(),
+}));
+jest.mock('@/app/utils/pdfGeneration', () => ({
+  generatePDF: jest.fn(),
+}));
+
+const mockActions = {
+  fetchSupplierInfoByCode: require('@/app/actions/grnActions').fetchSupplierInfoByCode,
+  fetchProductInfoByCode: require('@/app/actions/grnActions').fetchProductInfoByCode,
+  generateAtomicPalletNumbersV3: require('@/app/actions/grnActions').generateAtomicPalletNumbersV3,
+  savePalletData: require('@/app/actions/grnActions').savePalletData,
+};
+
+const mockGeneratePDF = require('@/app/utils/pdfGeneration').generatePDF;
+
+describe.skip('useGrnLabelBusinessV2 - GRN 標籤業務邏輯', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    jest.useFakeTimers();
+  });
+
+  afterEach(() => {
+    jest.runOnlyPendingTimers();
+    jest.useRealTimers();
+  });
+
+  describe('供應商查詢', () => {
+    test('成功查詢供應商信息', async () => {
+      const supplierInfo = {
+        success: true,
+        data: {
+          code: 'SUP001',
+          name: 'Test Supplier Ltd',
+          address: '123 Test Street',
+        },
+      };
+
+      mockActions.fetchSupplierInfoByCode.mockResolvedValueOnce(supplierInfo);
+
+      const { result } = renderHook(() => useGrnLabelBusinessV2());
+
+      // 設置供應商代碼
+      act(() => {
+        result.current.actions.setFormField('materialSupplier', 'SUP001');
+      });
+
+      // 觸發查詢
+      await act(async () => {
+        await result.current.handlers.handleSupplierLookup();
+      });
+
+      expect(mockActions.fetchSupplierInfoByCode).toHaveBeenCalledWith('SUP001');
+      expect(result.current.state.supplierInfo).toEqual(supplierInfo.data);
+    });
+
+    test('處理供應商查詢錯誤', async () => {
+      mockActions.fetchSupplierInfoByCode.mockResolvedValueOnce({
+        success: false,
+        error: 'Supplier not found',
+      });
+
+      const { result } = renderHook(() => useGrnLabelBusinessV2());
+
+      act(() => {
+        result.current.actions.setFormField('materialSupplier', 'INVALID');
+      });
+
+      await act(async () => {
+        await result.current.handlers.handleSupplierLookup();
+      });
+
+      expect(grnErrorHandler.handleSupplierError).toHaveBeenCalled();
+      expect(result.current.state.supplierInfo).toBeNull();
+    });
+
+    test('防抖供應商查詢', async () => {
+      const { result } = renderHook(() => useGrnLabelBusinessV2());
+
+      // 快速改變供應商代碼多次
+      act(() => {
+        result.current.actions.setFormField('materialSupplier', 'S');
+      });
+      act(() => {
+        result.current.actions.setFormField('materialSupplier', 'SU');
+      });
+      act(() => {
+        result.current.actions.setFormField('materialSupplier', 'SUP');
+      });
+      act(() => {
+        result.current.actions.setFormField('materialSupplier', 'SUP001');
+      });
+
+      // 前進時間，觸發防抖
+      act(() => {
+        jest.advanceTimersByTime(500);
+      });
+
+      await waitFor(() => {
+        // 應該只調用一次，使用最後的值
+        expect(mockActions.fetchSupplierInfoByCode).toHaveBeenCalledTimes(1);
+        expect(mockActions.fetchSupplierInfoByCode).toHaveBeenCalledWith('SUP001');
+      });
+    });
+  });
+
+  describe('產品查詢', () => {
+    test('成功查詢產品信息', async () => {
+      const productInfo = {
+        success: true,
+        data: {
+          code: 'PROD001',
+          description: 'Test Product',
+        },
+      };
+
+      mockActions.fetchProductInfoByCode.mockResolvedValueOnce(productInfo);
+
+      const { result } = renderHook(() => useGrnLabelBusinessV2());
+
+      act(() => {
+        result.current.actions.setFormField('productCode', 'PROD001');
+      });
+
+      await act(async () => {
+        await result.current.handlers.handleProductLookup();
+      });
+
+      expect(mockActions.fetchProductInfoByCode).toHaveBeenCalledWith('PROD001');
+      expect(result.current.state.productInfo).toEqual(productInfo.data);
+    });
+
+    test('產品查詢錯誤處理', async () => {
+      mockActions.fetchProductInfoByCode.mockRejectedValueOnce(new Error('Network error'));
+
+      const { result } = renderHook(() => useGrnLabelBusinessV2());
+
+      act(() => {
+        result.current.actions.setFormField('productCode', 'PROD001');
+      });
+
+      await act(async () => {
+        await result.current.handlers.handleProductLookup();
+      });
+
+      expect(grnErrorHandler.handleDatabaseError).toHaveBeenCalled();
+    });
+  });
+
+  describe('表單提交', () => {
+    test('成功生成標籤', async () => {
+      // 設置成功的模擬響應
+      mockActions.generateAtomicPalletNumbersV3.mockResolvedValueOnce({
+        success: true,
+        data: ['PAL001', 'PAL002'],
+      });
+
+      mockActions.savePalletData.mockResolvedValueOnce({
+        success: true,
+      });
+
+      mockGeneratePDF.mockResolvedValueOnce({ success: true });
+
+      const { result } = renderHook(() => useGrnLabelBusinessV2());
+
+      // 設置表單數據
+      act(() => {
+        result.current.actions.setFormField('grnNumber', 'GRN001');
+        result.current.actions.setFormField('materialSupplier', 'SUP001');
+        result.current.actions.setFormField('productCode', 'PROD001');
+        result.current.actions.setSupplierInfo({
+          code: 'SUP001',
+          name: 'Test Supplier',
+        });
+        result.current.actions.setProductInfo({
+          code: 'PROD001',
+          description: 'Test Product',
+        });
+        result.current.actions.setPalletType('whiteDry', '2');
+        result.current.actions.setGrossWeights(['100', '200']);
+      });
+
+      // 提交表單
+      await act(async () => {
+        await result.current.handlers.handleSubmit();
+      });
+
+      expect(mockActions.generateAtomicPalletNumbersV3).toHaveBeenCalledWith(2, 'weight');
+      expect(mockActions.savePalletData).toHaveBeenCalled();
+      expect(mockGeneratePDF).toHaveBeenCalled();
+      expect(toast.success).toHaveBeenCalled();
+    });
+
+    test('處理托盤生成錯誤', async () => {
+      mockActions.generateAtomicPalletNumbersV3.mockResolvedValueOnce({
+        success: false,
+        error: 'Failed to generate pallet numbers',
+      });
+
+      const { result } = renderHook(() => useGrnLabelBusinessV2());
+
+      // 設置必要的表單數據
+      act(() => {
+        result.current.actions.setFormField('grnNumber', 'GRN001');
+        result.current.actions.setPalletType('whiteDry', '1');
+        result.current.actions.setGrossWeights(['100']);
+      });
+
+      await act(async () => {
+        await result.current.handlers.handleSubmit();
+      });
+
+      expect(grnErrorHandler.handlePalletGenerationError).toHaveBeenCalled();
+      expect(mockActions.savePalletData).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('表單驗證', () => {
+    test('驗證必填欄位', async () => {
+      const { result } = renderHook(() => useGrnLabelBusinessV2());
+
+      // 提交空表單
+      await act(async () => {
+        await result.current.handlers.handleSubmit();
+      });
+
+      expect(grnErrorHandler.handleValidationError).toHaveBeenCalled();
+      expect(mockActions.generateAtomicPalletNumbersV3).not.toHaveBeenCalled();
+    });
+
+    test('驗證無效的重量輸入', () => {
+      const { result } = renderHook(() => useGrnLabelBusinessV2());
+
+      // 輸入無效重量
+      act(() => {
+        result.current.handlers.handleWeightChange(0, 'abc');
+      });
+
+      expect(grnErrorHandler.handleWeightError).toHaveBeenCalled();
+    });
+
+    test('驗證重量為零', () => {
+      const { result } = renderHook(() => useGrnLabelBusinessV2());
+
+      // 輸入零重量
+      act(() => {
+        result.current.handlers.handleWeightChange(0, '0');
+      });
+
+      expect(grnErrorHandler.handleWeightError).toHaveBeenCalled();
+    });
+  });
+
+  describe('鍵盤事件處理', () => {
+    test('Enter 鍵觸發供應商查詢', () => {
+      const { result } = renderHook(() => useGrnLabelBusinessV2());
+
+      const event = {
+        key: 'Enter',
+        preventDefault: jest.fn(),
+      } as unknown as React.KeyboardEvent;
+
+      act(() => {
+        result.current.actions.setFormField('materialSupplier', 'SUP001');
+      });
+
+      act(() => {
+        result.current.handlers.handleSupplierKeyDown(event);
+      });
+
+      expect(event.preventDefault).toHaveBeenCalled();
+      expect(mockActions.fetchSupplierInfoByCode).toHaveBeenCalledWith('SUP001');
+    });
+
+    test('Enter 鍵觸發產品查詢', () => {
+      const { result } = renderHook(() => useGrnLabelBusinessV2());
+
+      const event = {
+        key: 'Enter',
+        preventDefault: jest.fn(),
+      } as unknown as React.KeyboardEvent;
+
+      act(() => {
+        result.current.actions.setFormField('productCode', 'PROD001');
+      });
+
+      act(() => {
+        result.current.handlers.handleProductKeyDown(event);
+      });
+
+      expect(event.preventDefault).toHaveBeenCalled();
+      expect(mockActions.fetchProductInfoByCode).toHaveBeenCalledWith('PROD001');
+    });
+  });
+
+  describe('重置功能', () => {
+    test('重置產品和重量', () => {
+      const { result } = renderHook(() => useGrnLabelBusinessV2());
+
+      // 先設置一些數據
+      act(() => {
+        result.current.actions.setProductInfo({
+          code: 'PROD001',
+          description: 'Test Product',
+        });
+        result.current.actions.setGrossWeights(['100', '200', '300']);
+      });
+
+      // 執行重置
+      act(() => {
+        result.current.handlers.handleResetProductAndWeights();
+      });
+
+      expect(result.current.state.productInfo).toBeNull();
+      expect(result.current.state.grossWeights).toEqual(['']);
+    });
+
+    test('重置整個表單', () => {
+      const { result } = renderHook(() => useGrnLabelBusinessV2());
+
+      // 設置數據
+      act(() => {
+        result.current.actions.setFormField('grnNumber', 'GRN001');
+        result.current.actions.setFormField('materialSupplier', 'SUP001');
+        result.current.actions.setLabelMode('qty');
+      });
+
+      // 重置表單
+      act(() => {
+        result.current.handlers.handleResetForm();
+      });
+
+      expect(result.current.state.formData.grnNumber).toBe('');
+      expect(result.current.state.formData.materialSupplier).toBe('');
+      expect(result.current.state.labelMode).toBe('weight');
+    });
+  });
+});

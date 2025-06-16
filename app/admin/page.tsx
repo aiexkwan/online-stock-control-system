@@ -41,6 +41,7 @@ import {
   FolderOpenIcon,
   SparklesIcon
 } from '@heroicons/react/24/outline';
+import { ReportsButton } from '@/app/components/reports/ReportsButton';
 import { useAuth } from '@/app/hooks/useAuth';
 import MotionBackground from '../components/MotionBackground';
 
@@ -1210,18 +1211,28 @@ export default function AdminPanelPage() {
                 ))}
               </div>
 
-              {/* Right side - Mobile menu button */}
-              <div className="md:hidden">
-                <button
-                  onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                  className="p-3 text-slate-300 hover:text-white hover:bg-slate-700/50 rounded-xl transition-all duration-300"
-                >
-                  {isDropdownOpen ? (
-                    <XMarkIcon className="w-6 h-6" />
-                  ) : (
-                    <Bars3Icon className="w-6 h-6" />
-                  )}
-                </button>
+              {/* Right side - Reports button and Mobile menu button */}
+              <div className="flex items-center gap-2">
+                {/* Reports Button - visible on all screen sizes */}
+                <ReportsButton 
+                  variant="outline"
+                  size="sm"
+                  className="bg-slate-700/50 border-slate-600/50 hover:bg-slate-600/50 hover:border-slate-500/70 text-slate-300 hover:text-white"
+                />
+                
+                {/* Mobile menu button */}
+                <div className="md:hidden">
+                  <button
+                    onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                    className="p-3 text-slate-300 hover:text-white hover:bg-slate-700/50 rounded-xl transition-all duration-300"
+                  >
+                    {isDropdownOpen ? (
+                      <XMarkIcon className="w-6 h-6" />
+                    ) : (
+                      <Bars3Icon className="w-6 h-6" />
+                    )}
+                  </button>
+                </div>
               </div>
             </div>
 

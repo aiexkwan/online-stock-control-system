@@ -13,6 +13,7 @@ import {
   XMarkIcon
 } from '@heroicons/react/24/outline';
 import { UnifiedSearch } from '@/components/ui/unified-search';
+import { EnhancedMobileScanner } from './EnhancedMobileScanner';
 import { toast } from 'sonner';
 
 interface MobileOrderLoadingProps {
@@ -126,18 +127,9 @@ export default function MobileOrderLoading({
       {showOrderSelection && !selectedOrderRef && (
         <MobileCard>
           <div className={mobileConfig.spacing.stack}>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center">
-                <ClipboardDocumentListIcon className="h-6 w-6 mr-2 text-green-400" />
-                <h3 className={mobileConfig.fontSize.h3}>Select Order</h3>
-              </div>
-              <MobileButton
-                variant="ghost"
-                size="sm"
-                onClick={onChangeUser}
-              >
-                Change User
-              </MobileButton>
+            <div className="flex items-center">
+              <ClipboardDocumentListIcon className="h-6 w-6 mr-2 text-green-400" />
+              <h3 className={mobileConfig.fontSize.h3}>Select Order</h3>
             </div>
             
             {/* Order Search */}
@@ -150,7 +142,7 @@ export default function MobileOrderLoading({
             />
             
             {/* Order List */}
-            <div className="space-y-2 max-h-[60vh] overflow-y-auto">
+            <div className="space-y-2 max-h-[60vh] overflow-y-auto" id="mobile-order-list">
               {availableOrders
                 .filter(orderRef => orderRef.toLowerCase().includes(orderSearchQuery.toLowerCase()))
                 .map((orderRef) => {
@@ -257,16 +249,16 @@ export default function MobileOrderLoading({
                 </div>
               </div>
               
-              <UnifiedSearch
-                ref={searchInputRef}
-                searchType="pallet"
-                onSelect={onSearchSelect}
-                placeholder="Scan or search pallet..."
-                enableAutoDetection={true}
+              <EnhancedMobileScanner
                 value={searchValue}
                 onChange={onSearchChange}
+                onSelect={onSearchSelect}
                 isLoading={isSearching}
-                disabled={isSearching}
+                recentScans={recentLoads.slice(0, 5).map(load => ({
+                  value: load.pallet_num,
+                  timestamp: new Date(load.action_time),
+                  success: true
+                }))}
               />
               
               

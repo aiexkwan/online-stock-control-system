@@ -317,6 +317,7 @@ export type Database = {
       record_inventory: {
         Row: {
           await: number | null
+          await_grn: number | null
           backcarpark: number | null
           bulk: number | null
           fold: number | null
@@ -330,6 +331,7 @@ export type Database = {
         }
         Insert: {
           await?: number | null
+          await_grn?: number | null
           backcarpark?: number | null
           bulk?: number | null
           fold?: number | null
@@ -343,6 +345,7 @@ export type Database = {
         }
         Update: {
           await?: number | null
+          await_grn?: number | null
           backcarpark?: number | null
           bulk?: number | null
           fold?: number | null

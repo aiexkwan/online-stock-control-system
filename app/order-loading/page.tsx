@@ -27,6 +27,11 @@ import {
 import { loadPalletToOrder, undoLoadPallet } from '@/app/actions/orderLoadingActions';
 import MotionBackground from '../components/MotionBackground';
 import MobileOrderLoading from './components/MobileOrderLoading';
+import { VirtualizedOrderList, virtualScrollStyles } from './components/VirtualizedOrderList';
+import { useOrderDataCache, useOrderSummariesCache } from './hooks/useOrderCache';
+import { useSoundFeedback, useSoundSettings } from '@/app/hooks/useSoundFeedback';
+import { SoundSettingsToggle } from './components/SoundSettingsToggle';
+import { LoadingProgressChart } from './components/LoadingProgressChart';
 
 interface OrderData {
   order_ref: string;
@@ -65,6 +70,17 @@ export default function OrderLoadingPage() {
   const [showUndoDialog, setShowUndoDialog] = useState(false);
   const [undoItem, setUndoItem] = useState<any>(null);
   
+  // Cache hooks
+  const orderDataCache = useOrderDataCache();
+  const orderSummariesCache = useOrderSummariesCache();
+  
+  // Sound feedback hooks
+  const soundSettings = useSoundSettings();
+  const sound = useSoundFeedback({
+    enabled: soundSettings.getSoundEnabled(),
+    volume: soundSettings.getSoundVolume()
+  });
+  
   // Refs
   const idInputRef = useRef<HTMLInputElement>(null);
   const searchInputRef = useRef<any>(null);
@@ -87,6 +103,21 @@ export default function OrderLoadingPage() {
       localStorage.setItem('orderLoadingUserId', idNumber);
     }
   }, [isIdValid, idNumber]);
+
+  // Clear ID from localStorage when leaving the page
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      localStorage.removeItem('orderLoadingUserId');
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    
+    // Also clear when component unmounts
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      localStorage.removeItem('orderLoadingUserId');
+    };
+  }, []);
 
   // Check if ID exists in data_id table
   const checkIdExists = async (id: string) => {
@@ -113,9 +144,11 @@ export default function OrderLoadingPage() {
         setAvailableOrders([]);
         setSelectedOrderRef(null);
         setOrderData([]);
+        sound.playError();
         toast.error(`❌ ID ${id} not found. Please check your ID number.`);
       } else {
         setIsIdValid(true);
+        sound.playSuccess();
         await fetchAvailableOrders();
       }
     } catch (error) {
@@ -130,6 +163,18 @@ export default function OrderLoadingPage() {
   // Fetch available order references from data_order table with enhanced data
   const fetchAvailableOrders = async () => {
     try {
+      // Check cache first
+      const cacheKey = 'order-summaries-all';
+      const cachedSummaries = orderSummariesCache.get(cacheKey);
+      
+      if (cachedSummaries) {
+        console.log('[OrderCache] Using cached order summaries');
+        setOrderSummaries(cachedSummaries);
+        setAvailableOrders(Array.from(cachedSummaries.keys()));
+        return;
+      }
+
+      console.log('[OrderCache] Fetching fresh order summaries');
       const { data, error } = await supabase
         .from('data_order')
         .select('order_ref, product_qty, loaded_qty')
@@ -172,6 +217,9 @@ export default function OrderLoadingPage() {
         order.percentage = order.totalQty > 0 ? (order.loadedQty / order.totalQty) * 100 : 0;
       });
 
+      // Cache the summaries
+      orderSummariesCache.set(cacheKey, orderMap);
+      
       const uniqueOrderRefs = Array.from(orderMap.keys());
       setAvailableOrders(uniqueOrderRefs);
       setOrderSummaries(orderMap);
@@ -186,6 +234,18 @@ export default function OrderLoadingPage() {
     setIsLoadingOrders(true);
     
     try {
+      // Check cache first
+      const cacheKey = `order-data-${orderRef}`;
+      const cachedData = orderDataCache.get(cacheKey);
+      
+      if (cachedData) {
+        console.log(`[OrderCache] Using cached data for order: ${orderRef}`);
+        setOrderData(cachedData);
+        setIsLoadingOrders(false);
+        return;
+      }
+
+      console.log(`[OrderCache] Fetching fresh data for order: ${orderRef}`);
       const { data, error } = await supabase
         .from('data_order')
         .select('order_ref, product_code, product_desc, product_qty, loaded_qty')
@@ -198,7 +258,11 @@ export default function OrderLoadingPage() {
         return;
       }
 
-      setOrderData(data || []);
+      const orderDataArray = data || [];
+      setOrderData(orderDataArray);
+      
+      // Cache the order data
+      orderDataCache.set(cacheKey, orderDataArray);
     } catch (error) {
       console.error('Error fetching order data:', error);
       toast.error('Error occurred while fetching order data');
@@ -256,6 +320,7 @@ export default function OrderLoadingPage() {
 
   // Handle order selection
   const handleOrderSelect = (orderRef: string) => {
+    sound.playScan();
     setSelectedOrderRef(orderRef);
     fetchOrderData(orderRef);
     fetchRecentLoads(orderRef);
@@ -329,14 +394,17 @@ export default function OrderLoadingPage() {
       );
       
       if (result.success) {
+        sound.playSuccess();
         toast.success(`✓ Successfully undone: ${undoItem.pallet_num}`);
         // Refresh data
         await refreshAllData();
       } else {
+        sound.playError();
         toast.error(`❌ Failed to undo: ${result.message}`);
       }
     } catch (error) {
       console.error('Error undoing load:', error);
+      sound.playError();
       toast.error('❌ System error during undo');
     } finally {
       setShowUndoDialog(false);
@@ -347,6 +415,10 @@ export default function OrderLoadingPage() {
   // Refresh all data
   const refreshAllData = async () => {
     if (selectedOrderRef) {
+      // Clear caches to ensure fresh data
+      orderDataCache.remove(`order-data-${selectedOrderRef}`);
+      orderSummariesCache.remove('order-summaries-all');
+      
       await Promise.all([
         fetchOrderData(selectedOrderRef),
         fetchRecentLoads(selectedOrderRef),
@@ -367,6 +439,9 @@ export default function OrderLoadingPage() {
       const response = await loadPalletToOrder(selectedOrderRef, result.data.value);
       
       if (response.success) {
+        // Play success sound
+        sound.playSuccess();
+        
         // Show success with better formatting
         if (response.data) {
           toast.success(
@@ -378,6 +453,7 @@ export default function OrderLoadingPage() {
         
         // Show warning if anomaly detected
         if (response.warning) {
+          sound.playWarning();
           setTimeout(() => {
             toast.warning(response.warning);
           }, 500);
@@ -409,14 +485,17 @@ export default function OrderLoadingPage() {
           errorMessage = response.message; // Already clear
         } else if (response.error === 'DUPLICATE_SCAN') {
           // Special handling for duplicate scan - use warning instead of error
+          sound.playWarning();
           toast.warning(response.message);
           return;
         }
         
+        sound.playError();
         toast.error(`❌ Loading Failed: ${errorMessage}`);
       }
     } catch (error) {
       console.error('Error loading pallet:', error);
+      sound.playError();
       toast.error('Failed to load pallet');
     } finally {
       setIsSearching(false);
@@ -442,12 +521,17 @@ export default function OrderLoadingPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Page Header */}
           <div className="mb-6 md:mb-8">
-            <h1 className={cn(mobileConfig.fontSize.h1, "font-bold bg-gradient-to-r from-blue-300 via-cyan-300 to-blue-200 bg-clip-text text-transparent mb-2")}>
-              Order Loading
-            </h1>
-            <p className={cn(mobileConfig.fontSize.bodyLarge, "text-slate-400")}>
-              Manage order loading process
-            </p>
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className={cn(mobileConfig.fontSize.h1, "font-bold bg-gradient-to-r from-blue-300 via-cyan-300 to-blue-200 bg-clip-text text-transparent mb-2")}>
+                  Order Loading
+                </h1>
+                <p className={cn(mobileConfig.fontSize.bodyLarge, "text-slate-400")}>
+                  Manage order loading process
+                </p>
+              </div>
+              <SoundSettingsToggle />
+            </div>
           </div>
 
           {/* Mobile View */}
@@ -465,16 +549,7 @@ export default function OrderLoadingPage() {
               orderSearchQuery={orderSearchQuery}
               onOrderSearchChange={setOrderSearchQuery}
               onOrderSelect={handleOrderSelect}
-              onChangeUser={() => {
-                localStorage.removeItem('orderLoadingUserId');
-                setIdNumber('');
-                setIsIdValid(false);
-                setSelectedOrderRef(null);
-                setOrderData([]);
-                if (idInputRef.current) {
-                  idInputRef.current.focus();
-                }
-              }}
+              onChangeUser={() => {}} // Keep empty function to avoid prop errors
               orderData={orderData}
               isLoadingOrders={isLoadingOrders}
               searchValue={searchValue}
@@ -540,31 +615,12 @@ export default function OrderLoadingPage() {
               </Card>
 
               {/* Order Selection Card */}
-              {isIdValid && availableOrders.length > 0 && (
+              {isIdValid && availableOrders.length > 0 && !selectedOrderRef && (
                 <Card className="bg-slate-800/50 border-slate-700/50 backdrop-blur-sm">
                   <CardHeader>
-                    <CardTitle className="flex items-center justify-between text-slate-200">
-                      <div className="flex items-center">
-                        <ClipboardDocumentListIcon className="h-6 w-6 mr-2 text-green-400" />
-                        Choose order below
-                      </div>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => {
-                          localStorage.removeItem('orderLoadingUserId');
-                          setIdNumber('');
-                          setIsIdValid(false);
-                          setSelectedOrderRef(null);
-                          setOrderData([]);
-                          if (idInputRef.current) {
-                            idInputRef.current.focus();
-                          }
-                        }}
-                        className="text-slate-400 hover:text-white"
-                      >
-                        Change User
-                      </Button>
+                    <CardTitle className="flex items-center text-slate-200">
+                      <ClipboardDocumentListIcon className="h-6 w-6 mr-2 text-green-400" />
+                      Choose order
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
@@ -579,69 +635,14 @@ export default function OrderLoadingPage() {
                       />
                     </div>
                     
-                    <div className="space-y-2 md:space-y-3 max-h-64 md:max-h-96 overflow-y-auto">
-                      {availableOrders
-                        .filter(orderRef => 
-                          orderRef.toLowerCase().includes(orderSearchQuery.toLowerCase())
-                        )
-                        .map((orderRef) => {
-                          const summary = orderSummaries.get(orderRef);
-                          const isSelected = selectedOrderRef === orderRef;
-                          const isComplete = summary && summary.percentage >= 100;
-                          
-                          return (
-                            <button
-                              key={orderRef}
-                              onClick={() => handleOrderSelect(orderRef)}
-                              className={`w-full text-left px-3 py-2 md:px-4 md:py-3 rounded-xl transition-all duration-200 ${
-                                isSelected
-                                  ? 'bg-green-600/20 border-2 border-green-500/50 shadow-lg'
-                                  : isComplete
-                                  ? 'bg-green-900/20 border-2 border-green-700/30 hover:bg-green-800/30'
-                                  : 'bg-slate-700/30 border-2 border-slate-600/30 hover:bg-slate-700/50 hover:border-slate-500/50'
-                              }`}
-                            >
-                              <div className="flex items-center justify-between">
-                                <div className="flex-1">
-                                  <div className="flex items-center gap-2">
-                                    <span className="font-semibold text-white">Order #{orderRef}</span>
-                                    {isComplete && (
-                                      <span className="text-xs bg-green-500/20 text-green-400 px-2 py-0.5 rounded-full">
-                                        ✓ Complete
-                                      </span>
-                                    )}
-                                  </div>
-                                  {summary && (
-                                    <div className="mt-2 space-y-1">
-                                      <div className="text-xs text-slate-400">
-                                        {summary.completedItems}/{summary.itemCount} items • 
-                                        {summary.loadedQty}/{summary.totalQty} units
-                                      </div>
-                                      <div className="w-full bg-slate-600/30 rounded-full h-1.5 overflow-hidden">
-                                        <div 
-                                          className={`h-full transition-all duration-500 ${
-                                            isComplete
-                                              ? 'bg-green-500'
-                                              : summary.percentage > 75
-                                              ? 'bg-yellow-500'
-                                              : summary.percentage > 50
-                                              ? 'bg-orange-500'
-                                              : 'bg-blue-500'
-                                          }`}
-                                          style={{ width: `${summary.percentage}%` }}
-                                        />
-                                      </div>
-                                    </div>
-                                  )}
-                                </div>
-                                {isSelected && (
-                                  <CheckCircleIcon className="h-5 w-5 text-green-400 flex-shrink-0 ml-2" />
-                                )}
-                              </div>
-                            </button>
-                          );
-                        })}
-                    </div>
+                    <VirtualizedOrderList
+                      orders={availableOrders}
+                      orderSummaries={orderSummaries}
+                      selectedOrderRef={selectedOrderRef}
+                      searchQuery={orderSearchQuery}
+                      onOrderSelect={handleOrderSelect}
+                      containerHeight={384} // Fixed height for desktop
+                    />
                   </CardContent>
                 </Card>
               )}
@@ -649,47 +650,35 @@ export default function OrderLoadingPage() {
 
             {/* Right Column - Order Information and Search */}
             <div className="space-y-6">
-              {/* Order Summary Card */}
-              {selectedOrderRef && orderSummaries.has(selectedOrderRef) && (
-                <Card className="bg-slate-800/50 border-slate-700/50 backdrop-blur-sm">
-                  <CardContent className="p-6">
-                    <div className="grid grid-cols-2 gap-2 md:grid-cols-4 md:gap-4 text-center">
-                      <div className="bg-slate-700/30 rounded-lg p-2 md:p-3">
-                        <div className="text-xl md:text-2xl font-bold text-cyan-300">
-                          {orderSummaries.get(selectedOrderRef)!.percentage.toFixed(0)}%
-                        </div>
-                        <div className="text-xs text-slate-400 mt-1">Overall Progress</div>
-                      </div>
-                      <div className="bg-slate-700/30 rounded-lg p-2 md:p-3">
-                        <div className="text-2xl font-bold text-green-300">
-                          {orderSummaries.get(selectedOrderRef)!.completedItems}
-                        </div>
-                        <div className="text-xs text-slate-400 mt-1">Completed Items</div>
-                      </div>
-                      <div className="bg-slate-700/30 rounded-lg p-2 md:p-3">
-                        <div className="text-2xl font-bold text-yellow-300">
-                          {orderSummaries.get(selectedOrderRef)!.loadedQty}
-                        </div>
-                        <div className="text-xs text-slate-400 mt-1">Units Loaded</div>
-                      </div>
-                      <div className="bg-slate-700/30 rounded-lg p-2 md:p-3">
-                        <div className="text-2xl font-bold text-purple-300">
-                          {orderSummaries.get(selectedOrderRef)!.totalQty}
-                        </div>
-                        <div className="text-xs text-slate-400 mt-1">Total Units</div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
+              {/* Progress Chart - Show first for better visibility */}
+              {selectedOrderRef && orderData.length > 0 && (
+                <LoadingProgressChart 
+                  orderData={orderData}
+                  recentLoads={recentLoads}
+                />
               )}
               
               {/* Order Information Card */}
               {selectedOrderRef && (
                 <Card className="bg-slate-800/50 border-slate-700/50 backdrop-blur-sm">
                   <CardHeader>
-                    <CardTitle className="flex items-center text-slate-200">
-                      <ClipboardDocumentListIcon className="h-6 w-6 mr-2 text-cyan-400" />
-                      Order Information - Order #{selectedOrderRef}
+                    <CardTitle className="flex items-center justify-between text-slate-200">
+                      <div className="flex items-center">
+                        <ClipboardDocumentListIcon className="h-6 w-6 mr-2 text-cyan-400" />
+                        Order Details - Order #{selectedOrderRef}
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          setSelectedOrderRef(null);
+                          setOrderData([]);
+                          setSearchValue('');
+                        }}
+                        className="text-purple-400 hover:text-purple-300 bg-transparent hover:bg-transparent"
+                      >
+                        Change Order
+                      </Button>
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
@@ -710,60 +699,34 @@ export default function OrderLoadingPage() {
                           
                           return (
                             <div key={index} className="bg-slate-700/30 rounded-lg p-4 border border-slate-600/30">
-                              {/* Overload Warning */}
-                              {isNearComplete && (
-                                <div className="mb-3 p-2 bg-orange-900/30 border border-orange-600/50 rounded-lg">
-                                  <div className="flex items-center text-orange-400 text-sm">
-                                    <ExclamationTriangleIcon className="h-4 w-4 mr-2" />
-                                    <span>⚠️ Nearly full! Only {remainingQty} units remaining</span>
+                              <div className="flex justify-between items-start">
+                                <div className="flex-1">
+                                  <div className="flex items-center gap-2">
+                                    <span className="font-mono text-cyan-300">{order.product_code}</span>
+                                    {isComplete && (
+                                      <span className="text-xs bg-green-500/20 text-green-400 px-2 py-0.5 rounded-full">
+                                        ✓ Complete
+                                      </span>
+                                    )}
                                   </div>
+                                  <div className="text-sm text-slate-400 mt-1">{order.product_desc}</div>
+                                </div>
+                                <div className="text-right">
+                                  <div className="text-lg font-semibold text-white">
+                                    {loadedQty}/{totalQty}
+                                  </div>
+                                  <div className="text-sm text-slate-400">units</div>
+                                </div>
+                              </div>
+                              
+                              {/* Warning for nearly complete items */}
+                              {isNearComplete && (
+                                <div className="mt-3 p-2 bg-orange-900/30 border border-orange-600/50 rounded-lg">
+                                  <span className="text-xs text-orange-400">
+                                    ⚠️ Only {remainingQty} units remaining
+                                  </span>
                                 </div>
                               )}
-                              
-                              {/* Progress Bar */}
-                              <div className="mb-3">
-                                <div className="flex justify-between text-xs mb-1">
-                                  <span className="text-slate-400">
-                                    {loadedQty} / {totalQty} loaded
-                                  </span>
-                                  <span className={isComplete ? 'text-green-400' : isNearComplete ? 'text-orange-400' : 'text-yellow-400'}>
-                                    {percentage.toFixed(0)}%
-                                  </span>
-                                </div>
-                                <div className="w-full bg-slate-600/30 rounded-full h-2 overflow-hidden">
-                                  <div 
-                                    className={`h-full transition-all duration-500 ${
-                                      isComplete 
-                                        ? 'bg-gradient-to-r from-green-500 to-green-400' 
-                                        : percentage > 75 
-                                        ? 'bg-gradient-to-r from-yellow-500 to-yellow-400'
-                                        : percentage > 50
-                                        ? 'bg-gradient-to-r from-orange-500 to-orange-400'
-                                        : 'bg-gradient-to-r from-blue-500 to-blue-400'
-                                    }`}
-                                    style={{ width: `${percentage}%` }}
-                                  />
-                                </div>
-                              </div>
-                              
-                              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-                                <div>
-                                  <span className="text-slate-400">Product Code:</span>
-                                  <span className="text-cyan-300 font-mono ml-2">{order.product_code}</span>
-                                </div>
-                                <div>
-                                  <span className="text-slate-400">Status:</span>
-                                  <span className={`ml-2 font-medium ${
-                                    isComplete ? 'text-green-400' : 'text-yellow-400'
-                                  }`}>
-                                    {isComplete ? '✓ Complete' : 'In Progress'}
-                                  </span>
-                                </div>
-                                <div className="md:col-span-2">
-                                  <span className="text-slate-400">Product Description:</span>
-                                  <span className="text-white ml-2">{order.product_desc}</span>
-                                </div>
-                              </div>
                             </div>
                           );
                         })}
@@ -896,6 +859,9 @@ export default function OrderLoadingPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Virtual Scroll Styles */}
+      <style jsx global>{virtualScrollStyles}</style>
     </MotionBackground>
   );
 } 
