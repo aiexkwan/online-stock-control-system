@@ -1,0 +1,15 @@
+# 創建專案級別的 MCP 配置
+mkdir -p .claude
+cat > .claude/mcp_servers.json << 'EOF'
+{
+  "supabase": {
+    "command": "node",
+    "args": ["./node_modules/@supabase/mcp-server-supabase/dist/index.js"],
+    "env": {
+      "SUPABASE_URL": "https://bbmkuiplnzvpudszrend.supabase.co",
+      "SUPABASE_ANON_KEY": "your-anon-key-here",
+      "SUPABASE_SERVICE_ROLE_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJibWt1aXBsbnp2cHVkc3pyZW5kIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0NTcxNTYwNCwiZXhwIjoyMDYxMjkxNjA0fQ.B0pQF2V0kWdrU2_2VEYXR6qxZzt2oMDvwxD7qiR3huM"
+    }
+  }
+}
+EOF

@@ -37,7 +37,10 @@
       "Bash(npx mcp query:*)",
       "Bash(node:*)",
       "Bash(npx supabase table list:*)",
-      "Bash(npx tsx:*)"
+      "Bash(npx tsx:*)",
+      "Bash(env)",
+      "Bash(npm search supabase mcp)",
+      "Bash(sudo npm install:*)"
     ],
     "deny": []
   }

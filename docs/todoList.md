@@ -184,15 +184,28 @@
    - ~~基於角色的訪問控制 (RBAC)~~
    - ~~細化到按鈕級別的權限管理~~
 
-4. **添加自定義儀表板** (研究中)
-   - 用戶可配置的小部件系統
-   - 拖放式儀表板布局
-   - 保存用戶自定義配置
-   - 研究實施方案：
-     - 使用 react-grid-layout 或 react-beautiful-dnd
-     - 設計小部件註冊系統
-     - 使用 localStorage 或數據庫保存配置
-     - 提供預設模板和重置功能
+4. **添加自定義儀表板** ✅ (2025-06-16 完成)
+   - ✅ 實施拖放式儀表板布局（使用 react-grid-layout）
+   - ✅ 建立小部件註冊系統（WidgetRegistry）
+   - ✅ 實施配置保存機制（localStorage）
+   - ✅ 創建小部件類型系統（支援三種尺寸）
+   - ✅ 將所有 Admin 頁面卡片轉換為可重用小部件：
+     - OutputStatsWidget - 生產統計
+     - BookedOutStatsWidget - 出貨統計
+     - AskDatabaseWidget - AI 對話（只支援 Large）
+     - ProductMixChartWidget - 產品分佈
+     - AcoOrderProgressWidget - ACO 訂單進度
+     - InventorySearchWidget - 庫存搜尋
+     - FinishedProductWidget - 成品歷史
+     - MaterialReceivedWidget - 材料收貨
+     - PalletOverviewWidget - 棧板概覽
+     - VoidStatsWidget - 作廢統計
+   - ✅ 實施小部件尺寸選擇器（編輯模式）
+   - ✅ 支援編輯、保存、重置功能
+   - 待完成：
+     - [ ] 實施 Supabase 儲存（目前使用 localStorage）
+     - [ ] 添加預設模板功能
+     - [ ] 實施導入/導出配置
 
 ## 報表系統整合 ✅ (2025-06-16 完成)
 1. **統一報表框架** ✅
