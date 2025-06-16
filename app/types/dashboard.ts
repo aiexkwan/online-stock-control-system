@@ -22,15 +22,37 @@ export enum WidgetType {
   MATERIAL_RECEIVED = 'material_received',
   PALLET_OVERVIEW = 'pallet_overview',
   VOID_STATS = 'void_stats',
+  VOID_PALLET = 'void_pallet',
+  VIEW_HISTORY = 'view_history',
+  DATABASE_UPDATE = 'database_update',
+  UPLOAD_FILES = 'upload_files',
+  UPLOAD_ORDER_PDF = 'upload_order_pdf',
+  PRODUCT_SPEC = 'product_spec',
+  ANALYTICS_DASHBOARD = 'analytics_dashboard',
+  REPORTS = 'reports',
   CUSTOM = 'custom'
 }
 
 // 小部件尺寸
 export enum WidgetSize {
-  SMALL = 'small',    // 只顯示統計數值
-  MEDIUM = 'medium',  // 添加時間選擇器
-  LARGE = 'large'     // 完整功能包括圖表
+  SMALL = 'small',    // 2x2 - 只顯示統計數值
+  MEDIUM = 'medium',  // 4x4 - 添加更多資訊
+  LARGE = 'large'     // 6x6 - 完整功能包括圖表
 }
+
+// iOS 風格尺寸預設 - 更新為指定尺寸
+export const WidgetSizeConfig = {
+  [WidgetSize.SMALL]: { w: 2, h: 2 },   // 2x2
+  [WidgetSize.MEDIUM]: { w: 4, h: 4 },  // 4x4
+  [WidgetSize.LARGE]: { w: 6, h: 6 }    // 6x6
+};
+
+// 用於編輯模式的彈性尺寸配置 - 允許在範圍內拖動
+export const FlexibleWidgetSizeConfig = {
+  [WidgetSize.SMALL]: { minW: 1, maxW: 3, minH: 1, maxH: 3 },
+  [WidgetSize.MEDIUM]: { minW: 3, maxW: 5, minH: 3, maxH: 5 },
+  [WidgetSize.LARGE]: { minW: 4, maxW: 8, minH: 4, maxH: 8 }
+};
 
 // 小部件配置
 export interface WidgetConfig {

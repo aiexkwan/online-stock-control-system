@@ -11,6 +11,7 @@ import { WidgetComponentProps } from '@/app/types/dashboard';
 import { createClient } from '@/app/utils/supabase/client';
 import { dialogStyles, iconColors } from '@/app/utils/dialogStyles';
 import { format } from 'date-fns';
+import { fromDbTime } from '@/app/utils/timezone';
 
 interface ActivityItem {
   id: string;
@@ -99,7 +100,7 @@ export function RecentActivityWidget({ widget, isEditMode }: WidgetComponentProp
 
   const formatTime = (timestamp: string) => {
     try {
-      const date = new Date(timestamp);
+      const date = fromDbTime(timestamp);
       const now = new Date();
       const diffMs = now.getTime() - date.getTime();
       const diffMins = Math.floor(diffMs / 60000);

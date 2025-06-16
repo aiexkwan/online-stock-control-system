@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { createClient } from '@/lib/supabase';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
+import { getTodayRange, getYesterdayRange, getDateRange } from '@/app/utils/timezone';
 import { 
   ClipboardDocumentListIcon, 
   CubeIcon, 
@@ -54,76 +55,56 @@ export default function MaterialReceived() {
   }, []);
 
   // Get date range based on selected time range
-  const getDateRange = (timeRange: TimeRange) => {
-    const today = new Date();
-    const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59, 999);
-    
+  const getDateRangeForTimeRange = (timeRange: TimeRange) => {
     switch (timeRange) {
-      case 'Today': {
-        const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-        return { start: startOfDay.toISOString(), end: endOfDay.toISOString() };
-      }
-      case 'Yesterday': {
-        const yesterday = new Date(today);
-        yesterday.setDate(today.getDate() - 1);
-        const startOfYesterday = new Date(yesterday.getFullYear(), yesterday.getMonth(), yesterday.getDate());
-        const endOfYesterday = new Date(yesterday.getFullYear(), yesterday.getMonth(), yesterday.getDate(), 23, 59, 59, 999);
-        return { start: startOfYesterday.toISOString(), end: endOfYesterday.toISOString() };
-      }
-      case 'Past 3 days': {
-        const threeDaysAgo = new Date(today);
-        threeDaysAgo.setDate(today.getDate() - 3);
-        threeDaysAgo.setHours(0, 0, 0, 0);
-        return { start: threeDaysAgo.toISOString(), end: endOfDay.toISOString() };
-      }
-      case 'Past 7 days': {
-        const sevenDaysAgo = new Date(today);
-        sevenDaysAgo.setDate(today.getDate() - 7);
-        sevenDaysAgo.setHours(0, 0, 0, 0);
-        return { start: sevenDaysAgo.toISOString(), end: endOfDay.toISOString() };
-      }
+      case 'Today':
+        return getTodayRange();
+      case 'Yesterday':
+        return getYesterdayRange();
+      case 'Past 3 days':
+        return getDateRange(3);
+      case 'Past 7 days':
+        return getDateRange(7);
       default:
-        const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-        return { start: startOfDay.toISOString(), end: endOfDay.toISOString() };
+        return getTodayRange();
     }
   };
 
   async function fetchMaterialSummary(timeRange: TimeRange, reset = false) {
     try {
-    setLoading(true);
+      setLoading(true);
       setError(null);
       
-      const { start, end } = getDateRange(timeRange);
+      const { start, end } = getDateRangeForTimeRange(timeRange);
       
       const { data, error: fetchError } = await supabase
-        .from('record_palletinfo')
-        .select('product_code, product_qty, plt_num, plt_remark')
-        .gte('generate_time', start)
-        .lte('generate_time', end)
-        .ilike('plt_remark', '%Material GRN-%')
-        .order('product_code', { ascending: true });
+        .from('record_grn')
+        .select('material_code, net_weight, plt_num')
+        .gte('creat_time', start)
+        .lte('creat_time', end)
+        .order('material_code', { ascending: true });
       
       if (fetchError) {
         throw new Error(fetchError.message);
       }
       
       if (data) {
-        // Group by product_code (material_code) and calculate totals
+        // Group by material_code and calculate totals
         const materialMap = new Map<string, MaterialSummary>();
         
         for (const record of data) {
-          const { product_code, product_qty } = record;
+          const { material_code, net_weight } = record;
           
-          if (!materialMap.has(product_code)) {
-            materialMap.set(product_code, {
-              material_code: product_code,
+          if (!materialMap.has(material_code)) {
+            materialMap.set(material_code, {
+              material_code: material_code,
               total_qty: 0,
               total_pallets: 0
             });
           }
           
-          const materialSummary = materialMap.get(product_code)!;
-          materialSummary.total_qty += product_qty;
+          const materialSummary = materialMap.get(material_code)!;
+          materialSummary.total_qty += net_weight || 0;
           materialSummary.total_pallets += 1;
         }
         

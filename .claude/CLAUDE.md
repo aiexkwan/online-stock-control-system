@@ -5,6 +5,19 @@ alwaysApply: true
 ---
 # Supabase + Next.js WMS 專案 AI Coding 規則（繁體中文版）
 
+## 記憶系統設定
+本項目使用 mem0 作為對話記憶數據庫，儲存所有與 Claude 的對話記錄。
+
+### 記憶功能
+- 自動儲存每次對話到 mem0
+- 支援搜尋歷史對話內容
+- 記憶與用戶 ID 關聯（預設：kwanchuncheong）
+- API Key 已設定在 conversation_memory.js
+
+### 相關檔案
+- `.claude/conversation_memory.js` - 記憶系統核心功能
+- `mem0_client.js` - mem0 客戶端範例
+
 ## 專案背景
 
 本系統為現代化倉庫管理系統（WMS），以 Web 應用（Next.js App Router + React）結合 Supabase（PostgreSQL）、Tailwind CSS、Shadcn UI / Radix UI，並於 GitHub + Vercel 部署。主要功能包括：

@@ -18,6 +18,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer 
 } from 'recharts';
+import { getTodayRange, getYesterdayRange, getDateRange, formatDbTime } from '@/app/utils/timezone';
 
 interface OutputData {
   today: number;
@@ -65,42 +66,41 @@ export function OutputStatsWidget({ widget, isEditMode }: WidgetComponentProps) 
     try {
       setLoading(true);
       const supabase = createClient();
-      const now = new Date();
-      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-      const yesterday = new Date(today);
-      yesterday.setDate(yesterday.getDate() - 1);
-      const threeDaysAgo = new Date(today);
-      threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
-      const weekAgo = new Date(today);
-      weekAgo.setDate(weekAgo.getDate() - 7);
+      const todayRange = getTodayRange();
+      const yesterdayRange = getYesterdayRange();
+      const threeDaysRange = getDateRange(3);
+      const weekRange = getDateRange(7);
 
       // Get today's count
       const { count: todayCount } = await supabase
         .from('record_palletinfo')
         .select('*', { count: 'exact', head: true })
-        .gte('generate_time', today.toISOString())
+        .gte('generate_time', todayRange.start)
+        .lt('generate_time', todayRange.end)
         .not('plt_remark', 'ilike', '%Material GRN-%');
 
       // Get yesterday's count
       const { count: yesterdayCount } = await supabase
         .from('record_palletinfo')
         .select('*', { count: 'exact', head: true })
-        .gte('generate_time', yesterday.toISOString())
-        .lt('generate_time', today.toISOString())
+        .gte('generate_time', yesterdayRange.start)
+        .lt('generate_time', yesterdayRange.end)
         .not('plt_remark', 'ilike', '%Material GRN-%');
 
       // Get past 3 days count
       const { count: past3DaysCount } = await supabase
         .from('record_palletinfo')
         .select('*', { count: 'exact', head: true })
-        .gte('generate_time', threeDaysAgo.toISOString())
+        .gte('generate_time', threeDaysRange.start)
+        .lt('generate_time', threeDaysRange.end)
         .not('plt_remark', 'ilike', '%Material GRN-%');
 
       // Get past week count
       const { count: pastWeekCount } = await supabase
         .from('record_palletinfo')
         .select('*', { count: 'exact', head: true })
-        .gte('generate_time', weekAgo.toISOString())
+        .gte('generate_time', weekRange.start)
+        .lt('generate_time', weekRange.end)
         .not('plt_remark', 'ilike', '%Material GRN-%');
 
       // Get hourly data for large size
@@ -109,7 +109,8 @@ export function OutputStatsWidget({ widget, isEditMode }: WidgetComponentProps) 
         const { data: hourlyRecords } = await supabase
           .from('record_palletinfo')
           .select('generate_time')
-          .gte('generate_time', today.toISOString())
+          .gte('generate_time', todayRange.start)
+          .lt('generate_time', todayRange.end)
           .not('plt_remark', 'ilike', '%Material GRN-%');
 
         if (hourlyRecords) {

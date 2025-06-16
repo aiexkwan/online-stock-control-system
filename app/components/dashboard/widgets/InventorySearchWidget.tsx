@@ -21,6 +21,7 @@ interface InventoryLocation {
   injection: number;
   pipeline: number;
   await: number;
+  await_grn: number;
   fold: number;
   bulk: number;
   backcarpark: number;
@@ -61,6 +62,7 @@ export function InventorySearchWidget({ widget, isEditMode }: WidgetComponentPro
           injection: 0,
           pipeline: 0,
           await: 0,
+          await_grn: 0,
           fold: 0,
           bulk: 0,
           backcarpark: 0,
@@ -72,6 +74,7 @@ export function InventorySearchWidget({ widget, isEditMode }: WidgetComponentPro
           injection: sum.injection + (record.injection || 0),
           pipeline: sum.pipeline + (record.pipeline || 0),
           await: sum.await + (record.await || 0),
+          await_grn: sum.await_grn + (record.await_grn || 0),
           fold: sum.fold + (record.fold || 0),
           bulk: sum.bulk + (record.bulk || 0),
           backcarpark: sum.backcarpark + (record.backcarpark || 0),
@@ -80,20 +83,22 @@ export function InventorySearchWidget({ widget, isEditMode }: WidgetComponentPro
           injection: 0,
           pipeline: 0,
           await: 0,
+          await_grn: 0,
           fold: 0,
           bulk: 0,
           backcarpark: 0,
           damage: 0
         });
 
-        const total = aggregated.injection + aggregated.pipeline + aggregated.await + 
+        const total = aggregated.injection + aggregated.pipeline + aggregated.await + aggregated.await_grn +
                      aggregated.fold + aggregated.bulk + aggregated.backcarpark + aggregated.damage;
         
         setSearchResults({
           product_code: productCode.toUpperCase(),
           injection: aggregated.injection,
           pipeline: aggregated.pipeline,
-          await: aggregated.await,
+          await: aggregated.await + aggregated.await_grn,  // 合併 await 和 await_grn
+          await_grn: aggregated.await_grn,
           fold: aggregated.fold,
           bulk: aggregated.bulk,
           backcarpark: aggregated.backcarpark,

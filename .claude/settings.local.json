@@ -40,7 +40,13 @@
       "Bash(npx tsx:*)",
       "Bash(env)",
       "Bash(npm search supabase mcp)",
-      "Bash(sudo npm install:*)"
+      "Bash(sudo npm install:*)",
+      "Bash(npx @openmemory/install:*)",
+      "Bash(CI=true npx @openmemory/install --client claude --env OPENMEMORY_API_KEY=om-lrj6iziznpqzdxruq78px2tjylo9ks4w)",
+      "Bash(pip install:*)",
+      "Bash(pip uninstall:*)",
+      "mcp__ide__getDiagnostics",
+      "Bash(pkill:*)"
     ],
     "deny": []
   }

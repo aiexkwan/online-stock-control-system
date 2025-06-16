@@ -4,12 +4,12 @@
 
 import { WidgetType, WidgetSize } from '@/app/types/dashboard';
 import { WidgetRegistry } from '../WidgetRegistry';
-import { StatsCardWidget } from './StatsCardWidget';
+import { EnhancedStatsCardWidget } from './EnhancedStatsCardWidget';
 import { RecentActivityWidget } from './RecentActivityWidget';
 import { QuickActionsWidget } from './QuickActionsWidget';
 import { OutputStatsWidget } from './OutputStatsWidget';
 import { BookedOutStatsWidget } from './BookedOutStatsWidget';
-import { AskDatabaseWidget } from './AskDatabaseWidget';
+import { EnhancedAskDatabaseWidget } from './EnhancedAskDatabaseWidget';
 import { ProductMixChartWidget } from './ProductMixChartWidget';
 import { AcoOrderProgressWidget } from './AcoOrderProgressWidget';
 import { InventorySearchWidget } from './InventorySearchWidget';
@@ -17,8 +17,14 @@ import { FinishedProductWidget } from './FinishedProductWidget';
 import { MaterialReceivedWidget } from './MaterialReceivedWidget';
 import { PalletOverviewWidget } from './PalletOverviewWidget';
 import { VoidStatsWidget } from './VoidStatsWidget';
+import { VoidPalletWidget } from './VoidPalletWidget';
+import { ViewHistoryWidget } from './ViewHistoryWidget';
+import { DatabaseUpdateWidget } from './DatabaseUpdateWidget';
+import { DocumentUploadWidget } from './DocumentUploadWidget';
+import { AnalyticsDashboardWidget } from './AnalyticsDashboardWidget';
+import { ReportsWidget } from './ReportsWidget';
 import { Package, Activity, Zap } from 'lucide-react';
-import { CubeIcon, TruckIcon, ChatBubbleLeftRightIcon, ChartPieIcon, ClipboardDocumentListIcon, MagnifyingGlassIcon, PrinterIcon, DocumentArrowDownIcon, NoSymbolIcon } from '@heroicons/react/24/outline';
+import { CubeIcon, TruckIcon, ChatBubbleLeftRightIcon, ChartPieIcon, ClipboardDocumentListIcon, MagnifyingGlassIcon, PrinterIcon, DocumentArrowDownIcon, NoSymbolIcon, ClockIcon, CloudArrowUpIcon, ChartBarIcon, DocumentChartBarIcon } from '@heroicons/react/24/outline';
 
 // 註冊所有小部件
 export function registerWidgets() {
@@ -28,18 +34,19 @@ export function registerWidgets() {
     name: 'Stats Card',
     description: 'Display a single statistic with optional trend',
     icon: Package,
-    component: StatsCardWidget,
+    component: EnhancedStatsCardWidget,
     defaultConfig: {
       dataSource: 'total_pallets',
       icon: 'package',
-      refreshInterval: 60000
+      refreshInterval: 60000,
+      size: WidgetSize.MEDIUM
     },
     defaultSize: {
       w: 4,
-      h: 3,
-      minW: 3,
+      h: 2,
+      minW: 2,
       minH: 2,
-      maxW: 6,
+      maxW: 4,
       maxH: 4
     }
   });
@@ -100,11 +107,7 @@ export function registerWidgets() {
     },
     defaultSize: {
       w: 3,
-      h: 3,
-      minW: 2,
-      minH: 2,
-      maxW: 6,
-      maxH: 6
+      h: 3
     }
   });
 
@@ -122,32 +125,28 @@ export function registerWidgets() {
     },
     defaultSize: {
       w: 3,
-      h: 3,
-      minW: 2,
-      minH: 2,
-      maxW: 6,
-      maxH: 6
+      h: 3
     }
   });
 
-  // Ask Database Widget (只支援 Large size)
+  // Ask Database Widget (只支援 Medium 和 Large size)
   WidgetRegistry.register({
     type: WidgetType.ASK_DATABASE,
     name: 'Ask Database',
-    description: 'AI-powered database queries (Large size only)',
+    description: 'AI-powered database queries (Medium/Large size only)',
     icon: ChatBubbleLeftRightIcon,
-    component: AskDatabaseWidget,
+    component: EnhancedAskDatabaseWidget,
     defaultConfig: {
       size: WidgetSize.LARGE,
       refreshInterval: 0
     },
     defaultSize: {
-      w: 8,
-      h: 8,
-      minW: 8,
-      minH: 6,
-      maxW: 12,
-      maxH: 12
+      w: 4,
+      h: 4,
+      minW: 4,
+      minH: 2,
+      maxW: 4,
+      maxH: 4
     }
   });
 
@@ -299,21 +298,153 @@ export function registerWidgets() {
       maxH: 6
     }
   });
+
+  // Void Pallet Widget
+  WidgetRegistry.register({
+    type: WidgetType.VOID_PALLET,
+    name: 'Void Pallet',
+    description: 'Cancel records of illegal or damaged pallets',
+    icon: NoSymbolIcon,
+    component: VoidPalletWidget,
+    defaultConfig: {
+      size: WidgetSize.MEDIUM,
+      refreshInterval: 60000
+    },
+    defaultSize: {
+      w: 4,
+      h: 4,
+      minW: 2,
+      minH: 2,
+      maxW: 6,
+      maxH: 6
+    }
+  });
+
+  // View History Widget
+  WidgetRegistry.register({
+    type: WidgetType.VIEW_HISTORY,
+    name: 'View History',
+    description: 'View pallet full history records',
+    icon: ClockIcon,
+    component: ViewHistoryWidget,
+    defaultConfig: {
+      size: WidgetSize.MEDIUM,
+      refreshInterval: 60000
+    },
+    defaultSize: {
+      w: 4,
+      h: 4,
+      minW: 2,
+      minH: 2,
+      maxW: 6,
+      maxH: 6
+    }
+  });
+
+  // Database Update Widget
+  WidgetRegistry.register({
+    type: WidgetType.DATABASE_UPDATE,
+    name: 'Database Update',
+    description: 'Update database information',
+    icon: CubeIcon,
+    component: DatabaseUpdateWidget,
+    defaultConfig: {
+      size: WidgetSize.MEDIUM,
+      refreshInterval: 60000
+    },
+    defaultSize: {
+      w: 4,
+      h: 4,
+      minW: 2,
+      minH: 2,
+      maxW: 6,
+      maxH: 6
+    }
+  });
+
+  // Document Upload Widget (統一三個上傳功能)
+  WidgetRegistry.register({
+    type: WidgetType.UPLOAD_FILES,
+    name: 'Document Upload',
+    description: 'Upload documents, orders, and specifications',
+    icon: CloudArrowUpIcon,
+    component: DocumentUploadWidget,
+    defaultConfig: {
+      size: WidgetSize.MEDIUM,
+      refreshInterval: 60000
+    },
+    defaultSize: {
+      w: 4,
+      h: 4,
+      minW: 2,
+      minH: 2,
+      maxW: 6,
+      maxH: 6
+    }
+  });
+
+  // Analytics Dashboard Widget
+  WidgetRegistry.register({
+    type: WidgetType.ANALYTICS_DASHBOARD,
+    name: 'Analytics Dashboard',
+    description: 'View analytics and performance metrics',
+    icon: ChartBarIcon,
+    component: AnalyticsDashboardWidget,
+    defaultConfig: {
+      size: WidgetSize.LARGE,
+      refreshInterval: 300000
+    },
+    defaultSize: {
+      w: 6,
+      h: 6,
+      minW: 2,
+      minH: 2,
+      maxW: 8,
+      maxH: 8
+    }
+  });
+
+  // Reports Widget
+  WidgetRegistry.register({
+    type: WidgetType.REPORTS,
+    name: 'Reports',
+    description: 'Generate and view system reports',
+    icon: DocumentChartBarIcon,
+    component: ReportsWidget,
+    defaultConfig: {
+      size: WidgetSize.MEDIUM,
+      refreshInterval: 300000
+    },
+    defaultSize: {
+      w: 4,
+      h: 4,
+      minW: 2,
+      minH: 2,
+      maxW: 6,
+      maxH: 6
+    }
+  });
 }
 
 // 導出所有小部件組件
 export { 
-  StatsCardWidget, 
+  EnhancedStatsCardWidget, 
   RecentActivityWidget, 
   QuickActionsWidget,
   OutputStatsWidget,
   BookedOutStatsWidget,
-  AskDatabaseWidget,
+  EnhancedAskDatabaseWidget,
   ProductMixChartWidget,
   AcoOrderProgressWidget,
   InventorySearchWidget,
   FinishedProductWidget,
   MaterialReceivedWidget,
   PalletOverviewWidget,
-  VoidStatsWidget
+  VoidStatsWidget,
+  VoidPalletWidget,
+  ViewHistoryWidget,
+  DatabaseUpdateWidget,
+  DocumentUploadWidget,
+  AnalyticsDashboardWidget,
+  ReportsWidget
 };

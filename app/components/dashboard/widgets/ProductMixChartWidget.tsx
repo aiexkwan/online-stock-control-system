@@ -63,30 +63,34 @@ export function ProductMixChartWidget({ widget, isEditMode }: WidgetComponentPro
           break;
       }
 
-      // Get product distribution
-      const { data: palletData, error: palletError } = await supabase
-        .from('record_palletinfo')
-        .select('product_code')
-        .gte('generate_time', startDate.toISOString())
-        .not('plt_remark', 'ilike', '%Material GRN-%');
+      // Get product distribution from stock_level
+      const { data: stockData, error: stockError } = await supabase
+        .from('stock_level')
+        .select('stock, stock_level');
 
-      if (palletError) throw palletError;
+      if (stockError) throw stockError;
 
-      if (!palletData || palletData.length === 0) {
+      if (!stockData || stockData.length === 0) {
         setData([]);
         setTotalProducts(0);
         return;
       }
 
-      // Count products
+      // Count total stock for each product
       const productCounts = new Map<string, number>();
-      palletData.forEach(record => {
-        const code = record.product_code;
-        productCounts.set(code, (productCounts.get(code) || 0) + 1);
+      let totalStock = 0;
+      
+      stockData.forEach(record => {
+        const stockLevel = record.stock_level || 0;
+        
+        if (stockLevel > 0) {
+          productCounts.set(record.stock, stockLevel);
+          totalStock += stockLevel;
+        }
       });
 
       // Convert to array and calculate percentages
-      const total = palletData.length;
+      const total = totalStock;
       setTotalProducts(total);
       
       const productArray = Array.from(productCounts.entries())
@@ -156,7 +160,7 @@ export function ProductMixChartWidget({ widget, isEditMode }: WidgetComponentPro
             <>
               <div className="text-4xl font-bold text-white">{data.length}</div>
               <p className="text-xs text-slate-400 mt-1">Products</p>
-              <p className="text-xs text-slate-500">{totalProducts} total pallets</p>
+              <p className="text-xs text-slate-500">{totalProducts} total stock</p>
             </>
           )}
         </CardContent>
@@ -207,7 +211,7 @@ export function ProductMixChartWidget({ widget, isEditMode }: WidgetComponentPro
               <div className="pt-2 border-t border-slate-700">
                 <div className="flex justify-between text-xs text-slate-400">
                   <span>Total</span>
-                  <span>{totalProducts} pallets</span>
+                  <span>{totalProducts} units</span>
                 </div>
               </div>
             </div>
@@ -277,7 +281,7 @@ export function ProductMixChartWidget({ widget, isEditMode }: WidgetComponentPro
                       border: '1px solid #374151',
                       borderRadius: '8px'
                     }}
-                    formatter={(value: any, name: any) => [`${value} pallets`, name]}
+                    formatter={(value: any, name: any) => [`${value} units`, name]}
                   />
                   <Legend 
                     verticalAlign="bottom" 
@@ -292,7 +296,7 @@ export function ProductMixChartWidget({ widget, isEditMode }: WidgetComponentPro
             </div>
             <div className="mt-4 text-center">
               <p className="text-sm text-slate-400">
-                Total: <span className="font-semibold text-white">{totalProducts}</span> pallets across{' '}
+                Total: <span className="font-semibold text-white">{totalProducts}</span> units across{' '}
                 <span className="font-semibold text-white">{data.length}</span> products
               </p>
             </div>

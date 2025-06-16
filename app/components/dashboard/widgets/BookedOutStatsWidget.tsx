@@ -18,6 +18,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer 
 } from 'recharts';
+import { getTodayRange, getYesterdayRange, getDateRange, formatDbTime } from '@/app/utils/timezone';
 
 interface BookedOutData {
   today: number;
@@ -65,39 +66,38 @@ export function BookedOutStatsWidget({ widget, isEditMode }: WidgetComponentProp
     try {
       setLoading(true);
       const supabase = createClient();
-      const now = new Date();
-      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-      const yesterday = new Date(today);
-      yesterday.setDate(yesterday.getDate() - 1);
-      const threeDaysAgo = new Date(today);
-      threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
-      const weekAgo = new Date(today);
-      weekAgo.setDate(weekAgo.getDate() - 7);
+      const todayRange = getTodayRange();
+      const yesterdayRange = getYesterdayRange();
+      const threeDaysRange = getDateRange(3);
+      const weekRange = getDateRange(7);
 
       // Get today's count
       const { count: todayCount } = await supabase
         .from('record_transfer')
         .select('*', { count: 'exact', head: true })
-        .gte('tran_date', today.toISOString());
+        .gte('tran_date', todayRange.start)
+        .lt('tran_date', todayRange.end);
 
       // Get yesterday's count
       const { count: yesterdayCount } = await supabase
         .from('record_transfer')
         .select('*', { count: 'exact', head: true })
-        .gte('tran_date', yesterday.toISOString())
-        .lt('tran_date', today.toISOString());
+        .gte('tran_date', yesterdayRange.start)
+        .lt('tran_date', yesterdayRange.end);
 
       // Get past 3 days count
       const { count: past3DaysCount } = await supabase
         .from('record_transfer')
         .select('*', { count: 'exact', head: true })
-        .gte('tran_date', threeDaysAgo.toISOString());
+        .gte('tran_date', threeDaysRange.start)
+        .lt('tran_date', threeDaysRange.end);
 
       // Get past week count
       const { count: pastWeekCount } = await supabase
         .from('record_transfer')
         .select('*', { count: 'exact', head: true })
-        .gte('tran_date', weekAgo.toISOString());
+        .gte('tran_date', weekRange.start)
+        .lt('tran_date', weekRange.end);
 
       // Get daily data for large size
       let dailyData = [];
@@ -105,14 +105,15 @@ export function BookedOutStatsWidget({ widget, isEditMode }: WidgetComponentProp
         const { data: weekRecords } = await supabase
           .from('record_transfer')
           .select('tran_date')
-          .gte('tran_date', weekAgo.toISOString());
+          .gte('tran_date', weekRange.start)
+          .lt('tran_date', weekRange.end);
 
         if (weekRecords) {
           const dayCounts = new Map<string, number>();
           
           // Initialize all days
           for (let i = 0; i < 7; i++) {
-            const date = new Date(today);
+            const date = new Date();
             date.setDate(date.getDate() - i);
             const dateStr = date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
             dayCounts.set(dateStr, 0);
@@ -120,8 +121,7 @@ export function BookedOutStatsWidget({ widget, isEditMode }: WidgetComponentProp
 
           // Count transfers per day
           weekRecords.forEach(record => {
-            const date = new Date(record.tran_date);
-            const dateStr = date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
+            const dateStr = formatDbTime(record.tran_date, 'dd MMM');
             dayCounts.set(dateStr, (dayCounts.get(dateStr) || 0) + 1);
           });
 
