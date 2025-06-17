@@ -36,7 +36,7 @@ export function DialogManager({
   onReprintCancel,
   voidState 
 }: DialogManagerProps) {
-  const { dialogs, closeDialog } = useDialog();
+  const { dialogs, closeDialog, dialogData } = useDialog();
   const { reprintData } = useReprintDialog();
 
   return (
@@ -121,6 +121,7 @@ export function DialogManager({
       <DatabaseUpdateDialog
         isOpen={dialogs.databaseUpdate}
         onClose={() => closeDialog('databaseUpdate')}
+        defaultTab={dialogData?.defaultTab}
       />
 
       {/* Ask Database Dialog */}

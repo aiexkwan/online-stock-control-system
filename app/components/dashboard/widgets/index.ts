@@ -6,7 +6,6 @@ import { WidgetType, WidgetSize } from '@/app/types/dashboard';
 import { WidgetRegistry } from '../WidgetRegistry';
 import { EnhancedStatsCardWidget } from './EnhancedStatsCardWidget';
 import { RecentActivityWidget } from './RecentActivityWidget';
-import { QuickActionsWidget } from './QuickActionsWidget';
 import { OutputStatsWidget } from './OutputStatsWidget';
 import { BookedOutStatsWidget } from './BookedOutStatsWidget';
 import { EnhancedAskDatabaseWidget } from './EnhancedAskDatabaseWidget';
@@ -23,6 +22,7 @@ import { DatabaseUpdateWidget } from './DatabaseUpdateWidget';
 import { DocumentUploadWidget } from './DocumentUploadWidget';
 import { AnalyticsDashboardWidget } from './AnalyticsDashboardWidget';
 import { ReportsWidget } from './ReportsWidget';
+import { QuickActionsWidget } from './QuickActionsWidget';
 import { Package, Activity, Zap } from 'lucide-react';
 import { CubeIcon, TruckIcon, ChatBubbleLeftRightIcon, ChartPieIcon, ClipboardDocumentListIcon, MagnifyingGlassIcon, PrinterIcon, DocumentArrowDownIcon, NoSymbolIcon, ClockIcon, CloudArrowUpIcon, ChartBarIcon, DocumentChartBarIcon } from '@heroicons/react/24/outline';
 
@@ -76,12 +76,12 @@ export function registerWidgets() {
   WidgetRegistry.register({
     type: WidgetType.QUICK_ACTIONS,
     name: 'Quick Actions',
-    description: 'Quick access to common functions',
+    description: 'Quick access to common tasks',
     icon: Zap,
     component: QuickActionsWidget,
     defaultConfig: {
-      maxActions: 6,
-      refreshInterval: 0 // No refresh needed
+      size: WidgetSize.MEDIUM,
+      refreshInterval: 0
     },
     defaultSize: {
       w: 4,
@@ -111,11 +111,11 @@ export function registerWidgets() {
     }
   });
 
-  // Booked Out Stats Widget
+  // Stock Transfer Widget (原 Booked Out Stats)
   WidgetRegistry.register({
     type: WidgetType.BOOKED_OUT_STATS,
-    name: 'Booked Out Stats',
-    description: 'Transfer statistics',
+    name: 'Stock Transfer',
+    description: 'Transfer statistics by operator',
     icon: TruckIcon,
     component: BookedOutStatsWidget,
     defaultConfig: {
@@ -150,11 +150,11 @@ export function registerWidgets() {
     }
   });
 
-  // Product Mix Chart Widget
+  // Stock Level Widget (原 Product Mix Chart)
   WidgetRegistry.register({
     type: WidgetType.PRODUCT_MIX_CHART,
-    name: 'Product Mix Chart',
-    description: 'Product distribution visualization',
+    name: 'Stock Level',
+    description: 'Stock level distribution by type',
     icon: ChartPieIcon,
     component: ProductMixChartWidget,
     defaultConfig: {
@@ -341,11 +341,11 @@ export function registerWidgets() {
     }
   });
 
-  // Database Update Widget
+  // System Update Widget (原 Database Update)
   WidgetRegistry.register({
     type: WidgetType.DATABASE_UPDATE,
-    name: 'Database Update',
-    description: 'Update database information',
+    name: 'System Update',
+    description: 'Quick access to update product and supplier information',
     icon: CubeIcon,
     component: DatabaseUpdateWidget,
     defaultConfig: {
@@ -355,10 +355,10 @@ export function registerWidgets() {
     defaultSize: {
       w: 4,
       h: 4,
-      minW: 2,
-      minH: 2,
-      maxW: 6,
-      maxH: 6
+      minW: 4,
+      minH: 4,
+      maxW: 4,
+      maxH: 4
     }
   });
 

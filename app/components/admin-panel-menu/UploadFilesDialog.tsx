@@ -389,6 +389,11 @@ export const UploadFilesDialog: React.FC<UploadFilesDialogProps> = ({
       formData.append('file', uploadState.selectedFile);
       formData.append('folder', uploadState.selectedFolder);
       formData.append('fileName', uploadState.fileName);
+      
+      // 添加用戶 ID
+      if (currentUserId) {
+        formData.append('uploadBy', currentUserId.toString());
+      }
 
       // 模擬上傳進度
       const progressInterval = setInterval(() => {

@@ -1,141 +1,114 @@
 /**
- * Database Update Widget
- * 2x2: 顯示待更新數量
- * 4x4: 顯示最近更新記錄
- * 6x6: 顯示更新統計和操作面板
+ * System Update Widget
+ * 2x2: 不支援
+ * 4x4: Quick access 按鈕 + 最近更新記錄
+ * 6x6: 不支援
  */
 
 'use client';
 
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { CubeIcon, ArrowPathIcon, CheckCircleIcon } from '@heroicons/react/24/outline';
+import { CubeIcon, DocumentTextIcon, UserGroupIcon, ExclamationCircleIcon } from '@heroicons/react/24/outline';
 import { createClient } from '@/lib/supabase';
 import { WidgetComponentProps, WidgetSize } from '@/app/types/dashboard';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useDialog } from '@/app/contexts/DialogContext';
-import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip, Legend } from 'recharts';
 import { format } from 'date-fns';
+import { fromDbTime } from '@/app/utils/timezone';
 
-interface UpdateStats {
-  pending_updates: number;
-  completed_today: number;
-  completed_week: number;
-  total_updates: number;
-  update_types: Array<{ type: string; count: number }>;
-}
-
-interface RecentUpdate {
+interface UpdateRecord {
+  uuid: string;
   id: string;
-  type: string;
-  description: string;
-  updated_at: string;
-  updated_by: string;
-  status: 'pending' | 'completed' | 'failed';
+  action: string;
+  operator_id: string;
+  time: string;
+  remark?: string;
 }
-
-const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6'];
 
 export function DatabaseUpdateWidget({ widget, isEditMode }: WidgetComponentProps) {
-  const [stats, setStats] = useState<UpdateStats>({
-    pending_updates: 0,
-    completed_today: 0,
-    completed_week: 0,
-    total_updates: 0,
-    update_types: []
-  });
-  const [recentUpdates, setRecentUpdates] = useState<RecentUpdate[]>([]);
+  const [recentUpdates, setRecentUpdates] = useState<UpdateRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const supabase = createClient();
   const { openDialog } = useDialog();
   
   const size = widget.config.size || WidgetSize.MEDIUM;
 
-  // 載入資料庫更新統計
-  const loadUpdateStats = async () => {
+  // 載入最近的更新記錄
+  const loadRecentUpdates = async () => {
     try {
       setLoading(true);
       
-      const today = new Date();
-      const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate()).toISOString();
-      
-      const weekStart = new Date(today);
-      weekStart.setDate(today.getDate() - 7);
+      // 查詢 record_history 表
+      const { data, error } = await supabase
+        .from('record_history')
+        .select('*')
+        .in('action', ['Product Added', 'Product Update', 'Supplier Added', 'Supplier Update'])
+        .order('time', { ascending: false })
+        .limit(10);
 
-      // 獲取產品和庫存更新統計
-      const [productResult, inventoryResult] = await Promise.all([
-        supabase.from('data_product').select('*', { count: 'exact', head: true }),
-        supabase.from('record_inventory').select('*', { count: 'exact', head: true })
-      ]);
+      if (error) throw error;
 
-      // 模擬一些統計數據（實際應該從專門的更新記錄表獲取）
-      setStats({
-        pending_updates: Math.floor(Math.random() * 10) + 5,
-        completed_today: Math.floor(Math.random() * 20) + 10,
-        completed_week: Math.floor(Math.random() * 100) + 50,
-        total_updates: (productResult.count || 0) + (inventoryResult.count || 0),
-        update_types: [
-          { type: 'Product', count: productResult.count || 0 },
-          { type: 'Inventory', count: inventoryResult.count || 0 },
-          { type: 'ACO Orders', count: Math.floor(Math.random() * 50) + 20 },
-          { type: 'Transfers', count: Math.floor(Math.random() * 30) + 15 }
-        ]
-      });
-
-      // 如果是 MEDIUM 或 LARGE size，載入最近的更新記錄
-      if (size !== WidgetSize.SMALL) {
-        // 模擬最近更新記錄
-        const mockUpdates: RecentUpdate[] = [
-          {
-            id: '1',
-            type: 'Product',
-            description: 'Updated product specifications',
-            updated_at: new Date().toISOString(),
-            updated_by: 'System',
-            status: 'completed'
-          },
-          {
-            id: '2',
-            type: 'Inventory',
-            description: 'Stock level adjustment',
-            updated_at: new Date(Date.now() - 3600000).toISOString(),
-            updated_by: 'Admin',
-            status: 'completed'
-          },
-          {
-            id: '3',
-            type: 'ACO Order',
-            description: 'New order import',
-            updated_at: new Date(Date.now() - 7200000).toISOString(),
-            updated_by: 'System',
-            status: 'pending'
-          }
-        ];
-        
-        setRecentUpdates(mockUpdates.slice(0, size === WidgetSize.MEDIUM ? 3 : 5));
+      if (data) {
+        setRecentUpdates(data.map(record => ({
+          uuid: record.uuid,
+          id: record.id,
+          action: record.action,
+          operator_id: record.operator_id || 'System',
+          time: record.time,
+          remark: record.remark
+        })));
       }
 
     } catch (error) {
-      console.error('Error loading update statistics:', error);
+      console.error('Error loading update records:', error);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    loadUpdateStats();
-    
-    // 設置自動刷新
-    const interval = setInterval(loadUpdateStats, widget.config.refreshInterval || 60000);
-    return () => clearInterval(interval);
-  }, [size]);
+    if (size === WidgetSize.MEDIUM) {
+      loadRecentUpdates();
+      
+      // 設置自動刷新
+      const interval = setInterval(loadRecentUpdates, widget.config.refreshInterval || 60000);
+      return () => clearInterval(interval);
+    }
+  }, [size, widget.config.refreshInterval]);
 
-  const handleOpenUpdateDialog = () => {
-    openDialog('databaseUpdate');
+  const handleOpenProductUpdate = () => {
+    if (!isEditMode) {
+      openDialog('databaseUpdate', { defaultTab: 'product' });
+    }
   };
 
-  // 2x2 - 只顯示數值
+  const handleOpenSupplierUpdate = () => {
+    if (!isEditMode) {
+      openDialog('databaseUpdate', { defaultTab: 'supplier' });
+    }
+  };
+
+  const formatTime = (timestamp: string) => {
+    try {
+      const date = fromDbTime(timestamp);
+      return format(date, 'MMM dd HH:mm');
+    } catch {
+      return 'Unknown';
+    }
+  };
+
+  const getActionIcon = (action: string) => {
+    if (action.includes('Product')) {
+      return <CubeIcon className="w-4 h-4 text-blue-400" />;
+    } else if (action.includes('Supplier')) {
+      return <UserGroupIcon className="w-4 h-4 text-green-400" />;
+    }
+    return <DocumentTextIcon className="w-4 h-4 text-slate-400" />;
+  };
+
+  // 2x2 - 不支援
   if (size === WidgetSize.SMALL) {
     return (
       <motion.div
@@ -143,18 +116,20 @@ export function DatabaseUpdateWidget({ widget, isEditMode }: WidgetComponentProp
         animate={{ opacity: 1, y: 0 }}
         className="h-full"
       >
-        <Card className="h-full bg-slate-800/40 backdrop-blur-xl border-orange-500/30 hover:border-orange-400/50 transition-all duration-300 cursor-pointer" onClick={handleOpenUpdateDialog}>
+        <Card className="h-full bg-slate-900/95 backdrop-blur-xl border border-orange-500/30 shadow-2xl">
           <CardContent className="p-4 h-full flex flex-col items-center justify-center">
-            <CubeIcon className="w-8 h-8 text-orange-400 mb-2" />
-            <div className="text-3xl font-bold text-white">{stats.pending_updates}</div>
-            <div className="text-xs text-slate-400 mt-1">Pending Updates</div>
+            <ExclamationCircleIcon className="w-12 h-12 text-slate-500 mb-3" />
+            <h3 className="text-sm font-medium text-slate-400 mb-1">Not Supported</h3>
+            <p className="text-xs text-slate-500 text-center">
+              Please resize to Medium
+            </p>
           </CardContent>
         </Card>
       </motion.div>
     );
   }
 
-  // 4x4 - 顯示資料明細
+  // 4x4 - Quick access + 最近更新記錄
   if (size === WidgetSize.MEDIUM) {
     return (
       <motion.div
@@ -162,65 +137,68 @@ export function DatabaseUpdateWidget({ widget, isEditMode }: WidgetComponentProp
         animate={{ opacity: 1, y: 0 }}
         className="h-full"
       >
-        <Card className="h-full bg-slate-800/40 backdrop-blur-xl border-orange-500/30 hover:border-orange-400/50 transition-all duration-300">
+        <Card className="h-full bg-slate-900/95 backdrop-blur-xl border border-orange-500/30 shadow-2xl">
           <CardHeader className="pb-3">
-            <CardTitle className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <CubeIcon className="w-5 h-5 text-orange-400" />
-                <span className="text-lg">Database Update</span>
+            <CardTitle className="flex items-center gap-2">
+              <div className="w-8 h-8 bg-gradient-to-r from-orange-500 to-amber-500 rounded-lg flex items-center justify-center">
+                <CubeIcon className="h-5 w-5 text-white" />
               </div>
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={handleOpenUpdateDialog}
-                className="text-orange-400 hover:text-orange-300"
-              >
-                Update
-              </Button>
+              <span className="text-sm font-medium text-slate-200">System Update</span>
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
-            {/* 統計摘要 */}
-            <div className="grid grid-cols-2 gap-3">
-              <div className="bg-orange-500/20 rounded-lg p-3 border border-orange-500/30">
-                <div className="text-2xl font-bold text-white">{stats.pending_updates}</div>
-                <div className="text-xs text-orange-300">Pending</div>
-              </div>
-              <div className="bg-slate-700/30 rounded-lg p-3">
-                <div className="text-2xl font-bold text-white">{stats.completed_today}</div>
-                <div className="text-xs text-slate-400">Today</div>
-              </div>
+          <CardContent className="space-y-3">
+            {/* Quick Access 按鈕 */}
+            <div className="grid grid-cols-2 gap-2">
+              <Button
+                size="sm"
+                className="h-16 bg-gradient-to-br from-blue-500/20 to-blue-600/20 border border-blue-500/30 hover:from-blue-500/30 hover:to-blue-600/30 text-white flex flex-col items-center justify-center gap-1 transition-all"
+                onClick={handleOpenProductUpdate}
+                disabled={isEditMode}
+              >
+                <CubeIcon className="w-5 h-5" />
+                <span className="text-xs font-medium">Update Product Info</span>
+              </Button>
+              <Button
+                size="sm"
+                className="h-16 bg-gradient-to-br from-green-500/20 to-green-600/20 border border-green-500/30 hover:from-green-500/30 hover:to-green-600/30 text-white flex flex-col items-center justify-center gap-1 transition-all"
+                onClick={handleOpenSupplierUpdate}
+                disabled={isEditMode}
+              >
+                <UserGroupIcon className="w-5 h-5" />
+                <span className="text-xs font-medium">Update Supplier Info</span>
+              </Button>
             </div>
 
             {/* 最近更新記錄 */}
             <div className="space-y-2">
-              <h4 className="text-sm font-medium text-slate-400">Recent Updates</h4>
+              <h4 className="text-xs font-medium text-slate-400">Recent Updates</h4>
               {loading ? (
                 <div className="animate-pulse space-y-2">
                   {[1, 2, 3].map(i => (
-                    <div key={i} className="h-12 bg-slate-700/30 rounded-lg"></div>
+                    <div key={i} className="h-10 bg-slate-700/30 rounded-lg"></div>
                   ))}
                 </div>
               ) : recentUpdates.length === 0 ? (
-                <div className="text-center py-4 text-slate-500">No recent updates</div>
+                <div className="text-center py-4 text-slate-500 text-xs">No recent updates</div>
               ) : (
-                <div className="space-y-2 max-h-48 overflow-y-auto">
+                <div className="space-y-1.5 max-h-[200px] overflow-y-auto">
                   {recentUpdates.map((update) => (
-                    <div key={update.id} className="bg-slate-700/30 rounded-lg p-2 text-xs">
-                      <div className="flex justify-between items-start">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2">
-                            <span className="font-medium text-white">{update.type}</span>
-                            {update.status === 'completed' ? (
-                              <CheckCircleIcon className="w-3 h-3 text-green-400" />
-                            ) : update.status === 'pending' ? (
-                              <ArrowPathIcon className="w-3 h-3 text-yellow-400 animate-spin" />
-                            ) : null}
-                          </div>
-                          <div className="text-slate-400 truncate">{update.description}</div>
+                    <div key={update.uuid} className="bg-slate-800/50 rounded-lg p-2 hover:bg-slate-700/50 transition-colors">
+                      <div className="flex items-start gap-2">
+                        <div className="flex-shrink-0 mt-0.5">
+                          {getActionIcon(update.action)}
                         </div>
-                        <div className="text-slate-500 text-right">
-                          <div>{format(new Date(update.updated_at), 'HH:mm')}</div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="text-xs font-medium text-white truncate">{update.action}</span>
+                            <span className="text-xs text-slate-500 flex-shrink-0">{formatTime(update.time)}</span>
+                          </div>
+                          <div className="text-xs text-slate-400">
+                            by {update.operator_id}
+                            {update.remark && (
+                              <span className="ml-1 text-slate-500">• {update.remark}</span>
+                            )}
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -234,91 +212,20 @@ export function DatabaseUpdateWidget({ widget, isEditMode }: WidgetComponentProp
     );
   }
 
-  // 6x6 - 顯示功能按鈕和歷史操作
+  // 6x6 - 不支援
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       className="h-full"
     >
-      <Card className="h-full bg-slate-800/40 backdrop-blur-xl border-orange-500/30 hover:border-orange-400/50 transition-all duration-300">
-        <CardHeader className="pb-3">
-          <CardTitle className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <CubeIcon className="w-6 h-6 text-orange-400" />
-              <span className="text-xl">Database Management</span>
-            </div>
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {/* 主要功能按鈕 */}
-          <div className="grid grid-cols-2 gap-4">
-            <Button
-              className="h-20 bg-gradient-to-br from-orange-500/20 to-orange-600/20 border border-orange-500/30 hover:from-orange-500/30 hover:to-orange-600/30 text-white flex flex-col items-center justify-center gap-2"
-              onClick={handleOpenUpdateDialog}
-            >
-              <CubeIcon className="w-8 h-8" />
-              <span className="text-sm font-medium">Update Product Data</span>
-            </Button>
-            <Button
-              className="h-20 bg-gradient-to-br from-blue-500/20 to-blue-600/20 border border-blue-500/30 hover:from-blue-500/30 hover:to-blue-600/30 text-white flex flex-col items-center justify-center gap-2"
-              onClick={handleOpenUpdateDialog}
-            >
-              <ArrowPathIcon className="w-8 h-8" />
-              <span className="text-sm font-medium">Sync Inventory</span>
-            </Button>
-            <Button
-              className="h-20 bg-gradient-to-br from-green-500/20 to-green-600/20 border border-green-500/30 hover:from-green-500/30 hover:to-green-600/30 text-white flex flex-col items-center justify-center gap-2"
-              onClick={handleOpenUpdateDialog}
-            >
-              <CheckCircleIcon className="w-8 h-8" />
-              <span className="text-sm font-medium">Import ACO Orders</span>
-            </Button>
-            <Button
-              className="h-20 bg-gradient-to-br from-purple-500/20 to-purple-600/20 border border-purple-500/30 hover:from-purple-500/30 hover:to-purple-600/30 text-white flex flex-col items-center justify-center gap-2"
-              onClick={handleOpenUpdateDialog}
-            >
-              <CubeIcon className="w-8 h-8" />
-              <span className="text-sm font-medium">Batch Operations</span>
-            </Button>
-          </div>
-
-          {/* 最近操作歷史 */}
-          <div className="space-y-2">
-            <h4 className="text-sm font-medium text-slate-400">Recent Operations</h4>
-            {loading ? (
-              <div className="animate-pulse space-y-2">
-                {[1, 2, 3, 4].map(i => (
-                  <div key={i} className="h-14 bg-slate-700/30 rounded-lg"></div>
-                ))}
-              </div>
-            ) : (
-              <div className="space-y-2 max-h-64 overflow-y-auto">
-                {recentUpdates.map((update) => (
-                  <div key={update.id} className="bg-slate-700/30 rounded-lg p-3">
-                    <div className="flex justify-between items-start">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium text-white">{update.type}</span>
-                          {update.status === 'completed' ? (
-                            <CheckCircleIcon className="w-4 h-4 text-green-400" />
-                          ) : update.status === 'pending' ? (
-                            <ArrowPathIcon className="w-4 h-4 text-yellow-400 animate-spin" />
-                          ) : null}
-                        </div>
-                        <div className="text-sm text-slate-400">{update.description}</div>
-                        <div className="text-xs text-slate-500 mt-1">By: {update.updated_by}</div>
-                      </div>
-                      <div className="text-right">
-                        <div className="text-sm text-slate-400">{format(new Date(update.updated_at), 'MMM dd')}</div>
-                        <div className="text-xs text-slate-500">{format(new Date(update.updated_at), 'HH:mm')}</div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
+      <Card className="h-full bg-slate-900/95 backdrop-blur-xl border border-orange-500/30 shadow-2xl">
+        <CardContent className="p-6 h-full flex flex-col items-center justify-center">
+          <ExclamationCircleIcon className="w-16 h-16 text-slate-500 mb-4" />
+          <h3 className="text-lg font-medium text-slate-400 mb-2">Not Supported</h3>
+          <p className="text-sm text-slate-500 text-center">
+            This widget is only available in Medium (4x4) size
+          </p>
         </CardContent>
       </Card>
     </motion.div>

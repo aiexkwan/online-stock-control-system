@@ -1,9 +1,9 @@
 /**
- * 產品混合圖表小部件
+ * Stock Level 小部件
  * 支援三種尺寸：
- * - Small: 只顯示總產品數
- * - Medium: 顯示前5個產品的數量
- * - Large: 完整的圓餅圖視覺化
+ * - Small (2x2): 不支援
+ * - Medium (4x4): 按 stock 類型分類顯示庫存
+ * - Large (6x6): 包括 4x4 所有功能 + 圓餅圖視覺化
  */
 
 'use client';
@@ -22,6 +22,12 @@ interface ProductData {
   percentage: number;
 }
 
+interface StockType {
+  type: string;
+  products: ProductData[];
+  total: number;
+}
+
 const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#14B8A6', '#F97316'];
 
 export function ProductMixChartWidget({ widget, isEditMode }: WidgetComponentProps) {
@@ -29,104 +35,177 @@ export function ProductMixChartWidget({ widget, isEditMode }: WidgetComponentPro
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [totalProducts, setTotalProducts] = useState(0);
+  const [stockTypes, setStockTypes] = useState<string[]>([]);
+  const [selectedType, setSelectedType] = useState<string>('ALL');
+  const [stockByType, setStockByType] = useState<Map<string, StockType>>(new Map());
 
   const size = widget.config.size || WidgetSize.SMALL;
-  const timeRange = widget.config.timeRange || 'today';
 
   useEffect(() => {
     loadData();
     
-    if (widget.config.refreshInterval) {
+    if (widget.config.refreshInterval && !isEditMode) {
       const interval = setInterval(loadData, widget.config.refreshInterval);
       return () => clearInterval(interval);
     }
-  }, [widget.config, timeRange]);
+  }, [widget.config, selectedType, isEditMode]);
 
   const loadData = async () => {
     try {
       setLoading(true);
       const supabase = createClient();
-      
-      // Calculate date range
-      const now = new Date();
-      let startDate = new Date();
-      
-      switch (timeRange) {
-        case 'today':
-          startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-          break;
-        case 'week':
-          startDate.setDate(now.getDate() - 7);
-          break;
-        case 'month':
-          startDate.setMonth(now.getMonth() - 1);
-          break;
-      }
 
-      // Get product distribution from stock_level
+      // Get product distribution from stock_level - 只獲取有庫存的產品
       const { data: stockData, error: stockError } = await supabase
         .from('stock_level')
-        .select('stock, stock_level');
+        .select('stock, stock_level')
+        .gt('stock_level', 0)
+        .order('stock_level', { ascending: false });
 
       if (stockError) throw stockError;
+      
+      // Get product types from data_code - 分批獲取所有記錄
+      let allCodeData: any[] = [];
+      let offset = 0;
+      const batchSize = 1000;
+      
+      while (true) {
+        const { data: batch, error: codeError } = await supabase
+          .from('data_code')
+          .select('code, type')
+          .range(offset, offset + batchSize - 1);
+          
+        if (codeError) throw codeError;
+        
+        if (!batch || batch.length === 0) break;
+        
+        allCodeData = [...allCodeData, ...batch];
+        offset += batchSize;
+        
+        if (batch.length < batchSize) break;
+      }
+      
+      const codeData = allCodeData;
 
-      if (!stockData || stockData.length === 0) {
+      if (!stockData || stockData.length === 0 || !codeData) {
         setData([]);
         setTotalProducts(0);
         return;
       }
+      
+      // Create a map of product code to type
+      const codeTypeMap = new Map<string, string>();
+      codeData.forEach(item => {
+        // 將 "-" 視為 "Standard" 類型，null 或空值才設為 "Unknown"
+        let productType = item.type;
+        if (productType === '-') {
+          productType = 'Standard';
+        } else if (!productType) {
+          productType = 'Unknown';
+        }
+        codeTypeMap.set(item.code, productType);
+      });
+      
 
-      // Count total stock for each product
-      const productCounts = new Map<string, number>();
+      // Group stock by type
+      const typeMap = new Map<string, StockType>();
+      const allProducts: ProductData[] = [];
       let totalStock = 0;
+      
+      // 先統計有多少產品找到對應的 type
+      let matchedCount = 0;
+      let unmatchedCount = 0;
       
       stockData.forEach(record => {
         const stockLevel = record.stock_level || 0;
         
         if (stockLevel > 0) {
-          productCounts.set(record.stock, stockLevel);
-          totalStock += stockLevel;
-        }
-      });
-
-      // Convert to array and calculate percentages
-      const total = totalStock;
-      setTotalProducts(total);
-      
-      const productArray = Array.from(productCounts.entries())
-        .map(([code, count]) => ({
-          code,
-          count,
-          percentage: Math.round((count / total) * 100)
-        }))
-        .sort((a, b) => b.count - a.count);
-
-      // For small/medium sizes, limit to top products
-      if (size !== WidgetSize.LARGE) {
-        setData(productArray.slice(0, 5));
-      } else {
-        // For large size, group small percentages
-        const threshold = 2; // Group products with less than 2%
-        const mainProducts: ProductData[] = [];
-        let othersCount = 0;
-
-        productArray.forEach(product => {
-          if (product.percentage >= threshold && mainProducts.length < 7) {
-            mainProducts.push(product);
+          const productType = codeTypeMap.get(record.stock) || 'Unknown';
+          
+          if (productType === 'Unknown') {
+            unmatchedCount++;
           } else {
-            othersCount += product.count;
+            matchedCount++;
           }
-        });
-
-        if (othersCount > 0) {
-          mainProducts.push({
-            code: 'Others',
-            count: othersCount,
-            percentage: Math.round((othersCount / total) * 100)
+          
+          if (!typeMap.has(productType)) {
+            typeMap.set(productType, {
+              type: productType,
+              products: [],
+              total: 0
+            });
+          }
+          
+          const typeData = typeMap.get(productType)!;
+          typeData.products.push({
+            code: record.stock,
+            count: stockLevel,
+            percentage: 0 // 將在稍後計算
+          });
+          typeData.total += stockLevel;
+          totalStock += stockLevel;
+          
+          allProducts.push({
+            code: record.stock,
+            count: stockLevel,
+            percentage: 0
           });
         }
+      });
+      
+      // 計算百分比
+      typeMap.forEach(typeData => {
+        typeData.products.forEach(product => {
+          product.percentage = Math.round((product.count / typeData.total) * 100);
+        });
+        typeData.products.sort((a, b) => b.count - a.count);
+      });
+      
+      allProducts.forEach(product => {
+        product.percentage = Math.round((product.count / totalStock) * 100);
+      });
+      allProducts.sort((a, b) => b.count - a.count);
+      
+      setStockByType(typeMap);
+      const sortedTypes = Array.from(typeMap.keys()).sort();
+      setStockTypes(['ALL', ...sortedTypes]);
+      setTotalProducts(totalStock);
+      
+      // 根據選擇的類型設定數據
+      if (selectedType === 'ALL') {
+        if (size === WidgetSize.LARGE) {
+          // 對於大尺寸，組合小百分比
+          const threshold = 2;
+          const mainProducts: ProductData[] = [];
+          let othersCount = 0;
 
-        setData(mainProducts);
+          allProducts.forEach(product => {
+            if (product.percentage >= threshold && mainProducts.length < 7) {
+              mainProducts.push(product);
+            } else {
+              othersCount += product.count;
+            }
+          });
+
+          if (othersCount > 0) {
+            mainProducts.push({
+              code: 'Others',
+              count: othersCount,
+              percentage: Math.round((othersCount / totalStock) * 100)
+            });
+          }
+
+          setData(mainProducts);
+        } else {
+          setData(allProducts.slice(0, 10));
+        }
+      } else {
+        const typeData = typeMap.get(selectedType);
+        if (typeData) {
+          setData(typeData.products.slice(0, 10));
+        } else {
+          setData([]);
+        }
       }
 
       setError(null);
@@ -143,41 +222,43 @@ export function ProductMixChartWidget({ widget, isEditMode }: WidgetComponentPro
     return entry.percentage > 5 ? `${entry.percentage}%` : '';
   };
 
-  // Small size - only show total count
+  // Small size - 不支援
   if (size === WidgetSize.SMALL) {
     return (
       <Card className={`h-full bg-slate-900/95 backdrop-blur-xl border border-orange-500/30 shadow-2xl ${isEditMode ? 'border-dashed border-2 border-orange-500/50' : ''}`}>
         <CardContent className="p-4 h-full flex flex-col justify-center items-center">
-          <div className="w-10 h-10 bg-gradient-to-r from-orange-500 to-amber-500 rounded-lg flex items-center justify-center mb-2">
-            <ChartPieIcon className="h-6 w-6 text-white" />
-          </div>
-          <h3 className="text-sm font-medium text-slate-400 mb-1">Product Mix</h3>
-          {loading ? (
-            <div className="h-12 w-20 bg-slate-700 rounded animate-pulse"></div>
-          ) : error ? (
-            <div className="text-red-400 text-sm">Error</div>
-          ) : (
-            <>
-              <div className="text-4xl font-bold text-white">{data.length}</div>
-              <p className="text-xs text-slate-400 mt-1">Products</p>
-              <p className="text-xs text-slate-500">{totalProducts} total stock</p>
-            </>
-          )}
+          <ChartPieIcon className="w-12 h-12 text-slate-500 mb-3" />
+          <h3 className="text-sm font-medium text-slate-400 mb-1">Not Supported</h3>
+          <p className="text-xs text-slate-500 text-center">
+            Please resize to Medium or Large
+          </p>
         </CardContent>
       </Card>
     );
   }
 
-  // Medium size - show top 5 products
+  // Medium size - 按類型顯示庫存
   if (size === WidgetSize.MEDIUM) {
     return (
       <Card className={`h-full bg-slate-900/95 backdrop-blur-xl border border-orange-500/30 shadow-2xl ${isEditMode ? 'border-dashed border-2 border-orange-500/50' : ''}`}>
         <CardHeader className="pb-2">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-gradient-to-r from-orange-500 to-amber-500 rounded-lg flex items-center justify-center">
-              <ChartPieIcon className="h-5 w-5 text-white" />
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 bg-gradient-to-r from-orange-500 to-amber-500 rounded-lg flex items-center justify-center">
+                <ChartPieIcon className="h-5 w-5 text-white" />
+              </div>
+              <CardTitle className="text-sm font-medium text-slate-200">Stock Level</CardTitle>
             </div>
-            <CardTitle className="text-sm font-medium text-slate-200">Product Mix</CardTitle>
+            <select
+              value={selectedType}
+              onChange={(e) => setSelectedType(e.target.value)}
+              className="px-2 py-1 bg-slate-700/50 border border-slate-600/30 rounded-md text-xs text-slate-300 focus:outline-none focus:border-orange-500/50"
+              disabled={isEditMode}
+            >
+              {stockTypes.map(type => (
+                <option key={type} value={type}>{type}</option>
+              ))}
+            </select>
           </div>
         </CardHeader>
         <CardContent className="pt-2">
@@ -203,8 +284,7 @@ export function ProductMixChartWidget({ widget, isEditMode }: WidgetComponentPro
                     <span className="text-sm text-slate-300">{product.code}</span>
                   </div>
                   <div className="text-right">
-                    <span className="text-sm font-semibold text-white">{product.count}</span>
-                    <span className="text-xs text-slate-400 ml-1">({product.percentage}%)</span>
+                    <span className="text-sm font-semibold text-white">{product.count.toLocaleString()}</span>
                   </div>
                 </div>
               ))}
@@ -221,7 +301,7 @@ export function ProductMixChartWidget({ widget, isEditMode }: WidgetComponentPro
     );
   }
 
-  // Large size - full pie chart
+  // Large size - 上半部分明細 + 下半部分圓餅圖
   return (
     <Card className={`h-full bg-slate-900/95 backdrop-blur-xl border border-orange-500/30 shadow-2xl ${isEditMode ? 'border-dashed border-2 border-orange-500/50' : ''}`}>
       <CardHeader className="pb-2">
@@ -231,42 +311,108 @@ export function ProductMixChartWidget({ widget, isEditMode }: WidgetComponentPro
               <ChartPieIcon className="h-5 w-5 text-white" />
             </div>
             <CardTitle className="text-lg font-medium bg-gradient-to-r from-orange-300 via-amber-300 to-orange-200 bg-clip-text text-transparent">
-              Product Mix Distribution
+              Stock Level Distribution
             </CardTitle>
           </div>
           <select
-            value={timeRange}
-            onChange={(e) => widget.config.timeRange = e.target.value}
+            value={selectedType}
+            onChange={(e) => setSelectedType(e.target.value)}
             className="px-3 py-1 bg-slate-700/50 border border-slate-600/30 rounded-md text-sm text-slate-300 focus:outline-none focus:border-orange-500/50"
             disabled={isEditMode}
           >
-            <option value="today">Today</option>
-            <option value="week">This Week</option>
-            <option value="month">This Month</option>
+            {stockTypes.map(type => (
+              <option key={type} value={type}>{type}</option>
+            ))}
           </select>
         </div>
       </CardHeader>
-      <CardContent>
+      <CardContent className="flex flex-col h-[calc(100%-4rem)]">
         {loading ? (
-          <div className="h-64 bg-slate-700 rounded animate-pulse"></div>
+          <div className="space-y-3">
+            <div className="h-40 bg-slate-700 rounded animate-pulse"></div>
+            <div className="h-40 bg-slate-700 rounded animate-pulse"></div>
+          </div>
         ) : error ? (
           <div className="text-red-400 text-sm">{error}</div>
         ) : data.length === 0 ? (
-          <div className="h-64 flex items-center justify-center text-slate-400">
+          <div className="h-full flex items-center justify-center text-slate-400">
             No data available
           </div>
         ) : (
           <>
-            <div className="h-64">
+            {/* 上半部分 - 產品明細列表 (1/3) */}
+            <div className="h-[33.33%] bg-slate-800/50 rounded-lg p-3 mb-3 overflow-hidden">
+              <div className="h-full overflow-y-auto pr-2">
+                <div className="space-y-1">
+                  {data.slice(0, 10).map((product, index) => (
+                    <div key={product.code} className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div 
+                          className="w-2.5 h-2.5 rounded-full" 
+                          style={{ backgroundColor: COLORS[index % COLORS.length] }}
+                        />
+                        <span className="text-xs text-slate-300">{product.code}</span>
+                      </div>
+                      <div className="text-right">
+                        <span className="text-xs font-semibold text-white">{product.count.toLocaleString()}</span>
+                        <span className="text-xs text-slate-400 ml-1">({product.percentage}%)</span>
+                      </div>
+                    </div>
+                  ))}
+                  <div className="pt-1 border-t border-slate-700">
+                    <div className="flex justify-between text-xs text-slate-400">
+                      <span>Total</span>
+                      <span className="font-semibold text-white">{totalProducts.toLocaleString()} units</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            {/* 下半部分 - 圓餅圖 (2/3) */}
+            <div className="h-[66.67%]">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
                     data={data}
                     cx="50%"
                     cy="50%"
-                    labelLine={false}
-                    label={renderCustomLabel}
-                    outerRadius={80}
+                    labelLine={{
+                      stroke: '#94A3B8',
+                      strokeWidth: 1
+                    }}
+                    label={({
+                      cx,
+                      cy,
+                      midAngle,
+                      innerRadius,
+                      outerRadius,
+                      value,
+                      index,
+                      name
+                    }) => {
+                      const RADIAN = Math.PI / 180;
+                      const radius = 35 + innerRadius + (outerRadius - innerRadius);
+                      const x = cx + radius * Math.cos(-midAngle * RADIAN);
+                      const y = cy + radius * Math.sin(-midAngle * RADIAN);
+                      
+                      // 從 data 中獲取百分比
+                      const percentage = data[index].percentage;
+
+                      return (
+                        <text
+                          x={x}
+                          y={y}
+                          fill="#E5E7EB"
+                          textAnchor={x > cx ? 'start' : 'end'}
+                          dominantBaseline="central"
+                          className="text-xs"
+                        >
+                          {`${name} (${percentage}%)`}
+                        </text>
+                      );
+                    }}
+                    outerRadius={125}
                     fill="#8884d8"
                     dataKey="count"
                     nameKey="code"
@@ -279,26 +425,15 @@ export function ProductMixChartWidget({ widget, isEditMode }: WidgetComponentPro
                     contentStyle={{ 
                       backgroundColor: '#1F2937', 
                       border: '1px solid #374151',
-                      borderRadius: '8px'
+                      borderRadius: '8px',
+                      color: '#FFFFFF'
                     }}
+                    labelStyle={{ color: '#FFFFFF' }}
+                    itemStyle={{ color: '#FFFFFF' }}
                     formatter={(value: any, name: any) => [`${value} units`, name]}
-                  />
-                  <Legend 
-                    verticalAlign="bottom" 
-                    height={36}
-                    wrapperStyle={{ paddingTop: '10px' }}
-                    formatter={(value) => (
-                      <span style={{ color: '#94A3B8', fontSize: '12px' }}>{value}</span>
-                    )}
                   />
                 </PieChart>
               </ResponsiveContainer>
-            </div>
-            <div className="mt-4 text-center">
-              <p className="text-sm text-slate-400">
-                Total: <span className="font-semibold text-white">{totalProducts}</span> units across{' '}
-                <span className="font-semibold text-white">{data.length}</span> products
-              </p>
             </div>
           </>
         )}

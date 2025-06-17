@@ -304,6 +304,11 @@ export const UploadOrderPDFDialog: React.FC<UploadOrderPDFDialogProps> = ({
       console.log('[Order PDF Analysis] 分析完成:', result);
     
       toast.success(`PDF Analysis Complete! Extracted ${result.recordCount} records`);
+      
+      // 寫入 doc_upload 表的記錄已經在 API 中處理
+      if (result.storageInfo) {
+        console.log('[Order PDF Analysis] 文件已保存到:', result.storageInfo.publicUrl);
+      }
     
       // 重置分析狀態但保留數據預覽
       setOrderPDFState(prev => ({ 

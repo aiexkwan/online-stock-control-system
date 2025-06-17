@@ -46,7 +46,10 @@
       "Bash(pip install:*)",
       "Bash(pip uninstall:*)",
       "mcp__ide__getDiagnostics",
-      "Bash(pkill:*)"
+      "Bash(pkill:*)",
+      "WebFetch(domain:docs.anthropic.com)",
+      "Bash(npx supabase db dump:*)",
+      "Bash(npx supabase db push:*)"
     ],
     "deny": []
   }

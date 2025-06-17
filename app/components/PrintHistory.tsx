@@ -11,8 +11,10 @@ import {
   DocumentIcon, 
   ExclamationTriangleIcon,
   InboxIcon,
-  ChevronDownIcon 
+  ChevronDownIcon,
+  CubeIcon 
 } from '@heroicons/react/24/outline';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 interface ProductSummary {
   product_code: string;
@@ -20,11 +22,22 @@ interface ProductSummary {
   total_pallets: number;
 }
 
+interface ChartData {
+  date: string;
+  pallets: number;
+}
+
 type TimeRange = 'Today' | 'Yesterday' | 'Past 3 days' | 'Past 7 days';
 
 const TIME_RANGE_OPTIONS: TimeRange[] = ['Today', 'Yesterday', 'Past 3 days', 'Past 7 days'];
 
-export default function FinishedProduct() {
+import { WidgetSize } from '@/app/types/dashboard';
+
+interface FinishedProductProps {
+  widgetSize?: WidgetSize;
+}
+
+export default function FinishedProduct({ widgetSize }: FinishedProductProps) {
   const supabase = createClient();
   const [products, setProducts] = useState<ProductSummary[]>([]);
   const [loading, setLoading] = useState(false);
@@ -33,6 +46,8 @@ export default function FinishedProduct() {
   const [error, setError] = useState<string | null>(null);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const [totalPallets, setTotalPallets] = useState(0);
+  const [chartData, setChartData] = useState<ChartData[]>([]);
 
   // Initial load
   useEffect(() => {
@@ -97,23 +112,31 @@ export default function FinishedProduct() {
       
       const { data, error: fetchError } = await supabase
       .from('record_palletinfo')
-        .select('product_code, product_qty, plt_num, plt_remark')
+        .select('product_code, product_qty, plt_num, plt_remark, generate_time')
         .gte('generate_time', start)
         .lte('generate_time', end)
+        .ilike('plt_remark', '%Finished In Production%')
         .not('plt_remark', 'ilike', '%Material GRN-%')
-        .order('product_code', { ascending: true });
+        .order('generate_time', { ascending: true });
       
       if (fetchError) {
         throw new Error(fetchError.message);
       }
       
       if (data) {
+        // 計算總板數
+        setTotalPallets(data.length);
+        
         // Group by product_code and calculate totals
         const productMap = new Map<string, ProductSummary>();
         
+        // Group by date for chart data
+        const dateMap = new Map<string, number>();
+        
         for (const record of data) {
-          const { product_code, product_qty } = record;
+          const { product_code, product_qty, generate_time } = record;
           
+          // Product summary
           if (!productMap.has(product_code)) {
             productMap.set(product_code, {
               product_code,
@@ -125,13 +148,52 @@ export default function FinishedProduct() {
           const productSummary = productMap.get(product_code)!;
           productSummary.total_qty += product_qty;
           productSummary.total_pallets += 1;
+          
+          // Chart data - group by date/hour based on time range
+          const date = new Date(generate_time);
+          let dateKey: string;
+          
+          if (timeRange === 'Today' || timeRange === 'Yesterday') {
+            // For today and yesterday, group by hour
+            dateKey = format(date, 'HH:00');
+          } else {
+            // For other ranges, group by date
+            dateKey = format(date, 'MMM dd');
+          }
+          
+          dateMap.set(dateKey, (dateMap.get(dateKey) || 0) + 1);
         }
         
-        // Convert to array and sort by total_qty descending
+        // Convert to array and sort by total_pallets descending (for top 5)
         const productSummaries = Array.from(productMap.values())
-          .sort((a, b) => b.total_qty - a.total_qty);
+          .sort((a, b) => b.total_pallets - a.total_pallets);
         
         setProducts(productSummaries);
+        
+        // Prepare chart data
+        const chartDataArray: ChartData[] = [];
+        
+        if (timeRange === 'Today' || timeRange === 'Yesterday') {
+          // For today and yesterday, create hourly data points
+          for (let hour = 0; hour < 24; hour++) {
+            const hourKey = `${hour.toString().padStart(2, '0')}:00`;
+            chartDataArray.push({
+              date: hourKey,
+              pallets: dateMap.get(hourKey) || 0
+            });
+          }
+        } else {
+          // For other ranges, use actual dates
+          const sortedDates = Array.from(dateMap.keys()).sort();
+          sortedDates.forEach(date => {
+            chartDataArray.push({
+              date,
+              pallets: dateMap.get(date) || 0
+            });
+          });
+        }
+        
+        setChartData(chartDataArray);
       }
     } catch (err: any) {
       console.error('[FinishedProduct] Error fetching data:', err);
@@ -169,6 +231,195 @@ export default function FinishedProduct() {
     </div>
   );
 
+  // Small size (2x2) - 只顯示當天總板數
+  if (widgetSize === WidgetSize.SMALL) {
+    // 使用 Today 的數據
+    const todayData = products.reduce((sum, p) => sum + p.total_pallets, 0);
+    
+    // 強制使用 Today 時間範圍
+    useEffect(() => {
+      if (selectedTimeRange !== 'Today') {
+        setSelectedTimeRange('Today');
+      }
+    }, []);
+    
+    return (
+      <div className="h-full flex flex-col justify-center items-center">
+        <div className="w-10 h-10 bg-gradient-to-r from-green-500 to-emerald-500 rounded-lg flex items-center justify-center mb-2">
+          <CubeIcon className="h-6 w-6 text-white" />
+        </div>
+        <h3 className="text-sm font-medium text-slate-400 mb-2">Today's Finished</h3>
+        {loading || initialLoading ? (
+          <Skeleton className="h-10 w-20 bg-slate-800" />
+        ) : (
+          <motion.div
+            key={totalPallets}
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            className="text-3xl font-bold text-green-400"
+          >
+            {totalPallets}
+          </motion.div>
+        )}
+        <p className="text-xs text-slate-500 mt-1">Pallets</p>
+      </div>
+    );
+  }
+
+  // Medium or Large size - 顯示折線圖和產品明細 (2:1 比例)
+  if (widgetSize === WidgetSize.MEDIUM || widgetSize === WidgetSize.LARGE) {
+    return (
+      <div className="h-full flex flex-col">
+        {/* Header with time range dropdown */}
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-2">
+            <DocumentIcon className="w-5 h-5 text-green-500" />
+            <span className="text-sm font-medium text-slate-300">Finished Product</span>
+          </div>
+          
+          {/* Time Range Dropdown */}
+          <div className="relative" ref={dropdownRef}>
+            <button
+              onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+              className="flex items-center gap-2 px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-lg transition-colors text-xs"
+            >
+              <ClockIcon className="w-3 h-3" />
+              {selectedTimeRange}
+              <ChevronDownIcon className={`w-3 h-3 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} />
+            </button>
+            
+            <AnimatePresence>
+              {isDropdownOpen && (
+                <motion.div
+                  initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                  transition={{ duration: 0.2 }}
+                  className="absolute right-0 top-full mt-1 bg-slate-800 border border-slate-600 rounded-lg shadow-xl z-50 min-w-[140px]"
+                >
+                  {TIME_RANGE_OPTIONS.map((option) => (
+                    <button
+                      key={option}
+                      onClick={() => handleTimeRangeChange(option)}
+                      className={`w-full px-3 py-2 text-left text-xs hover:bg-slate-700 transition-colors first:rounded-t-lg last:rounded-b-lg ${
+                        selectedTimeRange === option ? 'bg-slate-700 text-green-400' : 'text-slate-300'
+                      }`}
+                    >
+                      {option}
+                    </button>
+                  ))}
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        </div>
+
+        {/* 上半部分 - 折線圖 (佔 2/3) */}
+        <div className="flex-[2] min-h-0 mb-4">
+          {loading ? (
+            <div className="h-full flex items-center justify-center">
+              <Skeleton className="h-full w-full bg-slate-800" />
+            </div>
+          ) : error ? (
+            <div className="h-full flex flex-col items-center justify-center text-center">
+              <ExclamationTriangleIcon className="w-8 h-8 text-red-500 mb-2" />
+              <p className="text-sm text-slate-400">Failed to load data</p>
+              <button onClick={handleRetry} className="mt-2 text-xs text-green-400 hover:text-green-300">
+                Retry
+              </button>
+            </div>
+          ) : chartData.length === 0 ? (
+            <div className="h-full flex flex-col items-center justify-center">
+              <InboxIcon className="w-8 h-8 text-slate-500 mb-2" />
+              <p className="text-sm text-slate-400">No data available</p>
+            </div>
+          ) : (
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={chartData} margin={{ top: 5, right: 5, left: 5, bottom: 5 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
+                <XAxis 
+                  dataKey="date" 
+                  stroke="#94a3b8" 
+                  fontSize={12}
+                  tick={{ fill: '#94a3b8' }}
+                />
+                <YAxis 
+                  stroke="#94a3b8" 
+                  fontSize={12}
+                  tick={{ fill: '#94a3b8' }}
+                />
+                <Tooltip 
+                  contentStyle={{ 
+                    backgroundColor: '#1e293b', 
+                    border: '1px solid #334155',
+                    borderRadius: '8px'
+                  }}
+                  labelStyle={{ color: '#94a3b8' }}
+                  itemStyle={{ color: '#22c55e' }}
+                />
+                <Line 
+                  type="monotone" 
+                  dataKey="pallets" 
+                  stroke="#22c55e" 
+                  strokeWidth={2}
+                  dot={{ fill: '#22c55e', r: 4 }}
+                  activeDot={{ r: 6 }}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          )}
+        </div>
+
+        {/* 下半部分 - 頭5產品明細 (佔 1/3) */}
+        <div className="flex-1 min-h-0">
+          <div className="border-t border-slate-700 pt-2 h-full flex flex-col">
+            <h4 className="text-sm font-semibold text-green-400 mb-2">
+              Top 5 Products
+            </h4>
+            {loading ? (
+              <div className="space-y-1 flex-1">
+                {[...Array(5)].map((_, i) => (
+                  <Skeleton key={i} className="h-6 w-full bg-slate-800" />
+                ))}
+              </div>
+            ) : products.length === 0 ? (
+              <p className="text-xs text-slate-500">No products found</p>
+            ) : (
+              <div className="space-y-1 flex-1 overflow-auto">
+                {products.slice(0, 5).map((product, index) => (
+                  <motion.div
+                    key={product.product_code}
+                    initial={{ x: -20, opacity: 0 }}
+                    animate={{ x: 0, opacity: 1 }}
+                    transition={{ delay: index * 0.1 }}
+                    className={`flex justify-between items-center ${
+                      widgetSize === WidgetSize.LARGE ? 'p-1.5 rounded bg-slate-800/50 hover:bg-slate-800/70 transition-colors' : ''
+                    }`}
+                  >
+                    <span className={`${widgetSize === WidgetSize.LARGE ? 'text-sm' : 'text-xs'} font-medium text-slate-300`}>
+                      {product.product_code}
+                    </span>
+                    <div className={`flex gap-3 ${widgetSize === WidgetSize.LARGE ? 'text-sm' : 'text-xs'}`}>
+                      <span className="text-green-400">
+                        {product.total_pallets} pallets
+                      </span>
+                      {widgetSize === WidgetSize.LARGE && (
+                        <span className="text-emerald-400">
+                          {product.total_qty.toLocaleString()} qty
+                        </span>
+                      )}
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Default return for original table view
   return (
     <div className="space-y-4">
       {/* Header with time range dropdown - Always visible */}
@@ -348,6 +599,42 @@ export default function FinishedProduct() {
             Retry
           </button>
         </motion.div>
+      )}
+
+      {/* Medium/Large size - 顯示頭5產品明細 */}
+      {(widgetSize === WidgetSize.MEDIUM || widgetSize === WidgetSize.LARGE) && products.length > 0 && (
+        <div className="border-t border-slate-700 pt-4">
+          <h4 className="text-sm font-semibold text-green-400 mb-3">
+            Top 5 Products - {selectedTimeRange}
+          </h4>
+          <div className="space-y-2">
+            {products.slice(0, 5).map((product, index) => (
+              <motion.div
+                key={product.product_code}
+                initial={{ x: -20, opacity: 0 }}
+                animate={{ x: 0, opacity: 1 }}
+                transition={{ delay: index * 0.1 }}
+                className={`flex justify-between items-center ${
+                  widgetSize === WidgetSize.LARGE ? 'p-2 rounded-lg bg-slate-800/50 hover:bg-slate-800/70 transition-colors' : ''
+                }`}
+              >
+                <span className={`${widgetSize === WidgetSize.LARGE ? 'text-sm' : 'text-xs'} font-medium text-slate-300`}>
+                  {product.product_code}
+                </span>
+                <div className={`flex gap-4 ${widgetSize === WidgetSize.LARGE ? 'text-sm' : 'text-xs'}`}>
+                  <span className="text-green-400">
+                    <span className="text-slate-500">Pallets:</span> {product.total_pallets}
+                  </span>
+                  {widgetSize === WidgetSize.LARGE && (
+                    <span className="text-emerald-400">
+                      <span className="text-slate-500">Qty:</span> {product.total_qty.toLocaleString()}
+                    </span>
+                  )}
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
       )}
     </div>
   );

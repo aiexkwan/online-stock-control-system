@@ -45,6 +45,7 @@ export const UploadFilesOnlyDialog: React.FC<UploadFilesOnlyDialogProps> = ({
   isOpen,
   onOpenChange
 }) => {
+  const [currentUserId, setCurrentUserId] = useState<number | null>(null);
   const [uploadState, setUploadState] = useState<UploadState>({
     selectedFile: null,
     selectedFolder: '',
@@ -56,6 +57,50 @@ export const UploadFilesOnlyDialog: React.FC<UploadFilesOnlyDialogProps> = ({
 
   const [isDragOver, setIsDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  // 獲取當前用戶 ID
+  React.useEffect(() => {
+    const getCurrentUser = async () => {
+      try {
+        const { createClient } = await import('@/app/utils/supabase/client');
+        const supabase = createClient();
+        const { data: { user }, error: authError } = await supabase.auth.getUser();
+        
+        if (authError) {
+          console.error('[UploadFilesOnlyDialog] Auth error:', authError);
+          return;
+        }
+        
+        if (user) {
+          try {
+            const { data: userDataByEmail, error: emailError } = await supabase
+              .from('data_id')
+              .select('id')
+              .eq('email', user.email)
+              .single();
+            
+            if (emailError) {
+              console.error('[UploadFilesOnlyDialog] Error fetching user data by email:', emailError);
+              return;
+            }
+            
+            if (userDataByEmail) {
+              console.log('[UploadFilesOnlyDialog] User ID found by email:', userDataByEmail.id);
+              setCurrentUserId(userDataByEmail.id);
+            }
+          } catch (queryError) {
+            console.error('[UploadFilesOnlyDialog] Query error:', queryError);
+          }
+        }
+      } catch (error) {
+        console.error('[UploadFilesOnlyDialog] Unexpected error:', error);
+      }
+    };
+    
+    if (isOpen) {
+      getCurrentUser();
+    }
+  }, [isOpen]);
 
   // 重置狀態
   const resetState = useCallback(() => {
@@ -208,6 +253,11 @@ export const UploadFilesOnlyDialog: React.FC<UploadFilesOnlyDialogProps> = ({
       formData.append('file', uploadState.selectedFile);
       formData.append('folder', uploadState.selectedFolder);
       formData.append('fileName', uploadState.fileName);
+      
+      // 添加用戶 ID
+      if (currentUserId) {
+        formData.append('uploadBy', currentUserId.toString());
+      }
 
       // 模擬上傳進度
       const progressInterval = setInterval(() => {

@@ -5,6 +5,7 @@ import { Toaster } from 'sonner';
 import AuthChecker from './AuthChecker';
 import GlobalHeader from '@/components/GlobalHeader';
 import MotionBackground from './MotionBackground';
+import { GlobalReportDialogs } from '@/app/components/reports/GlobalReportDialogs';
 
 interface ClientLayoutProps {
   children: React.ReactNode;
@@ -37,6 +38,9 @@ export default function ClientLayout({ children }: ClientLayoutProps) {
         <MotionBackground className="text-white">
           {children}
         </MotionBackground>
+        
+        {/* Global report dialogs */}
+        <GlobalReportDialogs />
       </AuthChecker>
     </>
   );

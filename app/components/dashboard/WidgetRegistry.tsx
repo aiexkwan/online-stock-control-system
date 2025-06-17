@@ -28,7 +28,15 @@ class WidgetRegistryClass {
     const item = this.get(type);
     if (!item) {
       console.error(`Unknown widget type: ${type}`);
-      return null;
+      // Return a placeholder component for unknown widgets
+      return (
+        <div className="flex items-center justify-center h-full bg-slate-800 rounded-lg border border-red-500">
+          <p className="text-red-400 text-center p-4">
+            Unknown widget type: {type}<br />
+            <span className="text-sm text-slate-400">Please remove this widget</span>
+          </p>
+        </div>
+      );
     }
     
     const Component = item.component;

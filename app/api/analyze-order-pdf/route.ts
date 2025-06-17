@@ -524,6 +524,28 @@ export async function POST(request: NextRequest) {
               recipients: emailData.recipients
             };
             
+            // 寫入記錄至 doc_upload 表（緩存版本）
+            try {
+              const { error: uploadRecordError } = await supabaseAdmin
+                .from('doc_upload')
+                .insert({
+                  doc_name: file.name,
+                  upload_by: parseInt(uploadedBy),
+                  doc_type: 'order',
+                  doc_url: storageInfo?.publicUrl || null,
+                  file_size: file.size,
+                  folder: 'orderpdf'
+                });
+                
+              if (uploadRecordError) {
+                console.error('[PDF Analysis] 寫入 doc_upload 表失敗 (cached):', uploadRecordError);
+              } else {
+                console.log('[PDF Analysis] 成功寫入 doc_upload 表 (cached)');
+              }
+            } catch (dbError) {
+              console.error('[PDF Analysis] 數據庫操作錯誤 (cached):', dbError);
+            }
+            
           } catch (emailError: any) {
             console.error('[PDF Analysis] Error sending order created email (cached):', emailError);
             console.error('[PDF Analysis] Full error details:', emailError);
@@ -789,6 +811,28 @@ export async function POST(request: NextRequest) {
             emailId: emailData.emailId,
             recipients: emailData.recipients
           };
+          
+          // 寫入記錄至 doc_upload 表
+          try {
+            const { error: uploadRecordError } = await supabaseAdmin
+              .from('doc_upload')
+              .insert({
+                doc_name: file.name,
+                upload_by: parseInt(uploadedBy),
+                doc_type: 'order',
+                doc_url: storageInfo?.publicUrl || null,
+                file_size: file.size,
+                folder: 'orderpdf'
+              });
+              
+            if (uploadRecordError) {
+              console.error('[PDF Analysis] 寫入 doc_upload 表失敗:', uploadRecordError);
+            } else {
+              console.log('[PDF Analysis] 成功寫入 doc_upload 表');
+            }
+          } catch (dbError) {
+            console.error('[PDF Analysis] 數據庫操作錯誤:', dbError);
+          }
           
         } catch (emailError: any) {
           console.error('[PDF Analysis] Error sending order created email:', emailError);

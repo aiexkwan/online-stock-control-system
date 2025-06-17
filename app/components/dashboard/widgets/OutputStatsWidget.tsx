@@ -1,9 +1,9 @@
 /**
- * 生產統計小部件
+ * Output Stats 小部件
  * 支援三種尺寸：
- * - Small: 只顯示數值
- * - Medium: 添加時間範圍選擇
- * - Large: 包含圖表視覺化
+ * - Small (2x2): 顯示當天生成的 pallet number 總數，不支援 data range pick
+ * - Medium (4x4): 顯示當天生成的 pallet number 總數和 product_code 及其 qty 總和，支援 data range pick
+ * - Large (6x6): 分成上中下(1:1:2)，支援 data range pick
  */
 
 'use client';
@@ -16,28 +16,35 @@ import { createClient } from '@/app/utils/supabase/client';
 import { dialogStyles, iconColors } from '@/app/utils/dialogStyles';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer 
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend 
 } from 'recharts';
 import { getTodayRange, getYesterdayRange, getDateRange, formatDbTime } from '@/app/utils/timezone';
 
 interface OutputData {
-  today: number;
-  yesterday: number;
-  past3Days: number;
-  pastWeek: number;
-  hourlyData?: Array<{ hour: string; count: number }>;
+  palletCount: number;
+  productCodeCount: number;
+  totalQuantity: number;
+  productDetails?: Array<{ 
+    product_code: string; 
+    quantity: number; 
+  }>;
+  dailyData?: Array<{
+    date: string;
+    [key: string]: any; // 動態 product code 欄位
+  }>;
 }
 
 export function OutputStatsWidget({ widget, isEditMode }: WidgetComponentProps) {
   const [data, setData] = useState<OutputData>({
-    today: 0,
-    yesterday: 0,
-    past3Days: 0,
-    pastWeek: 0
+    palletCount: 0,
+    productCodeCount: 0,
+    totalQuantity: 0,
+    productDetails: [],
+    dailyData: []
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [timeRange, setTimeRange] = useState(widget.config.timeRange || 'Today');
+  const [timeRange, setTimeRange] = useState('Today');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -46,11 +53,11 @@ export function OutputStatsWidget({ widget, isEditMode }: WidgetComponentProps) 
   useEffect(() => {
     loadData();
     
-    if (widget.config.refreshInterval) {
+    if (widget.config.refreshInterval && !isEditMode) {
       const interval = setInterval(loadData, widget.config.refreshInterval);
       return () => clearInterval(interval);
     }
-  }, [widget.config]);
+  }, [widget.config, timeRange, isEditMode]);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -66,73 +73,105 @@ export function OutputStatsWidget({ widget, isEditMode }: WidgetComponentProps) 
     try {
       setLoading(true);
       const supabase = createClient();
-      const todayRange = getTodayRange();
-      const yesterdayRange = getYesterdayRange();
-      const threeDaysRange = getDateRange(3);
-      const weekRange = getDateRange(7);
+      
+      // 根據時間範圍設定查詢範圍
+      let dateRange;
+      if (size === WidgetSize.MEDIUM || size === WidgetSize.LARGE) {
+        // 4x4 和 6x6 模式支援時間範圍選擇
+        switch (timeRange) {
+          case 'Yesterday':
+            dateRange = getYesterdayRange();
+            break;
+          case 'Past 3 days':
+            dateRange = getDateRange(3);
+            break;
+          case 'This week':
+            dateRange = getDateRange(7);
+            break;
+          default:
+            dateRange = getTodayRange();
+        }
+      } else {
+        // 2x2 模式只顯示當天
+        dateRange = getTodayRange();
+      }
 
-      // Get today's count
-      const { count: todayCount } = await supabase
+      // 查詢 pallet 總數 - 只顯示 plt_remark="Finished In Production"
+      const { count: palletCount } = await supabase
         .from('record_palletinfo')
         .select('*', { count: 'exact', head: true })
-        .gte('generate_time', todayRange.start)
-        .lt('generate_time', todayRange.end)
-        .not('plt_remark', 'ilike', '%Material GRN-%');
+        .gte('generate_time', dateRange.start)
+        .lt('generate_time', dateRange.end)
+        .eq('plt_remark', 'Finished In Production');
 
-      // Get yesterday's count
-      const { count: yesterdayCount } = await supabase
-        .from('record_palletinfo')
-        .select('*', { count: 'exact', head: true })
-        .gte('generate_time', yesterdayRange.start)
-        .lt('generate_time', yesterdayRange.end)
-        .not('plt_remark', 'ilike', '%Material GRN-%');
-
-      // Get past 3 days count
-      const { count: past3DaysCount } = await supabase
-        .from('record_palletinfo')
-        .select('*', { count: 'exact', head: true })
-        .gte('generate_time', threeDaysRange.start)
-        .lt('generate_time', threeDaysRange.end)
-        .not('plt_remark', 'ilike', '%Material GRN-%');
-
-      // Get past week count
-      const { count: pastWeekCount } = await supabase
-        .from('record_palletinfo')
-        .select('*', { count: 'exact', head: true })
-        .gte('generate_time', weekRange.start)
-        .lt('generate_time', weekRange.end)
-        .not('plt_remark', 'ilike', '%Material GRN-%');
-
-      // Get hourly data for large size
-      let hourlyData = [];
-      if (size === WidgetSize.LARGE) {
-        const { data: hourlyRecords } = await supabase
+      // 如果是 Medium 或 Large size，還需要獲取 product code 統計
+      let productCodeCount = 0;
+      let totalQuantity = 0;
+      let productDetails = [];
+      let dailyData = [];
+      
+      if (size === WidgetSize.MEDIUM || size === WidgetSize.LARGE) {
+        // 獲取所有產品代碼和數量
+        const { data: products } = await supabase
           .from('record_palletinfo')
-          .select('generate_time')
-          .gte('generate_time', todayRange.start)
-          .lt('generate_time', todayRange.end)
-          .not('plt_remark', 'ilike', '%Material GRN-%');
+          .select('product_code, product_qty, generate_time')
+          .gte('generate_time', dateRange.start)
+          .lt('generate_time', dateRange.end)
+          .eq('plt_remark', 'Finished In Production');
 
-        if (hourlyRecords) {
-          const hourCounts = new Map<number, number>();
-          hourlyRecords.forEach(record => {
-            const hour = new Date(record.generate_time).getHours();
-            hourCounts.set(hour, (hourCounts.get(hour) || 0) + 1);
+        if (products) {
+          // 統計不同 product_code 的數量
+          const productMap = new Map<string, number>();
+          const dailyMap = new Map<string, Map<string, number>>();
+          
+          products.forEach(p => {
+            // 總計
+            productMap.set(p.product_code, (productMap.get(p.product_code) || 0) + (p.product_qty || 0));
+            
+            // 按日期統計 (for Large size)
+            if (size === WidgetSize.LARGE) {
+              const date = formatDbTime(p.generate_time).split(' ')[0]; // 取日期部分
+              if (!dailyMap.has(date)) {
+                dailyMap.set(date, new Map());
+              }
+              const dateData = dailyMap.get(date)!;
+              dateData.set(p.product_code, (dateData.get(p.product_code) || 0) + (p.product_qty || 0));
+            }
           });
-
-          hourlyData = Array.from({ length: 24 }, (_, i) => ({
-            hour: `${i.toString().padStart(2, '0')}:00`,
-            count: hourCounts.get(i) || 0
-          }));
+          
+          productCodeCount = productMap.size;
+          totalQuantity = Array.from(productMap.values()).reduce((sum, qty) => sum + qty, 0);
+          
+          // Medium 和 Large size 都需要 productDetails
+          productDetails = Array.from(productMap.entries())
+            .map(([product_code, quantity]) => ({ product_code, quantity }))
+            .sort((a, b) => b.quantity - a.quantity);
+            
+          // Large size 需要 daily data for grouped bar chart
+          if (size === WidgetSize.LARGE) {
+            // 獲取前 3 個產品代碼
+            const topProducts = productDetails.slice(0, 3).map(p => p.product_code);
+            
+            // 轉換成圖表數據格式
+            dailyData = Array.from(dailyMap.entries())
+              .map(([date, products]) => {
+                const dayData: any = { date };
+                topProducts.forEach(code => {
+                  dayData[code] = products.get(code) || 0;
+                });
+                return dayData;
+              })
+              .sort((a, b) => a.date.localeCompare(b.date));
+          }
         }
       }
 
       setData({
-        today: todayCount || 0,
-        yesterday: yesterdayCount || 0,
-        past3Days: past3DaysCount || 0,
-        pastWeek: pastWeekCount || 0,
-        hourlyData
+        palletCount: palletCount || 0,
+        productCodeCount,
+        totalQuantity,
+        productDetails,
+        dailyData
       });
       setError(null);
     } catch (err: any) {
@@ -143,15 +182,6 @@ export function OutputStatsWidget({ widget, isEditMode }: WidgetComponentProps) 
     }
   };
 
-  const getCurrentValue = () => {
-    switch (timeRange) {
-      case 'Today': return data.today;
-      case 'Yesterday': return data.yesterday;
-      case 'Past 3 days': return data.past3Days;
-      case 'This week': return data.pastWeek;
-      default: return data.today;
-    }
-  };
 
   const handleTimeRangeChange = (newRange: string) => {
     setTimeRange(newRange);
@@ -166,20 +196,23 @@ export function OutputStatsWidget({ widget, isEditMode }: WidgetComponentProps) 
           <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-lg flex items-center justify-center mb-2">
             <CubeIcon className="h-6 w-6 text-white" />
           </div>
-          <h3 className="text-sm font-medium text-slate-400 mb-1">Output</h3>
+          <h3 className="text-sm font-medium text-slate-400 mb-1">Today's Output</h3>
           {loading ? (
             <div className="h-12 w-20 bg-slate-700 rounded animate-pulse"></div>
           ) : error ? (
             <div className="text-red-400 text-sm">Error</div>
           ) : (
-            <div className="text-4xl font-bold text-white">{getCurrentValue()}</div>
+            <>
+              <div className="text-4xl font-bold text-white">{data.palletCount}</div>
+              <p className="text-xs text-slate-500 mt-1">Pallets</p>
+            </>
           )}
         </CardContent>
       </Card>
     );
   }
 
-  // Medium size - add time selector
+  // Medium size - 顯示 pallet 總數和 product qty 總和，支援時間選擇
   if (size === WidgetSize.MEDIUM) {
     return (
       <Card className={`h-full bg-slate-900/95 backdrop-blur-xl border border-blue-500/30 shadow-2xl ${isEditMode ? 'border-dashed border-2 border-blue-500/50' : ''}`}>
@@ -189,7 +222,7 @@ export function OutputStatsWidget({ widget, isEditMode }: WidgetComponentProps) 
               <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-lg flex items-center justify-center">
                 <CubeIcon className="h-5 w-5 text-white" />
               </div>
-              <CardTitle className="text-sm font-medium text-slate-200">Output</CardTitle>
+              <CardTitle className="text-sm font-medium text-slate-200">Output Stats</CardTitle>
             </div>
             
             {/* Time Range Dropdown */}
@@ -197,6 +230,7 @@ export function OutputStatsWidget({ widget, isEditMode }: WidgetComponentProps) 
               <button
                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                 className="flex items-center gap-1 px-2 py-1 bg-slate-700/50 hover:bg-slate-600/50 text-slate-300 hover:text-white rounded-md transition-all duration-300 text-xs border border-slate-600/30"
+                disabled={isEditMode}
               >
                 <ClockIcon className="w-3 h-3" />
                 {timeRange}
@@ -231,18 +265,42 @@ export function OutputStatsWidget({ widget, isEditMode }: WidgetComponentProps) 
         </CardHeader>
         <CardContent className="pt-2">
           {loading ? (
-            <div className="h-16 bg-slate-700 rounded animate-pulse"></div>
+            <div className="space-y-3">
+              <div className="h-16 bg-slate-700 rounded animate-pulse"></div>
+              <div className="h-16 bg-slate-700 rounded animate-pulse"></div>
+            </div>
           ) : error ? (
             <div className="text-red-400 text-sm">{error}</div>
           ) : (
-            <div className="text-center">
-              <div className="text-5xl font-bold text-white mb-2">{getCurrentValue()}</div>
-              <p className="text-xs text-slate-400">
-                {timeRange === 'Today' && `Yesterday: ${data.yesterday}`}
-                {timeRange === 'Yesterday' && `Today: ${data.today}`}
-                {timeRange === 'Past 3 days' && `Average: ${Math.round(data.past3Days / 3)}/day`}
-                {timeRange === 'This week' && `Average: ${Math.round(data.pastWeek / 7)}/day`}
-              </p>
+            <div className="h-full flex flex-col space-y-2">
+              {/* Pallet 總數 */}
+              <div className="bg-slate-800/50 rounded-lg p-2">
+                <p className="text-xs text-slate-400">Total Pallets</p>
+                <div className="text-2xl font-bold text-white">{data.palletCount}</div>
+              </div>
+              
+              {/* Product 明細 */}
+              <div className="flex-1 bg-slate-800/50 rounded-lg p-2 overflow-hidden">
+                <p className="text-xs text-slate-400 mb-1">Product Details ({data.productCodeCount} codes, Total: {data.totalQuantity.toLocaleString()})</p>
+                
+                {data.productDetails && data.productDetails.length > 0 ? (
+                  <div className="max-h-[calc(100%-1.5rem)] overflow-y-auto pr-1">
+                    <div className="space-y-1">
+                      {data.productDetails.map((product) => (
+                        <div 
+                          key={product.product_code}
+                          className="flex justify-between items-center py-1 px-2 text-xs hover:bg-slate-700/50 rounded transition-colors"
+                        >
+                          <span className="text-slate-300">{product.product_code}</span>
+                          <span className="text-white font-medium">{product.quantity.toLocaleString()}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-xs text-slate-500 text-center py-4">No data</div>
+                )}
+              </div>
             </div>
           )}
         </CardContent>
@@ -300,54 +358,101 @@ export function OutputStatsWidget({ widget, isEditMode }: WidgetComponentProps) 
           </div>
         </div>
       </CardHeader>
-      <CardContent>
+      <CardContent className="flex-1 flex flex-col overflow-hidden">
         {loading ? (
           <div className="h-64 bg-slate-700 rounded animate-pulse"></div>
         ) : error ? (
           <div className="text-red-400 text-sm">{error}</div>
         ) : (
-          <>
-            <div className="text-center mb-4">
-              <div className="text-5xl font-bold text-white">{getCurrentValue()}</div>
-              <p className="text-sm text-slate-400 mt-1">Pallets Produced</p>
-            </div>
-            
-            {timeRange === 'Today' && data.hourlyData && (
-              <div className="h-48">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={data.hourlyData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                    <XAxis 
-                      dataKey="hour" 
-                      stroke="#9CA3AF"
-                      tick={{ fontSize: 10 }}
-                      interval={2}
-                    />
-                    <YAxis stroke="#9CA3AF" tick={{ fontSize: 10 }} />
-                    <Tooltip 
-                      contentStyle={{ 
-                        backgroundColor: '#1F2937', 
-                        border: '1px solid #374151',
-                        borderRadius: '8px'
-                      }}
-                    />
-                    <Bar dataKey="count" fill="#3B82F6" radius={[4, 4, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            )}
-            
-            <div className="grid grid-cols-2 gap-2 mt-4">
-              <div className="bg-slate-800/50 rounded-lg p-2">
-                <p className="text-xs text-slate-400">Today</p>
-                <p className="text-lg font-semibold text-white">{data.today}</p>
-              </div>
-              <div className="bg-slate-800/50 rounded-lg p-2">
-                <p className="text-xs text-slate-400">Yesterday</p>
-                <p className="text-lg font-semibold text-white">{data.yesterday}</p>
+          <div className="h-full flex flex-col">
+            {/* 上部份 - Pallet 總數 (1/4) */}
+            <div className="flex-1 mb-2">
+              <div className="bg-slate-800/50 rounded-lg p-3 h-full flex flex-col justify-center">
+                <p className="text-sm text-slate-400 mb-1">Total Pallets</p>
+                <div className="text-4xl font-bold text-white">{data.palletCount}</div>
               </div>
             </div>
-          </>
+            
+            {/* 中部份 - Product Code 明細列表 (1/4) */}
+            <div className="flex-1 mb-2">
+              <div className="bg-slate-800/50 rounded-lg p-2 h-full overflow-hidden flex flex-col">
+                <p className="text-xs text-slate-400 mb-1">Product Details ({data.productCodeCount} codes, Total: {data.totalQuantity.toLocaleString()})</p>
+                {data.productDetails && data.productDetails.length > 0 ? (
+                  <div className="flex-1 overflow-y-auto pr-1">
+                    <div className="space-y-0.5">
+                      {data.productDetails.map((product) => (
+                        <div 
+                          key={product.product_code}
+                          className="flex justify-between items-center py-0.5 px-2 text-xs hover:bg-slate-700/50 rounded transition-colors"
+                        >
+                          <span className="text-slate-300">{product.product_code}</span>
+                          <span className="text-white font-medium">{product.quantity.toLocaleString()}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-xs text-slate-500 text-center py-2">No data</div>
+                )}
+              </div>
+            </div>
+            
+            {/* 下部份 - 棒型圖 (2/4) */}
+            <div className="flex-[2] bg-slate-800/30 rounded-lg p-3">
+              <h4 className="text-sm font-medium text-slate-300 mb-2">Daily Product Quantity Chart (Top 3)</h4>
+              {data.dailyData && data.dailyData.length > 0 && data.productDetails && data.productDetails.length > 0 ? (
+                <div style={{ width: '100%', height: '450px' }}>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart 
+                      data={data.dailyData}
+                      margin={{ top: 10, right: 10, left: 5, bottom: 20 }}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                      <XAxis 
+                        dataKey="date" 
+                        stroke="#9CA3AF"
+                        tick={false}
+                        axisLine={{ stroke: '#9CA3AF' }}
+                      />
+                      <YAxis 
+                        stroke="#9CA3AF" 
+                        tick={{ fontSize: 11, fill: '#9CA3AF' }}
+                      />
+                      <Tooltip 
+                        contentStyle={{ 
+                          backgroundColor: '#1F2937', 
+                          border: '1px solid #374151',
+                          borderRadius: '8px',
+                          color: '#E5E7EB'
+                        }}
+                        formatter={(value: any) => value.toLocaleString()}
+                      />
+                      <Legend 
+                        wrapperStyle={{ fontSize: '11px', paddingTop: '10px' }}
+                      />
+                      {/* 動態生成 Bar components for top 3 products */}
+                      {data.productDetails.slice(0, 3).map((product, index) => (
+                        <Bar 
+                          key={product.product_code}
+                          dataKey={product.product_code} 
+                          fill={[
+                            '#3B82F6', // Blue
+                            '#10B981', // Green
+                            '#F59E0B', // Amber
+                          ][index]}
+                          radius={[4, 4, 0, 0]}
+                        />
+                      ))}
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              ) : (
+                <div style={{ height: '450px' }} className="flex items-center justify-center">
+                  <p className="text-sm text-slate-500">No data to display</p>
+                </div>
+              )}
+            </div>
+          </div>
         )}
       </CardContent>
     </Card>

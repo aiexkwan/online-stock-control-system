@@ -1,9 +1,9 @@
 /**
- * 出貨統計小部件
+ * Stock Transfer 小部件
  * 支援三種尺寸：
- * - Small: 只顯示數值
- * - Medium: 添加時間範圍選擇
- * - Large: 包含圖表視覺化
+ * - Small (2x2): 顯示當天 transfer 的總數量
+ * - Medium (4x4): 顯示各員工 transfer 的總數量，支援日期範圍選擇
+ * - Large (6x6): 包括 4x4 功能 + 折線圖視覺化（上下比例 1:1.5）
  */
 
 'use client';
@@ -20,24 +20,33 @@ import {
 } from 'recharts';
 import { getTodayRange, getYesterdayRange, getDateRange, formatDbTime } from '@/app/utils/timezone';
 
-interface BookedOutData {
-  today: number;
-  yesterday: number;
-  past3Days: number;
-  pastWeek: number;
-  dailyData?: Array<{ date: string; count: number }>;
+interface TransferData {
+  totalCount: number;
+  operatorData?: Array<{
+    operator_id: string;
+    count: number;
+    percentage: number;
+  }>;
+  dailyData?: Array<{ 
+    date: string; 
+    count: number;
+  }>;
+  hourlyData?: Array<{
+    hour: string;
+    count: number;
+  }>;
 }
 
 export function BookedOutStatsWidget({ widget, isEditMode }: WidgetComponentProps) {
-  const [data, setData] = useState<BookedOutData>({
-    today: 0,
-    yesterday: 0,
-    past3Days: 0,
-    pastWeek: 0
+  const [data, setData] = useState<TransferData>({
+    totalCount: 0,
+    operatorData: [],
+    dailyData: [],
+    hourlyData: []
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [timeRange, setTimeRange] = useState(widget.config.timeRange || 'Today');
+  const [timeRange, setTimeRange] = useState('Today');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -46,11 +55,11 @@ export function BookedOutStatsWidget({ widget, isEditMode }: WidgetComponentProp
   useEffect(() => {
     loadData();
     
-    if (widget.config.refreshInterval) {
+    if (widget.config.refreshInterval && !isEditMode) {
       const interval = setInterval(loadData, widget.config.refreshInterval);
       return () => clearInterval(interval);
     }
-  }, [widget.config]);
+  }, [widget.config, timeRange, isEditMode]);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -66,105 +75,122 @@ export function BookedOutStatsWidget({ widget, isEditMode }: WidgetComponentProp
     try {
       setLoading(true);
       const supabase = createClient();
-      const todayRange = getTodayRange();
-      const yesterdayRange = getYesterdayRange();
-      const threeDaysRange = getDateRange(3);
-      const weekRange = getDateRange(7);
+      
+      // 根據時間範圍設定查詢範圍
+      let dateRange;
+      const isHourlyView = timeRange === 'Today' || timeRange === 'Yesterday';
+      
+      switch (timeRange) {
+        case 'Yesterday':
+          dateRange = getYesterdayRange();
+          break;
+        case 'Past 3 days':
+          dateRange = getDateRange(3);
+          break;
+        case 'This week':
+          dateRange = getDateRange(7);
+          break;
+        default:
+          dateRange = getTodayRange();
+      }
 
-      // Get today's count
-      const { count: todayCount } = await supabase
+      // 獲取總數
+      const { count: totalCount } = await supabase
         .from('record_transfer')
         .select('*', { count: 'exact', head: true })
-        .gte('tran_date', todayRange.start)
-        .lt('tran_date', todayRange.end);
+        .gte('tran_date', dateRange.start)
+        .lt('tran_date', dateRange.end);
 
-      // Get yesterday's count
-      const { count: yesterdayCount } = await supabase
-        .from('record_transfer')
-        .select('*', { count: 'exact', head: true })
-        .gte('tran_date', yesterdayRange.start)
-        .lt('tran_date', yesterdayRange.end);
-
-      // Get past 3 days count
-      const { count: past3DaysCount } = await supabase
-        .from('record_transfer')
-        .select('*', { count: 'exact', head: true })
-        .gte('tran_date', threeDaysRange.start)
-        .lt('tran_date', threeDaysRange.end);
-
-      // Get past week count
-      const { count: pastWeekCount } = await supabase
-        .from('record_transfer')
-        .select('*', { count: 'exact', head: true })
-        .gte('tran_date', weekRange.start)
-        .lt('tran_date', weekRange.end);
-
-      // Get daily data for large size
+      // 如果是 Medium 或 Large size，獲取操作員統計
+      let operatorData = [];
       let dailyData = [];
-      if (size === WidgetSize.LARGE && timeRange === 'This week') {
-        const { data: weekRecords } = await supabase
+      let hourlyData = [];
+      
+      if (size === WidgetSize.MEDIUM || size === WidgetSize.LARGE) {
+        // 獲取所有 transfer 記錄
+        const { data: transfers } = await supabase
           .from('record_transfer')
-          .select('tran_date')
-          .gte('tran_date', weekRange.start)
-          .lt('tran_date', weekRange.end);
+          .select('operator_id, tran_date')
+          .gte('tran_date', dateRange.start)
+          .lt('tran_date', dateRange.end);
 
-        if (weekRecords) {
-          const dayCounts = new Map<string, number>();
+        if (transfers) {
+          // 統計各操作員的 transfer 數量
+          const operatorMap = new Map<string, number>();
           
-          // Initialize all days
-          for (let i = 0; i < 7; i++) {
-            const date = new Date();
-            date.setDate(date.getDate() - i);
-            const dateStr = date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
-            dayCounts.set(dateStr, 0);
-          }
-
-          // Count transfers per day
-          weekRecords.forEach(record => {
-            const dateStr = formatDbTime(record.tran_date, 'dd MMM');
-            dayCounts.set(dateStr, (dayCounts.get(dateStr) || 0) + 1);
+          transfers.forEach(transfer => {
+            const operator = transfer.operator_id || 'Unknown';
+            operatorMap.set(operator, (operatorMap.get(operator) || 0) + 1);
           });
-
-          dailyData = Array.from(dayCounts.entries()).reverse().map(([date, count]) => ({
-            date,
-            count
-          }));
+          
+          const total = totalCount || 0;
+          operatorData = Array.from(operatorMap.entries())
+            .map(([operator_id, count]) => ({
+              operator_id,
+              count,
+              percentage: total > 0 ? Math.round((count / total) * 100) : 0
+            }))
+            .sort((a, b) => b.count - a.count);
+            
+          // 如果是 Large size，生成圖表數據
+          if (size === WidgetSize.LARGE) {
+            if (isHourlyView) {
+              // 生成小時數據
+              const hourMap = new Map<string, number>();
+              
+              // 初始化所有小時
+              for (let i = 0; i < 24; i++) {
+                hourMap.set(i.toString().padStart(2, '0'), 0);
+              }
+              
+              transfers.forEach(transfer => {
+                const hour = new Date(transfer.tran_date).getHours().toString().padStart(2, '0');
+                hourMap.set(hour, (hourMap.get(hour) || 0) + 1);
+              });
+              
+              hourlyData = Array.from(hourMap.entries())
+                .map(([hour, count]) => ({
+                  hour: `${hour}:00`,
+                  count
+                }));
+            } else {
+              // 生成日期數據
+              const dayMap = new Map<string, number>();
+              
+              transfers.forEach(transfer => {
+                const date = formatDbTime(transfer.tran_date).split(' ')[0];
+                dayMap.set(date, (dayMap.get(date) || 0) + 1);
+              });
+              
+              dailyData = Array.from(dayMap.entries())
+                .map(([date, count]) => ({ date, count }))
+                .sort((a, b) => a.date.localeCompare(b.date));
+            }
+          }
         }
       }
 
       setData({
-        today: todayCount || 0,
-        yesterday: yesterdayCount || 0,
-        past3Days: past3DaysCount || 0,
-        pastWeek: pastWeekCount || 0,
-        dailyData
+        totalCount: totalCount || 0,
+        operatorData,
+        dailyData,
+        hourlyData
       });
       setError(null);
     } catch (err: any) {
-      console.error('Error loading booked out data:', err);
+      console.error('Error loading transfer data:', err);
       setError(err.message);
     } finally {
       setLoading(false);
     }
   };
 
-  const getCurrentValue = () => {
-    switch (timeRange) {
-      case 'Today': return data.today;
-      case 'Yesterday': return data.yesterday;
-      case 'Past 3 days': return data.past3Days;
-      case 'This week': return data.pastWeek;
-      default: return data.today;
-    }
-  };
-
   const handleTimeRangeChange = (newRange: string) => {
     setTimeRange(newRange);
     setIsDropdownOpen(false);
-    loadData(); // Reload data for new time range
   };
 
-  // Small size - only show number
+  // Small size - 只顯示當天數量
   if (size === WidgetSize.SMALL) {
     return (
       <Card className={`h-full bg-slate-900/95 backdrop-blur-xl border border-green-500/30 shadow-2xl ${isEditMode ? 'border-dashed border-2 border-green-500/50' : ''}`}>
@@ -172,20 +198,23 @@ export function BookedOutStatsWidget({ widget, isEditMode }: WidgetComponentProp
           <div className="w-10 h-10 bg-gradient-to-r from-green-500 to-emerald-500 rounded-lg flex items-center justify-center mb-2">
             <TruckIcon className="h-6 w-6 text-white" />
           </div>
-          <h3 className="text-sm font-medium text-slate-400 mb-1">Booked Out</h3>
+          <h3 className="text-sm font-medium text-slate-400 mb-1">Stock Transfer</h3>
           {loading ? (
             <div className="h-12 w-20 bg-slate-700 rounded animate-pulse"></div>
           ) : error ? (
             <div className="text-red-400 text-sm">Error</div>
           ) : (
-            <div className="text-4xl font-bold text-white">{getCurrentValue()}</div>
+            <>
+              <div className="text-4xl font-bold text-white">{data.totalCount}</div>
+              <p className="text-xs text-slate-500 mt-1">Today</p>
+            </>
           )}
         </CardContent>
       </Card>
     );
   }
 
-  // Medium size - add time selector
+  // Medium size - 顯示操作員統計
   if (size === WidgetSize.MEDIUM) {
     return (
       <Card className={`h-full bg-slate-900/95 backdrop-blur-xl border border-green-500/30 shadow-2xl ${isEditMode ? 'border-dashed border-2 border-green-500/50' : ''}`}>
@@ -195,7 +224,7 @@ export function BookedOutStatsWidget({ widget, isEditMode }: WidgetComponentProp
               <div className="w-8 h-8 bg-gradient-to-r from-green-500 to-emerald-500 rounded-lg flex items-center justify-center">
                 <TruckIcon className="h-5 w-5 text-white" />
               </div>
-              <CardTitle className="text-sm font-medium text-slate-200">Booked Out</CardTitle>
+              <CardTitle className="text-sm font-medium text-slate-200">Stock Transfer</CardTitle>
             </div>
             
             {/* Time Range Dropdown */}
@@ -203,6 +232,7 @@ export function BookedOutStatsWidget({ widget, isEditMode }: WidgetComponentProp
               <button
                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                 className="flex items-center gap-1 px-2 py-1 bg-slate-700/50 hover:bg-slate-600/50 text-slate-300 hover:text-white rounded-md transition-all duration-300 text-xs border border-slate-600/30"
+                disabled={isEditMode}
               >
                 <ClockIcon className="w-3 h-3" />
                 {timeRange}
@@ -237,18 +267,41 @@ export function BookedOutStatsWidget({ widget, isEditMode }: WidgetComponentProp
         </CardHeader>
         <CardContent className="pt-2">
           {loading ? (
-            <div className="h-16 bg-slate-700 rounded animate-pulse"></div>
+            <div className="space-y-2">
+              {[...Array(5)].map((_, i) => (
+                <div key={i} className="h-8 bg-slate-700 rounded animate-pulse"></div>
+              ))}
+            </div>
           ) : error ? (
             <div className="text-red-400 text-sm">{error}</div>
           ) : (
-            <div className="text-center">
-              <div className="text-5xl font-bold text-white mb-2">{getCurrentValue()}</div>
-              <p className="text-xs text-slate-400">
-                {timeRange === 'Today' && `Yesterday: ${data.yesterday}`}
-                {timeRange === 'Yesterday' && `Today: ${data.today}`}
-                {timeRange === 'Past 3 days' && `Average: ${Math.round(data.past3Days / 3)}/day`}
-                {timeRange === 'This week' && `Average: ${Math.round(data.pastWeek / 7)}/day`}
-              </p>
+            <div className="space-y-2">
+              <div className="text-center mb-3">
+                <div className="text-3xl font-bold text-white">{data.totalCount}</div>
+                <p className="text-xs text-slate-400">
+                  Total Transfers ({timeRange === 'Today' || timeRange === 'Yesterday' ? 'By Hour' : 'By Date'})
+                </p>
+              </div>
+              
+              {/* 操作員列表 */}
+              <div className="bg-slate-800/50 rounded-lg p-2 max-h-[160px] overflow-y-auto">
+                <p className="text-xs text-slate-400 mb-2">By Operator</p>
+                {data.operatorData && data.operatorData.length > 0 ? (
+                  <div className="space-y-1">
+                    {data.operatorData.map((operator) => (
+                      <div key={operator.operator_id} className="flex justify-between items-center py-1 px-2 hover:bg-slate-700/50 rounded transition-colors">
+                        <span className="text-xs text-slate-300">{operator.operator_id}</span>
+                        <div className="text-right">
+                          <span className="text-xs font-semibold text-white">{operator.count}</span>
+                          <span className="text-xs text-slate-400 ml-1">({operator.percentage}%)</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-xs text-slate-500 text-center py-2">No data</div>
+                )}
+              </div>
             </div>
           )}
         </CardContent>
@@ -256,7 +309,7 @@ export function BookedOutStatsWidget({ widget, isEditMode }: WidgetComponentProp
     );
   }
 
-  // Large size - add chart
+  // Large size - 包括圖表
   return (
     <Card className={`h-full bg-slate-900/95 backdrop-blur-xl border border-green-500/30 shadow-2xl ${isEditMode ? 'border-dashed border-2 border-green-500/50' : ''}`}>
       <CardHeader className="pb-2">
@@ -266,7 +319,7 @@ export function BookedOutStatsWidget({ widget, isEditMode }: WidgetComponentProp
               <TruckIcon className="h-5 w-5 text-white" />
             </div>
             <CardTitle className="text-lg font-medium bg-gradient-to-r from-green-300 via-emerald-300 to-green-200 bg-clip-text text-transparent">
-              Booked Out Pallets
+              Stock Transfer Analysis
             </CardTitle>
           </div>
           
@@ -274,6 +327,7 @@ export function BookedOutStatsWidget({ widget, isEditMode }: WidgetComponentProp
             <button
               onClick={() => setIsDropdownOpen(!isDropdownOpen)}
               className="flex items-center gap-1 px-3 py-1.5 bg-slate-700/50 hover:bg-slate-600/50 text-slate-300 hover:text-white rounded-md transition-all duration-300 text-sm border border-slate-600/30"
+              disabled={isEditMode}
             >
               <ClockIcon className="w-4 h-4" />
               {timeRange}
@@ -306,58 +360,87 @@ export function BookedOutStatsWidget({ widget, isEditMode }: WidgetComponentProp
           </div>
         </div>
       </CardHeader>
-      <CardContent>
+      <CardContent className="flex flex-col h-[calc(100%-4rem)]">
         {loading ? (
-          <div className="h-64 bg-slate-700 rounded animate-pulse"></div>
+          <div className="space-y-3">
+            <div className="h-32 bg-slate-700 rounded animate-pulse"></div>
+            <div className="h-48 bg-slate-700 rounded animate-pulse"></div>
+          </div>
         ) : error ? (
           <div className="text-red-400 text-sm">{error}</div>
         ) : (
           <>
-            <div className="text-center mb-4">
-              <div className="text-5xl font-bold text-white">{getCurrentValue()}</div>
-              <p className="text-sm text-slate-400 mt-1">Pallets Transferred</p>
+            {/* 上半部分 - 統計數據 (40%) */}
+            <div className="h-[40%] mb-3">
+              <div className="text-center mb-3">
+                <div className="text-4xl font-bold text-white">{data.totalCount}</div>
+                <p className="text-sm text-slate-400">
+                  Total Transfers ({timeRange === 'Today' || timeRange === 'Yesterday' ? 'Hourly' : 'Daily'})
+                </p>
+              </div>
+              
+              {/* 操作員列表 */}
+              <div className="bg-slate-800/50 rounded-lg p-3 h-[calc(100%-4rem)] overflow-hidden">
+                <p className="text-sm text-slate-400 mb-2">Operator Performance</p>
+                {data.operatorData && data.operatorData.length > 0 ? (
+                  <div className="h-[calc(100%-2rem)] overflow-y-auto pr-2 space-y-1">
+                    {data.operatorData.slice(0, 10).map((operator) => (
+                      <div key={operator.operator_id} className="flex justify-between items-center py-1 px-2 hover:bg-slate-700/50 rounded transition-colors">
+                        <span className="text-sm text-slate-300">{operator.operator_id}</span>
+                        <div className="text-right">
+                          <span className="text-sm font-semibold text-white">{operator.count}</span>
+                          <span className="text-xs text-slate-400 ml-2">({operator.percentage}%)</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-sm text-slate-500 text-center py-4">No data</div>
+                )}
+              </div>
             </div>
             
-            {timeRange === 'This week' && data.dailyData && (
-              <div className="h-48">
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={data.dailyData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                    <XAxis 
-                      dataKey="date" 
-                      stroke="#9CA3AF"
-                      tick={{ fontSize: 10 }}
-                    />
-                    <YAxis stroke="#9CA3AF" tick={{ fontSize: 10 }} />
-                    <Tooltip 
-                      contentStyle={{ 
-                        backgroundColor: '#1F2937', 
-                        border: '1px solid #374151',
-                        borderRadius: '8px'
-                      }}
-                    />
-                    <Line 
-                      type="monotone" 
-                      dataKey="count" 
-                      stroke="#10B981" 
-                      strokeWidth={2}
-                      dot={{ fill: '#10B981', r: 4 }}
-                      activeDot={{ r: 6 }}
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
-              </div>
-            )}
-            
-            <div className="grid grid-cols-2 gap-2 mt-4">
-              <div className="bg-slate-800/50 rounded-lg p-2">
-                <p className="text-xs text-slate-400">Today</p>
-                <p className="text-lg font-semibold text-white">{data.today}</p>
-              </div>
-              <div className="bg-slate-800/50 rounded-lg p-2">
-                <p className="text-xs text-slate-400">Yesterday</p>
-                <p className="text-lg font-semibold text-white">{data.yesterday}</p>
-              </div>
+            {/* 下半部分 - 折線圖 (60%) */}
+            <div className="h-[60%]">
+              <h4 className="text-sm font-medium text-slate-300 mb-2">
+                Transfer Trend ({timeRange === 'Today' || timeRange === 'Yesterday' ? 'Hourly' : 'Daily'})
+              </h4>
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart 
+                  data={timeRange === 'Today' || timeRange === 'Yesterday' ? data.hourlyData : data.dailyData}
+                  margin={{ top: 5, right: 10, left: 5, bottom: 5 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                  <XAxis 
+                    dataKey={timeRange === 'Today' || timeRange === 'Yesterday' ? 'hour' : 'date'}
+                    stroke="#9CA3AF"
+                    tick={false}
+                    axisLine={{ stroke: '#9CA3AF' }}
+                  />
+                  <YAxis 
+                    stroke="#9CA3AF" 
+                    tick={{ fontSize: 10, fill: '#9CA3AF' }} 
+                  />
+                  <Tooltip 
+                    contentStyle={{ 
+                      backgroundColor: '#1F2937', 
+                      border: '1px solid #374151',
+                      borderRadius: '8px',
+                      color: '#FFFFFF'
+                    }}
+                    labelStyle={{ color: '#FFFFFF' }}
+                    itemStyle={{ color: '#FFFFFF' }}
+                  />
+                  <Line 
+                    type="monotone" 
+                    dataKey="count" 
+                    stroke="#10B981" 
+                    strokeWidth={2}
+                    dot={{ fill: '#10B981', r: 4 }}
+                    activeDot={{ r: 6 }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
             </div>
           </>
         )}

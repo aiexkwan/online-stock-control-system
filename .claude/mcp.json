@@ -3,7 +3,7 @@
     "supabase": {
       "command": "npx",
       "args": [
-        "@supabase-community/supabase-mcp"
+        "@supabase/mcp-server-supabase"
       ],
       "env": {
         "SUPABASE_URL": "https://bbmkuiplnzvpudszrend.supabase.co",

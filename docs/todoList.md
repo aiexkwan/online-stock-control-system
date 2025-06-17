@@ -1,238 +1,182 @@
-# 專案待改進紀錄
+# Todo List - NewPennine Project
 
-## 高優先級
-1. **ORDER LOADING 性能優化** ✅
-   - 實施客戶端緩存 (React Query)
-   - 添加性能監控
-   - 實施 Realtime 更新
+## 已完成 ✅
 
-2. **系統安全性**
-   - 確認所有 API Keys 在環境變數中 ✅ (已修復硬編碼問題並更換 API Keys)
-   - 檢查 RLS 政策
+### Dashboard 自定義功能
+- [x] 將 admin 頁面功能遷移到 dashboard widgets
+- [x] 實現 widget 尺寸調整（2x2、4x4、6x6）
+- [x] 創建 widget 選擇對話框（分步驟選擇）
+- [x] 實現 dashboard 設定雲端同步（Supabase）
 
-3. **PRINT-LABEL 頁面優化** ✅
+### Widget 數據修正
+- [x] ProductMixChartWidget - 改用 stock_level 表
+- [x] InventorySearchWidget - await 欄位合併 await + await_grn
+- [x] DatabaseUpdateWidget - 6x6 只顯示功能按鈕
+- [x] AnalyticsDashboardWidget - 暫時註釋
+- [x] DocumentUploadWidget - 改名為 Document Management，從 Supabase buckets 獲取檔案數量
+- [x] ReportsWidget - 改為 quick access 樣式
+- [x] ViewHistoryWidget - Recent Activity 從 record_history 取資料
+- [x] MaterialReceivedWidget - 從 record_grn 取資料
 
-4. **托盤編號生成穩定性優化**
-   - 修復 generate_atomic_pallet_numbers_v3 不穩定問題
-   - 實施 v4 版本 RPC 函數
-   - 添加緩衝機制和回退方案
-   - 建立監控和診斷工具
-   - ✅ 第一階段（已完成）
-     - 清理 console.log (106個)
-     - 提取魔術數字為常量
-     - 添加 React.memo 優化
-   - ✅ 第二階段（已完成）
-     - 拆分大型 hooks (useQcLabelBusiness 1067行 → 348行)
-     - 統一表單驗證邏輯
-     - 優化資料庫查詢
-   - ✅ 第三階段（已完成）
-     - 添加表單持久化
-     - 實施串流 PDF 生成
-     - 擴展批量處理能力
+### Widget 顯示模式優化
+- [x] FinishedProductWidget - 完成各模式優化
+  - 2x2：顯示當天完成板數
+  - 4x4：上方折線圖(2/3) + 下方 Top 5 產品明細(1/3)
+  - 6x6：上方折線圖(2/3) + 下方 Top 5 產品明細含數量(1/3)
+  - 統一時間範圍選擇器控制整個 widget
+  - Today/Yesterday 按小時分組，其他按日期分組
 
-5. **Stock Transfer 系統優化** ✅ (2025-06-15 全部完成)
-   - ✅ 優化搜索後直接進入員工ID輸入 (2025-06-15 完成)
-     - 移除不必要的托盤信息顯示步驟
-     - 操作時間從 5-6 秒減少到 2-3 秒
-   - ✅ 實施預加載和快取機制提升響應速度 (2025-06-15 完成)
-     - 實施 5 分鈘 TTL 記憶體快取
-     - 支援背景刷新和預加載
-     - 重複搜尋近乎即時響應
-   - ✅ 優化數據庫查詢減少延遲 (2025-06-15 完成)
-     - 創建物化視圖 mv_pallet_current_location
-     - 實施 search_pallet_optimized 和 batch_search_pallets 函數
-     - 自動刷新機制確保資料一致性
-   - ✅ 實施樂觀更新（Optimistic UI）(2025-06-15 完成)
-     - 即時 UI 反饋，不需等待資料庫回應
-     - 防止重複操作的衝突檢測
-     - 失敗自動回滾狀態
-     - 待處理狀態的視覺指示（琥珀色脈動效果）
-   - ✅ 修復物化視圖新增托盤追蹤問題 (2025-06-15 完成)
-     - 新增 record_palletinfo 觸發器
-     - 實施 search_pallet_optimized_v2 智能回退機制
-     - 部署 smart_refresh_mv 和 force_sync_pallet_mv 函數
+### Widget 顯示模式優化（續）
+- [x] InventorySearchWidget - 調整各模式顯示
+  - 2x2：不支援（顯示提示訊息）
+  - 4x4：套用現時 6x6 模式的顯示內容及形式
+  - 6x6：上半部維持現有顯示，下半部加入折線圖（過去 7 天庫存量 vs 訂單數量）
+  - 數據來源：record_inventory（庫存），data_order（訂單）
+  - 庫存量 = injection + pipeline + prebook + await + await_grn + fold + bulk + backcarpark
 
-6. **Stock Transfer 頁面重構** ✅ (2025-06-15 完成)
-   - ✅ 組件拆分 (2025-06-15 完成)
-     - PageHeader、PalletSearchSection、TransferLogSection 等
-     - 主頁面從 474 行減少到 ~350 行
-     - 使用 React.memo 優化性能
-   - ✅ Hook 重構 (2025-06-15 完成)
-     - 創建 palletSearchService 統一搜尋服務
-     - 實施 usePalletSearch、useStockTransfer、useActivityLog
-     - 保持完全向後兼容
-   - ✅ 樣式優化 (2025-06-15 完成)
-     - 創建 constants/styles.ts 統一管理
-     - 提取重複樣式為常量
-   - ✅ 無障礙功能 (2025-06-15 完成)
-     - 實施鍵盤快捷鍵（Ctrl+K、/、Escape、?）
-     - 添加 Skip Navigation、ARIA 標籤
-     - 完整的鍵盤導航支援
+- [x] RecentActivityWidget - 調整各模式顯示
+  - 2x2：不支援（顯示提示訊息）
+  - 4x4：顯示最近 10 條記錄（支援滾動顯示更多），顯示格式：{time} - {action} - {id} - {plt_num}
+  - 6x6：顯示最近 15 條記錄（支援滾動顯示更多），顯示格式：{time} - {action} - {id} - {plt_num} - {remark}
+  - 數據來源：record_history 表
+  - 只顯示 action="Finished QC", "Stock Transfer", "GRN Receiving", "Order Load"
+  - 加入欄位標題（column headers）
 
-## 中優先級
-1. **共享組件優化** ✅
-   - [x] 創建共享的供應商驗證組件
+- [x] OutputStatsWidget - 調整各模式顯示
+  - 2x2：顯示當天生成的 pallet number 總數，不支援 data range pick
+  - 4x4：顯示當天生成的 pallet number 總數和 product_code 及其 qty 總和（明細列表），支援 data range pick
+  - 6x6：分成上中下(1:1:2)，支援 data range pick
+    - 上部份：根據 data range，顯示生成的 pallet number 總數
+    - 中部份：根據 data range，顯示生成的 product_code 及其 qty 總和（明細列表）
+    - 下部份：根據 data range，以棒型圖顯示每日 top 3 product_code 及其 qty 總和
+  - 數據來源：record_palletinfo 表
+  - 只顯示 plt_remark="Finished In Production"
 
-2. **用戶體驗改善** (部分完成)
-   - ✅ 添加鍵盤快捷鍵 (2025-06-15 Stock Transfer 已實施)
-   - 優化移動設備體驗
-   - 改善錯誤提示（確保英文）
+- [x] Stock Level Widget (原 ProductMixChartWidget) - 調整各模式顯示
+  - 2x2：不支援（顯示提示訊息）
+  - 4x4：按 stock 類型分類顯示庫存，支援類型選擇
+  - 6x6：包括 4x4 所有功能 + 圓餅圖視覺化（上下比例 1:2）
+  - 數據來源：stock_level 表（庫存），data_code 表（產品類型）
+  - 修正數據庫欄位名稱：data_code.code（非 product_code）
+  - 修正數據獲取問題：分批獲取 data_code 記錄以避免 1000 條限制
+  - 圓餅圖增大 56.25%，加入引導線標籤，移除圖例
 
-3. **代碼品質**
-   - 統一代碼註解為中文 (發現大量英文註解需翻譯)
-   - 移除未使用的組件
-   - 優化重複代碼
+- [x] Stock Transfer Widget (原 BookedOutStatsWidget) - 調整各模式顯示
+  - 2x2：顯示當天 transfer 的總數量，不支援 date range
+  - 4x4：顯示各員工 transfer 總數量，支援 date range（Today/Yesterday 顯示時間，其他顯示日期）
+  - 6x6：包括 4x4 功能 + 折線圖視覺化（上下比例 1:1.5）
+  - 數據來源：record_transfer 表
+  - 按 operator_id 分組統計
+  - Today/Yesterday 顯示每小時數據，其他顯示每日數據
+  - 移除 x 軸日期顯示
 
-4. **Stock Transfer 穩定性和反饋** (部分完成)
-   - ✅ 減少不必要的狀態更新和重新渲染 (樂觀更新已優化)
-   - ✅ 實施錯誤恢復機制避免操作中斷 (自動回滾機制已實施)
-   - 添加語音反饋支持（成功/失敗提示音）
+- [x] System Update Widget (原 DatabaseUpdateWidget) - 調整各模式顯示
+  - 2x2：不支援
+  - 4x4：Quick access 按鈕 + 最近更新記錄
+    - Update Product Info 按鈕：導向 Database Update dialog 的 Product update 分頁
+    - Update Supplier Info 按鈕：導向 Database Update dialog 的 material supplier update 分頁
+    - 顯示最近 10 條更新記錄（Product Added, Product Update, Supplier Added, Supplier Update）
+  - 6x6：不支援
+  - 數據來源：record_history 表
+  - 修正重複記錄問題：使用 UUID 作為唯一標識符
 
-## 低優先級
-1. **功能增強**
-   - 離線支持
-   - 批量操作
-   - 高級報表
+- [x] Document Management Widget (原 DocumentUploadWidget) - 調整各模式顯示
+  - 2x2：不支援（顯示提示訊息）
+  - 4x4：Quick access 按鈕（高度增加 20%）+ 上傳歷史（最近 6 條）
+  - 6x6：Quick access 按鈕 + 上傳歷史（最近 10 條）
+  - 移除 Orders, Pictures, Specs 統計
+  - 加入欄位標題（Date/Time, Document Name, Uploaded By）
+  - 顯示格式：{created_at} - {doc_name} - {upload_by}
+  - 6x6 模式更新：{created_at} - {doc_name} - {file_size} - {upload_by}
+  - 數據來源：doc_upload 表
+  - 實現分頁功能（Load more...）
+  - 使用批量查詢從 data_id 表獲取用戶名稱
+  - 修復 RLS 權限問題
+  - 加入手動刷新按鈕
 
-2. **文檔完善**
-   - 更新所有功能說明文檔
-   - 添加 API 文檔
+- [x] 文件上傳功能寫入 doc_upload 表
+  - 修改 /api/upload-file 路由：加入寫入 doc_upload 表記錄
+  - 修改 /api/analyze-order-pdf 路由：加入寫入 doc_upload 表記錄（包括緩存版本）
+  - 更新 UploadFilesDialog：傳遞當前用戶 ID 到上傳 API
+  - 更新 UploadFilesOnlyDialog：傳遞當前用戶 ID 到上傳 API
+  - 更新 UploadOrderPDFDialog：已在 API 中處理記錄寫入
+  - doc_upload 表欄位：doc_name, upload_by, doc_type, doc_url, file_size, folder
+  - 建立 doc_upload 表和 RLS 政策
 
-3. **Stock Transfer 代碼重構** (低優先級)
-   - 拆分 page.tsx（確保不影響性能）
-   - 添加單元測試
-   - 提取可重用組件
+- [x] ACO Order Progress Widget - 調整各模式顯示
+  - 2x2 模式：保持不變
+  - 4x4 模式：保持不變
+  - 6x6 模式：保持不變，加入顯示 latest_update
+  - 數據來源：record_aco 表
+  - 在每個進度條下方加入 "Last updated" 顯示
+  - 修正日期格式為 "MMM dd, yyyy HH:mm"
 
-## GRN Label 系統優化 ✅ (2025-06-14 完成)
+- [x] Report Center Widget (原 ReportsWidget) - 調整各模式顯示
+  - 2x2 模式：不支援（顯示提示訊息）
+  - 4x4 模式：顯示 4 個報表快速存取（Order Loading, GRN, Transaction, ACO Order）以 2x2 排列
+  - 6x6 模式：顯示所有 7 個報表快速存取以 2x5 排列
+  - 報表類型：Void Pallet Report, Order Loading Report, Stock Take Report, ACO Order Report, Transaction Report, GRN Report, Export All Data
+  - 實現點擊後導向對應功能
+  - 移除 Overview widget
 
-### 高優先級 ✅
-1. **組件模組化** ✅
-   - [x] 抽取托盤類型選擇為獨立組件 `PalletTypeSelector`
-   - [x] 抽取包裝類型選擇為獨立組件 `PackageTypeSelector`
-   - [x] 抽取重量輸入列表為獨立組件 `WeightInputList`
-   - [x] 創建專門的 `GrnDetailCard` 組件
+- [x] 移除 Quick Actions Widget
+  - 從 widget 註冊中移除
+  - 清理相關檔案引用
+  - 處理保存的 dashboard 中的引用錯誤
 
-2. **業務邏輯分離** ✅
-   - [x] 創建 `useGrnLabelBusiness` hook 管理核心業務邏輯
-   - [x] 創建 `useSupplierValidation` hook 處理供應商驗證
-   - [x] 創建 `useWeightCalculation` hook 處理重量計算
-   - [x] 創建 `usePalletGenerationGrn` hook 管理托盤號生成
+## 進行中 🔄
 
-3. **常量和配置提取** ✅
-   - [x] 創建 `constants/grnConstants.ts` 文件
-   - [x] 提取托盤重量常量 (PALLET_WEIGHTS)
-   - [x] 提取包裝重量常量 (PACKAGE_WEIGHTS)
-   - [x] 提取最大托盤數常量 (MAX_PALLETS)
+### 時區問題
+- [ ] 解決 Supabase（美國時間）與用戶（英國時間）的時區差異
+- [ ] 確保所有日期時間計算使用正確時區
 
-4. **代碼重用優化** ✅
-   - [x] 創建統一的 `usePalletGeneration` hook
-   - [x] 更新 `usePalletGenerationGrn` 使用統一 hook
-   - [x] 標記 deprecated 的托盤生成函數
-   - [x] 更新 auto-reprint-label 使用統一的 V6 生成
+## 待處理 📋
 
-### 中優先級
-4. **狀態管理優化** ✅ (2025-06-14 完成)
-   - [x] 使用 useReducer 統一管理表單狀態
-   - [x] 創建 GrnFormReducer
-   - [x] 優化狀態更新邏輯
+### Dashboard 優化
+- [ ] 優化 widget 載入性能
+- [ ] 添加 widget 載入錯誤處理
+- [ ] 實現 widget 數據快取機制
+- [ ] 添加 widget 刷新間隔設定
 
-5. **錯誤處理統一化** ✅ (2025-06-15 完成)
-   - [x] 創建統一的錯誤處理服務 `GrnErrorHandler`
-   - [x] 實現錯誤分級（low, medium, high, critical）
-   - [x] 添加錯誤恢復機制（托盤號回滾）
+### 數據準確性
+- [ ] 檢查所有 widget 的數據查詢邏輯
+- [ ] 確保統計數據的準確性
+- [ ] 優化查詢效率
 
-6. **性能優化** (進行中)
-   - [x] 使用 useMemo 優化重量計算 ✅ (已在 useWeightCalculation 實現)
-   - [x] 使用 useCallback 優化事件處理器 ✅ (已在 GrnLabelFormV2 實現)
-   - [x] 優化多個托盤輸入的顯示 ✅ (2025-06-15 實施可調整高度容器)
-   - [ ] 懶加載 PDF 相關組件
+### 用戶體驗
+- [ ] 添加 widget 載入動畫
+- [ ] 改善錯誤提示訊息
+- [ ] 優化移動設備顯示
+- [ ] 添加鍵盤快捷鍵支援
 
-### 低優先級
-7. **代碼復用**
-   - [x] 創建共用的 usePalletGeneration hook ✅
-   - [x] 統一 PDF 生成邏輯 ✅
-   - [x] 共享驗證邏輯組件 ✅
+### 新功能建議
+- [ ] 添加自定義報表生成器
+- [ ] 實現數據導出功能（Excel/CSV）
+- [ ] 添加更多圖表類型選項
+- [ ] 實現實時數據更新（WebSocket）
 
-8. **測試和文檔**
-   - [ ] 添加單元測試
-   - [ ] 創建 Storybook 組件文檔
-   - [ ] 添加 JSDoc 註釋
+### 系統維護
+- [ ] 清理未使用的代碼和組件
+- [ ] 更新文檔
+- [ ] 添加單元測試
+- [ ] 優化打包大小
 
-## Admin Dashboard 優化任務 (進行中)
-1. **改善對話框管理** ✅ (2025-06-16 完成)
-   - ✅ 建立 DialogContext 統一管理所有對話框狀態
-   - ✅ 創建 DialogManager 組件集中渲染對話框
-   - ✅ 移除 prop drilling，簡化組件結構
-   - ✅ 實施專用的 hooks (useDialog, useReprintDialog 等)
-   - ✅ 統一所有對話框風格為系統深色主題
-   - ✅ 更新報表系統所有對話框樣式
+## 已知問題 🐛
 
-2. **添加數據視覺化圖表** ✅ (2025-06-16 完成)
-   - ✅ 創建 Analytics Button 組件
-   - ✅ 實現 Analytics Dashboard Dialog
-   - ✅ 開發 Finished Transfer 圖表（原 Output vs Booked Out）
-   - ✅ 開發 Order Trend 圖表（支援 Summary/Detail 視圖）
-   - ✅ 開發 Staff Workload 圖表（使用 work_level 表）
-   - ✅ 整合 Analytics 到 Admin Panel
-   - ✅ 實施動態圖表切換（1天棒型圖，其他折線圖）
-   - ✅ 添加時間範圍選擇器（1天、7天、30天、90天）
-   - ✅ 修正數據庫欄位對應問題
-   - ✅ 統一所有圖表使用深色主題
+1. **時區問題**
+   - Supabase 使用美國時間
+   - 用戶在英國（可能有 1 小時誤差）
+   - 需要統一時區處理邏輯
 
-3. **實施權限細分** (已取消)
-   - ~~功能級別的權限控制~~
-   - ~~基於角色的訪問控制 (RBAC)~~
-   - ~~細化到按鈕級別的權限管理~~
+2. **性能問題**
+   - 大量 widget 同時載入可能影響性能
+   - 需要實現懶加載或虛擬滾動
 
-4. **添加自定義儀表板** ✅ (2025-06-16 完成)
-   - ✅ 實施拖放式儀表板布局（使用 react-grid-layout）
-   - ✅ 建立小部件註冊系統（WidgetRegistry）
-   - ✅ 實施配置保存機制（localStorage）
-   - ✅ 創建小部件類型系統（支援三種尺寸）
-   - ✅ 將所有 Admin 頁面卡片轉換為可重用小部件：
-     - OutputStatsWidget - 生產統計
-     - BookedOutStatsWidget - 出貨統計
-     - AskDatabaseWidget - AI 對話（只支援 Large）
-     - ProductMixChartWidget - 產品分佈
-     - AcoOrderProgressWidget - ACO 訂單進度
-     - InventorySearchWidget - 庫存搜尋
-     - FinishedProductWidget - 成品歷史
-     - MaterialReceivedWidget - 材料收貨
-     - PalletOverviewWidget - 棧板概覽
-     - VoidStatsWidget - 作廢統計
-   - ✅ 實施小部件尺寸選擇器（編輯模式）
-   - ✅ 支援編輯、保存、重置功能
-   - 待完成：
-     - [ ] 實施 Supabase 儲存（目前使用 localStorage）
-     - [ ] 添加預設模板功能
-     - [ ] 實施導入/導出配置
+3. **數據一致性**
+   - 某些 widget 可能顯示過時數據
+   - 需要實現更好的快取策略
 
-## 報表系統整合 ✅ (2025-06-16 完成)
-1. **統一報表框架** ✅
-   - [x] 建立統一報表生成框架
-   - [x] 創建 ReportRegistry 管理所有報表配置
-   - [x] 實施 UnifiedReportDialog 基礎組件
-   - [x] 建立報表儀表板（以 Dialog 方式開啟）
-   - [x] 統一所有報表對話框為深色主題
-   - [x] 重新分類 Stock Take Report 為 Management Report
-   - [x] 移除 Financial 和 Quality 報表分類
-
-2. **報表遷移** ✅
-   - [x] 遷移 Void Pallet Report 到統一框架
-   - [x] 遷移 Order Loading Report 到統一框架
-   - [x] 遷移 Stock Take Report 到統一框架
-   - [x] 整合 ACO Order Report 到新系統
-   - [x] 整合 GRN Report 到新系統
-   - [x] 整合 Transaction Report 到新系統
-   - [x] 整合 Export All Data 功能
-
-3. **UI 優化** ✅
-   - [x] 修復 UI 組件相容性問題
-   - [x] 統一界面語言為英文
-   - [x] 套用系統一致的深色主題風格
-   - [x] 移除舊的 Export Reports 按鈕和菜單項目
-
-## 注意事項
-- 所有新功能必須遵循 CLAUDE.mdc 規範
-- UI 文字必須為英文
-- 不可修改數據表結構
+## 優先級說明
+- 🔴 高優先級：影響核心功能
+- 🟡 中優先級：改善用戶體驗
+- 🟢 低優先級：優化和新功能

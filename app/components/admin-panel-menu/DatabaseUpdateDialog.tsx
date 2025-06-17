@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { XMarkIcon, CubeIcon, BuildingOfficeIcon } from '@heroicons/react/24/outline';
 import ProductUpdateTab from './ProductUpdateTab';
 import SupplierUpdateTab from './SupplierUpdateTab';
@@ -9,10 +9,17 @@ import { dialogStyles, iconColors } from '@/app/utils/dialogStyles';
 interface DatabaseUpdateDialogProps {
   isOpen: boolean;
   onClose: () => void;
+  defaultTab?: 'product' | 'supplier';
 }
 
-export default function DatabaseUpdateDialog({ isOpen, onClose }: DatabaseUpdateDialogProps) {
-  const [activeTab, setActiveTab] = useState<'product' | 'supplier'>('product');
+export default function DatabaseUpdateDialog({ isOpen, onClose, defaultTab }: DatabaseUpdateDialogProps) {
+  const [activeTab, setActiveTab] = useState<'product' | 'supplier'>(defaultTab || 'product');
+
+  useEffect(() => {
+    if (defaultTab) {
+      setActiveTab(defaultTab);
+    }
+  }, [defaultTab, isOpen]);
 
   if (!isOpen) return null;
 

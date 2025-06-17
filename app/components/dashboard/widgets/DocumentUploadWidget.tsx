@@ -1,201 +1,149 @@
 /**
  * Document Management Widget - 文檔管理功能
- * 2x2: 顯示總文件數量
- * 4x4: 顯示各 bucket 文件數量和快速上傳按鈕
- * 6x6: 顯示訂單數量統計和完整功能
+ * 2x2: 不支援
+ * 4x4: Quick access 按鈕 + 上傳歷史（最近 6 條）
+ * 6x6: Quick access 按鈕 + 上傳歷史（最近 10 條）
  */
 
 'use client';
 
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { CloudArrowUpIcon, DocumentTextIcon, DocumentArrowUpIcon } from '@heroicons/react/24/outline';
+import { CloudArrowUpIcon, DocumentTextIcon, DocumentArrowUpIcon, ExclamationCircleIcon } from '@heroicons/react/24/outline';
 import { createClient } from '@/lib/supabase';
 import { WidgetComponentProps, WidgetSize } from '@/app/types/dashboard';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useDialog } from '@/app/contexts/DialogContext';
-import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
 import { format } from 'date-fns';
+import { fromDbTime } from '@/app/utils/timezone';
 
-interface DocumentStats {
-  total_files: number;
-  bucket_counts: {
-    orderpdf: number;
-    stockpic: number;
-    productspec: number;
-  };
-  order_count: number;
-  orders_today: number;
-  orders_week: number;
-}
-
-interface RecentUpload {
-  id: string;
-  type: 'file' | 'order' | 'spec';
-  filename: string;
-  uploaded_at: string;
-  uploaded_by: string;
-  size: string;
+interface UploadRecord {
+  uuid: string;
+  doc_name: string;
+  upload_by: string | number;
+  created_at: string;
+  doc_type?: string;
+  file_size?: number;
+  folder?: string;
+  data_id?: { name: string }; // 關聯的用戶資料
+  uploader_name?: string; // 處理後的用戶名稱
 }
 
 export function DocumentUploadWidget({ widget, isEditMode }: WidgetComponentProps) {
-  const [stats, setStats] = useState<DocumentStats>({
-    total_files: 0,
-    bucket_counts: {
-      orderpdf: 0,
-      stockpic: 0,
-      productspec: 0
-    },
-    order_count: 0,
-    orders_today: 0,
-    orders_week: 0
-  });
-  const [recentUploads, setRecentUploads] = useState<RecentUpload[]>([]);
-  const [chartData, setChartData] = useState<any[]>([]);
+  const [uploadHistory, setUploadHistory] = useState<UploadRecord[]>([]);
   const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(0);
+  const [hasMore, setHasMore] = useState(true);
   const { openDialog } = useDialog();
   
   const size = widget.config.size || WidgetSize.MEDIUM;
+  const itemsPerPage = size === WidgetSize.LARGE ? 10 : 6;
 
-  // 載入文檔統計
-  const loadDocumentStats = async () => {
+  // 載入上傳歷史
+  const loadUploadHistory = async (loadMore = false) => {
     try {
-      setLoading(true);
-      const supabase = createClient();
+      if (!loadMore) {
+        setLoading(true);
+        setPage(0);
+      }
       
-      // 獲取各 bucket 的文件數量
-      const [orderPdfResult, stockPicResult, productSpecResult] = await Promise.all([
-        supabase.storage.from('orderpdf').list('', { limit: 1000 }),
-        supabase.storage.from('stockpic').list('', { limit: 1000 }),
-        supabase.storage.from('productspec').list('', { limit: 1000 })
-      ]);
+      const supabase = createClient();
+      const offset = loadMore ? page * itemsPerPage : 0;
+      
+      // 查詢 doc_upload 表
+      const { data, error, count } = await supabase
+        .from('doc_upload')
+        .select('*', { count: 'exact' })
+        .order('created_at', { ascending: false })
+        .range(offset, offset + itemsPerPage - 1);
 
-      const orderPdfCount = orderPdfResult.data?.length || 0;
-      const stockPicCount = stockPicResult.data?.length || 0;
-      const productSpecCount = productSpecResult.data?.length || 0;
-      const totalFiles = orderPdfCount + stockPicCount + productSpecCount;
-
-      // 獲取訂單數量
-      const today = new Date();
-      const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate()).toISOString();
-      const weekStart = new Date(today);
-      weekStart.setDate(today.getDate() - 7);
-
-      const [ordersResult, ordersTodayResult, ordersWeekResult] = await Promise.all([
-        supabase.from('data_order').select('*', { count: 'exact', head: true }),
-        supabase.from('data_order').select('*', { count: 'exact', head: true })
-          .gte('created_at', todayStart),
-        supabase.from('data_order').select('*', { count: 'exact', head: true })
-          .gte('created_at', weekStart.toISOString())
-      ]);
-
-      setStats({
-        total_files: totalFiles,
-        bucket_counts: {
-          orderpdf: orderPdfCount,
-          stockpic: stockPicCount,
-          productspec: productSpecCount
-        },
-        order_count: ordersResult.count || 0,
-        orders_today: ordersTodayResult.count || 0,
-        orders_week: ordersWeekResult.count || 0
-      });
-
-      // 如果是 MEDIUM 或 LARGE size，載入最近的上傳記錄
-      if (size !== WidgetSize.SMALL) {
-        // 模擬最近上傳記錄
-        const mockUploads: RecentUpload[] = [
-          {
-            id: '1',
-            type: 'order',
-            filename: 'PO-2024-001.pdf',
-            uploaded_at: new Date().toISOString(),
-            uploaded_by: 'Admin',
-            size: '2.5 MB'
-          },
-          {
-            id: '2',
-            type: 'spec',
-            filename: 'Product-Spec-ABC123.pdf',
-            uploaded_at: new Date(Date.now() - 3600000).toISOString(),
-            uploaded_by: 'User1',
-            size: '1.8 MB'
-          },
-          {
-            id: '3',
-            type: 'file',
-            filename: 'Invoice-INV001.pdf',
-            uploaded_at: new Date(Date.now() - 7200000).toISOString(),
-            uploaded_by: 'Admin',
-            size: '0.5 MB'
-          },
-          {
-            id: '4',
-            type: 'order',
-            filename: 'PO-2024-002.pdf',
-            uploaded_at: new Date(Date.now() - 10800000).toISOString(),
-            uploaded_by: 'User2',
-            size: '3.2 MB'
-          }
-        ];
-        
-        setRecentUploads(mockUploads.slice(0, size === WidgetSize.MEDIUM ? 3 : 5));
+      if (error) {
+        console.error('[DocumentUploadWidget] Error loading upload history:', error);
+        throw error;
       }
 
-      // 如果是 LARGE size，載入圖表資料
-      if (size === WidgetSize.LARGE) {
-        // 模擬7天上傳趨勢數據
-        const chartArray = [];
-        for (let i = 6; i >= 0; i--) {
-          const date = new Date();
-          date.setDate(date.getDate() - i);
-          chartArray.push({
-            date: format(date, 'MM/dd'),
-            uploads: Math.floor(Math.random() * 20) + 10
+      // 如果有數據，批量查詢用戶名稱
+      let processedData = data || [];
+      if (data && data.length > 0) {
+        // 獲取所有唯一的 upload_by ID
+        const userIds = [...new Set(data.map(record => record.upload_by))].filter(id => id);
+        
+        // 批量查詢用戶名稱
+        const { data: users, error: userError } = await supabase
+          .from('data_id')
+          .select('id, name')
+          .in('id', userIds);
+        
+        if (userError) {
+          console.error('[DocumentUploadWidget] Error loading user names:', userError);
+        }
+        
+        // 建立用戶 ID 到名稱的映射
+        const userMap = new Map();
+        if (users) {
+          users.forEach(user => {
+            userMap.set(user.id, user.name);
           });
         }
-        setChartData(chartArray);
+        
+        // 將用戶名稱添加到記錄中
+        processedData = data.map(record => ({
+          ...record,
+          uploader_name: userMap.get(Number(record.upload_by)) || `User ${record.upload_by}`
+        }));
+      }
+
+      if (processedData.length > 0) {
+        if (loadMore) {
+          setUploadHistory(prev => [...prev, ...processedData]);
+          setPage(prev => prev + 1);
+        } else {
+          setUploadHistory(processedData);
+          setPage(1);
+        }
+        
+        // 檢查是否還有更多數據
+        const totalLoaded = loadMore ? uploadHistory.length + processedData.length : processedData.length;
+        setHasMore(count ? totalLoaded < count : false);
       }
 
     } catch (error) {
-      console.error('Error loading document statistics:', error);
+      console.error('[DocumentUploadWidget] Error loading upload history:', error);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    loadDocumentStats();
-    
-    // 設置自動刷新
-    const interval = setInterval(loadDocumentStats, widget.config.refreshInterval || 60000);
-    return () => clearInterval(interval);
-  }, [size]);
+    if (size !== WidgetSize.SMALL) {
+      loadUploadHistory();
+      
+      // 設置自動刷新
+      const interval = setInterval(() => loadUploadHistory(false), widget.config.refreshInterval || 60000);
+      return () => clearInterval(interval);
+    }
+  }, [size, widget.config.refreshInterval]);
 
-  const getUploadTypeIcon = (type: string) => {
-    switch (type) {
-      case 'order':
-        return <DocumentArrowUpIcon className="w-4 h-4" />;
-      case 'spec':
-        return <DocumentTextIcon className="w-4 h-4" />;
-      default:
-        return <CloudArrowUpIcon className="w-4 h-4" />;
+  const formatTime = (timestamp: string) => {
+    try {
+      const date = fromDbTime(timestamp);
+      return format(date, 'MMM dd HH:mm');
+    } catch {
+      return 'Unknown';
     }
   };
 
-  const getUploadTypeColor = (type: string) => {
-    switch (type) {
-      case 'order':
-        return 'text-blue-400 bg-blue-500/20 border-blue-500/30';
-      case 'spec':
-        return 'text-purple-400 bg-purple-500/20 border-purple-500/30';
-      default:
-        return 'text-green-400 bg-green-500/20 border-green-500/30';
+  const getDocIcon = (docType?: string) => {
+    if (docType === 'order') {
+      return <DocumentArrowUpIcon className="w-4 h-4 text-blue-400" />;
+    } else if (docType === 'spec') {
+      return <DocumentTextIcon className="w-4 h-4 text-purple-400" />;
     }
+    return <CloudArrowUpIcon className="w-4 h-4 text-green-400" />;
   };
 
-  // 2x2 - 只顯示數值
+  // 2x2 - 不支援
   if (size === WidgetSize.SMALL) {
     return (
       <motion.div
@@ -203,18 +151,117 @@ export function DocumentUploadWidget({ widget, isEditMode }: WidgetComponentProp
         animate={{ opacity: 1, y: 0 }}
         className="h-full"
       >
-        <Card className="h-full bg-slate-800/40 backdrop-blur-xl border-purple-500/30 hover:border-purple-400/50 transition-all duration-300 cursor-pointer" onClick={() => openDialog('uploadFilesOnly')}>
+        <Card className="h-full bg-slate-900/95 backdrop-blur-xl border border-purple-500/30 shadow-2xl">
           <CardContent className="p-4 h-full flex flex-col items-center justify-center">
-            <CloudArrowUpIcon className="w-8 h-8 text-purple-400 mb-2" />
-            <div className="text-3xl font-bold text-white">{stats.total_files}</div>
-            <div className="text-xs text-slate-400 mt-1">Total Files</div>
+            <ExclamationCircleIcon className="w-12 h-12 text-slate-500 mb-3" />
+            <h3 className="text-sm font-medium text-slate-400 mb-1">Not Supported</h3>
+            <p className="text-xs text-slate-500 text-center">
+              Please resize to Medium or Large
+            </p>
           </CardContent>
         </Card>
       </motion.div>
     );
   }
 
-  // 4x4 - 顯示資料明細和快速操作
+  // 4x4 & 6x6 共用的內容
+  const content = (size: WidgetSize) => (
+    <>
+      {/* Quick Access 按鈕 */}
+      <div className="grid grid-cols-3 gap-2 mb-3">
+        <Button
+          size="sm"
+          onClick={() => !isEditMode && openDialog('uploadFilesOnly')}
+          disabled={isEditMode}
+          className="h-[4.8rem] bg-gradient-to-br from-green-500/20 to-green-600/20 border border-green-500/30 hover:from-green-500/30 hover:to-green-600/30 text-white flex flex-col items-center justify-center gap-2 transition-all"
+        >
+          <CloudArrowUpIcon className="w-6 h-6" />
+          <span className="text-xs font-medium">Upload Files</span>
+        </Button>
+        <Button
+          size="sm"
+          onClick={() => !isEditMode && openDialog('uploadOrderPdf')}
+          disabled={isEditMode}
+          className="h-[4.8rem] bg-gradient-to-br from-blue-500/20 to-blue-600/20 border border-blue-500/30 hover:from-blue-500/30 hover:to-blue-600/30 text-white flex flex-col items-center justify-center gap-2 transition-all"
+        >
+          <DocumentArrowUpIcon className="w-6 h-6" />
+          <span className="text-xs font-medium">Upload Order</span>
+        </Button>
+        <Button
+          size="sm"
+          onClick={() => !isEditMode && openDialog('productSpec')}
+          disabled={isEditMode}
+          className="h-[4.8rem] bg-gradient-to-br from-purple-500/20 to-purple-600/20 border border-purple-500/30 hover:from-purple-500/30 hover:to-purple-600/30 text-white flex flex-col items-center justify-center gap-2 transition-all"
+        >
+          <DocumentTextIcon className="w-6 h-6" />
+          <span className="text-xs font-medium">Upload Spec</span>
+        </Button>
+      </div>
+
+      {/* 上傳歷史 */}
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <h4 className="text-sm font-medium text-slate-400 mb-2">Upload History</h4>
+        
+        {/* Column Headers */}
+        <div className="border-b border-slate-700 pb-2 mb-2">
+          <div className={`grid ${size === WidgetSize.LARGE ? 'grid-cols-4' : 'grid-cols-3'} gap-2 px-2 text-xs font-medium text-slate-400`}>
+            <span>Date/Time</span>
+            <span>Document Name</span>
+            {size === WidgetSize.LARGE && <span>File Size</span>}
+            <span>Uploaded By</span>
+          </div>
+        </div>
+        
+        {loading && uploadHistory.length === 0 ? (
+          <div className="animate-pulse space-y-2">
+            {[...Array(itemsPerPage)].map((_, i) => (
+              <div key={i} className="h-10 bg-slate-700/30 rounded-lg"></div>
+            ))}
+          </div>
+        ) : uploadHistory.length === 0 ? (
+          <div className="text-center py-8 text-slate-500 text-sm">No upload history</div>
+        ) : (
+          <div className="flex-1 overflow-y-auto space-y-1">
+            {uploadHistory.map((record) => (
+              <div 
+                key={record.uuid} 
+                className="bg-slate-800/50 rounded-lg p-2 hover:bg-slate-700/50 transition-colors"
+              >
+                <div className={`grid ${size === WidgetSize.LARGE ? 'grid-cols-4' : 'grid-cols-3'} gap-2 items-center`}>
+                  <div className="flex items-center gap-2">
+                    {getDocIcon(record.doc_type)}
+                    <span className="text-xs text-slate-300">{formatTime(record.created_at)}</span>
+                  </div>
+                  <span className="text-xs text-white truncate" title={record.doc_name}>
+                    {record.doc_name}
+                  </span>
+                  {size === WidgetSize.LARGE && (
+                    <span className="text-xs text-slate-400">
+                      {record.file_size ? `${(record.file_size / 1024 / 1024).toFixed(2)} MB` : 'N/A'}
+                    </span>
+                  )}
+                  <span className="text-xs text-slate-400">{record.uploader_name || record.upload_by}</span>
+                </div>
+              </div>
+            ))}
+            
+            {/* Load More Button */}
+            {hasMore && !loading && (
+              <button
+                onClick={() => loadUploadHistory(true)}
+                className="w-full py-2 text-sm text-purple-400 hover:text-purple-300 transition-colors"
+                disabled={isEditMode}
+              >
+                Load more...
+              </button>
+            )}
+          </div>
+        )}
+      </div>
+    </>
+  );
+
+  // 4x4 - Medium size
   if (size === WidgetSize.MEDIUM) {
     return (
       <motion.div
@@ -222,208 +269,69 @@ export function DocumentUploadWidget({ widget, isEditMode }: WidgetComponentProp
         animate={{ opacity: 1, y: 0 }}
         className="h-full"
       >
-        <Card className="h-full bg-slate-800/40 backdrop-blur-xl border-purple-500/30 hover:border-purple-400/50 transition-all duration-300">
+        <Card className="h-full bg-slate-900/95 backdrop-blur-xl border border-purple-500/30 shadow-2xl flex flex-col">
           <CardHeader className="pb-3">
-            <CardTitle className="flex items-center gap-2">
-              <CloudArrowUpIcon className="w-5 h-5 text-purple-400" />
-              <span className="text-lg">Document Management</span>
+            <CardTitle className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg flex items-center justify-center">
+                  <CloudArrowUpIcon className="h-5 w-5 text-white" />
+                </div>
+                <span className="text-sm font-medium text-slate-200">Document Management</span>
+              </div>
+              {/* 手動刷新按鈕 */}
+              <button
+                onClick={() => !isEditMode && loadUploadHistory()}
+                disabled={isEditMode || loading}
+                className="p-1.5 rounded-lg hover:bg-slate-700/50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                title="Refresh"
+              >
+                <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+              </button>
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
-            {/* 快速操作按鈕 */}
-            <div className="grid grid-cols-3 gap-2">
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => openDialog('uploadFilesOnly')}
-                className="bg-green-500/20 border-green-500/30 hover:bg-green-500/30 text-green-300 text-xs p-2 h-auto flex flex-col gap-1"
-              >
-                <CloudArrowUpIcon className="w-4 h-4" />
-                <span>Files</span>
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => openDialog('uploadOrderPdf')}
-                className="bg-blue-500/20 border-blue-500/30 hover:bg-blue-500/30 text-blue-300 text-xs p-2 h-auto flex flex-col gap-1"
-              >
-                <DocumentArrowUpIcon className="w-4 h-4" />
-                <span>Orders</span>
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => openDialog('productSpec')}
-                className="bg-purple-500/20 border-purple-500/30 hover:bg-purple-500/30 text-purple-300 text-xs p-2 h-auto flex flex-col gap-1"
-              >
-                <DocumentTextIcon className="w-4 h-4" />
-                <span>Specs</span>
-              </Button>
-            </div>
-
-            {/* 統計摘要 */}
-            <div className="grid grid-cols-3 gap-2">
-              <div className="bg-slate-700/30 rounded-lg p-2 text-center">
-                <div className="text-xl font-bold text-white">{stats.bucket_counts.orderpdf}</div>
-                <div className="text-xs text-slate-400">Orders</div>
-              </div>
-              <div className="bg-slate-700/30 rounded-lg p-2 text-center">
-                <div className="text-xl font-bold text-white">{stats.bucket_counts.stockpic}</div>
-                <div className="text-xs text-slate-400">Pictures</div>
-              </div>
-              <div className="bg-slate-700/30 rounded-lg p-2 text-center">
-                <div className="text-xl font-bold text-white">{stats.bucket_counts.productspec}</div>
-                <div className="text-xs text-slate-400">Specs</div>
-              </div>
-            </div>
-
-            {/* 最近上傳 */}
-            <div className="space-y-2">
-              <h4 className="text-sm font-medium text-slate-400">Recent Uploads</h4>
-              {loading ? (
-                <div className="animate-pulse space-y-2">
-                  {[1, 2].map(i => (
-                    <div key={i} className="h-12 bg-slate-700/30 rounded-lg"></div>
-                  ))}
-                </div>
-              ) : recentUploads.length === 0 ? (
-                <div className="text-center py-4 text-slate-500">No recent uploads</div>
-              ) : (
-                <div className="space-y-2 max-h-32 overflow-y-auto">
-                  {recentUploads.map((upload) => (
-                    <div key={upload.id} className="bg-slate-700/30 rounded-lg p-2 text-xs">
-                      <div className="flex items-start gap-2">
-                        <div className={`p-1 rounded ${getUploadTypeColor(upload.type)}`}>
-                          {getUploadTypeIcon(upload.type)}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="font-medium text-white truncate">{upload.filename}</div>
-                          <div className="text-slate-400">{upload.size} • {format(new Date(upload.uploaded_at), 'HH:mm')}</div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
+          <CardContent className="flex-1 flex flex-col overflow-hidden">
+            {content(WidgetSize.MEDIUM)}
           </CardContent>
         </Card>
       </motion.div>
     );
   }
 
-  // 6x6 - 顯示圖表統計和完整功能
+  // 6x6 - Large size
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       className="h-full"
     >
-      <Card className="h-full bg-slate-800/40 backdrop-blur-xl border-purple-500/30 hover:border-purple-400/50 transition-all duration-300">
+      <Card className="h-full bg-slate-900/95 backdrop-blur-xl border border-purple-500/30 shadow-2xl flex flex-col">
         <CardHeader className="pb-3">
-          <CardTitle className="flex items-center gap-2">
-            <CloudArrowUpIcon className="w-6 h-6 text-purple-400" />
-            <span className="text-xl">Document Management</span>
+          <CardTitle className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg flex items-center justify-center">
+                <CloudArrowUpIcon className="h-5 w-5 text-white" />
+              </div>
+              <span className="text-lg font-medium bg-gradient-to-r from-purple-300 via-pink-300 to-purple-200 bg-clip-text text-transparent">
+                Document Management
+              </span>
+            </div>
+            {/* 手動刷新按鈕 */}
+            <button
+              onClick={() => !isEditMode && loadUploadHistory()}
+              disabled={isEditMode || loading}
+              className="p-2 rounded-lg hover:bg-slate-700/50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              title="Refresh"
+            >
+              <svg className="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+            </button>
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
-          {/* 統計卡片 */}
-          <div className="grid grid-cols-4 gap-3">
-            <div className="bg-gradient-to-br from-purple-500/20 to-purple-600/20 rounded-lg p-3 border border-purple-500/30">
-              <div className="text-2xl font-bold text-white">{stats.total_files}</div>
-              <div className="text-xs text-purple-300">Total Files</div>
-            </div>
-            <div className="bg-blue-500/20 rounded-lg p-3 border border-blue-500/30">
-              <div className="text-2xl font-bold text-white">{stats.bucket_counts.orderpdf}</div>
-              <div className="text-xs text-blue-300">Order PDFs</div>
-            </div>
-            <div className="bg-green-500/20 rounded-lg p-3 border border-green-500/30">
-              <div className="text-2xl font-bold text-white">{stats.bucket_counts.stockpic}</div>
-              <div className="text-xs text-green-300">Stock Pictures</div>
-            </div>
-            <div className="bg-purple-500/20 rounded-lg p-3 border border-purple-500/30">
-              <div className="text-2xl font-bold text-white">{stats.bucket_counts.productspec}</div>
-              <div className="text-xs text-purple-300">Product Specs</div>
-            </div>
-          </div>
-
-          {/* 訂單數量統計 */}
-          <div className="bg-slate-700/20 rounded-lg p-4">
-            <h4 className="text-sm font-medium text-slate-400 mb-3">Order Statistics</h4>
-            <div className="grid grid-cols-3 gap-4">
-              <div className="text-center">
-                <div className="text-2xl font-bold text-white">{stats.order_count}</div>
-                <div className="text-xs text-slate-400">Total Orders</div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-white">{stats.orders_today}</div>
-                <div className="text-xs text-slate-400">Today</div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-white">{stats.orders_week}</div>
-                <div className="text-xs text-slate-400">This Week</div>
-              </div>
-            </div>
-          </div>
-
-          {/* 快速上傳按鈕 */}
-          <div className="grid grid-cols-3 gap-3">
-            <Button
-              onClick={() => openDialog('uploadFilesOnly')}
-              className="bg-green-600 hover:bg-green-700 text-white"
-            >
-              <CloudArrowUpIcon className="w-4 h-4 mr-2" />
-              Upload Files
-            </Button>
-            <Button
-              onClick={() => openDialog('uploadOrderPdf')}
-              className="bg-blue-600 hover:bg-blue-700 text-white"
-            >
-              <DocumentArrowUpIcon className="w-4 h-4 mr-2" />
-              Upload Order
-            </Button>
-            <Button
-              onClick={() => openDialog('productSpec')}
-              className="bg-purple-600 hover:bg-purple-700 text-white"
-            >
-              <DocumentTextIcon className="w-4 h-4 mr-2" />
-              Upload Spec
-            </Button>
-          </div>
-
-          {/* 最近上傳列表 */}
-          <div className="space-y-2">
-            <h4 className="text-sm font-medium text-slate-400">Recent Uploads</h4>
-            {loading ? (
-              <div className="animate-pulse space-y-2">
-                {[1, 2, 3].map(i => (
-                  <div key={i} className="h-14 bg-slate-700/30 rounded-lg"></div>
-                ))}
-              </div>
-            ) : (
-              <div className="space-y-2 max-h-48 overflow-y-auto">
-                {recentUploads.map((upload) => (
-                  <div key={upload.id} className="bg-slate-700/30 rounded-lg p-3 hover:bg-slate-700/40 transition-colors">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className={`p-2 rounded-lg ${getUploadTypeColor(upload.type)}`}>
-                          {getUploadTypeIcon(upload.type)}
-                        </div>
-                        <div>
-                          <div className="font-medium text-white">{upload.filename}</div>
-                          <div className="text-sm text-slate-400">{upload.size} • Uploaded by {upload.uploaded_by}</div>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <div className="text-sm text-slate-400">{format(new Date(upload.uploaded_at), 'MMM dd')}</div>
-                        <div className="text-xs text-slate-500">{format(new Date(upload.uploaded_at), 'HH:mm')}</div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
+        <CardContent className="flex-1 flex flex-col overflow-hidden">
+          {content(WidgetSize.LARGE)}
         </CardContent>
       </Card>
     </motion.div>

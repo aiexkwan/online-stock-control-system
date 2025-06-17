@@ -168,6 +168,46 @@ export async function POST(request: NextRequest) {
 
     console.log('[Upload File API] 公共 URL 生成成功:', urlData.publicUrl);
 
+    // 寫入記錄至 doc_upload 表
+    try {
+      // 獲取當前登入的用戶
+      const uploadByStr = formData.get('uploadBy') as string;
+      const uploadBy = uploadByStr ? parseInt(uploadByStr) : 1; // 轉換為整數，預設為 1
+      
+      // 確定文檔類型
+      const docType = folder === 'stockPic' ? 'image' : 'spec';
+      
+      console.log('[Upload File API] 準備寫入 doc_upload 表:', {
+        doc_name: fileNameWithTimestamp,
+        upload_by: uploadBy,
+        doc_type: docType,
+        folder: folder
+      });
+      
+      // 插入記錄到 doc_upload 表
+      const { data: insertData, error: insertError } = await supabaseAdmin
+        .from('doc_upload')
+        .insert({
+          doc_name: fileNameWithTimestamp,
+          upload_by: uploadBy,
+          doc_type: docType,
+          doc_url: urlData.publicUrl,
+          file_size: file.size,
+          folder: folder
+        })
+        .select();
+
+      if (insertError) {
+        console.error('[Upload File API] 寫入 doc_upload 表失敗:', insertError);
+        // 不影響上傳成功的返回，只記錄錯誤
+      } else {
+        console.log('[Upload File API] 成功寫入 doc_upload 表:', insertData);
+      }
+    } catch (dbError) {
+      console.error('[Upload File API] 數據庫操作錯誤:', dbError);
+      // 不影響上傳成功的返回
+    }
+
     return NextResponse.json({
       success: true,
       message: 'File uploaded successfully',

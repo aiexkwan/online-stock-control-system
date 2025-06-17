@@ -3,7 +3,7 @@
  * 支援三種尺寸：
  * - Small: 只顯示未完成訂單數量
  * - Medium: 顯示訂單列表和進度
- * - Large: 完整功能包括訂單選擇和詳細進度
+ * - Large: 完整功能包括訂單選擇和詳細進度，加入 latest_update 顯示
  */
 
 'use client';
@@ -14,6 +14,7 @@ import { ClipboardDocumentListIcon, ChevronDownIcon } from '@heroicons/react/24/
 import { WidgetComponentProps, WidgetSize } from '@/app/types/dashboard';
 import { createClient } from '@/app/utils/supabase/client';
 import { motion, AnimatePresence } from 'framer-motion';
+import { format } from 'date-fns';
 
 interface AcoOrder {
   order_ref: number;
@@ -29,6 +30,7 @@ interface AcoOrderProgress {
   remain_qty: number;
   completed_qty: number;
   completion_percentage: number;
+  latest_update?: string;
 }
 
 export function AcoOrderProgressWidget({ widget, isEditMode }: WidgetComponentProps) {
@@ -108,7 +110,8 @@ export function AcoOrderProgressWidget({ widget, isEditMode }: WidgetComponentPr
         required_qty: item.required_qty,
         remain_qty: item.remain_qty,
         completed_qty: item.required_qty - item.remain_qty,
-        completion_percentage: Math.round(((item.required_qty - item.remain_qty) / item.required_qty) * 100)
+        completion_percentage: Math.round(((item.required_qty - item.remain_qty) / item.required_qty) * 100),
+        latest_update: item.latest_update
       }));
 
       setOrderProgress(progress);
@@ -312,13 +315,20 @@ export function AcoOrderProgressWidget({ widget, isEditMode }: WidgetComponentPr
                     )}
                   </div>
                 </div>
-                {item.completion_percentage <= 25 && (
-                  <div className="text-right">
+                <div className="flex justify-between items-center">
+                  {item.completion_percentage <= 25 ? (
                     <span className="text-sm text-orange-400 font-bold">
                       {item.completion_percentage}%
                     </span>
-                  </div>
-                )}
+                  ) : (
+                    <span></span>
+                  )}
+                  {item.latest_update && (
+                    <span className="text-xs text-slate-500">
+                      Last updated: {format(new Date(item.latest_update), 'MMM dd, yyyy HH:mm')}
+                    </span>
+                  )}
+                </div>
               </div>
             ))}
           </div>
