@@ -18,7 +18,7 @@ NewPennine 是一個倉庫管理系統，主要功能包括庫存管理、訂單
 
 #### 1. Dashboard 系統
 - **自定義 Dashboard**: 用戶可自由配置 widget 佈局
-- **Widget 系統**: 可調整大小（2x2、4x4、6x6）的模組化組件
+- **Widget 系統**: 可調整大小（1x1、3x3、5x5）的模組化組件
 - **雲端同步**: Dashboard 配置保存在 Supabase，支援跨設備同步
 
 #### 2. 庫存管理

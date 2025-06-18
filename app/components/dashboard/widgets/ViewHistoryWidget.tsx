@@ -1,8 +1,8 @@
 /**
  * View History Widget
- * 2x2: 顯示今日查詢次數
- * 4x4: 顯示最近查詢記錄
- * 6x6: 顯示查詢統計圖表和搜尋功能
+ * 1x1: 顯示今日查詢次數
+ * 3x3: 顯示最近查詢記錄
+ * 5x5: 顯示查詢統計圖表和搜尋功能
  */
 
 'use client';
@@ -12,27 +12,12 @@ import { motion } from 'framer-motion';
 import { ClockIcon, MagnifyingGlassIcon } from '@heroicons/react/24/outline';
 import { createClient } from '@/lib/supabase';
 import { WidgetComponentProps, WidgetSize } from '@/app/types/dashboard';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { WidgetCard } from '@/app/components/dashboard/WidgetCard';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useDialog } from '@/app/contexts/DialogContext';
-import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
-import { format } from 'date-fns';
-import { getTodayRange, getDateRange, formatDbTime } from '@/app/utils/timezone';
-
-interface HistoryStats {
-  today_queries: number;
-  week_queries: number;
-  total_queries: number;
-  popular_searches: Array<{ plt_num: string; count: number }>;
-}
-
-interface RecentSearch {
-  id: string;
-  plt_num: string;
-  searched_at: string;
-  searched_by: string;
-}
+import { formatDbTime } from '@/app/utils/timezone';
+import { WidgetStyles } from '@/app/utils/widgetStyles';
 
 interface HistoryRecord {
   uuid: string;
@@ -43,33 +28,87 @@ interface HistoryRecord {
   remark: string;
 }
 
-// 最近活動列表組件
-function RecentActivityList() {
+// 搜尋結果列表組件
+interface SearchResultsListProps {
+  searchQuery: string;
+}
+
+function SearchResultsList({ searchQuery }: SearchResultsListProps) {
   const [historyRecords, setHistoryRecords] = useState<HistoryRecord[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
+  const [searched, setSearched] = useState(false);
   const supabase = createClient();
 
-  useEffect(() => {
-    loadRecentActivity();
-  }, []);
-
-  const loadRecentActivity = async () => {
+  const searchPalletHistory = async () => {
+    if (!searchQuery.trim()) return;
+    
     try {
       setLoading(true);
-      const { data, error } = await supabase
-        .from('record_history')
-        .select('*')
-        .order('time', { ascending: false })
-        .limit(10);
-
-      if (error) throw error;
-      setHistoryRecords(data || []);
+      setSearched(true);
+      
+      let palletNumbers: string[] = [];
+      
+      // 判斷輸入類型
+      if (searchQuery.includes('-') && !searchQuery.includes('/')) {
+        // 輸入是 pallet series (例如: 140625-40X973)
+        const { data: palletData, error: palletError } = await supabase
+          .from('record_palletinfo')
+          .select('plt_num')
+          .eq('series', searchQuery);
+        
+        if (palletError) throw palletError;
+        
+        if (palletData && palletData.length > 0) {
+          palletNumbers = palletData.map(p => p.plt_num);
+        }
+      } else if (searchQuery.includes('/')) {
+        // 輸入是 pallet number (例如: 140625/4)
+        palletNumbers = [searchQuery];
+      }
+      // 不支援部分關鍵字搜尋
+      
+      // 搜尋 record_history 中相關記錄
+      if (palletNumbers.length > 0) {
+        const { data: historyData, error: historyError } = await supabase
+          .from('record_history')
+          .select('*')
+          .in('plt_num', palletNumbers)
+          .order('time', { ascending: false });
+        
+        if (historyError) throw historyError;
+        
+        setHistoryRecords(historyData || []);
+      } else {
+        setHistoryRecords([]);
+      }
     } catch (error) {
-      console.error('Error loading recent activity:', error);
+      console.error('Error searching pallet history:', error);
+      setHistoryRecords([]);
     } finally {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (searchQuery.trim()) {
+      searchPalletHistory();
+    } else {
+      setHistoryRecords([]);
+      setSearched(false);
+    }
+  }, [searchQuery]);
+
+  if (!searched) {
+    return (
+      <div className="text-center py-8 text-slate-500">
+        <MagnifyingGlassIcon className="w-10 h-10 mx-auto mb-2 opacity-50" />
+        <p>Enter complete pallet number or series to search</p>
+        <p className="text-xs mt-2 text-slate-600">
+          Examples: 140625/4 or 140625-40X973
+        </p>
+      </div>
+    );
+  }
 
   if (loading) {
     return (
@@ -85,26 +124,29 @@ function RecentActivityList() {
     return (
       <div className="text-center py-6 text-slate-500">
         <ClockIcon className="w-10 h-10 mx-auto mb-2 opacity-50" />
-        <p>No history records</p>
+        <p>No history found for "{searchQuery}"</p>
       </div>
     );
   }
 
   return (
-    <div className="space-y-2 max-h-52 overflow-y-auto">
+    <div className="h-full overflow-y-auto space-y-2 pr-1">
       {historyRecords.map((record) => (
         <div key={record.uuid} className="bg-slate-700/30 rounded-lg p-3 hover:bg-slate-700/40 transition-colors">
           <div className="flex justify-between items-center">
-            <div>
-              <div className="font-medium text-white">{record.plt_num}</div>
-              <div className="text-sm text-slate-400">{record.action} • {record.loc}</div>
+            <div className="flex-1">
+              <div className="flex items-center gap-2">
+                <span className="font-medium text-purple-400">{record.plt_num}</span>
+                <span className="text-sm text-purple-300">• {record.action}</span>
+              </div>
+              <div className="text-sm text-purple-300 mt-1">Location: {record.loc || 'N/A'}</div>
               {record.remark && (
-                <div className="text-xs text-slate-500 mt-1">{record.remark}</div>
+                <div className="text-xs text-purple-200 mt-1">Remark: {record.remark}</div>
               )}
             </div>
-            <div className="text-right">
-              <div className="text-sm text-slate-400">{formatDbTime(record.time, 'MMM dd')}</div>
-              <div className="text-xs text-slate-500">{formatDbTime(record.time, 'HH:mm')}</div>
+            <div className="text-right flex-shrink-0">
+              <div className="text-sm text-purple-300">{formatDbTime(record.time, 'MMM dd, yyyy')}</div>
+              <div className="text-xs text-purple-200">{formatDbTime(record.time, 'HH:mm:ss')}</div>
             </div>
           </div>
         </div>
@@ -114,114 +156,16 @@ function RecentActivityList() {
 }
 
 export function ViewHistoryWidget({ widget, isEditMode }: WidgetComponentProps) {
-  const [stats, setStats] = useState<HistoryStats>({
-    today_queries: 0,
-    week_queries: 0,
-    total_queries: 0,
-    popular_searches: []
-  });
-  const [recentSearches, setRecentSearches] = useState<RecentSearch[]>([]);
-  const [chartData, setChartData] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const supabase = createClient();
-  const { openDialog } = useDialog();
   
   const size = widget.config.size || WidgetSize.MEDIUM;
 
-  // 載入歷史查詢統計
-  const loadHistoryStats = async () => {
-    try {
-      setLoading(true);
-      
-      const today = new Date();
-      const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate()).toISOString();
-      
-      const weekStart = new Date(today);
-      weekStart.setDate(today.getDate() - 7);
-
-      // 獲取查詢統計（這裡假設有一個查詢記錄表，實際可能需要調整）
-      const [todayResult, weekResult, totalResult] = await Promise.all([
-        supabase.from('record_transfer').select('*', { count: 'exact', head: true }).gte('updated_at', todayStart),
-        supabase.from('record_transfer').select('*', { count: 'exact', head: true }).gte('updated_at', weekStart.toISOString()),
-        supabase.from('record_transfer').select('*', { count: 'exact', head: true })
-      ]);
-
-      setStats({
-        today_queries: todayResult.count || 0,
-        week_queries: weekResult.count || 0,
-        total_queries: totalResult.count || 0,
-        popular_searches: []
-      });
-
-      // 如果是 MEDIUM 或 LARGE size，載入最近的查詢記錄
-      if (size !== WidgetSize.SMALL) {
-        const { data: transferData } = await supabase
-          .from('record_transfer')
-          .select('transfer_id, plt_num, updated_at, location_to')
-          .order('updated_at', { ascending: false })
-          .limit(size === WidgetSize.MEDIUM ? 5 : 10);
-
-        const searches = (transferData || []).map(item => ({
-          id: item.transfer_id.toString(),
-          plt_num: item.plt_num,
-          searched_at: item.updated_at,
-          searched_by: item.location_to
-        }));
-
-        setRecentSearches(searches);
-      }
-
-      // 如果是 LARGE size，載入圖表資料
-      if (size === WidgetSize.LARGE) {
-        const { data: chartHistoryData } = await supabase
-          .from('record_transfer')
-          .select('updated_at')
-          .gte('updated_at', weekStart.toISOString())
-          .order('updated_at', { ascending: true });
-
-        // 按日期分組統計
-        const groupedData = (chartHistoryData || []).reduce((acc: any, record) => {
-          const date = format(new Date(record.updated_at), 'MM/dd');
-          acc[date] = (acc[date] || 0) + 1;
-          return acc;
-        }, {});
-
-        const chartArray = Object.entries(groupedData).map(([date, count]) => ({
-          date,
-          count
-        }));
-
-        setChartData(chartArray);
-      }
-
-    } catch (error) {
-      console.error('Error loading history statistics:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    loadHistoryStats();
-    
-    // 設置自動刷新
-    const interval = setInterval(loadHistoryStats, widget.config.refreshInterval || 60000);
-    return () => clearInterval(interval);
-  }, [size]);
-
-  const handleOpenHistoryDialog = () => {
-    openDialog('viewHistory');
-  };
-
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    if (searchQuery.trim()) {
-      openDialog('viewHistory');
-    }
+    // 搜尋由 SearchResultsList 組件自動處理
   };
 
-  // 2x2 - 只顯示數值
+  // 1x1 - 不支援
   if (size === WidgetSize.SMALL) {
     return (
       <motion.div
@@ -229,18 +173,18 @@ export function ViewHistoryWidget({ widget, isEditMode }: WidgetComponentProps) 
         animate={{ opacity: 1, y: 0 }}
         className="h-full"
       >
-        <Card className="h-full bg-slate-800/40 backdrop-blur-xl border-blue-500/30 hover:border-blue-400/50 transition-all duration-300 cursor-pointer" onClick={handleOpenHistoryDialog}>
-          <CardContent className="p-4 h-full flex flex-col items-center justify-center">
-            <ClockIcon className="w-8 h-8 text-blue-400 mb-2" />
-            <div className="text-3xl font-bold text-white">{stats.today_queries}</div>
-            <div className="text-xs text-slate-400 mt-1">Today's Queries</div>
+        <WidgetCard widgetType="VIEW_HISTORY" isEditMode={isEditMode}>
+          <CardContent className="p-2 h-full flex flex-col items-center justify-center">
+            <h3 className="text-xs text-slate-400 mb-1">View History</h3>
+            <div className="text-lg font-medium text-slate-500">(N/A)</div>
+            <p className="text-xs text-slate-500 mt-1">1×1</p>
           </CardContent>
-        </Card>
+        </WidgetCard>
       </motion.div>
     );
   }
 
-  // 4x4 - 顯示資料明細
+  // 3x3 - 不支援
   if (size === WidgetSize.MEDIUM) {
     return (
       <motion.div
@@ -248,121 +192,57 @@ export function ViewHistoryWidget({ widget, isEditMode }: WidgetComponentProps) 
         animate={{ opacity: 1, y: 0 }}
         className="h-full"
       >
-        <Card className="h-full bg-slate-800/40 backdrop-blur-xl border-blue-500/30 hover:border-blue-400/50 transition-all duration-300">
-          <CardHeader className="pb-3">
-            <CardTitle className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <ClockIcon className="w-5 h-5 text-blue-400" />
-                <span className="text-lg">View History</span>
-              </div>
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={handleOpenHistoryDialog}
-                className="text-blue-400 hover:text-blue-300"
-              >
-                Search
-              </Button>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {/* 統計摘要 */}
-            <div className="grid grid-cols-2 gap-3">
-              <div className="bg-slate-700/30 rounded-lg p-3">
-                <div className="text-2xl font-bold text-white">{stats.today_queries}</div>
-                <div className="text-xs text-slate-400">Today</div>
-              </div>
-              <div className="bg-slate-700/30 rounded-lg p-3">
-                <div className="text-2xl font-bold text-white">{stats.week_queries}</div>
-                <div className="text-xs text-slate-400">This Week</div>
-              </div>
-            </div>
-
-            {/* 最近查詢記錄 */}
-            <div className="space-y-2">
-              <h4 className="text-sm font-medium text-slate-400">Recent Searches</h4>
-              {loading ? (
-                <div className="animate-pulse space-y-2">
-                  {[1, 2, 3].map(i => (
-                    <div key={i} className="h-12 bg-slate-700/30 rounded-lg"></div>
-                  ))}
-                </div>
-              ) : recentSearches.length === 0 ? (
-                <div className="text-center py-4 text-slate-500">No recent searches</div>
-              ) : (
-                <div className="space-y-2 max-h-48 overflow-y-auto">
-                  {recentSearches.map((search) => (
-                    <div key={search.id} className="bg-slate-700/30 rounded-lg p-2 text-xs">
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <div className="font-medium text-white">{search.plt_num}</div>
-                          <div className="text-slate-400">To: {search.searched_by}</div>
-                        </div>
-                        <div className="text-slate-500 text-right">
-                          <div>{format(new Date(search.searched_at), 'MM/dd')}</div>
-                          <div>{format(new Date(search.searched_at), 'HH:mm')}</div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
+        <WidgetCard widgetType="VIEW_HISTORY" isEditMode={isEditMode}>
+          <CardContent className="p-2 h-full flex flex-col items-center justify-center">
+            <h3 className="text-xs text-slate-400 mb-1">View History</h3>
+            <div className="text-lg font-medium text-slate-500">(N/A)</div>
+            <p className="text-xs text-slate-500 mt-1">3×3</p>
           </CardContent>
-        </Card>
+        </WidgetCard>
       </motion.div>
     );
   }
 
-  // 6x6 - 顯示圖表統計和搜尋功能
+  // 5x5 - 顯示 Pallet History 搜尋功能
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       className="h-full"
     >
-      <Card className="h-full bg-slate-800/40 backdrop-blur-xl border-blue-500/30 hover:border-blue-400/50 transition-all duration-300">
+      <WidgetCard widgetType="VIEW_HISTORY" isEditMode={isEditMode} className="hover:border-blue-400/50 transition-all duration-300 flex flex-col">
         <CardHeader className="pb-3">
-          <CardTitle className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <ClockIcon className="w-6 h-6 text-blue-400" />
-              <span className="text-xl">Pallet History</span>
-            </div>
+          <CardTitle className="flex items-center gap-2">
+            <ClockIcon className="w-6 h-6 text-blue-400" />
+            <span className="text-xl">View Pallet History</span>
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="flex-1 flex flex-col space-y-3 overflow-hidden">
           {/* 搜尋欄 */}
-          <form onSubmit={handleSearch} className="flex gap-2">
+          <form onSubmit={handleSearch} className="flex gap-2 flex-shrink-0">
             <Input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Enter pallet number..."
+              placeholder="e.g. 140625/4 or 140625-40X973"
               className="flex-1 bg-slate-700/50 border-slate-600 text-white placeholder:text-slate-400"
             />
-            <Button type="submit" className="bg-blue-600 hover:bg-blue-700">
+            <Button type="submit" className={`${WidgetStyles.quickAccess.viewHistory}`}>
               <MagnifyingGlassIcon className="w-4 h-4" />
             </Button>
           </form>
 
-
-          {/* 最近活動列表 - 從 record_history 取資料 */}
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <h4 className="text-sm font-medium text-slate-400">Recent Activity</h4>
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={handleOpenHistoryDialog}
-                className="text-blue-400 hover:text-blue-300 text-xs"
-              >
-                View All
-              </Button>
+          {/* 搜尋結果列表 */}
+          <div className="flex-1 flex flex-col min-h-0">
+            <div className="flex items-center mb-2 flex-shrink-0">
+              <h4 className="text-sm font-medium text-slate-400">Search Results</h4>
             </div>
-            <RecentActivityList />
+            <div className="flex-1 overflow-hidden">
+              <SearchResultsList searchQuery={searchQuery} />
+            </div>
           </div>
         </CardContent>
-      </Card>
+      </WidgetCard>
     </motion.div>
   );
 }

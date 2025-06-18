@@ -1,0 +1,69 @@
+/* Admin Dashboard 專用樣式 - 確保正方形顯示 */
+
+/* 確保 widget 內容填滿整個容器 */
+.admin-dashboard .widget-container {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.admin-dashboard .widget-container > * {
+  flex: 1;
+  width: 100%;
+  height: 100%;
+}
+
+/* 調整網格間距 */
+.admin-dashboard .react-grid-layout {
+  min-height: calc(100vh - 200px);
+}
+
+/* 確保編輯模式下的控制按鈕不影響佈局 */
+.admin-dashboard .edit-mode .react-grid-item {
+  overflow: visible;
+}
+
+/* 防止編輯模式下的閃爍 */
+.admin-dashboard.edit-mode .react-grid-item {
+  will-change: transform;
+}
+
+/* 拖動時的樣式 */
+.admin-dashboard .react-grid-item.react-draggable-dragging {
+  z-index: 100;
+  opacity: 0.8;
+}
+
+/* 調整大小時的樣式 */
+.admin-dashboard .react-grid-item.resizing {
+  z-index: 100;
+  opacity: 0.8;
+}
+
+/* 防止動畫造成的閃爍 */
+.admin-dashboard .react-grid-item {
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+/* 確保拖動手柄可見且可用 */
+.admin-dashboard.edit-mode .react-resizable-handle {
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  bottom: 0;
+  right: 0;
+  cursor: se-resize;
+  z-index: 10;
+}
+
+/* 確保拖動區域可點擊 */
+.admin-dashboard.edit-mode .react-grid-item {
+  cursor: move;
+}
+
+/* 修正拖動時的指針 */
+.admin-dashboard .react-grid-item.react-draggable-dragging {
+  cursor: grabbing !important;
+}

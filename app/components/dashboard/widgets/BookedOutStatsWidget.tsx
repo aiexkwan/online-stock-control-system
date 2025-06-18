@@ -1,15 +1,16 @@
 /**
  * Stock Transfer 小部件
  * 支援三種尺寸：
- * - Small (2x2): 顯示當天 transfer 的總數量
- * - Medium (4x4): 顯示各員工 transfer 的總數量，支援日期範圍選擇
- * - Large (6x6): 包括 4x4 功能 + 折線圖視覺化（上下比例 1:1.5）
+ * - Small (1x1): 顯示當天 transfer 的總數量
+ * - Medium (3x3): 顯示各員工 transfer 的總數量，支援日期範圍選擇
+ * - Large (5x5): 包括 3x3 功能 + 折線圖視覺化（上下比例 1:1.5）
  */
 
 'use client';
 
 import React, { useEffect, useState, useRef } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { WidgetCard } from '@/app/components/dashboard/WidgetCard';
 import { TruckIcon, ClockIcon, ChevronDownIcon } from '@heroicons/react/24/outline';
 import { WidgetComponentProps, WidgetSize } from '@/app/types/dashboard';
 import { createClient } from '@/app/utils/supabase/client';
@@ -190,34 +191,31 @@ export function BookedOutStatsWidget({ widget, isEditMode }: WidgetComponentProp
     setIsDropdownOpen(false);
   };
 
-  // Small size - 只顯示當天數量
+  // Small size (1x1) - 只顯示文字和數據，無 icon
   if (size === WidgetSize.SMALL) {
     return (
-      <Card className={`h-full bg-slate-900/95 backdrop-blur-xl border border-green-500/30 shadow-2xl ${isEditMode ? 'border-dashed border-2 border-green-500/50' : ''}`}>
-        <CardContent className="p-4 h-full flex flex-col justify-center items-center">
-          <div className="w-10 h-10 bg-gradient-to-r from-green-500 to-emerald-500 rounded-lg flex items-center justify-center mb-2">
-            <TruckIcon className="h-6 w-6 text-white" />
-          </div>
-          <h3 className="text-sm font-medium text-slate-400 mb-1">Stock Transfer</h3>
+      <WidgetCard widgetType="BOOKED_OUT_STATS" isEditMode={isEditMode}>
+        <CardContent className="p-2 h-full flex flex-col justify-center items-center">
+          <h3 className="text-xs text-slate-400 mb-1">Transfer</h3>
           {loading ? (
-            <div className="h-12 w-20 bg-slate-700 rounded animate-pulse"></div>
+            <div className="h-8 w-16 bg-white/10 rounded animate-pulse"></div>
           ) : error ? (
-            <div className="text-red-400 text-sm">Error</div>
+            <div className="text-red-400 text-xs">Error</div>
           ) : (
             <>
-              <div className="text-4xl font-bold text-white">{data.totalCount}</div>
-              <p className="text-xs text-slate-500 mt-1">Today</p>
+              <div className="text-2xl font-bold text-white">{data.totalCount}</div>
+              <p className="text-xs text-slate-500">Today</p>
             </>
           )}
         </CardContent>
-      </Card>
+      </WidgetCard>
     );
   }
 
   // Medium size - 顯示操作員統計
   if (size === WidgetSize.MEDIUM) {
     return (
-      <Card className={`h-full bg-slate-900/95 backdrop-blur-xl border border-green-500/30 shadow-2xl ${isEditMode ? 'border-dashed border-2 border-green-500/50' : ''}`}>
+      <WidgetCard widgetType="BOOKED_OUT_STATS" isEditMode={isEditMode}>
         <CardHeader className="pb-2">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -231,7 +229,7 @@ export function BookedOutStatsWidget({ widget, isEditMode }: WidgetComponentProp
             <div className="relative" ref={dropdownRef}>
               <button
                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                className="flex items-center gap-1 px-2 py-1 bg-slate-700/50 hover:bg-slate-600/50 text-slate-300 hover:text-white rounded-md transition-all duration-300 text-xs border border-slate-600/30"
+                className="flex items-center gap-1 px-2 py-1 bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white rounded-md transition-all duration-300 text-xs border border-slate-600/30"
                 disabled={isEditMode}
               >
                 <ClockIcon className="w-3 h-3" />
@@ -246,14 +244,14 @@ export function BookedOutStatsWidget({ widget, isEditMode }: WidgetComponentProp
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: 10, scale: 0.95 }}
                     transition={{ duration: 0.2 }}
-                    className="absolute right-0 top-full mt-1 bg-slate-900/98 backdrop-blur-xl border border-slate-600/50 rounded-xl shadow-2xl z-50 min-w-[120px]"
+                    className="absolute right-0 top-full mt-1 bg-black/80 backdrop-blur-xl border border-slate-600/50 rounded-xl shadow-2xl z-50 min-w-[120px]"
                   >
                     {['Today', 'Yesterday', 'Past 3 days', 'This week'].map((option) => (
                       <button
                         key={option}
                         onClick={() => handleTimeRangeChange(option)}
-                        className={`w-full px-3 py-2 text-left text-xs hover:bg-slate-700/50 transition-all duration-300 first:rounded-t-xl last:rounded-b-xl ${
-                          timeRange === option ? 'bg-slate-700/50 text-green-400' : 'text-slate-300'
+                        className={`w-full px-3 py-2 text-left text-xs hover:bg-white/10 transition-all duration-300 first:rounded-t-xl last:rounded-b-xl ${
+                          timeRange === option ? 'bg-white/10 text-green-400' : 'text-slate-300'
                         }`}
                       >
                         {option}
@@ -269,7 +267,7 @@ export function BookedOutStatsWidget({ widget, isEditMode }: WidgetComponentProp
           {loading ? (
             <div className="space-y-2">
               {[...Array(5)].map((_, i) => (
-                <div key={i} className="h-8 bg-slate-700 rounded animate-pulse"></div>
+                <div key={i} className="h-8 bg-white/10 rounded animate-pulse"></div>
               ))}
             </div>
           ) : error ? (
@@ -284,16 +282,16 @@ export function BookedOutStatsWidget({ widget, isEditMode }: WidgetComponentProp
               </div>
               
               {/* 操作員列表 */}
-              <div className="bg-slate-800/50 rounded-lg p-2 max-h-[160px] overflow-y-auto">
-                <p className="text-xs text-slate-400 mb-2">By Operator</p>
+              <div className="bg-black/20 rounded-lg p-2 max-h-[160px] overflow-y-auto">
+                <p className="text-xs text-purple-400 mb-2">By Operator</p>
                 {data.operatorData && data.operatorData.length > 0 ? (
                   <div className="space-y-1">
                     {data.operatorData.map((operator) => (
-                      <div key={operator.operator_id} className="flex justify-between items-center py-1 px-2 hover:bg-slate-700/50 rounded transition-colors">
-                        <span className="text-xs text-slate-300">{operator.operator_id}</span>
+                      <div key={operator.operator_id} className="flex justify-between items-center py-1 px-2 hover:bg-white/10 rounded transition-colors">
+                        <span className="text-xs text-purple-200">{operator.operator_id}</span>
                         <div className="text-right">
-                          <span className="text-xs font-semibold text-white">{operator.count}</span>
-                          <span className="text-xs text-slate-400 ml-1">({operator.percentage}%)</span>
+                          <span className="text-xs font-semibold text-purple-200">{operator.count}</span>
+                          <span className="text-xs text-purple-300 ml-1">({operator.percentage}%)</span>
                         </div>
                       </div>
                     ))}
@@ -305,13 +303,13 @@ export function BookedOutStatsWidget({ widget, isEditMode }: WidgetComponentProp
             </div>
           )}
         </CardContent>
-      </Card>
+      </WidgetCard>
     );
   }
 
   // Large size - 包括圖表
   return (
-    <Card className={`h-full bg-slate-900/95 backdrop-blur-xl border border-green-500/30 shadow-2xl ${isEditMode ? 'border-dashed border-2 border-green-500/50' : ''}`}>
+    <WidgetCard widgetType="BOOKED_OUT_STATS" isEditMode={isEditMode}>
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -326,7 +324,7 @@ export function BookedOutStatsWidget({ widget, isEditMode }: WidgetComponentProp
           <div className="relative" ref={dropdownRef}>
             <button
               onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-              className="flex items-center gap-1 px-3 py-1.5 bg-slate-700/50 hover:bg-slate-600/50 text-slate-300 hover:text-white rounded-md transition-all duration-300 text-sm border border-slate-600/30"
+              className="flex items-center gap-1 px-3 py-1.5 bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white rounded-md transition-all duration-300 text-sm border border-slate-600/30"
               disabled={isEditMode}
             >
               <ClockIcon className="w-4 h-4" />
@@ -341,14 +339,14 @@ export function BookedOutStatsWidget({ widget, isEditMode }: WidgetComponentProp
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: 10, scale: 0.95 }}
                   transition={{ duration: 0.2 }}
-                  className="absolute right-0 top-full mt-1 bg-slate-900/98 backdrop-blur-xl border border-slate-600/50 rounded-xl shadow-2xl z-50 min-w-[140px]"
+                  className="absolute right-0 top-full mt-1 bg-black/80 backdrop-blur-xl border border-slate-600/50 rounded-xl shadow-2xl z-50 min-w-[140px]"
                 >
                   {['Today', 'Yesterday', 'Past 3 days', 'This week'].map((option) => (
                     <button
                       key={option}
                       onClick={() => handleTimeRangeChange(option)}
-                      className={`w-full px-3 py-2 text-left text-sm hover:bg-slate-700/50 transition-all duration-300 first:rounded-t-xl last:rounded-b-xl ${
-                        timeRange === option ? 'bg-slate-700/50 text-green-400' : 'text-slate-300'
+                      className={`w-full px-3 py-2 text-left text-sm hover:bg-white/10 transition-all duration-300 first:rounded-t-xl last:rounded-b-xl ${
+                        timeRange === option ? 'bg-white/10 text-green-400' : 'text-slate-300'
                       }`}
                     >
                       {option}
@@ -363,8 +361,8 @@ export function BookedOutStatsWidget({ widget, isEditMode }: WidgetComponentProp
       <CardContent className="flex flex-col h-[calc(100%-4rem)]">
         {loading ? (
           <div className="space-y-3">
-            <div className="h-32 bg-slate-700 rounded animate-pulse"></div>
-            <div className="h-48 bg-slate-700 rounded animate-pulse"></div>
+            <div className="h-32 bg-white/10 rounded animate-pulse"></div>
+            <div className="h-48 bg-white/10 rounded animate-pulse"></div>
           </div>
         ) : error ? (
           <div className="text-red-400 text-sm">{error}</div>
@@ -380,16 +378,16 @@ export function BookedOutStatsWidget({ widget, isEditMode }: WidgetComponentProp
               </div>
               
               {/* 操作員列表 */}
-              <div className="bg-slate-800/50 rounded-lg p-3 h-[calc(100%-4rem)] overflow-hidden">
-                <p className="text-sm text-slate-400 mb-2">Operator Performance</p>
+              <div className="bg-black/20 rounded-lg p-3 h-[calc(100%-4rem)] overflow-hidden">
+                <p className="text-sm text-purple-400 mb-2">Operator Performance</p>
                 {data.operatorData && data.operatorData.length > 0 ? (
                   <div className="h-[calc(100%-2rem)] overflow-y-auto pr-2 space-y-1">
                     {data.operatorData.slice(0, 10).map((operator) => (
-                      <div key={operator.operator_id} className="flex justify-between items-center py-1 px-2 hover:bg-slate-700/50 rounded transition-colors">
-                        <span className="text-sm text-slate-300">{operator.operator_id}</span>
+                      <div key={operator.operator_id} className="flex justify-between items-center py-1 px-2 hover:bg-white/10 rounded transition-colors">
+                        <span className="text-sm text-purple-200">{operator.operator_id}</span>
                         <div className="text-right">
-                          <span className="text-sm font-semibold text-white">{operator.count}</span>
-                          <span className="text-xs text-slate-400 ml-2">({operator.percentage}%)</span>
+                          <span className="text-sm font-semibold text-purple-200">{operator.count}</span>
+                          <span className="text-xs text-purple-300 ml-2">({operator.percentage}%)</span>
                         </div>
                       </div>
                     ))}
@@ -445,6 +443,6 @@ export function BookedOutStatsWidget({ widget, isEditMode }: WidgetComponentProp
           </>
         )}
       </CardContent>
-    </Card>
+    </WidgetCard>
   );
 }

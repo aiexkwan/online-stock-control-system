@@ -1,8 +1,8 @@
 /**
  * System Update Widget
- * 2x2: 不支援
- * 4x4: Quick access 按鈕 + 最近更新記錄
- * 6x6: 不支援
+ * 1x1: 不支援
+ * 3x3: Quick access 按鈕 + 最近更新記錄
+ * 5x5: 不支援
  */
 
 'use client';
@@ -12,11 +12,13 @@ import { motion } from 'framer-motion';
 import { CubeIcon, DocumentTextIcon, UserGroupIcon, ExclamationCircleIcon } from '@heroicons/react/24/outline';
 import { createClient } from '@/lib/supabase';
 import { WidgetComponentProps, WidgetSize } from '@/app/types/dashboard';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { WidgetCard } from '@/app/components/dashboard/WidgetCard';
 import { Button } from "@/components/ui/button";
 import { useDialog } from '@/app/contexts/DialogContext';
 import { format } from 'date-fns';
 import { fromDbTime } from '@/app/utils/timezone';
+import { WidgetStyles } from '@/app/utils/widgetStyles';
 
 interface UpdateRecord {
   uuid: string;
@@ -108,7 +110,7 @@ export function DatabaseUpdateWidget({ widget, isEditMode }: WidgetComponentProp
     return <DocumentTextIcon className="w-4 h-4 text-slate-400" />;
   };
 
-  // 2x2 - 不支援
+  // 1x1 - 不支援
   if (size === WidgetSize.SMALL) {
     return (
       <motion.div
@@ -116,20 +118,18 @@ export function DatabaseUpdateWidget({ widget, isEditMode }: WidgetComponentProp
         animate={{ opacity: 1, y: 0 }}
         className="h-full"
       >
-        <Card className="h-full bg-slate-900/95 backdrop-blur-xl border border-orange-500/30 shadow-2xl">
-          <CardContent className="p-4 h-full flex flex-col items-center justify-center">
-            <ExclamationCircleIcon className="w-12 h-12 text-slate-500 mb-3" />
-            <h3 className="text-sm font-medium text-slate-400 mb-1">Not Supported</h3>
-            <p className="text-xs text-slate-500 text-center">
-              Please resize to Medium
-            </p>
+        <WidgetCard widgetType="DATABASE_UPDATE" isEditMode={isEditMode}>
+          <CardContent className="p-2 h-full flex flex-col items-center justify-center">
+            <h3 className="text-xs text-slate-400 mb-1">System Update</h3>
+            <div className="text-lg font-medium text-slate-500">(N/A)</div>
+            <p className="text-xs text-slate-500 mt-1">1×1</p>
           </CardContent>
-        </Card>
+        </WidgetCard>
       </motion.div>
     );
   }
 
-  // 4x4 - Quick access + 最近更新記錄
+  // 3x3 - Quick access + 最近更新記錄
   if (size === WidgetSize.MEDIUM) {
     return (
       <motion.div
@@ -137,7 +137,7 @@ export function DatabaseUpdateWidget({ widget, isEditMode }: WidgetComponentProp
         animate={{ opacity: 1, y: 0 }}
         className="h-full"
       >
-        <Card className="h-full bg-slate-900/95 backdrop-blur-xl border border-orange-500/30 shadow-2xl">
+        <WidgetCard widgetType="DATABASE_UPDATE" isEditMode={isEditMode}>
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2">
               <div className="w-8 h-8 bg-gradient-to-r from-orange-500 to-amber-500 rounded-lg flex items-center justify-center">
@@ -151,7 +151,7 @@ export function DatabaseUpdateWidget({ widget, isEditMode }: WidgetComponentProp
             <div className="grid grid-cols-2 gap-2">
               <Button
                 size="sm"
-                className="h-16 bg-gradient-to-br from-blue-500/20 to-blue-600/20 border border-blue-500/30 hover:from-blue-500/30 hover:to-blue-600/30 text-white flex flex-col items-center justify-center gap-1 transition-all"
+                className={`h-16 ${WidgetStyles.quickAccess.systemUpdate['Update Product Info']} text-white flex flex-col items-center justify-center gap-1 transition-all`}
                 onClick={handleOpenProductUpdate}
                 disabled={isEditMode}
               >
@@ -160,7 +160,7 @@ export function DatabaseUpdateWidget({ widget, isEditMode }: WidgetComponentProp
               </Button>
               <Button
                 size="sm"
-                className="h-16 bg-gradient-to-br from-green-500/20 to-green-600/20 border border-green-500/30 hover:from-green-500/30 hover:to-green-600/30 text-white flex flex-col items-center justify-center gap-1 transition-all"
+                className={`h-16 ${WidgetStyles.quickAccess.systemUpdate['Update Supplier Info']} text-white flex flex-col items-center justify-center gap-1 transition-all`}
                 onClick={handleOpenSupplierUpdate}
                 disabled={isEditMode}
               >
@@ -175,7 +175,7 @@ export function DatabaseUpdateWidget({ widget, isEditMode }: WidgetComponentProp
               {loading ? (
                 <div className="animate-pulse space-y-2">
                   {[1, 2, 3].map(i => (
-                    <div key={i} className="h-10 bg-slate-700/30 rounded-lg"></div>
+                    <div key={i} className="h-10 bg-white/10 rounded-lg"></div>
                   ))}
                 </div>
               ) : recentUpdates.length === 0 ? (
@@ -183,20 +183,20 @@ export function DatabaseUpdateWidget({ widget, isEditMode }: WidgetComponentProp
               ) : (
                 <div className="space-y-1.5 max-h-[200px] overflow-y-auto">
                   {recentUpdates.map((update) => (
-                    <div key={update.uuid} className="bg-slate-800/50 rounded-lg p-2 hover:bg-slate-700/50 transition-colors">
+                    <div key={update.uuid} className="bg-black/20 rounded-lg p-2 hover:bg-white/10 transition-colors">
                       <div className="flex items-start gap-2">
                         <div className="flex-shrink-0 mt-0.5">
                           {getActionIcon(update.action)}
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center justify-between gap-2">
-                            <span className="text-xs font-medium text-white truncate">{update.action}</span>
-                            <span className="text-xs text-slate-500 flex-shrink-0">{formatTime(update.time)}</span>
+                            <span className="text-xs font-medium text-purple-400 truncate">{update.action}</span>
+                            <span className="text-xs text-purple-300 flex-shrink-0">{formatTime(update.time)}</span>
                           </div>
-                          <div className="text-xs text-slate-400">
+                          <div className="text-xs text-purple-300">
                             by {update.operator_id}
                             {update.remark && (
-                              <span className="ml-1 text-slate-500">• {update.remark}</span>
+                              <span className="ml-1 text-purple-200">• {update.remark}</span>
                             )}
                           </div>
                         </div>
@@ -207,27 +207,25 @@ export function DatabaseUpdateWidget({ widget, isEditMode }: WidgetComponentProp
               )}
             </div>
           </CardContent>
-        </Card>
+        </WidgetCard>
       </motion.div>
     );
   }
 
-  // 6x6 - 不支援
+  // 5x5 - 不支援
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       className="h-full"
     >
-      <Card className="h-full bg-slate-900/95 backdrop-blur-xl border border-orange-500/30 shadow-2xl">
-        <CardContent className="p-6 h-full flex flex-col items-center justify-center">
-          <ExclamationCircleIcon className="w-16 h-16 text-slate-500 mb-4" />
-          <h3 className="text-lg font-medium text-slate-400 mb-2">Not Supported</h3>
-          <p className="text-sm text-slate-500 text-center">
-            This widget is only available in Medium (4x4) size
-          </p>
+      <WidgetCard widgetType="DATABASE_UPDATE" isEditMode={isEditMode}>
+        <CardContent className="p-2 h-full flex flex-col items-center justify-center">
+          <h3 className="text-xs text-slate-400 mb-1">System Update</h3>
+          <div className="text-lg font-medium text-slate-500">(N/A)</div>
+          <p className="text-xs text-slate-500 mt-1">5×5</p>
         </CardContent>
-      </Card>
+      </WidgetCard>
     </motion.div>
   );
 }

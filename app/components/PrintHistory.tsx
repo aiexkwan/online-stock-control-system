@@ -223,45 +223,42 @@ export default function FinishedProduct({ widgetSize }: FinishedProductProps) {
     <div className="space-y-2">
       {[...Array(5)].map((_, i) => (
         <div key={i} className="flex items-center space-x-4 p-3">
-          <Skeleton className="h-4 w-24 bg-slate-700" />
-          <Skeleton className="h-4 w-16 bg-slate-700" />
-          <Skeleton className="h-4 w-16 bg-slate-700" />
+          <Skeleton className="h-4 w-24 bg-white/10" />
+          <Skeleton className="h-4 w-16 bg-white/10" />
+          <Skeleton className="h-4 w-16 bg-white/10" />
         </div>
       ))}
     </div>
   );
 
-  // Small size (2x2) - 只顯示當天總板數
+  // 強制 Small size 使用 Today 時間範圍
+  useEffect(() => {
+    if (widgetSize === WidgetSize.SMALL && selectedTimeRange !== 'Today') {
+      setSelectedTimeRange('Today');
+    }
+  }, [widgetSize]);
+
+  // Small size (1x1) - 只顯示當天總板數
   if (widgetSize === WidgetSize.SMALL) {
     // 使用 Today 的數據
     const todayData = products.reduce((sum, p) => sum + p.total_pallets, 0);
     
-    // 強制使用 Today 時間範圍
-    useEffect(() => {
-      if (selectedTimeRange !== 'Today') {
-        setSelectedTimeRange('Today');
-      }
-    }, []);
-    
     return (
       <div className="h-full flex flex-col justify-center items-center">
-        <div className="w-10 h-10 bg-gradient-to-r from-green-500 to-emerald-500 rounded-lg flex items-center justify-center mb-2">
-          <CubeIcon className="h-6 w-6 text-white" />
-        </div>
-        <h3 className="text-sm font-medium text-slate-400 mb-2">Today's Finished</h3>
+        <h3 className="text-xs text-slate-400 mb-1">Today's Finished</h3>
         {loading || initialLoading ? (
-          <Skeleton className="h-10 w-20 bg-slate-800" />
+          <Skeleton className="h-8 w-16 bg-white/10" />
         ) : (
           <motion.div
             key={totalPallets}
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
-            className="text-3xl font-bold text-green-400"
+            className="text-2xl font-medium text-green-400"
           >
             {totalPallets}
           </motion.div>
         )}
-        <p className="text-xs text-slate-500 mt-1">Pallets</p>
+        <p className="text-xs text-slate-500 mt-0.5">Pallets</p>
       </div>
     );
   }
@@ -271,17 +268,17 @@ export default function FinishedProduct({ widgetSize }: FinishedProductProps) {
     return (
       <div className="h-full flex flex-col">
         {/* Header with time range dropdown */}
-        <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center justify-between mb-1">
           <div className="flex items-center gap-2">
-            <DocumentIcon className="w-5 h-5 text-green-500" />
-            <span className="text-sm font-medium text-slate-300">Finished Product</span>
+            <DocumentIcon className="w-4 h-4 text-green-500" />
+            <span className="text-xs font-medium text-slate-300">Finished Product</span>
           </div>
           
           {/* Time Range Dropdown */}
           <div className="relative" ref={dropdownRef}>
             <button
               onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-              className="flex items-center gap-2 px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-lg transition-colors text-xs"
+              className="flex items-center gap-2 px-3 py-1.5 bg-black/20 hover:bg-white/10 text-slate-300 rounded-lg transition-colors text-xs"
             >
               <ClockIcon className="w-3 h-3" />
               {selectedTimeRange}
@@ -295,14 +292,14 @@ export default function FinishedProduct({ widgetSize }: FinishedProductProps) {
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: -10, scale: 0.95 }}
                   transition={{ duration: 0.2 }}
-                  className="absolute right-0 top-full mt-1 bg-slate-800 border border-slate-600 rounded-lg shadow-xl z-50 min-w-[140px]"
+                  className="absolute right-0 top-full mt-1 bg-black/80 backdrop-blur-xl border border-slate-600 rounded-lg shadow-xl z-50 min-w-[140px]"
                 >
                   {TIME_RANGE_OPTIONS.map((option) => (
                     <button
                       key={option}
                       onClick={() => handleTimeRangeChange(option)}
-                      className={`w-full px-3 py-2 text-left text-xs hover:bg-slate-700 transition-colors first:rounded-t-lg last:rounded-b-lg ${
-                        selectedTimeRange === option ? 'bg-slate-700 text-green-400' : 'text-slate-300'
+                      className={`w-full px-3 py-2 text-left text-xs hover:bg-white/10 transition-colors first:rounded-t-lg last:rounded-b-lg ${
+                        selectedTimeRange === option ? 'bg-white/10 text-green-400' : 'text-slate-300'
                       }`}
                     >
                       {option}
@@ -314,72 +311,21 @@ export default function FinishedProduct({ widgetSize }: FinishedProductProps) {
           </div>
         </div>
 
-        {/* 上半部分 - 折線圖 (佔 2/3) */}
-        <div className="flex-[2] min-h-0 mb-4">
-          {loading ? (
-            <div className="h-full flex items-center justify-center">
-              <Skeleton className="h-full w-full bg-slate-800" />
+        {/* 上半部分 - 頭5產品明細 (佔 1/3) */}
+        <div className="flex-1 min-h-0 mb-2">
+          <div className="h-full flex flex-col">
+            {/* Column Headers */}
+            <div className="flex items-center justify-between px-2 py-1 bg-black/20 rounded-t-lg mb-1">
+              <span className="text-[10px] font-semibold text-purple-400 flex-1">Product Code</span>
+              <span className="text-[10px] font-semibold text-purple-400 text-right w-20">Pallets</span>
+              {widgetSize === WidgetSize.LARGE && (
+                <span className="text-[10px] font-semibold text-purple-400 text-right w-24 ml-2">Quantity</span>
+              )}
             </div>
-          ) : error ? (
-            <div className="h-full flex flex-col items-center justify-center text-center">
-              <ExclamationTriangleIcon className="w-8 h-8 text-red-500 mb-2" />
-              <p className="text-sm text-slate-400">Failed to load data</p>
-              <button onClick={handleRetry} className="mt-2 text-xs text-green-400 hover:text-green-300">
-                Retry
-              </button>
-            </div>
-          ) : chartData.length === 0 ? (
-            <div className="h-full flex flex-col items-center justify-center">
-              <InboxIcon className="w-8 h-8 text-slate-500 mb-2" />
-              <p className="text-sm text-slate-400">No data available</p>
-            </div>
-          ) : (
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={chartData} margin={{ top: 5, right: 5, left: 5, bottom: 5 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
-                <XAxis 
-                  dataKey="date" 
-                  stroke="#94a3b8" 
-                  fontSize={12}
-                  tick={{ fill: '#94a3b8' }}
-                />
-                <YAxis 
-                  stroke="#94a3b8" 
-                  fontSize={12}
-                  tick={{ fill: '#94a3b8' }}
-                />
-                <Tooltip 
-                  contentStyle={{ 
-                    backgroundColor: '#1e293b', 
-                    border: '1px solid #334155',
-                    borderRadius: '8px'
-                  }}
-                  labelStyle={{ color: '#94a3b8' }}
-                  itemStyle={{ color: '#22c55e' }}
-                />
-                <Line 
-                  type="monotone" 
-                  dataKey="pallets" 
-                  stroke="#22c55e" 
-                  strokeWidth={2}
-                  dot={{ fill: '#22c55e', r: 4 }}
-                  activeDot={{ r: 6 }}
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          )}
-        </div>
-
-        {/* 下半部分 - 頭5產品明細 (佔 1/3) */}
-        <div className="flex-1 min-h-0">
-          <div className="border-t border-slate-700 pt-2 h-full flex flex-col">
-            <h4 className="text-sm font-semibold text-green-400 mb-2">
-              Top 5 Products
-            </h4>
             {loading ? (
               <div className="space-y-1 flex-1">
                 {[...Array(5)].map((_, i) => (
-                  <Skeleton key={i} className="h-6 w-full bg-slate-800" />
+                  <Skeleton key={i} className="h-6 w-full bg-white/10" />
                 ))}
               </div>
             ) : products.length === 0 ? (
@@ -392,26 +338,85 @@ export default function FinishedProduct({ widgetSize }: FinishedProductProps) {
                     initial={{ x: -20, opacity: 0 }}
                     animate={{ x: 0, opacity: 1 }}
                     transition={{ delay: index * 0.1 }}
-                    className={`flex justify-between items-center ${
-                      widgetSize === WidgetSize.LARGE ? 'p-1.5 rounded bg-slate-800/50 hover:bg-slate-800/70 transition-colors' : ''
-                    }`}
+                    className="flex items-center justify-between px-2 py-1 rounded bg-black/20 hover:bg-white/10 transition-colors"
                   >
-                    <span className={`${widgetSize === WidgetSize.LARGE ? 'text-sm' : 'text-xs'} font-medium text-slate-300`}>
+                    <span className={`${widgetSize === WidgetSize.LARGE ? 'text-xs' : 'text-[10px]'} font-medium text-purple-200 flex-1`}>
                       {product.product_code}
                     </span>
-                    <div className={`flex gap-3 ${widgetSize === WidgetSize.LARGE ? 'text-sm' : 'text-xs'}`}>
-                      <span className="text-green-400">
-                        {product.total_pallets} pallets
+                    <span className={`${widgetSize === WidgetSize.LARGE ? 'text-xs' : 'text-[10px]'} text-purple-200 text-right w-20`}>
+                      {product.total_pallets.toLocaleString()}
+                    </span>
+                    {widgetSize === WidgetSize.LARGE && (
+                      <span className="text-xs text-purple-200 text-right w-24 ml-2">
+                        {product.total_qty.toLocaleString()}
                       </span>
-                      {widgetSize === WidgetSize.LARGE && (
-                        <span className="text-emerald-400">
-                          {product.total_qty.toLocaleString()} qty
-                        </span>
-                      )}
-                    </div>
+                    )}
                   </motion.div>
                 ))}
               </div>
+            )}
+          </div>
+        </div>
+
+        {/* 下半部分 - 折線圖 (佔 2/3) */}
+        <div className="flex-[2] min-h-0">
+          <div className="border-t border-slate-700 pt-1 h-full">
+            {loading ? (
+              <div className="h-full flex items-center justify-center">
+                <Skeleton className="h-full w-full bg-white/10" />
+              </div>
+            ) : error ? (
+              <div className="h-full flex flex-col items-center justify-center text-center">
+                <ExclamationTriangleIcon className="w-8 h-8 text-red-500 mb-2" />
+                <p className="text-sm text-slate-400">Failed to load data</p>
+                <button onClick={handleRetry} className="mt-2 text-xs text-green-400 hover:text-green-300">
+                  Retry
+                </button>
+              </div>
+            ) : chartData.length === 0 ? (
+              <div className="h-full flex flex-col items-center justify-center">
+                <InboxIcon className="w-8 h-8 text-slate-500 mb-2" />
+                <p className="text-sm text-slate-400">No data available</p>
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={chartData} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
+                  <XAxis 
+                    dataKey="date" 
+                    stroke="#94a3b8" 
+                    fontSize={10}
+                    tick={{ fill: '#94a3b8' }}
+                    angle={-45}
+                    textAnchor="end"
+                    height={50}
+                  />
+                  <YAxis 
+                    stroke="#94a3b8" 
+                    fontSize={10}
+                    tick={{ fill: '#94a3b8' }}
+                    width={30}
+                  />
+                  <Tooltip 
+                    contentStyle={{ 
+                      backgroundColor: '#1e293b', 
+                      border: '1px solid #334155',
+                      borderRadius: '8px',
+                      fontSize: '12px'
+                    }}
+                    labelStyle={{ color: '#94a3b8' }}
+                    itemStyle={{ color: '#22c55e' }}
+                  />
+                  <Line 
+                    type="monotone" 
+                    dataKey="pallets" 
+                    stroke="#10b981" 
+                    strokeWidth={2}
+                    dot={{ fill: '#10b981', r: 3 }}
+                    activeDot={{ r: 5 }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
             )}
           </div>
         </div>
@@ -447,7 +452,7 @@ export default function FinishedProduct({ widgetSize }: FinishedProductProps) {
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, y: -10, scale: 0.95 }}
                 transition={{ duration: 0.2 }}
-                className="absolute right-0 top-full mt-1 bg-slate-800 border border-slate-600 rounded-lg shadow-xl z-50 min-w-[140px]"
+                className="absolute right-0 top-full mt-1 bg-black/80 backdrop-blur-xl border border-slate-600 rounded-lg shadow-xl z-50 min-w-[140px]"
               >
                 {TIME_RANGE_OPTIONS.map((option) => (
                   <button
@@ -512,7 +517,7 @@ export default function FinishedProduct({ widgetSize }: FinishedProductProps) {
         </motion.div>
       ) : (
         /* Table container */
-        <div className="relative overflow-hidden rounded-lg border border-slate-700 bg-slate-800/30" style={{ maxHeight: '320px' }}>
+        <div className="relative overflow-hidden rounded-lg border border-slate-700 bg-black/20" style={{ maxHeight: '320px' }}>
           {initialLoading ? (
             <div className="p-4">
               <LoadingSkeleton />
@@ -520,7 +525,7 @@ export default function FinishedProduct({ widgetSize }: FinishedProductProps) {
           ) : (
             <div className="overflow-auto" style={{ maxHeight: '320px' }}>
               <table className="min-w-full">
-                <thead className="sticky top-0 bg-slate-800/90 backdrop-blur-sm border-b border-slate-700">
+                <thead className="sticky top-0 bg-black/60 backdrop-blur-sm border-b border-slate-700">
                   <tr>
                     <th className="px-4 py-3 text-left text-xxxs font-medium text-slate-400 uppercase tracking-wider">
                       Code
@@ -615,7 +620,7 @@ export default function FinishedProduct({ widgetSize }: FinishedProductProps) {
                 animate={{ x: 0, opacity: 1 }}
                 transition={{ delay: index * 0.1 }}
                 className={`flex justify-between items-center ${
-                  widgetSize === WidgetSize.LARGE ? 'p-2 rounded-lg bg-slate-800/50 hover:bg-slate-800/70 transition-colors' : ''
+                  widgetSize === WidgetSize.LARGE ? 'p-2 rounded-lg bg-black/20 hover:bg-white/10 transition-colors' : ''
                 }`}
               >
                 <span className={`${widgetSize === WidgetSize.LARGE ? 'text-sm' : 'text-xs'} font-medium text-slate-300`}>

@@ -1,15 +1,16 @@
 /**
  * Output Stats 小部件
  * 支援三種尺寸：
- * - Small (2x2): 顯示當天生成的 pallet number 總數，不支援 data range pick
- * - Medium (4x4): 顯示當天生成的 pallet number 總數和 product_code 及其 qty 總和，支援 data range pick
- * - Large (6x6): 分成上中下(1:1:2)，支援 data range pick
+ * - Small (1x1): 顯示當天生成的 pallet number 總數，不支援 data range pick
+ * - Medium (3x3): 顯示當天生成的 pallet number 總數和 product_code 及其 qty 總和，支援 data range pick
+ * - Large (5x5): 分成上中下(1:1:2)，支援 data range pick
  */
 
 'use client';
 
 import React, { useEffect, useState, useRef } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { WidgetCard } from '@/app/components/dashboard/WidgetCard';
 import { CubeIcon, ClockIcon, ChevronDownIcon } from '@heroicons/react/24/outline';
 import { WidgetComponentProps, WidgetSize } from '@/app/types/dashboard';
 import { createClient } from '@/app/utils/supabase/client';
@@ -77,7 +78,7 @@ export function OutputStatsWidget({ widget, isEditMode }: WidgetComponentProps) 
       // 根據時間範圍設定查詢範圍
       let dateRange;
       if (size === WidgetSize.MEDIUM || size === WidgetSize.LARGE) {
-        // 4x4 和 6x6 模式支援時間範圍選擇
+        // 3x3 和 5x5 模式支援時間範圍選擇
         switch (timeRange) {
           case 'Yesterday':
             dateRange = getYesterdayRange();
@@ -92,7 +93,7 @@ export function OutputStatsWidget({ widget, isEditMode }: WidgetComponentProps) 
             dateRange = getTodayRange();
         }
       } else {
-        // 2x2 模式只顯示當天
+        // 1x1 模式只顯示當天
         dateRange = getTodayRange();
       }
 
@@ -188,34 +189,31 @@ export function OutputStatsWidget({ widget, isEditMode }: WidgetComponentProps) 
     setIsDropdownOpen(false);
   };
 
-  // Small size - only show number
+  // Small size (1x1) - 只顯示文字和數據，無 icon
   if (size === WidgetSize.SMALL) {
     return (
-      <Card className={`h-full bg-slate-900/95 backdrop-blur-xl border border-blue-500/30 shadow-2xl ${isEditMode ? 'border-dashed border-2 border-blue-500/50' : ''}`}>
-        <CardContent className="p-4 h-full flex flex-col justify-center items-center">
-          <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-lg flex items-center justify-center mb-2">
-            <CubeIcon className="h-6 w-6 text-white" />
-          </div>
-          <h3 className="text-sm font-medium text-slate-400 mb-1">Today's Output</h3>
+      <WidgetCard widgetType="OUTPUT_STATS" isEditMode={isEditMode}>
+        <CardContent className="p-2 h-full flex flex-col justify-center items-center">
+          <h3 className="text-xs text-slate-400 mb-1">Output</h3>
           {loading ? (
-            <div className="h-12 w-20 bg-slate-700 rounded animate-pulse"></div>
+            <div className="h-8 w-16 bg-white/10 rounded animate-pulse"></div>
           ) : error ? (
-            <div className="text-red-400 text-sm">Error</div>
+            <div className="text-red-400 text-xs">Error</div>
           ) : (
             <>
-              <div className="text-4xl font-bold text-white">{data.palletCount}</div>
-              <p className="text-xs text-slate-500 mt-1">Pallets</p>
+              <div className="text-2xl font-bold text-white">{data.palletCount}</div>
+              <p className="text-xs text-slate-500">Today</p>
             </>
           )}
         </CardContent>
-      </Card>
+      </WidgetCard>
     );
   }
 
   // Medium size - 顯示 pallet 總數和 product qty 總和，支援時間選擇
   if (size === WidgetSize.MEDIUM) {
     return (
-      <Card className={`h-full bg-slate-900/95 backdrop-blur-xl border border-blue-500/30 shadow-2xl ${isEditMode ? 'border-dashed border-2 border-blue-500/50' : ''}`}>
+      <WidgetCard widgetType="OUTPUT_STATS" isEditMode={isEditMode}>
         <CardHeader className="pb-2">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -229,7 +227,7 @@ export function OutputStatsWidget({ widget, isEditMode }: WidgetComponentProps) 
             <div className="relative" ref={dropdownRef}>
               <button
                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                className="flex items-center gap-1 px-2 py-1 bg-slate-700/50 hover:bg-slate-600/50 text-slate-300 hover:text-white rounded-md transition-all duration-300 text-xs border border-slate-600/30"
+                className="flex items-center gap-1 px-2 py-1 bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white rounded-md transition-all duration-300 text-xs border border-slate-600/30"
                 disabled={isEditMode}
               >
                 <ClockIcon className="w-3 h-3" />
@@ -244,14 +242,14 @@ export function OutputStatsWidget({ widget, isEditMode }: WidgetComponentProps) 
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: 10, scale: 0.95 }}
                     transition={{ duration: 0.2 }}
-                    className="absolute right-0 top-full mt-1 bg-slate-900/98 backdrop-blur-xl border border-slate-600/50 rounded-xl shadow-2xl z-50 min-w-[120px]"
+                    className="absolute right-0 top-full mt-1 bg-black/80 backdrop-blur-xl border border-slate-600/50 rounded-xl shadow-2xl z-50 min-w-[120px]"
                   >
                     {['Today', 'Yesterday', 'Past 3 days', 'This week'].map((option) => (
                       <button
                         key={option}
                         onClick={() => handleTimeRangeChange(option)}
-                        className={`w-full px-3 py-2 text-left text-xs hover:bg-slate-700/50 transition-all duration-300 first:rounded-t-xl last:rounded-b-xl ${
-                          timeRange === option ? 'bg-slate-700/50 text-blue-400' : 'text-slate-300'
+                        className={`w-full px-3 py-2 text-left text-xs hover:bg-white/10 transition-all duration-300 first:rounded-t-xl last:rounded-b-xl ${
+                          timeRange === option ? 'bg-white/10 text-blue-400' : 'text-slate-300'
                         }`}
                       >
                         {option}
@@ -266,22 +264,22 @@ export function OutputStatsWidget({ widget, isEditMode }: WidgetComponentProps) 
         <CardContent className="pt-2">
           {loading ? (
             <div className="space-y-3">
-              <div className="h-16 bg-slate-700 rounded animate-pulse"></div>
-              <div className="h-16 bg-slate-700 rounded animate-pulse"></div>
+              <div className="h-16 bg-white/10 rounded animate-pulse"></div>
+              <div className="h-16 bg-white/10 rounded animate-pulse"></div>
             </div>
           ) : error ? (
             <div className="text-red-400 text-sm">{error}</div>
           ) : (
             <div className="h-full flex flex-col space-y-2">
               {/* Pallet 總數 */}
-              <div className="bg-slate-800/50 rounded-lg p-2">
+              <div className="bg-black/20 rounded-lg p-2">
                 <p className="text-xs text-slate-400">Total Pallets</p>
                 <div className="text-2xl font-bold text-white">{data.palletCount}</div>
               </div>
               
               {/* Product 明細 */}
-              <div className="flex-1 bg-slate-800/50 rounded-lg p-2 overflow-hidden">
-                <p className="text-xs text-slate-400 mb-1">Product Details ({data.productCodeCount} codes, Total: {data.totalQuantity.toLocaleString()})</p>
+              <div className="flex-1 bg-black/20 rounded-lg p-2 overflow-hidden">
+                <p className="text-xs text-purple-400 mb-1">Product Details ({data.productCodeCount} codes, Total: {data.totalQuantity.toLocaleString()})</p>
                 
                 {data.productDetails && data.productDetails.length > 0 ? (
                   <div className="max-h-[calc(100%-1.5rem)] overflow-y-auto pr-1">
@@ -289,10 +287,10 @@ export function OutputStatsWidget({ widget, isEditMode }: WidgetComponentProps) 
                       {data.productDetails.map((product) => (
                         <div 
                           key={product.product_code}
-                          className="flex justify-between items-center py-1 px-2 text-xs hover:bg-slate-700/50 rounded transition-colors"
+                          className="flex justify-between items-center py-1 px-2 text-xs hover:bg-white/10 rounded transition-colors"
                         >
-                          <span className="text-slate-300">{product.product_code}</span>
-                          <span className="text-white font-medium">{product.quantity.toLocaleString()}</span>
+                          <span className="text-purple-200">{product.product_code}</span>
+                          <span className="text-purple-200 font-medium">{product.quantity.toLocaleString()}</span>
                         </div>
                       ))}
                     </div>
@@ -304,13 +302,13 @@ export function OutputStatsWidget({ widget, isEditMode }: WidgetComponentProps) 
             </div>
           )}
         </CardContent>
-      </Card>
+      </WidgetCard>
     );
   }
 
   // Large size - add chart
   return (
-    <Card className={`h-full bg-slate-900/95 backdrop-blur-xl border border-blue-500/30 shadow-2xl ${isEditMode ? 'border-dashed border-2 border-blue-500/50' : ''}`}>
+    <WidgetCard widgetType="OUTPUT_STATS" isEditMode={isEditMode}>
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -325,7 +323,7 @@ export function OutputStatsWidget({ widget, isEditMode }: WidgetComponentProps) 
           <div className="relative" ref={dropdownRef}>
             <button
               onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-              className="flex items-center gap-1 px-3 py-1.5 bg-slate-700/50 hover:bg-slate-600/50 text-slate-300 hover:text-white rounded-md transition-all duration-300 text-sm border border-slate-600/30"
+              className="flex items-center gap-1 px-3 py-1.5 bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white rounded-md transition-all duration-300 text-sm border border-slate-600/30"
             >
               <ClockIcon className="w-4 h-4" />
               {timeRange}
@@ -339,14 +337,14 @@ export function OutputStatsWidget({ widget, isEditMode }: WidgetComponentProps) 
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: 10, scale: 0.95 }}
                   transition={{ duration: 0.2 }}
-                  className="absolute right-0 top-full mt-1 bg-slate-900/98 backdrop-blur-xl border border-slate-600/50 rounded-xl shadow-2xl z-50 min-w-[140px]"
+                  className="absolute right-0 top-full mt-1 bg-black/80 backdrop-blur-xl border border-slate-600/50 rounded-xl shadow-2xl z-50 min-w-[140px]"
                 >
                   {['Today', 'Yesterday', 'Past 3 days', 'This week'].map((option) => (
                     <button
                       key={option}
                       onClick={() => handleTimeRangeChange(option)}
-                      className={`w-full px-3 py-2 text-left text-sm hover:bg-slate-700/50 transition-all duration-300 first:rounded-t-xl last:rounded-b-xl ${
-                        timeRange === option ? 'bg-slate-700/50 text-blue-400' : 'text-slate-300'
+                      className={`w-full px-3 py-2 text-left text-sm hover:bg-white/10 transition-all duration-300 first:rounded-t-xl last:rounded-b-xl ${
+                        timeRange === option ? 'bg-white/10 text-blue-400' : 'text-slate-300'
                       }`}
                     >
                       {option}
@@ -360,14 +358,14 @@ export function OutputStatsWidget({ widget, isEditMode }: WidgetComponentProps) 
       </CardHeader>
       <CardContent className="flex-1 flex flex-col overflow-hidden">
         {loading ? (
-          <div className="h-64 bg-slate-700 rounded animate-pulse"></div>
+          <div className="h-64 bg-white/10 rounded animate-pulse"></div>
         ) : error ? (
           <div className="text-red-400 text-sm">{error}</div>
         ) : (
           <div className="h-full flex flex-col">
             {/* 上部份 - Pallet 總數 (1/4) */}
             <div className="flex-1 mb-2">
-              <div className="bg-slate-800/50 rounded-lg p-3 h-full flex flex-col justify-center">
+              <div className="bg-black/20 rounded-lg p-3 h-full flex flex-col justify-center">
                 <p className="text-sm text-slate-400 mb-1">Total Pallets</p>
                 <div className="text-4xl font-bold text-white">{data.palletCount}</div>
               </div>
@@ -375,8 +373,8 @@ export function OutputStatsWidget({ widget, isEditMode }: WidgetComponentProps) 
             
             {/* 中部份 - Product Code 明細列表 (1/4) */}
             <div className="flex-1 mb-2">
-              <div className="bg-slate-800/50 rounded-lg p-2 h-full overflow-hidden flex flex-col">
-                <p className="text-xs text-slate-400 mb-1">Product Details ({data.productCodeCount} codes, Total: {data.totalQuantity.toLocaleString()})</p>
+              <div className="bg-black/20 rounded-lg p-2 h-full overflow-hidden flex flex-col">
+                <p className="text-xs text-purple-400 mb-1">Product Details ({data.productCodeCount} codes, Total: {data.totalQuantity.toLocaleString()})</p>
                 {data.productDetails && data.productDetails.length > 0 ? (
                   <div className="flex-1 overflow-y-auto pr-1">
                     <div className="space-y-0.5">
@@ -385,8 +383,8 @@ export function OutputStatsWidget({ widget, isEditMode }: WidgetComponentProps) 
                           key={product.product_code}
                           className="flex justify-between items-center py-0.5 px-2 text-xs hover:bg-slate-700/50 rounded transition-colors"
                         >
-                          <span className="text-slate-300">{product.product_code}</span>
-                          <span className="text-white font-medium">{product.quantity.toLocaleString()}</span>
+                          <span className="text-purple-200">{product.product_code}</span>
+                          <span className="text-purple-200 font-medium">{product.quantity.toLocaleString()}</span>
                         </div>
                       ))}
                     </div>
@@ -398,7 +396,7 @@ export function OutputStatsWidget({ widget, isEditMode }: WidgetComponentProps) 
             </div>
             
             {/* 下部份 - 棒型圖 (2/4) */}
-            <div className="flex-[2] bg-slate-800/30 rounded-lg p-3">
+            <div className="flex-[2] bg-black/20 rounded-lg p-3">
               <h4 className="text-sm font-medium text-slate-300 mb-2">Daily Product Quantity Chart (Top 3)</h4>
               {data.dailyData && data.dailyData.length > 0 && data.productDetails && data.productDetails.length > 0 ? (
                 <div style={{ width: '100%', height: '450px' }}>
@@ -436,9 +434,9 @@ export function OutputStatsWidget({ widget, isEditMode }: WidgetComponentProps) 
                           key={product.product_code}
                           dataKey={product.product_code} 
                           fill={[
-                            '#3B82F6', // Blue
                             '#10B981', // Green
-                            '#F59E0B', // Amber
+                            '#34D399', // Emerald
+                            '#6EE7B7', // Light Green
                           ][index]}
                           radius={[4, 4, 0, 0]}
                         />
@@ -455,6 +453,6 @@ export function OutputStatsWidget({ widget, isEditMode }: WidgetComponentProps) 
           </div>
         )}
       </CardContent>
-    </Card>
+    </WidgetCard>
   );
 }

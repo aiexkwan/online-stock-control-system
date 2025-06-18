@@ -1,8 +1,8 @@
 /**
  * Void Pallet Widget
- * 2x2: 顯示作廢總數
- * 4x4: 顯示最近作廢記錄列表
- * 6x6: 顯示作廢統計圖表和詳細列表
+ * 1x1: 顯示作廢總數
+ * 3x3: 顯示最近作廢記錄列表
+ * 5x5: 顯示作廢統計圖表和詳細列表
  */
 
 'use client';
@@ -12,11 +12,13 @@ import { motion } from 'framer-motion';
 import { NoSymbolIcon, ExclamationTriangleIcon } from '@heroicons/react/24/outline';
 import { createClient } from '@/lib/supabase';
 import { WidgetComponentProps, WidgetSize } from '@/app/types/dashboard';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { WidgetCard } from '@/app/components/dashboard/WidgetCard';
 import { Button } from "@/components/ui/button";
 import { useDialog } from '@/app/contexts/DialogContext';
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
 import { format } from 'date-fns';
+import { WidgetStyles } from '@/app/utils/widgetStyles';
 
 interface VoidRecord {
   void_id: number;
@@ -131,7 +133,7 @@ export function VoidPalletWidget({ widget, isEditMode }: WidgetComponentProps) {
     openDialog('voidPallet');
   };
 
-  // 2x2 - 只顯示數值
+  // 1x1 - 只顯示數值
   if (size === WidgetSize.SMALL) {
     return (
       <motion.div
@@ -139,18 +141,18 @@ export function VoidPalletWidget({ widget, isEditMode }: WidgetComponentProps) {
         animate={{ opacity: 1, y: 0 }}
         className="h-full"
       >
-        <Card className="h-full bg-slate-800/40 backdrop-blur-xl border-red-500/30 hover:border-red-400/50 transition-all duration-300 cursor-pointer" onClick={handleOpenVoidDialog}>
+        <WidgetCard widgetType="VOID_PALLET" isEditMode={isEditMode}>
           <CardContent className="p-4 h-full flex flex-col items-center justify-center">
             <NoSymbolIcon className="w-8 h-8 text-red-400 mb-2" />
-            <div className="text-3xl font-bold text-white">{stats.today_voided}</div>
+            <div className="text-3xl font-bold text-purple-400">{stats.today_voided}</div>
             <div className="text-xs text-slate-400 mt-1">Today's Voids</div>
           </CardContent>
-        </Card>
+        </WidgetCard>
       </motion.div>
     );
   }
 
-  // 4x4 - 顯示資料明細
+  // 3x3 - 顯示資料明細
   if (size === WidgetSize.MEDIUM) {
     return (
       <motion.div
@@ -158,32 +160,22 @@ export function VoidPalletWidget({ widget, isEditMode }: WidgetComponentProps) {
         animate={{ opacity: 1, y: 0 }}
         className="h-full"
       >
-        <Card className="h-full bg-slate-800/40 backdrop-blur-xl border-red-500/30 hover:border-red-400/50 transition-all duration-300">
+        <WidgetCard widgetType="VOID_PALLET" isEditMode={isEditMode} className="hover:border-orange-400/50 transition-all duration-300">
           <CardHeader className="pb-3">
-            <CardTitle className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <NoSymbolIcon className="w-5 h-5 text-red-400" />
-                <span className="text-lg">Void Pallets</span>
-              </div>
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={handleOpenVoidDialog}
-                className="text-red-400 hover:text-red-300"
-              >
-                Void
-              </Button>
+            <CardTitle className="flex items-center gap-2">
+              <NoSymbolIcon className="w-5 h-5 text-red-400" />
+              <span className="text-lg">Void Pallets</span>
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             {/* 統計摘要 */}
             <div className="grid grid-cols-2 gap-3">
               <div className="bg-slate-700/30 rounded-lg p-3">
-                <div className="text-2xl font-bold text-white">{stats.today_voided}</div>
+                <div className="text-2xl font-bold text-purple-400">{stats.today_voided}</div>
                 <div className="text-xs text-slate-400">Today</div>
               </div>
               <div className="bg-slate-700/30 rounded-lg p-3">
-                <div className="text-2xl font-bold text-white">{stats.this_week_voided}</div>
+                <div className="text-2xl font-bold text-purple-400">{stats.this_week_voided}</div>
                 <div className="text-xs text-slate-400">This Week</div>
               </div>
             </div>
@@ -205,10 +197,10 @@ export function VoidPalletWidget({ widget, isEditMode }: WidgetComponentProps) {
                     <div key={record.void_id} className="bg-slate-700/30 rounded-lg p-2 text-xs">
                       <div className="flex justify-between items-start">
                         <div>
-                          <div className="font-medium text-white">{record.plt_num}</div>
-                          <div className="text-slate-400">{record.void_reason}</div>
+                          <div className="font-medium text-purple-400">{record.plt_num}</div>
+                          <div className="text-purple-300">{record.void_reason}</div>
                         </div>
-                        <div className="text-slate-500 text-right">
+                        <div className="text-purple-300 text-right">
                           <div>{format(new Date(record.void_date), 'MM/dd')}</div>
                           <div>{format(new Date(record.void_date), 'HH:mm')}</div>
                         </div>
@@ -219,52 +211,42 @@ export function VoidPalletWidget({ widget, isEditMode }: WidgetComponentProps) {
               )}
             </div>
           </CardContent>
-        </Card>
+        </WidgetCard>
       </motion.div>
     );
   }
 
-  // 6x6 - 顯示圖表統計
+  // 5x5 - 顯示圖表統計
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       className="h-full"
     >
-      <Card className="h-full bg-slate-800/40 backdrop-blur-xl border-red-500/30 hover:border-red-400/50 transition-all duration-300">
+      <WidgetCard widgetType="VOID_PALLET" isEditMode={isEditMode} className="hover:border-red-400/50 transition-all duration-300">
         <CardHeader className="pb-3">
-          <CardTitle className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <NoSymbolIcon className="w-6 h-6 text-red-400" />
-              <span className="text-xl">Void Pallet Statistics</span>
-            </div>
-            <Button
-              size="sm"
-              onClick={handleOpenVoidDialog}
-              className="bg-red-600 hover:bg-red-700 text-white"
-            >
-              <NoSymbolIcon className="w-4 h-4 mr-1" />
-              Void Pallet
-            </Button>
+          <CardTitle className="flex items-center gap-2">
+            <NoSymbolIcon className="w-6 h-6 text-red-400" />
+            <span className="text-xl">Void Pallet Statistics</span>
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           {/* 統計卡片 */}
           <div className="grid grid-cols-4 gap-3">
             <div className="bg-gradient-to-br from-red-500/20 to-red-600/20 rounded-lg p-3 border border-red-500/30">
-              <div className="text-2xl font-bold text-white">{stats.total_voided}</div>
+              <div className="text-2xl font-bold text-purple-400">{stats.total_voided}</div>
               <div className="text-xs text-red-300">Total Voided</div>
             </div>
             <div className="bg-slate-700/30 rounded-lg p-3">
-              <div className="text-2xl font-bold text-white">{stats.today_voided}</div>
+              <div className="text-2xl font-bold text-purple-400">{stats.today_voided}</div>
               <div className="text-xs text-slate-400">Today</div>
             </div>
             <div className="bg-slate-700/30 rounded-lg p-3">
-              <div className="text-2xl font-bold text-white">{stats.this_week_voided}</div>
+              <div className="text-2xl font-bold text-purple-400">{stats.this_week_voided}</div>
               <div className="text-xs text-slate-400">This Week</div>
             </div>
             <div className="bg-slate-700/30 rounded-lg p-3">
-              <div className="text-2xl font-bold text-white">{stats.this_month_voided}</div>
+              <div className="text-2xl font-bold text-purple-400">{stats.this_month_voided}</div>
               <div className="text-xs text-slate-400">This Month</div>
             </div>
           </div>
@@ -316,19 +298,19 @@ export function VoidPalletWidget({ widget, isEditMode }: WidgetComponentProps) {
                     <div className="flex justify-between items-start">
                       <div className="flex-1">
                         <div className="flex items-center gap-2">
-                          <span className="font-medium text-white">{record.plt_num}</span>
+                          <span className="font-medium text-purple-400">{record.plt_num}</span>
                           {record.product_code && (
-                            <span className="text-xs bg-slate-600/50 px-2 py-1 rounded text-slate-300">
+                            <span className="text-xs bg-slate-600/50 px-2 py-1 rounded text-purple-300">
                               {record.product_code}
                             </span>
                           )}
                         </div>
-                        <div className="text-sm text-slate-400 mt-1">{record.void_reason}</div>
-                        <div className="text-xs text-slate-500 mt-1">By: {record.voided_by}</div>
+                        <div className="text-sm text-purple-300 mt-1">{record.void_reason}</div>
+                        <div className="text-xs text-purple-200 mt-1">By: {record.voided_by}</div>
                       </div>
                       <div className="text-right">
-                        <div className="text-sm text-slate-400">{format(new Date(record.void_date), 'MMM dd')}</div>
-                        <div className="text-xs text-slate-500">{format(new Date(record.void_date), 'HH:mm')}</div>
+                        <div className="text-sm text-purple-300">{format(new Date(record.void_date), 'MMM dd')}</div>
+                        <div className="text-xs text-purple-200">{format(new Date(record.void_date), 'HH:mm')}</div>
                       </div>
                     </div>
                   </div>
@@ -337,7 +319,7 @@ export function VoidPalletWidget({ widget, isEditMode }: WidgetComponentProps) {
             )}
           </div>
         </CardContent>
-      </Card>
+      </WidgetCard>
     </motion.div>
   );
 }

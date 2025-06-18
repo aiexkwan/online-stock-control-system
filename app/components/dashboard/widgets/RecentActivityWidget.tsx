@@ -1,15 +1,16 @@
 /**
  * Recent Activity 小部件
  * 支援三種尺寸：
- * - Small (2x2): 不支援
- * - Medium (4x4): 顯示最近 10 條記錄
- * - Large (6x6): 顯示最近 15 條記錄
+ * - Small (1x1): 不支援
+ * - Medium (3x3): 顯示最近 10 條記錄
+ * - Large (5x5): 顯示最近 15 條記錄
  */
 
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { WidgetCard } from '@/app/components/dashboard/WidgetCard';
 import { Activity, Package2, TruckIcon } from 'lucide-react';
 import { DocumentArrowDownIcon, ClipboardDocumentListIcon, ExclamationCircleIcon } from '@heroicons/react/24/outline';
 import { WidgetComponentProps, WidgetSize } from '@/app/types/dashboard';
@@ -17,11 +18,13 @@ import { createClient } from '@/app/utils/supabase/client';
 import { dialogStyles, iconColors } from '@/app/utils/dialogStyles';
 import { format } from 'date-fns';
 import { fromDbTime } from '@/app/utils/timezone';
+import { WidgetTitle, WidgetText, WidgetLabel } from '@/app/components/dashboard/WidgetTypography';
 
 interface ActivityItem {
   time: string;
   action: string;
   id: string;
+  userName?: string;
   plt_num: string;
   remark?: string;
   icon?: React.ReactNode;
@@ -41,15 +44,15 @@ export function RecentActivityWidget({ widget, isEditMode }: WidgetComponentProp
   const getActionIcon = (action: string) => {
     switch (action) {
       case 'Finished QC':
-        return <Package2 className={`h-4 w-4 ${iconColors.green}`} />;
+        return <Package2 className={`h-2 w-2 ${iconColors.green}`} />;
       case 'Stock Transfer':
-        return <TruckIcon className={`h-4 w-4 ${iconColors.blue}`} />;
+        return <TruckIcon className={`h-2 w-2 ${iconColors.blue}`} />;
       case 'GRN Receiving':
-        return <DocumentArrowDownIcon className={`h-4 w-4 ${iconColors.purple}`} />;
+        return <DocumentArrowDownIcon className={`h-2 w-2 ${iconColors.purple}`} />;
       case 'Order Load':
-        return <ClipboardDocumentListIcon className={`h-4 w-4 ${iconColors.orange}`} />;
+        return <ClipboardDocumentListIcon className={`h-2 w-2 ${iconColors.orange}`} />;
       default:
-        return <Activity className={`h-4 w-4 ${iconColors.cyan}`} />;
+        return <Activity className={`h-2 w-2 ${iconColors.cyan}`} />;
     }
   };
 
@@ -84,10 +87,31 @@ export function RecentActivityWidget({ widget, isEditMode }: WidgetComponentProp
       if (error) throw error;
       
       if (data) {
+        // 獲取所有唯一的 ID
+        const userIds = [...new Set(data.map(record => record.id).filter(id => id))];
+        
+        // 批量查詢用戶名稱
+        let userMap = new Map();
+        if (userIds.length > 0) {
+          const { data: users, error: userError } = await supabase
+            .from('data_id')
+            .select('id, name')
+            .in('id', userIds);
+          
+          if (userError) {
+            console.error('Error loading user names:', userError);
+          } else if (users) {
+            users.forEach(user => {
+              userMap.set(String(user.id), user.name);
+            });
+          }
+        }
+        
         const formattedActivities: ActivityItem[] = data.map(record => ({
           time: record.time,
           action: record.action,
           id: record.id || '',
+          userName: userMap.get(String(record.id)) || `User ${record.id || 'Unknown'}`,
           plt_num: record.plt_num || '',
           remark: record.remark || '',
           icon: getActionIcon(record.action)
@@ -118,77 +142,79 @@ export function RecentActivityWidget({ widget, isEditMode }: WidgetComponentProp
   const formatTime = (timestamp: string) => {
     try {
       const date = fromDbTime(timestamp);
+      // 在 3x3 模式下使用更精簡的時間格式
+      if (size === WidgetSize.MEDIUM) {
+        return format(date, 'MM/dd HH:mm');
+      }
       return format(date, 'MMM dd HH:mm');
     } catch {
       return 'Unknown';
     }
   };
   
-  // Small size (2x2) - 不支援
+  // Small size (1x1) - 不支援
   if (size === WidgetSize.SMALL) {
     return (
-      <Card className={`h-full bg-slate-900/95 backdrop-blur-xl border border-blue-500/30 shadow-2xl ${isEditMode ? 'border-dashed border-2 border-blue-500/50' : ''}`}>
-        <CardContent className="p-4 h-full flex flex-col justify-center items-center">
-          <ExclamationCircleIcon className="w-12 h-12 text-slate-500 mb-3" />
-          <h3 className="text-sm font-medium text-slate-400 mb-1">Not Supported</h3>
-          <p className="text-xs text-slate-500 text-center">
-            Please resize to Medium or Large
-          </p>
+      <WidgetCard widgetType="RECENT_ACTIVITY" isEditMode={isEditMode}>
+        <CardContent className="p-2 h-full flex flex-col justify-center items-center">
+          <WidgetTitle size="xs" glow="gray" className="mb-1">Recent Activity</WidgetTitle>
+          <WidgetText size="large" glow="gray" className="font-medium">(N/A)</WidgetText>
+          <WidgetLabel size="xs" glow="gray" className="mt-1">1×1</WidgetLabel>
         </CardContent>
-      </Card>
+      </WidgetCard>
     );
   }
 
   return (
-    <Card className={`h-full bg-slate-900/95 backdrop-blur-xl border border-blue-500/30 shadow-2xl flex flex-col ${isEditMode ? 'border-dashed border-2 border-blue-500/50' : ''}`}>
+    <WidgetCard widgetType="RECENT_ACTIVITY" isEditMode={isEditMode} className="flex flex-col">
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-lg flex items-center justify-center">
               <Activity className="h-5 w-5 text-white" />
             </div>
-            <CardTitle className={`${size === WidgetSize.LARGE ? 'text-lg' : 'text-sm'} font-medium bg-gradient-to-r from-blue-300 via-cyan-300 to-blue-200 bg-clip-text text-transparent`}>
+            <WidgetTitle size="small" glow="blue" className="bg-gradient-to-r from-blue-300 via-cyan-300 to-blue-200 bg-clip-text text-transparent">
               Recent Activity
-            </CardTitle>
+            </WidgetTitle>
           </div>
           {activities.length > 0 && (
-            <span className="text-xs text-slate-400">
+            <WidgetLabel size="xs" glow="gray">
               Showing {activities.length} records
-            </span>
+            </WidgetLabel>
           )}
         </div>
       </CardHeader>
-      <CardContent className="flex-1 overflow-hidden px-4 pb-4">
+      <CardContent className={`flex-1 overflow-hidden ${size === WidgetSize.MEDIUM ? 'px-2 pb-2' : 'px-4 pb-4'}`}>
         {loading && activities.length === 0 ? (
           <div className="space-y-3">
             {[...Array(size === WidgetSize.LARGE ? 6 : 4)].map((_, i) => (
               <div key={i} className="animate-pulse">
                 <div className="flex items-center gap-3">
-                  <div className="h-8 w-8 bg-slate-700 rounded-full"></div>
-                  <div className="flex-1 h-4 bg-slate-700 rounded"></div>
+                  <div className="h-8 w-8 bg-white/10 rounded-full"></div>
+                  <div className="flex-1 h-4 bg-white/10 rounded"></div>
                 </div>
               </div>
             ))}
           </div>
         ) : error ? (
-          <div className="text-red-400 text-sm text-center py-4">{error}</div>
+          <WidgetText size="xs" glow="red" className="text-center py-4">{error}</WidgetText>
         ) : activities.length === 0 ? (
-          <div className="text-slate-500 text-sm text-center py-8">
+          <WidgetText size="xs" glow="gray" className="text-center py-8">
             No recent activities
-          </div>
+          </WidgetText>
         ) : (
           <div className="h-full flex flex-col">
             {/* 欄位標題 */}
-            <div className="border-b border-slate-700 pb-2 mb-2">
-              <div className="flex items-center gap-3 px-2 text-xs font-medium text-slate-400">
-                <div className="w-8"></div>
-                <div className="flex-1">
-                  <span className="inline-block min-w-[100px]">Time</span>
-                  <span className="inline-block min-w-[120px] ml-4">Action</span>
-                  <span className="inline-block min-w-[80px] ml-4">ID</span>
-                  <span className="inline-block min-w-[100px] ml-4">Pallet No.</span>
+            <div className="border-b border-slate-700 pb-1 mb-1">
+              <div className="flex items-center gap-1 px-1">
+                <div className="w-4"></div>
+                <div className={`flex-1 grid ${size === WidgetSize.LARGE ? 'grid-cols-[100px_120px_80px_100px_1fr]' : 'grid-cols-[65px_60px_65px_65px]'} gap-1`}>
+                  <WidgetLabel size="xs" glow="purple" className="font-medium">Time</WidgetLabel>
+                  <WidgetLabel size="xs" glow="purple" className="font-medium">Action</WidgetLabel>
+                  <WidgetLabel size="xs" glow="purple" className="font-medium">Name</WidgetLabel>
+                  <WidgetLabel size="xs" glow="purple" className="font-medium">Pallet No.</WidgetLabel>
                   {size === WidgetSize.LARGE && (
-                    <span className="inline-block ml-4">Remark</span>
+                    <WidgetLabel size="xs" glow="purple" className="font-medium">Remark</WidgetLabel>
                   )}
                 </div>
               </div>
@@ -199,19 +225,23 @@ export function RecentActivityWidget({ widget, isEditMode }: WidgetComponentProp
               {activities.map((activity, index) => (
                 <div
                   key={`${activity.time}-${activity.plt_num}-${index}`}
-                  className="flex items-center gap-3 p-2 rounded-lg hover:bg-slate-800/50 transition-colors"
+                  className="flex items-center gap-1 p-1 rounded-lg hover:bg-white/10 transition-colors"
                 >
-                  <div className="flex-shrink-0 w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center">
+                  <div className="flex-shrink-0 w-4 h-4 rounded-full bg-black/20 flex items-center justify-center">
                     {activity.icon}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center text-sm text-slate-200">
-                      <span className="inline-block min-w-[100px] text-slate-400">{formatTime(activity.time)}</span>
-                      <span className="inline-block min-w-[120px] ml-4 font-medium">{activity.action}</span>
-                      <span className="inline-block min-w-[80px] ml-4 text-slate-300">{activity.id || '-'}</span>
-                      <span className="inline-block min-w-[100px] ml-4 text-blue-400">{activity.plt_num || '-'}</span>
+                    <div className={`grid ${size === WidgetSize.LARGE ? 'grid-cols-[100px_120px_80px_100px_1fr]' : 'grid-cols-[65px_60px_65px_65px]'} gap-1 items-center`}>
+                      <WidgetText size="xs" glow="subtle" className="truncate">{formatTime(activity.time)}</WidgetText>
+                      <WidgetText size="xs" glow="purple" className="font-medium truncate">
+                        {size === WidgetSize.MEDIUM ? 
+                          activity.action.replace('Finished QC', 'Finished').replace('Stock Transfer', 'Transfer').replace('GRN Receiving', 'GRN').replace('Order Load', 'Load') 
+                          : activity.action}
+                      </WidgetText>
+                      <WidgetText size="xs" glow="subtle" className="truncate">{activity.userName || '-'}</WidgetText>
+                      <WidgetText size="xs" glow="subtle" className="truncate">{activity.plt_num || '-'}</WidgetText>
                       {size === WidgetSize.LARGE && (
-                        <span className="inline-block ml-4 text-slate-300 italic flex-1">{activity.remark || '-'}</span>
+                        <WidgetText size="xs" glow="subtle" className="italic truncate">{activity.remark || '-'}</WidgetText>
                       )}
                     </div>
                   </div>
@@ -222,16 +252,18 @@ export function RecentActivityWidget({ widget, isEditMode }: WidgetComponentProp
               {hasMore && !loading && (
                 <button
                   onClick={() => loadActivities(true)}
-                  className="w-full py-2 text-sm text-blue-400 hover:text-blue-300 transition-colors"
+                  className="w-full py-1 transition-colors"
                   disabled={isEditMode}
                 >
-                  Load more...
+                  <WidgetText size="xs" glow="blue" className="hover:brightness-125">
+                    Load more...
+                  </WidgetText>
                 </button>
               )}
             </div>
           </div>
         )}
       </CardContent>
-    </Card>
+    </WidgetCard>
   );
 }

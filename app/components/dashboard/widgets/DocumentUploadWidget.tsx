@@ -1,8 +1,8 @@
 /**
  * Document Management Widget - 文檔管理功能
- * 2x2: 不支援
- * 4x4: Quick access 按鈕 + 上傳歷史（最近 6 條）
- * 6x6: Quick access 按鈕 + 上傳歷史（最近 10 條）
+ * 1x1: 不支援
+ * 3x3: Quick access 按鈕 + 上傳歷史（最近 6 條）
+ * 5x5: Quick access 按鈕 + 上傳歷史（最近 10 條）
  */
 
 'use client';
@@ -12,11 +12,13 @@ import { motion } from 'framer-motion';
 import { CloudArrowUpIcon, DocumentTextIcon, DocumentArrowUpIcon, ExclamationCircleIcon } from '@heroicons/react/24/outline';
 import { createClient } from '@/lib/supabase';
 import { WidgetComponentProps, WidgetSize } from '@/app/types/dashboard';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { WidgetCard } from '@/app/components/dashboard/WidgetCard';
 import { Button } from "@/components/ui/button";
 import { useDialog } from '@/app/contexts/DialogContext';
 import { format } from 'date-fns';
 import { fromDbTime } from '@/app/utils/timezone';
+import { WidgetStyles } from '@/app/utils/widgetStyles';
 
 interface UploadRecord {
   uuid: string;
@@ -143,7 +145,7 @@ export function DocumentUploadWidget({ widget, isEditMode }: WidgetComponentProp
     return <CloudArrowUpIcon className="w-4 h-4 text-green-400" />;
   };
 
-  // 2x2 - 不支援
+  // 1x1 - 不支援
   if (size === WidgetSize.SMALL) {
     return (
       <motion.div
@@ -151,20 +153,18 @@ export function DocumentUploadWidget({ widget, isEditMode }: WidgetComponentProp
         animate={{ opacity: 1, y: 0 }}
         className="h-full"
       >
-        <Card className="h-full bg-slate-900/95 backdrop-blur-xl border border-purple-500/30 shadow-2xl">
-          <CardContent className="p-4 h-full flex flex-col items-center justify-center">
-            <ExclamationCircleIcon className="w-12 h-12 text-slate-500 mb-3" />
-            <h3 className="text-sm font-medium text-slate-400 mb-1">Not Supported</h3>
-            <p className="text-xs text-slate-500 text-center">
-              Please resize to Medium or Large
-            </p>
+        <WidgetCard widgetType="UPLOAD_FILES" isEditMode={isEditMode}>
+          <CardContent className="p-2 h-full flex flex-col items-center justify-center">
+            <h3 className="text-xs text-slate-400 mb-1">Document Management</h3>
+            <div className="text-lg font-medium text-slate-500">(N/A)</div>
+            <p className="text-xs text-slate-500 mt-1">1×1</p>
           </CardContent>
-        </Card>
+        </WidgetCard>
       </motion.div>
     );
   }
 
-  // 4x4 & 6x6 共用的內容
+  // 3x3 & 5x5 共用的內容
   const content = (size: WidgetSize) => (
     <>
       {/* Quick Access 按鈕 */}
@@ -173,7 +173,7 @@ export function DocumentUploadWidget({ widget, isEditMode }: WidgetComponentProp
           size="sm"
           onClick={() => !isEditMode && openDialog('uploadFilesOnly')}
           disabled={isEditMode}
-          className="h-[4.8rem] bg-gradient-to-br from-green-500/20 to-green-600/20 border border-green-500/30 hover:from-green-500/30 hover:to-green-600/30 text-white flex flex-col items-center justify-center gap-2 transition-all"
+          className={`h-[4.8rem] ${WidgetStyles.quickAccess.documentUpload['Upload Files']} text-white flex flex-col items-center justify-center gap-2 transition-all`}
         >
           <CloudArrowUpIcon className="w-6 h-6" />
           <span className="text-xs font-medium">Upload Files</span>
@@ -182,7 +182,7 @@ export function DocumentUploadWidget({ widget, isEditMode }: WidgetComponentProp
           size="sm"
           onClick={() => !isEditMode && openDialog('uploadOrderPdf')}
           disabled={isEditMode}
-          className="h-[4.8rem] bg-gradient-to-br from-blue-500/20 to-blue-600/20 border border-blue-500/30 hover:from-blue-500/30 hover:to-blue-600/30 text-white flex flex-col items-center justify-center gap-2 transition-all"
+          className={`h-[4.8rem] ${WidgetStyles.quickAccess.documentUpload['Upload Order PDF']} text-white flex flex-col items-center justify-center gap-2 transition-all`}
         >
           <DocumentArrowUpIcon className="w-6 h-6" />
           <span className="text-xs font-medium">Upload Order</span>
@@ -191,7 +191,7 @@ export function DocumentUploadWidget({ widget, isEditMode }: WidgetComponentProp
           size="sm"
           onClick={() => !isEditMode && openDialog('productSpec')}
           disabled={isEditMode}
-          className="h-[4.8rem] bg-gradient-to-br from-purple-500/20 to-purple-600/20 border border-purple-500/30 hover:from-purple-500/30 hover:to-purple-600/30 text-white flex flex-col items-center justify-center gap-2 transition-all"
+          className={`h-[4.8rem] ${WidgetStyles.quickAccess.documentUpload['Upload Spec']} text-white flex flex-col items-center justify-center gap-2 transition-all`}
         >
           <DocumentTextIcon className="w-6 h-6" />
           <span className="text-xs font-medium">Upload Spec</span>
@@ -215,7 +215,7 @@ export function DocumentUploadWidget({ widget, isEditMode }: WidgetComponentProp
         {loading && uploadHistory.length === 0 ? (
           <div className="animate-pulse space-y-2">
             {[...Array(itemsPerPage)].map((_, i) => (
-              <div key={i} className="h-10 bg-slate-700/30 rounded-lg"></div>
+              <div key={i} className="h-10 bg-white/10 rounded-lg"></div>
             ))}
           </div>
         ) : uploadHistory.length === 0 ? (
@@ -225,22 +225,22 @@ export function DocumentUploadWidget({ widget, isEditMode }: WidgetComponentProp
             {uploadHistory.map((record) => (
               <div 
                 key={record.uuid} 
-                className="bg-slate-800/50 rounded-lg p-2 hover:bg-slate-700/50 transition-colors"
+                className="bg-black/20 rounded-lg p-2 hover:bg-white/10 transition-colors"
               >
                 <div className={`grid ${size === WidgetSize.LARGE ? 'grid-cols-4' : 'grid-cols-3'} gap-2 items-center`}>
                   <div className="flex items-center gap-2">
                     {getDocIcon(record.doc_type)}
-                    <span className="text-xs text-slate-300">{formatTime(record.created_at)}</span>
+                    <span className="text-xs text-purple-300">{formatTime(record.created_at)}</span>
                   </div>
-                  <span className="text-xs text-white truncate" title={record.doc_name}>
+                  <span className="text-xs text-purple-400 truncate" title={record.doc_name}>
                     {record.doc_name}
                   </span>
                   {size === WidgetSize.LARGE && (
-                    <span className="text-xs text-slate-400">
+                    <span className="text-xs text-purple-300">
                       {record.file_size ? `${(record.file_size / 1024 / 1024).toFixed(2)} MB` : 'N/A'}
                     </span>
                   )}
-                  <span className="text-xs text-slate-400">{record.uploader_name || record.upload_by}</span>
+                  <span className="text-xs text-purple-300">{record.uploader_name || record.upload_by}</span>
                 </div>
               </div>
             ))}
@@ -261,7 +261,7 @@ export function DocumentUploadWidget({ widget, isEditMode }: WidgetComponentProp
     </>
   );
 
-  // 4x4 - Medium size
+  // 3x3 - Medium size
   if (size === WidgetSize.MEDIUM) {
     return (
       <motion.div
@@ -269,7 +269,7 @@ export function DocumentUploadWidget({ widget, isEditMode }: WidgetComponentProp
         animate={{ opacity: 1, y: 0 }}
         className="h-full"
       >
-        <Card className="h-full bg-slate-900/95 backdrop-blur-xl border border-purple-500/30 shadow-2xl flex flex-col">
+        <WidgetCard widgetType="UPLOAD_FILES" isEditMode={isEditMode} className="flex flex-col">
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -294,19 +294,19 @@ export function DocumentUploadWidget({ widget, isEditMode }: WidgetComponentProp
           <CardContent className="flex-1 flex flex-col overflow-hidden">
             {content(WidgetSize.MEDIUM)}
           </CardContent>
-        </Card>
+        </WidgetCard>
       </motion.div>
     );
   }
 
-  // 6x6 - Large size
+  // 5x5 - Large size
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       className="h-full"
     >
-      <Card className="h-full bg-slate-900/95 backdrop-blur-xl border border-purple-500/30 shadow-2xl flex flex-col">
+      <WidgetCard widgetType="UPLOAD_FILES" isEditMode={isEditMode} className="flex flex-col">
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -333,7 +333,7 @@ export function DocumentUploadWidget({ widget, isEditMode }: WidgetComponentProp
         <CardContent className="flex-1 flex flex-col overflow-hidden">
           {content(WidgetSize.LARGE)}
         </CardContent>
-      </Card>
+      </WidgetCard>
     </motion.div>
   );
 }

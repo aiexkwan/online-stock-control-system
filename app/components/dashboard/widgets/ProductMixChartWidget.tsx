@@ -1,19 +1,21 @@
 /**
  * Stock Level 小部件
  * 支援三種尺寸：
- * - Small (2x2): 不支援
- * - Medium (4x4): 按 stock 類型分類顯示庫存
- * - Large (6x6): 包括 4x4 所有功能 + 圓餅圖視覺化
+ * - Small (1x1): 不支援
+ * - Medium (3x3): 按 stock 類型分類顯示庫存
+ * - Large (5x5): 包括 3x3 所有功能 + 圓餅圖視覺化
  */
 
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { WidgetCard } from '@/app/components/dashboard/WidgetCard';
 import { ChartPieIcon } from '@heroicons/react/24/outline';
 import { WidgetComponentProps, WidgetSize } from '@/app/types/dashboard';
 import { createClient } from '@/app/utils/supabase/client';
 import { iconColors } from '@/app/utils/dialogStyles';
+import { WidgetStyles } from '@/app/utils/widgetStyles';
 import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 interface ProductData {
@@ -28,7 +30,7 @@ interface StockType {
   total: number;
 }
 
-const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#14B8A6', '#F97316'];
+const COLORS = WidgetStyles.charts.pie;
 
 export function ProductMixChartWidget({ widget, isEditMode }: WidgetComponentProps) {
   const [data, setData] = useState<ProductData[]>([]);
@@ -169,10 +171,11 @@ export function ProductMixChartWidget({ widget, isEditMode }: WidgetComponentPro
       setStockByType(typeMap);
       const sortedTypes = Array.from(typeMap.keys()).sort();
       setStockTypes(['ALL', ...sortedTypes]);
-      setTotalProducts(totalStock);
       
-      // 根據選擇的類型設定數據
+      // 根據選擇的類型設定數據和總數
       if (selectedType === 'ALL') {
+        setTotalProducts(totalStock);
+        
         if (size === WidgetSize.LARGE) {
           // 對於大尺寸，組合小百分比
           const threshold = 2;
@@ -202,8 +205,10 @@ export function ProductMixChartWidget({ widget, isEditMode }: WidgetComponentPro
       } else {
         const typeData = typeMap.get(selectedType);
         if (typeData) {
+          setTotalProducts(typeData.total); // 設定為該類型的總數
           setData(typeData.products.slice(0, 10));
         } else {
+          setTotalProducts(0);
           setData([]);
         }
       }
@@ -222,25 +227,23 @@ export function ProductMixChartWidget({ widget, isEditMode }: WidgetComponentPro
     return entry.percentage > 5 ? `${entry.percentage}%` : '';
   };
 
-  // Small size - 不支援
+  // Small size (1x1) - 不支援，顯示 N/A
   if (size === WidgetSize.SMALL) {
     return (
-      <Card className={`h-full bg-slate-900/95 backdrop-blur-xl border border-orange-500/30 shadow-2xl ${isEditMode ? 'border-dashed border-2 border-orange-500/50' : ''}`}>
-        <CardContent className="p-4 h-full flex flex-col justify-center items-center">
-          <ChartPieIcon className="w-12 h-12 text-slate-500 mb-3" />
-          <h3 className="text-sm font-medium text-slate-400 mb-1">Not Supported</h3>
-          <p className="text-xs text-slate-500 text-center">
-            Please resize to Medium or Large
-          </p>
+      <WidgetCard widgetType="PRODUCT_MIX_CHART" isEditMode={isEditMode}>
+        <CardContent className="p-2 h-full flex flex-col justify-center items-center">
+          <h3 className="text-xs text-slate-400 mb-1">Stock Level</h3>
+          <div className="text-lg font-medium text-slate-500">(N/A)</div>
+          <p className="text-xs text-slate-500 mt-1">1×1</p>
         </CardContent>
-      </Card>
+      </WidgetCard>
     );
   }
 
   // Medium size - 按類型顯示庫存
   if (size === WidgetSize.MEDIUM) {
     return (
-      <Card className={`h-full bg-slate-900/95 backdrop-blur-xl border border-orange-500/30 shadow-2xl ${isEditMode ? 'border-dashed border-2 border-orange-500/50' : ''}`}>
+      <WidgetCard widgetType="PRODUCT_MIX_CHART" isEditMode={isEditMode}>
         <CardHeader className="pb-2">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -252,7 +255,7 @@ export function ProductMixChartWidget({ widget, isEditMode }: WidgetComponentPro
             <select
               value={selectedType}
               onChange={(e) => setSelectedType(e.target.value)}
-              className="px-2 py-1 bg-slate-700/50 border border-slate-600/30 rounded-md text-xs text-slate-300 focus:outline-none focus:border-orange-500/50"
+              className="px-2 py-1 bg-white/5 border border-slate-600/30 rounded-md text-xs text-slate-300 focus:outline-none focus:border-orange-500/50"
               disabled={isEditMode}
             >
               {stockTypes.map(type => (
@@ -265,7 +268,7 @@ export function ProductMixChartWidget({ widget, isEditMode }: WidgetComponentPro
           {loading ? (
             <div className="space-y-2">
               {[...Array(5)].map((_, i) => (
-                <div key={i} className="h-8 bg-slate-700 rounded animate-pulse"></div>
+                <div key={i} className="h-8 bg-white/10 rounded animate-pulse"></div>
               ))}
             </div>
           ) : error ? (
@@ -281,29 +284,29 @@ export function ProductMixChartWidget({ widget, isEditMode }: WidgetComponentPro
                       className="w-3 h-3 rounded-full" 
                       style={{ backgroundColor: COLORS[index % COLORS.length] }}
                     />
-                    <span className="text-sm text-slate-300">{product.code}</span>
+                    <span className={`text-sm ${WidgetStyles.text.tableData}`}>{product.code}</span>
                   </div>
                   <div className="text-right">
-                    <span className="text-sm font-semibold text-white">{product.count.toLocaleString()}</span>
+                    <span className={`text-sm font-semibold ${WidgetStyles.text.table}`}>{product.count.toLocaleString()}</span>
                   </div>
                 </div>
               ))}
               <div className="pt-2 border-t border-slate-700">
-                <div className="flex justify-between text-xs text-slate-400">
-                  <span>Total</span>
-                  <span>{totalProducts} units</span>
+                <div className="flex justify-between text-xs">
+                  <span className={WidgetStyles.text.tableHeader}>Total</span>
+                  <span className={WidgetStyles.text.table}>{totalProducts} units</span>
                 </div>
               </div>
             </div>
           )}
         </CardContent>
-      </Card>
+      </WidgetCard>
     );
   }
 
   // Large size - 上半部分明細 + 下半部分圓餅圖
   return (
-    <Card className={`h-full bg-slate-900/95 backdrop-blur-xl border border-orange-500/30 shadow-2xl ${isEditMode ? 'border-dashed border-2 border-orange-500/50' : ''}`}>
+    <WidgetCard widgetType="PRODUCT_MIX_CHART" isEditMode={isEditMode}>
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -317,7 +320,7 @@ export function ProductMixChartWidget({ widget, isEditMode }: WidgetComponentPro
           <select
             value={selectedType}
             onChange={(e) => setSelectedType(e.target.value)}
-            className="px-3 py-1 bg-slate-700/50 border border-slate-600/30 rounded-md text-sm text-slate-300 focus:outline-none focus:border-orange-500/50"
+            className="px-3 py-1 bg-white/5 border border-slate-600/30 rounded-md text-sm text-slate-300 focus:outline-none focus:border-orange-500/50"
             disabled={isEditMode}
           >
             {stockTypes.map(type => (
@@ -329,8 +332,8 @@ export function ProductMixChartWidget({ widget, isEditMode }: WidgetComponentPro
       <CardContent className="flex flex-col h-[calc(100%-4rem)]">
         {loading ? (
           <div className="space-y-3">
-            <div className="h-40 bg-slate-700 rounded animate-pulse"></div>
-            <div className="h-40 bg-slate-700 rounded animate-pulse"></div>
+            <div className="h-40 bg-white/10 rounded animate-pulse"></div>
+            <div className="h-40 bg-white/10 rounded animate-pulse"></div>
           </div>
         ) : error ? (
           <div className="text-red-400 text-sm">{error}</div>
@@ -341,7 +344,7 @@ export function ProductMixChartWidget({ widget, isEditMode }: WidgetComponentPro
         ) : (
           <>
             {/* 上半部分 - 產品明細列表 (1/3) */}
-            <div className="h-[33.33%] bg-slate-800/50 rounded-lg p-3 mb-3 overflow-hidden">
+            <div className="h-[33.33%] bg-black/20 rounded-lg p-3 mb-3 overflow-hidden">
               <div className="h-full overflow-y-auto pr-2">
                 <div className="space-y-1">
                   {data.slice(0, 10).map((product, index) => (
@@ -351,18 +354,18 @@ export function ProductMixChartWidget({ widget, isEditMode }: WidgetComponentPro
                           className="w-2.5 h-2.5 rounded-full" 
                           style={{ backgroundColor: COLORS[index % COLORS.length] }}
                         />
-                        <span className="text-xs text-slate-300">{product.code}</span>
+                        <span className={`text-xs ${WidgetStyles.text.tableData}`}>{product.code}</span>
                       </div>
                       <div className="text-right">
-                        <span className="text-xs font-semibold text-white">{product.count.toLocaleString()}</span>
-                        <span className="text-xs text-slate-400 ml-1">({product.percentage}%)</span>
+                        <span className={`text-xs font-semibold ${WidgetStyles.text.table}`}>{product.count.toLocaleString()}</span>
+                        <span className={`text-xs ${WidgetStyles.text.tableData} ml-1`}>({product.percentage}%)</span>
                       </div>
                     </div>
                   ))}
                   <div className="pt-1 border-t border-slate-700">
-                    <div className="flex justify-between text-xs text-slate-400">
-                      <span>Total</span>
-                      <span className="font-semibold text-white">{totalProducts.toLocaleString()} units</span>
+                    <div className="flex justify-between text-xs">
+                      <span className={WidgetStyles.text.tableHeader}>Total</span>
+                      <span className={`font-semibold ${WidgetStyles.text.table}`}>{totalProducts.toLocaleString()} units</span>
                     </div>
                   </div>
                 </div>
@@ -403,7 +406,7 @@ export function ProductMixChartWidget({ widget, isEditMode }: WidgetComponentPro
                         <text
                           x={x}
                           y={y}
-                          fill="#E5E7EB"
+                          fill={WidgetStyles.charts.line}
                           textAnchor={x > cx ? 'start' : 'end'}
                           dominantBaseline="central"
                           className="text-xs"
@@ -438,6 +441,6 @@ export function ProductMixChartWidget({ widget, isEditMode }: WidgetComponentPro
           </>
         )}
       </CardContent>
-    </Card>
+    </WidgetCard>
   );
 }

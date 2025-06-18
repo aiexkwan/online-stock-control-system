@@ -36,22 +36,28 @@ export function UnifiedGrnReportDialog({ isOpen, onClose }: UnifiedGrnReportDial
     try {
       const supabase = createClient();
       const { data, error } = await supabase
-        .from('grn_label')
+        .from('record_grn')
         .select('grn_ref')
-        .order('print_date', { ascending: false });
+        .order('creat_time', { ascending: false });
 
       if (error) {
         console.error('Error fetching GRN references:', error);
         toast({
           title: "Error",
-          description: "Failed to fetch GRN references",
+          description: `Failed to fetch GRN references: ${error.message}`,
           variant: "destructive",
         });
         return;
       }
 
-      // Get unique GRN references
-      const uniqueRefs = [...new Set((data || []).map(item => item.grn_ref))].filter(Boolean);
+      console.log('Fetched GRN data:', data?.length || 0, 'records');
+
+      // Get unique GRN references and convert to string if needed
+      const uniqueRefs = [...new Set((data || []).map(item => {
+        // Handle both string and number types
+        const ref = item.grn_ref;
+        return ref != null ? ref.toString() : null;
+      }))].filter(Boolean) as string[];
       setGrnRefs(uniqueRefs);
       
       // Set default selection

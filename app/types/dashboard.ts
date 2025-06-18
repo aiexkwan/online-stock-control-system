@@ -35,27 +35,27 @@ export enum WidgetType {
 
 // 小部件尺寸
 export enum WidgetSize {
-  SMALL = 'small',    // 2x2 - 只顯示統計數值
-  MEDIUM = 'medium',  // 4x4 - 添加更多資訊
-  LARGE = 'large'     // 6x6 - 完整功能包括圖表
+  SMALL = 'small',    // 1x1 - 只顯示統計數值
+  MEDIUM = 'medium',  // 3x3 - 添加更多資訊
+  LARGE = 'large'     // 5x5 - 完整功能包括圖表
 }
 
 // iOS 風格尺寸預設 - 更新為指定尺寸
 export const WidgetSizeConfig = {
-  [WidgetSize.SMALL]: { w: 2, h: 2 },   // 2x2
-  [WidgetSize.MEDIUM]: { w: 4, h: 4 },  // 4x4
-  [WidgetSize.LARGE]: { w: 6, h: 6 }    // 6x6
+  [WidgetSize.SMALL]: { w: 1, h: 1 },   // 1x1
+  [WidgetSize.MEDIUM]: { w: 3, h: 3 },  // 3x3
+  [WidgetSize.LARGE]: { w: 5, h: 5 }    // 5x5
 };
 
 // 用於編輯模式的彈性尺寸配置 - 允許在範圍內拖動
 export const FlexibleWidgetSizeConfig = {
-  [WidgetSize.SMALL]: { minW: 1, maxW: 3, minH: 1, maxH: 3 },
-  [WidgetSize.MEDIUM]: { minW: 3, maxW: 5, minH: 3, maxH: 5 },
-  [WidgetSize.LARGE]: { minW: 4, maxW: 8, minH: 4, maxH: 8 }
+  [WidgetSize.SMALL]: { minW: 1, maxW: 2, minH: 1, maxH: 2 },
+  [WidgetSize.MEDIUM]: { minW: 2, maxW: 4, minH: 2, maxH: 4 },
+  [WidgetSize.LARGE]: { minW: 4, maxW: 6, minH: 4, maxH: 6 }
 };
 
-// 小部件配置
-export interface WidgetConfig {
+// 小部件基礎配置
+export interface WidgetBaseConfig {
   refreshInterval?: number;     // 自動刷新間隔（毫秒）
   dataSource?: string;          // 數據源
   displayOptions?: any;         // 顯示選項
@@ -69,7 +69,7 @@ export interface DashboardWidget {
   id: string;                    // 唯一標識
   type: WidgetType;             // 小部件類型
   title: string;                // 顯示標題
-  config: WidgetConfig;         // 小部件配置
+  config: WidgetBaseConfig;     // 小部件配置
   permissions?: string[];       // 權限要求
 }
 
@@ -96,11 +96,34 @@ export interface DashboardConfig {
   updatedAt?: string;
 }
 
+// 簡化的 Dashboard Layout（用於 admin page）
+export interface DashboardLayout {
+  widgets: WidgetConfig[];
+}
+
+// Widget 配置（用於 admin page）
+export interface WidgetConfig {
+  id: string;
+  type: WidgetType;
+  gridProps: {
+    x: number;
+    y: number;
+    w: number;
+    h: number;
+  };
+  config: {
+    size?: WidgetSize;
+    refreshInterval?: number;
+    timeRange?: string;
+    [key: string]: any;
+  };
+}
+
 // 小部件組件屬性
 export interface WidgetComponentProps {
-  widget: DashboardWidget;
+  widget: DashboardWidget | WidgetConfig;
   isEditMode?: boolean;
-  onUpdate?: (config: WidgetConfig) => void;
+  onUpdate?: (config: WidgetBaseConfig) => void;
   onRemove?: () => void;
 }
 
@@ -109,9 +132,9 @@ export interface WidgetRegistryItem {
   type: WidgetType;
   name: string;
   description: string;
-  icon?: React.ComponentType;
+  icon?: React.ComponentType | string;
   component: React.ComponentType<WidgetComponentProps>;
-  defaultConfig: WidgetConfig;
+  defaultConfig: WidgetBaseConfig;
   defaultSize: {
     w: number;
     h: number;

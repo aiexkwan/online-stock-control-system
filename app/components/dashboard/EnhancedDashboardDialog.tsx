@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Button } from "@/components/ui/button";
 import { WidgetType, WidgetSize, WidgetSizeConfig } from '@/app/types/dashboard';
 import { WidgetRegistry } from './WidgetRegistry';
+import { isWidgetSizeSupported } from './WidgetSizeConfig';
 import { cn } from '@/lib/utils';
 import { ArrowLeftIcon } from '@heroicons/react/24/outline';
 
@@ -25,12 +26,13 @@ export function WidgetSelectDialog({ onSelect, onClose }: WidgetSelectDialogProp
 
   // 獲取支援的尺寸
   const getSupportedSizes = (type: WidgetType): WidgetSize[] => {
-    // Ask Database 只支援 Medium 和 Large
-    if (type === WidgetType.ASK_DATABASE) {
-      return [WidgetSize.MEDIUM, WidgetSize.LARGE];
+    const sizes: WidgetSize[] = [];
+    for (const size of Object.values(WidgetSize)) {
+      if (isWidgetSizeSupported(type, size)) {
+        sizes.push(size);
+      }
     }
-    // 其他 widget 支援所有尺寸
-    return [WidgetSize.SMALL, WidgetSize.MEDIUM, WidgetSize.LARGE];
+    return sizes;
   };
 
   const handleTypeSelect = (type: WidgetType) => {
@@ -54,23 +56,21 @@ export function WidgetSelectDialog({ onSelect, onClose }: WidgetSelectDialogProp
     }, 300);
   };
 
-  // 定義小部件分組
+  // 定義小部件分組 - 只包含已註冊的 widgets
   const widgetGroups = [
     {
       title: 'Statistics',
       widgets: [
-        WidgetType.STATS_CARD,
         WidgetType.OUTPUT_STATS,
         WidgetType.BOOKED_OUT_STATS,
         WidgetType.VOID_STATS,
-      ]
+      ].filter(type => WidgetRegistry.get(type) !== undefined)
     },
     {
       title: 'Charts & Analytics',
       widgets: [
         WidgetType.PRODUCT_MIX_CHART,
-        WidgetType.PALLET_OVERVIEW,
-      ]
+      ].filter(type => WidgetRegistry.get(type) !== undefined)
     },
     {
       title: 'Operations',
@@ -80,14 +80,13 @@ export function WidgetSelectDialog({ onSelect, onClose }: WidgetSelectDialogProp
         WidgetType.INVENTORY_SEARCH,
         WidgetType.FINISHED_PRODUCT,
         WidgetType.MATERIAL_RECEIVED,
-      ]
+      ].filter(type => WidgetRegistry.get(type) !== undefined)
     },
     {
       title: 'Tools',
       widgets: [
-        WidgetType.QUICK_ACTIONS,
         WidgetType.ASK_DATABASE,
-      ]
+      ].filter(type => WidgetRegistry.get(type) !== undefined)
     },
     {
       title: 'System Tools',
@@ -95,22 +94,16 @@ export function WidgetSelectDialog({ onSelect, onClose }: WidgetSelectDialogProp
         WidgetType.VOID_PALLET,
         WidgetType.VIEW_HISTORY,
         WidgetType.DATABASE_UPDATE,
-      ]
+      ].filter(type => WidgetRegistry.get(type) !== undefined)
     },
     {
       title: 'Document Management',
       widgets: [
         WidgetType.UPLOAD_FILES,
         WidgetType.REPORTS,
-      ]
-    },
-    {
-      title: 'Analytics',
-      widgets: [
-        WidgetType.ANALYTICS_DASHBOARD,
-      ]
+      ].filter(type => WidgetRegistry.get(type) !== undefined)
     }
-  ];
+  ].filter(group => group.widgets.length > 0); // 移除沒有 widgets 的分組
 
   const selectedWidget = selectedType ? WidgetRegistry.get(selectedType) : null;
   const supportedSizes = selectedType ? getSupportedSizes(selectedType) : [];
@@ -228,9 +221,9 @@ export function WidgetSelectDialog({ onSelect, onClose }: WidgetSelectDialogProp
                               <div className="absolute inset-0 opacity-30">
                                 <div className={cn(
                                   "grid gap-px bg-slate-700 p-1 h-full",
-                                  size === WidgetSize.SMALL && "grid-cols-2 grid-rows-2",
-                                  size === WidgetSize.MEDIUM && "grid-cols-4 grid-rows-4",
-                                  size === WidgetSize.LARGE && "grid-cols-6 grid-rows-6"
+                                  size === WidgetSize.SMALL && "grid-cols-1 grid-rows-1",
+                                  size === WidgetSize.MEDIUM && "grid-cols-3 grid-rows-3",
+                                  size === WidgetSize.LARGE && "grid-cols-5 grid-rows-5"
                                 )}>
                                   {Array.from({ length: config.w * config.h }).map((_, i) => (
                                     <div key={i} className="bg-slate-800 rounded-sm" />
@@ -264,9 +257,9 @@ export function WidgetSelectDialog({ onSelect, onClose }: WidgetSelectDialogProp
                 <div className="mt-6 p-4 bg-slate-800/50 rounded-lg border border-slate-700">
                   <h4 className="text-sm font-medium text-slate-300 mb-2">Size Guide</h4>
                   <div className="space-y-1 text-xs text-slate-400">
-                    <div><span className="text-slate-300">Small (2×2):</span> Shows key metrics only</div>
-                    <div><span className="text-slate-300">Medium (4×4):</span> Displays detailed information</div>
-                    <div><span className="text-slate-300">Large (6×6):</span> Full features with charts</div>
+                    <div><span className="text-slate-300">Small (1×1):</span> Shows key metrics only</div>
+                    <div><span className="text-slate-300">Medium (3×3):</span> Displays detailed information</div>
+                    <div><span className="text-slate-300">Large (5×5):</span> Full features with charts</div>
                   </div>
                 </div>
               </div>

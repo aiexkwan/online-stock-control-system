@@ -1,15 +1,16 @@
 /**
  * Inventory Search 小部件
  * 支援三種尺寸：
- * - Small (2x2): 不支援
- * - Medium (4x4): 套用現時 6x6 模式的顯示內容及形式
- * - Large (6x6): 上半部維持現有顯示，下半部加入折線圖
+ * - Small (1x1): 不支援
+ * - Medium (3x3): 套用現時 5x5 模式的顯示內容及形式
+ * - Large (5x5): 上半部維持現有顯示，下半部加入折線圖
  */
 
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { WidgetCard } from '@/app/components/dashboard/WidgetCard';
 import { MagnifyingGlassIcon, ExclamationCircleIcon } from '@heroicons/react/24/outline';
 import { WidgetComponentProps, WidgetSize } from '@/app/types/dashboard';
 import { createClient } from '@/app/utils/supabase/client';
@@ -47,7 +48,7 @@ export function InventorySearchWidget({ widget, isEditMode }: WidgetComponentPro
 
   const size = widget.config.size || WidgetSize.SMALL;
 
-  // 載入圖表數據 (用於 6x6 模式)
+  // 載入圖表數據 (用於 5x5 模式)
   useEffect(() => {
     if (size === WidgetSize.LARGE && searchResults && !isEditMode) {
       fetchChartData(searchResults.product_code);
@@ -258,25 +259,23 @@ export function InventorySearchWidget({ widget, isEditMode }: WidgetComponentPro
     searchInventory(searchQuery);
   };
 
-  // Small size (2x2) - 不支援
+  // Small size (1x1) - 不支援
   if (size === WidgetSize.SMALL) {
     return (
-      <Card className={`h-full bg-slate-900/95 backdrop-blur-xl border border-blue-500/30 shadow-2xl ${isEditMode ? 'border-dashed border-2 border-blue-500/50' : ''}`}>
-        <CardContent className="p-4 h-full flex flex-col justify-center items-center">
-          <ExclamationCircleIcon className="w-12 h-12 text-slate-500 mb-3" />
-          <h3 className="text-sm font-medium text-slate-400 mb-1">Not Supported</h3>
-          <p className="text-xs text-slate-500 text-center">
-            Please resize to Medium or Large
-          </p>
+      <WidgetCard widgetType="INVENTORY_SEARCH" isEditMode={isEditMode}>
+        <CardContent className="p-2 h-full flex flex-col justify-center items-center">
+          <h3 className="text-xs text-slate-400 mb-1">Inventory Search</h3>
+          <div className="text-lg font-medium text-slate-500">(N/A)</div>
+          <p className="text-xs text-slate-500 mt-1">1×1</p>
         </CardContent>
-      </Card>
+      </WidgetCard>
     );
   }
 
-  // Medium size (4x4) - 套用現時 6x6 模式的顯示內容
+  // Medium size (3x3) - 套用現時 5x5 模式的顯示內容
   if (size === WidgetSize.MEDIUM) {
     return (
-      <Card className={`h-full bg-slate-900/95 backdrop-blur-xl border border-blue-500/30 shadow-2xl ${isEditMode ? 'border-dashed border-2 border-blue-500/50' : ''}`}>
+      <WidgetCard widgetType="INVENTORY_SEARCH" isEditMode={isEditMode}>
         <CardHeader className="pb-2">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-lg flex items-center justify-center">
@@ -293,7 +292,7 @@ export function InventorySearchWidget({ widget, isEditMode }: WidgetComponentPro
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Enter Product Code"
-                className="flex-1 px-3 py-2 bg-slate-700/50 border border-slate-600/50 rounded-lg text-slate-200 placeholder-slate-400 focus:outline-none focus:border-blue-500/70 focus:bg-slate-700/70 hover:border-blue-500/50 hover:bg-slate-700/60 transition-all duration-300 text-sm"
+                className="flex-1 px-3 py-2 bg-white/5 border border-slate-600/50 rounded-lg text-slate-200 placeholder-slate-400 focus:outline-none focus:border-blue-500/70 focus:bg-white/10 hover:border-blue-500/50 hover:bg-white/10 transition-all duration-300 text-sm"
                 disabled={isEditMode}
               />
               <button
@@ -357,13 +356,13 @@ export function InventorySearchWidget({ widget, isEditMode }: WidgetComponentPro
             </div>
           )}
         </CardContent>
-      </Card>
+      </WidgetCard>
     );
   }
 
-  // Large size (6x6) - 上半部維持現有顯示，下半部加入折線圖
+  // Large size (5x5) - 上半部維持現有顯示，下半部加入折線圖
   return (
-    <Card className={`h-full bg-slate-900/95 backdrop-blur-xl border border-blue-500/30 shadow-2xl ${isEditMode ? 'border-dashed border-2 border-blue-500/50' : ''} flex flex-col`}>
+    <WidgetCard widgetType="INVENTORY_SEARCH" isEditMode={isEditMode} className="flex flex-col">
       <CardHeader className="pb-2">
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-lg flex items-center justify-center">
@@ -375,8 +374,8 @@ export function InventorySearchWidget({ widget, isEditMode }: WidgetComponentPro
         </div>
       </CardHeader>
       <CardContent className="flex-1 flex flex-col p-4 min-h-0">
-        {/* 上半部分 - 搜尋和結果 (50%) */}
-        <div className="h-1/2 overflow-auto pb-2">
+        {/* 上半部分 - 搜尋和結果 (2/3) */}
+        <div className="flex-[2] overflow-auto pb-2">
           <form onSubmit={handleSearchSubmit} className="space-y-4">
             <div className="flex gap-2">
               <input
@@ -384,7 +383,7 @@ export function InventorySearchWidget({ widget, isEditMode }: WidgetComponentPro
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Enter Product Code To Search"
-                className="flex-1 px-3 py-2 bg-slate-700/50 border border-slate-600/50 rounded-lg text-slate-200 placeholder-slate-400 focus:outline-none focus:border-blue-500/70 focus:bg-slate-700/70 hover:border-blue-500/50 hover:bg-slate-700/60 transition-all duration-300 text-sm"
+                className="flex-1 px-3 py-2 bg-white/5 border border-slate-600/50 rounded-lg text-slate-200 placeholder-slate-400 focus:outline-none focus:border-blue-500/70 focus:bg-white/10 hover:border-blue-500/50 hover:bg-white/10 transition-all duration-300 text-sm"
                 disabled={isEditMode}
               />
               <button
@@ -413,19 +412,26 @@ export function InventorySearchWidget({ widget, isEditMode }: WidgetComponentPro
               animate={{ opacity: 1, y: 0 }}
               className="mt-4 space-y-3"
             >
-              <div className="grid grid-cols-2 gap-2 text-sm">
+              {/* Column Headers */}
+              <div className="flex items-center justify-between px-3 py-2 bg-black/20 rounded-t-lg mb-1">
+                <span className="text-xs font-semibold text-purple-400 flex-1">Location</span>
+                <span className="text-xs font-semibold text-purple-400 text-right w-24">Quantity</span>
+              </div>
+              
+              {/* Data List */}
+              <div className="space-y-1">
                 {[
-                  { label: 'Production', value: searchResults.injection, color: 'text-blue-400', bg: 'bg-blue-500/10', border: 'border-blue-500/30' },
-                  { label: 'Pipeline', value: searchResults.pipeline, color: 'text-green-400', bg: 'bg-green-500/10', border: 'border-green-500/30' },
-                  { label: 'Prebook', value: searchResults.prebook, color: 'text-indigo-400', bg: 'bg-indigo-500/10', border: 'border-indigo-500/30' },
-                  { label: 'Awaiting', value: searchResults.await, color: 'text-yellow-400', bg: 'bg-yellow-500/10', border: 'border-yellow-500/30' },
-                  { label: 'Fold Mill', value: searchResults.fold, color: 'text-purple-400', bg: 'bg-purple-500/10', border: 'border-purple-500/30' },
-                  { label: 'Bulk Room', value: searchResults.bulk, color: 'text-orange-400', bg: 'bg-orange-500/10', border: 'border-orange-500/30' },
-                  { label: 'Back Car Park', value: searchResults.backcarpark, color: 'text-cyan-400', bg: 'bg-cyan-500/10', border: 'border-cyan-500/30' },
+                  { label: 'Production', value: searchResults.injection, color: 'text-blue-400' },
+                  { label: 'Pipeline', value: searchResults.pipeline, color: 'text-green-400' },
+                  { label: 'Prebook', value: searchResults.prebook, color: 'text-indigo-400' },
+                  { label: 'Awaiting', value: searchResults.await, color: 'text-yellow-400' },
+                  { label: 'Fold Mill', value: searchResults.fold, color: 'text-purple-400' },
+                  { label: 'Bulk Room', value: searchResults.bulk, color: 'text-orange-400' },
+                  { label: 'Back Car Park', value: searchResults.backcarpark, color: 'text-cyan-400' },
                 ].map((location) => (
-                  <div key={location.label} className={`flex justify-between items-center py-2 px-3 ${location.bg} border ${location.border} rounded-lg`}>
-                    <span className="text-slate-300 text-xs">{location.label}:</span>
-                    <span className={`font-bold ${location.color}`}>
+                  <div key={location.label} className="flex justify-between items-center py-1.5 px-3 bg-black/20 hover:bg-white/10 rounded transition-colors">
+                    <span className="text-sm text-purple-200 flex-1">{location.label}</span>
+                    <span className="text-sm font-semibold text-purple-200 text-right w-24">
                       {location.value.toLocaleString()}
                     </span>
                   </div>
@@ -449,9 +455,9 @@ export function InventorySearchWidget({ widget, isEditMode }: WidgetComponentPro
           )}
         </div>
 
-        {/* 下半部分 - 折線圖 (只在有搜尋結果時顯示) (50%) */}
+        {/* 下半部分 - 折線圖 (只在有搜尋結果時顯示) (1/3) */}
         {searchResults && (
-          <div className="h-1/2 flex flex-col mt-2 pt-2 border-t border-slate-700">
+          <div className="flex-1 flex flex-col mt-2 pt-2 border-t border-slate-700">
             <h4 className="text-sm font-semibold text-blue-400 mb-2">
               Past 7 Days: Inventory Quantity vs Orders
             </h4>
@@ -491,18 +497,18 @@ export function InventorySearchWidget({ widget, isEditMode }: WidgetComponentPro
                       type="monotone" 
                       dataKey="inventory" 
                       name="Total Inventory"
-                      stroke="#22c55e" 
+                      stroke="#10b981" 
                       strokeWidth={2}
-                      dot={{ fill: '#22c55e', r: 3 }}
+                      dot={{ fill: '#10b981', r: 3 }}
                       activeDot={{ r: 5 }}
                     />
                     <Line 
                       type="monotone" 
                       dataKey="orders" 
                       name="Order Quantity"
-                      stroke="#3b82f6" 
+                      stroke="#34d399" 
                       strokeWidth={2}
-                      dot={{ fill: '#3b82f6', r: 3 }}
+                      dot={{ fill: '#34d399', r: 3 }}
                       activeDot={{ r: 5 }}
                     />
                   </LineChart>
@@ -516,6 +522,6 @@ export function InventorySearchWidget({ widget, isEditMode }: WidgetComponentPro
           </div>
         )}
       </CardContent>
-    </Card>
+    </WidgetCard>
   );
 }

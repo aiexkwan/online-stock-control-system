@@ -1,54 +1,86 @@
 /**
  * Material Received Widget
  * 支援三種尺寸：
- * - Small: 只顯示最近收貨數量
+ * - Small: 只顯示當天 GRN 記錄數
  * - Medium: 顯示最近收貨列表
  * - Large: 完整功能包括GRN歷史
  */
 
 'use client';
 
-import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import React, { useEffect, useState } from 'react';
+import { CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { WidgetCard } from '@/app/components/dashboard/WidgetCard';
 import { DocumentArrowDownIcon } from '@heroicons/react/24/outline';
 import { WidgetComponentProps, WidgetSize } from '@/app/types/dashboard';
 import MaterialReceived from '@/app/components/GrnHistory';
+import { createClient } from '@/app/utils/supabase/client';
+import { getTodayRange } from '@/app/utils/timezone';
+import { WidgetTitle, WidgetText, WidgetLabel, WidgetValue } from '@/app/components/dashboard/WidgetTypography';
 
 export function MaterialReceivedWidget({ widget, isEditMode }: WidgetComponentProps) {
   const size = widget.config.size || WidgetSize.SMALL;
+  const [todayGrnCount, setTodayGrnCount] = useState<number>(0);
+  const [loading, setLoading] = useState(true);
 
-  // Small size - only show stats
+  useEffect(() => {
+    if (size === WidgetSize.SMALL) {
+      fetchTodayGrnCount();
+      
+      // 設置自動刷新
+      const interval = setInterval(fetchTodayGrnCount, widget.config.refreshInterval || 60000);
+      return () => clearInterval(interval);
+    }
+  }, [size, widget.config.refreshInterval]);
+
+  const fetchTodayGrnCount = async () => {
+    try {
+      setLoading(true);
+      const supabase = createClient();
+      const { start, end } = getTodayRange();
+      
+      const { count, error } = await supabase
+        .from('record_grn')
+        .select('*', { count: 'exact', head: true })
+        .gte('creat_time', start)
+        .lte('creat_time', end);
+      
+      if (error) throw error;
+      
+      setTodayGrnCount(count || 0);
+    } catch (error) {
+      console.error('Error fetching GRN count:', error);
+      setTodayGrnCount(0);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Small size - only show today's GRN count
   if (size === WidgetSize.SMALL) {
     return (
-      <Card className={`h-full bg-slate-900/95 backdrop-blur-xl border border-orange-500/30 shadow-2xl ${isEditMode ? 'border-dashed border-2 border-orange-500/50' : ''}`}>
-        <CardContent className="p-4 h-full flex flex-col justify-center items-center">
-          <div className="w-10 h-10 bg-gradient-to-r from-orange-500 to-amber-500 rounded-lg flex items-center justify-center mb-2">
-            <DocumentArrowDownIcon className="h-6 w-6 text-white" />
-          </div>
-          <h3 className="text-sm font-medium text-slate-400 mb-1">GRN History</h3>
-          <p className="text-xs text-slate-400 text-center">Resize to view history</p>
+      <WidgetCard widgetType="MATERIAL_RECEIVED" isEditMode={isEditMode}>
+        <CardContent className="p-2 h-full flex flex-col justify-center items-center">
+          <WidgetTitle size="xs" glow="gray" className="mb-1">Material Received</WidgetTitle>
+          {loading ? (
+            <div className="h-8 w-16 bg-white/10 rounded animate-pulse"></div>
+          ) : (
+            <>
+              <WidgetValue size="large" glow="yellow">{todayGrnCount}</WidgetValue>
+              <WidgetLabel size="xs" glow="gray" className="mt-0.5">Today's GRN</WidgetLabel>
+            </>
+          )}
         </CardContent>
-      </Card>
+      </WidgetCard>
     );
   }
 
   // Medium and Large sizes - show full component
   return (
-    <div className={`h-full relative group ${isEditMode ? 'border-2 border-dashed border-orange-500/50 rounded-2xl' : ''}`}>
-      {/* 卡片背景 */}
-      <div className="absolute inset-0 bg-gradient-to-r from-slate-800/50 to-orange-900/30 rounded-3xl blur-xl"></div>
-      
-      <div className="relative bg-slate-800/40 backdrop-blur-xl border border-slate-700/50 rounded-3xl p-6 shadow-2xl shadow-orange-900/20 hover:border-orange-500/30 transition-all duration-300 h-full">
-        {/* 卡片內部光效 */}
-        <div className="absolute inset-0 bg-gradient-to-r from-orange-500/5 via-transparent to-amber-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-3xl"></div>
-        
-        {/* 頂部邊框光效 */}
-        <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-orange-400/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-t-3xl"></div>
-        
-        <div className="relative z-10 h-full overflow-auto">
-          <MaterialReceived />
-        </div>
+    <WidgetCard widgetType="MATERIAL_RECEIVED" isEditMode={isEditMode}>
+      <div className="h-full overflow-auto p-4">
+        <MaterialReceived />
       </div>
-    </div>
+    </WidgetCard>
   );
 }
