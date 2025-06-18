@@ -153,7 +153,7 @@ export function DocumentUploadWidget({ widget, isEditMode }: WidgetComponentProp
         animate={{ opacity: 1, y: 0 }}
         className="h-full"
       >
-        <WidgetCard widgetType="UPLOAD_FILES" isEditMode={isEditMode}>
+        <WidgetCard size={widget.config.size} widgetType="UPLOAD_FILES" isEditMode={isEditMode}>
           <CardContent className="p-2 h-full flex flex-col items-center justify-center">
             <h3 className="text-xs text-slate-400 mb-1">Document Management</h3>
             <div className="text-lg font-medium text-slate-500">(N/A)</div>
@@ -200,14 +200,12 @@ export function DocumentUploadWidget({ widget, isEditMode }: WidgetComponentProp
 
       {/* 上傳歷史 */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        <h4 className="text-sm font-medium text-slate-400 mb-2">Upload History</h4>
         
         {/* Column Headers */}
         <div className="border-b border-slate-700 pb-2 mb-2">
-          <div className={`grid ${size === WidgetSize.LARGE ? 'grid-cols-4' : 'grid-cols-3'} gap-2 px-2 text-xs font-medium text-slate-400`}>
+          <div className={`grid ${size === WidgetSize.LARGE ? 'grid-cols-3' : 'grid-cols-3'} gap-2 px-2 text-xs font-medium text-slate-400`}>
             <span>Date/Time</span>
-            <span>Document Name</span>
-            {size === WidgetSize.LARGE && <span>File Size</span>}
+            <span className="col-span-1">Document Name</span>
             <span>Uploaded By</span>
           </div>
         </div>
@@ -227,20 +225,17 @@ export function DocumentUploadWidget({ widget, isEditMode }: WidgetComponentProp
                 key={record.uuid} 
                 className="bg-black/20 rounded-lg p-2 hover:bg-white/10 transition-colors"
               >
-                <div className={`grid ${size === WidgetSize.LARGE ? 'grid-cols-4' : 'grid-cols-3'} gap-2 items-center`}>
+                <div className={`grid ${size === WidgetSize.LARGE ? 'grid-cols-3' : 'grid-cols-3'} gap-2 items-center`}>
                   <div className="flex items-center gap-2">
                     {getDocIcon(record.doc_type)}
                     <span className="text-xs text-purple-300">{formatTime(record.created_at)}</span>
                   </div>
-                  <span className="text-xs text-purple-400 truncate" title={record.doc_name}>
-                    {record.doc_name}
-                  </span>
-                  {size === WidgetSize.LARGE && (
-                    <span className="text-xs text-purple-300">
-                      {record.file_size ? `${(record.file_size / 1024 / 1024).toFixed(2)} MB` : 'N/A'}
+                  <div className="col-span-1 min-w-0">
+                    <span className="text-xs text-purple-400 block truncate" title={record.doc_name}>
+                      {record.doc_name}
                     </span>
-                  )}
-                  <span className="text-xs text-purple-300">{record.uploader_name || record.upload_by}</span>
+                  </div>
+                  <span className="text-xs text-purple-300 text-right">{record.uploader_name || record.upload_by}</span>
                 </div>
               </div>
             ))}
@@ -269,7 +264,7 @@ export function DocumentUploadWidget({ widget, isEditMode }: WidgetComponentProp
         animate={{ opacity: 1, y: 0 }}
         className="h-full"
       >
-        <WidgetCard widgetType="UPLOAD_FILES" isEditMode={isEditMode} className="flex flex-col">
+        <WidgetCard size={widget.config.size} widgetType="UPLOAD_FILES" isEditMode={isEditMode} className="flex flex-col">
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -306,7 +301,7 @@ export function DocumentUploadWidget({ widget, isEditMode }: WidgetComponentProp
       animate={{ opacity: 1, y: 0 }}
       className="h-full"
     >
-      <WidgetCard widgetType="UPLOAD_FILES" isEditMode={isEditMode} className="flex flex-col">
+      <WidgetCard size={widget.config.size} widgetType="UPLOAD_FILES" isEditMode={isEditMode} className="flex flex-col">
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center justify-between">
             <div className="flex items-center gap-2">

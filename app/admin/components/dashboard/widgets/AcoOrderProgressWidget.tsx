@@ -18,6 +18,7 @@ import { WidgetStyles } from '@/app/utils/widgetStyles';
 import { motion, AnimatePresence } from 'framer-motion';
 import { format } from 'date-fns';
 import { WidgetTitle, WidgetText, WidgetLabel, WidgetValue } from '../WidgetTypography';
+import { useWidgetData } from '@/app/admin/hooks/useWidgetData';
 
 interface AcoOrder {
   order_ref: number;
@@ -47,31 +48,7 @@ export function AcoOrderProgressWidget({ widget, isEditMode }: WidgetComponentPr
 
   const size = widget.config.size || WidgetSize.SMALL;
 
-  useEffect(() => {
-    loadIncompleteOrders();
-    
-    if (widget.config.refreshInterval) {
-      const interval = setInterval(loadIncompleteOrders, widget.config.refreshInterval);
-      return () => clearInterval(interval);
-    }
-  }, [widget.config]);
-
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setIsDropdownOpen(false);
-      }
-    }
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
-  useEffect(() => {
-    if (selectedOrderRef) {
-      loadOrderProgress(selectedOrderRef);
-    }
-  }, [selectedOrderRef]);
-
+  // Define loadIncompleteOrders function
   const loadIncompleteOrders = async () => {
     try {
       setLoading(true);
@@ -85,11 +62,6 @@ export function AcoOrderProgressWidget({ widget, isEditMode }: WidgetComponentPr
       if (error) throw error;
 
       setIncompleteOrders(data || []);
-      
-      // Auto-select first order for large size
-      if (size === WidgetSize.LARGE && data && data.length > 0 && !selectedOrderRef) {
-        setSelectedOrderRef(data[0].order_ref);
-      }
     } catch (err: any) {
       console.error('Error loading ACO orders:', err);
       setError(err.message);
@@ -97,6 +69,37 @@ export function AcoOrderProgressWidget({ widget, isEditMode }: WidgetComponentPr
       setLoading(false);
     }
   };
+
+  // Use widget data hook for refresh management
+  useWidgetData({
+    loadFunction: loadIncompleteOrders,
+    dependencies: [],
+    isEditMode
+  });
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsDropdownOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Load order progress when selected order changes
+  useEffect(() => {
+    if (selectedOrderRef) {
+      loadOrderProgress(selectedOrderRef);
+    }
+  }, [selectedOrderRef]);
+
+  // Auto-select first order for large size
+  useEffect(() => {
+    if (size === WidgetSize.LARGE && incompleteOrders.length > 0 && !selectedOrderRef) {
+      setSelectedOrderRef(incompleteOrders[0].order_ref);
+    }
+  }, [incompleteOrders, size, selectedOrderRef]);
 
   const loadOrderProgress = async (orderRef: number) => {
     try {
@@ -132,7 +135,7 @@ export function AcoOrderProgressWidget({ widget, isEditMode }: WidgetComponentPr
   // Small size - only show count
   if (size === WidgetSize.SMALL) {
     return (
-      <WidgetCard widgetType="ACO_ORDER_PROGRESS" isEditMode={isEditMode}>
+      <WidgetCard size={widget.config.size} widgetType="ACO_ORDER_PROGRESS" isEditMode={isEditMode}>
         <CardContent className="p-2 h-full flex flex-col justify-center items-center">
           <WidgetTitle size="xs" glow="gray" className="mb-1">ACO Orders</WidgetTitle>
           {loading ? (
@@ -153,7 +156,7 @@ export function AcoOrderProgressWidget({ widget, isEditMode }: WidgetComponentPr
   // Medium size - show order list
   if (size === WidgetSize.MEDIUM) {
     return (
-      <WidgetCard widgetType="ACO_ORDER_PROGRESS" isEditMode={isEditMode}>
+      <WidgetCard size={widget.config.size} widgetType="ACO_ORDER_PROGRESS" isEditMode={isEditMode}>
         <CardHeader className="pb-2">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 bg-gradient-to-r from-orange-500 to-amber-500 rounded-lg flex items-center justify-center">
@@ -188,10 +191,10 @@ export function AcoOrderProgressWidget({ widget, isEditMode }: WidgetComponentPr
                     className="bg-black/20 rounded-lg p-2 border border-slate-700/50"
                   >
                     <div className="flex justify-between items-center mb-1">
-                      <WidgetText size="small" glow="white" className="font-medium">
+                      <WidgetText size="xs" glow="white" className="font-medium text-[11px]">
                         Order {order.order_ref}
                       </WidgetText>
-                      <div className={`bg-indigo-500/20 border border-indigo-400/30 ${WidgetStyles.text.tableData} px-2 py-0.5 rounded text-xs`}>
+                      <div className={`bg-indigo-500/20 border border-indigo-400/30 ${WidgetStyles.text.tableData} px-2 py-0.5 rounded text-[10px]`}>
                         {order.remain_qty} remain
                       </div>
                     </div>
@@ -218,14 +221,14 @@ export function AcoOrderProgressWidget({ widget, isEditMode }: WidgetComponentPr
 
   // Large size - full functionality
   return (
-    <WidgetCard widgetType="ACO_ORDER_PROGRESS" isEditMode={isEditMode}>
+    <WidgetCard size={widget.config.size} widgetType="ACO_ORDER_PROGRESS" isEditMode={isEditMode}>
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 bg-gradient-to-r from-orange-500 to-amber-500 rounded-lg flex items-center justify-center">
               <ClipboardDocumentListIcon className="h-5 w-5 text-white" />
             </div>
-            <WidgetTitle size="large" glow="orange" className="bg-gradient-to-r from-orange-300 via-amber-300 to-orange-200 bg-clip-text text-transparent">
+            <WidgetTitle size="small" glow="orange" className="bg-gradient-to-r from-orange-300 via-amber-300 to-orange-200 bg-clip-text text-transparent">
               ACO Order Progress
             </WidgetTitle>
           </div>
@@ -234,7 +237,7 @@ export function AcoOrderProgressWidget({ widget, isEditMode }: WidgetComponentPr
           <div className="relative" ref={dropdownRef}>
             <button
               onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-              className="flex items-center gap-2 px-3 py-1.5 bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white rounded-md transition-all duration-300 text-sm border border-slate-600/30"
+              className="flex items-center gap-2 px-2 py-1 bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white rounded-md transition-all duration-300 text-xs border border-slate-600/30"
               disabled={loading || isEditMode}
             >
               <ClipboardDocumentListIcon className="w-4 h-4" />
@@ -260,13 +263,13 @@ export function AcoOrderProgressWidget({ widget, isEditMode }: WidgetComponentPr
                       <button
                         key={order.order_ref}
                         onClick={() => handleOrderSelect(order.order_ref)}
-                        className={`w-full px-4 py-3 text-left text-sm hover:bg-white/10 transition-all duration-300 first:rounded-t-xl last:rounded-b-xl ${
+                        className={`w-full px-3 py-2 text-left text-xs hover:bg-white/10 transition-all duration-300 first:rounded-t-xl last:rounded-b-xl ${
                           selectedOrderRef === order.order_ref ? 'bg-white/10 text-orange-400' : 'text-slate-300'
                         }`}
                       >
                         <div className="flex justify-between items-center">
                           <span>Order {order.order_ref}</span>
-                          <div className="bg-orange-500/20 border border-orange-400/30 text-orange-300 px-2 py-1 rounded-lg text-xs">
+                          <div className="bg-orange-500/20 border border-orange-400/30 text-orange-300 px-2 py-0.5 rounded-lg text-[10px]">
                             {order.remain_qty} remain
                           </div>
                         </div>
@@ -298,8 +301,8 @@ export function AcoOrderProgressWidget({ widget, isEditMode }: WidgetComponentPr
             {orderProgress.map((item, index) => (
               <div key={index} className="space-y-3">
                 <div className="flex justify-between items-center">
-                  <WidgetText size="large" glow="white" className="font-medium">{item.code}</WidgetText>
-                  <span className={`text-sm ${WidgetStyles.text.tableData} bg-white/5 px-3 py-1 rounded-full`}>
+                  <WidgetText size="xs" glow="white" className="font-medium text-xs">{item.code}</WidgetText>
+                  <span className={`text-[10px] ${WidgetStyles.text.tableData} bg-white/5 px-2 py-0.5 rounded-full`}>
                     {item.completed_qty} / {item.required_qty}
                   </span>
                 </div>
@@ -317,14 +320,14 @@ export function AcoOrderProgressWidget({ widget, isEditMode }: WidgetComponentPr
                 </div>
                 <div className="flex justify-between items-center">
                   {item.completion_percentage <= 25 ? (
-                    <WidgetText size="small" glow="white" className="font-bold">
+                    <WidgetText size="xs" glow="white" className="font-bold text-xs">
                       {item.completion_percentage}%
                     </WidgetText>
                   ) : (
                     <span></span>
                   )}
                   {item.latest_update && (
-                    <WidgetLabel size="xs" glow="subtle">
+                    <WidgetLabel size="xs" glow="subtle" className="text-[10px]">
                       Last updated: {format(new Date(item.latest_update), 'MMM dd, yyyy HH:mm')}
                     </WidgetLabel>
                   )}

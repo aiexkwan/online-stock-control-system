@@ -20,6 +20,8 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend 
 } from 'recharts';
 import { getTodayRange, getYesterdayRange, getDateRange, formatDbTime } from '@/app/utils/timezone';
+import { useAdminRefresh } from '@/app/admin/contexts/AdminRefreshContext';
+import { format } from 'date-fns';
 
 interface OutputData {
   palletCount: number;
@@ -48,28 +50,11 @@ export function OutputStatsWidget({ widget, isEditMode }: WidgetComponentProps) 
   const [timeRange, setTimeRange] = useState('Today');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const { refreshTrigger } = useAdminRefresh();
 
   const size = widget.config.size || WidgetSize.SMALL;
 
-  useEffect(() => {
-    loadData();
-    
-    if (widget.config.refreshInterval && !isEditMode) {
-      const interval = setInterval(loadData, widget.config.refreshInterval);
-      return () => clearInterval(interval);
-    }
-  }, [widget.config, timeRange, isEditMode]);
-
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setIsDropdownOpen(false);
-      }
-    }
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
+  // Define loadData function
   const loadData = async () => {
     try {
       setLoading(true);
@@ -108,8 +93,8 @@ export function OutputStatsWidget({ widget, isEditMode }: WidgetComponentProps) 
       // 如果是 Medium 或 Large size，還需要獲取 product code 統計
       let productCodeCount = 0;
       let totalQuantity = 0;
-      let productDetails = [];
-      let dailyData = [];
+      let productDetails: ProductData[] = [];
+      let dailyData: any[] = [];
       
       if (size === WidgetSize.MEDIUM || size === WidgetSize.LARGE) {
         // 獲取所有產品代碼和數量
@@ -150,13 +135,25 @@ export function OutputStatsWidget({ widget, isEditMode }: WidgetComponentProps) 
             
           // Large size 需要 daily data for grouped bar chart
           if (size === WidgetSize.LARGE) {
+            // 如果沒有日期數據，創建一個示例數據
+            if (dailyMap.size === 0) {
+              // 創建過去7天的數據
+              const today = new Date();
+              for (let i = 6; i >= 0; i--) {
+                const date = new Date(today);
+                date.setDate(today.getDate() - i);
+                const dateStr = format(date, 'yyyy-MM-dd');
+                dailyMap.set(dateStr, new Map());
+              }
+            }
+            
             // 獲取前 3 個產品代碼
             const topProducts = productDetails.slice(0, 3).map(p => p.product_code);
             
             // 轉換成圖表數據格式
             dailyData = Array.from(dailyMap.entries())
               .map(([date, products]) => {
-                const dayData: any = { date };
+                const dayData: any = { date: format(new Date(date), 'MM/dd') };
                 topProducts.forEach(code => {
                   dayData[code] = products.get(code) || 0;
                 });
@@ -183,6 +180,25 @@ export function OutputStatsWidget({ widget, isEditMode }: WidgetComponentProps) 
     }
   };
 
+  // Load data on mount and when refresh is triggered
+  useEffect(() => {
+    loadData();
+  }, [refreshTrigger]);
+
+  // Load data when time range changes
+  useEffect(() => {
+    loadData();
+  }, [timeRange]);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsDropdownOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const handleTimeRangeChange = (newRange: string) => {
     setTimeRange(newRange);
@@ -192,7 +208,7 @@ export function OutputStatsWidget({ widget, isEditMode }: WidgetComponentProps) 
   // Small size (1x1) - 只顯示文字和數據，無 icon
   if (size === WidgetSize.SMALL) {
     return (
-      <WidgetCard widgetType="OUTPUT_STATS" isEditMode={isEditMode}>
+      <WidgetCard size={widget.config.size} widgetType="OUTPUT_STATS" isEditMode={isEditMode}>
         <CardContent className="p-2 h-full flex flex-col justify-center items-center">
           <h3 className="text-xs text-slate-400 mb-1">Output</h3>
           {loading ? (
@@ -213,7 +229,7 @@ export function OutputStatsWidget({ widget, isEditMode }: WidgetComponentProps) 
   // Medium size - 顯示 pallet 總數和 product qty 總和，支援時間選擇
   if (size === WidgetSize.MEDIUM) {
     return (
-      <WidgetCard widgetType="OUTPUT_STATS" isEditMode={isEditMode}>
+      <WidgetCard size={widget.config.size} widgetType="OUTPUT_STATS" isEditMode={isEditMode}>
         <CardHeader className="pb-2">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -308,7 +324,7 @@ export function OutputStatsWidget({ widget, isEditMode }: WidgetComponentProps) 
 
   // Large size - add chart
   return (
-    <WidgetCard widgetType="OUTPUT_STATS" isEditMode={isEditMode}>
+    <WidgetCard size={widget.config.size} widgetType="OUTPUT_STATS" isEditMode={isEditMode}>
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -363,18 +379,10 @@ export function OutputStatsWidget({ widget, isEditMode }: WidgetComponentProps) 
           <div className="text-red-400 text-sm">{error}</div>
         ) : (
           <div className="h-full flex flex-col">
-            {/* 上部份 - Pallet 總數 (1/4) */}
-            <div className="flex-1 mb-2">
-              <div className="bg-black/20 rounded-lg p-3 h-full flex flex-col justify-center">
-                <p className="text-sm text-slate-400 mb-1">Total Pallets</p>
-                <div className="text-4xl font-bold text-white">{data.palletCount}</div>
-              </div>
-            </div>
-            
-            {/* 中部份 - Product Code 明細列表 (1/4) */}
-            <div className="flex-1 mb-2">
+            {/* 上部份 - Product Code 明細列表 (1/4) */}
+            <div className="h-[25%] mb-2">
               <div className="bg-black/20 rounded-lg p-2 h-full overflow-hidden flex flex-col">
-                <p className="text-xs text-purple-400 mb-1">Product Details ({data.productCodeCount} codes, Total: {data.totalQuantity.toLocaleString()})</p>
+                <p className="text-xs text-purple-400 mb-1 flex-shrink-0">Product Details ({data.productCodeCount} codes, Total: {data.totalQuantity.toLocaleString()})</p>
                 {data.productDetails && data.productDetails.length > 0 ? (
                   <div className="flex-1 overflow-y-auto pr-1">
                     <div className="space-y-0.5">
@@ -395,16 +403,21 @@ export function OutputStatsWidget({ widget, isEditMode }: WidgetComponentProps) 
               </div>
             </div>
             
-            {/* 下部份 - 棒型圖 (2/4) */}
-            <div className="flex-[2] bg-black/20 rounded-lg p-3">
-              <h4 className="text-sm font-medium text-slate-300 mb-2">Daily Product Quantity Chart (Top 3)</h4>
-              {data.dailyData && data.dailyData.length > 0 && data.productDetails && data.productDetails.length > 0 ? (
-                <div style={{ width: '100%', height: '450px' }}>
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart 
-                      data={data.dailyData}
-                      margin={{ top: 10, right: 10, left: 5, bottom: 20 }}
-                    >
+            {/* 下部份 - 棒型圖 (3/4) */}
+            <div className="h-[75%] bg-black/20 rounded-lg p-2 overflow-hidden">
+              <h4 className="text-xs font-medium text-slate-300 mb-1">Daily Product Quantity Chart (Top 3)</h4>
+              {data.productDetails && data.productDetails.length > 0 ? (
+                <div className="h-[calc(100%-20px)]">
+                  {(!data.dailyData || data.dailyData.length === 0) ? (
+                    <div className="h-full flex items-center justify-center">
+                      <p className="text-sm text-slate-500">No chart data available</p>
+                    </div>
+                  ) : (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart 
+                        data={data.dailyData}
+                        margin={{ top: 5, right: 0, left: 0, bottom: 20 }}
+                      >
                       <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
                       <XAxis 
                         dataKey="date" 
@@ -429,24 +442,29 @@ export function OutputStatsWidget({ widget, isEditMode }: WidgetComponentProps) 
                         wrapperStyle={{ fontSize: '11px', paddingTop: '10px' }}
                       />
                       {/* 動態生成 Bar components for top 3 products */}
-                      {data.productDetails.slice(0, 3).map((product, index) => (
-                        <Bar 
-                          key={product.product_code}
-                          dataKey={product.product_code} 
-                          fill={[
-                            '#10B981', // Green
-                            '#34D399', // Emerald
-                            '#6EE7B7', // Light Green
-                          ][index]}
-                          radius={[4, 4, 0, 0]}
-                        />
-                      ))}
-                    </BarChart>
-                  </ResponsiveContainer>
+                      {data.productDetails && data.productDetails.length > 0 ? (
+                        data.productDetails.slice(0, 3).map((product, index) => (
+                          <Bar 
+                            key={product.product_code}
+                            dataKey={product.product_code} 
+                            fill={[
+                              '#10B981', // Green
+                              '#34D399', // Emerald
+                              '#6EE7B7', // Light Green
+                            ][index]}
+                            radius={[4, 4, 0, 0]}
+                          />
+                        ))
+                      ) : (
+                        <Bar dataKey="quantity" fill="#10B981" radius={[4, 4, 0, 0]} />
+                      )}
+                      </BarChart>
+                    </ResponsiveContainer>
+                  )}
                 </div>
               ) : (
-                <div style={{ height: '450px' }} className="flex items-center justify-center">
-                  <p className="text-sm text-slate-500">No data to display</p>
+                <div className="h-[calc(100%-20px)] flex items-center justify-center">
+                  <p className="text-sm text-slate-500">No product data available</p>
                 </div>
               )}
             </div>

@@ -17,6 +17,7 @@ import { createClient } from '@/app/utils/supabase/client';
 import { iconColors } from '@/app/utils/dialogStyles';
 import { WidgetStyles } from '@/app/utils/widgetStyles';
 import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { useWidgetData } from '@/app/admin/hooks/useWidgetData';
 
 interface ProductData {
   code: string;
@@ -30,7 +31,18 @@ interface StockType {
   total: number;
 }
 
-const COLORS = WidgetStyles.charts.pie;
+const COLORS = [
+  '#10B981', // Emerald green
+  '#3B82F6', // Blue
+  '#F59E0B', // Amber
+  '#EF4444', // Red
+  '#8B5CF6', // Purple
+  '#EC4899', // Pink
+  '#06B6D4', // Cyan
+  '#F97316', // Orange
+  '#84CC16', // Lime
+  '#14B8A6'  // Teal
+];
 
 export function ProductMixChartWidget({ widget, isEditMode }: WidgetComponentProps) {
   const [data, setData] = useState<ProductData[]>([]);
@@ -43,15 +55,7 @@ export function ProductMixChartWidget({ widget, isEditMode }: WidgetComponentPro
 
   const size = widget.config.size || WidgetSize.SMALL;
 
-  useEffect(() => {
-    loadData();
-    
-    if (widget.config.refreshInterval && !isEditMode) {
-      const interval = setInterval(loadData, widget.config.refreshInterval);
-      return () => clearInterval(interval);
-    }
-  }, [widget.config, selectedType, isEditMode]);
-
+  // Define loadData function
   const loadData = async () => {
     try {
       setLoading(true);
@@ -222,6 +226,13 @@ export function ProductMixChartWidget({ widget, isEditMode }: WidgetComponentPro
     }
   };
 
+  // Use widget data hook for refresh management
+  useWidgetData({
+    loadFunction: loadData,
+    dependencies: [selectedType],
+    isEditMode
+  });
+
   // Custom label for pie chart
   const renderCustomLabel = (entry: any) => {
     return entry.percentage > 5 ? `${entry.percentage}%` : '';
@@ -230,7 +241,7 @@ export function ProductMixChartWidget({ widget, isEditMode }: WidgetComponentPro
   // Small size (1x1) - 不支援，顯示 N/A
   if (size === WidgetSize.SMALL) {
     return (
-      <WidgetCard widgetType="PRODUCT_MIX_CHART" isEditMode={isEditMode}>
+      <WidgetCard size={widget.config.size} widgetType="PRODUCT_MIX_CHART" isEditMode={isEditMode}>
         <CardContent className="p-2 h-full flex flex-col justify-center items-center">
           <h3 className="text-xs text-slate-400 mb-1">Stock Level</h3>
           <div className="text-lg font-medium text-slate-500">(N/A)</div>
@@ -243,7 +254,7 @@ export function ProductMixChartWidget({ widget, isEditMode }: WidgetComponentPro
   // Medium size - 按類型顯示庫存
   if (size === WidgetSize.MEDIUM) {
     return (
-      <WidgetCard widgetType="PRODUCT_MIX_CHART" isEditMode={isEditMode}>
+      <WidgetCard size={widget.config.size} widgetType="PRODUCT_MIX_CHART" isEditMode={isEditMode}>
         <CardHeader className="pb-2">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -306,7 +317,7 @@ export function ProductMixChartWidget({ widget, isEditMode }: WidgetComponentPro
 
   // Large size - 上半部分明細 + 下半部分圓餅圖
   return (
-    <WidgetCard widgetType="PRODUCT_MIX_CHART" isEditMode={isEditMode}>
+    <WidgetCard size={widget.config.size} widgetType="PRODUCT_MIX_CHART" isEditMode={isEditMode}>
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -395,7 +406,7 @@ export function ProductMixChartWidget({ widget, isEditMode }: WidgetComponentPro
                       name
                     }) => {
                       const RADIAN = Math.PI / 180;
-                      const radius = 35 + innerRadius + (outerRadius - innerRadius);
+                      const radius = 25 + innerRadius + (outerRadius - innerRadius);
                       const x = cx + radius * Math.cos(-midAngle * RADIAN);
                       const y = cy + radius * Math.sin(-midAngle * RADIAN);
                       
@@ -409,13 +420,13 @@ export function ProductMixChartWidget({ widget, isEditMode }: WidgetComponentPro
                           fill={WidgetStyles.charts.line}
                           textAnchor={x > cx ? 'start' : 'end'}
                           dominantBaseline="central"
-                          className="text-xs"
+                          className="text-[10px]"
                         >
                           {`${name} (${percentage}%)`}
                         </text>
                       );
                     }}
-                    outerRadius={125}
+                    outerRadius={80}
                     fill="#8884d8"
                     dataKey="count"
                     nameKey="code"

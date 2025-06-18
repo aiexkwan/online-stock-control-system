@@ -141,7 +141,7 @@ export function VoidPalletWidget({ widget, isEditMode }: WidgetComponentProps) {
         animate={{ opacity: 1, y: 0 }}
         className="h-full"
       >
-        <WidgetCard widgetType="VOID_PALLET" isEditMode={isEditMode}>
+        <WidgetCard size={widget.config.size} widgetType="VOID_PALLET" isEditMode={isEditMode}>
           <CardContent className="p-4 h-full flex flex-col items-center justify-center">
             <NoSymbolIcon className="w-8 h-8 text-red-400 mb-2" />
             <div className="text-3xl font-bold text-purple-400">{stats.today_voided}</div>
@@ -160,7 +160,7 @@ export function VoidPalletWidget({ widget, isEditMode }: WidgetComponentProps) {
         animate={{ opacity: 1, y: 0 }}
         className="h-full"
       >
-        <WidgetCard widgetType="VOID_PALLET" isEditMode={isEditMode} className="hover:border-orange-400/50 transition-all duration-300">
+        <WidgetCard size={widget.config.size} widgetType="VOID_PALLET" isEditMode={isEditMode} className="hover:border-orange-400/50 transition-all duration-300">
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2">
               <NoSymbolIcon className="w-5 h-5 text-red-400" />
@@ -223,7 +223,7 @@ export function VoidPalletWidget({ widget, isEditMode }: WidgetComponentProps) {
       animate={{ opacity: 1, y: 0 }}
       className="h-full"
     >
-      <WidgetCard widgetType="VOID_PALLET" isEditMode={isEditMode} className="hover:border-red-400/50 transition-all duration-300">
+      <WidgetCard size={widget.config.size} widgetType="VOID_PALLET" isEditMode={isEditMode} className="hover:border-red-400/50 transition-all duration-300">
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center gap-2">
             <NoSymbolIcon className="w-6 h-6 text-red-400" />
@@ -231,25 +231,6 @@ export function VoidPalletWidget({ widget, isEditMode }: WidgetComponentProps) {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          {/* 統計卡片 */}
-          <div className="grid grid-cols-4 gap-3">
-            <div className="bg-gradient-to-br from-red-500/20 to-red-600/20 rounded-lg p-3 border border-red-500/30">
-              <div className="text-2xl font-bold text-purple-400">{stats.total_voided}</div>
-              <div className="text-xs text-red-300">Total Voided</div>
-            </div>
-            <div className="bg-slate-700/30 rounded-lg p-3">
-              <div className="text-2xl font-bold text-purple-400">{stats.today_voided}</div>
-              <div className="text-xs text-slate-400">Today</div>
-            </div>
-            <div className="bg-slate-700/30 rounded-lg p-3">
-              <div className="text-2xl font-bold text-purple-400">{stats.this_week_voided}</div>
-              <div className="text-xs text-slate-400">This Week</div>
-            </div>
-            <div className="bg-slate-700/30 rounded-lg p-3">
-              <div className="text-2xl font-bold text-purple-400">{stats.this_month_voided}</div>
-              <div className="text-xs text-slate-400">This Month</div>
-            </div>
-          </div>
 
           {/* 圖表 */}
           {chartData.length > 0 && (

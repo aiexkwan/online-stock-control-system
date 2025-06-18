@@ -18,15 +18,18 @@ export interface AdminDashboardSettings {
 }
 
 class AdminDashboardSettingsService {
-  private supabase = createClient();
   private readonly DASHBOARD_NAME = 'admin_dashboard';
-  private readonly LOCAL_STORAGE_KEY = 'adminDashboardLayout';
+  
+  // 每次使用時創建新的客戶端，避免快取問題
+  private getSupabase() {
+    return createClient();
+  }
 
   /**
    * 獲取當前用戶資訊
    */
   private async getCurrentUser() {
-    const { data: { user }, error } = await this.supabase.auth.getUser();
+    const { data: { user }, error } = await this.getSupabase().auth.getUser();
     if (error || !user) {
       throw new Error('User not authenticated');
     }
@@ -40,7 +43,8 @@ class AdminDashboardSettingsService {
     try {
       const user = await this.getCurrentUser();
       
-      const { data, error } = await this.supabase
+      // 強制取得最新數據，避免快取
+      const { data, error } = await this.getSupabase()
         .from('user_dashboard_settings')
         .select('*')
         .eq('user_id', user.id)
@@ -48,27 +52,17 @@ class AdminDashboardSettingsService {
         .single();
 
       if (error) {
-        // 如果是找不到記錄的錯誤，嘗試從 localStorage 遷移
+        // 如果是找不到記錄的錯誤，返回 null
         if (error.code === 'PGRST116') {
-          const migrated = await this.migrateFromLocalStorage();
-          if (migrated) {
-            return this.getAdminDashboardSettings();
-          }
           return null;
         }
         throw error;
       }
 
+      console.log('Loaded dashboard config from Supabase:', JSON.stringify(data.config, null, 2));
       return data.config as DashboardLayout;
     } catch (error) {
       console.error('Error fetching admin dashboard settings:', error);
-      
-      // 如果從資料庫讀取失敗，嘗試從 localStorage 讀取
-      const localLayout = this.getLocalLayout();
-      if (localLayout) {
-        return localLayout;
-      }
-      
       return null;
     }
   }
@@ -80,76 +74,53 @@ class AdminDashboardSettingsService {
     try {
       const user = await this.getCurrentUser();
       
-      // 同時保存到 localStorage（作為備份）
-      this.saveLocalLayout(layout);
+      console.log('Saving dashboard config to Supabase:', JSON.stringify(layout, null, 2));
       
-      // 檢查是否已存在設定
-      const { data: existing, error: fetchError } = await this.supabase
+      // 創建新的 Supabase 客戶端以避免快取
+      const supabase = this.getSupabase();
+      
+      // 使用 upsert - 如果存在則更新，不存在則插入
+      const { error } = await supabase
         .from('user_dashboard_settings')
-        .select('id')
-        .eq('user_id', user.id)
-        .eq('dashboard_name', this.DASHBOARD_NAME)
-        .single();
-      
-      if (fetchError && fetchError.code !== 'PGRST116') {
-        throw fetchError;
-      }
-      
-      if (existing) {
-        // 更新現有設定
-        const { error } = await this.supabase
-          .from('user_dashboard_settings')
-          .update({
-            config: layout,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', existing.id);
+        .upsert({
+          user_id: user.id,
+          email: user.email || '',
+          dashboard_name: this.DASHBOARD_NAME,
+          config: layout,
+          is_default: false,
+          updated_at: new Date().toISOString()
+        }, {
+          // 使用 user_id 和 dashboard_name 作為唯一標識
+          onConflict: 'user_id,dashboard_name'
+        });
 
-        if (error) throw error;
-      } else {
-        // 創建新設定
-        const { error } = await this.supabase
-          .from('user_dashboard_settings')
-          .insert({
-            user_id: user.id,
-            email: user.email || '',
-            dashboard_name: this.DASHBOARD_NAME,
-            config: layout,
-            is_default: false
-          });
-
-        if (error) throw error;
+      if (error) {
+        console.error('Error saving dashboard settings:', error);
+        throw error;
       }
       
       return true;
     } catch (error) {
       console.error('Error saving admin dashboard settings:', error);
-      
-      // 即使資料庫儲存失敗，也要確保 localStorage 有儲存
-      this.saveLocalLayout(layout);
-      
       return false;
     }
   }
 
   /**
-   * 重置為預設設定
+   * 重置為預設設定（清空所有 widgets）
    */
   async resetToDefault(): Promise<boolean> {
     try {
       const user = await this.getCurrentUser();
       
       // 從資料庫刪除
-      const { error } = await this.supabase
+      const { error } = await this.getSupabase()
         .from('user_dashboard_settings')
         .delete()
         .eq('user_id', user.id)
         .eq('dashboard_name', this.DASHBOARD_NAME);
 
       if (error) throw error;
-      
-      // 清除 localStorage
-      localStorage.removeItem(this.LOCAL_STORAGE_KEY);
       
       return true;
     } catch (error) {
@@ -159,65 +130,12 @@ class AdminDashboardSettingsService {
   }
 
   /**
-   * 從 localStorage 讀取佈局
-   */
-  private getLocalLayout(): DashboardLayout | null {
-    try {
-      const saved = localStorage.getItem(this.LOCAL_STORAGE_KEY);
-      if (saved) {
-        return JSON.parse(saved);
-      }
-    } catch (error) {
-      console.error('Error reading from localStorage:', error);
-    }
-    return null;
-  }
-
-  /**
-   * 保存佈局到 localStorage
-   */
-  private saveLocalLayout(layout: DashboardLayout): void {
-    try {
-      localStorage.setItem(this.LOCAL_STORAGE_KEY, JSON.stringify(layout));
-    } catch (error) {
-      console.error('Error saving to localStorage:', error);
-    }
-  }
-
-  /**
-   * 從 localStorage 遷移設定到 Supabase
-   */
-  private async migrateFromLocalStorage(): Promise<boolean> {
-    try {
-      const localLayout = this.getLocalLayout();
-      if (!localLayout) return false;
-
-      await this.saveAdminDashboardSettings(localLayout);
-      
-      return true;
-    } catch (error) {
-      console.error('Error migrating from localStorage:', error);
-      return false;
-    }
-  }
-
-  /**
-   * 監聽其他標籤頁的變更
+   * 監聽其他標籤頁的變更（已移除 localStorage，此功能暫時停用）
    */
   onStorageChange(callback: (layout: DashboardLayout | null) => void): () => void {
-    const handler = (e: StorageEvent) => {
-      if (e.key === this.LOCAL_STORAGE_KEY) {
-        const newLayout = e.newValue ? JSON.parse(e.newValue) : null;
-        callback(newLayout);
-      }
-    };
-
-    window.addEventListener('storage', handler);
-    
-    // 返回清理函數
-    return () => {
-      window.removeEventListener('storage', handler);
-    };
+    // 不再使用 localStorage，所以此功能暫時停用
+    // 未來可以考慮使用 Supabase Realtime 來實現跨標籤頁同步
+    return () => {};
   }
 }
 

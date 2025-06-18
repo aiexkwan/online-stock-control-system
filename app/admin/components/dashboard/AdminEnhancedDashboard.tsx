@@ -19,6 +19,7 @@ import { WidgetRegistry } from './WidgetRegistry';
 import { WidgetSelectDialog } from './EnhancedDashboardDialog';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
+import { WidgetSizeSelector } from './WidgetSizeSelector';
 
 // Register all admin widgets
 import './registerAdminWidgets';
@@ -41,7 +42,7 @@ interface AdminDashboardProps {
   rowHeight?: number;
 }
 
-// 網格列數定義 - 增加列數以充分利用螢幕寬度
+// 網格列數定義 - 所有斷點使用相同的列數以避免座標問題
 const BREAKPOINTS = {
   lg: 1400,
   md: 1200,
@@ -52,22 +53,28 @@ const BREAKPOINTS = {
 
 const COLS = {
   lg: 20,  // 增加到 20 列以更好利用寬螢幕
-  md: 15,
-  sm: 10,
-  xs: 6,
-  xxs: 4
+  md: 20,  // 使用相同的列數
+  sm: 20,  // 使用相同的列數
+  xs: 20,  // 使用相同的列數
+  xxs: 20  // 使用相同的列數
 };
 
-export function AdminEnhancedDashboard({ 
+export function AdminEnhancedDashboard({
   layout,
   onLayoutChange,
   onAddWidget,
   onRemoveWidget,
   onUpdateWidget,
   isEditMode,
-  maxCols = 12,
+  maxCols = 20,
   rowHeight = 60
 }: AdminDashboardProps) {
+  // 追蹤是否為初始載入
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
+  const [key, setKey] = useState(0); // 用於強制重新渲染
+  const [hasInitialized, setHasInitialized] = useState(false);
+  const [isReady, setIsReady] = useState(false); // 延遲渲染標誌
+  
   // 立即驗證並修復 layout
   const validatedLayout = useMemo(() => {
     if (!layout || !layout.widgets || !Array.isArray(layout.widgets)) {
@@ -75,29 +82,32 @@ export function AdminEnhancedDashboard({
     }
     
     return {
-      widgets: layout.widgets.map(widget => {
-        // 確保每個 widget 都有必要的屬性
-        const validatedWidget = {
-          ...widget,
-          id: widget.id || `widget-${Date.now()}-${Math.random()}`,
-          type: widget.type || WidgetType.STATS_CARD,
-          gridProps: {
-            x: (typeof widget.gridProps?.x === 'number' && !isNaN(widget.gridProps.x)) ? widget.gridProps.x : 0,
-            y: (typeof widget.gridProps?.y === 'number' && !isNaN(widget.gridProps.y)) ? widget.gridProps.y : 0,
-            w: (typeof widget.gridProps?.w === 'number' && !isNaN(widget.gridProps.w)) ? widget.gridProps.w : 3,
-            h: (typeof widget.gridProps?.h === 'number' && !isNaN(widget.gridProps.h)) ? widget.gridProps.h : 3
-          },
-          config: {
-            size: widget.config?.size || WidgetSize.MEDIUM,
-            refreshInterval: widget.config?.refreshInterval || 60000,
-            ...(widget.config || {})
-          }
-        };
-        
-        return validatedWidget;
-      })
+      widgets: layout.widgets
+        .filter(widget => widget && typeof widget === 'object')
+        .map((widget, index) => {
+          // 確保每個 widget 都有必要的屬性
+          const validatedWidget = {
+            ...widget,
+            id: widget.id || `widget-${Date.now()}-${index}-${Math.random()}`,
+            type: widget.type || WidgetType.STATS_CARD,
+            gridProps: {
+              x: (typeof widget.gridProps?.x === 'number' && !isNaN(widget.gridProps.x)) ? widget.gridProps.x : 0,
+              y: (typeof widget.gridProps?.y === 'number' && !isNaN(widget.gridProps.y)) ? widget.gridProps.y : 0,
+              w: (typeof widget.gridProps?.w === 'number' && !isNaN(widget.gridProps.w) && widget.gridProps.w > 0) ? widget.gridProps.w : 3,
+              h: (typeof widget.gridProps?.h === 'number' && !isNaN(widget.gridProps.h) && widget.gridProps.h > 0) ? widget.gridProps.h : 3
+            },
+            config: {
+              size: widget.config?.size || WidgetSize.MEDIUM,
+              refreshInterval: widget.config?.refreshInterval || 60000,
+              ...(widget.config || {})
+            }
+          };
+          
+          return validatedWidget;
+        })
     };
   }, [layout]);
+  
   const [showAddWidget, setShowAddWidget] = useState(false);
   const [currentBreakpoint, setCurrentBreakpoint] = useState('lg');
   const containerRef = useRef<HTMLDivElement>(null);
@@ -126,6 +136,35 @@ export function AdminEnhancedDashboard({
     }
   }, [currentBreakpoint, calculateCellSize, cellSize]);
 
+  // 監聽視窗大小變化和縮放變化
+  useEffect(() => {
+    const handleResize = () => {
+      const newSize = calculateCellSize();
+      if (newSize !== cellSize) {
+        setCellSize(newSize);
+      }
+    };
+
+    // 監聽視窗大小變化
+    window.addEventListener('resize', handleResize);
+    
+    // 監聽縮放變化（通過檢測 devicePixelRatio 變化）
+    let lastDevicePixelRatio = window.devicePixelRatio;
+    const checkZoom = () => {
+      if (window.devicePixelRatio !== lastDevicePixelRatio) {
+        lastDevicePixelRatio = window.devicePixelRatio;
+        handleResize();
+      }
+    };
+    
+    const zoomInterval = setInterval(checkZoom, 500);
+
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      clearInterval(zoomInterval);
+    };
+  }, [calculateCellSize, cellSize]);
+
   // 將 validatedLayout.widgets 轉換為 react-grid-layout 格式
   const gridLayouts = useMemo(() => {
     const layouts: any = {};
@@ -138,41 +177,65 @@ export function AdminEnhancedDashboard({
       return layouts;
     }
     
+    console.log('Creating grid layouts from widgets:', validatedLayout.widgets);
+    console.log('isEditMode:', isEditMode);
+    
+    // 為每個斷點創建完全相同的布局
     Object.keys(COLS).forEach(breakpoint => {
-      const cols = COLS[breakpoint as keyof typeof COLS];
-      layouts[breakpoint] = validatedLayout.widgets.map(widget => {
-        // 根據不同斷點調整位置和大小
-        const scaleFactor = breakpoint === 'lg' ? 1 : cols / COLS.lg;
+      layouts[breakpoint] = validatedLayout.widgets.map((widget, index) => {
+        // 確保座標在有效範圍內
+        const x = Math.min(widget.gridProps?.x || 0, COLS[breakpoint as keyof typeof COLS] - (widget.gridProps?.w || 3));
+        const y = widget.gridProps?.y || 0;
+        const w = widget.gridProps?.w || 3;
+        const h = widget.gridProps?.h || 3;
         
+        // 使用完全相同的座標，不考慮斷點
         const layoutItem = {
-          i: widget.id || `widget-${Date.now()}`,
-          x: Math.max(0, Math.floor(widget.gridProps.x * scaleFactor)),
-          y: Math.max(0, widget.gridProps.y),
-          w: Math.max(1, Math.min(cols, widget.gridProps.w)),
-          h: Math.max(1, widget.gridProps.h),
-          minW: widget.config.size === WidgetSize.SMALL ? 1 : 3,
-          minH: widget.config.size === WidgetSize.SMALL ? 1 : 3,
-          maxW: widget.config.size === WidgetSize.LARGE ? 5 : widget.config.size === WidgetSize.SMALL ? 1 : 3,
-          maxH: widget.config.size === WidgetSize.LARGE ? 5 : widget.config.size === WidgetSize.SMALL ? 1 : 3
+          i: widget.id,
+          x: x,
+          y: y,
+          w: w,
+          h: h,
+          minW: widget.config?.size === WidgetSize.SMALL ? 1 : widget.config?.size === WidgetSize.XLARGE ? 6 : 3,
+          minH: widget.config?.size === WidgetSize.SMALL ? 1 : widget.config?.size === WidgetSize.XLARGE ? 6 : 3,
+          maxW: widget.config?.size === WidgetSize.XLARGE ? 6 : widget.config?.size === WidgetSize.LARGE ? 5 : widget.config?.size === WidgetSize.SMALL ? 1 : 3,
+          maxH: widget.config?.size === WidgetSize.XLARGE ? 6 : widget.config?.size === WidgetSize.LARGE ? 5 : widget.config?.size === WidgetSize.SMALL ? 1 : 3,
+          static: !isEditMode,  // 在非編輯模式下設為靜態
+          moved: false,
+          isDraggable: isEditMode,
+          isResizable: isEditMode
         };
         
-        // 最後一次檢查
-        if (isNaN(layoutItem.x) || layoutItem.x === undefined) layoutItem.x = 0;
-        if (isNaN(layoutItem.y) || layoutItem.y === undefined) layoutItem.y = 0;
-        if (isNaN(layoutItem.w) || layoutItem.w === undefined) layoutItem.w = 3;
-        if (isNaN(layoutItem.h) || layoutItem.h === undefined) layoutItem.h = 3;
+        if (breakpoint === 'lg') {
+          console.log(`Layout item for ${widget.type} at x=${x}, y=${y}:`, layoutItem);
+        }
         
         return layoutItem;
       });
     });
     
     return layouts;
-  }, [validatedLayout.widgets]);
+  }, [validatedLayout.widgets, isEditMode]);
 
   // 處理佈局變更
   const handleLayoutChange = useCallback((currentLayout: any[], allLayouts: any) => {
     // 防止在初始化時觸發
     if (!currentLayout || currentLayout.length === 0) return;
+    
+    // 如果是初始載入，標記為已完成並跳過
+    if (isInitialLoad) {
+      console.log('Skipping initial layout change');
+      setIsInitialLoad(false);
+      return;
+    }
+    
+    // 只在編輯模式下處理佈局變更
+    if (!isEditMode) {
+      console.log('Ignoring layout change - not in edit mode');
+      return;
+    }
+    
+    console.log('Layout change detected:', currentLayout);
     
     const updatedWidgets = validatedLayout.widgets.map(widget => {
       const layoutItem = currentLayout.find(item => item.i === widget.id);
@@ -182,8 +245,8 @@ export function AdminEnhancedDashboard({
           gridProps: {
             x: layoutItem.x || 0,
             y: layoutItem.y || 0,
-            w: layoutItem.w || 3,
-            h: layoutItem.h || 3
+            w: Math.max(1, layoutItem.w || 3),
+            h: Math.max(1, layoutItem.h || 3)
           }
         };
       }
@@ -191,7 +254,7 @@ export function AdminEnhancedDashboard({
     });
 
     onLayoutChange({ widgets: updatedWidgets });
-  }, [validatedLayout.widgets, onLayoutChange]);
+  }, [validatedLayout.widgets, onLayoutChange, isEditMode, isInitialLoad]);
 
   // 處理添加小部件
   const handleAddWidget = useCallback((widgetType: WidgetType, size: WidgetSize = WidgetSize.MEDIUM) => {
@@ -208,17 +271,32 @@ export function AdminEnhancedDashboard({
     if (validatedLayout.widgets.length > 0) {
       console.log('Validated layout:', validatedLayout);
       console.log('Grid layouts:', gridLayouts);
-      
-      // 檢查是否有無效的佈局項
-      Object.entries(gridLayouts).forEach(([breakpoint, items]) => {
-        (items as any[]).forEach((item, index) => {
-          if (typeof item.x !== 'number' || isNaN(item.x)) {
-            console.error(`Invalid x value for widget ${item.i} at breakpoint ${breakpoint}:`, item);
-          }
-        });
-      });
+      console.log('Current breakpoint:', currentBreakpoint);
+      console.log('Layout for current breakpoint:', gridLayouts[currentBreakpoint]);
     }
-  }, [validatedLayout, gridLayouts]);
+  }, [validatedLayout, gridLayouts, currentBreakpoint]);
+  
+  // 當布局改變時重置初始載入標誌
+  useEffect(() => {
+    setIsInitialLoad(true);
+    // 只在第一次有數據時設置 key
+    if (!hasInitialized && validatedLayout.widgets.length > 0) {
+      setKey(Date.now());
+      setHasInitialized(true);
+    }
+  }, [layout, hasInitialized, validatedLayout.widgets.length]);
+  
+  // 延遲渲染 - 確保布局數據完全準備好
+  useEffect(() => {
+    if (validatedLayout.widgets.length > 0 && !isReady) {
+      // 使用 setTimeout 確保在下一個渲染週期
+      const timer = setTimeout(() => {
+        setIsReady(true);
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [validatedLayout.widgets.length, isReady]);
+  
 
   // 處理移除小部件
   const handleRemoveWidget = useCallback((widgetId: string) => {
@@ -235,7 +313,8 @@ export function AdminEnhancedDashboard({
     const sizeMap = {
       [WidgetSize.SMALL]: { w: 1, h: 1 },
       [WidgetSize.MEDIUM]: { w: 3, h: 3 },
-      [WidgetSize.LARGE]: { w: 5, h: 5 }
+      [WidgetSize.LARGE]: { w: 5, h: 5 },
+      [WidgetSize.XLARGE]: { w: 6, h: 6 }
     };
 
     const newGridProps = {
@@ -258,7 +337,7 @@ export function AdminEnhancedDashboard({
     <>
       <div className={cn("relative admin-dashboard", isEditMode && "edit-mode")}>
         {/* 編輯模式工具欄 */}
-        {isEditMode && (
+        {isEditMode && validatedLayout.widgets.length > 0 && (
           <motion.div
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -278,8 +357,10 @@ export function AdminEnhancedDashboard({
         )}
 
         {/* 響應式網格佈局 */}
+        {validatedLayout.widgets.length > 0 && isReady && (
         <div ref={containerRef}>
           <ResponsiveGridLayout
+            key={key}  // 使用 key 強制重新創建組件
             className={cn(
               "layout",
               isEditMode && "edit-mode"
@@ -290,77 +371,106 @@ export function AdminEnhancedDashboard({
             breakpoints={BREAKPOINTS}
             cols={COLS}
             rowHeight={cellSize}
+            compactionType={null}  // 關閉自動壓縮，避免小工具自動重新排列
+            preventCollision={false}  // 允許小工具重疊
             isDraggable={isEditMode}
             isResizable={isEditMode}
-            compactType="vertical"
-            preventCollision={false}
-            margin={[20, 20]}
+            resizeHandles={['se']} // 只啟用右下角的 resize handle
+            margin={[16, 16]}
             containerPadding={[20, 20]}
             useCSSTransforms={true}
-            transformScale={1}
-            isBounded={false}
-            autoSize={false}
+            autoSize={true}  // 開啟自動調整大小以適應內容
             measureBeforeMount={false}
+            draggableHandle=".widget-drag-handle"
+            draggableCancel=".widget-no-drag"
           >
           {validatedLayout.widgets.map((widget) => (
-            <div key={widget.id} className="widget-container" data-grid={`${widget.gridProps.w}x${widget.gridProps.h}`}>
-              <div className="h-full relative">
-                  {/* 編輯模式覆蓋層 */}
-                  {isEditMode && (
-                    <div className="absolute inset-0 z-10 pointer-events-none">
-                      <div className="absolute top-2 right-2 flex gap-2 pointer-events-auto">
-                        {/* 尺寸選擇器 */}
-                        <select
-                          value={widget.config.size}
-                          onChange={(e) => handleSizeChange(widget.id, e.target.value as WidgetSize)}
-                          className="px-2 py-1 text-xs bg-slate-700 text-white rounded-md border border-slate-600"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          <option value={WidgetSize.SMALL}>1x1</option>
-                          <option value={WidgetSize.MEDIUM}>3x3</option>
-                          <option value={WidgetSize.LARGE}>5x5</option>
-                        </select>
-                        
-                        {/* 移除按鈕 */}
-                        <button
-                          onClick={() => handleRemoveWidget(widget.id)}
-                          className="px-2 py-1 text-xs bg-red-500 hover:bg-red-600 text-white rounded-md"
-                        >
-                          Remove
-                        </button>
-                      </div>
+            <div key={widget.id} className={cn("widget-container", isEditMode && "widget-drag-handle")}>
+              {/* 編輯模式覆蓋層 */}
+              {isEditMode && (
+                <div 
+                  className="absolute inset-0 pointer-events-none" 
+                  style={{ zIndex: 999 }}
+                  onMouseDown={(e) => e.stopPropagation()}
+                >
+                  <div 
+                    className="absolute top-2 right-2 flex gap-2 pointer-events-auto widget-no-drag" 
+                    style={{ zIndex: 1000 }}
+                    onMouseDown={(e) => e.stopPropagation()}
+                  >
+                    {/* 尺寸選擇器 */}
+                    <div onClick={(e) => e.stopPropagation()}>
+                      <WidgetSizeSelector
+                        currentSize={widget.config.size || WidgetSize.MEDIUM}
+                        widgetType={widget.type}
+                        onChange={(size) => handleSizeChange(widget.id, size)}
+                        className="px-2 py-1 text-xs bg-slate-700 text-white rounded-md border border-slate-600"
+                      />
                     </div>
-                  )}
+                    
+                    {/* 移除按鈕 */}
+                    <button
+                      type="button"
+                      onMouseDown={(e) => {
+                        e.stopPropagation();
+                        e.preventDefault();
+                      }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        e.preventDefault();
+                        handleRemoveWidget(widget.id);
+                      }}
+                      className="w-7 h-7 flex items-center justify-center bg-red-500 hover:bg-red-600 text-white rounded-md text-lg font-bold transition-colors cursor-pointer"
+                      style={{ zIndex: 1001, position: 'relative' }}
+                    >
+                      ×
+                    </button>
+                  </div>
+                </div>
+              )}
 
-                  {/* 渲染小部件 */}
-                  {WidgetRegistry.createComponent(widget.type, {
-                    widget: {
-                      ...widget,
-                      config: {
-                        ...widget.config,
-                        size: widget.config.size || WidgetSize.MEDIUM
-                      }
-                    },
-                    isEditMode
-                  })}
+              {/* 渲染小部件 */}
+              <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column' }}>
+                {WidgetRegistry.createComponent(widget.type, {
+                  widget: {
+                    ...widget,
+                    config: {
+                      ...widget.config,
+                      size: widget.config.size || WidgetSize.MEDIUM
+                    }
+                  },
+                  isEditMode
+                })}
               </div>
             </div>
           ))}
           </ResponsiveGridLayout>
         </div>
+        )}
         
         {/* 空 widget提示 */}
         {validatedLayout.widgets.length === 0 && (
-          <div className="flex flex-col items-center justify-center h-96 text-slate-400">
-            <p className="text-lg mb-4">No widgets added yet</p>
-            {isEditMode && (
-              <Button
-                onClick={() => setShowAddWidget(true)}
-                className="bg-blue-500 hover:bg-blue-600"
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                Add Your First Widget
-              </Button>
+          <div className="flex flex-col items-center justify-center mt-8">
+            {isEditMode ? (
+              <>
+                <p className="text-lg mb-4 text-slate-400">No widgets added yet</p>
+                <Button
+                  onClick={() => setShowAddWidget(true)}
+                  className="bg-blue-500 hover:bg-blue-600"
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add Your First Widget
+                </Button>
+              </>
+            ) : (
+              <div className="text-center space-y-6">
+                <h2 className="text-5xl font-light text-white/20 tracking-wider">
+                  DASHBOARD IS EMPTY
+                </h2>
+                <p className="text-2xl text-white/15 tracking-wide">
+                  Click [EDIT DASHBOARD] to customize your dashboard
+                </p>
+              </div>
             )}
           </div>
         )}
@@ -380,69 +490,131 @@ export function AdminEnhancedDashboard({
 const styles = `
   .layout {
     position: relative;
-    min-height: 400px;
+    height: 100%;
+    /* 防止閃爍 */
+    -webkit-backface-visibility: hidden;
+    -moz-backface-visibility: hidden;
+    backface-visibility: hidden;
+    -webkit-transform: translate3d(0, 0, 0);
+    -moz-transform: translate3d(0, 0, 0);
+    transform: translate3d(0, 0, 0);
   }
 
   .widget-container {
     position: relative;
     height: 100%;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  /* 確保內部內容填滿容器 */
+  .widget-container > *:not(.absolute) {
+    flex: 1;
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+    overflow: auto;
   }
 
   .react-grid-item {
     background: transparent;
+    /* 確保所有 widget 保持正方形 */
+    aspect-ratio: 1 / 1 !important;
+    overflow: hidden;
+    display: flex;
+    align-items: stretch;
+    /* 防止閃爍 */
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
+    transform: translateZ(0);
   }
   
-  /* 只在非拖動狀態下才有 transition */
-  .react-grid-item.cssTransforms {
-    transition: transform 200ms ease;
+  /* 優化過渡動畫以實現類似 iOS 的效果 */
+  .react-grid-item.cssTransforms:not(.react-draggable-dragging) {
+    transition: transform 200ms ease-out;
   }
   
   .react-grid-item.react-draggable-dragging {
     transition: none !important;
+    z-index: 100;
+    opacity: 0.9;
+    cursor: grabbing !important;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+  }
+  
+  /* 編輯模式下的樣式 */
+  .admin-dashboard.edit-mode .react-grid-item {
+    cursor: grab;
+    will-change: transform;
+  }
+  
+  .admin-dashboard.edit-mode .react-grid-item:not(.react-draggable-dragging) {
+    transition: box-shadow 200ms ease;
+  }
+  
+  .admin-dashboard.edit-mode .react-grid-item:hover:not(.react-draggable-dragging) {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    border-radius: 0.75rem;
+  }
+  
+  /* 防止動畫衝突 */
+  .react-grid-item.resizing {
+    transition: none !important;
+  }
+  
+  /* 優化拖動中的 widget 外觀 */
+  .admin-dashboard.edit-mode .react-grid-item.react-draggable-dragging {
+    border-radius: 0.75rem;
   }
 
   .react-grid-item.react-grid-placeholder {
-    background: rgba(59, 130, 246, 0.2) !important;
-    border: 2px dashed rgba(59, 130, 246, 0.5);
+    background: rgba(59, 130, 246, 0.15) !important;
+    border: 2px dashed rgba(59, 130, 246, 0.4);
     border-radius: 0.75rem;
     opacity: 1 !important;
+    transition: all 200ms ease;
   }
 
+  /* 隱藏所有 resize handle */
   .react-grid-item > .react-resizable-handle {
+    display: none;
+  }
+  
+  /* 只顯示右下角的 resize handle */
+  .react-grid-item > .react-resizable-handle.react-resizable-handle-se {
+    display: block;
     position: absolute;
     width: 20px;
     height: 20px;
-    background: transparent;
+    bottom: 0;
+    right: 0;
+    background-image: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2IDYiIHN0eWxlPSJiYWNrZ3JvdW5kLWNvbG9yOiNmZmZmZmYwMCIgeD0iMHB4IiB5PSIwcHgiIHdpZHRoPSI2cHgiIGhlaWdodD0iNnB4Ij48ZyBvcGFjaXR5PSIwLjMwMiI+PHBhdGggZD0iTSA2IDYgTCAwIDYgTCAwIDQuMiBMIDQgNC4yIEwgNC4yIDQuMiBMIDQuMiAwIEwgNiAwIEwgNiA2IEwgNiA2IFoiIGZpbGw9IiMwMDAwMDAiLz48L2c+PC9zdmc+');
+    background-position: bottom right;
+    padding: 0 3px 3px 0;
+    background-repeat: no-repeat;
+    background-origin: content-box;
+    box-sizing: border-box;
+    cursor: se-resize;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    z-index: 15;
+    pointer-events: auto;
   }
-
-  .react-grid-item > .react-resizable-handle::after {
-    content: "";
-    position: absolute;
-    right: 3px;
-    bottom: 3px;
-    width: 5px;
-    height: 5px;
-    border-right: 2px solid rgba(255, 255, 255, 0.6);
-    border-bottom: 2px solid rgba(255, 255, 255, 0.6);
+  
+  /* 確保 widget 內容區域可以正常互動 */
+  .react-grid-item .widget-container {
+    pointer-events: auto;
+    position: relative;
+    z-index: 1;
   }
-
-  .edit-mode .react-grid-item:hover {
-    cursor: move;
+  
+  .admin-dashboard.edit-mode .react-grid-item:hover > .react-resizable-handle.react-resizable-handle-se {
+    opacity: 1;
+  }
+  
+  .admin-dashboard.edit-mode .widget-container:hover {
     box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5);
-    border-radius: 0.75rem;
-  }
-
-  .edit-mode .react-grid-item > .react-resizable-handle {
-    display: block;
-  }
-
-  .react-grid-item.resizing {
-    opacity: 0.9;
-    z-index: 100;
-  }
-
-  .react-grid-item.static {
-    background: transparent;
   }
 `;
 

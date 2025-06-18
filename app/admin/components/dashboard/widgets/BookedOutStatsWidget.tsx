@@ -194,7 +194,7 @@ export function BookedOutStatsWidget({ widget, isEditMode }: WidgetComponentProp
   // Small size (1x1) - 只顯示文字和數據，無 icon
   if (size === WidgetSize.SMALL) {
     return (
-      <WidgetCard widgetType="BOOKED_OUT_STATS" isEditMode={isEditMode}>
+      <WidgetCard size={widget.config.size} widgetType="BOOKED_OUT_STATS" isEditMode={isEditMode}>
         <CardContent className="p-2 h-full flex flex-col justify-center items-center">
           <h3 className="text-xs text-slate-400 mb-1">Transfer</h3>
           {loading ? (
@@ -215,7 +215,7 @@ export function BookedOutStatsWidget({ widget, isEditMode }: WidgetComponentProp
   // Medium size - 顯示操作員統計
   if (size === WidgetSize.MEDIUM) {
     return (
-      <WidgetCard widgetType="BOOKED_OUT_STATS" isEditMode={isEditMode}>
+      <WidgetCard size={widget.config.size} widgetType="BOOKED_OUT_STATS" isEditMode={isEditMode}>
         <CardHeader className="pb-2">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -276,9 +276,6 @@ export function BookedOutStatsWidget({ widget, isEditMode }: WidgetComponentProp
             <div className="space-y-2">
               <div className="text-center mb-3">
                 <div className="text-3xl font-bold text-white">{data.totalCount}</div>
-                <p className="text-xs text-slate-400">
-                  Total Transfers ({timeRange === 'Today' || timeRange === 'Yesterday' ? 'By Hour' : 'By Date'})
-                </p>
               </div>
               
               {/* 操作員列表 */}
@@ -309,7 +306,7 @@ export function BookedOutStatsWidget({ widget, isEditMode }: WidgetComponentProp
 
   // Large size - 包括圖表
   return (
-    <WidgetCard widgetType="BOOKED_OUT_STATS" isEditMode={isEditMode}>
+    <WidgetCard size={widget.config.size} widgetType="BOOKED_OUT_STATS" isEditMode={isEditMode}>
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -368,26 +365,19 @@ export function BookedOutStatsWidget({ widget, isEditMode }: WidgetComponentProp
           <div className="text-red-400 text-sm">{error}</div>
         ) : (
           <>
-            {/* 上半部分 - 統計數據 (40%) */}
-            <div className="h-[40%] mb-3">
-              <div className="text-center mb-3">
-                <div className="text-4xl font-bold text-white">{data.totalCount}</div>
-                <p className="text-sm text-slate-400">
-                  Total Transfers ({timeRange === 'Today' || timeRange === 'Yesterday' ? 'Hourly' : 'Daily'})
-                </p>
-              </div>
-              
+            {/* 上半部分 - 統計數據 (35%) */}
+            <div className="h-[35%] mb-2">
               {/* 操作員列表 */}
-              <div className="bg-black/20 rounded-lg p-3 h-[calc(100%-4rem)] overflow-hidden">
-                <p className="text-sm text-purple-400 mb-2">Operator Performance</p>
+              <div className="bg-black/20 rounded-lg p-2 h-full overflow-hidden">
+                <p className="text-xs text-purple-400 mb-1">Operator Workload</p>
                 {data.operatorData && data.operatorData.length > 0 ? (
-                  <div className="h-[calc(100%-2rem)] overflow-y-auto pr-2 space-y-1">
+                  <div className="h-[calc(100%-1.5rem)] overflow-y-auto pr-1 space-y-0.5">
                     {data.operatorData.slice(0, 10).map((operator) => (
-                      <div key={operator.operator_id} className="flex justify-between items-center py-1 px-2 hover:bg-white/10 rounded transition-colors">
-                        <span className="text-sm text-purple-200">{operator.operator_id}</span>
+                      <div key={operator.operator_id} className="flex justify-between items-center py-0.5 px-2 hover:bg-white/10 rounded transition-colors">
+                        <span className="text-xs text-purple-200">{operator.operator_id}</span>
                         <div className="text-right">
-                          <span className="text-sm font-semibold text-purple-200">{operator.count}</span>
-                          <span className="text-xs text-purple-300 ml-2">({operator.percentage}%)</span>
+                          <span className="text-xs font-semibold text-purple-200">{operator.count}</span>
+                          <span className="text-[10px] text-purple-300 ml-1">({operator.percentage}%)</span>
                         </div>
                       </div>
                     ))}
@@ -398,26 +388,24 @@ export function BookedOutStatsWidget({ widget, isEditMode }: WidgetComponentProp
               </div>
             </div>
             
-            {/* 下半部分 - 折線圖 (60%) */}
-            <div className="h-[60%]">
-              <h4 className="text-sm font-medium text-slate-300 mb-2">
-                Transfer Trend ({timeRange === 'Today' || timeRange === 'Yesterday' ? 'Hourly' : 'Daily'})
-              </h4>
+            {/* 下半部分 - 折線圖 (65%) */}
+            <div className="h-[65%]">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart 
                   data={timeRange === 'Today' || timeRange === 'Yesterday' ? data.hourlyData : data.dailyData}
-                  margin={{ top: 5, right: 10, left: 5, bottom: 5 }}
+                  margin={{ top: 0, right: 0, left: -15, bottom: 15 }}
                 >
                   <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
                   <XAxis 
                     dataKey={timeRange === 'Today' || timeRange === 'Yesterday' ? 'hour' : 'date'}
                     stroke="#9CA3AF"
-                    tick={false}
+                    tick={{ fontSize: 9, fill: '#9CA3AF' }}
                     axisLine={{ stroke: '#9CA3AF' }}
                   />
                   <YAxis 
                     stroke="#9CA3AF" 
-                    tick={{ fontSize: 10, fill: '#9CA3AF' }} 
+                    tick={{ fontSize: 9, fill: '#9CA3AF' }}
+                    width={30}
                   />
                   <Tooltip 
                     contentStyle={{ 

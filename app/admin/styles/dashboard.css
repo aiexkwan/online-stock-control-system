@@ -1,27 +1,101 @@
 /* Admin Dashboard 專用樣式 - 確保正方形顯示 */
 
+/* 確保所有 grid items 保持正方形 */
+.admin-dashboard .react-grid-item {
+  aspect-ratio: 1 / 1 !important;
+  overflow: hidden;
+  display: flex;
+  align-items: stretch;
+}
+
 /* 確保 widget 內容填滿整個容器 */
 .admin-dashboard .widget-container {
   width: 100%;
   height: 100%;
   display: flex;
   flex-direction: column;
+  position: relative;
+  overflow: hidden; /* 防止內容溢出 widget 邊界 */
 }
 
-.admin-dashboard .widget-container > * {
+/* widget 內部的直接子元素 */
+.admin-dashboard .widget-container > *:not(.absolute) {
   flex: 1;
   width: 100%;
   height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Widget 內容滾動處理 */
+.admin-dashboard .widget-content {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+  /* 確保內容可以滾動 */
+  overflow-y: auto;
+  overflow-x: hidden;
+  /* 確保滾動區域的 z-index 高於 resize handle */
+  position: relative;
+  z-index: 20;
+}
+
+/* 自定義滾動條樣式 - Webkit 瀏覽器 */
+.admin-dashboard .widget-content::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+  cursor: pointer !important;
+}
+
+.admin-dashboard .widget-content::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 4px;
+  margin: 4px;
+  cursor: pointer !important;
+}
+
+.admin-dashboard .widget-content::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+  cursor: pointer !important;
+}
+
+.admin-dashboard .widget-content::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
+  cursor: pointer !important;
+}
+
+.admin-dashboard .widget-content::-webkit-scrollbar-corner {
+  background: transparent;
 }
 
 /* 調整網格間距 */
 .admin-dashboard .react-grid-layout {
-  min-height: calc(100vh - 200px);
+  min-height: auto;
+  padding-bottom: 2rem;
 }
 
 /* 確保編輯模式下的控制按鈕不影響佈局 */
 .admin-dashboard .edit-mode .react-grid-item {
   overflow: visible;
+}
+
+/* 編輯模式下的控制按鈕層級 */
+.admin-dashboard.edit-mode .widget-container .absolute.z-30 {
+  z-index: 50 !important; /* 最高層級，確保控制按鈕可用 */
+}
+
+/* 確保按鈕可以點擊 */
+.admin-dashboard.edit-mode button {
+  pointer-events: auto !important;
+  cursor: pointer !important;
+  position: relative;
+}
+
+.admin-dashboard.edit-mode select {
+  pointer-events: auto !important;
+  cursor: pointer !important;
+  position: relative;
 }
 
 /* 防止編輯模式下的閃爍 */
@@ -55,7 +129,29 @@
   bottom: 0;
   right: 0;
   cursor: se-resize;
-  z-index: 10;
+  z-index: 15; /* 低於 widget-content 的 z-index: 20 */
+}
+
+/* 限制 resize handle 只在右下角 20x20 區域 */
+.admin-dashboard.edit-mode .react-resizable-handle-se {
+  width: 20px !important;
+  height: 20px !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  z-index: 10 !important;
+}
+
+/* 確保滾動條區域不被 resize 影響 */
+.admin-dashboard.edit-mode .widget-content {
+  /* 給滾動條留出空間，避免與 resize handle 衝突 */
+  padding-right: 25px; /* 給 resize handle 留出空間 */
+  padding-bottom: 25px;
+}
+
+/* 在非編輯模式下移除額外的 padding */
+.admin-dashboard:not(.edit-mode) .widget-content {
+  padding-right: 0;
+  padding-bottom: 0;
 }
 
 /* 確保拖動區域可點擊 */
@@ -66,4 +162,72 @@
 /* 修正拖動時的指針 */
 .admin-dashboard .react-grid-item.react-draggable-dragging {
   cursor: grabbing !important;
+}
+
+/* 縮放相關的字體大小調整 */
+.admin-dashboard {
+  /* 使用 rem 單位確保字體隨瀏覽器縮放調整 */
+  font-size: 1rem;
+}
+
+/* 針對不同的 widget 尺寸調整字體 */
+.admin-dashboard .react-grid-item[data-grid-width="1"] {
+  font-size: 0.75rem; /* 小型 widget 使用較小字體 */
+}
+
+.admin-dashboard .react-grid-item[data-grid-width="3"] {
+  font-size: 0.875rem; /* 中型 widget */
+}
+
+.admin-dashboard .react-grid-item[data-grid-width="5"] {
+  font-size: 1rem; /* 大型 widget 使用正常字體 */
+}
+
+.admin-dashboard .react-grid-item[data-grid-width="6"] {
+  font-size: 1rem; /* 超大型 widget 使用正常字體 */
+}
+
+/* 響應式調整 */
+@media (max-width: 1280px) {
+  .admin-dashboard .react-grid-layout {
+    min-height: calc(100vh - 180px);
+  }
+}
+
+@media (max-width: 768px) {
+  .admin-dashboard .react-grid-layout {
+    min-height: calc(100vh - 160px);
+  }
+  
+  /* 在小螢幕上調整 aspect ratio */
+  .admin-dashboard .react-grid-item {
+    aspect-ratio: auto !important;
+    min-height: 200px;
+  }
+}
+
+/* 處理高 DPI 螢幕 */
+@media (min-resolution: 144dpi) {
+  .admin-dashboard {
+    /* 微調滾動條大小 */
+    scrollbar-width: auto;
+  }
+  
+  .admin-dashboard .widget-container > * > div::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+}
+
+/* 處理極端縮放情況 */
+@media (min-width: 2560px) {
+  .admin-dashboard {
+    font-size: 1.125rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .admin-dashboard {
+    font-size: 0.875rem;
+  }
 }
