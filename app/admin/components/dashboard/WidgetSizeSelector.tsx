@@ -18,7 +18,8 @@ interface WidgetSizeSelectorProps {
 const SIZE_LABELS = {
   [WidgetSize.SMALL]: '1×1',
   [WidgetSize.MEDIUM]: '3×3',
-  [WidgetSize.LARGE]: '5×5'
+  [WidgetSize.LARGE]: '5×5',
+  [WidgetSize.XLARGE]: '6×6'
 };
 
 export function WidgetSizeSelector({ 

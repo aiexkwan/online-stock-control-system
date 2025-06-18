@@ -4,11 +4,12 @@
 
 import { WidgetRegistry } from './WidgetRegistry';
 import { WidgetType, WidgetSize } from '@/app/types/dashboard';
+import { getDefaultSize, getDefaultWidgetSize } from './WidgetSizeConfig';
 
 // Import all widget components
 import { OutputStatsWidget } from './widgets/OutputStatsWidget';
 import { BookedOutStatsWidget } from './widgets/BookedOutStatsWidget';
-import { VoidStatsWidget } from './widgets/VoidStatsWidget';
+// import { VoidStatsWidget } from './widgets/VoidStatsWidget'; // Removed as requested
 import { AcoOrderProgressWidget } from './widgets/AcoOrderProgressWidget';
 import { FinishedProductWidget } from './widgets/FinishedProductWidget';
 import { MaterialReceivedWidget } from './widgets/MaterialReceivedWidget';
@@ -22,208 +23,159 @@ import { DatabaseUpdateWidget } from './widgets/DatabaseUpdateWidget';
 import { DocumentUploadWidget } from './widgets/DocumentUploadWidget';
 import { ReportsWidget } from './widgets/ReportsWidget';
 
+// Helper function to register widget with default settings
+function registerWidget(
+  type: WidgetType,
+  name: string,
+  description: string,
+  icon: string,
+  component: any,
+  additionalConfig: any = {}
+) {
+  WidgetRegistry.register({
+    type,
+    name,
+    description,
+    icon,
+    component,
+    defaultSize: getDefaultSize(type),
+    defaultConfig: {
+      refreshInterval: 60000,
+      size: getDefaultWidgetSize(type),
+      ...additionalConfig
+    }
+  });
+}
+
 // Register all widgets
 export function registerAdminWidgets() {
   // Statistics widgets
-  WidgetRegistry.register({
-    type: WidgetType.OUTPUT_STATS,
-    name: 'Output Statistics',
-    description: 'Display output statistics',
-    icon: '📊',
-    component: OutputStatsWidget,
-    defaultSize: { w: 1, h: 1 },
-    defaultConfig: {
-      refreshInterval: 60000,
-      size: WidgetSize.SMALL
-    }
-  });
+  registerWidget(
+    WidgetType.OUTPUT_STATS,
+    'Production Statistics',
+    'Display production statistics',
+    '📊',
+    OutputStatsWidget,
+    { timeRange: 'Today' }
+  );
 
-  WidgetRegistry.register({
-    type: WidgetType.BOOKED_OUT_STATS,
-    name: 'Booked Out Statistics',
-    description: 'Display booked out statistics',
-    icon: '📦',
-    component: BookedOutStatsWidget,
-    defaultSize: { w: 1, h: 1 },
-    defaultConfig: {
-      refreshInterval: 60000,
-      size: WidgetSize.SMALL
-    }
-  });
+  registerWidget(
+    WidgetType.BOOKED_OUT_STATS,
+    'Transfer Statistics',
+    'Display transfer statistics',
+    '📦',
+    BookedOutStatsWidget,
+    { timeRange: 'Today' }
+  );
 
-  WidgetRegistry.register({
-    type: WidgetType.VOID_STATS,
-    name: 'Void Statistics',
-    description: 'Display void pallet statistics',
-    icon: '🚫',
-    component: VoidStatsWidget,
-    defaultSize: { w: 3, h: 3 },
-    defaultConfig: {
-      refreshInterval: 60000,
-      size: WidgetSize.MEDIUM
-    }
-  });
+  // Removed VOID_STATS widget as requested
 
   // Operations widgets
-  WidgetRegistry.register({
-    type: WidgetType.ACO_ORDER_PROGRESS,
-    name: 'ACO Order Progress',
-    description: 'Track ACO order progress',
-    icon: '📋',
-    component: AcoOrderProgressWidget,
-    defaultSize: { w: 3, h: 3 },
-    defaultConfig: {
-      refreshInterval: 60000,
-      size: WidgetSize.MEDIUM
-    }
-  });
+  registerWidget(
+    WidgetType.ACO_ORDER_PROGRESS,
+    'ACO Order Progress',
+    'Track ACO order progress',
+    '📋',
+    AcoOrderProgressWidget
+  );
 
-  WidgetRegistry.register({
-    type: WidgetType.FINISHED_PRODUCT,
-    name: 'Finished Product',
-    description: 'Finished product tracking',
-    icon: '✅',
-    component: FinishedProductWidget,
-    defaultSize: { w: 3, h: 3 },
-    defaultConfig: {
-      refreshInterval: 60000,
-      size: WidgetSize.MEDIUM
-    }
-  });
+  registerWidget(
+    WidgetType.FINISHED_PRODUCT,
+    'Production History',
+    'Production history tracking',
+    '✅',
+    FinishedProductWidget
+  );
 
-  WidgetRegistry.register({
-    type: WidgetType.MATERIAL_RECEIVED,
-    name: 'Material Received',
-    description: 'Track received materials',
-    icon: '📥',
-    component: MaterialReceivedWidget,
-    defaultSize: { w: 3, h: 3 },
-    defaultConfig: {
-      refreshInterval: 60000,
-      size: WidgetSize.MEDIUM
-    }
-  });
+  registerWidget(
+    WidgetType.MATERIAL_RECEIVED,
+    'GRN Received',
+    'Track GRN received',
+    '📥',
+    MaterialReceivedWidget
+  );
 
-  WidgetRegistry.register({
-    type: WidgetType.INVENTORY_SEARCH,
-    name: 'Inventory Search',
-    description: 'Quick inventory search',
-    icon: '🔍',
-    component: InventorySearchWidget,
-    defaultSize: { w: 3, h: 3 },
-    defaultConfig: {
-      refreshInterval: 0,
-      size: WidgetSize.MEDIUM
-    }
-  });
+  registerWidget(
+    WidgetType.INVENTORY_SEARCH,
+    'Product Code Search',
+    'Search by product code',
+    '🔍',
+    InventorySearchWidget,
+    { refreshInterval: 0 }
+  );
 
-  WidgetRegistry.register({
-    type: WidgetType.RECENT_ACTIVITY,
-    name: 'Recent Activity',
-    description: 'View recent system activity',
-    icon: '⚡',
-    component: RecentActivityWidget,
-    defaultSize: { w: 3, h: 3 },
-    defaultConfig: {
-      refreshInterval: 30000,
-      size: WidgetSize.MEDIUM
-    }
-  });
+  registerWidget(
+    WidgetType.RECENT_ACTIVITY,
+    'Operation History',
+    'View operation history',
+    '⚡',
+    RecentActivityWidget,
+    { refreshInterval: 30000 }
+  );
 
   // Charts & Analytics
-  WidgetRegistry.register({
-    type: WidgetType.PRODUCT_MIX_CHART,
-    name: 'Product Mix Chart',
-    description: 'Product distribution overview',
-    icon: '📈',
-    component: ProductMixChartWidget,
-    defaultSize: { w: 3, h: 3 },
-    defaultConfig: {
-      refreshInterval: 300000,
-      size: WidgetSize.MEDIUM
-    }
-  });
+  registerWidget(
+    WidgetType.PRODUCT_MIX_CHART,
+    'Inventory Statistics',
+    'Inventory statistics by type',
+    '📈',
+    ProductMixChartWidget,
+    { refreshInterval: 300000, timeRange: 'today' }
+  );
 
   // AI & Tools
-  WidgetRegistry.register({
-    type: WidgetType.ASK_DATABASE,
-    name: 'Ask Database',
-    description: 'AI-powered database queries',
-    icon: '🤖',
-    component: AskDatabaseWidget,
-    defaultSize: { w: 3, h: 3 },
-    defaultConfig: {
-      refreshInterval: 0,
-      size: WidgetSize.MEDIUM
-    }
-  });
+  registerWidget(
+    WidgetType.ASK_DATABASE,
+    'Ask Database',
+    'AI-powered database queries',
+    '🤖',
+    AskDatabaseWidget,
+    { refreshInterval: 0 }
+  );
 
   // System Tools
-  WidgetRegistry.register({
-    type: WidgetType.VIEW_HISTORY,
-    name: 'View History',
-    description: 'View pallet history',
-    icon: '🕐',
-    component: ViewHistoryWidget,
-    defaultSize: { w: 5, h: 5 },
-    defaultConfig: {
-      refreshInterval: 0,
-      size: WidgetSize.LARGE
-    }
-  });
+  registerWidget(
+    WidgetType.VIEW_HISTORY,
+    'Search By Pallet',
+    'Search by pallet number',
+    '🕐',
+    ViewHistoryWidget,
+    { refreshInterval: 0 }
+  );
 
-  WidgetRegistry.register({
-    type: WidgetType.VOID_PALLET,
-    name: 'Void Pallet',
-    description: 'Void pallet management',
-    icon: '❌',
-    component: VoidPalletWidget,
-    defaultSize: { w: 3, h: 3 },
-    defaultConfig: {
-      refreshInterval: 60000,
-      size: WidgetSize.MEDIUM
-    }
-  });
+  registerWidget(
+    WidgetType.VOID_PALLET,
+    'Damage Statistics',
+    'Damage statistics management',
+    '❌',
+    VoidPalletWidget
+  );
 
-  WidgetRegistry.register({
-    type: WidgetType.DATABASE_UPDATE,
-    name: 'System Update',
-    description: 'Database update tools',
-    icon: '🔧',
-    component: DatabaseUpdateWidget,
-    defaultSize: { w: 3, h: 3 },
-    defaultConfig: {
-      refreshInterval: 60000,
-      size: WidgetSize.MEDIUM
-    }
-  });
+  registerWidget(
+    WidgetType.DATABASE_UPDATE,
+    'Data Update',
+    'Data update tools',
+    '🔧',
+    DatabaseUpdateWidget
+  );
 
   // Document Management
-  WidgetRegistry.register({
-    type: WidgetType.UPLOAD_FILES,
-    name: 'Document Management',
-    description: 'Upload and manage documents',
-    icon: '📄',
-    component: DocumentUploadWidget,
-    defaultSize: { w: 3, h: 3 },
-    defaultConfig: {
-      refreshInterval: 60000,
-      size: WidgetSize.MEDIUM
-    }
-  });
+  registerWidget(
+    WidgetType.UPLOAD_FILES,
+    'Document Upload',
+    'Upload documents',
+    '📄',
+    DocumentUploadWidget
+  );
 
-  WidgetRegistry.register({
-    type: WidgetType.REPORTS,
-    name: 'Report Center',
-    description: 'Access system reports',
-    icon: '📊',
-    component: ReportsWidget,
-    defaultSize: { w: 3, h: 3 },
-    defaultConfig: {
-      refreshInterval: 0,
-      size: WidgetSize.MEDIUM
-    }
-  });
+  registerWidget(
+    WidgetType.REPORTS,
+    'Export Report',
+    'Export system reports',
+    '📊',
+    ReportsWidget,
+    { refreshInterval: 0 }
+  );
 }
 
 // Auto-register on import

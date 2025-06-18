@@ -15,7 +15,7 @@ export function EnhancedAskDatabaseWidget({ widget, isEditMode }: WidgetComponen
   // Medium 尺寸 - 簡化版
   if (size === WidgetSize.MEDIUM) {
     return (
-      <WidgetCard widgetType="ASK_DATABASE" isEditMode={isEditMode} className="overflow-hidden p-0">
+      <WidgetCard size={widget.config.size} widgetType="ASK_DATABASE" isEditMode={isEditMode} className="overflow-hidden p-0">
         <div className="h-full overflow-hidden">
           <style jsx global>{`
             .ask-database-widget-medium .p-4 { padding: 0.75rem !important; }
@@ -41,7 +41,7 @@ export function EnhancedAskDatabaseWidget({ widget, isEditMode }: WidgetComponen
 
   // Large 尺寸 - 完整版
   return (
-    <WidgetCard widgetType="ASK_DATABASE" isEditMode={isEditMode} className="overflow-hidden p-0">
+    <WidgetCard size={widget.config.size} widgetType="ASK_DATABASE" isEditMode={isEditMode} className="overflow-hidden p-0">
       <div className="h-full overflow-hidden">
         <style jsx global>{`
           /* Override text colors for data display in large size */

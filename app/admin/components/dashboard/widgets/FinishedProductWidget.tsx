@@ -20,7 +20,7 @@ export function FinishedProductWidget({ widget, isEditMode }: WidgetComponentPro
 
   // All sizes render the same component with different display modes
   return (
-    <WidgetCard widgetType="FINISHED_PRODUCT" isEditMode={isEditMode}>
+    <WidgetCard size={widget.config.size} widgetType="FINISHED_PRODUCT" isEditMode={isEditMode}>
       <CardContent className={`h-full ${size === WidgetSize.SMALL ? 'p-2' : 'p-3'}`}>
         <FinishedProduct widgetSize={size} />
       </CardContent>

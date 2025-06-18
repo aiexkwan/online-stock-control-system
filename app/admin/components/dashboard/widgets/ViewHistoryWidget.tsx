@@ -173,7 +173,7 @@ export function ViewHistoryWidget({ widget, isEditMode }: WidgetComponentProps) 
         animate={{ opacity: 1, y: 0 }}
         className="h-full"
       >
-        <WidgetCard widgetType="VIEW_HISTORY" isEditMode={isEditMode}>
+        <WidgetCard size={widget.config.size} widgetType="VIEW_HISTORY" isEditMode={isEditMode}>
           <CardContent className="p-2 h-full flex flex-col items-center justify-center">
             <h3 className="text-xs text-slate-400 mb-1">View History</h3>
             <div className="text-lg font-medium text-slate-500">(N/A)</div>
@@ -192,7 +192,7 @@ export function ViewHistoryWidget({ widget, isEditMode }: WidgetComponentProps) 
         animate={{ opacity: 1, y: 0 }}
         className="h-full"
       >
-        <WidgetCard widgetType="VIEW_HISTORY" isEditMode={isEditMode}>
+        <WidgetCard size={widget.config.size} widgetType="VIEW_HISTORY" isEditMode={isEditMode}>
           <CardContent className="p-2 h-full flex flex-col items-center justify-center">
             <h3 className="text-xs text-slate-400 mb-1">View History</h3>
             <div className="text-lg font-medium text-slate-500">(N/A)</div>
@@ -210,7 +210,7 @@ export function ViewHistoryWidget({ widget, isEditMode }: WidgetComponentProps) 
       animate={{ opacity: 1, y: 0 }}
       className="h-full"
     >
-      <WidgetCard widgetType="VIEW_HISTORY" isEditMode={isEditMode} className="hover:border-blue-400/50 transition-all duration-300 flex flex-col">
+      <WidgetCard size={widget.config.size} widgetType="VIEW_HISTORY" isEditMode={isEditMode} className="hover:border-blue-400/50 transition-all duration-300 flex flex-col">
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center gap-2">
             <ClockIcon className="w-6 h-6 text-blue-400" />

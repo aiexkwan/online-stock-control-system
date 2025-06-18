@@ -118,7 +118,7 @@ export function DatabaseUpdateWidget({ widget, isEditMode }: WidgetComponentProp
         animate={{ opacity: 1, y: 0 }}
         className="h-full"
       >
-        <WidgetCard widgetType="DATABASE_UPDATE" isEditMode={isEditMode}>
+        <WidgetCard size={widget.config.size} widgetType="DATABASE_UPDATE" isEditMode={isEditMode}>
           <CardContent className="p-2 h-full flex flex-col items-center justify-center">
             <h3 className="text-xs text-slate-400 mb-1">System Update</h3>
             <div className="text-lg font-medium text-slate-500">(N/A)</div>
@@ -137,7 +137,7 @@ export function DatabaseUpdateWidget({ widget, isEditMode }: WidgetComponentProp
         animate={{ opacity: 1, y: 0 }}
         className="h-full"
       >
-        <WidgetCard widgetType="DATABASE_UPDATE" isEditMode={isEditMode}>
+        <WidgetCard size={widget.config.size} widgetType="DATABASE_UPDATE" isEditMode={isEditMode}>
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2">
               <div className="w-8 h-8 bg-gradient-to-r from-orange-500 to-amber-500 rounded-lg flex items-center justify-center">
@@ -219,7 +219,7 @@ export function DatabaseUpdateWidget({ widget, isEditMode }: WidgetComponentProp
       animate={{ opacity: 1, y: 0 }}
       className="h-full"
     >
-      <WidgetCard widgetType="DATABASE_UPDATE" isEditMode={isEditMode}>
+      <WidgetCard size={widget.config.size} widgetType="DATABASE_UPDATE" isEditMode={isEditMode}>
         <CardContent className="p-2 h-full flex flex-col items-center justify-center">
           <h3 className="text-xs text-slate-400 mb-1">System Update</h3>
           <div className="text-lg font-medium text-slate-500">(N/A)</div>

@@ -172,7 +172,7 @@ export function VoidStatsWidget({ widget, isEditMode }: WidgetComponentProps) {
   // Small size (1x1) - 只顯示文字和數據
   if (size === WidgetSize.SMALL) {
     return (
-      <WidgetCard widgetType="VOID_STATS" isEditMode={isEditMode}>
+      <WidgetCard size={widget.config.size} widgetType="VOID_STATS" isEditMode={isEditMode}>
         <CardContent className="p-2 h-full flex flex-col justify-center items-center">
           <h3 className="text-xs text-slate-400 mb-1">Voids</h3>
           {loading ? (
@@ -191,7 +191,7 @@ export function VoidStatsWidget({ widget, isEditMode }: WidgetComponentProps) {
   // Medium size (3x3) - 顯示損毀統計資料列表
   if (size === WidgetSize.MEDIUM) {
     return (
-      <WidgetCard widgetType="VOID_STATS" isEditMode={isEditMode}>
+      <WidgetCard size={widget.config.size} widgetType="VOID_STATS" isEditMode={isEditMode}>
         <CardHeader className="pb-2">
           <CardTitle className="text-sm font-medium text-slate-200">Void Statistics</CardTitle>
         </CardHeader>
@@ -220,7 +220,7 @@ export function VoidStatsWidget({ widget, isEditMode }: WidgetComponentProps) {
 
   // Large size (5x5) - 完整功能包括圖表
   return (
-    <WidgetCard widgetType="VOID_STATS" isEditMode={isEditMode}>
+    <WidgetCard size={widget.config.size} widgetType="VOID_STATS" isEditMode={isEditMode}>
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
           <CardTitle className="text-sm font-medium text-slate-200">Void Statistics</CardTitle>

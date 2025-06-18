@@ -59,7 +59,7 @@ export function MaterialReceivedWidget({ widget, isEditMode }: WidgetComponentPr
   // Small size - only show today's GRN count
   if (size === WidgetSize.SMALL) {
     return (
-      <WidgetCard widgetType="MATERIAL_RECEIVED" isEditMode={isEditMode}>
+      <WidgetCard size={widget.config.size} widgetType="MATERIAL_RECEIVED" isEditMode={isEditMode}>
         <CardContent className="p-2 h-full flex flex-col justify-center items-center">
           <WidgetTitle size="xs" glow="gray" className="mb-1">Material Received</WidgetTitle>
           {loading ? (
@@ -77,7 +77,7 @@ export function MaterialReceivedWidget({ widget, isEditMode }: WidgetComponentPr
 
   // Medium and Large sizes - show full component
   return (
-    <WidgetCard widgetType="MATERIAL_RECEIVED" isEditMode={isEditMode}>
+    <WidgetCard size={widget.config.size} widgetType="MATERIAL_RECEIVED" isEditMode={isEditMode}>
       <div className="h-full overflow-auto p-4">
         <MaterialReceived />
       </div>

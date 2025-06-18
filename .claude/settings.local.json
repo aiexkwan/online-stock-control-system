@@ -49,7 +49,11 @@
       "Bash(pkill:*)",
       "WebFetch(domain:docs.anthropic.com)",
       "Bash(npx supabase db dump:*)",
-      "Bash(npx supabase db push:*)"
+      "Bash(npx supabase db push:*)",
+      "Bash(git pull:*)",
+      "Bash(chmod:*)",
+      "Bash(./update-widgets.sh:*)",
+      "Bash(git push:*)"
     ],
     "deny": []
   }

@@ -18,6 +18,7 @@ import { motion } from 'framer-motion';
 import { toast } from 'sonner';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { format, subDays } from 'date-fns';
+import { useAdminRefresh } from '@/app/admin/contexts/AdminRefreshContext';
 
 interface InventoryLocation {
   product_code: string;
@@ -45,6 +46,7 @@ export function InventorySearchWidget({ widget, isEditMode }: WidgetComponentPro
   const [error, setError] = useState<string | null>(null);
   const [chartData, setChartData] = useState<ChartData[]>([]);
   const [loadingChart, setLoadingChart] = useState(false);
+  const { refreshTrigger } = useAdminRefresh();
 
   const size = widget.config.size || WidgetSize.SMALL;
 
@@ -54,6 +56,13 @@ export function InventorySearchWidget({ widget, isEditMode }: WidgetComponentPro
       fetchChartData(searchResults.product_code);
     }
   }, [searchResults, size, isEditMode]);
+
+  // Re-search when refresh is triggered
+  useEffect(() => {
+    if (searchQuery && refreshTrigger > 0) {
+      searchInventory(searchQuery);
+    }
+  }, [refreshTrigger]);
 
   const fetchChartData = async (productCode: string) => {
     try {
@@ -262,7 +271,7 @@ export function InventorySearchWidget({ widget, isEditMode }: WidgetComponentPro
   // Small size (1x1) - 不支援
   if (size === WidgetSize.SMALL) {
     return (
-      <WidgetCard widgetType="INVENTORY_SEARCH" isEditMode={isEditMode}>
+      <WidgetCard size={widget.config.size} widgetType="INVENTORY_SEARCH" isEditMode={isEditMode}>
         <CardContent className="p-2 h-full flex flex-col justify-center items-center">
           <h3 className="text-xs text-slate-400 mb-1">Inventory Search</h3>
           <div className="text-lg font-medium text-slate-500">(N/A)</div>
@@ -275,7 +284,7 @@ export function InventorySearchWidget({ widget, isEditMode }: WidgetComponentPro
   // Medium size (3x3) - 套用現時 5x5 模式的顯示內容
   if (size === WidgetSize.MEDIUM) {
     return (
-      <WidgetCard widgetType="INVENTORY_SEARCH" isEditMode={isEditMode}>
+      <WidgetCard size={widget.config.size} widgetType="INVENTORY_SEARCH" isEditMode={isEditMode}>
         <CardHeader className="pb-2">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-lg flex items-center justify-center">
@@ -362,7 +371,7 @@ export function InventorySearchWidget({ widget, isEditMode }: WidgetComponentPro
 
   // Large size (5x5) - 上半部維持現有顯示，下半部加入折線圖
   return (
-    <WidgetCard widgetType="INVENTORY_SEARCH" isEditMode={isEditMode} className="flex flex-col">
+    <WidgetCard size={widget.config.size} widgetType="INVENTORY_SEARCH" isEditMode={isEditMode} className="flex flex-col">
       <CardHeader className="pb-2">
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-lg flex items-center justify-center">

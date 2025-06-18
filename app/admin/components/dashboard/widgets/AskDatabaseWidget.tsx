@@ -1,6 +1,6 @@
 /**
  * Ask Database 小部件
- * 只支援 Large 尺寸，因為需要顯示完整的對話介面
+ * 只支援 XLarge (6x6) 尺寸，因為需要顯示完整的對話介面
  */
 
 'use client';
@@ -13,10 +13,10 @@ import { iconColors } from '@/app/utils/dialogStyles';
 import AskDatabaseInlineCard from '@/app/components/AskDatabaseInlineCard';
 
 export function AskDatabaseWidget({ widget, isEditMode }: WidgetComponentProps) {
-  const size = widget.config.size || WidgetSize.LARGE;
+  const size = widget.config.size || WidgetSize.XLARGE;
 
-  // Ask Database 只支援 Large size
-  if (size !== WidgetSize.LARGE) {
+  // Ask Database 只支援 XLarge (6x6) size
+  if (size !== WidgetSize.XLARGE) {
     return (
       <Card className={`h-full bg-black/30 backdrop-blur-sm border border-purple-500/30 shadow-2xl ${isEditMode ? 'border-dashed border-2 border-purple-500/50' : ''}`}>
         <CardContent className="p-6 h-full flex flex-col justify-center items-center">
@@ -25,10 +25,10 @@ export function AskDatabaseWidget({ widget, isEditMode }: WidgetComponentProps) 
           </div>
           <h3 className="text-lg font-medium text-purple-300 mb-2">Ask Database</h3>
           <p className="text-sm text-slate-400 text-center">
-            This widget requires Large size to display the chat interface
+            This widget requires 6×6 size to display the chat interface
           </p>
           <p className="text-xs text-slate-500 mt-2">
-            Please resize to Large
+            Please resize to 6×6
           </p>
         </CardContent>
       </Card>

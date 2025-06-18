@@ -8,6 +8,7 @@
 import React from 'react';
 import { WidgetStyles } from '@/app/utils/widgetStyles';
 import { cn } from '@/lib/utils';
+import { WidgetSize } from '@/app/types/dashboard';
 
 interface WidgetCardProps {
   widgetType: keyof typeof WidgetStyles.borders;
@@ -15,6 +16,7 @@ interface WidgetCardProps {
   className?: string;
   children: React.ReactNode;
   onClick?: () => void;
+  size?: WidgetSize;
 }
 
 export function WidgetCard({ 
@@ -22,27 +24,40 @@ export function WidgetCard({
   isEditMode = false, 
   className = '', 
   children,
-  onClick 
+  onClick,
+  size = WidgetSize.MEDIUM
 }: WidgetCardProps) {
   const borderStyle = WidgetStyles.borders[widgetType] || '';
+  
+  // 1x1 widget 不需要滾動
+  const isSmallWidget = size === WidgetSize.SMALL;
   
   return (
     <div 
       onClick={onClick}
       className={cn(
         // 基礎樣式
-        'h-full rounded-xl border shadow transition-all duration-300',
+        'h-full rounded-xl transition-all duration-300',
         // 透明背景樣式 - 使用白色透明度讓效果更明顯
         'bg-white/3 backdrop-blur-md',
-        // Widget 專屬邊框
+        // Widget 專屬邊框（已包含 border 設定）
         borderStyle,
         // 編輯模式樣式
         isEditMode && 'border-dashed border-2 border-blue-500/50',
+        // 確保內容不會溢出圓角
+        'overflow-hidden',
+        // Flex 佈局
+        'flex flex-col',
         // 額外的自定義樣式
         className
       )}
     >
-      {children}
+      <div className={cn(
+        "flex-1 min-h-0",
+        isSmallWidget ? "overflow-hidden" : "overflow-auto widget-content"
+      )}>
+        {children}
+      </div>
     </div>
   );
 }

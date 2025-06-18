@@ -143,9 +143,10 @@ export function AdminEnhancedDashboard({
     return {
       gridColumn: `${x + 1} / span ${w}`,
       gridRow: `${y + 1} / span ${h}`,
-      minHeight: `${h * rowHeight}px`,
+      aspectRatio: '1 / 1', // 保持正方形
       width: '100%',
-      height: '100%'
+      height: 'auto',
+      overflow: 'hidden'
     };
   };
   
@@ -203,7 +204,7 @@ export function AdminEnhancedDashboard({
           className="grid gap-5 p-5"
           style={{
             gridTemplateColumns: `repeat(${maxCols}, minmax(0, 1fr))`,
-            gridAutoRows: `${rowHeight}px`,
+            gridAutoRows: `minmax(0, 1fr)`, // 改為彈性高度
             minHeight: 'calc(100vh - 200px)'
           }}
         >
@@ -271,6 +272,9 @@ export function AdminEnhancedDashboard({
 const styles = `
   .admin-dashboard .widget-container {
     transition: all 0.2s ease;
+    position: relative;
+    display: flex;
+    flex-direction: column;
   }
   
   .admin-dashboard.edit-mode .widget-container:hover {
@@ -278,9 +282,25 @@ const styles = `
     transform: scale(1.02);
   }
   
-  .admin-dashboard .widget-container > * {
-    height: 100%;
+  .admin-dashboard .widget-container > *:not(.absolute) {
+    flex: 1;
+    min-height: 0;
     width: 100%;
+    overflow: auto;
+  }
+  
+  /* 確保網格系統在不同螢幕尺寸下保持響應式 */
+  @media (max-width: 1280px) {
+    .admin-dashboard .grid {
+      gap: 1rem !important;
+    }
+  }
+  
+  @media (max-width: 768px) {
+    .admin-dashboard .grid {
+      gap: 0.75rem !important;
+      padding: 0.75rem !important;
+    }
   }
 `;
 

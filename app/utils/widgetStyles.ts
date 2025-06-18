@@ -34,6 +34,23 @@ export const WidgetStyles = {
     // Document Management 類
     UPLOAD_FILES: 'border-2 border-sky-500/50 shadow-[0_0_15px_rgba(14,165,233,0.3)]',
     REPORTS: 'border-2 border-rose-500/50 shadow-[0_0_15px_rgba(244,63,94,0.3)]',
+    
+    // 支援小寫版本（兼容性）
+    output_stats: 'border-2 border-emerald-500/50 shadow-[0_0_15px_rgba(16,185,129,0.3)]',
+    booked_out_stats: 'border-2 border-cyan-500/50 shadow-[0_0_15px_rgba(6,182,212,0.3)]',
+    void_stats: 'border-2 border-red-500/50 shadow-[0_0_15px_rgba(239,68,68,0.3)]',
+    product_mix_chart: 'border-2 border-purple-500/50 shadow-[0_0_15px_rgba(168,85,247,0.3)]',
+    recent_activity: 'border-2 border-blue-500/50 shadow-[0_0_15px_rgba(59,130,246,0.3)]',
+    aco_order_progress: 'border-2 border-indigo-500/50 shadow-[0_0_15px_rgba(99,102,241,0.3)]',
+    inventory_search: 'border-2 border-teal-500/50 shadow-[0_0_15px_rgba(20,184,166,0.3)]',
+    finished_product: 'border-2 border-green-500/50 shadow-[0_0_15px_rgba(34,197,94,0.3)]',
+    material_received: 'border-2 border-yellow-500/50 shadow-[0_0_15px_rgba(234,179,8,0.3)]',
+    ask_database: 'border-2 border-pink-500/50 shadow-[0_0_15px_rgba(236,72,153,0.3)]',
+    void_pallet: 'border-2 border-orange-500/50 shadow-[0_0_15px_rgba(249,115,22,0.3)]',
+    view_history: 'border-2 border-lime-500/50 shadow-[0_0_15px_rgba(132,204,22,0.3)]',
+    database_update: 'border-2 border-violet-500/50 shadow-[0_0_15px_rgba(139,92,246,0.3)]',
+    upload_files: 'border-2 border-sky-500/50 shadow-[0_0_15px_rgba(14,165,233,0.3)]',
+    reports: 'border-2 border-rose-500/50 shadow-[0_0_15px_rgba(244,63,94,0.3)]',
   },
   
   // 文字顏色

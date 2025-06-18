@@ -13,6 +13,8 @@ import {
 interface EditDashboardButtonProps {
   isEditMode: boolean;
   onToggleEdit: () => void;
+  onSaveChanges?: () => void;
+  onCancelEdit?: () => void;
   onResetLayout: () => void;
   variant?: 'default' | 'outline';
   size?: 'sm' | 'md' | 'lg';
@@ -22,6 +24,8 @@ interface EditDashboardButtonProps {
 export function EditDashboardButton({
   isEditMode,
   onToggleEdit,
+  onSaveChanges,
+  onCancelEdit,
   onResetLayout,
   variant = 'outline',
   size = 'sm',
@@ -42,11 +46,18 @@ export function EditDashboardButton({
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="bg-slate-800 border-slate-700">
           <DropdownMenuItem 
-            onClick={onToggleEdit}
+            onClick={onSaveChanges || onToggleEdit}
             className="text-white hover:bg-slate-700 cursor-pointer"
           >
             <CheckIcon className="w-4 h-4 mr-2" />
             Save Changes
+          </DropdownMenuItem>
+          <DropdownMenuItem 
+            onClick={onCancelEdit || onToggleEdit}
+            className="text-orange-400 hover:bg-slate-700 cursor-pointer"
+          >
+            <XMarkIcon className="w-4 h-4 mr-2" />
+            Cancel Editing
           </DropdownMenuItem>
           <DropdownMenuItem 
             onClick={onResetLayout}

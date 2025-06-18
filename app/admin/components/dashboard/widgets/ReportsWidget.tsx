@@ -112,7 +112,7 @@ export function ReportsWidget({ widget, isEditMode }: WidgetComponentProps) {
         animate={{ opacity: 1, y: 0 }}
         className="h-full"
       >
-        <WidgetCard widgetType="REPORTS" isEditMode={isEditMode}>
+        <WidgetCard size={widget.config.size} widgetType="REPORTS" isEditMode={isEditMode}>
           <CardContent className="p-2 h-full flex flex-col items-center justify-center">
             <h3 className="text-xs text-slate-400 mb-1">Reports</h3>
             <div className="text-lg font-medium text-slate-500">(N/A)</div>
@@ -133,7 +133,7 @@ export function ReportsWidget({ widget, isEditMode }: WidgetComponentProps) {
         animate={{ opacity: 1, y: 0 }}
         className="h-full"
       >
-        <WidgetCard widgetType="REPORTS" isEditMode={isEditMode}>
+        <WidgetCard size={widget.config.size} widgetType="REPORTS" isEditMode={isEditMode}>
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2">
               <DocumentChartBarIcon className="w-5 h-5 text-emerald-400" />
@@ -170,7 +170,7 @@ export function ReportsWidget({ widget, isEditMode }: WidgetComponentProps) {
       animate={{ opacity: 1, y: 0 }}
       className="h-full"
     >
-      <WidgetCard widgetType="REPORTS" isEditMode={isEditMode}>
+      <WidgetCard size={widget.config.size} widgetType="REPORTS" isEditMode={isEditMode}>
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center gap-2">
             <DocumentChartBarIcon className="w-6 h-6 text-emerald-400" />

@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Button } from "@/components/ui/button";
 import { WidgetType, WidgetSize, WidgetSizeConfig } from '@/app/types/dashboard';
 import { WidgetRegistry } from './WidgetRegistry';
-import { isWidgetSizeSupported } from './WidgetSizeConfig';
+import { isWidgetSizeSupported, getSupportedSizes as getConfigSupportedSizes, getDefaultWidgetSize } from './WidgetSizeConfig';
 import { cn } from '@/lib/utils';
 import { ArrowLeftIcon } from '@heroicons/react/24/outline';
 
@@ -25,15 +25,9 @@ export function WidgetSelectDialog({ isOpen, onSelect, onClose }: WidgetSelectDi
   const [selectedType, setSelectedType] = useState<WidgetType | null>(null);
   const [showSizeSelection, setShowSizeSelection] = useState(false);
 
-  // 獲取支援的尺寸
+  // 使用統一的配置來獲取支援的尺寸
   const getSupportedSizes = (type: WidgetType): WidgetSize[] => {
-    const sizes: WidgetSize[] = [];
-    for (const size of Object.values(WidgetSize)) {
-      if (isWidgetSizeSupported(type, size)) {
-        sizes.push(size);
-      }
-    }
-    return sizes;
+    return getConfigSupportedSizes(type);
   };
 
   const handleTypeSelect = (type: WidgetType) => {
@@ -63,54 +57,23 @@ export function WidgetSelectDialog({ isOpen, onSelect, onClose }: WidgetSelectDi
     }, 300);
   };
 
-  // 定義小部件分組 - 只包含已註冊的 widgets
-  const widgetGroups = [
-    {
-      title: 'Statistics',
-      widgets: [
-        WidgetType.OUTPUT_STATS,
-        WidgetType.BOOKED_OUT_STATS,
-        WidgetType.VOID_STATS,
-      ].filter(type => WidgetRegistry.get(type) !== undefined)
-    },
-    {
-      title: 'Charts & Analytics',
-      widgets: [
-        WidgetType.PRODUCT_MIX_CHART,
-      ].filter(type => WidgetRegistry.get(type) !== undefined)
-    },
-    {
-      title: 'Operations',
-      widgets: [
-        WidgetType.RECENT_ACTIVITY,
-        WidgetType.ACO_ORDER_PROGRESS,
-        WidgetType.INVENTORY_SEARCH,
-        WidgetType.FINISHED_PRODUCT,
-        WidgetType.MATERIAL_RECEIVED,
-      ].filter(type => WidgetRegistry.get(type) !== undefined)
-    },
-    {
-      title: 'Tools',
-      widgets: [
-        WidgetType.ASK_DATABASE,
-      ].filter(type => WidgetRegistry.get(type) !== undefined)
-    },
-    {
-      title: 'System Tools',
-      widgets: [
-        WidgetType.VOID_PALLET,
-        WidgetType.VIEW_HISTORY,
-        WidgetType.DATABASE_UPDATE,
-      ].filter(type => WidgetRegistry.get(type) !== undefined)
-    },
-    {
-      title: 'Document Management',
-      widgets: [
-        WidgetType.UPLOAD_FILES,
-        WidgetType.REPORTS,
-      ].filter(type => WidgetRegistry.get(type) !== undefined)
-    }
-  ].filter(group => group.widgets.length > 0); // 移除沒有 widgets 的分組
+  // 獲取所有已註冊的 widgets (不分組，扁平化顯示)
+  const allWidgets = [
+    WidgetType.OUTPUT_STATS,
+    WidgetType.BOOKED_OUT_STATS,
+    WidgetType.RECENT_ACTIVITY,
+    WidgetType.ACO_ORDER_PROGRESS,
+    WidgetType.PRODUCT_MIX_CHART,
+    WidgetType.INVENTORY_SEARCH,
+    WidgetType.FINISHED_PRODUCT,
+    WidgetType.MATERIAL_RECEIVED,
+    WidgetType.ASK_DATABASE,
+    WidgetType.VOID_PALLET,
+    WidgetType.VIEW_HISTORY,
+    WidgetType.DATABASE_UPDATE,
+    WidgetType.UPLOAD_FILES,
+    WidgetType.REPORTS,
+  ].filter(type => WidgetRegistry.get(type) !== undefined);
 
   const selectedWidget = selectedType ? WidgetRegistry.get(selectedType) : null;
   const supportedSizes = selectedType ? getSupportedSizes(selectedType) : [];
@@ -135,33 +98,28 @@ export function WidgetSelectDialog({ isOpen, onSelect, onClose }: WidgetSelectDi
                 </DialogDescription>
               </DialogHeader>
 
-              <div className="space-y-6 mt-6 max-h-[60vh] overflow-y-auto pr-2">
-                {widgetGroups.map((group) => (
-                  <div key={group.title}>
-                    <h3 className="text-sm font-medium text-slate-400 mb-3">{group.title}</h3>
-                    <div className="grid grid-cols-2 gap-3">
-                      {group.widgets.map((type) => {
-                        const registryItem = WidgetRegistry.get(type);
-                        if (!registryItem) return null;
-                        
-                        return (
-                          <button
-                            key={type}
-                            onClick={() => handleTypeSelect(type)}
-                            className="p-4 rounded-lg border-2 border-slate-700 bg-slate-800 hover:bg-slate-700 hover:border-slate-600 transition-all text-left group"
-                          >
-                            <div className="font-medium group-hover:text-blue-400 transition-colors">
-                              {registryItem.name}
-                            </div>
-                            <div className="text-sm text-slate-400 mt-1">
-                              {registryItem.description}
-                            </div>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                ))}
+              <div className="mt-6 max-h-[60vh] overflow-y-auto pr-2">
+                <div className="grid grid-cols-2 gap-3">
+                  {allWidgets.map((type) => {
+                    const registryItem = WidgetRegistry.get(type);
+                    if (!registryItem) return null;
+                    
+                    return (
+                      <button
+                        key={type}
+                        onClick={() => handleTypeSelect(type)}
+                        className="p-4 rounded-lg border-2 border-slate-700 bg-slate-800 hover:bg-slate-700 hover:border-slate-600 transition-all text-left group"
+                      >
+                        <div className="font-medium group-hover:text-blue-400 transition-colors">
+                          {registryItem.name}
+                        </div>
+                        <div className="text-sm text-slate-400 mt-1">
+                          {registryItem.description}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
             </motion.div>
           ) : (
@@ -221,7 +179,8 @@ export function WidgetSelectDialog({ isOpen, onSelect, onClose }: WidgetSelectDi
                                 "bg-gradient-to-br from-blue-500/20 to-purple-500/20 rounded-lg border border-slate-600",
                                 size === WidgetSize.SMALL && "w-16 h-16",
                                 size === WidgetSize.MEDIUM && "w-24 h-24",
-                                size === WidgetSize.LARGE && "w-32 h-32"
+                                size === WidgetSize.LARGE && "w-32 h-32",
+                                size === WidgetSize.XLARGE && "w-36 h-36"
                               )}
                             >
                               {/* Grid pattern */}
@@ -230,7 +189,8 @@ export function WidgetSelectDialog({ isOpen, onSelect, onClose }: WidgetSelectDi
                                   "grid gap-px bg-slate-700 p-1 h-full",
                                   size === WidgetSize.SMALL && "grid-cols-1 grid-rows-1",
                                   size === WidgetSize.MEDIUM && "grid-cols-3 grid-rows-3",
-                                  size === WidgetSize.LARGE && "grid-cols-5 grid-rows-5"
+                                  size === WidgetSize.LARGE && "grid-cols-5 grid-rows-5",
+                                  size === WidgetSize.XLARGE && "grid-cols-6 grid-rows-6"
                                 )}>
                                   {Array.from({ length: config.w * config.h }).map((_, i) => (
                                     <div key={i} className="bg-slate-800 rounded-sm" />
@@ -267,6 +227,7 @@ export function WidgetSelectDialog({ isOpen, onSelect, onClose }: WidgetSelectDi
                     <div><span className="text-slate-300">Small (1×1):</span> Shows key metrics only</div>
                     <div><span className="text-slate-300">Medium (3×3):</span> Displays detailed information</div>
                     <div><span className="text-slate-300">Large (5×5):</span> Full features with charts</div>
+                    <div><span className="text-slate-300">XLarge (6×6):</span> Extended features (e.g., Ask Database)</div>
                   </div>
                 </div>
               </div>
