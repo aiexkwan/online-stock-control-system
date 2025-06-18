@@ -1,8 +1,7 @@
 /* Admin Dashboard 專用樣式 - 確保正方形顯示 */
 
-/* 確保所有 grid items 保持正方形 */
+/* 確保所有 grid items 保持正方形 - 最高優先級 */
 .admin-dashboard .react-grid-item {
-  aspect-ratio: 1 / 1 !important;
   overflow: hidden;
   display: flex;
   align-items: stretch;
@@ -30,18 +29,33 @@
 
 /* Widget 內容滾動處理 */
 .admin-dashboard .widget-content {
-  scrollbar-width: thin;
-  scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+  /* 預設隱藏滾動條 - Firefox */
+  scrollbar-width: none;
   /* 確保內容可以滾動 */
   overflow-y: auto;
   overflow-x: hidden;
   /* 確保滾動區域的 z-index 高於 resize handle */
   position: relative;
   z-index: 20;
+  /* 過渡效果 */
+  transition: scrollbar-color 0.3s ease;
 }
 
-/* 自定義滾動條樣式 - Webkit 瀏覽器 */
+/* Hover 時顯示滾動條 - Firefox */
+.admin-dashboard .react-grid-item:hover .widget-content {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+}
+
+/* 預設隱藏滾動條 - Webkit 瀏覽器 */
 .admin-dashboard .widget-content::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  transition: width 0.3s ease, height 0.3s ease;
+}
+
+/* Hover 時顯示滾動條 - Webkit 瀏覽器 */
+.admin-dashboard .react-grid-item:hover .widget-content::-webkit-scrollbar {
   width: 8px;
   height: 8px;
   cursor: pointer !important;
@@ -154,6 +168,11 @@
   padding-bottom: 0;
 }
 
+/* Hover 時也需要調整 padding 以容納滾動條 */
+.admin-dashboard:not(.edit-mode) .react-grid-item:hover .widget-content {
+  padding-right: 8px; /* 給滾動條留出空間 */
+}
+
 /* 確保拖動區域可點擊 */
 .admin-dashboard.edit-mode .react-grid-item {
   cursor: move;
@@ -199,10 +218,10 @@
     min-height: calc(100vh - 160px);
   }
   
-  /* 在小螢幕上調整 aspect ratio */
+  /* 在小螢幕上也保持正方形 */
   .admin-dashboard .react-grid-item {
-    aspect-ratio: auto !important;
-    min-height: 200px;
+    aspect-ratio: 1 / 1 !important;
+    min-height: auto;
   }
 }
 

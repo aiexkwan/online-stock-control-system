@@ -53,7 +53,8 @@
       "Bash(git pull:*)",
       "Bash(chmod:*)",
       "Bash(./update-widgets.sh:*)",
-      "Bash(git push:*)"
+      "Bash(git push:*)",
+      "Bash(python3:*)"
     ],
     "deny": []
   }

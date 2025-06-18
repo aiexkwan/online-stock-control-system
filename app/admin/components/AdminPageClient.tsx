@@ -17,13 +17,10 @@ import {
   XMarkIcon,
   ArrowPathIcon
 } from '@heroicons/react/24/outline';
-import { ReportsButton } from '@/app/components/reports/ReportsButton';
-import { AnalyticsButton } from '@/app/components/analytics/AnalyticsButton';
-import { AnalyticsDashboardDialog } from '@/app/components/analytics/AnalyticsDashboardDialog';
 import { EditDashboardButton } from '../components/EditDashboardButton';
 import { RefreshButton } from '../components/RefreshButton';
 import { useAuth } from '@/app/hooks/useAuth';
-import MotionBackground from '../../components/MotionBackground';
+import MotionBackground from '@/app/components/MotionBackground';
 import { useDialog, useReprintDialog } from '@/app/contexts/DialogContext';
 import { DialogManager } from '@/app/components/admin-panel/DialogManager';
 import { adminMenuItems } from '@/app/components/admin-panel/AdminMenu';
@@ -54,6 +51,7 @@ export function AdminPageClient() {
   const [layout, setLayout] = useState<DashboardLayout>(DEFAULT_ADMIN_LAYOUT);
   const [tempLayout, setTempLayout] = useState<DashboardLayout | null>(null);
   const [isEditMode, setIsEditMode] = useState(false);
+  const [currentBreakpoint, setCurrentBreakpoint] = useState<string>('lg');
   
   // Dialog hooks - these will now work because we're inside DialogProvider
   const { openDialog } = useDialog();
@@ -117,6 +115,38 @@ export function AdminPageClient() {
       case 'product-spec':
         openDialog('productSpec');
         break;
+      // Reports
+      case 'void-pallet-report':
+        window.dispatchEvent(new CustomEvent('openVoidPalletReport'));
+        break;
+      case 'order-loading-report':
+        window.dispatchEvent(new CustomEvent('openOrderLoadingReport'));
+        break;
+      case 'stock-take-report':
+        window.dispatchEvent(new CustomEvent('openStockTakeReport'));
+        break;
+      case 'aco-order-report':
+        window.dispatchEvent(new CustomEvent('openAcoOrderReport'));
+        break;
+      case 'transaction-report':
+        window.dispatchEvent(new CustomEvent('openTransactionReport'));
+        break;
+      case 'grn-report':
+        window.dispatchEvent(new CustomEvent('openGrnReport'));
+        break;
+      case 'export-all-data':
+        window.dispatchEvent(new CustomEvent('openExportAllData'));
+        break;
+      // Analytics
+      case 'finished-transfer':
+        window.dispatchEvent(new CustomEvent('openFinishedTransfer'));
+        break;
+      case 'order-trend':
+        window.dispatchEvent(new CustomEvent('openOrderTrend'));
+        break;
+      case 'staff-workload':
+        window.dispatchEvent(new CustomEvent('openStaffWorkload'));
+        break;
       default:
         // No default action
     }
@@ -126,8 +156,8 @@ export function AdminPageClient() {
   useEffect(() => {
     const loadLayout = async () => {
       try {
-        // 先嘗試從資料庫載入
-        const savedLayout = await adminDashboardSettingsService.getAdminDashboardSettings();
+        // 先嘗試從資料庫載入（根據當前 breakpoint）
+        const savedLayout = await adminDashboardSettingsService.getAdminDashboardSettings(currentBreakpoint);
         console.log('Raw layout from service:', savedLayout);
         console.log('Layout timestamp:', new Date().toISOString());
         
@@ -194,7 +224,7 @@ export function AdminPageClient() {
     if (isAuthenticated) {
       loadLayout();
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, currentBreakpoint]);
 
   // 監聽其他標籤頁或裝置的變更
   useEffect(() => {
@@ -269,10 +299,10 @@ export function AdminPageClient() {
   // Save layout to database
   const saveLayoutToDatabase = async (layoutToSave: DashboardLayout) => {
     try {
-      const success = await adminDashboardSettingsService.saveAdminDashboardSettings(layoutToSave);
+      const success = await adminDashboardSettingsService.saveAdminDashboardSettings(layoutToSave, currentBreakpoint);
       if (success) {
-        toast.success('Dashboard layout saved successfully');
-        console.log('Dashboard layout saved to cloud');
+        toast.success(`Dashboard layout saved successfully for ${currentBreakpoint} screen`);
+        console.log(`Dashboard layout saved to cloud for breakpoint: ${currentBreakpoint}`);
       } else {
         toast.error('Failed to save dashboard layout to cloud');
         console.log('Failed to save to cloud');
@@ -443,8 +473,8 @@ export function AdminPageClient() {
       } else {
         // 非編輯模式下，直接重置並儲存
         setLayout(DEFAULT_ADMIN_LAYOUT);
-        // 同時從資料庫刪除儲存的設定
-        const success = await adminDashboardSettingsService.resetToDefault();
+        // 同時從資料庫刪除儲存的設定（只刪除當前 breakpoint）
+        const success = await adminDashboardSettingsService.resetToDefault(currentBreakpoint);
         if (success) {
           toast.success('Dashboard cleared');
         }
@@ -455,43 +485,64 @@ export function AdminPageClient() {
   // Loading state
   if (loading) {
     return (
-      <div className="min-h-screen flex flex-col justify-center items-center p-4 bg-gray-900 text-white">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-orange-500"></div>
-        <p className="text-lg mt-4">Loading...</p>
-      </div>
+      <MotionBackground className="min-h-screen">
+        <div className="min-h-screen flex flex-col justify-center items-center p-4 text-white relative z-10">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-orange-500"></div>
+          <p className="text-lg mt-4">Loading...</p>
+        </div>
+      </MotionBackground>
     );
   }
 
   // Not authenticated
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen flex flex-col justify-center items-center p-4 bg-gray-900 text-white">
-        <h1 className="text-3xl font-bold mb-4 text-orange-500">Authentication Required</h1>
-        <p className="text-lg mb-6">Please log in to access the Admin Panel.</p>
-        <button 
-          onClick={() => router.push('/main-login')}
-          className="px-6 py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors"
-        >
-          Go to Login
-        </button>
-      </div>
+      <MotionBackground className="min-h-screen">
+        <div className="min-h-screen flex flex-col justify-center items-center p-4 text-white relative z-10">
+          <h1 className="text-3xl font-bold mb-4 text-orange-500">Authentication Required</h1>
+          <p className="text-lg mb-6">Please log in to access the Admin Panel.</p>
+          <button 
+            onClick={() => router.push('/main-login')}
+            className="px-6 py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors"
+          >
+            Go to Login
+          </button>
+        </div>
+      </MotionBackground>
     );
   }
 
+  // Main content
   return (
-    <MotionBackground>
-      <div className="text-white min-h-screen flex flex-col overflow-x-hidden">
+    <MotionBackground className="min-h-screen">
+      <div className="text-white min-h-screen flex flex-col overflow-x-hidden relative z-10">
         {/* Admin Panel Navigation Bar */}
-        <div className="bg-slate-800/40 backdrop-blur-xl border-y border-slate-700/50 sticky top-0 z-30">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex items-center justify-between h-16">
-              {/* Left side - Empty space or could be used for breadcrumbs */}
-              <div className="flex items-center">
-                {/* Removed Edit Dashboard button from here */}
-              </div>
+        <div className="bg-slate-800/40 backdrop-blur-xl border-y border-slate-700/50 fixed top-[96px] left-0 right-0 z-30">
+          <div className="flex items-center justify-between h-16 px-4 sm:px-6 lg:px-8">
+            {/* Left side - Refresh and Edit Dashboard buttons */}
+            <div className="flex items-center gap-2">
+              {/* Refresh Button */}
+              <RefreshButton
+                variant="outline"
+                size="sm"
+                className="bg-slate-700/50 border-slate-600/50 hover:bg-slate-600/50 hover:border-slate-500/70 text-slate-300 hover:text-white"
+              />
+              
+              {/* Edit Dashboard Button */}
+              <EditDashboardButton
+                isEditMode={isEditMode}
+                onToggleEdit={isEditMode ? handleEditModeToggle : handleEditModeToggle}
+                onSaveChanges={handleSaveChanges}
+                onCancelEdit={handleCancelEdit}
+                onResetLayout={handleResetLayout}
+                variant="outline"
+                size="sm"
+                className="bg-slate-700/50 border-slate-600/50 hover:bg-slate-600/50 hover:border-slate-500/70 text-slate-300 hover:text-white"
+              />
+            </div>
 
-              {/* Center - Navigation Menu */}
-              <div className="hidden md:flex items-center space-x-1">
+            {/* Center - Navigation Menu */}
+            <div className="hidden md:flex items-center space-x-1 flex-1 justify-center">
                 {Object.entries(groupedItems).map(([category, items]) => (
                   <div key={category} className="relative group">
                     <div className="flex items-center gap-2 px-4 py-2 text-sm text-slate-300 hover:text-white hover:bg-slate-700/50 rounded-xl transition-all duration-300 cursor-pointer">
@@ -529,110 +580,76 @@ export function AdminPageClient() {
                 ))}
               </div>
 
-              {/* Right side - Edit Dashboard, Analytics, Reports buttons and Mobile menu button */}
-              <div className="flex items-center gap-2">
-                {/* Refresh Button */}
-                <RefreshButton
-                  variant="outline"
-                  size="sm"
-                  className="bg-slate-700/50 border-slate-600/50 hover:bg-slate-600/50 hover:border-slate-500/70 text-slate-300 hover:text-white"
-                />
-                
-                {/* Edit Dashboard Button */}
-                <EditDashboardButton
-                  isEditMode={isEditMode}
-                  onToggleEdit={isEditMode ? handleEditModeToggle : handleEditModeToggle}
-                  onSaveChanges={handleSaveChanges}
-                  onCancelEdit={handleCancelEdit}
-                  onResetLayout={handleResetLayout}
-                  variant="outline"
-                  size="sm"
-                  className="bg-slate-700/50 border-slate-600/50 hover:bg-slate-600/50 hover:border-slate-500/70 text-slate-300 hover:text-white"
-                />
-                
-                {/* Analytics Button */}
-                <AnalyticsButton 
-                  variant="outline"
-                  size="sm"
-                  className="bg-slate-700/50 border-slate-600/50 hover:bg-slate-600/50 hover:border-slate-500/70 text-slate-300 hover:text-white"
-                />
-                
-                {/* Reports Button */}
-                <ReportsButton 
-                  variant="outline"
-                  size="sm"
-                  className="bg-slate-700/50 border-slate-600/50 hover:bg-slate-600/50 hover:border-slate-500/70 text-slate-300 hover:text-white"
-                />
-                
-                {/* Mobile menu button */}
-                <div className="md:hidden">
-                  <button
-                    onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                    className="p-3 text-slate-300 hover:text-white hover:bg-slate-700/50 rounded-xl transition-all duration-300"
-                  >
-                    {isDropdownOpen ? (
-                      <XMarkIcon className="w-6 h-6" />
-                    ) : (
-                      <Bars3Icon className="w-6 h-6" />
-                    )}
-                  </button>
-                </div>
+            {/* Right side - Mobile menu button */}
+            <div className="flex items-center gap-2">
+              {/* Mobile menu button */}
+              <div className="md:hidden">
+                <button
+                  onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                  className="p-3 text-slate-300 hover:text-white hover:bg-slate-700/50 rounded-xl transition-all duration-300"
+                >
+                  {isDropdownOpen ? (
+                    <XMarkIcon className="w-6 h-6" />
+                  ) : (
+                    <Bars3Icon className="w-6 h-6" />
+                  )}
+                </button>
               </div>
             </div>
-
-            {/* Mobile Navigation Menu */}
-            <AnimatePresence>
-              {isDropdownOpen && (
-                <motion.div
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: 'auto' }}
-                  exit={{ opacity: 0, height: 0 }}
-                  transition={{ duration: 0.3 }}
-                  className="md:hidden border-t border-slate-700/50 py-6"
-                >
-                  <div className="space-y-6">
-                    {Object.entries(groupedItems).map(([category, items]) => (
-                      <div key={category}>
-                        <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-3">
-                          {category}
-                        </h3>
-                        <div className="space-y-2">
-                          {items.map((item) => {
-                            const IconComponent = item.icon;
-                            return (
-                              <button
-                                key={item.id}
-                                onClick={() => {
-                                  handleItemClick(item);
-                                  setIsDropdownOpen(false);
-                                }}
-                                className={`w-full px-4 py-3 text-left hover:bg-slate-700/50 rounded-xl transition-all duration-300 ${item.color}`}
-                              >
-                                <div className="flex items-center gap-4">
-                                  <IconComponent className="w-5 h-5" />
-                                  <div>
-                                    <div className="text-sm font-medium">
-                                      {item.title}
-                                    </div>
-                                    <div className="text-xs text-slate-400">{item.description}</div>
-                                  </div>
-                                </div>
-                              </button>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
           </div>
+
+          {/* Mobile Navigation Menu */}
+          <AnimatePresence>
+            {isDropdownOpen && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.3 }}
+                className="md:hidden border-t border-slate-700/50 py-6"
+              >
+                <div className="space-y-6">
+                  {Object.entries(groupedItems).map(([category, items]) => (
+                    <div key={category}>
+                      <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-3">
+                        {category}
+                      </h3>
+                      <div className="space-y-2">
+                        {items.map((item) => {
+                          const IconComponent = item.icon;
+                          return (
+                            <button
+                              key={item.id}
+                              onClick={() => {
+                                handleItemClick(item);
+                                setIsDropdownOpen(false);
+                              }}
+                              className={`w-full px-4 py-3 text-left hover:bg-slate-700/50 rounded-xl transition-all duration-300 ${item.color}`}
+                            >
+                              <div className="flex items-center gap-4">
+                                <IconComponent className="w-5 h-5" />
+                                <div>
+                                  <div className="text-sm font-medium">
+                                    {item.title}
+                                  </div>
+                                  <div className="text-xs text-slate-400">{item.description}</div>
+                                </div>
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
 
         {/* Dashboard Content */}
         <div className={`flex-1 w-full px-4 sm:px-6 lg:px-8 ${
-          (isEditMode && tempLayout ? tempLayout : layout).widgets.length === 0 ? 'pt-8 pb-24' : 'pt-8 pb-24'
+          (isEditMode && tempLayout ? tempLayout : layout).widgets.length === 0 ? 'pt-40 pb-24' : 'pt-40 pb-24'
         }`}>
           <AdminEnhancedDashboard
             layout={isEditMode && tempLayout ? tempLayout : layout}
@@ -643,19 +660,20 @@ export function AdminPageClient() {
             isEditMode={isEditMode}
             maxCols={20}
             rowHeight={60}
+            onBreakpointChange={setCurrentBreakpoint}
           />
         </div>
-      </div>
 
-      {/* Footer */}
-      <div className="text-center py-8 relative z-10">
-        <div className="inline-flex items-center space-x-2 text-slate-500 text-sm">
-          <div className="w-1 h-1 bg-slate-500 rounded-full"></div>
-          <span>Pennine Manufacturing Stock Control System</span>
-          <div className="w-1 h-1 bg-slate-500 rounded-full"></div>
+        {/* Footer */}
+        <div className="text-center py-8 relative z-10">
+          <div className="inline-flex items-center space-x-2 text-slate-500 text-sm">
+            <div className="w-1 h-1 bg-slate-500 rounded-full"></div>
+            <span>Pennine Manufacturing Stock Control System</span>
+            <div className="w-1 h-1 bg-slate-500 rounded-full"></div>
+          </div>
         </div>
       </div>
-
+      
       {/* Dialog Manager */}
       <DialogManager
         onReprintNeeded={handleReprintNeeded}
@@ -663,9 +681,6 @@ export function AdminPageClient() {
         onReprintCancel={handleReprintCancel}
         voidState={voidState}
       />
-      
-      {/* Analytics Dashboard Dialog */}
-      <AnalyticsDashboardDialog />
     </MotionBackground>
   );
 }

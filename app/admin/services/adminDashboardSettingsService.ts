@@ -13,6 +13,7 @@ export interface AdminDashboardSettings {
   dashboard_name: string;
   config: DashboardLayout;
   is_default: boolean;
+  breakpoint?: string; // 新增：支援不同螢幕尺寸
   created_at?: string;
   updated_at?: string;
 }
@@ -37,9 +38,9 @@ class AdminDashboardSettingsService {
   }
 
   /**
-   * 獲取用戶的 admin dashboard 設定
+   * 獲取用戶的 admin dashboard 設定（根據螢幕尺寸）
    */
-  async getAdminDashboardSettings(): Promise<DashboardLayout | null> {
+  async getAdminDashboardSettings(breakpoint: string = 'lg'): Promise<DashboardLayout | null> {
     try {
       const user = await this.getCurrentUser();
       
@@ -49,17 +50,22 @@ class AdminDashboardSettingsService {
         .select('*')
         .eq('user_id', user.id)
         .eq('dashboard_name', this.DASHBOARD_NAME)
+        .eq('breakpoint', breakpoint)
         .single();
 
       if (error) {
-        // 如果是找不到記錄的錯誤，返回 null
+        // 如果是找不到記錄的錯誤，嘗試獲取預設的 lg 布局
         if (error.code === 'PGRST116') {
+          if (breakpoint !== 'lg') {
+            // 如果當前 breakpoint 沒有設定，嘗試使用 lg 的設定
+            return this.getAdminDashboardSettings('lg');
+          }
           return null;
         }
         throw error;
       }
 
-      console.log('Loaded dashboard config from Supabase:', JSON.stringify(data.config, null, 2));
+      console.log(`Loaded dashboard config for breakpoint ${breakpoint} from Supabase:`, JSON.stringify(data.config, null, 2));
       return data.config as DashboardLayout;
     } catch (error) {
       console.error('Error fetching admin dashboard settings:', error);
@@ -68,13 +74,13 @@ class AdminDashboardSettingsService {
   }
 
   /**
-   * 保存用戶的 admin dashboard 設定
+   * 保存用戶的 admin dashboard 設定（根據螢幕尺寸）
    */
-  async saveAdminDashboardSettings(layout: DashboardLayout): Promise<boolean> {
+  async saveAdminDashboardSettings(layout: DashboardLayout, breakpoint: string = 'lg'): Promise<boolean> {
     try {
       const user = await this.getCurrentUser();
       
-      console.log('Saving dashboard config to Supabase:', JSON.stringify(layout, null, 2));
+      console.log(`Saving dashboard config for breakpoint ${breakpoint} to Supabase:`, JSON.stringify(layout, null, 2));
       
       // 創建新的 Supabase 客戶端以避免快取
       const supabase = this.getSupabase();
@@ -88,10 +94,11 @@ class AdminDashboardSettingsService {
           dashboard_name: this.DASHBOARD_NAME,
           config: layout,
           is_default: false,
+          breakpoint: breakpoint,
           updated_at: new Date().toISOString()
         }, {
-          // 使用 user_id 和 dashboard_name 作為唯一標識
-          onConflict: 'user_id,dashboard_name'
+          // 使用 user_id, dashboard_name 和 breakpoint 作為唯一標識
+          onConflict: 'user_id,dashboard_name,breakpoint'
         });
 
       if (error) {
@@ -109,16 +116,23 @@ class AdminDashboardSettingsService {
   /**
    * 重置為預設設定（清空所有 widgets）
    */
-  async resetToDefault(): Promise<boolean> {
+  async resetToDefault(breakpoint?: string): Promise<boolean> {
     try {
       const user = await this.getCurrentUser();
       
-      // 從資料庫刪除
-      const { error } = await this.getSupabase()
+      // 構建刪除條件
+      let query = this.getSupabase()
         .from('user_dashboard_settings')
         .delete()
         .eq('user_id', user.id)
         .eq('dashboard_name', this.DASHBOARD_NAME);
+      
+      // 如果指定了 breakpoint，只刪除該 breakpoint 的設定
+      if (breakpoint) {
+        query = query.eq('breakpoint', breakpoint);
+      }
+      
+      const { error } = await query;
 
       if (error) throw error;
       

@@ -13,6 +13,16 @@ import {
   ClockIcon, 
   CubeIcon,
   DocumentTextIcon,
+  DocumentChartBarIcon,
+  TruckIcon,
+  ClipboardDocumentCheckIcon,
+  ClipboardDocumentListIcon,
+  ArrowsRightLeftIcon,
+  DocumentArrowDownIcon,
+  CircleStackIcon,
+  ChartBarIcon,
+  ArrowTrendingUpIcon,
+  UserGroupIcon
 } from '@heroicons/react/24/outline';
 
 export const adminMenuItems = [
@@ -69,6 +79,98 @@ export const adminMenuItems = [
     action: 'product-spec',
     color: 'hover:bg-cyan-900/20 hover:text-cyan-400',
     category: 'Document Upload'
+  },
+  // Reports
+  {
+    id: 'void-pallet-report',
+    title: 'Void Pallet Report',
+    description: 'View void pallet records',
+    icon: NoSymbolIcon,
+    action: 'void-pallet-report',
+    color: 'hover:bg-red-900/20 hover:text-red-400',
+    category: 'Reports'
+  },
+  {
+    id: 'order-loading-report',
+    title: 'Order Loading Report',
+    description: 'View order loading records',
+    icon: TruckIcon,
+    action: 'order-loading-report',
+    color: 'hover:bg-blue-900/20 hover:text-blue-400',
+    category: 'Reports'
+  },
+  {
+    id: 'stock-take-report',
+    title: 'Stock Take Report',
+    description: 'View stock take records',
+    icon: ClipboardDocumentCheckIcon,
+    action: 'stock-take-report',
+    color: 'hover:bg-green-900/20 hover:text-green-400',
+    category: 'Reports'
+  },
+  {
+    id: 'aco-order-report',
+    title: 'ACO Order Report',
+    description: 'View ACO order records',
+    icon: ClipboardDocumentListIcon,
+    action: 'aco-order-report',
+    color: 'hover:bg-purple-900/20 hover:text-purple-400',
+    category: 'Reports'
+  },
+  {
+    id: 'transaction-report',
+    title: 'Transaction Report',
+    description: 'View transaction records',
+    icon: ArrowsRightLeftIcon,
+    action: 'transaction-report',
+    color: 'hover:bg-orange-900/20 hover:text-orange-400',
+    category: 'Reports'
+  },
+  {
+    id: 'grn-report',
+    title: 'GRN Report',
+    description: 'View goods received notes',
+    icon: DocumentArrowDownIcon,
+    action: 'grn-report',
+    color: 'hover:bg-teal-900/20 hover:text-teal-400',
+    category: 'Reports'
+  },
+  {
+    id: 'export-all-data',
+    title: 'Export All Data',
+    description: 'Export all system data',
+    icon: CircleStackIcon,
+    action: 'export-all-data',
+    color: 'hover:bg-indigo-900/20 hover:text-indigo-400',
+    category: 'Reports'
+  },
+  // Analytics
+  {
+    id: 'finished-transfer',
+    title: 'Finished Transfer',
+    description: 'Output ratio analytics',
+    icon: ChartBarIcon,
+    action: 'finished-transfer',
+    color: 'hover:bg-blue-900/20 hover:text-blue-400',
+    category: 'Analytics'
+  },
+  {
+    id: 'order-trend',
+    title: 'Order Trend',
+    description: 'Product trend analytics',
+    icon: ArrowTrendingUpIcon,
+    action: 'order-trend',
+    color: 'hover:bg-green-900/20 hover:text-green-400',
+    category: 'Analytics'
+  },
+  {
+    id: 'staff-workload',
+    title: 'Staff Workload',
+    description: 'Staff productivity analytics',
+    icon: UserGroupIcon,
+    action: 'staff-workload',
+    color: 'hover:bg-purple-900/20 hover:text-purple-400',
+    category: 'Analytics'
   }
 ];
 
@@ -99,6 +201,38 @@ export function AdminMenu({ className }: AdminMenuProps) {
         break;
       case 'product-spec':
         openDialog('productSpec');
+        break;
+      // Reports
+      case 'void-pallet-report':
+        window.dispatchEvent(new CustomEvent('openVoidPalletReport'));
+        break;
+      case 'order-loading-report':
+        window.dispatchEvent(new CustomEvent('openOrderLoadingReport'));
+        break;
+      case 'stock-take-report':
+        window.dispatchEvent(new CustomEvent('openStockTakeReport'));
+        break;
+      case 'aco-order-report':
+        window.dispatchEvent(new CustomEvent('openAcoOrderReport'));
+        break;
+      case 'transaction-report':
+        window.dispatchEvent(new CustomEvent('openTransactionReport'));
+        break;
+      case 'grn-report':
+        window.dispatchEvent(new CustomEvent('openGrnReport'));
+        break;
+      case 'export-all-data':
+        window.dispatchEvent(new CustomEvent('openExportAllData'));
+        break;
+      // Analytics
+      case 'finished-transfer':
+        window.dispatchEvent(new CustomEvent('openFinishedTransfer'));
+        break;
+      case 'order-trend':
+        window.dispatchEvent(new CustomEvent('openOrderTrend'));
+        break;
+      case 'staff-workload':
+        window.dispatchEvent(new CustomEvent('openStaffWorkload'));
         break;
       default:
         // No default action

@@ -131,7 +131,7 @@ export function OutputStatsWidget({ widget, isEditMode }: WidgetComponentProps) 
             
             // 按日期統計 (for Large size)
             if (size === WidgetSize.LARGE) {
-              const date = formatDbTime(p.generate_time).split(' ')[0]; // 取日期部分
+              const date = formatDbTime(p.generate_time, 'yyyy-MM-dd'); // 只取日期部分
               if (!dailyMap.has(date)) {
                 dailyMap.set(date, new Map());
               }
@@ -163,6 +163,7 @@ export function OutputStatsWidget({ widget, isEditMode }: WidgetComponentProps) 
                 return dayData;
               })
               .sort((a, b) => a.date.localeCompare(b.date));
+            
           }
         }
       }
@@ -409,7 +410,7 @@ export function OutputStatsWidget({ widget, isEditMode }: WidgetComponentProps) 
                       <XAxis 
                         dataKey="date" 
                         stroke="#9CA3AF"
-                        tick={false}
+                        tick={{ fontSize: 10, fill: '#9CA3AF' }}
                         axisLine={{ stroke: '#9CA3AF' }}
                       />
                       <YAxis 

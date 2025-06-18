@@ -21,13 +21,11 @@ import { format } from 'date-fns';
 import { WidgetStyles } from '@/app/utils/widgetStyles';
 
 interface VoidRecord {
-  void_id: number;
+  uuid: string;
   plt_num: string;
-  void_date: string;
-  void_reason: string;
-  voided_by: string;
-  product_code?: string;
-  quantity?: number;
+  time: string;
+  reason: string;
+  damage_qty: number;
 }
 
 interface VoidStats {
@@ -67,10 +65,10 @@ export function VoidPalletWidget({ widget, isEditMode }: WidgetComponentProps) {
 
       // 獲取總數和不同時間範圍的統計
       const [totalResult, todayResult, weekResult, monthResult] = await Promise.all([
-        supabase.from('record_void').select('*', { count: 'exact', head: true }),
-        supabase.from('record_void').select('*', { count: 'exact', head: true }).gte('void_date', todayStart),
-        supabase.from('record_void').select('*', { count: 'exact', head: true }).gte('void_date', weekStart.toISOString()),
-        supabase.from('record_void').select('*', { count: 'exact', head: true }).gte('void_date', monthStart)
+        supabase.from('report_void').select('*', { count: 'exact', head: true }),
+        supabase.from('report_void').select('*', { count: 'exact', head: true }).gte('time', todayStart),
+        supabase.from('report_void').select('*', { count: 'exact', head: true }).gte('time', weekStart.toISOString()),
+        supabase.from('report_void').select('*', { count: 'exact', head: true }).gte('time', monthStart)
       ]);
 
       setStats({
@@ -83,9 +81,9 @@ export function VoidPalletWidget({ widget, isEditMode }: WidgetComponentProps) {
       // 如果是 MEDIUM 或 LARGE size，載入最近的作廢記錄
       if (size !== WidgetSize.SMALL) {
         const { data: voidData } = await supabase
-          .from('record_void')
+          .from('report_void')
           .select('*')
-          .order('void_date', { ascending: false })
+          .order('time', { ascending: false })
           .limit(size === WidgetSize.MEDIUM ? 5 : 10);
 
         setRecentVoids(voidData || []);
@@ -94,14 +92,14 @@ export function VoidPalletWidget({ widget, isEditMode }: WidgetComponentProps) {
       // 如果是 LARGE size，載入圖表資料
       if (size === WidgetSize.LARGE) {
         const { data: chartVoidData } = await supabase
-          .from('record_void')
-          .select('void_date')
-          .gte('void_date', weekStart.toISOString())
-          .order('void_date', { ascending: true });
+          .from('report_void')
+          .select('time')
+          .gte('time', weekStart.toISOString())
+          .order('time', { ascending: true });
 
         // 按日期分組統計
         const groupedData = (chartVoidData || []).reduce((acc: any, record) => {
-          const date = format(new Date(record.void_date), 'MM/dd');
+          const date = format(new Date(record.time), 'MM/dd');
           acc[date] = (acc[date] || 0) + 1;
           return acc;
         }, {});
@@ -194,15 +192,15 @@ export function VoidPalletWidget({ widget, isEditMode }: WidgetComponentProps) {
               ) : (
                 <div className="space-y-2 max-h-48 overflow-y-auto">
                   {recentVoids.map((record) => (
-                    <div key={record.void_id} className="bg-slate-700/30 rounded-lg p-2 text-xs">
+                    <div key={record.uuid} className="bg-slate-700/30 rounded-lg p-2 text-xs">
                       <div className="flex justify-between items-start">
                         <div>
                           <div className="font-medium text-purple-400">{record.plt_num}</div>
-                          <div className="text-purple-300">{record.void_reason}</div>
+                          <div className="text-purple-300">{record.reason}</div>
                         </div>
                         <div className="text-purple-300 text-right">
-                          <div>{format(new Date(record.void_date), 'MM/dd')}</div>
-                          <div>{format(new Date(record.void_date), 'HH:mm')}</div>
+                          <div>{format(new Date(record.time), 'MM/dd')}</div>
+                          <div>{format(new Date(record.time), 'HH:mm')}</div>
                         </div>
                       </div>
                     </div>
@@ -275,23 +273,22 @@ export function VoidPalletWidget({ widget, isEditMode }: WidgetComponentProps) {
             ) : (
               <div className="space-y-2 max-h-64 overflow-y-auto">
                 {recentVoids.map((record) => (
-                  <div key={record.void_id} className="bg-slate-700/30 rounded-lg p-3">
+                  <div key={record.uuid} className="bg-slate-700/30 rounded-lg p-3">
                     <div className="flex justify-between items-start">
                       <div className="flex-1">
                         <div className="flex items-center gap-2">
                           <span className="font-medium text-purple-400">{record.plt_num}</span>
-                          {record.product_code && (
+                          {record.damage_qty > 0 && (
                             <span className="text-xs bg-slate-600/50 px-2 py-1 rounded text-purple-300">
-                              {record.product_code}
+                              Qty: {record.damage_qty}
                             </span>
                           )}
                         </div>
-                        <div className="text-sm text-purple-300 mt-1">{record.void_reason}</div>
-                        <div className="text-xs text-purple-200 mt-1">By: {record.voided_by}</div>
+                        <div className="text-sm text-purple-300 mt-1">{record.reason}</div>
                       </div>
                       <div className="text-right">
-                        <div className="text-sm text-purple-300">{format(new Date(record.void_date), 'MMM dd')}</div>
-                        <div className="text-xs text-purple-200">{format(new Date(record.void_date), 'HH:mm')}</div>
+                        <div className="text-sm text-purple-300">{format(new Date(record.time), 'MMM dd')}</div>
+                        <div className="text-xs text-purple-200">{format(new Date(record.time), 'HH:mm')}</div>
                       </div>
                     </div>
                   </div>

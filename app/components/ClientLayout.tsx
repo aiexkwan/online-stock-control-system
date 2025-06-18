@@ -6,6 +6,7 @@ import AuthChecker from './AuthChecker';
 import GlobalHeader from '@/components/GlobalHeader';
 import MotionBackground from './MotionBackground';
 import { GlobalReportDialogs } from '@/app/components/reports/GlobalReportDialogs';
+import { GlobalAnalyticsDialogs } from '@/app/components/analytics/GlobalAnalyticsDialogs';
 
 interface ClientLayoutProps {
   children: React.ReactNode;
@@ -41,6 +42,9 @@ export default function ClientLayout({ children }: ClientLayoutProps) {
         
         {/* Global report dialogs */}
         <GlobalReportDialogs />
+        
+        {/* Global analytics dialogs */}
+        <GlobalAnalyticsDialogs />
       </AuthChecker>
     </>
   );

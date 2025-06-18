@@ -22,6 +22,7 @@ import DatabaseUpdateDialog from '@/app/components/admin-panel-menu/DatabaseUpda
 import AskDatabaseDialog from '@/app/components/admin-panel-menu/AskDatabaseDialog';
 import { ReprintInfoDialog } from '@/app/void-pallet/components/ReprintInfoDialog';
 
+
 interface DialogManagerProps {
   // Callbacks for specific dialogs
   onReprintNeeded?: (reprintInfo: any) => void;

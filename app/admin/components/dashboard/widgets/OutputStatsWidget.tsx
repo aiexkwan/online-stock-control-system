@@ -116,7 +116,7 @@ export function OutputStatsWidget({ widget, isEditMode }: WidgetComponentProps) 
             
             // 按日期統計 (for Large size)
             if (size === WidgetSize.LARGE) {
-              const date = formatDbTime(p.generate_time).split(' ')[0]; // 取日期部分
+              const date = formatDbTime(p.generate_time, 'yyyy-MM-dd'); // 只取日期部分
               if (!dailyMap.has(date)) {
                 dailyMap.set(date, new Map());
               }
@@ -135,31 +135,20 @@ export function OutputStatsWidget({ widget, isEditMode }: WidgetComponentProps) 
             
           // Large size 需要 daily data for grouped bar chart
           if (size === WidgetSize.LARGE) {
-            // 如果沒有日期數據，創建一個示例數據
-            if (dailyMap.size === 0) {
-              // 創建過去7天的數據
-              const today = new Date();
-              for (let i = 6; i >= 0; i--) {
-                const date = new Date(today);
-                date.setDate(today.getDate() - i);
-                const dateStr = format(date, 'yyyy-MM-dd');
-                dailyMap.set(dateStr, new Map());
-              }
-            }
-            
             // 獲取前 3 個產品代碼
             const topProducts = productDetails.slice(0, 3).map(p => p.product_code);
             
             // 轉換成圖表數據格式
             dailyData = Array.from(dailyMap.entries())
               .map(([date, products]) => {
-                const dayData: any = { date: format(new Date(date), 'MM/dd') };
+                const dayData: any = { date };
                 topProducts.forEach(code => {
                   dayData[code] = products.get(code) || 0;
                 });
                 return dayData;
               })
               .sort((a, b) => a.date.localeCompare(b.date));
+            
           }
         }
       }
@@ -378,9 +367,9 @@ export function OutputStatsWidget({ widget, isEditMode }: WidgetComponentProps) 
         ) : error ? (
           <div className="text-red-400 text-sm">{error}</div>
         ) : (
-          <div className="h-full flex flex-col">
+          <div className="h-full flex flex-col" style={{ minHeight: '400px' }}>
             {/* 上部份 - Product Code 明細列表 (1/4) */}
-            <div className="h-[25%] mb-2">
+            <div className="flex-shrink-0 mb-2" style={{ height: '100px' }}>
               <div className="bg-black/20 rounded-lg p-2 h-full overflow-hidden flex flex-col">
                 <p className="text-xs text-purple-400 mb-1 flex-shrink-0">Product Details ({data.productCodeCount} codes, Total: {data.totalQuantity.toLocaleString()})</p>
                 {data.productDetails && data.productDetails.length > 0 ? (
@@ -404,16 +393,18 @@ export function OutputStatsWidget({ widget, isEditMode }: WidgetComponentProps) 
             </div>
             
             {/* 下部份 - 棒型圖 (3/4) */}
-            <div className="h-[75%] bg-black/20 rounded-lg p-2 overflow-hidden">
+            <div className="flex-1 bg-black/20 rounded-lg p-2 overflow-hidden" style={{ minHeight: '300px' }}>
               <h4 className="text-xs font-medium text-slate-300 mb-1">Daily Product Quantity Chart (Top 3)</h4>
               {data.productDetails && data.productDetails.length > 0 ? (
-                <div className="h-[calc(100%-20px)]">
+                <div className="h-[calc(100%-20px)]" style={{ minHeight: '250px' }}>
                   {(!data.dailyData || data.dailyData.length === 0) ? (
                     <div className="h-full flex items-center justify-center">
                       <p className="text-sm text-slate-500">No chart data available</p>
                     </div>
                   ) : (
-                    <ResponsiveContainer width="100%" height="100%">
+                    <>
+                      <div style={{ width: '100%', height: '400px' }}>
+                        <ResponsiveContainer width="100%" height={400}>
                       <BarChart 
                         data={data.dailyData}
                         margin={{ top: 5, right: 0, left: 0, bottom: 20 }}
@@ -422,7 +413,7 @@ export function OutputStatsWidget({ widget, isEditMode }: WidgetComponentProps) 
                       <XAxis 
                         dataKey="date" 
                         stroke="#9CA3AF"
-                        tick={false}
+                        tick={{ fontSize: 10, fill: '#9CA3AF' }}
                         axisLine={{ stroke: '#9CA3AF' }}
                       />
                       <YAxis 
@@ -448,9 +439,9 @@ export function OutputStatsWidget({ widget, isEditMode }: WidgetComponentProps) 
                             key={product.product_code}
                             dataKey={product.product_code} 
                             fill={[
-                              '#10B981', // Green
-                              '#34D399', // Emerald
-                              '#6EE7B7', // Light Green
+                              '#3B82F6', // Blue
+                              '#F59E0B', // Amber
+                              '#8B5CF6', // Purple
                             ][index]}
                             radius={[4, 4, 0, 0]}
                           />
@@ -460,6 +451,8 @@ export function OutputStatsWidget({ widget, isEditMode }: WidgetComponentProps) 
                       )}
                       </BarChart>
                     </ResponsiveContainer>
+                      </div>
+                    </>
                   )}
                 </div>
               ) : (
