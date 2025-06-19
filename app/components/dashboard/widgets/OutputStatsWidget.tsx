@@ -108,8 +108,14 @@ export function OutputStatsWidget({ widget, isEditMode }: WidgetComponentProps) 
       // 如果是 Medium 或 Large size，還需要獲取 product code 統計
       let productCodeCount = 0;
       let totalQuantity = 0;
-      let productDetails = [];
-      let dailyData = [];
+      let productDetails: Array<{ 
+        product_code: string; 
+        quantity: number; 
+      }> = [];
+      let dailyData: Array<{
+        date: string;
+        [key: string]: any; // 動態 product code 欄位
+      }> = [];
       
       if (size === WidgetSize.MEDIUM || size === WidgetSize.LARGE) {
         // 獲取所有產品代碼和數量
