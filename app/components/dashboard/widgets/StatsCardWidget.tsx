@@ -112,7 +112,7 @@ export function StatsCardWidget({ widget, isEditMode }: WidgetComponentProps) {
     <Card className={`h-full bg-slate-900/95 backdrop-blur-xl border border-slate-700/50 shadow-2xl ${isEditMode ? 'border-dashed border-2 border-blue-500/50' : ''}`}>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <CardTitle className="text-sm font-medium bg-gradient-to-r from-blue-300 via-cyan-300 to-blue-200 bg-clip-text text-transparent">
-          {widget.title}
+          {'title' in widget ? widget.title : 'Stats'}
         </CardTitle>
         {getIcon()}
       </CardHeader>

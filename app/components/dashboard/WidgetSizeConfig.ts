@@ -111,7 +111,7 @@ export const WIDGET_SIZE_CONFIGS = {
 
 // Helper functions
 export function getWidgetSizeConfig(widgetType: WidgetType) {
-  return WIDGET_SIZE_CONFIGS[widgetType] || WIDGET_SIZE_CONFIGS.DEFAULT;
+  return WIDGET_SIZE_CONFIGS[widgetType as keyof typeof WIDGET_SIZE_CONFIGS] || WIDGET_SIZE_CONFIGS.DEFAULT;
 }
 
 export function getDefaultSize(widgetType: WidgetType) {
