@@ -348,12 +348,13 @@ export function AdminPageClient() {
   };
 
   // Add widget
-  const handleAddWidget = (widgetType: WidgetType, config?: Partial<WidgetConfig>) => {
+  const handleAddWidget = (widgetType: WidgetType, config?: Partial<WidgetConfig['config']>) => {
     const currentLayout = isEditMode && tempLayout ? tempLayout : layout;
     
     // 計算新 widget 的尺寸
-    const widgetWidth = config?.size === WidgetSize.XLARGE ? 6 : config?.size === WidgetSize.LARGE ? 5 : config?.size === WidgetSize.SMALL ? 1 : 3;
-    const widgetHeight = config?.size === WidgetSize.XLARGE ? 6 : config?.size === WidgetSize.LARGE ? 5 : config?.size === WidgetSize.SMALL ? 1 : 3;
+    const size = config?.size || WidgetSize.MEDIUM;
+    const widgetWidth = size === WidgetSize.XLARGE ? 6 : size === WidgetSize.LARGE ? 5 : size === WidgetSize.SMALL ? 1 : 3;
+    const widgetHeight = size === WidgetSize.XLARGE ? 6 : size === WidgetSize.LARGE ? 5 : size === WidgetSize.SMALL ? 1 : 3;
     
     // 找到一個合適的位置放置新 widget
     let newX = 0;
