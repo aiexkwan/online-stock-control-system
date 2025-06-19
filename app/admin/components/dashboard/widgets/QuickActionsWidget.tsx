@@ -93,7 +93,7 @@ export function QuickActionsWidget({ widget, isEditMode }: WidgetComponentProps)
       <CardHeader className="pb-3">
         <CardTitle className="text-sm font-medium bg-gradient-to-r from-blue-300 via-cyan-300 to-blue-200 bg-clip-text text-transparent flex items-center gap-2">
           <Zap className={`h-4 w-4 ${iconColors.yellow}`} />
-          {widget.title}
+          {'title' in widget ? widget.title : 'Quick Actions'}
         </CardTitle>
       </CardHeader>
       <CardContent className="px-4 pb-4">

@@ -180,7 +180,7 @@ export function EnhancedStatsCardWidget({ widget, isEditMode }: WidgetComponentP
           <div className="flex items-center gap-2">
             {getIcon()}
             <CardTitle className="text-sm font-medium bg-gradient-to-r from-blue-300 via-cyan-300 to-blue-200 bg-clip-text text-transparent">
-              {widget.title}
+              {'title' in widget ? widget.title : 'Stats'}
             </CardTitle>
           </div>
           <Select value={timeRange} onValueChange={setTimeRange}>
@@ -230,7 +230,7 @@ export function EnhancedStatsCardWidget({ widget, isEditMode }: WidgetComponentP
         <div className="flex items-center gap-2">
           {getIcon()}
           <CardTitle className="text-base font-medium bg-gradient-to-r from-blue-300 via-cyan-300 to-blue-200 bg-clip-text text-transparent">
-            {widget.title}
+            {'title' in widget ? widget.title : 'Stats'}
           </CardTitle>
         </div>
         <div className="flex items-center gap-2">

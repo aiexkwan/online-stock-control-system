@@ -55,7 +55,7 @@ export function AskDatabaseWidget({ widget, isEditMode }: WidgetComponentProps) 
             </div>
             <div>
               <h2 className="text-xl font-bold bg-gradient-to-r from-purple-300 via-indigo-300 to-cyan-300 bg-clip-text text-transparent">
-                {widget.title || 'Ask Me Anything'}
+                {'title' in widget ? widget.title : 'Ask Me Anything'}
               </h2>
             </div>
           </div>
