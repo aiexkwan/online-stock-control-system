@@ -16,11 +16,6 @@ export const ErrorStats: React.FC<ErrorStatsProps> = React.memo(({
   const [stats, setStats] = useState(errorHandler.getErrorStats());
   const [isExpanded, setIsExpanded] = useState(false);
 
-  // Don't show in production unless explicitly enabled
-  if (process.env.NODE_ENV === 'production' && !showInProduction) {
-    return null;
-  }
-
   useEffect(() => {
     const interval = setInterval(() => {
       setStats(errorHandler.getErrorStats());
@@ -28,6 +23,11 @@ export const ErrorStats: React.FC<ErrorStatsProps> = React.memo(({
 
     return () => clearInterval(interval);
   }, [refreshInterval]);
+
+  // Don't show in production unless explicitly enabled
+  if (process.env.NODE_ENV === 'production' && !showInProduction) {
+    return null;
+  }
 
   const getSeverityColor = (severity: string) => {
     switch (severity) {

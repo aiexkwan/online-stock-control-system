@@ -136,7 +136,7 @@ export default function MainLoginPage() {
             </div>
             
             <div className="text-center">
-                    <span className="text-slate-400 text-sm">Don't have an account? </span>
+                    <span className="text-slate-400 text-sm">Don&apos;t have an account? </span>
               <Link
                 href="/main-login/register"
                       className="text-blue-400 hover:text-blue-300 text-sm transition-all duration-300 hover:underline"

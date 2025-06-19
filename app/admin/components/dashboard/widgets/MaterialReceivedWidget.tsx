@@ -8,7 +8,7 @@
 
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { WidgetCard } from '../WidgetCard';
 import { DocumentArrowDownIcon } from '@heroicons/react/24/outline';
@@ -23,17 +23,7 @@ export function MaterialReceivedWidget({ widget, isEditMode }: WidgetComponentPr
   const [todayGrnCount, setTodayGrnCount] = useState<number>(0);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    if (size === WidgetSize.SMALL) {
-      fetchTodayGrnCount();
-      
-      // 設置自動刷新
-      const interval = setInterval(fetchTodayGrnCount, widget.config.refreshInterval || 60000);
-      return () => clearInterval(interval);
-    }
-  }, [size, widget.config.refreshInterval]);
-
-  const fetchTodayGrnCount = async () => {
+  const fetchTodayGrnCount = useCallback(async () => {
     try {
       setLoading(true);
       const supabase = createClient();
@@ -54,7 +44,17 @@ export function MaterialReceivedWidget({ widget, isEditMode }: WidgetComponentPr
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    if (size === WidgetSize.SMALL) {
+      fetchTodayGrnCount();
+      
+      // 設置自動刷新
+      const interval = setInterval(fetchTodayGrnCount, widget.config.refreshInterval || 60000);
+      return () => clearInterval(interval);
+    }
+  }, [size, widget.config.refreshInterval, fetchTodayGrnCount]);
 
   // Small size - only show today's GRN count
   if (size === WidgetSize.SMALL) {
@@ -67,7 +67,7 @@ export function MaterialReceivedWidget({ widget, isEditMode }: WidgetComponentPr
           ) : (
             <>
               <WidgetValue size="large" glow="yellow">{todayGrnCount}</WidgetValue>
-              <WidgetLabel size="xs" glow="gray" className="mt-0.5">Today's GRN</WidgetLabel>
+              <WidgetLabel size="xs" glow="gray" className="mt-0.5">Today&apos;s GRN</WidgetLabel>
             </>
           )}
         </CardContent>

@@ -191,10 +191,10 @@ export default function TimezoneTester() {
           <CardTitle className="text-white">Usage Instructions</CardTitle>
         </CardHeader>
         <CardContent className="text-slate-300 space-y-2">
-          <p>1. Click "Run Conversion Tests" to test timezone conversion functions</p>
-          <p>2. Click "Fetch Database Records" to get today's records and see time conversion</p>
+          <p>1. Click &quot;Run Conversion Tests&quot; to test timezone conversion functions</p>
+          <p>2. Click &quot;Fetch Database Records&quot; to get today&apos;s records and see time conversion</p>
           <p>3. Check if the converted times match your expected UK time</p>
-          <p>4. If there's a discrepancy, we may need to adjust the timezone settings</p>
+          <p>4. If there&apos;s a discrepancy, we may need to adjust the timezone settings</p>
         </CardContent>
       </Card>
     </div>

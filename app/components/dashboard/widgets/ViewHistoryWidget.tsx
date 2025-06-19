@@ -124,7 +124,7 @@ function SearchResultsList({ searchQuery }: SearchResultsListProps) {
     return (
       <div className="text-center py-6 text-slate-500">
         <ClockIcon className="w-10 h-10 mx-auto mb-2 opacity-50" />
-        <p>No history found for "{searchQuery}"</p>
+        <p>No history found for &quot;{searchQuery}&quot;</p>
       </div>
     );
   }

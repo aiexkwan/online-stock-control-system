@@ -488,7 +488,7 @@ export const PerformanceOptimizedForm: React.FC<PerformanceOptimizedFormProps> =
                     Auto-Fill Mode
                   </div>
                   <div className="text-sm text-blue-200/90 leading-relaxed">
-                    Form has been automatically filled with basic information from the Void Pallet system. Please review and complete other required fields, then click "Print Label" to generate new labels.
+                    Form has been automatically filled with basic information from the Void Pallet system. Please review and complete other required fields, then click &quot;Print Label&quot; to generate new labels.
                   </div>
                   {urlParams.originalPltNum && (
                     <div className="mt-3 p-3 bg-slate-800/40 rounded-xl border border-slate-600/30">

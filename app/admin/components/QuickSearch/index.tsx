@@ -102,7 +102,7 @@ export function QuickSearch() {
 
             {searchQuery && !loading && !result && (
               <div className="text-center py-4 text-slate-400 text-sm">
-                No inventory found for product code "{searchQuery}"
+                No inventory found for product code &quot;{searchQuery}&quot;
               </div>
             )}
           </div>

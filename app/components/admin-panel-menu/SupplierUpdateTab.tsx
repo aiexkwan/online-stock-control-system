@@ -324,7 +324,7 @@ export default function SupplierUpdateTab() {
                     Supplier Not Found
                   </h3>
                   <p className="text-slate-300 mb-4">
-                    The supplier code "{searchedCode}" was not found in the database. 
+                    The supplier code &quot;{searchedCode}&quot; was not found in the database. 
                     Would you like to create a new supplier with this code?
                   </p>
                   <div className="flex space-x-3">

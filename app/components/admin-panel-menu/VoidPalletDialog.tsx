@@ -487,7 +487,7 @@ export default function VoidPalletDialog({ isOpen, onClose, onReprintNeeded }: V
                   />
                   
                   <p className="text-xs text-slate-400 mt-2">
-                    Press 'Enter' after entering to search
+                    Press &apos;Enter&apos; after entering to search
                   </p>
                 </div>
               </div>

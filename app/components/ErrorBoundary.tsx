@@ -35,7 +35,7 @@ class ErrorBoundary extends Component<Props, State> {
                 Something went wrong
               </h2>
               <p className="mt-2 text-center text-sm text-gray-600">
-                We're working to fix this issue. Please try again later.
+                We&apos;re working to fix this issue. Please try again later.
               </p>
               {this.state.error && (
                 <pre className="mt-4 p-4 bg-red-50 rounded-md text-sm text-red-600 overflow-auto">

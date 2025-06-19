@@ -75,7 +75,7 @@ export function useGrnLabelBusiness() {
   const supabase = createClient();
   
   const { generatePalletNumbersAndSeries, createDatabaseEntries, uploadPdf } = useDatabaseOperationsV2();
-  const { generateMultiplePdfs, printPdfs, generationProgress, resetProgress } = usePdfGeneration();
+  const { generateMultiplePdfs, generateSinglePdf, printPdfs, generationProgress, resetProgress } = usePdfGeneration();
   const { saveFormData, clearFormData } = useFormPersistence();
   
   // Process GRN labels
@@ -226,7 +226,6 @@ export function useGrnLabelBusiness() {
             }
             
             // Generate PDF
-            const { generateSinglePdf } = usePdfGeneration();
             const pdfBlob = await generateSinglePdf(data.pdfData);
             
             if (!pdfBlob) {

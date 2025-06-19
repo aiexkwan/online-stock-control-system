@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@/app/utils/supabase/client';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -33,7 +33,7 @@ export const PalletGenerationMonitor: React.FC = () => {
   const [testing, setTesting] = useState(false);
   const supabase = createClient();
 
-  const fetchMonitorData = async () => {
+  const fetchMonitorData = useCallback(async () => {
     setLoading(true);
     setError(null);
     
@@ -109,7 +109,7 @@ export const PalletGenerationMonitor: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [supabase]);
 
   const testGeneration = async (count: number = 1) => {
     setTesting(true);
@@ -165,7 +165,7 @@ export const PalletGenerationMonitor: React.FC = () => {
     fetchMonitorData();
     const interval = setInterval(fetchMonitorData, 30000); // 每30秒刷新
     return () => clearInterval(interval);
-  }, []);
+  }, [fetchMonitorData]);
 
   const isOutOfSync = monitorData && monitorData.sequenceMax !== monitorData.actualMax;
 
@@ -250,7 +250,7 @@ export const PalletGenerationMonitor: React.FC = () => {
                   <div className="flex-1">
                     <p className="text-yellow-800 font-medium">Sequence Out of Sync</p>
                     <p className="text-yellow-700 text-sm mt-1">
-                      The sequence counter ({monitorData.sequenceMax}) doesn't match the actual maximum ({monitorData.actualMax}).
+                      The sequence counter ({monitorData.sequenceMax}) doesn&apos;t match the actual maximum ({monitorData.actualMax}).
                     </p>
                     <Button 
                       onClick={fixSequence}

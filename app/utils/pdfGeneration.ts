@@ -245,11 +245,11 @@ async function uploadPdfToStorage(
     let uploadResult;
     if (storagePath === 'qc-labels' || storagePath === 'grn-labels') {
       // Use server action for these paths
-      const module = storagePath === 'qc-labels' 
+      const importedModule = storagePath === 'qc-labels' 
         ? await import('@/app/actions/qcActions')
         : await import('@/app/actions/grnActions');
       
-      uploadResult = await module.uploadPdfToStorage(numberArray, filename, storagePath);
+      uploadResult = await importedModule.uploadPdfToStorage(numberArray, filename, storagePath);
     } else {
       // Use API route for other paths
       const formData = new FormData();

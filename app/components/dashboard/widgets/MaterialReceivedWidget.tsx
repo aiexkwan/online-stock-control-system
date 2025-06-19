@@ -67,7 +67,7 @@ export function MaterialReceivedWidget({ widget, isEditMode }: WidgetComponentPr
           ) : (
             <>
               <WidgetValue size="large" glow="yellow">{todayGrnCount}</WidgetValue>
-              <WidgetLabel size="xs" glow="gray" className="mt-0.5">Today's GRN</WidgetLabel>
+              <WidgetLabel size="xs" glow="gray" className="mt-0.5">Today&apos;s GRN</WidgetLabel>
             </>
           )}
         </CardContent>

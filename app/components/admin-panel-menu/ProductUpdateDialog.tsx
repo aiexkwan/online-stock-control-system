@@ -382,7 +382,7 @@ export default function ProductUpdateDialog({ isOpen, onClose }: ProductUpdateDi
                           Product Not Found
                         </h3>
                         <p className="text-slate-300 mb-4">
-                          The product code "{searchedCode}" was not found in the database. 
+                          The product code &quot;{searchedCode}&quot; was not found in the database. 
                           Would you like to create a new product with this code?
                         </p>
                         <div className="flex space-x-3">

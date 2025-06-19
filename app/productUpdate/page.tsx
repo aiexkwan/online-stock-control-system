@@ -236,7 +236,7 @@ export default function ProductUpdatePage() {
                     Product Not Found
                   </h3>
                   <p className="text-gray-300 mb-4">
-                    The product code "{searchedCode}" was not found in the database. 
+                    The product code &quot;{searchedCode}&quot; was not found in the database. 
                     Would you like to create a new product with this code?
                   </p>
                   <div className="flex space-x-3">
@@ -277,7 +277,7 @@ export default function ProductUpdatePage() {
                 <Package className="w-16 h-16 text-gray-400 mx-auto mb-4" />
                 <p className="text-xl text-gray-400 mb-2">Product Details</p>
                 <p className="text-gray-500">
-                  Click "Edit Product" to modify the product information
+                  Click &quot;Edit Product&quot; to modify the product information
                 </p>
               </CardContent>
             </Card>

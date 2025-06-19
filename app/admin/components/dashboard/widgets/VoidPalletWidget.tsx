@@ -7,7 +7,7 @@
 
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { NoSymbolIcon, ExclamationTriangleIcon } from '@heroicons/react/24/outline';
 import { createClient } from '@/lib/supabase';
@@ -51,7 +51,7 @@ export function VoidPalletWidget({ widget, isEditMode }: WidgetComponentProps) {
   const size = widget.config.size || WidgetSize.MEDIUM;
 
   // 載入作廢統計資料
-  const loadVoidStats = async () => {
+  const loadVoidStats = useCallback(async () => {
     try {
       setLoading(true);
       
@@ -117,7 +117,7 @@ export function VoidPalletWidget({ widget, isEditMode }: WidgetComponentProps) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [size, supabase]);
 
   useEffect(() => {
     loadVoidStats();
@@ -125,7 +125,7 @@ export function VoidPalletWidget({ widget, isEditMode }: WidgetComponentProps) {
     // 設置自動刷新
     const interval = setInterval(loadVoidStats, widget.config.refreshInterval || 60000);
     return () => clearInterval(interval);
-  }, [size]);
+  }, [size, widget.config.refreshInterval, loadVoidStats]);
 
   const handleOpenVoidDialog = () => {
     openDialog('voidPallet');
@@ -143,7 +143,7 @@ export function VoidPalletWidget({ widget, isEditMode }: WidgetComponentProps) {
           <CardContent className="p-4 h-full flex flex-col items-center justify-center">
             <NoSymbolIcon className="w-8 h-8 text-red-400 mb-2" />
             <div className="text-3xl font-bold text-purple-400">{stats.today_voided}</div>
-            <div className="text-xs text-slate-400 mt-1">Today's Voids</div>
+            <div className="text-xs text-slate-400 mt-1">Today&apos;s Voids</div>
           </CardContent>
         </WidgetCard>
       </motion.div>

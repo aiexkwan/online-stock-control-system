@@ -92,7 +92,7 @@ export default function RegisterPage() {
                 Check Your Email
               </h2>
               <p className="text-gray-400">
-                We've sent a confirmation link to
+                We&apos;ve sent a confirmation link to
               </p>
               <p className="text-blue-400 font-medium mt-1">
                 {registeredEmail}
@@ -107,7 +107,7 @@ export default function RegisterPage() {
               
               <div className="bg-yellow-900/30 border border-yellow-600 rounded-md p-3">
                 <p className="text-yellow-300 text-xs">
-                  <strong>Important:</strong> Make sure to check your spam folder if you don't see the email within a few minutes.
+                  <strong>Important:</strong> Make sure to check your spam folder if you don&apos;t see the email within a few minutes.
                 </p>
               </div>
 

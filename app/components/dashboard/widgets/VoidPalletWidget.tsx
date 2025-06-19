@@ -143,7 +143,7 @@ export function VoidPalletWidget({ widget, isEditMode }: WidgetComponentProps) {
           <CardContent className="p-4 h-full flex flex-col items-center justify-center">
             <NoSymbolIcon className="w-8 h-8 text-red-400 mb-2" />
             <div className="text-3xl font-bold text-purple-400">{stats.today_voided}</div>
-            <div className="text-xs text-slate-400 mt-1">Today's Voids</div>
+            <div className="text-xs text-slate-400 mt-1">Today&apos;s Voids</div>
           </CardContent>
         </WidgetCard>
       </motion.div>

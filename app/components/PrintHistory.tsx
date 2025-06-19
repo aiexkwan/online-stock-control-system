@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { createClient } from '@/lib/supabase';
 import { format } from 'date-fns';
@@ -52,7 +52,7 @@ export default function FinishedProduct({ widgetSize }: FinishedProductProps) {
   // Initial load
   useEffect(() => {
     fetchProductSummary(selectedTimeRange, true);
-  }, [selectedTimeRange]);
+  }, [selectedTimeRange, fetchProductSummary]);
 
   // Click outside to close dropdown
   useEffect(() => {
@@ -103,7 +103,7 @@ export default function FinishedProduct({ widgetSize }: FinishedProductProps) {
     }
   };
 
-  async function fetchProductSummary(timeRange: TimeRange, reset = false) {
+  const fetchProductSummary = useCallback(async (timeRange: TimeRange, reset = false) => {
     try {
     setLoading(true);
       setError(null);
@@ -202,7 +202,7 @@ export default function FinishedProduct({ widgetSize }: FinishedProductProps) {
       setLoading(false);
       setInitialLoading(false);
     }
-  }
+  }, [supabase]);
 
   // Retry function
   const handleRetry = () => {
@@ -236,7 +236,7 @@ export default function FinishedProduct({ widgetSize }: FinishedProductProps) {
     if (widgetSize === WidgetSize.SMALL && selectedTimeRange !== 'Today') {
       setSelectedTimeRange('Today');
     }
-  }, [widgetSize]);
+  }, [widgetSize, selectedTimeRange]);
 
   // Small size (1x1) - 只顯示當天總板數
   if (widgetSize === WidgetSize.SMALL) {
@@ -245,7 +245,7 @@ export default function FinishedProduct({ widgetSize }: FinishedProductProps) {
     
     return (
       <div className="h-full flex flex-col justify-center items-center">
-        <h3 className="text-xs text-slate-400 mb-1">Today's Finished</h3>
+        <h3 className="text-xs text-slate-400 mb-1">Today&apos;s Finished</h3>
         {loading || initialLoading ? (
           <Skeleton className="h-8 w-16 bg-white/10" />
         ) : (

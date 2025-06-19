@@ -226,7 +226,7 @@ export default function CameraDebugPage() {
               style={{ height: '300px' }}
             >
               {logs.length === 0 ? (
-                <div className="text-gray-500">點擊 "開始相機測試" 開始...</div>
+                <div className="text-gray-500">點擊 &quot;開始相機測試&quot; 開始...</div>
               ) : (
                 logs.map((log, index) => (
                   <div key={index} className="mb-1 text-green-400">

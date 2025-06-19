@@ -7,7 +7,7 @@
 
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { ClockIcon, MagnifyingGlassIcon } from '@heroicons/react/24/outline';
 import { createClient } from '@/lib/supabase';
@@ -39,7 +39,7 @@ function SearchResultsList({ searchQuery }: SearchResultsListProps) {
   const [searched, setSearched] = useState(false);
   const supabase = createClient();
 
-  const searchPalletHistory = async () => {
+  const searchPalletHistory = useCallback(async () => {
     if (!searchQuery.trim()) return;
     
     try {
@@ -87,7 +87,7 @@ function SearchResultsList({ searchQuery }: SearchResultsListProps) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [searchQuery, supabase]);
 
   useEffect(() => {
     if (searchQuery.trim()) {
@@ -96,7 +96,7 @@ function SearchResultsList({ searchQuery }: SearchResultsListProps) {
       setHistoryRecords([]);
       setSearched(false);
     }
-  }, [searchQuery]);
+  }, [searchQuery, searchPalletHistory]);
 
   if (!searched) {
     return (
@@ -124,7 +124,7 @@ function SearchResultsList({ searchQuery }: SearchResultsListProps) {
     return (
       <div className="text-center py-6 text-slate-500">
         <ClockIcon className="w-10 h-10 mx-auto mb-2 opacity-50" />
-        <p>No history found for "{searchQuery}"</p>
+        <p>No history found for &quot;{searchQuery}&quot;</p>
       </div>
     );
   }

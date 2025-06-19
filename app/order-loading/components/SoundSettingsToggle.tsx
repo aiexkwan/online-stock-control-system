@@ -8,6 +8,7 @@ import { useSoundSettings, useSoundFeedback } from '@/app/hooks/useSoundFeedback
 export function SoundSettingsToggle() {
   const soundSettings = useSoundSettings();
   const [soundEnabled, setSoundEnabled] = useState(true);
+  const sound = useSoundFeedback({ enabled: true, volume: soundSettings.getSoundVolume() });
   
   // Initialize from localStorage
   useEffect(() => {
@@ -21,7 +22,6 @@ export function SoundSettingsToggle() {
     
     // Play a test sound if enabling
     if (newValue) {
-      const sound = useSoundFeedback({ enabled: true, volume: soundSettings.getSoundVolume() });
       sound.playScan();
     }
   };
