@@ -44,15 +44,15 @@ export enum WidgetSize {
   XLARGE = 'xlarge'   // 6x6 - 擴展功能（如 Ask Database）
 }
 
-// iOS 風格尺寸預設 - 更新為指定尺寸
+// iOS 風格尺寸預設 - 正方形比例
 export const WidgetSizeConfig = {
-  [WidgetSize.SMALL]: { w: 1, h: 1 },   // 1x1
-  [WidgetSize.MEDIUM]: { w: 3, h: 3 },  // 3x3
-  [WidgetSize.LARGE]: { w: 5, h: 5 },   // 5x5
-  [WidgetSize.XLARGE]: { w: 6, h: 6 }   // 6x6
+  [WidgetSize.SMALL]: { w: 1, h: 1 },     // 1x1 (正方形)
+  [WidgetSize.MEDIUM]: { w: 3, h: 3 },    // 3x3 (正方形)
+  [WidgetSize.LARGE]: { w: 5, h: 5 },     // 5x5 (正方形)
+  [WidgetSize.XLARGE]: { w: 6, h: 6 }     // 6x6 (正方形)
 };
 
-// 用於編輯模式的彈性尺寸配置 - 允許在範圍內拖動
+// 用於編輯模式的彈性尺寸配置 - 允許在範圍內拖動（保持正方形比例）
 export const FlexibleWidgetSizeConfig = {
   [WidgetSize.SMALL]: { minW: 1, maxW: 2, minH: 1, maxH: 2 },
   [WidgetSize.MEDIUM]: { minW: 2, maxW: 4, minH: 2, maxH: 4 },

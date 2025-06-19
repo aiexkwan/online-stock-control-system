@@ -157,8 +157,8 @@ export function GridWidget({
         <div className="absolute inset-0 border-2 border-dashed border-blue-500/50 rounded-lg pointer-events-none" />
       )}
       
-      {/* Widget 內容 - Apply glow wrapper by default */}
-      <div className="w-full h-full glow-card-container">
+      {/* Widget 內容 */}
+      <div className="w-full h-full">
         {children}
       </div>
 

@@ -26,7 +26,7 @@ import { DialogManager } from '@/app/components/admin-panel/DialogManager';
 import { adminMenuItems } from '@/app/components/admin-panel/AdminMenu';
 import { useVoidPallet } from '@/app/void-pallet/hooks/useVoidPallet';
 import { AdminEnhancedDashboard } from '../components/dashboard/AdminEnhancedDashboard';
-import { WidgetType, DashboardLayout, WidgetConfig, WidgetSize } from '@/app/types/dashboard';
+import { WidgetType, DashboardLayout, WidgetConfig, WidgetSize, WidgetSizeConfig } from '@/app/types/dashboard';
 import { adminDashboardSettingsService } from '../services/adminDashboardSettingsService';
 import { useAdminRefresh } from '../contexts/AdminRefreshContext';
 
@@ -353,8 +353,8 @@ export function AdminPageClient() {
     
     // 計算新 widget 的尺寸
     const size = config?.size || WidgetSize.MEDIUM;
-    const widgetWidth = size === WidgetSize.XLARGE ? 6 : size === WidgetSize.LARGE ? 5 : size === WidgetSize.SMALL ? 1 : 3;
-    const widgetHeight = size === WidgetSize.XLARGE ? 6 : size === WidgetSize.LARGE ? 5 : size === WidgetSize.SMALL ? 1 : 3;
+    const widgetWidth = WidgetSizeConfig[size].w;
+    const widgetHeight = WidgetSizeConfig[size].h;
     
     // 找到一個合適的位置放置新 widget
     let newX = 0;
@@ -424,9 +424,9 @@ export function AdminPageClient() {
         w: widgetWidth,
         h: widgetHeight,
         minW: config?.size === WidgetSize.XLARGE ? 6 : config?.size === WidgetSize.SMALL ? 1 : 3,
-        minH: config?.size === WidgetSize.XLARGE ? 6 : config?.size === WidgetSize.SMALL ? 1 : 3,
+        minH: config?.size === WidgetSize.XLARGE ? 6 : config?.size === WidgetSize.SMALL ? 1 : config?.size === WidgetSize.LARGE ? 5 : 3,
         maxW: config?.size === WidgetSize.XLARGE ? 6 : config?.size === WidgetSize.LARGE ? 5 : 3,
-        maxH: config?.size === WidgetSize.XLARGE ? 6 : config?.size === WidgetSize.LARGE ? 5 : 3
+        maxH: config?.size === WidgetSize.XLARGE ? 6 : config?.size === WidgetSize.LARGE ? 5 : config?.size === WidgetSize.SMALL ? 1 : 3
       },
       config: {
         size: config?.size || WidgetSize.MEDIUM,
@@ -650,7 +650,7 @@ export function AdminPageClient() {
 
         {/* Dashboard Content */}
         <div className={`flex-1 w-full px-4 sm:px-6 lg:px-8 ${
-          (isEditMode && tempLayout ? tempLayout : layout).widgets.length === 0 ? 'pt-40 pb-24' : 'pt-40 pb-24'
+          (isEditMode && tempLayout ? tempLayout : layout).widgets.length === 0 ? 'pt-[74px] pb-24' : 'pt-[74px] pb-24'
         }`}>
           <AdminEnhancedDashboard
             layout={isEditMode && tempLayout ? tempLayout : layout}
@@ -660,7 +660,6 @@ export function AdminPageClient() {
             onUpdateWidget={handleUpdateWidget}
             isEditMode={isEditMode}
             maxCols={20}
-            rowHeight={60}
             onBreakpointChange={setCurrentBreakpoint}
           />
         </div>

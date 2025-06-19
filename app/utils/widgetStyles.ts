@@ -6,51 +6,51 @@ export const WidgetStyles = {
   // 基礎樣式 - 透明背景
   base: 'bg-white/5 backdrop-blur-md',
   
-  // Widget 專屬邊框顏色 - 隱藏邊框，只在 hover 時顯示
+  // Widget 專屬邊框顏色 - 完全移除邊框效果
   borders: {
     // Statistics 類
-    OUTPUT_STATS: 'border-2 border-transparent hover:border-emerald-500/50 transition-all duration-300 hover:shadow-[0_0_15px_rgba(16,185,129,0.3)]',
-    BOOKED_OUT_STATS: 'border-2 border-transparent hover:border-cyan-500/50 transition-all duration-300 hover:shadow-[0_0_15px_rgba(6,182,212,0.3)]',
-    VOID_STATS: 'border-2 border-transparent hover:border-red-500/50 transition-all duration-300 hover:shadow-[0_0_15px_rgba(239,68,68,0.3)]',
+    OUTPUT_STATS: '',
+    BOOKED_OUT_STATS: '',
+    VOID_STATS: '',
     
     // Charts & Analytics 類
-    PRODUCT_MIX_CHART: 'border-2 border-transparent hover:border-purple-500/50 transition-all duration-300 hover:shadow-[0_0_15px_rgba(168,85,247,0.3)]',
+    PRODUCT_MIX_CHART: '',
     
     // Operations 類
-    RECENT_ACTIVITY: 'border-2 border-transparent hover:border-blue-500/50 transition-all duration-300 hover:shadow-[0_0_15px_rgba(59,130,246,0.3)]',
-    ACO_ORDER_PROGRESS: 'border-2 border-transparent hover:border-indigo-500/50 transition-all duration-300 hover:shadow-[0_0_15px_rgba(99,102,241,0.3)]',
-    INVENTORY_SEARCH: 'border-2 border-transparent hover:border-teal-500/50 transition-all duration-300 hover:shadow-[0_0_15px_rgba(20,184,166,0.3)]',
-    FINISHED_PRODUCT: 'border-2 border-transparent hover:border-green-500/50 transition-all duration-300 hover:shadow-[0_0_15px_rgba(34,197,94,0.3)]',
-    MATERIAL_RECEIVED: 'border-2 border-transparent hover:border-yellow-500/50 transition-all duration-300 hover:shadow-[0_0_15px_rgba(234,179,8,0.3)]',
+    RECENT_ACTIVITY: '',
+    ACO_ORDER_PROGRESS: '',
+    INVENTORY_SEARCH: '',
+    FINISHED_PRODUCT: '',
+    MATERIAL_RECEIVED: '',
     
     // Tools 類
-    ASK_DATABASE: 'border-2 border-transparent hover:border-pink-500/50 transition-all duration-300 hover:shadow-[0_0_15px_rgba(236,72,153,0.3)]',
+    ASK_DATABASE: '',
     
     // System Tools 類
-    VOID_PALLET: 'border-2 border-transparent hover:border-orange-500/50 transition-all duration-300 hover:shadow-[0_0_15px_rgba(249,115,22,0.3)]',
-    VIEW_HISTORY: 'border-2 border-transparent hover:border-lime-500/50 transition-all duration-300 hover:shadow-[0_0_15px_rgba(132,204,22,0.3)]',
-    DATABASE_UPDATE: 'border-2 border-transparent hover:border-violet-500/50 transition-all duration-300 hover:shadow-[0_0_15px_rgba(139,92,246,0.3)]',
+    VOID_PALLET: '',
+    VIEW_HISTORY: '',
+    DATABASE_UPDATE: '',
     
     // Document Management 類
-    UPLOAD_FILES: 'border-2 border-transparent hover:border-sky-500/50 transition-all duration-300 hover:shadow-[0_0_15px_rgba(14,165,233,0.3)]',
-    REPORTS: 'border-2 border-transparent hover:border-rose-500/50 transition-all duration-300 hover:shadow-[0_0_15px_rgba(244,63,94,0.3)]',
+    UPLOAD_FILES: '',
+    REPORTS: '',
     
     // 支援小寫版本（兼容性）
-    output_stats: 'border-2 border-transparent hover:border-emerald-500/50 transition-all duration-300 hover:shadow-[0_0_15px_rgba(16,185,129,0.3)]',
-    booked_out_stats: 'border-2 border-transparent hover:border-cyan-500/50 transition-all duration-300 hover:shadow-[0_0_15px_rgba(6,182,212,0.3)]',
-    void_stats: 'border-2 border-transparent hover:border-red-500/50 transition-all duration-300 hover:shadow-[0_0_15px_rgba(239,68,68,0.3)]',
-    product_mix_chart: 'border-2 border-transparent hover:border-purple-500/50 transition-all duration-300 hover:shadow-[0_0_15px_rgba(168,85,247,0.3)]',
-    recent_activity: 'border-2 border-transparent hover:border-blue-500/50 transition-all duration-300 hover:shadow-[0_0_15px_rgba(59,130,246,0.3)]',
-    aco_order_progress: 'border-2 border-transparent hover:border-indigo-500/50 transition-all duration-300 hover:shadow-[0_0_15px_rgba(99,102,241,0.3)]',
-    inventory_search: 'border-2 border-transparent hover:border-teal-500/50 transition-all duration-300 hover:shadow-[0_0_15px_rgba(20,184,166,0.3)]',
-    finished_product: 'border-2 border-transparent hover:border-green-500/50 transition-all duration-300 hover:shadow-[0_0_15px_rgba(34,197,94,0.3)]',
-    material_received: 'border-2 border-transparent hover:border-yellow-500/50 transition-all duration-300 hover:shadow-[0_0_15px_rgba(234,179,8,0.3)]',
-    ask_database: 'border-2 border-transparent hover:border-pink-500/50 transition-all duration-300 hover:shadow-[0_0_15px_rgba(236,72,153,0.3)]',
-    void_pallet: 'border-2 border-transparent hover:border-orange-500/50 transition-all duration-300 hover:shadow-[0_0_15px_rgba(249,115,22,0.3)]',
-    view_history: 'border-2 border-transparent hover:border-lime-500/50 transition-all duration-300 hover:shadow-[0_0_15px_rgba(132,204,22,0.3)]',
-    database_update: 'border-2 border-transparent hover:border-violet-500/50 transition-all duration-300 hover:shadow-[0_0_15px_rgba(139,92,246,0.3)]',
-    upload_files: 'border-2 border-transparent hover:border-sky-500/50 transition-all duration-300 hover:shadow-[0_0_15px_rgba(14,165,233,0.3)]',
-    reports: 'border-2 border-transparent hover:border-rose-500/50 transition-all duration-300 hover:shadow-[0_0_15px_rgba(244,63,94,0.3)]',
+    output_stats: '',
+    booked_out_stats: '',
+    void_stats: '',
+    product_mix_chart: '',
+    recent_activity: '',
+    aco_order_progress: '',
+    inventory_search: '',
+    finished_product: '',
+    material_received: '',
+    ask_database: '',
+    void_pallet: '',
+    view_history: '',
+    database_update: '',
+    upload_files: '',
+    reports: '',
   },
   
   // 文字顏色

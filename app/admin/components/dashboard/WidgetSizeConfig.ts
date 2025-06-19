@@ -12,108 +12,112 @@
 
 import { WidgetType, WidgetSize } from '@/app/types/dashboard';
 
-// 基礎尺寸映射
-export const SIZE_MAPPING = {
-  [WidgetSize.SMALL]: { w: 1, h: 1 },   // 1x1
-  [WidgetSize.MEDIUM]: { w: 3, h: 3 },  // 3x3
-  [WidgetSize.LARGE]: { w: 5, h: 5 },   // 5x5
-  [WidgetSize.XLARGE]: { w: 6, h: 6 }   // 6x6
-} as const;
+// 從統一的 WidgetSizeConfig 導入
+import { WidgetSizeConfig } from '@/app/types/dashboard';
+
+// 基礎尺寸映射 - 使用統一的配置
+export const SIZE_MAPPING = WidgetSizeConfig;
+
+// 輔助函數：根據寬度計算對應的高度（保持正方形比例）
+function getProportionalHeight(width: number): number {
+  // 現在所有 widget 都是正方形 (1:1 比例)
+  return width;
+}
 
 // Widget 特定尺寸配置
 export const WIDGET_SIZE_CONFIGS = {
   // Statistics 類 - 主要支援 1x1 和 3x3
   [WidgetType.OUTPUT_STATS]: {
-    default: { w: 2, h: 2 },
-    min: { w: 1, h: 1 },
-    max: { w: 3, h: 3 }
+    default: { w: 2, h: 1.8 },
+    min: { w: 1, h: 0.8 },
+    max: { w: 3, h: 2.8 }
   },
   [WidgetType.BOOKED_OUT_STATS]: {
-    default: { w: 2, h: 2 },
-    min: { w: 1, h: 1 },
-    max: { w: 3, h: 3 }
+    default: { w: 2, h: getProportionalHeight(2) },
+    min: { w: 1, h: getProportionalHeight(1) },
+    max: { w: 3, h: getProportionalHeight(3) }
   },
   [WidgetType.VOID_STATS]: {
-    default: { w: 3, h: 3 },
-    min: { w: 2, h: 2 },
-    max: { w: 4, h: 4 }
+    default: { w: 3, h: getProportionalHeight(3) },
+    min: { w: 2, h: getProportionalHeight(2) },
+    max: { w: 4, h: getProportionalHeight(4) }
   },
 
   // Charts & Analytics 類 - 需要較大空間
   [WidgetType.PRODUCT_MIX_CHART]: {
-    default: { w: 3, h: 4 },
-    min: { w: 3, h: 3 },
-    max: { w: 5, h: 6 }
+    default: { w: 3, h: getProportionalHeight(3) },
+    min: { w: 3, h: getProportionalHeight(3) },
+    max: { w: 5, h: getProportionalHeight(5) }
   },
 
   // Operations 類
   [WidgetType.RECENT_ACTIVITY]: {
-    default: { w: 3, h: 5 },
-    min: { w: 2, h: 3 },
-    max: { w: 5, h: 8 }
+    default: { w: 3, h: getProportionalHeight(3) },
+    min: { w: 2, h: getProportionalHeight(2) },
+    max: { w: 5, h: getProportionalHeight(5) }
   },
   [WidgetType.ACO_ORDER_PROGRESS]: {
-    default: { w: 3, h: 4 },
-    min: { w: 2, h: 2 },
-    max: { w: 5, h: 6 }
+    default: { w: 3, h: getProportionalHeight(3) },
+    min: { w: 2, h: getProportionalHeight(2) },
+    max: { w: 5, h: getProportionalHeight(5) }
   },
   [WidgetType.INVENTORY_SEARCH]: {
-    default: { w: 3, h: 4 },
-    min: { w: 2, h: 2 },
-    max: { w: 5, h: 6 }
+    default: { w: 3, h: getProportionalHeight(3) },
+    min: { w: 2, h: getProportionalHeight(2) },
+    max: { w: 5, h: getProportionalHeight(5) }
   },
   [WidgetType.FINISHED_PRODUCT]: {
-    default: { w: 5, h: 5 },
-    min: { w: 2, h: 2 },
-    max: { w: 6, h: 8 }
+    default: { w: 5, h: getProportionalHeight(5) },
+    min: { w: 2, h: getProportionalHeight(2) },
+    max: { w: 6, h: getProportionalHeight(6) }
   },
   [WidgetType.MATERIAL_RECEIVED]: {
-    default: { w: 5, h: 5 },
-    min: { w: 2, h: 2 },
-    max: { w: 6, h: 8 }
+    default: { w: 5, h: getProportionalHeight(5) },
+    min: { w: 2, h: getProportionalHeight(2) },
+    max: { w: 6, h: getProportionalHeight(6) }
   },
 
   // Tools 類
   [WidgetType.ASK_DATABASE]: {
-    default: { w: 6, h: 6 },
-    min: { w: 6, h: 6 },
-    max: { w: 6, h: 6 }
+    default: { w: 6, h: getProportionalHeight(6) },
+    min: { w: 6, h: getProportionalHeight(6) },
+    max: { w: 6, h: getProportionalHeight(6) }
   },
 
   // System Tools 類
   [WidgetType.VOID_PALLET]: {
-    default: { w: 3, h: 3 },
-    min: { w: 2, h: 2 },
-    max: { w: 5, h: 5 }
+    default: { w: 3, h: getProportionalHeight(3) },
+    min: { w: 2, h: getProportionalHeight(2) },
+    max: { w: 5, h: getProportionalHeight(5) }
   },
   [WidgetType.VIEW_HISTORY]: {
-    default: { w: 5, h: 5 },
-    min: { w: 5, h: 5 },
-    max: { w: 5, h: 5 }
+    default: { w: 5, h: getProportionalHeight(5) },
+    min: { w: 5, h: getProportionalHeight(5) },
+    max: { w: 5, h: getProportionalHeight(5) }
   },
   [WidgetType.DATABASE_UPDATE]: {
-    default: { w: 3, h: 3 },
-    min: { w: 3, h: 3 },
-    max: { w: 3, h: 3 }
+    default: { w: 3, h: getProportionalHeight(3) },
+    min: { w: 3, h: getProportionalHeight(3) },
+    max: { w: 3, h: getProportionalHeight(3) }
   },
 
   // Document Management 類
   [WidgetType.UPLOAD_FILES]: {
-    default: { w: 3, h: 3 },
-    min: { w: 3, h: 3 },
-    max: { w: 5, h: 5 }
+    default: { w: 3, h: getProportionalHeight(3) },
+    min: { w: 3, h: getProportionalHeight(3) },
+    max: { w: 5, h: getProportionalHeight(5) }
   },
   [WidgetType.REPORTS]: {
-    default: { w: 3, h: 3 },
-    min: { w: 2, h: 2 },
-    max: { w: 5, h: 5 }
+    default: { w: 3, h: getProportionalHeight(3) },
+    min: { w: 2, h: getProportionalHeight(2) },
+    max: { w: 5, h: getProportionalHeight(5) }
   },
 
   // 預設配置（如果上面沒有定義）
   DEFAULT: {
-    default: { w: 3, h: 3 },
-    min: { w: 1, h: 1 },
-    max: { w: 5, h: 5 }
+    default: { w: 3, h: getProportionalHeight(3) },
+    min: { w: 1, h: getProportionalHeight(1) },
+    max: { w: 5, h: getProportionalHeight(5) }
   }
 } as const;
 

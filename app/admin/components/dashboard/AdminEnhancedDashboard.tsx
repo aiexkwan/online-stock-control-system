@@ -13,7 +13,8 @@ import {
   DashboardLayout,
   WidgetConfig,
   WidgetType,
-  WidgetSize
+  WidgetSize,
+  WidgetSizeConfig
 } from '@/app/types/dashboard';
 import { WidgetRegistry } from './WidgetRegistry';
 import { WidgetSelectDialog } from './EnhancedDashboardDialog';
@@ -99,6 +100,17 @@ export function AdminEnhancedDashboard({
         .filter(widget => widget && typeof widget === 'object')
         .map((widget, index) => {
           // 確保每個 widget 都有必要的屬性
+          const w = (typeof widget.gridProps?.w === 'number' && !isNaN(widget.gridProps.w) && widget.gridProps.w > 0) ? widget.gridProps.w : 3;
+          
+          // 根據寬度自動修正高度以保持正方形
+          // 如果高度不等於寬度，則修正為正方形
+          let h = (typeof widget.gridProps?.h === 'number' && !isNaN(widget.gridProps.h) && widget.gridProps.h > 0) ? widget.gridProps.h : 3;
+          
+          // 檢查並修正高度以確保正方形
+          if (h !== w) {
+            h = w; // 設置高度等於寬度
+          }
+          
           const validatedWidget = {
             ...widget,
             id: widget.id || `widget-${Date.now()}-${index}-${Math.random()}`,
@@ -106,8 +118,8 @@ export function AdminEnhancedDashboard({
             gridProps: {
               x: (typeof widget.gridProps?.x === 'number' && !isNaN(widget.gridProps.x)) ? widget.gridProps.x : 0,
               y: (typeof widget.gridProps?.y === 'number' && !isNaN(widget.gridProps.y)) ? widget.gridProps.y : 0,
-              w: (typeof widget.gridProps?.w === 'number' && !isNaN(widget.gridProps.w) && widget.gridProps.w > 0) ? widget.gridProps.w : 3,
-              h: (typeof widget.gridProps?.h === 'number' && !isNaN(widget.gridProps.h) && widget.gridProps.h > 0) ? widget.gridProps.h : 3
+              w: w,
+              h: h
             },
             config: {
               size: widget.config?.size || WidgetSize.MEDIUM,
@@ -131,7 +143,19 @@ export function AdminEnhancedDashboard({
     xs: 6,
     xxs: 4
   });
-  const [actualRowHeight, setActualRowHeight] = useState(TARGET_CELL_SIZE);
+  // 初始化時就計算正確的 rowHeight
+  const [actualRowHeight, setActualRowHeight] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const width = window.innerWidth - 80; // 估算容器寬度
+      const cols = calculateCols(width);
+      const margin = 16;
+      const containerPadding = 40;
+      const availableWidth = width - containerPadding;
+      const cellWidth = (availableWidth - (margin * (cols - 1))) / cols;
+      return Math.round(cellWidth);
+    }
+    return TARGET_CELL_SIZE;
+  });
   
   // 動態計算列數和格子大小
   useEffect(() => {
@@ -140,7 +164,8 @@ export function AdminEnhancedDashboard({
         if (!containerRef.current) return;
         
         const width = containerRef.current.offsetWidth;
-        if (width <= 0) return; // 防止無效寬度
+        const height = containerRef.current.offsetHeight;
+        if (width <= 0 || height <= 0) return; // 防止無效寬度或高度
         
         const cols = calculateCols(width);
         
@@ -150,13 +175,22 @@ export function AdminEnhancedDashboard({
         const availableWidth = width - containerPadding;
         const actualCellWidth = (availableWidth - (margin * (cols - 1))) / cols;
         
-        console.log('Container width:', width);
-        console.log('Calculated cols:', cols);
-        console.log('Actual cell width:', actualCellWidth, 'px');
-        console.log('Row height:', TARGET_CELL_SIZE, 'px');
-        
         // 為了保持正方形，rowHeight 應該等於 actualCellWidth
-        setActualRowHeight(Math.floor(actualCellWidth));
+        // 使用 Math.round 而不是 Math.floor 來獲得更準確的值
+        const calculatedRowHeight = Math.round(actualCellWidth);
+        setActualRowHeight(calculatedRowHeight);
+        
+        // Debug logging for grid calculations
+        console.log('Grid Calculations:', {
+          containerWidth: width,
+          containerHeight: height,
+          cols: cols,
+          margin: margin,
+          containerPadding: containerPadding,
+          availableWidth: availableWidth,
+          actualCellWidth: actualCellWidth,
+          calculatedRowHeight: calculatedRowHeight
+        });
         
         // 為所有 breakpoint 設定相同的列數
         setDynamicCols({
@@ -222,7 +256,7 @@ export function AdminEnhancedDashboard({
           w: w,
           h: h,
           minW: widget.config?.size === WidgetSize.SMALL ? 1 : widget.config?.size === WidgetSize.XLARGE ? 6 : 3,
-          minH: widget.config?.size === WidgetSize.SMALL ? 1 : widget.config?.size === WidgetSize.XLARGE ? 6 : 3,
+          minH: widget.config?.size === WidgetSize.XLARGE ? 6 : widget.config?.size === WidgetSize.SMALL ? 1 : widget.config?.size === WidgetSize.LARGE ? 5 : 3,
           maxW: widget.config?.size === WidgetSize.XLARGE ? 6 : widget.config?.size === WidgetSize.LARGE ? 5 : widget.config?.size === WidgetSize.SMALL ? 1 : 3,
           maxH: widget.config?.size === WidgetSize.XLARGE ? 6 : widget.config?.size === WidgetSize.LARGE ? 5 : widget.config?.size === WidgetSize.SMALL ? 1 : 3,
           static: !isEditMode,  // 在非編輯模式下設為靜態
@@ -231,9 +265,6 @@ export function AdminEnhancedDashboard({
           isResizable: isEditMode
         };
         
-        if (breakpoint === 'lg') {
-          console.log(`Layout item for ${widget.type} at x=${x}, y=${y}:`, layoutItem);
-        }
         
         return layoutItem;
       });
@@ -320,6 +351,7 @@ export function AdminEnhancedDashboard({
     }
   }, [layout, hasInitialized, validatedLayout.widgets.length]);
   
+  
   // 延遲渲染 - 確保布局數據完全準備好
   useEffect(() => {
     if (validatedLayout.widgets.length > 0 && !isReady) {
@@ -344,16 +376,13 @@ export function AdminEnhancedDashboard({
     const widget = validatedLayout.widgets.find(w => w.id === widgetId);
     if (!widget) return;
 
-    const sizeMap = {
-      [WidgetSize.SMALL]: { w: 1, h: 1 },
-      [WidgetSize.MEDIUM]: { w: 3, h: 3 },
-      [WidgetSize.LARGE]: { w: 5, h: 5 },
-      [WidgetSize.XLARGE]: { w: 6, h: 6 }
-    };
+    // 使用統一的 WidgetSizeConfig
+    const newDimensions = WidgetSizeConfig[newSize];
 
     const newGridProps = {
       ...widget.gridProps,
-      ...sizeMap[newSize]
+      w: newDimensions.w,
+      h: newDimensions.h
     };
 
     onUpdateWidget(widgetId, {
@@ -409,13 +438,39 @@ export function AdminEnhancedDashboard({
             margin={[16, 16]}
             containerPadding={[20, 20]}
             useCSSTransforms={true}
-            autoSize={true}  // 開啟自動調整大小以適應內容
+            autoSize={false}  // 關閉自動調整大小，保持正方形
             measureBeforeMount={false}
             draggableHandle=".widget-drag-handle"
             draggableCancel=".widget-no-drag"
           >
-          {validatedLayout.widgets.map((widget) => (
-            <div key={widget.id} className={cn("widget-container", isEditMode && "widget-drag-handle")}>
+          {validatedLayout.widgets.map((widget) => {
+            // Debug log for each widget
+            console.log(`Widget ${widget.id} dimensions:`, {
+              type: widget.type,
+              size: widget.config?.size,
+              gridProps: widget.gridProps,
+              expectedPixelWidth: widget.gridProps.w * actualRowHeight + (widget.gridProps.w - 1) * 16,
+              expectedPixelHeight: widget.gridProps.h * actualRowHeight + (widget.gridProps.h - 1) * 16
+            });
+            
+            return (
+            <div 
+              key={widget.id} 
+              className={cn("widget-container", isEditMode && "widget-drag-handle")}
+              ref={(el) => {
+                if (el) {
+                  // Log actual DOM dimensions after render
+                  setTimeout(() => {
+                    const rect = el.getBoundingClientRect();
+                    console.log(`Widget ${widget.id} actual DOM dimensions:`, {
+                      width: rect.width,
+                      height: rect.height,
+                      aspectRatio: rect.width / rect.height
+                    });
+                  }, 100);
+                }
+              }}
+            >
               {/* 編輯模式覆蓋層 */}
               {isEditMode && (
                 <div 
@@ -473,7 +528,8 @@ export function AdminEnhancedDashboard({
                 })}
               </div>
             </div>
-          ))}
+          );
+          })}
           </ResponsiveGridLayout>
         </div>
         )}
@@ -568,7 +624,7 @@ const styles = `
     z-index: 100;
     opacity: 0.9;
     cursor: grabbing !important;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+    /* 移除拖動時的陰影效果 */
   }
   
   /* 編輯模式下的樣式 */
@@ -582,7 +638,7 @@ const styles = `
   }
   
   .admin-dashboard.edit-mode .react-grid-item:hover:not(.react-draggable-dragging) {
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    /* 移除 hover shadow 效果 */
     border-radius: 0.75rem;
   }
   
@@ -642,7 +698,21 @@ const styles = `
   }
   
   .admin-dashboard.edit-mode .widget-container:hover {
-    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5);
+    /* 移除 hover 邊框效果 */
+  }
+`;
+
+// 新增強制正方形的樣式
+const squareStyles = `
+  /* 強制所有 widget 保持正方形 */
+  .admin-dashboard .react-grid-item > .widget-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100% !important;
+    height: 100% !important;
   }
 `;
 
@@ -652,7 +722,7 @@ if (typeof document !== 'undefined') {
   if (!styleElement) {
     const newStyleElement = document.createElement('style');
     newStyleElement.id = 'enhanced-dashboard-styles';
-    newStyleElement.innerHTML = styles;
+    newStyleElement.innerHTML = styles + squareStyles;
     document.head.appendChild(newStyleElement);
   }
 }

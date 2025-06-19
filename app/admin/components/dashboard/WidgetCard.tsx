@@ -40,9 +40,9 @@ export function WidgetCard({
         'h-full rounded-xl transition-all duration-300',
         // 透明背景樣式 - 使用白色透明度讓效果更明顯
         'bg-white/3 backdrop-blur-md',
-        // Widget 專屬邊框（已包含 border 設定）
+        // Widget 專屬邊框（已移除）
         borderStyle,
-        // 編輯模式樣式
+        // 編輯模式樣式（保留編輯模式邊框）
         isEditMode && 'border-dashed border-2 border-blue-500/50',
         // 確保內容不會溢出圓角
         'overflow-hidden',

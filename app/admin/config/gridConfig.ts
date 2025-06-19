@@ -79,12 +79,14 @@ export function calculateCellSize(
   return { cellWidth: cellSize, cellHeight: cellSize };
 }
 
-// Widget 尺寸定義（佔用的格數）
+import { WidgetSizeConfig, WidgetSize } from '@/app/types/dashboard';
+
+// Widget 尺寸定義（佔用的格數）- 從統一配置取得
 export const WIDGET_GRID_SIZES = {
-  '1x1': { cols: 1, rows: 1 },
-  '3x3': { cols: 3, rows: 3 },
-  '5x5': { cols: 5, rows: 5 },
-  '6x6': { cols: 6, rows: 6 } // ASK_DATABASE 專用
+  '1x1': { cols: WidgetSizeConfig[WidgetSize.SMALL].w, rows: WidgetSizeConfig[WidgetSize.SMALL].h },
+  '3x3': { cols: WidgetSizeConfig[WidgetSize.MEDIUM].w, rows: WidgetSizeConfig[WidgetSize.MEDIUM].h },
+  '5x5': { cols: WidgetSizeConfig[WidgetSize.LARGE].w, rows: WidgetSizeConfig[WidgetSize.LARGE].h },
+  '6x6': { cols: WidgetSizeConfig[WidgetSize.XLARGE].w, rows: WidgetSizeConfig[WidgetSize.XLARGE].h }
 } as const;
 
 // 驗證 widget 位置是否有效

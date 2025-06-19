@@ -5,13 +5,17 @@
 
 import { WidgetType, WidgetSize } from '@/app/types/dashboard';
 
-// 基礎尺寸映射
-export const SIZE_MAPPING = {
-  [WidgetSize.SMALL]: { w: 1, h: 1 },   // 1x1
-  [WidgetSize.MEDIUM]: { w: 3, h: 3 },  // 3x3
-  [WidgetSize.LARGE]: { w: 5, h: 5 },   // 5x5
-  [WidgetSize.XLARGE]: { w: 6, h: 6 }   // 6x6
-} as const;
+// 從統一的 WidgetSizeConfig 導入
+import { WidgetSizeConfig } from '@/app/types/dashboard';
+
+// 基礎尺寸映射 - 使用統一的配置
+export const SIZE_MAPPING = WidgetSizeConfig;
+
+// 輔助函數：根據寬度計算對應的高度（保持正方形比例）
+function getProportionalHeight(width: number): number {
+  // 現在所有 widget 都是正方形 (1:1 比例)
+  return width;
+}
 
 // Widget 特定尺寸配置
 export const WIDGET_SIZE_CONFIGS = {
