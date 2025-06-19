@@ -192,7 +192,7 @@ export function EnhancedDashboard({ config: initialConfig, onSave }: DashboardPr
     // 更新佈局
     const sizeConfig = WidgetSizeConfig[newSize];
     const flexConfig = FlexibleWidgetSizeConfig[newSize];
-    setLayouts(prevLayouts => {
+    setLayouts((prevLayouts: any) => {
       const newLayouts = Object.keys(prevLayouts).reduce((acc, breakpoint) => {
         acc[breakpoint] = prevLayouts[breakpoint].map((item: Layout) => 
           item.i === widgetId ? { ...item, ...sizeConfig, ...flexConfig } : item
@@ -290,7 +290,7 @@ export function EnhancedDashboard({ config: initialConfig, onSave }: DashboardPr
     });
 
     // 更新所有斷點的佈局
-    setLayouts(prevLayouts => {
+    setLayouts((prevLayouts: any) => {
       const updatedLayouts = { ...prevLayouts };
       updatedLayouts[currentBreakpoint] = newLayout;
       return updatedLayouts;
@@ -331,7 +331,7 @@ export function EnhancedDashboard({ config: initialConfig, onSave }: DashboardPr
     setWidgets(prevWidgets => [...prevWidgets, newWidget]);
     
     // 為所有斷點添加佈局，確保每個斷點都有佈局
-    setLayouts(prevLayouts => {
+    setLayouts((prevLayouts: any) => {
       const newLayouts = { ...prevLayouts };
       const breakpoints = ['lg', 'md', 'sm', 'xs', 'xxs'];
       
@@ -348,7 +348,7 @@ export function EnhancedDashboard({ config: initialConfig, onSave }: DashboardPr
     setWidgets(prevWidgets => prevWidgets.filter(w => w.id !== widgetId));
     
     // 從所有佈局中移除
-    setLayouts(prevLayouts => {
+    setLayouts((prevLayouts: any) => {
       const newLayouts = Object.keys(prevLayouts).reduce((acc, breakpoint) => {
         acc[breakpoint] = prevLayouts[breakpoint].filter((item: Layout) => item.i !== widgetId);
         return acc;
