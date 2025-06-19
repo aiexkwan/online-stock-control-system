@@ -37,7 +37,7 @@ interface FinishedProductProps {
   widgetSize?: WidgetSize;
 }
 
-export default function FinishedProduct({ widgetSize }: FinishedProductProps) {
+export default function FinishedProduct({ widgetSize = WidgetSize.MEDIUM }: FinishedProductProps) {
   const supabase = createClient();
   const [products, setProducts] = useState<ProductSummary[]>([]);
   const [loading, setLoading] = useState(false);
@@ -607,7 +607,7 @@ export default function FinishedProduct({ widgetSize }: FinishedProductProps) {
       )}
 
       {/* Medium/Large size - 顯示頭5產品明細 */}
-      {(widgetSize === WidgetSize.MEDIUM || widgetSize === WidgetSize.LARGE) && products.length > 0 && (
+      {(widgetSize === WidgetSize.MEDIUM || widgetSize === WidgetSize.LARGE || widgetSize === WidgetSize.XLARGE) && products.length > 0 && (
         <div className="border-t border-slate-700 pt-4">
           <h4 className="text-sm font-semibold text-green-400 mb-3">
             Top 5 Products - {selectedTimeRange}
@@ -620,17 +620,17 @@ export default function FinishedProduct({ widgetSize }: FinishedProductProps) {
                 animate={{ x: 0, opacity: 1 }}
                 transition={{ delay: index * 0.1 }}
                 className={`flex justify-between items-center ${
-                  widgetSize === WidgetSize.LARGE ? 'p-2 rounded-lg bg-black/20 hover:bg-white/10 transition-colors' : ''
+                  (widgetSize === WidgetSize.LARGE || widgetSize === WidgetSize.XLARGE) ? 'p-2 rounded-lg bg-black/20 hover:bg-white/10 transition-colors' : ''
                 }`}
               >
-                <span className={`${widgetSize === WidgetSize.LARGE ? 'text-sm' : 'text-xs'} font-medium text-slate-300`}>
+                <span className={`${(widgetSize === WidgetSize.LARGE || widgetSize === WidgetSize.XLARGE) ? 'text-sm' : 'text-xs'} font-medium text-slate-300`}>
                   {product.product_code}
                 </span>
-                <div className={`flex gap-4 ${widgetSize === WidgetSize.LARGE ? 'text-sm' : 'text-xs'}`}>
+                <div className={`flex gap-4 ${(widgetSize === WidgetSize.LARGE || widgetSize === WidgetSize.XLARGE) ? 'text-sm' : 'text-xs'}`}>
                   <span className="text-green-400">
                     <span className="text-slate-500">Pallets:</span> {product.total_pallets}
                   </span>
-                  {widgetSize === WidgetSize.LARGE && (
+                  {(widgetSize === WidgetSize.LARGE || widgetSize === WidgetSize.XLARGE) && (
                     <span className="text-emerald-400">
                       <span className="text-slate-500">Qty:</span> {product.total_qty.toLocaleString()}
                     </span>
