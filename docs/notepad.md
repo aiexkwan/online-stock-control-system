@@ -17,3 +17,9 @@
 - 無需顯示File Size欄位
 > Void Pallet Statistics
 - 無需顯示Total Voided, Today, This Week, This Month的數據
+
+分析/admin頁面新既WIDGET系統現有既
+- 現有問題
+> 好難適用唔同寬度既螢幕
+> 似乎太過複雜操作
+> 幫我上網搵下/睇下有冇其他方法, 但又可以做到類似效果

@@ -32,6 +32,7 @@ type TimeRange = 'Today' | 'Yesterday' | 'Past 3 days' | 'Past 7 days';
 const TIME_RANGE_OPTIONS: TimeRange[] = ['Today', 'Yesterday', 'Past 3 days', 'Past 7 days'];
 
 import { WidgetSize } from '@/app/types/dashboard';
+import { isSizeAtLeast, isSizeExactly } from '@/app/components/dashboard/WidgetSizeConfig';
 
 interface FinishedProductProps {
   widgetSize?: WidgetSize;
@@ -264,7 +265,7 @@ export default function FinishedProduct({ widgetSize = WidgetSize.MEDIUM }: Fini
   }
 
   // Medium or Large size - 顯示折線圖和產品明細 (2:1 比例)
-  if (widgetSize === WidgetSize.MEDIUM || widgetSize === WidgetSize.LARGE) {
+  if (isSizeExactly(widgetSize, WidgetSize.MEDIUM, WidgetSize.LARGE)) {
     return (
       <div className="h-full flex flex-col">
         {/* Header with time range dropdown */}
@@ -318,7 +319,7 @@ export default function FinishedProduct({ widgetSize = WidgetSize.MEDIUM }: Fini
             <div className="flex items-center justify-between px-2 py-1 bg-black/20 rounded-t-lg mb-1">
               <span className="text-[10px] font-semibold text-purple-400 flex-1">Product Code</span>
               <span className="text-[10px] font-semibold text-purple-400 text-right w-20">Pallets</span>
-              {widgetSize === WidgetSize.LARGE && (
+              {isSizeExactly(widgetSize, WidgetSize.LARGE) && (
                 <span className="text-[10px] font-semibold text-purple-400 text-right w-24 ml-2">Quantity</span>
               )}
             </div>
@@ -340,13 +341,13 @@ export default function FinishedProduct({ widgetSize = WidgetSize.MEDIUM }: Fini
                     transition={{ delay: index * 0.1 }}
                     className="flex items-center justify-between px-2 py-1 rounded bg-black/20 hover:bg-white/10 transition-colors"
                   >
-                    <span className={`${widgetSize === WidgetSize.LARGE ? 'text-xs' : 'text-[10px]'} font-medium text-purple-200 flex-1`}>
+                    <span className={`${isSizeExactly(widgetSize, WidgetSize.LARGE) ? 'text-xs' : 'text-[10px]'} font-medium text-purple-200 flex-1`}>
                       {product.product_code}
                     </span>
-                    <span className={`${widgetSize === WidgetSize.LARGE ? 'text-xs' : 'text-[10px]'} text-purple-200 text-right w-20`}>
+                    <span className={`${isSizeExactly(widgetSize, WidgetSize.LARGE) ? 'text-xs' : 'text-[10px]'} text-purple-200 text-right w-20`}>
                       {product.total_pallets.toLocaleString()}
                     </span>
-                    {widgetSize === WidgetSize.LARGE && (
+                    {isSizeExactly(widgetSize, WidgetSize.LARGE) && (
                       <span className="text-xs text-purple-200 text-right w-24 ml-2">
                         {product.total_qty.toLocaleString()}
                       </span>
@@ -607,7 +608,7 @@ export default function FinishedProduct({ widgetSize = WidgetSize.MEDIUM }: Fini
       )}
 
       {/* Medium/Large size - 顯示頭5產品明細 */}
-      {(widgetSize === WidgetSize.MEDIUM || widgetSize === WidgetSize.LARGE || widgetSize === WidgetSize.XLARGE) && products.length > 0 && (
+      {isSizeAtLeast(widgetSize, WidgetSize.MEDIUM) && products.length > 0 && (
         <div className="border-t border-slate-700 pt-4">
           <h4 className="text-sm font-semibold text-green-400 mb-3">
             Top 5 Products - {selectedTimeRange}
@@ -620,17 +621,17 @@ export default function FinishedProduct({ widgetSize = WidgetSize.MEDIUM }: Fini
                 animate={{ x: 0, opacity: 1 }}
                 transition={{ delay: index * 0.1 }}
                 className={`flex justify-between items-center ${
-                  (widgetSize === WidgetSize.LARGE || widgetSize === WidgetSize.XLARGE) ? 'p-2 rounded-lg bg-black/20 hover:bg-white/10 transition-colors' : ''
+                  isSizeAtLeast(widgetSize, WidgetSize.LARGE) ? 'p-2 rounded-lg bg-black/20 hover:bg-white/10 transition-colors' : ''
                 }`}
               >
-                <span className={`${(widgetSize === WidgetSize.LARGE || widgetSize === WidgetSize.XLARGE) ? 'text-sm' : 'text-xs'} font-medium text-slate-300`}>
+                <span className={`${isSizeAtLeast(widgetSize, WidgetSize.LARGE) ? 'text-sm' : 'text-xs'} font-medium text-slate-300`}>
                   {product.product_code}
                 </span>
-                <div className={`flex gap-4 ${(widgetSize === WidgetSize.LARGE || widgetSize === WidgetSize.XLARGE) ? 'text-sm' : 'text-xs'}`}>
+                <div className={`flex gap-4 ${isSizeAtLeast(widgetSize, WidgetSize.LARGE) ? 'text-sm' : 'text-xs'}`}>
                   <span className="text-green-400">
                     <span className="text-slate-500">Pallets:</span> {product.total_pallets}
                   </span>
-                  {(widgetSize === WidgetSize.LARGE || widgetSize === WidgetSize.XLARGE) && (
+                  {isSizeAtLeast(widgetSize, WidgetSize.LARGE) && (
                     <span className="text-emerald-400">
                       <span className="text-slate-500">Qty:</span> {product.total_qty.toLocaleString()}
                     </span>

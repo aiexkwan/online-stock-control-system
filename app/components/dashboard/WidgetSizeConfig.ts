@@ -132,6 +132,18 @@ export function getSizeByEnum(size: WidgetSize) {
   return SIZE_MAPPING[size];
 }
 
+// 類型保護函數 - 確保正確的尺寸比較
+export function isSizeAtLeast(currentSize: WidgetSize, targetSize: WidgetSize): boolean {
+  const sizeOrder = [WidgetSize.SMALL, WidgetSize.MEDIUM, WidgetSize.LARGE, WidgetSize.XLARGE];
+  const currentIndex = sizeOrder.indexOf(currentSize);
+  const targetIndex = sizeOrder.indexOf(targetSize);
+  return currentIndex >= targetIndex;
+}
+
+export function isSizeExactly(currentSize: WidgetSize, ...targetSizes: WidgetSize[]): boolean {
+  return targetSizes.includes(currentSize);
+}
+
 // 檢查 widget 是否支援特定尺寸
 export function isWidgetSizeSupported(widgetType: WidgetType, size: WidgetSize): boolean {
   // Ask Database 只支援 Medium 和 Large
