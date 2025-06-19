@@ -17,7 +17,7 @@ interface EditDashboardButtonProps {
   onCancelEdit?: () => void;
   onResetLayout: () => void;
   variant?: 'default' | 'outline';
-  size?: 'sm' | 'md' | 'lg';
+  size?: 'sm' | 'default' | 'lg';
   className?: string;
 }
 
