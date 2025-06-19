@@ -24,7 +24,17 @@ class MemoryService {
 
   async addMemory(messages: MemoryMessage[]): Promise<void> {
     try {
-      await client.add(messages, { user_id: this.userId });
+      // Filter out system messages or convert them to user messages as mem0ai doesn't support system role
+      const compatibleMessages = messages
+        .filter(msg => msg.role !== 'system')
+        .map(msg => ({
+          role: msg.role as 'user' | 'assistant',
+          content: msg.content
+        }));
+      
+      if (compatibleMessages.length > 0) {
+        await client.add(compatibleMessages, { user_id: this.userId });
+      }
     } catch (error) {
       console.error('添加記憶時出錯:', error);
       throw error;
@@ -34,7 +44,13 @@ class MemoryService {
   async searchMemory(query: string): Promise<MemorySearchResult[]> {
     try {
       const result = await client.search(query, { user_id: this.userId });
-      return result.results || [];
+      const memories = Array.isArray(result) ? result : (result as any)?.results || [];
+      return memories.map((item: any) => ({
+        memory: item.memory || item.text || '',
+        created_at: item.created_at || '',
+        updated_at: item.updated_at || '',
+        id: item.id || ''
+      }));
     } catch (error) {
       console.error('搜尋記憶時出錯:', error);
       return [];
@@ -44,7 +60,13 @@ class MemoryService {
   async getAll(): Promise<MemorySearchResult[]> {
     try {
       const result = await client.getAll({ user_id: this.userId });
-      return result.results || [];
+      const memories = Array.isArray(result) ? result : (result as any)?.results || [];
+      return memories.map((item: any) => ({
+        memory: item.memory || item.text || '',
+        created_at: item.created_at || '',
+        updated_at: item.updated_at || '',
+        id: item.id || ''
+      }));
     } catch (error) {
       console.error('獲取所有記憶時出錯:', error);
       return [];
