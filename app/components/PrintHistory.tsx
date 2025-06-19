@@ -49,25 +49,6 @@ export default function FinishedProduct({ widgetSize }: FinishedProductProps) {
   const [totalPallets, setTotalPallets] = useState(0);
   const [chartData, setChartData] = useState<ChartData[]>([]);
 
-  // Initial load
-  useEffect(() => {
-    fetchProductSummary(selectedTimeRange, true);
-  }, [selectedTimeRange, fetchProductSummary]);
-
-  // Click outside to close dropdown
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setIsDropdownOpen(false);
-      }
-    }
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, []);
-
   // Get date range based on selected time range
   const getDateRange = (timeRange: TimeRange) => {
     const today = new Date();
@@ -202,7 +183,26 @@ export default function FinishedProduct({ widgetSize }: FinishedProductProps) {
       setLoading(false);
       setInitialLoading(false);
     }
-  }, [supabase]);
+  }, [supabase, getDateRange]);
+
+  // Initial load
+  useEffect(() => {
+    fetchProductSummary(selectedTimeRange, true);
+  }, [selectedTimeRange, fetchProductSummary]);
+
+  // Click outside to close dropdown
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsDropdownOpen(false);
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   // Retry function
   const handleRetry = () => {
