@@ -68,7 +68,8 @@ export function EnhancedDashboard({ config: initialConfig, onSave }: DashboardPr
       const validatedLayouts: any = {};
       
       breakpoints.forEach(bp => {
-        validatedLayouts[bp] = (initialConfig.layouts[bp] || []).map((item: any) => {
+        const breakpointKey = bp as keyof typeof initialConfig.layouts;
+        validatedLayouts[bp] = (initialConfig.layouts[breakpointKey] || []).map((item: any) => {
           const widget = initialConfig.widgets.find(w => w.id === item.i);
           const size = widget?.config?.size || WidgetSize.MEDIUM;
           const sizeConfig = WidgetSizeConfig[size];
