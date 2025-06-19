@@ -20,6 +20,8 @@ import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer 
 } from 'recharts';
 import { getTodayRange, getYesterdayRange, getDateRange, formatDbTime } from '@/app/utils/timezone';
+import { UnifiedWidgetLayout, TableRow, ChartContainer } from '../UnifiedWidgetLayout';
+import { useWidgetData } from '@/app/admin/hooks/useWidgetData';
 
 interface TransferData {
   totalCount: number;
@@ -177,14 +179,7 @@ export function BookedOutStatsWidget({ widget, isEditMode }: WidgetComponentProp
     }
   }, [timeRange, size]);
 
-  useEffect(() => {
-    loadData();
-    
-    if (widget.config.refreshInterval && !isEditMode) {
-      const interval = setInterval(loadData, widget.config.refreshInterval);
-      return () => clearInterval(interval);
-    }
-  }, [widget.config, timeRange, isEditMode, loadData]);
+  useWidgetData({ loadFunction: loadData, isEditMode, dependencies: [timeRange] });
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -274,41 +269,46 @@ export function BookedOutStatsWidget({ widget, isEditMode }: WidgetComponentProp
           </div>
         </CardHeader>
         <CardContent className="pt-2">
-          {loading ? (
-            <div className="space-y-2">
-              {[...Array(5)].map((_, i) => (
-                <div key={i} className="h-8 bg-white/10 rounded animate-pulse"></div>
-              ))}
-            </div>
-          ) : error ? (
-            <div className="text-red-400 text-sm">{error}</div>
-          ) : (
-            <div className="space-y-2">
-              <div className="text-center mb-3">
-                <div className="text-3xl font-bold text-white">{data.totalCount}</div>
-              </div>
-              
-              {/* 操作員列表 */}
-              <div className="bg-black/20 rounded-lg p-2 max-h-[160px] overflow-y-auto">
-                <p className="text-xs text-purple-400 mb-2">By Operator</p>
-                {data.operatorData && data.operatorData.length > 0 ? (
-                  <div className="space-y-1">
-                    {data.operatorData.map((operator) => (
-                      <div key={operator.operator_id} className="flex justify-between items-center py-1 px-2 hover:bg-white/10 rounded transition-colors">
-                        <span className="text-xs text-purple-200">{operator.operator_id}</span>
-                        <div className="text-right">
-                          <span className="text-xs font-semibold text-purple-200">{operator.count}</span>
-                          <span className="text-xs text-purple-300 ml-1">({operator.percentage}%)</span>
-                        </div>
-                      </div>
-                    ))}
+          <UnifiedWidgetLayout
+            size={size}
+            singleContent={
+              loading ? (
+                <div className="space-y-2">
+                  {[...Array(5)].map((_, i) => (
+                    <div key={i} className="h-8 bg-white/10 rounded animate-pulse"></div>
+                  ))}
+                </div>
+              ) : error ? (
+                <div className="text-red-400 text-sm">{error}</div>
+              ) : (
+                <div className="space-y-2">
+                  <div className="text-center mb-3">
+                    <div className="text-3xl font-bold text-white">{data.totalCount}</div>
                   </div>
-                ) : (
-                  <div className="text-xs text-slate-500 text-center py-2">No data</div>
-                )}
-              </div>
-            </div>
-          )}
+                  
+                  {/* 操作員列表 */}
+                  <div>
+                    <p className="text-xs text-purple-400 mb-2">By Operator</p>
+                    {data.operatorData && data.operatorData.length > 0 ? (
+                      <div className="space-y-1">
+                        {data.operatorData.map((operator) => (
+                          <TableRow key={operator.operator_id}>
+                            <span className="text-xs text-purple-200">{operator.operator_id}</span>
+                            <div className="text-right">
+                              <span className="text-xs font-semibold text-purple-200">{operator.count}</span>
+                              <span className="text-xs text-purple-300 ml-1">({operator.percentage}%)</span>
+                            </div>
+                          </TableRow>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-xs text-slate-500 text-center py-2">No data</div>
+                    )}
+                  </div>
+                </div>
+              )
+            }
+          />
         </CardContent>
       </WidgetCard>
     );
@@ -375,14 +375,14 @@ export function BookedOutStatsWidget({ widget, isEditMode }: WidgetComponentProp
           <div className="text-red-400 text-sm">{error}</div>
         ) : (
           <>
-            {/* 上半部分 - 統計數據 (35%) */}
-            <div className="h-[35%] mb-2">
+            {/* 上半部分 - 統計數據 (40%) */}
+            <div className="h-[40%] mb-2">
               {/* 操作員列表 */}
               <div className="bg-black/20 rounded-lg p-2 h-full overflow-hidden">
                 <p className="text-xs text-purple-400 mb-1">Operator Workload</p>
                 {data.operatorData && data.operatorData.length > 0 ? (
                   <div className="h-[calc(100%-1.5rem)] overflow-y-auto pr-1 space-y-0.5">
-                    {data.operatorData.slice(0, 10).map((operator) => (
+                    {data.operatorData.slice(0, 4).map((operator) => (
                       <div key={operator.operator_id} className="flex justify-between items-center py-0.5 px-2 hover:bg-white/10 rounded transition-colors">
                         <span className="text-xs text-purple-200">{operator.operator_id}</span>
                         <div className="text-right">
@@ -398,8 +398,8 @@ export function BookedOutStatsWidget({ widget, isEditMode }: WidgetComponentProp
               </div>
             </div>
             
-            {/* 下半部分 - 折線圖 (65%) */}
-            <div className="h-[65%]">
+            {/* 下半部分 - 折線圖 (60%) */}
+            <div className="h-[60%]">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart 
                   data={timeRange === 'Today' || timeRange === 'Yesterday' ? data.hourlyData : data.dailyData}

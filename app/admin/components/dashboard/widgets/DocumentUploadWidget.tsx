@@ -120,12 +120,8 @@ export function DocumentUploadWidget({ widget, isEditMode }: WidgetComponentProp
   useEffect(() => {
     if (size !== WidgetSize.SMALL) {
       loadUploadHistory();
-      
-      // 設置自動刷新
-      const interval = setInterval(() => loadUploadHistory(false), widget.config.refreshInterval || 60000);
-      return () => clearInterval(interval);
     }
-  }, [size, widget.config.refreshInterval, loadUploadHistory]);
+  }, [size, loadUploadHistory]);
 
   const formatTime = (timestamp: string) => {
     try {

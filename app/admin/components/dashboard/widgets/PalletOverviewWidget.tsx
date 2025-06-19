@@ -12,6 +12,7 @@ import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ChartPieIcon, ClockIcon, ChevronDownIcon } from '@heroicons/react/24/outline';
 import { WidgetComponentProps, WidgetSize } from '@/app/types/dashboard';
+import { useWidgetData } from '@/app/admin/hooks/useWidgetData';
 import { createClient } from '@/app/utils/supabase/client';
 import PalletDonutChart from '@/app/components/PalletDonutChart';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -123,14 +124,7 @@ export function PalletOverviewWidget({ widget, isEditMode }: WidgetComponentProp
     }
   }, [timeRange, calculateTransferredPallets]);
 
-  useEffect(() => {
-    loadStats();
-    
-    if (widget.config.refreshInterval) {
-      const interval = setInterval(loadStats, widget.config.refreshInterval);
-      return () => clearInterval(interval);
-    }
-  }, [widget.config, timeRange, loadStats]);
+  useWidgetData({ loadFunction: loadStats, isEditMode });
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {

@@ -8,6 +8,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { TrendingUp, TrendingDown, Package, AlertCircle, Calendar } from 'lucide-react';
 import { WidgetComponentProps, WidgetSize } from '@/app/types/dashboard';
+import { useWidgetData } from '@/app/admin/hooks/useWidgetData';
 import { createClient } from '@/app/utils/supabase/client';
 import { dialogStyles, iconColors } from '@/app/utils/dialogStyles';
 
@@ -120,15 +121,7 @@ export function EnhancedStatsCardWidget({ widget, isEditMode }: WidgetComponentP
     }
   }, [widget.config, timeRange, size]);
 
-  useEffect(() => {
-    loadData();
-    
-    // 設置自動刷新
-    if (widget.config.refreshInterval) {
-      const interval = setInterval(loadData, widget.config.refreshInterval);
-      return () => clearInterval(interval);
-    }
-  }, [widget.config, timeRange, loadData]);
+  useWidgetData({ loadFunction: loadData, isEditMode });
 
 
   const getIcon = () => {

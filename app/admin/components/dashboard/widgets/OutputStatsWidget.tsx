@@ -8,7 +8,7 @@
 
 'use client';
 
-import React, { useEffect, useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 import { CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { WidgetCard } from '../WidgetCard';
 import { CubeIcon, ClockIcon, ChevronDownIcon } from '@heroicons/react/24/outline';
@@ -20,8 +20,9 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend 
 } from 'recharts';
 import { getTodayRange, getYesterdayRange, getDateRange, formatDbTime } from '@/app/utils/timezone';
-import { useAdminRefresh } from '@/app/admin/contexts/AdminRefreshContext';
 import { format } from 'date-fns';
+import { UnifiedWidgetLayout, TableRow, ChartContainer } from '../UnifiedWidgetLayout';
+import { useWidgetData } from '@/app/admin/hooks/useWidgetData';
 
 interface OutputData {
   palletCount: number;
@@ -50,7 +51,6 @@ export function OutputStatsWidget({ widget, isEditMode }: WidgetComponentProps) 
   const [timeRange, setTimeRange] = useState('Today');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const { refreshTrigger } = useAdminRefresh();
 
   const size = widget.config.size || WidgetSize.SMALL;
 
@@ -169,17 +169,14 @@ export function OutputStatsWidget({ widget, isEditMode }: WidgetComponentProps) 
     }
   }, [size, timeRange]);
 
-  // Load data on mount and when refresh is triggered
-  useEffect(() => {
-    loadData();
-  }, [refreshTrigger, loadData]);
+  // Use widget data hook for refresh management
+  useWidgetData({
+    loadFunction: loadData,
+    dependencies: [timeRange],
+    isEditMode
+  });
 
-  // Load data when time range changes
-  useEffect(() => {
-    loadData();
-  }, [timeRange, loadData]);
-
-  useEffect(() => {
+  React.useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setIsDropdownOpen(false);
@@ -267,45 +264,47 @@ export function OutputStatsWidget({ widget, isEditMode }: WidgetComponentProps) 
           </div>
         </CardHeader>
         <CardContent className="pt-2">
-          {loading ? (
-            <div className="space-y-3">
-              <div className="h-16 bg-white/10 rounded animate-pulse"></div>
-              <div className="h-16 bg-white/10 rounded animate-pulse"></div>
-            </div>
-          ) : error ? (
-            <div className="text-red-400 text-sm">{error}</div>
-          ) : (
-            <div className="h-full flex flex-col space-y-2">
-              {/* Pallet 總數 */}
-              <div className="bg-black/20 rounded-lg p-2">
-                <p className="text-xs text-slate-400">Total Pallets</p>
-                <div className="text-2xl font-bold text-white">{data.palletCount}</div>
-              </div>
-              
-              {/* Product 明細 */}
-              <div className="flex-1 bg-black/20 rounded-lg p-2 overflow-hidden">
-                <p className="text-xs text-purple-400 mb-1">Product Details ({data.productCodeCount} codes, Total: {data.totalQuantity.toLocaleString()})</p>
-                
-                {data.productDetails && data.productDetails.length > 0 ? (
-                  <div className="max-h-[calc(100%-1.5rem)] overflow-y-auto pr-1">
-                    <div className="space-y-1">
-                      {data.productDetails.map((product) => (
-                        <div 
-                          key={product.product_code}
-                          className="flex justify-between items-center py-1 px-2 text-xs hover:bg-white/10 rounded transition-colors"
-                        >
-                          <span className="text-purple-200">{product.product_code}</span>
-                          <span className="text-purple-200 font-medium">{product.quantity.toLocaleString()}</span>
-                        </div>
-                      ))}
-                    </div>
+          <UnifiedWidgetLayout
+            size={size}
+            singleContent={
+              loading ? (
+                <div className="space-y-3">
+                  <div className="h-16 bg-white/10 rounded animate-pulse"></div>
+                  <div className="h-16 bg-white/10 rounded animate-pulse"></div>
+                </div>
+              ) : error ? (
+                <div className="text-red-400 text-sm">{error}</div>
+              ) : (
+                <div className="h-full flex flex-col space-y-2">
+                  {/* Pallet 總數 */}
+                  <div className="bg-black/20 rounded-lg p-2">
+                    <p className="text-xs text-slate-400">Total Pallets</p>
+                    <div className="text-2xl font-bold text-white">{data.palletCount}</div>
                   </div>
-                ) : (
-                  <div className="text-xs text-slate-500 text-center py-4">No data</div>
-                )}
-              </div>
-            </div>
-          )}
+                  
+                  {/* Product 明細 */}
+                  <div className="flex-1 bg-black/20 rounded-lg p-2 overflow-hidden">
+                    <p className="text-xs text-purple-400 mb-1">Product Details ({data.productCodeCount} codes, Total: {data.totalQuantity.toLocaleString()})</p>
+                    
+                    {data.productDetails && data.productDetails.length > 0 ? (
+                      <div className="max-h-[calc(100%-1.5rem)] overflow-y-auto pr-1">
+                        <div className="space-y-1">
+                          {data.productDetails.map((product) => (
+                            <TableRow key={product.product_code}>
+                              <span className="text-purple-200">{product.product_code}</span>
+                              <span className="text-purple-200 font-medium">{product.quantity.toLocaleString()}</span>
+                            </TableRow>
+                          ))}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="text-xs text-slate-500 text-center py-4">No data</div>
+                    )}
+                  </div>
+                </div>
+              )
+            }
+          />
         </CardContent>
       </WidgetCard>
     );
@@ -367,22 +366,26 @@ export function OutputStatsWidget({ widget, isEditMode }: WidgetComponentProps) 
         ) : error ? (
           <div className="text-red-400 text-sm">{error}</div>
         ) : (
-          <div className="h-full flex flex-col" style={{ minHeight: '400px' }}>
-            {/* 上部份 - Product Code 明細列表 (1/4) */}
-            <div className="flex-shrink-0 mb-2" style={{ height: '100px' }}>
+          <UnifiedWidgetLayout
+            size={size}
+            tableData={data.productDetails}
+            renderTableRow={(product) => (
+              <TableRow key={product.product_code}>
+                <span className="text-purple-200 text-xs">{product.product_code}</span>
+                <span className="text-purple-200 font-medium text-xs">{product.quantity.toLocaleString()}</span>
+              </TableRow>
+            )}
+            tableContent={
               <div className="bg-black/20 rounded-lg p-2 h-full overflow-hidden flex flex-col">
                 <p className="text-xs text-purple-400 mb-1 flex-shrink-0">Product Details ({data.productCodeCount} codes, Total: {data.totalQuantity.toLocaleString()})</p>
                 {data.productDetails && data.productDetails.length > 0 ? (
                   <div className="flex-1 overflow-y-auto pr-1">
                     <div className="space-y-0.5">
-                      {data.productDetails.map((product) => (
-                        <div 
-                          key={product.product_code}
-                          className="flex justify-between items-center py-0.5 px-2 text-xs hover:bg-slate-700/50 rounded transition-colors"
-                        >
-                          <span className="text-purple-200">{product.product_code}</span>
-                          <span className="text-purple-200 font-medium">{product.quantity.toLocaleString()}</span>
-                        </div>
+                      {data.productDetails.slice(0, 4).map((product) => (
+                        <TableRow key={product.product_code}>
+                          <span className="text-purple-200 text-xs">{product.product_code}</span>
+                          <span className="text-purple-200 font-medium text-xs">{product.quantity.toLocaleString()}</span>
+                        </TableRow>
                       ))}
                     </div>
                   </div>
@@ -390,78 +393,73 @@ export function OutputStatsWidget({ widget, isEditMode }: WidgetComponentProps) 
                   <div className="text-xs text-slate-500 text-center py-2">No data</div>
                 )}
               </div>
-            </div>
-            
-            {/* 下部份 - 棒型圖 (3/4) */}
-            <div className="flex-1 bg-black/20 rounded-lg p-2 overflow-hidden" style={{ minHeight: '300px' }}>
-              <h4 className="text-xs font-medium text-slate-300 mb-1">Daily Product Quantity Chart (Top 3)</h4>
-              {data.productDetails && data.productDetails.length > 0 ? (
-                <div className="h-[calc(100%-20px)]" style={{ minHeight: '250px' }}>
-                  {(!data.dailyData || data.dailyData.length === 0) ? (
-                    <div className="h-full flex items-center justify-center">
-                      <p className="text-sm text-slate-500">No chart data available</p>
-                    </div>
-                  ) : (
-                    <>
-                      <div style={{ width: '100%', height: '400px' }}>
-                        <ResponsiveContainer width="100%" height={400}>
-                      <BarChart 
-                        data={data.dailyData}
-                        margin={{ top: 5, right: 0, left: 0, bottom: 20 }}
-                      >
-                      <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                      <XAxis 
-                        dataKey="date" 
-                        stroke="#9CA3AF"
-                        tick={{ fontSize: 10, fill: '#9CA3AF' }}
-                        axisLine={{ stroke: '#9CA3AF' }}
-                      />
-                      <YAxis 
-                        stroke="#9CA3AF" 
-                        tick={{ fontSize: 11, fill: '#9CA3AF' }}
-                      />
-                      <Tooltip 
-                        contentStyle={{ 
-                          backgroundColor: '#1F2937', 
-                          border: '1px solid #374151',
-                          borderRadius: '8px',
-                          color: '#E5E7EB'
-                        }}
-                        formatter={(value: any) => value.toLocaleString()}
-                      />
-                      <Legend 
-                        wrapperStyle={{ fontSize: '11px', paddingTop: '10px' }}
-                      />
-                      {/* 動態生成 Bar components for top 3 products */}
-                      {data.productDetails && data.productDetails.length > 0 ? (
-                        data.productDetails.slice(0, 3).map((product, index) => (
-                          <Bar 
-                            key={product.product_code}
-                            dataKey={product.product_code} 
-                            fill={[
-                              '#3B82F6', // Blue
-                              '#F59E0B', // Amber
-                              '#8B5CF6', // Purple
-                            ][index]}
-                            radius={[4, 4, 0, 0]}
-                          />
-                        ))
-                      ) : (
-                        <Bar dataKey="quantity" fill="#10B981" radius={[4, 4, 0, 0]} />
-                      )}
-                      </BarChart>
-                    </ResponsiveContainer>
+            }
+            chartContent={
+              <ChartContainer title="Daily Product Quantity Chart (Top 3)">
+                {data.productDetails && data.productDetails.length > 0 ? (
+                  <>
+                    {(!data.dailyData || data.dailyData.length === 0) ? (
+                      <div className="h-full flex items-center justify-center">
+                        <p className="text-sm text-slate-500">No chart data available</p>
                       </div>
-                    </>
-                  )}
-                </div>
-              ) : (
-                <div className="h-[calc(100%-20px)] flex items-center justify-center">
-                  <p className="text-sm text-slate-500">No product data available</p>
-                </div>
-              )}
-            </div>
-          </div>
+                    ) : (
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart 
+                          data={data.dailyData}
+                          margin={{ top: 5, right: 0, left: 0, bottom: 20 }}
+                        >
+                        <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                        <XAxis 
+                          dataKey="date" 
+                          stroke="#9CA3AF"
+                          tick={{ fontSize: 10, fill: '#9CA3AF' }}
+                          axisLine={{ stroke: '#9CA3AF' }}
+                        />
+                        <YAxis 
+                          stroke="#9CA3AF" 
+                          tick={{ fontSize: 11, fill: '#9CA3AF' }}
+                        />
+                        <Tooltip 
+                          contentStyle={{ 
+                            backgroundColor: '#1F2937', 
+                            border: '1px solid #374151',
+                            borderRadius: '8px',
+                            color: '#E5E7EB'
+                          }}
+                          formatter={(value: any) => value.toLocaleString()}
+                        />
+                        <Legend 
+                          wrapperStyle={{ fontSize: '11px', paddingTop: '10px' }}
+                        />
+                        {/* 動態生成 Bar components for top 3 products */}
+                        {data.productDetails && data.productDetails.length > 0 ? (
+                          data.productDetails.slice(0, 3).map((product, index) => (
+                            <Bar 
+                              key={product.product_code}
+                              dataKey={product.product_code} 
+                              fill={[
+                                '#3B82F6', // Blue
+                                '#F59E0B', // Amber
+                                '#8B5CF6', // Purple
+                              ][index]}
+                              radius={[4, 4, 0, 0]}
+                            />
+                          ))
+                        ) : (
+                          <Bar dataKey="quantity" fill="#10B981" radius={[4, 4, 0, 0]} />
+                        )}
+                        </BarChart>
+                      </ResponsiveContainer>
+                    )}
+                  </>
+                ) : (
+                  <div className="h-full flex items-center justify-center">
+                    <p className="text-sm text-slate-500">No product data available</p>
+                  </div>
+                )}
+              </ChartContainer>
+            }
+          />
         )}
       </CardContent>
     </WidgetCard>

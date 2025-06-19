@@ -130,14 +130,10 @@ export function RecentActivityWidget({ widget, isEditMode }: WidgetComponentProp
   }, [page, itemsPerPage, activities.length]);
 
   useEffect(() => {
-    loadActivities();
-    
-    // 設置自動刷新
-    if (widget.config.refreshInterval && !isEditMode) {
-      const interval = setInterval(loadActivities, widget.config.refreshInterval);
-      return () => clearInterval(interval);
+    if (!isEditMode) {
+      loadActivities();
     }
-  }, [widget.config, size, isEditMode, loadActivities]);
+  }, [loadActivities, isEditMode]);
 
 
   const formatTime = (timestamp: string) => {

@@ -1,0 +1,173 @@
+/**
+ * Glow Effects CSS
+ * Advanced animations and effects for admin dashboard
+ */
+
+/* CSS Custom Properties for animations */
+@property --rotation-angle {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
+
+/* Keyframe animations */
+@keyframes rotate {
+  to {
+    --rotation-angle: 360deg;
+  }
+}
+
+@keyframes fadeInScale {
+  0% {
+    opacity: 0;
+    transform: scale(0.97);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes fadeUpCell {
+  0% {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: .5;
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -1000px 0;
+  }
+  100% {
+    background-position: 1000px 0;
+  }
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Animation classes */
+.animate-fade-in-scale {
+  animation: fadeInScale 0.7s cubic-bezier(.46,.03,.52,.96) forwards;
+}
+
+.animate-fade-up-cell {
+  animation: fadeUpCell 0.7s cubic-bezier(.64,.09,.08,1) forwards;
+  opacity: 0;
+  transform: translateY(30px);
+}
+
+.animate-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.animate-shimmer {
+  animation: shimmer 2s linear infinite;
+  background: linear-gradient(
+    105deg,
+    transparent 40%,
+    rgba(255, 255, 255, 0.7) 50%,
+    transparent 60%
+  );
+  background-size: 1000px 100%;
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+/* Cell animation delays */
+.cell-1 { animation-delay: 0.2s; }
+.cell-2 { animation-delay: 0.35s; }
+.cell-3 { animation-delay: 0.5s; }
+.cell-4 { animation-delay: 0.65s; }
+
+/* Glow card styles */
+.glow-card {
+  position: relative;
+  border-radius: 1rem;
+  overflow: visible;
+}
+
+.glow-card::before {
+  content: '';
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  border-radius: 1rem;
+  pointer-events: none;
+}
+
+.glow-card > .main-content {
+  position: relative;
+  z-index: 2;
+  border-radius: 1rem;
+  overflow: hidden;
+}
+
+/* Subtle outline effects */
+.subtle-outline {
+  outline: 1.5px solid rgba(100, 112, 140, 0.10);
+}
+
+.subtle-outline-inner {
+  border-color: rgba(120, 130, 150, 0.09);
+}
+
+/* Widget hover effects */
+.widget-wrapper {
+  transition: all 0.3s ease;
+}
+
+.widget-wrapper:hover {
+  transform: translateY(-2px);
+  box-shadow: 
+    0 20px 25px -5px rgb(0 0 0 / 0.3),
+    0 10px 10px -5px rgb(0 0 0 / 0.04);
+}
+
+/* Dark theme adjustments */
+body {
+  background-color: #16161A;
+  color: #EAEAEA;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #18181C;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #23232A;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #2A2A32;
+}

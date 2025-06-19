@@ -17,6 +17,8 @@ import { format, startOfDay, endOfDay, subDays, subMonths } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ClockIcon, ChevronDownIcon } from '@heroicons/react/24/outline';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { UnifiedWidgetLayout, TableRow, ChartContainer } from '../UnifiedWidgetLayout';
+import { useWidgetData } from '@/app/admin/hooks/useWidgetData';
 
 interface VoidData {
   id: string;
@@ -155,9 +157,7 @@ export function VoidStatsWidget({ widget, isEditMode }: WidgetComponentProps) {
     }
   }, [timeRange, size, getDateRange, prepareChartData]);
 
-  useEffect(() => {
-    fetchVoidData();
-  }, [fetchVoidData]);
+  useWidgetData({ loadFunction: fetchVoidData, isEditMode });
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -197,23 +197,32 @@ export function VoidStatsWidget({ widget, isEditMode }: WidgetComponentProps) {
           <CardTitle className="text-sm font-medium text-slate-200">Void Statistics</CardTitle>
         </CardHeader>
         <CardContent className="pt-2">
-          {loading ? (
-            <div className="space-y-2">
-              {[...Array(3)].map((_, i) => (
-                <div key={i} className="h-6 bg-white/10 rounded animate-pulse"></div>
-              ))}
-            </div>
-          ) : voidData.length === 0 ? (
-            <p className="text-xs text-slate-500 text-center py-4">No void records today</p>
-          ) : (
-            <div className="space-y-1 max-h-[180px] overflow-y-auto">
-              {voidData.slice(0, 10).map((item) => (
-                <div key={item.id} className="text-xs text-purple-300 py-1">
-                  {format(new Date(item.created_at), 'HH:mm')} - {item.product_code} - {item.damage_qty}
+          <UnifiedWidgetLayout
+            size={size}
+            singleContent={
+              loading ? (
+                <div className="space-y-2">
+                  {[...Array(3)].map((_, i) => (
+                    <div key={i} className="h-6 bg-white/10 rounded animate-pulse"></div>
+                  ))}
                 </div>
-              ))}
-            </div>
-          )}
+              ) : voidData.length === 0 ? (
+                <p className="text-xs text-slate-500 text-center py-4">No void records today</p>
+              ) : (
+                <div className="space-y-1">
+                  {voidData.slice(0, 10).map((item) => (
+                    <TableRow key={item.id}>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-slate-400">{format(new Date(item.created_at), 'HH:mm')}</span>
+                        <span className="text-xs text-purple-300">{item.product_code}</span>
+                      </div>
+                      <span className="text-xs font-semibold text-purple-400">{item.damage_qty}</span>
+                    </TableRow>
+                  ))}
+                </div>
+              )
+            }
+          />
         </CardContent>
       </WidgetCard>
     );
@@ -268,7 +277,7 @@ export function VoidStatsWidget({ widget, isEditMode }: WidgetComponentProps) {
         </div>
       </CardHeader>
       
-      <CardContent className="flex-1 flex flex-col pt-2">
+      <CardContent className="flex-1 min-h-0">
         {loading ? (
           <div className="space-y-2">
             {[...Array(5)].map((_, i) => (
@@ -276,38 +285,24 @@ export function VoidStatsWidget({ widget, isEditMode }: WidgetComponentProps) {
             ))}
           </div>
         ) : (
-          <>
-            {/* 數據表 (1/3) */}
-            <div className="flex-1 mb-2">
-              {/* Column Headers */}
-              <div className="flex items-center justify-between px-2 py-1 bg-black/20 rounded-t text-xs font-semibold text-purple-400 mb-1">
-                <span className="flex-1">Time</span>
-                <span className="w-24 text-center">Product</span>
-                {timeRange !== 'Today' && timeRange !== 'Yesterday' && <span className="w-20 text-center">Reason</span>}
-                <span className="w-16 text-right">Qty</span>
-              </div>
-              
-              {/* Data Rows */}
-              <div className="space-y-0.5 max-h-[120px] overflow-y-auto">
-                {voidData.length === 0 ? (
-                  <p className="text-xs text-slate-500 text-center py-4">No void records</p>
-                ) : (
-                  voidData.slice(0, 20).map((item) => (
-                    <div key={item.id} className="flex items-center justify-between text-xs text-purple-200 py-0.5 px-2 hover:bg-white/5 rounded">
-                      <span className="flex-1">{format(new Date(item.created_at), 'HH:mm')}</span>
-                      <span className="w-24 text-center truncate">{item.product_code}</span>
-                      {timeRange !== 'Today' && timeRange !== 'Yesterday' && <span className="w-20 text-center truncate">{item.reason || '-'}</span>}
-                      <span className="w-16 text-right">{item.damage_qty}</span>
-                    </div>
-                  ))
-                )}
-              </div>
-            </div>
-
-            {/* 圖表 (2/3) - 只在 Last Week 或 Last Month 時顯示 */}
-            {(timeRange === 'Last Week' || timeRange === 'Last Month') && (
-              <div className="flex-[2] min-h-0">
-                <div className="h-full border-t border-slate-700 pt-2">
+          <UnifiedWidgetLayout
+            size={size}
+            tableData={voidData}
+            renderTableRow={(item) => (
+              <TableRow key={item.id}>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-slate-400">{format(new Date(item.created_at), 'HH:mm')}</span>
+                  <span className="text-xs text-purple-300">{item.product_code}</span>
+                  {timeRange !== 'Today' && timeRange !== 'Yesterday' && (
+                    <span className="text-xs text-slate-500">{item.reason || '-'}</span>
+                  )}
+                </div>
+                <span className="text-xs font-semibold text-purple-400">{item.damage_qty}</span>
+              </TableRow>
+            )}
+            chartContent={
+              (timeRange === 'Last Week' || timeRange === 'Last Month') ? (
+                <ChartContainer>
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={chartData} margin={{ top: 5, right: 5, left: 5, bottom: 5 }}>
                       <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
@@ -333,10 +328,14 @@ export function VoidStatsWidget({ widget, isEditMode }: WidgetComponentProps) {
                       <Bar dataKey="count" fill="#10b981" />
                     </BarChart>
                   </ResponsiveContainer>
+                </ChartContainer>
+              ) : (
+                <div className="h-full flex items-center justify-center">
+                  <p className="text-sm text-slate-400">Chart available for Week/Month views</p>
                 </div>
-              </div>
-            )}
-          </>
+              )
+            }
+          />
         )}
       </CardContent>
     </WidgetCard>

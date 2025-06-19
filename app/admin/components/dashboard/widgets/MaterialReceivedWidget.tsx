@@ -17,6 +17,7 @@ import MaterialReceived from '@/app/components/GrnHistory';
 import { createClient } from '@/app/utils/supabase/client';
 import { getTodayRange } from '@/app/utils/timezone';
 import { WidgetTitle, WidgetText, WidgetLabel, WidgetValue } from '../WidgetTypography';
+import { useWidgetData } from '@/app/admin/hooks/useWidgetData';
 
 export function MaterialReceivedWidget({ widget, isEditMode }: WidgetComponentProps) {
   const size = widget.config.size || WidgetSize.SMALL;
@@ -46,15 +47,11 @@ export function MaterialReceivedWidget({ widget, isEditMode }: WidgetComponentPr
     }
   }, []);
 
-  useEffect(() => {
-    if (size === WidgetSize.SMALL) {
-      fetchTodayGrnCount();
-      
-      // 設置自動刷新
-      const interval = setInterval(fetchTodayGrnCount, widget.config.refreshInterval || 60000);
-      return () => clearInterval(interval);
-    }
-  }, [size, widget.config.refreshInterval, fetchTodayGrnCount]);
+  useWidgetData({ 
+    loadFunction: fetchTodayGrnCount, 
+    isEditMode,
+    skip: size !== WidgetSize.SMALL
+  });
 
   // Small size - only show today's GRN count
   if (size === WidgetSize.SMALL) {

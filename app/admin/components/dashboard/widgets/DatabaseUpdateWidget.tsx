@@ -73,12 +73,8 @@ export function DatabaseUpdateWidget({ widget, isEditMode }: WidgetComponentProp
   useEffect(() => {
     if (size === WidgetSize.MEDIUM) {
       loadRecentUpdates();
-      
-      // 設置自動刷新
-      const interval = setInterval(loadRecentUpdates, widget.config.refreshInterval || 60000);
-      return () => clearInterval(interval);
     }
-  }, [size, widget.config.refreshInterval, loadRecentUpdates]);
+  }, [size, loadRecentUpdates]);
 
   const handleOpenProductUpdate = () => {
     if (!isEditMode) {

@@ -54,7 +54,13 @@
       "Bash(chmod:*)",
       "Bash(./update-widgets.sh:*)",
       "Bash(git push:*)",
-      "Bash(python3:*)"
+      "Bash(python3:*)",
+      "Bash(npx supabase migration:*)",
+      "Bash(npx eslint:*)",
+      "Bash(dos2unix:*)",
+      "Bash(sed:*)",
+      "Bash(awk:*)",
+      "Bash(kill:*)"
     ],
     "deny": []
   }

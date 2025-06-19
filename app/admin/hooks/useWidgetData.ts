@@ -19,20 +19,20 @@ export function useWidgetData({
 }: UseWidgetDataOptions) {
   const { refreshTrigger } = useAdminRefresh();
 
-  // Load data on mount and when refresh is triggered
-  useEffect(() => {
+  // Memoize the load function to prevent unnecessary re-renders
+  const memoizedLoadFunction = useCallback(() => {
     if (!isEditMode) {
       loadFunction();
     }
-  }, [refreshTrigger, isEditMode, loadFunction]);
+  }, [isEditMode, loadFunction]);
 
-  // Load data when dependencies change (skip if it's the initial mount)
+  // Single useEffect to handle all data loading scenarios
   useEffect(() => {
-    if (!isEditMode && refreshTrigger > 0) {
-      loadFunction();
-    }
+    memoizedLoadFunction();
+    // We only want to re-run when refreshTrigger changes or dependencies change
+    // loadFunction changes are handled by the memoizedLoadFunction
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loadFunction, refreshTrigger, isEditMode, ...dependencies]);
+  }, [refreshTrigger, isEditMode, ...dependencies]);
 
   return {
     reload: loadFunction

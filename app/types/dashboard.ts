@@ -30,7 +30,10 @@ export enum WidgetType {
   PRODUCT_SPEC = 'product_spec',
   ANALYTICS_DASHBOARD = 'analytics_dashboard',
   REPORTS = 'reports',
-  CUSTOM = 'custom'
+  CUSTOM = 'custom',
+  TODAY_PRODUCTION = 'today_production',
+  MACHINE_EFFICIENCY = 'machine_efficiency',
+  TARGET_HIT_RATE = 'target_hit_rate'
 }
 
 // 小部件尺寸

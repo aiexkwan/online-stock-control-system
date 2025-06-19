@@ -1,0 +1,98 @@
+/**
+ * Admin Dashboard Theme Configuration
+ * Centralized theme settings for consistent UI
+ */
+
+export const THEME = {
+  colors: {
+    // Base colors
+    background: '#16161A',
+    cardBg: '#18181C',
+    cardBorder: '#23232A',
+    subtleBorder: 'rgba(120, 130, 150, 0.09)',
+    
+    // Text colors
+    textPrimary: '#EAEAEA',
+    textSecondary: '#8E8EA0',
+    textMuted: '#6B7280',
+    
+    // Tab theme colors
+    tabs: {
+      production: {
+        primary: '#FFD700',
+        secondary: '#FFA500',
+        glow: 'rgba(255, 215, 0, 0.3)'
+      },
+      warehouse: {
+        primary: '#3B82F6',
+        secondary: '#2563EB',
+        glow: 'rgba(59, 130, 246, 0.3)'
+      },
+      inventory: {
+        primary: '#10B981',
+        secondary: '#059669',
+        glow: 'rgba(16, 185, 129, 0.3)'
+      },
+      update: {
+        primary: '#6B7280',
+        secondary: '#4B5563',
+        glow: 'rgba(107, 114, 128, 0.3)'
+      },
+      search: {
+        primary: '#EC4899',
+        secondary: '#DB2777',
+        glow: 'rgba(236, 72, 153, 0.3)'
+      }
+    }
+  },
+  
+  // Glow effect configuration
+  glow: {
+    colors: [
+      '#669900', '#99cc33', '#ccee66',
+      '#006699', '#3399cc', '#990066',
+      '#cc3399', '#ff6600', '#ff9900',
+      '#ffcc00', '#669900'
+    ],
+    opacity: 0.44,
+    blur: '20px',
+    spread: '32px 12px',
+    innerSpread: '48px 16px',
+    innerGlow: '0 2px'
+  },
+  
+  // Spacing
+  spacing: {
+    widget: '1rem',
+    card: '1.25rem',
+    section: '1.5rem'
+  },
+  
+  // Border radius
+  borderRadius: {
+    sm: '0.5rem',
+    md: '0.75rem',
+    lg: '1rem',
+    xl: '1rem'
+  },
+  
+  // Shadows
+  shadows: {
+    sm: '0 1px 2px 0 rgb(0 0 0 / 0.05)',
+    md: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
+    lg: '0 10px 15px -3px rgb(0 0 0 / 0.1)',
+    xl: '0 20px 25px -5px rgb(0 0 0 / 0.2)',
+    glow: '0 0 32px 12px rgba(102,153,0,0.18), 0 0 48px 16px rgba(51,153,204,0.12), 0 0 0 2px rgba(204,238,102,0.08) inset'
+  },
+  
+  // Transitions
+  transitions: {
+    fast: '150ms ease',
+    normal: '300ms ease',
+    slow: '500ms ease',
+    cubic: 'cubic-bezier(.64,.09,.08,1)'
+  }
+};
+
+export type ThemeColors = typeof THEME.colors;
+export type TabTheme = keyof typeof THEME.colors.tabs;

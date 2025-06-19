@@ -1,5 +1,7 @@
 @import '@fontsource/lato/400.css';
 @import '@fontsource/lato/700.css';
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
+@import './admin/styles/glowEffects.css';
 @tailwind base;
 @tailwind components;
 @tailwind utilities; 

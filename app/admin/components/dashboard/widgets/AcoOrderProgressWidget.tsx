@@ -8,7 +8,7 @@
 
 'use client';
 
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { WidgetCard } from '../WidgetCard';
 import { ClipboardDocumentListIcon, ChevronDownIcon } from '@heroicons/react/24/outline';
@@ -26,6 +26,7 @@ interface AcoOrder {
   required_qty: number;
   remain_qty: number;
   latest_update: string;
+  unique_id?: string; // 添加唯一標識符
 }
 
 interface AcoOrderProgress {
@@ -49,7 +50,7 @@ export function AcoOrderProgressWidget({ widget, isEditMode }: WidgetComponentPr
   const size = widget.config.size || WidgetSize.SMALL;
 
   // Define loadIncompleteOrders function
-  const loadIncompleteOrders = async () => {
+  const loadIncompleteOrders = useCallback(async () => {
     try {
       setLoading(true);
       const supabase = createClient();
@@ -61,14 +62,20 @@ export function AcoOrderProgressWidget({ widget, isEditMode }: WidgetComponentPr
 
       if (error) throw error;
 
-      setIncompleteOrders(data || []);
+      // 為每個訂單添加唯一標識符，避免重複 key 問題
+      const ordersWithUniqueId = (data || []).map((order, index) => ({
+        ...order,
+        unique_id: `${order.order_ref}-${order.code}-${index}`
+      }));
+
+      setIncompleteOrders(ordersWithUniqueId);
     } catch (err: any) {
       console.error('Error loading ACO orders:', err);
       setError(err.message);
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   // Use widget data hook for refresh management
   useWidgetData({
@@ -87,21 +94,7 @@ export function AcoOrderProgressWidget({ widget, isEditMode }: WidgetComponentPr
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Load order progress when selected order changes
-  useEffect(() => {
-    if (selectedOrderRef) {
-      loadOrderProgress(selectedOrderRef);
-    }
-  }, [selectedOrderRef]);
-
-  // Auto-select first order for large size
-  useEffect(() => {
-    if (size === WidgetSize.LARGE && incompleteOrders.length > 0 && !selectedOrderRef) {
-      setSelectedOrderRef(incompleteOrders[0].order_ref);
-    }
-  }, [incompleteOrders, size, selectedOrderRef]);
-
-  const loadOrderProgress = async (orderRef: number) => {
+  const loadOrderProgress = useCallback(async (orderRef: number) => {
     try {
       const supabase = createClient();
       const { data, error } = await supabase
@@ -125,7 +118,22 @@ export function AcoOrderProgressWidget({ widget, isEditMode }: WidgetComponentPr
       console.error('Error loading order progress:', err);
       setError(err.message);
     }
-  };
+  }, []);
+
+  // Load order progress when selected order changes
+  useEffect(() => {
+    if (selectedOrderRef) {
+      loadOrderProgress(selectedOrderRef);
+    }
+  }, [selectedOrderRef, loadOrderProgress]);
+
+  // Auto-select first order for large size
+  useEffect(() => {
+    if (size === WidgetSize.LARGE && incompleteOrders.length > 0 && !selectedOrderRef) {
+      setSelectedOrderRef(incompleteOrders[0].order_ref);
+    }
+  }, [incompleteOrders, size, selectedOrderRef]);
+
 
   const handleOrderSelect = (orderRef: number) => {
     setSelectedOrderRef(orderRef);
@@ -181,13 +189,13 @@ export function AcoOrderProgressWidget({ widget, isEditMode }: WidgetComponentPr
             </div>
           ) : (
             <div className="space-y-2 max-h-48 overflow-y-auto">
-              {incompleteOrders.slice(0, 5).map((order) => {
+              {incompleteOrders.slice(0, 5).map((order, idx) => {
                 const completionPercentage = Math.round(
                   ((order.required_qty - order.remain_qty) / order.required_qty) * 100
                 );
                 return (
                   <div 
-                    key={order.order_ref} 
+                    key={order.unique_id || `order-${order.order_ref}-${idx}`} 
                     className="bg-black/20 rounded-lg p-2 border border-slate-700/50"
                   >
                     <div className="flex justify-between items-center mb-1">
@@ -259,9 +267,9 @@ export function AcoOrderProgressWidget({ widget, isEditMode }: WidgetComponentPr
                       No incomplete orders
                     </div>
                   ) : (
-                    incompleteOrders.map((order) => (
+                    incompleteOrders.map((order, idx) => (
                       <button
-                        key={order.order_ref}
+                        key={order.unique_id || `dropdown-order-${order.order_ref}-${idx}`}
                         onClick={() => handleOrderSelect(order.order_ref)}
                         className={`w-full px-3 py-2 text-left text-xs hover:bg-white/10 transition-all duration-300 first:rounded-t-xl last:rounded-b-xl ${
                           selectedOrderRef === order.order_ref ? 'bg-white/10 text-orange-400' : 'text-slate-300'
@@ -299,7 +307,7 @@ export function AcoOrderProgressWidget({ widget, isEditMode }: WidgetComponentPr
         ) : (
           <div className="space-y-6">
             {orderProgress.map((item, index) => (
-              <div key={index} className="space-y-3">
+              <div key={`${selectedOrderRef}-${item.code}-${index}`} className="space-y-3">
                 <div className="flex justify-between items-center">
                   <WidgetText size="xs" glow="white" className="font-medium text-xs">{item.code}</WidgetText>
                   <span className={`text-[10px] ${WidgetStyles.text.tableData} bg-white/5 px-2 py-0.5 rounded-full`}>

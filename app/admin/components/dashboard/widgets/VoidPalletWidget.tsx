@@ -19,6 +19,8 @@ import { useDialog } from '@/app/contexts/DialogContext';
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
 import { format } from 'date-fns';
 import { WidgetStyles } from '@/app/utils/widgetStyles';
+import { UnifiedWidgetLayout, TableRow, ChartContainer } from '../UnifiedWidgetLayout';
+import { useWidgetData } from '@/app/admin/hooks/useWidgetData';
 
 interface VoidRecord {
   uuid: string;
@@ -119,13 +121,7 @@ export function VoidPalletWidget({ widget, isEditMode }: WidgetComponentProps) {
     }
   }, [size, supabase]);
 
-  useEffect(() => {
-    loadVoidStats();
-    
-    // 設置自動刷新
-    const interval = setInterval(loadVoidStats, widget.config.refreshInterval || 60000);
-    return () => clearInterval(interval);
-  }, [size, widget.config.refreshInterval, loadVoidStats]);
+  useWidgetData({ loadFunction: loadVoidStats, isEditMode });
 
   const handleOpenVoidDialog = () => {
     openDialog('voidPallet');
@@ -165,49 +161,54 @@ export function VoidPalletWidget({ widget, isEditMode }: WidgetComponentProps) {
               <span className="text-lg">Void Pallets</span>
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
-            {/* 統計摘要 */}
-            <div className="grid grid-cols-2 gap-3">
-              <div className="bg-slate-700/30 rounded-lg p-3">
-                <div className="text-2xl font-bold text-purple-400">{stats.today_voided}</div>
-                <div className="text-xs text-slate-400">Today</div>
-              </div>
-              <div className="bg-slate-700/30 rounded-lg p-3">
-                <div className="text-2xl font-bold text-purple-400">{stats.this_week_voided}</div>
-                <div className="text-xs text-slate-400">This Week</div>
-              </div>
-            </div>
-
-            {/* 最近作廢記錄 */}
-            <div className="space-y-2">
-              <h4 className="text-sm font-medium text-slate-400">Recent Voids</h4>
-              {loading ? (
-                <div className="animate-pulse space-y-2">
-                  {[1, 2, 3].map(i => (
-                    <div key={i} className="h-12 bg-slate-700/30 rounded-lg"></div>
-                  ))}
-                </div>
-              ) : recentVoids.length === 0 ? (
-                <div className="text-center py-4 text-slate-500">No recent voids</div>
-              ) : (
-                <div className="space-y-2 max-h-48 overflow-y-auto">
-                  {recentVoids.map((record) => (
-                    <div key={record.uuid} className="bg-slate-700/30 rounded-lg p-2 text-xs">
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <div className="font-medium text-purple-400">{record.plt_num}</div>
-                          <div className="text-purple-300">{record.reason}</div>
-                        </div>
-                        <div className="text-purple-300 text-right">
-                          <div>{format(new Date(record.time), 'MM/dd')}</div>
-                          <div>{format(new Date(record.time), 'HH:mm')}</div>
-                        </div>
-                      </div>
+          <CardContent className="pt-2">
+            <UnifiedWidgetLayout
+              size={size}
+              singleContent={
+                <div className="space-y-4">
+                  {/* 統計摘要 */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="bg-slate-700/30 rounded-lg p-3">
+                      <div className="text-2xl font-bold text-purple-400">{stats.today_voided}</div>
+                      <div className="text-xs text-slate-400">Today</div>
                     </div>
-                  ))}
+                    <div className="bg-slate-700/30 rounded-lg p-3">
+                      <div className="text-2xl font-bold text-purple-400">{stats.this_week_voided}</div>
+                      <div className="text-xs text-slate-400">This Week</div>
+                    </div>
+                  </div>
+
+                  {/* 最近作廢記錄 */}
+                  <div className="space-y-2">
+                    <h4 className="text-sm font-medium text-slate-400">Recent Voids</h4>
+                    {loading ? (
+                      <div className="animate-pulse space-y-2">
+                        {[1, 2, 3].map(i => (
+                          <div key={i} className="h-12 bg-slate-700/30 rounded-lg"></div>
+                        ))}
+                      </div>
+                    ) : recentVoids.length === 0 ? (
+                      <div className="text-center py-4 text-slate-500">No recent voids</div>
+                    ) : (
+                      <div className="space-y-1">
+                        {recentVoids.map((record) => (
+                          <TableRow key={record.uuid}>
+                            <div>
+                              <div className="font-medium text-purple-400">{record.plt_num}</div>
+                              <div className="text-xs text-purple-300">{record.reason}</div>
+                            </div>
+                            <div className="text-right">
+                              <div className="text-xs text-purple-300">{format(new Date(record.time), 'MM/dd')}</div>
+                              <div className="text-xs text-purple-200">{format(new Date(record.time), 'HH:mm')}</div>
+                            </div>
+                          </TableRow>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
-              )}
-            </div>
+              }
+            />
           </CardContent>
         </WidgetCard>
       </motion.div>
@@ -228,74 +229,62 @@ export function VoidPalletWidget({ widget, isEditMode }: WidgetComponentProps) {
             <span className="text-xl">Void Pallet Statistics</span>
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
-
-          {/* 圖表 */}
-          {chartData.length > 0 && (
-            <div className="bg-slate-700/20 rounded-lg p-4">
-              <h4 className="text-sm font-medium text-slate-400 mb-3">7-Day Trend</h4>
-              <ResponsiveContainer width="100%" height={200}>
-                <LineChart data={chartData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                  <XAxis dataKey="date" stroke="#9CA3AF" fontSize={12} />
-                  <YAxis stroke="#9CA3AF" fontSize={12} />
-                  <Tooltip 
-                    contentStyle={{ backgroundColor: '#1F2937', border: 'none', borderRadius: '8px' }}
-                    labelStyle={{ color: '#9CA3AF' }}
-                  />
-                  <Line 
-                    type="monotone" 
-                    dataKey="count" 
-                    stroke="#EF4444" 
-                    strokeWidth={2}
-                    dot={{ fill: '#EF4444', r: 4 }}
-                    name="Voids"
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
-          )}
-
-          {/* 詳細列表 */}
-          <div className="space-y-2">
-            <h4 className="text-sm font-medium text-slate-400">Recent Void Records</h4>
-            {loading ? (
-              <div className="animate-pulse space-y-2">
-                {[1, 2, 3, 4].map(i => (
-                  <div key={i} className="h-16 bg-slate-700/30 rounded-lg"></div>
-                ))}
-              </div>
-            ) : recentVoids.length === 0 ? (
-              <div className="text-center py-8 text-slate-500">
-                <ExclamationTriangleIcon className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                <p>No void records found</p>
-              </div>
-            ) : (
-              <div className="space-y-2 max-h-64 overflow-y-auto">
-                {recentVoids.map((record) => (
-                  <div key={record.uuid} className="bg-slate-700/30 rounded-lg p-3">
-                    <div className="flex justify-between items-start">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium text-purple-400">{record.plt_num}</span>
-                          {record.damage_qty > 0 && (
-                            <span className="text-xs bg-slate-600/50 px-2 py-1 rounded text-purple-300">
-                              Qty: {record.damage_qty}
-                            </span>
-                          )}
-                        </div>
-                        <div className="text-sm text-purple-300 mt-1">{record.reason}</div>
-                      </div>
-                      <div className="text-right">
-                        <div className="text-sm text-purple-300">{format(new Date(record.time), 'MMM dd')}</div>
-                        <div className="text-xs text-purple-200">{format(new Date(record.time), 'HH:mm')}</div>
-                      </div>
-                    </div>
+        <CardContent className="flex-1 min-h-0">
+          <UnifiedWidgetLayout
+            size={size}
+            tableData={recentVoids}
+            renderTableRow={(record) => (
+              <TableRow key={record.uuid}>
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium text-purple-400 text-xs">{record.plt_num}</span>
+                    {record.damage_qty > 0 && (
+                      <span className="text-xs bg-slate-600/50 px-1.5 py-0.5 rounded text-purple-300">
+                        Qty: {record.damage_qty}
+                      </span>
+                    )}
                   </div>
-                ))}
-              </div>
+                  <div className="text-xs text-purple-300 mt-0.5">{record.reason}</div>
+                </div>
+                <div className="text-right">
+                  <div className="text-xs text-purple-300">{format(new Date(record.time), 'MMM dd')}</div>
+                  <div className="text-xs text-purple-200">{format(new Date(record.time), 'HH:mm')}</div>
+                </div>
+              </TableRow>
             )}
-          </div>
+            chartContent={
+              chartData.length > 0 ? (
+                <ChartContainer title="7-Day Trend">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={chartData}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                      <XAxis dataKey="date" stroke="#9CA3AF" fontSize={12} />
+                      <YAxis stroke="#9CA3AF" fontSize={12} />
+                      <Tooltip 
+                        contentStyle={{ backgroundColor: '#1F2937', border: 'none', borderRadius: '8px' }}
+                        labelStyle={{ color: '#9CA3AF' }}
+                      />
+                      <Line 
+                        type="monotone" 
+                        dataKey="count" 
+                        stroke="#EF4444" 
+                        strokeWidth={2}
+                        dot={{ fill: '#EF4444', r: 4 }}
+                        name="Voids"
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </ChartContainer>
+              ) : (
+                <div className="h-full flex items-center justify-center">
+                  <div className="text-center text-slate-500">
+                    <ExclamationTriangleIcon className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                    <p>No data for chart</p>
+                  </div>
+                </div>
+              )
+            }
+          />
         </CardContent>
       </WidgetCard>
     </motion.div>

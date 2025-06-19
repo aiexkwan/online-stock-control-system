@@ -1,0 +1,99 @@
+/**
+ * BaseWidget Component
+ * Base class for all dashboard widgets
+ */
+
+'use client';
+
+import React from 'react';
+import { WidgetWrapper } from '../ui/WidgetWrapper';
+import { cn } from '@/lib/utils';
+import { TabType } from '../navigation/SidebarNavigation';
+
+interface BaseWidgetProps {
+  title?: string;
+  subtitle?: string;
+  children: React.ReactNode;
+  headerAction?: React.ReactNode;
+  theme?: TabType;
+  className?: string;
+  contentClassName?: string;
+  animationDelay?: number;
+  disableGlow?: boolean;
+  noPadding?: boolean;
+}
+
+export function BaseWidget({
+  title,
+  subtitle,
+  children,
+  headerAction,
+  theme,
+  className,
+  contentClassName,
+  animationDelay = 0,
+  disableGlow = false,
+  noPadding = false
+}: BaseWidgetProps) {
+  return (
+    <WidgetWrapper
+      title={title}
+      subtitle={subtitle}
+      headerAction={headerAction}
+      theme={theme}
+      padding={!noPadding}
+      animationDelay={animationDelay}
+      disableGlow={disableGlow}
+      className={className}
+    >
+      <div className={cn(
+        'w-full h-full',
+        'flex flex-col',
+        contentClassName
+      )}>
+        {children}
+      </div>
+    </WidgetWrapper>
+  );
+}
+
+// Export common widget layouts
+export const WidgetLayouts = {
+  // Table + Chart layout (40% table, 60% chart)
+  TableChart: ({ table, chart }: { table: React.ReactNode; chart: React.ReactNode }) => (
+    <>
+      <div className="h-[40%] mb-2 overflow-auto">
+        {table}
+      </div>
+      <div className="h-[60%] overflow-hidden">
+        {chart}
+      </div>
+    </>
+  ),
+  
+  // Full chart layout
+  FullChart: ({ children }: { children: React.ReactNode }) => (
+    <div className="w-full h-full overflow-hidden">
+      {children}
+    </div>
+  ),
+  
+  // Full table layout
+  FullTable: ({ children }: { children: React.ReactNode }) => (
+    <div className="w-full h-full overflow-auto">
+      {children}
+    </div>
+  ),
+  
+  // Grid layout for multiple items
+  Grid: ({ children, cols = 2 }: { children: React.ReactNode; cols?: number }) => (
+    <div className={cn(
+      'grid gap-3 h-full',
+      cols === 2 && 'grid-cols-2',
+      cols === 3 && 'grid-cols-3',
+      cols === 4 && 'grid-cols-4'
+    )}>
+      {children}
+    </div>
+  )
+};
