@@ -10,7 +10,7 @@ import { TrendingUp, TrendingDown, Package, AlertCircle, Calendar } from 'lucide
 import { WidgetComponentProps, WidgetSize } from '@/app/types/dashboard';
 import { createClient } from '@/app/utils/supabase/client';
 import { dialogStyles, iconColors } from '@/app/utils/dialogStyles';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 interface StatsData {
@@ -183,16 +183,15 @@ export function EnhancedStatsCardWidget({ widget, isEditMode }: WidgetComponentP
               {'title' in widget ? widget.title : 'Stats'}
             </CardTitle>
           </div>
-          <Select value={timeRange} onValueChange={setTimeRange}>
-            <SelectTrigger className="w-20 h-7 text-xs bg-slate-800 border-slate-700">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="1d">1D</SelectItem>
-              <SelectItem value="7d">7D</SelectItem>
-              <SelectItem value="30d">30D</SelectItem>
-            </SelectContent>
-          </Select>
+          <select 
+            value={timeRange} 
+            onChange={(e) => setTimeRange(e.target.value)}
+            className="w-20 h-7 text-xs bg-slate-800 border-slate-700 rounded-md text-white"
+          >
+            <option value="1d">1D</option>
+            <option value="7d">7D</option>
+            <option value="30d">30D</option>
+          </select>
         </CardHeader>
         <CardContent>
           {loading ? (
@@ -235,17 +234,16 @@ export function EnhancedStatsCardWidget({ widget, isEditMode }: WidgetComponentP
         </div>
         <div className="flex items-center gap-2">
           <Calendar className="h-4 w-4 text-slate-400" />
-          <Select value={timeRange} onValueChange={setTimeRange}>
-            <SelectTrigger className="w-24 h-8 text-sm bg-slate-800 border-slate-700">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="1d">Today</SelectItem>
-              <SelectItem value="7d">7 Days</SelectItem>
-              <SelectItem value="30d">30 Days</SelectItem>
-              <SelectItem value="90d">90 Days</SelectItem>
-            </SelectContent>
-          </Select>
+          <select 
+            value={timeRange} 
+            onChange={(e) => setTimeRange(e.target.value)}
+            className="w-24 h-8 text-sm bg-slate-800 border-slate-700 rounded-md text-white"
+          >
+            <option value="1d">Today</option>
+            <option value="7d">7 Days</option>
+            <option value="30d">30 Days</option>
+            <option value="90d">90 Days</option>
+          </select>
         </div>
       </CardHeader>
       <CardContent>
