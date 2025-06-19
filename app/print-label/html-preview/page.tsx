@@ -174,6 +174,7 @@ export default function HtmlPreviewPage() {
       {/* 第一個標籤 */}
       <div className="label">
         {/* Logo */}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
         <img 
           src="https://bbmkuiplnzvpudszrend.supabase.co/storage/v1/object/public/web-ui/P_Logo_DB.PNG" 
           className="logo"
@@ -182,6 +183,7 @@ export default function HtmlPreviewPage() {
         
         {/* QR Code */}
         {qrCodeDataUrl && (
+          // eslint-disable-next-line @next/next/no-img-element
           <img 
             src={qrCodeDataUrl} 
             className="qr-code"
@@ -237,6 +239,7 @@ export default function HtmlPreviewPage() {
       {/* 第二個標籤（重複） */}
       <div className="label">
         {/* Logo */}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
         <img 
           src="https://bbmkuiplnzvpudszrend.supabase.co/storage/v1/object/public/web-ui/P_Logo_DB.PNG" 
           className="logo"
@@ -245,6 +248,7 @@ export default function HtmlPreviewPage() {
         
         {/* QR Code */}
         {qrCodeDataUrl && (
+          // eslint-disable-next-line @next/next/no-img-element
           <img 
             src={qrCodeDataUrl} 
             className="qr-code"

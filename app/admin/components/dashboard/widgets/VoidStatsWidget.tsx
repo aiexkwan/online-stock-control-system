@@ -8,7 +8,7 @@
 
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { WidgetCard } from '../WidgetCard';
 import { WidgetComponentProps, WidgetSize } from '@/app/types/dashboard';
@@ -46,21 +46,7 @@ export function VoidStatsWidget({ widget, isEditMode }: WidgetComponentProps) {
     ? ['Today', 'Yesterday', 'Last Week', 'Last Month']
     : ['Today'];
 
-  useEffect(() => {
-    fetchVoidData();
-  }, [timeRange, size]);
-
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setIsDropdownOpen(false);
-      }
-    }
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
-  const getDateRange = () => {
+  const getDateRange = useCallback(() => {
     const now = new Date();
     const today = startOfDay(now);
     
@@ -77,9 +63,45 @@ export function VoidStatsWidget({ widget, isEditMode }: WidgetComponentProps) {
       default:
         return { start: today, end: endOfDay(now) };
     }
-  };
+  }, [timeRange]);
 
-  const fetchVoidData = async () => {
+  const prepareChartData = useCallback((data: VoidData[]) => {
+    const chartMap = new Map<string, number>();
+    
+    if (timeRange === 'Last Week') {
+      // 按天分組
+      for (let i = 6; i >= 0; i--) {
+        const date = format(subDays(new Date(), i), 'MMM dd');
+        chartMap.set(date, 0);
+      }
+      
+      data.forEach(item => {
+        const date = format(new Date(item.created_at), 'MMM dd');
+        chartMap.set(date, (chartMap.get(date) || 0) + item.damage_qty);
+      });
+    } else if (timeRange === 'Last Month') {
+      // 按每4天分組
+      const today = new Date();
+      for (let i = 7; i >= 0; i--) {
+        const startDate = subDays(today, (i + 1) * 4 - 1);
+        const label = format(startDate, 'MMM dd');
+        chartMap.set(label, 0);
+      }
+      
+      data.forEach(item => {
+        const itemDate = new Date(item.created_at);
+        const daysDiff = Math.floor((today.getTime() - itemDate.getTime()) / (1000 * 60 * 60 * 24));
+        const groupIndex = Math.floor(daysDiff / 4);
+        const startDate = subDays(today, (groupIndex + 1) * 4 - 1);
+        const label = format(startDate, 'MMM dd');
+        chartMap.set(label, (chartMap.get(label) || 0) + item.damage_qty);
+      });
+    }
+    
+    setChartData(Array.from(chartMap.entries()).map(([date, count]) => ({ date, count })));
+  }, [timeRange]);
+
+  const fetchVoidData = useCallback(async () => {
     try {
       setLoading(true);
       const supabase = createClient();
@@ -131,43 +153,22 @@ export function VoidStatsWidget({ widget, isEditMode }: WidgetComponentProps) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [timeRange, size, getDateRange, prepareChartData]);
 
-  const prepareChartData = (data: VoidData[]) => {
-    const chartMap = new Map<string, number>();
-    
-    if (timeRange === 'Last Week') {
-      // 按天分組
-      for (let i = 6; i >= 0; i--) {
-        const date = format(subDays(new Date(), i), 'MMM dd');
-        chartMap.set(date, 0);
+  useEffect(() => {
+    fetchVoidData();
+  }, [fetchVoidData]);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsDropdownOpen(false);
       }
-      
-      data.forEach(item => {
-        const date = format(new Date(item.created_at), 'MMM dd');
-        chartMap.set(date, (chartMap.get(date) || 0) + item.damage_qty);
-      });
-    } else if (timeRange === 'Last Month') {
-      // 按每4天分組
-      const today = new Date();
-      for (let i = 7; i >= 0; i--) {
-        const startDate = subDays(today, (i + 1) * 4 - 1);
-        const label = format(startDate, 'MMM dd');
-        chartMap.set(label, 0);
-      }
-      
-      data.forEach(item => {
-        const itemDate = new Date(item.created_at);
-        const daysDiff = Math.floor((today.getTime() - itemDate.getTime()) / (1000 * 60 * 60 * 24));
-        const groupIndex = Math.floor(daysDiff / 4);
-        const startDate = subDays(today, (groupIndex + 1) * 4 - 1);
-        const label = format(startDate, 'MMM dd');
-        chartMap.set(label, (chartMap.get(label) || 0) + item.damage_qty);
-      });
     }
-    
-    setChartData(Array.from(chartMap.entries()).map(([date, count]) => ({ date, count })));
-  };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
 
   // Small size (1x1) - 只顯示文字和數據
   if (size === WidgetSize.SMALL) {

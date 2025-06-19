@@ -7,7 +7,7 @@
 
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { CloudArrowUpIcon, DocumentTextIcon, DocumentArrowUpIcon, ExclamationCircleIcon } from '@heroicons/react/24/outline';
 import { createClient } from '@/lib/supabase';
@@ -43,7 +43,7 @@ export function DocumentUploadWidget({ widget, isEditMode }: WidgetComponentProp
   const itemsPerPage = size === WidgetSize.LARGE ? 10 : 6;
 
   // 載入上傳歷史
-  const loadUploadHistory = async (loadMore = false) => {
+  const loadUploadHistory = useCallback(async (loadMore = false) => {
     try {
       if (!loadMore) {
         setLoading(true);
@@ -115,7 +115,7 @@ export function DocumentUploadWidget({ widget, isEditMode }: WidgetComponentProp
     } finally {
       setLoading(false);
     }
-  };
+  }, [page, itemsPerPage, uploadHistory.length]);
 
   useEffect(() => {
     if (size !== WidgetSize.SMALL) {
@@ -125,7 +125,7 @@ export function DocumentUploadWidget({ widget, isEditMode }: WidgetComponentProp
       const interval = setInterval(() => loadUploadHistory(false), widget.config.refreshInterval || 60000);
       return () => clearInterval(interval);
     }
-  }, [size, widget.config.refreshInterval]);
+  }, [size, widget.config.refreshInterval, loadUploadHistory]);
 
   const formatTime = (timestamp: string) => {
     try {

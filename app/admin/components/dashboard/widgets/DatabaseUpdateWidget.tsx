@@ -7,7 +7,7 @@
 
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { CubeIcon, DocumentTextIcon, UserGroupIcon, ExclamationCircleIcon } from '@heroicons/react/24/outline';
 import { createClient } from '@/lib/supabase';
@@ -38,7 +38,7 @@ export function DatabaseUpdateWidget({ widget, isEditMode }: WidgetComponentProp
   const size = widget.config.size || WidgetSize.MEDIUM;
 
   // 載入最近的更新記錄
-  const loadRecentUpdates = async () => {
+  const loadRecentUpdates = useCallback(async () => {
     try {
       setLoading(true);
       
@@ -68,7 +68,7 @@ export function DatabaseUpdateWidget({ widget, isEditMode }: WidgetComponentProp
     } finally {
       setLoading(false);
     }
-  };
+  }, [supabase]);
 
   useEffect(() => {
     if (size === WidgetSize.MEDIUM) {
@@ -78,7 +78,7 @@ export function DatabaseUpdateWidget({ widget, isEditMode }: WidgetComponentProp
       const interval = setInterval(loadRecentUpdates, widget.config.refreshInterval || 60000);
       return () => clearInterval(interval);
     }
-  }, [size, widget.config.refreshInterval]);
+  }, [size, widget.config.refreshInterval, loadRecentUpdates]);
 
   const handleOpenProductUpdate = () => {
     if (!isEditMode) {

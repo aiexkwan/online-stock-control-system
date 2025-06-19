@@ -300,7 +300,7 @@ export const UploadFilesOnlyDialog: React.FC<UploadFilesOnlyDialogProps> = ({
         uploadProgress: 0
       }));
     }
-  }, [uploadState.selectedFile, uploadState.selectedFolder, uploadState.fileName, handleClose]);
+  }, [uploadState.selectedFile, uploadState.selectedFolder, uploadState.fileName, handleClose, currentUserId]);
 
   const availableFolders = uploadState.selectedFile ? getAvailableFolders(uploadState.selectedFile) : [];
 

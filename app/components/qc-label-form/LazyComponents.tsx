@@ -135,11 +135,13 @@ export const useConditionalPreload = (productType: string | null) => {
   }, [productType]);
 };
 
-export default {
+const LazyComponents = {
   LazyAcoSection,
   LazySlateSection,
   LazyProgressSection,
   LazyErrorStatsSection,
   preloadAllComponents,
   useConditionalPreload
-}; 
+};
+
+export default LazyComponents; 

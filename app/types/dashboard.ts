@@ -113,6 +113,10 @@ export interface WidgetConfig {
     y: number;
     w: number;
     h: number;
+    minW?: number;
+    minH?: number;
+    maxW?: number;
+    maxH?: number;
   };
   config: {
     size?: WidgetSize;

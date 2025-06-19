@@ -8,7 +8,7 @@
 
 'use client';
 
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ChartPieIcon, ClockIcon, ChevronDownIcon } from '@heroicons/react/24/outline';
 import { WidgetComponentProps, WidgetSize } from '@/app/types/dashboard';
@@ -34,26 +34,7 @@ export function PalletOverviewWidget({ widget, isEditMode }: WidgetComponentProp
 
   const size = widget.config.size || WidgetSize.SMALL;
 
-  useEffect(() => {
-    loadStats();
-    
-    if (widget.config.refreshInterval) {
-      const interval = setInterval(loadStats, widget.config.refreshInterval);
-      return () => clearInterval(interval);
-    }
-  }, [widget.config, timeRange]);
-
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setIsDropdownOpen(false);
-      }
-    }
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
-  const loadStats = async () => {
+  const loadStats = useCallback(async () => {
     try {
       setLoading(true);
       const supabase = createClient();
@@ -127,9 +108,9 @@ export function PalletOverviewWidget({ widget, isEditMode }: WidgetComponentProp
     } finally {
       setLoading(false);
     }
-  };
+  }, [timeRange]);
 
-  const calculateTransferredPallets = async (palletNums: string[]) => {
+  const calculateTransferredPallets = useCallback(async (palletNums: string[]) => {
     if (!palletNums || palletNums.length === 0) return 0;
     
     const supabase = createClient();
@@ -140,7 +121,27 @@ export function PalletOverviewWidget({ widget, isEditMode }: WidgetComponentProp
 
     const uniqueTransferredPallets = new Set(transferredData?.map(r => r.plt_num) || []);
     return uniqueTransferredPallets.size;
-  };
+  }, []);
+
+  useEffect(() => {
+    loadStats();
+    
+    if (widget.config.refreshInterval) {
+      const interval = setInterval(loadStats, widget.config.refreshInterval);
+      return () => clearInterval(interval);
+    }
+  }, [widget.config, timeRange, loadStats]);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsDropdownOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
 
   const handleTimeRangeChange = (newRange: string) => {
     setTimeRange(newRange);

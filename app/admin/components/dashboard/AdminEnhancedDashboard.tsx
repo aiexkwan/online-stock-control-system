@@ -401,7 +401,7 @@ export function AdminEnhancedDashboard({
             breakpoints={BREAKPOINTS}
             cols={dynamicCols}
             rowHeight={actualRowHeight}
-            compactionType={null}  // 關閉自動壓縮，避免小工具自動重新排列
+            compactType={null}  // 關閉自動壓縮，避免小工具自動重新排列
             preventCollision={false}  // 允許小工具重疊
             isDraggable={isEditMode}
             isResizable={isEditMode}

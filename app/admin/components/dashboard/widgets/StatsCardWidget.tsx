@@ -4,7 +4,7 @@
 
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { TrendingUp, TrendingDown, Package, AlertCircle } from 'lucide-react';
 import { WidgetComponentProps } from '@/app/types/dashboard';
@@ -22,17 +22,7 @@ export function StatsCardWidget({ widget, isEditMode }: WidgetComponentProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    loadData();
-    
-    // 設置自動刷新
-    if (widget.config.refreshInterval) {
-      const interval = setInterval(loadData, widget.config.refreshInterval);
-      return () => clearInterval(interval);
-    }
-  }, [widget.config]);
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     try {
       setLoading(true);
       const supabase = createClient();
@@ -91,7 +81,18 @@ export function StatsCardWidget({ widget, isEditMode }: WidgetComponentProps) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [widget.config]);
+
+  useEffect(() => {
+    loadData();
+    
+    // 設置自動刷新
+    if (widget.config.refreshInterval) {
+      const interval = setInterval(loadData, widget.config.refreshInterval);
+      return () => clearInterval(interval);
+    }
+  }, [widget.config, loadData]);
+
 
   const getIcon = () => {
     switch (widget.config.icon) {

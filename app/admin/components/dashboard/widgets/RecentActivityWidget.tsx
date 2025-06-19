@@ -8,7 +8,7 @@
 
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { WidgetCard } from '../WidgetCard';
 import { Activity, Package2, TruckIcon } from 'lucide-react';
@@ -56,17 +56,7 @@ export function RecentActivityWidget({ widget, isEditMode }: WidgetComponentProp
     }
   };
 
-  useEffect(() => {
-    loadActivities();
-    
-    // 設置自動刷新
-    if (widget.config.refreshInterval && !isEditMode) {
-      const interval = setInterval(loadActivities, widget.config.refreshInterval);
-      return () => clearInterval(interval);
-    }
-  }, [widget.config, size, isEditMode]);
-
-  const loadActivities = async (loadMore = false) => {
+  const loadActivities = useCallback(async (loadMore = false) => {
     try {
       if (!loadMore) {
         setLoading(true);
@@ -137,7 +127,18 @@ export function RecentActivityWidget({ widget, isEditMode }: WidgetComponentProp
     } finally {
       setLoading(false);
     }
-  };
+  }, [page, itemsPerPage, activities.length, getActionIcon]);
+
+  useEffect(() => {
+    loadActivities();
+    
+    // 設置自動刷新
+    if (widget.config.refreshInterval && !isEditMode) {
+      const interval = setInterval(loadActivities, widget.config.refreshInterval);
+      return () => clearInterval(interval);
+    }
+  }, [widget.config, size, isEditMode, loadActivities]);
+
 
   const formatTime = (timestamp: string) => {
     try {

@@ -8,7 +8,7 @@
 
 'use client';
 
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { WidgetCard } from '../WidgetCard';
 import { TruckIcon, ClockIcon, ChevronDownIcon } from '@heroicons/react/24/outline';
@@ -60,7 +60,7 @@ export function BookedOutStatsWidget({ widget, isEditMode }: WidgetComponentProp
       const interval = setInterval(loadData, widget.config.refreshInterval);
       return () => clearInterval(interval);
     }
-  }, [widget.config, timeRange, isEditMode]);
+  }, [widget.config, timeRange, isEditMode, loadData]);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -72,7 +72,7 @@ export function BookedOutStatsWidget({ widget, isEditMode }: WidgetComponentProp
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     try {
       setLoading(true);
       const supabase = createClient();
@@ -184,7 +184,7 @@ export function BookedOutStatsWidget({ widget, isEditMode }: WidgetComponentProp
     } finally {
       setLoading(false);
     }
-  };
+  }, [timeRange, size]);
 
   const handleTimeRangeChange = (newRange: string) => {
     setTimeRange(newRange);

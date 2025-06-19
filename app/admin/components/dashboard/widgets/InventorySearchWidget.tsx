@@ -8,7 +8,7 @@
 
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { WidgetCard } from '../WidgetCard';
 import { MagnifyingGlassIcon, ExclamationCircleIcon } from '@heroicons/react/24/outline';
@@ -50,21 +50,7 @@ export function InventorySearchWidget({ widget, isEditMode }: WidgetComponentPro
 
   const size = widget.config.size || WidgetSize.SMALL;
 
-  // 載入圖表數據 (用於 5x5 模式)
-  useEffect(() => {
-    if (size === WidgetSize.LARGE && searchResults && !isEditMode) {
-      fetchChartData(searchResults.product_code);
-    }
-  }, [searchResults, size, isEditMode]);
-
-  // Re-search when refresh is triggered
-  useEffect(() => {
-    if (searchQuery && refreshTrigger > 0) {
-      searchInventory(searchQuery);
-    }
-  }, [refreshTrigger]);
-
-  const fetchChartData = async (productCode: string) => {
+  const fetchChartData = useCallback(async (productCode: string) => {
     try {
       setLoadingChart(true);
       const supabase = createClient();
@@ -179,9 +165,16 @@ export function InventorySearchWidget({ widget, isEditMode }: WidgetComponentPro
     } finally {
       setLoadingChart(false);
     }
-  };
+  }, []);
 
-  const searchInventory = async (productCode: string) => {
+  // 載入圖表數據 (用於 5x5 模式)
+  useEffect(() => {
+    if (size === WidgetSize.LARGE && searchResults && !isEditMode) {
+      fetchChartData(searchResults.product_code);
+    }
+  }, [searchResults, size, isEditMode, fetchChartData]);
+
+  const searchInventory = useCallback(async (productCode: string) => {
     if (!productCode.trim()) {
       setSearchResults(null);
       setChartData([]);
@@ -261,7 +254,16 @@ export function InventorySearchWidget({ widget, isEditMode }: WidgetComponentPro
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  // Re-search when refresh is triggered
+  useEffect(() => {
+    if (searchQuery && refreshTrigger > 0) {
+      searchInventory(searchQuery);
+    }
+  }, [refreshTrigger, searchQuery, searchInventory]);
+
+
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();

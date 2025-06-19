@@ -194,7 +194,7 @@ export const useAsyncCallback = <T extends (...args: any[]) => Promise<any>>(
   return { execute, isLoading, error };
 };
 
-export default {
+const OptimizedCallbacks = {
   useDebouncedCallback,
   useThrottledCallback,
   useStableCallback,
@@ -202,4 +202,6 @@ export default {
   useOptimizedFormHandler,
   useBatchedUpdates,
   useAsyncCallback
-}; 
+};
+
+export default OptimizedCallbacks; 

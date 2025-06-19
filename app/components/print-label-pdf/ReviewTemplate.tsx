@@ -65,6 +65,7 @@ function LabelBlock(props: ReviewTemplateProps) {
   return (
     <div className="w-[210mm] h-[145mm] p-[5mm] relative bg-white">
       {/* Logo */}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
       <img 
         className="absolute top-[5mm] left-[5mm] w-[210px] h-[55px]"
         src="https://wonderful-icecream-2e5.notion.site/image/attachment%3Acc29babe-4a18-4f90-82ac-80ab639d2fdb%3AP_Logo_DB.jpg?table=block&id=1ecea6a0-a03e-80ec-ad56-cf3d49ff147b&spaceId=8b44b340-b032-4818-8d92-a05586933829&width=310&userId=&cache=v2"

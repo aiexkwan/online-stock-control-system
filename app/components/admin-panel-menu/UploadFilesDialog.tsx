@@ -436,7 +436,7 @@ export const UploadFilesDialog: React.FC<UploadFilesDialogProps> = ({
         uploadProgress: 0
       }));
     }
-  }, [uploadState.selectedFile, uploadState.selectedFolder, uploadState.fileName, handleClose]);
+  }, [uploadState.selectedFile, uploadState.selectedFolder, uploadState.fileName, handleClose, currentUserId]);
 
 
 

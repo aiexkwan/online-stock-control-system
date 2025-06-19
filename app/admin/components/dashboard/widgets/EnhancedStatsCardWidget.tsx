@@ -4,7 +4,7 @@
 
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { TrendingUp, TrendingDown, Package, AlertCircle, Calendar } from 'lucide-react';
 import { WidgetComponentProps, WidgetSize } from '@/app/types/dashboard';
@@ -28,17 +28,7 @@ export function EnhancedStatsCardWidget({ widget, isEditMode }: WidgetComponentP
   
   const size = widget.config.size || WidgetSize.MEDIUM;
 
-  useEffect(() => {
-    loadData();
-    
-    // 設置自動刷新
-    if (widget.config.refreshInterval) {
-      const interval = setInterval(loadData, widget.config.refreshInterval);
-      return () => clearInterval(interval);
-    }
-  }, [widget.config, timeRange]);
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     try {
       setLoading(true);
       const supabase = createClient();
@@ -128,7 +118,18 @@ export function EnhancedStatsCardWidget({ widget, isEditMode }: WidgetComponentP
     } finally {
       setLoading(false);
     }
-  };
+  }, [widget.config, timeRange, size]);
+
+  useEffect(() => {
+    loadData();
+    
+    // 設置自動刷新
+    if (widget.config.refreshInterval) {
+      const interval = setInterval(loadData, widget.config.refreshInterval);
+      return () => clearInterval(interval);
+    }
+  }, [widget.config, timeRange, loadData]);
+
 
   const getIcon = () => {
     const iconClass = size === WidgetSize.SMALL ? 'h-4 w-4' : 'h-5 w-5';

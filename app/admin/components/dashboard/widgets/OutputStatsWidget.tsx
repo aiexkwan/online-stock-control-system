@@ -8,7 +8,7 @@
 
 'use client';
 
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { WidgetCard } from '../WidgetCard';
 import { CubeIcon, ClockIcon, ChevronDownIcon } from '@heroicons/react/24/outline';
@@ -55,7 +55,7 @@ export function OutputStatsWidget({ widget, isEditMode }: WidgetComponentProps) 
   const size = widget.config.size || WidgetSize.SMALL;
 
   // Define loadData function
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     try {
       setLoading(true);
       const supabase = createClient();
@@ -93,7 +93,7 @@ export function OutputStatsWidget({ widget, isEditMode }: WidgetComponentProps) 
       // 如果是 Medium 或 Large size，還需要獲取 product code 統計
       let productCodeCount = 0;
       let totalQuantity = 0;
-      let productDetails: ProductData[] = [];
+      let productDetails: Array<{ product_code: string; quantity: number }> = [];
       let dailyData: any[] = [];
       
       if (size === WidgetSize.MEDIUM || size === WidgetSize.LARGE) {
@@ -167,17 +167,17 @@ export function OutputStatsWidget({ widget, isEditMode }: WidgetComponentProps) 
     } finally {
       setLoading(false);
     }
-  };
+  }, [size, timeRange]);
 
   // Load data on mount and when refresh is triggered
   useEffect(() => {
     loadData();
-  }, [refreshTrigger]);
+  }, [refreshTrigger, loadData]);
 
   // Load data when time range changes
   useEffect(() => {
     loadData();
-  }, [timeRange]);
+  }, [timeRange, loadData]);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
