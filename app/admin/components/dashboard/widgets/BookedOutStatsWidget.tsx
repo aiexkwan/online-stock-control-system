@@ -53,25 +53,6 @@ export function BookedOutStatsWidget({ widget, isEditMode }: WidgetComponentProp
 
   const size = widget.config.size || WidgetSize.SMALL;
 
-  useEffect(() => {
-    loadData();
-    
-    if (widget.config.refreshInterval && !isEditMode) {
-      const interval = setInterval(loadData, widget.config.refreshInterval);
-      return () => clearInterval(interval);
-    }
-  }, [widget.config, timeRange, isEditMode, loadData]);
-
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setIsDropdownOpen(false);
-      }
-    }
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
   const loadData = useCallback(async () => {
     try {
       setLoading(true);
@@ -185,6 +166,25 @@ export function BookedOutStatsWidget({ widget, isEditMode }: WidgetComponentProp
       setLoading(false);
     }
   }, [timeRange, size]);
+
+  useEffect(() => {
+    loadData();
+    
+    if (widget.config.refreshInterval && !isEditMode) {
+      const interval = setInterval(loadData, widget.config.refreshInterval);
+      return () => clearInterval(interval);
+    }
+  }, [widget.config, timeRange, isEditMode, loadData]);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsDropdownOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const handleTimeRangeChange = (newRange: string) => {
     setTimeRange(newRange);
