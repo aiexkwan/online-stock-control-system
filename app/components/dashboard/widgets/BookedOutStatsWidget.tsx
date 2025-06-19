@@ -103,9 +103,19 @@ export function BookedOutStatsWidget({ widget, isEditMode }: WidgetComponentProp
         .lt('tran_date', dateRange.end);
 
       // 如果是 Medium 或 Large size，獲取操作員統計
-      let operatorData = [];
-      let dailyData = [];
-      let hourlyData = [];
+      let operatorData: Array<{
+        operator_id: string;
+        count: number;
+        percentage: number;
+      }> = [];
+      let dailyData: Array<{ 
+        date: string; 
+        count: number;
+      }> = [];
+      let hourlyData: Array<{
+        hour: string;
+        count: number;
+      }> = [];
       
       if (size === WidgetSize.MEDIUM || size === WidgetSize.LARGE) {
         // 獲取所有 transfer 記錄
