@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import MemoryService, { MemoryMessage, MemorySearchResult } from '@/app/services/memoryService';
 import { useAuth } from '@/app/hooks/useAuth';
 
@@ -7,7 +7,7 @@ export const useMemory = () => {
   const [memories, setMemories] = useState<MemorySearchResult[]>([]);
   const { user } = useAuth();
   
-  const memoryService = new MemoryService(user?.id || 'default');
+  const memoryService = useMemo(() => new MemoryService(user?.id || 'default'), [user?.id]);
 
   const addMemory = useCallback(async (messages: MemoryMessage[]) => {
     setLoading(true);

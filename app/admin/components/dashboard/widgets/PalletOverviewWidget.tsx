@@ -34,6 +34,19 @@ export function PalletOverviewWidget({ widget, isEditMode }: WidgetComponentProp
 
   const size = widget.config.size || WidgetSize.SMALL;
 
+  const calculateTransferredPallets = useCallback(async (palletNums: string[]) => {
+    if (!palletNums || palletNums.length === 0) return 0;
+    
+    const supabase = createClient();
+    const { data: transferredData } = await supabase
+      .from('record_transfer')
+      .select('plt_num')
+      .in('plt_num', palletNums);
+
+    const uniqueTransferredPallets = new Set(transferredData?.map(r => r.plt_num) || []);
+    return uniqueTransferredPallets.size;
+  }, []);
+
   const loadStats = useCallback(async () => {
     try {
       setLoading(true);
@@ -108,20 +121,7 @@ export function PalletOverviewWidget({ widget, isEditMode }: WidgetComponentProp
     } finally {
       setLoading(false);
     }
-  }, [timeRange]);
-
-  const calculateTransferredPallets = useCallback(async (palletNums: string[]) => {
-    if (!palletNums || palletNums.length === 0) return 0;
-    
-    const supabase = createClient();
-    const { data: transferredData } = await supabase
-      .from('record_transfer')
-      .select('plt_num')
-      .in('plt_num', palletNums);
-
-    const uniqueTransferredPallets = new Set(transferredData?.map(r => r.plt_num) || []);
-    return uniqueTransferredPallets.size;
-  }, []);
+  }, [timeRange, calculateTransferredPallets]);
 
   useEffect(() => {
     loadStats();

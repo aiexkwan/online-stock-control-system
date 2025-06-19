@@ -127,7 +127,7 @@ export function RecentActivityWidget({ widget, isEditMode }: WidgetComponentProp
     } finally {
       setLoading(false);
     }
-  }, [page, itemsPerPage, activities.length, getActionIcon]);
+  }, [page, itemsPerPage, activities.length]);
 
   useEffect(() => {
     loadActivities();

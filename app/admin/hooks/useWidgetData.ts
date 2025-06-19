@@ -24,14 +24,15 @@ export function useWidgetData({
     if (!isEditMode) {
       loadFunction();
     }
-  }, [refreshTrigger, isEditMode]);
+  }, [refreshTrigger, isEditMode, loadFunction]);
 
   // Load data when dependencies change (skip if it's the initial mount)
   useEffect(() => {
     if (!isEditMode && refreshTrigger > 0) {
       loadFunction();
     }
-  }, [...dependencies, isEditMode]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loadFunction, refreshTrigger, isEditMode, ...dependencies]);
 
   return {
     reload: loadFunction
