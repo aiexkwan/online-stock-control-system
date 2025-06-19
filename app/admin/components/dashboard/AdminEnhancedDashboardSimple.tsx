@@ -123,7 +123,8 @@ export function AdminEnhancedDashboard({
     const sizeMap = {
       [WidgetSize.SMALL]: { w: 1, h: 1 },
       [WidgetSize.MEDIUM]: { w: 3, h: 3 },
-      [WidgetSize.LARGE]: { w: 5, h: 5 }
+      [WidgetSize.LARGE]: { w: 5, h: 5 },
+      [WidgetSize.XLARGE]: { w: 6, h: 6 }
     };
 
     const newGridProps = {
@@ -228,6 +229,7 @@ export function AdminEnhancedDashboard({
                       <option value={WidgetSize.SMALL}>1x1</option>
                       <option value={WidgetSize.MEDIUM}>3x3</option>
                       <option value={WidgetSize.LARGE}>5x5</option>
+                      <option value={WidgetSize.XLARGE}>6x6</option>
                     </select>
                     
                     {/* 移除按鈕 */}
