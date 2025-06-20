@@ -11,6 +11,7 @@ import { WidgetCard } from '../WidgetCard';
 import { CogIcon } from '@heroicons/react/24/outline';
 import { WidgetComponentProps, WidgetSize } from '@/app/types/dashboard';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+import { WidgetStyles } from '@/app/utils/widgetStyles';
 
 // 模擬機器效率數據
 const machineData = [
@@ -38,7 +39,7 @@ export function MockupMachineEfficiencyWidget({ widget, isEditMode }: WidgetComp
   // 2x4 數據顯示版本
   if (size === WidgetSize.MEDIUM) {
     return (
-      <WidgetCard size={widget.config.size} widgetType="MACHINE_EFFICIENCY" isEditMode={isEditMode}>
+      <WidgetCard size={widget.config.size} widgetType={widget.type as keyof typeof WidgetStyles.borders} isEditMode={isEditMode}>
         <CardHeader className="pb-2">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg flex items-center justify-center">
@@ -77,7 +78,7 @@ export function MockupMachineEfficiencyWidget({ widget, isEditMode }: WidgetComp
 
   // 6x6 圖表版本
   return (
-    <WidgetCard size={widget.config.size} widgetType="MACHINE_EFFICIENCY" isEditMode={isEditMode}>
+    <WidgetCard size={widget.config.size} widgetType={widget.type as keyof typeof WidgetStyles.borders} isEditMode={isEditMode}>
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">

@@ -26,31 +26,40 @@ interface ProductHistory {
 export function ProductDoneHistoryWidget({ widget, isEditMode }: WidgetComponentProps) {
   const [sortBy, setSortBy] = useState<'date' | 'productCode' | 'quantity'>('date');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [data, setData] = useState<ProductHistory>({
     records: [],
     totalQuantity: 0
   });
 
   const loadHistoryData = async () => {
-    const supabase = createClient();
-    
-    // Mock data for demonstration
-    const mockData = Array.from({ length: 20 }, (_, i) => ({
-      date: format(new Date(Date.now() - i * 24 * 60 * 60 * 1000), 'yyyy-MM-dd'),
-      productCode: `PRD${String(Math.floor(Math.random() * 900) + 100).padStart(3, '0')}`,
-      quantity: Math.floor(Math.random() * 500) + 100,
-      status: Math.random() > 0.1 ? 'completed' : Math.random() > 0.5 ? 'pending' : 'cancelled' as any
-    }));
-    
-    const totalQuantity = mockData
-      .filter(r => r.status === 'completed')
-      .reduce((sum, r) => sum + r.quantity, 0);
-    
-    setData({ records: mockData, totalQuantity });
+    setLoading(true);
+    setError(null);
+    try {
+      const supabase = createClient();
+      
+      // Mock data for demonstration
+      const mockData = Array.from({ length: 20 }, (_, i) => ({
+        date: format(new Date(Date.now() - i * 24 * 60 * 60 * 1000), 'yyyy-MM-dd'),
+        productCode: `PRD${String(Math.floor(Math.random() * 900) + 100).padStart(3, '0')}`,
+        quantity: Math.floor(Math.random() * 500) + 100,
+        status: Math.random() > 0.1 ? 'completed' : Math.random() > 0.5 ? 'pending' : 'cancelled' as any
+      }));
+      
+      const totalQuantity = mockData
+        .filter(r => r.status === 'completed')
+        .reduce((sum, r) => sum + r.quantity, 0);
+      
+      setData({ records: mockData, totalQuantity });
+    } catch (err) {
+      setError('Failed to load history data');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const { loading, error } = useWidgetData({
-    widgetId: widget.id,
+  useWidgetData({
     loadFunction: loadHistoryData,
     dependencies: [],
     isEditMode

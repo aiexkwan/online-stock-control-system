@@ -38,7 +38,7 @@ export function ChannelGrid({ onWidgetClick }: ChannelGridProps) {
     expandedChannels: []
   });
   
-  const [widgetData, setWidgetData] = useState<Record<WidgetType, any>>({});
+  const [widgetData, setWidgetData] = useState<Record<WidgetType, any>>({} as Record<WidgetType, any>);
   const [loadingChannels, setLoadingChannels] = useState<Set<ChannelType>>(new Set());
   const [showSubscriptionDialog, setShowSubscriptionDialog] = useState(false);
   
@@ -77,7 +77,7 @@ export function ChannelGrid({ onWidgetClick }: ChannelGridProps) {
     
     try {
       const widgets = getChannelWidgets(channelType);
-      const newData: Record<WidgetType, any> = {};
+      const newData: Record<WidgetType, any> = {} as Record<WidgetType, any>;
       
       // 這裡應該根據不同的 widget 類型載入相應的數據
       // 暫時使用模擬數據

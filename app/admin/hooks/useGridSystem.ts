@@ -36,6 +36,15 @@ export function useGridSystem(containerRef: React.RefObject<HTMLElement>) {
     const gridConfig = getGridConfig(screenWidth);
     const cellSize = calculateCellSize(width, height, gridConfig);
     
+    // Debug log
+    console.log('Grid calculation:', {
+      containerWidth: width,
+      containerHeight: height,
+      screenWidth,
+      gridConfig,
+      cellSize
+    });
+    
     setState({
       gridConfig,
       cellSize,
@@ -45,7 +54,10 @@ export function useGridSystem(containerRef: React.RefObject<HTMLElement>) {
 
   // 監聽視窗大小變化
   useEffect(() => {
-    calculateGrid();
+    // 延遲計算以確保容器已渲染
+    const timer = setTimeout(() => {
+      calculateGrid();
+    }, 100);
 
     const handleResize = () => {
       calculateGrid();
@@ -63,6 +75,7 @@ export function useGridSystem(containerRef: React.RefObject<HTMLElement>) {
     }
 
     return () => {
+      clearTimeout(timer);
       window.removeEventListener('resize', handleResize);
       resizeObserver.disconnect();
     };

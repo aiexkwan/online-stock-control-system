@@ -9,13 +9,14 @@ import { CardContent, CardHeader } from '@/components/ui/card';
 import { WidgetCard } from '../WidgetCard';
 import { CubeIcon } from '@heroicons/react/24/outline';
 import { WidgetComponentProps, WidgetSize } from '@/app/types/dashboard';
+import { WidgetStyles } from '@/app/utils/widgetStyles';
 
 export function MockupOutputStatsWidget({ widget, isEditMode }: WidgetComponentProps) {
   const size = widget.config.size || WidgetSize.SMALL;
 
   if (size === WidgetSize.SMALL) {
     return (
-      <WidgetCard size={widget.config.size} widgetType="OUTPUT_STATS" isEditMode={isEditMode}>
+      <WidgetCard size={widget.config.size} widgetType={widget.type as keyof typeof WidgetStyles.borders} isEditMode={isEditMode}>
         <CardContent className="p-2 h-full flex flex-col justify-center items-center">
           <h3 className="text-xs text-slate-400 mb-1">Output Today</h3>
           <div className="text-2xl font-bold text-orange-400">256</div>
@@ -27,7 +28,7 @@ export function MockupOutputStatsWidget({ widget, isEditMode }: WidgetComponentP
 
   if (size === WidgetSize.MEDIUM) {
     return (
-      <WidgetCard size={widget.config.size} widgetType="OUTPUT_STATS" isEditMode={isEditMode}>
+      <WidgetCard size={widget.config.size} widgetType={widget.type as keyof typeof WidgetStyles.borders} isEditMode={isEditMode}>
         <CardHeader className="pb-2">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-lg flex items-center justify-center">
@@ -64,7 +65,7 @@ export function MockupOutputStatsWidget({ widget, isEditMode }: WidgetComponentP
 
   // Large size
   return (
-    <WidgetCard size={widget.config.size} widgetType="OUTPUT_STATS" isEditMode={isEditMode}>
+    <WidgetCard size={widget.config.size} widgetType={widget.type as keyof typeof WidgetStyles.borders} isEditMode={isEditMode}>
       <CardHeader className="pb-2">
         <div className="flex items-center gap-2">
           <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-lg flex items-center justify-center">

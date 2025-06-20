@@ -5,38 +5,34 @@
 
 'use client';
 
-import React, { useRef } from 'react';
-import { useGridSystem } from '../../hooks/useGridSystem';
+import React from 'react';
 import { cn } from '@/lib/utils';
+import { GridConfig } from '../../config/gridConfig';
 
 interface GridLayoutProps {
   children?: React.ReactNode;
   showGrid?: boolean; // 是否顯示網格線（用於調試）
   className?: string;
+  gridConfig?: GridConfig & { cellWidth: number; cellHeight: number };
 }
 
 export function GridLayout({ 
   children, 
   showGrid = false,
-  className 
+  className,
+  gridConfig
 }: GridLayoutProps) {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const { 
-    gridConfig, 
-    cellSize,
-    getGridContainerStyle 
-  } = useGridSystem(containerRef);
 
   // 生成網格線（用於調試）
   const renderGridLines = () => {
-    if (!showGrid) return null;
+    if (!showGrid || !gridConfig) return null;
 
     const lines = [];
-    const { maxCols, maxRows, gap, padding } = gridConfig;
+    const { maxCols, maxRows, gap, padding, cellWidth, cellHeight } = gridConfig;
     
     // 垂直線
     for (let i = 0; i <= maxCols; i++) {
-      const x = padding + i * (cellSize.cellWidth + gap) - gap / 2;
+      const x = padding + i * (cellWidth + gap) - gap / 2;
       lines.push(
         <div
           key={`v-${i}`}
@@ -48,7 +44,7 @@ export function GridLayout({
     
     // 水平線
     for (let i = 0; i <= maxRows; i++) {
-      const y = padding + i * (cellSize.cellHeight + gap) - gap / 2;
+      const y = padding + i * (cellHeight + gap) - gap / 2;
       lines.push(
         <div
           key={`h-${i}`}
@@ -67,12 +63,12 @@ export function GridLayout({
 
   // 顯示網格資訊（用於調試）
   const renderGridInfo = () => {
-    if (!showGrid) return null;
+    if (!showGrid || !gridConfig) return null;
 
     return (
       <div className="absolute top-2 right-2 bg-black/80 text-white p-2 rounded text-xs z-50">
         <div>Grid: {gridConfig.maxCols} × {gridConfig.maxRows}</div>
-        <div>Cell: {Math.round(cellSize.cellWidth)} × {Math.round(cellSize.cellHeight)}px</div>
+        <div>Cell: {Math.round(gridConfig.cellWidth)} × {Math.round(gridConfig.cellHeight)}px</div>
         <div>Gap: {gridConfig.gap}px</div>
       </div>
     );
@@ -80,13 +76,12 @@ export function GridLayout({
 
   return (
     <div 
-      ref={containerRef}
       className={cn(
         "relative w-full h-full overflow-hidden",
         className
       )}
       style={{
-        ...getGridContainerStyle(),
+        padding: gridConfig?.padding || 20,
         minHeight: '100%'
       }}
     >

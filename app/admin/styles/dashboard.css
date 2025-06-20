@@ -1,10 +1,33 @@
 /* Admin Dashboard 專用樣式 - 確保正方形顯示 */
 
-/* 確保所有 grid items 保持正方形 - 最高優先級 */
+/* 強制所有 grid items 保持正方形 - 最高優先級 */
 .admin-dashboard .react-grid-item {
-  overflow: hidden;
-  display: flex;
-  align-items: stretch;
+  overflow: hidden !important;
+  position: relative !important;
+  aspect-ratio: 1 / 1 !important;
+}
+
+/* 確保整體網格容器居中 */
+.admin-dashboard {
+  max-width: 1920px;
+  margin: 0 auto;
+}
+
+.admin-dashboard .react-grid-layout {
+  margin: 0 auto;
+  width: 100%;
+  max-width: 100%;
+}
+
+/* Widget 容器絕對定位填充整個空間 */
+.admin-dashboard .react-grid-item > .widget-container {
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
 }
 
 /* 確保 widget 內容填滿整個容器 */
@@ -216,12 +239,6 @@
 @media (max-width: 768px) {
   .admin-dashboard .react-grid-layout {
     min-height: calc(100vh - 160px);
-  }
-  
-  /* 在小螢幕上也保持正方形 */
-  .admin-dashboard .react-grid-item {
-    aspect-ratio: 1 / 1 !important;
-    min-height: auto;
   }
 }
 

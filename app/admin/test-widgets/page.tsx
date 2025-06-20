@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { WidgetType } from '@/app/types/dashboard';
 import { VoidPalletWidget } from '@/app/admin/components/dashboard/widgets/VoidPalletWidget';
 import { ProductMixChartWidget } from '@/app/admin/components/dashboard/widgets/ProductMixChartWidget';
 import { BookedOutStatsWidget } from '@/app/admin/components/dashboard/widgets/BookedOutStatsWidget';
@@ -59,12 +60,15 @@ export default function TestWidgetsPage() {
               <Widget 
                 widget={{ 
                   id: `test-${name}`, 
-                  channel_id: 'test', 
+                  type: WidgetType.CUSTOM,
+                  title: name,
                   config,
-                  x: 0,
-                  y: 0,
-                  w: 5,
-                  h: 5
+                  gridProps: {
+                    x: 0,
+                    y: 0,
+                    w: 5,
+                    h: 5
+                  }
                 }} 
                 isEditMode={false} 
               />

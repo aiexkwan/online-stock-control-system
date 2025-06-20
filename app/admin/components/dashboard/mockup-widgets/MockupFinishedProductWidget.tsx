@@ -9,13 +9,14 @@ import { CardContent, CardHeader } from '@/components/ui/card';
 import { WidgetCard } from '../WidgetCard';
 import { CubeIcon } from '@heroicons/react/24/outline';
 import { WidgetComponentProps, WidgetSize } from '@/app/types/dashboard';
+import { WidgetStyles } from '@/app/utils/widgetStyles';
 
 export function MockupFinishedProductWidget({ widget, isEditMode }: WidgetComponentProps) {
   const size = widget.config.size || WidgetSize.SMALL;
 
   if (size === WidgetSize.SMALL) {
     return (
-      <WidgetCard size={widget.config.size} widgetType="FINISHED_PRODUCT" isEditMode={isEditMode}>
+      <WidgetCard size={widget.config.size} widgetType={widget.type as keyof typeof WidgetStyles.borders} isEditMode={isEditMode}>
         <CardContent className="p-2 h-full flex flex-col justify-center items-center">
           <h3 className="text-xs text-slate-400 mb-1">Finished Products</h3>
           <div className="text-2xl font-bold text-green-400">89</div>
@@ -27,7 +28,7 @@ export function MockupFinishedProductWidget({ widget, isEditMode }: WidgetCompon
 
   if (size === WidgetSize.MEDIUM) {
     return (
-      <WidgetCard size={widget.config.size} widgetType="FINISHED_PRODUCT" isEditMode={isEditMode}>
+      <WidgetCard size={widget.config.size} widgetType={widget.type as keyof typeof WidgetStyles.borders} isEditMode={isEditMode}>
         <CardHeader className="pb-2">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -71,7 +72,7 @@ export function MockupFinishedProductWidget({ widget, isEditMode }: WidgetCompon
 
   // Large size
   return (
-    <WidgetCard size={widget.config.size} widgetType="FINISHED_PRODUCT" isEditMode={isEditMode}>
+    <WidgetCard size={widget.config.size} widgetType={widget.type as keyof typeof WidgetStyles.borders} isEditMode={isEditMode}>
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">

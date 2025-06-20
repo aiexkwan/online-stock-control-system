@@ -362,7 +362,7 @@ export function AdminPageClient() {
     
     // 如果有現存的 widgets，智能尋找空位
     if (currentLayout.widgets.length > 0) {
-      const maxCols = 20; // Grid 最大列數 - 與 AdminEnhancedDashboard 保持一致
+      const maxCols = 18; // Grid 最大列數 - 1920×1080 標準為 18 列
       
       // 創建一個佔用圖表來追蹤哪些格子已被佔用
       const occupancyMap: boolean[][] = [];
@@ -404,14 +404,33 @@ export function AdminPageClient() {
         }
       }
       
-      // 如果找不到空位，放在所有 widgets 下方
+      // 如果找不到空位，嘗試放在第一行的下一個可用位置
       if (!found) {
-        const bottomMostWidget = currentLayout.widgets.reduce((prev, curr) => {
-          const prevBottom = (prev.gridProps?.y || 0) + (prev.gridProps?.h || 0);
-          const currBottom = (curr.gridProps?.y || 0) + (curr.gridProps?.h || 0);
-          return currBottom > prevBottom ? curr : prev;
-        });
-        newY = (bottomMostWidget.gridProps?.y || 0) + (bottomMostWidget.gridProps?.h || 0);
+        // 檢查第一行（y=0）是否還有空間
+        for (let x = 0; x <= maxCols - widgetWidth; x++) {
+          let canPlace = true;
+          for (let dx = 0; dx < widgetWidth && canPlace; dx++) {
+            if (occupancyMap[0] && occupancyMap[0][x + dx]) {
+              canPlace = false;
+            }
+          }
+          if (canPlace) {
+            newX = x;
+            newY = 0;
+            found = true;
+            break;
+          }
+        }
+        
+        // 如果第一行沒空間，才放在所有 widgets 下方
+        if (!found) {
+          const bottomMostWidget = currentLayout.widgets.reduce((prev, curr) => {
+            const prevBottom = (prev.gridProps?.y || 0) + (prev.gridProps?.h || 0);
+            const currBottom = (curr.gridProps?.y || 0) + (curr.gridProps?.h || 0);
+            return currBottom > prevBottom ? curr : prev;
+          });
+          newY = (bottomMostWidget.gridProps?.y || 0) + (bottomMostWidget.gridProps?.h || 0);
+        }
       }
     }
     
@@ -659,7 +678,7 @@ export function AdminPageClient() {
             onRemoveWidget={handleRemoveWidget}
             onUpdateWidget={handleUpdateWidget}
             isEditMode={isEditMode}
-            maxCols={20}
+            maxCols={10}
             onBreakpointChange={setCurrentBreakpoint}
           />
         </div>

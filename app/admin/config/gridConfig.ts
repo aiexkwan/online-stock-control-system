@@ -20,24 +20,24 @@ export interface ScreenGridConfig {
 export const GRID_CONFIG: ScreenGridConfig = {
   // 大螢幕 (>= 1920px)
   large: {
-    maxCols: 20,
+    maxCols: 10,  // 改為 10 列以匹配 AdminEnhancedDashboard
     maxRows: 10,
-    gap: 12,
-    padding: 16
+    gap: 16,      // 增加間隔以匹配 margin: [16, 16]
+    padding: 20   // 增加邊距以匹配 containerPadding: [20, 20]
   },
   // 中螢幕 (1280px - 1919px)
   medium: {
-    maxCols: 15,
+    maxCols: 10,  // 統一為 10 列
     maxRows: 10,
-    gap: 10,
-    padding: 14
+    gap: 16,
+    padding: 20
   },
   // 小螢幕 (< 1280px)
   small: {
-    maxCols: 10,
+    maxCols: 10,  // 保持 10 列
     maxRows: 10,
-    gap: 8,
-    padding: 12
+    gap: 16,
+    padding: 20
   }
 };
 
@@ -73,10 +73,14 @@ export function calculateCellSize(
   const cellWidthByWidth = Math.floor(availableWidth / maxCols);
   const cellHeightByHeight = Math.floor(availableHeight / maxRows);
   
-  // 使用較小的值確保是正方形
-  const cellSize = Math.min(cellWidthByWidth, cellHeightByHeight);
+  // 使用寬度計算的值以確保填滿容器寬度
+  // 但如果高度受限，則使用較小的值
+  const cellSize = Math.min(cellWidthByWidth, cellHeightByHeight, 90); // 最大 90px 以匹配 TARGET_CELL_SIZE
   
-  return { cellWidth: cellSize, cellHeight: cellSize };
+  // 確保最小尺寸
+  const finalCellSize = Math.max(cellSize, 60); // 最小 60px
+  
+  return { cellWidth: finalCellSize, cellHeight: finalCellSize };
 }
 
 import { WidgetSizeConfig, WidgetSize } from '@/app/types/dashboard';

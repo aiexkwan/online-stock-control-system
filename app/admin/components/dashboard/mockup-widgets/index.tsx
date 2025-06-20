@@ -15,12 +15,13 @@ import React from 'react';
 import { CardContent, CardHeader } from '@/components/ui/card';
 import { WidgetCard } from '../WidgetCard';
 import { WidgetComponentProps } from '@/app/types/dashboard';
+import { WidgetStyles } from '@/app/utils/widgetStyles';
 
 // Generic mockup widget component
 const createMockupWidget = (title: string, icon: string, color: string) => {
   return function MockupWidget({ widget, isEditMode }: WidgetComponentProps) {
     return (
-      <WidgetCard size={widget.config.size} widgetType={widget.type} isEditMode={isEditMode}>
+      <WidgetCard size={widget.config.size} widgetType={widget.type as keyof typeof WidgetStyles.borders} isEditMode={isEditMode}>
         <CardHeader className="pb-2">
           <div className="flex items-center gap-2">
             <div className={`w-8 h-8 bg-gradient-to-r ${color} rounded-lg flex items-center justify-center`}>

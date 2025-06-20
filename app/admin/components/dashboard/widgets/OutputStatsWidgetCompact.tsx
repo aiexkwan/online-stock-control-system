@@ -6,7 +6,7 @@
 'use client';
 
 import React, { useEffect, useState, useCallback } from 'react';
-import { CubeIcon, TrendingUpIcon } from '@heroicons/react/24/outline';
+import { CubeIcon, ArrowTrendingUpIcon } from '@heroicons/react/24/outline';
 import { WidgetComponentProps } from '@/app/types/dashboard';
 import { useWidgetData } from '@/app/admin/hooks/useWidgetData';
 import { createClient } from '@/app/utils/supabase/client';
@@ -117,7 +117,7 @@ export function OutputStatsWidgetCompact({ widget, isEditMode }: WidgetComponent
                 "flex items-center gap-1 mt-2 text-sm",
                 data.percentageChange > 0 ? "text-green-400" : "text-red-400"
               )}>
-                <TrendingUpIcon className={cn(
+                <ArrowTrendingUpIcon className={cn(
                   "w-4 h-4",
                   data.percentageChange < 0 && "rotate-180"
                 )} />
@@ -163,7 +163,7 @@ export function OutputStatsWidgetCompact({ widget, isEditMode }: WidgetComponent
                 "flex items-center gap-1 mt-2 text-sm",
                 data.percentageChange > 0 ? "text-green-400" : "text-red-400"
               )}>
-                <TrendingUpIcon className={cn(
+                <ArrowTrendingUpIcon className={cn(
                   "w-4 h-4",
                   data.percentageChange < 0 && "rotate-180"
                 )} />

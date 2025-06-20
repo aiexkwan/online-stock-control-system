@@ -11,6 +11,7 @@ import { WidgetCard } from '../WidgetCard';
 import { ChartBarIcon } from '@heroicons/react/24/outline';
 import { WidgetComponentProps, WidgetSize } from '@/app/types/dashboard';
 import { RadialBarChart, RadialBar, PolarAngleAxis, ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
+import { WidgetStyles } from '@/app/utils/widgetStyles';
 
 // 模擬目標達成率數據
 const weeklyData = [
@@ -33,7 +34,7 @@ export function MockupTargetHitRateWidget({ widget, isEditMode }: WidgetComponen
   // 2x4 數據顯示版本
   if (size === WidgetSize.MEDIUM) {
     return (
-      <WidgetCard size={widget.config.size} widgetType="TARGET_HIT_RATE" isEditMode={isEditMode}>
+      <WidgetCard size={widget.config.size} widgetType={widget.type as keyof typeof WidgetStyles.borders} isEditMode={isEditMode}>
         <CardHeader className="pb-2">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 bg-gradient-to-r from-green-500 to-emerald-500 rounded-lg flex items-center justify-center">
@@ -72,7 +73,7 @@ export function MockupTargetHitRateWidget({ widget, isEditMode }: WidgetComponen
 
   // 6x6 圖表版本
   return (
-    <WidgetCard size={widget.config.size} widgetType="TARGET_HIT_RATE" isEditMode={isEditMode}>
+    <WidgetCard size={widget.config.size} widgetType={widget.type as keyof typeof WidgetStyles.borders} isEditMode={isEditMode}>
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">

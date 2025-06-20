@@ -1,0 +1,121 @@
+/* Glassmorphism Design Theme */
+
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@200;300;400;600&family=Inter:wght@400;500&display=swap');
+
+/* Font definitions */
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+}
+
+h1, h2, h3, h4 {
+  font-family: 'Manrope', sans-serif !important;
+  font-weight: 200 !important;
+  letter-spacing: -0.03em !important;
+}
+
+/* Glass effect */
+.glass-effect {
+  backdrop-filter: blur(14px) brightness(0.91);
+  -webkit-backdrop-filter: blur(14px) brightness(0.91);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+/* Gradient text */
+.gradient-text {
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+}
+
+/* Card divider */
+.card-divider {
+  height: 1px;
+  background-image: linear-gradient(90deg,
+    transparent,
+    rgba(255,255,255,0.09) 20%,
+    rgba(255,255,255,0.22) 50%,
+    rgba(255,255,255,0.09) 80%,
+    transparent
+  );
+}
+
+/* Icon circle */
+.icon-circle {
+  height: 2rem;
+  width: 2rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.12);
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+/* Nav item hover effects */
+.nav-item-glass {
+  transition: all 0.3s ease;
+  border-left: 3px solid transparent;
+}
+
+.nav-item-glass:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-left-color: rgba(59, 130, 246, 0.5);
+  transform: translateX(4px);
+}
+
+.nav-item-glass.active {
+  background: rgba(59, 130, 246, 0.1);
+  border-left-color: #3b82f6;
+}
+
+/* Widget hover effects */
+.widget-glass {
+  transition: all 0.3s ease;
+}
+
+.widget-glass:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.3);
+}
+
+/* Button styles */
+.btn-glass {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: all 0.2s ease;
+}
+
+.btn-glass:hover {
+  background: rgba(255, 255, 255, 0.15);
+  transform: translateY(-1px);
+}
+
+.btn-primary {
+  background: rgba(59, 130, 246, 0.9);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+}
+
+.btn-primary:hover {
+  background: rgba(59, 130, 246, 1);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+}

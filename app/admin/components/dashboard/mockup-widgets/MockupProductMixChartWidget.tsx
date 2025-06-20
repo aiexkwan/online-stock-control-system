@@ -10,6 +10,7 @@ import { WidgetCard } from '../WidgetCard';
 import { ChartPieIcon } from '@heroicons/react/24/outline';
 import { WidgetComponentProps, WidgetSize } from '@/app/types/dashboard';
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
+import { WidgetStyles } from '@/app/utils/widgetStyles';
 
 const COLORS = [
   '#10B981', // Emerald green
@@ -34,7 +35,7 @@ export function MockupProductMixChartWidget({ widget, isEditMode }: WidgetCompon
 
   if (size === WidgetSize.SMALL) {
     return (
-      <WidgetCard size={widget.config.size} widgetType="PRODUCT_MIX_CHART" isEditMode={isEditMode}>
+      <WidgetCard size={widget.config.size} widgetType={widget.type as keyof typeof WidgetStyles.borders} isEditMode={isEditMode}>
         <CardContent className="p-2 h-full flex flex-col justify-center items-center">
           <h3 className="text-xs text-slate-400 mb-1">Stock Level</h3>
           <div className="text-lg font-medium text-slate-500">(N/A)</div>
@@ -46,7 +47,7 @@ export function MockupProductMixChartWidget({ widget, isEditMode }: WidgetCompon
 
   if (size === WidgetSize.MEDIUM) {
     return (
-      <WidgetCard size={widget.config.size} widgetType="PRODUCT_MIX_CHART" isEditMode={isEditMode}>
+      <WidgetCard size={widget.config.size} widgetType={widget.type as keyof typeof WidgetStyles.borders} isEditMode={isEditMode}>
         <CardHeader className="pb-2">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -93,7 +94,7 @@ export function MockupProductMixChartWidget({ widget, isEditMode }: WidgetCompon
 
   // Large size
   return (
-    <WidgetCard size={widget.config.size} widgetType="PRODUCT_MIX_CHART" isEditMode={isEditMode}>
+    <WidgetCard size={widget.config.size} widgetType={widget.type as keyof typeof WidgetStyles.borders} isEditMode={isEditMode}>
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">

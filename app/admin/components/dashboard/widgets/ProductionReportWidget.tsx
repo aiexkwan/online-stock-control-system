@@ -28,27 +28,36 @@ export function ProductionReportWidget({ widget, isEditMode }: WidgetComponentPr
   const [data, setData] = useState<ProductionData>({
     dailyProduction: []
   });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const loadProductionData = async () => {
-    const supabase = createClient();
-    
-    // Mock data for demonstration
-    const today = new Date();
-    const mockData = Array.from({ length: 7 }, (_, i) => {
-      const date = new Date(today);
-      date.setDate(date.getDate() - (6 - i));
-      return {
-        date: format(date, 'MM/dd'),
-        total: Math.floor(Math.random() * 500) + 800,
-        target: 1000
-      };
-    });
-    
-    setData({ dailyProduction: mockData });
+    try {
+      setLoading(true);
+      setError(null);
+      const supabase = createClient();
+      
+      // Mock data for demonstration
+      const today = new Date();
+      const mockData = Array.from({ length: 7 }, (_, i) => {
+        const date = new Date(today);
+        date.setDate(date.getDate() - (6 - i));
+        return {
+          date: format(date, 'MM/dd'),
+          total: Math.floor(Math.random() * 500) + 800,
+          target: 1000
+        };
+      });
+      
+      setData({ dailyProduction: mockData });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load production data');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const { loading, error } = useWidgetData({
-    widgetId: widget.id,
+  useWidgetData({
     loadFunction: loadProductionData,
     dependencies: [dateRange],
     isEditMode

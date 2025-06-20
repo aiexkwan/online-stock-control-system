@@ -65,15 +65,29 @@ export function GridWidget({
 
   // 計算 widget 的實際位置和大小
   const calculateStyle = useCallback(() => {
-    if (!gridConfig) return {};
+    if (!gridConfig) {
+      // 提供預設值以避免 widget 消失
+      return {
+        position: 'absolute' as const,
+        left: '0px',
+        top: '0px',
+        width: '180px',
+        height: '180px'
+      };
+    }
 
     const { cellWidth, cellHeight, gap, padding } = gridConfig;
     
+    // 確保 cellWidth 和 cellHeight 有效
+    const validCellWidth = cellWidth > 0 ? cellWidth : 90;
+    const validCellHeight = cellHeight > 0 ? cellHeight : 90;
+    
     return {
-      left: `${padding + (x * (cellWidth + gap))}px`,
-      top: `${padding + (y * (cellHeight + gap))}px`,
-      width: `${cols * cellWidth + (cols - 1) * gap}px`,
-      height: `${rows * cellHeight + (rows - 1) * gap}px`
+      position: 'absolute' as const,
+      left: `${padding + (x * (validCellWidth + gap))}px`,
+      top: `${padding + (y * (validCellHeight + gap))}px`,
+      width: `${cols * validCellWidth + (cols - 1) * gap}px`,
+      height: `${rows * validCellHeight + (rows - 1) * gap}px`
     };
   }, [x, y, cols, rows, gridConfig]);
 
@@ -140,7 +154,7 @@ export function GridWidget({
     <motion.div
       ref={widgetRef}
       className={cn(
-        "absolute transition-all duration-300",
+        "transition-all duration-300",
         isDragging && "z-50 cursor-grabbing",
         isEditMode && !isDragging && "cursor-grab hover:shadow-lg",
         className

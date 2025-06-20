@@ -9,13 +9,14 @@ import { CardContent, CardHeader } from '@/components/ui/card';
 import { WidgetCard } from '../WidgetCard';
 import { ClipboardDocumentListIcon } from '@heroicons/react/24/outline';
 import { WidgetComponentProps, WidgetSize } from '@/app/types/dashboard';
+import { WidgetStyles } from '@/app/utils/widgetStyles';
 
 export function MockupAcoOrderProgressWidget({ widget, isEditMode }: WidgetComponentProps) {
   const size = widget.config.size || WidgetSize.SMALL;
 
   if (size === WidgetSize.SMALL) {
     return (
-      <WidgetCard size={widget.config.size} widgetType="ACO_ORDER_PROGRESS" isEditMode={isEditMode}>
+      <WidgetCard size={widget.config.size} widgetType={widget.type as keyof typeof WidgetStyles.borders} isEditMode={isEditMode}>
         <CardContent className="p-2 h-full flex flex-col justify-center items-center">
           <h3 className="text-xs text-slate-400 mb-1">ACO Orders</h3>
           <div className="text-2xl font-bold text-orange-400">12</div>
@@ -27,7 +28,7 @@ export function MockupAcoOrderProgressWidget({ widget, isEditMode }: WidgetCompo
 
   if (size === WidgetSize.MEDIUM) {
     return (
-      <WidgetCard size={widget.config.size} widgetType="ACO_ORDER_PROGRESS" isEditMode={isEditMode}>
+      <WidgetCard size={widget.config.size} widgetType={widget.type as keyof typeof WidgetStyles.borders} isEditMode={isEditMode}>
         <CardHeader className="pb-2">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 bg-gradient-to-r from-orange-500 to-amber-500 rounded-lg flex items-center justify-center">
@@ -65,7 +66,7 @@ export function MockupAcoOrderProgressWidget({ widget, isEditMode }: WidgetCompo
 
   // Large size
   return (
-    <WidgetCard size={widget.config.size} widgetType="ACO_ORDER_PROGRESS" isEditMode={isEditMode}>
+    <WidgetCard size={widget.config.size} widgetType={widget.type as keyof typeof WidgetStyles.borders} isEditMode={isEditMode}>
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">

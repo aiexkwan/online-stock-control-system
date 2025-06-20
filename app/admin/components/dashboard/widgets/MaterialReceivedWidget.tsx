@@ -47,10 +47,10 @@ export function MaterialReceivedWidget({ widget, isEditMode }: WidgetComponentPr
     }
   }, []);
 
+  // Always call the hook but only load data for small size
   useWidgetData({ 
-    loadFunction: fetchTodayGrnCount, 
-    isEditMode,
-    skip: size !== WidgetSize.SMALL
+    loadFunction: size === WidgetSize.SMALL ? fetchTodayGrnCount : async () => {}, 
+    isEditMode
   });
 
   // Small size - only show today's GRN count

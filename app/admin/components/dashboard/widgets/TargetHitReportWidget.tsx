@@ -28,27 +28,36 @@ export function TargetHitReportWidget({ widget, isEditMode }: WidgetComponentPro
   const [data, setData] = useState<TargetData>({
     dailyTargets: []
   });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const loadTargetData = async () => {
-    const supabase = createClient();
-    
-    // Mock data for demonstration
-    const today = new Date();
-    const mockData = Array.from({ length: 7 }, (_, i) => {
-      const date = new Date(today);
-      date.setDate(date.getDate() - (6 - i));
-      return {
-        date: format(date, 'MM/dd'),
-        hitRate: Math.floor(Math.random() * 20) + 80,
-        efficiency: Math.floor(Math.random() * 15) + 75
-      };
-    });
-    
-    setData({ dailyTargets: mockData });
+    try {
+      setLoading(true);
+      setError(null);
+      const supabase = createClient();
+      
+      // Mock data for demonstration
+      const today = new Date();
+      const mockData = Array.from({ length: 7 }, (_, i) => {
+        const date = new Date(today);
+        date.setDate(date.getDate() - (6 - i));
+        return {
+          date: format(date, 'MM/dd'),
+          hitRate: Math.floor(Math.random() * 20) + 80,
+          efficiency: Math.floor(Math.random() * 15) + 75
+        };
+      });
+      
+      setData({ dailyTargets: mockData });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load target data');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const { loading, error } = useWidgetData({
-    widgetId: widget.id,
+  useWidgetData({
     loadFunction: loadTargetData,
     dependencies: [dateRange],
     isEditMode

@@ -7,6 +7,7 @@
 
 import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { Responsive, WidthProvider } from 'react-grid-layout';
+import ReactGridLayout from 'react-grid-layout';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
 import { 
@@ -31,6 +32,7 @@ import 'react-resizable/css/styles.css';
 import '../../styles/dashboard.css';
 
 const ResponsiveGridLayout = WidthProvider(Responsive);
+const GridLayout = WidthProvider(ReactGridLayout);
 
 interface AdminDashboardProps {
   layout: DashboardLayout;
@@ -58,8 +60,14 @@ const TARGET_CELL_SIZE = 90; // 90px per cell
 
 // 動態計算列數 - 確保格子保持正方形
 const calculateCols = (containerWidth: number): number => {
+  // 如果寬度大於等於 1920，固定使用 18 列
+  if (containerWidth >= 1920) {
+    return 18; // 固定 18 列，可以放下三個 5x5 widget 加上適當間距
+  }
+  
+  // 低於 1920 的情況下動態調整
   const margin = 16; // grid margin between items
-  const containerPadding = 40; // container padding (20px each side)
+  const containerPadding = 80; // container padding (40px each side)
   
   // 可用寬度 = 容器寬度 - 左右 padding
   const availableWidth = containerWidth - containerPadding;
@@ -68,8 +76,8 @@ const calculateCols = (containerWidth: number): number => {
   // 每個格子需要 TARGET_CELL_SIZE 寬度 + margin（除了最後一個）
   const cols = Math.floor((availableWidth + margin) / (TARGET_CELL_SIZE + margin));
   
-  // 最少 4 列，最多 30 列
-  return Math.max(4, Math.min(30, cols));
+  // 最少 15 列，確保能放下三個 5x5 的 widget
+  return Math.max(15, Math.min(18, cols));
 };
 
 export function AdminEnhancedDashboard({
@@ -106,9 +114,17 @@ export function AdminEnhancedDashboard({
           // 如果高度不等於寬度，則修正為正方形
           let h = (typeof widget.gridProps?.h === 'number' && !isNaN(widget.gridProps.h) && widget.gridProps.h > 0) ? widget.gridProps.h : 3;
           
-          // 檢查並修正高度以確保正方形
-          if (h !== w) {
-            h = w; // 設置高度等於寬度
+          // 強制高度等於寬度以確保正方形
+          h = w;
+          
+          // 獲取原始 x 座標
+          let x = (typeof widget.gridProps?.x === 'number' && !isNaN(widget.gridProps.x)) ? widget.gridProps.x : 0;
+          let y = (typeof widget.gridProps?.y === 'number' && !isNaN(widget.gridProps.y)) ? widget.gridProps.y : 0;
+          
+          // 確保 x 座標不超出新的網格邊界
+          // 18 列網格中，5x5 的 widget 最大 x 座標是 13
+          if (x + w > 18) {
+            x = Math.max(0, 18 - w);
           }
           
           const validatedWidget = {
@@ -116,8 +132,8 @@ export function AdminEnhancedDashboard({
             id: widget.id || `widget-${Date.now()}-${index}-${Math.random()}`,
             type: widget.type || WidgetType.STATS_CARD,
             gridProps: {
-              x: (typeof widget.gridProps?.x === 'number' && !isNaN(widget.gridProps.x)) ? widget.gridProps.x : 0,
-              y: (typeof widget.gridProps?.y === 'number' && !isNaN(widget.gridProps.y)) ? widget.gridProps.y : 0,
+              x: x,
+              y: y,
               w: w,
               h: h
             },
@@ -137,19 +153,30 @@ export function AdminEnhancedDashboard({
   const [currentBreakpoint, setCurrentBreakpoint] = useState('lg');
   const containerRef = useRef<HTMLDivElement>(null);
   const [dynamicCols, setDynamicCols] = useState<{[key: string]: number}>({
-    lg: 20,
+    lg: 18,  // 1920×1080 標準：18 列
     md: 15,
-    sm: 10,
-    xs: 6,
-    xxs: 4
+    sm: 15,
+    xs: 10,
+    xxs: 6
   });
   // 初始化時就計算正確的 rowHeight
   const [actualRowHeight, setActualRowHeight] = useState(() => {
     if (typeof window !== 'undefined') {
       const width = window.innerWidth - 80; // 估算容器寬度
+      
+      // 1920×1080 標準情況下的固定 rowHeight
+      if (width >= 1920) {
+        const margin = 16;
+        const containerPadding = 80;
+        const availableWidth = 1920 - containerPadding;
+        const cellWidth = (availableWidth - (margin * 17)) / 18; // 18列，17個間距
+        return Math.round(cellWidth);
+      }
+      
+      // 低於 1920 的動態計算
       const cols = calculateCols(width);
       const margin = 16;
-      const containerPadding = 40;
+      const containerPadding = 80;
       const availableWidth = width - containerPadding;
       const cellWidth = (availableWidth - (margin * (cols - 1))) / cols;
       return Math.round(cellWidth);
@@ -167,38 +194,53 @@ export function AdminEnhancedDashboard({
         const height = containerRef.current.offsetHeight;
         if (width <= 0 || height <= 0) return; // 防止無效寬度或高度
         
-        const cols = calculateCols(width);
+        let calculatedRowHeight;
+        let cols;
         
-        // 計算實際的單元格寬度（考慮 margin 和 padding）
-        const margin = 16;
-        const containerPadding = 40;
-        const availableWidth = width - containerPadding;
-        const actualCellWidth = (availableWidth - (margin * (cols - 1))) / cols;
+        // 1920×1080 標準情況下的固定設置
+        if (width >= 1920) {
+          const margin = 16;
+          const containerPadding = 80;
+          const availableWidth = 1920 - containerPadding;
+          const actualCellWidth = (availableWidth - (margin * 17)) / 18; // 18列，17個間距
+          calculatedRowHeight = Math.round(actualCellWidth);
+          cols = 18;
+          setActualRowHeight(calculatedRowHeight);
+          
+          // 設定固定的列數
+          setDynamicCols({
+            lg: 18,
+            md: 18,
+            sm: 18,
+            xs: 18,
+            xxs: 18
+          });
+        } else {
+          // 低於 1920 的動態調整
+          cols = calculateCols(width);
+          const margin = 16;
+          const containerPadding = 80;
+          const availableWidth = width - containerPadding;
+          const actualCellWidth = (availableWidth - (margin * (cols - 1))) / cols;
+          calculatedRowHeight = Math.round(actualCellWidth);
+          setActualRowHeight(calculatedRowHeight);
+          
+          // 為所有 breakpoint 設定相同的列數
+          setDynamicCols({
+            lg: cols,
+            md: cols,
+            sm: cols,
+            xs: cols,
+            xxs: cols
+          });
+        }
         
-        // 為了保持正方形，rowHeight 應該等於 actualCellWidth
-        // 使用 Math.round 而不是 Math.floor 來獲得更準確的值
-        const calculatedRowHeight = Math.round(actualCellWidth);
-        setActualRowHeight(calculatedRowHeight);
-        
-        // Debug logging for grid calculations
-        console.log('Grid Calculations:', {
+        // 調試信息
+        console.log('Grid calculations:', {
           containerWidth: width,
-          containerHeight: height,
           cols: cols,
-          margin: margin,
-          containerPadding: containerPadding,
-          availableWidth: availableWidth,
-          actualCellWidth: actualCellWidth,
+          isStandardResolution: width >= 1920,
           calculatedRowHeight: calculatedRowHeight
-        });
-        
-        // 為所有 breakpoint 設定相同的列數
-        setDynamicCols({
-          lg: cols,
-          md: cols,
-          sm: cols,
-          xs: cols,
-          xxs: cols
         });
       } catch (error) {
         console.error('Error updating grid cols:', error);
@@ -235,36 +277,26 @@ export function AdminEnhancedDashboard({
       return layouts;
     }
     
-    console.log('Creating grid layouts from widgets:', validatedLayout.widgets);
-    console.log('isEditMode:', isEditMode);
     
     // 為每個斷點創建完全相同的布局
     Object.keys(dynamicCols).forEach(breakpoint => {
       layouts[breakpoint] = validatedLayout.widgets.map((widget, index) => {
-        // 確保座標在有效範圍內
-        const cols = dynamicCols[breakpoint as keyof typeof dynamicCols] || 20; // 預設 20 列
-        const x = Math.max(0, Math.min(widget.gridProps?.x || 0, cols - (widget.gridProps?.w || 3)));
-        const y = widget.gridProps?.y || 0;
-        const w = widget.gridProps?.w || 3;
-        const h = widget.gridProps?.h || 3;
+        // 直接使用 widget 的座標，不做任何限制
+        const x = widget.gridProps?.x ?? 0;
+        const y = widget.gridProps?.y ?? 0;
+        const w = widget.gridProps?.w ?? 3;
+        const h = widget.gridProps?.h ?? 3;
         
-        // 使用完全相同的座標，不考慮斷點
         const layoutItem = {
           i: widget.id,
           x: x,
           y: y,
           w: w,
-          h: h,
-          minW: widget.config?.size === WidgetSize.SMALL ? 1 : widget.config?.size === WidgetSize.XLARGE ? 6 : 3,
-          minH: widget.config?.size === WidgetSize.XLARGE ? 6 : widget.config?.size === WidgetSize.SMALL ? 1 : widget.config?.size === WidgetSize.LARGE ? 5 : 3,
-          maxW: widget.config?.size === WidgetSize.XLARGE ? 6 : widget.config?.size === WidgetSize.LARGE ? 5 : widget.config?.size === WidgetSize.SMALL ? 1 : 3,
-          maxH: widget.config?.size === WidgetSize.XLARGE ? 6 : widget.config?.size === WidgetSize.LARGE ? 5 : widget.config?.size === WidgetSize.SMALL ? 1 : 3,
-          static: !isEditMode,  // 在非編輯模式下設為靜態
-          moved: false,
+          h: w, // 強制高度等於寬度
           isDraggable: isEditMode,
-          isResizable: isEditMode
+          isResizable: isEditMode,
+          static: false
         };
-        
         
         return layoutItem;
       });
@@ -272,6 +304,20 @@ export function AdminEnhancedDashboard({
     
     return layouts;
   }, [validatedLayout.widgets, isEditMode, dynamicCols]);
+  
+  // 簡單的 layout 格式（用於測試）
+  const simpleLayout = useMemo(() => {
+    return validatedLayout.widgets.map((widget) => ({
+      i: widget.id,
+      x: widget.gridProps?.x ?? 0,
+      y: widget.gridProps?.y ?? 0,
+      w: widget.gridProps?.w ?? 3,
+      h: widget.gridProps?.w ?? 3, // 使用 w 作為 h 確保正方形
+      static: false,
+      isDraggable: isEditMode,
+      isResizable: isEditMode
+    }));
+  }, [validatedLayout.widgets, isEditMode]);
 
   // 處理佈局變更
   const handleLayoutChange = useCallback((currentLayout: any[], allLayouts: any) => {
@@ -280,29 +326,40 @@ export function AdminEnhancedDashboard({
     
     // 如果是初始載入，標記為已完成並跳過
     if (isInitialLoad) {
-      console.log('Skipping initial layout change');
       setIsInitialLoad(false);
       return;
     }
     
     // 只在編輯模式下處理佈局變更
     if (!isEditMode) {
-      console.log('Ignoring layout change - not in edit mode');
       return;
     }
     
-    console.log('Layout change detected:', currentLayout);
+    console.log('Layout change:', currentLayout.map(item => ({
+      i: item.i,
+      x: item.x,
+      y: item.y,
+      w: item.w,
+      h: item.h
+    })));
     
     const updatedWidgets = validatedLayout.widgets.map(widget => {
       const layoutItem = currentLayout.find(item => item.i === widget.id);
       if (layoutItem) {
+        // 確保保持正方形 - 使用寬度作為高度
+        const width = Math.max(1, layoutItem.w || 3);
+        const height = Math.max(1, layoutItem.h || width);
+        
+        // 如果不是正方形，強制使用寬度
+        const finalSize = width;
+        
         return {
           ...widget,
           gridProps: {
-            x: layoutItem.x || 0,
-            y: layoutItem.y || 0,
-            w: Math.max(1, layoutItem.w || 3),
-            h: Math.max(1, layoutItem.h || 3)
+            x: Math.max(0, layoutItem.x || 0),
+            y: Math.max(0, layoutItem.y || 0),
+            w: finalSize,
+            h: finalSize // 高度始終等於寬度
           }
         };
       }
@@ -314,7 +371,6 @@ export function AdminEnhancedDashboard({
 
   // 處理 breakpoint 變更
   const handleBreakpointChange = useCallback((breakpoint: string) => {
-    console.log('Breakpoint changed to:', breakpoint);
     setCurrentBreakpoint(breakpoint);
     if (onBreakpointChange) {
       onBreakpointChange(breakpoint);
@@ -331,15 +387,6 @@ export function AdminEnhancedDashboard({
     setShowAddWidget(false);
   }, [onAddWidget]);
   
-  // 驗證 widgets 數據
-  useEffect(() => {
-    if (validatedLayout.widgets.length > 0) {
-      console.log('Validated layout:', validatedLayout);
-      console.log('Grid layouts:', gridLayouts);
-      console.log('Current breakpoint:', currentBreakpoint);
-      console.log('Layout for current breakpoint:', gridLayouts[currentBreakpoint]);
-    }
-  }, [validatedLayout, gridLayouts, currentBreakpoint]);
   
   // 當布局改變時重置初始載入標誌
   useEffect(() => {
@@ -362,6 +409,7 @@ export function AdminEnhancedDashboard({
       return () => clearTimeout(timer);
     }
   }, [validatedLayout.widgets.length, isReady]);
+  
   
 
   // 處理移除小部件
@@ -417,7 +465,7 @@ export function AdminEnhancedDashboard({
 
         {/* 響應式網格佈局 */}
         {validatedLayout.widgets.length > 0 && isReady && (
-        <div ref={containerRef}>
+        <div ref={containerRef} style={{ width: '100%' }}>
           <ResponsiveGridLayout
             key={key}  // 使用 key 強制重新創建組件
             className={cn(
@@ -427,49 +475,50 @@ export function AdminEnhancedDashboard({
             layouts={gridLayouts}
             onLayoutChange={handleLayoutChange}
             onBreakpointChange={handleBreakpointChange}
+            onDrag={(layout, oldItem, newItem, placeholder, e, element) => {
+              // 確保拖動時保持正方形
+              if (newItem.h !== newItem.w) {
+                newItem.h = newItem.w;
+              }
+              if (placeholder && placeholder.h !== placeholder.w) {
+                placeholder.h = placeholder.w;
+              }
+            }}
             breakpoints={BREAKPOINTS}
             cols={dynamicCols}
             rowHeight={actualRowHeight}
+            onDragStart={(layout, oldItem, newItem, placeholder, e, element) => {
+              console.log('Drag start:', { oldItem, newItem });
+            }}
+            onDragStop={(layout, oldItem, newItem, placeholder, e, element) => {
+              console.log('Drag stop:', { oldItem, newItem });
+            }}
             compactType={null}  // 關閉自動壓縮，避免小工具自動重新排列
-            preventCollision={false}  // 允許小工具重疊
+            preventCollision={false}  // 允許 widgets 自由定位
             isDraggable={isEditMode}
             isResizable={isEditMode}
             resizeHandles={['se']} // 只啟用右下角的 resize handle
             margin={[16, 16]}
-            containerPadding={[20, 20]}
+            containerPadding={[40, 20]}
             useCSSTransforms={true}
             autoSize={false}  // 關閉自動調整大小，保持正方形
+            onResize={(layout, oldItem, newItem, placeholder, e, element) => {
+              // 在調整大小時強制保持正方形
+              newItem.h = newItem.w;
+              if (placeholder) {
+                placeholder.h = newItem.w;
+              }
+            }}
             measureBeforeMount={false}
             draggableHandle=".widget-drag-handle"
             draggableCancel=".widget-no-drag"
+            allowOverlap={true}  // 允許 widgets 重疊
+            isDroppable={false}  // 禁用 drop 功能
           >
-          {validatedLayout.widgets.map((widget) => {
-            // Debug log for each widget
-            console.log(`Widget ${widget.id} dimensions:`, {
-              type: widget.type,
-              size: widget.config?.size,
-              gridProps: widget.gridProps,
-              expectedPixelWidth: widget.gridProps.w * actualRowHeight + (widget.gridProps.w - 1) * 16,
-              expectedPixelHeight: widget.gridProps.h * actualRowHeight + (widget.gridProps.h - 1) * 16
-            });
-            
-            return (
+          {validatedLayout.widgets.map((widget) => (
             <div 
               key={widget.id} 
               className={cn("widget-container", isEditMode && "widget-drag-handle")}
-              ref={(el) => {
-                if (el) {
-                  // Log actual DOM dimensions after render
-                  setTimeout(() => {
-                    const rect = el.getBoundingClientRect();
-                    console.log(`Widget ${widget.id} actual DOM dimensions:`, {
-                      width: rect.width,
-                      height: rect.height,
-                      aspectRatio: rect.width / rect.height
-                    });
-                  }, 100);
-                }
-              }}
             >
               {/* 編輯模式覆蓋層 */}
               {isEditMode && (
@@ -528,8 +577,7 @@ export function AdminEnhancedDashboard({
                 })}
               </div>
             </div>
-          );
-          })}
+          ))}
           </ResponsiveGridLayout>
         </div>
         )}
