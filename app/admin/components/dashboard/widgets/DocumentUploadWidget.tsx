@@ -32,7 +32,7 @@ interface UploadRecord {
   uploader_name?: string; // 處理後的用戶名稱
 }
 
-export function DocumentUploadWidget({ widget, isEditMode }: WidgetComponentProps) {
+export const DocumentUploadWidget = React.memo(function DocumentUploadWidget({ widget, isEditMode }: WidgetComponentProps) {
   const [uploadHistory, setUploadHistory] = useState<UploadRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(0);
@@ -327,4 +327,4 @@ export function DocumentUploadWidget({ widget, isEditMode }: WidgetComponentProp
       </WidgetCard>
     </motion.div>
   );
-}
+});

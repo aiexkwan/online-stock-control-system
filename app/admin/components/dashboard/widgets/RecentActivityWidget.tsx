@@ -30,7 +30,7 @@ interface ActivityItem {
   icon?: React.ReactNode;
 }
 
-export function RecentActivityWidget({ widget, isEditMode }: WidgetComponentProps) {
+export const RecentActivityWidget = React.memo(function RecentActivityWidget({ widget, isEditMode }: WidgetComponentProps) {
   const [activities, setActivities] = useState<ActivityItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -265,4 +265,4 @@ export function RecentActivityWidget({ widget, isEditMode }: WidgetComponentProp
       </div>
     </WidgetCard>
   );
-}
+});

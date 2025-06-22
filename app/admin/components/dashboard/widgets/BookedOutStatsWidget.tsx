@@ -40,7 +40,7 @@ interface TransferData {
   }>;
 }
 
-export function BookedOutStatsWidget({ widget, isEditMode }: WidgetComponentProps) {
+export const BookedOutStatsWidget = React.memo(function BookedOutStatsWidget({ widget, isEditMode }: WidgetComponentProps) {
   const [data, setData] = useState<TransferData>({
     totalCount: 0,
     operatorData: [],
@@ -443,4 +443,4 @@ export function BookedOutStatsWidget({ widget, isEditMode }: WidgetComponentProp
       </CardContent>
     </WidgetCard>
   );
-}
+});

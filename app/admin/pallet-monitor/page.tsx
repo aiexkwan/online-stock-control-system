@@ -2,11 +2,10 @@
 
 import React from 'react';
 import { PalletGenerationMonitor } from '@/app/components/admin/PalletGenerationMonitor';
-import MotionBackground from '@/app/components/MotionBackground';
 
 export default function PalletMonitorPage() {
   return (
-    <MotionBackground>
+    <div>
       <div className="container mx-auto px-4 py-8">
         {/* 頁面標題 */}
         <div className="relative mb-8">
@@ -44,6 +43,6 @@ export default function PalletMonitorPage() {
           </div>
         </div>
       </div>
-    </MotionBackground>
+    </div>
   );
 }

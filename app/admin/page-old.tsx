@@ -37,7 +37,6 @@ import { ReportsButton } from '@/app/components/reports/ReportsButton';
 import { AnalyticsButton } from '@/app/components/analytics/AnalyticsButton';
 import { AnalyticsDashboardDialog } from '@/app/components/analytics/AnalyticsDashboardDialog';
 import { useAuth } from '@/app/hooks/useAuth';
-import MotionBackground from '../components/MotionBackground';
 import { useDialog, useReprintDialog } from '@/app/contexts/DialogContext';
 import { DialogManager } from '@/app/components/admin-panel/DialogManager';
 import { adminMenuItems } from '@/app/components/admin-panel/AdminMenu';
@@ -642,7 +641,7 @@ export default function AdminPanelPage() {
   }
 
   return (
-    <MotionBackground>
+    <div>
       {/* 主要內容區域 */}
       <div className="text-white">
         {/* Admin Panel Navigation Bar */}
@@ -1293,6 +1292,6 @@ export default function AdminPanelPage() {
       
       {/* Analytics Dashboard Dialog */}
       <AnalyticsDashboardDialog />
-    </MotionBackground>
+    </div>
   );
 }

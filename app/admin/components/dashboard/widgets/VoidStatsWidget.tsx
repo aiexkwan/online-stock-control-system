@@ -34,7 +34,7 @@ interface ChartData {
   count: number;
 }
 
-export function VoidStatsWidget({ widget, isEditMode }: WidgetComponentProps) {
+export const VoidStatsWidget = React.memo(function VoidStatsWidget({ widget, isEditMode }: WidgetComponentProps) {
   const size = widget.config.size || WidgetSize.SMALL;
   const [loading, setLoading] = useState(true);
   const [voidData, setVoidData] = useState<VoidData[]>([]);
@@ -340,4 +340,4 @@ export function VoidStatsWidget({ widget, isEditMode }: WidgetComponentProps) {
       </CardContent>
     </WidgetCard>
   );
-}
+});

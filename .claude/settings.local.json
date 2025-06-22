@@ -60,7 +60,14 @@
       "Bash(dos2unix:*)",
       "Bash(sed:*)",
       "Bash(awk:*)",
-      "Bash(kill:*)"
+      "Bash(kill:*)",
+      "WebFetch(domain:v0.dev)",
+      "WebFetch(domain:v0-futuristic-dashboard-roan-two.vercel.app)",
+      "WebFetch(domain:browsermcp.io)",
+      "WebFetch(domain:docs.browsermcp.io)",
+      "WebFetch(domain:github.com)",
+      "Bash(npm search:*)",
+      "Bash(curl:*)"
     ],
     "deny": []
   }

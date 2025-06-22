@@ -32,7 +32,22 @@ type TimeRange = 'Today' | 'Yesterday' | 'Past 3 days' | 'Past 7 days';
 const TIME_RANGE_OPTIONS: TimeRange[] = ['Today', 'Yesterday', 'Past 3 days', 'Past 7 days'];
 
 import { WidgetSize } from '@/app/types/dashboard';
-import { isSizeAtLeast, isSizeExactly } from '@/app/components/dashboard/WidgetSizeConfig';
+
+// Helper functions for widget size comparison
+const isSizeAtLeast = (currentSize: WidgetSize, targetSize: WidgetSize): boolean => {
+  const sizeOrder = {
+    [WidgetSize.SMALL]: 1,
+    [WidgetSize.MEDIUM]: 2,
+    [WidgetSize.LARGE]: 3,
+    [WidgetSize.XLARGE]: 4,
+    [WidgetSize.TALL_MEDIUM]: 2.5
+  };
+  return sizeOrder[currentSize] >= sizeOrder[targetSize];
+};
+
+const isSizeExactly = (currentSize: WidgetSize, targetSize: WidgetSize): boolean => {
+  return currentSize === targetSize;
+};
 
 interface FinishedProductProps {
   widgetSize?: WidgetSize;

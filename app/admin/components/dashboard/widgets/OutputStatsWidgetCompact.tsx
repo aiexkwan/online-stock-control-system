@@ -22,7 +22,7 @@ interface OutputData {
   percentageChange: number; // 相比昨天的變化百分比
 }
 
-export function OutputStatsWidgetCompact({ widget, isEditMode }: WidgetComponentProps) {
+export const OutputStatsWidgetCompact = React.memo(function OutputStatsWidgetCompact({ widget, isEditMode }: WidgetComponentProps) {
   const isCompact = widget.config?.isCompact ?? false;
   const [data, setData] = useState<OutputData>({
     palletCount: 0,
@@ -202,4 +202,4 @@ export function OutputStatsWidgetCompact({ widget, isEditMode }: WidgetComponent
       )}
     </div>
   );
-}
+});

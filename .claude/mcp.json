@@ -25,6 +25,14 @@
       "env": {
         "PUPPETEER_HEADLESS": "true"
       }
+    },
+    "@21st-dev/magic": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@21st-dev/magic@latest",
+        "API_KEY=\"50bcbabfee27800a8ccb64eed92797516ff32b2d0d5919a168d6e4ea4e7a6591\""
+      ]
     }
   }
 }

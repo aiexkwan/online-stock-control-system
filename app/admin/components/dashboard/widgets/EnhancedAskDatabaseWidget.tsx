@@ -9,7 +9,7 @@ import { WidgetCard } from '../WidgetCard';
 import { WidgetComponentProps, WidgetSize } from '@/app/types/dashboard';
 import AskDatabaseInlineCard from '@/app/components/AskDatabaseInlineCard';
 
-export function EnhancedAskDatabaseWidget({ widget, isEditMode }: WidgetComponentProps) {
+export const EnhancedAskDatabaseWidget = React.memo(function EnhancedAskDatabaseWidget({ widget, isEditMode }: WidgetComponentProps) {
   const size = widget.config.size || WidgetSize.LARGE;
 
   // Medium 尺寸 - 簡化版
@@ -57,4 +57,4 @@ export function EnhancedAskDatabaseWidget({ widget, isEditMode }: WidgetComponen
       </div>
     </WidgetCard>
   );
-}
+});

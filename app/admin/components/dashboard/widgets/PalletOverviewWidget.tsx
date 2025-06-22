@@ -22,7 +22,7 @@ interface DashboardStats {
   palletsTransferred: number;
 }
 
-export function PalletOverviewWidget({ widget, isEditMode }: WidgetComponentProps) {
+export const PalletOverviewWidget = React.memo(function PalletOverviewWidget({ widget, isEditMode }: WidgetComponentProps) {
   const [stats, setStats] = useState<DashboardStats>({
     palletsDone: 0,
     palletsTransferred: 0
@@ -321,4 +321,4 @@ export function PalletOverviewWidget({ widget, isEditMode }: WidgetComponentProp
       </CardContent>
     </Card>
   );
-}
+});

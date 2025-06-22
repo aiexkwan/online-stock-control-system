@@ -1,18 +1,17 @@
 /**
  * Admin Panel Page
- * Server component that wraps the client component with necessary providers
+ * 使用新的 Dashboard 系統
  */
 
 import { AdminRefreshProvider } from './contexts/AdminRefreshContext';
 import { AdminErrorBoundary } from './components/AdminErrorBoundary';
-import { AdminPageClient } from './components/AdminPageClient';
-import './utils/clearAdminDashboard';
+import { NewAdminDashboard } from './components/NewAdminDashboard';
 
 export default function AdminPanelPage() {
   return (
     <AdminErrorBoundary>
       <AdminRefreshProvider>
-        <AdminPageClient />
+        <NewAdminDashboard />
       </AdminRefreshProvider>
     </AdminErrorBoundary>
   );

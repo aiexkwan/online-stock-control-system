@@ -1,0 +1,42 @@
+/**
+ * useOnClickOutside Hook
+ * 處理點擊外部區域嘅事件，自動清理避免內存洩漏
+ */
+
+import { useEffect, RefObject } from 'react';
+
+type Handler = (event: MouseEvent | TouchEvent) => void;
+
+export function useOnClickOutside<T extends HTMLElement = HTMLElement>(
+  ref: RefObject<T>,
+  handler: Handler,
+  mouseEvent: 'mousedown' | 'mouseup' = 'mousedown'
+): void {
+  useEffect(() => {
+    // 如果 ref 或 handler 不存在，直接返回
+    if (!ref?.current || !handler) {
+      return;
+    }
+
+    const listener = (event: MouseEvent | TouchEvent) => {
+      const el = ref.current;
+
+      // 如果點擊發生在元素內部，不執行 handler
+      if (!el || el.contains(event.target as Node)) {
+        return;
+      }
+
+      handler(event);
+    };
+
+    // 添加事件監聽器
+    document.addEventListener(mouseEvent, listener);
+    document.addEventListener('touchstart', listener);
+
+    // 清理函數 - 防止內存洩漏
+    return () => {
+      document.removeEventListener(mouseEvent, listener);
+      document.removeEventListener('touchstart', listener);
+    };
+  }, [ref, handler, mouseEvent]);
+}

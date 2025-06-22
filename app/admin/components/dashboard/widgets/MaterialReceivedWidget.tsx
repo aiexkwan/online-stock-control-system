@@ -19,7 +19,7 @@ import { getTodayRange } from '@/app/utils/timezone';
 import { WidgetTitle, WidgetText, WidgetLabel, WidgetValue } from '../WidgetTypography';
 import { useWidgetData } from '@/app/admin/hooks/useWidgetData';
 
-export function MaterialReceivedWidget({ widget, isEditMode }: WidgetComponentProps) {
+export const MaterialReceivedWidget = React.memo(function MaterialReceivedWidget({ widget, isEditMode }: WidgetComponentProps) {
   const size = widget.config.size || WidgetSize.SMALL;
   const [todayGrnCount, setTodayGrnCount] = useState<number>(0);
   const [loading, setLoading] = useState(true);
@@ -80,4 +80,4 @@ export function MaterialReceivedWidget({ widget, isEditMode }: WidgetComponentPr
       </div>
     </WidgetCard>
   );
-}
+});

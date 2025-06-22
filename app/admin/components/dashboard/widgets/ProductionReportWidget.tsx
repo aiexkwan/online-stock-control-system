@@ -23,7 +23,7 @@ interface ProductionData {
   }>;
 }
 
-export function ProductionReportWidget({ widget, isEditMode }: WidgetComponentProps) {
+export const ProductionReportWidget = React.memo(function ProductionReportWidget({ widget, isEditMode }: WidgetComponentProps) {
   const [dateRange, setDateRange] = useState<'week' | 'month' | 'quarter'>('week');
   const [data, setData] = useState<ProductionData>({
     dailyProduction: []
@@ -137,4 +137,4 @@ export function ProductionReportWidget({ widget, isEditMode }: WidgetComponentPr
       </WidgetLayouts.FullChart>
     </BaseWidget>
   );
-}
+});

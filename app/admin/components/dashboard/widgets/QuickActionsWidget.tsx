@@ -29,7 +29,7 @@ interface QuickAction {
   color?: string;
 }
 
-export function QuickActionsWidget({ widget, isEditMode }: WidgetComponentProps) {
+export const QuickActionsWidget = React.memo(function QuickActionsWidget({ widget, isEditMode }: WidgetComponentProps) {
   const router = useRouter();
 
   const actions: QuickAction[] = [
@@ -123,4 +123,4 @@ export function QuickActionsWidget({ widget, isEditMode }: WidgetComponentProps)
       </CardContent>
     </Card>
   );
-}
+});

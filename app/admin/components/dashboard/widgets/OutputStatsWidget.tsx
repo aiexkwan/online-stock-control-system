@@ -38,7 +38,7 @@ interface OutputData {
   }>;
 }
 
-export function OutputStatsWidget({ widget, isEditMode }: WidgetComponentProps) {
+export const OutputStatsWidget = React.memo(function OutputStatsWidget({ widget, isEditMode }: WidgetComponentProps) {
   const [data, setData] = useState<OutputData>({
     palletCount: 0,
     productCodeCount: 0,
@@ -464,4 +464,4 @@ export function OutputStatsWidget({ widget, isEditMode }: WidgetComponentProps) 
       </CardContent>
     </WidgetCard>
   );
-}
+});

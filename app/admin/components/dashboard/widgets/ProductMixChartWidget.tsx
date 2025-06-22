@@ -16,7 +16,7 @@ import { useWidgetData } from '@/app/admin/hooks/useWidgetData';
 
 const COLORS = ['#10B981', '#3B82F6', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899'];
 
-export function ProductMixChartWidget({ widget, isEditMode }: WidgetComponentProps) {
+export const ProductMixChartWidget = React.memo(function ProductMixChartWidget({ widget, isEditMode }: WidgetComponentProps) {
   const [data, setData] = React.useState<any[]>([]);
   const [loading, setLoading] = React.useState(true);
   const size = widget.config.size || WidgetSize.SMALL;
@@ -161,4 +161,4 @@ export function ProductMixChartWidget({ widget, isEditMode }: WidgetComponentPro
       </CardContent>
     </WidgetCard>
   );
-}
+});

@@ -3,7 +3,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
-import MotionBackground from '@/app/components/MotionBackground';
 import StockTakeNav from '../components/StockTakeNav';
 import ScanToStart from './components/ScanToStart';
 import RemainToCount from './components/RemainToCount';
@@ -409,7 +408,7 @@ export default function CycleCountPage() {
   };
 
   return (
-    <MotionBackground>
+    <div>
       <ErrorBoundary>
         <div className="text-white">
           <StockTakeNav />
@@ -672,6 +671,6 @@ export default function CycleCountPage() {
         </AnimatePresence>
       </div>
       </ErrorBoundary>
-    </MotionBackground>
+    </div>
   );
 } 

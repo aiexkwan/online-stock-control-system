@@ -18,7 +18,7 @@ interface StatsData {
   label?: string;
 }
 
-export function StatsCardWidget({ widget, isEditMode }: WidgetComponentProps) {
+export const StatsCardWidget = React.memo(function StatsCardWidget({ widget, isEditMode }: WidgetComponentProps) {
   const [data, setData] = useState<StatsData>({ value: 0 });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -134,4 +134,4 @@ export function StatsCardWidget({ widget, isEditMode }: WidgetComponentProps) {
       </CardContent>
     </Card>
   );
-}
+});

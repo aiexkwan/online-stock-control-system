@@ -93,7 +93,7 @@ const reportTypes: ReportType[] = [
   }
 ];
 
-export function ReportsWidget({ widget, isEditMode }: WidgetComponentProps) {
+export const ReportsWidget = React.memo(function ReportsWidget({ widget, isEditMode }: WidgetComponentProps) {
   const size = widget.config.size || WidgetSize.MEDIUM;
 
   const handleReportClick = (report: ReportType) => {
@@ -198,4 +198,4 @@ export function ReportsWidget({ widget, isEditMode }: WidgetComponentProps) {
       </WidgetCard>
     </motion.div>
   );
-}
+});

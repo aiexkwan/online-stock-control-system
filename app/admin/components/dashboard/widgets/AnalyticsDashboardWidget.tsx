@@ -14,7 +14,7 @@ import { ChartBarIcon } from '@heroicons/react/24/outline';
 import { WidgetComponentProps } from '@/app/types/dashboard';
 import { Card, CardContent } from "@/components/ui/card";
 
-export function AnalyticsDashboardWidget({ widget, isEditMode }: WidgetComponentProps) {
+export const AnalyticsDashboardWidget = React.memo(function AnalyticsDashboardWidget({ widget, isEditMode }: WidgetComponentProps) {
   return (
     <Card className="h-full bg-slate-800/40 backdrop-blur-xl border-gray-500/30">
       <CardContent className="p-4 h-full flex flex-col items-center justify-center">
@@ -24,4 +24,4 @@ export function AnalyticsDashboardWidget({ widget, isEditMode }: WidgetComponent
       </CardContent>
     </Card>
   );
-}
+});

@@ -4,7 +4,7 @@ import React from 'react';
 import { Toaster } from 'sonner';
 import AuthChecker from './AuthChecker';
 import GlobalHeader from '@/components/GlobalHeader';
-import MotionBackground from './MotionBackground';
+import { UniversalBackground } from './UniversalBackground';
 import { GlobalReportDialogs } from '@/app/components/reports/GlobalReportDialogs';
 import { GlobalAnalyticsDialogs } from '@/app/components/analytics/GlobalAnalyticsDialogs';
 
@@ -35,10 +35,10 @@ export default function ClientLayout({ children }: ClientLayoutProps) {
         {/* Global header */}
         <GlobalHeader />
         
-        {/* Main content with motion background */}
-        <MotionBackground className="text-white">
+        {/* Main content with universal background */}
+        <UniversalBackground className="text-white">
           {children}
-        </MotionBackground>
+        </UniversalBackground>
         
         {/* Global report dialogs */}
         <GlobalReportDialogs />

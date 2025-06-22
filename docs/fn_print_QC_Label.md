@@ -1,248 +1,277 @@
-# QC 標籤列印功能文檔
+# QC標籤列印系統
 
-## 功能概述
-QC 標籤列印系統負責生成和列印質量控制標籤，支援 ACO 和 Slate 兩種產品類型。
+## 概述
+
+QC標籤列印系統係用嚟生成同列印質量控制標籤嘅核心功能，支援ACO同Slate兩種特殊產品類型。系統提供完整嘅標籤生成工作流程，包括產品驗證、數量管理、操作員認證同PDF生成。
 
 ## 系統架構
 
 ### 主要頁面
-- `/print-label`: QC 標籤列印的主頁面，提供完整的標籤生成工作流程
+- `/print-label`: QC標籤列印主頁面
 
 ### 核心組件結構
 
 #### 主表單組件
-- `app/components/qc-label-form/PerformanceOptimizedForm.tsx`: 主表單組件，負責使用者輸入處理和流程控制
+- `app/components/qc-label-form/PerformanceOptimizedForm.tsx`: 主表單組件，處理用戶輸入同流程控制
 - `app/components/qc-label-form/ProductSection.tsx`: 產品資訊輸入區塊
-- `app/components/qc-label-form/ProgressSection.tsx`: 標籤列印進度顯示區塊
+- `app/components/qc-label-form/ProgressSection.tsx`: 標籤列印進度顯示
 
 #### 輸入組件
-- `app/components/qc-label-form/ProductCodeInput.tsx`: 產品代碼輸入組件，支援即時搜尋和驗證
+- `app/components/qc-label-form/ProductCodeInput.tsx`: 產品代碼輸入，支援即時搜尋同驗證
+- `app/components/qc-label-form/EnhancedFormField.tsx`: 增強表單欄位組件
+- `app/components/qc-label-form/EnhancedProgressBar.tsx`: 現代化進度條
 
 #### 對話框組件
-- `app/components/qc-label-form/ClockNumberConfirmDialog.tsx`: 操作員身份確認對話框
-- `app/components/qc-label-form/ErrorBoundary.tsx`: 錯誤邊界處理組件
+- `app/components/qc-label-form/ClockNumberConfirmDialog.tsx`: 操作員身份確認
+- `app/components/qc-label-form/ErrorBoundary.tsx`: 錯誤邊界處理
 
-#### 表單元件
-- `app/components/qc-label-form/EnhancedFormField.tsx`: 包含 EnhancedInput 和 EnhancedSelect 的增強表單欄位
-- `app/components/qc-label-form/EnhancedProgressBar.tsx`: 現代化進度條組件
-- `app/components/qc-label-form/ResponsiveLayout.tsx`: 響應式卡片佈局組件
-
-#### 業務邏輯 Hooks（V2 優化版本）
-- `app/components/qc-label-form/hooks/useQcLabelBusiness.tsx`: QC 標籤生成的核心業務邏輯
-- `app/components/qc-label-form/hooks/modules/useFormValidation.tsx`: 表單驗證邏輯模組
-- `app/components/qc-label-form/hooks/modules/useErrorHandler.tsx`: 統一錯誤處理模組
-- `app/components/qc-label-form/hooks/modules/useDatabaseOperationsV2.tsx`: V2 版本數據庫操作模組
-- `app/components/qc-label-form/hooks/modules/usePalletGenerationV2.tsx`: V2 版本托盤號生成模組
-- `app/components/qc-label-form/hooks/modules/usePdfGenerationV2.tsx`: V2 版本 PDF 生成模組
-- `app/components/qc-label-form/hooks/modules/useAutoSaveV2.tsx`: V2 版本自動保存模組
-- `app/components/qc-label-form/hooks/modules/useSlateManagement.tsx`: Slate 產品管理模組
-- `app/components/qc-label-form/hooks/modules/useAcoManagement.tsx`: ACO 產品管理模組
-
-#### 服務層
-- `app/components/qc-label-form/services/ErrorHandler.ts`: 錯誤處理服務
-- `app/components/qc-label-form/services/`: 其他業務服務
+#### 業務邏輯Hooks（V2優化版）
+- `app/components/qc-label-form/hooks/useQcLabelBusiness.tsx`: QC標籤生成核心業務邏輯
+- `app/components/qc-label-form/hooks/modules/useFormValidation.tsx`: 表單驗證邏輯
+- `app/components/qc-label-form/hooks/modules/useErrorHandler.tsx`: 統一錯誤處理
+- `app/components/qc-label-form/hooks/modules/useDatabaseOperationsV2.tsx`: 資料庫操作
+- `app/components/qc-label-form/hooks/modules/usePalletGenerationV2.tsx`: 棧板號生成
+- `app/components/qc-label-form/hooks/modules/usePdfGenerationV2.tsx`: PDF生成
+- `app/components/qc-label-form/hooks/modules/useAutoSaveV2.tsx`: 自動保存
+- `app/components/qc-label-form/hooks/modules/useSlateManagement.tsx`: Slate產品管理
+- `app/components/qc-label-form/hooks/modules/useAcoManagement.tsx`: ACO產品管理
 
 ## 數據流向
 
-### 資料庫表結構
+### 資料庫表
 - `record_palletinfo`: 棧板基本資訊儲存
 - `record_history`: 操作歷史記錄
-- `data_code`: 產品代碼資料
 - `record_inventory`: 庫存數量管理
+- `data_code`: 產品代碼資料
 - `data_id`: 操作員身份驗證
-- `pallet_number_buffer`: 托盤號碼緩衝表（優化性能）
-- `daily_pallet_sequence`: 每日托盤序列管理
+- `pallet_number_buffer`: 棧板號碼緩衝池
+- `daily_pallet_sequence`: 每日棧板序列管理
+- `record_aco`: ACO訂單記錄（ACO產品專用）
+- `record_slate`: Slate產品記錄（Slate產品專用）
 
-### 儲存系統
-- Supabase Storage `qc-labels` bucket: QC 標籤 PDF 檔案儲存
-- Supabase Storage `pallet-label-pdf` bucket: 棧板標籤 PDF 檔案儲存
+### 存儲系統
+- Supabase Storage `pallet-label-pdf` bucket: QC標籤PDF檔案儲存
 
 ## 工作流程
 
-### 1. 使用者輸入階段
-- 操作員在 PerformanceOptimizedForm 中輸入產品代碼、數量等資訊
-- ProductCodeInput 提供即時搜尋和驗證功能
-- 系統進行即時表單驗證
-- 支援 ACO 和 Slate 產品的特殊欄位輸入
+### 1. 產品資訊輸入
+- 輸入產品代碼，系統即時搜尋驗證
+- 顯示產品描述同標準數量
+- 輸入實際數量同棧板數量
+- 可選輸入操作員clock號碼
 
-### 2. 身份驗證階段
-- 提交表單前彈出 ClockNumberConfirmDialog
-- 要求操作員輸入工號進行身份驗證
-- 驗證通過後啟動標籤生成流程
+### 2. 特殊產品處理
 
-### 3. 資料準備階段（V2 優化）
-useQcLabelBusiness Hook 執行以下操作：
-- `usePalletGenerationV2`: 使用 V5 版本托盤號生成函數，支援數字排序
-- `generateOptimizedPalletNumbersV5()`: 生成棧板號碼，格式為 `ddMMyy/N`
-- `generateMultipleUniqueSeries()`: 生成系列號，格式為 `ddMMyy-XXXXXX`
-- `prepareQcLabelData()`: 準備 PDF 生成所需的標籤資料
+#### ACO產品
+- 需要輸入ACO訂單參考號
+- 系統查詢訂單詳情同剩餘數量
+- 確保不超過訂單剩餘數量
+- 自動更新訂單完成狀態
 
-### 4. 批量處理階段（V2 優化）
-使用 `useDatabaseOperationsV2` 模組：
-- 插入 `record_palletinfo` 記錄棧板基本資訊
-- 插入 `record_history` 記錄操作歷史
-- 根據產品類型自動處理庫存更新
-- 支援事務處理確保數據一致性
+#### Slate產品
+- 需要輸入批次號碼
+- 特殊標籤格式處理
+- 記錄到`record_slate`表
 
-### 5. PDF 生成與儲存階段（V2 優化）
-使用 `usePdfGenerationV2` 模組：
-- `generateAndUploadPdf()` 根據準備的資料生成 QC 標籤 PDF
-- 自動上傳 PDF 到 Supabase Storage 的 `qc-labels` 路徑
-- 支援多個 PDF 的合併處理
-- 優化 PDF 生成性能，減少等待時間
+### 3. 身份驗證
+- 提交前彈出clock號碼確認對話框
+- 驗證操作員身份
+- 記錄QC clock號碼
 
-### 6. 列印觸發階段
-- `mergeAndPrintPdfs()` 合併多個 PDF（如需要）
+### 4. 數據準備（V2優化）
+- 使用`generate_atomic_pallet_numbers_v5` RPC函數生成棧板號
+- 格式：`DDMMYY/XXXX`（日期+4位數字序列）
+- 生成唯一系列號格式：`DDMMYY-XXXXXX`
+- 準備PDF生成所需數據
+
+### 5. 批量處理（V2優化）
+- 原子性資料庫操作確保數據一致性
+- 插入`record_palletinfo`記錄
+- 插入`record_history`操作記錄
+- 更新`record_inventory`庫存
+- ACO產品更新`record_aco`
+- Slate產品更新`record_slate`
+
+### 6. PDF生成同儲存
+- 根據數據生成QC標籤PDF
+- 包含內容：
+  - 公司標誌
+  - QR碼（產品代碼+棧板號）
+  - 產品代碼同描述
+  - 數量、日期、操作員/QC clock號碼
+  - 工作訂單資訊（如適用）
+  - 棧板號碼
+- 上傳PDF到Supabase Storage
+- 支援多個PDF合併
+
+### 7. 列印觸發
+- 合併所有PDF（如需要）
 - 觸發瀏覽器列印對話框
-- 使用者確認後執行實際列印
+- 用戶確認後執行列印
 
-### 7. 進度監控與錯誤處理
-- ProgressSection 和 EnhancedProgressBar 即時顯示處理狀態
-- 錯誤分級處理（Critical/High/Medium/Low）
-- 友好的錯誤訊息顯示
+### 8. 進度監控同錯誤處理
+- 即時顯示處理狀態
+- 錯誤分級處理（嚴重/高/中/低）
+- 友好錯誤消息顯示
 - 錯誤記錄到資料庫
-
-### 8. 自動保存功能（V2 新增）
-- 使用 `useAutoSaveV2` 模組自動保存表單狀態
-- 防止意外關閉導致數據丟失
-- 支援草稿恢復功能
 
 ## 技術實現
 
 ### 前端技術
-- React 組件化架構設計
-- Tailwind CSS 現代化 UI 框架
+- React組件化架構
+- TypeScript類型安全
+- Tailwind CSS現代化UI
 - 玻璃擬態設計風格
 - 響應式設計支援
-- TypeScript 類型安全
+
+### 狀態管理
+- React Hook Form表單管理
+- 模組化hooks架構
+- 自動保存功能
+- 錯誤邊界保護
 
 ### 後端整合
-- Supabase 作為後端服務
-- 資料庫操作透過 Supabase Client
-- 檔案儲存使用 Supabase Storage
-- PDF 生成透過專用 API 服務
+- Supabase作為後端服務
+- RPC函數用於原子操作
+- 即時數據驗證
+- PDF生成API服務
 
-### UI 設計特色
+### UI設計特色
 - 深藍色/深色主題
-- 動態漸層背景與網格紋理
-- 半透明背景與背景模糊效果
-- 邊框光效與懸停互動
-- 現代化按鈕設計與載入動畫
-- 清晰的視覺回饋系統
+- 動態漸變背景
+- 半透明玻璃效果
+- 邊框光效同懸停互動
+- 現代化按鈕設計
+- 清晰視覺回饋
 
-## API 端點
+## 標籤格式
 
-### PDF 生成 API
-- `app/api/print-label-pdf/`: QC 標籤 PDF 生成服務
-- 支援批量 PDF 生成
-- 自動檔案上傳與管理
+### 標準QC標籤
+- 尺寸：210mm x 145mm
+- 包含公司標誌（左上）
+- QR碼（右上）
+- 產品資訊（中間）
+- 數據表格（數量、日期、clock號碼）
+- 棧板號碼（右下）
 
-### 資料查詢 API
+### ACO特殊標籤
+- 額外顯示ACO訂單參考
+- 訂單特定要求處理
+
+### Slate特殊標籤
+- 顯示批次號碼
+- 客製化產品描述
+
+## API端點
+
+### PDF生成API
+- `/api/print-label-pdf/`: QC標籤PDF生成
+- 支援批量PDF生成
+- 自動檔案上傳管理
+
+### 數據查詢API
 - 產品代碼驗證
 - 庫存數量查詢
 - 操作員身份驗證
+- ACO訂單查詢
 
-### 自動補貨 API（V2 優化）
-- `app/api/auto-reprint-label-v2/`: 自動補貨標籤生成
-- 使用 V5 托盤號生成函數
-- 優化性能和可靠性
+### 自動補貨API
+- `/api/auto-reprint-label-v2/`: 自動補貨標籤生成
+- 使用V5棧板號生成函數
+- 優化性能同可靠性
 
-## 配置要求
+## 棧板號生成優化（V5）
 
-### 環境變數
-- `NEXT_PUBLIC_SUPABASE_URL`: Supabase 專案 URL
-- `SUPABASE_SERVICE_ROLE_KEY`: Supabase 服務角色金鑰
+### 核心功能
+- 使用`generate_atomic_pallet_numbers_v5` RPC函數
+- 支援數字排序（解決字符串排序問題）
+- 實現緩衝池機制提升性能
+- 原子性操作確保唯一性
 
-### 權限設定
-- 資料庫表讀寫權限
-- Supabase Storage bucket 存取權限
-- PDF 生成服務權限
+### 緩衝池機制
+- 預生成棧板號碼存入`pallet_number_buffer`
+- 減少實時生成延遲
+- 自動補充緩衝池
+- 防止並發衝突
 
-## 支援的產品類型
+### 自動清理
+- 使用Supabase Scheduler（pg_cron）
+- 每5分鐘自動執行清理
+- 清理規則：
+  - 刪除非今日條目
+  - 刪除已使用超過2小時條目
+  - 刪除未使用超過30分鐘條目
+  - 保持最多100個未使用條目
 
-### 正常產品
-- 標準 QC 標籤格式
-- 自動庫存扣減
-- 標準棧板號碼生成
-
-### ACO 產品
-- 包含訂單參考資訊
-- 特殊標籤格式
-- 客戶特定要求處理
-
-### Slate 產品
-- Slate 專用標籤格式
-- 特殊產品描述處理
-- 客製化標籤內容
-
-## 效能優化（V2 版本）
+## 性能優化
 
 ### 前端優化
-- 組件懶載入
-- 表單狀態優化（模組化管理）
-- 進度條效能優化
-- 錯誤邊界保護
-- 防抖和節流處理
+- 組件懶加載
+- 表單狀態模組化管理
+- 進度條性能優化
+- 防抖同節流處理
+- 虛擬列表渲染
 
 ### 後端優化
 - 批量資料庫操作
-- PDF 生成快取
+- PDF生成快取
 - 檔案上傳優化
-- 查詢效能優化
-- 托盤號碼緩衝池機制
+- 查詢性能優化
+- 連接池管理
 
-### 托盤號生成優化（V5）
-- 使用 `generate_atomic_pallet_numbers_v5` RPC 函數
-- 支援數字排序，解決字符串排序問題
-- 實現緩衝池機制提升性能
-- 自動清理過期緩衝條目
+### 緩存策略
+- 產品代碼搜尋結果緩存
+- 表單數據本地存儲
+- PDF模板緩存
+- API響應緩存
 
-## 系統維護
+## 錯誤處理機制
 
-### 托盤號碼緩衝區自動清理
-- 使用 Supabase Scheduler（pg_cron）
-- 每 5 分鐘自動執行清理
-- 清理規則：
-  - 刪除非今日的條目
-  - 刪除已使用超過 2 小時的條目
-  - 刪除未使用超過 30 分鐘的條目
-  - 保持最多 100 個未使用條目
+### 分級錯誤處理
+- **嚴重錯誤**: 系統無法繼續（資料庫連接失敗）
+- **高級錯誤**: 操作失敗（棧板號生成失敗）
+- **中級錯誤**: 部分功能受影響（PDF生成錯誤）
+- **低級錯誤**: 非關鍵問題（驗證警告）
 
-### 監控和維護
-- 定期檢查托盤號生成日誌
-- 監控緩衝區使用情況
-- 檢查清理任務執行狀態
-- 性能監控和優化
+### 錯誤恢復
+- 自動重試機制
+- 降級處理策略
+- 用戶友好提示
+- 詳細錯誤日誌
 
-## 故障排除
+## 監控同維護
 
-### 常見問題
+### 系統監控
+- 棧板號生成日誌
+- 緩衝區使用情況
+- 清理任務執行狀態
+- API性能指標
 
-#### 1. 產品代碼搜尋不穩定
+### 日常維護
+- 檢查錯誤日誌
+- 監控緩衝池狀態
+- 清理過期PDF文件
+- 更新產品數據
+
+### 故障排除
+
+#### 產品代碼搜尋問題
 - 檢查網絡連接
-- 確認產品代碼存在於數據庫
-- 查看瀏覽器控制台錯誤
+- 確認產品代碼存在
+- 查看控制台錯誤
+- 檢查API權限
 
-#### 2. 托盤號碼生成失敗
-- 檢查 RPC 函數是否正常
-- 確認數據庫權限
+#### 棧板號生成失敗
+- 檢查RPC函數狀態
+- 確認資料庫權限
 - 查看緩衝區狀態
+- 檢查序列號衝突
 
-#### 3. PDF 生成錯誤
-- 檢查 Storage bucket 權限
-- 確認 PDF API 服務正常
+#### PDF生成錯誤
+- 檢查Storage權限
+- 確認PDF API正常
 - 查看錯誤日誌
-
-#### 4. 表單數據丟失
-- 檢查自動保存功能
-- 確認本地存儲可用
-- 查看瀏覽器設置
-
-### 調試工具
-- 瀏覽器開發者工具
-- Supabase Dashboard
-- 系統日誌查詢
-- 性能分析工具
+- 驗證數據完整性
 
 ## 最佳實踐
 
@@ -250,32 +279,38 @@ useQcLabelBusiness Hook 執行以下操作：
 1. 定期檢查產品代碼準確性
 2. 確保操作員工號正確
 3. 避免頻繁重複提交
-4. 定期清理打印歷史
+4. 及時處理錯誤提示
 
-### 維護建議
-1. 每週檢查系統日誌
-2. 每月分析性能報告
-3. 定期更新產品數據
-4. 保持系統文檔更新
+### 性能建議
+1. 批量列印優於單個列印
+2. 避免高峰期大量操作
+3. 定期清理歷史數據
+4. 優化產品搜尋查詢
+
+### 安全建議
+1. 定期更新操作員權限
+2. 審核異常操作記錄
+3. 保護敏感數據
+4. 定期安全審計
 
 ## 版本歷史
 
-### V2.1 修復版本（2025-06-14）
-- 修復產品代碼搜尋無限載入問題
-- 修復時鐘號碼驗證卡住問題
-- 移除所有 simple-client 使用，統一使用標準 browser client
-- 修復表單驗證類型錯誤（`trim is not a function`）
-- 改善錯誤處理和用戶體驗
+### V2.1修復版（2025-06-14）
+- 修復產品代碼搜尋無限載入
+- 修復clock號碼驗證卡住
+- 統一使用標準browser client
+- 修復表單驗證類型錯誤
+- 改善錯誤處理同用戶體驗
 
-### V2 優化版本（2025-06）
+### V2優化版（2025-06）
 - 實現模組化架構
-- 優化托盤號生成（V5）
+- 優化棧板號生成（V5）
 - 增加自動保存功能
 - 改進錯誤處理機制
 - 實現自動清理功能
 
-### V1 初始版本
-- 基本 QC 標籤功能
-- 支援 ACO/Slate 產品
-- PDF 生成和打印
+### V1初始版
+- 基本QC標籤功能
+- 支援ACO/Slate產品
+- PDF生成同列印
 - 基礎錯誤處理

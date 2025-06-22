@@ -23,7 +23,7 @@ interface TargetData {
   }>;
 }
 
-export function TargetHitReportWidget({ widget, isEditMode }: WidgetComponentProps) {
+export const TargetHitReportWidget = React.memo(function TargetHitReportWidget({ widget, isEditMode }: WidgetComponentProps) {
   const [dateRange, setDateRange] = useState<'week' | 'month' | 'quarter'>('week');
   const [data, setData] = useState<TargetData>({
     dailyTargets: []
@@ -147,4 +147,4 @@ export function TargetHitReportWidget({ widget, isEditMode }: WidgetComponentPro
       </WidgetLayouts.FullChart>
     </BaseWidget>
   );
-}
+});

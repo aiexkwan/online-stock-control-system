@@ -4,12 +4,11 @@ import React from 'react';
 // 使用新版本的 GrnLabelFormV2 組件（使用 useReducer 統一管理狀態）
 import GrnLabelFormV2 from './components/GrnLabelFormV2';
 import FloatingInstructions from '@/components/ui/floating-instructions';
-import MotionBackground from '../components/MotionBackground';
 import GrnErrorStats from './components/ErrorStats';
 
 export default function PrintGrnLabelPage() {
   return (
-    <MotionBackground>
+    <div>
       {/* 主要內容區域 */}
       <div className="relative">
         <div className="container mx-auto px-4 py-8">
@@ -90,6 +89,6 @@ export default function PrintGrnLabelPage() {
       
       {/* 錯誤統計組件 - 僅在開發環境顯示 */}
       <GrnErrorStats />
-    </MotionBackground>
+    </div>
   );
 } 

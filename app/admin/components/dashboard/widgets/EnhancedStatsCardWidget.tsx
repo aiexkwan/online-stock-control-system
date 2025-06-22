@@ -21,7 +21,7 @@ interface StatsData {
   history?: { date: string; value: number }[];
 }
 
-export function EnhancedStatsCardWidget({ widget, isEditMode }: WidgetComponentProps) {
+export const EnhancedStatsCardWidget = React.memo(function EnhancedStatsCardWidget({ widget, isEditMode }: WidgetComponentProps) {
   const [data, setData] = useState<StatsData>({ value: 0 });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -302,4 +302,4 @@ export function EnhancedStatsCardWidget({ widget, isEditMode }: WidgetComponentP
       </CardContent>
     </Card>
   );
-}
+});

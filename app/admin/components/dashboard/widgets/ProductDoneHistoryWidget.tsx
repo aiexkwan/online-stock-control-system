@@ -23,7 +23,7 @@ interface ProductHistory {
   totalQuantity: number;
 }
 
-export function ProductDoneHistoryWidget({ widget, isEditMode }: WidgetComponentProps) {
+export const ProductDoneHistoryWidget = React.memo(function ProductDoneHistoryWidget({ widget, isEditMode }: WidgetComponentProps) {
   const [sortBy, setSortBy] = useState<'date' | 'productCode' | 'quantity'>('date');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [loading, setLoading] = useState(true);
@@ -169,4 +169,4 @@ export function ProductDoneHistoryWidget({ widget, isEditMode }: WidgetComponent
       </WidgetLayouts.FullTable>
     </BaseWidget>
   );
-}
+});

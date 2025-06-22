@@ -38,7 +38,7 @@ interface AcoOrderProgress {
   latest_update?: string;
 }
 
-export function AcoOrderProgressWidget({ widget, isEditMode }: WidgetComponentProps) {
+export const AcoOrderProgressWidget = React.memo(function AcoOrderProgressWidget({ widget, isEditMode }: WidgetComponentProps) {
   const [incompleteOrders, setIncompleteOrders] = useState<AcoOrder[]>([]);
   const [selectedOrderRef, setSelectedOrderRef] = useState<number | null>(null);
   const [orderProgress, setOrderProgress] = useState<AcoOrderProgress[]>([]);
@@ -347,4 +347,4 @@ export function AcoOrderProgressWidget({ widget, isEditMode }: WidgetComponentPr
       </CardContent>
     </WidgetCard>
   );
-}
+});

@@ -2,7 +2,6 @@
 
 import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import MotionBackground from '@/app/components/MotionBackground';
 import StockTakeNav from '../components/StockTakeNav';
 import { DocumentChartBarIcon, ArrowDownTrayIcon, CalendarIcon, ChartBarIcon, ExclamationTriangleIcon } from '@heroicons/react/24/outline';
 import { createClient } from '@/app/utils/supabase/client';
@@ -247,7 +246,7 @@ export default function StockReportPage() {
     : stockCounts;
 
   return (
-    <MotionBackground>
+    <div>
       <div className="text-white min-h-screen">
         <StockTakeNav />
         
@@ -427,6 +426,6 @@ export default function StockReportPage() {
         </div>
       </div>
       <Toaster position="top-right" />
-    </MotionBackground>
+    </div>
   );
 }

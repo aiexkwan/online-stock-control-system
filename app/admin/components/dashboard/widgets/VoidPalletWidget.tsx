@@ -37,7 +37,7 @@ interface VoidStats {
   this_month_voided: number;
 }
 
-export function VoidPalletWidget({ widget, isEditMode }: WidgetComponentProps) {
+export const VoidPalletWidget = React.memo(function VoidPalletWidget({ widget, isEditMode }: WidgetComponentProps) {
   const [stats, setStats] = useState<VoidStats>({
     total_voided: 0,
     today_voided: 0,
@@ -289,4 +289,4 @@ export function VoidPalletWidget({ widget, isEditMode }: WidgetComponentProps) {
       </WidgetCard>
     </motion.div>
   );
-}
+});

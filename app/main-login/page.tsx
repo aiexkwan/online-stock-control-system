@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { motion } from 'framer-motion';
 import SimpleLoginForm from './components/SimpleLoginForm';
 import { forceCleanupAllAuth } from './utils/cleanup-legacy-auth';
-import StarfieldBackground from '../components/StarfieldBackground';
+// Starfield background is now handled globally
 
 export default function MainLoginPage() {
   const [showConfirmation, setShowConfirmation] = useState(false);
@@ -31,13 +31,8 @@ export default function MainLoginPage() {
 
   return (
     <div className="min-h-screen relative overflow-hidden">
-      {/* Starfield Background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
-        <StarfieldBackground />
-      </div>
-
       {/* Background Gradient Overlay */}
-      <div className="absolute inset-0 bg-gradient-to-br from-blue-900/20 via-purple-900/10 to-slate-900/30" style={{ zIndex: 2 }} />
+      <div className="absolute inset-0 bg-gradient-to-br from-blue-900/20 via-purple-900/10 to-slate-900/30" />
 
       {/* Main Content */}
       <div className="relative z-10 min-h-screen flex items-center justify-center px-4">

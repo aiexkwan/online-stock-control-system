@@ -29,7 +29,7 @@ interface UpdateRecord {
   remark?: string;
 }
 
-export function DatabaseUpdateWidget({ widget, isEditMode }: WidgetComponentProps) {
+export const DatabaseUpdateWidget = React.memo(function DatabaseUpdateWidget({ widget, isEditMode }: WidgetComponentProps) {
   const [recentUpdates, setRecentUpdates] = useState<UpdateRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const supabase = createClient();
@@ -224,4 +224,4 @@ export function DatabaseUpdateWidget({ widget, isEditMode }: WidgetComponentProp
       </WidgetCard>
     </motion.div>
   );
-}
+});

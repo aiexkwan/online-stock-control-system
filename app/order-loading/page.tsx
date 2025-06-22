@@ -25,7 +25,6 @@ import {
   XMarkIcon
 } from '@heroicons/react/24/outline';
 import { loadPalletToOrder, undoLoadPallet } from '@/app/actions/orderLoadingActions';
-import MotionBackground from '../components/MotionBackground';
 import MobileOrderLoading from './components/MobileOrderLoading';
 import { VirtualizedOrderList, virtualScrollStyles } from './components/VirtualizedOrderList';
 import { useOrderDataCache, useOrderSummariesCache } from './hooks/useOrderCache';
@@ -516,7 +515,7 @@ export default function OrderLoadingPage() {
   }, []);
 
   return (
-    <MotionBackground>
+    <div>
       <div className="pt-24 pb-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Page Header */}
@@ -862,6 +861,6 @@ export default function OrderLoadingPage() {
 
       {/* Virtual Scroll Styles */}
       <style jsx global>{virtualScrollStyles}</style>
-    </MotionBackground>
+    </div>
   );
 } 

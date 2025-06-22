@@ -12,11 +12,16 @@ import { WidgetComponentProps, WidgetSize } from '@/app/types/dashboard';
 import { iconColors } from '@/app/utils/dialogStyles';
 import AskDatabaseInlineCard from '@/app/components/AskDatabaseInlineCard';
 
-export function AskDatabaseWidget({ widget, isEditMode }: WidgetComponentProps) {
-  const size = widget.config.size || WidgetSize.XLARGE;
+export const AskDatabaseWidget = React.memo(function AskDatabaseWidget({ widget, isEditMode }: WidgetComponentProps) {
+  // 獲取實際的 grid 尺寸
+  const gridProps = 'gridProps' in widget ? widget.gridProps : null;
+  const actualWidth = gridProps?.w || 6;
+  const actualHeight = gridProps?.h || 6;
+  
+  // Ask Database 需要至少 6x6 的空間
+  const hasEnoughSpace = actualWidth >= 6 && actualHeight >= 6;
 
-  // Ask Database 只支援 XLarge (6x6) size
-  if (size !== WidgetSize.XLARGE) {
+  if (!hasEnoughSpace) {
     return (
       <Card className={`h-full bg-black/30 backdrop-blur-sm border border-purple-500/30 shadow-2xl ${isEditMode ? 'border-dashed border-2 border-purple-500/50' : ''}`}>
         <CardContent className="p-6 h-full flex flex-col justify-center items-center">
@@ -25,10 +30,13 @@ export function AskDatabaseWidget({ widget, isEditMode }: WidgetComponentProps) 
           </div>
           <h3 className="text-lg font-medium text-purple-300 mb-2">Ask Database</h3>
           <p className="text-sm text-slate-400 text-center">
-            This widget requires 6×6 size to display the chat interface
+            This widget requires at least 6×6 size to display the chat interface
           </p>
           <p className="text-xs text-slate-500 mt-2">
-            Please resize to 6×6
+            Current size: {actualWidth}×{actualHeight}
+          </p>
+          <p className="text-xs text-slate-500">
+            Please resize to at least 6×6
           </p>
         </CardContent>
       </Card>
@@ -75,4 +83,4 @@ export function AskDatabaseWidget({ widget, isEditMode }: WidgetComponentProps) 
       </div>
     </div>
   );
-}
+});

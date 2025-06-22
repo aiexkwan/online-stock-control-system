@@ -155,7 +155,7 @@ function SearchResultsList({ searchQuery }: SearchResultsListProps) {
   );
 }
 
-export function ViewHistoryWidget({ widget, isEditMode }: WidgetComponentProps) {
+export const ViewHistoryWidget = React.memo(function ViewHistoryWidget({ widget, isEditMode }: WidgetComponentProps) {
   const [searchQuery, setSearchQuery] = useState('');
   
   const size = widget.config.size || WidgetSize.MEDIUM;
@@ -245,4 +245,4 @@ export function ViewHistoryWidget({ widget, isEditMode }: WidgetComponentProps) 
       </WidgetCard>
     </motion.div>
   );
-}
+});

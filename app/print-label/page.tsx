@@ -4,13 +4,12 @@ import React from 'react';
 import { PerformanceOptimizedForm } from '../components/qc-label-form/PerformanceOptimizedForm';
 import { ErrorBoundary } from '../components/qc-label-form/ErrorBoundary';
 import FloatingInstructions from '@/components/ui/floating-instructions';
-import MotionBackground from '../components/MotionBackground';
 // import ReviewTemplate from '../components/print-label-pdf/ReviewTemplate';
 // import PdfPreview from '../components/print-label-pdf/PdfPreview';
 
 export default function PrintLabelPage() {
   return (
-    <MotionBackground>
+    <div>
       {/* 主要內容區域 */}
       <div className="container mx-auto px-4 py-8">
         {/* 頁面標題卡片 */}
@@ -88,6 +87,6 @@ export default function PrintLabelPage() {
           </div>
         </div>
       </div>
-    </MotionBackground>
+    </div>
   );
 }

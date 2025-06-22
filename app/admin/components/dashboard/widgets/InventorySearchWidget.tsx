@@ -39,7 +39,7 @@ interface ChartData {
   orders: number;
 }
 
-export function InventorySearchWidget({ widget, isEditMode }: WidgetComponentProps) {
+export const InventorySearchWidget = React.memo(function InventorySearchWidget({ widget, isEditMode }: WidgetComponentProps) {
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [searchResults, setSearchResults] = useState<InventoryLocation | null>(null);
   const [loading, setLoading] = useState(false);
@@ -154,10 +154,6 @@ export function InventorySearchWidget({ widget, isEditMode }: WidgetComponentPro
         inventory: data.inventory,
         orders: data.orders
       }));
-
-      console.log('Chart data prepared:', chartDataArray);
-      console.log('Order data count:', orderData?.length || 0);
-      console.log('Date range:', { start: startDate.toISOString(), end: endDate.toISOString() });
       
       setChartData(chartDataArray);
     } catch (err) {
@@ -535,4 +531,4 @@ export function InventorySearchWidget({ widget, isEditMode }: WidgetComponentPro
       </CardContent>
     </WidgetCard>
   );
-}
+});

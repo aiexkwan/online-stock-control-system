@@ -36,15 +36,6 @@ export function useGridSystem(containerRef: React.RefObject<HTMLElement>) {
     const gridConfig = getGridConfig(screenWidth);
     const cellSize = calculateCellSize(width, height, gridConfig);
     
-    // Debug log
-    console.log('Grid calculation:', {
-      containerWidth: width,
-      containerHeight: height,
-      screenWidth,
-      gridConfig,
-      cellSize
-    });
-    
     setState({
       gridConfig,
       cellSize,

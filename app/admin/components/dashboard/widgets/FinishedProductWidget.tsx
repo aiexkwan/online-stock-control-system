@@ -15,7 +15,7 @@ import { CubeIcon } from '@heroicons/react/24/outline';
 import { WidgetComponentProps, WidgetSize } from '@/app/types/dashboard';
 import FinishedProduct from '@/app/components/PrintHistory';
 
-export function FinishedProductWidget({ widget, isEditMode }: WidgetComponentProps) {
+export const FinishedProductWidget = React.memo(function FinishedProductWidget({ widget, isEditMode }: WidgetComponentProps) {
   const size = widget.config.size || WidgetSize.SMALL;
 
   // All sizes render the same component with different display modes
@@ -26,4 +26,4 @@ export function FinishedProductWidget({ widget, isEditMode }: WidgetComponentPro
       </CardContent>
     </WidgetCard>
   );
-}
+});
