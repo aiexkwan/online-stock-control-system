@@ -1,6 +1,7 @@
 read across this project 
-re-write/update below markdown file accourding their file description
+update below markdown file accourding their file description
 if markdown not exist, help me to create
+markdown need to be written in Cantonese, with breifing explain and stated out file involved
 - fn_admin_panel.md
 - fn_ask_me_anything.md
 - fn_print_GRN_Label.md

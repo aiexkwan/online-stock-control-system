@@ -63,7 +63,7 @@ const ResponsiveBookedOutStatsWidgetFixed = memo<WidgetComponentProps>(({ widget
       default:
         return getTodayRange();
     }
-  }, []));;
+  }, []);
 
   // 載入數據
   const loadData = useCallback(async () => {

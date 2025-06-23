@@ -27,6 +27,7 @@ import {
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer 
 } from 'recharts';
 import { cn } from '@/lib/utils';
+import { ArrowTrendingUpIcon, ArrowTrendingDownIcon } from '@heroicons/react/24/solid';
 
 interface DashboardWidgetRendererProps {
   config: WidgetConfig;

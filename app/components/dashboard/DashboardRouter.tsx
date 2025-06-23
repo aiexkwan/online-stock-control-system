@@ -23,7 +23,7 @@ export const DashboardRouter: React.FC = () => {
       <div className="min-h-screen bg-slate-950 flex items-center justify-center">
         <div className="text-center">
           <h1 className="text-2xl font-bold text-white mb-4">Dashboard Not Found</h1>
-          <p className="text-gray-400">The requested dashboard theme "{theme}" does not exist.</p>
+          <p className="text-gray-400">The requested dashboard theme &quot;{theme}&quot; does not exist.</p>
         </div>
       </div>
     );

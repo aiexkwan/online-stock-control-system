@@ -46,6 +46,7 @@ const getActivityColor = (action: string) => {
 };
 
 const ResponsiveRecentActivityWidget = memo<WidgetComponentProps>(({ widget, isEditMode }) => {
+ResponsiveRecentActivityWidget.displayName = 'ResponsiveRecentActivityWidget';
   const [activities, setActivities] = useState<ActivityData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
