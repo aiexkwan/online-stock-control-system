@@ -757,7 +757,7 @@ export const AdminWidgetRenderer: React.FC<AdminWidgetRendererProps> = ({
       default:
         return (
           <div className="text-center text-gray-400">
-            <p>Widget type "{config.type}" not implemented</p>
+            <p>Widget type &quot;{config.type}&quot; not implemented</p>
           </div>
         );
     }

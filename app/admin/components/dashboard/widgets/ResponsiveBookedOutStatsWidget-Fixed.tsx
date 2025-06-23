@@ -51,6 +51,7 @@ const ResponsiveBookedOutStatsWidgetFixed = memo<WidgetComponentProps>(({ widget
 
   // 獲取時間範圍
   const getDateRangeForTimeRange = React.memo((range: TimeRange) => {
+getDateRangeForTimeRange.displayName = 'getDateRangeForTimeRange';
     switch (range) {
       case 'Today':
         return getTodayRange();
