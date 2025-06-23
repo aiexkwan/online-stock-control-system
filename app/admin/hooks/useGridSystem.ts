@@ -146,8 +146,8 @@ export function useGridSystem(containerRef: React.RefObject<HTMLElement>) {
     const gridY = Math.round((pixelY - padding) / (cellSize.cellHeight + gap));
     
     return {
-      gridX: Math.max(0, Math.min(gridX, gridConfig.maxCols - 1)),
-      gridY: Math.max(0, Math.min(gridY, gridConfig.maxRows - 1))
+      gridX: Math.max(0, Math.min(gridX, gridConfig.cols - 1)),
+      gridY: Math.max(0, Math.min(gridY, gridConfig.rows - 1))
     };
   }, [state]);
 

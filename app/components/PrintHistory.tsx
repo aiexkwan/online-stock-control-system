@@ -280,7 +280,7 @@ export default function FinishedProduct({ widgetSize = WidgetSize.MEDIUM }: Fini
   }
 
   // Medium or Large size - 顯示折線圖和產品明細 (2:1 比例)
-  if (isSizeExactly(widgetSize, WidgetSize.MEDIUM, WidgetSize.LARGE)) {
+  if (isSizeExactly(widgetSize, WidgetSize.MEDIUM) || isSizeExactly(widgetSize, WidgetSize.LARGE)) {
     return (
       <div className="h-full flex flex-col">
         {/* Header with time range dropdown */}

@@ -524,27 +524,7 @@ export async function POST(request: NextRequest) {
               recipients: emailData.recipients
             };
             
-            // 寫入記錄至 doc_upload 表（緩存版本）
-            try {
-              const { error: uploadRecordError } = await supabaseAdmin
-                .from('doc_upload')
-                .insert({
-                  doc_name: file.name,
-                  upload_by: parseInt(uploadedBy),
-                  doc_type: 'order',
-                  doc_url: storageInfo?.publicUrl || null,
-                  file_size: file.size,
-                  folder: 'orderpdf'
-                });
-                
-              if (uploadRecordError) {
-                console.error('[PDF Analysis] 寫入 doc_upload 表失敗 (cached):', uploadRecordError);
-              } else {
-                console.log('[PDF Analysis] 成功寫入 doc_upload 表 (cached)');
-              }
-            } catch (dbError) {
-              console.error('[PDF Analysis] 數據庫操作錯誤 (cached):', dbError);
-            }
+            // doc_upload 記錄已在 upload-file API 中寫入，這裡不需要重複寫入（緩存版本）
             
           } catch (emailError: any) {
             console.error('[PDF Analysis] Error sending order created email (cached):', emailError);
@@ -560,6 +540,7 @@ export async function POST(request: NextRequest) {
             message: `Successfully processed PDF (cached) and inserted ${insertResults.length} records${acoInsertResults ? ` and ${acoInsertResults.length} ACO records` : ''}`,
             recordCount: insertResults.length,
             extractedData: cachedResult.orderData, // 🔥 返回緩存的數據
+            extractedText: cachedResult.extractedText || '', // 🔥 返回緩存的原始文本
             insertedRecords: insertResults,
             acoRecords: acoInsertResults, // 🔥 返回 ACO 插入結果
             emailNotification: emailResult, // 🔥 返回郵件發送結果
@@ -715,6 +696,7 @@ export async function POST(request: NextRequest) {
     setCachedResult(fileHash, {
       orderData,
       usage: response.usage,
+      extractedText: extractedText, // 🔥 緩存處理後的文本
       originalTextLength: rawText.length, // 🔥 記錄原始文本長度
       processedTextLength: extractedText.length, // 🔥 記錄預處理後文本長度
       textReduction: textReductionPercentage // 🔥 記錄文本減少百分比
@@ -812,27 +794,7 @@ export async function POST(request: NextRequest) {
             recipients: emailData.recipients
           };
           
-          // 寫入記錄至 doc_upload 表
-          try {
-            const { error: uploadRecordError } = await supabaseAdmin
-              .from('doc_upload')
-              .insert({
-                doc_name: file.name,
-                upload_by: parseInt(uploadedBy),
-                doc_type: 'order',
-                doc_url: storageInfo?.publicUrl || null,
-                file_size: file.size,
-                folder: 'orderpdf'
-              });
-              
-            if (uploadRecordError) {
-              console.error('[PDF Analysis] 寫入 doc_upload 表失敗:', uploadRecordError);
-            } else {
-              console.log('[PDF Analysis] 成功寫入 doc_upload 表');
-            }
-          } catch (dbError) {
-            console.error('[PDF Analysis] 數據庫操作錯誤:', dbError);
-          }
+          // doc_upload 記錄已在 upload-file API 中寫入，這裡不需要重複寫入
           
         } catch (emailError: any) {
           console.error('[PDF Analysis] Error sending order created email:', emailError);
@@ -848,6 +810,7 @@ export async function POST(request: NextRequest) {
           message: `Successfully processed PDF and inserted ${insertResults.length} records${acoInsertResults ? ` and ${acoInsertResults.length} ACO records` : ''}`,
           recordCount: insertResults.length,
           extractedData: orderData, // 🔥 返回提取的數據
+          extractedText: extractedText, // 🔥 返回發送給 OpenAI 的處理後文本
           insertedRecords: insertResults,
           acoRecords: acoInsertResults, // 🔥 返回 ACO 插入結果
           emailNotification: emailResult, // 🔥 返回郵件發送結果

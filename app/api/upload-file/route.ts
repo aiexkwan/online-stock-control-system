@@ -53,11 +53,11 @@ export async function POST(request: NextRequest) {
     }
 
     // 驗證文件夾
-    const allowedFolders = ['stockPic', 'productSpec'];
+    const allowedFolders = ['stockPic', 'productSpec', 'photos', 'orderpdf'];
     if (!allowedFolders.includes(folder)) {
       console.error('[Upload File API] 無效的文件夾:', folder);
       return NextResponse.json(
-        { error: 'Invalid folder. Allowed folders: stockPic, productSpec' },
+        { error: 'Invalid folder. Allowed folders: stockPic, productSpec, photos, orderpdf' },
         { status: 400 }
       );
     }
@@ -66,7 +66,9 @@ export async function POST(request: NextRequest) {
     const fileExtension = '.' + file.name.split('.').pop()?.toLowerCase();
     const fileValidation = {
       stockPic: ['.png', '.jpeg', '.jpg'],
-      productSpec: ['.pdf', '.doc', '.docx']
+      productSpec: ['.pdf', '.doc', '.docx'],
+      photos: ['.png', '.jpeg', '.jpg', '.gif', '.webp'],
+      orderpdf: ['.pdf']
     };
 
     if (!fileValidation[folder as keyof typeof fileValidation].includes(fileExtension)) {
@@ -98,15 +100,7 @@ export async function POST(request: NextRequest) {
     const supabaseAdmin = createSupabaseAdmin();
 
     // 構建文件路徑
-    const now = new Date();
-    const day = String(now.getDate()).padStart(2, '0');
-    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-                       'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    const month = monthNames[now.getMonth()];
-    const year = now.getFullYear();
-    const datePrefix = `${day}-${month}-${year}`;
-    const fileNameWithTimestamp = `${datePrefix}_${fileName}`;
-    const filePath = `${folder}/${fileNameWithTimestamp}`;
+    const filePath = `${folder}/${fileName}`;
 
     console.log('[Upload File API] 準備上傳到路徑:', filePath);
 
@@ -125,6 +119,24 @@ export async function POST(request: NextRequest) {
 
     if (error) {
       console.error('[Upload File API] Supabase 上傳錯誤:', error);
+      
+      // 如果是檔案已存在錯誤
+      if (error.message && error.message.includes('already exists')) {
+        // 根據檔案類型提供不同的錯誤訊息
+        let errorMessage = 'File already uploaded. Please check.';
+        if (folder === 'orderpdf') {
+          errorMessage = 'Order already uploaded. Please check.';
+        } else if (folder === 'photos') {
+          errorMessage = 'Photo already uploaded. Please check.';
+        } else if (folder === 'productSpec') {
+          errorMessage = 'Product spec already uploaded. Please check.';
+        }
+        
+        return NextResponse.json(
+          { error: errorMessage },
+          { status: 409 }
+        );
+      }
       
       // 如果是 RLS 錯誤，提供更詳細的錯誤信息
       if (error.message.includes('row-level security') || error.message.includes('RLS')) {
@@ -175,10 +187,26 @@ export async function POST(request: NextRequest) {
       const uploadBy = uploadByStr ? parseInt(uploadByStr) : 1; // 轉換為整數，預設為 1
       
       // 確定文檔類型
-      const docType = folder === 'stockPic' ? 'image' : 'spec';
+      let docType: string;
+      switch (folder) {
+        case 'stockPic':
+          docType = 'image';
+          break;
+        case 'productSpec':
+          docType = 'spec';
+          break;
+        case 'photos':
+          docType = 'photo';
+          break;
+        case 'orderpdf':
+          docType = 'order';
+          break;
+        default:
+          docType = 'other';
+      }
       
       console.log('[Upload File API] 準備寫入 doc_upload 表:', {
-        doc_name: fileNameWithTimestamp,
+        doc_name: fileName,
         upload_by: uploadBy,
         doc_type: docType,
         folder: folder
@@ -188,7 +216,7 @@ export async function POST(request: NextRequest) {
       const { data: insertData, error: insertError } = await supabaseAdmin
         .from('doc_upload')
         .insert({
-          doc_name: fileNameWithTimestamp,
+          doc_name: fileName,
           upload_by: uploadBy,
           doc_type: docType,
           doc_url: urlData.publicUrl,
@@ -215,7 +243,7 @@ export async function POST(request: NextRequest) {
         path: data.path,
         fullPath: data.fullPath,
         publicUrl: urlData.publicUrl,
-        fileName: fileNameWithTimestamp,
+        fileName: fileName,
         folder: folder,
         size: file.size,
         type: file.type

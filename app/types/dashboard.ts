@@ -80,8 +80,16 @@ export interface DashboardWidget {
 }
 
 // 儀表板佈局項目
-export interface DashboardLayoutItem extends Layout {
+export interface DashboardLayoutItem {
   i: string;  // widget id
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  minW?: number;
+  minH?: number;
+  maxW?: number;
+  maxH?: number;
 }
 
 // 儀表板配置

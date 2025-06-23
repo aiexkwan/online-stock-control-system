@@ -58,11 +58,14 @@ export const StarfieldBackground: React.FC = () => {
       return;
     }
 
-    const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
-    if (!gl) {
+    const glContext = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+    if (!glContext) {
       console.error('WebGL not supported');
       return;
     }
+    
+    // Type assertion for WebGL context
+    const gl = glContext as WebGLRenderingContext;
     
     console.log('StarfieldBackground: WebGL context created');
 

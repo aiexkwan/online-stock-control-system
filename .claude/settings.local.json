@@ -72,7 +72,10 @@
       "Bash(npx playwright test:*)",
       "WebFetch(domain:21st.dev)",
       "Bash(npx shadcn@latest add:*)",
-      "Bash(npx shadcn-ui@latest add calendar:*)"
+      "Bash(npx shadcn-ui@latest add calendar:*)",
+      "WebFetch(domain:www.reactbits.dev)",
+      "Bash(npx jsrepo add:*)",
+      "WebFetch(domain:reactbits.dev)"
     ],
     "deny": []
   }

@@ -34,6 +34,9 @@ export const WidgetStyles = {
     // Document Management 類
     UPLOAD_FILES: '',
     REPORTS: '',
+    UPLOAD_ORDER_PDF: '',
+    PRODUCT_SPEC: '',
+    CUSTOM: '',
     
     // 支援小寫版本（兼容性）
     output_stats: '',
@@ -51,6 +54,9 @@ export const WidgetStyles = {
     database_update: '',
     upload_files: '',
     reports: '',
+    upload_order_pdf: '',
+    product_spec: '',
+    custom: '',
   },
   
   // 文字顏色

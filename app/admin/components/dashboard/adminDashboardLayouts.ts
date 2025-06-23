@@ -245,58 +245,53 @@ export const adminDashboardLayouts: Record<string, AdminDashboardLayout> = {
   upload: {
     theme: 'upload',
     gridTemplate: `
-      "widget2 widget2 widget2 widget3 widget3 widget3 widget4 widget4 widget1 widget1" 
-      "widget2 widget2 widget2 widget3 widget3 widget3 widget5 widget5 widget1 widget1" 
-      "widget2 widget2 widget2 widget3 widget3 widget3 widget6 widget6 widget1 widget1" 
-      "widget2 widget2 widget2 widget3 widget3 widget3 widget7 widget7 widget1 widget1"
+      "widget1 widget1 widget1 widget2 widget2 widget2 widget3 widget3 widget7 widget7" 
+      "widget1 widget1 widget1 widget2 widget2 widget2 widget4 widget4 widget7 widget7" 
+      "widget1 widget1 widget1 widget2 widget2 widget2 widget5 widget5 widget7 widget7" 
+      "widget1 widget1 widget1 widget2 widget2 widget2 widget6 widget6 widget7 widget7"
     `,
     widgets: [
       {
         type: 'history-tree',
         title: 'History Tree',
-        gridArea: 'widget1',
+        gridArea: 'widget7',
         component: 'HistoryTree'
       },
       {
-        type: 'upload-zone',
-        title: 'Upload Files',
+        type: 'orders-list',
+        title: 'Order Upload History',
+        gridArea: 'widget1',
+        component: 'OrdersListWidget'
+      },
+      {
+        type: 'other-files-list',
+        title: 'Other File Upload History',
         gridArea: 'widget2',
-        dataSource: 'doc_upload',
-        component: 'UploadZone'
+        component: 'OtherFilesListWidget'
       },
       {
-        type: 'list',
-        title: 'Recent Uploads',
+        type: 'upload-files',
+        title: 'Upload Files',
         gridArea: 'widget3',
-        dataSource: 'doc_upload'
+        component: 'UploadFilesWidget'
       },
       {
-        type: 'stats',
-        title: 'Total Files',
+        type: 'upload-orders',
+        title: 'Upload Orders',
         gridArea: 'widget4',
-        dataSource: 'upload_stats',
-        metrics: ['total_files']
+        component: 'UploadOrdersWidget'
       },
       {
-        type: 'stats',
-        title: 'Processing',
+        type: 'upload-product-spec',
+        title: 'Upload Product Spec',
         gridArea: 'widget5',
-        dataSource: 'upload_stats',
-        metrics: ['processing']
+        component: 'UploadProductSpecWidget'
       },
       {
-        type: 'stats',
-        title: 'Completed',
+        type: 'upload-photo',
+        title: 'Upload Photo',
         gridArea: 'widget6',
-        dataSource: 'upload_stats',
-        metrics: ['completed']
-      },
-      {
-        type: 'stats',
-        title: 'Failed',
-        gridArea: 'widget7',
-        dataSource: 'upload_stats',
-        metrics: ['failed']
+        component: 'UploadPhotoWidget'
       }
     ]
   },

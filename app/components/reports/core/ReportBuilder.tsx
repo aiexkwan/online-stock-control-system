@@ -135,6 +135,7 @@ export function ReportBuilder({ config, onGenerate, className }: ReportBuilderPr
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0">
                 <Calendar
+                  mode="single"
                   selected={value ? new Date(value) : undefined}
                   onSelect={(date) => handleFilterChange(filter.id, date ? format(date, 'yyyy-MM-dd') : '')}
                 />
@@ -168,6 +169,7 @@ export function ReportBuilder({ config, onGenerate, className }: ReportBuilderPr
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0">
                   <Calendar
+                    mode="single"
                     selected={startDate ? new Date(startDate) : undefined}
                     onSelect={(date) => {
                       const newStart = date ? format(date, 'yyyy-MM-dd') : '';
@@ -192,6 +194,7 @@ export function ReportBuilder({ config, onGenerate, className }: ReportBuilderPr
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0">
                   <Calendar
+                    mode="single"
                     selected={endDate ? new Date(endDate) : undefined}
                     onSelect={(date) => {
                       const newEnd = date ? format(date, 'yyyy-MM-dd') : '';

@@ -135,6 +135,15 @@ export const UploadUpdateLayout: React.FC<UploadUpdateLayoutProps> = ({
           );
         }
 
+        // For upload widgets (index 3-6), render without glassmorphism wrapper
+        if (index >= 3 && index <= 6) {
+          return (
+            <div key={`widget-${index}`} className="upload-update-item" style={style}>
+              {child}
+            </div>
+          );
+        }
+
         // Stats widgets with stronger glassmorphism effect
         return (
           <motion.div

@@ -55,6 +55,14 @@ const CHART_COLORS = [
 
 // 導入特殊組件 - 已移除舊 Dashboard 依賴
 
+// 新的上傳頁面組件 - 使用 lazy loading
+const OrdersListWidget = React.lazy(() => import('./widgets/OrdersListWidget').then(mod => ({ default: mod.OrdersListWidget })));
+const OtherFilesListWidget = React.lazy(() => import('./widgets/OtherFilesListWidget').then(mod => ({ default: mod.OtherFilesListWidget })));
+const UploadFilesWidget = React.lazy(() => import('./widgets/UploadFilesWidget').then(mod => ({ default: mod.UploadFilesWidget })));
+const UploadOrdersWidget = React.lazy(() => import('./widgets/UploadOrdersWidget').then(mod => ({ default: mod.UploadOrdersWidget })));
+const UploadProductSpecWidget = React.lazy(() => import('./widgets/UploadProductSpecWidget').then(mod => ({ default: mod.UploadProductSpecWidget })));
+const UploadPhotoWidget = React.lazy(() => import('./widgets/UploadPhotoWidget').then(mod => ({ default: mod.UploadPhotoWidget })));
+
 export const AdminWidgetRenderer: React.FC<AdminWidgetRendererProps> = ({ 
   config, 
   theme,
@@ -1037,6 +1045,73 @@ export const AdminWidgetRenderer: React.FC<AdminWidgetRendererProps> = ({
             </div>
           </div>
         );
+      // Upload page widgets
+      case 'OrdersListWidget':
+        return (
+          <Suspense fallback={<div className="h-full flex items-center justify-center"><div className="animate-pulse">Loading orders...</div></div>}>
+            <OrdersListWidget widget={{ 
+              id: 'orders-list',
+              type: 'CUSTOM' as any,
+              title: 'Orders List',
+              config: { size: 'LARGE' as any }
+            }} isEditMode={false} />
+          </Suspense>
+        );
+      case 'OtherFilesListWidget':
+        return (
+          <Suspense fallback={<div className="h-full flex items-center justify-center"><div className="animate-pulse">Loading files...</div></div>}>
+            <OtherFilesListWidget widget={{ 
+              id: 'other-files-list',
+              type: 'CUSTOM' as any,
+              title: 'Other Files',
+              config: { size: 'LARGE' as any }
+            }} isEditMode={false} />
+          </Suspense>
+        );
+      case 'UploadFilesWidget':
+        return (
+          <Suspense fallback={<div className="h-full flex items-center justify-center"><div className="animate-pulse">Loading...</div></div>}>
+            <UploadFilesWidget widget={{ 
+              id: 'upload-files',
+              type: 'UPLOAD_FILES' as any,
+              title: 'Upload Files',
+              config: { size: 'MEDIUM' as any }
+            }} isEditMode={false} />
+          </Suspense>
+        );
+      case 'UploadOrdersWidget':
+        return (
+          <Suspense fallback={<div className="h-full flex items-center justify-center"><div className="animate-pulse">Loading...</div></div>}>
+            <UploadOrdersWidget widget={{ 
+              id: 'upload-orders',
+              type: 'UPLOAD_ORDER_PDF' as any,
+              title: 'Upload Orders',
+              config: { size: 'MEDIUM' as any }
+            }} isEditMode={false} />
+          </Suspense>
+        );
+      case 'UploadProductSpecWidget':
+        return (
+          <Suspense fallback={<div className="h-full flex items-center justify-center"><div className="animate-pulse">Loading...</div></div>}>
+            <UploadProductSpecWidget widget={{ 
+              id: 'upload-product-spec',
+              type: 'PRODUCT_SPEC' as any,
+              title: 'Upload Product Spec',
+              config: { size: 'MEDIUM' as any }
+            }} isEditMode={false} />
+          </Suspense>
+        );
+      case 'UploadPhotoWidget':
+        return (
+          <Suspense fallback={<div className="h-full flex items-center justify-center"><div className="animate-pulse">Loading...</div></div>}>
+            <UploadPhotoWidget widget={{ 
+              id: 'upload-photo',
+              type: 'CUSTOM' as any,
+              title: 'Upload Photo',
+              config: { size: 'MEDIUM' as any }
+            }} isEditMode={false} />
+          </Suspense>
+        );
       default:
         return <div>Component {config.component} not found</div>;
     }
@@ -1076,7 +1151,19 @@ export const AdminWidgetRenderer: React.FC<AdminWidgetRendererProps> = ({
   };
 
   // For special components like HistoryTree, return with special handling
-  if (config.component === 'HistoryTree' || config.component === 'PipelineFlowDiagram' || config.component === 'WarehouseHeatmap' || config.component === 'UploadZone' || config.component === 'UpdateForm' || config.component === 'StockInventoryTable') {
+  const specialComponents = [
+    'HistoryTree', 'PipelineFlowDiagram', 'WarehouseHeatmap', 'UploadZone', 
+    'UpdateForm', 'StockInventoryTable', 'OrdersListWidget', 'OtherFilesListWidget'
+  ];
+  
+  // Upload widgets should be rendered without wrapper
+  const uploadComponents = ['UploadFilesWidget', 'UploadOrdersWidget', 'UploadProductSpecWidget', 'UploadPhotoWidget'];
+  
+  if (config.component && uploadComponents.includes(config.component)) {
+    return renderContent();
+  }
+  
+  if (config.component && specialComponents.includes(config.component)) {
     return (
       <div className="h-full w-full p-6">
         {renderContent()}

@@ -74,7 +74,10 @@ export const Sidebar = ({
   );
 };
 
-export const SidebarBody = (props: React.ComponentProps<typeof motion.div>) => {
+export const SidebarBody = (props: {
+  className?: string;
+  children: React.ReactNode;
+} & Omit<React.ComponentProps<typeof motion.div>, 'children'>) => {
   return (
     <>
       <DesktopSidebar {...props} />
@@ -87,7 +90,10 @@ export const DesktopSidebar = ({
   className,
   children,
   ...props
-}: React.ComponentProps<typeof motion.div>) => {
+}: {
+  className?: string;
+  children: React.ReactNode;
+} & Omit<React.ComponentProps<typeof motion.div>, 'children'>) => {
   const { open, setOpen, animate } = useSidebar();
   return (
     <motion.div

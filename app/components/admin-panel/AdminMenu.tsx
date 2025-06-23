@@ -53,33 +53,34 @@ export const adminMenuItems = [
     color: 'hover:bg-orange-900/20 hover:text-orange-400',
     category: 'System Tools'
   },
-  {
-    id: 'upload-files-only',
-    title: 'Upload Files',
-    description: 'Upload documents and images',
-    icon: DocumentTextIcon,
-    action: 'upload-files-only',
-    color: 'hover:bg-purple-900/20 hover:text-purple-400',
-    category: 'Document Upload'
-  },
-  {
-    id: 'upload-order-pdf',
-    title: 'Upload Order PDF',
-    description: 'Upload order PDF',
-    icon: DocumentTextIcon,
-    action: 'upload-order-pdf',
-    color: 'hover:bg-blue-900/20 hover:text-blue-400',
-    category: 'Document Upload'
-  },
-  {
-    id: 'product-spec-doc',
-    title: 'Product Spec Doc',
-    description: 'Upload product specification documents',
-    icon: DocumentTextIcon,
-    action: 'product-spec',
-    color: 'hover:bg-cyan-900/20 hover:text-cyan-400',
-    category: 'Document Upload'
-  },
+  // Document Upload 功能已移至 Upload 頁面
+  // {
+  //   id: 'upload-files-only',
+  //   title: 'Upload Files',
+  //   description: 'Upload documents and images',
+  //   icon: DocumentTextIcon,
+  //   action: 'upload-files-only',
+  //   color: 'hover:bg-purple-900/20 hover:text-purple-400',
+  //   category: 'Document Upload'
+  // },
+  // {
+  //   id: 'upload-order-pdf',
+  //   title: 'Upload Order PDF',
+  //   description: 'Upload order PDF',
+  //   icon: DocumentTextIcon,
+  //   action: 'upload-order-pdf',
+  //   color: 'hover:bg-blue-900/20 hover:text-blue-400',
+  //   category: 'Document Upload'
+  // },
+  // {
+  //   id: 'product-spec-doc',
+  //   title: 'Product Spec Doc',
+  //   description: 'Upload product specification documents',
+  //   icon: DocumentTextIcon,
+  //   action: 'product-spec',
+  //   color: 'hover:bg-cyan-900/20 hover:text-cyan-400',
+  //   category: 'Document Upload'
+  // },
   // Reports
   {
     id: 'void-pallet-report',

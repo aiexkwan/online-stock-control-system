@@ -39,10 +39,20 @@ export const WIDGET_SIZE_RECOMMENDATIONS: Record<WidgetType, {
     ]
   },
   
-  [WidgetType.ASK_DATABASE]: {
+  // Note: ASK_DATABASE is not in WidgetType enum - this needs to be reviewed
+  // [WidgetType.ASK_DATABASE]: {
+  //   recommended: RECOMMENDED_SIZES.SQUARE_LARGE,
+  //   minimum: { w: 6, h: 6 },
+  //   description: "Database Query Interface",
+  //   features: [
+  //     { size: { w: 6, h: 6 }, available: ['Query Input', 'Results Display', 'History'] }
+  //   ]
+  // },
+  
+  [WidgetType.DATABASE_UPDATE]: {
     recommended: RECOMMENDED_SIZES.SQUARE_LARGE,
     minimum: { w: 6, h: 6 },
-    description: "Database Query Interface",
+    description: "Database Update Interface",
     features: [
       { size: { w: 6, h: 6 }, available: ['Query Input', 'Results Display', 'History'] }
     ]
@@ -144,6 +154,179 @@ export const WIDGET_SIZE_RECOMMENDATIONS: Record<WidgetType, {
       { size: { w: 6, h: 3 }, available: ['Report List'] },
       { size: { w: 10, h: 4 }, available: ['Report List', 'Quick Preview'] },
       { size: { w: 12, h: 5 }, available: ['Report List', 'Quick Preview', 'Filter Options'] }
+    ]
+  },
+  
+  // Stats and Analytics
+  [WidgetType.STATS_CARD]: {
+    recommended: RECOMMENDED_SIZES.COMPACT,
+    minimum: { w: 3, h: 2 },
+    description: "Statistics Card",
+    features: [
+      { size: { w: 3, h: 2 }, available: ['Main Stat', 'Trend'] },
+      { size: { w: 5, h: 3 }, available: ['Main Stat', 'Trend', 'Mini Chart'] }
+    ]
+  },
+  
+  [WidgetType.ANALYTICS_CHART]: {
+    recommended: RECOMMENDED_SIZES.DETAILED,
+    minimum: { w: 5, h: 4 },
+    description: "Analytics Chart",
+    features: [
+      { size: { w: 5, h: 4 }, available: ['Basic Chart'] },
+      { size: { w: 8, h: 5 }, available: ['Detailed Chart', 'Legend', 'Controls'] },
+      { size: { w: 10, h: 6 }, available: ['Interactive Chart', 'Legend', 'Controls', 'Data Table'] }
+    ]
+  },
+  
+  [WidgetType.ANALYTICS_DASHBOARD]: {
+    recommended: RECOMMENDED_SIZES.FULL,
+    minimum: { w: 8, h: 6 },
+    description: "Analytics Dashboard",
+    features: [
+      { size: { w: 8, h: 6 }, available: ['Multiple Charts', 'Summary Stats'] },
+      { size: { w: 10, h: 6 }, available: ['Multiple Charts', 'Summary Stats', 'Filters'] },
+      { size: { w: 12, h: 8 }, available: ['Full Dashboard', 'All Features'] }
+    ]
+  },
+  
+  // Quick Actions and Controls
+  [WidgetType.QUICK_ACTIONS]: {
+    recommended: RECOMMENDED_SIZES.SQUARE_SMALL,
+    minimum: { w: 3, h: 3 },
+    description: "Quick Actions",
+    features: [
+      { size: { w: 3, h: 3 }, available: ['4 Actions'] },
+      { size: { w: 5, h: 3 }, available: ['6 Actions'] },
+      { size: { w: 5, h: 5 }, available: ['9 Actions', 'Descriptions'] }
+    ]
+  },
+  
+  // Inventory and Stock
+  [WidgetType.STOCK_SUMMARY]: {
+    recommended: RECOMMENDED_SIZES.STANDARD,
+    minimum: { w: 4, h: 3 },
+    description: "Stock Summary",
+    features: [
+      { size: { w: 4, h: 3 }, available: ['Stock Levels'] },
+      { size: { w: 5, h: 3 }, available: ['Stock Levels', 'Categories'] },
+      { size: { w: 8, h: 5 }, available: ['Stock Levels', 'Categories', 'Trend Chart'] }
+    ]
+  },
+  
+  [WidgetType.PALLET_OVERVIEW]: {
+    recommended: RECOMMENDED_SIZES.DETAILED,
+    minimum: { w: 5, h: 4 },
+    description: "Pallet Overview",
+    features: [
+      { size: { w: 5, h: 4 }, available: ['Pallet Count', 'Status'] },
+      { size: { w: 8, h: 5 }, available: ['Pallet Count', 'Status', 'Location Map'] },
+      { size: { w: 10, h: 6 }, available: ['Pallet Count', 'Status', 'Location Map', 'Details'] }
+    ]
+  },
+  
+  // Alerts and Monitoring
+  [WidgetType.ALERTS]: {
+    recommended: RECOMMENDED_SIZES.TALL,
+    minimum: { w: 3, h: 4 },
+    description: "System Alerts",
+    features: [
+      { size: { w: 3, h: 4 }, available: ['5 Alerts'] },
+      { size: { w: 4, h: 6 }, available: ['10 Alerts', 'Priority'] },
+      { size: { w: 4, h: 8 }, available: ['15 Alerts', 'Priority', 'Actions'] }
+    ]
+  },
+  
+  // Void Operations
+  [WidgetType.VOID_STATS]: {
+    recommended: RECOMMENDED_SIZES.COMPACT,
+    minimum: { w: 3, h: 2 },
+    description: "Void Statistics",
+    features: [
+      { size: { w: 3, h: 2 }, available: ['Void Count'] },
+      { size: { w: 5, h: 3 }, available: ['Void Count', 'Reasons'] },
+      { size: { w: 8, h: 5 }, available: ['Void Count', 'Reasons', 'Trend Chart'] }
+    ]
+  },
+  
+  // History and Records
+  [WidgetType.VIEW_HISTORY]: {
+    recommended: RECOMMENDED_SIZES.WIDE,
+    minimum: { w: 6, h: 4 },
+    description: "History Viewer",
+    features: [
+      { size: { w: 6, h: 4 }, available: ['Recent History'] },
+      { size: { w: 10, h: 4 }, available: ['Extended History', 'Filters'] },
+      { size: { w: 12, h: 6 }, available: ['Full History', 'Filters', 'Export'] }
+    ]
+  },
+  
+  // File Operations
+  [WidgetType.UPLOAD_FILES]: {
+    recommended: RECOMMENDED_SIZES.SQUARE_MEDIUM,
+    minimum: { w: 4, h: 4 },
+    description: "File Upload",
+    features: [
+      { size: { w: 4, h: 4 }, available: ['Upload Area'] },
+      { size: { w: 5, h: 5 }, available: ['Upload Area', 'Recent Files'] },
+      { size: { w: 6, h: 6 }, available: ['Upload Area', 'Recent Files', 'Progress'] }
+    ]
+  },
+  
+  [WidgetType.UPLOAD_ORDER_PDF]: {
+    recommended: RECOMMENDED_SIZES.STANDARD,
+    minimum: { w: 4, h: 3 },
+    description: "Order PDF Upload",
+    features: [
+      { size: { w: 4, h: 3 }, available: ['PDF Upload'] },
+      { size: { w: 5, h: 3 }, available: ['PDF Upload', 'Preview'] },
+      { size: { w: 8, h: 5 }, available: ['PDF Upload', 'Preview', 'Order Details'] }
+    ]
+  },
+  
+  // Product Information
+  [WidgetType.PRODUCT_SPEC]: {
+    recommended: RECOMMENDED_SIZES.DETAILED,
+    minimum: { w: 5, h: 4 },
+    description: "Product Specifications",
+    features: [
+      { size: { w: 5, h: 4 }, available: ['Basic Specs'] },
+      { size: { w: 8, h: 5 }, available: ['Detailed Specs', 'Images'] },
+      { size: { w: 10, h: 6 }, available: ['Full Specs', 'Images', 'Documents'] }
+    ]
+  },
+  
+  // Production Monitoring
+  [WidgetType.TODAY_PRODUCTION]: {
+    recommended: RECOMMENDED_SIZES.STANDARD,
+    minimum: { w: 4, h: 3 },
+    description: "Today's Production",
+    features: [
+      { size: { w: 4, h: 3 }, available: ['Production Count'] },
+      { size: { w: 5, h: 3 }, available: ['Production Count', 'Efficiency'] },
+      { size: { w: 8, h: 5 }, available: ['Production Count', 'Efficiency', 'Hourly Chart'] }
+    ]
+  },
+  
+  [WidgetType.MACHINE_EFFICIENCY]: {
+    recommended: RECOMMENDED_SIZES.DETAILED,
+    minimum: { w: 5, h: 4 },
+    description: "Machine Efficiency",
+    features: [
+      { size: { w: 5, h: 4 }, available: ['Efficiency Metrics'] },
+      { size: { w: 8, h: 5 }, available: ['Efficiency Metrics', 'Machine Status'] },
+      { size: { w: 10, h: 6 }, available: ['Efficiency Metrics', 'Machine Status', 'Performance Chart'] }
+    ]
+  },
+  
+  [WidgetType.TARGET_HIT_RATE]: {
+    recommended: RECOMMENDED_SIZES.SQUARE_MEDIUM,
+    minimum: { w: 4, h: 4 },
+    description: "Target Hit Rate",
+    features: [
+      { size: { w: 4, h: 4 }, available: ['Hit Rate %', 'Progress'] },
+      { size: { w: 5, h: 5 }, available: ['Hit Rate %', 'Progress', 'Target Details'] },
+      { size: { w: 6, h: 6 }, available: ['Hit Rate %', 'Progress', 'Target Details', 'History'] }
     ]
   },
   
