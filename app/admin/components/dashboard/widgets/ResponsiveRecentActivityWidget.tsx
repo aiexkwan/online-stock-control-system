@@ -452,6 +452,4 @@ const ResponsiveRecentActivityWidget = memo<WidgetComponentProps>(({ widget, isE
 
 ResponsiveRecentActivityWidget.displayName = 'ResponsiveRecentActivityWidget';
 
-ResponsiveRecentActivityWidget.displayName = 'ResponsiveRecentActivityWidget';
-
 export default ResponsiveRecentActivityWidget;
