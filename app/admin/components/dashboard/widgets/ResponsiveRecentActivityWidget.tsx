@@ -34,7 +34,9 @@ const getActivityIcon = React.memo((action: string) => {
   if (actionLower.includes('update') || actionLower.includes('edit')) return RefreshCw;
   if (actionLower.includes('scan') || actionLower.includes('check')) return Package;
   return Activity;
-});;
+});
+
+getActivityIcon.displayName = 'getActivityIcon';
 
 const getActivityColor = (action: string) => {
   const actionLower = action.toLowerCase();
