@@ -1,8 +1,14 @@
 const { createClient } = require('@supabase/supabase-js');
+require('dotenv').config();
 
-// Supabase 配置
-const supabaseUrl = 'https://bbmkuiplnzvpudszrend.supabase.co';
-const supabaseServiceRoleKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJibWt1aXBsbnp2cHVkc3pyZW5kIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0NTcxNTYwNCwiZXhwIjoyMDYxMjkxNjA0fQ.B0pQF2V0kWdrU2_2VEYXR6qxZzt2oMDvwxD7qiR3huM';
+// Supabase 配置 - 從環境變量讀取
+const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+if (!supabaseUrl || !supabaseServiceRoleKey) {
+  console.error('Missing required environment variables: SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY');
+  process.exit(1);
+}
 
 // 建立 Supabase 客戶端
 const supabase = createClient(supabaseUrl, supabaseServiceRoleKey);

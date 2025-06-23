@@ -20,7 +20,7 @@ export const HistoryTree = React.memo(function HistoryTree({ widget, isEditMode 
       animate={{ opacity: 1, y: 0 }}
       className="h-full"
     >
-      <WidgetCard size={widget.config.size} widgetType="HISTORY_TREE" isEditMode={isEditMode} className="flex flex-col">
+      <WidgetCard size={widget.config.size} widgetType="view_history" isEditMode={isEditMode} className="flex flex-col">
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center gap-2">
             <div className="w-8 h-8 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-lg flex items-center justify-center">

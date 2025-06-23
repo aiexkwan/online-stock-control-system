@@ -1,6 +1,12 @@
 import MemoryClient from 'mem0ai';
 
-const apiKey = 'm0-S0JE8FcAYEgnJrCosoLeXZOync7kPcM01kACRN7l';
+// Get API key from environment variables
+const apiKey = process.env.MEM0_API_KEY;
+if (!apiKey) {
+  console.error('MEM0_API_KEY is not set in environment variables');
+  throw new Error('MEM0_API_KEY is required');
+}
+
 const client = new MemoryClient({ apiKey });
 
 export interface MemoryMessage {

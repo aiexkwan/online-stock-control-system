@@ -1,6 +1,14 @@
 import MemoryClient from 'mem0ai';
+import dotenv from 'dotenv';
 
-const apiKey = 'm0-S0JE8FcAYEgnJrCosoLeXZOync7kPcM01kACRN7l';
+// Load environment variables
+dotenv.config();
+
+const apiKey = process.env.MEM0_API_KEY;
+if (!apiKey) {
+  throw new Error('MEM0_API_KEY is not set in environment variables');
+}
+
 const client = new MemoryClient({ apiKey: apiKey });
 
 // 使用例子：
