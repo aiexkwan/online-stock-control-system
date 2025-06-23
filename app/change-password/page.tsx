@@ -23,7 +23,7 @@ function ChangePasswordFormComponent() {
   useEffect(() => {
     if (formState.success) {
       toast.success(formState.message || 'Password updated successfully! Redirecting to dashboard...');
-      router.push('/dashboard');
+      router.push('/admin');
     } else if (formState.error) {
       toast.error(formState.error);
     }

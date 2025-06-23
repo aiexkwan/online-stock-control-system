@@ -35,9 +35,6 @@ export function createLazyWidget(
 // Lazy loaded widgets map
 export const LazyWidgets: Partial<Record<WidgetType, React.ComponentType<WidgetComponentProps>>> = {
   // Heavy widgets that benefit from lazy loading
-  [WidgetType.PRODUCTION_REPORT]: createLazyWidget(
-    () => import('./widgets/ProductionReportWidget').then(m => ({ default: m.ProductionReportWidget }))
-  ),
   
   [WidgetType.ANALYTICS_DASHBOARD]: createLazyWidget(
     () => import('./widgets/AnalyticsDashboardWidget').then(m => ({ default: m.AnalyticsDashboardWidget }))

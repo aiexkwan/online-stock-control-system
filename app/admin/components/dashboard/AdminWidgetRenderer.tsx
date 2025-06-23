@@ -53,9 +53,7 @@ const CHART_COLORS = [
   '#64748b'  // gray
 ];
 
-// 導入特殊組件
-const HistoryTree = React.lazy(() => import('@/app/components/dashboard/HistoryTree').then(m => ({ default: m.HistoryTree })));
-const WarehouseHeatmap = React.lazy(() => import('@/app/dashboard/warehouse/WarehouseDashboard').then(m => ({ default: m.WarehouseHeatmap })));
+// 導入特殊組件 - 已移除舊 Dashboard 依賴
 
 export const AdminWidgetRenderer: React.FC<AdminWidgetRendererProps> = ({ 
   config, 
@@ -97,11 +95,24 @@ export const AdminWidgetRenderer: React.FC<AdminWidgetRendererProps> = ({
           case 'production_summary':
             await loadProductionSummary(supabase, timeFrame);
             break;
+          case 'production_details':
+            await loadProductionDetails(supabase, timeFrame);
+            break;
+          case 'work_level':
+            await loadWorkLevel(supabase, timeFrame);
+            break;
           case 'data_customerorder':
             await loadCustomerOrderData(supabase);
             break;
           case 'system_status':
             await loadSystemStatus(supabase);
+            break;
+          case 'coming_soon':
+            setData({
+              value: 'N/A',
+              label: config.title,
+              icon: <ClockIcon className="w-8 h-8" />
+            });
             break;
           default:
             // 使用模擬數據
@@ -121,43 +132,114 @@ export const AdminWidgetRenderer: React.FC<AdminWidgetRendererProps> = ({
 
   // 載入 Pallet 數據
   const loadPalletData = async (supabase: any, timeFrame: TimeFrame) => {
-    const { data: palletData, count } = await supabase
-      .from('record_palletinfo')
-      .select('*', { count: 'exact' })
-      .gte('generate_time', timeFrame.start.toISOString())
-      .lte('generate_time', timeFrame.end.toISOString())
-      .order('generate_time', { ascending: false });
+    // 根據 metrics 判斷要載入什麼數據
+    const metric = config.metrics?.[0];
+    
+    if (metric === 'pallet_count') {
+      // 載入棧板數量
+      const { data: palletData, error } = await supabase
+        .from('record_palletinfo')
+        .select('plt_num')
+        .ilike('plt_remark', '%finished in production%')
+        .not('product_code', 'ilike', 'U%')
+        .gte('generate_time', timeFrame.start.toISOString())
+        .lte('generate_time', timeFrame.end.toISOString());
 
-    // 計算趨勢
-    const previousStart = new Date(timeFrame.start);
-    previousStart.setDate(previousStart.getDate() - 1);
-    const previousEnd = new Date(timeFrame.end);
-    previousEnd.setDate(previousEnd.getDate() - 1);
+      if (error) {
+        console.error('Error loading pallet count:', error);
+        setData({ value: 0, label: config.title });
+        return;
+      }
 
-    const { count: previousCount } = await supabase
-      .from('record_palletinfo')
-      .select('*', { count: 'exact', head: true })
-      .gte('generate_time', previousStart.toISOString())
-      .lte('generate_time', previousEnd.toISOString());
+      const uniquePallets = new Set(palletData?.map((p: any) => p.plt_num) || []);
+      
+      setData({
+        value: uniquePallets.size,
+        label: config.title,
+        icon: <CubeIcon className="w-8 h-8" />
+      });
+    } else if (metric === 'quantity_sum') {
+      // 載入數量總和
+      const { data: palletData, error } = await supabase
+        .from('record_palletinfo')
+        .select('product_qty')
+        .ilike('plt_remark', '%finished in production%')
+        .not('product_code', 'ilike', 'U%')
+        .gte('generate_time', timeFrame.start.toISOString())
+        .lte('generate_time', timeFrame.end.toISOString());
 
-    const trend = previousCount > 0 ? ((count - previousCount) / previousCount * 100) : 0;
+      if (error) {
+        console.error('Error loading quantity sum:', error);
+        setData({ value: 0, label: config.title });
+        return;
+      }
 
-    // 生成圖表數據
-    const chartData = generateHourlyData(palletData, 'generate_time');
+      const totalQty = palletData?.reduce((sum: number, p: any) => sum + (p.product_qty || 0), 0) || 0;
+      
+      setData({
+        value: totalQty,
+        label: config.title,
+        icon: <CubeIcon className="w-8 h-8" />
+      });
+    } else if (config.chartType === 'bar') {
+      // 載入 Top 5 產品數據
+      const { data: palletData, error } = await supabase
+        .from('record_palletinfo')
+        .select('product_code, product_qty')
+        .ilike('plt_remark', '%finished in production%')
+        .not('product_code', 'ilike', 'U%')
+        .gte('generate_time', timeFrame.start.toISOString())
+        .lte('generate_time', timeFrame.end.toISOString());
 
-    setData({
-      value: count || 0,
-      trend,
-      label: 'Total Production',
-      icon: <CubeIcon className="w-8 h-8" />,
-      chartData,
-      items: palletData?.slice(0, 5).map((p: any) => ({
-        title: `Product: ${p.product_code}`,
-        subtitle: `Pallet: ${p.plt_num}`,
-        value: `${p.product_qty} units`,
-        time: format(new Date(p.generate_time), 'HH:mm')
-      }))
-    });
+      if (error) {
+        console.error('Error loading top products:', error);
+        setData({ chartData: [] });
+        return;
+      }
+
+      // 按產品代碼分組並計算總數
+      const productTotals: Record<string, number> = {};
+      palletData?.forEach((p: any) => {
+        productTotals[p.product_code] = (productTotals[p.product_code] || 0) + (p.product_qty || 0);
+      });
+
+      // 排序並取前5
+      const chartData = Object.entries(productTotals)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 5)
+        .map(([name, value]) => ({ name, value }));
+
+      setData({ chartData });
+    } else if (config.chartType === 'donut') {
+      // 載入 Top 10 產品數據
+      const { data: palletData, error } = await supabase
+        .from('record_palletinfo')
+        .select('product_code, product_qty')
+        .ilike('plt_remark', '%finished in production%')
+        .not('product_code', 'ilike', 'U%')
+        .gte('generate_time', timeFrame.start.toISOString())
+        .lte('generate_time', timeFrame.end.toISOString());
+
+      if (error) {
+        console.error('Error loading top products:', error);
+        setData({ chartData: [] });
+        return;
+      }
+
+      // 按產品代碼分組並計算總數
+      const productTotals: Record<string, number> = {};
+      palletData?.forEach((p: any) => {
+        productTotals[p.product_code] = (productTotals[p.product_code] || 0) + (p.product_qty || 0);
+      });
+
+      // 排序並取前10
+      const chartData = Object.entries(productTotals)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 10)
+        .map(([name, value]) => ({ name, value }));
+
+      setData({ chartData });
+    }
   };
 
   // 載入庫存數據
@@ -327,6 +409,147 @@ export const AdminWidgetRenderer: React.FC<AdminWidgetRendererProps> = ({
     });
   };
 
+  // 載入生產明細數據
+  const loadProductionDetails = async (supabase: any, timeFrame: TimeFrame) => {
+    try {
+      // 先獲取符合條件的棧板資料
+      const { data: palletData, error: palletError } = await supabase
+        .from('record_palletinfo')
+        .select('plt_num, product_code, product_qty, generate_time')
+        .ilike('plt_remark', '%finished in production%')
+        .not('product_code', 'ilike', 'U%')
+        .gte('generate_time', timeFrame.start.toISOString())
+        .lte('generate_time', timeFrame.end.toISOString())
+        .order('generate_time', { ascending: false })
+        .limit(50);
+
+      if (palletError) {
+        console.error('Error loading production details:', palletError);
+        setData({ headers: ['Pallet Num', 'Product Code', 'Qty', 'Q.C. By'], rows: [] });
+        return;
+      }
+
+      // 對每個棧板查找 QC 操作員
+      const rows = [];
+      for (const pallet of palletData || []) {
+        // 查找 QC 記錄
+        const { data: historyData } = await supabase
+          .from('record_history')
+          .select('id')
+          .eq('plt_num', pallet.plt_num)
+          .eq('action', 'Finished QC')
+          .order('time', { ascending: false })
+          .limit(1);
+
+        let qcOperator = 'N/A';
+        if (historyData && historyData.length > 0 && historyData[0].id) {
+          // 查找操作員名稱
+          const { data: operatorData } = await supabase
+            .from('data_id')
+            .select('name')
+            .eq('id', historyData[0].id)
+            .single();
+          
+          if (operatorData) {
+            qcOperator = operatorData.name;
+          }
+        }
+
+        rows.push([
+          pallet.plt_num,
+          pallet.product_code,
+          pallet.product_qty.toLocaleString(),
+          qcOperator
+        ]);
+      }
+
+      setData({
+        headers: ['Pallet Num', 'Product Code', 'Qty', 'Q.C. By'],
+        rows: rows.slice(0, 20) // 限制顯示20行
+      });
+    } catch (error) {
+      console.error('Error in loadProductionDetails:', error);
+      setData({ headers: ['Pallet Num', 'Product Code', 'Qty', 'Q.C. By'], rows: [] });
+    }
+  };
+
+  // 載入員工工作量數據
+  const loadWorkLevel = async (supabase: any, timeFrame: TimeFrame) => {
+    try {
+      // 獲取 Injection 部門的員工
+      const { data: allUsers } = await supabase
+        .from('data_id')
+        .select('id, name')
+        .eq('Department', 'Injection')
+        .order('name');
+
+      if (!allUsers || allUsers.length === 0) {
+        setData({ chartData: [], legendData: [] });
+        return;
+      }
+
+      // 計算時間範圍內的日期
+      const dates: Date[] = [];
+      const currentDate = new Date(timeFrame.start);
+      while (currentDate <= timeFrame.end) {
+        dates.push(new Date(currentDate));
+        currentDate.setDate(currentDate.getDate() + 1);
+      }
+
+      // 為每個日期構建數據點
+      const chartData: any[] = [];
+      
+      for (const date of dates) {
+        const dayStart = new Date(date);
+        dayStart.setHours(0, 0, 0, 0);
+        const dayEnd = new Date(date);
+        dayEnd.setHours(23, 59, 59, 999);
+
+        // 獲取當天的工作量數據
+        const { data: dayWorkData } = await supabase
+          .from('work_level')
+          .select('id, qc, grn, move')
+          .gte('latest_update', dayStart.toISOString())
+          .lte('latest_update', dayEnd.toISOString());
+
+        // 構建當天的數據點
+        const dataPoint: any = {
+          date: format(date, 'MMM d'),
+          fullDate: date.toISOString()
+        };
+
+        // 為每個用戶計算總工作量
+        allUsers.forEach((user: any) => {
+          const userWork = dayWorkData?.find((w: any) => w.id === user.id);
+          const total = userWork ? (userWork.qc || 0) + (userWork.grn || 0) + (userWork.move || 0) : 0;
+          dataPoint[user.name] = total;
+        });
+
+        chartData.push(dataPoint);
+      }
+
+      // 準備圖例數據 - 只顯示有數據的用戶
+      const legendData = allUsers
+        .filter((user: any) => {
+          // 檢查用戶是否有任何非零數據
+          return chartData.some(point => point[user.name] > 0);
+        })
+        .map((user: any) => ({
+          value: user.name,
+          color: CHART_COLORS[allUsers.indexOf(user) % CHART_COLORS.length]
+        }));
+
+      setData({ 
+        chartData, 
+        legendData,
+        userNames: legendData.map((l: any) => l.value)
+      });
+    } catch (error) {
+      console.error('Error in loadWorkLevel:', error);
+      setData({ chartData: [], legendData: [] });
+    }
+  };
+
   // 生成每小時數據
   const generateHourlyData = (data: any[], timeField: string) => {
     const hourlyMap = new Map<number, number>();
@@ -442,35 +665,68 @@ export const AdminWidgetRenderer: React.FC<AdminWidgetRendererProps> = ({
 
     const chartData = data?.chartData || [];
     
-    let ChartComponent;
+    let ChartComponent = <div />; // Default component
     if (config.chartType === 'line') {
-      ChartComponent = (
-        <LineChart data={chartData}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
-          <XAxis dataKey="name" stroke="#94a3b8" fontSize={12} />
-          <YAxis stroke="#94a3b8" fontSize={12} />
-          <Tooltip 
-            contentStyle={{ 
-              backgroundColor: '#1e293b',
-              border: '1px solid #334155',
-              borderRadius: '8px'
-            }}
-          />
-          <Line 
-            type="monotone" 
-            dataKey="value" 
-            stroke="#3b82f6" 
-            strokeWidth={2}
-            dot={{ fill: '#3b82f6', r: 3 }}
-          />
-        </LineChart>
-      );
+      // Check if this is workload data with multiple users
+      const isWorkloadData = data?.userNames && data.userNames.length > 0;
+      
+      if (isWorkloadData) {
+        ChartComponent = (
+          <LineChart data={chartData} margin={{ top: 5, right: 5, left: 0, bottom: 5 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
+            <XAxis dataKey="date" stroke="#94a3b8" fontSize={11} />
+            <YAxis stroke="#94a3b8" fontSize={11} />
+            <Tooltip 
+              contentStyle={{ 
+                backgroundColor: '#1e293b',
+                border: '1px solid #334155',
+                borderRadius: '8px'
+              }}
+            />
+            {/* Render a line for each user */}
+            {data.userNames.map((userName: string, index: number) => (
+              <Line 
+                key={userName}
+                type="monotone" 
+                dataKey={userName} 
+                stroke={CHART_COLORS[index % CHART_COLORS.length]}
+                strokeWidth={2}
+                dot={{ r: 4 }}
+                activeDot={{ r: 6 }}
+              />
+            ))}
+          </LineChart>
+        );
+      } else {
+        // Default single line chart
+        ChartComponent = (
+          <LineChart data={chartData} margin={{ top: 5, right: 5, left: 0, bottom: 5 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
+            <XAxis dataKey="name" stroke="#94a3b8" fontSize={11} />
+            <YAxis stroke="#94a3b8" fontSize={11} />
+            <Tooltip 
+              contentStyle={{ 
+                backgroundColor: '#1e293b',
+                border: '1px solid #334155',
+                borderRadius: '8px'
+              }}
+            />
+            <Line 
+              type="monotone" 
+              dataKey="value" 
+              stroke="#3b82f6" 
+              strokeWidth={2}
+              dot={{ fill: '#3b82f6', r: 3 }}
+            />
+          </LineChart>
+        );
+      }
     } else if (config.chartType === 'bar') {
       ChartComponent = (
-        <BarChart data={chartData}>
+        <BarChart data={chartData} margin={{ top: 5, right: 5, left: 0, bottom: 5 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
-          <XAxis dataKey="name" stroke="#94a3b8" fontSize={12} />
-          <YAxis stroke="#94a3b8" fontSize={12} />
+          <XAxis dataKey="name" stroke="#94a3b8" fontSize={11} angle={-45} textAnchor="end" height={60} />
+          <YAxis stroke="#94a3b8" fontSize={11} />
           <Tooltip 
             contentStyle={{ 
               backgroundColor: '#1e293b',
@@ -482,18 +738,27 @@ export const AdminWidgetRenderer: React.FC<AdminWidgetRendererProps> = ({
         </BarChart>
       );
     } else if (config.chartType === 'pie' || config.chartType === 'donut') {
+      // Calculate percentages
+      const total = chartData.reduce((sum: number, entry: any) => sum + entry.value, 0);
+      const dataWithPercentage = chartData.map((entry: any) => ({
+        ...entry,
+        percentage: ((entry.value / total) * 100).toFixed(1)
+      }));
+
       ChartComponent = (
-        <PieChart>
+        <PieChart margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
           <Pie
-            data={chartData}
+            data={dataWithPercentage}
             cx="50%"
             cy="50%"
-            innerRadius={config.chartType === 'donut' ? 60 : 0}
-            outerRadius={80}
-            paddingAngle={5}
+            innerRadius={config.chartType === 'donut' ? 50 : 0}
+            outerRadius={90}
+            paddingAngle={2}
             dataKey="value"
+            label={(entry) => `${entry.percentage}%`}
+            labelLine={false}
           >
-            {chartData.map((entry: any, index: number) => (
+            {dataWithPercentage.map((entry: any, index: number) => (
               <Cell key={`cell-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} />
             ))}
           </Pie>
@@ -503,15 +768,19 @@ export const AdminWidgetRenderer: React.FC<AdminWidgetRendererProps> = ({
               border: '1px solid #334155',
               borderRadius: '8px'
             }}
+            formatter={(value: any, name: any, props: any) => [
+              `${value.toLocaleString()} (${props.payload.percentage}%)`,
+              props.payload.name
+            ]}
           />
         </PieChart>
       );
     } else if (config.chartType === 'area') {
       ChartComponent = (
-        <AreaChart data={chartData}>
+        <AreaChart data={chartData} margin={{ top: 5, right: 5, left: 0, bottom: 5 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
-          <XAxis dataKey="name" stroke="#94a3b8" fontSize={12} />
-          <YAxis stroke="#94a3b8" fontSize={12} />
+          <XAxis dataKey="name" stroke="#94a3b8" fontSize={11} />
+          <YAxis stroke="#94a3b8" fontSize={11} />
           <Tooltip 
             contentStyle={{ 
               backgroundColor: '#1e293b',
@@ -531,9 +800,43 @@ export const AdminWidgetRenderer: React.FC<AdminWidgetRendererProps> = ({
     }
     
     return (
-      <ResponsiveContainer width="100%" height="100%">
-        {ChartComponent}
-      </ResponsiveContainer>
+      <div className="h-full flex flex-col">
+        <ResponsiveContainer width="100%" height={data?.legendData || (config.chartType === 'donut' && chartData.length > 0) ? "85%" : "100%"}>
+          {ChartComponent}
+        </ResponsiveContainer>
+        
+        {/* Legend for workload chart */}
+        {data?.legendData && data.legendData.length > 0 && (
+          <div className="flex flex-wrap gap-2 justify-center mt-1">
+            {data.legendData.map((item: any, index: number) => (
+              <div key={item.value} className="flex items-center gap-1">
+                <div 
+                  className="w-2 h-2 rounded-full"
+                  style={{ backgroundColor: item.color }}
+                />
+                <span className="text-xs text-gray-300">{item.value}</span>
+              </div>
+            ))}
+          </div>
+        )}
+        
+        {/* Legend for donut/pie chart */}
+        {(config.chartType === 'donut' || config.chartType === 'pie') && chartData.length > 0 && (
+          <div className="flex flex-wrap gap-1 justify-center mt-1 px-1 overflow-y-auto max-h-20">
+            {chartData.slice(0, 10).map((item: any, index: number) => (
+              <div key={item.name} className="flex items-center gap-1">
+                <div 
+                  className="w-2 h-2 rounded-full flex-shrink-0"
+                  style={{ backgroundColor: CHART_COLORS[index % CHART_COLORS.length] }}
+                />
+                <span className="text-xs text-gray-300 truncate max-w-[80px]" title={item.name}>
+                  {item.name}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     );
   };
 
@@ -594,20 +897,20 @@ export const AdminWidgetRenderer: React.FC<AdminWidgetRendererProps> = ({
     return (
         <div className="overflow-x-auto h-full">
           <table className="w-full">
-            <thead>
+            <thead className="sticky top-0 bg-slate-800/90 z-10">
               <tr className="border-b border-slate-700">
                 {headers.map((header: string, index: number) => (
-                  <th key={index} className="text-left py-2 px-3 text-xs font-medium text-gray-400 uppercase">
+                  <th key={index} className="text-left py-2 px-3 text-xs font-medium text-gray-400 uppercase whitespace-nowrap">
                     {header}
                   </th>
                 ))}
               </tr>
             </thead>
             <tbody>
-              {rows?.slice(0, 10).map((row: any[], rowIndex: number) => (
+              {rows?.map((row: any[], rowIndex: number) => (
                 <tr key={rowIndex} className="border-b border-slate-700/50 hover:bg-slate-700/30">
                   {row.map((cell: any, cellIndex: number) => (
-                    <td key={cellIndex} className="py-2 px-3 text-sm text-white">
+                    <td key={cellIndex} className="py-2 px-3 text-sm text-white whitespace-nowrap">
                       {cell}
                     </td>
                   ))}
@@ -624,15 +927,19 @@ export const AdminWidgetRenderer: React.FC<AdminWidgetRendererProps> = ({
     switch (config.component) {
       case 'HistoryTree':
         return (
-          <Suspense fallback={<div className="animate-pulse h-full bg-slate-700 rounded"></div>}>
-            <HistoryTree />
-          </Suspense>
+          <div className="h-full flex flex-col items-center justify-center text-white">
+            <ClockIcon className="w-16 h-16 text-blue-400 mb-4" />
+            <h3 className="text-xl font-semibold mb-2">History Tree</h3>
+            <p className="text-sm text-gray-400">Component has been removed</p>
+          </div>
         );
       case 'WarehouseHeatmap':
         return (
-          <Suspense fallback={<div className="animate-pulse h-full bg-slate-700 rounded"></div>}>
-            <WarehouseHeatmap gridArea={config.gridArea} />
-          </Suspense>
+          <div className="h-full flex flex-col items-center justify-center text-white">
+            <ChartBarIcon className="w-16 h-16 text-blue-400 mb-4" />
+            <h3 className="text-xl font-semibold mb-2">Warehouse Heatmap</h3>
+            <p className="text-sm text-gray-400">Component has been removed</p>
+          </div>
         );
       case 'PipelineFlowDiagram':
         return (
@@ -780,8 +1087,10 @@ export const AdminWidgetRenderer: React.FC<AdminWidgetRendererProps> = ({
   // For regular widgets in custom themes, they're already wrapped by CustomThemeLayout
   const isCustomTheme = theme === 'injection' || theme === 'pipeline' || theme === 'warehouse' || theme === 'upload' || theme === 'update' || theme === 'stock-management' || theme === 'system' || theme === 'analysis';
   if (isCustomTheme) {
+    // Use less padding for chart widgets to maximize space
+    const padding = config.type === 'chart' ? 'p-3' : 'p-6';
     return (
-      <div className="h-full w-full p-6">
+      <div className={`h-full w-full ${padding}`}>
         {error ? (
           <div className="text-red-400 text-sm">Error: {error}</div>
         ) : (

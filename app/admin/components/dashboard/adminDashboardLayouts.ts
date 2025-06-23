@@ -32,65 +32,65 @@ export const adminDashboardLayouts: Record<string, AdminDashboardLayout> = {
       },
       {
         type: 'stats',
-        title: 'Total Production',
+        title: 'Today Produced (PLT)',
         gridArea: 'widget2',
         dataSource: 'record_palletinfo',
-        metrics: ['count', 'trend']
+        metrics: ['pallet_count']
       },
       {
         type: 'stats',
-        title: 'Active Machines',
+        title: 'Today Produced (QTY)',
         gridArea: 'widget3',
-        dataSource: 'production_status',
-        metrics: ['active_count']
+        dataSource: 'record_palletinfo',
+        metrics: ['quantity_sum']
       },
       {
         type: 'stats',
-        title: 'Efficiency Rate',
+        title: 'Available Soon',
         gridArea: 'widget4',
-        dataSource: 'production_metrics',
-        metrics: ['efficiency']
+        dataSource: 'coming_soon',
+        metrics: ['placeholder']
       },
       {
         type: 'stats',
-        title: 'Defect Rate',
+        title: 'Available Soon',
         gridArea: 'widget5',
-        dataSource: 'quality_control',
-        metrics: ['defect_rate']
+        dataSource: 'coming_soon',
+        metrics: ['placeholder']
       },
       {
         type: 'chart',
-        title: 'Hourly Production Trend',
+        title: 'Top 5 Products by Quantity',
         gridArea: 'widget6',
         dataSource: 'record_palletinfo',
-        chartType: 'line'
+        chartType: 'bar'
       },
       {
         type: 'chart',
-        title: 'Machine Status',
+        title: 'Top 10 Products Distribution',
         gridArea: 'widget7',
-        dataSource: 'machine_status',
+        dataSource: 'record_palletinfo',
         chartType: 'donut'
       },
       {
         type: 'stats',
-        title: 'Quality Score',
+        title: 'Available Soon',
         gridArea: 'widget8',
-        dataSource: 'quality_metrics',
-        metrics: ['quality_score']
+        dataSource: 'coming_soon',
+        metrics: ['placeholder']
       },
       {
         type: 'table',
-        title: 'Production Summary',
+        title: 'Production Details',
         gridArea: 'widget9',
-        dataSource: 'production_summary'
+        dataSource: 'production_details'
       },
       {
         type: 'chart',
-        title: 'Quality Metrics',
+        title: 'Staff Workload',
         gridArea: 'widget10',
-        dataSource: 'quality_control',
-        chartType: 'bar'
+        dataSource: 'work_level',
+        chartType: 'line'
       }
     ]
   },

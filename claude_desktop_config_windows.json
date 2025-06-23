@@ -1,0 +1,38 @@
+{
+  "mcpServers": {
+    "supabase": {
+      "command": "npx.cmd",
+      "args": [
+        "@supabase/mcp-server-supabase"
+      ],
+      "env": {
+        "SUPABASE_URL": "https://bbmkuiplnzvpudszrend.supabase.co",
+        "SUPABASE_SERVICE_ROLE_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJibWt1aXBsbnp2cHVkc3pyZW5kIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0NTcxNTYwNCwiZXhwIjoyMDYxMjkxNjA0fQ.B0pQF2V0kWdrU2_2VEYXR6qxZzt2oMDvwxD7qiR3huM"
+      }
+    },
+    "mem0": {
+      "command": "python",
+      "args": [
+        "-m", "mem0.mcp"
+      ],
+      "env": {
+        "MEM0_API_KEY": "om-lrj6iziznpqzdxruq78px2tjylo9ks4w"
+      }
+    },
+    "puppeteer": {
+      "command": "npx.cmd",
+      "args": ["puppeteer-mcp-server"],
+      "env": {
+        "PUPPETEER_HEADLESS": "true"
+      }
+    },
+    "@21st-dev/magic": {
+      "command": "npx.cmd",
+      "args": [
+        "-y",
+        "@21st-dev/magic@latest",
+        "API_KEY=\"50bcbabfee27800a8ccb64eed92797516ff32b2d0d5919a168d6e4ea4e7a6591\""
+      ]
+    }
+  }
+}

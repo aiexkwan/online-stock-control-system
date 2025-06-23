@@ -8,14 +8,15 @@
 import React from 'react';
 import { WidgetWrapper } from '../ui/WidgetWrapper';
 import { cn } from '@/lib/utils';
-import { TabType } from '../navigation/SidebarNavigation';
+// Import the correct theme type instead of defining local TabType
+import { TabTheme } from '../../config/theme';
 
 interface BaseWidgetProps {
   title?: string;
   subtitle?: string;
   children: React.ReactNode;
   headerAction?: React.ReactNode;
-  theme?: TabType;
+  theme?: TabTheme;
   className?: string;
   contentClassName?: string;
   animationDelay?: number;

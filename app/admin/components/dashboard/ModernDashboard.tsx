@@ -10,8 +10,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { WidgetSize, WidgetType } from '@/app/types/dashboard';
 import { cn } from '@/lib/utils';
 
-// Import existing navigation
-import { TabType } from '../navigation/SidebarNavigation';
+// Import existing navigation - removed old navigation dependency
+type TabType = 'production' | 'warehouse' | 'history' | 'analytics' | 'inventory' | 'update' | 'search';
 
 // Terminal widget imports
 import { ProductionReportWidget } from './widgets/ProductionReportWidget';

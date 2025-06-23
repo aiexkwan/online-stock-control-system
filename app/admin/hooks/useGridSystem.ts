@@ -4,7 +4,35 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import { getGridConfig, calculateCellSize, GridConfig } from '../config/gridConfig';
+// Grid configuration types and functions
+interface GridConfig {
+  cols: number;
+  rows: number;
+  gap: number;
+  padding: number;
+}
+
+function getGridConfig(screenWidth: number): GridConfig {
+  if (screenWidth < 768) {
+    return { cols: 4, rows: 8, gap: 8, padding: 16 };
+  } else if (screenWidth < 1024) {
+    return { cols: 8, rows: 8, gap: 12, padding: 20 };
+  } else if (screenWidth < 1440) {
+    return { cols: 12, rows: 8, gap: 16, padding: 24 };
+  }
+  return { cols: 16, rows: 8, gap: 16, padding: 24 };
+}
+
+function calculateCellSize(containerWidth: number, containerHeight: number, gridConfig: GridConfig) {
+  const { cols, rows, gap, padding } = gridConfig;
+  const availableWidth = containerWidth - (padding * 2) - (gap * (cols - 1));
+  const availableHeight = containerHeight - (padding * 2) - (gap * (rows - 1));
+  
+  return {
+    cellWidth: Math.floor(availableWidth / cols),
+    cellHeight: Math.floor(availableHeight / rows)
+  };
+}
 
 interface GridSystemState {
   gridConfig: GridConfig;
