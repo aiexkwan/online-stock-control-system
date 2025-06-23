@@ -67,7 +67,12 @@
       "WebFetch(domain:docs.browsermcp.io)",
       "WebFetch(domain:github.com)",
       "Bash(npm search:*)",
-      "Bash(curl:*)"
+      "Bash(curl:*)",
+      "Bash(npx jest:*)",
+      "Bash(npx playwright test:*)",
+      "WebFetch(domain:21st.dev)",
+      "Bash(npx shadcn@latest add:*)",
+      "Bash(npx shadcn-ui@latest add calendar:*)"
     ],
     "deny": []
   }

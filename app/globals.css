@@ -4,7 +4,23 @@
 @import './admin/styles/glowEffects.css';
 @tailwind base;
 @tailwind components;
-@tailwind utilities; 
+@tailwind utilities;
+
+/* Override calendar selected date styles for admin */
+.universal-date-picker [data-selected-single="true"],
+.universal-date-picker [data-range-start="true"],
+.universal-date-picker [data-range-end="true"],
+.universal-date-picker [data-range-middle="true"] {
+  background-color: rgba(71, 85, 105, 0.5) !important;
+  color: rgb(255, 255, 255) !important;
+}
+
+.universal-date-picker [data-selected-single="true"]:hover,
+.universal-date-picker [data-range-start="true"]:hover,
+.universal-date-picker [data-range-end="true"]:hover,
+.universal-date-picker [data-range-middle="true"]:hover {
+  background-color: rgba(71, 85, 105, 0.6) !important;
+} 
 
 :host,
 html {

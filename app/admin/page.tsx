@@ -1,18 +1,10 @@
 /**
  * Admin Panel Page
- * 使用新的 Dashboard 系統
+ * 重定向到 Injection Dashboard
  */
 
-import { AdminRefreshProvider } from './contexts/AdminRefreshContext';
-import { AdminErrorBoundary } from './components/AdminErrorBoundary';
-import { NewAdminDashboard } from './components/NewAdminDashboard';
+import { redirect } from 'next/navigation';
 
 export default function AdminPanelPage() {
-  return (
-    <AdminErrorBoundary>
-      <AdminRefreshProvider>
-        <NewAdminDashboard />
-      </AdminRefreshProvider>
-    </AdminErrorBoundary>
-  );
+  redirect('/admin/injection');
 }

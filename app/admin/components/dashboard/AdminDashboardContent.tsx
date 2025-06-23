@@ -6,7 +6,7 @@
 'use client';
 
 import React from 'react';
-import { TimeFrame } from '@/app/components/dashboard/TimeFrameSelector';
+import { TimeFrame } from '@/app/components/admin/UniversalTimeRangeSelector';
 import { adminDashboardLayouts } from './adminDashboardLayouts';
 import { AdminWidgetRenderer } from './AdminWidgetRenderer';
 import { CustomThemeLayout } from './CustomThemeLayout';

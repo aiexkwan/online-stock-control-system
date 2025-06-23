@@ -2,17 +2,92 @@
 
 import React from 'react';
 import { Toaster } from 'sonner';
+import { usePathname } from 'next/navigation';
 import AuthChecker from './AuthChecker';
 import GlobalHeader from '@/components/GlobalHeader';
 import { UniversalBackground } from './UniversalBackground';
 import { GlobalReportDialogs } from '@/app/components/reports/GlobalReportDialogs';
 import { GlobalAnalyticsDialogs } from '@/app/components/analytics/GlobalAnalyticsDialogs';
+import { Sidebar, SidebarBody, SidebarLink, SidebarLogout, SidebarHeader } from '@/components/ui/sidebar';
+import { useAuth } from '@/app/hooks/useAuth';
+
+// Icons
+import { 
+  HomeIcon,
+  PrinterIcon,
+  ChartBarIcon,
+  ClipboardDocumentCheckIcon,
+  CogIcon
+} from '@heroicons/react/24/outline';
 
 interface ClientLayoutProps {
   children: React.ReactNode;
 }
 
 export default function ClientLayout({ children }: ClientLayoutProps) {
+  const pathname = usePathname();
+  const { isAuthenticated, userRole } = useAuth();
+  
+  // Don't show sidebar on login pages and access page only
+  const isLoginPage = pathname?.startsWith('/main-login') || pathname === '/';
+  const isAccessPage = pathname === '/access';
+  const showSidebar = isAuthenticated && !isLoginPage && !isAccessPage;
+
+  // Menu items
+  const menuItems = [
+    {
+      label: 'Home',
+      href: '/home',
+      icon: <HomeIcon className="w-5 h-5" />
+    },
+    {
+      label: 'Print Labels',
+      href: '/print-label',
+      icon: <PrinterIcon className="w-5 h-5" />
+    },
+    {
+      label: 'Stock Transfer',
+      href: '/stock-transfer',
+      icon: <ChartBarIcon className="w-5 h-5" />
+    },
+    {
+      label: 'Order Loading',
+      href: '/order-loading',
+      icon: <ChartBarIcon className="w-5 h-5" />
+    },
+    {
+      label: 'Stock Take',
+      href: '/stock-take/cycle-count',
+      icon: <ClipboardDocumentCheckIcon className="w-5 h-5" />
+    },
+    {
+      label: 'Admin Panel',
+      href: '/admin',
+      icon: <CogIcon className="w-5 h-5" />
+    }
+  ];
+
+  // Filter menu items based on user role
+  const getFilteredMenuItems = () => {
+    if (!userRole || userRole.type === 'admin') {
+      return menuItems; // Admin sees all menu items
+    }
+    
+    // Filter based on allowed paths
+    const filteredItems = menuItems.filter(item => {
+      // Special handling for Order Loading
+      if (item.href === '/order-loading') {
+        // This will be handled by user email check in the future
+        return true;
+      }
+      return userRole.allowedPaths.includes(item.href);
+    });
+    
+    return filteredItems;
+  };
+
+  const filteredMenuItems = getFilteredMenuItems();
+
   return (
     <>
       {/* Toast notifications */}
@@ -32,13 +107,49 @@ export default function ClientLayout({ children }: ClientLayoutProps) {
       
       {/* Authentication checker */}
       <AuthChecker>
-        {/* Global header */}
+        {/* Global header - now empty */}
         <GlobalHeader />
         
-        {/* Main content with universal background */}
-        <UniversalBackground className="text-white">
-          {children}
-        </UniversalBackground>
+        {/* Main layout */}
+        {showSidebar ? (
+          <div className="flex h-screen overflow-hidden">
+            {/* Sidebar */}
+            <Sidebar animate={true}>
+              <SidebarBody className="justify-between">
+                <div className="flex flex-col gap-2">
+                  {/* Logo/Title - Only show when expanded */}
+                  <SidebarHeader />
+                  
+                  {/* Navigation Links */}
+                  {filteredMenuItems.map((item) => (
+                    <SidebarLink
+                      key={item.href}
+                      link={item}
+                      isActive={pathname === item.href}
+                    />
+                  ))}
+                </div>
+                
+                {/* Logout at bottom */}
+                <div className="mt-auto">
+                  <SidebarLogout />
+                </div>
+              </SidebarBody>
+            </Sidebar>
+            
+            {/* Main content */}
+            <div className="flex-1 overflow-auto">
+              <UniversalBackground className="text-white min-h-full">
+                {children}
+              </UniversalBackground>
+            </div>
+          </div>
+        ) : (
+          /* For pages without sidebar, render content normally */
+          <UniversalBackground className="text-white">
+            {children}
+          </UniversalBackground>
+        )}
         
         {/* Global report dialogs */}
         <GlobalReportDialogs />

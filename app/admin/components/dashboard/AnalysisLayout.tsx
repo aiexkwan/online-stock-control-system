@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { TimeFrame } from '@/app/components/dashboard/TimeFrameSelector';
+import { TimeFrame } from '@/app/components/admin/UniversalTimeRangeSelector';
 import { motion } from 'framer-motion';
 
 interface AnalysisLayoutProps {

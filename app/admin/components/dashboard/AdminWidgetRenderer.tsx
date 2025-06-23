@@ -8,7 +8,7 @@
 import React, { useState, useEffect, Suspense } from 'react';
 import { motion } from 'framer-motion';
 import { AdminWidgetConfig } from './adminDashboardLayouts';
-import { TimeFrame } from '@/app/components/dashboard/TimeFrameSelector';
+import { TimeFrame } from '@/app/components/admin/UniversalTimeRangeSelector';
 import { createClient } from '@/lib/supabase';
 import { useAdminRefresh } from '@/app/admin/contexts/AdminRefreshContext';
 import { 

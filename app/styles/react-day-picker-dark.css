@@ -1,11 +1,11 @@
 /* Custom styles for react-day-picker in dark theme */
 .rdp {
-  --rdp-color-selected: rgb(59 130 246);
-  --rdp-color-selected-hover: rgb(59 130 246 / 0.8);
+  --rdp-color-selected: rgb(156 163 175 / 0.2);
+  --rdp-color-selected-hover: rgb(156 163 175 / 0.3);
   --rdp-background-color: rgb(15 23 42 / 0.5);
   --rdp-background-color-hover: rgb(51 65 85 / 0.5);
-  --rdp-outline: 2px solid rgb(59 130 246 / 0.5);
-  --rdp-outline-selected: 2px solid rgb(59 130 246);
+  --rdp-outline: 2px solid rgb(156 163 175 / 0.3);
+  --rdp-outline-selected: 2px solid rgb(156 163 175 / 0.4);
 }
 
 .rdp-day {
@@ -20,21 +20,22 @@
 
 .rdp-day_selected {
   background-color: var(--rdp-color-selected) !important;
-  color: white !important;
+  color: rgb(229 231 235) !important;
 }
 
 .rdp-day_in_range:not(.rdp-day_selected) {
-  background-color: rgb(59 130 246 / 0.1);
-  color: rgb(219 234 254);
+  background-color: rgb(156 163 175 / 0.15);
+  color: rgb(229 231 235);
 }
 
 .rdp-day_today {
   font-weight: bold;
-  color: rgb(59 130 246);
+  color: rgb(156 163 175);
+  text-decoration: underline;
 }
 
 .rdp-day_today.rdp-day_selected {
-  color: white !important;
+  color: rgb(229 231 235) !important;
 }
 
 .rdp-day_outside {

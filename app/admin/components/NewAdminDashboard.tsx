@@ -14,31 +14,99 @@ import {
   ChevronDownIcon,
   Bars3Icon,
   XMarkIcon,
-  CalendarIcon,
   ArrowPathIcon
 } from '@heroicons/react/24/outline';
 import { useAuth } from '@/app/hooks/useAuth';
+import { format, startOfDay, endOfDay } from 'date-fns';
 // Universal background is now handled at the app level
 import { useDialog, useReprintDialog } from '@/app/contexts/DialogContext';
 import { DialogManager } from '@/app/components/admin-panel/DialogManager';
 import { adminMenuItems } from '@/app/components/admin-panel/AdminMenu';
 import { useVoidPallet } from '@/app/void-pallet/hooks/useVoidPallet';
-import { TimeFrameSelectorEnhanced as TimeFrameSelector, TimeFrame } from '@/app/components/dashboard/TimeFrameSelectorEnhanced';
+import { UniversalTimeRangeSelector, TimeFrame } from '@/app/components/admin/UniversalTimeRangeSelector';
 import { AdminDashboardContent } from './dashboard/AdminDashboardContent';
 import { LoadingScreen, FadeInContainer } from './LoadingScreen';
 import { cn } from '@/lib/utils';
+import { MenuBar } from '@/components/ui/glow-menu';
+import UniversalChatbot from '@/app/components/admin/UniversalChatbot';
+import { 
+  HomeIcon as Home,
+  BeakerIcon as Beaker,
+  CubeIcon as Cube,
+  BuildingStorefrontIcon as Building,
+  CloudArrowUpIcon as Cloud,
+  PencilSquareIcon as Pencil,
+  ArchiveBoxIcon as Archive,
+  CogIcon as Cog,
+  ChartBarIcon as Chart
+} from '@heroicons/react/24/outline';
 
-// Dashboard themes
+// Dashboard themes with glow menu configuration
 const DASHBOARD_THEMES = [
-  { id: 'overview', label: 'Overview', path: '/admin' },
-  { id: 'injection', label: 'Injection', path: '/admin/injection' },
-  { id: 'pipeline', label: 'Pipeline', path: '/admin/pipeline' },
-  { id: 'warehouse', label: 'Warehouse', path: '/admin/warehouse' },
-  { id: 'upload', label: 'Upload', path: '/admin/upload' },
-  { id: 'update', label: 'Update', path: '/admin/update' },
-  { id: 'stock-management', label: 'Stock Mgmt', path: '/admin/stock-management' },
-  { id: 'system', label: 'System', path: '/admin/system' },
-  { id: 'analysis', label: 'Analysis', path: '/admin/analysis' }
+  { 
+    id: 'injection', 
+    label: 'Injection', 
+    path: '/admin/injection',
+    icon: Beaker,
+    gradient: "radial-gradient(circle, rgba(168,85,247,0.15) 0%, rgba(147,51,234,0.06) 50%, rgba(126,34,206,0) 100%)",
+    iconColor: "text-purple-500"
+  },
+  { 
+    id: 'pipeline', 
+    label: 'Pipeline', 
+    path: '/admin/pipeline',
+    icon: Cube,
+    gradient: "radial-gradient(circle, rgba(34,197,94,0.15) 0%, rgba(22,163,74,0.06) 50%, rgba(21,128,61,0) 100%)",
+    iconColor: "text-green-500"
+  },
+  { 
+    id: 'warehouse', 
+    label: 'Warehouse', 
+    path: '/admin/warehouse',
+    icon: Building,
+    gradient: "radial-gradient(circle, rgba(249,115,22,0.15) 0%, rgba(234,88,12,0.06) 50%, rgba(194,65,12,0) 100%)",
+    iconColor: "text-orange-500"
+  },
+  { 
+    id: 'upload', 
+    label: 'Upload', 
+    path: '/admin/upload',
+    icon: Cloud,
+    gradient: "radial-gradient(circle, rgba(6,182,212,0.15) 0%, rgba(8,145,178,0.06) 50%, rgba(14,116,144,0) 100%)",
+    iconColor: "text-cyan-500"
+  },
+  { 
+    id: 'update', 
+    label: 'Update', 
+    path: '/admin/update',
+    icon: Pencil,
+    gradient: "radial-gradient(circle, rgba(236,72,153,0.15) 0%, rgba(219,39,119,0.06) 50%, rgba(190,24,93,0) 100%)",
+    iconColor: "text-pink-500"
+  },
+  { 
+    id: 'stock-management', 
+    label: 'Stock Mgmt', 
+    path: '/admin/stock-management',
+    icon: Archive,
+    gradient: "radial-gradient(circle, rgba(251,191,36,0.15) 0%, rgba(245,158,11,0.06) 50%, rgba(217,119,6,0) 100%)",
+    iconColor: "text-amber-500"
+  },
+  { 
+    id: 'system', 
+    label: 'System', 
+    path: '/admin/system',
+    icon: Cog,
+    gradient: "radial-gradient(circle, rgba(107,114,128,0.15) 0%, rgba(75,85,99,0.06) 50%, rgba(55,65,81,0) 100%)",
+    iconColor: "text-gray-500"
+  },
+  { 
+    id: 'analysis', 
+    label: 'Analysis', 
+    path: '/admin/analysis',
+    icon: Chart,
+    gradient: "radial-gradient(circle, rgba(239,68,68,0.15) 0%, rgba(220,38,38,0.06) 50%, rgba(185,28,28,0) 100%)",
+    iconColor: "text-red-500"
+  }
 ];
 
 // Group menu items by category
@@ -55,18 +123,17 @@ export function NewAdminDashboard() {
   const pathname = usePathname();
   const { isAuthenticated, loading } = useAuth();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const [isHistoryVisible, setIsHistoryVisible] = useState(true);
   const [isDashboardLoading, setIsDashboardLoading] = useState(true);
   const [timeFrame, setTimeFrame] = useState<TimeFrame>({
-    label: 'Today',
-    value: 'today',
-    start: new Date(),
-    end: new Date()
+    label: format(new Date(), 'MMM d, yyyy'),
+    value: 'custom',
+    start: startOfDay(new Date()),
+    end: endOfDay(new Date())
   });
   
   // 從路徑判斷當前主題
   const pathParts = pathname.split('/').filter(Boolean);
-  const currentTheme = pathParts.length > 1 ? pathParts[pathParts.length - 1] : 'overview';
+  const currentTheme = pathParts.length > 1 ? pathParts[pathParts.length - 1] : 'injection';
   
   // Universal background is handled at the app level
 
@@ -208,24 +275,21 @@ export function NewAdminDashboard() {
       <div className="min-h-screen">
         <div className="text-white min-h-screen flex flex-col overflow-x-hidden relative z-10">
           {/* Admin Panel Navigation Bar */}
-        <div className="bg-slate-800/40 backdrop-blur-xl border-y border-slate-700/50 fixed top-[96px] left-0 right-0 z-30">
+        <div className="sticky top-0 z-30">
           <div className="flex items-center justify-between h-16 px-4 sm:px-6 lg:px-8">
-            {/* Left side - Dashboard Theme Tabs */}
-            <div className="hidden lg:flex items-center gap-1">
-              {DASHBOARD_THEMES.map((theme) => (
-                <button
-                  key={theme.id}
-                  onClick={() => router.push(theme.path)}
-                  className={cn(
-                    "px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200",
-                    currentTheme === theme.id
-                      ? "bg-blue-600 text-white"
-                      : "bg-slate-700/50 text-gray-300 hover:bg-slate-600/50 hover:text-white"
-                  )}
-                >
-                  {theme.label}
-                </button>
-              ))}
+            {/* Left side - Dashboard Theme Tabs with Glow Effect */}
+            <div className="hidden lg:flex items-center">
+              <MenuBar
+                items={DASHBOARD_THEMES.map(theme => ({
+                  ...theme,
+                  href: theme.path
+                }))}
+                activeItem={DASHBOARD_THEMES.find(t => t.id === currentTheme)?.label || 'Injection'}
+                onItemClick={(label) => {
+                  const theme = DASHBOARD_THEMES.find(t => t.label === label);
+                  if (theme) router.push(theme.path);
+                }}
+              />
             </div>
 
             {/* Center - Navigation Menu */}
@@ -269,7 +333,7 @@ export function NewAdminDashboard() {
 
             {/* Right side - Mobile menu button */}
             <div className="flex items-center gap-2">
-              {/* Mobile Dashboard Theme Selector */}
+              {/* Mobile Dashboard Theme Selector - Keep simple dropdown for mobile */}
               <div className="lg:hidden">
                 <select 
                   value={currentTheme}
@@ -351,29 +415,14 @@ export function NewAdminDashboard() {
         </div>
 
         {/* Dashboard Content Area */}
-        <div className="flex-1 pt-[160px] pb-8">
+        <div className="flex-1 pb-8">
           <div className="mx-auto max-w-[1920px] h-full px-4 sm:px-6 lg:px-8">
             {/* 時間選擇器 */}
             <div className="mb-6 flex items-center justify-end">
-              <div className="flex items-center gap-4">
-                <TimeFrameSelector 
-                  value={timeFrame.value}
-                  onChange={setTimeFrame}
-                />
-                
-                <button
-                  onClick={() => setIsHistoryVisible(!isHistoryVisible)}
-                  className={cn(
-                    "p-2 rounded-lg transition-colors",
-                    isHistoryVisible 
-                      ? "bg-blue-600 text-white" 
-                      : "bg-slate-700/50 text-gray-300 hover:bg-slate-600/50"
-                  )}
-                  title="Toggle History"
-                >
-                  <CalendarIcon className="w-5 h-5" />
-                </button>
-              </div>
+              <UniversalTimeRangeSelector 
+                value={timeFrame}
+                onChange={setTimeFrame}
+              />
             </div>
 
             {/* 主內容區域 */}
@@ -404,6 +453,9 @@ export function NewAdminDashboard() {
         onReprintCancel={() => {}}
         voidState={voidState}
       />
+      
+      {/* Universal Chatbot */}
+      <UniversalChatbot />
       </div>
     </LoadingScreen>
   );

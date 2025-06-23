@@ -21,7 +21,7 @@ export const LoadingScreen: React.FC<LoadingScreenProps> = ({ isLoading, childre
       // Delay content reveal for smooth transition
       const timer = setTimeout(() => {
         setShowContent(true);
-      }, 300);
+      }, 150);
       return () => clearTimeout(timer);
     } else {
       setShowContent(false);
@@ -37,7 +37,7 @@ export const LoadingScreen: React.FC<LoadingScreenProps> = ({ isLoading, childre
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.5, ease: "easeInOut" }}
+            transition={{ duration: 0.2, ease: "easeInOut" }}
             className="fixed inset-0 z-50 flex items-center justify-center"
           >
             {/* Semi-transparent overlay for better readability */}
@@ -49,7 +49,7 @@ export const LoadingScreen: React.FC<LoadingScreenProps> = ({ isLoading, childre
               <motion.div
                 initial={{ scale: 0.8, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
-                transition={{ delay: 0.2, duration: 0.5 }}
+                transition={{ delay: 0.1, duration: 0.2 }}
                 className="mb-8"
               >
                 <div className="w-24 h-24 mx-auto mb-4">
@@ -67,7 +67,7 @@ export const LoadingScreen: React.FC<LoadingScreenProps> = ({ isLoading, childre
                       fill="none"
                       initial={{ pathLength: 0 }}
                       animate={{ pathLength: 1 }}
-                      transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+                      transition={{ duration: 0.5, repeat: Infinity, ease: "linear" }}
                     />
                     <defs>
                       <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -84,7 +84,7 @@ export const LoadingScreen: React.FC<LoadingScreenProps> = ({ isLoading, childre
               <motion.h2
                 initial={{ y: 20, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
-                transition={{ delay: 0.4, duration: 0.5 }}
+                transition={{ delay: 0.2, duration: 0.2 }}
                 className="text-2xl font-semibold text-white mb-4"
               >
                 Loading Dashboard
@@ -94,7 +94,7 @@ export const LoadingScreen: React.FC<LoadingScreenProps> = ({ isLoading, childre
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                transition={{ delay: 0.6, duration: 0.5 }}
+                transition={{ delay: 0.3, duration: 0.2 }}
                 className="flex justify-center gap-2"
               >
                 {[0, 1, 2].map((index) => (
@@ -106,9 +106,9 @@ export const LoadingScreen: React.FC<LoadingScreenProps> = ({ isLoading, childre
                       opacity: [0.5, 1, 0.5],
                     }}
                     transition={{
-                      duration: 1.5,
+                      duration: 0.5,
                       repeat: Infinity,
-                      delay: index * 0.2,
+                      delay: index * 0.1,
                     }}
                   />
                 ))}
@@ -118,7 +118,7 @@ export const LoadingScreen: React.FC<LoadingScreenProps> = ({ isLoading, childre
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                transition={{ delay: 0.8, duration: 0.5 }}
+                transition={{ delay: 0.4, duration: 0.1 }}
                 className="mt-8"
               >
                 <LoadingMessages />
@@ -135,7 +135,7 @@ export const LoadingScreen: React.FC<LoadingScreenProps> = ({ isLoading, childre
             key="content"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ duration: 0.6, ease: "easeOut" }}
+            transition={{ duration: 0.3, ease: "easeOut" }}
           >
             {children}
           </motion.div>
@@ -160,7 +160,7 @@ const LoadingMessages: React.FC = () => {
   useEffect(() => {
     const interval = setInterval(() => {
       setCurrentMessage((prev) => (prev + 1) % messages.length);
-    }, 2000);
+    }, 500);
 
     return () => clearInterval(interval);
   }, [messages.length]);
@@ -186,7 +186,7 @@ export const SkeletonCard: React.FC<{ className?: string }> = ({ className = "" 
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      transition={{ duration: 0.5 }}
+      transition={{ duration: 0.2 }}
       className={`${className} animate-pulse`}
     >
       <div className="bg-slate-800/50 rounded-lg p-6 h-full">
@@ -209,7 +209,7 @@ export const FadeInContainer: React.FC<{
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ 
-        duration: 0.6, 
+        duration: 0.3, 
         delay,
         ease: [0.25, 0.1, 0.25, 1] // Custom easing
       }}

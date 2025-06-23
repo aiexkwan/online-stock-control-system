@@ -60,18 +60,6 @@ export const LazyWidgets: Partial<Record<WidgetType, React.ComponentType<WidgetC
     () => import('./widgets/ProductMixChartWidget').then(m => ({ default: m.ProductMixChartWidget }))
   ),
   
-  // Database-heavy widgets
-  [WidgetType.ASK_DATABASE]: createLazyWidget(
-    () => import('./widgets/AskDatabaseWidget').then(m => ({ default: m.AskDatabaseWidget })),
-    () => (
-      <div className="h-full w-full p-4 flex items-center justify-center">
-        <div className="text-center">
-          <Skeleton className="h-12 w-12 rounded-xl bg-purple-700/20 mx-auto mb-3" />
-          <Skeleton className="h-4 w-32 bg-slate-700 mx-auto" />
-        </div>
-      </div>
-    )
-  ),
 };
 
 // Helper to check if widget should be lazy loaded

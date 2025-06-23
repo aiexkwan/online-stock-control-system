@@ -10,7 +10,6 @@ export enum WidgetType {
   QUICK_ACTIONS = 'quick_actions',
   STOCK_SUMMARY = 'stock_summary',
   ALERTS = 'alerts',
-  ASK_DATABASE = 'ask_database',
   OUTPUT_STATS = 'output_stats',
   BOOKED_OUT_STATS = 'booked_out_stats',
   PRODUCT_MIX_CHART = 'product_mix_chart',
