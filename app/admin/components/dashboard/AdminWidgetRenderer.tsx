@@ -442,93 +442,98 @@ export const AdminWidgetRenderer: React.FC<AdminWidgetRendererProps> = ({
 
     const chartData = data?.chartData || [];
     
+    let ChartComponent;
+    if (config.chartType === 'line') {
+      ChartComponent = (
+        <LineChart data={chartData}>
+          <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
+          <XAxis dataKey="name" stroke="#94a3b8" fontSize={12} />
+          <YAxis stroke="#94a3b8" fontSize={12} />
+          <Tooltip 
+            contentStyle={{ 
+              backgroundColor: '#1e293b',
+              border: '1px solid #334155',
+              borderRadius: '8px'
+            }}
+          />
+          <Line 
+            type="monotone" 
+            dataKey="value" 
+            stroke="#3b82f6" 
+            strokeWidth={2}
+            dot={{ fill: '#3b82f6', r: 3 }}
+          />
+        </LineChart>
+      );
+    } else if (config.chartType === 'bar') {
+      ChartComponent = (
+        <BarChart data={chartData}>
+          <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
+          <XAxis dataKey="name" stroke="#94a3b8" fontSize={12} />
+          <YAxis stroke="#94a3b8" fontSize={12} />
+          <Tooltip 
+            contentStyle={{ 
+              backgroundColor: '#1e293b',
+              border: '1px solid #334155',
+              borderRadius: '8px'
+            }}
+          />
+          <Bar dataKey="value" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+        </BarChart>
+      );
+    } else if (config.chartType === 'pie' || config.chartType === 'donut') {
+      ChartComponent = (
+        <PieChart>
+          <Pie
+            data={chartData}
+            cx="50%"
+            cy="50%"
+            innerRadius={config.chartType === 'donut' ? 60 : 0}
+            outerRadius={80}
+            paddingAngle={5}
+            dataKey="value"
+          >
+            {chartData.map((entry: any, index: number) => (
+              <Cell key={`cell-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} />
+            ))}
+          </Pie>
+          <Tooltip 
+            contentStyle={{ 
+              backgroundColor: '#1e293b',
+              border: '1px solid #334155',
+              borderRadius: '8px'
+            }}
+          />
+        </PieChart>
+      );
+    } else if (config.chartType === 'area') {
+      ChartComponent = (
+        <AreaChart data={chartData}>
+          <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
+          <XAxis dataKey="name" stroke="#94a3b8" fontSize={12} />
+          <YAxis stroke="#94a3b8" fontSize={12} />
+          <Tooltip 
+            contentStyle={{ 
+              backgroundColor: '#1e293b',
+              border: '1px solid #334155',
+              borderRadius: '8px'
+            }}
+          />
+          <Area 
+            type="monotone" 
+            dataKey="value" 
+            stroke="#3b82f6" 
+            fill="#3b82f6" 
+            fillOpacity={0.3}
+          />
+        </AreaChart>
+      );
+    }
+    
     return (
       <ResponsiveContainer width="100%" height="100%">
-          {config.chartType === 'line' && (
-            <LineChart data={chartData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
-              <XAxis dataKey="name" stroke="#94a3b8" fontSize={12} />
-              <YAxis stroke="#94a3b8" fontSize={12} />
-              <Tooltip 
-                contentStyle={{ 
-                  backgroundColor: '#1e293b',
-                  border: '1px solid #334155',
-                  borderRadius: '8px'
-                }}
-              />
-              <Line 
-                type="monotone" 
-                dataKey="value" 
-                stroke="#3b82f6" 
-                strokeWidth={2}
-                dot={{ fill: '#3b82f6', r: 3 }}
-              />
-            </LineChart>
-          )}
-          
-          {config.chartType === 'bar' && (
-            <BarChart data={chartData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
-              <XAxis dataKey="name" stroke="#94a3b8" fontSize={12} />
-              <YAxis stroke="#94a3b8" fontSize={12} />
-              <Tooltip 
-                contentStyle={{ 
-                  backgroundColor: '#1e293b',
-                  border: '1px solid #334155',
-                  borderRadius: '8px'
-                }}
-              />
-              <Bar dataKey="value" fill="#3b82f6" radius={[4, 4, 0, 0]} />
-            </BarChart>
-          )}
-          
-          {(config.chartType === 'pie' || config.chartType === 'donut') && (
-            <PieChart>
-              <Pie
-                data={chartData}
-                cx="50%"
-                cy="50%"
-                innerRadius={config.chartType === 'donut' ? 60 : 0}
-                outerRadius={80}
-                paddingAngle={5}
-                dataKey="value"
-              >
-                {chartData.map((entry: any, index: number) => (
-                  <Cell key={`cell-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} />
-                ))}
-              </Pie>
-              <Tooltip 
-                contentStyle={{ 
-                  backgroundColor: '#1e293b',
-                  border: '1px solid #334155',
-                  borderRadius: '8px'
-                }}
-              />
-            </PieChart>
-          )}
-          
-          {config.chartType === 'area' && (
-            <AreaChart data={chartData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
-              <XAxis dataKey="name" stroke="#94a3b8" fontSize={12} />
-              <YAxis stroke="#94a3b8" fontSize={12} />
-              <Tooltip 
-                contentStyle={{ 
-                  backgroundColor: '#1e293b',
-                  border: '1px solid #334155',
-                  borderRadius: '8px'
-                }}
-              />
-              <Area 
-                type="monotone" 
-                dataKey="value" 
-                stroke="#3b82f6" 
-                fill="#3b82f6" 
-                fillOpacity={0.3}
-              />
-            </AreaChart>
-          )}
-        </ResponsiveContainer>
+        {ChartComponent}
+      </ResponsiveContainer>
     );
   };
 
