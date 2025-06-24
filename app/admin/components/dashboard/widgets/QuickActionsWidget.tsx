@@ -70,7 +70,7 @@ export const QuickActionsWidget = React.memo(function QuickActionsWidget({ widge
     },
     {
       id: 'admin',
-      label: 'Admin Panel',
+      label: 'Admin Dashboard',
       icon: <Users className="h-5 w-5" />,
       href: '/admin',
       color: iconColors.red

@@ -61,7 +61,7 @@ export default function ClientLayout({ children }: ClientLayoutProps) {
       icon: <ClipboardDocumentCheckIcon className="w-5 h-5" />
     },
     {
-      label: 'Admin Panel',
+      label: 'Admin Dashboard',
       href: '/admin',
       icon: <CogIcon className="w-5 h-5" />
     }

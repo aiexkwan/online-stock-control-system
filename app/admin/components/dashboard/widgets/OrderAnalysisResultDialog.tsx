@@ -30,6 +30,11 @@ export const OrderAnalysisResultDialog: React.FC<OrderAnalysisResultDialogProps>
     console.log('[OrderAnalysisResultDialog] First order:', orders[0]);
   }
 
+  // Extract common info from first order (since only one order upload is allowed)
+  const accountNumber = orders[0]?.account_num || null;
+  const deliveryAddress = orders[0]?.delivery_add || null;
+  const orderRef = orders[0]?.order_ref || null;
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl max-h-[90vh] bg-black/90 backdrop-blur-xl border border-white/10">
@@ -45,62 +50,62 @@ export const OrderAnalysisResultDialog: React.FC<OrderAnalysisResultDialogProps>
         <div className="h-[60vh] overflow-y-auto pr-4">
           <div className="space-y-4">
             <div className="text-sm text-slate-400">
-              Found {orders.length} order{orders.length > 1 ? 's' : ''} in the PDF
+              Order details from PDF analysis
             </div>
             
-            {orders.map((order: any, index: number) => (
-              <div key={index} className="bg-white/5 backdrop-blur-md rounded-xl p-5 space-y-4 border border-white/10">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-medium text-white">
-                    Order #{order.order_ref || 'N/A'}
-                  </h3>
-                  <span className="text-sm text-slate-400">
-                    {order.issueDate || 'No date'}
-                  </span>
-                </div>
-                
-                {/* Account and Delivery Info */}
-                {(order.account_num || order.delivery_add) && (
-                  <div className="grid grid-cols-2 gap-4">
-                    {order.account_num && (
-                      <div>
-                        <span className="text-xs text-slate-500 uppercase tracking-wider">Account Number</span>
-                        <p className="text-sm text-white mt-1">{order.account_num}</p>
-                      </div>
-                    )}
-                    {order.delivery_add && (
-                      <div>
-                        <span className="text-xs text-slate-500 uppercase tracking-wider">Delivery Address</span>
-                        <p className="text-sm text-white mt-1">{order.delivery_add}</p>
-                      </div>
-                    )}
+            {/* Display order info once at the top */}
+            {(orderRef || accountNumber || deliveryAddress) && (
+              <div className="bg-white/5 backdrop-blur-md rounded-xl p-5 border border-white/10">
+                {orderRef && (
+                  <div className="mb-4">
+                    <h3 className="text-lg font-medium text-white">Order #{orderRef}</h3>
                   </div>
                 )}
-                
-                {/* Single item display for simplified orders */}
-                {order.product_code && (
-                  <div className="bg-black/20 backdrop-blur-sm rounded-lg p-4 space-y-3">
-                    <div className="grid grid-cols-3 gap-4">
-                      <div>
-                        <span className="text-xs text-slate-500 uppercase tracking-wider">Product Code</span>
-                        <p className="text-white mt-1 font-medium">{order.product_code}</p>
-                      </div>
-                      <div>
-                        <span className="text-xs text-slate-500 uppercase tracking-wider">Quantity</span>
-                        <p className="text-white mt-1 font-medium">{order.product_qty || 0}</p>
-                      </div>
-                      <div>
-                        <span className="text-xs text-slate-500 uppercase tracking-wider">Description</span>
-                        <p className="text-white mt-1 text-sm">{order.product_desc || 'N/A'}</p>
+                <div className="grid grid-cols-2 gap-4">
+                  {accountNumber && (
+                    <div>
+                      <span className="text-xs text-slate-500 uppercase tracking-wider">Account Number</span>
+                      <p className="text-sm text-white mt-1">{accountNumber}</p>
+                    </div>
+                  )}
+                  {deliveryAddress && (
+                    <div>
+                      <span className="text-xs text-slate-500 uppercase tracking-wider">Delivery Address</span>
+                      <p className="text-sm text-white mt-1">{deliveryAddress}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+            
+            {/* Order Items */}
+            <div className="bg-white/5 backdrop-blur-md rounded-xl p-5 space-y-4 border border-white/10">
+              <h4 className="text-sm font-medium text-white uppercase tracking-wider">Order Items</h4>
+              
+              {orders.map((order: any, index: number) => (
+                <div key={index} className="space-y-3">
+                  {/* Single item display for simplified orders */}
+                  {order.product_code && (
+                    <div className="bg-black/20 backdrop-blur-sm rounded-lg p-4">
+                      <div className="grid grid-cols-3 gap-4">
+                        <div>
+                          <span className="text-xs text-slate-500 uppercase tracking-wider">Product Code</span>
+                          <p className="text-white mt-1 font-medium">{order.product_code}</p>
+                        </div>
+                        <div>
+                          <span className="text-xs text-slate-500 uppercase tracking-wider">Quantity</span>
+                          <p className="text-white mt-1 font-medium">{order.product_qty || 0}</p>
+                        </div>
+                        <div>
+                          <span className="text-xs text-slate-500 uppercase tracking-wider">Description</span>
+                          <p className="text-white mt-1 text-sm">{order.product_desc || 'N/A'}</p>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                )}
+                  )}
                 
-                {/* Multiple items display */}
-                {order.items && order.items.length > 0 && (
-                  <div>
-                    <span className="text-xs text-slate-500 uppercase tracking-wider mb-3 block">Order Items</span>
+                  {/* Multiple items display */}
+                  {order.items && order.items.length > 0 && (
                     <div className="space-y-2">
                       {order.items.map((item: any, itemIndex: number) => (
                         <div key={itemIndex} className="bg-black/20 backdrop-blur-sm rounded-lg p-3 grid grid-cols-3 gap-2 text-sm">
@@ -119,21 +124,23 @@ export const OrderAnalysisResultDialog: React.FC<OrderAnalysisResultDialogProps>
                         </div>
                       ))}
                     </div>
-                  </div>
-                )}
+                  )}
                 
-                {order.totalAmount && (
-                  <div className="pt-3 border-t border-white/10">
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-slate-400">Total Amount</span>
-                      <span className="text-lg font-semibold text-white">
-                        ${order.totalAmount}
-                      </span>
-                    </div>
+                </div>
+              ))}
+              
+              {/* Total Amount */}
+              {orders[0]?.totalAmount && (
+                <div className="pt-3 border-t border-white/10">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-slate-400">Total Amount</span>
+                    <span className="text-lg font-semibold text-white">
+                      ${orders[0].totalAmount}
+                    </span>
                   </div>
-                )}
-              </div>
-            ))}
+                </div>
+              )}
+            </div>
             
           </div>
         </div>

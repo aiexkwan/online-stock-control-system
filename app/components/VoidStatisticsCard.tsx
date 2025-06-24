@@ -10,7 +10,7 @@ import {
 } from 'lucide-react';
 import { VoidStatistics, getVoidStatistics } from '@/app/void-pallet/services/statisticsService';
 import { motion } from 'framer-motion';
-import VoidPalletDialog from '@/app/components/admin-panel-menu/VoidPalletDialog';
+import VoidPalletDialog from '@/app/components/admin-dialogs/VoidPalletDialog';
 
 export function VoidStatisticsCard() {
   const [loading, setLoading] = useState(true);

@@ -20,8 +20,7 @@ import { useAuth } from '@/app/hooks/useAuth';
 import { format, startOfDay, endOfDay } from 'date-fns';
 // Universal background is now handled at the app level
 import { useDialog, useReprintDialog } from '@/app/contexts/DialogContext';
-import { DialogManager } from '@/app/components/admin-panel/DialogManager';
-import { adminMenuItems } from '@/app/components/admin-panel/AdminMenu';
+import { DialogManager } from '@/app/components/admin-system/DialogManager';
 import { useVoidPallet } from '@/app/void-pallet/hooks/useVoidPallet';
 import { UniversalTimeRangeSelector, TimeFrame } from '@/app/components/admin/UniversalTimeRangeSelector';
 import { AdminDashboardContent } from './dashboard/AdminDashboardContent';
@@ -109,14 +108,6 @@ const DASHBOARD_THEMES = [
   }
 ];
 
-// Group menu items by category
-const groupedItems = adminMenuItems.reduce((acc, item) => {
-  if (!acc[item.category]) {
-    acc[item.category] = [];
-  }
-  acc[item.category].push(item);
-  return acc;
-}, {} as Record<string, typeof adminMenuItems>);
 
 export function NewAdminDashboard() {
   const router = useRouter();
@@ -134,6 +125,72 @@ export function NewAdminDashboard() {
   // 從路徑判斷當前主題
   const pathParts = pathname.split('/').filter(Boolean);
   const currentTheme = pathParts.length > 1 ? pathParts[pathParts.length - 1] : 'injection';
+  
+  // Navigation menu items grouped by category
+  const groupedItems = {
+    'Quick Actions': [
+      { 
+        id: 'load-stock',
+        title: 'Load Stock', 
+        description: 'Load new stock into warehouse',
+        icon: Archive, 
+        action: () => openDialog('loadStock'),
+        color: 'text-blue-400'
+      },
+      { 
+        id: 'stock-transfer',
+        title: 'Stock Transfer', 
+        description: 'Transfer stock between locations',
+        icon: ArrowPathIcon, 
+        action: () => openDialog('stockTransfer'),
+        color: 'text-green-400'
+      },
+      { 
+        id: 'void-pallet',
+        title: 'Void Pallet', 
+        description: 'Void existing pallets',
+        icon: XMarkIcon, 
+        action: () => openDialog('voidPallet'),
+        color: 'text-red-400'
+      },
+    ],
+    'Reports': [
+      { 
+        id: 'view-reports',
+        title: 'View Reports', 
+        description: 'Access system reports',
+        icon: Chart, 
+        action: () => router.push('/admin/reports'),
+        color: 'text-purple-400'
+      },
+      { 
+        id: 'export-data',
+        title: 'Export Data', 
+        description: 'Export system data',
+        icon: Cloud, 
+        action: () => openDialog('exportData'),
+        color: 'text-cyan-400'
+      },
+    ],
+    'Settings': [
+      { 
+        id: 'system-settings',
+        title: 'System Settings', 
+        description: 'Configure system settings',
+        icon: Cog, 
+        action: () => router.push('/admin/settings'),
+        color: 'text-gray-400'
+      },
+      { 
+        id: 'user-management',
+        title: 'User Management', 
+        description: 'Manage system users',
+        icon: Building, 
+        action: () => router.push('/admin/users'),
+        color: 'text-indigo-400'
+      },
+    ]
+  };
   
   // Universal background is handled at the app level
 
@@ -257,7 +314,7 @@ export function NewAdminDashboard() {
       <div className="min-h-screen">
         <div className="min-h-screen flex flex-col justify-center items-center p-4 text-white relative z-10">
           <h1 className="text-3xl font-bold mb-4 text-orange-500">Authentication Required</h1>
-          <p className="text-lg mb-6">Please log in to access the Admin Panel.</p>
+          <p className="text-lg mb-6">Please log in to access the Admin Dashboard.</p>
           <button 
             onClick={() => router.push('/main-login')}
             className="px-6 py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors"
@@ -274,7 +331,7 @@ export function NewAdminDashboard() {
     <LoadingScreen isLoading={isDashboardLoading}>
       <div className="min-h-screen">
         <div className="text-white min-h-screen flex flex-col overflow-x-hidden relative z-10">
-          {/* Admin Panel Navigation Bar */}
+          {/* Admin Dashboard Navigation Bar */}
         <div className="sticky top-0 z-30">
           <div className="flex items-center justify-between h-16 px-4 sm:px-6 lg:px-8">
             {/* Left side - Dashboard Theme Tabs with Glow Effect */}

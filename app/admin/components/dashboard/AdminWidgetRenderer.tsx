@@ -1749,13 +1749,10 @@ function ProductUpdateComponent() {
               <div className="absolute inset-0 bg-gradient-to-r from-orange-500/5 via-transparent to-amber-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-2xl"></div>
               <div className="relative z-10">
                 <h3 className="text-lg font-medium bg-gradient-to-r from-orange-300 to-amber-300 bg-clip-text text-transparent mb-4">
-                  Product Search
+                  Update Product
                 </h3>
                 <div className="space-y-4">
                   <div>
-                    <Label htmlFor="search" className="text-slate-200 font-medium">
-                      Product Code
-                    </Label>
                     <div className="flex gap-3 mt-2">
                       <Input
                         id="search"
@@ -1786,9 +1783,6 @@ function ProductUpdateComponent() {
                         )}
                       </Button>
                     </div>
-                    <p className="text-xs text-slate-400 mt-2">
-                      Enter a product code and press Enter to search (case-insensitive)
-                    </p>
                   </div>
                 </div>
               </div>
@@ -2253,13 +2247,10 @@ function SupplierUpdateComponent() {
               <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 via-transparent to-cyan-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-2xl"></div>
               <div className="relative z-10">
                 <h3 className="text-lg font-medium bg-gradient-to-r from-blue-300 to-cyan-300 bg-clip-text text-transparent mb-4">
-                  Supplier Search
+                  Update Supplier
                 </h3>
                 <div className="space-y-4">
                   <div>
-                    <Label htmlFor="search" className="text-slate-200 font-medium">
-                      Supplier Code
-                    </Label>
                     <div className="flex gap-3 mt-2">
                       <Input
                         id="search"
@@ -2290,9 +2281,6 @@ function SupplierUpdateComponent() {
                         )}
                       </Button>
                     </div>
-                    <p className="text-xs text-slate-400 mt-2">
-                      Enter a supplier code and press Enter to search (case-insensitive)
-                    </p>
                   </div>
                 </div>
               </div>

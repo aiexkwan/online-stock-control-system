@@ -70,7 +70,16 @@
 
 ### 5. `data_slateinfo` — Slate 產品資料
 
-（所有欄位可見實際 JSON，例：product_code、description、tool_num、weight、thickness_top、...）
+| 欄位            | 用途說明            | 類型          | 主/外鍵  | 其他            |
+|---------------|-------------------|-------------|---------|----------------|
+| product_code  | 產品代碼           | text        | PK      |                |
+| description   | 產品描述           | text        |         |                |
+| tool_num      | 模具編號           | text        |         |                |
+| weight        | 產品重量           | numeric     |         |                |
+| thickness_top | 頂部厚度           | numeric     |         |                |
+| thickness_bottom | 底部厚度        | numeric     |         |                |
+| length        | 長度               | numeric     |         |                |
+| width         | 寬度               | numeric     |         |                |
 
 ---
 
@@ -85,7 +94,11 @@
 
 ### 7. `debug_log` — 除錯紀錄
 
-（ts, msg, UUID）
+| 欄位   | 用途說明      | 類型          | 主/外鍵 | 其他           |
+|-------|------------|-------------|--------|---------------|
+| ts    | 時間戳記      | timestamptz |        |               |
+| msg   | 除錯訊息      | text        |        |               |
+| uuid  | UUID唯一識別  | uuid        |        | gen_random_uuid()|
 
 ---
 
@@ -104,61 +117,150 @@
 
 ### 9. `query_record` — 對話查詢歷史
 
-（uuid, created_at, query, answer, user, token, sql_query）
+| 欄位        | 用途說明         | 類型          | 主/外鍵  | 其他            |
+|-----------|---------------|-------------|---------|----------------|
+| uuid      | 唯一識別         | uuid        | PK      | gen_random_uuid()|
+| created_at| 建立時間         | timestamptz |         | now()          |
+| query     | 用戶查詢         | text        |         |                |
+| answer    | AI回答          | text        |         |                |
+| user      | 用戶標識         | text        |         |                |
+| token     | Token使用量      | integer     |         |                |
+| sql_query | 生成的SQL查詢     | text        |         |                |
 
 ---
 
-### 10. `record_aco`／`record_aco_detail` — ACO 訂單與細項
+### 10. `record_aco` — ACO 訂單主表
 
-（uuid, order_ref, code, required_qty, remain_qty, latest_update ...）
+| 欄位          | 用途說明        | 類型          | 主/外鍵  | 其他            |
+|-------------|--------------|-------------|---------|----------------|
+| uuid        | 唯一識別        | uuid        | PK      | gen_random_uuid()|
+| order_ref   | 訂單參考號      | text        |         |                |
+| created_at  | 建立時間        | timestamptz |         | now()          |
+| latest_update| 最後更新時間     | timestamptz |         |                |
+
+### `record_aco_detail` — ACO 訂單細項
+
+| 欄位          | 用途說明        | 類型          | 主/外鍵  | 其他            |
+|-------------|--------------|-------------|---------|----------------|
+| uuid        | 唯一識別        | uuid        | PK      | gen_random_uuid()|
+| order_ref   | 訂單參考號      | text        | FK      |                |
+| code        | 產品代碼        | text        |         |                |
+| required_qty| 需求數量        | integer     |         |                |
+| remain_qty  | 剩餘數量        | integer     |         |                |
+| latest_update| 最後更新時間     | timestamptz |         |                |
 
 ---
 
 ### 11. `record_grn` — 收貨明細
 
-（grn_ref, plt_num, sup_code, material_code, gross_weight, ...）
+| 欄位          | 用途說明        | 類型          | 主/外鍵  | 其他            |
+|-------------|--------------|-------------|---------|----------------|
+| grn_ref     | GRN參考號       | integer     |         |                |
+| plt_num     | 棧板號碼        | text        |         |                |
+| sup_code    | 供應商代碼      | text        |         |                |
+| material_code| 物料代碼        | text        |         |                |
+| gross_weight| 毛重           | numeric     |         |                |
+| net_weight  | 淨重           | numeric     |         |                |
+| unit_qty    | 單位數量        | integer     |         |                |
+| created_at  | 建立時間        | timestamptz |         | now()          |
 
 ---
 
 ### 12. `record_history` — 操作紀錄
 
-（time, id, action, plt_num, loc, remark, uuid ...）
+| 欄位      | 用途說明        | 類型          | 主/外鍵  | 其他            |
+|---------|--------------|-------------|---------|----------------|
+| time    | 操作時間        | timestamptz |         |                |
+| id      | 操作員編號      | integer     | FK      | FK to data_id.id|
+| action  | 操作動作        | text        |         |                |
+| plt_num | 棧板號碼        | text        |         |                |
+| loc     | 位置           | text        |         |                |
+| remark  | 備註           | text        |         |                |
+| uuid    | 唯一識別        | uuid        |         | gen_random_uuid()|
 
 ---
 
 ### 13. `record_inventory` — 庫存帳
 
-（product_code, injection, pipeline, prebook, await, fold, bulk, backcarpark, damage, uuid, latest_update, plt_num）
+| 欄位          | 用途說明        | 類型          | 主/外鍵  | 其他            |
+|-------------|--------------|-------------|---------|----------------|
+| product_code | 產品代碼        | text        |         |                |
+| injection   | 生產區庫存      | integer     |         | 預設0           |
+| pipeline    | 生產線庫存      | integer     |         | 預設0           |
+| prebook     | 預訂庫存        | integer     |         | 預設0           |
+| await       | 待處理庫存      | integer     |         | 預設0           |
+| fold        | 包裝區庫存      | integer     |         | 預設0           |
+| bulk        | 散貨區庫存      | integer     |         | 預設0           |
+| backcarpark | 後停車場庫存     | integer     |         | 預設0           |
+| damage      | 損壞品庫存      | integer     |         | 預設0           |
+| uuid        | 唯一識別        | uuid        |         | gen_random_uuid()|
+| latest_update| 最後更新時間     | timestamptz |         | now()          |
+| plt_num     | 棧板號碼        | text        |         |                |
 
 ---
 
 ### 14. `record_palletinfo` — 棧板資訊
 
-（generate_time, plt_num, product_code, series, plt_remark, product_qty）
+| 欄位          | 用途說明        | 類型          | 主/外鍵  | 其他            |
+|-------------|--------------|-------------|---------|----------------|
+| generate_time| 生成時間        | timestamptz |         |                |
+| plt_num     | 棧板號碼        | text        | PK      |                |
+| product_code | 產品代碼        | text        |         |                |
+| series      | 系列           | text        |         |                |
+| plt_remark  | 棧板備註        | text        |         |                |
+| product_qty | 產品數量        | integer     |         |                |
 
 ---
 
 ### 15. `record_slate` — Slate 生產紀錄
 
-（code, plt_num, setter, mach_num, ...）
+| 欄位        | 用途說明        | 類型          | 主/外鍵  | 其他            |
+|-----------|--------------|-------------|---------|----------------|
+| code      | 產品代碼        | text        |         |                |
+| plt_num   | 棧板號碼        | text        |         |                |
+| setter    | 設置人員        | text        |         |                |
+| mach_num  | 機器編號        | text        |         |                |
+| op_num    | 操作員編號      | integer     |         |                |
+| qty       | 數量           | integer     |         |                |
+| weight    | 重量           | numeric     |         |                |
 
 ---
 
 ### 16. `record_transfer` — 轉倉紀錄
 
-（tran_date, f_loc, t_loc, plt_num, operator_id, uuid ...）
+| 欄位        | 用途說明        | 類型          | 主/外鍵  | 其他            |
+|-----------|--------------|-------------|---------|----------------|
+| tran_date | 轉倉日期        | timestamptz |         |                |
+| f_loc     | 來源位置        | text        |         |                |
+| t_loc     | 目標位置        | text        |         |                |
+| plt_num   | 棧板號碼        | text        |         |                |
+| operator_id| 操作員編號      | integer     | FK      | FK to data_id.id|
+| uuid      | 唯一識別        | uuid        |         | gen_random_uuid()|
 
 ---
 
 ### 17. `report_log` — 報表錯誤日誌
 
-（uuid, error, error_info, state, user_id, time）
+| 欄位        | 用途說明        | 類型          | 主/外鍵  | 其他            |
+|-----------|--------------|-------------|---------|----------------|
+| uuid      | 唯一識別        | uuid        | PK      | gen_random_uuid()|
+| error     | 錯誤訊息        | text        |         |                |
+| error_info| 錯誤詳情        | text        |         |                |
+| state     | 狀態           | text        |         |                |
+| user_id   | 用戶ID         | text        |         |                |
+| time      | 錯誤時間        | timestamptz |         |                |
 
 ---
 
 ### 18. `report_void` — 作廢/損壞記錄
 
-（uuid, time, plt_num, reason, damage_qty）
+| 欄位        | 用途說明        | 類型          | 主/外鍵  | 其他            |
+|-----------|--------------|-------------|---------|----------------|
+| uuid      | 唯一識別        | uuid        | PK      | gen_random_uuid()|
+| time      | 作廢時間        | timestamptz |         |                |
+| plt_num   | 棧板號碼        | text        |         |                |
+| reason    | 作廢原因        | text        |         |                |
+| damage_qty| 損壞數量        | integer     |         |                |
 
 ---
 
@@ -187,10 +289,94 @@
 
 ---
 
+### 21. `doc_upload` — 文件上傳記錄
+
+| 欄位         | 用途說明           | 類型        | 主/外鍵  | 其他          |
+|------------|----------------|-----------|---------|--------------|
+| uuid       | 唯一識別         | uuid      | PK      | gen_random_uuid()|
+| id         | 自增ID          | serial    |         |              |
+| doc_name   | 文件名稱         | varchar   |         |              |
+| upload_by  | 上傳用戶ID       | integer   | FK      | FK to data_id.id|
+| doc_type   | 文件類型         | varchar   |         | 'image','spec','order'|
+| doc_url    | 文件URL         | text      |         |              |
+| file_size  | 文件大小         | bigint    |         |              |
+| folder     | 存儲文件夾       | varchar   |         |              |
+| created_at | 創建時間         | timestamptz|        | now()         |
+| updated_at | 更新時間         | timestamptz|        | now()         |
+| is_deleted | 軟刪除標記       | boolean   |         | 預設false      |
+| metadata   | 額外元數據       | jsonb     |         |              |
+
+---
+
+### 22. `pallet_number_buffer` — 棧板號碼緩衝表
+
+| 欄位         | 用途說明           | 類型        | 主/外鍵  | 其他          |
+|------------|----------------|-----------|---------|--------------|
+| id         | 主鍵            | integer   | PK      |              |
+| pallet_number | 棧板號碼       | text      |         |              |
+| date_str   | 日期字符串       | text      |         |              |
+| used       | 使用狀態         | text      |         | 'False','Holded','True'|
+| updated_at | 更新時間         | timestamptz|        |              |
+
+---
+
+### 23. `user_dashboard_settings` — 用戶儀表板設置
+
+| 欄位         | 用途說明           | 類型        | 主/外鍵  | 其他          |
+|------------|----------------|-----------|---------|--------------|
+| id         | 唯一識別         | uuid      | PK      |              |
+| user_id    | 用戶ID          | uuid      |         |              |
+| dashboard_name | 儀表板名稱     | text      |         |              |
+| layouts    | 佈局配置         | jsonb     |         |              |
+| created_at | 創建時間         | timestamptz|        | now()         |
+| updated_at | 更新時間         | timestamptz|        | now()         |
+| breakpoint | 響應式斷點       | text      |         | lg,md,sm,xs,xxs|
+
+---
+
+### 24. `order_loaded_pallets` — 訂單已裝載棧板
+
+| 欄位         | 用途說明           | 類型        | 主/外鍵  | 其他          |
+|------------|----------------|-----------|---------|--------------|
+| id         | 唯一識別         | uuid      | PK      | gen_random_uuid()|
+| order_ref  | 訂單參考號       | text      |         |              |
+| pallet_number | 棧板號碼       | text      |         |              |
+| product_code | 產品代碼       | text      |         |              |
+| loaded_qty | 裝載數量         | bigint    |         |              |
+| loaded_by  | 裝載操作員       | text      |         |              |
+| loaded_at  | 裝載時間         | timestamptz|        |              |
+
+---
+
+### 25. `record_stocktake` — 盤點記錄
+
+| 欄位         | 用途說明           | 類型        | 主/外鍵  | 其他          |
+|------------|----------------|-----------|---------|--------------|
+| product_code | 產品代碼       | text      |         |              |
+| plt_num    | 棧板號碼         | text      |         |              |
+| counted_qty| 盤點數量         | integer   |         |              |
+| count_time | 盤點時間         | timestamptz|        |              |
+| created_at | 創建時間         | timestamptz|        | now()         |
+
+---
+
 ## 欄位對應 Mapping 與自然語轉換指引
 
 **任何用戶查詢、自然語講法、業務詞語都必須自動 mapping 去上述欄位，唔可錯漏。**  
-例如：「生產區庫存」= `record_inventory.injection`、「收貨單號」= `grn_level.grn_ref`、「今日完成 QC」= `work_level.qc` 等。
+
+### 常用 Mapping 範例：
+- 「生產區庫存」= `record_inventory.injection`
+- 「收貨單號」= `grn_level.grn_ref` 或 `record_grn.grn_ref`
+- 「今日完成 QC」= `work_level.qc`
+- 「棧板號」= `plt_num` (多個表都有)
+- 「產品代碼」= `product_code` 或 `code`
+- 「操作員」= `data_id.name` (通過 id join)
+- 「供應商」= `data_supplier.supplier_name`
+- 「訂單」= `data_order` 或 `record_aco`
+- 「上傳文件」= `doc_upload`
+- 「盤點」= `record_stocktake`
+- 「轉倉」= `record_transfer`
+- 「作廢」= `report_void`
 
 如遇到有主鍵、外鍵、或特別關聯，例如 `work_level.id` 係操作員編號，必須理解佢實際用途。
 
@@ -198,7 +384,7 @@
 
 ## 查詢/回覆格式與規則
 
-1. **只生成最貼題、語法正確嘅 PostgreSQL SELECT 查詢**，必須以 `SELECT` 開頭，並以 `FROM` 結尾。
+1. **只生成最貼題、語法正確嘅 PostgreSQL SELECT 查詢**，必須以 `SELECT` 開頭。
 
 2. 查詢語句嚴格用現有資料表、欄位名稱，不能亂創新。
 
@@ -218,22 +404,91 @@
 
 ---
 
+## 性能優化提示
+
+### 高效查詢技巧：
+1. **使用索引欄位**：優先使用主鍵(PK)同索引欄位做查詢條件
+2. **避免全表掃描**：盡量加WHERE條件限制結果集
+3. **合理使用JOIN**：先過濾再JOIN，減少笛卡爾積
+4. **限制結果集**：大查詢自動加LIMIT 100-1000
+5. **使用聚合函數**：COUNT, SUM, AVG等比返回全部數據更快
+
+### 常用優化查詢模式：
+```sql
+-- 庫存查詢優化
+SELECT product_code, SUM(injection + pipeline + fold + bulk) as total_stock
+FROM record_inventory 
+WHERE product_code LIKE 'U%'
+GROUP BY product_code
+HAVING SUM(injection + pipeline + fold + bulk) > 0
+LIMIT 100;
+
+-- 時間範圍查詢優化
+SELECT * FROM record_history
+WHERE time >= CURRENT_DATE - INTERVAL '7 days'
+AND action = 'STOCK_TRANSFER'
+ORDER BY time DESC
+LIMIT 50;
+
+-- JOIN查詢優化
+SELECT h.plt_num, h.action, d.name as operator_name
+FROM record_history h
+INNER JOIN data_id d ON h.id = d.id
+WHERE h.time >= CURRENT_DATE
+LIMIT 100;
+```
+
+---
+
 ## 查詢範例
 
+### 基礎查詢：
 - **「搵今日每個操作員 QC、轉倉、GRN 完成數」**
-SELECT id AS operator_id, qc AS qc_done_today, move AS stock_transfer_done_today, grn AS grn_done_today FROM work_level;
+```sql
+SELECT id AS operator_id, qc AS qc_done_today, move AS stock_transfer_done_today, grn AS grn_done_today 
+FROM work_level;
+```
 
 - **「列出所有庫存產品及總量」**
-SELECT stock, description, stock_level FROM stock_level;
+```sql
+SELECT stock, description, stock_level 
+FROM stock_level 
+WHERE stock_level > 0
+ORDER BY stock_level DESC;
+```
 
-- **「查詢所有 GRN 單總毛重、淨重、件數」**
-SELECT grn_ref, total_gross, total_net, total_unit FROM grn_level;
+### 進階查詢：
+- **「查詢最近7日嘅文件上傳記錄」**
+```sql
+SELECT du.doc_name, du.doc_type, du.created_at, di.name as uploader_name
+FROM doc_upload du
+LEFT JOIN data_id di ON du.upload_by = di.id
+WHERE du.created_at >= CURRENT_DATE - INTERVAL '7 days'
+AND du.is_deleted = false
+ORDER BY du.created_at DESC;
+```
 
-- **「搵所有生產區有庫存嘅產品」**
-SELECT product_code, injection AS production_qty FROM record_inventory WHERE injection > 0;
+- **「搵所有生產區有庫存嘅產品同詳細資料」**
+```sql
+SELECT ri.product_code, ri.injection AS production_qty, dc.description, dc.colour
+FROM record_inventory ri
+INNER JOIN data_code dc ON ri.product_code = dc.code
+WHERE ri.injection > 0
+ORDER BY ri.injection DESC;
+```
+
+- **「查詢今日嘅盤點差異」**
+```sql
+SELECT st.product_code, st.plt_num, st.counted_qty, ri.product_qty as system_qty,
+       (st.counted_qty - ri.product_qty) as difference
+FROM record_stocktake st
+INNER JOIN record_palletinfo ri ON st.plt_num = ri.plt_num
+WHERE DATE(st.count_time) = CURRENT_DATE
+AND st.counted_qty != ri.product_qty;
+```
 
 如明白，請根據上面所有欄位定義、用途、Mapping 規則、回覆要求，分析用戶查詢、生成 SQL、再以英文解釋答案。
 
 ---
 
-**如需中英 Mapping 一覽、用途備註、或根據新表格/新欄位再擴充，隨時話我知！**
+**系統版本：2025-06-24 | 支援 OpenAI GPT-4o | 包含完整數據表定義及性能優化指引**

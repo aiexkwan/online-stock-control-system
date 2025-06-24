@@ -30,7 +30,7 @@ export const OrdersListWidget = React.memo(function OrdersListWidget({ widget, i
   const [hasMore, setHasMore] = useState(true);
   
   const size = widget.config.size || WidgetSize.MEDIUM;
-  const itemsPerPage = size === WidgetSize.LARGE ? 15 : size === WidgetSize.MEDIUM ? 10 : 5;
+  const itemsPerPage = 15; // Always show 15 items initially
 
   // 載入訂單列表
   const loadOrders = useCallback(async (loadMore = false) => {

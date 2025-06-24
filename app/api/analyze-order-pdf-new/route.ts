@@ -130,18 +130,39 @@ function preprocessPdfText(rawText: string): string {
   
   // 1.1 提取 Account No (可能包含字母和數字)
   let accountNum = '';
-  const accountPatterns = [
-    /Account\s*No\.?:?\s*([A-Z0-9]+)/i,
-    /Account\s*Number:?\s*([A-Z0-9]+)/i,
-    /Acc\s*No\.?:?\s*([A-Z0-9]+)/i,
-    /Customer\s*No\.?:?\s*([A-Z0-9]+)/i
-  ];
   
-  for (const pattern of accountPatterns) {
-    const match = rawText.match(pattern);
-    if (match) {
-      accountNum = match[1];
-      break;
+  // 首先檢查 "Account No:" 後面是否是 PO 號碼
+  const accountLineMatch = rawText.match(/Account\s*No\.?:?\s*([^\n]+)/i);
+  if (accountLineMatch && accountLineMatch[1].match(/^PO\d+/i)) {
+    // 如果是 PO 號碼，查找前面的獨立數字行（5-8位數字）
+    const beforeAccountNo = rawText.substring(0, accountLineMatch.index);
+    const lines = beforeAccountNo.split('\n').reverse(); // 從後往前查找
+    
+    for (const line of lines) {
+      const trimmedLine = line.trim();
+      if (trimmedLine.match(/^\d{5,8}$/)) {
+        accountNum = trimmedLine;
+        console.log(`[PDF Preprocessing] Found account number in standalone line: "${accountNum}"`);
+        break;
+      }
+    }
+  }
+  
+  // 如果沒找到，使用常規模式
+  if (!accountNum) {
+    const accountPatterns = [
+      /Account\s*No\.?:?\s*([A-Z0-9]+)/i,
+      /Account\s*Number:?\s*([A-Z0-9]+)/i,
+      /Acc\s*No\.?:?\s*([A-Z0-9]+)/i,
+      /Customer\s*No\.?:?\s*([A-Z0-9]+)/i
+    ];
+    
+    for (const pattern of accountPatterns) {
+      const match = rawText.match(pattern);
+      if (match && !match[1].match(/^PO/i)) { // 排除 PO 開頭的匹配
+        accountNum = match[1];
+        break;
+      }
     }
   }
   console.log(`[PDF Preprocessing] Account No found: "${accountNum}"`);
@@ -312,7 +333,7 @@ async function uploadToStorageAsync(pdfBuffer: Buffer, fileName: string, uploade
       .from('documents')
       .getPublicUrl(`orderpdf/${fileName}`);
     
-    // 寫入 doc_upload 表（包含 json 欄位）
+    // 寫入 doc_upload 表（包含 json_txt 欄位）
     const { error: docError } = await supabaseAdmin
       .from('doc_upload')
       .insert({
@@ -322,13 +343,13 @@ async function uploadToStorageAsync(pdfBuffer: Buffer, fileName: string, uploade
         doc_url: urlData.publicUrl,
         file_size: pdfBuffer.length,
         folder: 'orderpdf',
-        json: extractedText || null // 🔥 加入提取的文本到 json 欄位
+        json_txt: extractedText || null // 🔥 加入提取的文本到 json_txt 欄位
       });
     
     if (docError) {
       console.warn('[Background Storage] doc_upload insert failed:', docError);
     } else {
-      console.log('[Background Storage] doc_upload inserted with json field');
+      console.log('[Background Storage] doc_upload inserted with json_txt field');
     }
     
     console.log('[Background Storage] Upload completed:', urlData.publicUrl);
@@ -452,18 +473,18 @@ export async function POST(request: NextRequest) {
             });
             
             if (docRecord && !findError) {
-              // 更新 json 欄位
+              // 更新 json_txt 欄位
               const { error: updateError } = await supabaseAdmin
                 .from('doc_upload')
                 .update({
-                  json: cachedResult.extractedText // 存儲緩存的提取文本到 json 欄位
+                  json_txt: cachedResult.extractedText // 存儲緩存的提取文本到 json_txt 欄位
                 })
                 .eq('uuid', docRecord.uuid);
               
               if (updateError) {
-                console.error('[PDF Analysis] Failed to update doc_upload json field (cached):', updateError);
+                console.error('[PDF Analysis] Failed to update doc_upload json_txt field (cached):', updateError);
               } else {
-                console.log('[PDF Analysis] Successfully updated doc_upload json field (cached)');
+                console.log('[PDF Analysis] Successfully updated doc_upload json_txt field (cached)');
               }
             } else {
               console.warn('[PDF Analysis] No matching doc_upload record found for json update (cached)');

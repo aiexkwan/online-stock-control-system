@@ -1,0 +1,18 @@
+{
+  "timestamp": "2025-06-24T19:40:36.226Z",
+  "totalTests": 1,
+  "passed": 0,
+  "failed": 1,
+  "totalRecords": 0,
+  "totalExecutionTime": 5165,
+  "results": [
+    {
+      "pdfFile": "280813-Picking List.pdf",
+      "success": false,
+      "recordCount": 0,
+      "extractedData": null,
+      "executionTime": 5165,
+      "error": "adminButton.click is not a function"
+    }
+  ]
+}
