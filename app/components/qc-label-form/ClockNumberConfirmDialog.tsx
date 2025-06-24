@@ -69,7 +69,7 @@ export const ClockNumberConfirmDialog: React.FC<ClockNumberConfirmDialogProps> =
     return () => {
       document.removeEventListener('keydown', handleKeyDown);
     };
-  }, [isOpen, isVerifying, isLoading, clockNumber]);
+  }, [isOpen, isVerifying, isLoading, clockNumber, handleConfirm, handleCancel]);
 
   const validateClockNumber = async (clockNum: string): Promise<boolean> => {
     try {

@@ -278,7 +278,8 @@ export default function ModernDashboard() {
       mounted = false;
       subscription.unsubscribe();
     };
-  }, [router, supabase]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [router, supabase, loadHistoryRecords, loadIncompleteAcoOrders]);
 
   // Loading state
   if (loading) {

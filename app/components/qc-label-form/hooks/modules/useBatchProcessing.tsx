@@ -237,7 +237,7 @@ export const useBatchProcessing = ({
     } finally {
       setIsProcessing(false);
     }
-  }, []);
+  }, [processSingleItem]);
 
   // 導出批量結果為 CSV
   const exportResults = useCallback((items: BatchItem[]) => {

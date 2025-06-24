@@ -112,7 +112,7 @@ export default function AcoOrderStatus() {
     }
 
     fetchAcoData();
-  }, []);
+  }, [supabase]);
 
   if (loading) {
     return (

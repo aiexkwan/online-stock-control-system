@@ -20,6 +20,7 @@ export const useDebouncedCallback = <T extends (...args: any[]) => any>(
         callback(...args);
       }, delay);
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [callback, delay, ...deps]
   ) as T;
 
@@ -54,6 +55,7 @@ export const useThrottledCallback = <T extends (...args: any[]) => any>(
         }, delay - timeSinceLastCall);
       }
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [callback, delay, ...deps]
   ) as T;
 
@@ -85,7 +87,8 @@ export const useMemoizedEventHandler = <T extends (...args: any[]) => any>(
   handler: T,
   deps: React.DependencyList
 ): T => {
-  return useCallback(handler, deps) as T;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  return useCallback(handler, [handler]) as T;
 };
 
 // Optimized form change handler
@@ -182,6 +185,7 @@ export const useAsyncCallback = <T extends (...args: any[]) => Promise<any>>(
         throw err;
       }
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [asyncCallback, ...deps]
   );
 

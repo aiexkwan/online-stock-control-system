@@ -41,7 +41,7 @@ export const WeightInputList: React.FC<WeightInputListProps> = ({
     if (filledWeightsCount > 5 && !isExpanded) {
       setIsExpanded(true);
     }
-  }, [filledWeightsCount]);
+  }, [filledWeightsCount, isExpanded]);
 
   const handleWeightChange = (index: number, value: string) => {
     onChange(index, value);

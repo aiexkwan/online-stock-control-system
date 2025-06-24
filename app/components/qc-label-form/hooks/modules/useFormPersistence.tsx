@@ -60,7 +60,8 @@ export const useFormPersistence = ({
   // 使用防抖來自動保存
   const debouncedSave = useCallback(
     debounce(saveFormData, autoSaveDelay),
-    [saveFormData, autoSaveDelay]
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    []
   );
 
   // 從本地存儲加載表單數據
@@ -135,6 +136,7 @@ export const useFormPersistence = ({
   // 初始化時加載數據
   useEffect(() => {
     loadFormData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // 監聽表單數據變化並自動保存

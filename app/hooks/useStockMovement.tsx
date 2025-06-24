@@ -405,7 +405,8 @@ export const useStockMovement = (options: UseStockMovementOptions = {}) => {
     } finally {
       setIsLoading(false);
     }
-  }, [userId, supabase, enableCache, invalidateCache, searchPalletWithCache, optimisticTransfers]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId, supabase, enableCache, invalidateCache, searchPalletWithCache, optimisticTransfers, addActivityLog]);
 
   // Add activity log
   const addActivityLog = useCallback((message: string, type: 'success' | 'error' | 'info') => {

@@ -108,6 +108,7 @@ export const OtherFilesListWidget = React.memo(function OtherFilesListWidget({ w
 
   useEffect(() => {
     loadFiles();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const formatTime = (timestamp: string) => {

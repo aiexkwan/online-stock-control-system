@@ -107,6 +107,7 @@ export const OrdersListWidget = React.memo(function OrdersListWidget({ widget, i
 
   useEffect(() => {
     loadOrders();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const formatTime = (timestamp: string) => {

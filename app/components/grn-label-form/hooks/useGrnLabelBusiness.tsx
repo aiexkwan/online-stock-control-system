@@ -317,7 +317,7 @@ export function useGrnLabelBusiness() {
     generatePalletNumbersAndSeries,
     createDatabaseEntries,
     uploadPdf,
-    generateMultiplePdfs,
+    generateSinglePdf,
     printPdfs,
     resetProgress,
     clearFormData,

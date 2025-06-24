@@ -113,7 +113,7 @@ const ResponsiveMaterialReceivedWidget = React.memo<WidgetComponentProps>(({ wid
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [getDateRangeForTimeRange]);
 
   // Initial load
   useEffect(() => {

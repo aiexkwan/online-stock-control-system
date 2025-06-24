@@ -38,6 +38,7 @@ export default function MaterialReceived() {
   // Initial load
   useEffect(() => {
     fetchMaterialSummary(selectedTimeRange, true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedTimeRange]);
 
   // Click outside to close dropdown

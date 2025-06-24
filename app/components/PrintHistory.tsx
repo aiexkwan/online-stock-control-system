@@ -66,7 +66,7 @@ export default function FinishedProduct({ widgetSize = WidgetSize.MEDIUM }: Fini
   const [chartData, setChartData] = useState<ChartData[]>([]);
 
   // Get date range based on selected time range
-  const getDateRange = (timeRange: TimeRange) => {
+  const getDateRange = useCallback((timeRange: TimeRange) => {
     const today = new Date();
     const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59, 999);
     
@@ -98,7 +98,7 @@ export default function FinishedProduct({ widgetSize = WidgetSize.MEDIUM }: Fini
         const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
         return { start: startOfDay.toISOString(), end: endOfDay.toISOString() };
     }
-  };
+  }, []);
 
   const fetchProductSummary = useCallback(async (timeRange: TimeRange, reset = false) => {
     try {

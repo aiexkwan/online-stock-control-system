@@ -146,7 +146,7 @@ export const useDatabaseOperationsV2 = (): UseDatabaseOperationsReturn => {
         error: error.message
       };
     }
-  }, [validatePalletUniqueness, warmupBuffer]);
+  }, [validatePalletUniqueness, supabase]);
 
   // 創建 QC 記錄
   const createQcRecords = useCallback(async (options: DatabaseOperationOptions) => {

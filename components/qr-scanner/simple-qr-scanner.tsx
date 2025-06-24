@@ -82,7 +82,7 @@ export const SimpleQRScanner: React.FC<SimpleQRScannerProps> = ({
     console.log('SimpleQRScanner: handleClose called');
     cleanup();
     onClose();
-  }, [onClose]);
+  }, [onClose, cleanup]);
 
   useEffect(() => {
     if (!open) {

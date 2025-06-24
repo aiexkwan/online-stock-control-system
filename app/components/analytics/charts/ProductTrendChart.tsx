@@ -48,6 +48,7 @@ export function ProductTrendChart({ timeRange }: ProductTrendChartProps) {
   
   useEffect(() => {
     loadData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [timeRange]);
 
   const loadData = async () => {

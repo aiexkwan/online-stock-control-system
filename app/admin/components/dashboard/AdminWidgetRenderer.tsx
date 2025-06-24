@@ -136,6 +136,7 @@ export const AdminWidgetRenderer: React.FC<AdminWidgetRendererProps> = ({
     };
 
     loadData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [config, timeFrame, refreshTrigger]);
 
   // 載入 Pallet 數據

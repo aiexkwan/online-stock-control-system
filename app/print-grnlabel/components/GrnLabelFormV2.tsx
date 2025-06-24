@@ -137,7 +137,8 @@ export const GrnLabelFormV2: React.FC = () => {
     };
 
     initializeUser();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [supabase]);
 
   // Calculate pallet count for display purposes
   const palletCount = Math.min(22, Object.values(state.palletType).reduce((sum, v) => sum + (parseInt(v) || 0), 0) || 1);
@@ -147,6 +148,7 @@ export const GrnLabelFormV2: React.FC = () => {
     if (state.grossWeights.length === 0) {
       actions.setGrossWeights(['']);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // 只在組件掛載時執行一次
 
   // Form handlers
@@ -349,14 +351,14 @@ export const GrnLabelFormV2: React.FC = () => {
                   <WeightInputList
                     grossWeights={state.grossWeights}
                     onChange={handleGrossWeightChange}
-                    onRemove={(idx) => {
+                    onRemove={useCallback((idx: number) => {
                       actions.removeGrossWeight(idx);
                       // 確保至少有一個輸入框
                       if (state.grossWeights.length === 1 || 
                           (state.grossWeights.length === 2 && state.grossWeights[state.grossWeights.length - 1].trim() !== '')) {
                         actions.addGrossWeight();
                       }
-                    }}
+                    }, [actions, state.grossWeights.length])}
                     labelMode={state.labelMode}
                     selectedPalletType={(Object.entries(state.palletType).find(([, value]) => (parseInt(value) || 0) > 0)?.[0] || 'notIncluded') as PalletTypeKey}
                     selectedPackageType={(Object.entries(state.packageType).find(([, value]) => (parseInt(value) || 0) > 0)?.[0] || 'notIncluded') as PackageTypeKey}

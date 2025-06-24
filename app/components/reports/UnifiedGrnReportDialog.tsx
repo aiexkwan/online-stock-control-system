@@ -30,6 +30,7 @@ export function UnifiedGrnReportDialog({ isOpen, onClose }: UnifiedGrnReportDial
     if (isOpen) {
       fetchGrnRefs();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]);
 
   const fetchGrnRefs = async () => {

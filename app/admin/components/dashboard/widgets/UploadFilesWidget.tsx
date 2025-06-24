@@ -184,7 +184,7 @@ export const UploadFilesWidget = React.memo(function UploadFilesWidget({ widget,
         uploadFile(file);
       });
     }
-  }, [selectedFolder, isEditMode, currentUserId]);
+  }, [selectedFolder, isEditMode, uploadFile, validateFile]);
 
   // 拖放處理
   const handleDragOver = (e: React.DragEvent) => {

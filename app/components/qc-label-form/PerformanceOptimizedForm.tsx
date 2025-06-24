@@ -464,7 +464,7 @@ export const PerformanceOptimizedForm: React.FC<PerformanceOptimizedFormProps> =
         businessLogic.clearSavedData();
       }
     };
-  }, []);
+  }, [businessLogic]);
 
   return (
     <ResponsiveLayout className={className}>

@@ -151,7 +151,7 @@ const ResponsiveBookedOutStatsWidgetFixed = memo<WidgetComponentProps>(({ widget
     } finally {
       setLoading(false);
     }
-  }, [timeRange]);
+  }, [timeRange, getDateRangeForTimeRange]);
 
   // 初始載入和刷新觸發
   useEffect(() => {
@@ -176,7 +176,7 @@ const ResponsiveBookedOutStatsWidgetFixed = memo<WidgetComponentProps>(({ widget
     e.preventDefault();
     e.stopPropagation();
     setIsDropdownOpen(prev => !prev);
-  }, [isDropdownOpen]);
+  }, []);
 
   // FIX: 處理選項點擊
   const handleOptionClick = useCallback((range: TimeRange) => (e: React.MouseEvent) => {

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import StockTakeNav from '../components/StockTakeNav';
@@ -308,7 +308,7 @@ export default function CycleCountPage() {
   };
 
   // 數據驗證函數
-  const validateQuantity = async (productCode: string, quantity: number): Promise<any> => {
+  const validateQuantity = useCallback(async (productCode: string, quantity: number): Promise<any> => {
     try {
       const response = await fetch('/api/stock-count/validate', {
         method: 'POST',
@@ -327,7 +327,7 @@ export default function CycleCountPage() {
       console.error('Validation error:', error);
       return { is_valid: true }; // 驗證失敗時允許繼續
     }
-  };
+  }, []);
 
   // 處理批量掃描提交
   const handleBatchSubmit = async () => {

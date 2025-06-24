@@ -155,7 +155,7 @@ export function SupplierInput({
       console.error('[SupplierInput] Error searching suppliers:', err);
       setSuggestions([]);
     }
-  }, [enableSuggestions, autoSelectSingleMatch, supabase]);
+  }, [enableSuggestions, autoSelectSingleMatch, supabase, selectSupplier]);
 
   // Debounced search
   const debouncedSearch = useCallback((value: string) => {

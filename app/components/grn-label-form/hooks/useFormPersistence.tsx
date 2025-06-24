@@ -60,7 +60,8 @@ export function useFormPersistence(isEnabled: boolean = true) {
     debounce((data: Partial<FormData>) => {
       saveFormData(data);
     }, 1000),
-    [saveFormData]
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    []
   );
   
   // Load form data from localStorage

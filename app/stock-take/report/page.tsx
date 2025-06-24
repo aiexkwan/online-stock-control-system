@@ -40,6 +40,7 @@ export default function StockReportPage() {
 
   useEffect(() => {
     fetchReportData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedDate]);
 
   const fetchReportData = async () => {

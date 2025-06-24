@@ -30,6 +30,7 @@ export function UnifiedAcoReportDialog({ isOpen, onClose }: UnifiedAcoReportDial
     if (isOpen) {
       fetchAcoOrders();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]);
 
   const fetchAcoOrders = async () => {

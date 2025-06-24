@@ -244,7 +244,7 @@ export const UploadOrdersWidget = React.memo(function UploadOrdersWidget({ widge
         uploadAndAnalyzeOrder(file);
       });
     }
-  }, [isEditMode, currentUserId]);
+  }, [isEditMode, uploadAndAnalyzeOrder]);
 
   // 拖放處理
   const handleDragOver = (e: React.DragEvent) => {

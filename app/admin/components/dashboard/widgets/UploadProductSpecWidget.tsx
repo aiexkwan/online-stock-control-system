@@ -174,7 +174,7 @@ export const UploadProductSpecWidget = React.memo(function UploadProductSpecWidg
         uploadFile(file);
       });
     }
-  }, [isEditMode, currentUserId]);
+  }, [isEditMode, uploadFile]);
 
   // 拖放處理
   const handleDragOver = (e: React.DragEvent) => {

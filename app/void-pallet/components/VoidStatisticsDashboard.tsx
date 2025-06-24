@@ -33,6 +33,7 @@ export function VoidStatisticsDashboard({ isOpen, onClose }: VoidStatisticsDashb
     if (isOpen) {
       loadStatistics();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, dateRange]);
 
   const loadStatistics = async () => {

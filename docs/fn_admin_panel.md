@@ -2,61 +2,149 @@
 
 ## 概述
 
-管理面板系統係成個倉庫管理系統嘅綜合控制中心，提供全面嘅數據監控、報表生成、系統工具同管理功能。系統整合咗儀表板統計、ACO訂單追蹤、庫存搜尋、報表匯出、檔案上傳、棧板作廢、歷史查詢、資料庫更新同AI驅動嘅資料庫查詢。
+管理面板系統係 NewPennine 倉庫管理系統嘅綜合控制中心，提供全面嘅數據監控、報表生成、系統工具同管理功能。系統採用主題式佈局設計，每個主題針對特定業務功能進行優化。
 
 ## 系統架構
 
-### 主要頁面
-- `/admin`: 主管理面板頁面，提供完整嘅系統管理同監控
-- `/admin/test-grid`: 網格系統測試頁面
-- `/admin/layout`: 管理佈局包裝器，提供Dialog Context
+### 主要頁面路由
+- `/admin`: 主管理面板入口
+- `/admin/[theme]`: 主題式管理頁面
+  - `/admin/injection`: 注塑生產監控
+  - `/admin/pipeline`: 生產流程管理
+  - `/admin/warehouse`: 倉庫管理
+  - `/admin/upload`: 文件上傳中心
+  - `/admin/update`: 數據更新
+  - `/admin/stock-management`: 庫存管理
+  - `/admin/system`: 系統監控
+  - `/admin/analysis`: 數據分析
+- `/admin/pallet-monitor`: 棧板監控頁面
 
 ### 核心組件結構
 
 #### 主頁面組件
-- `app/admin/page.tsx`: 伺服器組件，提供認證同錯誤邊界
-- `app/admin/components/AdminPageClient.tsx`: 主客戶端組件，處理儀表板UI同小工具管理
-- `app/admin/layout.tsx`: 佈局包裝器，提供Dialog Context
+- `app/admin/page.tsx`: 主入口頁面（重定向到 injection 主題）
+- `app/admin/[theme]/page.tsx`: 動態主題頁面
+- `app/admin/layout.tsx`: 管理面板佈局包裝器
+- `app/admin/components/NewAdminDashboard.tsx`: 主儀表板組件
 
-#### 增強儀表板系統
-- `app/admin/components/dashboard/EnhancedDashboard.tsx`: iOS風格嘅小工具系統，支援拖放
-- `app/admin/components/dashboard/AdminEnhancedDashboard.tsx`: 管理員專用嘅增強儀表板
-- `app/admin/components/dashboard/AdminEnhancedDashboardSafe.tsx`: 帶錯誤處理嘅安全版本
-- `app/admin/components/dashboard/AdminEnhancedDashboardSimple.tsx`: 簡化版儀表板
-- `app/admin/components/dashboard/AdminEnhancedDashboardFixed.tsx`: 固定佈局儀表板
+#### 佈局系統
+- `app/admin/components/dashboard/adminDashboardLayouts.ts`: 所有主題佈局定義
+- `app/admin/components/dashboard/CustomThemeLayout.tsx`: injection/pipeline/warehouse 佈局
+- `app/admin/components/dashboard/UploadUpdateLayout.tsx`: upload/update 主題佈局
+- `app/admin/components/dashboard/StockManagementLayout.tsx`: 庫存管理佈局
+- `app/admin/components/dashboard/SystemLayout.tsx`: 系統監控佈局
+- `app/admin/components/dashboard/AnalysisLayout.tsx`: 分析報表佈局
 
-#### 小工具系統組件
-- `app/admin/components/dashboard/registerAdminWidgets.ts`: 小工具註冊系統
-- `app/admin/components/dashboard/GridWidget.tsx`: 基礎網格小工具組件
-- `app/admin/components/dashboard/BaseWidgetWrapper.tsx`: 所有小工具嘅基礎包裝器
-- `app/admin/components/dashboard/ResponsiveWidgetWrapper.tsx`: 響應式小工具容器
+#### Widget 渲染系統
+- `app/admin/components/dashboard/AdminWidgetRenderer.tsx`: Widget 動態渲染器
+- `app/admin/components/dashboard/WidgetCard.tsx`: 統一 Widget 卡片樣式
+- `app/admin/types/widgetSizeRecommendations.ts`: Widget 尺寸建議
 
-#### 管理小工具
+#### 主要 Widget 組件
 位於 `app/admin/components/dashboard/widgets/`:
-- `AcoOrderProgressWidget.tsx`: ACO訂單進度追蹤
-- `InventorySearchWidget.tsx`: 即時庫存搜尋
+
+**數據監控類**
+- `AcoOrderProgressWidget.tsx`: ACO 訂單進度追蹤
 - `OutputStatsWidget.tsx`: 生產輸出統計
-- `RecentActivityWidget.tsx`: 最近系統活動
-- `VoidPalletWidget.tsx`: 作廢棧板操作
 - `MaterialReceivedWidget.tsx`: 物料接收統計
 - `BookedOutStatsWidget.tsx`: 已預訂統計
 - `FinishedProductWidget.tsx`: 成品追蹤
-- `ChartWidget.tsx`: 數據可視化圖表
-- `TestClickWidget.tsx`: 開發測試小工具
+- `UnusedStockWidget.tsx`: 未使用庫存
+- `ProductMixChartWidget.tsx`: 產品組合圖表
+- `PendingGrnWidget.tsx`: 待處理 GRN
 
-#### 對話框組件
-- `app/components/admin-panel-menu/UploadFilesDialog.tsx`: 檔案上傳介面
-- `app/components/admin-panel-menu/VoidPalletDialog.tsx`: 棧板作廢操作
-- `app/components/admin-panel-menu/ViewHistoryDialog.tsx`: 歷史查看介面
-- `app/components/admin-panel-menu/DatabaseUpdateDialog.tsx`: 資料庫更新操作
-- `app/components/admin-panel-menu/AskDatabaseDialog.tsx`: AI資料庫查詢介面
+**操作類**
+- `InventorySearchWidget.tsx`: 即時庫存搜尋
+- `VoidPalletWidget.tsx`: 作廢棧板操作
+- `RecentActivityWidget.tsx`: 最近系統活動
+- `QuickActionsWidget.tsx`: 快速操作
+- `ReportsWidget.tsx`: 報表生成
+- `DocumentUploadWidget.tsx`: 文檔上傳（舊版）
+- `DatabaseUpdateWidget.tsx`: 數據庫更新
+- `AskDatabaseWidget.tsx`: AI 數據庫查詢
 
-#### 業務邏輯Hooks
-- `app/admin/hooks/useAdminDashboard.ts`: 主儀表板操作hook
-- `app/admin/hooks/useGridSystem.ts`: 網格佈局管理
-- `app/admin/hooks/useWidgetData.ts`: 小工具數據獲取
-- `app/admin/hooks/useDialogManagement.ts`: 對話框狀態管理
+**上傳類（新 3D UI）**
+- `Folder3D.tsx`: 3D 文件夾組件
+- `UploadFilesWidget.tsx`: 通用文件上傳
+- `UploadOrdersWidget.tsx`: 訂單 PDF 上傳（含 AI 分析）
+- `UploadProductSpecWidget.tsx`: 產品規格上傳
+- `UploadPhotoWidget.tsx`: 照片上傳
+- `OrdersListWidget.tsx`: 訂單上傳歷史
+- `OtherFilesListWidget.tsx`: 其他文件上傳歷史
+- `HistoryTree.tsx`: 歷史樹狀視圖
+- `GoogleDriveUploadToast.tsx`: 上傳進度提示
+- `OrderAnalysisResultDialog.tsx`: 訂單分析結果對話框
+
+**響應式組件**
+- `ResponsiveOutputStatsWidget.tsx`: 響應式輸出統計
+- `ResponsiveChartWidget.tsx`: 響應式圖表
+- `ResponsiveInventorySearchWidget.tsx`: 響應式庫存搜尋
+- 其他響應式 Widget...
+
+#### UI 組件
+- `app/admin/components/MenuBar.tsx`: Glow Menu 導航系統
+- `app/admin/components/StarfieldBackground.tsx`: 星空背景效果
+- `app/admin/components/UniversalTimeRangeSelector.tsx`: 時間範圍選擇器
+- `app/admin/components/UniversalChatbot.tsx`: AI 助手
+- `app/admin/components/LoadingScreen.tsx`: 加載畫面
+
+#### 業務邏輯 Hooks
+- `app/admin/hooks/useAdminDashboard.ts`: 主儀表板操作
+- `app/admin/hooks/useGridSystem.ts`: 網格系統計算（部分棄用）
+- `app/admin/hooks/useWidgetData.ts`: Widget 數據獲取
 - `app/hooks/useAuth.tsx`: 用戶認證同角色管理
+
+## 主題系統
+
+### 1. Injection（注塑生產）
+- 實時生產監控
+- 輸出統計
+- ACO 訂單追蹤
+- 最近活動
+
+### 2. Pipeline（生產流程）
+- 物料接收追蹤
+- 生產流程狀態
+- 待處理訂單
+- 效率分析
+
+### 3. Warehouse（倉庫管理）
+- 庫存搜尋
+- 棧板管理
+- 位置追蹤
+- 物料流動
+
+### 4. Upload（文件上傳）
+**特色：3D Folder UI**
+- 訂單 PDF 上傳（含 OpenAI 分析）
+- 產品規格文檔
+- 照片上傳
+- 其他文件
+- 上傳歷史查看
+
+### 5. Update（數據更新）
+- 批量數據更新
+- 記錄修改
+- 歷史追蹤
+- 數據驗證
+
+### 6. Stock Management（庫存管理）
+- 庫存水平監控
+- 未使用庫存
+- 庫存調整
+- 報表生成
+
+### 7. System（系統監控）
+- 系統性能
+- 用戶活動
+- 錯誤日誌
+- 系統健康
+
+### 8. Analysis（數據分析）
+- 產品組合分析
+- 趨勢分析
+- 性能指標
+- 自定義報表
 
 ## 數據流向
 
@@ -64,269 +152,204 @@
 - `record_palletinfo`: 棧板基本資訊
 - `record_history`: 操作歷史記錄
 - `record_transfer`: 轉移記錄
-- `record_aco`: ACO訂單進度追蹤
-- `record_grn`: GRN收貨記錄
+- `record_aco`: ACO 訂單進度追蹤
+- `record_grn`: GRN 收貨記錄
 - `record_inventory`: 庫存位置統計
 - `data_code`: 產品代碼數據
 - `data_supplier`: 供應商資訊
 - `data_id`: 用戶認證
-- `data_order`: 歷史訂單記錄
-- `grn_level`: GRN收貨統計
+- `data_order`: 訂單記錄
+- `doc_upload`: 文檔上傳記錄
+- `grn_level`: GRN 收貨統計
 - `stock_level`: 庫存統計
 - `work_level`: 員工工作量統計
-- `admin_dashboard_settings`: 用戶儀表板配置
 
-### 小工具數據服務
-- `app/admin/services/AdminDataService.ts`: 集中式小工具數據獲取
-- `app/admin/services/adminDashboardSettingsService.ts`: 儀表板配置持久化
-- 使用RPC函數進行優化數據檢索
-- 使用React嘅cache()函數實現緩存
+### Widget 數據服務
+- 使用 Supabase 實時查詢
+- React Query 緩存管理
+- 樂觀 UI 更新
+- 錯誤重試機制
 
 ### 權限管理系統
 - 基於角色嘅訪問控制（管理員、生產、倉庫）
 - 功能權限控制
 - 查詢權限管理
-- 管理員權限驗證
+- 頁面級別權限
 
 ## 功能模組
 
-### 1. 儀表板小工具系統
+### 1. 3D 文件上傳系統
 
-#### 小工具功能
-- **拖放**: 使用拖動手柄重新排列小工具
-- **靈活尺寸**: 5種尺寸選項（小、中、大、特大、超大）
-- **響應式網格**: 12列網格系統，帶斷點
-- **持久佈局**: 用戶配置保存到資料庫
-- **即時更新**: 小工具嘅自動刷新功能
+#### 特色功能
+- **3D Folder UI**: CSS 3D transforms 實現立體效果
+- **拖放上傳**: 支援拖放文件到文件夾
+- **多文件支援**: 批量上傳處理
+- **進度追蹤**: Google Drive 風格進度提示
+- **文件預覽**: 圖片即時預覽
 
-#### 小工具管理
-- 動態添加/刪除小工具
-- 編輯小工具屬性
-- 為每個用戶保存自定義佈局
-- 重置為默認佈局
-- 測試預覽模式
+#### 訂單 PDF 分析
+- OpenAI GPT-4 自動分析
+- 提取訂單信息（order_ref, product_code, quantity）
+- 自動插入數據庫
+- ACO 產品自動識別
+- 郵件通知功能
 
-### 2. 快速搜尋模組
+### 2. 庫存搜尋模組
 
-#### 庫存搜尋功能
-- 產品代碼搜尋，帶自動建議
-- 即時搜尋結果
-- 按位置顯示庫存
+#### 功能特點
+- 產品代碼自動完成
+- 實時庫存查詢
+- 按位置分組顯示
 - 總庫存統計
-- 與其他小工具整合
+- 導出功能
 
-### 3. 報表匯出模組
+### 3. 報表系統
 
 #### 報表類型
-- ACO訂單報表
-- GRN收貨報表
-- 交易記錄
-- Slate產品報表
-- 完整數據匯出
-- 自定義日期範圍報表
+- ACO 訂單報表
+- GRN 收貨報表
+- 交易記錄報表
+- 庫存盤點報表
+- 棧板作廢報表
+- 自定義日期範圍
 
-### 4. 系統工具模組
+### 4. AI 數據庫查詢
 
-#### 檔案上傳
-- PDF檔案支援
-- 訂單分析
-- 自動數據提取
-- 重複檢查
-- 進度追蹤
-
-#### 棧板作廢操作
-- 狀態變更管理
-- 原因記錄
-- 庫存自動調整
-- 標籤重印支援
-- 批量作廢功能
-
-#### 歷史查詢
-- 完整棧板歷史
-- 操作追蹤
-- 時間線顯示
-- 詳細資訊查看
-- 匯出功能
-
-#### 資料庫更新
-- 記錄修改
-- 批量更新操作
-- 數據完整性檢查
-- 更新歷史記錄
-- 回滾支援
-
-#### AI資料庫查詢
+#### 功能特色
 - 自然語言查詢
-- 智能SQL生成
-- 查詢結果顯示
-- 基於權限嘅訪問
-- 查詢歷史追蹤
+- SQL 自動生成
+- 結果可視化
+- 查詢歷史
+- 權限控制
+
+### 5. 實時監控
+
+#### 監控指標
+- 生產輸出率
+- 物料接收量
+- 庫存水平
+- 系統性能
+- 用戶活動
 
 ## 技術實現
 
-### 前端技術
-- React 18配合伺服器組件
-- TypeScript用於類型安全
-- Framer Motion用於動畫
-- Tailwind CSS用於樣式
-- Heroicons用於圖標
-- React DnD用於拖放
-- React PDF用於報表生成
+### 前端技術棧
+- **React 18**: 使用 Server Components
+- **Next.js 14.2.30**: App Router
+- **TypeScript**: 類型安全
+- **Tailwind CSS**: 樣式系統
+- **Framer Motion**: 動畫效果
+- **Recharts**: 數據可視化
+- **React Hook Form**: 表單管理
+
+### UI/UX 設計
+- **玻璃擬態效果**: backdrop-blur, 半透明背景
+- **深色主題**: 黑色/灰色基調
+- **漸變效果**: 品牌色彩漸變
+- **響應式設計**: 適配各種設備
+- **3D 效果**: CSS 3D transforms
+- **動畫過渡**: 流暢的狀態轉換
 
 ### 狀態管理
-- React Context用於全局狀態
-- 自定義hooks用於業務邏輯
-- 樂觀UI更新
-- 錯誤邊界實現
-- 載入狀態管理
+- React Context（全局狀態）
+- React Query（服務器狀態）
+- Local State（組件狀態）
+- URL State（路由狀態）
 
 ### 後端整合
-- Supabase作為後端服務
-- 即時資料庫查詢
-- 檔案存儲管理
-- RPC函數用於複雜查詢
-- 行級安全性（RLS）
+- **Supabase**: PostgreSQL 數據庫
+- **實時訂閱**: 數據即時更新
+- **Row Level Security**: 數據安全
+- **Storage**: 文件存儲
+- **Edge Functions**: 服務端邏輯
 
-### UI設計特色
-- 玻璃擬態效果
-- 帶漸變嘅深色主題
-- 響應式斷點
-- 動態背景元素
-- 現代卡片設計
-- 流暢動畫
-- 觸控友好介面
-
-## 介面佈局設計
-
-### 頂部導航區
-- 頁面標題同麵包屑
-- 用戶資訊顯示
-- 快速操作按鈕
-- 系統狀態指示器
-- 設置訪問
-
-### 儀表板網格區
-- 可自定義小工具網格
-- 拖放支援
-- 響應式列
-- 小工具尺寸變化
-- 空狀態處理
-
-### 小工具類型
-- **統計小工具**: 顯示關鍵指標
-- **圖表小工具**: 數據可視化
-- **列表小工具**: 表格數據顯示
-- **操作小工具**: 快速操作
-- **搜尋小工具**: 數據查詢
-
-### 控制面板
-- 編輯模式切換
-- 添加小工具按鈕
-- 佈局保存/重置
-- 查看選項
-- 幫助文檔
-
-## API端點
-
-### RPC函數
-- `get_admin_dashboard_stats`: 集中式統計檢索
-- `search_inventory_by_product`: 產品搜尋
-- `get_operator_performance`: 性能指標
-- `get_void_statistics`: 作廢棧板統計
-- `get_time_range_stats`: 基於時間嘅統計
+## API 端點
 
 ### REST API
-- `/api/export-report/`: 報表生成
-- `/api/upload-file/`: 檔案上傳服務
-- `/api/analyze-order-pdf/`: PDF分析
-- `/api/ask-database/`: AI查詢處理
+- `/api/upload-file/`: 文件上傳
+- `/api/analyze-order-pdf/`: PDF 分析
+- `/api/export-report/`: 報表導出
+- `/api/ask-database/`: AI 查詢
 
-## 權限控制系統
-
-### 用戶角色
-- **管理員**: 完整系統訪問
-- **生產**: 限於生產功能
-- **倉庫**: 限於倉庫操作
-
-### 功能權限
-- 儀表板自定義
-- 報表生成
-- 系統工具訪問
-- AI查詢功能
-- 數據修改權限
-
-### 安全設計
-- 操作日誌
-- 敏感操作確認
-- 數據訪問控制
-- 會話管理
-- API速率限制
+### Supabase RPC
+- 複雜查詢優化
+- 數據聚合
+- 批量操作
+- 統計計算
 
 ## 性能優化
 
 ### 前端優化
-- 組件延遲加載
-- 昂貴操作嘅記憶化
-- 大列表嘅虛擬滾動
-- 防抖搜尋輸入
-- 樂觀UI更新
+- 組件懶加載
+- 代碼分割
+- 圖片優化
+- 緩存策略
+- 虛擬滾動
 
-### 資料庫優化
-- 索引查詢
-- 物化視圖
-- 連接池
-- 查詢結果緩存
-- 批量操作
+### 數據優化
+- 查詢優化
+- 索引使用
+- 分頁加載
+- 數據預取
+- 批量更新
 
-### 緩存策略
-- React cache()用於伺服器數據
-- 客戶端狀態緩存
-- 小工具數據緩存
-- 配置緩存
-- 圖像優化
+### UI 優化
+- 骨架屏
+- 樂觀更新
+- 錯誤邊界
+- 加載狀態
+- 防抖節流
 
-## 監控同日誌
+## 安全措施
 
-### 操作監控
-- 用戶操作追蹤
-- 小工具使用分析
-- 性能指標
-- 錯誤率追蹤
-- 功能採用率
+### 認證授權
+- Supabase Auth
+- JWT Token
+- 角色權限
+- 頁面保護
+- API 保護
 
-### 日誌系統
-- 操作日誌
-- 錯誤收集
-- 系統事件
-- 安全事件
-- 性能日誌
+### 數據安全
+- RLS 政策
+- 輸入驗證
+- SQL 注入防護
+- XSS 防護
+- CSRF 保護
 
-### 警報機制
-- 系統異常警報
-- 性能問題警告
-- 安全事件通知
-- 自動恢復
-- 電郵通知
+### 操作審計
+- 用戶活動日誌
+- 數據修改記錄
+- 文件上傳記錄
+- 查詢歷史
+- 錯誤日誌
 
-## 未來改進
+## 部署架構
+
+### 環境配置
+- 開發環境
+- 測試環境
+- 生產環境
+- 環境變量管理
+
+### 監控告警
+- 性能監控
+- 錯誤追蹤
+- 用戶行為分析
+- 系統健康檢查
+- 實時告警
+
+## 未來發展
 
 ### 計劃功能
-- 即時協作
-- 高級分析儀表板
-- 移動應用整合
-- 語音命令支援
-- 機器學習洞察
+- 移動端優化
+- 離線支援
+- 更多 AI 功能
+- 數據導入導出增強
+- 第三方整合
 
 ### 技術改進
-- WebSocket整合
-- Service Worker實現
-- 離線功能
-- 增強緩存
-- 性能監控
-
-### 用戶體驗
-- 可自定義主題
-- 鍵盤快捷鍵
-- 無障礙改進
-- 多語言支援
-- 教程系統
+- 性能持續優化
+- 更好的錯誤處理
+- 測試覆蓋提升
+- 文檔完善
+- 國際化支援

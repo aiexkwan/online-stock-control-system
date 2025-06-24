@@ -103,7 +103,7 @@ export const useQcLabelBusiness = ({
     // Store the event and open clock number confirmation
     setPrintEventToProceed(e);
     setIsClockConfirmOpen(true);
-  }, []);
+  }, [setIsClockConfirmOpen, setPrintEventToProceed]);
 
   // Handle clock number confirmation
   const handleClockNumberConfirm = useCallback(async (clockNumber: string) => {
@@ -406,6 +406,9 @@ export const useQcLabelBusiness = ({
       setPrintEventToProceed(null);
     }
   }, [
+    isProcessing,
+    setIsClockConfirmOpen,
+    setPrintEventToProceed,
     productInfo,
     formData,
     setFormData,

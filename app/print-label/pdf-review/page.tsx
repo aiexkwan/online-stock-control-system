@@ -36,7 +36,8 @@ export default function PdfReviewPage() {
       palletNum,
       workOrderNumber
     });
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [productCode, description, quantity, date, operatorClockNum, qcClockNum, workOrderType, workOrderValue, palletNum, workOrderNumber]);
 
   return (
     <div className="min-h-screen bg-gray-900 flex flex-col items-center justify-center py-8">

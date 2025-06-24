@@ -62,7 +62,7 @@ export default function NumberPad({ onConfirm, onCancel, isLoading = false }: Nu
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [value, isLoading]);
+  }, [value, isLoading, handleClear, handleConfirm]);
 
   // 處理數字輸入
   const handleNumberClick = (num: string) => {

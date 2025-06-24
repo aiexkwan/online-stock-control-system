@@ -50,6 +50,7 @@ export function StaffWorkloadChart({ timeRange }: StaffWorkloadChartProps) {
   
   useEffect(() => {
     loadData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [timeRange]);
 
   const loadData = async () => {

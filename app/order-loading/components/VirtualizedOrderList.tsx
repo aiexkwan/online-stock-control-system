@@ -74,7 +74,7 @@ export function VirtualizedOrderList({
         }
       }
     }
-  }, [selectedOrderRef]); // Only depend on selectedOrderRef change
+  }, [selectedOrderRef, filteredOrders, scrollTop, itemHeight, containerHeight]);
 
   const visibleItems = filteredOrders.slice(visibleRange.start, visibleRange.end);
 

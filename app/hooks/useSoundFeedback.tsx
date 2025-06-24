@@ -22,12 +22,16 @@ export function useSoundFeedback(options: SoundOptions = {}) {
     }
     
     return () => {
-      if (oscillatorRef.current) {
-        oscillatorRef.current.stop();
-        oscillatorRef.current.disconnect();
+      // Capture the current ref values to avoid stale closure issues
+      const oscillator = oscillatorRef.current;
+      const audioContext = audioContextRef.current;
+      
+      if (oscillator) {
+        oscillator.stop();
+        oscillator.disconnect();
       }
-      if (audioContextRef.current) {
-        audioContextRef.current.close();
+      if (audioContext) {
+        audioContext.close();
       }
     };
   }, []);

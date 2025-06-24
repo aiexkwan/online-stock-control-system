@@ -94,6 +94,7 @@ export default function OrderLoadingPage() {
     } else if (idInputRef.current) {
       idInputRef.current.focus();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Save ID to localStorage when validated

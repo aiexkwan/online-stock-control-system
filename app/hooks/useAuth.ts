@@ -88,7 +88,7 @@ export function useAuth(): AuthState {
     );
 
     return () => subscription.unsubscribe();
-  }, []);
+  }, [supabase.auth]);
 
   return {
     user,
