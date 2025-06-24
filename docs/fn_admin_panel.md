@@ -75,6 +75,10 @@
 - `GoogleDriveUploadToast.tsx`: 上傳進度提示
 - `OrderAnalysisResultDialog.tsx`: 訂單分析結果對話框
 
+**更新類（Update 頁面專用）**
+- `ProductUpdateComponent`: 產品資料更新（嵌入到 AdminWidgetRenderer）
+- `SupplierUpdateComponent`: 供應商資料更新（嵌入到 AdminWidgetRenderer）
+
 **響應式組件**
 - `ResponsiveOutputStatsWidget.tsx`: 響應式輸出統計
 - `ResponsiveChartWidget.tsx`: 響應式圖表
@@ -97,54 +101,68 @@
 ## 主題系統
 
 ### 1. Injection（注塑生產）
-- 實時生產監控
-- 輸出統計
-- ACO 訂單追蹤
-- 最近活動
+**主要功能**: 監控注塑車間生產（非 U 開頭產品）
+- Today Produced (PLT/QTY): 今日生產統計
+- Top 5/10 Products: 產品排行視覺化
+- Production Details: 生產明細表（棧板號、產品碼、數量、QC人員）
+- Staff Workload: 員工工作量追蹤（QC、GRN、Move 總和）
 
 ### 2. Pipeline（生產流程）
-- 物料接收追蹤
-- 生產流程狀態
-- 待處理訂單
-- 效率分析
+**主要功能**: 監控 Pipeline 車間生產（U 開頭產品）
+- 同 Injection 類似佈局但專注 U 系列產品
+- Pipeline 部門員工工作量分析
+- U 系列產品生產排行
+- 專門嘅生產明細追蹤
 
 ### 3. Warehouse（倉庫管理）
-- 庫存搜尋
-- 棧板管理
-- 位置追蹤
-- 物料流動
+**主要功能**: 倉庫位置管理同庫存監控
+- Warehouse Location Map: 倉庫位置熱力圖（WarehouseHeatmap）
+- Total Stock/Locations Used: 庫存同位置統計
+- In Transit/Capacity: 運輸中數量同容量使用率
+- Inventory Levels/Location Utilization: 庫存水平視覺化
+- Warehouse Alerts: 倉庫警報系統
+- Recent Movements: 最近移動記錄
 
 ### 4. Upload（文件上傳）
 **特色：3D Folder UI**
-- 訂單 PDF 上傳（含 OpenAI 分析）
-- 產品規格文檔
-- 照片上傳
-- 其他文件
-- 上傳歷史查看
+- Order Upload History: 訂單上傳歷史列表
+- Other File Upload History: 其他文件上傳歷史
+- Upload Files: 通用文件上傳（拖放支援）
+- Upload Orders: 訂單 PDF 上傳（含 OpenAI 分析）
+- Upload Product Spec: 產品規格文檔
+- Upload Photo: 照片上傳
+- Google Drive 整合同進度提示
 
 ### 5. Update（數據更新）
-- 批量數據更新
-- 記錄修改
-- 歷史追蹤
-- 數據驗證
+- **Product Update Widget**: 產品資料維護（搜尋、新增、編輯）
+- **Supplier Update Widget**: 供應商資料維護（搜尋、新增、編輯）
+- 四個透明統計 widgets（Pending Updates、Processing、Completed Today、Failed）
+- 完整移植原有 dialog tabs 功能到獨立 widgets
 
 ### 6. Stock Management（庫存管理）
-- 庫存水平監控
-- 未使用庫存
-- 庫存調整
-- 報表生成
+**主要功能**: 庫存水平監控同分析
+- Stock Inventory: 庫存清單表格（搜尋、導出功能）
+- Total Stock Value: 總庫存價值統計
+- Stock Distribution: 庫存分佈圓餅圖
+- Stock Alerts: 低庫存警報系統
 
 ### 7. System（系統監控）
-- 系統性能
-- 用戶活動
-- 錯誤日誌
-- 系統健康
+**主要功能**: 系統報表生成中心
+- Void Pallet Report: 損壞棧板報表
+- Order Loading Report: 訂單裝載報表
+- Stock Take Report: 盤點報表
+- ACO Order Report: ACO 訂單報表（需選擇訂單）
+- Transaction Report: 庫存轉移報表
+- GRN Report: 收貨報表（需選擇 GRN）
+- Export All Data: 系統數據導出
+- Additional Reports: 其他報表（即將推出）
 
 ### 8. Analysis（數據分析）
-- 產品組合分析
-- 趨勢分析
-- 性能指標
-- 自定義報表
+**主要功能**: 生產數據深度分析
+- Production Trend Analysis: 生產趨勢分析折線圖
+- Product Mix Distribution: 產品組合分佈餅圖
+- Performance Metrics: 性能指標表格
+- Comparative Analysis: 期間對比分析柱狀圖
 
 ## 數據流向
 
