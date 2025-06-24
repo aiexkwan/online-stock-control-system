@@ -113,16 +113,45 @@ async function extractTextFromPDF(pdfBuffer: Buffer): Promise<string> {
       throw new Error('Invalid PDF buffer');
     }
     
+    console.log('[PDF Text Extract] Buffer size:', pdfBuffer.length);
+    
     const pkg = require('pdf-parse');
     const pdfParse = pkg.default || pkg;
-    const pdfData = await pdfParse(pdfBuffer);
+    
+    // 添加更多選項以處理不同類型的 PDF
+    const options = {
+      max: 0, // 不限制頁數
+      // 移除 version 設定，因為可能導致問題
+    };
+    
+    const pdfData = await pdfParse(pdfBuffer, options);
+    
+    console.log('[PDF Text Extract] Pages:', pdfData.numpages);
+    console.log('[PDF Text Extract] Text length:', pdfData.text?.length || 0);
+    console.log('[PDF Text Extract] PDF info:', pdfData.info);
     
     if (!pdfData.text || pdfData.text.trim().length === 0) {
-      throw new Error('No readable text found in PDF');
+      // 如果沒有文本，嘗試提取頁面信息
+      console.log('[PDF Text Extract] No text found, PDF info:', pdfData.info);
+      throw new Error('No readable text found in PDF - might be a scanned image');
     }
     
-    return pdfData.text.trim();
+    const extractedText = pdfData.text.trim();
+    console.log('[PDF Text Extract] FULL EXTRACTED TEXT:');
+    console.log('=====================================');
+    console.log(extractedText);
+    console.log('=====================================');
+    console.log('[PDF Text Extract] Contains key terms:', {
+      hasOrderRef: /\b\d{6,10}\b/.test(extractedText),
+      hasAccount: /Account\s*No/i.test(extractedText),
+      hasDelivery: /Delivery\s*Address/i.test(extractedText),
+      hasProduct: /Product|Item|Code/i.test(extractedText),
+      hasNumbers: /\d+/.test(extractedText)
+    });
+    
+    return extractedText;
   } catch (error: any) {
+    console.error('[PDF Text Extract] Error:', error.message);
     throw new Error(`PDF text extraction failed: ${error.message}`);
   }
 }
@@ -136,33 +165,85 @@ function preprocessPdfText(rawText: string): string {
   const orderRef = orderRefMatch ? orderRefMatch[0] : '';
   
   // 1.1 提取 Account No (可能包含字母和數字)
-  // 改進：支持字母數字組合
-  const accountMatch = rawText.match(/Account\s*No\.?:?\s*([A-Z0-9]+)/i);
-  const accountNum = accountMatch ? accountMatch[1] : '';
-  console.log(`[PDF Preprocessing] Account No found: ${accountNum}`);
+  // 改進：支持多種格式
+  let accountNum = '';
+  const accountPatterns = [
+    /Account\s*No\.?:?\s*([A-Z0-9]+)/i,
+    /Account\s*Number:?\s*([A-Z0-9]+)/i,
+    /Acc\s*No\.?:?\s*([A-Z0-9]+)/i,
+    /Customer\s*No\.?:?\s*([A-Z0-9]+)/i
+  ];
   
-  // 1.2 提取 Delivery Address
+  for (const pattern of accountPatterns) {
+    const match = rawText.match(pattern);
+    if (match) {
+      accountNum = match[1];
+      break;
+    }
+  }
+  console.log(`[PDF Preprocessing] Account No found: "${accountNum}"`);
+  
+  // 1.2 提取 Delivery Address - 改進版
   let deliveryAdd = '';
-  // 改進：更精確的地址匹配
-  const deliveryAddMatch = rawText.match(/Delivery\s*Address:?\s*([\s\S]*?)(?=\s*(?:Driver|Date|Order|Pallet\s*Information|Item\s*Code|Product|Price\s*Band|Account\s*Balance|Tel:|Email:|Credit\s*Position|Page|\n\s*\n))/i);
-  if (deliveryAddMatch) {
-    const rawAddress = deliveryAddMatch[1].trim();
-    console.log(`[PDF Preprocessing] Raw delivery address match:`, rawAddress);
-    
-    // 清理地址，保留郵政編碼
-    deliveryAdd = rawAddress
-      .split('\n')
-      .map(line => line.trim())
-      .filter(line => {
-        // 過濾空行和標題
-        if (!line) return false;
-        if (line.match(/^(Delivery Address:?|Invoice To:?|Tel:?|Email:?)$/i)) return false;
-        // 保留含有郵政編碼的行
-        return true;
-      })
-      .join(', ');
-  } else {
-    console.log(`[PDF Preprocessing] No delivery address match found`);
+  const deliveryPatterns = [
+    // 標準格式：Delivery Address: 後的內容
+    /Delivery\s*Address:?\s*([\s\S]*?)(?=\s*(?:Driver|Date|Order|Pallet\s*Information|Item\s*Code|Product|Price\s*Band|Account\s*Balance|Tel:|Email:|Credit\s*Position|Page|Requested\s*Delivery|Account\s*No|Customer|Notes|Goods\s*to|^\s*$))/i,
+    // 備選格式：Deliver To: 或 Ship To:
+    /(?:Deliver\s*To|Ship\s*To):?\s*([\s\S]*?)(?=\s*(?:Driver|Date|Order|Pallet\s*Information|Item\s*Code|Product|Price\s*Band|Account\s*Balance|Tel:|Email:|Credit\s*Position|Page|Requested\s*Delivery|Account\s*No|Customer|Notes|^\s*$))/i
+  ];
+  
+  for (const pattern of deliveryPatterns) {
+    const match = rawText.match(pattern);
+    if (match) {
+      const rawAddress = match[1].trim();
+      console.log(`[PDF Preprocessing] Raw delivery address match:`, rawAddress.substring(0, 200));
+      
+      // 清理地址，移除不相關的行
+      deliveryAdd = rawAddress
+        .split('\n')
+        .map(line => line.trim())
+        .filter(line => {
+          // 過濾空行和標題
+          if (!line) return false;
+          if (line.match(/^(Delivery Address:?|Invoice To:?|Deliver To:?|Ship To:?|Tel:?|Email:?|Site Tel No:?)$/i)) return false;
+          // 過濾純數字行（可能是電話）
+          if (line.match(/^\d+$/)) return false;
+          // 過濾日期格式
+          if (line.match(/^\d{1,2}\/\d{1,2}\/\d{2,4}$/)) return false;
+          return true;
+        })
+        .slice(0, 5) // 最多取前5行
+        .join(', ');
+      
+      if (deliveryAdd.length > 10) { // 確保地址有意義的長度
+        break;
+      }
+    }
+  }
+  
+  console.log(`[PDF Preprocessing] Extracted delivery address: "${deliveryAdd}"`);
+  
+  // 如果仍然沒有找到地址，嘗試查找包含郵政編碼的行
+  if (!deliveryAdd) {
+    const postcodeMatch = rawText.match(/([A-Z]{1,2}\d{1,2}\s?\d[A-Z]{2})/g);
+    if (postcodeMatch) {
+      const lines = rawText.split('\n');
+      for (const line of lines) {
+        if (postcodeMatch.some(postcode => line.includes(postcode))) {
+          // 找到包含郵政編碼的行及其前幾行
+          const lineIndex = lines.indexOf(line);
+          const addressLines = lines.slice(Math.max(0, lineIndex - 3), lineIndex + 1)
+            .map(l => l.trim())
+            .filter(l => l && !l.match(/^(Tel:|Email:|Date:|Account|Customer)/i));
+          
+          if (addressLines.length > 0) {
+            deliveryAdd = addressLines.join(', ');
+            console.log(`[PDF Preprocessing] Found address by postcode: "${deliveryAdd}"`);
+            break;
+          }
+        }
+      }
+    }
   }
   
   // 2. 定位產品表格區域的關鍵標識
@@ -184,7 +265,20 @@ function preprocessPdfText(rawText: string): string {
     'VAT',
     'TOTAL',
     'Parcel 1',
-    'Parcel 2'
+    'Parcel 2',
+    'Parcel 3',
+    'Parcel 4',
+    'Parcel 5',
+    'Height',
+    'Length',
+    'Width',
+    'Weight',
+    'Requested Delivery Date:',
+    'Actual Delivery Date:',
+    'Driver:',
+    'No Of Pallets:',
+    'Amended On Sage:',
+    'Is A Balance Order Required:'
   ];
   
   // 3. 找到表格開始位置
@@ -217,16 +311,16 @@ function preprocessPdfText(rawText: string): string {
   if (accountNum) {
     coreContent += `Account No: ${accountNum}\n`;
   } else {
-    // 即使沒有帳號也要加上標籤
-    coreContent += `Account No: \n`;
+    // 即使沒有帳號也要加上標籤，但提示 OpenAI 嘗試從原文提取
+    coreContent += `Account No: [EXTRACT_FROM_TEXT]\n`;
   }
   
   // 添加 Delivery Address
   if (deliveryAdd) {
     coreContent += `Delivery Address: ${deliveryAdd}\n`;
   } else {
-    // 即使沒有地址也要加上標籤，讓 OpenAI 知道要填充這個欄位
-    coreContent += `Delivery Address: \n`;
+    // 即使沒有地址也要加上標籤，但提示 OpenAI 嘗試從原文提取
+    coreContent += `Delivery Address: [EXTRACT_FROM_TEXT]\n`;
   }
   
   coreContent += '\n';
@@ -240,28 +334,59 @@ function preprocessPdfText(rawText: string): string {
     if (processedLines.length > 0) {
       coreContent += `Product Table:\n${processedLines.join('\n')}`;
     } else {
-      // 備用：使用原始表格內容但保留基本格式
-      coreContent += `Product Table:\n${tableContent}`;
+      // 備用：從原始文本中提取產品行
+      console.log('[PDF Preprocessing] No processed lines found, extracting product lines from raw text');
+      const productLines = extractProductLinesFromRawText(rawText);
+      if (productLines.length > 0) {
+        coreContent += `Product Table:\n${productLines.join('\n')}`;
+      } else {
+        coreContent += `Product Table:\n${tableContent}`;
+      }
     }
   } else {
     // 如果找不到表格標識，嘗試直接識別產品行
     console.log('[PDF Preprocessing] Table markers not found, attempting direct product line extraction');
-    const processedLines = extractAndProcessProductLines(rawText);
-    if (processedLines.length > 0) {
-      coreContent += `Order Reference: ${orderRef}\n\nProduct Table:\n${processedLines.join('\n')}`;
+    const productLines = extractProductLinesFromRawText(rawText);
+    if (productLines.length > 0) {
+      coreContent += `Product Table:\n${productLines.join('\n')}`;
     } else {
-      // 最後備用策略：使用原始文本
-      coreContent = rawText;
+      // 最後備用策略：保留關鍵產品信息
+      const productSection = rawText.match(/S\d+[A-Z0-9\-]+.*?(?=\n|$)/gm);
+      if (productSection && productSection.length > 0) {
+        coreContent += `Product Table:\n${productSection.join('\n')}`;
+      } else {
+        coreContent += `Product Table:\n[No products found]`;
+      }
     }
   }
   
-  // 6. 輕度清理文本（保留重要的格式）
+  // 6. 強化文本清理，移除無關內容
   let processedText = coreContent
     // 移除多餘的空行（但保留單個換行）
     .replace(/\n{3,}/g, '\n\n')
-    // 移除常見的無關內容
+    // 移除 Parcel 相關信息
+    .replace(/Parcel\s*\d+[\s\S]*?(?=\n|$)/gi, '')
+    // 移除包裝尺寸信息
+    .replace(/Height[\s\S]*?Width[\s\S]*?Length[\s\S]*?Weight/gi, '')
+    .replace(/Length[\s\S]*?Height[\s\S]*?Width[\s\S]*?Weight/gi, '')
+    .replace(/Weight[\s\S]*?Width[\s\S]*?Height[\s\S]*?Length/gi, '')
+    // 移除總計信息
+    .replace(/Notes:.*?TOTAL[\d\.]+/gi, '')
+    .replace(/Nett[\d\.]+\s*VAT[\d\.]+\s*TOTAL[\d\.]+/gi, '')
+    // 移除頁尾信息
+    .replace(/Total Number Of Pages:.*$/gi, '')
+    .replace(/Requested Delivery Date:.*?Total Weight Of Order.*$/gi, '')
+    .replace(/Actual Delivery Date:.*$/gi, '')
+    .replace(/Driver:.*$/gi, '')
+    .replace(/No Of Pallets:.*$/gi, '')
+    .replace(/Amended On Sage:.*$/gi, '')
+    .replace(/Is A Balance Order Required:.*$/gi, '')
+    .replace(/Total Weight Of Order.*$/gi, '')
+    // 移除聯絡信息
     .replace(/Tel:\s*\d+[\d\s\-\+\(\)]*\n?/gi, '')
     .replace(/Email:\s*[\w\.\-]+@[\w\.\-]+\n?/gi, '')
+    .replace(/Site Tel No:.*?\n?/gi, '')
+    // 移除其他無關信息
     .replace(/Price Band ID:\s*\d+\n?/gi, '')
     .replace(/Credit Position:.*?\n?/gi, '')
     .replace(/Account Balance:.*?\n?/gi, '')
@@ -269,23 +394,53 @@ function preprocessPdfText(rawText: string): string {
     .replace(/Requested Delivery Date:.*?\n?/gi, '')
     .replace(/Entered By:.*?\n?/gi, '')
     .replace(/Checked By:.*?\n?/gi, '')
-    // 移除地址相關內容（更精確的模式）
-    // .replace(/\b[A-Z]{1,2}\d{1,2}\s?\d[A-Z]{2}\b(?!\s*\d)/g, '') // 暫時註釋掉，避免移除郵編
-    // 移除頁首頁尾
     .replace(/Invoice To:/gi, '')
-    // 不要移除 Delivery Address: 標識，因為需要用來提取地址
-    // .replace(/Delivery Address:/gi, '')
     .replace(/Pallet Information/gi, '')
-    .replace(/Site Tel No:.*?\n?/gi, '')
+    .replace(/Priority:/gi, '')
+    // 移除多個連續嘅空白字符
+    .replace(/\s{3,}/g, ' ')
+    .trim();
+
+  // 7. 特殊清理：移除你提到嘅具體無關內容
+  const unwantedPatterns = [
+    // 移除包裝詳情
+    /Parcel\s*[1-5][\s\S]*?(?=\n[A-Z]|\n\s*$|$)/gi,
+    // 移除尺寸重量詳情
+    /(?:Height|Length|Width|Weight)(?:\s+(?:Height|Length|Width|Weight))*[\s\S]*?(?=\n[A-Z]|\n\s*$|$)/gi,
+    // 移除總計部分
+    /Notes:\s*Nett[\d\.]+\s*VAT[\d\.]+\s*TOTAL[\d\.]+/gi,
+    // 移除頁尾信息
+    /Total Number Of Pages:\s*\d+/gi,
+    /Requested Delivery Date:[\s\S]*?Total Weight Of Order \(Kg\):\s*\d*/gi,
+    /Actual Delivery Date:[\s\S]*?$/gi,
+    /Driver:[\s\S]*?$/gi,
+    /No Of Pallets:[\s\S]*?$/gi,
+    /Amended On Sage:[\s\S]*?$/gi,
+    /Is A Balance Order Required:[\s\S]*?$/gi,
+    // 移除零散的包裝信息
+    /LengthHeight/gi,
+    /WidthWeight/gi,
+    /HeightLength/gi
+  ];
+
+  for (const pattern of unwantedPatterns) {
+    processedText = processedText.replace(pattern, '');
+  }
+
+  // 最終清理
+  processedText = processedText
+    .replace(/\n{2,}/g, '\n') // 移除多餘換行
+    .replace(/\s{2,}/g, ' ')  // 移除多餘空格
     .trim();
   
   console.log(`[PDF Preprocessing] Processed text length: ${processedText.length} chars`);
   console.log(`[PDF Preprocessing] Reduction: ${((rawText.length - processedText.length) / rawText.length * 100).toFixed(1)}%`);
   console.log(`[PDF Preprocessing] Extracted Account No:`, accountNum);
   console.log(`[PDF Preprocessing] Extracted Delivery Address:`, deliveryAdd);
-  
-  // Debug: 顯示前 500 個字符
-  console.log(`[PDF Preprocessing] First 500 chars of processed text:`, processedText.substring(0, 500));
+  console.log('[PDF Preprocessing] FULL PROCESSED TEXT:');
+  console.log('=====================================');
+  console.log(processedText);
+  console.log('=====================================');
   
   return processedText;
 }
@@ -498,8 +653,65 @@ export async function POST(request: NextRequest) {
     
     const contentType = request.headers.get('content-type') || '';
     
-    if (contentType.includes('application/json')) {
-      // 新格式：接收 JSON 包含 pdfUrl
+    if (contentType.includes('multipart/form-data')) {
+      // 🚀 新流程：直接處理 FormData（性能優化）
+      console.log('[PDF Analysis] Using direct FormData processing');
+      
+      const formData = await request.formData();
+      const file = formData.get('file') as File;
+      fileName = formData.get('fileName') as string || file.name;
+      uploadedBy = formData.get('uploadedBy') as string;
+      const saveToStorage = formData.get('saveToStorage') === 'true';
+      
+      console.log('[PDF Analysis] FormData received:', { 
+        fileName, 
+        uploadedBy, 
+        fileSize: file.size,
+        saveToStorage 
+      });
+      
+      if (!file || !fileName || !uploadedBy) {
+        return NextResponse.json({ 
+          error: 'Missing required fields: file, fileName, or uploadedBy' 
+        }, { status: 400 });
+      }
+      
+      // 🚀 直接從文件提取，無需 Storage round trip
+      try {
+        const arrayBuffer = await file.arrayBuffer();
+        pdfBuffer = Buffer.from(arrayBuffer);
+        console.log('[PDF Analysis] PDF loaded directly from FormData, size:', pdfBuffer.length, 'bytes');
+        
+        // 檢查 PDF 魔術數字
+        const pdfMagic = pdfBuffer.slice(0, 5).toString();
+        console.log('[PDF Analysis] PDF magic bytes:', pdfMagic);
+        
+        if (!pdfMagic.startsWith('%PDF')) {
+          throw new Error('Uploaded file is not a valid PDF');
+        }
+        
+        // 🔄 可選背景存儲（不影響分析性能）
+        if (saveToStorage) {
+          console.log('[PDF Analysis] Scheduling background storage upload...');
+          // 在分析完成後執行背景存儲
+          setImmediate(async () => {
+            try {
+              await uploadToStorageAsync(pdfBuffer, fileName, uploadedBy);
+            } catch (storageError) {
+              console.warn('[PDF Analysis] Background storage failed:', storageError);
+            }
+          });
+        }
+        
+      } catch (fileError: any) {
+        console.error('[PDF Analysis] FormData processing error:', fileError);
+        throw new Error(`Failed to process uploaded file: ${fileError.message}`);
+      }
+      
+    } else if (contentType.includes('application/json')) {
+      // 🔄 舊流程：兼容現有 JSON 請求
+      console.log('[PDF Analysis] Using legacy JSON processing with Storage download');
+      
       const body = await request.json();
       pdfUrl = body.pdfUrl;
       fileName = body.fileName;
@@ -513,19 +725,72 @@ export async function POST(request: NextRequest) {
         }, { status: 400 });
       }
       
-      // 下載 PDF
-      console.log('[PDF Analysis] Downloading PDF from URL:', pdfUrl);
-      const pdfResponse = await fetch(pdfUrl);
-      if (!pdfResponse.ok) {
-        throw new Error(`Failed to download PDF: ${pdfResponse.status} ${pdfResponse.statusText}`);
+      // 嘗試從 Supabase Storage 直接讀取，如果失敗則用 URL 下載
+      console.log('[PDF Analysis] Getting PDF from storage or URL:', pdfUrl);
+      try {
+        // 方法 1: 嘗試從 Supabase Storage 直接讀取
+        const urlParts = new URL(pdfUrl);
+        const pathSegments = urlParts.pathname.split('/');
+        
+        // 檢查是否是 Supabase storage URL
+        if (pdfUrl.includes('supabase.co/storage/v1/object/public/')) {
+          const bucketIndex = pathSegments.findIndex(segment => segment === 'public') + 1;
+          const bucket = pathSegments[bucketIndex];
+          const filePath = pathSegments.slice(bucketIndex + 1).join('/');
+          
+          console.log('[PDF Analysis] Attempting direct storage download:', { bucket, filePath });
+          
+          try {
+            const supabaseAdmin = createSupabaseAdmin();
+            const { data: fileData, error: downloadError } = await supabaseAdmin.storage
+              .from(bucket)
+              .download(decodeURIComponent(filePath));
+            
+            if (!downloadError && fileData) {
+              const arrayBuffer = await fileData.arrayBuffer();
+              pdfBuffer = Buffer.from(arrayBuffer);
+              console.log('[PDF Analysis] PDF loaded from storage, size:', pdfBuffer.length, 'bytes');
+            } else {
+              throw new Error('Storage download failed: ' + downloadError?.message);
+            }
+          } catch (storageError: any) {
+            console.warn('[PDF Analysis] Storage download failed, trying URL:', storageError.message);
+            throw storageError; // 讓它 fallback 到 URL 方法
+          }
+        } else {
+          throw new Error('Not a Supabase storage URL');
+        }
+      } catch (storageError: any) {
+        // 方法 2: Fallback 到 URL 下載
+        console.log('[PDF Analysis] Fallback to URL download:', pdfUrl);
+        try {
+          const pdfResponse = await fetch(pdfUrl);
+          console.log('[PDF Analysis] PDF response status:', pdfResponse.status);
+          
+          if (!pdfResponse.ok) {
+            throw new Error(`Failed to download PDF: ${pdfResponse.status} ${pdfResponse.statusText}`);
+          }
+          
+          const contentType = pdfResponse.headers.get('content-type');
+          console.log('[PDF Analysis] PDF content-type:', contentType);
+          
+          const arrayBuffer = await pdfResponse.arrayBuffer();
+          pdfBuffer = Buffer.from(arrayBuffer);
+          console.log('[PDF Analysis] PDF downloaded via URL, size:', pdfBuffer.length, 'bytes');
+        } catch (urlError: any) {
+          console.error('[PDF Analysis] Both storage and URL download failed');
+          throw new Error(`Failed to get PDF: Storage error: ${storageError.message}, URL error: ${urlError.message}`);
+        }
       }
       
-      const arrayBuffer = await pdfResponse.arrayBuffer();
-      pdfBuffer = Buffer.from(arrayBuffer);
-      console.log('[PDF Analysis] PDF downloaded, size:', pdfBuffer.length, 'bytes');
+      // 檢查 PDF 魔術數字
+      const pdfMagic = pdfBuffer.slice(0, 5).toString();
+      console.log('[PDF Analysis] PDF magic bytes:', pdfMagic);
       
-      fileName = body.fileName;
-      pdfBuffer = Buffer.from(new Uint8Array(0)); // 暫時空 buffer
+      if (!pdfMagic.startsWith('%PDF')) {
+        throw new Error('Downloaded file is not a valid PDF');
+      }
+      
     } else {
       return NextResponse.json({ 
         error: 'Invalid content type. Expected application/json' 
@@ -590,6 +855,7 @@ export async function POST(request: NextRequest) {
             product_desc: order.product_desc,
             product_qty: String(order.product_qty), // 轉換為 text
             uploaded_by: String(uploadedBy), // 轉換為 text
+            token: tokenPerRecord, // 🔥 添加 token 欄位到 data_order 表
             delivery_add: order.delivery_add || '-', // 🔥 添加 delivery_add，預設值 '-'
             account_num: order.account_num || '-' // 🔥 添加 account_num，預設值 '-'
           }));
@@ -608,6 +874,7 @@ export async function POST(request: NextRequest) {
           // 🔥 更新 doc_upload 表的 json 欄位（快取版本）
           try {
             console.log('[PDF Analysis] Updating doc_upload json field (cached)...');
+            console.log('[PDF Analysis] Cached text to save length:', cachedResult.extractedText?.length || 0, 'chars');
             
             // 查找最近上傳的對應文件記錄
             console.log('[PDF Analysis] Looking for doc_upload record (cached):', {
@@ -618,7 +885,7 @@ export async function POST(request: NextRequest) {
             
             const { data: docRecord, error: findError } = await supabaseAdmin
               .from('doc_upload')
-              .select('uuid')
+              .select('uuid, json')
               .eq('doc_name', fileName)
               .eq('upload_by', uploadedBy) // 不需要 parseInt，因為是 text 類型
               .eq('doc_type', 'order')
@@ -626,25 +893,56 @@ export async function POST(request: NextRequest) {
               .limit(1)
               .single();
             
+            console.log('[PDF Analysis] Doc record found (cached):', {
+              found: !!docRecord,
+              uuid: docRecord?.uuid,
+              hasExistingJson: !!docRecord?.json,
+              findError: findError
+            });
+            
             if (docRecord && !findError) {
+              // 準備要儲存的數據
+              const jsonData = {
+                extractedText: cachedResult.extractedText,
+                originalLength: cachedResult.textProcessing?.originalLength || 0,
+                processedLength: cachedResult.textProcessing?.processedLength || 0,
+                extractedOrders: cachedResult.orderData,
+                timestamp: new Date().toISOString(),
+                fromCache: true
+              };
+              
               const { error: updateError } = await supabaseAdmin
                 .from('doc_upload')
                 .update({
-                  json: cachedResult.extractedText, // 儲存智能預處理後的文本（從緩存）
-                  token: totalTokens // 🔥 更新 token 欄位
+                  json: JSON.stringify(jsonData) // 儲存為 JSON 字符串，移除 token 欄位
                 })
                 .eq('uuid', docRecord.uuid);
               
               if (updateError) {
                 console.error('[PDF Analysis] Failed to update doc_upload json field (cached):', updateError);
+                console.error('[PDF Analysis] Update error details (cached):', {
+                  message: updateError.message,
+                  code: updateError.code,
+                  details: updateError.details
+                });
               } else {
                 console.log('[PDF Analysis] Successfully updated doc_upload json field (cached)');
+                console.log('[PDF Analysis] Saved data size (cached):', JSON.stringify(jsonData).length, 'chars');
               }
             } else {
               console.error('[PDF Analysis] Could not find doc_upload record (cached):', findError);
+              console.error('[PDF Analysis] Find error details (cached):', {
+                message: findError?.message,
+                code: findError?.code,
+                details: findError?.details
+              });
             }
           } catch (updateError: any) {
             console.error('[PDF Analysis] Error updating doc_upload (cached):', updateError);
+            console.error('[PDF Analysis] Full error (cached):', {
+              message: updateError.message,
+              stack: updateError.stack
+            });
             // 不影響主要流程
           }
           
@@ -792,10 +1090,33 @@ export async function POST(request: NextRequest) {
       }
     } catch (textError: any) {
       console.error('[PDF Analysis] Text extraction failed:', textError.message);
-      return NextResponse.json({ 
-        error: 'PDF text extraction failed',
-        details: textError.message
-      }, { status: 500 });
+      
+      // 🔥 如果文本提取失敗，嘗試 OCR fallback
+      if (pdfUrl) {
+        console.log('[PDF Analysis] Attempting OCR fallback with PDF URL...');
+        
+        // 創建一個簡單的 fallback 文本，包含基本信息
+        const fallbackText = `Order Reference: ${fileName?.match(/\d+/)?.[0] || 'Unknown'}
+Account No: 
+Delivery Address: 
+
+Product Table:
+Unable to extract text from PDF. Please check if the PDF contains text or is a scanned image.
+PDF URL: ${pdfUrl}`;
+        
+        extractedText = fallbackText;
+        rawText = fallbackText;
+        
+        console.log('[PDF Analysis] Using fallback text for analysis');
+        
+        // 繼續處理而不是返回錯誤
+      } else {
+        return NextResponse.json({ 
+          error: 'PDF text extraction failed',
+          details: textError.message,
+          suggestion: 'The PDF might be a scanned image. Please ensure the PDF contains selectable text.'
+        }, { status: 500 });
+      }
     }
     
     // 讀取 OpenAI prompt 文件
@@ -818,7 +1139,10 @@ export async function POST(request: NextRequest) {
     const messageContent = `${prompt}\n\n**DOCUMENT TEXT:**\n${extractedText}`;
     
     console.log('[PDF Analysis] Sending to OpenAI');
-    console.log('[PDF Analysis] Text being sent to OpenAI (first 1000 chars):', messageContent.substring(0, 1000));
+    console.log('[PDF Analysis] FULL MESSAGE CONTENT SENT TO OPENAI:');
+    console.log('=====================================');
+    console.log(messageContent);
+    console.log('=====================================');
     
     // 發送到 OpenAI API（優化版）
     const openai = createOpenAIClient();
@@ -832,15 +1156,16 @@ export async function POST(request: NextRequest) {
         messages: [
           {
             role: "system",
-            content: "You are a JSON-only data extraction bot. Return ONLY valid JSON arrays. No explanations or markdown."
+            content: "You are a precise data extraction specialist. Extract order data and return ONLY a valid JSON array. No text, explanations, markdown, or code blocks - just pure JSON."
           },
           {
             role: "user",
             content: messageContent
           }
         ],
-        max_tokens: 2000, // 🔥 減少 max_tokens 節省成本
-        temperature: 0.1
+        max_tokens: 1500,
+        temperature: 0.0, // 🔥 設為 0 確保一致性
+        response_format: { type: "json_object" } // 🔥 強制 JSON 模式
       });
     } catch (error: any) {
       console.error('[PDF Analysis] GPT-4o failed:', error.message);
@@ -853,15 +1178,16 @@ export async function POST(request: NextRequest) {
           messages: [
             {
               role: "system",
-              content: "You are a JSON-only data extraction bot. Return ONLY valid JSON arrays. No explanations or markdown."
+              content: "You are a precise data extraction specialist. Extract order data and return ONLY a valid JSON array. No text, explanations, markdown, or code blocks - just pure JSON."
             },
             {
               role: "user",
               content: messageContent
             }
           ],
-          max_tokens: 2000,
-          temperature: 0.1
+          max_tokens: 1500,
+          temperature: 0.0,
+          response_format: { type: "json_object" }
         });
       } catch (fallbackError: any) {
         console.error('[PDF Analysis] GPT-4-turbo also failed:', fallbackError.message);
@@ -875,8 +1201,12 @@ export async function POST(request: NextRequest) {
     }
     
     console.log(`[PDF Analysis] OpenAI response: ${extractedContent.length} chars, tokens: ${response.usage?.total_tokens || 'unknown'}`);
+    console.log('[PDF Analysis] FULL OPENAI RESPONSE:');
+    console.log('=====================================');
+    console.log(extractedContent);
+    console.log('=====================================');
     
-    // 解析 OpenAI 回應（簡化版）
+    // 解析 OpenAI 回應（增強版）
     let orderData: OrderData[];
     try {
       let cleanContent = extractedContent.trim()
@@ -884,25 +1214,65 @@ export async function POST(request: NextRequest) {
         .replace(/```\s*/g, '')
         .replace(/^\uFEFF/, '');
       
-      orderData = JSON.parse(cleanContent);
+      console.log(`[PDF Analysis] Cleaned content for parsing:`, cleanContent.substring(0, 300));
       
-      if (!Array.isArray(orderData)) {
-        throw new Error('Response is not an array');
+      const parsedResponse = JSON.parse(cleanContent);
+      
+      // 檢查是否是新格式 {orders: [...]} 或舊格式 [...]
+      if (parsedResponse.orders && Array.isArray(parsedResponse.orders)) {
+        orderData = parsedResponse.orders;
+        console.log('[PDF Analysis] Using new format: {orders: [...]}');
+      } else if (Array.isArray(parsedResponse)) {
+        orderData = parsedResponse;
+        console.log('[PDF Analysis] Using legacy format: [...]');
+      } else {
+        console.error(`[PDF Analysis] Invalid response format. Type: ${typeof parsedResponse}, Content:`, parsedResponse);
+        throw new Error('Response is not in expected format');
       }
       
       console.log(`[PDF Analysis] Parsed ${orderData.length} records`);
+      
+      // 檢查每個記錄是否有必要欄位
+      orderData.forEach((record, index) => {
+        console.log(`[PDF Analysis] Record ${index}:`, {
+          order_ref: record.order_ref,
+          product_code: record.product_code,
+          delivery_add: record.delivery_add,
+          account_num: record.account_num
+        });
+      });
     
-    // 如果沒有數據，顯示 OpenAI 的原始回應
-    if (orderData.length === 0) {
-      console.log('[PDF Analysis] No records parsed. OpenAI raw response:', extractedContent);
-      console.log('[PDF Analysis] Text sent to OpenAI (full):', extractedText);
-    }
+      // 如果沒有數據，顯示 OpenAI 的原始回應
+      if (orderData.length === 0) {
+        console.log('[PDF Analysis] ❌ NO RECORDS PARSED!');
+        console.log('[PDF Analysis] OpenAI raw response:', extractedContent);
+        console.log('[PDF Analysis] Text sent to OpenAI (full):', extractedText);
+        console.log('[PDF Analysis] Prompt used:', prompt.substring(0, 500));
+        
+        // 嘗試簡化測試：直接檢查文本是否包含基本信息
+        const hasOrderNumber = /\b\d{6,10}\b/.test(extractedText);
+        const hasProductInfo = /Product|Item|Code|Description/i.test(extractedText);
+        const hasQuantity = /\b\d+\b/.test(extractedText);
+        
+        console.log('[PDF Analysis] Text analysis:', {
+          hasOrderNumber,
+          hasProductInfo, 
+          hasQuantity,
+          textLength: extractedText.length,
+          sampleText: extractedText.substring(0, 200)
+        });
+      }
       
     } catch (parseError: any) {
       console.error('[PDF Analysis] Parse error:', parseError.message);
+      console.error('[PDF Analysis] Raw OpenAI response that failed to parse:', extractedContent);
+      console.error('[PDF Analysis] Text that was sent to OpenAI:', extractedText.substring(0, 1000));
+      
       return NextResponse.json({ 
         error: 'Failed to parse OpenAI response',
-        details: parseError.message
+        details: parseError.message,
+        rawResponse: extractedContent.substring(0, 500), // 提供前500字符供調試
+        sentText: extractedText.substring(0, 500)
       }, { status: 500 });
     }
     
@@ -934,7 +1304,7 @@ export async function POST(request: NextRequest) {
             product_desc: order.product_desc,
             product_qty: String(order.product_qty), // 轉換為 text
             uploaded_by: String(uploadedBy), // 轉換為 text
-            // token: tokenPerRecord, // 🔥 token 欄位不存在，移除
+            token: tokenPerRecord, // 🔥 添加 token 欄位到 data_order 表
             delivery_add: order.delivery_add || '-', // 🔥 添加 delivery_add，預設值 '-'
             account_num: order.account_num || '-' // 🔥 添加 account_num，預設值 '-'
           };
@@ -956,6 +1326,7 @@ export async function POST(request: NextRequest) {
         // 🔥 更新 doc_upload 表的 json 欄位
         try {
           console.log('[PDF Analysis] Updating doc_upload json field...');
+          console.log('[PDF Analysis] Text to save length:', extractedText.length, 'chars');
           
           // 查找最近上傳的對應文件記錄
           console.log('[PDF Analysis] Looking for doc_upload record:', {
@@ -966,7 +1337,7 @@ export async function POST(request: NextRequest) {
           
           const { data: docRecord, error: findError } = await supabaseAdmin
             .from('doc_upload')
-            .select('uuid')
+            .select('uuid, json')
             .eq('doc_name', fileName)
             .eq('upload_by', uploadedBy) // 不需要 parseInt，因為是 text 類型
             .eq('doc_type', 'order')
@@ -974,25 +1345,55 @@ export async function POST(request: NextRequest) {
             .limit(1)
             .single();
           
+          console.log('[PDF Analysis] Doc record found:', {
+            found: !!docRecord,
+            uuid: docRecord?.uuid,
+            hasExistingJson: !!docRecord?.json,
+            findError: findError
+          });
+          
           if (docRecord && !findError) {
+            // 準備要儲存的數據
+            const jsonData = {
+              extractedText: extractedText,
+              originalLength: rawText.length,
+              processedLength: extractedText.length,
+              extractedOrders: orderData,
+              timestamp: new Date().toISOString()
+            };
+            
             const { error: updateError } = await supabaseAdmin
               .from('doc_upload')
               .update({
-                json: extractedText, // 儲存智能預處理後的文本
-                token: totalTokens // 🔥 更新 token 欄位
+                json: JSON.stringify(jsonData) // 儲存為 JSON 字符串，移除 token 欄位
               })
               .eq('uuid', docRecord.uuid);
             
             if (updateError) {
               console.error('[PDF Analysis] Failed to update doc_upload json field:', updateError);
+              console.error('[PDF Analysis] Update error details:', {
+                message: updateError.message,
+                code: updateError.code,
+                details: updateError.details
+              });
             } else {
               console.log('[PDF Analysis] Successfully updated doc_upload json field');
+              console.log('[PDF Analysis] Saved data size:', JSON.stringify(jsonData).length, 'chars');
             }
           } else {
             console.error('[PDF Analysis] Could not find doc_upload record:', findError);
+            console.error('[PDF Analysis] Find error details:', {
+              message: findError?.message,
+              code: findError?.code,
+              details: findError?.details
+            });
           }
         } catch (updateError: any) {
           console.error('[PDF Analysis] Error updating doc_upload:', updateError);
+          console.error('[PDF Analysis] Full error:', {
+            message: updateError.message,
+            stack: updateError.stack
+          });
           // 不影響主要流程
         }
         
@@ -1028,48 +1429,55 @@ export async function POST(request: NextRequest) {
           }
         }
         
-        // 🔥 發送訂單創建郵件通知 - 使用內部服務
+        // 🔥 發送訂單創建郵件通知 - 使用內部服務（可選）
         let emailResult = null;
         try {
-          console.log('[PDF Analysis] Sending order created email notification...');
+          console.log('[PDF Analysis] Attempting to send order created email notification...');
           
-          // 使用內部郵件服務，完全繞過中間件和API路由問題
-          const { sendOrderCreatedEmail } = await import('../../services/emailService');
-          
-          const emailRequestBody = {
-            orderData: insertResults.map(record => ({
-              order_ref: record.order_ref,
-              product_code: record.product_code,
-              product_desc: record.product_desc,
-              product_qty: record.product_qty
-            })),
-            from: 'ordercreated@pennine.cc',
-            pdfAttachment: {
-              filename: file.name,
-              content: pdfBuffer.toString('base64')
-            }
-          };
-          
-          console.log('[PDF Analysis] Calling internal email service...');
-          
-          const emailData = await sendOrderCreatedEmail(emailRequestBody);
-          
-          console.log('[PDF Analysis] Order created email sent successfully:', emailData);
-          emailResult = {
-            success: true,
-            message: emailData.message,
-            emailId: emailData.emailId,
-            recipients: emailData.recipients
-          };
-          
-          // doc_upload 記錄已在 upload-file API 中寫入，這裡不需要重複寫入
+          // 檢查郵件服務是否可用
+          try {
+            const { sendOrderCreatedEmail } = await import('../../services/emailService');
+            
+            const emailRequestBody = {
+              orderData: insertResults.map(record => ({
+                order_ref: record.order_ref,
+                product_code: record.product_code,
+                product_desc: record.product_desc,
+                product_qty: record.product_qty
+              })),
+              from: 'ordercreated@pennine.cc',
+              pdfAttachment: {
+                filename: fileName || 'order.pdf',
+                content: pdfBuffer.toString('base64')
+              }
+            };
+            
+            console.log('[PDF Analysis] Calling internal email service...');
+            
+            const emailData = await sendOrderCreatedEmail(emailRequestBody);
+            
+            console.log('[PDF Analysis] Order created email sent successfully:', emailData);
+            emailResult = {
+              success: true,
+              message: emailData.message,
+              emailId: emailData.emailId,
+              recipients: emailData.recipients
+            };
+          } catch (emailImportError: any) {
+            console.warn('[PDF Analysis] Email service not available:', emailImportError.message);
+            emailResult = {
+              success: false,
+              error: 'Email service not available',
+              skipped: true
+            };
+          }
           
         } catch (emailError: any) {
-          console.error('[PDF Analysis] Error sending order created email:', emailError);
-          console.error('[PDF Analysis] Full error details:', emailError);
+          console.warn('[PDF Analysis] Email notification failed (non-critical):', emailError.message);
           emailResult = {
             success: false,
-            error: `Email service error: ${emailError.message}`
+            error: `Email service error: ${emailError.message}`,
+            skipped: true
           };
         }
         
@@ -1108,6 +1516,9 @@ export async function POST(request: NextRequest) {
         success: true,
         message: 'PDF processed but no valid records found',
         recordCount: 0,
+        extractedData: [], // 🔥 返回空數組而不是 undefined
+        extractedText: extractedText, // 🔥 返回提取的文本供調試
+        openaiResponse: extractedContent, // 🔥 返回 OpenAI 原始響應供調試
         storageInfo: storageInfo,
         cached: false,
         usage: response.usage, // 🔥 即使沒有記錄也返回 token 使用情況

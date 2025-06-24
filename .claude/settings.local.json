@@ -80,7 +80,8 @@
       "Bash(claude mcp:*)",
       "Bash(npx supabase db query:*)",
       "Bash(npx ts-node:*)",
-      "Bash(npm uninstall:*)"
+      "Bash(npm uninstall:*)",
+      "WebFetch(domain:supabase.com)"
     ],
     "deny": []
   }
