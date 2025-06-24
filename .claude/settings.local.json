@@ -81,7 +81,10 @@
       "Bash(npx supabase db query:*)",
       "Bash(npx ts-node:*)",
       "Bash(npm uninstall:*)",
-      "WebFetch(domain:supabase.com)"
+      "WebFetch(domain:supabase.com)",
+      "mcp__supabase__search_docs",
+      "Bash(npm view:*)",
+      "Bash(npx graphql-codegen:*)"
     ],
     "deny": []
   }

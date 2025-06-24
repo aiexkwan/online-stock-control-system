@@ -78,6 +78,18 @@ const ReportGeneratorWidget = React.lazy(() => import('./widgets/ReportGenerator
 const ReportGeneratorWithDialogWidget = React.lazy(() => import('./widgets/ReportGeneratorWithDialogWidget'));
 const AvailableSoonWidget = React.lazy(() => import('./widgets/AvailableSoonWidget'));
 
+// GraphQL 組件
+const ProductionStatsGraphQL = React.lazy(() => import('./widgets/ProductionStatsGraphQL').then(mod => ({ default: mod.ProductionStatsGraphQL })));
+const TopProductsChartGraphQL = React.lazy(() => import('./widgets/TopProductsChartGraphQL').then(mod => ({ default: mod.TopProductsChartGraphQL })));
+const ProductDistributionChartGraphQL = React.lazy(() => import('./widgets/ProductDistributionChartGraphQL').then(mod => ({ default: mod.ProductDistributionChartGraphQL })));
+const ProductionDetailsGraphQL = React.lazy(() => import('./widgets/ProductionDetailsGraphQL').then(mod => ({ default: mod.ProductionDetailsGraphQL })));
+const StaffWorkloadGraphQL = React.lazy(() => import('./widgets/StaffWorkloadGraphQL').then(mod => ({ default: mod.StaffWorkloadGraphQL })));
+const OrdersListGraphQL = React.lazy(() => import('./widgets/OrdersListGraphQL').then(mod => ({ default: mod.OrdersListGraphQL })));
+const OtherFilesListGraphQL = React.lazy(() => import('./widgets/OtherFilesListGraphQL').then(mod => ({ default: mod.OtherFilesListGraphQL })));
+
+// GraphQL 功能開關
+const ENABLE_GRAPHQL = process.env.NEXT_PUBLIC_ENABLE_GRAPHQL === 'true';
+
 export const AdminWidgetRenderer: React.FC<AdminWidgetRendererProps> = ({ 
   config, 
   theme,
@@ -540,14 +552,14 @@ export const AdminWidgetRenderer: React.FC<AdminWidgetRendererProps> = ({
         let qcOperator = 'N/A';
         if (historyData && historyData.length > 0 && historyData[0].id) {
           // 查找操作員名稱
-          const { data: operatorData } = await supabase
+          const { data: operatorData, error: operatorError } = await supabase
             .from('data_id')
             .select('name')
             .eq('id', historyData[0].id)
-            .single();
+            .limit(1);
           
-          if (operatorData) {
-            qcOperator = operatorData.name;
+          if (!operatorError && operatorData && operatorData.length > 0) {
+            qcOperator = operatorData[0].name;
           }
         }
 
@@ -604,14 +616,14 @@ export const AdminWidgetRenderer: React.FC<AdminWidgetRendererProps> = ({
         let qcOperator = 'N/A';
         if (historyData && historyData.length > 0 && historyData[0].id) {
           // 查找操作員名稱
-          const { data: operatorData } = await supabase
+          const { data: operatorData, error: operatorError } = await supabase
             .from('data_id')
             .select('name')
             .eq('id', historyData[0].id)
-            .single();
+            .limit(1);
           
-          if (operatorData) {
-            qcOperator = operatorData.name;
+          if (!operatorError && operatorData && operatorData.length > 0) {
+            qcOperator = operatorData[0].name;
           }
         }
 
@@ -640,7 +652,7 @@ export const AdminWidgetRenderer: React.FC<AdminWidgetRendererProps> = ({
       const { data: allUsers } = await supabase
         .from('data_id')
         .select('id, name')
-        .eq('department', 'injection')
+        .eq('department', 'Injection')
         .order('name');
 
       if (!allUsers || allUsers.length === 0) {
@@ -717,7 +729,7 @@ export const AdminWidgetRenderer: React.FC<AdminWidgetRendererProps> = ({
       const { data: allUsers } = await supabase
         .from('data_id')
         .select('id, name')
-        .eq('department', 'pipeline')
+        .eq('department', 'Pipeline')
         .order('name');
 
       if (!allUsers || allUsers.length === 0) {
@@ -836,6 +848,28 @@ export const AdminWidgetRenderer: React.FC<AdminWidgetRendererProps> = ({
       return <div className="h-full" style={{ opacity: 0 }}></div>;
     }
 
+    // 如果啟用 GraphQL 且是生產統計類型，使用 GraphQL 組件
+    if (ENABLE_GRAPHQL && 
+        config.dataSource === 'record_palletinfo' && 
+        (config.metrics?.[0] === 'pallet_count' || config.metrics?.[0] === 'quantity_sum')) {
+      return (
+        <Suspense fallback={
+          <div className="animate-pulse">
+            <div className="h-12 w-12 bg-slate-700/50 rounded-xl mb-4"></div>
+            <div className="h-8 w-24 bg-slate-700/50 rounded mb-2"></div>
+            <div className="h-4 w-32 bg-slate-700/50 rounded"></div>
+          </div>
+        }>
+          <ProductionStatsGraphQL
+            title={config.title}
+            metric={config.metrics[0] as 'pallet_count' | 'quantity_sum'}
+            timeFrame={timeFrame}
+            className="h-full"
+          />
+        </Suspense>
+      );
+    }
+
     if (loading) {
       return (
         <div className="animate-pulse">
@@ -900,6 +934,57 @@ export const AdminWidgetRenderer: React.FC<AdminWidgetRendererProps> = ({
 
   // 渲染圖表
   const renderChart = () => {
+    // 如果啟用 GraphQL，檢查是否有對應的 GraphQL 組件
+    if (ENABLE_GRAPHQL) {
+      // Top 5 Products by Quantity
+      if (config.title === 'Top 5 Products by Quantity' && config.chartType === 'bar') {
+        return (
+          <Suspense fallback={
+            <div className="animate-pulse h-full bg-slate-700 rounded"></div>
+          }>
+            <TopProductsChartGraphQL
+              title={config.title}
+              timeFrame={timeFrame}
+              className="h-full"
+              limit={5}
+            />
+          </Suspense>
+        );
+      }
+      
+      // Top 10 Products Distribution
+      if (config.title === 'Top 10 Products Distribution' && config.chartType === 'donut') {
+        return (
+          <Suspense fallback={
+            <div className="animate-pulse h-full bg-slate-700 rounded"></div>
+          }>
+            <ProductDistributionChartGraphQL
+              title={config.title}
+              timeFrame={timeFrame}
+              className="h-full"
+              limit={10}
+            />
+          </Suspense>
+        );
+      }
+      
+      // Staff Workload
+      if (config.title === 'Staff Workload' && config.chartType === 'line') {
+        return (
+          <Suspense fallback={
+            <div className="animate-pulse h-full bg-slate-700 rounded"></div>
+          }>
+            <StaffWorkloadGraphQL
+              title={config.title}
+              timeFrame={timeFrame}
+              className="h-full"
+              department="Injection"
+            />
+          </Suspense>
+        );
+      }
+    }
+    
     if (loading) {
       return (
         <div className="animate-pulse h-full bg-slate-700 rounded"></div>
@@ -1122,6 +1207,28 @@ export const AdminWidgetRenderer: React.FC<AdminWidgetRendererProps> = ({
 
   // 渲染表格
   const renderTable = () => {
+    // 如果啟用 GraphQL 且是 Production Details
+    if (ENABLE_GRAPHQL && config.title === 'Production Details') {
+      return (
+        <Suspense fallback={
+          <div className="animate-pulse">
+            <div className="h-10 bg-slate-700 rounded mb-2"></div>
+            <div className="space-y-1">
+              {[1, 2, 3].map(i => (
+                <div key={i} className="h-8 bg-slate-700 rounded"></div>
+              ))}
+            </div>
+          </div>
+        }>
+          <ProductionDetailsGraphQL
+            title={config.title}
+            timeFrame={timeFrame}
+            className="h-full"
+          />
+        </Suspense>
+      );
+    }
+    
     if (loading) {
       return (
         <div className="animate-pulse">
@@ -1300,23 +1407,41 @@ export const AdminWidgetRenderer: React.FC<AdminWidgetRendererProps> = ({
       case 'OrdersListWidget':
         return (
           <Suspense fallback={<div className="h-full flex items-center justify-center"><div className="animate-pulse">Loading orders...</div></div>}>
-            <OrdersListWidget widget={{ 
-              id: 'orders-list',
-              type: 'CUSTOM' as any,
-              title: 'Orders List',
-              config: { size: 'LARGE' as any }
-            }} isEditMode={false} />
+            {ENABLE_GRAPHQL ? (
+              <OrdersListGraphQL widget={{ 
+                id: 'orders-list',
+                type: 'CUSTOM' as any,
+                title: 'Orders List',
+                config: { size: 'LARGE' as any }
+              }} isEditMode={false} />
+            ) : (
+              <OrdersListWidget widget={{ 
+                id: 'orders-list',
+                type: 'CUSTOM' as any,
+                title: 'Orders List',
+                config: { size: 'LARGE' as any }
+              }} isEditMode={false} />
+            )}
           </Suspense>
         );
       case 'OtherFilesListWidget':
         return (
           <Suspense fallback={<div className="h-full flex items-center justify-center"><div className="animate-pulse">Loading files...</div></div>}>
-            <OtherFilesListWidget widget={{ 
-              id: 'other-files-list',
-              type: 'CUSTOM' as any,
-              title: 'Other Files',
-              config: { size: 'LARGE' as any }
-            }} isEditMode={false} />
+            {ENABLE_GRAPHQL ? (
+              <OtherFilesListGraphQL widget={{ 
+                id: 'other-files-list',
+                type: 'CUSTOM' as any,
+                title: 'Other Files',
+                config: { size: 'LARGE' as any }
+              }} isEditMode={false} />
+            ) : (
+              <OtherFilesListWidget widget={{ 
+                id: 'other-files-list',
+                type: 'CUSTOM' as any,
+                title: 'Other Files',
+                config: { size: 'LARGE' as any }
+              }} isEditMode={false} />
+            )}
           </Suspense>
         );
       case 'UploadFilesWidget':
