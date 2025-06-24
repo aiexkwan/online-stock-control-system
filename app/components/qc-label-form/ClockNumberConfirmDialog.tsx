@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { createClient } from '@/app/utils/supabase/client';
 import { toast } from 'sonner';
 import {
@@ -38,40 +38,7 @@ export const ClockNumberConfirmDialog: React.FC<ClockNumberConfirmDialogProps> =
   const [error, setError] = useState<string | null>(null);
   const clockNumberInputRef = useRef<HTMLInputElement>(null);
 
-  // Focus input when dialog opens
-  useEffect(() => {
-    if (isOpen) {
-      setTimeout(() => {
-        clockNumberInputRef.current?.focus();
-      }, 100);
-      setClockNumber('');
-      setError(null);
-    }
-  }, [isOpen]);
-
-  // Handle keyboard events
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (!isOpen) return;
-
-      if (event.key === 'Escape') {
-        event.preventDefault();
-        handleCancel();
-      } else if (event.key === 'Enter') {
-        event.preventDefault();
-        if (!isVerifying && !isLoading && clockNumber.trim()) {
-          handleConfirm();
-        }
-      }
-    };
-
-    document.addEventListener('keydown', handleKeyDown);
-    return () => {
-      document.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [isOpen, isVerifying, isLoading, clockNumber, handleConfirm, handleCancel]);
-
-  const validateClockNumber = async (clockNum: string): Promise<boolean> => {
+  const validateClockNumber = useCallback(async (clockNum: string): Promise<boolean> => {
     try {
       console.log('[ClockNumberConfirmDialog] Validating clock number:', clockNum);
       
@@ -107,9 +74,15 @@ export const ClockNumberConfirmDialog: React.FC<ClockNumberConfirmDialogProps> =
       }
       return false;
     }
-  };
+  }, []);
 
-  const handleConfirm = async () => {
+  const handleCancel = useCallback(() => {
+    onCancel();
+    setClockNumber('');
+    setError(null);
+  }, [onCancel]);
+
+  const handleConfirm = useCallback(async () => {
     if (!clockNumber.trim()) {
       setError('Clock number is required');
       return;
@@ -143,15 +116,9 @@ export const ClockNumberConfirmDialog: React.FC<ClockNumberConfirmDialogProps> =
     } finally {
       setIsVerifying(false);
     }
-  };
+  }, [clockNumber, onConfirm, validateClockNumber]);
 
-  const handleCancel = () => {
-    onCancel();
-    setClockNumber('');
-    setError(null);
-  };
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     // Only allow numeric input
     if (/^\d*$/.test(value)) {
@@ -160,7 +127,40 @@ export const ClockNumberConfirmDialog: React.FC<ClockNumberConfirmDialogProps> =
         setError(null);
       }
     }
-  };
+  }, [error]);
+
+  // Focus input when dialog opens
+  useEffect(() => {
+    if (isOpen) {
+      setTimeout(() => {
+        clockNumberInputRef.current?.focus();
+      }, 100);
+      setClockNumber('');
+      setError(null);
+    }
+  }, [isOpen]);
+
+  // Handle keyboard events
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (!isOpen) return;
+
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        handleCancel();
+      } else if (event.key === 'Enter') {
+        event.preventDefault();
+        if (!isVerifying && !isLoading && clockNumber.trim()) {
+          handleConfirm();
+        }
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isOpen, isVerifying, isLoading, clockNumber, handleConfirm, handleCancel]);
 
   return (
     <Dialog 
@@ -237,4 +237,4 @@ export const ClockNumberConfirmDialog: React.FC<ClockNumberConfirmDialogProps> =
   );
 };
 
-export default ClockNumberConfirmDialog; 
+export default ClockNumberConfirmDialog;

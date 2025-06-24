@@ -367,7 +367,11 @@ export const PerformanceOptimizedForm: React.FC<PerformanceOptimizedFormProps> =
 
   // Update errors when validation changes
   useEffect(() => {
-    setErrors(validationState.errors);
+    setErrors(prevErrors => {
+      // Only update if errors actually changed
+      const hasChanged = JSON.stringify(prevErrors) !== JSON.stringify(validationState.errors);
+      return hasChanged ? validationState.errors : prevErrors;
+    });
   }, [validationState.errors]);
 
   // Auto-set count to 1 for Slate products
@@ -423,43 +427,27 @@ export const PerformanceOptimizedForm: React.FC<PerformanceOptimizedFormProps> =
 
   // Sync pdfProgress from formData to local state
   useEffect(() => {
-    setPdfProgress({
-      current: formData.pdfProgress.current,
-      total: formData.pdfProgress.total,
-      status: formData.pdfProgress.status
+    setPdfProgress(prev => {
+      // Only update if progress actually changed
+      const hasChanged = 
+        prev.current !== formData.pdfProgress.current ||
+        prev.total !== formData.pdfProgress.total ||
+        JSON.stringify(prev.status) !== JSON.stringify(formData.pdfProgress.status);
+      
+      return hasChanged ? {
+        current: formData.pdfProgress.current,
+        total: formData.pdfProgress.total,
+        status: formData.pdfProgress.status
+      } : prev;
     });
   }, [formData.pdfProgress]);
   
-  // 清理 effect - 當用戶離開頁面時重置表單
+  // 清理 effect - 當用戶離開頁面時清理資源
   useEffect(() => {
     return () => {
       console.log('[PerformanceOptimizedForm] Cleaning up on unmount');
-      // 重置所有表單數據
-      setFormData({
-        productCode: '',
-        productInfo: null,
-        quantity: '',
-        count: '',
-        operator: '',
-        userId: '',
-        acoOrderRef: '',
-        acoOrderDetails: [],
-        acoNewRef: false,
-        acoNewProductCode: '',
-        acoNewOrderQty: '',
-        slateDetail: { batchNumber: '' },
-        pdfProgress: { current: 0, total: 0, status: [] },
-        isLoading: false,
-        acoSearchLoading: false,
-        productError: null,
-        acoOrderDetailErrors: [],
-        acoRemain: null,
-        availableAcoOrderRefs: []
-      });
-      setProductInfo(null);
-      setPdfProgress({ current: 0, total: 0, status: [] });
-      setErrors({});
-      // 清除保存的數據
+      // 只清除保存的數據，不要在 cleanup 中調用 setState
+      // 因為組件已經 unmount，setState 會導致內存洩漏和警告
       if (businessLogic.clearSavedData) {
         businessLogic.clearSavedData();
       }

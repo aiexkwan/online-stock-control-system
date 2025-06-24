@@ -14,6 +14,31 @@ export default function NumberPad({ onConfirm, onCancel, isLoading = false }: Nu
   const [value, setValue] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
 
+  // 處理數字輸入
+  const handleNumberClick = (num: string) => {
+    if (value.length < 10) { // 限制最大長度
+      setValue(prev => prev + num);
+    }
+  };
+
+  // 處理退格
+  const handleBackspace = () => {
+    setValue(prev => prev.slice(0, -1));
+  };
+
+  // 處理確認
+  const handleConfirm = () => {
+    const numValue = parseInt(value);
+    if (!isNaN(numValue) && numValue >= 0) {
+      onConfirm(numValue);
+    }
+  };
+
+  // 處理清除
+  const handleClear = () => {
+    setValue('');
+  };
+
   // Focus 輸入框當組件載入
   useEffect(() => {
     // 延遲一下確保動畫完成
@@ -62,32 +87,7 @@ export default function NumberPad({ onConfirm, onCancel, isLoading = false }: Nu
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [value, isLoading, handleClear, handleConfirm]);
-
-  // 處理數字輸入
-  const handleNumberClick = (num: string) => {
-    if (value.length < 10) { // 限制最大長度
-      setValue(prev => prev + num);
-    }
-  };
-
-  // 處理退格
-  const handleBackspace = () => {
-    setValue(prev => prev.slice(0, -1));
-  };
-
-  // 處理確認
-  const handleConfirm = () => {
-    const numValue = parseInt(value);
-    if (!isNaN(numValue) && numValue >= 0) {
-      onConfirm(numValue);
-    }
-  };
-
-  // 處理清除
-  const handleClear = () => {
-    setValue('');
-  };
+  }, [value, isLoading, handleClear, handleConfirm, handleNumberClick, onCancel]);
 
   // 處理輸入框變更
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {

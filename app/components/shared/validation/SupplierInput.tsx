@@ -128,6 +128,17 @@ export function SupplierInput({
     }
   }, [errorMessage, onSupplierValidated, supabase]);
 
+  // Select supplier from suggestions (defined before searchSuppliers to avoid hoisting issues)
+  const selectSupplier = useCallback((supplier: SupplierInfo) => {
+    setLocalValue(supplier.supplier_code);
+    setSupplierInfo(supplier);
+    setError(null);
+    setSuggestions([]);
+    setShowSuggestions(false);
+    onChange?.(supplier.supplier_code);
+    onSupplierValidated?.(supplier);
+  }, [onChange, onSupplierValidated]);
+
   // Search for supplier suggestions
   const searchSuppliers = useCallback(async (searchTerm: string) => {
     if (!searchTerm.trim() || !enableSuggestions) {
@@ -212,17 +223,6 @@ export function SupplierInput({
     if (!supplierInfo && localValue) {
       validateSupplier(localValue);
     }
-  };
-
-  // Select supplier from suggestions
-  const selectSupplier = (supplier: SupplierInfo) => {
-    setLocalValue(supplier.supplier_code);
-    setSupplierInfo(supplier);
-    setError(null);
-    setSuggestions([]);
-    setShowSuggestions(false);
-    onChange?.(supplier.supplier_code);
-    onSupplierValidated?.(supplier);
   };
 
   // Handle keyboard navigation

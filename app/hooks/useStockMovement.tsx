@@ -6,6 +6,7 @@ import { usePalletSearch } from './usePalletSearch';
 import { useStockTransfer } from './useStockTransfer';
 import { useActivityLog } from './useActivityLog';
 import type { PalletInfo } from '@/app/services/palletSearchService';
+import { LOCATION_TO_COLUMN } from '@/app/constants/locations';
 
 // 使用統一的 PalletInfo 類型（從服務導入）
 // 這裡的重複定義是為了保持向後兼容
@@ -196,6 +197,16 @@ export const useStockMovement = (options: UseStockMovementOptions = {}) => {
     }
   }, [supabase, enableCache, searchPalletWithCache]);
 
+  // Add activity log
+  const addActivityLog = useCallback((message: string, type: 'success' | 'error' | 'info') => {
+    const newEntry: ActivityLogEntry = {
+      message,
+      type,
+      timestamp: new Date().toLocaleString('en-US')
+    };
+    setActivityLog(prev => [newEntry, ...prev].slice(0, 100)); // Keep last 100 records
+  }, []);
+
   // Execute stock transfer
   const executeStockTransfer = useCallback(async (
     pltNum: string,
@@ -308,20 +319,10 @@ export const useStockMovement = (options: UseStockMovementOptions = {}) => {
       }
 
       // 3. Update inventory records
-      // Map location names to inventory column names
-      const locationToColumn: { [key: string]: string } = {
-        'Production': 'injection',
-        'PipeLine': 'pipeline', 
-        'Pre-Book': 'prebook',
-        'Await': 'await',
-        'Await_grn': 'await_grn',
-        'Fold Mill': 'fold',
-        'Bulk Room': 'bulk',
-        'Back Car Park': 'backcarpark'
-      };
-
-      const fromColumn = locationToColumn[fromLocation];
-      const toColumn = locationToColumn[toLocation];
+      const fromLocationKey = fromLocation || '';
+      const toLocationKey = toLocation || '';
+      const fromColumn = LOCATION_TO_COLUMN[fromLocationKey];
+      const toColumn = LOCATION_TO_COLUMN[toLocationKey];
 
       if (!fromColumn || !toColumn) {
         throw new Error(`Invalid location mapping: ${fromLocation} → ${toLocation}`);
@@ -407,16 +408,6 @@ export const useStockMovement = (options: UseStockMovementOptions = {}) => {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId, supabase, enableCache, invalidateCache, searchPalletWithCache, optimisticTransfers, addActivityLog]);
-
-  // Add activity log
-  const addActivityLog = useCallback((message: string, type: 'success' | 'error' | 'info') => {
-    const newEntry: ActivityLogEntry = {
-      message,
-      type,
-      timestamp: new Date().toLocaleString('en-US')
-    };
-    setActivityLog(prev => [newEntry, ...prev].slice(0, 100)); // Keep last 100 records
-  }, []);
 
   // Clear activity log
   const clearActivityLog = useCallback(() => {
