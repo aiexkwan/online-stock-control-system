@@ -117,10 +117,33 @@ export const CustomThemeLayout: React.FC<CustomThemeLayoutProps> = ({
       {children.slice(0, 10).map((child, index) => {
         const isHistoryTree = index === 0;
         
+        // Check if it's one of the transparent widgets
+        const transparentWidgets = ['Pending Updates', 'Processing', 'Completed Today', 'Failed'];
+        const widgetTitle = React.isValidElement(child) && child.props?.config?.title;
+        const isTransparentWidget = transparentWidgets.includes(widgetTitle);
+        
         if (isHistoryTree) {
           // History Tree without glassmorphism wrapper
           return (
             <div key={`widget-${index}`} className="custom-theme-item">
+              {child}
+            </div>
+          );
+        }
+
+        if (isTransparentWidget) {
+          // Transparent widgets - completely invisible
+          return (
+            <div 
+              key={`widget-${index}`} 
+              className="custom-theme-item"
+              style={{
+                background: 'transparent',
+                border: 'none',
+                boxShadow: 'none',
+                opacity: 0
+              }}
+            >
               {child}
             </div>
           );

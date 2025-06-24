@@ -113,30 +113,12 @@ export async function POST(request: NextRequest) {
       .from('documents')
       .upload(filePath, uint8Array, {
         contentType: file.type,
-        upsert: false,
+        upsert: true,  // 改為 true，允許覆蓋已存在的文件
         cacheControl: '3600'
       });
 
     if (error) {
       console.error('[Upload File API] Supabase 上傳錯誤:', error);
-      
-      // 如果是檔案已存在錯誤
-      if (error.message && error.message.includes('already exists')) {
-        // 根據檔案類型提供不同的錯誤訊息
-        let errorMessage = 'File already uploaded. Please check.';
-        if (folder === 'orderpdf') {
-          errorMessage = 'Order already uploaded. Please check.';
-        } else if (folder === 'photos') {
-          errorMessage = 'Photo already uploaded. Please check.';
-        } else if (folder === 'productSpec') {
-          errorMessage = 'Product spec already uploaded. Please check.';
-        }
-        
-        return NextResponse.json(
-          { error: errorMessage },
-          { status: 409 }
-        );
-      }
       
       // 如果是 RLS 錯誤，提供更詳細的錯誤信息
       if (error.message.includes('row-level security') || error.message.includes('RLS')) {

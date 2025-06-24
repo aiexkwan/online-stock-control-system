@@ -13,6 +13,7 @@ import { toast } from 'sonner';
 import { Folder3D } from './Folder3D';
 import { GoogleDriveUploadToast } from './GoogleDriveUploadToast';
 import { OrderAnalysisResultDialog } from './OrderAnalysisResultDialog';
+import { FileExistsDialog } from './FileExistsDialog';
 
 interface UploadingFile {
   id: string;
@@ -33,6 +34,8 @@ export const UploadOrdersWidget = React.memo(function UploadOrdersWidget({ widge
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<any>(null);
   const [showAnalysisDialog, setShowAnalysisDialog] = useState(false);
+  const [showFileExistsDialog, setShowFileExistsDialog] = useState(false);
+  const [pendingFile, setPendingFile] = useState<UploadingFile | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   const size = widget.config.size || WidgetSize.MEDIUM;
@@ -84,8 +87,29 @@ export const UploadOrdersWidget = React.memo(function UploadOrdersWidget({ widge
     return match ? match[1] : fileName.replace('.pdf', '').replace('.PDF', '');
   };
 
+  // 檢查文件是否存在
+  const checkFileExists = async (fileName: string): Promise<{ exists: boolean; publicUrl?: string }> => {
+    try {
+      const response = await fetch('/api/check-file-exists', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fileName, folder: 'orderpdf' })
+      });
+      
+      if (!response.ok) {
+        console.error('[UploadOrdersWidget] Failed to check file existence');
+        return { exists: false };
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('[UploadOrdersWidget] Error checking file:', error);
+      return { exists: false };
+    }
+  };
+
   // 上傳並分析訂單
-  const uploadAndAnalyzeOrder = async (uploadingFile: UploadingFile) => {
+  const uploadAndAnalyzeOrder = useCallback(async (uploadingFile: UploadingFile, skipUpload = false, existingUrl?: string) => {
     try {
       // 更新進度
       const updateProgress = (progress: number) => {
@@ -95,91 +119,107 @@ export const UploadOrdersWidget = React.memo(function UploadOrdersWidget({ widge
       };
 
       updateProgress(10);
+      
+      let publicUrl = existingUrl;
 
-      // 上傳文件
-      const formData = new FormData();
-      formData.append('file', uploadingFile.file);
-      formData.append('folder', 'orderpdf');
-      formData.append('fileName', uploadingFile.file.name);
-      formData.append('uploadBy', currentUserId?.toString() || '');
+      // 如果不跳過上傳，則上傳文件
+      if (!skipUpload) {
+        const formData = new FormData();
+        formData.append('file', uploadingFile.file);
+        formData.append('folder', 'orderpdf');
+        formData.append('fileName', uploadingFile.file.name);
+        formData.append('uploadBy', currentUserId?.toString() || '');
 
-      const uploadResponse = await fetch('/api/upload-file', {
-        method: 'POST',
-        body: formData,
-      });
+        const uploadResponse = await fetch('/api/upload-file', {
+          method: 'POST',
+          body: formData,
+        });
 
-      updateProgress(30);
+        updateProgress(30);
 
-      if (!uploadResponse.ok) {
-        const error = await uploadResponse.json();
-        throw new Error(error.error || 'Upload failed');
-      }
-
-      const uploadResult = await uploadResponse.json();
-      updateProgress(50);
-
-      // 記錄到 doc_upload 表（先不包含 metadata）
-      let docUploadId: string | null = null;
-      if (currentUserId && uploadResult.url) {
-        const supabase = createClient();
-        const { data: insertedDoc, error: insertError } = await supabase
-          .from('doc_upload')
-          .insert({
-            doc_name: uploadingFile.file.name,
-            upload_by: currentUserId,
-            doc_type: 'order',
-            doc_url: uploadResult.url,
-            file_size: uploadingFile.file.size,
-            folder: 'orderpdf'
-          })
-          .select('uuid')
-          .single();
-
-        if (insertedDoc) {
-          docUploadId = insertedDoc.uuid;
+        if (!uploadResponse.ok) {
+          const error = await uploadResponse.json();
+          throw new Error(error.error || 'Upload failed');
         }
+        
+        const uploadResult = await uploadResponse.json();
+        publicUrl = uploadResult.data?.publicUrl || uploadResult.publicUrl;
+        updateProgress(50);
+      } else {
+        // 如果跳過上傳，直接更新進度
+        updateProgress(50);
       }
+
+      // doc_upload 記錄已在 upload-file API 中創建
+      // json 欄位將在 analyze-order-pdf API 中更新
 
       updateProgress(60);
 
       // 開始 AI 分析
       setIsAnalyzing(true);
-      const analyzeFormData = new FormData();
-      analyzeFormData.append('file', uploadingFile.file);
-      analyzeFormData.append('orderNumber', uploadingFile.orderNumber || '');
-      analyzeFormData.append('uploadedBy', currentUserId?.toString() || '');
-
+      console.log('[UploadOrdersWidget] Starting analysis with userId:', currentUserId);
+      console.log('[UploadOrdersWidget] Using PDF URL:', publicUrl);
+      
+      if (!publicUrl) {
+        throw new Error('No PDF URL available for analysis');
+      }
+      
       const analyzeResponse = await fetch('/api/analyze-order-pdf', {
         method: 'POST',
-        body: analyzeFormData,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          pdfUrl: publicUrl,
+          fileName: uploadingFile.file.name,
+          uploadedBy: currentUserId?.toString() || ''
+        })
       });
 
       updateProgress(80);
 
-      if (!analyzeResponse.ok) {
-        const error = await analyzeResponse.json();
-        throw new Error(error.error || 'Analysis failed');
+      // 🔎 改進錯誤處理
+      let analysisResult;
+      try {
+        if (!analyzeResponse.ok) {
+          // 先嘗試解析為 JSON
+          let errorData;
+          try {
+            errorData = await analyzeResponse.json();
+            console.error('[UploadOrdersWidget] ❌ Analysis failed (JSON):', errorData);
+          } catch (jsonError) {
+            // 如果不是 JSON，讀取為文本
+            const errorText = await analyzeResponse.text();
+            console.error('[UploadOrdersWidget] ❌ Analysis failed (Text):', errorText);
+            console.error('[UploadOrdersWidget] Response status:', analyzeResponse.status);
+            throw new Error(`Server error: ${analyzeResponse.status} - Check console for details`);
+          }
+          
+          // 如果是 PDF 格式不支持的錯誤，提供明確訊息
+          if (errorData?.error?.includes('PDF format not supported')) {
+            throw new Error('PDF analysis failed. Please check the PDF format.');
+          }
+          
+          throw new Error(errorData?.error || errorData?.details || 'Analysis failed');
+        }
+        
+        analysisResult = await analyzeResponse.json();
+      } catch (parseError: any) {
+        console.error('[UploadOrdersWidget] ❌ Failed to parse response:', parseError);
+        throw new Error(parseError.message || 'Failed to parse server response');
       }
-
-      const analysisResult = await analyzeResponse.json();
+      console.log('[UploadOrdersWidget] Analysis result:', analysisResult);
+      console.log('[UploadOrdersWidget] extractedData:', analysisResult.extractedData);
+      console.log('[UploadOrdersWidget] recordCount:', analysisResult.recordCount);
+      
+      // 🔥 Debug: 檢查第一筆訂單數據
+      if (analysisResult.extractedData && analysisResult.extractedData.length > 0) {
+        console.log('[UploadOrdersWidget] First order data:', analysisResult.extractedData[0]);
+        console.log('[UploadOrdersWidget] delivery_add:', analysisResult.extractedData[0].delivery_add);
+        console.log('[UploadOrdersWidget] account_num:', analysisResult.extractedData[0].account_num);
+      }
+      
       updateProgress(90);
 
-      // 更新 doc_upload 表的 json 欄位 - 儲存發送給 OpenAI 的原始文本
-      if (docUploadId && analysisResult.extractedText) {
-        const supabase = createClient();
-        const { error: updateError } = await supabase
-          .from('doc_upload')
-          .update({
-            json: analysisResult.extractedText
-          })
-          .eq('uuid', docUploadId);
-          
-        if (updateError) {
-          console.error('[UploadOrdersWidget] Failed to update json field:', updateError);
-        } else {
-          console.log('[UploadOrdersWidget] Successfully updated json field with extracted text');
-        }
-      }
+      // json 欄位更新已在 analyze-order-pdf API 中處理
 
       updateProgress(100);
       setIsAnalyzing(false);
@@ -194,6 +234,11 @@ export const UploadOrdersWidget = React.memo(function UploadOrdersWidget({ widge
         toast.success(`Successfully analyzed ${analysisResult.extractedData.length} orders`);
         setAnalysisResult(analysisResult);
         setShowAnalysisDialog(true);
+      } else if (analysisResult.success && analysisResult.recordCount === 0) {
+        toast.warning('PDF processed but no orders found');
+      } else {
+        toast.error('Analysis completed but no data extracted');
+        console.warn('[UploadOrdersWidget] No extracted data in result:', analysisResult);
       }
 
     } catch (error) {
@@ -207,44 +252,73 @@ export const UploadOrdersWidget = React.memo(function UploadOrdersWidget({ widge
         } : f)
       );
     }
-  };
+  }, [currentUserId]);
 
   // 處理文件選擇
-  const handleFiles = useCallback((files: FileList | null) => {
+  const handleFiles = useCallback(async (files: FileList | null) => {
     if (!files || files.length === 0 || isEditMode) return;
-
-    const newFiles: UploadingFile[] = [];
     
-    for (let i = 0; i < files.length; i++) {
-      const file = files[i];
-      const error = validateFile(file);
-      
-      if (error) {
-        toast.error(`${file.name}: ${error}`);
-        continue;
-      }
-      
-      const uploadingFile: UploadingFile = {
-        id: `${Date.now()}-${i}`,
-        name: file.name,
-        progress: 0,
-        status: 'uploading',
-        file: file,
-        orderNumber: extractOrderNumber(file.name)
-      };
-      
-      newFiles.push(uploadingFile);
+    if (!currentUserId) {
+      toast.error('User not authenticated. Please refresh and try again.');
+      return;
     }
 
-    if (newFiles.length > 0) {
-      setUploadingFiles(prev => [...prev, ...newFiles]);
-      
-      // 開始上傳和分析
-      newFiles.forEach(file => {
-        uploadAndAnalyzeOrder(file);
-      });
+    // 只處理第一個文件（不支持批量上傳）
+    const file = files[0];
+    const error = validateFile(file);
+    
+    if (error) {
+      toast.error(`${file.name}: ${error}`);
+      return;
     }
-  }, [isEditMode, uploadAndAnalyzeOrder]);
+    
+    // 檢查文件是否已存在
+    const { exists, publicUrl } = await checkFileExists(file.name);
+    
+    const uploadingFile: UploadingFile = {
+      id: `${Date.now()}`,
+      name: file.name,
+      progress: 0,
+      status: 'uploading',
+      file: file,
+      orderNumber: extractOrderNumber(file.name)
+    };
+    
+    if (exists && publicUrl) {
+      // 文件已存在，顯示確認對話框
+      setPendingFile(uploadingFile);
+      setShowFileExistsDialog(true);
+    } else {
+      // 文件不存在，直接上傳
+      setUploadingFiles(prev => [...prev, uploadingFile]);
+      uploadAndAnalyzeOrder(uploadingFile);
+    }
+  }, [isEditMode, uploadAndAnalyzeOrder, currentUserId]);
+
+  // 處理確認重新上傳
+  const handleConfirmReupload = useCallback(async () => {
+    if (pendingFile) {
+      setUploadingFiles(prev => [...prev, pendingFile]);
+      // 跳過上傳步驟，直接分析
+      try {
+        const { publicUrl } = await checkFileExists(pendingFile.name);
+        console.log('[UploadOrdersWidget] Reupload - File exists check result:', { publicUrl });
+        if (publicUrl) {
+          uploadAndAnalyzeOrder(pendingFile, true, publicUrl);
+        } else {
+          console.error('[UploadOrdersWidget] No public URL found for existing file');
+          // 如果沒有找到 URL，嘗試重新上傳
+          uploadAndAnalyzeOrder(pendingFile, false);
+        }
+      } catch (error) {
+        console.error('[UploadOrdersWidget] Error checking file exists:', error);
+        // 發生錯誤時，嘗試正常上傳
+        uploadAndAnalyzeOrder(pendingFile, false);
+      }
+      setShowFileExistsDialog(false);
+      setPendingFile(null);
+    }
+  }, [pendingFile, uploadAndAnalyzeOrder]);
 
   // 拖放處理
   const handleDragOver = (e: React.DragEvent) => {
@@ -306,7 +380,6 @@ export const UploadOrdersWidget = React.memo(function UploadOrdersWidget({ widge
         <input
           ref={fileInputRef}
           type="file"
-          multiple
           accept=".pdf"
           onChange={(e) => handleFiles(e.target.files)}
           className="hidden"
@@ -328,6 +401,19 @@ export const UploadOrdersWidget = React.memo(function UploadOrdersWidget({ widge
           isOpen={showAnalysisDialog}
           onClose={() => setShowAnalysisDialog(false)}
           data={analysisResult}
+        />
+      )}
+      
+      {/* File Exists Confirmation Dialog */}
+      {showFileExistsDialog && pendingFile && (
+        <FileExistsDialog
+          isOpen={showFileExistsDialog}
+          onClose={() => {
+            setShowFileExistsDialog(false);
+            setPendingFile(null);
+          }}
+          onConfirm={handleConfirmReupload}
+          fileName={pendingFile.name}
         />
       )}
     </>

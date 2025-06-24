@@ -10,7 +10,13 @@ import { UnifiedReportDialog } from '@/app/components/reports/core/UnifiedReport
 import { useToast } from '@/components/ui/use-toast';
 import { createClient } from '@/app/utils/supabase/client';
 import { Label } from '@/components/ui/label';
-import { Select } from '@/components/ui/select';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select-radix';
 import { exportGrnReport } from '@/lib/exportReport';
 import { getMaterialCodesForGrnRef, getGrnReportData } from '@/app/actions/reportActions';
 
@@ -148,18 +154,27 @@ export function UnifiedGrnReportDialog({ isOpen, onClose }: UnifiedGrnReportDial
         <div className="space-y-2">
           <Label htmlFor="grn-ref">GRN Reference</Label>
           <Select
-            id="grn-ref"
             value={selectedGrnRef}
-            onChange={(e) => setSelectedGrnRef(e.target.value)}
+            onValueChange={setSelectedGrnRef}
             disabled={grnRefs.length === 0}
-            className="bg-slate-800 border-slate-600 text-white"
           >
-            <option value="">{grnRefs.length === 0 ? "Loading..." : "Select GRN reference"}</option>
-            {grnRefs.map((ref) => (
-              <option key={ref} value={ref}>
-                {ref}
-              </option>
-            ))}
+            <SelectTrigger 
+              id="grn-ref"
+              className="bg-slate-800 border-slate-600 text-white"
+            >
+              <SelectValue placeholder={grnRefs.length === 0 ? "Loading..." : "Select GRN reference"} />
+            </SelectTrigger>
+            <SelectContent className="bg-slate-800 border-slate-600">
+              {grnRefs.map((ref) => (
+                <SelectItem 
+                  key={ref} 
+                  value={ref}
+                  className="text-white hover:bg-slate-700"
+                >
+                  {ref}
+                </SelectItem>
+              ))}
+            </SelectContent>
           </Select>
           {grnRefs.length === 0 && (
             <p className="text-sm text-slate-500">No GRN references found</p>

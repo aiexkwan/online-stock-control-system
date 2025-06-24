@@ -2,7 +2,7 @@
 const nextConfig = {
   reactStrictMode: true,
   experimental: {
-    serverComponentsExternalPackages: ['pdf-parse'],
+    serverComponentsExternalPackages: ['pdf-parse', 'pdfjs-dist', 'sharp'],
   },
   // 環境變數應該從 .env 或 .env.local 文件自動讀取
   // 不應在此處硬編碼任何 API keys
@@ -52,6 +52,9 @@ const nextConfig = {
       config.resolve.fallback = {
         ...config.resolve.fallback,
         'iconv-lite': false, // 嘗試將 iconv-lite 設為 false
+        'canvas': false,
+        'fs': false,
+        'path': false,
       };
     }
 

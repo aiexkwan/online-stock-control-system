@@ -20,10 +20,7 @@ export const Folder3D: React.FC<Folder3DProps> = ({
   label,
   description
 }) => {
-  const [isOpen, setIsOpen] = useState(false);
-
   const handleClick = () => {
-    setIsOpen(!isOpen);
     if (onClick) onClick();
   };
 
@@ -36,7 +33,7 @@ export const Folder3D: React.FC<Folder3DProps> = ({
   return (
     <div className="flex flex-col items-center justify-center">
       <div 
-        className={`folder ${isOpen ? 'open' : ''}`}
+        className="folder"
         style={folderStyle}
         onClick={handleClick}
       >

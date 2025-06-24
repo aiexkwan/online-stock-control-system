@@ -11,6 +11,14 @@ export interface AdminWidgetConfig {
   chartType?: 'line' | 'bar' | 'pie' | 'donut' | 'area';
   metrics?: string[];
   component?: string; // 特殊組件名稱
+  reportType?: string;
+  apiEndpoint?: string;
+  description?: string;
+  dialogTitle?: string;
+  dialogDescription?: string;
+  selectLabel?: string;
+  dataTable?: string;
+  referenceField?: string;
 }
 
 export interface AdminDashboardLayout {
@@ -97,7 +105,7 @@ export const adminDashboardLayouts: Record<string, AdminDashboardLayout> = {
 
   pipeline: {
     theme: 'pipeline',
-    gridTemplate: `"widget2 widget2 widget2 widget2 widget3 widget3 widget4 widget4 widget1 widget1" "widget2 widget2 widget2 widget2 widget5 widget5 widget6 widget6 widget1 widget1" "widget7 widget7 widget7 widget7 widget7 widget8 widget8 widget8 widget1 widget1" "widget7 widget7 widget7 widget7 widget7 widget8 widget8 widget8 widget1 widget1" "widget7 widget7 widget7 widget7 widget7 widget9 widget9 widget9 widget1 widget1" "widget10 widget10 widget10 widget10 widget10 widget10 widget10 widget10 widget1 widget1" "widget10 widget10 widget10 widget10 widget10 widget10 widget10 widget10 widget1 widget1"`,
+    gridTemplate: `"widget2 widget2 widget3 widget3 widget4 widget4 widget5 widget5 widget1 widget1" "widget2 widget2 widget3 widget3 widget4 widget4 widget5 widget5 widget1 widget1" "widget6 widget6 widget6 widget7 widget7 widget7 widget8 widget8 widget1 widget1" "widget6 widget6 widget6 widget7 widget7 widget7 widget8 widget8 widget1 widget1" "widget6 widget6 widget6 widget7 widget7 widget7 widget8 widget8 widget1 widget1" "widget9 widget9 widget9 widget9 widget10 widget10 widget10 widget10 widget1 widget1" "widget9 widget9 widget9 widget9 widget10 widget10 widget10 widget10 widget1 widget1"`,
     widgets: [
       {
         type: 'history-tree',
@@ -106,64 +114,68 @@ export const adminDashboardLayouts: Record<string, AdminDashboardLayout> = {
         component: 'HistoryTree'
       },
       {
-        type: 'flow-diagram',
-        title: 'Pipeline Flow',
+        type: 'stats',
+        title: 'Today Produced (PLT)',
         gridArea: 'widget2',
-        dataSource: 'record_inventory',
-        component: 'PipelineFlowDiagram'
+        dataSource: 'record_palletinfo',
+        metrics: ['pipeline_pallet_count']
       },
       {
         type: 'stats',
-        title: 'Throughput',
+        title: 'Today Produced (QTY)',
         gridArea: 'widget3',
-        dataSource: 'pipeline_metrics',
-        metrics: ['throughput']
+        dataSource: 'record_palletinfo',
+        metrics: ['pipeline_quantity_sum']
       },
       {
         type: 'stats',
-        title: 'Bottlenecks',
+        title: 'Available Soon',
         gridArea: 'widget4',
-        dataSource: 'pipeline_metrics',
-        metrics: ['bottlenecks']
+        dataSource: 'coming_soon',
+        metrics: ['placeholder']
       },
       {
         type: 'stats',
-        title: 'Wait Time',
+        title: 'Available Soon',
         gridArea: 'widget5',
-        dataSource: 'pipeline_metrics',
-        metrics: ['wait_time']
+        dataSource: 'coming_soon',
+        metrics: ['placeholder']
       },
       {
         type: 'stats',
-        title: 'Capacity',
+        title: 'Available Soon',
         gridArea: 'widget6',
-        dataSource: 'pipeline_metrics',
-        metrics: ['capacity']
-      },
-      {
-        type: 'monitor',
-        title: 'Real-time Monitor',
-        gridArea: 'widget7',
-        dataSource: 'record_history'
+        dataSource: 'coming_soon',
+        metrics: ['placeholder']
       },
       {
         type: 'chart',
-        title: 'Flow Rate Analysis',
-        gridArea: 'widget8',
-        dataSource: 'pipeline_flow',
-        chartType: 'area'
+        title: 'Top 5 Products by Quantity',
+        gridArea: 'widget7',
+        dataSource: 'record_palletinfo',
+        chartType: 'bar',
+        metrics: ['pipeline_products']
       },
       {
-        type: 'alerts',
-        title: 'Pipeline Alerts',
-        gridArea: 'widget9',
-        dataSource: 'system_alerts'
+        type: 'chart',
+        title: 'Top 10 Products Distribution',
+        gridArea: 'widget8',
+        dataSource: 'record_palletinfo',
+        chartType: 'donut',
+        metrics: ['pipeline_products_top10']
       },
       {
         type: 'table',
-        title: 'Pipeline Status',
+        title: 'Production Details',
+        gridArea: 'widget9',
+        dataSource: 'pipeline_production_details'
+      },
+      {
+        type: 'chart',
+        title: 'Staff Workload',
         gridArea: 'widget10',
-        dataSource: 'pipeline_status'
+        dataSource: 'pipeline_work_level',
+        chartType: 'line'
       }
     ]
   },
@@ -313,14 +325,14 @@ export const adminDashboardLayouts: Record<string, AdminDashboardLayout> = {
       },
       {
         type: 'form',
-        title: 'Update Form',
+        title: 'Product Update',
         gridArea: 'widget2',
         dataSource: 'data_forms',
         component: 'UpdateForm'
       },
       {
         type: 'preview',
-        title: 'Data Preview',
+        title: 'Supplier Update',
         gridArea: 'widget3',
         dataSource: 'data_preview'
       },
@@ -415,57 +427,83 @@ export const adminDashboardLayouts: Record<string, AdminDashboardLayout> = {
         component: 'HistoryTree'
       },
       {
-        type: 'stats',
-        title: 'System Health',
+        type: 'report-generator',
+        title: 'Void Pallet Report',
         gridArea: 'widget2',
-        dataSource: 'system_status',
-        metrics: ['health_score']
+        component: 'ReportGeneratorWidget',
+        reportType: 'void-pallet',
+        description: 'Damage Report',
+        apiEndpoint: '/api/reports/void-pallet'
       },
       {
-        type: 'stats',
-        title: 'Active Users',
+        type: 'report-generator',
+        title: 'Order Loading Report',
         gridArea: 'widget3',
-        dataSource: 'data_id',
-        metrics: ['active_count']
+        component: 'ReportGeneratorWidget',
+        reportType: 'order-loading',
+        description: 'Loading Report',
+        apiEndpoint: '/api/reports/order-loading'
       },
       {
-        type: 'stats',
-        title: 'CPU Usage',
+        type: 'report-generator',
+        title: 'Stock Take Report',
         gridArea: 'widget4',
-        dataSource: 'system_metrics',
-        metrics: ['cpu_usage']
+        component: 'ReportGeneratorWidget',
+        reportType: 'stock-take',
+        description: 'StockTake Report',
+        apiEndpoint: '/api/reports/stock-take'
       },
       {
-        type: 'chart',
-        title: 'Performance Metrics',
+        type: 'report-generator-dialog',
+        title: 'ACO Order Report',
         gridArea: 'widget5',
-        dataSource: 'system_performance',
-        chartType: 'line'
+        component: 'ReportGeneratorWithDialogWidget',
+        reportType: 'aco-order',
+        description: 'ACO Order Report',
+        apiEndpoint: '/api/reports/aco-order',
+        dialogTitle: 'Select ACO Order',
+        dialogDescription: 'Please select an ACO order reference to generate the report.',
+        selectLabel: 'ACO Order Reference',
+        dataTable: 'record_aco',
+        referenceField: 'order_ref'
       },
       {
-        type: 'chart',
-        title: 'Memory Usage',
+        type: 'report-generator',
+        title: 'Transaction Report',
         gridArea: 'widget6',
-        dataSource: 'system_metrics',
-        chartType: 'area'
+        component: 'ReportGeneratorWidget',
+        reportType: 'transaction',
+        description: 'Stock Transfer Report',
+        apiEndpoint: '/api/reports/transaction'
       },
       {
-        type: 'alerts',
-        title: 'System Alerts',
+        type: 'report-generator-dialog',
+        title: 'GRN Report',
         gridArea: 'widget7',
-        dataSource: 'system_alerts'
+        component: 'ReportGeneratorWithDialogWidget',
+        reportType: 'grn',
+        description: 'GRN Report',
+        apiEndpoint: '/api/reports/grn',
+        dialogTitle: 'Select GRN Reference',
+        dialogDescription: 'Please select a GRN reference to generate the report.',
+        selectLabel: 'GRN Reference',
+        dataTable: 'record_grn',
+        referenceField: 'grn_ref'
       },
       {
-        type: 'list',
-        title: 'Recent Logs',
+        type: 'report-generator',
+        title: 'Export All Data',
         gridArea: 'widget8',
-        dataSource: 'system_logs'
+        component: 'ReportGeneratorWidget',
+        reportType: 'export-all',
+        description: 'Export System Data',
+        apiEndpoint: '/api/reports/export-all'
       },
       {
-        type: 'table',
-        title: 'Background Jobs',
+        type: 'available-soon',
+        title: 'Additional Reports',
         gridArea: 'widget9',
-        dataSource: 'cron_jobs'
+        component: 'AvailableSoonWidget'
       }
     ]
   },

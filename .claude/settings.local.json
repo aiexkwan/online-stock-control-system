@@ -75,7 +75,12 @@
       "Bash(npx shadcn-ui@latest add calendar:*)",
       "WebFetch(domain:www.reactbits.dev)",
       "Bash(npx jsrepo add:*)",
-      "WebFetch(domain:reactbits.dev)"
+      "WebFetch(domain:reactbits.dev)",
+      "Bash(claude mcp env:*)",
+      "Bash(claude mcp:*)",
+      "Bash(npx supabase db query:*)",
+      "Bash(npx ts-node:*)",
+      "Bash(npm uninstall:*)"
     ],
     "deny": []
   }

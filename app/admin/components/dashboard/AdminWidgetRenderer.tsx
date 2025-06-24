@@ -5,7 +5,7 @@
 
 'use client';
 
-import React, { useState, useEffect, Suspense } from 'react';
+import React, { useState, useEffect, Suspense, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { AdminWidgetConfig } from './adminDashboardLayouts';
 import { TimeFrame } from '@/app/components/admin/UniversalTimeRangeSelector';
@@ -22,8 +22,20 @@ import {
   DocumentArrowDownIcon,
   TruckIcon,
   ExclamationTriangleIcon,
-  ArrowPathIcon
+  ArrowPathIcon,
+  MagnifyingGlassIcon,
+  PencilIcon,
+  BuildingOfficeIcon
 } from '@heroicons/react/24/outline';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { 
+  getProductByCode, 
+  createProduct, 
+  updateProduct,
+  ProductData 
+} from '@/app/actions/productActions';
 import { 
   LineChart, Line, 
   BarChart, Bar, 
@@ -62,6 +74,9 @@ const UploadFilesWidget = React.lazy(() => import('./widgets/UploadFilesWidget')
 const UploadOrdersWidget = React.lazy(() => import('./widgets/UploadOrdersWidget').then(mod => ({ default: mod.UploadOrdersWidget })));
 const UploadProductSpecWidget = React.lazy(() => import('./widgets/UploadProductSpecWidget').then(mod => ({ default: mod.UploadProductSpecWidget })));
 const UploadPhotoWidget = React.lazy(() => import('./widgets/UploadPhotoWidget').then(mod => ({ default: mod.UploadPhotoWidget })));
+const ReportGeneratorWidget = React.lazy(() => import('./widgets/ReportGeneratorWidget'));
+const ReportGeneratorWithDialogWidget = React.lazy(() => import('./widgets/ReportGeneratorWithDialogWidget'));
+const AvailableSoonWidget = React.lazy(() => import('./widgets/AvailableSoonWidget'));
 
 export const AdminWidgetRenderer: React.FC<AdminWidgetRendererProps> = ({ 
   config, 
@@ -108,6 +123,12 @@ export const AdminWidgetRenderer: React.FC<AdminWidgetRendererProps> = ({
             break;
           case 'work_level':
             await loadWorkLevel(supabase, timeFrame);
+            break;
+          case 'pipeline_production_details':
+            await loadPipelineProductionDetails(supabase, timeFrame);
+            break;
+          case 'pipeline_work_level':
+            await loadPipelineWorkLevel(supabase, timeFrame);
             break;
           case 'data_customerorder':
             await loadCustomerOrderData(supabase);
@@ -167,6 +188,29 @@ export const AdminWidgetRenderer: React.FC<AdminWidgetRendererProps> = ({
         label: config.title,
         icon: <CubeIcon className="w-8 h-8" />
       });
+    } else if (metric === 'pipeline_pallet_count') {
+      // 載入 Pipeline 棧板數量
+      const { data: palletData, error } = await supabase
+        .from('record_palletinfo')
+        .select('plt_num')
+        .ilike('plt_remark', '%finished in production%')
+        .ilike('product_code', 'U%')
+        .gte('generate_time', timeFrame.start.toISOString())
+        .lte('generate_time', timeFrame.end.toISOString());
+
+      if (error) {
+        console.error('Error loading pipeline pallet count:', error);
+        setData({ value: 0, label: config.title });
+        return;
+      }
+
+      const uniquePallets = new Set(palletData?.map((p: any) => p.plt_num) || []);
+      
+      setData({
+        value: uniquePallets.size,
+        label: config.title,
+        icon: <CubeIcon className="w-8 h-8" />
+      });
     } else if (metric === 'quantity_sum') {
       // 載入數量總和
       const { data: palletData, error } = await supabase
@@ -190,15 +234,48 @@ export const AdminWidgetRenderer: React.FC<AdminWidgetRendererProps> = ({
         label: config.title,
         icon: <CubeIcon className="w-8 h-8" />
       });
-    } else if (config.chartType === 'bar') {
-      // 載入 Top 5 產品數據
+    } else if (metric === 'pipeline_quantity_sum') {
+      // 載入 Pipeline 數量總和
       const { data: palletData, error } = await supabase
+        .from('record_palletinfo')
+        .select('product_qty')
+        .ilike('plt_remark', '%finished in production%')
+        .ilike('product_code', 'U%')
+        .gte('generate_time', timeFrame.start.toISOString())
+        .lte('generate_time', timeFrame.end.toISOString());
+
+      if (error) {
+        console.error('Error loading pipeline quantity sum:', error);
+        setData({ value: 0, label: config.title });
+        return;
+      }
+
+      const totalQty = palletData?.reduce((sum: number, p: any) => sum + (p.product_qty || 0), 0) || 0;
+      
+      setData({
+        value: totalQty,
+        label: config.title,
+        icon: <CubeIcon className="w-8 h-8" />
+      });
+    } else if (config.chartType === 'bar') {
+      // 判斷是否為 pipeline 數據
+      const isPipeline = config.metrics?.[0] === 'pipeline_products';
+      
+      // 載入 Top 5 產品數據
+      const query = supabase
         .from('record_palletinfo')
         .select('product_code, product_qty')
         .ilike('plt_remark', '%finished in production%')
-        .not('product_code', 'ilike', 'U%')
         .gte('generate_time', timeFrame.start.toISOString())
         .lte('generate_time', timeFrame.end.toISOString());
+        
+      if (isPipeline) {
+        query.ilike('product_code', 'U%');
+      } else {
+        query.not('product_code', 'ilike', 'U%');
+      }
+        
+      const { data: palletData, error } = await query;
 
       if (error) {
         console.error('Error loading top products:', error);
@@ -220,14 +297,24 @@ export const AdminWidgetRenderer: React.FC<AdminWidgetRendererProps> = ({
 
       setData({ chartData });
     } else if (config.chartType === 'donut') {
+      // 判斷是否為 pipeline 數據
+      const isPipeline = config.metrics?.[0] === 'pipeline_products_top10';
+      
       // 載入 Top 10 產品數據
-      const { data: palletData, error } = await supabase
+      const query = supabase
         .from('record_palletinfo')
         .select('product_code, product_qty')
         .ilike('plt_remark', '%finished in production%')
-        .not('product_code', 'ilike', 'U%')
         .gte('generate_time', timeFrame.start.toISOString())
         .lte('generate_time', timeFrame.end.toISOString());
+        
+      if (isPipeline) {
+        query.ilike('product_code', 'U%');
+      } else {
+        query.not('product_code', 'ilike', 'U%');
+      }
+        
+      const { data: palletData, error } = await query;
 
       if (error) {
         console.error('Error loading top products:', error);
@@ -482,6 +569,70 @@ export const AdminWidgetRenderer: React.FC<AdminWidgetRendererProps> = ({
     }
   };
 
+  // 載入 Pipeline 生產明細數據
+  const loadPipelineProductionDetails = async (supabase: any, timeFrame: TimeFrame) => {
+    try {
+      // 先獲取符合條件的棧板資料
+      const { data: palletData, error: palletError } = await supabase
+        .from('record_palletinfo')
+        .select('plt_num, product_code, product_qty, generate_time')
+        .ilike('plt_remark', '%finished in production%')
+        .ilike('product_code', 'U%')
+        .gte('generate_time', timeFrame.start.toISOString())
+        .lte('generate_time', timeFrame.end.toISOString())
+        .order('generate_time', { ascending: false })
+        .limit(50);
+
+      if (palletError) {
+        console.error('Error loading pipeline production details:', palletError);
+        setData({ headers: ['Pallet Num', 'Product Code', 'Qty', 'Q.C. By'], rows: [] });
+        return;
+      }
+
+      // 對每個棧板查找 QC 操作員
+      const rows = [];
+      for (const pallet of palletData || []) {
+        // 查找 QC 記錄
+        const { data: historyData } = await supabase
+          .from('record_history')
+          .select('id')
+          .eq('plt_num', pallet.plt_num)
+          .eq('action', 'Finished QC')
+          .order('time', { ascending: false })
+          .limit(1);
+
+        let qcOperator = 'N/A';
+        if (historyData && historyData.length > 0 && historyData[0].id) {
+          // 查找操作員名稱
+          const { data: operatorData } = await supabase
+            .from('data_id')
+            .select('name')
+            .eq('id', historyData[0].id)
+            .single();
+          
+          if (operatorData) {
+            qcOperator = operatorData.name;
+          }
+        }
+
+        rows.push([
+          pallet.plt_num,
+          pallet.product_code,
+          pallet.product_qty.toLocaleString(),
+          qcOperator
+        ]);
+      }
+
+      setData({
+        headers: ['Pallet Num', 'Product Code', 'Qty', 'Q.C. By'],
+        rows: rows.slice(0, 20) // 限制顯示20行
+      });
+    } catch (error) {
+      console.error('Error in loadPipelineProductionDetails:', error);
+      setData({ headers: ['Pallet Num', 'Product Code', 'Qty', 'Q.C. By'], rows: [] });
+    }
+  };
+
   // 載入員工工作量數據
   const loadWorkLevel = async (supabase: any, timeFrame: TimeFrame) => {
     try {
@@ -489,7 +640,7 @@ export const AdminWidgetRenderer: React.FC<AdminWidgetRendererProps> = ({
       const { data: allUsers } = await supabase
         .from('data_id')
         .select('id, name')
-        .eq('Department', 'Injection')
+        .eq('department', 'injection')
         .order('name');
 
       if (!allUsers || allUsers.length === 0) {
@@ -559,6 +710,83 @@ export const AdminWidgetRenderer: React.FC<AdminWidgetRendererProps> = ({
     }
   };
 
+  // 載入 Pipeline 員工工作量數據
+  const loadPipelineWorkLevel = async (supabase: any, timeFrame: TimeFrame) => {
+    try {
+      // 獲取 Pipeline 部門的員工
+      const { data: allUsers } = await supabase
+        .from('data_id')
+        .select('id, name')
+        .eq('department', 'pipeline')
+        .order('name');
+
+      if (!allUsers || allUsers.length === 0) {
+        setData({ chartData: [], legendData: [] });
+        return;
+      }
+
+      // 計算時間範圍內的日期
+      const dates: Date[] = [];
+      const currentDate = new Date(timeFrame.start);
+      while (currentDate <= timeFrame.end) {
+        dates.push(new Date(currentDate));
+        currentDate.setDate(currentDate.getDate() + 1);
+      }
+
+      // 為每個日期構建數據點
+      const chartData: any[] = [];
+      
+      for (const date of dates) {
+        const dayStart = new Date(date);
+        dayStart.setHours(0, 0, 0, 0);
+        const dayEnd = new Date(date);
+        dayEnd.setHours(23, 59, 59, 999);
+
+        // 獲取當天的工作量數據
+        const { data: dayWorkData } = await supabase
+          .from('work_level')
+          .select('id, qc, grn, move')
+          .gte('latest_update', dayStart.toISOString())
+          .lte('latest_update', dayEnd.toISOString());
+
+        // 構建當天的數據點
+        const dataPoint: any = {
+          date: format(date, 'MMM d'),
+          fullDate: date.toISOString()
+        };
+
+        // 為每個用戶計算總工作量
+        allUsers.forEach((user: any) => {
+          const userWork = dayWorkData?.find((w: any) => w.id === user.id);
+          const total = userWork ? (userWork.qc || 0) + (userWork.grn || 0) + (userWork.move || 0) : 0;
+          dataPoint[user.name] = total;
+        });
+
+        chartData.push(dataPoint);
+      }
+
+      // 準備圖例數據 - 只顯示有數據的用戶
+      const legendData = allUsers
+        .filter((user: any) => {
+          // 檢查用戶是否有任何非零數據
+          return chartData.some(point => point[user.name] > 0);
+        })
+        .map((user: any) => ({
+          value: user.name,
+          color: CHART_COLORS[allUsers.indexOf(user) % CHART_COLORS.length]
+        }));
+
+      setData({ 
+        chartData, 
+        legendData,
+        userNames: legendData.map((l: any) => l.value)
+      });
+    } catch (error) {
+      console.error('Error in loadPipelineWorkLevel:', error);
+      setData({ chartData: [], legendData: [] });
+    }
+  };
+
   // 生成每小時數據
   const generateHourlyData = (data: any[], timeField: string) => {
     const hourlyMap = new Map<number, number>();
@@ -602,6 +830,12 @@ export const AdminWidgetRenderer: React.FC<AdminWidgetRendererProps> = ({
 
   // 渲染統計卡片
   const renderStatsCard = () => {
+    // 檢查是否為需要透明的四個小 widget
+    const transparentWidgets = ['Pending Updates', 'Processing', 'Completed Today', 'Failed'];
+    if (transparentWidgets.includes(config.title)) {
+      return <div className="h-full" style={{ opacity: 0 }}></div>;
+    }
+
     if (loading) {
       return (
         <div className="animate-pulse">
@@ -970,23 +1204,39 @@ export const AdminWidgetRenderer: React.FC<AdminWidgetRendererProps> = ({
           </div>
         );
       case 'UpdateForm':
+        return <ProductUpdateComponent />;
+      case 'ReportGeneratorWidget':
         return (
-          <div className="h-full p-6 text-white">
-            <h3 className="text-xl font-semibold mb-4">Update Data Form</h3>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-400 mb-1">Product Code</label>
-                <input type="text" className="w-full px-3 py-2 bg-slate-700 rounded-lg border border-slate-600 focus:border-blue-500 focus:outline-none" />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-400 mb-1">Quantity</label>
-                <input type="number" className="w-full px-3 py-2 bg-slate-700 rounded-lg border border-slate-600 focus:border-blue-500 focus:outline-none" />
-              </div>
-              <button className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-                Submit Update
-              </button>
-            </div>
-          </div>
+          <Suspense fallback={<div className="h-full w-full animate-pulse bg-slate-800/50" />}>
+            <ReportGeneratorWidget 
+              title={config.title}
+              reportType={config.reportType || ''}
+              description={config.description}
+              apiEndpoint={config.apiEndpoint}
+            />
+          </Suspense>
+        );
+      case 'ReportGeneratorWithDialogWidget':
+        return (
+          <Suspense fallback={<div className="h-full w-full animate-pulse bg-slate-800/50" />}>
+            <ReportGeneratorWithDialogWidget 
+              title={config.title}
+              reportType={config.reportType || ''}
+              description={config.description}
+              apiEndpoint={config.apiEndpoint}
+              dialogTitle={config.dialogTitle || ''}
+              dialogDescription={config.dialogDescription || ''}
+              selectLabel={config.selectLabel || ''}
+              dataTable={config.dataTable || ''}
+              referenceField={config.referenceField || ''}
+            />
+          </Suspense>
+        );
+      case 'AvailableSoonWidget':
+        return (
+          <Suspense fallback={<div className="h-full w-full animate-pulse bg-slate-800/50" />}>
+            <AvailableSoonWidget title={config.title} />
+          </Suspense>
         );
       case 'StockInventoryTable':
         return (
@@ -1142,6 +1392,41 @@ export const AdminWidgetRenderer: React.FC<AdminWidgetRendererProps> = ({
               <p>No alerts at this time</p>
             </div>
         );
+      case 'preview':
+        return <SupplierUpdateComponent />;
+      case 'report-generator':
+        return (
+          <Suspense fallback={<div className="h-full w-full animate-pulse bg-slate-800/50" />}>
+            <ReportGeneratorWidget 
+              title={config.title}
+              reportType={config.reportType || ''}
+              description={config.description}
+              apiEndpoint={config.apiEndpoint}
+            />
+          </Suspense>
+        );
+      case 'report-generator-dialog':
+        return (
+          <Suspense fallback={<div className="h-full w-full animate-pulse bg-slate-800/50" />}>
+            <ReportGeneratorWithDialogWidget 
+              title={config.title}
+              reportType={config.reportType || ''}
+              description={config.description}
+              apiEndpoint={config.apiEndpoint}
+              dialogTitle={config.dialogTitle || ''}
+              dialogDescription={config.dialogDescription || ''}
+              selectLabel={config.selectLabel || ''}
+              dataTable={config.dataTable || ''}
+              referenceField={config.referenceField || ''}
+            />
+          </Suspense>
+        );
+      case 'available-soon':
+        return (
+          <Suspense fallback={<div className="h-full w-full animate-pulse bg-slate-800/50" />}>
+            <AvailableSoonWidget title={config.title} />
+          </Suspense>
+        );
       default:
         return (
           <div className="text-center text-gray-400">
@@ -1247,4 +1532,972 @@ function getMockData(config: AdminWidgetConfig): any {
     default:
       return null;
   }
+}
+
+// Product Update Component - 從 ProductUpdateTab 移植
+interface StatusMessageType {
+  type: 'success' | 'error' | 'warning' | 'info';
+  message: string;
+}
+
+function ProductUpdateComponent() {
+  // 狀態管理
+  const [productData, setProductData] = useState<ProductData | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [showForm, setShowForm] = useState(false);
+  const [searchedCode, setSearchedCode] = useState('');
+  const [statusMessage, setStatusMessage] = useState<StatusMessageType | null>(null);
+  
+  // 表單狀態
+  const [formData, setFormData] = useState<ProductData>({
+    code: '',
+    description: '',
+    colour: '',
+    standard_qty: 0,
+    type: ''
+  });
+
+  // 重置狀態
+  const resetState = useCallback(() => {
+    setProductData(null);
+    setIsEditing(false);
+    setShowCreateDialog(false);
+    setShowForm(false);
+    setSearchedCode('');
+    setStatusMessage(null);
+    setFormData({
+      code: '',
+      description: '',
+      colour: '',
+      standard_qty: 0,
+      type: ''
+    });
+  }, []);
+
+  // 搜尋產品
+  const handleSearch = useCallback(async (code: string) => {
+    if (!code.trim()) {
+      setStatusMessage({
+        type: 'error',
+        message: 'Please enter a product code'
+      });
+      return;
+    }
+
+    setIsLoading(true);
+    setStatusMessage(null);
+    setSearchedCode(code.trim());
+    
+    try {
+      const result = await getProductByCode(code.trim());
+      
+      if (result.success && result.data) {
+        // 搜尋成功 - 顯示產品信息
+        setProductData(result.data);
+        setIsEditing(false);
+        setShowForm(false);
+        setShowCreateDialog(false);
+        setStatusMessage({
+          type: 'success',
+          message: `Product found: ${result.data.code}`
+        });
+      } else {
+        // 搜尋失敗 - 詢問是否新增
+        setProductData(null);
+        setShowCreateDialog(true);
+        setShowForm(false);
+        setIsEditing(false);
+        setStatusMessage({
+          type: 'warning',
+          message: `Product "${code.trim()}" not found. Would you like to create it?`
+        });
+      }
+    } catch (error) {
+      setStatusMessage({
+        type: 'error',
+        message: 'An unexpected error occurred during the search.'
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  // 開始編輯
+  const handleEdit = useCallback(() => {
+    if (productData) {
+      setFormData(productData);
+      setIsEditing(true);
+      setShowForm(true);
+      setShowCreateDialog(false);
+    }
+  }, [productData]);
+
+  // 確認新增產品
+  const handleConfirmCreate = useCallback(() => {
+    setFormData({
+      code: searchedCode,
+      description: '',
+      colour: '',
+      standard_qty: 0,
+      type: ''
+    });
+    setIsEditing(false);
+    setShowForm(true);
+    setShowCreateDialog(false);
+    setStatusMessage({
+      type: 'info',
+      message: 'Fill in the product details below to create a new product.'
+    });
+  }, [searchedCode]);
+
+  // 取消操作
+  const handleCancel = useCallback(() => {
+    setIsEditing(false);
+    setShowForm(false);
+    setShowCreateDialog(false);
+    setStatusMessage(null);
+  }, []);
+
+  // 提交表單
+  const handleSubmit = useCallback(async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    
+    try {
+      let result;
+      
+      if (isEditing && productData) {
+        // 更新現有產品
+        const { code: _, ...updateData } = formData;
+        
+        // 確保數據類型正確
+        if (typeof updateData.standard_qty === 'string') {
+          updateData.standard_qty = parseInt(updateData.standard_qty as any) || 0;
+        }
+        
+        result = await updateProduct(productData.code, updateData);
+        
+        if (result.success) {
+          setProductData(result.data!);
+          setStatusMessage({
+            type: 'success',
+            message: 'Product details updated successfully!'
+          });
+        }
+      } else {
+        // 新增產品
+        result = await createProduct(formData);
+        if (result.success) {
+          setProductData(result.data!);
+          setStatusMessage({
+            type: 'success',
+            message: 'Product created successfully!'
+          });
+        }
+      }
+      
+      if (!result.success) {
+        setStatusMessage({
+          type: 'error',
+          message: result.error || 'Operation failed'
+        });
+        return;
+      }
+      
+      // 成功後重置狀態
+      setIsEditing(false);
+      setShowForm(false);
+      setShowCreateDialog(false);
+      
+    } catch (error) {
+      console.error('[ProductUpdate] Unexpected error:', error);
+      setStatusMessage({
+        type: 'error',
+        message: 'An unexpected error occurred.'
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  }, [isEditing, productData, formData]);
+
+  // 處理表單輸入變化
+  const handleInputChange = useCallback((field: keyof ProductData, value: string | number) => {
+    setFormData(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  }, []);
+
+  // 處理 Enter 鍵搜尋
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !isLoading) {
+      const target = e.target as HTMLInputElement;
+      handleSearch(target.value);
+    }
+  };
+
+  return (
+    <div className="h-full bg-gradient-to-br from-slate-900/50 via-orange-900/20 to-slate-800/50">
+      <div className="h-full overflow-y-auto">
+        {/* Search Section */}
+        {!showForm && (
+          <div className="relative group mb-6 p-6">
+            <div className="absolute inset-0 bg-gradient-to-r from-slate-800/50 to-orange-900/30 rounded-2xl blur-xl"></div>
+            <div className="relative bg-slate-800/40 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-6 shadow-xl shadow-orange-900/20 hover:border-orange-500/30 transition-all duration-300">
+              <div className="absolute inset-0 bg-gradient-to-r from-orange-500/5 via-transparent to-amber-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-2xl"></div>
+              <div className="relative z-10">
+                <h3 className="text-lg font-medium bg-gradient-to-r from-orange-300 to-amber-300 bg-clip-text text-transparent mb-4">
+                  Product Search
+                </h3>
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="search" className="text-slate-200 font-medium">
+                      Product Code
+                    </Label>
+                    <div className="flex gap-3 mt-2">
+                      <Input
+                        id="search"
+                        type="text"
+                        placeholder="Enter product code and press Enter..."
+                        onKeyPress={handleKeyPress}
+                        className="flex-1 bg-slate-700/50 border-slate-600/50 text-slate-200 placeholder-slate-400 focus:border-orange-500/70 focus:bg-slate-700/70 hover:border-orange-500/50 hover:bg-slate-700/60 transition-all duration-300"
+                        disabled={isLoading || showCreateDialog}
+                      />
+                      <Button
+                        onClick={() => {
+                          const input = document.getElementById('search') as HTMLInputElement;
+                          if (input) handleSearch(input.value);
+                        }}
+                        disabled={isLoading}
+                        className="bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-500 hover:to-amber-500 disabled:from-slate-600 disabled:to-slate-600 text-white px-6 shadow-lg hover:shadow-orange-500/25 hover:scale-105 active:scale-95 transition-all duration-300"
+                      >
+                        {isLoading ? (
+                          <>
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
+                            Searching...
+                          </>
+                        ) : (
+                          <>
+                            <MagnifyingGlassIcon className="h-4 w-4 mr-2" />
+                            Search
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                    <p className="text-xs text-slate-400 mt-2">
+                      Enter a product code and press Enter to search (case-insensitive)
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* New Search Button */}
+        {showForm && (
+          <div className="flex justify-between items-center mb-6 px-6">
+            <h3 className="text-lg font-semibold bg-gradient-to-r from-white via-orange-100 to-amber-100 bg-clip-text text-transparent">
+              {isEditing ? 'Edit Product' : 'Create New Product'}
+            </h3>
+            <Button
+              onClick={resetState}
+              variant="outline"
+              className="border-orange-500/50 text-orange-400 hover:bg-orange-500/10 hover:border-orange-400/70 bg-slate-800/50 backdrop-blur-sm"
+            >
+              <ArrowPathIcon className="w-4 h-4 mr-2" />
+              New Search
+            </Button>
+          </div>
+        )}
+
+        {/* Status Message */}
+        {statusMessage && (
+          <div className={`p-4 rounded-xl mb-6 mx-6 backdrop-blur-sm border ${
+            statusMessage.type === 'success' ? 'bg-green-500/10 border-green-500/30' :
+            statusMessage.type === 'error' ? 'bg-red-500/10 border-red-500/30' :
+            statusMessage.type === 'warning' ? 'bg-yellow-500/10 border-yellow-500/30' :
+            'bg-blue-500/10 border-blue-500/30'
+          }`}>
+            <p className={`text-sm ${
+              statusMessage.type === 'success' ? 'text-green-400' :
+              statusMessage.type === 'error' ? 'text-red-400' :
+              statusMessage.type === 'warning' ? 'text-yellow-400' :
+              'text-blue-400'
+            }`}>
+              {statusMessage.message}
+            </p>
+          </div>
+        )}
+
+        {/* Create Confirmation Dialog */}
+        {showCreateDialog && (
+          <div className="relative group mb-6 px-6">
+            <div className="absolute inset-0 bg-gradient-to-r from-slate-800/50 to-yellow-900/30 rounded-2xl blur-xl"></div>
+            <div className="relative bg-slate-800/40 backdrop-blur-xl border border-yellow-500/30 rounded-2xl p-6 shadow-xl shadow-yellow-900/20">
+              <div className="absolute inset-0 bg-gradient-to-r from-yellow-500/5 via-transparent to-amber-500/5 opacity-100 rounded-2xl"></div>
+              <div className="relative z-10">
+                <div className="flex items-start space-x-4">
+                  <ExclamationTriangleIcon className="w-6 h-6 text-yellow-400 mt-1 flex-shrink-0" />
+                  <div className="flex-1">
+                    <h3 className="text-lg font-medium text-yellow-400 mb-2">
+                      Product Not Found
+                    </h3>
+                    <p className="text-slate-300 mb-4">
+                      The product code &quot;{searchedCode}&quot; was not found in the database. 
+                      Would you like to create a new product with this code?
+                    </p>
+                    <div className="flex space-x-3">
+                      <Button
+                        onClick={handleConfirmCreate}
+                        className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white shadow-lg hover:shadow-green-500/25 hover:scale-105 active:scale-95 transition-all duration-300"
+                      >
+                        <CheckCircleIcon className="w-4 h-4 mr-2" />
+                        Yes, Create Product
+                      </Button>
+                      <Button
+                        onClick={handleCancel}
+                        variant="outline"
+                        className="border-slate-600/50 text-slate-300 hover:bg-slate-700/50 hover:border-slate-500/70 hover:text-white transition-all duration-300"
+                      >
+                        Cancel
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Product Info Display */}
+        {productData && !showForm && (
+          <div className="px-6">
+            <div className="relative group">
+              <div className="absolute inset-0 bg-gradient-to-r from-slate-800/50 to-orange-900/30 rounded-2xl blur-xl"></div>
+              <div className="relative bg-slate-800/40 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-6 shadow-xl shadow-orange-900/20 hover:border-orange-500/30 transition-all duration-300">
+                <div className="absolute inset-0 bg-gradient-to-r from-orange-500/5 via-transparent to-amber-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-2xl"></div>
+                <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-orange-400/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-t-2xl"></div>
+                <div className="relative z-10">
+                  <div className="flex items-center justify-between mb-4">
+                    <h4 className="text-lg font-medium bg-gradient-to-r from-orange-300 to-amber-300 bg-clip-text text-transparent">
+                      Product Information
+                    </h4>
+                    <Button
+                      onClick={handleEdit}
+                      size="sm"
+                      className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white shadow-lg hover:shadow-blue-500/25 hover:scale-105 active:scale-95 transition-all duration-300"
+                    >
+                      <PencilIcon className="w-4 h-4 mr-2" />
+                      Edit Product
+                    </Button>
+                  </div>
+                  <div className="space-y-3">
+                    <ProductInfoRow label="Product Code" value={productData.code} />
+                    <ProductInfoRow label="Description" value={productData.description} />
+                    <ProductInfoRow label="Colour" value={productData.colour} />
+                    <ProductInfoRow label="Standard Quantity" value={productData.standard_qty.toString()} />
+                    <ProductInfoRow label="Type" value={productData.type} />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Product Form */}
+        {showForm && (
+          <div className="px-6">
+            <div className="relative group">
+              <div className="absolute inset-0 bg-gradient-to-r from-slate-800/50 to-orange-900/30 rounded-2xl blur-xl"></div>
+              <div className="relative bg-slate-800/40 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-6 shadow-xl shadow-orange-900/20">
+                <div className="absolute inset-0 bg-gradient-to-r from-orange-500/5 via-transparent to-amber-500/5 opacity-100 rounded-2xl"></div>
+                <div className="relative z-10">
+                  <form onSubmit={handleSubmit} className="space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div>
+                        <Label htmlFor="code" className="text-slate-200 font-medium">
+                          Product Code *
+                        </Label>
+                        <Input
+                          id="code"
+                          type="text"
+                          value={formData.code}
+                          onChange={(e) => handleInputChange('code', e.target.value)}
+                          disabled={isEditing}
+                          className="mt-2 bg-slate-700/50 border-slate-600/50 text-slate-200 placeholder-slate-400 focus:border-orange-500/70 focus:bg-slate-700/70 disabled:opacity-50 disabled:cursor-not-allowed"
+                          required
+                        />
+                      </div>
+
+                      <div>
+                        <Label htmlFor="type" className="text-slate-200 font-medium">
+                          Type *
+                        </Label>
+                        <Input
+                          id="type"
+                          type="text"
+                          value={formData.type}
+                          onChange={(e) => handleInputChange('type', e.target.value)}
+                          className="mt-2 bg-slate-700/50 border-slate-600/50 text-slate-200 placeholder-slate-400 focus:border-orange-500/70 focus:bg-slate-700/70"
+                          required
+                        />
+                      </div>
+
+                      <div className="md:col-span-2">
+                        <Label htmlFor="description" className="text-slate-200 font-medium">
+                          Description *
+                        </Label>
+                        <Input
+                          id="description"
+                          type="text"
+                          value={formData.description}
+                          onChange={(e) => handleInputChange('description', e.target.value)}
+                          className="mt-2 bg-slate-700/50 border-slate-600/50 text-slate-200 placeholder-slate-400 focus:border-orange-500/70 focus:bg-slate-700/70"
+                          required
+                        />
+                      </div>
+
+                      <div>
+                        <Label htmlFor="colour" className="text-slate-200 font-medium">
+                          Colour
+                        </Label>
+                        <Input
+                          id="colour"
+                          type="text"
+                          value={formData.colour}
+                          onChange={(e) => handleInputChange('colour', e.target.value)}
+                          className="mt-2 bg-slate-700/50 border-slate-600/50 text-slate-200 placeholder-slate-400 focus:border-orange-500/70 focus:bg-slate-700/70"
+                        />
+                      </div>
+
+                      <div>
+                        <Label htmlFor="standard_qty" className="text-slate-200 font-medium">
+                          Standard Quantity *
+                        </Label>
+                        <Input
+                          id="standard_qty"
+                          type="number"
+                          value={formData.standard_qty}
+                          onChange={(e) => handleInputChange('standard_qty', parseInt(e.target.value) || 0)}
+                          className="mt-2 bg-slate-700/50 border-slate-600/50 text-slate-200 placeholder-slate-400 focus:border-orange-500/70 focus:bg-slate-700/70"
+                          min="0"
+                          required
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex justify-end space-x-4 pt-4">
+                      <Button
+                        type="button"
+                        onClick={handleCancel}
+                        variant="outline"
+                        className="border-slate-600/50 text-slate-300 hover:bg-slate-700/50 hover:border-slate-500/70 hover:text-white transition-all duration-300"
+                        disabled={isLoading}
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        type="submit"
+                        disabled={isLoading}
+                        className="bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-500 hover:to-amber-500 disabled:from-slate-600 disabled:to-slate-600 text-white shadow-lg hover:shadow-orange-500/25 hover:scale-105 active:scale-95 transition-all duration-300"
+                      >
+                        {isLoading ? (
+                          <>
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
+                            {isEditing ? 'Updating...' : 'Creating...'}
+                          </>
+                        ) : (
+                          <>
+                            <CheckCircleIcon className="w-4 h-4 mr-2" />
+                            {isEditing ? 'Update Product' : 'Create Product'}
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// Product Info Row Component
+interface ProductInfoRowProps {
+  label: string;
+  value: string;
+}
+
+function ProductInfoRow({ label, value }: ProductInfoRowProps) {
+  return (
+    <div className="flex justify-between items-center py-3 px-4 bg-slate-700/30 border border-slate-600/30 rounded-xl">
+      <span className="text-slate-300 font-medium">{label}:</span>
+      <span className="text-slate-100 font-semibold">{value || '-'}</span>
+    </div>
+  );
+}
+
+// Supplier Update Component - 從 SupplierUpdateTab 移植
+interface SupplierData {
+  supplier_code: string;
+  supplier_name: string;
+}
+
+function SupplierUpdateComponent() {
+  // 狀態管理
+  const [supplierData, setSupplierData] = useState<SupplierData | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [showForm, setShowForm] = useState(false);
+  const [searchedCode, setSearchedCode] = useState('');
+  const [statusMessage, setStatusMessage] = useState<StatusMessageType | null>(null);
+  
+  // 表單狀態
+  const [formData, setFormData] = useState<SupplierData>({
+    supplier_code: '',
+    supplier_name: ''
+  });
+
+  const supabase = createClient();
+
+  // 重置狀態
+  const resetState = useCallback(() => {
+    setSupplierData(null);
+    setIsEditing(false);
+    setShowCreateDialog(false);
+    setShowForm(false);
+    setSearchedCode('');
+    setStatusMessage(null);
+    setFormData({
+      supplier_code: '',
+      supplier_name: ''
+    });
+  }, []);
+
+  // 搜尋供應商
+  const handleSearch = useCallback(async (code: string) => {
+    if (!code.trim()) {
+      setStatusMessage({
+        type: 'error',
+        message: 'Please enter a supplier code'
+      });
+      return;
+    }
+
+    setIsLoading(true);
+    setStatusMessage(null);
+    setSearchedCode(code.trim().toUpperCase());
+    
+    try {
+      const { data, error } = await supabase
+        .from('data_supplier')
+        .select('*')
+        .eq('supplier_code', code.trim().toUpperCase())
+        .single();
+      
+      if (error && error.code !== 'PGRST116') {
+        throw error;
+      }
+      
+      if (data) {
+        // 搜尋成功 - 顯示供應商信息
+        setSupplierData(data);
+        setIsEditing(false);
+        setShowForm(false);
+        setShowCreateDialog(false);
+        setStatusMessage({
+          type: 'success',
+          message: `Supplier found: ${data.supplier_code}`
+        });
+      } else {
+        // 搜尋失敗 - 詢問是否新增
+        setSupplierData(null);
+        setShowCreateDialog(true);
+        setShowForm(false);
+        setIsEditing(false);
+        setStatusMessage({
+          type: 'warning',
+          message: `Supplier "${code.trim().toUpperCase()}" not found. Would you like to create it?`
+        });
+      }
+    } catch (error: any) {
+      console.error('Search error:', error);
+      setStatusMessage({
+        type: 'error',
+        message: 'An unexpected error occurred during the search.'
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  }, [supabase]);
+
+  // 開始編輯
+  const handleEdit = useCallback(() => {
+    if (supplierData) {
+      setFormData(supplierData);
+      setIsEditing(true);
+      setShowForm(true);
+      setShowCreateDialog(false);
+    }
+  }, [supplierData]);
+
+  // 確認新增供應商
+  const handleConfirmCreate = useCallback(() => {
+    setFormData({
+      supplier_code: searchedCode,
+      supplier_name: ''
+    });
+    setIsEditing(false);
+    setShowForm(true);
+    setShowCreateDialog(false);
+    setStatusMessage({
+      type: 'info',
+      message: 'Fill in the supplier details below to create a new supplier.'
+    });
+  }, [searchedCode]);
+
+  // 取消操作
+  const handleCancel = useCallback(() => {
+    setIsEditing(false);
+    setShowForm(false);
+    setShowCreateDialog(false);
+    setStatusMessage(null);
+  }, []);
+
+  // 提交表單
+  const handleSubmit = useCallback(async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    
+    try {
+      if (isEditing && supplierData) {
+        // 更新現有供應商
+        const { data, error } = await supabase
+          .from('data_supplier')
+          .update({ supplier_name: formData.supplier_name })
+          .eq('supplier_code', supplierData.supplier_code)
+          .select()
+          .single();
+        
+        if (error) throw error;
+        
+        setSupplierData(data);
+        setStatusMessage({
+          type: 'success',
+          message: 'Supplier details updated successfully!'
+        });
+      } else {
+        // 新增供應商
+        const { data, error } = await supabase
+          .from('data_supplier')
+          .insert([formData])
+          .select()
+          .single();
+        
+        if (error) throw error;
+        
+        setSupplierData(data);
+        setStatusMessage({
+          type: 'success',
+          message: 'Supplier created successfully!'
+        });
+      }
+      
+      // 成功後重置狀態
+      setIsEditing(false);
+      setShowForm(false);
+      setShowCreateDialog(false);
+      
+    } catch (error: any) {
+      console.error('Submit error:', error);
+      setStatusMessage({
+        type: 'error',
+        message: error.message || 'An unexpected error occurred.'
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  }, [isEditing, supplierData, formData, supabase]);
+
+  // 處理表單輸入變化
+  const handleInputChange = useCallback((field: keyof SupplierData, value: string) => {
+    setFormData(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  }, []);
+
+  // 處理 Enter 鍵搜尋
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !isLoading) {
+      const target = e.target as HTMLInputElement;
+      handleSearch(target.value);
+    }
+  };
+
+  return (
+    <div className="h-full bg-gradient-to-br from-slate-900/50 via-blue-900/20 to-slate-800/50">
+      <div className="h-full overflow-y-auto">
+        {/* Search Section */}
+        {!showForm && (
+          <div className="relative group mb-6 p-6">
+            <div className="absolute inset-0 bg-gradient-to-r from-slate-800/50 to-blue-900/30 rounded-2xl blur-xl"></div>
+            <div className="relative bg-slate-800/40 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-6 shadow-xl shadow-blue-900/20 hover:border-blue-500/30 transition-all duration-300">
+              <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 via-transparent to-cyan-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-2xl"></div>
+              <div className="relative z-10">
+                <h3 className="text-lg font-medium bg-gradient-to-r from-blue-300 to-cyan-300 bg-clip-text text-transparent mb-4">
+                  Supplier Search
+                </h3>
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="search" className="text-slate-200 font-medium">
+                      Supplier Code
+                    </Label>
+                    <div className="flex gap-3 mt-2">
+                      <Input
+                        id="search"
+                        type="text"
+                        placeholder="Enter supplier code and press Enter..."
+                        onKeyPress={handleKeyPress}
+                        className="flex-1 bg-slate-700/50 border-slate-600/50 text-slate-200 placeholder-slate-400 focus:border-blue-500/70 focus:bg-slate-700/70 hover:border-blue-500/50 hover:bg-slate-700/60 transition-all duration-300"
+                        disabled={isLoading || showCreateDialog}
+                      />
+                      <Button
+                        onClick={() => {
+                          const input = document.getElementById('search') as HTMLInputElement;
+                          if (input) handleSearch(input.value);
+                        }}
+                        disabled={isLoading}
+                        className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 disabled:from-slate-600 disabled:to-slate-600 text-white px-6 shadow-lg hover:shadow-blue-500/25 hover:scale-105 active:scale-95 transition-all duration-300"
+                      >
+                        {isLoading ? (
+                          <>
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
+                            Searching...
+                          </>
+                        ) : (
+                          <>
+                            <MagnifyingGlassIcon className="h-4 w-4 mr-2" />
+                            Search
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                    <p className="text-xs text-slate-400 mt-2">
+                      Enter a supplier code and press Enter to search (case-insensitive)
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* New Search Button */}
+        {showForm && (
+          <div className="flex justify-between items-center mb-6 px-6">
+            <h3 className="text-lg font-semibold bg-gradient-to-r from-white via-blue-100 to-cyan-100 bg-clip-text text-transparent">
+              {isEditing ? 'Edit Supplier' : 'Create New Supplier'}
+            </h3>
+            <Button
+              onClick={resetState}
+              variant="outline"
+              className="border-blue-500/50 text-blue-400 hover:bg-blue-500/10 hover:border-blue-400/70 bg-slate-800/50 backdrop-blur-sm"
+            >
+              <ArrowPathIcon className="w-4 h-4 mr-2" />
+              New Search
+            </Button>
+          </div>
+        )}
+
+        {/* Status Message */}
+        {statusMessage && (
+          <div className={`p-4 rounded-xl mb-6 mx-6 backdrop-blur-sm border ${
+            statusMessage.type === 'success' ? 'bg-green-500/10 border-green-500/30' :
+            statusMessage.type === 'error' ? 'bg-red-500/10 border-red-500/30' :
+            statusMessage.type === 'warning' ? 'bg-yellow-500/10 border-yellow-500/30' :
+            'bg-blue-500/10 border-blue-500/30'
+          }`}>
+            <p className={`text-sm ${
+              statusMessage.type === 'success' ? 'text-green-400' :
+              statusMessage.type === 'error' ? 'text-red-400' :
+              statusMessage.type === 'warning' ? 'text-yellow-400' :
+              'text-blue-400'
+            }`}>
+              {statusMessage.message}
+            </p>
+          </div>
+        )}
+
+        {/* Create Confirmation Dialog */}
+        {showCreateDialog && (
+          <div className="relative group mb-6 px-6">
+            <div className="absolute inset-0 bg-gradient-to-r from-slate-800/50 to-yellow-900/30 rounded-2xl blur-xl"></div>
+            <div className="relative bg-slate-800/40 backdrop-blur-xl border border-yellow-500/30 rounded-2xl p-6 shadow-xl shadow-yellow-900/20">
+              <div className="absolute inset-0 bg-gradient-to-r from-yellow-500/5 via-transparent to-amber-500/5 opacity-100 rounded-2xl"></div>
+              <div className="relative z-10">
+                <div className="flex items-start space-x-4">
+                  <ExclamationTriangleIcon className="w-6 h-6 text-yellow-400 mt-1 flex-shrink-0" />
+                  <div className="flex-1">
+                    <h3 className="text-lg font-medium text-yellow-400 mb-2">
+                      Supplier Not Found
+                    </h3>
+                    <p className="text-slate-300 mb-4">
+                      The supplier code &quot;{searchedCode}&quot; was not found in the database. 
+                      Would you like to create a new supplier with this code?
+                    </p>
+                    <div className="flex space-x-3">
+                      <Button
+                        onClick={handleConfirmCreate}
+                        className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white shadow-lg hover:shadow-green-500/25 hover:scale-105 active:scale-95 transition-all duration-300"
+                      >
+                        <CheckCircleIcon className="w-4 h-4 mr-2" />
+                        Yes, Create Supplier
+                      </Button>
+                      <Button
+                        onClick={handleCancel}
+                        variant="outline"
+                        className="border-slate-600/50 text-slate-300 hover:bg-slate-700/50 hover:border-slate-500/70 hover:text-white transition-all duration-300"
+                      >
+                        Cancel
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Supplier Info Display */}
+        {supplierData && !showForm && (
+          <div className="px-6">
+            <div className="relative group">
+              <div className="absolute inset-0 bg-gradient-to-r from-slate-800/50 to-blue-900/30 rounded-2xl blur-xl"></div>
+              <div className="relative bg-slate-800/40 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-6 shadow-xl shadow-blue-900/20 hover:border-blue-500/30 transition-all duration-300">
+                <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 via-transparent to-cyan-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-2xl"></div>
+                <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-blue-400/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-t-2xl"></div>
+                <div className="relative z-10">
+                  <div className="flex items-center justify-between mb-4">
+                    <h4 className="text-lg font-medium bg-gradient-to-r from-blue-300 to-cyan-300 bg-clip-text text-transparent">
+                      Supplier Information
+                    </h4>
+                    <Button
+                      onClick={handleEdit}
+                      size="sm"
+                      className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white shadow-lg hover:shadow-blue-500/25 hover:scale-105 active:scale-95 transition-all duration-300"
+                    >
+                      <PencilIcon className="w-4 h-4 mr-2" />
+                      Edit Supplier
+                    </Button>
+                  </div>
+                  <div className="space-y-3">
+                    <SupplierInfoRow label="Supplier Code" value={supplierData.supplier_code} />
+                    <SupplierInfoRow label="Supplier Name" value={supplierData.supplier_name} />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Supplier Form */}
+        {showForm && (
+          <div className="px-6">
+            <div className="relative group">
+              <div className="absolute inset-0 bg-gradient-to-r from-slate-800/50 to-blue-900/30 rounded-2xl blur-xl"></div>
+              <div className="relative bg-slate-800/40 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-6 shadow-xl shadow-blue-900/20">
+                <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 via-transparent to-cyan-500/5 opacity-100 rounded-2xl"></div>
+                <div className="relative z-10">
+                  <form onSubmit={handleSubmit} className="space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div>
+                        <Label htmlFor="supplier_code" className="text-slate-200 font-medium">
+                          Supplier Code *
+                        </Label>
+                        <Input
+                          id="supplier_code"
+                          type="text"
+                          value={formData.supplier_code}
+                          onChange={(e) => handleInputChange('supplier_code', e.target.value.toUpperCase())}
+                          disabled={isEditing}
+                          className="mt-2 bg-slate-700/50 border-slate-600/50 text-slate-200 placeholder-slate-400 focus:border-blue-500/70 focus:bg-slate-700/70 disabled:opacity-50 disabled:cursor-not-allowed"
+                          required
+                        />
+                      </div>
+
+                      <div>
+                        <Label htmlFor="supplier_name" className="text-slate-200 font-medium">
+                          Supplier Name *
+                        </Label>
+                        <Input
+                          id="supplier_name"
+                          type="text"
+                          value={formData.supplier_name}
+                          onChange={(e) => handleInputChange('supplier_name', e.target.value)}
+                          className="mt-2 bg-slate-700/50 border-slate-600/50 text-slate-200 placeholder-slate-400 focus:border-blue-500/70 focus:bg-slate-700/70"
+                          required
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex justify-end space-x-4 pt-4">
+                      <Button
+                        type="button"
+                        onClick={handleCancel}
+                        variant="outline"
+                        className="border-slate-600/50 text-slate-300 hover:bg-slate-700/50 hover:border-slate-500/70 hover:text-white transition-all duration-300"
+                        disabled={isLoading}
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        type="submit"
+                        disabled={isLoading}
+                        className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 disabled:from-slate-600 disabled:to-slate-600 text-white shadow-lg hover:shadow-blue-500/25 hover:scale-105 active:scale-95 transition-all duration-300"
+                      >
+                        {isLoading ? (
+                          <>
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
+                            {isEditing ? 'Updating...' : 'Creating...'}
+                          </>
+                        ) : (
+                          <>
+                            <CheckCircleIcon className="w-4 h-4 mr-2" />
+                            {isEditing ? 'Update Supplier' : 'Create Supplier'}
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// Supplier Info Row Component
+interface SupplierInfoRowProps {
+  label: string;
+  value: string;
+}
+
+function SupplierInfoRow({ label, value }: SupplierInfoRowProps) {
+  return (
+    <div className="flex justify-between items-center py-3 px-4 bg-slate-700/30 border border-slate-600/30 rounded-xl">
+      <span className="text-slate-300 font-medium">{label}:</span>
+      <span className="text-slate-100 font-semibold">{value || '-'}</span>
+    </div>
+  );
 }

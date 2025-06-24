@@ -23,6 +23,12 @@ export const OrderAnalysisResultDialog: React.FC<OrderAnalysisResultDialogProps>
   if (!data || !data.extractedData) return null;
 
   const orders = Array.isArray(data.extractedData) ? data.extractedData : [data.extractedData];
+  
+  // Debug log
+  console.log('[OrderAnalysisResultDialog] Orders:', orders);
+  if (orders.length > 0) {
+    console.log('[OrderAnalysisResultDialog] First order:', orders[0]);
+  }
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -53,10 +59,21 @@ export const OrderAnalysisResultDialog: React.FC<OrderAnalysisResultDialogProps>
                   </span>
                 </div>
                 
-                {order.supplier && (
-                  <div>
-                    <span className="text-xs text-slate-500 uppercase tracking-wider">Supplier</span>
-                    <p className="text-sm text-white mt-1">{order.supplier}</p>
+                {/* Account and Delivery Info */}
+                {(order.account_num || order.delivery_add) && (
+                  <div className="grid grid-cols-2 gap-4">
+                    {order.account_num && (
+                      <div>
+                        <span className="text-xs text-slate-500 uppercase tracking-wider">Account Number</span>
+                        <p className="text-sm text-white mt-1">{order.account_num}</p>
+                      </div>
+                    )}
+                    {order.delivery_add && (
+                      <div>
+                        <span className="text-xs text-slate-500 uppercase tracking-wider">Delivery Address</span>
+                        <p className="text-sm text-white mt-1">{order.delivery_add}</p>
+                      </div>
+                    )}
                   </div>
                 )}
                 

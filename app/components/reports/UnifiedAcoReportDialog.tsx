@@ -10,7 +10,13 @@ import { UnifiedReportDialog } from '@/app/components/reports/core/UnifiedReport
 import { useToast } from '@/components/ui/use-toast';
 import { createClient } from '@/app/utils/supabase/client';
 import { Label } from '@/components/ui/label';
-import { Select } from '@/components/ui/select';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select-radix';
 import { exportAcoReport } from '@/lib/exportReport';
 import { getAcoReportData } from '@/app/actions/reportActions';
 
@@ -124,18 +130,27 @@ export function UnifiedAcoReportDialog({ isOpen, onClose }: UnifiedAcoReportDial
         <div className="space-y-2">
           <Label htmlFor="aco-order">ACO Order</Label>
           <Select
-            id="aco-order"
             value={selectedAcoOrder}
-            onChange={(e) => setSelectedAcoOrder(e.target.value)}
+            onValueChange={setSelectedAcoOrder}
             disabled={acoOrders.length === 0}
-            className="bg-slate-800 border-slate-600 text-white"
           >
-            <option value="">{acoOrders.length === 0 ? "Loading..." : "Select ACO order"}</option>
-            {acoOrders.map((order) => (
-              <option key={order} value={order}>
-                {order}
-              </option>
-            ))}
+            <SelectTrigger 
+              id="aco-order"
+              className="bg-slate-800 border-slate-600 text-white"
+            >
+              <SelectValue placeholder={acoOrders.length === 0 ? "Loading..." : "Select ACO order"} />
+            </SelectTrigger>
+            <SelectContent className="bg-slate-800 border-slate-600">
+              {acoOrders.map((order) => (
+                <SelectItem 
+                  key={order} 
+                  value={order}
+                  className="text-white hover:bg-slate-700"
+                >
+                  {order}
+                </SelectItem>
+              ))}
+            </SelectContent>
           </Select>
           {acoOrders.length === 0 && (
             <p className="text-sm text-slate-500">No ACO orders found</p>
