@@ -193,7 +193,7 @@ export const useQcLabelBusiness = ({
       sortedPalletNumbers = sortedData.map((item: any) => item.pallet);
       const sortedSeries = sortedData.map((item: any) => item.series);
       
-      console.log('[QC Label] Sorted pallet numbers for processing:', sortedPalletNumbers);
+      process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[QC Label] Sorted pallet numbers for processing:', sortedPalletNumbers);
 
       // 處理每個托盤 - 先創建數據庫記錄，再生成 PDF
       for (let i = 0; i < count; i++) {
@@ -246,7 +246,7 @@ export const useQcLabelBusiness = ({
       
       if (shouldUseStreaming) {
         // 多個標籤時自動使用串流模式
-        console.log(`[QC Label] Auto-enabled streaming mode for ${count} labels`);
+        process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`[QC Label] Auto-enabled streaming mode for ${count} labels`);
         pdfResult = await generatePdfsStream({
           productInfo,
           quantity,
@@ -269,13 +269,13 @@ export const useQcLabelBusiness = ({
           },
           onStreamComplete: (blob, url, index) => {
             // 可以在這裡處理單個 PDF 完成的邏輯
-            console.log(`[QC Label] Label ${index + 1} completed in streaming mode`);
+            process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`[QC Label] Label ${index + 1} completed in streaming mode`);
           },
           batchSize: 5 // 每批處理 5 個
         });
       } else {
         // 單個標籤使用傳統模式
-        console.log(`[QC Label] Using normal mode for single label`);
+        process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`[QC Label] Using normal mode for single label`);
         pdfResult = await generatePdfs({
           productInfo,
           quantity,
@@ -311,7 +311,7 @@ export const useQcLabelBusiness = ({
         // 確認托盤編號已使用（v6 系統）
         const confirmResult = await confirmPalletUsage(sortedPalletNumbers, supabase);
         if (!confirmResult) {
-          console.warn('[QC Label] Failed to confirm pallet usage for v6 system');
+          process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.warn('[QC Label] Failed to confirm pallet usage for v6 system');
         }
         
         // 更新庫存和工作記錄
@@ -342,7 +342,7 @@ export const useQcLabelBusiness = ({
         // 打印失敗，釋放托盤編號（v6 系統）
         const releaseResult = await releasePalletReservation(sortedPalletNumbers, supabase);
         if (!releaseResult) {
-          console.warn('[QC Label] Failed to release pallet reservation for v6 system');
+          process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.warn('[QC Label] Failed to release pallet reservation for v6 system');
         }
         
         if (pdfResult.errors.length > 0) {
@@ -398,7 +398,7 @@ export const useQcLabelBusiness = ({
       if (sortedPalletNumbers && sortedPalletNumbers.length > 0) {
         const releaseResult = await releasePalletReservation(sortedPalletNumbers, supabase);
         if (!releaseResult) {
-          console.warn('[QC Label] Failed to release pallet reservation after error');
+          process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.warn('[QC Label] Failed to release pallet reservation after error');
         }
       }
     } finally {

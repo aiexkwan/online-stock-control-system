@@ -312,6 +312,172 @@ export const GET_USERS_BY_IDS = gql`
   }
 `;
 
+// ============= Warehouse Dashboard Queries =============
+
+/**
+ * 獲取 Await Location 總數量
+ * 用於 Warehouse Dashboard - Await Location Qty Widget
+ */
+export const GET_AWAIT_LOCATION_QTY = gql`
+  query GetAwaitLocationQty {
+    aggregatedAwaitQty: record_inventoryCollection {
+      aggregate {
+        sum {
+          await
+        }
+      }
+    }
+  }
+`;
+
+/**
+ * 獲取轉移記錄統計
+ * 用於 Warehouse Dashboard - Transfer Stats Widget
+ */
+export const GET_TRANSFER_STATS = gql`
+  query GetTransferStats($startDate: Datetime!, $endDate: Datetime!) {
+    record_transferCollection(
+      filter: {
+        tran_date: { gte: $startDate, lte: $endDate }
+      }
+    ) {
+      aggregate {
+        count
+      }
+    }
+  }
+`;
+
+/**
+ * 獲取轉移時間分布
+ * 用於 Warehouse Dashboard - Transfer Time Distribution Chart
+ */
+export const GET_TRANSFER_TIME_DISTRIBUTION = gql`
+  query GetTransferTimeDistribution($startDate: Datetime!, $endDate: Datetime!) {
+    record_transferCollection(
+      filter: {
+        tran_date: { gte: $startDate, lte: $endDate }
+      }
+      orderBy: [{ tran_date: AscNullsLast }]
+    ) {
+      edges {
+        node {
+          tran_date
+        }
+      }
+    }
+  }
+`;
+
+/**
+ * 獲取訂單進度列表
+ * 用於 Warehouse Dashboard - Order State List Widget
+ */
+export const GET_ORDER_PROGRESS = gql`
+  query GetOrderProgress($limit: Int = 5) {
+    data_orderCollection(
+      orderBy: [{ created_at: DescNullsLast }]
+      first: $limit
+    ) {
+      edges {
+        node {
+          uuid
+          order_ref
+          account_num
+          product_code
+          product_desc
+          product_qty
+          loaded_qty
+          created_at
+        }
+      }
+    }
+  }
+`;
+
+/**
+ * 獲取倉庫部門轉移記錄
+ * 用於 Warehouse Dashboard - Transfer List Widget
+ */
+export const GET_WAREHOUSE_TRANSFERS = gql`
+  query GetWarehouseTransfers($startDate: Datetime!, $endDate: Datetime!, $limit: Int = 50) {
+    record_transferCollection(
+      filter: {
+        tran_date: { gte: $startDate, lte: $endDate }
+        data_id: { Department: { eq: "Warehouse" } }
+      }
+      orderBy: [{ tran_date: DescNullsLast }]
+      first: $limit
+    ) {
+      edges {
+        node {
+          tran_date
+          plt_num
+          operator_id
+          data_id {
+            name
+            Department
+          }
+        }
+      }
+    }
+  }
+`;
+
+/**
+ * 獲取倉庫部門工作量
+ * 用於 Warehouse Dashboard - Work Level Area Chart
+ */
+export const GET_WAREHOUSE_WORK_LEVEL = gql`
+  query GetWarehouseWorkLevel($startDate: Datetime!, $endDate: Datetime!) {
+    work_levelCollection(
+      filter: {
+        latest_update: { gte: $startDate, lte: $endDate }
+        data_id: { Department: { eq: "Warehouse" } }
+      }
+      orderBy: [{ latest_update: AscNullsLast }]
+    ) {
+      edges {
+        node {
+          id
+          move
+          latest_update
+          data_id {
+            name
+            Department
+          }
+        }
+      }
+    }
+  }
+`;
+
+/**
+ * 獲取昨天完成但今天仍在 Await 的棧板
+ * 用於 Warehouse Dashboard - Still in Await Stats
+ */
+export const GET_STILL_IN_AWAIT_STATS = gql`
+  query GetStillInAwaitStats($yesterdayStart: Datetime!, $yesterdayEnd: Datetime!) {
+    record_historyCollection(
+      filter: {
+        time: { gte: $yesterdayStart, lte: $yesterdayEnd }
+        action: { eq: "Move" }
+        loc: { eq: "Await" }
+      }
+    ) {
+      edges {
+        node {
+          plt_num
+          time
+          record_palletinfo {
+            product_qty
+          }
+        }
+      }
+    }
+  }
+`;
+
 // ============= Real-time Subscriptions =============
 
 /**

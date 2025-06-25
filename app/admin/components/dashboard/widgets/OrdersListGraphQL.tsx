@@ -8,7 +8,7 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { DocumentArrowUpIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
-import { WidgetComponentProps, WidgetSize } from '@/app/types/dashboard';
+import { WidgetComponentProps } from '@/app/types/dashboard';
 import { CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { WidgetCard } from '../WidgetCard';
 import { format } from 'date-fns';
@@ -30,7 +30,6 @@ export const OrdersListGraphQL = React.memo(function OrdersListGraphQL({ widget,
   const [hasMore, setHasMore] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   
-  const size = widget.config.size || WidgetSize.MEDIUM;
   const itemsPerPage = 15; // Always show 15 items initially
 
   // 初始載入
@@ -187,30 +186,6 @@ export const OrdersListGraphQL = React.memo(function OrdersListGraphQL({ widget,
   const loading = initialLoading;
 
   // Small size - 簡化顯示
-  if (size === WidgetSize.SMALL) {
-    return (
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="h-full"
-      >
-        <WidgetCard size={widget.config.size} widgetType="CUSTOM" isEditMode={isEditMode}>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm flex items-center gap-2">
-              <DocumentArrowUpIcon className="w-4 h-4 text-blue-400" />
-              <span>Orders</span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="pt-2">
-            <div className="text-2xl font-bold text-blue-400">
-              {loading ? '...' : orders.length}
-            </div>
-            <p className="text-xs text-slate-500 mt-1">Recent orders</p>
-          </CardContent>
-        </WidgetCard>
-      </motion.div>
-    );
-  }
 
   // Medium & Large sizes
   return (
@@ -219,7 +194,7 @@ export const OrdersListGraphQL = React.memo(function OrdersListGraphQL({ widget,
       animate={{ opacity: 1, y: 0 }}
       className="h-full"
     >
-      <WidgetCard size={widget.config.size} widgetType="CUSTOM" isEditMode={isEditMode} className="flex flex-col">
+      <WidgetCard widgetType="CUSTOM" isEditMode={isEditMode} className="flex flex-col">
         {/* GraphQL 標識 */}
         <div className="absolute top-2 right-2 px-2 py-1 bg-gradient-to-r from-purple-600/80 to-pink-600/80 text-white text-xs rounded-full shadow-lg backdrop-blur-sm z-10">
           GraphQL

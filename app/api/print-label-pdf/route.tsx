@@ -5,7 +5,7 @@ export const runtime = 'nodejs';
 export async function POST(request: NextRequest) {
   // 在開始時讀取並保存 data
     const data = await request.json();
-    console.log('[Print Label PDF API] Received data:', data);
+    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[Print Label PDF API] Received data:', data);
 
   try {
     // 直接使用 Puppeteer 方法，因為我們已經有工作的 HTML API
@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
     const protocol = host?.startsWith('localhost') ? 'http' : 'https';
     const url = `${protocol}://${host}/api/print-label-html?${params}`;
 
-    console.log('[Print Label PDF API] Generating PDF from URL:', url);
+    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[Print Label PDF API] Generating PDF from URL:', url);
 
     const browser = await puppeteer.default.launch({
       args: ['--no-sandbox', '--disable-setuid-sandbox'],
@@ -43,7 +43,7 @@ export async function POST(request: NextRequest) {
 
     await browser.close();
 
-    console.log('[Print Label PDF API] PDF generated successfully, size:', pdfBuffer.length);
+    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[Print Label PDF API] PDF generated successfully, size:', pdfBuffer.length);
 
     return new NextResponse(pdfBuffer, {
       headers: {

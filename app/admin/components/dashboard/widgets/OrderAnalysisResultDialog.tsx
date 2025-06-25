@@ -25,9 +25,9 @@ export const OrderAnalysisResultDialog: React.FC<OrderAnalysisResultDialogProps>
   const orders = Array.isArray(data.extractedData) ? data.extractedData : [data.extractedData];
   
   // Debug log
-  console.log('[OrderAnalysisResultDialog] Orders:', orders);
+  process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[OrderAnalysisResultDialog] Orders:', orders);
   if (orders.length > 0) {
-    console.log('[OrderAnalysisResultDialog] First order:', orders[0]);
+    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[OrderAnalysisResultDialog] First order:', orders[0]);
   }
 
   // Extract common info from first order (since only one order upload is allowed)

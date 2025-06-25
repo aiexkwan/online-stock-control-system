@@ -8,7 +8,7 @@
 import React from 'react';
 import { WidgetStyles } from '@/app/utils/widgetStyles';
 import { cn } from '@/lib/utils';
-import { WidgetSize } from '@/app/types/dashboard';
+// WidgetSize 已移除 - admin dashboard 使用固定佈局
 
 interface WidgetCardProps {
   widgetType: keyof typeof WidgetStyles.borders;
@@ -16,7 +16,7 @@ interface WidgetCardProps {
   className?: string;
   children: React.ReactNode;
   onClick?: () => void;
-  size?: WidgetSize;
+  // size 已移除 - admin dashboard 使用固定佈局
 }
 
 export function WidgetCard({ 
@@ -25,12 +25,11 @@ export function WidgetCard({
   className = '', 
   children,
   onClick,
-  size = WidgetSize.MEDIUM
+  // size parameter removed
 }: WidgetCardProps) {
   const borderStyle = WidgetStyles.borders[widgetType] || '';
   
-  // 1x1 widget 不需要滾動
-  const isSmallWidget = size === WidgetSize.SMALL;
+  // 所有 widget 使用固定佈局
   
   return (
     <div 
@@ -54,7 +53,7 @@ export function WidgetCard({
     >
       <div className={cn(
         "flex-1 min-h-0",
-        isSmallWidget ? "overflow-hidden" : "overflow-auto widget-content"
+        "overflow-auto widget-content"
       )}>
         {children}
       </div>

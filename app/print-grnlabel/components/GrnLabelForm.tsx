@@ -213,7 +213,7 @@ export const GrnLabelForm: React.FC = () => {
     };
 
     initializeUser();
-  }, []);
+  }, [supabase.auth]);
 
   // Calculate pallet count
   const palletCount = Math.min(22, Object.values(palletType).reduce((sum, v) => sum + (parseInt(v) || 0), 0) || 1);

@@ -37,7 +37,7 @@ function createSupabaseAdmin() {
 
 export async function POST(request: NextRequest) {
   try {
-    console.log('[Upload File API] 接收文件上傳請求...');
+    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[Upload File API] 接收文件上傳請求...');
     
     const formData = await request.formData();
     const file = formData.get('file') as File;
@@ -89,7 +89,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log('[Upload File API] 文件信息:', {
+    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[Upload File API] 文件信息:', {
       fileName,
       fileSize: file.size,
       fileType: file.type,
@@ -102,7 +102,7 @@ export async function POST(request: NextRequest) {
     // 構建文件路徑
     const filePath = `${folder}/${fileName}`;
 
-    console.log('[Upload File API] 準備上傳到路徑:', filePath);
+    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[Upload File API] 準備上傳到路徑:', filePath);
 
     // 將文件轉換為 ArrayBuffer
     const arrayBuffer = await file.arrayBuffer();
@@ -145,7 +145,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log('[Upload File API] 文件上傳成功，路徑:', data.path);
+    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[Upload File API] 文件上傳成功，路徑:', data.path);
 
     // 獲取公開 URL
     const { data: urlData } = supabaseAdmin.storage
@@ -160,7 +160,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log('[Upload File API] 公共 URL 生成成功:', urlData.publicUrl);
+    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[Upload File API] 公共 URL 生成成功:', urlData.publicUrl);
 
     // 寫入記錄至 doc_upload 表
     try {
@@ -187,7 +187,7 @@ export async function POST(request: NextRequest) {
           docType = 'other';
       }
       
-      console.log('[Upload File API] 準備寫入 doc_upload 表:', {
+      process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[Upload File API] 準備寫入 doc_upload 表:', {
         doc_name: fileName,
         upload_by: uploadBy,
         doc_type: docType,
@@ -211,7 +211,7 @@ export async function POST(request: NextRequest) {
         console.error('[Upload File API] 寫入 doc_upload 表失敗:', insertError);
         // 不影響上傳成功的返回，只記錄錯誤
       } else {
-        console.log('[Upload File API] 成功寫入 doc_upload 表:', insertData);
+        process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[Upload File API] 成功寫入 doc_upload 表:', insertData);
       }
     } catch (dbError) {
       console.error('[Upload File API] 數據庫操作錯誤:', dbError);

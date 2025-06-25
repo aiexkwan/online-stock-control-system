@@ -22,7 +22,7 @@ export function clockNumberToEmail(clockNumber: string): string {
  */
 export function emailToClockNumber(email: string | null | undefined): string | null {
   if (!email) {
-    console.warn('[authUtils] emailToClockNumber called with null or undefined email');
+    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.warn('[authUtils] emailToClockNumber called with null or undefined email');
     return null;
   }
   

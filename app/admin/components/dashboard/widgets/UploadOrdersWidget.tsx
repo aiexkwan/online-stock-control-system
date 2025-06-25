@@ -8,11 +8,12 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { DocumentArrowUpIcon, SparklesIcon } from '@heroicons/react/24/outline';
 import { createClient } from '@/lib/supabase';
-import { WidgetComponentProps, WidgetSize } from '@/app/types/dashboard';
+import { WidgetComponentProps } from '@/app/types/dashboard';
 import { toast } from 'sonner';
 import { Folder3D } from './Folder3D';
 import { GoogleDriveUploadToast } from './GoogleDriveUploadToast';
 import { OrderAnalysisResultDialog } from './OrderAnalysisResultDialog';
+import { useUploadRefresh } from '@/app/admin/contexts/UploadRefreshContext';
 
 interface UploadingFile {
   id: string;
@@ -34,8 +35,8 @@ export const UploadOrdersWidget = React.memo(function UploadOrdersWidget({ widge
   const [analysisResult, setAnalysisResult] = useState<any>(null);
   const [showAnalysisDialog, setShowAnalysisDialog] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { triggerOrderHistoryRefresh } = useUploadRefresh();
   
-  const size = widget.config.size || WidgetSize.MEDIUM;
 
   // 獲取當前用戶 ID
   useEffect(() => {
@@ -99,8 +100,8 @@ export const UploadOrdersWidget = React.memo(function UploadOrdersWidget({ widge
       
       // 🚀 直接發送 FormData 到 analyze-order-pdf-new（無需先上傳到 Storage）
       setIsAnalyzing(true);
-      console.log('[UploadOrdersWidget] Starting direct analysis with userId:', currentUserId);
-      console.log('[UploadOrdersWidget] File size:', uploadingFile.file.size, 'bytes');
+      process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[UploadOrdersWidget] Starting direct analysis with userId:', currentUserId);
+      process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[UploadOrdersWidget] File size:', uploadingFile.file.size, 'bytes');
       
       updateProgress(30);
       
@@ -151,15 +152,15 @@ export const UploadOrdersWidget = React.memo(function UploadOrdersWidget({ widge
         console.error('[UploadOrdersWidget] ❌ Failed to parse response:', parseError);
         throw new Error(parseError.message || 'Failed to parse server response');
       }
-      console.log('[UploadOrdersWidget] Analysis result:', analysisResult);
-      console.log('[UploadOrdersWidget] extractedData:', analysisResult.extractedData);
-      console.log('[UploadOrdersWidget] recordCount:', analysisResult.recordCount);
+      process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[UploadOrdersWidget] Analysis result:', analysisResult);
+      process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[UploadOrdersWidget] extractedData:', analysisResult.extractedData);
+      process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[UploadOrdersWidget] recordCount:', analysisResult.recordCount);
       
       // 🔥 Debug: 檢查第一筆訂單數據
       if (analysisResult.extractedData && analysisResult.extractedData.length > 0) {
-        console.log('[UploadOrdersWidget] First order data:', analysisResult.extractedData[0]);
-        console.log('[UploadOrdersWidget] delivery_add:', analysisResult.extractedData[0].delivery_add);
-        console.log('[UploadOrdersWidget] account_num:', analysisResult.extractedData[0].account_num);
+        process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[UploadOrdersWidget] First order data:', analysisResult.extractedData[0]);
+        process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[UploadOrdersWidget] delivery_add:', analysisResult.extractedData[0].delivery_add);
+        process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[UploadOrdersWidget] account_num:', analysisResult.extractedData[0].account_num);
       }
       
       updateProgress(90);
@@ -179,11 +180,14 @@ export const UploadOrdersWidget = React.memo(function UploadOrdersWidget({ widge
         toast.success(`Successfully analyzed ${analysisResult.extractedData.length} orders`);
         setAnalysisResult(analysisResult);
         setShowAnalysisDialog(true);
+        
+        // 觸發訂單歷史記錄更新
+        triggerOrderHistoryRefresh();
       } else if (analysisResult.success && analysisResult.recordCount === 0) {
         toast.warning('PDF processed but no orders found');
       } else {
         toast.error('Analysis completed but no data extracted');
-        console.warn('[UploadOrdersWidget] No extracted data in result:', analysisResult);
+        process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.warn('[UploadOrdersWidget] No extracted data in result:', analysisResult);
       }
 
     } catch (error) {
@@ -197,7 +201,7 @@ export const UploadOrdersWidget = React.memo(function UploadOrdersWidget({ widge
         } : f)
       );
     }
-  }, [currentUserId]);
+  }, [currentUserId, triggerOrderHistoryRefresh]);
 
   // 🚀 處理文件選擇（簡化版 - 直接處理）
   const handleFiles = useCallback(async (files: FileList | null) => {
@@ -278,7 +282,7 @@ export const UploadOrdersWidget = React.memo(function UploadOrdersWidget({ widge
       >
         <Folder3D
           color="#3b82f6"
-          size={1.2}
+
           icon={<DocumentArrowUpIcon />}
           onClick={handleClick}
           label="Upload Orders"

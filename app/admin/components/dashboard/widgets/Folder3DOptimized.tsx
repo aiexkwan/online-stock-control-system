@@ -89,7 +89,7 @@ export const Folder3DPerformanceMonitor: React.FC<{ children: React.ReactNode }>
     const observer = new PerformanceObserver((list) => {
       for (const entry of list.getEntries()) {
         if (entry.entryType === 'paint' || entry.entryType === 'layout-shift') {
-          console.log(`[Folder3D Performance] ${entry.name}: ${entry.startTime}ms`);
+          process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`[Folder3D Performance] ${entry.name}: ${entry.startTime}ms`);
         }
       }
     });

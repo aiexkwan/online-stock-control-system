@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, useMemo } from 'react';
 import { debounce } from 'lodash';
 
 const STORAGE_KEY = 'grn-label-form-data';
@@ -49,19 +49,18 @@ export function useFormPersistence(isEnabled: boolean = true) {
       };
       
       localStorage.setItem(STORAGE_KEY, JSON.stringify(storedData));
-      console.log('[GRN useFormPersistence] Form data saved');
+      process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[GRN useFormPersistence] Form data saved');
     } catch (error) {
       console.error('[GRN useFormPersistence] Failed to save form data:', error);
     }
   }, [isEnabled]);
   
   // Debounced save function
-  const debouncedSave = useCallback(
-    debounce((data: Partial<FormData>) => {
+  const debouncedSave = useMemo(
+    () => debounce((data: Partial<FormData>) => {
       saveFormData(data);
     }, 1000),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    []
+    [saveFormData]
   );
   
   // Load form data from localStorage
@@ -76,7 +75,7 @@ export function useFormPersistence(isEnabled: boolean = true) {
       
       // Check version
       if (parsed.version !== STORAGE_VERSION) {
-        console.log('[GRN useFormPersistence] Version mismatch, clearing stored data');
+        process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[GRN useFormPersistence] Version mismatch, clearing stored data');
         localStorage.removeItem(STORAGE_KEY);
         return null;
       }
@@ -84,12 +83,12 @@ export function useFormPersistence(isEnabled: boolean = true) {
       // Check expiry
       const expiryMs = EXPIRY_HOURS * 60 * 60 * 1000;
       if (Date.now() - parsed.timestamp > expiryMs) {
-        console.log('[GRN useFormPersistence] Data expired, clearing stored data');
+        process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[GRN useFormPersistence] Data expired, clearing stored data');
         localStorage.removeItem(STORAGE_KEY);
         return null;
       }
       
-      console.log('[GRN useFormPersistence] Form data loaded');
+      process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[GRN useFormPersistence] Form data loaded');
       return parsed.data;
     } catch (error) {
       console.error('[GRN useFormPersistence] Failed to load form data:', error);
@@ -103,7 +102,7 @@ export function useFormPersistence(isEnabled: boolean = true) {
   const clearFormData = useCallback(() => {
     try {
       localStorage.removeItem(STORAGE_KEY);
-      console.log('[GRN useFormPersistence] Form data cleared');
+      process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[GRN useFormPersistence] Form data cleared');
     } catch (error) {
       console.error('[GRN useFormPersistence] Failed to clear form data:', error);
     }

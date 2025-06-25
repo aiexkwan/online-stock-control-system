@@ -57,7 +57,7 @@ export function UnifiedGrnReportDialog({ isOpen, onClose }: UnifiedGrnReportDial
         return;
       }
 
-      console.log('Fetched GRN data:', data?.length || 0, 'records');
+      process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('Fetched GRN data:', data?.length || 0, 'records');
 
       // Get unique GRN references and convert to string if needed
       const uniqueRefs = [...new Set((data || []).map(item => {

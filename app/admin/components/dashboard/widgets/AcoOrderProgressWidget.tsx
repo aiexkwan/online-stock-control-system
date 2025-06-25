@@ -12,7 +12,7 @@ import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { WidgetCard } from '../WidgetCard';
 import { ClipboardDocumentListIcon, ChevronDownIcon } from '@heroicons/react/24/outline';
-import { WidgetComponentProps, WidgetSize } from '@/app/types/dashboard';
+import { WidgetComponentProps } from '@/app/types/dashboard';
 import { createClient } from '@/app/utils/supabase/client';
 import { WidgetStyles } from '@/app/utils/widgetStyles';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -47,7 +47,7 @@ export const AcoOrderProgressWidget = React.memo(function AcoOrderProgressWidget
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const size = widget.config.size || WidgetSize.SMALL;
+  // Fixed layout - no size configuration needed
 
   // Define loadIncompleteOrders function
   const loadIncompleteOrders = useCallback(async () => {
@@ -127,12 +127,12 @@ export const AcoOrderProgressWidget = React.memo(function AcoOrderProgressWidget
     }
   }, [selectedOrderRef, loadOrderProgress]);
 
-  // Auto-select first order for large size
+  // Auto-select first order
   useEffect(() => {
-    if (size === WidgetSize.LARGE && incompleteOrders.length > 0 && !selectedOrderRef) {
+    if (incompleteOrders.length > 0 && !selectedOrderRef) {
       setSelectedOrderRef(incompleteOrders[0].order_ref);
     }
-  }, [incompleteOrders, size, selectedOrderRef]);
+  }, [incompleteOrders, selectedOrderRef]);
 
 
   const handleOrderSelect = (orderRef: number) => {
@@ -140,96 +140,9 @@ export const AcoOrderProgressWidget = React.memo(function AcoOrderProgressWidget
     setIsDropdownOpen(false);
   };
 
-  // Small size - only show count
-  if (size === WidgetSize.SMALL) {
-    return (
-      <WidgetCard size={widget.config.size} widgetType="ACO_ORDER_PROGRESS" isEditMode={isEditMode}>
-        <CardContent className="p-2 h-full flex flex-col justify-center items-center">
-          <WidgetTitle size="xs" glow="gray" className="mb-1">ACO Orders</WidgetTitle>
-          {loading ? (
-            <div className="h-8 w-16 bg-white/10 rounded animate-pulse"></div>
-          ) : error ? (
-            <WidgetText size="xs" glow="red">Error</WidgetText>
-          ) : (
-            <>
-              <WidgetValue size="large" glow="orange">{incompleteOrders.length}</WidgetValue>
-              <WidgetLabel size="xs" glow="gray" className="mt-0.5">Incomplete</WidgetLabel>
-            </>
-          )}
-        </CardContent>
-      </WidgetCard>
-    );
-  }
-
-  // Medium size - show order list
-  if (size === WidgetSize.MEDIUM) {
-    return (
-      <WidgetCard size={widget.config.size} widgetType="ACO_ORDER_PROGRESS" isEditMode={isEditMode}>
-        <CardHeader className="pb-2">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-gradient-to-r from-orange-500 to-amber-500 rounded-lg flex items-center justify-center">
-              <ClipboardDocumentListIcon className="h-5 w-5 text-white" />
-            </div>
-            <WidgetTitle size="small" glow="white">ACO Orders</WidgetTitle>
-          </div>
-        </CardHeader>
-        <CardContent className="pt-2">
-          {loading ? (
-            <div className="space-y-2">
-              {[...Array(3)].map((_, i) => (
-                <div key={i} className="h-10 bg-white/10 rounded animate-pulse"></div>
-              ))}
-            </div>
-          ) : error ? (
-            <div className="text-red-400 text-sm">{error}</div>
-          ) : incompleteOrders.length === 0 ? (
-            <div className="text-center py-8">
-              <ClipboardDocumentListIcon className="w-12 h-12 text-slate-600 mx-auto mb-2" />
-              <WidgetText size="small" glow="gray">No incomplete orders</WidgetText>
-            </div>
-          ) : (
-            <div className="space-y-2 max-h-48 overflow-y-auto">
-              {incompleteOrders.slice(0, 5).map((order, idx) => {
-                const completionPercentage = Math.round(
-                  ((order.required_qty - order.remain_qty) / order.required_qty) * 100
-                );
-                return (
-                  <div 
-                    key={order.unique_id || `order-${order.order_ref}-${idx}`} 
-                    className="bg-black/20 rounded-lg p-2 border border-slate-700/50"
-                  >
-                    <div className="flex justify-between items-center mb-1">
-                      <WidgetText size="xs" glow="white" className="font-medium text-[11px]">
-                        Order {order.order_ref}
-                      </WidgetText>
-                      <div className={`bg-indigo-500/20 border border-indigo-400/30 ${WidgetStyles.text.tableData} px-2 py-0.5 rounded text-[10px]`}>
-                        {order.remain_qty} remain
-                      </div>
-                    </div>
-                    <div className="w-full bg-white/10 rounded-full h-2 overflow-hidden">
-                      <div 
-                        className="bg-gradient-to-r from-orange-500 to-amber-400 h-2 rounded-full transition-all duration-500"
-                        style={{ width: `${completionPercentage}%` }}
-                      />
-                    </div>
-                  </div>
-                );
-              })}
-              {incompleteOrders.length > 5 && (
-                <WidgetLabel size="xs" glow="gray" className="text-center pt-2">
-                  +{incompleteOrders.length - 5} more orders
-                </WidgetLabel>
-              )}
-            </div>
-          )}
-        </CardContent>
-      </WidgetCard>
-    );
-  }
-
-  // Large size - full functionality
+  // Fixed layout widget - full functionality
   return (
-    <WidgetCard size={widget.config.size} widgetType="ACO_ORDER_PROGRESS" isEditMode={isEditMode}>
+    <WidgetCard widgetType="ACO_ORDER_PROGRESS" isEditMode={isEditMode}>
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">

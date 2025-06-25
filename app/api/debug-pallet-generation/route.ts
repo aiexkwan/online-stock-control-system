@@ -3,7 +3,7 @@ import { createClient } from '@supabase/supabase-js';
 
 export async function GET(request: NextRequest) {
   try {
-    console.log('[debug-pallet-generation] 開始調試托盤編號生成問題...');
+    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[debug-pallet-generation] 開始調試托盤編號生成問題...');
     
     // 檢查環境變數
     const supabaseUrl = process.env.SUPABASE_URL;
@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
     const year = today.getFullYear().toString().slice(-2);
     const dateStr = `${day}${month}${year}`;
     
-    console.log('[debug-pallet-generation] 當前日期字符串:', dateStr);
+    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[debug-pallet-generation] 當前日期字符串:', dateStr);
     
     // 檢查序列號狀態
     const { data: sequenceData, error: sequenceError } = await supabase
@@ -43,7 +43,7 @@ export async function GET(request: NextRequest) {
       .eq('date_str', dateStr)
       .single();
     
-    console.log('[debug-pallet-generation] 序列號查詢結果:', { sequenceData, sequenceError });
+    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[debug-pallet-generation] 序列號查詢結果:', { sequenceData, sequenceError });
     
     // 檢查今日已存在的托盤編號
     const { data: existingPallets, error: palletsError } = await supabase
@@ -53,7 +53,7 @@ export async function GET(request: NextRequest) {
       .order('generate_time', { ascending: false })
       .limit(10);
     
-    console.log('[debug-pallet-generation] 現有托盤編號:', { existingPallets, palletsError });
+    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[debug-pallet-generation] 現有托盤編號:', { existingPallets, palletsError });
     
     // 測試 RPC 函數
     let rpcTestResult = null;
@@ -69,7 +69,7 @@ export async function GET(request: NextRequest) {
       rpcTestError = error.message;
     }
     
-    console.log('[debug-pallet-generation] RPC 測試結果:', { rpcTestResult, rpcTestError });
+    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[debug-pallet-generation] RPC 測試結果:', { rpcTestResult, rpcTestError });
     
     // 檢查環境信息
     const environmentInfo = {
@@ -111,7 +111,7 @@ export async function POST(request: NextRequest) {
   try {
     const { count = 1 } = await request.json();
     
-    console.log('[debug-pallet-generation] 測試生成托盤編號，數量:', count);
+    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[debug-pallet-generation] 測試生成托盤編號，數量:', count);
     
     const supabaseUrl = process.env.SUPABASE_URL;
     const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;

@@ -80,7 +80,7 @@ export async function getPalletHistoryAndStockInfo(
   let productCodeForSearch: string | undefined = undefined; // Renamed for clarity
   let palletNumForHistorySearch: string | undefined = undefined;
 
-  console.log(`Server Action: Real DB Search for ${type} - ${value}`);
+  process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`Server Action: Real DB Search for ${type} - ${value}`);
   // await new Promise(resolve => setTimeout(resolve, 500)); // Shorter delay for real search, or remove for production
 
   try {
@@ -138,7 +138,7 @@ export async function getPalletHistoryAndStockInfo(
         .single(); // Use single() as code should be unique. PGRST116 will be handled.
 
       if (dcError && dcError.code !== 'PGRST116') { 
-        console.warn(`Could not fetch product details from data_code for ${productCodeForSearch}: ${dcError.message}`);
+        process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.warn(`Could not fetch product details from data_code for ${productCodeForSearch}: ${dcError.message}`);
         // Not throwing error, palletInfo will just lack these details.
       }
       if (dcDetails) {
@@ -222,7 +222,7 @@ export async function getPalletHistoryAndStockInfo(
                                   (totals.backcarpark || 0);
           
           if (calculatedTotal !== stockLevelData.stock_level) {
-            console.warn(`Stock level mismatch for ${productCodeForSearch}: calculated=${calculatedTotal}, stock_level=${stockLevelData.stock_level}`);
+            process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.warn(`Stock level mismatch for ${productCodeForSearch}: calculated=${calculatedTotal}, stock_level=${stockLevelData.stock_level}`);
             // You may want to use the stock_level value as the authoritative source
             // or add a 'total' field to show the pre-aggregated value
           }

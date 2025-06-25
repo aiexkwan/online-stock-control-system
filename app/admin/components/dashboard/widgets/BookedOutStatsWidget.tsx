@@ -12,7 +12,7 @@ import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { WidgetCard } from '../WidgetCard';
 import { TruckIcon, ClockIcon, ChevronDownIcon } from '@heroicons/react/24/outline';
-import { WidgetComponentProps, WidgetSize } from '@/app/types/dashboard';
+import { WidgetComponentProps } from '@/app/types/dashboard';
 import { createClient } from '@/app/utils/supabase/client';
 import { dialogStyles, iconColors } from '@/app/utils/dialogStyles';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -53,7 +53,6 @@ export const BookedOutStatsWidget = React.memo(function BookedOutStatsWidget({ w
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const size = widget.config.size || WidgetSize.SMALL;
 
   const loadData = useCallback(async () => {
     try {
@@ -177,7 +176,7 @@ export const BookedOutStatsWidget = React.memo(function BookedOutStatsWidget({ w
     } finally {
       setLoading(false);
     }
-  }, [timeRange, size]);
+  }, [timeRange]);
 
   useWidgetData({ loadFunction: loadData, isEditMode, dependencies: [timeRange] });
 
@@ -197,126 +196,11 @@ export const BookedOutStatsWidget = React.memo(function BookedOutStatsWidget({ w
   };
 
   // Small size (1x1) - 只顯示文字和數據，無 icon
-  if (size === WidgetSize.SMALL) {
-    return (
-      <WidgetCard size={widget.config.size} widgetType="BOOKED_OUT_STATS" isEditMode={isEditMode}>
-        <CardContent className="p-2 h-full flex flex-col justify-center items-center">
-          <h3 className="text-xs text-slate-400 mb-1">Transfer</h3>
-          {loading ? (
-            <div className="h-8 w-16 bg-white/10 rounded animate-pulse"></div>
-          ) : error ? (
-            <div className="text-red-400 text-xs">Error</div>
-          ) : (
-            <>
-              <div className="text-2xl font-bold text-white">{data.totalCount}</div>
-              <p className="text-xs text-slate-500">Today</p>
-            </>
-          )}
-        </CardContent>
-      </WidgetCard>
-    );
-  }
 
   // Medium size - 顯示操作員統計
-  if (size === WidgetSize.MEDIUM) {
-    return (
-      <WidgetCard size={widget.config.size} widgetType="BOOKED_OUT_STATS" isEditMode={isEditMode}>
-        <CardHeader className="pb-2">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-gradient-to-r from-green-500 to-emerald-500 rounded-lg flex items-center justify-center">
-                <TruckIcon className="h-5 w-5 text-white" />
-              </div>
-              <CardTitle className="text-sm font-medium text-slate-200">Stock Transfer</CardTitle>
-            </div>
-            
-            {/* Time Range Dropdown */}
-            <div className="relative" ref={dropdownRef}>
-              <button
-                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                className="flex items-center gap-1 px-2 py-1 bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white rounded-md transition-all duration-300 text-xs border border-slate-600/30"
-                disabled={isEditMode}
-              >
-                <ClockIcon className="w-3 h-3" />
-                {timeRange}
-                <ChevronDownIcon className={`w-3 h-3 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} />
-              </button>
-              
-              <AnimatePresence>
-                {isDropdownOpen && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                    transition={{ duration: 0.2 }}
-                    className="absolute right-0 top-full mt-1 bg-black/80 backdrop-blur-xl border border-slate-600/50 rounded-xl shadow-2xl z-50 min-w-[120px]"
-                  >
-                    {['Today', 'Yesterday', 'Past 3 days', 'This week'].map((option) => (
-                      <button
-                        key={option}
-                        onClick={() => handleTimeRangeChange(option)}
-                        className={`w-full px-3 py-2 text-left text-xs hover:bg-white/10 transition-all duration-300 first:rounded-t-xl last:rounded-b-xl ${
-                          timeRange === option ? 'bg-white/10 text-green-400' : 'text-slate-300'
-                        }`}
-                      >
-                        {option}
-                      </button>
-                    ))}
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent className="pt-2">
-          <UnifiedWidgetLayout
-            size={size}
-            singleContent={
-              loading ? (
-                <div className="space-y-2">
-                  {[...Array(5)].map((_, i) => (
-                    <div key={i} className="h-8 bg-white/10 rounded animate-pulse"></div>
-                  ))}
-                </div>
-              ) : error ? (
-                <div className="text-red-400 text-sm">{error}</div>
-              ) : (
-                <div className="space-y-2">
-                  <div className="text-center mb-3">
-                    <div className="text-3xl font-bold text-white">{data.totalCount}</div>
-                  </div>
-                  
-                  {/* 操作員列表 */}
-                  <div>
-                    <p className="text-xs text-purple-400 mb-2">By Operator</p>
-                    {data.operatorData && data.operatorData.length > 0 ? (
-                      <div className="space-y-1">
-                        {data.operatorData.map((operator) => (
-                          <TableRow key={operator.operator_id}>
-                            <span className="text-xs text-purple-200">{operator.operator_id}</span>
-                            <div className="text-right">
-                              <span className="text-xs font-semibold text-purple-200">{operator.count}</span>
-                              <span className="text-xs text-purple-300 ml-1">({operator.percentage}%)</span>
-                            </div>
-                          </TableRow>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="text-xs text-slate-500 text-center py-2">No data</div>
-                    )}
-                  </div>
-                </div>
-              )
-            }
-          />
-        </CardContent>
-      </WidgetCard>
-    );
-  }
 
-  // Large size - 包括圖表
   return (
-    <WidgetCard size={widget.config.size} widgetType="BOOKED_OUT_STATS" isEditMode={isEditMode}>
+    <WidgetCard widgetType="BOOKED_OUT_STATS" isEditMode={isEditMode}>
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">

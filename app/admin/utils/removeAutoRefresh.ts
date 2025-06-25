@@ -47,7 +47,7 @@ async function removeAutoRefresh() {
       }
       
       await writeFile(filePath, content, 'utf-8');
-      console.log(`Updated: ${file}`);
+      process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`Updated: ${file}`);
     }
   }
 }

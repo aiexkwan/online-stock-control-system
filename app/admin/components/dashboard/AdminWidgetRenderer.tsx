@@ -66,6 +66,7 @@ const CHART_COLORS = [
 ];
 
 // 導入特殊組件 - 已移除舊 Dashboard 依賴
+import { HistoryTree } from './widgets/HistoryTree';
 
 // 新的上傳頁面組件 - 使用 lazy loading
 const OrdersListWidget = React.lazy(() => import('./widgets/OrdersListWidget').then(mod => ({ default: mod.OrdersListWidget })));
@@ -86,6 +87,17 @@ const ProductionDetailsGraphQL = React.lazy(() => import('./widgets/ProductionDe
 const StaffWorkloadGraphQL = React.lazy(() => import('./widgets/StaffWorkloadGraphQL').then(mod => ({ default: mod.StaffWorkloadGraphQL })));
 const OrdersListGraphQL = React.lazy(() => import('./widgets/OrdersListGraphQL').then(mod => ({ default: mod.OrdersListGraphQL })));
 const OtherFilesListGraphQL = React.lazy(() => import('./widgets/OtherFilesListGraphQL').then(mod => ({ default: mod.OtherFilesListGraphQL })));
+
+// Warehouse Dashboard 組件
+const AwaitLocationQtyWidget = React.lazy(() => import('./widgets/AwaitLocationQtyWidget').then(mod => ({ default: mod.AwaitLocationQtyWidget })));
+const YesterdayTransferCountWidget = React.lazy(() => import('./widgets/YesterdayTransferCountWidget').then(mod => ({ default: mod.YesterdayTransferCountWidget })));
+const StillInAwaitWidget = React.lazy(() => import('./widgets/StillInAwaitWidget').then(mod => ({ default: mod.StillInAwaitWidget })));
+const StillInAwaitPercentageWidget = React.lazy(() => import('./widgets/StillInAwaitPercentageWidget').then(mod => ({ default: mod.StillInAwaitPercentageWidget })));
+const OrderStateListWidget = React.lazy(() => import('./widgets/OrderStateListWidget').then(mod => ({ default: mod.OrderStateListWidget })));
+const TransferTimeDistributionWidget = React.lazy(() => import('./widgets/TransferTimeDistributionWidget').then(mod => ({ default: mod.TransferTimeDistributionWidget })));
+const EmptyPlaceholderWidget = React.lazy(() => import('./widgets/EmptyPlaceholderWidget').then(mod => ({ default: mod.EmptyPlaceholderWidget })));
+const WarehouseTransferListWidget = React.lazy(() => import('./widgets/WarehouseTransferListWidget').then(mod => ({ default: mod.WarehouseTransferListWidget })));
+const WarehouseWorkLevelAreaChart = React.lazy(() => import('./widgets/WarehouseWorkLevelAreaChart').then(mod => ({ default: mod.WarehouseWorkLevelAreaChart })));
 
 // GraphQL 功能開關
 const ENABLE_GRAPHQL = process.env.NEXT_PUBLIC_ENABLE_GRAPHQL === 'true';
@@ -1276,13 +1288,12 @@ export const AdminWidgetRenderer: React.FC<AdminWidgetRendererProps> = ({
   const renderSpecialComponent = () => {
     switch (config.component) {
       case 'HistoryTree':
-        return (
-          <div className="h-full flex flex-col items-center justify-center text-white">
-            <ClockIcon className="w-16 h-16 text-blue-400 mb-4" />
-            <h3 className="text-xl font-semibold mb-2">History Tree</h3>
-            <p className="text-sm text-gray-400">Component has been removed</p>
-          </div>
-        );
+        return <HistoryTree widget={{
+          config: {
+            ...config,
+            size: config.size || 'MEDIUM'
+          }
+        }} isEditMode={false} />;
       case 'WarehouseHeatmap':
         return (
           <div className="h-full flex flex-col items-center justify-center text-white">
@@ -1486,6 +1497,106 @@ export const AdminWidgetRenderer: React.FC<AdminWidgetRendererProps> = ({
               title: 'Upload Photo',
               config: { size: 'MEDIUM' as any }
             }} isEditMode={false} />
+          </Suspense>
+        );
+      // Warehouse Dashboard Widgets
+      case 'AwaitLocationQtyWidget':
+        return (
+          <Suspense fallback={<div className="h-full w-full animate-pulse bg-slate-800/50" />}>
+            <AwaitLocationQtyWidget widget={{ 
+              id: 'await-location-qty',
+              type: 'CUSTOM' as any,
+              title: 'Await Location Qty',
+              config: { size: 'MEDIUM' as any }
+            }} isEditMode={false} timeFrame={timeFrame} />
+          </Suspense>
+        );
+      case 'YesterdayTransferCountWidget':
+        return (
+          <Suspense fallback={<div className="h-full w-full animate-pulse bg-slate-800/50" />}>
+            <YesterdayTransferCountWidget widget={{ 
+              id: 'yesterday-transfer-count',
+              type: 'CUSTOM' as any,
+              title: 'Transfer Done',
+              config: { size: 'MEDIUM' as any }
+            }} isEditMode={false} timeFrame={timeFrame} />
+          </Suspense>
+        );
+      case 'StillInAwaitWidget':
+        return (
+          <Suspense fallback={<div className="h-full w-full animate-pulse bg-slate-800/50" />}>
+            <StillInAwaitWidget widget={{ 
+              id: 'still-in-await',
+              type: 'CUSTOM' as any,
+              title: 'Still In Await',
+              config: { size: 'MEDIUM' as any }
+            }} isEditMode={false} timeFrame={timeFrame} />
+          </Suspense>
+        );
+      case 'StillInAwaitPercentageWidget':
+        return (
+          <Suspense fallback={<div className="h-full w-full animate-pulse bg-slate-800/50" />}>
+            <StillInAwaitPercentageWidget widget={{ 
+              id: 'still-in-await-percentage',
+              type: 'CUSTOM' as any,
+              title: 'Still In Await %',
+              config: { size: 'MEDIUM' as any }
+            }} isEditMode={false} timeFrame={timeFrame} />
+          </Suspense>
+        );
+      case 'OrderStateListWidget':
+        return (
+          <Suspense fallback={<div className="h-full w-full animate-pulse bg-slate-800/50" />}>
+            <OrderStateListWidget widget={{ 
+              id: 'order-state-list',
+              type: 'CUSTOM' as any,
+              title: 'Order Progress',
+              config: { size: 'MEDIUM' as any }
+            }} isEditMode={false} timeFrame={timeFrame} />
+          </Suspense>
+        );
+      case 'TransferTimeDistributionWidget':
+        return (
+          <Suspense fallback={<div className="h-full w-full animate-pulse bg-slate-800/50" />}>
+            <TransferTimeDistributionWidget widget={{ 
+              id: 'transfer-time-distribution',
+              type: 'CUSTOM' as any,
+              title: 'Transfer Time Distribution',
+              config: { size: 'MEDIUM' as any }
+            }} isEditMode={false} timeFrame={timeFrame} />
+          </Suspense>
+        );
+      case 'EmptyPlaceholderWidget':
+        return (
+          <Suspense fallback={<div className="h-full w-full animate-pulse bg-slate-800/50" />}>
+            <EmptyPlaceholderWidget widget={{ 
+              id: 'empty-placeholder',
+              type: 'CUSTOM' as any,
+              title: 'Empty Placeholder',
+              config: { size: 'MEDIUM' as any }
+            }} isEditMode={false} timeFrame={timeFrame} />
+          </Suspense>
+        );
+      case 'WarehouseTransferListWidget':
+        return (
+          <Suspense fallback={<div className="h-full w-full animate-pulse bg-slate-800/50" />}>
+            <WarehouseTransferListWidget widget={{ 
+              id: 'warehouse-transfer-list',
+              type: 'CUSTOM' as any,
+              title: 'Transfer List',
+              config: { size: 'LARGE' as any }
+            }} isEditMode={false} timeFrame={timeFrame} />
+          </Suspense>
+        );
+      case 'WarehouseWorkLevelAreaChart':
+        return (
+          <Suspense fallback={<div className="h-full w-full animate-pulse bg-slate-800/50" />}>
+            <WarehouseWorkLevelAreaChart widget={{ 
+              id: 'warehouse-work-level',
+              type: 'CUSTOM' as any,
+              title: 'Work Level',
+              config: { size: 'LARGE' as any }
+            }} isEditMode={false} timeFrame={timeFrame} />
           </Suspense>
         );
       default:

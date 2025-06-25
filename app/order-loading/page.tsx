@@ -168,13 +168,13 @@ export default function OrderLoadingPage() {
       const cachedSummaries = orderSummariesCache.get(cacheKey);
       
       if (cachedSummaries) {
-        console.log('[OrderCache] Using cached order summaries');
+        process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[OrderCache] Using cached order summaries');
         setOrderSummaries(cachedSummaries);
         setAvailableOrders(Array.from(cachedSummaries.keys()));
         return;
       }
 
-      console.log('[OrderCache] Fetching fresh order summaries');
+      process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[OrderCache] Fetching fresh order summaries');
       const { data, error } = await supabase
         .from('data_order')
         .select('order_ref, product_qty, loaded_qty')
@@ -239,13 +239,13 @@ export default function OrderLoadingPage() {
       const cachedData = orderDataCache.get(cacheKey);
       
       if (cachedData) {
-        console.log(`[OrderCache] Using cached data for order: ${orderRef}`);
+        process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`[OrderCache] Using cached data for order: ${orderRef}`);
         setOrderData(cachedData);
         setIsLoadingOrders(false);
         return;
       }
 
-      console.log(`[OrderCache] Fetching fresh data for order: ${orderRef}`);
+      process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`[OrderCache] Fetching fresh data for order: ${orderRef}`);
       const { data, error } = await supabase
         .from('data_order')
         .select('order_ref, product_code, product_desc, product_qty, loaded_qty')

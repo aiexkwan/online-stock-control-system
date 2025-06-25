@@ -84,7 +84,8 @@
       "WebFetch(domain:supabase.com)",
       "mcp__supabase__search_docs",
       "Bash(npm view:*)",
-      "Bash(npx graphql-codegen:*)"
+      "Bash(npx graphql-codegen:*)",
+      "Bash(diff:*)"
     ],
     "deny": []
   }

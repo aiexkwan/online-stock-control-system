@@ -20,7 +20,6 @@ const publicPaths = [
 const protectedPaths = [
   '/access',
   '/dashboard',
-  '/history',
   '/productUpdate',
   '/stock-transfer',
   //'/print-label',
@@ -36,12 +35,12 @@ export default function AuthChecker({ children }: AuthCheckerProps) {
 
   useEffect(() => {
     const checkAuthentication = async () => {
-      console.log('[AuthChecker] Checking authentication for path:', pathname);
+      process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[AuthChecker] Checking authentication for path:', pathname);
 
       // 如果是公開路由，直接通過
       const isPublicRoute = publicPaths.some(path => pathname.startsWith(path));
       if (isPublicRoute) {
-        console.log('[AuthChecker] Public route, skipping auth check');
+        process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[AuthChecker] Public route, skipping auth check');
         setIsAuthChecked(true);
         setIsAuthenticated(true);
         return;
@@ -49,14 +48,14 @@ export default function AuthChecker({ children }: AuthCheckerProps) {
 
       // 除了公開路由外，所有其他路由都需要認證
       try {
-        console.log('[AuthChecker] Checking user authentication...');
+        process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[AuthChecker] Checking user authentication...');
         const user = await unifiedAuth.getCurrentUser();
         
         if (user) {
-          console.log('[AuthChecker] User authenticated:', user.email);
+          process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[AuthChecker] User authenticated:', user.email);
           setIsAuthenticated(true);
         } else {
-          console.log('[AuthChecker] No authenticated user found');
+          process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[AuthChecker] No authenticated user found');
           setIsAuthenticated(false);
           
           toast.error('Please log in to access this page.', {

@@ -9,11 +9,12 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { DocumentIcon, CloudIcon, PhotoIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
 import { createClient } from '@/lib/supabase';
-import { WidgetComponentProps, WidgetSize } from '@/app/types/dashboard';
+import { WidgetComponentProps } from '@/app/types/dashboard';
 import { CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { WidgetCard } from '../WidgetCard';
 import { format } from 'date-fns';
 import { fromDbTime } from '@/app/utils/timezone';
+import { useUploadRefresh } from '@/app/admin/contexts/UploadRefreshContext';
 
 interface FileRecord {
   uuid: string;
@@ -29,9 +30,10 @@ export const OtherFilesListWidget = React.memo(function OtherFilesListWidget({ w
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(true);
+  const { useOtherFilesRefresh } = useUploadRefresh();
   
-  const size = widget.config.size || WidgetSize.MEDIUM;
-  const itemsPerPage = size === WidgetSize.LARGE ? 15 : size === WidgetSize.MEDIUM ? 10 : 5;
+  // 根據 widget size 設定每頁顯示數量，預設 10
+  const itemsPerPage = 10;
 
   // 載入文件列表
   const loadFiles = useCallback(async (loadMore = false) => {
@@ -110,6 +112,11 @@ export const OtherFilesListWidget = React.memo(function OtherFilesListWidget({ w
     loadFiles();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+  
+  // 訂閱上傳更新事件
+  useOtherFilesRefresh(() => {
+    loadFiles(false); // 重新載入第一頁
+  });
 
   const formatTime = (timestamp: string) => {
     try {
@@ -130,30 +137,6 @@ export const OtherFilesListWidget = React.memo(function OtherFilesListWidget({ w
   };
 
   // Small size - 簡化顯示
-  if (size === WidgetSize.SMALL) {
-    return (
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="h-full"
-      >
-        <WidgetCard size={widget.config.size} widgetType="CUSTOM" isEditMode={isEditMode}>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm flex items-center gap-2">
-              <CloudIcon className="w-4 h-4 text-purple-400" />
-              <span>Other Files</span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="pt-2">
-            <div className="text-2xl font-bold text-purple-400">
-              {loading ? '...' : files.length}
-            </div>
-            <p className="text-xs text-slate-500 mt-1">Documents & images</p>
-          </CardContent>
-        </WidgetCard>
-      </motion.div>
-    );
-  }
 
   // Medium & Large sizes
   return (
@@ -162,7 +145,7 @@ export const OtherFilesListWidget = React.memo(function OtherFilesListWidget({ w
       animate={{ opacity: 1, y: 0 }}
       className="h-full"
     >
-      <WidgetCard size={widget.config.size} widgetType="CUSTOM" isEditMode={isEditMode} className="flex flex-col">
+      <WidgetCard widgetType="CUSTOM" isEditMode={isEditMode} className="flex flex-col">
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center justify-between">
             <div className="flex items-center gap-2">

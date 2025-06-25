@@ -26,12 +26,12 @@ export async function resetPasswordAction(userId: string, newPassword: string): 
   }
 
   try {
-    console.log(`[Server Action] Attempting to reset password for userId: ${userId}`);
+    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`[Server Action] Attempting to reset password for userId: ${userId}`);
 
     // 1. Hash the new password
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(newPassword, salt);
-    console.log(`[Server Action] New password hashed for userId: ${userId}`);
+    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`[Server Action] New password hashed for userId: ${userId}`);
 
     // 2. Update the user's password in the data_id table
     // IMPORTANT: Using supabaseAdmin here for elevated privileges. 
@@ -52,11 +52,11 @@ export async function resetPasswordAction(userId: string, newPassword: string): 
 
     // Check if any row was actually updated. If no row matched `userId`, data will be empty.
     if (!data || data.length === 0) {
-        console.warn(`[Server Action] No user found with id: ${userId} during password reset attempt.`);
+        process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.warn(`[Server Action] No user found with id: ${userId} during password reset attempt.`);
         return { success: false, error: 'User not found. Password not updated.' };
     }
 
-    console.log(`[Server Action] Password for userId: ${userId} updated successfully in data_id table.`);
+    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`[Server Action] Password for userId: ${userId} updated successfully in data_id table.`);
     
     // 3. Optionally, log this action to record_history (if appropriate for password resets)
     // This might require passing the initiator if it's not the user themselves (e.g. admin reset)
@@ -68,7 +68,7 @@ export async function resetPasswordAction(userId: string, newPassword: string): 
             action: 'Password Reset', // A more specific action type
             remark: 'User self-service password reset successful.',
         });
-        console.log(`[Server Action] Password reset logged to history for userId: ${userId}`);
+        process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`[Server Action] Password reset logged to history for userId: ${userId}`);
     } catch (historyError) {
         console.error(`[Server Action] Failed to log password reset to record_history for userId ${userId}:`, historyError);
         // Do not fail the whole operation if logging fails, but log the error.

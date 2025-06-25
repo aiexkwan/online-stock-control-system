@@ -72,8 +72,8 @@ export async function POST(request: NextRequest) {
     let emailResult = null;
     if (result.order_completed) {
       try {
-        console.log(`[ACO] Order ${orderRefNum} completed, sending email notification...`);
-        console.log('[ACO] Environment check:', {
+        process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`[ACO] Order ${orderRefNum} completed, sending email notification...`);
+        process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[ACO] Environment check:', {
           nodeEnv: process.env.NODE_ENV,
           isLocalhost: request.url.includes('localhost'),
           supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL?.substring(0, 20) + '...'
@@ -91,18 +91,18 @@ export async function POST(request: NextRequest) {
           }
         );
 
-        console.log('[ACO] Edge Function response:', { emailData, emailError });
+        process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[ACO] Edge Function response:', { emailData, emailError });
 
         if (emailError) {
           console.error('Error sending ACO completion email:', emailError);
           // Log the completion even if email fails
-          console.log(`🎉 ACO ORDER COMPLETED: Order ${orderRefNum} has been completed but email notification failed.`);
+          process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`🎉 ACO ORDER COMPLETED: Order ${orderRefNum} has been completed but email notification failed.`);
           emailResult = {
             success: false,
             error: emailError.message
           };
         } else {
-          console.log('ACO completion email sent successfully:', emailData);
+          process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('ACO completion email sent successfully:', emailData);
           emailResult = {
             success: true,
             message: emailData.message,
@@ -113,7 +113,7 @@ export async function POST(request: NextRequest) {
       } catch (emailError: any) {
         console.error('Error invoking email function:', emailError);
         // Log the completion even if email fails
-        console.log(`🎉 ACO ORDER COMPLETED: Order ${orderRefNum} has been completed but email service failed.`);
+        process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`🎉 ACO ORDER COMPLETED: Order ${orderRefNum} has been completed but email service failed.`);
         emailResult = {
           success: false,
           error: `Email service error: ${emailError.message}`

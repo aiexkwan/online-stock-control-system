@@ -11,7 +11,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { CloudArrowUpIcon, DocumentTextIcon, DocumentArrowUpIcon, ExclamationCircleIcon } from '@heroicons/react/24/outline';
 import { createClient } from '@/lib/supabase';
-import { WidgetComponentProps, WidgetSize } from '@/app/types/dashboard';
+import { WidgetComponentProps } from '@/app/types/dashboard';
 import { CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { WidgetCard } from '../WidgetCard';
 import { Button } from "@/components/ui/button";
@@ -39,7 +39,6 @@ export const DocumentUploadWidget = React.memo(function DocumentUploadWidget({ w
   const [hasMore, setHasMore] = useState(true);
   const { openDialog } = useDialog();
   
-  const size = widget.config.size || WidgetSize.MEDIUM;
   const itemsPerPage = size === WidgetSize.LARGE ? 10 : 6;
 
   // 載入上傳歷史
@@ -121,7 +120,7 @@ export const DocumentUploadWidget = React.memo(function DocumentUploadWidget({ w
     if (size !== WidgetSize.SMALL) {
       loadUploadHistory();
     }
-  }, [size, loadUploadHistory]);
+  }, [loadUploadHistory]);
 
   const formatTime = (timestamp: string) => {
     try {
@@ -142,23 +141,6 @@ export const DocumentUploadWidget = React.memo(function DocumentUploadWidget({ w
   };
 
   // 1x1 - 不支援
-  if (size === WidgetSize.SMALL) {
-    return (
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="h-full"
-      >
-        <WidgetCard size={widget.config.size} widgetType="UPLOAD_FILES" isEditMode={isEditMode}>
-          <CardContent className="p-2 h-full flex flex-col items-center justify-center">
-            <h3 className="text-xs text-slate-400 mb-1">Document Management</h3>
-            <div className="text-lg font-medium text-slate-500">(N/A)</div>
-            <p className="text-xs text-slate-500 mt-1">1×1</p>
-          </CardContent>
-        </WidgetCard>
-      </motion.div>
-    );
-  }
 
   // 3x3 & 5x5 共用的內容
   const content = (size: WidgetSize) => (
@@ -253,42 +235,6 @@ export const DocumentUploadWidget = React.memo(function DocumentUploadWidget({ w
   );
 
   // 3x3 - Medium size
-  if (size === WidgetSize.MEDIUM) {
-    return (
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="h-full"
-      >
-        <WidgetCard size={widget.config.size} widgetType="UPLOAD_FILES" isEditMode={isEditMode} className="flex flex-col">
-          <CardHeader className="pb-3">
-            <CardTitle className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg flex items-center justify-center">
-                  <CloudArrowUpIcon className="h-5 w-5 text-white" />
-                </div>
-                <span className="text-sm font-medium text-slate-200">Document Management</span>
-              </div>
-              {/* 手動刷新按鈕 */}
-              <button
-                onClick={() => !isEditMode && loadUploadHistory()}
-                disabled={isEditMode || loading}
-                className="p-1.5 rounded-lg hover:bg-slate-700/50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                title="Refresh"
-              >
-                <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                </svg>
-              </button>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="flex-1 flex flex-col overflow-hidden">
-            {content(WidgetSize.MEDIUM)}
-          </CardContent>
-        </WidgetCard>
-      </motion.div>
-    );
-  }
 
   // 5x5 - Large size
   return (
@@ -297,7 +243,7 @@ export const DocumentUploadWidget = React.memo(function DocumentUploadWidget({ w
       animate={{ opacity: 1, y: 0 }}
       className="h-full"
     >
-      <WidgetCard size={widget.config.size} widgetType="UPLOAD_FILES" isEditMode={isEditMode} className="flex flex-col">
+      <WidgetCard widgetType="UPLOAD_FILES" isEditMode={isEditMode} className="flex flex-col">
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center justify-between">
             <div className="flex items-center gap-2">

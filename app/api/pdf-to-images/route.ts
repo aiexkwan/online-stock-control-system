@@ -26,7 +26,7 @@ function createSupabaseAdmin() {
 
 export async function POST(request: NextRequest) {
   try {
-    console.log('[PDF to Images] Starting PDF processing');
+    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[PDF to Images] Starting PDF processing');
     
     const { pdfUrl, fileName } = await request.json();
     
@@ -42,7 +42,7 @@ export async function POST(request: NextRequest) {
     // 我們可以嘗試以下幾種方法：
     
     // 方法 1: 生成 Supabase 簽名 URL
-    console.log('[PDF to Images] Generating signed URL for PDF');
+    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[PDF to Images] Generating signed URL for PDF');
     
     // 從公開 URL 提取存儲路徑
     const urlParts = pdfUrl.split('/');
@@ -50,7 +50,7 @@ export async function POST(request: NextRequest) {
     const bucket = urlParts[bucketIndex];
     const filePath = urlParts.slice(bucketIndex + 1).join('/');
     
-    console.log('[PDF to Images] Bucket:', bucket, 'Path:', filePath);
+    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[PDF to Images] Bucket:', bucket, 'Path:', filePath);
     
     // 生成簽名 URL（7天有效期）
     const { data: signedUrlData, error: signError } = await supabaseAdmin.storage
@@ -68,7 +68,7 @@ export async function POST(request: NextRequest) {
       });
     }
     
-    console.log('[PDF to Images] Signed URL created successfully');
+    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[PDF to Images] Signed URL created successfully');
     
     // 方法 2: 使用 Supabase 的 transform API（如果可用）
     // Supabase 可能支持圖片轉換，但不一定支持 PDF

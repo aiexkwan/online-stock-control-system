@@ -19,7 +19,7 @@ const supabase = createClient();
  */
 async function getUserIdFromEmail(email: string): Promise<number | null> {
   try {
-    console.log(`[getUserIdFromEmail] Looking up user ID for email: ${email}`);
+    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`[getUserIdFromEmail] Looking up user ID for email: ${email}`);
     
     const { data, error } = await supabase
       .from('data_id')
@@ -27,19 +27,19 @@ async function getUserIdFromEmail(email: string): Promise<number | null> {
       .eq('email', email)
       .single();
 
-    console.log(`[getUserIdFromEmail] Query result:`, { data, error });
+    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`[getUserIdFromEmail] Query result:`, { data, error });
 
     if (error) {
       if (error.code === 'PGRST116') {
         // No user found with this email
-        console.log(`[getUserIdFromEmail] No user found for email: ${email}`);
+        process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`[getUserIdFromEmail] No user found for email: ${email}`);
         return null;
       }
       throw error;
     }
 
     const userId = data?.id;
-    console.log(`[getUserIdFromEmail] Found user ID: ${userId} for email: ${email}`);
+    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`[getUserIdFromEmail] Found user ID: ${userId} for email: ${email}`);
     
     return userId || null;
   } catch (error: any) {
@@ -53,11 +53,11 @@ async function getUserIdFromEmail(email: string): Promise<number | null> {
  */
 function isACOOrderPallet(plt_remark: string | null): { isACO: boolean; refNumber?: string } {
   if (!plt_remark) {
-    console.log('[ACO Check] No plt_remark found');
+    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[ACO Check] No plt_remark found');
     return { isACO: false };
   }
   
-  console.log(`[ACO Check] Checking plt_remark: "${plt_remark}"`);
+  process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`[ACO Check] Checking plt_remark: "${plt_remark}"`);
   
   // Look for ACO reference pattern in remarks - support multiple formats with flexible spacing
   const acoPatterns = [
@@ -71,12 +71,12 @@ function isACOOrderPallet(plt_remark: string | null): { isACO: boolean; refNumbe
   for (const pattern of acoPatterns) {
     const match = plt_remark.match(pattern);
     if (match) {
-      console.log(`[ACO Check] Found ACO reference: ${match[1]} using pattern: ${pattern}`);
+      process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`[ACO Check] Found ACO reference: ${match[1]} using pattern: ${pattern}`);
       return { isACO: true, refNumber: match[1] };
     }
   }
   
-  console.log('[ACO Check] No ACO reference found');
+  process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[ACO Check] No ACO reference found');
   return { isACO: false };
 }
 
@@ -89,7 +89,7 @@ async function updateACORecord(
   quantity: number
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    console.log(`[ACO Update] Starting update: ref=${refNumber}, code=${productCode}, qty=${quantity}`);
+    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`[ACO Update] Starting update: ref=${refNumber}, code=${productCode}, qty=${quantity}`);
     
     // Find the ACO record by order_ref and code (case-insensitive for product code)
     const { data: acoRecord, error: findError } = await supabase
@@ -99,11 +99,11 @@ async function updateACORecord(
       .ilike('code', productCode) // Use ilike for case-insensitive matching
       .single();
 
-    console.log(`[ACO Update] Query result:`, { acoRecord, findError });
+    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`[ACO Update] Query result:`, { acoRecord, findError });
 
     if (findError) {
       if (findError.code === 'PGRST116') {
-        console.log(`[ACO Update] No record found for ref=${refNumber}, code=${productCode}`);
+        process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`[ACO Update] No record found for ref=${refNumber}, code=${productCode}`);
         
         // Try to find any records with this order_ref to see what's available
         const { data: allRecords } = await supabase
@@ -111,7 +111,7 @@ async function updateACORecord(
           .select('uuid, code, remain_qty')
           .eq('order_ref', refNumber);
         
-        console.log(`[ACO Update] Available records for ref=${refNumber}:`, allRecords);
+        process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`[ACO Update] Available records for ref=${refNumber}:`, allRecords);
         
         return { 
           success: false, 
@@ -122,19 +122,19 @@ async function updateACORecord(
     }
 
     if (!acoRecord) {
-      console.log(`[ACO Update] No ACO record returned`);
+      process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`[ACO Update] No ACO record returned`);
       return { 
         success: false, 
         error: `ACO record not found for ref: ${refNumber}, code: ${productCode}` 
       };
     }
 
-    console.log(`[ACO Update] Found record: uuid=${acoRecord.uuid}, current_remain_qty=${acoRecord.remain_qty}`);
+    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`[ACO Update] Found record: uuid=${acoRecord.uuid}, current_remain_qty=${acoRecord.remain_qty}`);
 
     // Update remain_qty by adding back the voided quantity
     const newRemainQty = acoRecord.remain_qty + quantity;
     
-    console.log(`[ACO Update] Updating remain_qty: ${acoRecord.remain_qty} + ${quantity} = ${newRemainQty}`);
+    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`[ACO Update] Updating remain_qty: ${acoRecord.remain_qty} + ${quantity} = ${newRemainQty}`);
     
     const { error: updateError } = await supabase
       .from('record_aco')
@@ -146,7 +146,7 @@ async function updateACORecord(
       throw updateError;
     }
 
-    console.log(`[ACO Update] Successfully updated: ref=${refNumber}, code=${productCode}, added=${quantity}, new_remain_qty=${newRemainQty}`);
+    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`[ACO Update] Successfully updated: ref=${refNumber}, code=${productCode}, added=${quantity}, new_remain_qty=${newRemainQty}`);
     
     return { success: true };
   } catch (error: any) {
@@ -407,7 +407,7 @@ export async function recordHistoryAction(
           numericId = await getUserIdFromEmail(user.email);
         }
       } catch (authError) {
-        console.warn('Could not get user from auth for history recording:', authError);
+        process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.warn('Could not get user from auth for history recording:', authError);
       }
     } else {
       // Convert clockNumber to numeric ID
@@ -468,7 +468,7 @@ export async function logErrorAction(
           numericId = await getUserIdFromEmail(user.email);
         }
       } catch (authError) {
-        console.warn('Could not get user from auth for error logging:', authError);
+        process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.warn('Could not get user from auth for error logging:', authError);
       }
     } else {
       // Convert clockNumber to numeric ID
@@ -480,7 +480,7 @@ export async function logErrorAction(
 
     // If we still don't have a valid user ID, skip logging to avoid database errors
     if (!numericId) {
-      console.warn(`Cannot log error to database: invalid user ID. ClockNumber: ${clockNumber}, ErrorInfo: ${errorInfo}`);
+      process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.warn(`Cannot log error to database: invalid user ID. ClockNumber: ${clockNumber}, ErrorInfo: ${errorInfo}`);
       return;
     }
 
@@ -504,7 +504,7 @@ export async function voidPalletAction(params: Omit<VoidParams, 'userId'>): Prom
   try {
     const { palletInfo, voidReason, password } = params;
 
-    console.log('[Void Pallet] Starting void operation:', {
+    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[Void Pallet] Starting void operation:', {
       plt_num: palletInfo.plt_num,
       product_code: palletInfo.product_code,
       product_qty: palletInfo.product_qty,
@@ -582,7 +582,7 @@ export async function voidPalletAction(params: Omit<VoidParams, 'userId'>): Prom
 
     // 🚀 新增：同步更新 stock_level 表
     try {
-      console.log('[Void Pallet] Updating stock_level for product:', {
+      process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[Void Pallet] Updating stock_level for product:', {
         product_code: palletInfo.product_code,
         quantity: palletInfo.product_qty,
         operation: 'void'
@@ -596,7 +596,7 @@ export async function voidPalletAction(params: Omit<VoidParams, 'userId'>): Prom
         });
 
       if (stockError) {
-        console.warn('[Void Pallet] Stock level update failed:', stockError);
+        process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.warn('[Void Pallet] Stock level update failed:', stockError);
         // 記錄警告但不中斷主要流程
         await recordHistoryAction(
           clockNumber,
@@ -606,7 +606,7 @@ export async function voidPalletAction(params: Omit<VoidParams, 'userId'>): Prom
           `Stock level update failed: ${stockError.message}`
         );
       } else {
-        console.log('[Void Pallet] Stock level updated successfully:', stockResult);
+        process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[Void Pallet] Stock level updated successfully:', stockResult);
         // 記錄成功的庫存更新
         await recordHistoryAction(
           clockNumber,
@@ -617,7 +617,7 @@ export async function voidPalletAction(params: Omit<VoidParams, 'userId'>): Prom
         );
       }
     } catch (stockUpdateError: any) {
-      console.warn('[Void Pallet] Stock level update error:', stockUpdateError);
+      process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.warn('[Void Pallet] Stock level update error:', stockUpdateError);
       // 記錄錯誤但不中斷主要流程
       await recordHistoryAction(
         clockNumber,
@@ -650,7 +650,7 @@ export async function voidPalletAction(params: Omit<VoidParams, 'userId'>): Prom
     // 6. Handle ACO Order Pallet if applicable
     const acoCheck = isACOOrderPallet(palletInfo.plt_remark);
     if (acoCheck.isACO && acoCheck.refNumber) {
-      console.log(`Processing ACO Order Pallet: ref=${acoCheck.refNumber}, code=${palletInfo.product_code}, qty=${palletInfo.product_qty}`);
+      process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`Processing ACO Order Pallet: ref=${acoCheck.refNumber}, code=${palletInfo.product_code}, qty=${palletInfo.product_qty}`);
       
       const acoResult = await updateACORecord(
         acoCheck.refNumber,
@@ -659,7 +659,7 @@ export async function voidPalletAction(params: Omit<VoidParams, 'userId'>): Prom
       );
       
       if (!acoResult.success) {
-        console.warn(`ACO update failed: ${acoResult.error}`);
+        process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.warn(`ACO update failed: ${acoResult.error}`);
         // Log the ACO update failure but don't fail the entire void operation
         await recordHistoryAction(
           clockNumber,
@@ -683,12 +683,12 @@ export async function voidPalletAction(params: Omit<VoidParams, 'userId'>): Prom
     // 7. Handle Material GRN Pallet if applicable
     const grnCheck = isMaterialGRNPallet(palletInfo.plt_remark);
     if (grnCheck.isGRN && grnCheck.grnNumber) {
-      console.log(`Processing Material GRN Pallet: grn=${grnCheck.grnNumber}, plt_num=${palletInfo.plt_num}`);
+      process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`Processing Material GRN Pallet: grn=${grnCheck.grnNumber}, plt_num=${palletInfo.plt_num}`);
       
       const grnResult = await deleteGRNRecord(palletInfo.plt_num);
       
       if (!grnResult.success) {
-        console.warn(`GRN deletion failed: ${grnResult.error}`);
+        process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.warn(`GRN deletion failed: ${grnResult.error}`);
         // Log the GRN deletion failure but don't fail the entire void operation
         await recordHistoryAction(
           clockNumber,
@@ -743,7 +743,7 @@ export async function processDamageAction(params: Omit<VoidParams, 'userId'>): P
   try {
     const { palletInfo, voidReason, password, damageQuantity } = params;
 
-    console.log('[Damage Processing] Starting damage operation:', {
+    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[Damage Processing] Starting damage operation:', {
       plt_num: palletInfo.plt_num,
       product_code: palletInfo.product_code,
       product_qty: palletInfo.product_qty,
@@ -834,7 +834,7 @@ export async function processDamageAction(params: Omit<VoidParams, 'userId'>): P
 
     // 🚀 優化：同步更新 stock_level 表 - 減去整個 pallet qty（因為後續 reprint 會再更新）
     try {
-      console.log('[Damage Processing] Updating stock_level for product:', {
+      process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[Damage Processing] Updating stock_level for product:', {
         product_code: palletInfo.product_code,
         total_quantity: palletInfo.product_qty, // 減去整個 pallet 數量
         damage_quantity: damageQuantity,
@@ -849,7 +849,7 @@ export async function processDamageAction(params: Omit<VoidParams, 'userId'>): P
         });
 
       if (stockError) {
-        console.warn('[Damage Processing] Stock level update failed:', stockError);
+        process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.warn('[Damage Processing] Stock level update failed:', stockError);
         // 記錄警告但不中斷主要流程
         await recordHistoryAction(
           clockNumber,
@@ -859,7 +859,7 @@ export async function processDamageAction(params: Omit<VoidParams, 'userId'>): P
           `Stock level update failed: ${stockError.message}`
         );
       } else {
-        console.log('[Damage Processing] Stock level updated successfully:', stockResult);
+        process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[Damage Processing] Stock level updated successfully:', stockResult);
         
         // 🔥 優化 remark 格式
         const optimizedRemark = `Stock level updated: ${palletInfo.product_code} - from ${palletInfo.product_qty} to 0`;
@@ -874,7 +874,7 @@ export async function processDamageAction(params: Omit<VoidParams, 'userId'>): P
         );
       }
     } catch (stockUpdateError: any) {
-      console.warn('[Damage Processing] Stock level update error:', stockUpdateError);
+      process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.warn('[Damage Processing] Stock level update error:', stockUpdateError);
       // 記錄錯誤但不中斷主要流程
       await recordHistoryAction(
         clockNumber,
@@ -918,7 +918,7 @@ export async function processDamageAction(params: Omit<VoidParams, 'userId'>): P
 
     // 6. Handle ACO Order Pallet if applicable
     if (acoCheck.isACO && acoCheck.refNumber) {
-      console.log(`Processing ACO Order Pallet (Damage): ref=${acoCheck.refNumber}, code=${palletInfo.product_code}, qty=${palletInfo.product_qty}`);
+      process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`Processing ACO Order Pallet (Damage): ref=${acoCheck.refNumber}, code=${palletInfo.product_code}, qty=${palletInfo.product_qty}`);
       
       const acoResult = await updateACORecord(
         acoCheck.refNumber,
@@ -927,7 +927,7 @@ export async function processDamageAction(params: Omit<VoidParams, 'userId'>): P
       );
       
       if (!acoResult.success) {
-        console.warn(`ACO update failed: ${acoResult.error}`);
+        process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.warn(`ACO update failed: ${acoResult.error}`);
         // Log the ACO update failure but don't fail the entire void operation
         await recordHistoryAction(
           clockNumber,
@@ -951,12 +951,12 @@ export async function processDamageAction(params: Omit<VoidParams, 'userId'>): P
     // 7. Handle Material GRN Pallet if applicable
     const grnCheck = isMaterialGRNPallet(palletInfo.plt_remark);
     if (grnCheck.isGRN && grnCheck.grnNumber) {
-      console.log(`Processing Material GRN Pallet (Damage): grn=${grnCheck.grnNumber}, plt_num=${palletInfo.plt_num}`);
+      process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`Processing Material GRN Pallet (Damage): grn=${grnCheck.grnNumber}, plt_num=${palletInfo.plt_num}`);
       
       const grnResult = await deleteGRNRecord(palletInfo.plt_num);
       
       if (!grnResult.success) {
-        console.warn(`GRN deletion failed: ${grnResult.error}`);
+        process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.warn(`GRN deletion failed: ${grnResult.error}`);
         // Log the GRN deletion failure but don't fail the entire void operation
         await recordHistoryAction(
           clockNumber,
@@ -1018,22 +1018,22 @@ export async function processDamageAction(params: Omit<VoidParams, 'userId'>): P
  */
 function isMaterialGRNPallet(plt_remark: string | null): { isGRN: boolean; grnNumber?: string } {
   if (!plt_remark) {
-    console.log('[GRN Check] No plt_remark found');
+    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[GRN Check] No plt_remark found');
     return { isGRN: false };
   }
   
-  console.log(`[GRN Check] Checking plt_remark: "${plt_remark}"`);
+  process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`[GRN Check] Checking plt_remark: "${plt_remark}"`);
   
   // Look for Material GRN pattern in remarks - support flexible spacing
   const grnPattern = /Material\s+GRN\s*-\s*(\w+)/i;
   const match = plt_remark.match(grnPattern);
   
   if (match) {
-    console.log(`[GRN Check] Found GRN reference: ${match[1]}`);
+    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`[GRN Check] Found GRN reference: ${match[1]}`);
     return { isGRN: true, grnNumber: match[1] };
   }
   
-  console.log('[GRN Check] No GRN reference found');
+  process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[GRN Check] No GRN reference found');
   return { isGRN: false };
 }
 
@@ -1044,7 +1044,7 @@ async function deleteGRNRecord(
   pltNum: string
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    console.log(`[GRN Delete] Starting deletion for plt_num: ${pltNum}`);
+    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`[GRN Delete] Starting deletion for plt_num: ${pltNum}`);
     
     // Find and delete the GRN record by plt_num
     const { data: deletedRecord, error: deleteError } = await supabase
@@ -1059,15 +1059,15 @@ async function deleteGRNRecord(
     }
 
     if (!deletedRecord || deletedRecord.length === 0) {
-      console.log(`[GRN Delete] No GRN record found for plt_num: ${pltNum}`);
+      process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`[GRN Delete] No GRN record found for plt_num: ${pltNum}`);
       return { 
         success: false, 
         error: `No GRN record found for pallet: ${pltNum}` 
       };
     }
 
-    console.log(`[GRN Delete] Successfully deleted ${deletedRecord.length} GRN record(s) for plt_num: ${pltNum}`);
-    console.log(`[GRN Delete] Deleted records:`, deletedRecord);
+    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`[GRN Delete] Successfully deleted ${deletedRecord.length} GRN record(s) for plt_num: ${pltNum}`);
+    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`[GRN Delete] Deleted records:`, deletedRecord);
     
     return { success: true };
   } catch (error: any) {
@@ -1085,7 +1085,7 @@ async function deleteGRNRecord(
 function getInventoryColumn(location: string | null): string {
   if (!location) return 'injection'; // Default value
   
-  console.log(`[Inventory] Mapping location "${location}" to inventory column`);
+  process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`[Inventory] Mapping location "${location}" to inventory column`);
   
   const locationMap: { [key: string]: string } = {
     // Exact matches for database locations
@@ -1108,7 +1108,7 @@ function getInventoryColumn(location: string | null): string {
   };
   
   const column = locationMap[location] || 'injection';
-  console.log(`[Inventory] Location "${location}" mapped to column "${column}"`);
+  process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`[Inventory] Location "${location}" mapped to column "${column}"`);
   
   return column;
 }

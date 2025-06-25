@@ -69,7 +69,7 @@ export function useVoidPallet() {
       getCurrentUserClockNumberAsync().then(clockNumber => {
         logErrorAction(clockNumber || 'unknown', `${error.type}: ${error.message}`);
       }).catch(err => {
-        console.warn('[VoidPallet] Failed to get clock number for error logging:', err);
+        process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.warn('[VoidPallet] Failed to get clock number for error logging:', err);
         logErrorAction('unknown', `${error.type}: ${error.message}`);
       });
     }
@@ -92,7 +92,7 @@ export function useVoidPallet() {
     const detection = detectSearchType(searchValue.trim());
     
     // Show detection confidence in console for debugging
-    console.log('[Search Detection]', {
+    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[Search Detection]', {
       input: searchValue,
       detected: detection.type,
       confidence: detection.confidence,
@@ -363,7 +363,7 @@ export function useVoidPallet() {
   }, [state.foundPallet, state.voidReason, updateState]);
 
   const handleReprintInfoConfirm = useCallback(async (reprintInfo: ReprintInfoInput) => {
-    console.log('[Auto Reprint] Starting reprint process...');
+    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[Auto Reprint] Starting reprint process...');
     updateState({ isAutoReprinting: true, showReprintInfoDialog: false });
     
     try {
@@ -381,17 +381,17 @@ export function useVoidPallet() {
         throw new Error('No internet connection available');
       }
       
-      console.log('[Auto Reprint] Browser compatibility check passed');
+      process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[Auto Reprint] Browser compatibility check passed');
 
       // 獲取 operator clock number - 只使用 Supabase Auth
       let operatorClockNum: string | null = null;
       
       // 使用異步函數獲取 clock number
-      console.log('[Auto Reprint] Getting clock number via async method...');
+      process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[Auto Reprint] Getting clock number via async method...');
       operatorClockNum = await getCurrentUserClockNumberAsync();
       
       if (operatorClockNum) {
-        console.log('[Auto Reprint] Got clock number from async method:', operatorClockNum);
+        process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[Auto Reprint] Got clock number from async method:', operatorClockNum);
       } else {
         console.error('[Auto Reprint] Failed to get clock number from async method');
       }
@@ -403,7 +403,7 @@ export function useVoidPallet() {
 
       // 確保 operatorClockNum 不為 null（已經通過上面的檢查）
       const finalOperatorClockNum: string = operatorClockNum!;
-      console.log(`[Auto Reprint] Final operator clock number: ${finalOperatorClockNum}`);
+      process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`[Auto Reprint] Final operator clock number: ${finalOperatorClockNum}`);
 
       // Prepare auto reprint parameters
       const autoReprintParams = {
@@ -417,14 +417,14 @@ export function useVoidPallet() {
         operatorClockNum: finalOperatorClockNum
       };
 
-      console.log(`[Auto Reprint] Calling API with params:`, autoReprintParams);
+      process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`[Auto Reprint] Calling API with params:`, autoReprintParams);
 
       // Call auto reprint API (same as QC Label approach)
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
 
       try {
-        console.log('[Auto Reprint] Calling API...');
+        process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[Auto Reprint] Calling API...');
         const response = await fetch('/api/auto-reprint-label-v2', {
           method: 'POST',
           headers: {
@@ -436,8 +436,8 @@ export function useVoidPallet() {
 
         clearTimeout(timeoutId);
 
-        console.log(`[Auto Reprint] API response status: ${response.status}`);
-        console.log(`[Auto Reprint] API response headers:`, Object.fromEntries(response.headers.entries()));
+        process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`[Auto Reprint] API response status: ${response.status}`);
+        process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`[Auto Reprint] API response headers:`, Object.fromEntries(response.headers.entries()));
 
         if (!response.ok) {
           let errorMessage = 'Auto reprint failed';
@@ -461,19 +461,19 @@ export function useVoidPallet() {
 
         const { newPalletNumber, fileName, qcInputData } = result.data;
 
-        console.log(`[Auto Reprint] Success! New pallet: ${newPalletNumber}`);
-        console.log(`[Auto Reprint] QC input data:`, qcInputData);
+        process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`[Auto Reprint] Success! New pallet: ${newPalletNumber}`);
+        process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`[Auto Reprint] QC input data:`, qcInputData);
 
         // Generate PDF using exactly the same logic as QC Label
-        console.log('[Auto Reprint] Generating PDF using QC Label logic...');
+        process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[Auto Reprint] Generating PDF using QC Label logic...');
         const { prepareQcLabelData, mergeAndPrintPdfs } = await import('@/lib/pdfUtils');
         const { pdf } = await import('@react-pdf/renderer');
         const { PrintLabelPdf } = await import('@/components/print-label-pdf/PrintLabelPdf');
         
-        console.log('[Auto Reprint] Preparing QC label data...');
+        process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[Auto Reprint] Preparing QC label data...');
         const pdfLabelProps = await prepareQcLabelData(qcInputData);
         
-        console.log('[Auto Reprint] Generating PDF blob...');
+        process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[Auto Reprint] Generating PDF blob...');
         // Use JSX syntax now that this is a .tsx file
         const pdfBlob = await pdf(<PrintLabelPdf {...pdfLabelProps} />).toBlob();
         
@@ -481,7 +481,7 @@ export function useVoidPallet() {
           throw new Error('PDF generation failed to return a blob.');
         }
 
-        console.log(`[Auto Reprint] PDF blob generated, size: ${pdfBlob.size} bytes`);
+        process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`[Auto Reprint] PDF blob generated, size: ${pdfBlob.size} bytes`);
 
         // Convert blob to ArrayBuffer for printing (exact same as QC Label)
         const pdfArrayBuffer = await pdfBlob.arrayBuffer();
@@ -489,7 +489,7 @@ export function useVoidPallet() {
         // Auto-print the PDF (exact same as QC Label)
         await mergeAndPrintPdfs([pdfArrayBuffer], fileName);
         
-        console.log('[Auto Reprint] Auto-print triggered successfully');
+        process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[Auto Reprint] Auto-print triggered successfully');
         toast.success(`New pallet ${newPalletNumber} created and sent to printer successfully`);
         
         // Reset state
@@ -513,7 +513,7 @@ export function useVoidPallet() {
         timestamp: new Date()
       });
     } finally {
-      console.log('[Auto Reprint] Process completed, resetting state...');
+      process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[Auto Reprint] Process completed, resetting state...');
       updateState({ isAutoReprinting: false });
     }
   }, [state.voidReason, updateState, resetState, setError]);

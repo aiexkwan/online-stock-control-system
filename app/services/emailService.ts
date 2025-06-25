@@ -19,8 +19,8 @@ interface EmailRequest {
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
 
 export async function sendOrderCreatedEmail(emailRequest: EmailRequest) {
-  console.log('=== 📧 Internal Email Service Started ===');
-  console.log('🔍 [emailService] Bypassing all middleware and routes');
+  process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('=== 📧 Internal Email Service Started ===');
+  process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('🔍 [emailService] Bypassing all middleware and routes');
   
   if (!RESEND_API_KEY) {
     console.error('❌ RESEND_API_KEY is not set in environment variables');
@@ -59,7 +59,7 @@ export async function sendOrderCreatedEmail(emailRequest: EmailRequest) {
     ccEmails = cc || ['akwan@pennineindustries.com', 'kjones@pennineindustries.com', 'grobinson@pennineindustries.com'];
   }
   
-  console.log('📧 Email details:', {
+  process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('📧 Email details:', {
     from: fromEmail,
     to: toEmails,
     cc: ccEmails,
@@ -154,10 +154,10 @@ This is an automated notification from the Pennine Stock Control System.
         type: 'application/pdf'
       }
     ];
-    console.log('📎 PDF attachment added:', pdfAttachment.filename);
+    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('📎 PDF attachment added:', pdfAttachment.filename);
   }
 
-  console.log('📤 Sending email directly to Resend API...');
+  process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('📤 Sending email directly to Resend API...');
 
   // 發送郵件使用 Resend API
   const response = await fetch('https://api.resend.com/emails', {
@@ -169,16 +169,16 @@ This is an automated notification from the Pennine Stock Control System.
     body: JSON.stringify(emailData),
   });
 
-  console.log('📨 Resend API response status:', response.status);
+  process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('📨 Resend API response status:', response.status);
 
   let result;
   try {
     result = await response.json();
-    console.log('📨 Resend API response body:', result);
+    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('📨 Resend API response body:', result);
   } catch (jsonError) {
     console.error('❌ Failed to parse Resend API response as JSON:', jsonError);
     const textResult = await response.text();
-    console.log('📨 Resend API response as text:', textResult);
+    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('📨 Resend API response as text:', textResult);
     throw new Error(`Failed to parse email service response: ${textResult}`);
   }
 
@@ -191,7 +191,7 @@ This is an automated notification from the Pennine Stock Control System.
     throw new Error(`Failed to send email via Resend API: ${response.status} ${response.statusText}`);
   }
 
-  console.log('✅ Email sent successfully via internal service:', result);
+  process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('✅ Email sent successfully via internal service:', result);
 
   return {
     success: true,

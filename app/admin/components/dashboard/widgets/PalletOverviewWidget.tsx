@@ -11,7 +11,7 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ChartPieIcon, ClockIcon, ChevronDownIcon } from '@heroicons/react/24/outline';
-import { WidgetComponentProps, WidgetSize } from '@/app/types/dashboard';
+import { WidgetComponentProps } from '@/app/types/dashboard';
 import { useWidgetData } from '@/app/admin/hooks/useWidgetData';
 import { createClient } from '@/app/utils/supabase/client';
 import PalletDonutChart from '@/app/components/PalletDonutChart';
@@ -33,7 +33,6 @@ export const PalletOverviewWidget = React.memo(function PalletOverviewWidget({ w
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const size = widget.config.size || WidgetSize.SMALL;
 
   const calculateTransferredPallets = useCallback(async (palletNums: string[]) => {
     if (!palletNums || palletNums.length === 0) return 0;
@@ -148,111 +147,9 @@ export const PalletOverviewWidget = React.memo(function PalletOverviewWidget({ w
   };
 
   // Small size - only show numbers
-  if (size === WidgetSize.SMALL) {
-    return (
-      <Card className={`h-full bg-slate-900/95 backdrop-blur-xl border border-purple-500/30 shadow-2xl ${isEditMode ? 'border-dashed border-2 border-purple-500/50' : ''}`}>
-        <CardContent className="p-4 h-full flex flex-col justify-center items-center">
-          <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-indigo-500 rounded-lg flex items-center justify-center mb-2">
-            <ChartPieIcon className="h-6 w-6 text-white" />
-          </div>
-          <h3 className="text-sm font-medium text-slate-400 mb-1">Overview</h3>
-          {loading ? (
-            <div className="h-12 w-20 bg-slate-700 rounded animate-pulse"></div>
-          ) : error ? (
-            <div className="text-red-400 text-sm">Error</div>
-          ) : (
-            <>
-              <div className="text-2xl font-bold text-white">{getPercentage()}%</div>
-              <p className="text-xs text-slate-400 mt-1">Transferred</p>
-            </>
-          )}
-        </CardContent>
-      </Card>
-    );
-  }
 
   // Medium size - show stats with time range
-  if (size === WidgetSize.MEDIUM) {
-    return (
-      <Card className={`h-full bg-slate-900/95 backdrop-blur-xl border border-purple-500/30 shadow-2xl ${isEditMode ? 'border-dashed border-2 border-purple-500/50' : ''}`}>
-        <CardHeader className="pb-2">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-indigo-500 rounded-lg flex items-center justify-center">
-                <ChartPieIcon className="h-5 w-5 text-white" />
-              </div>
-              <CardTitle className="text-sm font-medium text-slate-200">Overview</CardTitle>
-            </div>
-            
-            <div className="relative" ref={dropdownRef}>
-              <button
-                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                className="flex items-center gap-1 px-2 py-1 bg-slate-700/50 hover:bg-slate-600/50 text-slate-300 hover:text-white rounded-md transition-all duration-300 text-xs border border-slate-600/30"
-                disabled={isEditMode}
-              >
-                <ClockIcon className="w-3 h-3" />
-                {timeRange}
-                <ChevronDownIcon className={`w-3 h-3 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} />
-              </button>
-              
-              <AnimatePresence>
-                {isDropdownOpen && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                    transition={{ duration: 0.2 }}
-                    className="absolute right-0 top-full mt-1 bg-slate-900/98 backdrop-blur-xl border border-slate-600/50 rounded-xl shadow-2xl z-50 min-w-[120px]"
-                  >
-                    {['Today', 'Yesterday', 'Past 3 days', 'Past 7 days'].map((option) => (
-                      <button
-                        key={option}
-                        onClick={() => handleTimeRangeChange(option)}
-                        className={`w-full px-3 py-2 text-left text-xs hover:bg-slate-700/50 transition-all duration-300 first:rounded-t-xl last:rounded-b-xl ${
-                          timeRange === option ? 'bg-slate-700/50 text-purple-400' : 'text-slate-300'
-                        }`}
-                      >
-                        {option}
-                      </button>
-                    ))}
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent className="pt-2">
-          {loading ? (
-            <div className="space-y-2">
-              <div className="h-8 bg-slate-700 rounded animate-pulse"></div>
-              <div className="h-8 bg-slate-700 rounded animate-pulse"></div>
-            </div>
-          ) : error ? (
-            <div className="text-red-400 text-sm">{error}</div>
-          ) : (
-            <div className="space-y-3">
-              <div className="text-center">
-                <div className="text-4xl font-bold text-white mb-1">{getPercentage()}%</div>
-                <p className="text-xs text-slate-400">Transfer Rate</p>
-              </div>
-              <div className="grid grid-cols-2 gap-2 text-sm">
-                <div className="bg-slate-800/50 rounded-lg p-2 text-center">
-                  <p className="text-xs text-slate-400">Produced</p>
-                  <p className="text-lg font-semibold text-white">{stats.palletsDone}</p>
-                </div>
-                <div className="bg-slate-800/50 rounded-lg p-2 text-center">
-                  <p className="text-xs text-slate-400">Transferred</p>
-                  <p className="text-lg font-semibold text-white">{stats.palletsTransferred}</p>
-                </div>
-              </div>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-    );
-  }
 
-  // Large size - full donut chart
   return (
     <Card className={`h-full bg-slate-900/95 backdrop-blur-xl border border-purple-500/30 shadow-2xl ${isEditMode ? 'border-dashed border-2 border-purple-500/50' : ''}`}>
       <CardHeader className="pb-2">

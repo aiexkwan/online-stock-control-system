@@ -216,7 +216,7 @@ export function useRealtimeStats() {
           table: 'record_palletinfo'
         },
         () => {
-          console.log('Pallet data changed, refreshing stats...');
+          process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('Pallet data changed, refreshing stats...');
           refreshStats();
         }
       )
@@ -233,7 +233,7 @@ export function useRealtimeStats() {
           table: 'record_transfer'
         },
         () => {
-          console.log('Transfer data changed, refreshing stats...');
+          process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('Transfer data changed, refreshing stats...');
           refreshStats();
         }
       )
@@ -250,7 +250,7 @@ export function useRealtimeStats() {
           table: 'record_aco'
         },
         () => {
-          console.log('ACO data changed, refreshing orders...');
+          process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('ACO data changed, refreshing orders...');
           refreshOrders();
         }
       )

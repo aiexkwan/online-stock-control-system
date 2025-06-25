@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import StockTakeNav from '../components/StockTakeNav';
+// import StockTakeNav from '../components/StockTakeNav'; // Removed - using dynamic action bar
 import { DocumentChartBarIcon, ArrowDownTrayIcon, CalendarIcon, ChartBarIcon, ExclamationTriangleIcon } from '@heroicons/react/24/outline';
 import { createClient } from '@/app/utils/supabase/client';
 import { format } from 'date-fns';
@@ -249,7 +249,7 @@ export default function StockReportPage() {
   return (
     <div>
       <div className="text-white min-h-screen">
-        <StockTakeNav />
+        {/* Navigation removed - using dynamic action bar */}
         
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <motion.div

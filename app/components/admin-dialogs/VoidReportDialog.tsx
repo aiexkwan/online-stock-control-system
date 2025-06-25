@@ -44,11 +44,11 @@ export default function VoidReportDialog({ isOpen, onClose }: VoidReportDialogPr
       // Fetch void records
       let records;
       try {
-        console.log('Attempting to fetch void records with primary method...');
+        process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('Attempting to fetch void records with primary method...');
         records = await fetchVoidRecords(filters);
       } catch (primaryError) {
         console.error('Primary fetch method failed:', primaryError);
-        console.log('Attempting alternative fetch method...');
+        process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('Attempting alternative fetch method...');
         toast.info('Using alternative data fetch method...');
         
         try {

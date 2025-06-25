@@ -358,7 +358,7 @@ export const useStockMovement = (options: UseStockMovementOptions = {}) => {
       
       // 🚀 新增：更新 work_level 表的 move 欄位
       try {
-        console.log('[useStockMovement] 更新員工 Move 工作量記錄...', {
+        process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[useStockMovement] 更新員工 Move 工作量記錄...', {
           operatorId: operatorIdNum,
           moveCount: 1
         });
@@ -372,7 +372,7 @@ export const useStockMovement = (options: UseStockMovementOptions = {}) => {
           console.error('[useStockMovement] Work level move 更新失敗:', workLevelError);
           // 移除活動日誌顯示，只保留控制台日誌
         } else {
-          console.log('[useStockMovement] Work level move 更新成功:', workLevelData);
+          process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[useStockMovement] Work level move 更新成功:', workLevelData);
           // 移除活動日誌顯示，只保留控制台日誌
         }
       } catch (workLevelError: any) {

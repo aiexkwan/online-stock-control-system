@@ -39,7 +39,7 @@ function createSupabaseAdmin() {
 
 export async function POST(request: NextRequest) {
   try {
-    console.log('[Upload PDF API] 接收 PDF 上傳請求...');
+    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[Upload PDF API] 接收 PDF 上傳請求...');
     
     const formData = await request.formData();
     const file = formData.get('file') as File;
@@ -56,7 +56,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'No fileName provided' }, { status: 400 });
     }
     
-    console.log('[Upload PDF API] 文件信息:', {
+    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[Upload PDF API] 文件信息:', {
       fileName,
       fileSize: file.size,
       fileType: file.type,
@@ -75,7 +75,7 @@ export async function POST(request: NextRequest) {
     const arrayBuffer = await file.arrayBuffer();
     const blob = new Blob([arrayBuffer], { type: 'application/pdf' });
     
-    console.log('[Upload PDF API] 文件轉換完成，準備上傳到 Supabase Storage bucket:', storagePath);
+    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[Upload PDF API] 文件轉換完成，準備上傳到 Supabase Storage bucket:', storagePath);
     
     // 創建服務端客戶端
     const supabaseAdmin = createSupabaseAdmin();
@@ -103,7 +103,7 @@ export async function POST(request: NextRequest) {
       }, { status: 500 });
     }
     
-    console.log('[Upload PDF API] 文件上傳成功，路徑:', uploadData.path);
+    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[Upload PDF API] 文件上傳成功，路徑:', uploadData.path);
     
     // 獲取公共 URL
     const { data: urlData } = supabaseAdmin.storage
@@ -117,7 +117,7 @@ export async function POST(request: NextRequest) {
       }, { status: 500 });
     }
     
-    console.log('[Upload PDF API] 公共 URL 生成成功:', urlData.publicUrl);
+    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[Upload PDF API] 公共 URL 生成成功:', urlData.publicUrl);
     
     return NextResponse.json({
       success: true,

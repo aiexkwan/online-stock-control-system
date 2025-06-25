@@ -11,7 +11,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { NoSymbolIcon, ExclamationTriangleIcon } from '@heroicons/react/24/outline';
 import { createClient } from '@/lib/supabase';
-import { WidgetComponentProps, WidgetSize } from '@/app/types/dashboard';
+import { WidgetComponentProps } from '@/app/types/dashboard';
 import { CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { WidgetCard } from '../WidgetCard';
 import { Button } from "@/components/ui/button";
@@ -50,7 +50,6 @@ export const VoidPalletWidget = React.memo(function VoidPalletWidget({ widget, i
   const supabase = createClient();
   const { openDialog } = useDialog();
   
-  const size = widget.config.size || WidgetSize.MEDIUM;
 
   // 載入作廢統計資料
   const loadVoidStats = useCallback(async () => {
@@ -119,7 +118,7 @@ export const VoidPalletWidget = React.memo(function VoidPalletWidget({ widget, i
     } finally {
       setLoading(false);
     }
-  }, [size, supabase]);
+  }, [supabase]);
 
   useWidgetData({ loadFunction: loadVoidStats, isEditMode });
 
@@ -128,92 +127,8 @@ export const VoidPalletWidget = React.memo(function VoidPalletWidget({ widget, i
   };
 
   // 1x1 - 只顯示數值
-  if (size === WidgetSize.SMALL) {
-    return (
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="h-full"
-      >
-        <WidgetCard size={widget.config.size} widgetType="VOID_PALLET" isEditMode={isEditMode}>
-          <CardContent className="p-4 h-full flex flex-col items-center justify-center">
-            <NoSymbolIcon className="w-8 h-8 text-red-400 mb-2" />
-            <div className="text-3xl font-bold text-purple-400">{stats.today_voided}</div>
-            <div className="text-xs text-slate-400 mt-1">Today&apos;s Voids</div>
-          </CardContent>
-        </WidgetCard>
-      </motion.div>
-    );
-  }
 
   // 3x3 - 顯示資料明細
-  if (size === WidgetSize.MEDIUM) {
-    return (
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="h-full"
-      >
-        <WidgetCard size={widget.config.size} widgetType="VOID_PALLET" isEditMode={isEditMode} className="hover:border-orange-400/50 transition-all duration-300">
-          <CardHeader className="pb-3">
-            <CardTitle className="flex items-center gap-2">
-              <NoSymbolIcon className="w-5 h-5 text-red-400" />
-              <span className="text-lg">Void Pallets</span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="pt-2">
-            <UnifiedWidgetLayout
-              size={size}
-              singleContent={
-                <div className="space-y-4">
-                  {/* 統計摘要 */}
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="bg-slate-700/30 rounded-lg p-3">
-                      <div className="text-2xl font-bold text-purple-400">{stats.today_voided}</div>
-                      <div className="text-xs text-slate-400">Today</div>
-                    </div>
-                    <div className="bg-slate-700/30 rounded-lg p-3">
-                      <div className="text-2xl font-bold text-purple-400">{stats.this_week_voided}</div>
-                      <div className="text-xs text-slate-400">This Week</div>
-                    </div>
-                  </div>
-
-                  {/* 最近作廢記錄 */}
-                  <div className="space-y-2">
-                    <h4 className="text-sm font-medium text-slate-400">Recent Voids</h4>
-                    {loading ? (
-                      <div className="animate-pulse space-y-2">
-                        {[1, 2, 3].map(i => (
-                          <div key={i} className="h-12 bg-slate-700/30 rounded-lg"></div>
-                        ))}
-                      </div>
-                    ) : recentVoids.length === 0 ? (
-                      <div className="text-center py-4 text-slate-500">No recent voids</div>
-                    ) : (
-                      <div className="space-y-1">
-                        {recentVoids.map((record) => (
-                          <TableRow key={record.uuid}>
-                            <div>
-                              <div className="font-medium text-purple-400">{record.plt_num}</div>
-                              <div className="text-xs text-purple-300">{record.reason}</div>
-                            </div>
-                            <div className="text-right">
-                              <div className="text-xs text-purple-300">{format(new Date(record.time), 'MM/dd')}</div>
-                              <div className="text-xs text-purple-200">{format(new Date(record.time), 'HH:mm')}</div>
-                            </div>
-                          </TableRow>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              }
-            />
-          </CardContent>
-        </WidgetCard>
-      </motion.div>
-    );
-  }
 
   // 5x5 - 顯示圖表統計
   return (
@@ -222,7 +137,7 @@ export const VoidPalletWidget = React.memo(function VoidPalletWidget({ widget, i
       animate={{ opacity: 1, y: 0 }}
       className="h-full"
     >
-      <WidgetCard size={widget.config.size} widgetType="VOID_PALLET" isEditMode={isEditMode} className="hover:border-red-400/50 transition-all duration-300">
+      <WidgetCard widgetType="VOID_PALLET" isEditMode={isEditMode} className="hover:border-red-400/50 transition-all duration-300">
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center gap-2">
             <NoSymbolIcon className="w-6 h-6 text-red-400" />
@@ -231,7 +146,7 @@ export const VoidPalletWidget = React.memo(function VoidPalletWidget({ widget, i
         </CardHeader>
         <CardContent className="flex-1 min-h-0">
           <UnifiedWidgetLayout
-            size={size}
+
             tableData={recentVoids}
             renderTableRow={(record) => (
               <TableRow key={record.uuid}>

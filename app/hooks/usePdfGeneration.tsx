@@ -66,7 +66,7 @@ interface UsePdfGenerationReturn {
  *   components: components,
  *   filenames: filenames,
  *   batchSize: 5,
- *   onProgress: (current, total) => console.log(`${current}/${total}`)
+ *   onProgress: (current, total) => process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`${current}/${total}`)
  * });
  * ```
  */

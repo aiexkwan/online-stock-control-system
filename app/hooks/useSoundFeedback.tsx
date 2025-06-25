@@ -23,6 +23,7 @@ export function useSoundFeedback(options: SoundOptions = {}) {
     
     return () => {
       // Capture the current ref values to avoid stale closure issues
+      // eslint-disable-next-line react-hooks/exhaustive-deps
       const oscillator = oscillatorRef.current;
       const audioContext = audioContextRef.current;
       

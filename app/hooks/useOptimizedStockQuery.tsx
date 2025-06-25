@@ -29,7 +29,7 @@ export const useOptimizedStockQuery = () => {
 
       if (!v2Error && v2Data && v2Data.length > 0) {
         const result = v2Data[0];
-        console.log(`[OptimizedQuery] 查詢成功，數據來源: ${result.is_from_mv ? '物化視圖' : '實時查詢'}`);
+        process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`[OptimizedQuery] 查詢成功，數據來源: ${result.is_from_mv ? '物化視圖' : '實時查詢'}`);
         
         return {
           plt_num: result.plt_num,
@@ -45,7 +45,7 @@ export const useOptimizedStockQuery = () => {
 
       // 如果 V2 函數不存在，回退到 V1
       if (v2Error && v2Error.code === '42883') { // function does not exist
-        console.log('[OptimizedQuery] V2 函數不存在，回退到 V1');
+        process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[OptimizedQuery] V2 函數不存在，回退到 V1');
         
         const { data, error } = await supabase.rpc('search_pallet_optimized', {
           p_search_type: searchType,
@@ -135,7 +135,7 @@ export const useOptimizedStockQuery = () => {
         return false;
       }
 
-      console.log('[OptimizedQuery] 物化視圖刷新成功');
+      process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[OptimizedQuery] 物化視圖刷新成功');
       return true;
     } catch (error) {
       console.error('[OptimizedQuery] 刷新視圖異常:', error);
@@ -153,7 +153,7 @@ export const useOptimizedStockQuery = () => {
         return false;
       }
 
-      console.log('[OptimizedQuery] 智能刷新完成');
+      process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[OptimizedQuery] 智能刷新完成');
       return true;
     } catch (error) {
       console.error('[OptimizedQuery] 智能刷新異常:', error);
@@ -171,7 +171,7 @@ export const useOptimizedStockQuery = () => {
         return false;
       }
 
-      console.log('[OptimizedQuery] 強制同步完成:', data);
+      process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[OptimizedQuery] 強制同步完成:', data);
       return true;
     } catch (error) {
       console.error('[OptimizedQuery] 強制同步異常:', error);

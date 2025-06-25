@@ -7,7 +7,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { TrendingUp, TrendingDown, Package, AlertCircle, Calendar } from 'lucide-react';
-import { WidgetComponentProps, WidgetSize } from '@/app/types/dashboard';
+import { WidgetComponentProps } from '@/app/types/dashboard';
 import { useWidgetData } from '@/app/admin/hooks/useWidgetData';
 import { createClient } from '@/app/utils/supabase/client';
 import { dialogStyles, iconColors } from '@/app/utils/dialogStyles';
@@ -27,7 +27,6 @@ export const EnhancedStatsCardWidget = React.memo(function EnhancedStatsCardWidg
   const [error, setError] = useState<string | null>(null);
   const [timeRange, setTimeRange] = useState(widget.config.timeRange || '7d');
   
-  const size = widget.config.size || WidgetSize.MEDIUM;
 
   const loadData = useCallback(async () => {
     try {
@@ -119,7 +118,7 @@ export const EnhancedStatsCardWidget = React.memo(function EnhancedStatsCardWidg
     } finally {
       setLoading(false);
     }
-  }, [widget.config, timeRange, size]);
+  }, [widget.config, timeRange]);
 
   useWidgetData({ loadFunction: loadData, isEditMode });
 
@@ -142,78 +141,8 @@ export const EnhancedStatsCardWidget = React.memo(function EnhancedStatsCardWidg
   };
 
   // 小尺寸 - 只顯示數值
-  if (size === WidgetSize.SMALL) {
-    return (
-      <Card className={`h-full bg-slate-900/95 backdrop-blur-xl border border-slate-700/50 shadow-2xl overflow-hidden ${isEditMode ? 'border-dashed border-2 border-blue-500/50' : ''}`}>
-        <CardContent className="h-full flex flex-col items-center justify-center p-4 overflow-hidden">
-          {loading ? (
-            <div className="animate-pulse">
-              <div className="h-8 bg-slate-700 rounded w-16 mb-2"></div>
-              <div className="h-4 bg-slate-700 rounded w-12"></div>
-            </div>
-          ) : error ? (
-            <div className="text-red-400 text-xs text-center">{error}</div>
-          ) : (
-            <div className="text-center">
-              {getIcon()}
-              <div className="text-xl font-bold text-white mt-1">{data.value}</div>
-              <p className="text-xs text-slate-400 truncate px-2">{data.label}</p>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-    );
-  }
 
   // 中尺寸 - 顯示數值、趨勢和時間選擇器
-  if (size === WidgetSize.MEDIUM) {
-    return (
-      <Card className={`h-full bg-slate-900/95 backdrop-blur-xl border border-slate-700/50 shadow-2xl overflow-hidden ${isEditMode ? 'border-dashed border-2 border-blue-500/50' : ''}`}>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <div className="flex items-center gap-2">
-            {getIcon()}
-            <CardTitle className="text-sm font-medium bg-gradient-to-r from-blue-300 via-cyan-300 to-blue-200 bg-clip-text text-transparent">
-              {'title' in widget ? widget.title : 'Stats'}
-            </CardTitle>
-          </div>
-          <select 
-            value={timeRange} 
-            onChange={(e) => setTimeRange(e.target.value)}
-            className="w-20 h-7 text-xs bg-slate-800 border-slate-700 rounded-md text-white"
-          >
-            <option value="1d">1D</option>
-            <option value="7d">7D</option>
-            <option value="30d">30D</option>
-          </select>
-        </CardHeader>
-        <CardContent>
-          {loading ? (
-            <div className="animate-pulse">
-              <div className="h-10 bg-slate-700 rounded w-24 mb-2"></div>
-              <div className="h-4 bg-slate-700 rounded w-32"></div>
-            </div>
-          ) : error ? (
-            <div className="text-red-400 text-sm">{error}</div>
-          ) : (
-            <div className="flex items-baseline justify-between">
-              <div>
-                <div className="text-3xl font-bold text-white">{data.value}</div>
-                {data.label && (
-                  <p className="text-sm text-slate-400">{data.label}</p>
-                )}
-              </div>
-              {data.trend !== undefined && (
-                <div className={`flex items-center gap-1 ${data.trend > 0 ? 'text-green-400' : 'text-red-400'}`}>
-                  {data.trend > 0 ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />}
-                  <span className="text-sm font-medium">{Math.abs(data.trend)}%</span>
-                </div>
-              )}
-            </div>
-          )}
-        </CardContent>
-      </Card>
-    );
-  }
 
   // 大尺寸 - 完整功能包括圖表
   return (

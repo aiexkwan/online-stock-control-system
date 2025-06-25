@@ -445,7 +445,7 @@ export const PerformanceOptimizedForm: React.FC<PerformanceOptimizedFormProps> =
   // 清理 effect - 當用戶離開頁面時清理資源
   useEffect(() => {
     return () => {
-      console.log('[PerformanceOptimizedForm] Cleaning up on unmount');
+      process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[PerformanceOptimizedForm] Cleaning up on unmount');
       // 只清除保存的數據，不要在 cleanup 中調用 setState
       // 因為組件已經 unmount，setState 會導致內存洩漏和警告
       if (businessLogic.clearSavedData) {

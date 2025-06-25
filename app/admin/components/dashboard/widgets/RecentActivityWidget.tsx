@@ -13,7 +13,7 @@ import { CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { WidgetCard } from '../WidgetCard';
 import { Activity, Package2, TruckIcon } from 'lucide-react';
 import { DocumentArrowDownIcon, ClipboardDocumentListIcon, ExclamationCircleIcon } from '@heroicons/react/24/outline';
-import { WidgetComponentProps, WidgetSize } from '@/app/types/dashboard';
+import { WidgetComponentProps } from '@/app/types/dashboard';
 import { createClient } from '@/app/utils/supabase/client';
 import { dialogStyles, iconColors } from '@/app/utils/dialogStyles';
 import { format } from 'date-fns';
@@ -37,7 +37,6 @@ export const RecentActivityWidget = React.memo(function RecentActivityWidget({ w
   const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(true);
   
-  const size = widget.config.size || WidgetSize.MEDIUM;
   const itemsPerPage = size === WidgetSize.LARGE ? 15 : 10;
   
   // 根據 action 類型返回對應的圖標
@@ -140,9 +139,6 @@ export const RecentActivityWidget = React.memo(function RecentActivityWidget({ w
     try {
       const date = fromDbTime(timestamp);
       // 在 3x3 模式下使用更精簡的時間格式
-      if (size === WidgetSize.MEDIUM) {
-        return format(date, 'MM/dd HH:mm');
-      }
       return format(date, 'MMM dd HH:mm');
     } catch {
       return 'Unknown';
@@ -150,20 +146,9 @@ export const RecentActivityWidget = React.memo(function RecentActivityWidget({ w
   };
   
   // Small size (1x1) - 不支援
-  if (size === WidgetSize.SMALL) {
-    return (
-      <WidgetCard size={widget.config.size} widgetType="RECENT_ACTIVITY" isEditMode={isEditMode}>
-        <CardContent className="p-2 h-full flex flex-col justify-center items-center">
-          <WidgetTitle size="xs" glow="gray" className="mb-1">Recent Activity</WidgetTitle>
-          <WidgetText size="large" glow="gray" className="font-medium">(N/A)</WidgetText>
-          <WidgetLabel size="xs" glow="gray" className="mt-1">1×1</WidgetLabel>
-        </CardContent>
-      </WidgetCard>
-    );
-  }
 
   return (
-    <WidgetCard size={widget.config.size} widgetType="RECENT_ACTIVITY" isEditMode={isEditMode}>
+    <WidgetCard widgetType="RECENT_ACTIVITY" isEditMode={isEditMode}>
       <div className="h-full flex flex-col">
         <CardHeader className="pb-3 flex-shrink-0">
           <div className="flex items-center justify-between">

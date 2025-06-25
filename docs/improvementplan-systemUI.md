@@ -543,6 +543,40 @@ export class PerformanceMonitor {
   - 實現 LoadingScreen（全頁）、LoadingSpinner（inline）、LoadingButton（按鈕）
   - 更新 Admin Dashboard、Home Page、Access Page 使用統一組件
   - 保留 Login 頁面獨立動畫風格
+- [x] **統一 Dialog 顯示系統** (2025-06-25 完成)
+  - 創建統一 Dialog 組件庫 (`/components/ui/notification-dialogs.tsx`)
+  - 實現 6 種 Dialog 類型：Notification、Success、Error、Warning、Delete、Info
+  - 統一淡入淡出動畫效果（200ms 進入，150ms 退出）
+  - 保持 Admin 頁面深色主題風格
+  - 已遷移組件：
+    - Void Pallet 模組：VoidConfirmDialog、BatchVoidConfirmDialog
+    - Stock Transfer 模組：KeyboardShortcutsDialog
+  - 創建測試頁面 `/test-dialogs` 展示所有 Dialog 組件
+  - 建立遷移指南文檔 (`/docs/dialog-migration-summary.md`)
+- [x] **清理舊 Widget 系統** (2025-06-25 完成)
+  - 移除所有 WidgetSize 相關代碼（enum、配置、resize 功能）
+  - 更新 59 個 widget 文件，移除 size 參數
+  - Admin Dashboard 已完全使用固定 widget 佈局（gridTemplate + gridArea）
+  - 刪除所有響應式 widget 代碼，不再需要調整功能
+- [x] **實施動態導航系統** (2025-06-25 完成)
+  - 整合 dynamic-action-bar 作為唯一導航系統
+  - 移除舊導航欄：Admin Navigation Bar、Stock Take Navigation
+  - 導航欄功能：
+    - 5 大分類：Print Label、Stock Transfer、Loading Order、Stock Take、Admin
+    - 整合 Ask Database 功能
+    - Hover 效果（desktop）/ Click 互動（mobile）
+    - 半透明背景 + backdrop-blur 效果
+  - 用戶資訊顯示：
+    - 根據時間顯示歡迎語（Good Morning/Afternoon/Evening）
+    - 從 data_id table 獲取用戶名稱和頭像（icon_url）
+    - 用戶頭像（支援自定義圖片或名稱首字母）
+    - 登出按鈕（hover 時變紅色）
+  - 位置：螢幕底部 1%（bottom-[1%]）
+  - Mobile view：用戶資訊顯示在頂部 header
+- [x] **修復 Ask Database Modal 顯示問題** (2025-06-25 完成)
+  - 更新背景為深色（bg-slate-900）
+  - 修正邊框和文字顏色以適應深色主題
+  - 確保關閉按鈕可見（白色 + hover 效果）
 
 ### 第3-4週：性能優化
 - [ ] 實施虛擬滾動

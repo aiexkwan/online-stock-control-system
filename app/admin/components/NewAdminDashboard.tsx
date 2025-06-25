@@ -23,8 +23,8 @@ import { UniversalTimeRangeSelector, TimeFrame } from '@/app/components/admin/Un
 import { AdminDashboardContent } from './dashboard/AdminDashboardContent';
 import { LoadingScreen, FadeInContainer } from '@/components/ui/loading';
 import { cn } from '@/lib/utils';
-import { MenuBar } from '@/components/ui/glow-menu';
-import UniversalChatbot from '@/app/components/admin/UniversalChatbot';
+// import { MenuBar } from '@/components/ui/glow-menu'; // Removed - using dynamic action bar
+// import UniversalChatbot from '@/app/components/admin/UniversalChatbot'; // Removed - integrated into navigation
 import { 
   HomeIcon as Home,
   BeakerIcon as Beaker,
@@ -33,7 +33,8 @@ import {
   CloudArrowUpIcon as Cloud,
   PencilSquareIcon as Pencil,
   ArchiveBoxIcon as Archive,
-  CogIcon as Cog
+  CogIcon as Cog,
+  ChartPieIcon as ChartPie
 } from '@heroicons/react/24/outline';
 
 // Dashboard themes with glow menu configuration
@@ -98,7 +99,7 @@ const DASHBOARD_THEMES = [
     id: 'analysis', 
     label: 'Analysis', 
     path: '/admin/analysis',
-    icon: Chart,
+    icon: ChartPie,
     gradient: "radial-gradient(circle, rgba(239,68,68,0.15) 0%, rgba(220,38,38,0.06) 50%, rgba(185,28,28,0) 100%)",
     iconColor: "text-red-500"
   }
@@ -202,47 +203,7 @@ export function NewAdminDashboard() {
     <LoadingScreen isLoading={isDashboardLoading}>
       <div className="min-h-screen">
         <div className="text-white min-h-screen flex flex-col overflow-x-hidden relative z-10">
-          {/* Admin Dashboard Navigation Bar */}
-        <div className="sticky top-0 z-30">
-          <div className="flex items-center justify-between h-16 px-4 sm:px-6 lg:px-8">
-            {/* Left side - Dashboard Theme Tabs with Glow Effect */}
-            <div className="hidden lg:flex items-center">
-              <MenuBar
-                items={DASHBOARD_THEMES.map(theme => ({
-                  ...theme,
-                  href: theme.path
-                }))}
-                activeItem={DASHBOARD_THEMES.find(t => t.id === currentTheme)?.label || 'Injection'}
-                onItemClick={(label) => {
-                  const theme = DASHBOARD_THEMES.find(t => t.label === label);
-                  if (theme) router.push(theme.path);
-                }}
-              />
-            </div>
-
-
-            {/* Right side - Mobile menu button */}
-            <div className="flex items-center gap-2">
-              {/* Mobile Dashboard Theme Selector - Keep simple dropdown for mobile */}
-              <div className="lg:hidden">
-                <select 
-                  value={currentTheme}
-                  onChange={(e) => {
-                    const theme = DASHBOARD_THEMES.find(t => t.id === e.target.value);
-                    if (theme) router.push(theme.path);
-                  }}
-                  className="bg-slate-700/50 text-white text-sm rounded-lg px-3 py-2 border border-slate-600/50"
-                >
-                  {DASHBOARD_THEMES.map((theme) => (
-                    <option key={theme.id} value={theme.id}>{theme.label}</option>
-                  ))}
-                </select>
-              </div>
-
-            </div>
-          </div>
-
-        </div>
+          {/* Navigation removed - using dynamic action bar */}
 
         {/* Dashboard Content Area */}
         <div className="flex-1 pb-8">
@@ -284,8 +245,7 @@ export function NewAdminDashboard() {
         voidState={voidState}
       />
       
-      {/* Universal Chatbot */}
-      <UniversalChatbot />
+      {/* Universal Chatbot removed - integrated into navigation bar */}
       </div>
     </LoadingScreen>
   );

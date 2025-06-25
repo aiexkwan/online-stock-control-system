@@ -27,7 +27,7 @@ export async function getUniqueAcoOrderRefs(): Promise<string[]> {
   }
 
     if (!data || data.length === 0) {
-      console.log('No ACO order references found in database.');
+      process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('No ACO order references found in database.');
     return [];
   }
 
@@ -104,7 +104,7 @@ export async function getAcoReportData(orderRef: string): Promise<AcoProductData
     }
     
     if (!acoCodesData || acoCodesData.length === 0) {
-      console.log(`No product codes found for orderRef ${orderRefNum}.`);
+      process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`No product codes found for orderRef ${orderRefNum}.`);
       return [];
     }
 
@@ -126,7 +126,7 @@ export async function getAcoReportData(orderRef: string): Promise<AcoProductData
     });
 
     if (uniqueProductCodes.length === 0) {
-      console.log(`No valid product codes extracted for orderRef ${orderRefNum}.`);
+      process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`No valid product codes extracted for orderRef ${orderRefNum}.`);
       return [];
     }
 
@@ -167,10 +167,10 @@ export async function getAcoReportData(orderRef: string): Promise<AcoProductData
             if (isValid(dateObj)) {
             formattedDate = format(dateObj, 'dd-MMM-yy');
           } else {
-            console.warn(`Invalid date value for generate_time: ${p.generate_time} for product ${productCode}`);
+            process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.warn(`Invalid date value for generate_time: ${p.generate_time} for product ${productCode}`);
             }
           } catch (dateError) {
-            console.warn(`Error parsing date ${p.generate_time} for product ${productCode}:`, dateError);
+            process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.warn(`Error parsing date ${p.generate_time} for product ${productCode}:`, dateError);
           }
         }
 
@@ -199,7 +199,7 @@ export async function getAcoReportData(orderRef: string): Promise<AcoProductData
     // 按產品代碼排序
     reportData.sort((a, b) => a.product_code.localeCompare(b.product_code));
 
-    console.log(`Successfully fetched ACO report data for orderRef ${orderRefNum}: ${reportData.length} products, ${reportData.reduce((sum, p) => sum + p.pallets.length, 0)} pallets`);
+    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`Successfully fetched ACO report data for orderRef ${orderRefNum}: ${reportData.length} products, ${reportData.reduce((sum, p) => sum + p.pallets.length, 0)} pallets`);
     return reportData;
 
   } catch (error) {
@@ -223,7 +223,7 @@ export async function getUniqueGrnRefs(): Promise<string[]> {
   }
 
     if (!data || data.length === 0) {
-      console.log('No GRN references found in database.');
+      process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('No GRN references found in database.');
     return [];
   }
 
@@ -280,7 +280,7 @@ export async function getMaterialCodesForGrnRef(grnRef: string): Promise<string[
     }
 
     if (!data || data.length === 0) {
-      console.log(`No material codes found for grnRef ${grnRefNum}.`);
+      process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`No material codes found for grnRef ${grnRefNum}.`);
     return [];
   }
 
@@ -384,7 +384,7 @@ export async function getGrnReportData(
     }
 
     userId = userIdData.id.toString();
-    console.log(`Found user ID ${userId} for email ${trimmedUserEmail}`);
+    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`Found user ID ${userId} for email ${trimmedUserEmail}`);
 
     // 1. Fetch GRN records for the given grn_ref and material_code
     const { data: grnRecords, error: grnError } = await supabase
@@ -399,7 +399,7 @@ export async function getGrnReportData(
     }
     
     if (!grnRecords || grnRecords.length === 0) {
-      console.log(`No GRN records found for grnRef ${grnRefNum} and materialCode ${trimmedMaterialCode}.`);
+      process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`No GRN records found for grnRef ${grnRefNum} and materialCode ${trimmedMaterialCode}.`);
       return null;
     }
 
@@ -416,9 +416,9 @@ export async function getGrnReportData(
     }));
 
     // DEBUGGING LOG START
-    console.log(`[DEBUG] GRN Ref: ${grnRefNum}, Material: ${trimmedMaterialCode}, User ID: ${userId}`);
-    console.log('[DEBUG] grnRecords from DB:', JSON.stringify(grnRecords, null, 2));
-    console.log('[DEBUG] Mapped recordsDetails:', JSON.stringify(recordsDetails, null, 2));
+    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`[DEBUG] GRN Ref: ${grnRefNum}, Material: ${trimmedMaterialCode}, User ID: ${userId}`);
+    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[DEBUG] grnRecords from DB:', JSON.stringify(grnRecords, null, 2));
+    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[DEBUG] Mapped recordsDetails:', JSON.stringify(recordsDetails, null, 2));
     // DEBUGGING LOG END
 
     // 2. Fetch material description from data_code
@@ -430,7 +430,7 @@ export async function getGrnReportData(
       .single();
 
     if (materialError) {
-      console.warn(`Could not fetch description for materialCode ${trimmedMaterialCode}:`, materialError.message);
+      process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.warn(`Could not fetch description for materialCode ${trimmedMaterialCode}:`, materialError.message);
     }
     if (materialData && materialData.description) {
       materialDescription = materialData.description;
@@ -446,13 +446,13 @@ export async function getGrnReportData(
         .single();
 
       if (supplierError) {
-        console.warn(`Could not fetch supplier name for sup_code ${supplierCode}:`, supplierError.message);
+        process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.warn(`Could not fetch supplier name for sup_code ${supplierCode}:`, supplierError.message);
       }
       if (supplierData && supplierData.supplier_name) {
         supplierName = supplierData.supplier_name;
       }
     } else {
-        console.warn('Supplier code was not found in GRN records, cannot fetch supplier name.');
+        process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.warn('Supplier code was not found in GRN records, cannot fetch supplier name.');
     }
 
     // 4. Calculate totals with proper number validation
@@ -484,7 +484,7 @@ export async function getGrnReportData(
       weight_difference: Math.round(weightDifference * 100) / 100,
     };
 
-    console.log(`Successfully generated GRN report data for grnRef ${grnRefNum}, materialCode ${trimmedMaterialCode}, userId ${userId}: ${recordsDetails.length} records`);
+    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`Successfully generated GRN report data for grnRef ${grnRefNum}, materialCode ${trimmedMaterialCode}, userId ${userId}: ${recordsDetails.length} records`);
     return result;
 
   } catch (error) {
@@ -560,14 +560,14 @@ export async function getTransactionReportData(
 
   try {
     // 1. 獲取指定日期範圍內的轉移記錄
-    console.log(`[DEBUG] Searching for transfers between ${startDate} and ${endDate}`);
+    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`[DEBUG] Searching for transfers between ${startDate} and ${endDate}`);
     
     // 🆕 修復日期查詢：處理帶時間戳的日期格式
     // 將結束日期設為當天的 23:59:59 以包含整天的記錄
     const startDateTime = `${startDate}T00:00:00.000Z`;
     const endDateTime = `${endDate}T23:59:59.999Z`;
     
-    console.log(`[DEBUG] Using datetime range: ${startDateTime} to ${endDateTime}`);
+    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`[DEBUG] Using datetime range: ${startDateTime} to ${endDateTime}`);
     
     const { data: transferRecords, error: transferError } = await supabase
       .from('record_transfer')
@@ -582,7 +582,7 @@ export async function getTransactionReportData(
       .lte('tran_date', endDateTime)
       .order('tran_date', { ascending: true });
 
-    console.log(`[DEBUG] Transfer query result:`, { 
+    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`[DEBUG] Transfer query result:`, { 
       recordCount: transferRecords?.length || 0, 
       error: transferError?.message,
       sampleRecord: transferRecords?.[0] 
@@ -595,10 +595,10 @@ export async function getTransactionReportData(
 
     // 如果沒有轉移記錄，返回空數據結構
     if (!transferRecords || transferRecords.length === 0) {
-      console.log(`No transfer records found for date range ${startDate} to ${endDate}`);
+      process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`No transfer records found for date range ${startDate} to ${endDate}`);
       
       // 🆕 嘗試更寬鬆的日期查詢，以防日期格式問題
-      console.log(`[DEBUG] Trying broader date search...`);
+      process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`[DEBUG] Trying broader date search...`);
       const { data: allRecords, error: allError } = await supabase
         .from('record_transfer')
         .select('tran_date')
@@ -606,7 +606,7 @@ export async function getTransactionReportData(
         .limit(10);
       
       if (allRecords && allRecords.length > 0) {
-        console.log(`[DEBUG] Sample dates in database:`, allRecords.map(r => r.tran_date));
+        process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`[DEBUG] Sample dates in database:`, allRecords.map(r => r.tran_date));
       }
       
       return {
@@ -626,7 +626,7 @@ export async function getTransactionReportData(
       .in('plt_num', palletNumbers);
 
     if (palletError) {
-      console.warn('Error fetching pallet info:', palletError.message);
+      process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.warn('Error fetching pallet info:', palletError.message);
     }
 
     // 3. 獲取操作員資訊 - 確保 operator_id 是 number 類型
@@ -637,7 +637,7 @@ export async function getTransactionReportData(
       .in('id', operatorIds);
 
     if (operatorError) {
-      console.warn('Error fetching operator info:', operatorError.message);
+      process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.warn('Error fetching operator info:', operatorError.message);
     }
 
     // 4. 創建查找映射
@@ -701,7 +701,7 @@ export async function getTransactionReportData(
       total_pallets: palletNumbers.length,
     };
 
-    console.log(`Successfully fetched transaction report data: ${transfers.length} transfers, ${palletNumbers.length} unique pallets`);
+    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`Successfully fetched transaction report data: ${transfers.length} transfers, ${palletNumbers.length} unique pallets`);
     return result;
 
   } catch (error) {

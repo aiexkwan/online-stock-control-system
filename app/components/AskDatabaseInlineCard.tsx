@@ -72,7 +72,7 @@ export default function AskDatabaseInlineCard() {
     setQuestion('');
 
     try {
-      console.log('[AskDatabaseInlineCard] Submitting question:', currentQuestion);
+      process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[AskDatabaseInlineCard] Submitting question:', currentQuestion);
       
       const response = await fetch('/api/ask-database', {
         method: 'POST',
@@ -83,7 +83,7 @@ export default function AskDatabaseInlineCard() {
         }),
       });
 
-      console.log('[AskDatabaseInlineCard] Response status:', response.status);
+      process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[AskDatabaseInlineCard] Response status:', response.status);
 
       if (!response.ok) {
         const errorData = await response.json();
@@ -92,7 +92,7 @@ export default function AskDatabaseInlineCard() {
       }
 
       const result: QueryResult = await response.json();
-      console.log('[AskDatabaseInlineCard] Success result:', result);
+      process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[AskDatabaseInlineCard] Success result:', result);
       
       // Add AI response message
       const aiMessage: ChatMessage = {

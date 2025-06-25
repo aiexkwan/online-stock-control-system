@@ -50,7 +50,7 @@ export default function RegisterPage() {
 
     try {
       const result = await unifiedAuth.signUp(formData.email, formData.password);
-      console.log('[RegisterPage] Registration result:', result);
+      process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[RegisterPage] Registration result:', result);
       
       // 註冊成功，顯示電郵確認訊息
       setRegisteredEmail(formData.email);

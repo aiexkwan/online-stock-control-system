@@ -21,7 +21,7 @@ export async function uploadPalletLabelPdfAction(
   // For simplicity, using the provided fileName, but consider potential overwrites or structure.
   const filePath = `${fileName}`;
 
-  console.log(`[uploadPalletLabelPdfAction] Attempting to upload ${filePath} to bucket ${bucketName}, size: ${fileContent.byteLength}`);
+  process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`[uploadPalletLabelPdfAction] Attempting to upload ${filePath} to bucket ${bucketName}, size: ${fileContent.byteLength}`);
 
   try {
     const { data, error } = await supabase.storage
@@ -36,7 +36,7 @@ export async function uploadPalletLabelPdfAction(
       return { success: false, error: `Storage upload failed: ${error.message}` };
     }
 
-    console.log(`[uploadPalletLabelPdfAction] File ${filePath} uploaded successfully to ${bucketName}. Path: ${data?.path}`);
+    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`[uploadPalletLabelPdfAction] File ${filePath} uploaded successfully to ${bucketName}. Path: ${data?.path}`);
     return { success: true, filePath: data?.path };
 
   } catch (e: any) {

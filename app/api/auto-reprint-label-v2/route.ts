@@ -77,10 +77,10 @@ export async function POST(request: NextRequest) {
   let palletNum: string | undefined;
   
   try {
-    console.log('[Auto Reprint V2 API] Starting optimized auto reprint process...');
+    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[Auto Reprint V2 API] Starting optimized auto reprint process...');
     const data: AutoReprintRequest = await request.json();
     
-    console.log('[Auto Reprint V2 API] Received request data:', data);
+    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[Auto Reprint V2 API] Received request data:', data);
 
     // Validate input
     if (!data.productCode || !data.quantity || !data.operatorClockNum) {
@@ -96,12 +96,12 @@ export async function POST(request: NextRequest) {
     }
 
     // Get product information
-    console.log(`[Auto Reprint V2 API] Getting product info for: ${data.productCode}`);
+    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`[Auto Reprint V2 API] Getting product info for: ${data.productCode}`);
     const productInfo = await getProductInfo(data.productCode);
-    console.log('[Auto Reprint V2 API] Product info retrieved:', productInfo);
+    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[Auto Reprint V2 API] Product info retrieved:', productInfo);
 
     // Generate pallet number using V6 optimized method
-    console.log('[Auto Reprint V2 API] Generating pallet number using V6 optimization...');
+    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[Auto Reprint V2 API] Generating pallet number using V6 optimization...');
     
     const generationResult = await generateOptimizedPalletNumbersV6({
       count: 1,
@@ -114,14 +114,14 @@ export async function POST(request: NextRequest) {
     }
     
     // Log method used
-    console.log('[Auto Reprint V2 API] Generation method:', generationResult.method);
+    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[Auto Reprint V2 API] Generation method:', generationResult.method);
     
     palletNum = generationResult.palletNumbers[0];
     const seriesValue = generationResult.series[0]; // V6 includes series
-    console.log(`[Auto Reprint V2 API] Generated pallet: ${palletNum}, series: ${seriesValue}`);
+    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`[Auto Reprint V2 API] Generated pallet: ${palletNum}, series: ${seriesValue}`);
 
     // Prepare database records
-    console.log('[Auto Reprint V2 API] Preparing database records...');
+    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[Auto Reprint V2 API] Preparing database records...');
     const palletInfoRecord: QcPalletInfoPayload = {
       plt_num: palletNum,
       series: seriesValue,
@@ -147,7 +147,7 @@ export async function POST(request: NextRequest) {
     
     // Set inventory field based on original pallet location
     const mappedLocation = mapLocationToDbField(data.originalLocation);
-    console.log(`[Auto Reprint V2 API] Location mapping: "${data.originalLocation}" -> "${mappedLocation}"`);
+    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`[Auto Reprint V2 API] Location mapping: "${data.originalLocation}" -> "${mappedLocation}"`);
     inventoryRecord[mappedLocation] = data.quantity;
 
     const databasePayload: QcDatabaseEntryPayload = {
@@ -157,17 +157,17 @@ export async function POST(request: NextRequest) {
     };
 
     // Insert database records
-    console.log('[Auto Reprint V2 API] Inserting database records...');
+    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[Auto Reprint V2 API] Inserting database records...');
     const dbResult = await createQcDatabaseEntriesWithTransaction(databasePayload, data.operatorClockNum);
     if (dbResult.error) {
       console.error('[Auto Reprint V2 API] Database operation failed:', dbResult.error);
       throw new Error(`Database operation failed: ${dbResult.error}`);
     }
-    console.log('[Auto Reprint V2 API] Database records inserted successfully');
+    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[Auto Reprint V2 API] Database records inserted successfully');
 
     // Update original pallet's history record
     try {
-      console.log('[Auto Reprint V2 API] Updating original pallet history record...');
+      process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[Auto Reprint V2 API] Updating original pallet history record...');
       
       // Find original pallet's "Partially Damaged" record
       const { data: historyRecords, error: findError } = await supabase
@@ -179,10 +179,10 @@ export async function POST(request: NextRequest) {
         .limit(1);
 
       if (findError) {
-        console.warn('[Auto Reprint V2 API] Failed to find original history record:', findError);
+        process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.warn('[Auto Reprint V2 API] Failed to find original history record:', findError);
       } else if (historyRecords && historyRecords.length > 0) {
         const originalRecord = historyRecords[0];
-        console.log('[Auto Reprint V2 API] Found original history record:', originalRecord);
+        process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[Auto Reprint V2 API] Found original history record:', originalRecord);
         
         // Update remark, replace "XX" with actual new pallet number
         if (originalRecord.remark && originalRecord.remark.includes('/XX')) {
@@ -194,25 +194,25 @@ export async function POST(request: NextRequest) {
             .eq('uuid', originalRecord.uuid);
 
           if (updateError) {
-            console.warn('[Auto Reprint V2 API] Failed to update original history record:', updateError);
+            process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.warn('[Auto Reprint V2 API] Failed to update original history record:', updateError);
           } else {
-            console.log('[Auto Reprint V2 API] Successfully updated original history record:', {
+            process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[Auto Reprint V2 API] Successfully updated original history record:', {
               original_remark: originalRecord.remark,
               updated_remark: updatedRemark
             });
           }
         }
       } else {
-        console.log('[Auto Reprint V2 API] No "Partially Damaged" history record found for original pallet');
+        process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[Auto Reprint V2 API] No "Partially Damaged" history record found for original pallet');
       }
     } catch (historyUpdateError: any) {
-      console.warn('[Auto Reprint V2 API] Error updating original history record:', historyUpdateError);
+      process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.warn('[Auto Reprint V2 API] Error updating original history record:', historyUpdateError);
       // Don't interrupt main flow
     }
 
     // Update stock_level table
     try {
-      console.log('[Auto Reprint V2 API] Updating stock_level for product:', {
+      process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[Auto Reprint V2 API] Updating stock_level for product:', {
         product_code: productInfo.code,
         quantity: data.quantity,
         operation: 'auto_reprint'
@@ -225,16 +225,16 @@ export async function POST(request: NextRequest) {
       });
 
       if (stockError) {
-        console.warn('[Auto Reprint V2 API] Stock level update failed:', stockError);
+        process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.warn('[Auto Reprint V2 API] Stock level update failed:', stockError);
       } else {
-        console.log('[Auto Reprint V2 API] Stock level updated successfully:', stockResult);
+        process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[Auto Reprint V2 API] Stock level updated successfully:', stockResult);
       }
     } catch (stockUpdateError: any) {
-      console.warn('[Auto Reprint V2 API] Stock level update error:', stockUpdateError);
+      process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.warn('[Auto Reprint V2 API] Stock level update error:', stockUpdateError);
     }
 
     // Return success data for client-side PDF generation
-    console.log('[Auto Reprint V2 API] Preparing data for client-side PDF generation...');
+    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[Auto Reprint V2 API] Preparing data for client-side PDF generation...');
     
     // Prepare QC input data (same format as QC Label)
     const qcInputData = {
@@ -250,15 +250,15 @@ export async function POST(request: NextRequest) {
       productType: productInfo.type
     };
 
-    console.log('[Auto Reprint V2 API] QC input data prepared:', qcInputData);
+    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[Auto Reprint V2 API] QC input data prepared:', qcInputData);
     
     // Confirm pallet usage in V6 system (since DB transaction was successful)
     const confirmResult = await confirmPalletUsage([palletNum], supabase);
     if (!confirmResult) {
-      console.warn('[Auto Reprint V2 API] Failed to confirm pallet usage for v6 system');
+      process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.warn('[Auto Reprint V2 API] Failed to confirm pallet usage for v6 system');
     }
     
-    console.log(`[Auto Reprint V2 API] Returning QC input data for client-side PDF generation`);
+    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`[Auto Reprint V2 API] Returning QC input data for client-side PDF generation`);
     
     return NextResponse.json({
       success: true,
@@ -278,7 +278,7 @@ export async function POST(request: NextRequest) {
     if (palletNum) {
       const releaseResult = await releasePalletReservation([palletNum], supabase);
       if (!releaseResult) {
-        console.warn('[Auto Reprint V2 API] Failed to release pallet reservation after error');
+        process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.warn('[Auto Reprint V2 API] Failed to release pallet reservation after error');
       }
     }
     

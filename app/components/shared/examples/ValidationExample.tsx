@@ -23,7 +23,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
  */
 export function ValidationExample() {
   const handleSubmit = async (data: any) => {
-    console.log('Form submitted:', data);
+    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('Form submitted:', data);
     // Handle form submission
   };
   

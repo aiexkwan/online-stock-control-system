@@ -65,7 +65,7 @@ export const useDatabaseOperationsV2 = (): UseDatabaseOperationsReturn => {
     try {
       const result = await warmupPalletBuffer(20);
       if (!result.success) {
-        console.warn('Buffer warmup failed:', result.message);
+        process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.warn('Buffer warmup failed:', result.message);
       }
     } catch (error) {
       console.error('Buffer warmup error:', error);
@@ -127,7 +127,7 @@ export const useDatabaseOperationsV2 = (): UseDatabaseOperationsReturn => {
       toast.success(`Generated ${count} pallet numbers successfully`);
       
       // V6 已經返回正確排序的托盤編號，無需再排序
-      console.log('[DatabaseOperations] Generated pallet numbers:', result.palletNumbers);
+      process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[DatabaseOperations] Generated pallet numbers:', result.palletNumbers);
       
       return {
         palletNumbers: result.palletNumbers,

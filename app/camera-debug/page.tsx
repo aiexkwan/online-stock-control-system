@@ -12,7 +12,7 @@ export default function CameraDebugPage() {
     const timestamp = new Date().toLocaleTimeString();
     const logEntry = `[${timestamp}] ${message}`;
     setLogs(prev => [...prev, logEntry]);
-    console.log(`[CameraDebug] ${message}`);
+    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`[CameraDebug] ${message}`);
   };
 
   const startCameraTest = async () => {

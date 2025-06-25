@@ -106,7 +106,7 @@ export async function generateOptimizedPalletNumbers(
       });
       
       if (!error && data && Array.isArray(data) && data.length === count) {
-        console.log(`[PalletGeneration] Success with v4 RPC on attempt ${attempt + 1}`);
+        process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`[PalletGeneration] Success with v4 RPC on attempt ${attempt + 1}`);
         const series = generateSeries(count);
         return {
           palletNumbers: data,
@@ -139,7 +139,7 @@ export async function generateOptimizedPalletNumbers(
       });
       
       if (!error && data && Array.isArray(data) && data.length === count) {
-        console.log(`[PalletGeneration] Success with v3 RPC on attempt ${attempt + 1}`);
+        process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`[PalletGeneration] Success with v3 RPC on attempt ${attempt + 1}`);
         const series = generateSeries(count);
         return {
           palletNumbers: data,
@@ -162,7 +162,7 @@ export async function generateOptimizedPalletNumbers(
   
   // 本地回退機制
   if (enableFallback) {
-    console.warn('[PalletGeneration] RPC failed, using local fallback');
+    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.warn('[PalletGeneration] RPC failed, using local fallback');
     try {
       const palletNumbers = await generatePalletNumbersLocally(count, supabase);
       const series = generateSeries(count);

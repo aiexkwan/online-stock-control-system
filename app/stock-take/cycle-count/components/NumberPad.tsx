@@ -87,7 +87,7 @@ export default function NumberPad({ onConfirm, onCancel, isLoading = false }: Nu
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [value, isLoading, handleClear, handleConfirm, handleNumberClick, onCancel]);
+  }, [value, isLoading, handleClear, handleConfirm, handleNumberClick, handleBackspace, onCancel]);
 
   // 處理輸入框變更
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {

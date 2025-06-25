@@ -27,7 +27,7 @@ export async function userExistsInSupabaseAuth(supabase: SupabaseClient, clockNu
   // const supabase = createServerSupabaseClient(); // REMOVED: Use passed-in client
   try {
     const email = clockNumberToEmail(clockNumber);
-    console.log(`[userExistsInSupabaseAuth] Checking if user exists: ${email}`);
+    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`[userExistsInSupabaseAuth] Checking if user exists: ${email}`);
     const { error } = await supabase.auth.signInWithOtp({
       email,
       options: { shouldCreateUser: false },
@@ -56,7 +56,7 @@ export async function migrateUserToSupabaseAuth(
   const supabaseAdmin = getAdminClient(); // 用於讀取 data_id 和可能的管理操作
 
   try {
-    console.log(`[migrateUserToSupabaseAuth] Starting migration for user: ${clockNumber}`);
+    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`[migrateUserToSupabaseAuth] Starting migration for user: ${clockNumber}`);
     
     // 1. 從 data_id 表獲取用戶資料 (使用 admin client 可能更合適，如果 RLS 限制了普通服務器 client)
     const { data: userData, error: userError } = await supabaseAdmin
@@ -127,7 +127,7 @@ export async function signInWithSupabaseAuth(
 }> {
   try {
     const email = clockNumberToEmail(clockNumber);
-    console.log(`[signInWithSupabaseAuth] Attempting login for ${email}`);
+    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`[signInWithSupabaseAuth] Attempting login for ${email}`);
     
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
@@ -141,10 +141,10 @@ export async function signInWithSupabaseAuth(
       console.error('[signInWithSupabaseAuth] Login error:', error);
       
       if (error.message.includes('Invalid login credentials')) {
-        console.log('[signInWithSupabaseAuth] Invalid credentials, checking if user exists in Auth');
+        process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[signInWithSupabaseAuth] Invalid credentials, checking if user exists in Auth');
         const userExists = await userExistsInSupabaseAuth(supabase, clockNumber);
         if (!userExists) {
-          console.log('[signInWithSupabaseAuth] User does not exist in Auth, might need migration');
+          process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[signInWithSupabaseAuth] User does not exist in Auth, might need migration');
         }
       }
       
@@ -159,8 +159,8 @@ export async function signInWithSupabaseAuth(
     const { user: authUser, session } = data;
     const metadata = authUser.user_metadata || {};
     
-    console.log(`[signInWithSupabaseAuth] User ${clockNumber} logged in successfully`);
-    console.log('[signInWithSupabaseAuth] Session:', JSON.stringify(session, null, 2));
+    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`[signInWithSupabaseAuth] User ${clockNumber} logged in successfully`);
+    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[signInWithSupabaseAuth] Session:', JSON.stringify(session, null, 2));
     
     // 構建用戶資料
     const userData: UserData = {
@@ -181,7 +181,7 @@ export async function signInWithSupabaseAuth(
     const needsPasswordChange = metadata.needs_password_change === true;
     
     if (needsPasswordChange) {
-      console.log(`[signInWithSupabaseAuth] First login (needs password change) detected for user: ${clockNumber}`);
+      process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`[signInWithSupabaseAuth] First login (needs password change) detected for user: ${clockNumber}`);
     }
 
     // 確保 session 已經設置好
@@ -216,7 +216,7 @@ export async function updatePasswordWithSupabaseAuth(
 }> {
   try {
     // 1. 更新 Supabase Auth 中的用戶密碼
-    console.log('[updatePasswordWithSupabaseAuth] Attempting to update password in Supabase Auth');
+    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[updatePasswordWithSupabaseAuth] Attempting to update password in Supabase Auth');
     const { error: updateError } = await supabaseActionClient.auth.updateUser({
       password: newPassword
     });
@@ -225,10 +225,10 @@ export async function updatePasswordWithSupabaseAuth(
       console.error('[updatePasswordWithSupabaseAuth] Error updating password in Supabase Auth:', updateError);
       return { success: false, error: `Supabase Auth password update failed: ${updateError.message}` };
     }
-    console.log('[updatePasswordWithSupabaseAuth] Successfully updated password in Supabase Auth');
+    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[updatePasswordWithSupabaseAuth] Successfully updated password in Supabase Auth');
 
     // 2. 清除 needs_password_change 標誌
-    console.log('[updatePasswordWithSupabaseAuth] Attempting to clear needs_password_change flag');
+    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[updatePasswordWithSupabaseAuth] Attempting to clear needs_password_change flag');
     const { error: updateMetaError } = await supabaseActionClient.auth.updateUser({
       data: { needs_password_change: false }
     });
@@ -238,7 +238,7 @@ export async function updatePasswordWithSupabaseAuth(
       console.error('[updatePasswordWithSupabaseAuth] Error clearing needs_password_change flag:', updateMetaError);
       // 可以選擇返回一個特定的錯誤或警告，但主要操作（密碼更改）已成功
     } else {
-      console.log('[updatePasswordWithSupabaseAuth] Successfully cleared needs_password_change flag');
+      process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[updatePasswordWithSupabaseAuth] Successfully cleared needs_password_change flag');
     }
     
     // 移除舊系統 data_id 表的密碼更新邏輯 (如果需要保留，請確保使用正確的 client 和邏輯)
@@ -269,6 +269,6 @@ export async function signOut(supabaseInstance?: SupabaseClient): Promise<void> 
   if (error) {
     console.error('[signOut] Error signing out:', error);
   } else {
-    console.log('[signOut] User signed out process initiated.');
+    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[signOut] User signed out process initiated.');
   }
 } 

@@ -53,6 +53,17 @@
 - `ProductMixChartWidget.tsx`: 產品組合圖表
 - `PendingGrnWidget.tsx`: 待處理 GRN
 
+**倉庫管理類（Warehouse 頁面專用）**
+- `AwaitLocationQtyWidget.tsx`: Await 位置數量統計
+- `YesterdayTransferCountWidget.tsx`: 昨日轉移數量（含趨勢）
+- `StillInAwaitWidget.tsx`: 仍在 Await 的數量
+- `StillInAwaitPercentageWidget.tsx`: 仍在 Await 的百分比
+- `OrderStateListWidget.tsx`: 訂單狀態列表
+- `TransferTimeDistributionWidget.tsx`: 轉移時間分布圖
+- `EmptyPlaceholderWidget.tsx`: 空白佔位 Widget
+- `WarehouseTransferListWidget.tsx`: 倉庫轉移列表
+- `WarehouseWorkLevelAreaChart.tsx`: 倉庫工作量區域圖
+
 **操作類**
 - `InventorySearchWidget.tsx`: 即時庫存搜尋
 - `VoidPalletWidget.tsx`: 作廢棧板操作
@@ -115,13 +126,24 @@
 - 專門嘅生產明細追蹤
 
 ### 3. Warehouse（倉庫管理）
-**主要功能**: 倉庫位置管理同庫存監控
-- Warehouse Location Map: 倉庫位置熱力圖（WarehouseHeatmap）
-- Total Stock/Locations Used: 庫存同位置統計
-- In Transit/Capacity: 運輸中數量同容量使用率
-- Inventory Levels/Location Utilization: 庫存水平視覺化
-- Warehouse Alerts: 倉庫警報系統
-- Recent Movements: 最近移動記錄
+**主要功能**: 倉庫操作監控同轉移管理
+
+#### 第一行 Widgets
+- **Await Location Qty**: 顯示 record_inventory 表內 await 欄位的總和
+- **Yesterday Transfer Count**: 顯示昨日完成的轉移總數（支援 time frame selector）
+- **Still In Await**: 顯示昨日完成但仍在 await 位置的數量
+- **Still In Await %**: 顯示昨日完成但仍在 await 位置的百分比
+
+#### 第二行 Widgets
+- **Order State List**: 顯示最新訂單狀態列表（已加載/未加載數量）
+- **Transfer Time Distribution**: 以線形圖顯示轉移時間分布（支援 time frame selector）
+- **Empty Placeholder**: 預留空間
+
+#### 第三行 Widgets
+- **Warehouse Transfers**: 列表顯示倉庫部門的轉移記錄（時間、棧板號、操作員）
+- **Warehouse Work Level**: Area Chart 顯示倉庫部門員工的 move 活動量
+
+所有 widgets 支援頁面級別的 time frame selector，使用 GraphQL 查詢優先。
 
 ### 4. Upload（文件上傳）
 **特色：3D Folder UI**

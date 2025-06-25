@@ -57,8 +57,8 @@ interface QueryResult {
   timestamp: string;
 }
 
-console.log('[Ask Database] 🚀 OpenAI SQL Generation Mode - Build 2025-01-03');
-console.log('[Ask Database] ✅ Using OpenAI for SQL generation and natural language responses');
+process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[Ask Database] 🚀 OpenAI SQL Generation Mode - Build 2025-01-03');
+process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[Ask Database] ✅ Using OpenAI for SQL generation and natural language responses');
 
 export async function POST(request: NextRequest) {
   const startTime = Date.now();
@@ -66,14 +66,14 @@ export async function POST(request: NextRequest) {
   let userName: string | null = null;
   
   try {
-    console.log('[Ask Database] 🚀 OpenAI Mode - Request received');
+    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[Ask Database] 🚀 OpenAI Mode - Request received');
     
     const { question, sessionId } = await request.json();
-    console.log('[Ask Database] Question:', question);
-    console.log('[Ask Database] Session ID:', sessionId);
+    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[Ask Database] Question:', question);
+    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[Ask Database] Session ID:', sessionId);
 
     // 1. 並行執行權限檢查和會話歷史獲取
-    console.log('[Ask Database] Starting parallel operations...');
+    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[Ask Database] Starting parallel operations...');
     const [hasPermission, conversationHistory, userInfo] = await Promise.all([
       checkUserPermission(),
       Promise.resolve(getConversationHistory(sessionId)),
@@ -81,7 +81,7 @@ export async function POST(request: NextRequest) {
     ]);
 
     if (!hasPermission) {
-      console.log('[Ask Database] Permission denied');
+      process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[Ask Database] Permission denied');
       return NextResponse.json(
         { error: 'You do not have permission to use the database query feature' },
         { status: 403 }
@@ -90,14 +90,14 @@ export async function POST(request: NextRequest) {
     
     userEmail = userInfo.email;
     userName = userInfo.name;
-    console.log('[Ask Database] User info:', { email: userEmail, name: userName });
-    console.log('[Ask Database] Permission granted, conversation history length:', conversationHistory.length);
+    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[Ask Database] User info:', { email: userEmail, name: userName });
+    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[Ask Database] Permission granted, conversation history length:', conversationHistory.length);
 
     // 2. 檢查緩存
     const cacheKey = generateCacheKey(question, conversationHistory);
     const cachedResult = queryCache.get(cacheKey);
     if (cachedResult) {
-      console.log('[Ask Database] 🎯 Cache hit - returning cached result');
+      process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[Ask Database] 🎯 Cache hit - returning cached result');
       
       // 異步保存聊天記錄
       saveQueryRecordAsync(question, cachedResult.answer, userName, cachedResult.tokensUsed, cachedResult.sql);
@@ -109,26 +109,26 @@ export async function POST(request: NextRequest) {
         responseTime: Date.now() - startTime,
       });
     }
-    console.log('[Ask Database] Cache miss');
+    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[Ask Database] Cache miss');
 
     // 3. 使用 OpenAI 生成 SQL 查詢
-    console.log('[Ask Database] 🧠 Generating SQL with OpenAI...');
+    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[Ask Database] 🧠 Generating SQL with OpenAI...');
     const { sql, tokensUsed } = await generateSQLWithOpenAI(question, conversationHistory, userEmail);
-    console.log('[Ask Database] Generated SQL:', sql);
-    console.log('[Ask Database] Tokens used:', tokensUsed);
+    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[Ask Database] Generated SQL:', sql);
+    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[Ask Database] Tokens used:', tokensUsed);
 
     // 4. 執行 SQL 查詢
-    console.log('[Ask Database] 🚀 Executing SQL query...');
+    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[Ask Database] 🚀 Executing SQL query...');
     const queryResult = await executeSQLQuery(sql);
-    console.log('[Ask Database] SQL result:', {
+    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[Ask Database] SQL result:', {
       rowCount: queryResult.data.length,
       executionTime: queryResult.executionTime
     });
 
     // 5. 使用 OpenAI 生成自然語言回應
-    console.log('[Ask Database] 📝 Generating natural language response with OpenAI...');
+    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[Ask Database] 📝 Generating natural language response with OpenAI...');
     const { answer, additionalTokens } = await generateAnswerWithOpenAI(question, sql, queryResult);
-    console.log('[Ask Database] Natural language response generated');
+    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[Ask Database] Natural language response generated');
 
     const totalTokens = tokensUsed + additionalTokens;
     const complexity = determineComplexity(sql, queryResult.data.length);
@@ -145,7 +145,7 @@ export async function POST(request: NextRequest) {
     };
 
     // 6. 並行執行緩存保存、會話歷史保存和聊天記錄保存
-    console.log('[Ask Database] 💾 Saving results...');
+    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[Ask Database] 💾 Saving results...');
     const saveOperations = [
       Promise.resolve(queryCache.set(cacheKey, result)),
       Promise.resolve(saveConversationHistory(sessionId, {
@@ -163,7 +163,7 @@ export async function POST(request: NextRequest) {
       console.error('[Ask Database] Save operations failed:', error);
     });
 
-    console.log('[Ask Database] 🎉 OpenAI request completed successfully in', Date.now() - startTime, 'ms');
+    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[Ask Database] 🎉 OpenAI request completed successfully in', Date.now() - startTime, 'ms');
     return NextResponse.json(result);
 
   } catch (error: any) {
@@ -254,7 +254,7 @@ async function generateSQLWithOpenAI(question: string, conversationHistory: Conv
       content: question
     });
 
-    console.log('[OpenAI SQL] Sending request to OpenAI...');
+    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[OpenAI SQL] Sending request to OpenAI...');
     const response = await openai.chat.completions.create({
       model: 'gpt-4o',
       messages: messages as any,
@@ -302,7 +302,7 @@ async function generateSQLWithOpenAI(question: string, conversationHistory: Conv
       throw new Error('Only SELECT queries are allowed');
     }
 
-    console.log('[OpenAI SQL] SQL generated successfully');
+    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[OpenAI SQL] SQL generated successfully');
     return { sql, tokensUsed };
 
   } catch (error: any) {
@@ -317,7 +317,7 @@ async function executeSQLQuery(sql: string): Promise<{ data: any[]; rowCount: nu
   const startTime = Date.now();
 
   try {
-    console.log('[SQL Execution] Executing query:', sql);
+    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[SQL Execution] Executing query:', sql);
     
     const { data, error } = await supabase.rpc('execute_sql_query', { query_text: sql });
     
@@ -329,7 +329,7 @@ async function executeSQLQuery(sql: string): Promise<{ data: any[]; rowCount: nu
     }
 
     const resultData = Array.isArray(data) ? data : [];
-    console.log('[SQL Execution] Query executed successfully, rows:', resultData.length);
+    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[SQL Execution] Query executed successfully, rows:', resultData.length);
 
     return {
       data: resultData,
@@ -375,7 +375,7 @@ Please provide a natural English response to the user's question based on these 
       }
     ];
 
-    console.log('[OpenAI Answer] Generating natural language response...');
+    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[OpenAI Answer] Generating natural language response...');
     const response = await openai.chat.completions.create({
       model: 'gpt-4o',
       messages: messages as any,
@@ -390,7 +390,7 @@ Please provide a natural English response to the user's question based on these 
       throw new Error('OpenAI returned empty answer');
     }
 
-    console.log('[OpenAI Answer] Natural language response generated successfully');
+    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[OpenAI Answer] Natural language response generated successfully');
     return { answer: answer.trim(), additionalTokens: tokensUsed };
 
   } catch (error: any) {
@@ -460,7 +460,7 @@ async function getUserInfo(): Promise<{ email: string | null; name: string | nul
     const { data: { user } } = await supabase.auth.getUser();
     
     if (!user?.email) {
-        console.log('[getUserInfo] Development mode: No authenticated user, using test user');
+        process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[getUserInfo] Development mode: No authenticated user, using test user');
         const { data: testUser, error } = await supabase
           .from('data_id')
           .select('name, email')
@@ -469,7 +469,7 @@ async function getUserInfo(): Promise<{ email: string | null; name: string | nul
         
         if (testUser) {
           const testEmail = testUser.email || `test-user-${testUser.name.toLowerCase()}@pennineindustries.com`;
-          console.log('[getUserInfo] Using test user:', testUser.name, 'with email:', testEmail);
+          process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[getUserInfo] Using test user:', testUser.name, 'with email:', testEmail);
           return { email: testEmail, name: testUser.name };
         }
       }
@@ -478,19 +478,19 @@ async function getUserInfo(): Promise<{ email: string | null; name: string | nul
     const { data: { user } } = await supabase.auth.getUser();
     
     if (!user?.email) {
-      console.log('[getUserInfo] No authenticated user found');
+      process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[getUserInfo] No authenticated user found');
       return { email: null, name: null };
     }
 
     // 檢查緩存
     const cachedName = userNameCache.get(user.email);
     if (cachedName) {
-      console.log('[getUserInfo] Using cached user name for:', user.email);
+      process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[getUserInfo] Using cached user name for:', user.email);
       return { email: user.email, name: cachedName };
     }
 
     // 從 data_id 表獲取用戶名
-    console.log('[getUserInfo] Fetching user name from database for:', user.email);
+    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[getUserInfo] Fetching user name from database for:', user.email);
     const { data: userData, error } = await supabase
       .from('data_id')
       .select('name')
@@ -498,13 +498,13 @@ async function getUserInfo(): Promise<{ email: string | null; name: string | nul
       .single();
 
     if (error || !userData) {
-      console.log('[getUserInfo] User not found in data_id table:', user.email, 'Error:', error?.message);
+      process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[getUserInfo] User not found in data_id table:', user.email, 'Error:', error?.message);
       return { email: user.email, name: user.email };
     }
 
     // 緩存用戶名
     userNameCache.set(user.email, userData.name);
-    console.log('[getUserInfo] User name cached:', userData.name);
+    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[getUserInfo] User name cached:', userData.name);
     
     return { email: user.email, name: userData.name };
   } catch (error) {
@@ -532,7 +532,7 @@ async function saveQueryRecordAsync(query: string, answer: string, user: string 
       if (error) {
         console.error('[saveQueryRecordAsync] Failed to save query record:', error);
       } else {
-        console.log('[saveQueryRecordAsync] Query record saved successfully with token usage:', tokenUsage);
+        process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[saveQueryRecordAsync] Query record saved successfully with token usage:', tokenUsage);
       }
     } catch (error) {
       console.error('[saveQueryRecordAsync] Error saving query record:', error);
@@ -544,7 +544,7 @@ async function saveQueryRecordAsync(query: string, answer: string, user: string 
 async function checkUserPermission(): Promise<boolean> {
   // 開發環境下跳過權限檢查
   if (process.env.NODE_ENV === 'development') {
-    console.log('[checkUserPermission] Development mode: skipping auth check for debugging');
+    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[checkUserPermission] Development mode: skipping auth check for debugging');
     return true;
   }
   
@@ -626,7 +626,7 @@ export async function GET(request: NextRequest) {
         };
       }
     } catch (authError) {
-      console.log('[Ask Database Status] Auth check failed:', authError);
+      process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[Ask Database Status] Auth check failed:', authError);
     }
     
     // 檢查數據庫連接
@@ -642,7 +642,7 @@ export async function GET(request: NextRequest) {
         tablesAccessible: !!data
       };
     } catch (dbError) {
-      console.log('[Ask Database Status] DB check failed:', dbError);
+      process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[Ask Database Status] DB check failed:', dbError);
     }
     
     const status = {

@@ -44,10 +44,6 @@ export const LazyWidgets: Partial<Record<WidgetType, React.ComponentType<WidgetC
     () => import('./widgets/ReportsWidget').then(m => ({ default: m.ReportsWidget }))
   ),
   
-  [WidgetType.MATERIAL_RECEIVED]: createLazyWidget(
-    () => import('./widgets/MaterialReceivedWidget').then(m => ({ default: m.MaterialReceivedWidget }))
-  ),
-  
   [WidgetType.INVENTORY_SEARCH]: createLazyWidget(
     () => import('./widgets/InventorySearchWidget').then(m => ({ default: m.InventorySearchWidget }))
   ),

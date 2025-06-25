@@ -55,7 +55,7 @@ async function recordProductHistory(
       console.error('[recordProductHistory] Error recording history:', error);
       // 不拋出錯誤，避免影響主要操作
     } else {
-      console.log(`[recordProductHistory] Recorded: ${action} for ${productCode} by ${userName}`);
+      process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`[recordProductHistory] Recorded: ${action} for ${productCode} by ${userName}`);
     }
   } catch (error) {
     console.error('[recordProductHistory] Unexpected error:', error);
@@ -145,7 +145,7 @@ export async function updateProduct(code: string, productData: Partial<ProductDa
     }
 
     if (allMatches.length > 1) {
-      console.warn(`Multiple products found for code "${code}":`, allMatches);
+      process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.warn(`Multiple products found for code "${code}":`, allMatches);
     }
 
     // 使用第一個匹配的實際代碼
@@ -233,7 +233,7 @@ export async function checkProductExists(code: string): Promise<{ exists: boolea
     }
 
     if (data.length > 1) {
-      console.warn(`Multiple products found for code "${code}":`, data.map(p => p.code));
+      process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.warn(`Multiple products found for code "${code}":`, data.map(p => p.code));
     }
 
     return { exists: true };

@@ -102,27 +102,6 @@ export const WIDGET_SIZE_RECOMMENDATIONS: Record<WidgetType, {
     ]
   },
   
-  [WidgetType.FINISHED_PRODUCT]: {
-    recommended: RECOMMENDED_SIZES.DETAILED,
-    minimum: { w: 4, h: 3 },
-    description: "Finished Product Stats",
-    features: [
-      { size: { w: 4, h: 3 }, available: ['Product List'] },
-      { size: { w: 6, h: 4 }, available: ['Product List', 'Stock Levels'] },
-      { size: { w: 8, h: 5 }, available: ['Product List', 'Stock Levels', 'Detailed Analysis'] }
-    ]
-  },
-  
-  [WidgetType.MATERIAL_RECEIVED]: {
-    recommended: RECOMMENDED_SIZES.STANDARD,
-    minimum: { w: 3, h: 3 },
-    description: "Material Received Records",
-    features: [
-      { size: { w: 3, h: 3 }, available: ['Today\'s Receipts'] },
-      { size: { w: 5, h: 3 }, available: ['Today\'s Receipts', 'Supplier List'] },
-      { size: { w: 8, h: 5 }, available: ['Today\'s Receipts', 'Supplier List', 'Trend Chart'] }
-    ]
-  },
   
   [WidgetType.PRODUCT_MIX_CHART]: {
     recommended: RECOMMENDED_SIZES.DETAILED,

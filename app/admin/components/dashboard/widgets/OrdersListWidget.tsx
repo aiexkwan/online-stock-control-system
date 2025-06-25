@@ -9,11 +9,12 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { DocumentArrowUpIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
 import { createClient } from '@/lib/supabase';
-import { WidgetComponentProps, WidgetSize } from '@/app/types/dashboard';
+import { WidgetComponentProps } from '@/app/types/dashboard';
 import { CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { WidgetCard } from '../WidgetCard';
 import { format } from 'date-fns';
 import { fromDbTime } from '@/app/utils/timezone';
+import { useUploadRefresh } from '@/app/admin/contexts/UploadRefreshContext';
 
 interface OrderRecord {
   uuid: string;
@@ -28,8 +29,8 @@ export const OrdersListWidget = React.memo(function OrdersListWidget({ widget, i
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(true);
+  const { useOrderHistoryRefresh } = useUploadRefresh();
   
-  const size = widget.config.size || WidgetSize.MEDIUM;
   const itemsPerPage = 15; // Always show 15 items initially
 
   // 載入訂單列表
@@ -109,6 +110,11 @@ export const OrdersListWidget = React.memo(function OrdersListWidget({ widget, i
     loadOrders();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+  
+  // 訂閱上傳更新事件
+  useOrderHistoryRefresh(() => {
+    loadOrders(false); // 重新載入第一頁
+  });
 
   const formatTime = (timestamp: string) => {
     try {
@@ -120,30 +126,6 @@ export const OrdersListWidget = React.memo(function OrdersListWidget({ widget, i
   };
 
   // Small size - 簡化顯示
-  if (size === WidgetSize.SMALL) {
-    return (
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="h-full"
-      >
-        <WidgetCard size={widget.config.size} widgetType="CUSTOM" isEditMode={isEditMode}>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm flex items-center gap-2">
-              <DocumentArrowUpIcon className="w-4 h-4 text-blue-400" />
-              <span>Orders</span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="pt-2">
-            <div className="text-2xl font-bold text-blue-400">
-              {loading ? '...' : orders.length}
-            </div>
-            <p className="text-xs text-slate-500 mt-1">Recent orders</p>
-          </CardContent>
-        </WidgetCard>
-      </motion.div>
-    );
-  }
 
   // Medium & Large sizes
   return (
@@ -152,7 +134,7 @@ export const OrdersListWidget = React.memo(function OrdersListWidget({ widget, i
       animate={{ opacity: 1, y: 0 }}
       className="h-full"
     >
-      <WidgetCard size={widget.config.size} widgetType="CUSTOM" isEditMode={isEditMode} className="flex flex-col">
+      <WidgetCard widgetType="CUSTOM" isEditMode={isEditMode} className="flex flex-col">
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center justify-between">
             <div className="flex items-center gap-2">

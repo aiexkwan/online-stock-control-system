@@ -87,7 +87,7 @@
     "file-saver": "^2.0.5",
     "formidable": "^3.5.2",
     "formik": "^2.4.6",
-    "framer-motion": "^11.15.0",
+    "framer-motion": "^11.18.2",
     "googleapis": "^146.0.0",
     "graphql": "^16.11.0",
     "gridstack": "^12.2.1",
@@ -103,7 +103,7 @@
     "ldrs": "^1.0.2",
     "lucide-react": "^0.467.0",
     "negotiator": "^0.6.4",
-    "next": "14.2.30",
+    "next": "^14.2.30",
     "next-auth": "^4.24.11",
     "nodemailer": "^6.9.16",
     "openai": "^4.77.2",
@@ -115,6 +115,8 @@
     "pdf-lib": "^1.17.1",
     "pdf-parse": "^1.1.1",
     "pdf2pic": "^3.2.0",
+    "pino": "^9.7.0",
+    "pino-pretty": "^13.0.0",
     "prop-types": "^15.8.1",
     "puppeteer": "^23.11.1",
     "qrcode": "^1.5.4",
@@ -142,10 +144,9 @@
     "use-debounce": "^10.0.4",
     "util": "^0.12.5",
     "uuid": "^11.0.5",
-    "winston": "^3.17.0",
     "xlsx": "^0.18.5",
     "zod": "^3.24.1",
-    "zustand": "^5.0.2"
+    "zustand": "^5.0.5"
   },
   "devDependencies": {
     "@graphql-codegen/cli": "^5.0.7",

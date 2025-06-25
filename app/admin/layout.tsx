@@ -1,11 +1,12 @@
 /**
  * Admin Layout
- * 為 Admin 頁面提供 Dialog Context
+ * 為 Admin 頁面提供 Dialog Context 和 Upload Refresh Context
  */
 
 'use client';
 
 import { DialogProvider } from '@/app/contexts/DialogContext';
+import { UploadRefreshProvider } from './contexts/UploadRefreshContext';
 
 export default function AdminLayout({
   children,
@@ -14,7 +15,9 @@ export default function AdminLayout({
 }) {
   return (
     <DialogProvider>
-      {children}
+      <UploadRefreshProvider>
+        {children}
+      </UploadRefreshProvider>
     </DialogProvider>
   );
 }

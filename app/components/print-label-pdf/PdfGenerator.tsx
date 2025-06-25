@@ -35,10 +35,10 @@ interface PdfGeneratorProps {
 }
 
 export async function generateAndUploadPdf(props: PdfGeneratorProps): Promise<{ publicUrl: string; blob: Blob } | undefined> {
-  console.log('[PdfGenerator] FUNCTION ENTERED');
+  process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[PdfGenerator] FUNCTION ENTERED');
   const { pdfData, fileName, folderName, setPdfProgress, index, onSuccess, onError } = props;
 
-  console.log('[PdfGenerator] generateAndUploadPdf called. PalletNum (from folderName):', folderName, 'Output fileName:', fileName);
+  process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[PdfGenerator] generateAndUploadPdf called. PalletNum (from folderName):', folderName, 'Output fileName:', fileName);
 
   // Font registration (optional for minimal test, but good to keep if fonts are used elsewhere or for future)
   try {
@@ -49,26 +49,26 @@ export async function generateAndUploadPdf(props: PdfGeneratorProps): Promise<{ 
         { src: '/fonts/Montserrat-Bold.ttf', fontWeight: 'bold' },
       ],
     });
-    console.log('[PdfGenerator] Font registered (Montserrat).');
+    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[PdfGenerator] Font registered (Montserrat).');
   } catch (fontError) {
     console.error('[PdfGenerator] Error registering font:', fontError);
   }
 
   try {
-    console.log('[PdfGenerator] Attempting to generate PDF blob with PrintLabelPdf...');
+    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[PdfGenerator] Attempting to generate PDF blob with PrintLabelPdf...');
     // Use the actual PrintLabelPdf component and pass the pdfData props
     const blob = await pdf(<PrintLabelPdf {...pdfData} />).toBlob();
-    console.log('[PdfGenerator] PDF blob generated successfully with PrintLabelPdf, size:', blob?.size);
+    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[PdfGenerator] PDF blob generated successfully with PrintLabelPdf, size:', blob?.size);
 
     if (!blob || blob.size === 0) {
       console.error('[PdfGenerator] Generated PDF blob is invalid or empty.');
       throw new Error('Generated PDF blob is invalid or empty');
     }
 
-    console.log('[PdfGenerator] Attempting to setup storage (using global supabase client from supabase-storage.ts)...');
+    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[PdfGenerator] Attempting to setup storage (using global supabase client from supabase-storage.ts)...');
     // setupStorage uses its own imported supabase client, so no need to pass props.supabase here.
     await setupStorage(); // Corrected: No arguments
-    console.log('[PdfGenerator] Storage setup hopefully successful. Attempting to upload PDF...');
+    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[PdfGenerator] Storage setup hopefully successful. Attempting to upload PDF...');
 
     // For uploadPdf(palletNum: string, qrValue: string, blob: Blob):
     // Use folderName as palletNum.
@@ -76,7 +76,7 @@ export async function generateAndUploadPdf(props: PdfGeneratorProps): Promise<{ 
     const qrPlaceholder = fileName.replace('.pdf', ''); // Use the UUID part of the filename as a stand-in for qrValue
 
     const publicUrl = await uploadPdf(folderName, qrPlaceholder, blob); // Corrected arguments
-    console.log('[PdfGenerator] PDF uploaded successfully. Public URL:', publicUrl);
+    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[PdfGenerator] PDF uploaded successfully. Public URL:', publicUrl);
 
     if (setPdfProgress && typeof index === 'number') {
       setPdfProgress(prev => {

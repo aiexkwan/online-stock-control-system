@@ -102,7 +102,7 @@ export async function authenticateUser(userId: string, passwordInput: string): P
         };
       } else {
         // --- Password INCORRECT - Check for Pending Reset Request --- 
-        console.log(`Password mismatch for ${userId}. Checking for pending reset request...`);
+        process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`Password mismatch for ${userId}. Checking for pending reset request...`);
         
         // --- Explicitly parse userId to integer for query --- 
         const userIdInt = parseInt(userId, 10);
@@ -128,7 +128,7 @@ export async function authenticateUser(userId: string, passwordInput: string): P
 
         if (pendingRequest) {
           // Pending request FOUND - Grant temporary access
-          console.log(`Pending reset request found for ${userId}. Granting temporary access.`);
+          process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`Pending reset request found for ${userId}. Granting temporary access.`);
           return { 
             success: true, 
             user: clientUserData, 
@@ -137,7 +137,7 @@ export async function authenticateUser(userId: string, passwordInput: string): P
           }; 
         } else {
           // No pending request - Just an incorrect password
-          console.log(`No pending reset request found for ${userId}.`);
+          process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`No pending reset request found for ${userId}.`);
           return { success: false, error: 'Incorrect password.' };
         }
       }

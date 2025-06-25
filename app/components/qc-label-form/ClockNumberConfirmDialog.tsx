@@ -40,7 +40,7 @@ export const ClockNumberConfirmDialog: React.FC<ClockNumberConfirmDialogProps> =
 
   const validateClockNumber = useCallback(async (clockNum: string): Promise<boolean> => {
     try {
-      console.log('[ClockNumberConfirmDialog] Validating clock number:', clockNum);
+      process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[ClockNumberConfirmDialog] Validating clock number:', clockNum);
       
       // 使用標準 browser client
       const client = createClient();
@@ -65,7 +65,7 @@ export const ClockNumberConfirmDialog: React.FC<ClockNumberConfirmDialogProps> =
         return false;
       }
 
-      console.log('[ClockNumberConfirmDialog] Validation result:', data);
+      process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[ClockNumberConfirmDialog] Validation result:', data);
       return !!data;
     } catch (error: any) {
       console.error('[ClockNumberConfirmDialog] Exception during validation:', error);

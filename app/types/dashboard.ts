@@ -15,8 +15,6 @@ export enum WidgetType {
   PRODUCT_MIX_CHART = 'product_mix_chart',
   ACO_ORDER_PROGRESS = 'aco_order_progress',
   INVENTORY_SEARCH = 'inventory_search',
-  FINISHED_PRODUCT = 'finished_product',
-  MATERIAL_RECEIVED = 'material_received',
   PALLET_OVERVIEW = 'pallet_overview',
   VOID_STATS = 'void_stats',
   VOID_PALLET = 'void_pallet',
@@ -33,39 +31,14 @@ export enum WidgetType {
   TARGET_HIT_RATE = 'target_hit_rate'
 }
 
-// 小部件尺寸
-export enum WidgetSize {
-  SMALL = 'small',    // 1x1 - 只顯示統計數值
-  MEDIUM = 'medium',  // 3x3 - 添加更多資訊
-  LARGE = 'large',    // 5x5 - 完整功能包括圖表
-  XLARGE = 'xlarge',  // 6x6 - 擴展功能（如 Ask Database）
-  TALL_MEDIUM = 'tall_medium' // 2x5 - 高瘦型佈局
-}
-
-// iOS 風格尺寸預設 - 正方形比例
-export const WidgetSizeConfig = {
-  [WidgetSize.SMALL]: { w: 1, h: 1 },     // 1x1 (正方形)
-  [WidgetSize.MEDIUM]: { w: 3, h: 3 },    // 3x3 (正方形)
-  [WidgetSize.LARGE]: { w: 5, h: 5 },     // 5x5 (正方形)
-  [WidgetSize.XLARGE]: { w: 6, h: 6 },    // 6x6 (正方形)
-  [WidgetSize.TALL_MEDIUM]: { w: 2, h: 5 } // 2x5 (高瘦型)
-};
-
-// 用於編輯模式的彈性尺寸配置 - 允許在範圍內拖動（保持正方形比例）
-export const FlexibleWidgetSizeConfig = {
-  [WidgetSize.SMALL]: { minW: 1, maxW: 2, minH: 1, maxH: 2 },
-  [WidgetSize.MEDIUM]: { minW: 2, maxW: 4, minH: 2, maxH: 4 },
-  [WidgetSize.LARGE]: { minW: 4, maxW: 6, minH: 4, maxH: 6 },
-  [WidgetSize.XLARGE]: { minW: 6, maxW: 6, minH: 6, maxH: 6 },
-  [WidgetSize.TALL_MEDIUM]: { minW: 2, maxW: 2, minH: 5, maxH: 5 }
-};
+// Widget size 相關定義已移除 - admin dashboard 使用固定佈局
 
 // 小部件基礎配置
 export interface WidgetBaseConfig {
   refreshInterval?: number;     // 自動刷新間隔（毫秒）
   dataSource?: string;          // 數據源
   displayOptions?: any;         // 顯示選項
-  size?: WidgetSize;           // 小部件尺寸
+  // size 已移除 - admin dashboard 使用固定佈局
   timeRange?: string;          // 時間範圍
   [key: string]: any;          // 擴展配置
 }
@@ -130,7 +103,7 @@ export interface WidgetConfig {
     maxH?: number;
   };
   config: {
-    size?: WidgetSize;
+    // size 已移除 - admin dashboard 使用固定佈局
     refreshInterval?: number;
     timeRange?: string;
     [key: string]: any;
@@ -143,6 +116,10 @@ export interface WidgetComponentProps {
   isEditMode?: boolean;
   onUpdate?: (config: WidgetBaseConfig) => void;
   onRemove?: () => void;
+  timeFrame?: {
+    start: Date;
+    end: Date;
+  };
 }
 
 // 小部件註冊表項目

@@ -223,7 +223,7 @@
   {
     "表格名稱": "data_id",
     "表格描述": "user id library",
-    "欄位名稱": "Department",
+    "欄位名稱": "department",
     "欄位順序": 17,
     "資料類型": "text",
     "最大長度": null,

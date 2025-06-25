@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
-    console.log('[Check File Exists] Checking file:', { fileName, folder });
+    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[Check File Exists] Checking file:', { fileName, folder });
 
     const supabaseAdmin = createSupabaseAdmin();
     
@@ -62,7 +62,7 @@ export async function POST(request: NextRequest) {
         .getPublicUrl(fileName);
       
       publicUrl = data.publicUrl;
-      console.log('[Check File Exists] File exists, public URL:', publicUrl);
+      process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[Check File Exists] File exists, public URL:', publicUrl);
     }
 
     return NextResponse.json({

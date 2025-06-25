@@ -150,7 +150,7 @@ export const useGrnLabelBusiness = ({
         return;
       }
 
-      console.log('[useGrnLabelBusiness] Processing pallets:', numberOfPalletsToProcess);
+      process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[useGrnLabelBusiness] Processing pallets:', numberOfPalletsToProcess);
 
       // Process each pallet
       for (let i = 0; i < numberOfPalletsToProcess; i++) {
@@ -227,7 +227,7 @@ export const useGrnLabelBusiness = ({
           }
 
           if (actionResult.warning) {
-            console.warn(`[useGrnLabelBusiness] Pallet ${i + 1} GRN workflow warning:`, actionResult.warning);
+            process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.warn(`[useGrnLabelBusiness] Pallet ${i + 1} GRN workflow warning:`, actionResult.warning);
             toast.warning(`Pallet ${i + 1}: ${actionResult.warning}`);
           }
 
@@ -303,10 +303,10 @@ export const useGrnLabelBusiness = ({
           // 打印成功後確認托盤使用
           const confirmResult = await palletGeneration.confirmUsage(palletNumbers);
           if (!confirmResult) {
-            console.warn('[useGrnLabelBusiness] Failed to confirm pallet usage');
+            process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.warn('[useGrnLabelBusiness] Failed to confirm pallet usage');
             toast.warning('Note: Failed to update pallet status. Please contact admin if issues persist.');
           } else {
-            console.log('[useGrnLabelBusiness] Pallet usage confirmed successfully');
+            process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[useGrnLabelBusiness] Pallet usage confirmed successfully');
           }
         } catch (printError: any) {
           toast.error(`PDF Printing Error: ${printError.message}`);
@@ -315,7 +315,7 @@ export const useGrnLabelBusiness = ({
           // 打印失敗時釋放托盤預留
           const releaseResult = await palletGeneration.releaseReservation(palletNumbers);
           if (!releaseResult) {
-            console.warn('[useGrnLabelBusiness] Failed to release pallet reservation');
+            process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.warn('[useGrnLabelBusiness] Failed to release pallet reservation');
           }
         }
       } else {
@@ -326,7 +326,7 @@ export const useGrnLabelBusiness = ({
         if (palletNumbers.length > 0) {
           const releaseResult = await palletGeneration.releaseReservation(palletNumbers);
           if (!releaseResult) {
-            console.warn('[useGrnLabelBusiness] Failed to release pallet reservation');
+            process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.warn('[useGrnLabelBusiness] Failed to release pallet reservation');
           }
         }
       }
@@ -346,7 +346,7 @@ export const useGrnLabelBusiness = ({
         try {
           const releaseResult = await palletGeneration.releaseReservation(palletNumbers);
           if (!releaseResult) {
-            console.warn('[useGrnLabelBusiness] Failed to release pallet reservation after error');
+            process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.warn('[useGrnLabelBusiness] Failed to release pallet reservation after error');
           }
         } catch (releaseError) {
           console.error('[useGrnLabelBusiness] Error releasing pallet reservation:', releaseError);

@@ -74,8 +74,8 @@ export async function generateOptimizedPalletNumbersV5(
       });
       
       if (!error && data && Array.isArray(data) && data.length === count) {
-        console.log(`[PalletGeneration] Success with v5 RPC on attempt ${attempt + 1}`);
-        console.log('[PalletGeneration] Raw v5 data from DB:', data);
+        process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`[PalletGeneration] Success with v5 RPC on attempt ${attempt + 1}`);
+        process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[PalletGeneration] Raw v5 data from DB:', data);
         const series = generateSeries(count);
         return {
           palletNumbers: data,
@@ -88,14 +88,14 @@ export async function generateOptimizedPalletNumbersV5(
       }
       
       if (error) {
-        console.log(`[PalletGeneration] v5 RPC error on attempt ${attempt + 1}:`, error);
+        process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`[PalletGeneration] v5 RPC error on attempt ${attempt + 1}:`, error);
         // 如果 v5 不存在，回退到 v4 但排序結果
         if (error.message.includes('function') && error.message.includes('does not exist')) {
           break;
         }
         lastError = error.message;
       } else if (!data || !Array.isArray(data) || data.length !== count) {
-        console.log(`[PalletGeneration] v5 RPC returned invalid data:`, {
+        process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`[PalletGeneration] v5 RPC returned invalid data:`, {
           data,
           isArray: Array.isArray(data),
           length: data?.length,
@@ -121,7 +121,7 @@ export async function generateOptimizedPalletNumbersV5(
       });
       
       if (!error && data && Array.isArray(data) && data.length === count) {
-        console.log(`[PalletGeneration] Success with v4 RPC on attempt ${attempt + 1}, applying numeric sort`);
+        process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`[PalletGeneration] Success with v4 RPC on attempt ${attempt + 1}, applying numeric sort`);
         
         // 對結果進行數字排序
         const sortedPalletNumbers = data.sort((a, b) => {
@@ -161,7 +161,7 @@ export async function generateOptimizedPalletNumbersV5(
       });
       
       if (!error && data && Array.isArray(data) && data.length === count) {
-        console.log(`[PalletGeneration] Success with v3 RPC on attempt ${attempt + 1}`);
+        process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`[PalletGeneration] Success with v3 RPC on attempt ${attempt + 1}`);
         const series = generateSeries(count);
         return {
           palletNumbers: data,

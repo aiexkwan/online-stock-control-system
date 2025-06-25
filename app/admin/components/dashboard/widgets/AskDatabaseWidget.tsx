@@ -8,7 +8,7 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ChatBubbleLeftRightIcon } from '@heroicons/react/24/outline';
-import { WidgetComponentProps, WidgetSize } from '@/app/types/dashboard';
+import { WidgetComponentProps } from '@/app/types/dashboard';
 import { iconColors } from '@/app/utils/dialogStyles';
 import AskDatabaseInlineCard from '@/app/components/AskDatabaseInlineCard';
 
@@ -43,7 +43,6 @@ export const AskDatabaseWidget = React.memo(function AskDatabaseWidget({ widget,
     );
   }
 
-  // Large size - full chat interface
   return (
     <div className="relative group h-full">
       {/* 卡片背景 */}

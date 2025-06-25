@@ -19,7 +19,7 @@ import {
   DocumentArrowDownIcon,
   CircleStackIcon
 } from '@heroicons/react/24/outline';
-import { WidgetComponentProps, WidgetSize } from '@/app/types/dashboard';
+import { WidgetComponentProps } from '@/app/types/dashboard';
 import { CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { WidgetCard } from '../WidgetCard';
 import { Button } from "@/components/ui/button";
@@ -94,7 +94,6 @@ const reportTypes: ReportType[] = [
 ];
 
 export const ReportsWidget = React.memo(function ReportsWidget({ widget, isEditMode }: WidgetComponentProps) {
-  const size = widget.config.size || WidgetSize.MEDIUM;
 
   const handleReportClick = (report: ReportType) => {
     // 觸發對應的報表事件
@@ -105,63 +104,8 @@ export const ReportsWidget = React.memo(function ReportsWidget({ widget, isEditM
 
 
   // 1x1 - 不支援
-  if (size === WidgetSize.SMALL) {
-    return (
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="h-full"
-      >
-        <WidgetCard size={widget.config.size} widgetType="REPORTS" isEditMode={isEditMode}>
-          <CardContent className="p-2 h-full flex flex-col items-center justify-center">
-            <h3 className="text-xs text-slate-400 mb-1">Reports</h3>
-            <div className="text-lg font-medium text-slate-500">(N/A)</div>
-            <p className="text-xs text-slate-500 mt-1">1×1</p>
-          </CardContent>
-        </WidgetCard>
-      </motion.div>
-    );
-  }
 
   // 3x3 - 顯示 4 個報表快速存取 (2x2 排列)
-  if (size === WidgetSize.MEDIUM) {
-    const mediumReports = reportTypes.filter(r => r.show4x4);
-    
-    return (
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="h-full"
-      >
-        <WidgetCard size={widget.config.size} widgetType="REPORTS" isEditMode={isEditMode}>
-          <CardHeader className="pb-3">
-            <CardTitle className="flex items-center gap-2">
-              <DocumentChartBarIcon className="w-5 h-5 text-emerald-400" />
-              <span className="text-lg">Quick Reports</span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 gap-3">
-              {mediumReports.map((report) => (
-                <Button
-                  key={report.id}
-                  variant="ghost"
-                  className={`${report.color} p-4 h-28 flex flex-col items-center justify-center gap-2 transition-all duration-300 text-white`}
-                  onClick={() => handleReportClick(report)}
-                  disabled={isEditMode}
-                >
-                  <div className="w-8 h-8">
-                    {React.cloneElement(report.icon as React.ReactElement, { className: "w-full h-full" })}
-                  </div>
-                  <span className="text-sm font-medium text-center leading-tight">{report.name}</span>
-                </Button>
-              ))}
-            </div>
-          </CardContent>
-        </WidgetCard>
-      </motion.div>
-    );
-  }
 
   // 5x5 - 顯示所有報表種類 (2x5 排列)
   return (
@@ -170,7 +114,7 @@ export const ReportsWidget = React.memo(function ReportsWidget({ widget, isEditM
       animate={{ opacity: 1, y: 0 }}
       className="h-full"
     >
-      <WidgetCard size={widget.config.size} widgetType="REPORTS" isEditMode={isEditMode}>
+      <WidgetCard widgetType="REPORTS" isEditMode={isEditMode}>
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center gap-2">
             <DocumentChartBarIcon className="w-6 h-6 text-emerald-400" />

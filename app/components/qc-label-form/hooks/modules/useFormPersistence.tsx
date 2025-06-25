@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { debounce } from '@/app/utils/debounce';
 import type { FormData } from '../../types';
 
@@ -58,10 +58,9 @@ export const useFormPersistence = ({
   }, [isEnabled]);
 
   // 使用防抖來自動保存
-  const debouncedSave = useCallback(
-    debounce(saveFormData, autoSaveDelay),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    []
+  const debouncedSave = useMemo(
+    () => debounce(saveFormData, autoSaveDelay),
+    [saveFormData, autoSaveDelay]
   );
 
   // 從本地存儲加載表單數據

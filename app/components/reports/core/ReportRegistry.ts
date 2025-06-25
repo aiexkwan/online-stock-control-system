@@ -16,7 +16,7 @@ class ReportRegistryClass {
     dataSources: Map<string, ReportDataSource>
   ): void {
     if (this.reports.has(config.id)) {
-      console.warn(`Report "${config.id}" is already registered. Overwriting...`);
+      process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.warn(`Report "${config.id}" is already registered. Overwriting...`);
     }
     
     // 驗證數據源
@@ -35,7 +35,7 @@ class ReportRegistryClass {
       dataSources
     });
     
-    console.log(`Report "${config.id}" registered successfully`);
+    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`Report "${config.id}" registered successfully`);
   }
   
   /**

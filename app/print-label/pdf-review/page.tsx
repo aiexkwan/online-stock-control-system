@@ -23,8 +23,8 @@ export default function PdfReviewPage() {
 
   // 添加調試信息
   useEffect(() => {
-    console.log('PDF Review Page Loaded');
-    console.log('URL Parameters:', {
+    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('PDF Review Page Loaded');
+    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('URL Parameters:', {
       productCode,
       description,
       quantity,

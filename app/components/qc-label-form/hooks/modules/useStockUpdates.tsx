@@ -59,10 +59,10 @@ export const useStockUpdates = (): UseStockUpdatesReturn => {
           });
           
           if (!cacheResponse.ok) {
-            console.warn('Cache clear API returned non-OK status');
+            process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.warn('Cache clear API returned non-OK status');
           }
         } catch (apiError) {
-          console.warn('Failed to call cache clear API:', apiError);
+          process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.warn('Failed to call cache clear API:', apiError);
         }
       } catch (cacheError) {
         console.error('Error clearing cache:', cacheError);

@@ -77,7 +77,7 @@ export default function StockTransferPage() {
     const initPreload = async () => {
       try {
         await preloadPallets(['PM-', 'PT-', 'PL-']);
-        console.log('[Stock Transfer] 預加載完成');
+        process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[Stock Transfer] 預加載完成');
       } catch (error) {
         console.error('[Stock Transfer] 預加載失敗:', error);
       }

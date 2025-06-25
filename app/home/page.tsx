@@ -77,7 +77,7 @@ export default function ModernDashboard() {
         .single();
       
       if (error || !data) {
-        console.log('[Dashboard] No name found in data_id for email:', email);
+        process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[Dashboard] No name found in data_id for email:', email);
         return email.split('@')[0]; // Fallback to email prefix
       }
       
@@ -140,7 +140,7 @@ export default function ModernDashboard() {
         .in('plt_num', pltNums);
 
       if (palletError) {
-        console.warn('[Dashboard] Error fetching pallet info:', palletError);
+        process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.warn('[Dashboard] Error fetching pallet info:', palletError);
       }
 
       // Create a map for plt_num -> product_code lookup
@@ -163,7 +163,7 @@ export default function ModernDashboard() {
         .in('code', Array.from(productCodes));
 
       if (codeError) {
-        console.warn('[Dashboard] Error fetching code descriptions:', codeError);
+        process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.warn('[Dashboard] Error fetching code descriptions:', codeError);
       }
 
       // Create a map for product_code -> description lookup
@@ -264,7 +264,7 @@ export default function ModernDashboard() {
 
     // Listen for auth state changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log('[Dashboard] Auth state changed:', event);
+      process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[Dashboard] Auth state changed:', event);
       
       if (event === 'SIGNED_OUT') {
         router.push('/main-login');

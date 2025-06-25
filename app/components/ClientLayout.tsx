@@ -10,6 +10,8 @@ import { GlobalReportDialogs } from '@/app/components/reports/GlobalReportDialog
 import { GlobalAnalyticsDialogs } from '@/app/components/analytics/GlobalAnalyticsDialogs';
 import { Sidebar, SidebarBody, SidebarLink, SidebarLogout, SidebarHeader } from '@/components/ui/sidebar';
 import { useAuth } from '@/app/hooks/useAuth';
+import { DynamicActionBar } from '@/components/ui/dynamic-action-bar';
+import { AskDatabaseModal } from '@/components/ui/ask-database-modal';
 
 // Icons
 import { 
@@ -31,7 +33,8 @@ export default function ClientLayout({ children }: ClientLayoutProps) {
   // Don't show sidebar on login pages and access page only
   const isLoginPage = pathname?.startsWith('/main-login') || pathname === '/';
   const isAccessPage = pathname === '/access';
-  const showSidebar = isAuthenticated && !isLoginPage && !isAccessPage;
+  // Disable sidebar for now - using dynamic navigation instead
+  const showSidebar = false; // was: isAuthenticated && !isLoginPage && !isAccessPage;
 
   // Menu items
   const menuItems = [
@@ -156,6 +159,14 @@ export default function ClientLayout({ children }: ClientLayoutProps) {
         
         {/* Global analytics dialogs */}
         <GlobalAnalyticsDialogs />
+        
+        {/* Dynamic Navigation Bar - Show only when authenticated and not on login/access pages */}
+        {isAuthenticated && !isLoginPage && !isAccessPage && (
+          <DynamicActionBar />
+        )}
+        
+        {/* Ask Database Modal */}
+        <AskDatabaseModal />
       </AuthChecker>
     </>
   );

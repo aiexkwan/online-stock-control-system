@@ -9,10 +9,11 @@ import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CloudArrowUpIcon, DocumentIcon, PhotoIcon } from '@heroicons/react/24/outline';
 import { createClient } from '@/lib/supabase';
-import { WidgetComponentProps, WidgetSize } from '@/app/types/dashboard';
+import { WidgetComponentProps } from '@/app/types/dashboard';
 import { toast } from 'sonner';
 import { Folder3D } from './Folder3D';
 import { GoogleDriveUploadToast } from './GoogleDriveUploadToast';
+import { useUploadRefresh } from '@/app/admin/contexts/UploadRefreshContext';
 
 interface UploadingFile {
   id: string;
@@ -37,8 +38,8 @@ export const UploadFilesWidget = React.memo(function UploadFilesWidget({ widget,
   const [selectedFolder, setSelectedFolder] = useState<'stockPic' | 'productSpec'>('stockPic');
   const [uploadingFiles, setUploadingFiles] = useState<UploadingFile[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { triggerOtherFilesRefresh } = useUploadRefresh();
   
-  const size = widget.config.size || WidgetSize.MEDIUM;
 
   // 獲取當前用戶 ID
   useEffect(() => {
@@ -136,6 +137,9 @@ export const UploadFilesWidget = React.memo(function UploadFilesWidget({ widget,
       setUploadingFiles(prev => 
         prev.map(f => f.id === uploadingFile.id ? { ...f, status: 'completed', progress: 100 } : f)
       );
+      
+      // 觸發歷史記錄更新
+      triggerOtherFilesRefresh();
 
     } catch (error) {
       console.error('[UploadFilesWidget] Upload error:', error);
@@ -147,7 +151,7 @@ export const UploadFilesWidget = React.memo(function UploadFilesWidget({ widget,
         } : f)
       );
     }
-  }, [currentUserId]);
+  }, [currentUserId, triggerOtherFilesRefresh]);
 
   // 處理文件選擇
   const handleFiles = useCallback((files: FileList | null) => {
@@ -230,7 +234,7 @@ export const UploadFilesWidget = React.memo(function UploadFilesWidget({ widget,
       >
         <Folder3D
           color={selectedFolder === 'stockPic' ? '#10b981' : '#8b5cf6'}
-          size={1.2}
+
           icon={<CloudArrowUpIcon />}
           onClick={handleClick}
           label="Upload Files"

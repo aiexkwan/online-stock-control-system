@@ -44,9 +44,9 @@ export function OutputRatioChart({ timeRange }: OutputRatioChartProps) {
       const startDate = getStartDate(timeRange);
       const endDate = getEndDate();
       
-      console.log('Loading data for time range:', timeRange);
-      console.log('Start date:', startDate.toISOString());
-      console.log('End date:', endDate.toISOString());
+      process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('Loading data for time range:', timeRange);
+      process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('Start date:', startDate.toISOString());
+      process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('End date:', endDate.toISOString());
       
       // Fetch output data (pallets generated)
       const { data: outputData, error: outputError } = await supabase
@@ -61,7 +61,7 @@ export function OutputRatioChart({ timeRange }: OutputRatioChartProps) {
         throw outputError;
       }
       
-      console.log('Output data count:', outputData?.length || 0);
+      process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('Output data count:', outputData?.length || 0);
       
       // Fetch transfer data (pallets booked out)
       const { data: transferData, error: transferError } = await supabase
@@ -75,7 +75,7 @@ export function OutputRatioChart({ timeRange }: OutputRatioChartProps) {
         throw transferError;
       }
       
-      console.log('Transfer data count:', transferData?.length || 0);
+      process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('Transfer data count:', transferData?.length || 0);
       
       // Process data
       const processedData = processOutputRatioData(
@@ -84,7 +84,7 @@ export function OutputRatioChart({ timeRange }: OutputRatioChartProps) {
         timeRange
       );
       
-      console.log('Processed data:', processedData);
+      process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('Processed data:', processedData);
       
       setData(processedData);
     } catch (err: any) {

@@ -30,7 +30,7 @@ const corsHeaders = {
 };
 
 export async function OPTIONS() {
-  console.log('📋 [send-order-email] OPTIONS request received');
+  process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('📋 [send-order-email] OPTIONS request received');
   return new Response('ok', { headers: corsHeaders });
 }
 
@@ -42,20 +42,20 @@ export async function POST(request: NextRequest) {
   };
 
   try {
-    console.log('=== 📧 Order Created Email API Started ===');
-    console.log('🔍 [send-order-email] API Route Hit - Bypassing Auth');
-    console.log('🌍 Environment:', process.env.NODE_ENV);
-    console.log('🌐 Request URL:', request.url);
-    console.log('📍 Request method:', request.method);
-    console.log('🔗 User-Agent:', request.headers.get('user-agent'));
-    console.log('🔗 Referer:', request.headers.get('referer'));
-    console.log('🔗 Host:', request.headers.get('host'));
+    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('=== 📧 Order Created Email API Started ===');
+    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('🔍 [send-order-email] API Route Hit - Bypassing Auth');
+    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('🌍 Environment:', process.env.NODE_ENV);
+    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('🌐 Request URL:', request.url);
+    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('📍 Request method:', request.method);
+    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('🔗 User-Agent:', request.headers.get('user-agent'));
+    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('🔗 Referer:', request.headers.get('referer'));
+    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('🔗 Host:', request.headers.get('host'));
 
     // 驗證 API Key
-    console.log('🔍 Checking RESEND_API_KEY availability...');
-    console.log('RESEND_API_KEY exists:', !!RESEND_API_KEY);
-    console.log('RESEND_API_KEY length:', RESEND_API_KEY?.length || 0);
-    console.log('RESEND_API_KEY prefix:', RESEND_API_KEY?.substring(0, 10) || 'N/A');
+    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('🔍 Checking RESEND_API_KEY availability...');
+    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('RESEND_API_KEY exists:', !!RESEND_API_KEY);
+    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('RESEND_API_KEY length:', RESEND_API_KEY?.length || 0);
+    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('RESEND_API_KEY prefix:', RESEND_API_KEY?.substring(0, 10) || 'N/A');
     
     if (!RESEND_API_KEY) {
       console.error('❌ RESEND_API_KEY is not set in environment variables');
@@ -75,7 +75,7 @@ export async function POST(request: NextRequest) {
     let requestBody: EmailRequest;
     try {
       requestBody = await request.json();
-      console.log('📥 Request body received:', requestBody);
+      process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('📥 Request body received:', requestBody);
     } catch (parseError) {
       console.error('❌ Failed to parse request body:', parseError);
       return NextResponse.json(
@@ -131,7 +131,7 @@ export async function POST(request: NextRequest) {
       ccEmails = cc || ['akwan@pennineindustries.com', 'grobinson@pennineindustries.com', 'kjones@pennineindustries.com'];
     }
     
-    console.log('📧 Email details:', {
+    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('📧 Email details:', {
       from: fromEmail,
       to: toEmails,
       cc: ccEmails,
@@ -226,11 +226,11 @@ This is an automated notification from the Pennine Stock Control System.
           type: 'application/pdf'
         }
       ];
-      console.log('📎 PDF attachment added:', pdfAttachment.filename);
+      process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('📎 PDF attachment added:', pdfAttachment.filename);
     }
 
-    console.log('📤 Sending email to Resend API...');
-    console.log('📤 Email data preview:', {
+    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('📤 Sending email to Resend API...');
+    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('📤 Email data preview:', {
       from: emailData.from,
       to: emailData.to,
       cc: emailData.cc,
@@ -249,17 +249,17 @@ This is an automated notification from the Pennine Stock Control System.
       body: JSON.stringify(emailData),
     });
 
-    console.log('📨 Resend API response status:', response.status);
-    console.log('📨 Resend API response headers:', Object.fromEntries(response.headers.entries()));
+    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('📨 Resend API response status:', response.status);
+    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('📨 Resend API response headers:', Object.fromEntries(response.headers.entries()));
 
     let result;
     try {
       result = await response.json();
-      console.log('📨 Resend API response body:', result);
+      process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('📨 Resend API response body:', result);
     } catch (jsonError) {
       console.error('❌ Failed to parse Resend API response as JSON:', jsonError);
       const textResult = await response.text();
-      console.log('📨 Resend API response as text:', textResult);
+      process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('📨 Resend API response as text:', textResult);
       
       return NextResponse.json(
         { 
@@ -301,7 +301,7 @@ This is an automated notification from the Pennine Stock Control System.
       );
     }
 
-    console.log('✅ Email sent successfully:', result);
+    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('✅ Email sent successfully:', result);
 
     return NextResponse.json(
       { 

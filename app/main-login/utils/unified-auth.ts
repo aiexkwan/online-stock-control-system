@@ -88,7 +88,7 @@ class UnifiedAuth {
 
     // 檢查並清理舊版認證數據
     if (shouldCleanupLegacyAuth()) {
-      console.log('[UnifiedAuth] Detected legacy auth data, cleaning up...');
+      process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[UnifiedAuth] Detected legacy auth data, cleaning up...');
       cleanupLegacyAuth();
     }
 
@@ -112,7 +112,7 @@ class UnifiedAuth {
     }
 
     const supabase = this.getSupabaseClient();
-    console.log(`[UnifiedAuth] Using ${this.config.mode} mode for sign in`);
+    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`[UnifiedAuth] Using ${this.config.mode} mode for sign in`);
     
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
@@ -136,7 +136,7 @@ class UnifiedAuth {
     }
 
     const supabase = this.getSupabaseClient();
-    console.log(`[UnifiedAuth] Using ${this.config.mode} mode for sign up`);
+    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`[UnifiedAuth] Using ${this.config.mode} mode for sign up`);
     
     // 設置正確的重定向 URL
     const redirectTo = `${window.location.origin}/main-login?confirmed=true`;
@@ -155,7 +155,7 @@ class UnifiedAuth {
 
   async signOut() {
     const supabase = this.getSupabaseClient();
-    console.log(`[UnifiedAuth] Using ${this.config.mode} mode for sign out`);
+    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`[UnifiedAuth] Using ${this.config.mode} mode for sign out`);
     
     // 清理本地存儲（如果使用的話）
     if (this.config.useLocalStorage) {

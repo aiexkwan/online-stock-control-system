@@ -7,10 +7,10 @@
 
 import React from 'react';
 import { cn } from '@/lib/utils';
-import { WidgetSize } from '@/app/types/dashboard';
+// WidgetSize 已移除 - admin dashboard 使用固定佈局
 
 interface UnifiedWidgetLayoutProps {
-  size: WidgetSize;
+  // size 已移除 - admin dashboard 使用固定佈局
   // 數據表部分
   tableContent?: React.ReactNode;
   tableData?: any[];
@@ -23,7 +23,7 @@ interface UnifiedWidgetLayoutProps {
 }
 
 export function UnifiedWidgetLayout({
-  size,
+  // size parameter removed
   tableContent,
   tableData,
   renderTableRow,
@@ -31,10 +31,7 @@ export function UnifiedWidgetLayout({
   singleContent,
   className
 }: UnifiedWidgetLayoutProps) {
-  // 1x1 尺寸特殊處理
-  if (size === WidgetSize.SMALL) {
-    return <div className={cn("h-full", className)}>{singleContent}</div>;
-  }
+  // 所有 widget 使用固定佈局，不再需要 size 判斷
 
   // 只有單一內容（只有表格或只有圖表）
   if (singleContent) {

@@ -60,7 +60,7 @@ export const ProductCodeInput: React.FC<ProductCodeInputProps> = ({
 
     // 避免重複搜尋相同的值
     if (trimmedValue === lastSearchValue && !productError) {
-      console.log('[ProductCodeInput] Skipping duplicate search for:', trimmedValue);
+      process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[ProductCodeInput] Skipping duplicate search for:', trimmedValue);
       return;
     }
 
@@ -70,7 +70,7 @@ export const ProductCodeInput: React.FC<ProductCodeInputProps> = ({
     }
 
     // 開始搜尋
-    console.log('[ProductCodeInput] Starting search for:', trimmedValue);
+    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[ProductCodeInput] Starting search for:', trimmedValue);
     setIsLoading(true);
     setProductError(null);
     setLastSearchValue(trimmedValue);
@@ -80,10 +80,10 @@ export const ProductCodeInput: React.FC<ProductCodeInputProps> = ({
     abortControllerRef.current = abortController;
 
     try {
-      console.log('[ProductCodeInput] Creating Supabase client...');
+      process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[ProductCodeInput] Creating Supabase client...');
       const client = createClient();
       
-      console.log('[ProductCodeInput] Executing query for:', trimmedValue);
+      process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[ProductCodeInput] Executing query for:', trimmedValue);
       // 直接搜尋 data_code 表 - 使用 ilike 進行不區分大小寫的搜尋
       const { data, error } = await client
         .from('data_code')
@@ -91,20 +91,20 @@ export const ProductCodeInput: React.FC<ProductCodeInputProps> = ({
         .ilike('code', trimmedValue)
         .single();
 
-      console.log('[ProductCodeInput] Search result:', { data, error });
+      process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[ProductCodeInput] Search result:', { data, error });
 
       if (error || !data) {
         // 找不到產品
         onProductInfoChange(null);
         setProductError(`Product Code ${trimmedValue} Not Found`);
-        console.log('[ProductCodeInput] Product not found:', trimmedValue);
+        process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[ProductCodeInput] Product not found:', trimmedValue);
       } else {
         // 找到產品
         const productData = data as ProductInfo;
         onProductInfoChange(productData);
         onChange(productData.code); // 使用資料庫中的標準化代碼
         setProductError(null);
-        console.log('[ProductCodeInput] Product found:', productData);
+        process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[ProductCodeInput] Product found:', productData);
         
         // 自動填充數量（如果有）
         if (productData.standard_qty && onQuantityChange) {
@@ -114,7 +114,7 @@ export const ProductCodeInput: React.FC<ProductCodeInputProps> = ({
     } catch (error: any) {
       // 如果是取消請求，不處理
       if (error.name === 'AbortError') {
-        console.log('[ProductCodeInput] Search cancelled');
+        process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[ProductCodeInput] Search cancelled');
         return;
       }
       
@@ -130,7 +130,7 @@ export const ProductCodeInput: React.FC<ProductCodeInputProps> = ({
       // 只有在沒有被取消的情況下才清除 loading 狀態
       if (abortControllerRef.current === abortController) {
         setIsLoading(false);
-        console.log('[ProductCodeInput] Search completed, loading state cleared');
+        process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[ProductCodeInput] Search completed, loading state cleared');
       }
     }
   };

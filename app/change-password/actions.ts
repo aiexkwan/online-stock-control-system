@@ -18,11 +18,11 @@ export async function updateUserPasswordInDbAction(
   prevState: ChangePasswordActionResult,
   formData: FormData
 ): Promise<ChangePasswordActionResult> {
-  console.log('[updateUserPasswordInDbAction] Action started. PrevState:', prevState);
+  process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[updateUserPasswordInDbAction] Action started. PrevState:', prevState);
   // const cookieStore = cookies(); // 不再直接需要
 
   const supabase = createClient(); // 使用新的輔助函數創建客戶端
-  console.log('[updateUserPasswordInDbAction] Supabase client (from @/app/utils/supabase/server) obtained.');
+  process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[updateUserPasswordInDbAction] Supabase client (from @/app/utils/supabase/server) obtained.');
 
   const newPassword = formData.get('newPassword')?.toString();
   const confirmPassword = formData.get('confirmPassword')?.toString();
@@ -40,7 +40,7 @@ export async function updateUserPasswordInDbAction(
     return { error: 'Passwords do not match.' };
   }
 
-  console.log('[updateUserPasswordInDbAction] Attempting to get user from session...');
+  process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[updateUserPasswordInDbAction] Attempting to get user from session...');
   const { data: { user }, error: userError } = await supabase.auth.getUser(); // 使用新的 supabase client
 
   if (userError) {
@@ -51,7 +51,7 @@ export async function updateUserPasswordInDbAction(
     console.error('[updateUserPasswordInDbAction] No user session found.');
     return { error: 'No active session found. Please log in again.' };
   }
-  console.log('[updateUserPasswordInDbAction] User session found. User ID:', user.id);
+  process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[updateUserPasswordInDbAction] User session found. User ID:', user.id);
 
   const clockNumber = user.user_metadata?.clock_number as string | undefined;
 
@@ -62,7 +62,7 @@ export async function updateUserPasswordInDbAction(
     // return { error: 'User identification failed (clock number missing). Cannot change password.' };
   }
   if (clockNumber) {
-      console.log(`[updateUserPasswordInDbAction] Clock number from metadata: ${clockNumber}`);
+      process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`[updateUserPasswordInDbAction] Clock number from metadata: ${clockNumber}`);
   }
   
   // 可選：如果表單也提交了 clockNumber，可以進行驗證
@@ -71,7 +71,7 @@ export async function updateUserPasswordInDbAction(
   //   return { error: 'User identification mismatch.' };
   // }
 
-  console.log(`[updateUserPasswordInDbAction] Attempting to call updatePasswordWithSupabaseAuth.`);
+  process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`[updateUserPasswordInDbAction] Attempting to call updatePasswordWithSupabaseAuth.`);
   
   const result = await updatePasswordWithSupabaseAuth(
     newPassword,
@@ -84,7 +84,7 @@ export async function updateUserPasswordInDbAction(
     return { error: result.error }; 
   }
 
-  console.log(`[updateUserPasswordInDbAction] Password changed successfully for user ${user.id}.`);
+  process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`[updateUserPasswordInDbAction] Password changed successfully for user ${user.id}.`);
 
   // 不要立即重定向，而是返回成功狀態，讓 useFormState 更新 UI
   // 客戶端可以根據這個成功狀態來決定是否以及何時重定向

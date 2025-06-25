@@ -13,7 +13,7 @@ import React, { useState, useRef, useCallback } from 'react';
 import { CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { WidgetCard } from '../WidgetCard';
 import { CubeIcon, ClockIcon, ChevronDownIcon } from '@heroicons/react/24/outline';
-import { WidgetComponentProps, WidgetSize } from '@/app/types/dashboard';
+import { WidgetComponentProps } from '@/app/types/dashboard';
 import { dialogStyles, iconColors } from '@/app/utils/dialogStyles';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -45,7 +45,6 @@ export const OutputStatsWidgetGraphQL = React.memo(function OutputStatsWidgetGra
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const size = widget.config.size || WidgetSize.SMALL;
 
   // 根據時間範圍設定查詢範圍
   const getDateRangeForQuery = () => {
@@ -127,7 +126,6 @@ export const OutputStatsWidgetGraphQL = React.memo(function OutputStatsWidgetGra
         .map(([product_code, quantity]) => ({ product_code, quantity }))
         .sort((a, b) => b.quantity - a.quantity);
         
-      // Large size 需要 daily data for grouped bar chart
       if (size === WidgetSize.LARGE) {
         // 獲取前 3 個產品代碼
         const topProducts = productDetails.slice(0, 3).map(p => p.product_code);
@@ -152,7 +150,7 @@ export const OutputStatsWidgetGraphQL = React.memo(function OutputStatsWidgetGra
       productDetails,
       dailyData
     };
-  }, [graphqlData, size]);
+  }, [graphqlData]);
 
   React.useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -177,133 +175,11 @@ export const OutputStatsWidgetGraphQL = React.memo(function OutputStatsWidgetGra
   );
 
   // Small size (1x1) - 只顯示文字和數據，無 icon
-  if (size === WidgetSize.SMALL) {
-    return (
-      <WidgetCard size={widget.config.size} widgetType="OUTPUT_STATS" isEditMode={isEditMode}>
-        <div className="relative">
-          <GraphQLBadge />
-          <CardContent className="p-2 h-full flex flex-col justify-center items-center">
-            <h3 className="text-xs text-slate-400 mb-1">Output</h3>
-            {loading ? (
-              <div className="h-8 w-16 bg-white/10 rounded animate-pulse"></div>
-            ) : error ? (
-              <div className="text-red-400 text-xs">Error</div>
-            ) : (
-              <>
-                <div className="text-2xl font-bold text-white">{processedData.palletCount}</div>
-                <p className="text-xs text-slate-500">Today</p>
-              </>
-            )}
-          </CardContent>
-        </div>
-      </WidgetCard>
-    );
-  }
 
   // Medium size - 顯示 pallet 總數和 product qty 總和，支援時間選擇
-  if (size === WidgetSize.MEDIUM) {
-    return (
-      <WidgetCard size={widget.config.size} widgetType="OUTPUT_STATS" isEditMode={isEditMode}>
-        <div className="relative">
-          <GraphQLBadge />
-          <CardHeader className="pb-2">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-lg flex items-center justify-center">
-                  <CubeIcon className="h-5 w-5 text-white" />
-                </div>
-                <CardTitle className="text-sm font-medium text-slate-200">Output Stats</CardTitle>
-              </div>
-              
-              {/* Time Range Dropdown */}
-              <div className="relative" ref={dropdownRef}>
-                <button
-                  onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                  className="flex items-center gap-1 px-2 py-1 bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white rounded-md transition-all duration-300 text-xs border border-slate-600/30"
-                  disabled={isEditMode}
-                >
-                  <ClockIcon className="w-3 h-3" />
-                  {timeRange}
-                  <ChevronDownIcon className={`w-3 h-3 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} />
-                </button>
-                
-                <AnimatePresence>
-                  {isDropdownOpen && (
-                    <motion.div
-                      initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                      animate={{ opacity: 1, y: 0, scale: 1 }}
-                      exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                      transition={{ duration: 0.2 }}
-                      className="absolute right-0 top-full mt-1 bg-black/80 backdrop-blur-xl border border-slate-600/50 rounded-xl shadow-2xl z-50 min-w-[120px]"
-                    >
-                      {['Today', 'Yesterday', 'Past 3 days', 'This week'].map((option) => (
-                        <button
-                          key={option}
-                          onClick={() => handleTimeRangeChange(option)}
-                          className={`w-full px-3 py-2 text-left text-xs hover:bg-white/10 transition-all duration-300 first:rounded-t-xl last:rounded-b-xl ${
-                            timeRange === option ? 'bg-white/10 text-blue-400' : 'text-slate-300'
-                          }`}
-                        >
-                          {option}
-                        </button>
-                      ))}
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent className="pt-2">
-            <UnifiedWidgetLayout
-              size={size}
-              singleContent={
-                loading ? (
-                  <div className="space-y-3">
-                    <div className="h-16 bg-white/10 rounded animate-pulse"></div>
-                    <div className="h-16 bg-white/10 rounded animate-pulse"></div>
-                  </div>
-                ) : error ? (
-                  <div className="text-red-400 text-sm">GraphQL Error: {error.message}</div>
-                ) : (
-                  <div className="h-full flex flex-col space-y-2">
-                    {/* Pallet 總數 */}
-                    <div className="bg-black/20 rounded-lg p-2">
-                      <p className="text-xs text-slate-400">Total Pallets</p>
-                      <div className="text-2xl font-bold text-white">{processedData.palletCount}</div>
-                    </div>
-                    
-                    {/* Product 明細 */}
-                    <div className="flex-1 bg-black/20 rounded-lg p-2 overflow-hidden">
-                      <p className="text-xs text-purple-400 mb-1">Product Details ({processedData.productCodeCount} codes, Total: {processedData.totalQuantity.toLocaleString()})</p>
-                      
-                      {processedData.productDetails && processedData.productDetails.length > 0 ? (
-                        <div className="max-h-[calc(100%-1.5rem)] overflow-y-auto pr-1">
-                          <div className="space-y-1">
-                            {processedData.productDetails.map((product) => (
-                              <TableRow key={product.product_code}>
-                                <span className="text-purple-200">{product.product_code}</span>
-                                <span className="text-purple-200 font-medium">{product.quantity.toLocaleString()}</span>
-                              </TableRow>
-                            ))}
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="text-xs text-slate-500 text-center py-4">No data</div>
-                      )}
-                    </div>
-                  </div>
-                )
-              }
-            />
-          </CardContent>
-        </div>
-      </WidgetCard>
-    );
-  }
 
-  // Large size - add chart
   return (
-    <WidgetCard size={widget.config.size} widgetType="OUTPUT_STATS" isEditMode={isEditMode}>
+    <WidgetCard widgetType="OUTPUT_STATS" isEditMode={isEditMode}>
       <div className="relative h-full">
         <GraphQLBadge />
         <CardHeader className="pb-2">
@@ -360,7 +236,7 @@ export const OutputStatsWidgetGraphQL = React.memo(function OutputStatsWidgetGra
             <div className="text-red-400 text-sm">GraphQL Error: {error.message}</div>
           ) : (
             <UnifiedWidgetLayout
-              size={size}
+
               tableData={processedData.productDetails}
               renderTableRow={(product) => (
                 <TableRow key={product.product_code}>

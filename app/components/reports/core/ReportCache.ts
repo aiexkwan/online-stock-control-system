@@ -63,7 +63,7 @@ export class ReportCache {
       return null;
     }
     
-    console.log(`[ReportCache] Cache hit for ${reportId}`);
+    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`[ReportCache] Cache hit for ${reportId}`);
     return entry.data;
   }
   
@@ -84,7 +84,7 @@ export class ReportCache {
       ttl: ttl || this.defaultTTL
     });
     
-    console.log(`[ReportCache] Cached data for ${reportId}`);
+    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`[ReportCache] Cached data for ${reportId}`);
   }
   
   /**
@@ -100,7 +100,7 @@ export class ReportCache {
     });
     
     keysToDelete.forEach(key => this.cache.delete(key));
-    console.log(`[ReportCache] Cleared ${keysToDelete.length} entries for ${reportId}`);
+    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`[ReportCache] Cleared ${keysToDelete.length} entries for ${reportId}`);
   }
   
   /**
@@ -109,7 +109,7 @@ export class ReportCache {
   clearAll(): void {
     const size = this.cache.size;
     this.cache.clear();
-    console.log(`[ReportCache] Cleared all ${size} entries`);
+    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`[ReportCache] Cleared all ${size} entries`);
   }
   
   /**
@@ -128,7 +128,7 @@ export class ReportCache {
     keysToDelete.forEach(key => this.cache.delete(key));
     
     if (keysToDelete.length > 0) {
-      console.log(`[ReportCache] Cleaned up ${keysToDelete.length} expired entries`);
+      process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`[ReportCache] Cleaned up ${keysToDelete.length} expired entries`);
     }
   }
   

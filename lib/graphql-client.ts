@@ -124,6 +124,12 @@ export function useGraphQLQuery<T = any>(
   const [error, setError] = React.useState<Error | null>(null);
   const [refreshTrigger, setRefreshTrigger] = React.useState(0);
 
+  // Memoize serialized variables to avoid complex expression in dependency array
+  const serializedVariables = React.useMemo(
+    () => JSON.stringify(variables),
+    [variables]
+  );
+
   const fetchData = React.useCallback(async () => {
     try {
       setLoading(true);
@@ -140,7 +146,7 @@ export function useGraphQLQuery<T = any>(
     } finally {
       setLoading(false);
     }
-  }, [query, JSON.stringify(variables)]);
+  }, [query, variables]);
 
   React.useEffect(() => {
     fetchData();

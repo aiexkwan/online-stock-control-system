@@ -30,8 +30,8 @@ interface UsePalletGenerationReturn {
  * // Generate pallet numbers
  * const result = await palletGeneration.generatePalletNumbersAndSeries(5, 'my-session');
  * if (result.success) {
- *   console.log(result.palletNumbers);
- *   console.log(result.series);
+ *   process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(result.palletNumbers);
+ *   process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(result.series);
  * }
  * 
  * // Confirm usage after successful printing
@@ -66,7 +66,7 @@ export const usePalletGeneration = (): UsePalletGenerationReturn => {
     setGenerationError(null);
 
     try {
-      console.log('[usePalletGeneration] Generating pallet numbers:', count);
+      process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[usePalletGeneration] Generating pallet numbers:', count);
       
       // 使用統一的托盤生成函數
       const supabase = createClient();
@@ -80,7 +80,7 @@ export const usePalletGeneration = (): UsePalletGenerationReturn => {
         return result;
       }
 
-      console.log('[usePalletGeneration] Generated successfully:', {
+      process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[usePalletGeneration] Generated successfully:', {
         count: result.palletNumbers.length,
         method: result.method
       });

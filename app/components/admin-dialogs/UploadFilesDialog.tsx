@@ -107,7 +107,7 @@ export const UploadFilesDialog: React.FC<UploadFilesDialogProps> = ({
         }
         
         if (user) {
-          console.log('[UploadFilesDialog] Current user:', user.email, 'UUID:', user.id);
+          process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[UploadFilesDialog] Current user:', user.email, 'UUID:', user.id);
           
           // 直接使用 supabase client 查詢 data_id 表（通過 RLS）
           try {
@@ -128,10 +128,10 @@ export const UploadFilesDialog: React.FC<UploadFilesDialogProps> = ({
             }
             
             if (userDataByEmail) {
-              console.log('[UploadFilesDialog] User ID found by email:', userDataByEmail.id);
+              process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[UploadFilesDialog] User ID found by email:', userDataByEmail.id);
               setCurrentUserId(userDataByEmail.id);
             } else {
-              console.warn('[UploadFilesDialog] No user data found by email');
+              process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.warn('[UploadFilesDialog] No user data found by email');
               setOrderPDFState(prev => ({
                 ...prev,
                 error: 'User not found in system. Please contact administrator.'
@@ -145,7 +145,7 @@ export const UploadFilesDialog: React.FC<UploadFilesDialogProps> = ({
             }));
           }
         } else {
-          console.warn('[UploadFilesDialog] No authenticated user');
+          process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.warn('[UploadFilesDialog] No authenticated user');
         }
       } catch (error) {
         console.error('[UploadFilesDialog] Unexpected error:', error);
@@ -424,7 +424,7 @@ export const UploadFilesDialog: React.FC<UploadFilesDialogProps> = ({
       await new Promise(resolve => setTimeout(resolve, 500));
 
       toast.success(`File uploaded successfully to ${uploadState.selectedFolder}!`);
-      console.log('Upload result:', result.data);
+      process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('Upload result:', result.data);
       
       handleClose();
     } catch (error) {
@@ -458,7 +458,7 @@ export const UploadFilesDialog: React.FC<UploadFilesDialogProps> = ({
       return;
     }
 
-    console.log('[UploadFilesDialog] Starting PDF analysis with user ID:', currentUserId);
+    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[UploadFilesDialog] Starting PDF analysis with user ID:', currentUserId);
 
       setOrderPDFState(prev => ({ 
     ...prev, 
@@ -482,7 +482,7 @@ export const UploadFilesDialog: React.FC<UploadFilesDialogProps> = ({
         }));
       }, 300);
 
-      console.log('[Order PDF Analysis] 開始分析 PDF...');
+      process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[Order PDF Analysis] 開始分析 PDF...');
 
       // 發送到 analyze-order-pdf-new API
       const response = await fetch('/api/analyze-order-pdf-new', {
@@ -509,7 +509,7 @@ export const UploadFilesDialog: React.FC<UploadFilesDialogProps> = ({
       // 短暫延遲顯示完成狀態
       await new Promise(resolve => setTimeout(resolve, 500));
 
-          console.log('[Order PDF Analysis] 分析完成:', result);
+          process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[Order PDF Analysis] 分析完成:', result);
     
     toast.success(`PDF Analysis Complete! Extracted ${result.recordCount} records`);
     
@@ -579,7 +579,7 @@ export const UploadFilesDialog: React.FC<UploadFilesDialogProps> = ({
       await new Promise(resolve => setTimeout(resolve, 500));
 
       toast.success(`Order PDF uploaded successfully! Order: ${orderPDFState.orderNumber}`);
-      console.log('Order PDF upload result:', result);
+      process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('Order PDF upload result:', result);
       
       handleClose();
     } catch (error) {

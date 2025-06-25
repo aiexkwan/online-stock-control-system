@@ -154,7 +154,7 @@ export const GrnLabelFormV2: React.FC = () => {
   // Form handlers
   const handleFormChange = useCallback((field: keyof typeof state.formData, value: string) => {
     actions.setFormField(field, value);
-  }, [actions]);
+  }, [actions, state]);
 
   const handleSupplierBlur = useCallback(async (e: React.FocusEvent<HTMLInputElement>) => {
     const inputValue = e.target.value;
@@ -358,7 +358,7 @@ export const GrnLabelFormV2: React.FC = () => {
                           (state.grossWeights.length === 2 && state.grossWeights[state.grossWeights.length - 1].trim() !== '')) {
                         actions.addGrossWeight();
                       }
-                    }, [actions, state.grossWeights.length])}
+                    }, [actions, state.grossWeights])}
                     labelMode={state.labelMode}
                     selectedPalletType={(Object.entries(state.palletType).find(([, value]) => (parseInt(value) || 0) > 0)?.[0] || 'notIncluded') as PalletTypeKey}
                     selectedPackageType={(Object.entries(state.packageType).find(([, value]) => (parseInt(value) || 0) > 0)?.[0] || 'notIncluded') as PackageTypeKey}

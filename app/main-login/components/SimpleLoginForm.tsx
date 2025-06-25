@@ -29,14 +29,14 @@ export default function SimpleLoginForm() {
     setError('');
 
     try {
-      console.log('[SimpleLoginForm] Attempting sign in...');
+      process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[SimpleLoginForm] Attempting sign in...');
       const result = await unifiedAuth.signIn(email, password);
-      console.log('[SimpleLoginForm] Sign in successful:', result);
+      process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[SimpleLoginForm] Sign in successful:', result);
       
       // 等待一小段時間確保 session 建立
       await new Promise(resolve => setTimeout(resolve, 500));
       
-      console.log('[SimpleLoginForm] Redirecting to /access');
+      process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[SimpleLoginForm] Redirecting to /access');
       router.push('/access');
     } catch (err: any) {
       console.error('[SimpleLoginForm] Sign in failed:', err);

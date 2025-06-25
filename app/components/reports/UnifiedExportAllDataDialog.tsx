@@ -67,7 +67,7 @@ export function UnifiedExportAllDataDialog({ isOpen, onClose }: UnifiedExportAll
     }
 
     if (!data || data.length === 0) {
-      console.log(`No data found for ${tableName}`);
+      process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`No data found for ${tableName}`);
       return;
     }
 

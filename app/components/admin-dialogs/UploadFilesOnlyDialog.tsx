@@ -85,7 +85,7 @@ export const UploadFilesOnlyDialog: React.FC<UploadFilesOnlyDialogProps> = ({
             }
             
             if (userDataByEmail) {
-              console.log('[UploadFilesOnlyDialog] User ID found by email:', userDataByEmail.id);
+              process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[UploadFilesOnlyDialog] User ID found by email:', userDataByEmail.id);
               setCurrentUserId(userDataByEmail.id);
             }
           } catch (queryError) {
@@ -288,7 +288,7 @@ export const UploadFilesOnlyDialog: React.FC<UploadFilesOnlyDialogProps> = ({
       await new Promise(resolve => setTimeout(resolve, 500));
 
       toast.success(`File uploaded successfully to ${uploadState.selectedFolder}!`);
-      console.log('Upload result:', result);
+      process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('Upload result:', result);
       
       handleClose();
     } catch (error) {

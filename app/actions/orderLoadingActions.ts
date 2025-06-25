@@ -35,7 +35,7 @@ export async function undoLoadPallet(
   quantity: number
 ): Promise<UndoLoadResult> {
   const supabase = await createClient()
-  console.log(`[undoLoadPallet] Starting undo for order: ${orderRef}, pallet: ${palletNum}`)
+  process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`[undoLoadPallet] Starting undo for order: ${orderRef}, pallet: ${palletNum}`)
 
   try {
     // Get current user
@@ -57,7 +57,7 @@ export async function undoLoadPallet(
     }
     
     // Call RPC function for atomic transaction
-    console.log(`[undoLoadPallet] Calling RPC function`);
+    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`[undoLoadPallet] Calling RPC function`);
     const { data, error } = await supabase
       .rpc('rpc_undo_load_pallet', {
         p_order_ref: orderRef,
@@ -77,7 +77,7 @@ export async function undoLoadPallet(
     }
     
     if (data.success) {
-      console.log(`[undoLoadPallet] Successfully undone:`, data);
+      process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`[undoLoadPallet] Successfully undone:`, data);
     }
     
     return data;
@@ -96,7 +96,7 @@ export async function loadPalletToOrder(
   palletInput: string
 ): Promise<LoadPalletResult> {
   const supabase = await createClient()
-  console.log(`[loadPalletToOrder] Started with orderRef: ${orderRef}, input: ${palletInput}`);
+  process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`[loadPalletToOrder] Started with orderRef: ${orderRef}, input: ${palletInput}`);
 
   try {
     // Get current user
@@ -131,7 +131,7 @@ export async function loadPalletToOrder(
     const cleanInput = palletInput.trim();
     
     // Call RPC function for atomic transaction
-    console.log(`[loadPalletToOrder] Calling RPC function`);
+    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`[loadPalletToOrder] Calling RPC function`);
     const { data, error } = await supabase
       .rpc('rpc_load_pallet_to_order', {
         p_order_ref: orderRef,
@@ -154,7 +154,7 @@ export async function loadPalletToOrder(
     const postLoadAnomaly = await checkOperationAnomaly(userId.toString(), orderRef);
     
     if (data.success) {
-      console.log(`[loadPalletToOrder] Successfully loaded:`, data);
+      process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`[loadPalletToOrder] Successfully loaded:`, data);
       return {
         ...data,
         warning: postLoadAnomaly.hasAnomaly ? postLoadAnomaly.message : undefined

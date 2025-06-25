@@ -45,7 +45,7 @@ export default function AskDatabaseDialog({ isOpen, onClose }: AskDatabaseDialog
     setQuestion('');
 
     try {
-      console.log('[AskDatabaseDialog] Submitting question:', currentQuestion);
+      process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[AskDatabaseDialog] Submitting question:', currentQuestion);
       
       const response = await fetch('/api/ask-database', {
         method: 'POST',
@@ -56,8 +56,8 @@ export default function AskDatabaseDialog({ isOpen, onClose }: AskDatabaseDialog
         }),
       });
 
-      console.log('[AskDatabaseDialog] Response status:', response.status);
-      console.log('[AskDatabaseDialog] Response headers:', Object.fromEntries(response.headers.entries()));
+      process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[AskDatabaseDialog] Response status:', response.status);
+      process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[AskDatabaseDialog] Response headers:', Object.fromEntries(response.headers.entries()));
 
       if (!response.ok) {
         const errorData = await response.json();
@@ -66,7 +66,7 @@ export default function AskDatabaseDialog({ isOpen, onClose }: AskDatabaseDialog
       }
 
       const result: QueryResult = await response.json();
-      console.log('[AskDatabaseDialog] Success result:', result);
+      process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[AskDatabaseDialog] Success result:', result);
       setConversation(prev => [...prev, result]);
     } catch (error: any) {
       console.error('[AskDatabaseDialog] Request failed:', error);
@@ -116,7 +116,7 @@ export default function AskDatabaseDialog({ isOpen, onClose }: AskDatabaseDialog
         method: 'GET',
       });
       const status = await response.json();
-      console.log('[AskDatabaseDialog] API Status:', status);
+      process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[AskDatabaseDialog] API Status:', status);
       
       // 顯示狀態信息
       const statusMessage = `

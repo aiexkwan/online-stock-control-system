@@ -198,7 +198,7 @@ export const useStockMovement = (options: UseStockMovementOptions = {}) => {
   // 預加載托盤（使用批量搜尋）
   const preloadPallets = useCallback(async (patterns: string[]): Promise<void> => {
     // 這個功能在新架構中通過快取自動實現
-    console.log('[useStockMovement] Preload patterns:', patterns);
+    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[useStockMovement] Preload patterns:', patterns);
   }, []);
 
   // 轉換活動日誌格式（為了向後兼容）

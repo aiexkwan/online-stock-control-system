@@ -57,7 +57,7 @@ export interface SupplierInputProps extends Omit<React.InputHTMLAttributes<HTMLI
  *   enableSuggestions
  *   onSupplierValidated={(supplier) => {
  *     if (supplier) {
- *       console.log('Valid supplier:', supplier.supplier_name);
+ *       process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('Valid supplier:', supplier.supplier_name);
  *     }
  *   }}
  * />

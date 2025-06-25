@@ -43,7 +43,7 @@ export interface SupplierFieldProps {
  *   showCard
  *   cardTitle="Supplier Information"
  *   onSupplierChange={(supplier) => {
- *     console.log('Selected supplier:', supplier);
+ *     process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('Selected supplier:', supplier);
  *   }}
  * />
  * ```

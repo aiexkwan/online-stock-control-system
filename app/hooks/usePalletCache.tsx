@@ -112,7 +112,7 @@ export const usePalletCache = (options: PalletCacheOptions = {}) => {
       });
 
       await Promise.all(promises);
-      console.log('[PalletCache] 預加載完成，快取大小:', cache.current.size);
+      process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[PalletCache] 預加載完成，快取大小:', cache.current.size);
     } catch (error) {
       console.error('[PalletCache] 預加載失敗:', error);
     }
@@ -129,7 +129,7 @@ export const usePalletCache = (options: PalletCacheOptions = {}) => {
     // 先檢查快取
     const cachedData = getFromCache(cacheKey);
     if (cachedData) {
-      console.log('[PalletCache] 快取命中:', cacheKey);
+      process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[PalletCache] 快取命中:', cacheKey);
       return cachedData;
     }
 
@@ -206,7 +206,7 @@ export const usePalletCache = (options: PalletCacheOptions = {}) => {
 
     // 批量刷新
     if (keysToRefresh.length > 0) {
-      console.log('[PalletCache] 背景刷新:', keysToRefresh.length, '個項目');
+      process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[PalletCache] 背景刷新:', keysToRefresh.length, '個項目');
       
       const { data: palletInfos } = await supabase
         .from('record_palletinfo')

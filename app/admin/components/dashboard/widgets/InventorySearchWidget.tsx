@@ -12,7 +12,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { WidgetCard } from '../WidgetCard';
 import { MagnifyingGlassIcon, ExclamationCircleIcon } from '@heroicons/react/24/outline';
-import { WidgetComponentProps, WidgetSize } from '@/app/types/dashboard';
+import { WidgetComponentProps } from '@/app/types/dashboard';
 import { createClient } from '@/app/utils/supabase/client';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
@@ -48,7 +48,6 @@ export const InventorySearchWidget = React.memo(function InventorySearchWidget({
   const [loadingChart, setLoadingChart] = useState(false);
   const { refreshTrigger } = useAdminRefresh();
 
-  const size = widget.config.size || WidgetSize.SMALL;
 
   const fetchChartData = useCallback(async (productCode: string) => {
     try {
@@ -168,7 +167,7 @@ export const InventorySearchWidget = React.memo(function InventorySearchWidget({
     if (size === WidgetSize.LARGE && searchResults && !isEditMode) {
       fetchChartData(searchResults.product_code);
     }
-  }, [searchResults, size, isEditMode, fetchChartData]);
+  }, [searchResults, isEditMode, fetchChartData]);
 
   const searchInventory = useCallback(async (productCode: string) => {
     if (!productCode.trim()) {
@@ -260,116 +259,17 @@ export const InventorySearchWidget = React.memo(function InventorySearchWidget({
   }, [refreshTrigger, searchQuery, searchInventory]);
 
 
-
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     searchInventory(searchQuery);
   };
 
   // Small size (1x1) - 不支援
-  if (size === WidgetSize.SMALL) {
-    return (
-      <WidgetCard size={widget.config.size} widgetType="INVENTORY_SEARCH" isEditMode={isEditMode}>
-        <CardContent className="p-2 h-full flex flex-col justify-center items-center">
-          <h3 className="text-xs text-slate-400 mb-1">Inventory Search</h3>
-          <div className="text-lg font-medium text-slate-500">(N/A)</div>
-          <p className="text-xs text-slate-500 mt-1">1×1</p>
-        </CardContent>
-      </WidgetCard>
-    );
-  }
 
   // Medium size (3x3) - 套用現時 5x5 模式的顯示內容
-  if (size === WidgetSize.MEDIUM) {
-    return (
-      <WidgetCard size={widget.config.size} widgetType="INVENTORY_SEARCH" isEditMode={isEditMode}>
-        <CardHeader className="pb-2">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-lg flex items-center justify-center">
-              <MagnifyingGlassIcon className="h-5 w-5 text-white" />
-            </div>
-            <CardTitle className="text-sm font-medium text-slate-200">Inventory Search</CardTitle>
-          </div>
-        </CardHeader>
-        <CardContent className="pt-2">
-          <form onSubmit={handleSearchSubmit} className="space-y-3">
-            <div className="flex gap-2">
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Enter Product Code"
-                className="flex-1 px-3 py-2 bg-white/5 border border-slate-600/50 rounded-lg text-slate-200 placeholder-slate-400 focus:outline-none focus:border-blue-500/70 focus:bg-white/10 hover:border-blue-500/50 hover:bg-white/10 transition-all duration-300 text-sm"
-                disabled={isEditMode}
-              />
-              <button
-                type="submit"
-                disabled={loading || !searchQuery.trim() || isEditMode}
-                className="px-3 py-2 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 disabled:from-slate-600 disabled:to-slate-600 disabled:cursor-not-allowed text-white rounded-lg transition-all duration-300 font-medium shadow-lg hover:shadow-blue-500/25"
-              >
-                {loading ? (
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                ) : (
-                  <MagnifyingGlassIcon className="w-4 h-4" />
-                )}
-              </button>
-            </div>
-          </form>
 
-          {error && (
-            <div className="mt-3 p-2 bg-red-500/10 border border-red-500/30 rounded-lg">
-              <p className="text-red-400 text-xs">{error}</p>
-            </div>
-          )}
-
-          {searchResults && (
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="mt-3 space-y-2"
-            >
-              <div className="grid grid-cols-2 gap-2 text-xs">
-                {[
-                  { label: 'Production', value: searchResults.injection, color: 'text-blue-400', bg: 'bg-blue-500/10', border: 'border-blue-500/30' },
-                  { label: 'Pipeline', value: searchResults.pipeline, color: 'text-green-400', bg: 'bg-green-500/10', border: 'border-green-500/30' },
-                  { label: 'Prebook', value: searchResults.prebook, color: 'text-indigo-400', bg: 'bg-indigo-500/10', border: 'border-indigo-500/30' },
-                  { label: 'Awaiting', value: searchResults.await, color: 'text-yellow-400', bg: 'bg-yellow-500/10', border: 'border-yellow-500/30' },
-                  { label: 'Fold Mill', value: searchResults.fold, color: 'text-purple-400', bg: 'bg-purple-500/10', border: 'border-purple-500/30' },
-                  { label: 'Bulk Room', value: searchResults.bulk, color: 'text-orange-400', bg: 'bg-orange-500/10', border: 'border-orange-500/30' },
-                  { label: 'Back Car Park', value: searchResults.backcarpark, color: 'text-cyan-400', bg: 'bg-cyan-500/10', border: 'border-cyan-500/30' },
-                ].map((location) => (
-                  <div key={location.label} className={`flex justify-between items-center py-1.5 px-2 ${location.bg} border ${location.border} rounded`}>
-                    <span className="text-slate-300">{location.label}:</span>
-                    <span className={`font-bold ${location.color}`}>
-                      {location.value.toLocaleString()}
-                    </span>
-                  </div>
-                ))}
-              </div>
-              
-              <div className="flex justify-between items-center py-2 px-3 bg-gradient-to-r from-blue-500/10 to-cyan-500/10 border border-blue-500/30 rounded-lg">
-                <span className="text-sm font-bold text-slate-200">Total:</span>
-                <span className="text-lg font-bold text-blue-400">
-                  {searchResults.total.toLocaleString()}
-                </span>
-              </div>
-            </motion.div>
-          )}
-
-          {!searchResults && !loading && !error && (
-            <div className="mt-4 text-center py-4">
-              <MagnifyingGlassIcon className="w-8 h-8 text-slate-600 mx-auto mb-2" />
-              <p className="text-slate-400 text-xs">Enter a product code</p>
-            </div>
-          )}
-        </CardContent>
-      </WidgetCard>
-    );
-  }
-
-  // Large size (5x5) - 上半部維持現有顯示，下半部加入折線圖
   return (
-    <WidgetCard size={widget.config.size} widgetType="INVENTORY_SEARCH" isEditMode={isEditMode} className="flex flex-col">
+    <WidgetCard widgetType="INVENTORY_SEARCH" isEditMode={isEditMode} className="flex flex-col">
       <CardHeader className="pb-2">
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-lg flex items-center justify-center">

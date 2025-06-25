@@ -60,7 +60,7 @@ export const usePerformanceMonitor = (config: PerformanceConfig) => {
     }));
 
     if (enableLogging && renderTime > slowRenderThreshold) {
-      console.warn(`[Performance] Slow render detected in ${componentName}: ${renderTime.toFixed(2)}ms`);
+      process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.warn(`[Performance] Slow render detected in ${componentName}: ${renderTime.toFixed(2)}ms`);
     }
   }, [componentName, enableLogging, slowRenderThreshold]);
 
@@ -76,7 +76,7 @@ export const usePerformanceMonitor = (config: PerformanceConfig) => {
       const duration = endTime - startTime;
       
       if (enableLogging) {
-        console.log(`[Performance] ${componentName} - ${interactionType}: ${duration.toFixed(2)}ms`);
+        process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`[Performance] ${componentName} - ${interactionType}: ${duration.toFixed(2)}ms`);
       }
     };
   }, [componentName, enableLogging, trackUserInteractions]);

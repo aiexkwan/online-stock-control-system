@@ -47,7 +47,7 @@ export const useBatchProcessing = ({
   const supabase = createClient();
 
   // 獲取產品信息
-  const fetchProductInfo = async (productCode: string): Promise<ProductInfo | null> => {
+  const fetchProductInfo = useCallback(async (productCode: string): Promise<ProductInfo | null> => {
     try {
       const { data, error } = await supabase
         .from('products')
@@ -69,10 +69,10 @@ export const useBatchProcessing = ({
       console.error('Error fetching product info:', error);
       return null;
     }
-  };
+  }, [supabase]);
 
   // 處理單個批量項目
-  const processSingleItem = async (
+  const processSingleItem = useCallback(async (
     item: BatchItem,
     clockNumber: string
   ): Promise<{ success: boolean; error?: string }> => {
@@ -161,7 +161,7 @@ export const useBatchProcessing = ({
       console.error('Error processing batch item:', error);
       return { success: false, error: error.message || 'Unknown error' };
     }
-  };
+  }, [fetchProductInfo, generatePalletNumbers, createQcRecords, generatePdfs, updateStockAndWorkLevels]);
 
   // 處理批量項目
   const processBatch = useCallback(async (options: BatchProcessingOptions) => {

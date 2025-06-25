@@ -3,7 +3,7 @@
 import React, { useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
-import StockTakeNav from '../components/StockTakeNav';
+// import StockTakeNav from '../components/StockTakeNav'; // Removed - using dynamic action bar
 import ScanToStart from './components/ScanToStart';
 import RemainToCount from './components/RemainToCount';
 import NumberPad from './components/NumberPad';
@@ -411,7 +411,7 @@ export default function CycleCountPage() {
     <div>
       <ErrorBoundary>
         <div className="text-white">
-          <StockTakeNav />
+          {/* Navigation removed - using dynamic action bar */}
         
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           {/* 頁面標題 */}

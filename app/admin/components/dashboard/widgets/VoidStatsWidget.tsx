@@ -11,7 +11,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { WidgetCard } from '../WidgetCard';
-import { WidgetComponentProps, WidgetSize } from '@/app/types/dashboard';
+import { WidgetComponentProps } from '@/app/types/dashboard';
 import { createClient } from '@/app/utils/supabase/client';
 import { format, startOfDay, endOfDay, subDays, subMonths } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -35,7 +35,6 @@ interface ChartData {
 }
 
 export const VoidStatsWidget = React.memo(function VoidStatsWidget({ widget, isEditMode }: WidgetComponentProps) {
-  const size = widget.config.size || WidgetSize.SMALL;
   const [loading, setLoading] = useState(true);
   const [voidData, setVoidData] = useState<VoidData[]>([]);
   const [totalCount, setTotalCount] = useState(0);
@@ -155,7 +154,7 @@ export const VoidStatsWidget = React.memo(function VoidStatsWidget({ widget, isE
     } finally {
       setLoading(false);
     }
-  }, [timeRange, size, getDateRange, prepareChartData]);
+  }, [timeRange, getDateRange, prepareChartData]);
 
   useWidgetData({ loadFunction: fetchVoidData, isEditMode });
 
@@ -171,66 +170,11 @@ export const VoidStatsWidget = React.memo(function VoidStatsWidget({ widget, isE
 
 
   // Small size (1x1) - 只顯示文字和數據
-  if (size === WidgetSize.SMALL) {
-    return (
-      <WidgetCard size={widget.config.size} widgetType="VOID_STATS" isEditMode={isEditMode}>
-        <CardContent className="p-2 h-full flex flex-col justify-center items-center">
-          <h3 className="text-xs text-slate-400 mb-1">Voids</h3>
-          {loading ? (
-            <div className="h-8 w-16 bg-white/10 rounded animate-pulse"></div>
-          ) : (
-            <>
-              <div className="text-2xl font-bold text-red-400">{totalCount}</div>
-              <p className="text-xs text-slate-500">Today</p>
-            </>
-          )}
-        </CardContent>
-      </WidgetCard>
-    );
-  }
 
   // Medium size (3x3) - 顯示損毀統計資料列表
-  if (size === WidgetSize.MEDIUM) {
-    return (
-      <WidgetCard size={widget.config.size} widgetType="VOID_STATS" isEditMode={isEditMode}>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-medium text-slate-200">Void Statistics</CardTitle>
-        </CardHeader>
-        <CardContent className="pt-2">
-          <UnifiedWidgetLayout
-            size={size}
-            singleContent={
-              loading ? (
-                <div className="space-y-2">
-                  {[...Array(3)].map((_, i) => (
-                    <div key={i} className="h-6 bg-white/10 rounded animate-pulse"></div>
-                  ))}
-                </div>
-              ) : voidData.length === 0 ? (
-                <p className="text-xs text-slate-500 text-center py-4">No void records today</p>
-              ) : (
-                <div className="space-y-1">
-                  {voidData.slice(0, 10).map((item) => (
-                    <TableRow key={item.id}>
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs text-slate-400">{format(new Date(item.created_at), 'HH:mm')}</span>
-                        <span className="text-xs text-purple-300">{item.product_code}</span>
-                      </div>
-                      <span className="text-xs font-semibold text-purple-400">{item.damage_qty}</span>
-                    </TableRow>
-                  ))}
-                </div>
-              )
-            }
-          />
-        </CardContent>
-      </WidgetCard>
-    );
-  }
 
-  // Large size (5x5) - 完整功能包括圖表
   return (
-    <WidgetCard size={widget.config.size} widgetType="VOID_STATS" isEditMode={isEditMode}>
+    <WidgetCard widgetType="VOID_STATS" isEditMode={isEditMode}>
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
           <CardTitle className="text-sm font-medium text-slate-200">Void Statistics</CardTitle>
@@ -286,7 +230,7 @@ export const VoidStatsWidget = React.memo(function VoidStatsWidget({ widget, isE
           </div>
         ) : (
           <UnifiedWidgetLayout
-            size={size}
+
             tableData={voidData}
             renderTableRow={(item) => (
               <TableRow key={item.id}>

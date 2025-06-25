@@ -45,8 +45,8 @@ export {
  * 
  * const result = await generatePalletNumbers(5, 'qc-label-123');
  * if (result.success) {
- *   console.log(result.palletNumbers); // ['140625/1', '140625/2', ...]
- *   console.log(result.series); // ['140625-ABC123', '140625-DEF456', ...]
+ *   process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(result.palletNumbers); // ['140625/1', '140625/2', ...]
+ *   process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(result.series); // ['140625-ABC123', '140625-DEF456', ...]
  * }
  * ```
  */
@@ -95,6 +95,6 @@ export {
  * import { getPalletBufferStatus } from '@/app/utils/palletGeneration';
  * 
  * const status = await getPalletBufferStatus();
- * console.log(`Available: ${status.availableCount}/${status.totalCount}`);
+ * process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`Available: ${status.availableCount}/${status.totalCount}`);
  * ```
  */

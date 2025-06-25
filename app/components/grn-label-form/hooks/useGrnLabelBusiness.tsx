@@ -118,7 +118,7 @@ export function useGrnLabelBusiness() {
       const packageCount = parseInt(formData.packageType[selectedPackageType as keyof typeof formData.packageType] || '0');
       
       // Generate pallet numbers and series with V2 optimization
-      console.log('[GRN useGrnLabelBusiness] Generating pallet numbers using V2 optimization');
+      process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[GRN useGrnLabelBusiness] Generating pallet numbers using V2 optimization');
       const generationResult = await generatePalletNumbersAndSeries(numberOfPalletsToProcess);
       
       if (generationResult.error) {
@@ -265,7 +265,7 @@ export function useGrnLabelBusiness() {
           // Confirm pallet usage in V6 system
           const confirmResult = await confirmPalletUsage(palletNumbers, supabase);
           if (!confirmResult) {
-            console.warn('[GRN] Failed to confirm pallet usage for v6 system');
+            process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.warn('[GRN] Failed to confirm pallet usage for v6 system');
           }
         } else {
           toast.error(`Print failed: ${printResult.error}`);
@@ -273,7 +273,7 @@ export function useGrnLabelBusiness() {
           // Release pallet reservation in V6 system on print failure
           const releaseResult = await releasePalletReservation(palletNumbers, supabase);
           if (!releaseResult) {
-            console.warn('[GRN] Failed to release pallet reservation for v6 system');
+            process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.warn('[GRN] Failed to release pallet reservation for v6 system');
           }
         }
       } else {
@@ -282,7 +282,7 @@ export function useGrnLabelBusiness() {
         // Release all pallet numbers if nothing was generated
         const releaseResult = await releasePalletReservation(palletNumbers, supabase);
         if (!releaseResult) {
-          console.warn('[GRN] Failed to release pallet reservation for v6 system');
+          process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.warn('[GRN] Failed to release pallet reservation for v6 system');
         }
       }
       
@@ -304,7 +304,7 @@ export function useGrnLabelBusiness() {
       if (palletNumbers && palletNumbers.length > 0) {
         const releaseResult = await releasePalletReservation(palletNumbers, supabase);
         if (!releaseResult) {
-          console.warn('[GRN] Failed to release pallet reservation after error');
+          process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.warn('[GRN] Failed to release pallet reservation after error');
         }
       }
       

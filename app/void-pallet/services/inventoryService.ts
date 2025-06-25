@@ -8,7 +8,7 @@ import { createClient } from '@/app/utils/supabase/server';
 export function getInventoryColumn(location: string | null): string {
   if (!location) return 'injection'; // Default value
   
-  console.log(`[Inventory] Mapping location "${location}" to inventory column`);
+  process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`[Inventory] Mapping location "${location}" to inventory column`);
   
   const locationMap: { [key: string]: string } = {
     // Exact matches for database locations
@@ -31,7 +31,7 @@ export function getInventoryColumn(location: string | null): string {
   };
   
   const column = locationMap[location] || 'injection';
-  console.log(`[Inventory] Location "${location}" mapped to column "${column}"`);
+  process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`[Inventory] Location "${location}" mapped to column "${column}"`);
   
   return column;
 }
@@ -73,7 +73,7 @@ export async function updateInventoryForVoid(
       return { success: false, error: error.message };
     }
 
-    console.log('[Inventory] Successfully updated inventory:', inventoryUpdate);
+    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[Inventory] Successfully updated inventory:', inventoryUpdate);
     return { success: true };
   } catch (error: any) {
     console.error('[Inventory] Unexpected error:', error);
@@ -92,7 +92,7 @@ export async function updateStockLevel(
   try {
     const supabase = createClient();
     
-    console.log('[Stock Level] Updating:', {
+    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[Stock Level] Updating:', {
       product_code: productCode,
       quantity: quantity,
       operation: operation
@@ -110,7 +110,7 @@ export async function updateStockLevel(
       return { success: false, error: error.message };
     }
 
-    console.log('[Stock Level] Updated successfully:', data);
+    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[Stock Level] Updated successfully:', data);
     return { success: true, result: data };
   } catch (error: any) {
     console.error('[Stock Level] Unexpected error:', error);

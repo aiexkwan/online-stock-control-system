@@ -106,10 +106,10 @@ export default function ProductUpdatePage() {
       
       if (isEditing && productData) {
         // 更新現有產品 - 使用優化的 SQL 方法
-        console.log('[ProductUpdate] Using optimized SQL update method');
-        console.log('[ProductUpdate] productData.code:', productData.code);
-        console.log('[ProductUpdate] formData:', formData);
-        console.log('[ProductUpdate] isEditing:', isEditing);
+        process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[ProductUpdate] Using optimized SQL update method');
+        process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[ProductUpdate] productData.code:', productData.code);
+        process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[ProductUpdate] formData:', formData);
+        process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[ProductUpdate] isEditing:', isEditing);
         
         // 移除 formData 中的 code 字段，因為它不應該被更新
         const { code: _, ...updateData } = formData;
@@ -120,11 +120,11 @@ export default function ProductUpdatePage() {
           updateData.standard_qty = parseInt(updateData.standard_qty) || 0;
         }
         
-        console.log('[ProductUpdate] updateData (without code):', updateData);
+        process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[ProductUpdate] updateData (without code):', updateData);
         
         result = await updateProduct(productData.code, updateData);
         
-        console.log('[ProductUpdate] updateProduct result:', result);
+        process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[ProductUpdate] updateProduct result:', result);
         
         if (result.success) {
           setProductData(result.data!);
@@ -135,8 +135,8 @@ export default function ProductUpdatePage() {
         }
       } else {
         // 新增產品
-        console.log('[ProductUpdate] Creating new product');
-        console.log('[ProductUpdate] formData:', formData);
+        process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[ProductUpdate] Creating new product');
+        process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[ProductUpdate] formData:', formData);
         
         result = await createProduct(formData);
         if (result.success) {
@@ -149,7 +149,7 @@ export default function ProductUpdatePage() {
       }
       
       if (!result.success) {
-        console.log('[ProductUpdate] Operation failed:', result.error);
+        process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[ProductUpdate] Operation failed:', result.error);
         setStatusMessage({
           type: 'error',
           message: result.error || 'Operation failed'

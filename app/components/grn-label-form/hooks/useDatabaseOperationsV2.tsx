@@ -24,7 +24,7 @@ export function useDatabaseOperationsV2() {
   // Optimized pallet number and series generation
   const generatePalletNumbersAndSeries = useCallback(async (count: number): Promise<GenerationResult> => {
     try {
-      console.log(`[GRN useDatabaseOperationsV2] Generating ${count} pallet numbers using optimized method`);
+      process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`[GRN useDatabaseOperationsV2] Generating ${count} pallet numbers using optimized method`);
       
       // Use V6 optimized pallet generation (includes series)
       const supabase = createClient();
@@ -42,7 +42,7 @@ export function useDatabaseOperationsV2() {
       
       // Log method used
       if (result.method) {
-        console.log(`[GRN useDatabaseOperationsV2] Generation completed:`, {
+        process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`[GRN useDatabaseOperationsV2] Generation completed:`, {
           method: result.method,
           count
         });
@@ -77,7 +77,7 @@ export function useDatabaseOperationsV2() {
       
       // Handle workflow warnings
       if (result.warning) {
-        console.warn('[GRN useDatabaseOperationsV2] Workflow warning:', result.warning);
+        process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.warn('[GRN useDatabaseOperationsV2] Workflow warning:', result.warning);
         toast.warning(result.warning);
       }
       

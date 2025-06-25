@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import OpenAI from 'openai';
 import crypto from 'crypto';
+import { apiLogger, logApiRequest, logApiResponse, systemLogger } from '@/lib/logger';
 
 // 簡單的內存緩存（生產環境建議使用 Redis）
 const fileCache = new Map<string, any>();
@@ -80,7 +81,7 @@ async function extractTextFromPDF(pdfBuffer: Buffer): Promise<string> {
       throw new Error('Invalid PDF buffer');
     }
     
-    console.log('[PDF Text Extract] Buffer size:', pdfBuffer.length);
+    systemLogger.debug('[PDF Text Extract] Buffer size:', { bufferSize: pdfBuffer.length });
     
     const pkg = require('pdf-parse');
     const pdfParse = pkg.default || pkg;
@@ -91,21 +92,20 @@ async function extractTextFromPDF(pdfBuffer: Buffer): Promise<string> {
     
     const pdfData = await pdfParse(pdfBuffer, options);
     
-    console.log('[PDF Text Extract] Pages:', pdfData.numpages);
-    console.log('[PDF Text Extract] Text length:', pdfData.text?.length || 0);
-    console.log('[PDF Text Extract] PDF info:', pdfData.info);
+    systemLogger.debug('[PDF Text Extract] PDF parsed', {
+      pages: pdfData.numpages,
+      textLength: pdfData.text?.length || 0,
+      info: pdfData.info
+    });
     
     if (!pdfData.text || pdfData.text.trim().length === 0) {
-      console.log('[PDF Text Extract] No text found, PDF info:', pdfData.info);
+      systemLogger.warn('[PDF Text Extract] No text found in PDF', { info: pdfData.info });
       throw new Error('No readable text found in PDF - might be a scanned image');
     }
     
     const extractedText = pdfData.text.trim();
-    console.log('[PDF Text Extract] FULL EXTRACTED TEXT:');
-    console.log('=====================================');
-    console.log(extractedText);
-    console.log('=====================================');
-    console.log('[PDF Text Extract] Contains key terms:', {
+    systemLogger.debug('[PDF Text Extract] Text extraction complete', {
+      textLength: extractedText.length,
       hasOrderRef: /\b\d{6,10}\b/.test(extractedText),
       hasAccount: /Account\s*No/i.test(extractedText),
       hasDelivery: /Delivery\s*Address/i.test(extractedText),
@@ -115,14 +115,14 @@ async function extractTextFromPDF(pdfBuffer: Buffer): Promise<string> {
     
     return extractedText;
   } catch (error: any) {
-    console.error('[PDF Text Extract] Error:', error.message);
+    systemLogger.error('[PDF Text Extract] Error', { error: error.message });
     throw new Error(`PDF text extraction failed: ${error.message}`);
   }
 }
 
 // 🔥 策略 2：PDF 文本智能預處理函數
 function preprocessPdfText(rawText: string): string {
-  console.log(`[PDF Preprocessing] Original text length: ${rawText.length} chars`);
+  systemLogger.debug('[PDF Preprocessing] Starting', { originalLength: rawText.length });
   
   // 1. 提取訂單參考號碼（通常在文檔開頭）
   const orderRefMatch = rawText.match(/\b\d{6,10}\b/);
@@ -142,7 +142,7 @@ function preprocessPdfText(rawText: string): string {
       const trimmedLine = line.trim();
       if (trimmedLine.match(/^\d{5,8}$/)) {
         accountNum = trimmedLine;
-        console.log(`[PDF Preprocessing] Found account number in standalone line: "${accountNum}"`);
+        systemLogger.debug('[PDF Preprocessing] Found account number in standalone line', { accountNum });
         break;
       }
     }
@@ -165,7 +165,7 @@ function preprocessPdfText(rawText: string): string {
       }
     }
   }
-  console.log(`[PDF Preprocessing] Account No found: "${accountNum}"`);
+  systemLogger.debug('[PDF Preprocessing] Account No found', { accountNum });
   
   // 1.2 提取 Delivery Address - 改進版
   let deliveryAdd = '';
@@ -178,7 +178,7 @@ function preprocessPdfText(rawText: string): string {
     const match = rawText.match(pattern);
     if (match) {
       const rawAddress = match[1].trim();
-      console.log(`[PDF Preprocessing] Raw delivery address match:`, rawAddress.substring(0, 200));
+      systemLogger.debug('[PDF Preprocessing] Raw delivery address match', { addressPreview: rawAddress.substring(0, 200) });
       
       deliveryAdd = rawAddress
         .split('\n')
@@ -199,7 +199,7 @@ function preprocessPdfText(rawText: string): string {
     }
   }
   
-  console.log(`[PDF Preprocessing] Extracted delivery address: "${deliveryAdd}"`);
+  systemLogger.debug('[PDF Preprocessing] Extracted delivery address', { deliveryAdd });
   
   // 如果仍然沒有找到地址，嘗試查找包含郵政編碼的行
   if (!deliveryAdd) {
@@ -215,7 +215,7 @@ function preprocessPdfText(rawText: string): string {
           
           if (addressLines.length > 0) {
             deliveryAdd = addressLines.join(', ');
-            console.log(`[PDF Preprocessing] Found address by postcode: "${deliveryAdd}"`);
+            systemLogger.debug('[PDF Preprocessing] Found address by postcode', { deliveryAdd });
             break;
           }
         }
@@ -237,8 +237,10 @@ function preprocessPdfText(rawText: string): string {
     return (hasProductCode || isTransport) && isNotHeader && trimmed.length > 3;
   });
   
-  console.log(`[PDF Preprocessing] Found ${productLines.length} potential product lines`);
-  console.log(`[PDF Preprocessing] Product lines:`, productLines.slice(0, 5)); // 顯示前5行作為調試
+  systemLogger.debug('[PDF Preprocessing] Found potential product lines', {
+    count: productLines.length,
+    preview: productLines.slice(0, 5)
+  });
   
   // 3. 構建清潔的文本
   let coreContent = '';
@@ -281,14 +283,12 @@ function preprocessPdfText(rawText: string): string {
     }
   }
   
-  console.log(`[PDF Preprocessing] Processed text length: ${coreContent.length} chars`);
-  console.log(`[PDF Preprocessing] Reduction: ${((rawText.length - coreContent.length) / rawText.length * 100).toFixed(1)}%`);
-  console.log(`[PDF Preprocessing] Extracted Account No:`, accountNum);
-  console.log(`[PDF Preprocessing] Extracted Delivery Address:`, deliveryAdd);
-  console.log('[PDF Preprocessing] FULL PROCESSED TEXT:');
-  console.log('=====================================');
-  console.log(coreContent);
-  console.log('=====================================');
+  systemLogger.debug('[PDF Preprocessing] Processing complete', {
+    processedLength: coreContent.length,
+    reductionPercent: ((rawText.length - coreContent.length) / rawText.length * 100).toFixed(1),
+    accountNum,
+    deliveryAdd
+  });
   
   return coreContent;
 }
@@ -314,7 +314,7 @@ function calculateTokenPerRecord(totalTokens: number, recordCount: number): numb
 // 🚀 可選背景存儲函數
 async function uploadToStorageAsync(pdfBuffer: Buffer, fileName: string, uploadedBy: string, extractedText?: string) {
   try {
-    console.log('[Background Storage] Starting upload...');
+    systemLogger.info('[Background Storage] Starting upload');
     const supabaseAdmin = createSupabaseAdmin();
     
     const { data: uploadData, error: uploadError } = await supabaseAdmin.storage
@@ -347,23 +347,26 @@ async function uploadToStorageAsync(pdfBuffer: Buffer, fileName: string, uploade
       });
     
     if (docError) {
-      console.warn('[Background Storage] doc_upload insert failed:', docError);
+      systemLogger.warn('[Background Storage] doc_upload insert failed', { error: docError });
     } else {
-      console.log('[Background Storage] doc_upload inserted with json_txt field');
+      systemLogger.info('[Background Storage] doc_upload inserted with json_txt field');
     }
     
-    console.log('[Background Storage] Upload completed:', urlData.publicUrl);
+    systemLogger.info('[Background Storage] Upload completed', { publicUrl: urlData.publicUrl });
     return urlData.publicUrl;
     
   } catch (error: any) {
-    console.error('[Background Storage] Upload failed:', error.message);
+    systemLogger.error('[Background Storage] Upload failed', { error: error.message });
     throw error;
   }
 }
 
 export async function POST(request: NextRequest) {
+  const startTime = Date.now();
+  logApiRequest('POST', '/api/analyze-order-pdf-new');
+  
   try {
-    console.log('[PDF Analysis] Starting PDF analysis request');
+    apiLogger.info('[PDF Analysis] Starting PDF analysis request');
     
     // 🚀 新流程：只處理 FormData，直接從文件提取
     const formData = await request.formData();
@@ -372,7 +375,7 @@ export async function POST(request: NextRequest) {
     const uploadedBy = formData.get('uploadedBy') as string;
     const saveToStorage = formData.get('saveToStorage') === 'true';
     
-    console.log('[PDF Analysis] FormData received:', { 
+    apiLogger.info('[PDF Analysis] FormData received', { 
       fileName, 
       uploadedBy, 
       fileSize: file?.size,
@@ -380,6 +383,14 @@ export async function POST(request: NextRequest) {
     });
     
     if (!file || !fileName || !uploadedBy) {
+      apiLogger.error('[PDF Analysis] Missing required fields', {
+        hasFile: !!file,
+        hasFileName: !!fileName,
+        hasUploadedBy: !!uploadedBy,
+        fileType: file?.type,
+        fileSize: file?.size
+      });
+      logApiResponse('POST', '/api/analyze-order-pdf-new', 400, Date.now() - startTime);
       return NextResponse.json({ 
         error: 'Missing required fields: file, fileName, or uploadedBy' 
       }, { status: 400 });
@@ -390,18 +401,28 @@ export async function POST(request: NextRequest) {
     try {
       const arrayBuffer = await file.arrayBuffer();
       pdfBuffer = Buffer.from(arrayBuffer);
-      console.log('[PDF Analysis] PDF loaded directly from FormData, size:', pdfBuffer.length, 'bytes');
       
       // 檢查 PDF 魔術數字
       const pdfMagic = pdfBuffer.slice(0, 5).toString();
-      console.log('[PDF Analysis] PDF magic bytes:', pdfMagic);
+      
+      apiLogger.debug('[PDF Analysis] PDF loaded directly from FormData', { 
+        size: pdfBuffer.length,
+        magicBytes: pdfMagic
+      });
       
       if (!pdfMagic.startsWith('%PDF')) {
         throw new Error('Uploaded file is not a valid PDF');
       }
       
     } catch (fileError: any) {
-      console.error('[PDF Analysis] FormData processing error:', fileError);
+      apiLogger.error('[PDF Analysis] FormData processing error', { 
+        error: fileError.message,
+        stack: fileError.stack,
+        fileName,
+        fileSize: file?.size,
+        fileType: file?.type
+      });
+      logApiResponse('POST', '/api/analyze-order-pdf-new', 400, Date.now() - startTime);
       return NextResponse.json({ 
         error: 'Failed to process uploaded file',
         details: fileError.message
@@ -412,7 +433,10 @@ export async function POST(request: NextRequest) {
     const fileHash = generateFileHash(pdfBuffer);
     const cachedResult = getCachedResult(fileHash);
     if (cachedResult) {
-      console.log(`[PDF Analysis] Cache hit: ${fileHash.substring(0, 8)}... (${cachedResult.orderData?.length || 0} records)`);
+      apiLogger.info('[PDF Analysis] Cache hit', {
+        hashPrefix: fileHash.substring(0, 8),
+        recordCount: cachedResult.orderData?.length || 0
+      });
       
       // 重新插入數據庫（因為 uploaded_by 可能不同）
       if (cachedResult.orderData && cachedResult.orderData.length > 0) {
@@ -441,15 +465,16 @@ export async function POST(request: NextRequest) {
             throw insertError;
           }
           
-          console.log(`[PDF Analysis] Cached data inserted: ${insertResults.length} records`);
+          apiLogger.info('[PDF Analysis] Cached data inserted', { recordCount: insertResults.length });
           
           // 🔥 更新 doc_upload 表的 json 欄位（緩存版本 - 總是嘗試更新）
           try {
-            console.log('[PDF Analysis] Updating doc_upload json field (cached)...');
-            console.log('[PDF Analysis] Cached text to save length:', cachedResult.extractedText?.length || 0, 'chars');
+            apiLogger.debug('[PDF Analysis] Updating doc_upload json field (cached)', {
+              textLength: cachedResult.extractedText?.length || 0
+            });
             
             // 查找最近上傳的對應文件記錄
-            console.log('[PDF Analysis] Looking for doc_upload record (cached):', {
+            apiLogger.debug('[PDF Analysis] Looking for doc_upload record (cached)', {
               doc_name: fileName,
               upload_by: uploadedBy,
               doc_type: 'order'
@@ -465,7 +490,7 @@ export async function POST(request: NextRequest) {
               .limit(1)
               .single();
             
-            console.log('[PDF Analysis] Doc record found (cached):', {
+            apiLogger.debug('[PDF Analysis] Doc record found (cached)', {
               found: !!docRecord,
               uuid: docRecord?.uuid,
               hasExistingJson: !!docRecord?.json,
@@ -482,22 +507,22 @@ export async function POST(request: NextRequest) {
                 .eq('uuid', docRecord.uuid);
               
               if (updateError) {
-                console.error('[PDF Analysis] Failed to update doc_upload json_txt field (cached):', updateError);
+                apiLogger.error('[PDF Analysis] Failed to update doc_upload json_txt field (cached)', { error: updateError });
               } else {
-                console.log('[PDF Analysis] Successfully updated doc_upload json_txt field (cached)');
+                apiLogger.info('[PDF Analysis] Successfully updated doc_upload json_txt field (cached)');
               }
             } else {
-              console.warn('[PDF Analysis] No matching doc_upload record found for json update (cached)');
+              apiLogger.warn('[PDF Analysis] No matching doc_upload record found for json update (cached)');
             }
             
           } catch (jsonUpdateError: any) {
-            console.error('[PDF Analysis] Error updating doc_upload json field (cached):', jsonUpdateError.message);
+            apiLogger.error('[PDF Analysis] Error updating doc_upload json field (cached)', { error: jsonUpdateError.message });
           }
           
           // 📧 發送訂單創建郵件通知（緩存版本）
           let emailResult = { success: false, error: 'Email not attempted' };
           try {
-            console.log('[PDF Analysis] Preparing order created email (cached)...');
+            apiLogger.info('[PDF Analysis] Preparing order created email (cached)');
             
             const { sendOrderCreatedEmail } = await import('../../services/emailService');
             
@@ -514,12 +539,13 @@ export async function POST(request: NextRequest) {
               }
             };
             
-            console.log('[PDF Analysis] Calling internal email service with PDF attachment (cached)...');
-            console.log('[PDF Analysis] PDF attachment size (cached):', pdfBuffer.length, 'bytes');
+            apiLogger.debug('[PDF Analysis] Calling internal email service with PDF attachment (cached)', {
+              attachmentSize: pdfBuffer.length
+            });
             
             const emailData = await sendOrderCreatedEmail(emailRequestBody);
             
-            console.log('[PDF Analysis] Order created email sent successfully (cached):', emailData);
+            apiLogger.info('[PDF Analysis] Order created email sent successfully (cached)', { emailData });
             emailResult = {
               success: true,
               error: '',
@@ -529,13 +555,14 @@ export async function POST(request: NextRequest) {
             } as any;
             
           } catch (emailError: any) {
-            console.error('[PDF Analysis] Error sending order created email (cached):', emailError);
+            apiLogger.error('[PDF Analysis] Error sending order created email (cached)', { error: emailError.message });
             emailResult = {
               success: false,
               error: `Email service error: ${emailError.message}`
             };
           }
           
+          logApiResponse('POST', '/api/analyze-order-pdf-new', 200, Date.now() - startTime);
           return NextResponse.json({
             success: true,
             message: `Successfully processed PDF (cached) and inserted ${insertResults.length} records`,
@@ -549,7 +576,8 @@ export async function POST(request: NextRequest) {
           });
           
         } catch (insertError: any) {
-          console.error('[PDF Analysis] Database insertion failed:', insertError.message);
+          apiLogger.error('[PDF Analysis] Database insertion failed', { error: insertError.message });
+          logApiResponse('POST', '/api/analyze-order-pdf-new', 500, Date.now() - startTime);
           return NextResponse.json({ 
             error: 'Database insertion failed',
             details: insertError.message
@@ -565,15 +593,19 @@ export async function POST(request: NextRequest) {
     
     try {
       rawText = await extractTextFromPDF(pdfBuffer);
-      console.log(`[PDF Analysis] Raw text extracted: ${rawText.length} chars`);
+      apiLogger.debug('[PDF Analysis] Raw text extracted', { length: rawText.length });
       
       // 啟用預處理以提高準確性
       extractedText = preprocessPdfText(rawText);
       textReductionPercentage = ((rawText.length - extractedText.length) / rawText.length * 100).toFixed(1);
-      console.log(`[PDF Analysis] Preprocessed text: ${extractedText.length} chars (${textReductionPercentage}% reduction)`);
+      apiLogger.debug('[PDF Analysis] Text preprocessed', {
+        processedLength: extractedText.length,
+        reductionPercent: textReductionPercentage
+      });
       
     } catch (textError: any) {
-      console.error('[PDF Analysis] Text extraction failed:', textError.message);
+      apiLogger.error('[PDF Analysis] Text extraction failed', { error: textError.message });
+      logApiResponse('POST', '/api/analyze-order-pdf-new', 500, Date.now() - startTime);
       return NextResponse.json({ 
         error: 'PDF text extraction failed',
         details: textError.message,
@@ -588,9 +620,10 @@ export async function POST(request: NextRequest) {
       const path = require('path');
       const promptPath = path.join(process.cwd(), 'docs', 'openAI_pdf_prompt');
       prompt = fs.readFileSync(promptPath, 'utf8');
-      console.log('[PDF Analysis] Prompt loaded from file');
+      apiLogger.debug('[PDF Analysis] Prompt loaded from file');
     } catch (promptError: any) {
-      console.error('[PDF Analysis] Failed to read prompt file:', promptError.message);
+      apiLogger.error('[PDF Analysis] Failed to read prompt file', { error: promptError.message });
+      logApiResponse('POST', '/api/analyze-order-pdf-new', 500, Date.now() - startTime);
       return NextResponse.json({ 
         error: 'Failed to load prompt file',
         details: promptError.message
@@ -600,18 +633,16 @@ export async function POST(request: NextRequest) {
     // 🔥 傳送完整文本內容
     const messageContent = `${prompt}\n\n**DOCUMENT TEXT:**\n${extractedText}`;
     
-    console.log('[PDF Analysis] Sending to OpenAI');
-    console.log('[PDF Analysis] FULL MESSAGE CONTENT SENT TO OPENAI:');
-    console.log('=====================================');
-    console.log(messageContent);
-    console.log('=====================================');
+    apiLogger.info('[PDF Analysis] Sending to OpenAI', {
+      messageLength: messageContent.length
+    });
     
     // 發送到 OpenAI API
     const openai = createOpenAIClient();
     let response;
     
     try {
-      console.log('[PDF Analysis] Trying GPT-4o model...');
+      apiLogger.debug('[PDF Analysis] Trying GPT-4o model');
       response = await openai.chat.completions.create({
         model: "gpt-4o",
         messages: [
@@ -629,9 +660,9 @@ export async function POST(request: NextRequest) {
         response_format: { type: "json_object" }
       });
     } catch (error: any) {
-      console.error('[PDF Analysis] GPT-4o failed:', error.message);
+      apiLogger.warn('[PDF Analysis] GPT-4o failed', { error: error.message });
       
-      console.log('[PDF Analysis] Falling back to GPT-4-turbo model...');
+      apiLogger.info('[PDF Analysis] Falling back to GPT-4-turbo model');
       try {
         response = await openai.chat.completions.create({
           model: "gpt-4-turbo-preview",
@@ -650,21 +681,21 @@ export async function POST(request: NextRequest) {
           response_format: { type: "json_object" }
         });
       } catch (fallbackError: any) {
-        console.error('[PDF Analysis] GPT-4-turbo also failed:', fallbackError.message);
+        apiLogger.error('[PDF Analysis] GPT-4-turbo also failed', { error: fallbackError.message });
         throw new Error('Both GPT-4o and GPT-4-turbo models failed');
       }
     }
     
     const extractedContent = response.choices[0]?.message?.content;
     if (!extractedContent) {
+      logApiResponse('POST', '/api/analyze-order-pdf-new', 500, Date.now() - startTime);
       return NextResponse.json({ error: 'No content extracted from OpenAI' }, { status: 500 });
     }
     
-    console.log(`[PDF Analysis] OpenAI response: ${extractedContent.length} chars, tokens: ${response.usage?.total_tokens || 'unknown'}`);
-    console.log('[PDF Analysis] FULL OPENAI RESPONSE:');
-    console.log('=====================================');
-    console.log(extractedContent);
-    console.log('=====================================');
+    apiLogger.info('[PDF Analysis] OpenAI response received', {
+      responseLength: extractedContent.length,
+      totalTokens: response.usage?.total_tokens || 'unknown'
+    });
     
     // 解析 OpenAI 回應
     let orderData: OrderData[];
@@ -674,27 +705,30 @@ export async function POST(request: NextRequest) {
         .replace(/```\s*/g, '')
         .replace(/^\uFEFF/, '');
       
-      console.log(`[PDF Analysis] Cleaned content for parsing:`, cleanContent.substring(0, 300));
+      apiLogger.debug('[PDF Analysis] Cleaned content for parsing', { preview: cleanContent.substring(0, 300) });
       
       const parsedResponse = JSON.parse(cleanContent);
       
       // 檢查是否是新格式 {orders: [...]} 或舊格式 [...]
       if (parsedResponse.orders && Array.isArray(parsedResponse.orders)) {
         orderData = parsedResponse.orders;
-        console.log('[PDF Analysis] Using new format: {orders: [...]}');
+        apiLogger.debug('[PDF Analysis] Using new format: {orders: [...]}')
       } else if (Array.isArray(parsedResponse)) {
         orderData = parsedResponse;
-        console.log('[PDF Analysis] Using legacy format: [...]');
+        apiLogger.debug('[PDF Analysis] Using legacy format: [...]')
       } else {
-        console.error(`[PDF Analysis] Invalid response format. Type: ${typeof parsedResponse}, Content:`, parsedResponse);
+        apiLogger.error('[PDF Analysis] Invalid response format', {
+          type: typeof parsedResponse,
+          content: parsedResponse
+        });
         throw new Error('Response is not in expected format');
       }
       
-      console.log(`[PDF Analysis] Parsed ${orderData.length} records`);
+      apiLogger.info('[PDF Analysis] Records parsed', { count: orderData.length });
       
       // 檢查每個記錄是否有必要欄位
       orderData.forEach((record, index) => {
-        console.log(`[PDF Analysis] Record ${index}:`, {
+        apiLogger.debug(`[PDF Analysis] Record ${index}`, {
           order_ref: record.order_ref,
           product_code: record.product_code,
           delivery_add: record.delivery_add,
@@ -704,29 +738,32 @@ export async function POST(request: NextRequest) {
     
       // 如果沒有數據，顯示 OpenAI 的原始回應
       if (orderData.length === 0) {
-        console.log('[PDF Analysis] ❌ NO RECORDS PARSED!');
-        console.log('[PDF Analysis] OpenAI raw response:', extractedContent);
-        console.log('[PDF Analysis] Text sent to OpenAI (full):', extractedText);
-        console.log('[PDF Analysis] Prompt used:', prompt.substring(0, 500));
-        
         const hasOrderNumber = /\b\d{6,10}\b/.test(extractedText);
         const hasProductInfo = /Product|Item|Code|Description/i.test(extractedText);
         const hasQuantity = /\b\d+\b/.test(extractedText);
         
-        console.log('[PDF Analysis] Text analysis:', {
-          hasOrderNumber,
-          hasProductInfo, 
-          hasQuantity,
-          textLength: extractedText.length,
-          sampleText: extractedText.substring(0, 200)
+        apiLogger.warn('[PDF Analysis] NO RECORDS PARSED', {
+          openaiResponse: extractedContent.substring(0, 500),
+          textSentLength: extractedText.length,
+          promptPreview: prompt.substring(0, 200),
+          textAnalysis: {
+            hasOrderNumber,
+            hasProductInfo, 
+            hasQuantity,
+            textLength: extractedText.length,
+            sampleText: extractedText.substring(0, 200)
+          }
         });
       }
       
     } catch (parseError: any) {
-      console.error('[PDF Analysis] Parse error:', parseError.message);
-      console.error('[PDF Analysis] Raw OpenAI response that failed to parse:', extractedContent);
-      console.error('[PDF Analysis] Text that was sent to OpenAI:', extractedText.substring(0, 1000));
+      apiLogger.error('[PDF Analysis] Parse error', {
+        error: parseError.message,
+        rawResponse: extractedContent.substring(0, 500),
+        sentTextPreview: extractedText.substring(0, 1000)
+      });
       
+      logApiResponse('POST', '/api/analyze-order-pdf-new', 500, Date.now() - startTime);
       return NextResponse.json({ 
         error: 'Failed to parse OpenAI response',
         details: parseError.message,
@@ -753,7 +790,7 @@ export async function POST(request: NextRequest) {
         const totalTokens = response.usage?.total_tokens || 0;
         const tokenPerRecord = calculateTokenPerRecord(totalTokens, orderData.length);
         
-        console.log('[PDF Analysis] Raw orderData:', orderData);
+        apiLogger.debug('[PDF Analysis] Raw orderData', { orderData });
         
         const insertData = orderData.map(order => {
           const record = {
@@ -766,7 +803,7 @@ export async function POST(request: NextRequest) {
             delivery_add: order.delivery_add || '-',
             account_num: order.account_num || '-'
           };
-          console.log('[PDF Analysis] Insert record:', record);
+          apiLogger.debug('[PDF Analysis] Insert record', { record });
           return record;
         });
         
@@ -779,16 +816,21 @@ export async function POST(request: NextRequest) {
           throw insertError;
         }
         
-        console.log(`[PDF Analysis] Successfully inserted ${insertResults.length} records, ${tokenPerRecord} tokens per record, total: ${totalTokens} tokens`);
+        apiLogger.info('[PDF Analysis] Records inserted successfully', {
+          recordCount: insertResults.length,
+          tokenPerRecord,
+          totalTokens
+        });
         
         // 🔥 更新 doc_upload 表的 json 欄位（僅當不使用背景存儲時）
         if (!saveToStorage) {
           try {
-            console.log('[PDF Analysis] Updating doc_upload json field...');
-            console.log('[PDF Analysis] Extracted text to save length:', extractedText?.length || 0, 'chars');
+            apiLogger.debug('[PDF Analysis] Updating doc_upload json field', {
+              textLength: extractedText?.length || 0
+            });
             
             // 查找最近上傳的對應文件記錄
-            console.log('[PDF Analysis] Looking for doc_upload record:', {
+            apiLogger.debug('[PDF Analysis] Looking for doc_upload record', {
               doc_name: fileName,
               upload_by: uploadedBy,
               doc_type: 'order'
@@ -804,7 +846,7 @@ export async function POST(request: NextRequest) {
               .limit(1)
               .single();
             
-            console.log('[PDF Analysis] Doc record found:', {
+            apiLogger.debug('[PDF Analysis] Doc record found', {
               found: !!docRecord,
               uuid: docRecord?.uuid,
               hasExistingJson: !!docRecord?.json,
@@ -821,19 +863,19 @@ export async function POST(request: NextRequest) {
                 .eq('uuid', docRecord.uuid);
               
               if (updateError) {
-                console.error('[PDF Analysis] Failed to update doc_upload json field:', updateError);
+                apiLogger.error('[PDF Analysis] Failed to update doc_upload json field', { error: updateError });
               } else {
-                console.log('[PDF Analysis] Successfully updated doc_upload json field');
+                apiLogger.info('[PDF Analysis] Successfully updated doc_upload json field');
               }
             } else {
-              console.warn('[PDF Analysis] No matching doc_upload record found for json update');
+              apiLogger.warn('[PDF Analysis] No matching doc_upload record found for json update');
             }
             
           } catch (jsonUpdateError: any) {
-            console.error('[PDF Analysis] Error updating doc_upload json field:', jsonUpdateError.message);
+            apiLogger.error('[PDF Analysis] Error updating doc_upload json field', { error: jsonUpdateError.message });
           }
         } else {
-          console.log('[PDF Analysis] Skipping doc_upload json update - will be handled by background storage');
+          apiLogger.debug('[PDF Analysis] Skipping doc_upload json update - will be handled by background storage');
         }
         
         // 🔄 可選背景存儲（不影響響應時間）
@@ -842,7 +884,7 @@ export async function POST(request: NextRequest) {
             try {
               await uploadToStorageAsync(pdfBuffer, fileName, uploadedBy, extractedText);
             } catch (storageError) {
-              console.warn('[PDF Analysis] Background storage failed:', storageError);
+              systemLogger.warn('[PDF Analysis] Background storage failed', { error: storageError });
             }
           });
         }
@@ -850,7 +892,7 @@ export async function POST(request: NextRequest) {
         // 📧 發送訂單創建郵件通知
         let emailResult = { success: false, error: 'Email not attempted' };
         try {
-          console.log('[PDF Analysis] Preparing order created email...');
+          apiLogger.info('[PDF Analysis] Preparing order created email');
           
           const { sendOrderCreatedEmail } = await import('../../services/emailService');
           
@@ -867,12 +909,13 @@ export async function POST(request: NextRequest) {
             }
           };
           
-          console.log('[PDF Analysis] Calling internal email service with PDF attachment...');
-          console.log('[PDF Analysis] PDF attachment size:', pdfBuffer.length, 'bytes');
+          apiLogger.debug('[PDF Analysis] Calling internal email service with PDF attachment', {
+            attachmentSize: pdfBuffer.length
+          });
           
           const emailData = await sendOrderCreatedEmail(emailRequestBody);
           
-          console.log('[PDF Analysis] Order created email sent successfully:', emailData);
+          apiLogger.info('[PDF Analysis] Order created email sent successfully', { emailData });
           emailResult = {
             success: true,
             error: '',
@@ -882,7 +925,7 @@ export async function POST(request: NextRequest) {
           } as any;
           
         } catch (emailError: any) {
-          console.error('[PDF Analysis] Error sending order created email:', emailError);
+          apiLogger.error('[PDF Analysis] Error sending order created email', { error: emailError.message });
           emailResult = {
             success: false,
             error: `Email service error: ${emailError.message}`
@@ -910,16 +953,17 @@ export async function POST(request: NextRequest) {
               .select();
             
             if (acoError) {
-              console.error('[PDF Analysis] ACO insertion failed:', acoError.message);
+              apiLogger.error('[PDF Analysis] ACO insertion failed', { error: acoError.message });
             } else {
               acoInsertResults = acoResults;
-              console.log(`[PDF Analysis] Successfully inserted ${acoResults.length} ACO records`);
+              apiLogger.info('[PDF Analysis] ACO records inserted', { count: acoResults.length });
             }
           } catch (acoError: any) {
-            console.error('[PDF Analysis] ACO insertion error:', acoError.message);
+            apiLogger.error('[PDF Analysis] ACO insertion error', { error: acoError.message });
           }
         }
         
+        logApiResponse('POST', '/api/analyze-order-pdf-new', 200, Date.now() - startTime);
         return NextResponse.json({
           success: true,
           message: `Successfully processed PDF and inserted ${insertResults.length} records${acoInsertResults ? ` and ${acoInsertResults.length} ACO records` : ''}`,
@@ -942,14 +986,16 @@ export async function POST(request: NextRequest) {
         });
         
       } catch (insertError: any) {
-        console.error('[PDF Analysis] Database insertion failed:', insertError.message);
+        apiLogger.error('[PDF Analysis] Database insertion failed', { error: insertError.message });
+        logApiResponse('POST', '/api/analyze-order-pdf-new', 500, Date.now() - startTime);
         return NextResponse.json({ 
           error: 'Database insertion failed',
           details: insertError.message
         }, { status: 500 });
       }
     } else {
-      console.log('[PDF Analysis] No records to insert');
+      apiLogger.info('[PDF Analysis] No records to insert');
+      logApiResponse('POST', '/api/analyze-order-pdf-new', 200, Date.now() - startTime);
       return NextResponse.json({
         success: true,
         message: 'PDF processed but no valid records found',
@@ -970,14 +1016,14 @@ export async function POST(request: NextRequest) {
     }
     
   } catch (error: any) {
-    console.error('[PDF Analysis] System error:', error);
-    console.error('[PDF Analysis] Error stack:', error.stack);
-    console.error('[PDF Analysis] Error details:', {
+    apiLogger.error('[PDF Analysis] System error', {
       message: error.message,
       name: error.name,
-      code: error.code
+      code: error.code,
+      stack: error.stack
     });
     
+    logApiResponse('POST', '/api/analyze-order-pdf-new', 500, Date.now() - startTime);
     return NextResponse.json({ 
       error: 'System error',
       details: error.message,
@@ -990,6 +1036,9 @@ export async function POST(request: NextRequest) {
 
 // GET 方法：清理緩存和獲取緩存狀態
 export async function GET(request: NextRequest) {
+  const startTime = Date.now();
+  logApiRequest('GET', '/api/analyze-order-pdf-new');
+  
   try {
     const { searchParams } = new URL(request.url);
     const action = searchParams.get('action');
@@ -997,8 +1046,9 @@ export async function GET(request: NextRequest) {
     if (action === 'clear-cache') {
       const beforeSize = fileCache.size;
       fileCache.clear();
-      console.log(`[PDF Analysis] Cache cleared: ${beforeSize} entries removed`);
+      apiLogger.info('[PDF Analysis] Cache cleared', { entriesRemoved: beforeSize });
       
+      logApiResponse('GET', '/api/analyze-order-pdf-new', 200, Date.now() - startTime);
       return NextResponse.json({
         success: true,
         message: `Cache cleared successfully. ${beforeSize} entries removed.`,
@@ -1013,6 +1063,7 @@ export async function GET(request: NextRequest) {
         recordCount: value.data.orderData?.length || 0
       }));
       
+      logApiResponse('GET', '/api/analyze-order-pdf-new', 200, Date.now() - startTime);
       return NextResponse.json({
         success: true,
         cacheSize: fileCache.size,
@@ -1021,6 +1072,7 @@ export async function GET(request: NextRequest) {
       });
     }
     
+    logApiResponse('GET', '/api/analyze-order-pdf-new', 200, Date.now() - startTime);
     return NextResponse.json({
       success: true,
       message: 'PDF Analysis API is running (FormData only)',
@@ -1029,7 +1081,8 @@ export async function GET(request: NextRequest) {
     });
     
   } catch (error: any) {
-    console.error('[PDF Analysis] GET request error:', error);
+    apiLogger.error('[PDF Analysis] GET request error', { error: error.message });
+    logApiResponse('GET', '/api/analyze-order-pdf-new', 500, Date.now() - startTime);
     return NextResponse.json({ 
       error: 'Failed to process request',
       details: error.message

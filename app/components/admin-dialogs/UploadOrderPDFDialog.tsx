@@ -73,7 +73,7 @@ export const UploadOrderPDFDialog: React.FC<UploadOrderPDFDialogProps> = ({
         }
         
         if (user) {
-          console.log('[UploadOrderPDFDialog] Current user:', user.email, 'UUID:', user.id);
+          process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[UploadOrderPDFDialog] Current user:', user.email, 'UUID:', user.id);
           
           try {
             const { data: userDataByEmail, error: emailError } = await supabase
@@ -92,10 +92,10 @@ export const UploadOrderPDFDialog: React.FC<UploadOrderPDFDialogProps> = ({
             }
             
             if (userDataByEmail) {
-              console.log('[UploadOrderPDFDialog] User ID found by email:', userDataByEmail.id);
+              process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[UploadOrderPDFDialog] User ID found by email:', userDataByEmail.id);
               setCurrentUserId(userDataByEmail.id);
             } else {
-              console.warn('[UploadOrderPDFDialog] No user data found by email');
+              process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.warn('[UploadOrderPDFDialog] No user data found by email');
               setOrderPDFState(prev => ({
                 ...prev,
                 error: 'User not found in system. Please contact administrator.'
@@ -109,7 +109,7 @@ export const UploadOrderPDFDialog: React.FC<UploadOrderPDFDialogProps> = ({
             }));
           }
         } else {
-          console.warn('[UploadOrderPDFDialog] No authenticated user');
+          process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.warn('[UploadOrderPDFDialog] No authenticated user');
         }
       } catch (error) {
         console.error('[UploadOrderPDFDialog] Unexpected error:', error);
@@ -250,7 +250,7 @@ export const UploadOrderPDFDialog: React.FC<UploadOrderPDFDialogProps> = ({
       return;
     }
 
-    console.log('[UploadOrderPDFDialog] Starting PDF analysis with user ID:', currentUserId);
+    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[UploadOrderPDFDialog] Starting PDF analysis with user ID:', currentUserId);
 
     setOrderPDFState(prev => ({ 
       ...prev, 
@@ -274,7 +274,7 @@ export const UploadOrderPDFDialog: React.FC<UploadOrderPDFDialogProps> = ({
         }));
       }, 300);
 
-      console.log('[Order PDF Analysis] 開始分析 PDF...');
+      process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[Order PDF Analysis] 開始分析 PDF...');
 
       // 發送到 analyze-order-pdf-new API
       const response = await fetch('/api/analyze-order-pdf-new', {
@@ -301,13 +301,13 @@ export const UploadOrderPDFDialog: React.FC<UploadOrderPDFDialogProps> = ({
       // 短暫延遲顯示完成狀態
       await new Promise(resolve => setTimeout(resolve, 500));
 
-      console.log('[Order PDF Analysis] 分析完成:', result);
+      process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[Order PDF Analysis] 分析完成:', result);
     
       toast.success(`PDF Analysis Complete! Extracted ${result.recordCount} records`);
       
       // 寫入 doc_upload 表的記錄已經在 API 中處理
       if (result.storageInfo) {
-        console.log('[Order PDF Analysis] 文件已保存到:', result.storageInfo.publicUrl);
+        process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[Order PDF Analysis] 文件已保存到:', result.storageInfo.publicUrl);
       }
     
       // 重置分析狀態但保留數據預覽

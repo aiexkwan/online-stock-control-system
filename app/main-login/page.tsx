@@ -22,7 +22,7 @@ export default function MainLoginPage() {
     }
     
     if (urlParams.get('cleanup') === 'force') {
-      console.log('[MainLoginPage] Force cleanup requested via URL parameter');
+      process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[MainLoginPage] Force cleanup requested via URL parameter');
       forceCleanupAllAuth();
       // 移除 URL 參數
       window.history.replaceState({}, document.title, window.location.pathname);

@@ -191,65 +191,74 @@ export const adminDashboardLayouts: Record<string, AdminDashboardLayout> = {
         component: 'HistoryTree'
       },
       {
-        type: 'heatmap',
-        title: 'Warehouse Location Map',
+        type: 'stats',
+        title: 'Await Location Qty',
         gridArea: 'widget2',
         dataSource: 'record_inventory',
-        component: 'WarehouseHeatmap'
+        metrics: ['await_total'],
+        component: 'AwaitLocationQtyWidget'
       },
       {
         type: 'stats',
-        title: 'Total Stock',
+        title: 'Transfer Done',
         gridArea: 'widget3',
-        dataSource: 'stock_level',
-        metrics: ['total_quantity']
-      },
-      {
-        type: 'stats',
-        title: 'Locations Used',
-        gridArea: 'widget4',
-        dataSource: 'record_inventory',
-        metrics: ['location_count']
-      },
-      {
-        type: 'stats',
-        title: 'In Transit',
-        gridArea: 'widget5',
         dataSource: 'record_transfer',
-        metrics: ['active_transfers']
+        metrics: ['yesterday_count'],
+        component: 'YesterdayTransferCountWidget'
       },
       {
         type: 'stats',
-        title: 'Capacity',
+        title: 'Still In Await',
+        gridArea: 'widget4',
+        dataSource: 'record_palletinfo',
+        metrics: ['still_in_await_qty'],
+        component: 'StillInAwaitWidget'
+      },
+      {
+        type: 'stats',
+        title: 'Still In Await %',
+        gridArea: 'widget5',
+        dataSource: 'record_palletinfo',
+        metrics: ['still_in_await_percentage'],
+        component: 'StillInAwaitPercentageWidget'
+      },
+      {
+        type: 'list',
+        title: 'Order Progress',
         gridArea: 'widget6',
-        dataSource: 'warehouse_capacity',
-        metrics: ['usage_percentage']
+        dataSource: 'data_order',
+        metrics: ['order_progress'],
+        component: 'OrderStateListWidget'
       },
       {
         type: 'chart',
-        title: 'Inventory Levels',
+        title: 'Transfer Time Distribution',
         gridArea: 'widget7',
-        dataSource: 'record_inventory',
-        chartType: 'bar'
+        dataSource: 'record_transfer',
+        chartType: 'line',
+        component: 'TransferTimeDistributionWidget'
       },
       {
-        type: 'chart',
-        title: 'Location Utilization',
+        type: 'placeholder',
+        title: 'Empty Placeholder',
         gridArea: 'widget8',
-        dataSource: 'location_usage',
-        chartType: 'donut'
-      },
-      {
-        type: 'alerts',
-        title: 'Warehouse Alerts',
-        gridArea: 'widget9',
-        dataSource: 'warehouse_alerts'
+        dataSource: 'none',
+        component: 'EmptyPlaceholderWidget'
       },
       {
         type: 'table',
-        title: 'Recent Movements',
+        title: 'Transfer List',
+        gridArea: 'widget9',
+        dataSource: 'record_transfer',
+        component: 'WarehouseTransferListWidget'
+      },
+      {
+        type: 'chart',
+        title: 'Work Level',
         gridArea: 'widget10',
-        dataSource: 'record_transfer'
+        dataSource: 'work_level',
+        chartType: 'area',
+        component: 'WarehouseWorkLevelAreaChart'
       }
     ]
   },

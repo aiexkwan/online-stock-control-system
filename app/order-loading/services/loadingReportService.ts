@@ -32,7 +32,7 @@ export async function fetchLoadingRecords(filters: LoadingReportFilters): Promis
   const supabase = createClient();
   
   try {
-    console.log('Fetching loading records with filters:', filters);
+    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('Fetching loading records with filters:', filters);
     
     // Fetch loading history records
     let query = supabase
@@ -80,11 +80,11 @@ export async function fetchLoadingRecords(filters: LoadingReportFilters): Promis
     }
 
     if (!loadingRecords || loadingRecords.length === 0) {
-      console.log('No loading records found');
+      process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('No loading records found');
       return [];
     }
 
-    console.log(`Found ${loadingRecords.length} loading records`);
+    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`Found ${loadingRecords.length} loading records`);
 
     // Get unique order references for additional data
     const uniqueOrderRefs = [...new Set(loadingRecords.map(r => r.order_ref))];

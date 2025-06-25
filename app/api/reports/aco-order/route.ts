@@ -71,7 +71,7 @@ export async function POST(request: NextRequest) {
       try {
         sheet.mergeCells(range);
       } catch (e) {
-        console.warn(`Could not merge cells for range ${range}:`, e);
+        process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.warn(`Could not merge cells for range ${range}:`, e);
       }
     });
     

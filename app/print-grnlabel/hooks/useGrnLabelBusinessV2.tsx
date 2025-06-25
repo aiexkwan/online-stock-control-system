@@ -161,7 +161,7 @@ export const useGrnLabelBusinessV2 = ({
         return;
       }
 
-      console.log('[useGrnLabelBusinessV2] Processing pallets:', numberOfPalletsToProcess);
+      process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[useGrnLabelBusinessV2] Processing pallets:', numberOfPalletsToProcess);
 
       // Process each pallet
       for (let i = 0; i < numberOfPalletsToProcess; i++) {
@@ -284,7 +284,7 @@ export const useGrnLabelBusinessV2 = ({
           let pdfBlob: Blob;
           try {
             pdfBlob = await pdf(<PrintLabelPdf {...pdfProps} />).toBlob();
-            console.log('[useGrnLabelBusinessV2] PDF generated:', {
+            process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[useGrnLabelBusinessV2] PDF generated:', {
               size: pdfBlob.size,
               type: pdfBlob.type
             });
@@ -383,7 +383,7 @@ export const useGrnLabelBusinessV2 = ({
 
         // Confirm pallet usage to update status from "Holded" to "True"
         try {
-          console.log('[useGrnLabelBusinessV2] Confirming pallet usage for:', palletNumbers);
+          process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[useGrnLabelBusinessV2] Confirming pallet usage for:', palletNumbers);
           const confirmSuccess = await confirmPalletUsage(palletNumbers);
           if (!confirmSuccess) {
             console.error('[useGrnLabelBusinessV2] Failed to confirm pallet usage');
@@ -424,7 +424,7 @@ export const useGrnLabelBusinessV2 = ({
       if (palletNumbers.length > 0 && series.length > 0) {
         try {
           await palletGeneration.rollbackPalletNumbers(palletNumbers, series);
-          console.log('[useGrnLabelBusinessV2] Successfully rolled back pallet numbers');
+          process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[useGrnLabelBusinessV2] Successfully rolled back pallet numbers');
         } catch (rollbackError) {
           console.error('[useGrnLabelBusinessV2] Failed to rollback pallet numbers:', rollbackError);
         }
@@ -450,8 +450,7 @@ export const useGrnLabelBusinessV2 = ({
     state,
     actions,
     weightCalculation,
-    palletGeneration,
-    currentUserId
+    palletGeneration
   ]);
 
   return {
