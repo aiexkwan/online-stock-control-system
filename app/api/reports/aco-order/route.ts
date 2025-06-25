@@ -15,6 +15,7 @@ export async function POST(request: NextRequest) {
     }
     
     // Verify user authentication
+    const supabase = createClient();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user?.email) {
       return NextResponse.json(
@@ -125,10 +126,10 @@ export async function POST(request: NextRequest) {
     // Process data by product code
     const productGroups = new Map<string, any[]>();
     reportData.forEach(item => {
-      if (!productGroups.has(item.productCode)) {
-        productGroups.set(item.productCode, []);
+      if (!productGroups.has(item.product_code)) {
+        productGroups.set(item.product_code, []);
       }
-      productGroups.get(item.productCode)!.push(item);
+      productGroups.get(item.product_code)!.push(item);
     });
     
     // Fill data

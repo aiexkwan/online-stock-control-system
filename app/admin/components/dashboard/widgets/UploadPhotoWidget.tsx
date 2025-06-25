@@ -90,7 +90,7 @@ export const UploadPhotoWidget = React.memo(function UploadPhotoWidget({ widget,
   };
 
   // 上傳單個文件
-  const uploadFile = async (uploadingFile: UploadingFile) => {
+  const uploadFile = useCallback(async (uploadingFile: UploadingFile) => {
     try {
       // 更新進度
       const updateProgress = (progress: number) => {
@@ -154,7 +154,7 @@ export const UploadPhotoWidget = React.memo(function UploadPhotoWidget({ widget,
         } : f)
       );
     }
-  };
+  }, [currentUserId]);
 
   // 處理文件選擇
   const handleFiles = useCallback((files: FileList | null) => {

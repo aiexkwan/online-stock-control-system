@@ -143,7 +143,7 @@ export async function POST(request: NextRequest) {
       
       // Fill in the data
       sheet.getCell('D2').value = reportData.material_code;
-      sheet.getCell('D3').value = reportData.material_desc;
+      sheet.getCell('D3').value = reportData.material_description;
       sheet.getCell('D4').value = reportData.supplier_name;
       sheet.getCell('D6').value = reportData.report_date;
       

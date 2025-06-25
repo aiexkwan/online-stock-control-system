@@ -522,10 +522,11 @@ export async function POST(request: NextRequest) {
             console.log('[PDF Analysis] Order created email sent successfully (cached):', emailData);
             emailResult = {
               success: true,
+              error: '',
               message: emailData.message,
               emailId: emailData.emailId,
               recipients: emailData.recipients
-            };
+            } as any;
             
           } catch (emailError: any) {
             console.error('[PDF Analysis] Error sending order created email (cached):', emailError);
@@ -874,10 +875,11 @@ export async function POST(request: NextRequest) {
           console.log('[PDF Analysis] Order created email sent successfully:', emailData);
           emailResult = {
             success: true,
+            error: '',
             message: emailData.message,
             emailId: emailData.emailId,
             recipients: emailData.recipients
-          };
+          } as any;
           
         } catch (emailError: any) {
           console.error('[PDF Analysis] Error sending order created email:', emailError);

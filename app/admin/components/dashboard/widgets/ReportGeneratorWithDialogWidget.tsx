@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { Download, Loader2, CheckCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -52,14 +52,7 @@ export default function ReportGeneratorWithDialogWidget({
   const [downloadStatus, setDownloadStatus] = useState<"idle" | "downloading" | "downloaded" | "complete">("idle");
   const [progress, setProgress] = useState(0);
 
-  // Load references when dialog opens
-  useEffect(() => {
-    if (isDialogOpen) {
-      loadReferences();
-    }
-  }, [isDialogOpen]);
-
-  const loadReferences = async () => {
+  const loadReferences = useCallback(async () => {
     setIsLoadingRefs(true);
     try {
       const supabase = createClient();
@@ -72,7 +65,7 @@ export default function ReportGeneratorWithDialogWidget({
       if (error) throw error;
 
       // Get unique references and convert to strings
-      const uniqueRefs = Array.from(new Set(data?.map(item => item[referenceField]) || []))
+      const uniqueRefs = Array.from(new Set(data?.map(item => (item as any)[referenceField]) || []))
         .filter(ref => ref !== null && ref !== undefined)
         .map(ref => String(ref));
       setReferences(uniqueRefs);
@@ -81,7 +74,14 @@ export default function ReportGeneratorWithDialogWidget({
     } finally {
       setIsLoadingRefs(false);
     }
-  };
+  }, [dataTable, referenceField]);
+
+  // Load references when dialog opens
+  useEffect(() => {
+    if (isDialogOpen) {
+      loadReferences();
+    }
+  }, [isDialogOpen, loadReferences]);
 
   const handleDownload = async () => {
     if (!selectedRef || downloadStatus !== "idle") return;

@@ -17,7 +17,10 @@ export type DialogType =
   | 'viewHistory'
   | 'databaseUpdate'
   | 'askDatabase'
-  | 'reprint';
+  | 'reprint'
+  | 'loadStock'
+  | 'stockTransfer'
+  | 'exportData';
 
 // 對話框數據類型
 interface DialogData {
@@ -61,6 +64,9 @@ export function DialogProvider({ children }: { children: React.ReactNode }) {
     databaseUpdate: false,
     askDatabase: false,
     reprint: false,
+    loadStock: false,
+    stockTransfer: false,
+    exportData: false,
   });
 
   const [dialogData, setDialogData] = useState<DialogData>({});

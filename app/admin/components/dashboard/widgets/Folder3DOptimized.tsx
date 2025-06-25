@@ -81,11 +81,11 @@ export const Folder3DOptimized: React.FC<Folder3DOptimizedProps> = ({
 
 // Performance monitoring component for development
 export const Folder3DPerformanceMonitor: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  if (process.env.NODE_ENV === 'production') {
-    return <>{children}</>;
-  }
-
   React.useEffect(() => {
+    if (process.env.NODE_ENV === 'production') {
+      return;
+    }
+
     const observer = new PerformanceObserver((list) => {
       for (const entry of list.getEntries()) {
         if (entry.entryType === 'paint' || entry.entryType === 'layout-shift') {

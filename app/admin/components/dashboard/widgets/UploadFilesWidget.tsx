@@ -67,7 +67,7 @@ export const UploadFilesWidget = React.memo(function UploadFilesWidget({ widget,
   }, []);
 
   // 驗證文件
-  const validateFile = (file: File): string | null => {
+  const validateFile = useCallback((file: File): string | null => {
     const fileExtension = '.' + file.name.split('.').pop()?.toLowerCase();
     
     // 檢查文件格式
@@ -81,10 +81,10 @@ export const UploadFilesWidget = React.memo(function UploadFilesWidget({ widget,
     }
     
     return null;
-  };
+  }, [selectedFolder]);
 
   // 上傳單個文件
-  const uploadFile = async (uploadingFile: UploadingFile) => {
+  const uploadFile = useCallback(async (uploadingFile: UploadingFile) => {
     try {
       // 更新進度
       const updateProgress = (progress: number) => {
@@ -147,7 +147,7 @@ export const UploadFilesWidget = React.memo(function UploadFilesWidget({ widget,
         } : f)
       );
     }
-  };
+  }, [currentUserId]);
 
   // 處理文件選擇
   const handleFiles = useCallback((files: FileList | null) => {

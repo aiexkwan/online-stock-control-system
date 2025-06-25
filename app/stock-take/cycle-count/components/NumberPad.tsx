@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { CheckIcon, XMarkIcon, BackspaceIcon } from '@heroicons/react/24/outline';
 
@@ -15,29 +15,29 @@ export default function NumberPad({ onConfirm, onCancel, isLoading = false }: Nu
   const inputRef = useRef<HTMLInputElement>(null);
 
   // 處理數字輸入
-  const handleNumberClick = (num: string) => {
+  const handleNumberClick = useCallback((num: string) => {
     if (value.length < 10) { // 限制最大長度
       setValue(prev => prev + num);
     }
-  };
+  }, [value.length]);
 
   // 處理退格
-  const handleBackspace = () => {
+  const handleBackspace = useCallback(() => {
     setValue(prev => prev.slice(0, -1));
-  };
+  }, []);
 
   // 處理確認
-  const handleConfirm = () => {
+  const handleConfirm = useCallback(() => {
     const numValue = parseInt(value);
     if (!isNaN(numValue) && numValue >= 0) {
       onConfirm(numValue);
     }
-  };
+  }, [value, onConfirm]);
 
   // 處理清除
-  const handleClear = () => {
+  const handleClear = useCallback(() => {
     setValue('');
-  };
+  }, []);
 
   // Focus 輸入框當組件載入
   useEffect(() => {
