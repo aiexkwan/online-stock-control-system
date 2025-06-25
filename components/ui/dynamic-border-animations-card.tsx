@@ -1,10 +1,10 @@
 import React, { useEffect, useRef } from 'react';
 
 const AnimatedCard = () => {
-  const topRef = useRef(null);
-  const rightRef = useRef(null);
-  const bottomRef = useRef(null);
-  const leftRef = useRef(null);
+  const topRef = useRef<HTMLDivElement>(null);
+  const rightRef = useRef<HTMLDivElement>(null);
+  const bottomRef = useRef<HTMLDivElement>(null);
+  const leftRef = useRef<HTMLDivElement>(null);
   
   useEffect(() => {
     const animateBorder = () => {

@@ -18,30 +18,15 @@ import {
   DialogHeader,
   DialogFooter,
   DialogTitle,
-  DialogDescription
+  DialogDescription,
+  DialogPortal,
+  DialogOverlay,
+  DialogContent
 } from '@/components/ui/unified-dialog'
 
 const Dialog = DialogPrimitive.Root
 const DialogTrigger = DialogPrimitive.Trigger
-const DialogPortal = DialogPrimitive.Portal
 const DialogClose = DialogPrimitive.Close
-
-// 背景遮罩
-const DialogOverlay = React.forwardRef<
-  React.ElementRef<typeof DialogPrimitive.Overlay>,
-  React.ComponentPropsWithoutRef<typeof DialogPrimitive.Overlay>
->(({ className, ...props }, ref) => (
-  <DialogPrimitive.Overlay
-    ref={ref}
-    className={cn(
-      dialogAnimationClasses.overlay.base,
-      dialogAnimationClasses.overlay.animation,
-      className
-    )}
-    {...props}
-  />
-))
-DialogOverlay.displayName = DialogPrimitive.Overlay.displayName
 
 // 動態邊框組件
 const AnimatedBorder = ({ type = "form" }: { type?: DialogType }) => {
@@ -206,28 +191,32 @@ interface AnimatedDialogContentProps
 const AnimatedDialogContent = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Content>,
   AnimatedDialogContentProps
->(({ className, children, type = "form", size = "md", enableAnimatedBorder = true, ...props }, ref) => (
-  <DialogPortal>
-    <DialogOverlay />
-    <DialogPrimitive.Content
+>(({ className, children, type = "form", size = "md", enableAnimatedBorder = true, ...props }, ref) => {
+  return (
+    <DialogContent
       ref={ref}
-      className={cn(
-        dialogAnimationClasses.content.base,
-        dialogAnimationClasses.content.animation,
-        dialogVariants({ type, size }),
-        "max-h-[90vh] overflow-y-auto p-8 relative",
-        className
-      )}
+      type={type}
+      size={size}
+      className={cn("relative overflow-visible", className)}
       {...props}
     >
-      {/* 動態邊框 */}
-      {enableAnimatedBorder && <AnimatedBorder type={type} />}
-      
-      {/* 光暈效果 */}
+      {/* 動態邊框 - 絕對定位在 dialog 外圍 */}
       {enableAnimatedBorder && (
-        <>
+        <div className="pointer-events-none absolute -inset-[2px] rounded-3xl overflow-hidden">
+          <AnimatedBorder type={type} />
+        </div>
+      )}
+      
+      {/* 內容 */}
+      <div className="relative z-10">
+        {children}
+      </div>
+      
+      {/* 光暈效果 - 放在 dialog 外部 */}
+      {enableAnimatedBorder && (
+        <div className="pointer-events-none absolute inset-0">
           <div className={cn(
-            "absolute -top-20 -right-20 w-40 h-40 rounded-full blur-3xl opacity-20",
+            "absolute -top-20 -right-20 w-40 h-40 rounded-full blur-3xl opacity-10",
             type === "error" ? "bg-red-500" :
             type === "warning" ? "bg-yellow-500" :
             type === "notification" ? "bg-blue-500" :
@@ -236,7 +225,7 @@ const AnimatedDialogContent = React.forwardRef<
             "bg-blue-500"
           )} />
           <div className={cn(
-            "absolute -bottom-20 -left-20 w-40 h-40 rounded-full blur-3xl opacity-20",
+            "absolute -bottom-20 -left-20 w-40 h-40 rounded-full blur-3xl opacity-10",
             type === "error" ? "bg-rose-500" :
             type === "warning" ? "bg-amber-500" :
             type === "notification" ? "bg-cyan-500" :
@@ -244,23 +233,12 @@ const AnimatedDialogContent = React.forwardRef<
             type === "report" ? "bg-indigo-500" :
             "bg-cyan-500"
           )} />
-        </>
+        </div>
       )}
-      
-      {/* 內容 */}
-      <div className="relative z-10">
-        {children}
-      </div>
-      
-      {/* 關閉按鈕 */}
-      <DialogPrimitive.Close className="absolute right-6 top-6 rounded-full opacity-70 ring-offset-background transition-all hover:opacity-100 hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none p-1.5 z-20">
-        <X className="h-5 w-5" />
-        <span className="sr-only">Close</span>
-      </DialogPrimitive.Close>
-    </DialogPrimitive.Content>
-  </DialogPortal>
-))
-AnimatedDialogContent.displayName = DialogPrimitive.Content.displayName
+    </DialogContent>
+  );
+})
+AnimatedDialogContent.displayName = "AnimatedDialogContent"
 
 // 導出為 AnimatedDialog
 const AnimatedDialog = Dialog

@@ -189,6 +189,7 @@ interface WarningDialogProps {
   onOpenChange: (open: boolean) => void;
   title?: string;
   message: string;
+  details?: React.ReactNode;  // 新增：支持詳細內容
   confirmText?: string;
   cancelText?: string;
   onConfirm: () => void;
@@ -202,6 +203,7 @@ export function WarningDialog({
   onOpenChange,
   title = "警告",
   message,
+  details,
   confirmText = "確定",
   cancelText = "取消",
   onConfirm,
@@ -211,7 +213,7 @@ export function WarningDialog({
 }: WarningDialogProps) {
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent type="warning" size="sm">
+      <DialogContent type="warning" size={details ? "md" : "sm"}>
         <DialogHeader className="space-y-4">
           <DialogTitle 
             type="warning" 
@@ -223,6 +225,14 @@ export function WarningDialog({
             {message}
           </DialogDescription>
         </DialogHeader>
+        
+        {/* 詳細內容 */}
+        {details && (
+          <div className="py-4">
+            {details}
+          </div>
+        )}
+        
         <DialogFooter className="gap-3 pt-6">
           <Button
             onClick={() => {

@@ -11,9 +11,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { createClient } from '@/lib/supabase';
 import { toast } from 'sonner';
 import { 
-  ChevronDownIcon,
-  Bars3Icon,
-  XMarkIcon,
   ArrowPathIcon
 } from '@heroicons/react/24/outline';
 import { useAuth } from '@/app/hooks/useAuth';
@@ -36,8 +33,7 @@ import {
   CloudArrowUpIcon as Cloud,
   PencilSquareIcon as Pencil,
   ArchiveBoxIcon as Archive,
-  CogIcon as Cog,
-  ChartBarIcon as Chart
+  CogIcon as Cog
 } from '@heroicons/react/24/outline';
 
 // Dashboard themes with glow menu configuration
@@ -113,7 +109,6 @@ export function NewAdminDashboard() {
   const router = useRouter();
   const pathname = usePathname();
   const { isAuthenticated, loading } = useAuth();
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isDashboardLoading, setIsDashboardLoading] = useState(true);
   const [timeFrame, setTimeFrame] = useState<TimeFrame>({
     label: format(new Date(), 'MMM d, yyyy'),
@@ -127,70 +122,6 @@ export function NewAdminDashboard() {
   const currentTheme = pathParts.length > 1 ? pathParts[pathParts.length - 1] : 'injection';
   
   // Navigation menu items grouped by category
-  const groupedItems = {
-    'Quick Actions': [
-      { 
-        id: 'load-stock',
-        title: 'Load Stock', 
-        description: 'Load new stock into warehouse',
-        icon: Archive, 
-        action: () => openDialog('loadStock'),
-        color: 'text-blue-400'
-      },
-      { 
-        id: 'stock-transfer',
-        title: 'Stock Transfer', 
-        description: 'Transfer stock between locations',
-        icon: ArrowPathIcon, 
-        action: () => openDialog('stockTransfer'),
-        color: 'text-green-400'
-      },
-      { 
-        id: 'void-pallet',
-        title: 'Void Pallet', 
-        description: 'Void existing pallets',
-        icon: XMarkIcon, 
-        action: () => openDialog('voidPallet'),
-        color: 'text-red-400'
-      },
-    ],
-    'Reports': [
-      { 
-        id: 'view-reports',
-        title: 'View Reports', 
-        description: 'Access system reports',
-        icon: Chart, 
-        action: () => router.push('/admin/reports'),
-        color: 'text-purple-400'
-      },
-      { 
-        id: 'export-data',
-        title: 'Export Data', 
-        description: 'Export system data',
-        icon: Cloud, 
-        action: () => openDialog('exportData'),
-        color: 'text-cyan-400'
-      },
-    ],
-    'Settings': [
-      { 
-        id: 'system-settings',
-        title: 'System Settings', 
-        description: 'Configure system settings',
-        icon: Cog, 
-        action: () => router.push('/admin/settings'),
-        color: 'text-gray-400'
-      },
-      { 
-        id: 'user-management',
-        title: 'User Management', 
-        description: 'Manage system users',
-        icon: Building, 
-        action: () => router.push('/admin/users'),
-        color: 'text-indigo-400'
-      },
-    ]
-  };
   
   // Universal background is handled at the app level
 
@@ -238,63 +169,6 @@ export function NewAdminDashboard() {
     }
   }, [handleReprintInfoConfirm]);
 
-  // Handle item click
-  const handleItemClick = (item: any) => {
-    switch (item.action) {
-      case 'void-pallet':
-        openDialog('voidPallet');
-        break;
-      case 'view-history':
-        openDialog('viewHistory');
-        break;
-      case 'database-update':
-        openDialog('databaseUpdate');
-        break;
-      case 'upload-files-only':
-        openDialog('uploadFilesOnly');
-        break;
-      case 'upload-order-pdf':
-        openDialog('uploadOrderPdf');
-        break;
-      case 'product-spec':
-        openDialog('productSpec');
-        break;
-      // Reports
-      case 'void-pallet-report':
-        window.dispatchEvent(new CustomEvent('openVoidPalletReport'));
-        break;
-      case 'order-loading-report':
-        window.dispatchEvent(new CustomEvent('openOrderLoadingReport'));
-        break;
-      case 'stock-take-report':
-        window.dispatchEvent(new CustomEvent('openStockTakeReport'));
-        break;
-      case 'aco-order-report':
-        window.dispatchEvent(new CustomEvent('openAcoOrderReport'));
-        break;
-      case 'transaction-report':
-        window.dispatchEvent(new CustomEvent('openTransactionReport'));
-        break;
-      case 'grn-report':
-        window.dispatchEvent(new CustomEvent('openGrnReport'));
-        break;
-      case 'export-all-data':
-        window.dispatchEvent(new CustomEvent('openExportAllData'));
-        break;
-      // Analytics
-      case 'finished-transfer':
-        window.dispatchEvent(new CustomEvent('openFinishedTransfer'));
-        break;
-      case 'order-trend':
-        window.dispatchEvent(new CustomEvent('openOrderTrend'));
-        break;
-      case 'staff-workload':
-        window.dispatchEvent(new CustomEvent('openStaffWorkload'));
-        break;
-      default:
-        // No default action
-    }
-  };
 
   // Loading state
   if (loading) {
@@ -346,44 +220,6 @@ export function NewAdminDashboard() {
               />
             </div>
 
-            {/* Center - Navigation Menu */}
-            <div className="hidden md:flex items-center space-x-1 flex-1 justify-center lg:justify-end">
-              {Object.entries(groupedItems).map(([category, items]) => (
-                <div key={category} className="relative group">
-                  <div className="flex items-center gap-2 px-4 py-2 text-sm text-slate-300 hover:text-white hover:bg-slate-700/50 rounded-xl transition-all duration-300 cursor-pointer">
-                    {category}
-                    <ChevronDownIcon className="w-4 h-4 transition-transform group-hover:rotate-180" />
-                  </div>
-                  
-                  {/* Hover Dropdown */}
-                  <div className="absolute top-full right-0 mt-2 bg-slate-800/90 backdrop-blur-xl border border-slate-600/50 rounded-2xl shadow-2xl z-40 min-w-[280px] opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300">
-                    {items.map((item) => {
-                      const IconComponent = item.icon;
-                      return (
-                        <button
-                          key={item.id}
-                          onClick={() => {
-                            handleItemClick(item);
-                            setIsDropdownOpen(false);
-                          }}
-                          className={`w-full px-5 py-4 text-left hover:bg-slate-700/50 transition-all duration-300 first:rounded-t-2xl last:rounded-b-2xl group/item ${item.color}`}
-                        >
-                          <div className="flex items-center gap-4">
-                            <IconComponent className="w-5 h-5 group-hover/item:scale-110 transition-transform duration-300" />
-                            <div>
-                              <div className="text-sm font-medium">
-                                {item.title}
-                              </div>
-                              <div className="text-xs text-slate-400">{item.description}</div>
-                            </div>
-                          </div>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              ))}
-            </div>
 
             {/* Right side - Mobile menu button */}
             <div className="flex items-center gap-2">
@@ -403,69 +239,9 @@ export function NewAdminDashboard() {
                 </select>
               </div>
 
-              {/* Mobile menu button */}
-              <div className="md:hidden">
-                <button
-                  onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                  className="p-3 text-slate-300 hover:text-white hover:bg-slate-700/50 rounded-xl transition-all duration-300"
-                >
-                  {isDropdownOpen ? (
-                    <XMarkIcon className="w-6 h-6" />
-                  ) : (
-                    <Bars3Icon className="w-6 h-6" />
-                  )}
-                </button>
-              </div>
             </div>
           </div>
 
-          {/* Mobile Navigation Menu */}
-          <AnimatePresence>
-            {isDropdownOpen && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: 'auto' }}
-                exit={{ opacity: 0, height: 0 }}
-                transition={{ duration: 0.3 }}
-                className="md:hidden border-t border-slate-700/50 py-6"
-              >
-                <div className="space-y-6 px-4">
-                  {Object.entries(groupedItems).map(([category, items]) => (
-                    <div key={category}>
-                      <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-3">
-                        {category}
-                      </h3>
-                      <div className="space-y-2">
-                        {items.map((item) => {
-                          const IconComponent = item.icon;
-                          return (
-                            <button
-                              key={item.id}
-                              onClick={() => {
-                                handleItemClick(item);
-                                setIsDropdownOpen(false);
-                              }}
-                              className={`w-full px-4 py-3 text-left hover:bg-slate-700/50 rounded-xl transition-all duration-300 ${item.color}`}
-                            >
-                              <div className="flex items-center gap-4">
-                                <IconComponent className="w-5 h-5" />
-                                <div>
-                                  <div className="text-sm font-medium">
-                                    {item.title}
-                                  </div>
-                                  <div className="text-xs text-slate-400">{item.description}</div>
-                                </div>
-                              </div>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
         </div>
 
         {/* Dashboard Content Area */}

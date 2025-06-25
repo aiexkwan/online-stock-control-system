@@ -14,11 +14,13 @@ import {
   WarningDialog,
   DeleteConfirmDialog,
   InfoDialog
-} from '@/components/ui/notification-dialogs-animated';
+} from '@/components/ui/notification-dialogs';
 // 同時導入原版進行對比測試
 import {
   NotificationDialog as OriginalNotificationDialog
 } from '@/components/ui/notification-dialogs';
+import { TestDialog } from '@/components/ui/test-dialog';
+import { SimpleAnimatedDialog } from '@/components/ui/simple-animated-dialog';
 
 export default function TestDialogsPage() {
   const [dialogs, setDialogs] = useState({
@@ -29,13 +31,24 @@ export default function TestDialogsPage() {
     delete: false,
     info: false,
     original: false,  // 測試原版
-    simple: false     // 簡單測試
+    simple: false,    // 簡單測試
+    simpleAnimated: false  // 簡化動畫版測試
   });
 
   const openDialog = (type: keyof typeof dialogs) => {
     console.log('Opening dialog:', type);
-    setDialogs(prev => ({ ...prev, [type]: true }));
+    console.log('Current dialogs state:', dialogs);
+    setDialogs(prev => {
+      const newState = { ...prev, [type]: true };
+      console.log('New state will be:', newState);
+      return newState;
+    });
   };
+  
+  // 使用 useEffect 來監聽狀態變化
+  React.useEffect(() => {
+    console.log('Dialogs state changed:', dialogs);
+  }, [dialogs]);
 
   const closeDialog = (type: keyof typeof dialogs) => {
     console.log('Closing dialog:', type);
@@ -49,7 +62,7 @@ export default function TestDialogsPage() {
           Dialog 測試頁面
         </h1>
         <p className="text-slate-400 mb-4">
-          所有 Dialog 現已加入光線流動邊框效果
+          統一的 Dialog 樣式和淡入淡出動畫
         </p>
         <p className="text-yellow-400 mb-8">
           請打開瀏覽器控制台查看調試信息
@@ -57,7 +70,11 @@ export default function TestDialogsPage() {
         
         <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-8">
           <Button
-            onClick={() => openDialog('notification')}
+            onClick={() => {
+              console.log('Button clicked: notification');
+              openDialog('notification');
+              console.log('After openDialog, dialogs:', dialogs);
+            }}
             className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500"
           >
             通知 Dialog
@@ -120,14 +137,33 @@ export default function TestDialogsPage() {
             >
               檢查 Dialog 狀態
             </Button>
+            <Button
+              onClick={() => openDialog('simple')}
+              variant="outline"
+              className="border-green-500 text-green-400 hover:bg-green-500/20"
+            >
+              測試簡單 Dialog
+            </Button>
+            <Button
+              onClick={() => openDialog('simpleAnimated')}
+              variant="outline"
+              className="border-purple-500 text-purple-400 hover:bg-purple-500/20"
+            >
+              測試簡化動畫版
+            </Button>
           </div>
         </div>
       </div>
 
+      {/* 調試信息 - 移除靜態顯示，因為它不會更新 */}
+
       {/* Dialogs */}
       <NotificationDialog
         isOpen={dialogs.notification}
-        onOpenChange={(open) => !open && closeDialog('notification')}
+        onOpenChange={(open) => {
+          console.log('NotificationDialog onOpenChange:', open);
+          if (!open) closeDialog('notification');
+        }}
         title="系統通知"
         message="您有新的訂單需要處理，請及時查看。"
         onConfirm={() => console.log('Notification confirmed')}
@@ -192,6 +228,39 @@ export default function TestDialogsPage() {
         title="原版通知測試"
         message="這是使用原版組件的測試"
         onConfirm={() => console.log('Original confirmed')}
+      />
+      
+      {/* 簡單測試 Dialog */}
+      <TestDialog
+        isOpen={dialogs.simple}
+        onOpenChange={(open) => !open && closeDialog('simple')}
+        title="簡單測試"
+        message="這是一個簡單的測試 dialog"
+      />
+      
+      {/* 最基本的測試 */}
+      {dialogs.simple && (
+        <div className="fixed inset-0 z-50">
+          <div className="fixed inset-0 bg-black/50" onClick={() => closeDialog('simple')} />
+          <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white p-6 rounded-lg">
+            <h2 className="text-black">這是一個最基本的 Dialog</h2>
+            <button 
+              className="mt-4 px-4 py-2 bg-blue-500 text-white rounded"
+              onClick={() => closeDialog('simple')}
+            >
+              關閉
+            </button>
+          </div>
+        </div>
+      )}
+      
+      {/* 簡化動畫版測試 */}
+      <SimpleAnimatedDialog
+        isOpen={dialogs.simpleAnimated}
+        onOpenChange={(open) => !open && closeDialog('simpleAnimated')}
+        title="簡化動畫版測試"
+        message="這是使用統一 dialog 組件但不使用 AnimatedDialogContent 的版本"
+        onConfirm={() => console.log('Simple animated confirmed')}
       />
     </div>
   );
