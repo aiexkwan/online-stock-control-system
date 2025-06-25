@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import Image from 'next/image';
 import { cn } from '@/lib/utils';
 import { NavigationItem } from './NavigationItem';
 import { MobileView } from './MobileView';
@@ -132,9 +133,11 @@ export function DynamicActionBar({ className }: DynamicActionBarProps) {
           
           {/* User Avatar */}
           {userData?.icon_url ? (
-            <img 
+            <Image 
               src={userData.icon_url} 
               alt={userData.name || 'User'} 
+              width={40}
+              height={40}
               className="w-10 h-10 rounded-full shadow-lg object-cover"
             />
           ) : (
