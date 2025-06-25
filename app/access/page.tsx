@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { unifiedAuth } from '../main-login/utils/unified-auth';
 import { getUserRole } from '../hooks/useAuth';
+import { LoadingScreen } from '@/components/ui/loading';
 // Starfield background is now handled globally
 
 export default function AccessPage() {
@@ -80,22 +81,9 @@ export default function AccessPage() {
   // 載入中狀態
   if (isLoading) {
     return (
-      <div className="min-h-screen relative overflow-hidden">
-        {/* Background Gradient Overlay */}
-        <div className="absolute inset-0 bg-gradient-to-br from-blue-900/20 via-purple-900/10 to-slate-900/30" />
-
-        {/* Content */}
-        <div className="relative z-10 min-h-screen flex items-center justify-center px-4">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="text-center"
-          >
-            <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-            <p className="text-slate-300 text-lg">Verifying access...</p>
-          </motion.div>
-        </div>
-      </div>
+      <LoadingScreen isLoading={true} loadingText="Verifying access...">
+        <div />
+      </LoadingScreen>
     );
   }
 

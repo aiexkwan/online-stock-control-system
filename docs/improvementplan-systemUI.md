@@ -538,6 +538,11 @@ export class PerformanceMonitor {
 - [ ] 統一表單組件
 - [ ] 清理重複組件
 - [ ] 建立組件展示頁面
+- [x] **統一 Loading 動畫系統** (2025-06-25 完成)
+  - 創建統一 Loading 組件庫 (`/components/ui/loading/`)
+  - 實現 LoadingScreen（全頁）、LoadingSpinner（inline）、LoadingButton（按鈕）
+  - 更新 Admin Dashboard、Home Page、Access Page 使用統一組件
+  - 保留 Login 頁面獨立動畫風格
 
 ### 第3-4週：性能優化
 - [ ] 實施虛擬滾動

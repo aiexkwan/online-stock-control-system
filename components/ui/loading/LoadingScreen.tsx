@@ -1,6 +1,6 @@
 /**
- * Loading Screen Component with Fade Animation
- * Dashboard 載入畫面
+ * Unified Loading Screen Component
+ * 統一嘅載入畫面組件
  */
 
 'use client';
@@ -11,9 +11,16 @@ import { motion, AnimatePresence } from 'framer-motion';
 interface LoadingScreenProps {
   isLoading: boolean;
   children: React.ReactNode;
+  loadingText?: string;
+  showMessages?: boolean;
 }
 
-export const LoadingScreen: React.FC<LoadingScreenProps> = ({ isLoading, children }) => {
+export const LoadingScreen: React.FC<LoadingScreenProps> = ({ 
+  isLoading, 
+  children,
+  loadingText = "Loading",
+  showMessages = true
+}) => {
   const [showContent, setShowContent] = useState(false);
 
   useEffect(() => {
@@ -87,7 +94,7 @@ export const LoadingScreen: React.FC<LoadingScreenProps> = ({ isLoading, childre
                 transition={{ delay: 0.2, duration: 0.2 }}
                 className="text-2xl font-semibold text-white mb-4"
               >
-                Loading Dashboard
+                {loadingText}
               </motion.h2>
 
               {/* Progress Dots */}
@@ -115,14 +122,16 @@ export const LoadingScreen: React.FC<LoadingScreenProps> = ({ isLoading, childre
               </motion.div>
 
               {/* Loading Messages */}
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.4, duration: 0.1 }}
-                className="mt-8"
-              >
-                <LoadingMessages />
-              </motion.div>
+              {showMessages && (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.4, duration: 0.1 }}
+                  className="mt-8"
+                >
+                  <LoadingMessages />
+                </motion.div>
+              )}
             </div>
           </motion.div>
         )}
@@ -151,7 +160,7 @@ const LoadingMessages: React.FC = () => {
   const messages = [
     "Initializing components...",
     "Loading your data...",
-    "Preparing dashboard...",
+    "Preparing interface...",
     "Almost there...",
   ];
 

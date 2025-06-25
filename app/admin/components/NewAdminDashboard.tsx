@@ -24,7 +24,7 @@ import { DialogManager } from '@/app/components/admin-system/DialogManager';
 import { useVoidPallet } from '@/app/void-pallet/hooks/useVoidPallet';
 import { UniversalTimeRangeSelector, TimeFrame } from '@/app/components/admin/UniversalTimeRangeSelector';
 import { AdminDashboardContent } from './dashboard/AdminDashboardContent';
-import { LoadingScreen, FadeInContainer } from './LoadingScreen';
+import { LoadingScreen, FadeInContainer } from '@/components/ui/loading';
 import { cn } from '@/lib/utils';
 import { MenuBar } from '@/components/ui/glow-menu';
 import UniversalChatbot from '@/app/components/admin/UniversalChatbot';
@@ -299,12 +299,9 @@ export function NewAdminDashboard() {
   // Loading state
   if (loading) {
     return (
-      <div className="min-h-screen">
-        <div className="min-h-screen flex flex-col justify-center items-center p-4 text-white relative z-10">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-orange-500"></div>
-          <p className="text-lg mt-4">Loading...</p>
-        </div>
-      </div>
+      <LoadingScreen isLoading={true} loadingText="Authenticating..." showMessages={false}>
+        <div />
+      </LoadingScreen>
     );
   }
 
