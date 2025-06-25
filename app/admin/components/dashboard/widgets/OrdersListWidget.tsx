@@ -29,7 +29,7 @@ export const OrdersListWidget = React.memo(function OrdersListWidget({ widget, i
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(true);
-  const { useOrderHistoryRefresh } = useUploadRefresh();
+  const { orderHistoryVersion } = useUploadRefresh();
   
   const itemsPerPage = 15; // Always show 15 items initially
 
@@ -112,9 +112,12 @@ export const OrdersListWidget = React.memo(function OrdersListWidget({ widget, i
   }, []);
   
   // 訂閱上傳更新事件
-  useOrderHistoryRefresh(() => {
-    loadOrders(false); // 重新載入第一頁
-  });
+  useEffect(() => {
+    if (orderHistoryVersion > 0) {
+      loadOrders(false); // 重新載入第一頁
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [orderHistoryVersion]);
 
   const formatTime = (timestamp: string) => {
     try {

@@ -7,9 +7,9 @@ interface UploadRefreshContextType {
   triggerOrderHistoryRefresh: () => void;
   triggerOtherFilesRefresh: () => void;
   
-  // 訂閱更新事件嘅 hooks
-  useOrderHistoryRefresh: (callback: () => void) => void;
-  useOtherFilesRefresh: (callback: () => void) => void;
+  // 版本號碼 - 用於 hooks 訂閱
+  orderHistoryVersion: number;
+  otherFilesVersion: number;
 }
 
 const UploadRefreshContext = createContext<UploadRefreshContextType | undefined>(undefined);
@@ -28,33 +28,18 @@ export const UploadRefreshProvider: React.FC<{ children: React.ReactNode }> = ({
     setOtherFilesVersion(v => v + 1);
   }, []);
 
-  // 訂閱 hooks
-  const useOrderHistoryRefresh = useCallback((callback: () => void) => {
-    React.useEffect(() => {
-      if (orderHistoryVersion > 0) {
-        callback();
-      }
-    }, [orderHistoryVersion, callback]);
-  }, [orderHistoryVersion]);
-
-  const useOtherFilesRefresh = useCallback((callback: () => void) => {
-    React.useEffect(() => {
-      if (otherFilesVersion > 0) {
-        callback();
-      }
-    }, [otherFilesVersion, callback]);
-  }, [otherFilesVersion]);
+  // 將版本號碼暴露出去，畀使用者自己處理 useEffect
 
   const value = React.useMemo(() => ({
     triggerOrderHistoryRefresh,
     triggerOtherFilesRefresh,
-    useOrderHistoryRefresh,
-    useOtherFilesRefresh
+    orderHistoryVersion,
+    otherFilesVersion
   }), [
     triggerOrderHistoryRefresh,
     triggerOtherFilesRefresh,
-    useOrderHistoryRefresh,
-    useOtherFilesRefresh
+    orderHistoryVersion,
+    otherFilesVersion
   ]);
 
   return (

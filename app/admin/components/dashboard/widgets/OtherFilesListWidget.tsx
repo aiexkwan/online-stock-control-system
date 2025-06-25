@@ -30,7 +30,7 @@ export const OtherFilesListWidget = React.memo(function OtherFilesListWidget({ w
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(true);
-  const { useOtherFilesRefresh } = useUploadRefresh();
+  const { otherFilesVersion } = useUploadRefresh();
   
   // 根據 widget size 設定每頁顯示數量，預設 10
   const itemsPerPage = 10;
@@ -114,9 +114,12 @@ export const OtherFilesListWidget = React.memo(function OtherFilesListWidget({ w
   }, []);
   
   // 訂閱上傳更新事件
-  useOtherFilesRefresh(() => {
-    loadFiles(false); // 重新載入第一頁
-  });
+  useEffect(() => {
+    if (otherFilesVersion > 0) {
+      loadFiles(false); // 重新載入第一頁
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [otherFilesVersion]);
 
   const formatTime = (timestamp: string) => {
     try {
