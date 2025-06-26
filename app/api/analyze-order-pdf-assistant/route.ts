@@ -5,7 +5,6 @@ import { createClient } from '@supabase/supabase-js';
 import { AssistantService } from '@/lib/services/assistantService';
 import { SYSTEM_PROMPT } from '@/lib/openai-assistant-config';
 import { apiLogger, logApiRequest, logApiResponse, systemLogger } from '@/lib/logger';
-import { getUserIdFromEmail } from '@/lib/utils/getUserId';
 import crypto from 'crypto';
 
 // 簡單的內存緩存（與現有系統一致）
@@ -195,15 +194,15 @@ async function recordOrderUploadHistory(
   try {
     const supabase = createSupabaseAdmin();
     
-    // 獲取用戶 ID
-    const userId = await getUserIdFromEmail(`${uploadedBy}@pennineindustries.com`);
+    // uploadedBy 參數已經係用戶 ID (integer)，直接使用
+    const userId = parseInt(uploadedBy);
     
     // 插入歷史記錄
     const { error } = await supabase
       .from('record_history')
       .insert({
         time: new Date().toISOString(),
-        id: userId, // 使用從 data_id 表獲取的 ID
+        id: userId, // 直接使用 uploadedBy 轉換成 integer
         action: 'Order Upload',
         plt_num: null, // 訂單上傳不涉及棧板
         loc: null, // 訂單上傳不涉及位置

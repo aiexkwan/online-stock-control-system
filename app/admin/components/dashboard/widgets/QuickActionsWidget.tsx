@@ -65,7 +65,7 @@ export const QuickActionsWidget = React.memo(function QuickActionsWidget({ widge
       id: 'stock-take',
       label: 'Stock Take',
       icon: <ClipboardList className="h-5 w-5" />,
-      href: '/stock-take/cycle-count',
+      href: '/admin/stock-count',
       color: iconColors.purple
     },
     {

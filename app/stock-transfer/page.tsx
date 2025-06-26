@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { StatusMessage } from '../../components/ui/stock-movement-layout';
+import { StatusMessage } from '../../components/ui/universal-stock-movement-layout';
 import { useStockMovement } from '../hooks/useStockMovement';
 
 // 導入拆分的組件

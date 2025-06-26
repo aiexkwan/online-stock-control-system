@@ -10,8 +10,7 @@ export default function PrintGrnLabelPage() {
   return (
     <div>
       {/* 主要內容區域 */}
-      <div className="relative">
-        <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 py-8">
           {/* Instructions Section */}
           <div className="flex justify-end mb-6">
             <FloatingInstructions
@@ -58,7 +57,6 @@ export default function PrintGrnLabelPage() {
                   <div className="w-1 h-1 bg-slate-400 rounded-full"></div>
                 </div>
               </div>
-            </div>
           </div>
         </div>
       </div>

@@ -10,7 +10,7 @@
 
 import React, { useState, useRef, useCallback, useMemo, useEffect } from 'react';
 import { CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { WidgetCard } from '../WidgetCard';
+import { UniversalWidgetCard as WidgetCard } from '../UniversalWidgetCard';
 import { TruckIcon, ClockIcon, ChevronDownIcon } from '@heroicons/react/24/outline';
 import { WidgetComponentProps } from '@/app/types/dashboard';
 import { useGraphQLQuery } from '@/lib/graphql-client-stable';

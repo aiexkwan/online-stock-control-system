@@ -5,7 +5,7 @@
 'use client';
 
 import React from 'react';
-import { WidgetCard } from '../WidgetCard';
+import { UniversalWidgetCard as WidgetCard } from '../UniversalWidgetCard';
 import { WidgetComponentProps } from '@/app/types/dashboard';
 import AskDatabaseInlineCard from '@/app/components/AskDatabaseInlineCard';
 

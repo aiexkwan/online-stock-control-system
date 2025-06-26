@@ -11,7 +11,7 @@
 
 import React, { useState, useRef, useCallback } from 'react';
 import { CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { WidgetCard } from '../WidgetCard';
+import { UniversalWidgetCard as WidgetCard } from '../UniversalWidgetCard';
 import { CubeIcon, ClockIcon, ChevronDownIcon } from '@heroicons/react/24/outline';
 import { WidgetComponentProps } from '@/app/types/dashboard';
 import { dialogStyles, iconColors } from '@/app/utils/dialogStyles';

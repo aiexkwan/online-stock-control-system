@@ -379,9 +379,10 @@ export const adminDashboardLayouts: Record<string, AdminDashboardLayout> = {
   'stock-management': {
     theme: 'stock-management',
     gridTemplate: `
-      "widget2 widget2 widget2 widget2 widget2 widget3 widget3 widget3 widget1 widget1"
       "widget2 widget2 widget2 widget2 widget2 widget4 widget4 widget4 widget1 widget1"
       "widget2 widget2 widget2 widget2 widget2 widget5 widget5 widget5 widget1 widget1"
+      "widget3 widget3 widget3 widget3 widget3 widget6 widget6 widget6 widget1 widget1"
+      "widget3 widget3 widget3 widget3 widget3 widget6 widget6 widget6 widget1 widget1"
     `,
     widgets: [
       {
@@ -392,29 +393,37 @@ export const adminDashboardLayouts: Record<string, AdminDashboardLayout> = {
       },
       {
         type: 'table',
-        title: 'Stock Inventory',
+        title: 'Stock Type Selector',
         gridArea: 'widget2',
         dataSource: 'stock_level',
-        component: 'StockInventoryTable'
+        component: 'StockTypeSelector'
+      },
+      {
+        type: 'chart',
+        title: 'Stock Distribution',
+        gridArea: 'widget3',
+        dataSource: 'stock_level',
+        chartType: 'pie',
+        component: 'StockDistributionChart'
       },
       {
         type: 'stats',
         title: 'Total Stock Value',
-        gridArea: 'widget3',
+        gridArea: 'widget4',
         dataSource: 'stock_level',
         metrics: ['total_value']
       },
       {
         type: 'chart',
-        title: 'Stock Distribution',
-        gridArea: 'widget4',
+        title: 'Stock Trend',
+        gridArea: 'widget5',
         dataSource: 'stock_level',
         chartType: 'donut'
       },
       {
         type: 'alerts',
         title: 'Stock Alerts',
-        gridArea: 'widget5',
+        gridArea: 'widget6',
         dataSource: 'stock_alerts'
       }
     ]

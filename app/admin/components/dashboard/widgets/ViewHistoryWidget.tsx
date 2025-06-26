@@ -13,7 +13,7 @@ import { ClockIcon, MagnifyingGlassIcon } from '@heroicons/react/24/outline';
 import { createClient } from '@/lib/supabase';
 import { WidgetComponentProps } from '@/app/types/dashboard';
 import { CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { WidgetCard } from '../WidgetCard';
+import { UniversalWidgetCard as WidgetCard } from '../UniversalWidgetCard';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { formatDbTime } from '@/app/utils/timezone';

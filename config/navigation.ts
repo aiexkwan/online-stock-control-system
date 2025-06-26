@@ -78,12 +78,6 @@ export const MAIN_NAVIGATION: NavigationItem[] = [
     iconColor: "text-pink-500",
     children: [
       {
-        id: 'cycle-count',
-        label: 'Cycle Count',
-        href: '/stock-take/cycle-count',
-        description: 'Periodic inventory count'
-      },
-      {
         id: 'stock-report',
         label: 'Stock Count Report',
         href: '/stock-take/report',

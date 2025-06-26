@@ -11,7 +11,7 @@ import { DocumentIcon, CloudIcon, PhotoIcon, ArrowPathIcon } from '@heroicons/re
 import { createClient } from '@/lib/supabase';
 import { WidgetComponentProps } from '@/app/types/dashboard';
 import { CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { WidgetCard } from '../WidgetCard';
+import { UniversalWidgetCard as WidgetCard } from '../UniversalWidgetCard';
 import { format } from 'date-fns';
 import { fromDbTime } from '@/app/utils/timezone';
 import { useUploadRefresh } from '@/app/admin/contexts/UploadRefreshContext';

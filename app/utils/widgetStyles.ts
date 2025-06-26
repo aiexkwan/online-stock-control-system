@@ -9,8 +9,6 @@ export const WidgetStyles = {
   // Widget 專屬邊框顏色 - 完全移除邊框效果
   borders: {
     // Statistics 類
-    OUTPUT_STATS: '',
-    BOOKED_OUT_STATS: '',
     VOID_STATS: '',
     
     // Charts & Analytics 類
@@ -34,13 +32,10 @@ export const WidgetStyles = {
     // Document Management 類
     UPLOAD_FILES: '',
     REPORTS: '',
-    UPLOAD_ORDER_PDF: '',
     PRODUCT_SPEC: '',
     CUSTOM: '',
     
     // 支援小寫版本（兼容性）
-    output_stats: '',
-    booked_out_stats: '',
     void_stats: '',
     product_mix_chart: '',
     recent_activity: '',
@@ -54,7 +49,6 @@ export const WidgetStyles = {
     database_update: '',
     upload_files: '',
     reports: '',
-    upload_order_pdf: '',
     product_spec: '',
     custom: '',
   },

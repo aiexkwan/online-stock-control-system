@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useCallback } from 'react';
-import { StockMovementLayout, StatusMessage } from '../../components/ui/stock-movement-layout';
+import { StockMovementLayout, StatusMessage } from '../../components/ui/universal-stock-movement-layout';
 import { Card, CardContent } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
 import { Package, AlertCircle, CheckCircle } from 'lucide-react';

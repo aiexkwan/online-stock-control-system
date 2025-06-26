@@ -8,7 +8,6 @@
 import React, { useState, useEffect } from 'react';
 import { UnifiedVoidReportDialog } from '@/app/void-pallet/components/UnifiedVoidReportDialog';
 import { UnifiedLoadingReportDialog } from '@/app/order-loading/components/UnifiedLoadingReportDialog';
-import { UnifiedStockTakeReportDialog } from '@/app/stock-take/components/UnifiedStockTakeReportDialog';
 import { UnifiedAcoReportDialog } from '@/app/components/reports/UnifiedAcoReportDialog';
 import { UnifiedGrnReportDialog } from '@/app/components/reports/UnifiedGrnReportDialog';
 import { UnifiedTransactionReportDialog } from '@/app/components/reports/UnifiedTransactionReportDialog';
@@ -102,10 +101,6 @@ export function GlobalReportDialogs() {
         onClose={() => closeDialog('orderLoadingReport')}
       />
       
-      <UnifiedStockTakeReportDialog
-        isOpen={dialogStates.stockTakeReport}
-        onClose={() => closeDialog('stockTakeReport')}
-      />
       
       <UnifiedAcoReportDialog
         isOpen={dialogStates.acoOrderReport}

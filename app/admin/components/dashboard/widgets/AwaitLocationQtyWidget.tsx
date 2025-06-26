@@ -8,7 +8,7 @@
 
 import React, { useMemo } from 'react';
 import { CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { WidgetCard } from '../WidgetCard';
+import { UniversalWidgetCard as WidgetCard } from '../UniversalWidgetCard';
 import { BuildingOfficeIcon, ArrowTrendingUpIcon, ArrowTrendingDownIcon } from '@heroicons/react/24/outline';
 import { WidgetComponentProps } from '@/app/types/dashboard';
 import { useGraphQLQuery, gql } from '@/lib/graphql-client-stable';

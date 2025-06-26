@@ -21,7 +21,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { WidgetComponentProps } from '@/app/types/dashboard';
 import { CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { WidgetCard } from '../WidgetCard';
+import { UniversalWidgetCard as WidgetCard } from '../UniversalWidgetCard';
 import { Button } from "@/components/ui/button";
 import { WidgetStyles } from '@/app/utils/widgetStyles';
 

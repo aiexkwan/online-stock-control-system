@@ -37,34 +37,37 @@ export const StockManagementLayout: React.FC<StockManagementLayoutProps> = ({
       height: 'auto',
       width: 'auto'
     },
-    // Item 2 - Main content area (large left section)
+    // Item 2 - Stock Type Selector (top half of left section)
     { 
-      gridArea: '1 / 1 / 2 / 2',
       gridColumn: '1 / 6',
-      gridRow: '1 / 9',
+      gridRow: '1 / 5',
       height: 'auto',
       width: 'auto'
     },
-    // Item 3 - Stats/Info widget (top right)
+    // Item 3 - Stock Distribution Chart (bottom half of left section)
     { 
-      gridArea: '1 / 6 / 2 / 7',
+      gridColumn: '1 / 6',
+      gridRow: '5 / 9',
+      height: 'auto',
+      width: 'auto'
+    },
+    // Item 4 - Total Stock Value (top right)
+    { 
       gridColumn: '6 / 9',
-      gridRow: '1 / 4',
+      gridRow: '1 / 3',
       height: 'auto',
       width: 'auto'
     },
-    // Item 4 - Stats/Info widget (middle right)
+    // Item 5 - Stock Trend (middle right)
     { 
-      gridArea: '4 / 6 / 5 / 7',
       gridColumn: '6 / 9',
-      gridRow: '4 / 7',
+      gridRow: '3 / 6',
       height: 'auto',
       width: 'auto'
     },
-    // Item 5 - Stats/Info widget (bottom right)
+    // Item 6 - Stock Alerts (bottom right)
     { 
-      gridArea: '7 / 6 / 8 / 7',
-      gridRow: '7 / 9',
+      gridRow: '6 / 9',
       gridColumn: '6 / 9',
       height: 'auto',
       width: 'auto'
@@ -73,9 +76,9 @@ export const StockManagementLayout: React.FC<StockManagementLayoutProps> = ({
 
   return (
     <div className="stock-management-container" style={containerStyle}>
-      {children.slice(0, 5).map((child, index) => {
+      {children.slice(0, 6).map((child, index) => {
         const isHistoryTree = index === 0;
-        const isMainContent = index === 1;
+        const isMainContent = index === 1 || index === 2; // Both stock selector and chart
         const style = widgetStyles[index];
         
         if (isHistoryTree) {

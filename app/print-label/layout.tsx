@@ -1,12 +1,14 @@
+import { UniversalContainer } from '@/components/layout/universal';
+
 export default function PrintLabelLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
   return (
-    <div className="min-h-screen">
+    <UniversalContainer variant="page" background="transparent" padding="none">
       {/* Navigation removed - using dynamic action bar */}
       {children}
-    </div>
+    </UniversalContainer>
   );
 }

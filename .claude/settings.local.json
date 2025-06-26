@@ -86,7 +86,8 @@
       "Bash(npm view:*)",
       "Bash(npx graphql-codegen:*)",
       "Bash(diff:*)",
-      "WebFetch(domain:aurachat.io)"
+      "WebFetch(domain:aurachat.io)",
+      "Bash(md5sum:*)"
     ],
     "deny": []
   }

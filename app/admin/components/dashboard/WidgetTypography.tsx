@@ -179,8 +179,6 @@ export function WidgetValue({
 export function getGlowColorForWidget(widgetType: string): keyof typeof GlowStyles {
   const colorMap: Record<string, keyof typeof GlowStyles> = {
     // Statistics 類
-    'OUTPUT_STATS': 'green',
-    'BOOKED_OUT_STATS': 'blue',
     'VOID_STATS': 'red',
     
     // Operations 類

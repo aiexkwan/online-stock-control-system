@@ -12,6 +12,7 @@ import { Sidebar, SidebarBody, SidebarLink, SidebarLogout, SidebarHeader } from 
 import { useAuth } from '@/app/hooks/useAuth';
 import { DynamicActionBar } from '@/components/ui/dynamic-action-bar';
 import { AskDatabaseModal } from '@/components/ui/ask-database-modal';
+import { UniversalProvider } from '@/components/layout/universal';
 
 // Icons
 import { 
@@ -35,6 +36,18 @@ export default function ClientLayout({ children }: ClientLayoutProps) {
   const isAccessPage = pathname === '/access';
   // Disable sidebar for now - using dynamic navigation instead
   const showSidebar = false; // was: isAuthenticated && !isLoginPage && !isAccessPage;
+
+  // 根據路徑動態決定主題
+  const getThemeFromPath = (path: string): string => {
+    if (path.startsWith('/admin')) return 'admin';
+    if (path.startsWith('/stock-transfer')) return 'warehouse';
+    if (path.startsWith('/order-loading')) return 'production';
+    if (path.startsWith('/print-label') || path.startsWith('/print-grnlabel')) return 'qc';
+    if (path.startsWith('/void-pallet')) return 'production';
+    return 'neutral';
+  };
+
+  const currentTheme = getThemeFromPath(pathname || '');
 
   // Menu items
   const menuItems = [
@@ -60,7 +73,7 @@ export default function ClientLayout({ children }: ClientLayoutProps) {
     },
     {
       label: 'Stock Take',
-      href: '/stock-take/cycle-count',
+      href: '/admin/stock-count',
       icon: <ClipboardDocumentCheckIcon className="w-5 h-5" />
     },
     {
@@ -92,7 +105,11 @@ export default function ClientLayout({ children }: ClientLayoutProps) {
   const filteredMenuItems = getFilteredMenuItems();
 
   return (
-    <>
+    <UniversalProvider 
+      defaultTheme={currentTheme}
+      animationsEnabled={true}
+      debugMode={process.env.NODE_ENV === 'development'}
+    >
       {/* Toast notifications */}
       <Toaster 
         position="top-right"
@@ -168,6 +185,6 @@ export default function ClientLayout({ children }: ClientLayoutProps) {
         {/* Ask Database Modal */}
         <AskDatabaseModal />
       </AuthChecker>
-    </>
+    </UniversalProvider>
   );
 } 

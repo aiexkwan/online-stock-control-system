@@ -9,11 +9,9 @@ import FloatingInstructions from '@/components/ui/floating-instructions';
 
 export default function PrintLabelPage() {
   return (
-    <div>
-      {/* 主要內容區域 */}
-      <div className="container mx-auto px-4 py-8">
-        {/* Instructions Section */}
-        <div className="flex justify-end mb-6">
+    <div className="container mx-auto px-4 py-8">
+      {/* Instructions Section */}
+      <div className="flex justify-end mb-6">
           <FloatingInstructions
             title="QC Label Instructions"
             variant="hangover"
@@ -61,7 +59,6 @@ export default function PrintLabelPage() {
               </div>
             </div>
           </div>
-        </div>
       </div>
     </div>
   );

@@ -11,7 +11,7 @@ import { ClockIcon, Package2, TruckIcon, PrinterIcon, CheckCircleIcon, XCircleIc
 import { DocumentArrowDownIcon, ClipboardDocumentListIcon } from '@heroicons/react/24/outline';
 import { WidgetComponentProps } from '@/app/types/dashboard';
 import { CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { WidgetCard } from '../WidgetCard';
+import { UniversalWidgetCard as WidgetCard } from '../UniversalWidgetCard';
 import { Timeline } from '@/components/ui/timeline';
 import { createClient } from '@/app/utils/supabase/client';
 import { format } from 'date-fns';

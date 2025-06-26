@@ -10,7 +10,7 @@ import { motion } from 'framer-motion';
 import { DocumentArrowUpIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
 import { WidgetComponentProps } from '@/app/types/dashboard';
 import { CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { WidgetCard } from '../WidgetCard';
+import { UniversalWidgetCard as WidgetCard } from '../UniversalWidgetCard';
 import { format } from 'date-fns';
 import { fromDbTime } from '@/app/utils/timezone';
 import { useGraphQLQuery } from '@/lib/graphql-client-stable';

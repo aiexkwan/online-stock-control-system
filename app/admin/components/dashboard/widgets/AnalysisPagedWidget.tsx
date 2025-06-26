@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
 // Import chart components (will be created)
-import AcoOrderProgressChart from '../charts/AcoOrderProgressChart';
+import AcoOrderProgressCards from '../charts/AcoOrderProgressCards';
 import TopProductsInventoryChart from '../charts/TopProductsInventoryChart';
 import UserActivityHeatmap from '../charts/UserActivityHeatmap';
 import InventoryTurnoverAnalysis from '../charts/InventoryTurnoverAnalysis';
@@ -31,7 +31,7 @@ const pages: PageContent[] = [
     title: 'ACO Order Progress',
     subtitle: 'Track order completion status',
     icon: BarChart,
-    component: AcoOrderProgressChart,
+    component: AcoOrderProgressCards,
     color: 'from-blue-500 to-cyan-500'
   },
   {

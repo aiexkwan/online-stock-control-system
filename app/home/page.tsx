@@ -1,9 +1,9 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { createClient } from '@/lib/supabase';
+import { createClient } from '@/app/utils/supabase/client';
 import { toast } from 'sonner';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -89,7 +89,7 @@ export default function ModernDashboard() {
   };
 
   // Load incomplete ACO orders
-  const loadIncompleteAcoOrders = async () => {
+  const loadIncompleteAcoOrders = useCallback(async () => {
     try {
       setAcoLoading(true);
       const { data, error } = await supabase
@@ -107,10 +107,10 @@ export default function ModernDashboard() {
     } finally {
       setAcoLoading(false);
     }
-  };
+  }, [supabase]);
 
   // Load history records
-  const loadHistoryRecords = async () => {
+  const loadHistoryRecords = useCallback(async () => {
     try {
       setHistoryLoading(true);
       
@@ -195,7 +195,7 @@ export default function ModernDashboard() {
     } finally {
       setHistoryLoading(false);
     }
-  };
+  }, [supabase]);
 
   // Initialize authentication and load user data
   useEffect(() => {

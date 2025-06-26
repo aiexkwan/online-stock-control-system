@@ -6,7 +6,7 @@ import { BarChart, Activity, TrendingUp, CheckCircle, AlertTriangle, Map } from 
 import { cn } from '@/lib/utils';
 
 // Import chart components
-import AcoOrderProgressChart from '../charts/AcoOrderProgressChart';
+import AcoOrderProgressCards from '../charts/AcoOrderProgressCards';
 import TopProductsInventoryChart from '../charts/TopProductsInventoryChart';
 import UserActivityHeatmap from '../charts/UserActivityHeatmap';
 import InventoryTurnoverAnalysis from '../charts/InventoryTurnoverAnalysis';
@@ -30,7 +30,7 @@ const chartOptions: ChartOption[] = [
     title: 'ACO Order Progress',
     subtitle: 'Track order completion status',
     icon: BarChart,
-    component: AcoOrderProgressChart,
+    component: AcoOrderProgressCards,
     backgroundGradient: 'from-blue-900/90 via-blue-800/70 to-cyan-900/60',
     iconColor: 'from-blue-400 to-cyan-400'
   },
