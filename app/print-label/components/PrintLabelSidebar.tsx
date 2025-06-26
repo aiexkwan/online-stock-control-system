@@ -7,7 +7,6 @@ import { Sidebar, SidebarBody, SidebarLink, SidebarLogout } from '@/components/u
 // Icons
 import { 
   PrinterIcon,
-  HomeIcon,
   DocumentTextIcon
 } from '@heroicons/react/24/outline';
 
@@ -16,11 +15,6 @@ export function PrintLabelSidebar({ children }: { children: React.ReactNode }) {
 
   // Print label specific menu items
   const menuItems = [
-    {
-      label: 'Home',
-      href: '/home',
-      icon: <HomeIcon className="w-5 h-5" />
-    },
     {
       label: 'Print QC Label',
       href: '/print-label',

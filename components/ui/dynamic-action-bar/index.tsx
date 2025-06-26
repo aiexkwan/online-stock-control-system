@@ -22,9 +22,12 @@ export function DynamicActionBar({ className }: DynamicActionBarProps) {
   const [activeItem, setActiveItem] = useState<string | null>(null);
   const [userData, setUserData] = useState<{ name: string; email: string; icon_url?: string | null } | null>(null);
   const isMobile = useMediaQuery('(max-width: 768px)');
-  const { user } = useAuth();
+  const { user, userRole } = useAuth();
   const router = useRouter();
   const supabase = createClient();
+
+  // 調試日誌
+  console.log('[DynamicActionBar] User:', user?.email, 'UserRole:', userRole);
 
   // Get greeting based on time
   const getGreeting = () => {
@@ -85,7 +88,9 @@ export function DynamicActionBar({ className }: DynamicActionBarProps) {
   };
 
   if (isMobile) {
-    return <MobileView items={MAIN_NAVIGATION} />;
+    // Mobile view should also respect user role restrictions
+    const allowedNavigation = userRole?.navigationRestricted ? [] : MAIN_NAVIGATION;
+    return <MobileView items={allowedNavigation} />;
   }
 
   return (
@@ -106,22 +111,26 @@ export function DynamicActionBar({ className }: DynamicActionBarProps) {
       onMouseLeave={() => setActiveItem(null)} // Clear active item when mouse leaves the entire nav bar
     >
       <div className="flex items-center justify-between gap-8 w-full">
-        {/* Navigation Items */}
-        <div className="flex items-center gap-2">
-          {MAIN_NAVIGATION.map((item) => (
-            <NavigationItem
-              key={item.id}
-              item={item}
-              isActive={activeItem === item.id}
-              onActiveChange={setActiveItem}
-            />
-          ))}
-        </div>
+        {/* Navigation Items - Only show for Admin users */}
+        {!userRole?.navigationRestricted && (
+          <div className="flex items-center gap-2">
+            {MAIN_NAVIGATION.map((item) => (
+              <NavigationItem
+                key={item.id}
+                item={item}
+                isActive={activeItem === item.id}
+                onActiveChange={setActiveItem}
+              />
+            ))}
+          </div>
+        )}
         
         {/* User Info Section */}
         <div className="flex items-center gap-4">
-          {/* Divider */}
-          <div className="h-8 w-px bg-white/20" />
+          {/* Divider - Only show if navigation items are present */}
+          {!userRole?.navigationRestricted && (
+            <div className="h-8 w-px bg-white/20" />
+          )}
           
           {/* Greeting and User Name */}
           <div className="text-right">

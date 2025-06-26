@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { unifiedAuth } from '../main-login/utils/unified-auth';
-import { getUserRole } from '../hooks/useAuth';
+import { getUserRoleFromDatabase } from '../hooks/useAuth';
 import { LoadingScreen } from '@/components/ui/loading';
 // Starfield background is now handled globally
 
@@ -17,7 +17,7 @@ export default function AccessPage() {
   const [securityInfo, setSecurityInfo] = useState<any>(null);
   const [countdown, setCountdown] = useState(3);
   const [isRedirecting, setIsRedirecting] = useState(false);
-  const [redirectPath, setRedirectPath] = useState('/home');
+  const [redirectPath, setRedirectPath] = useState('/admin/analysis');
 
   useEffect(() => {
     const checkAuthentication = async () => {
@@ -39,8 +39,14 @@ export default function AccessPage() {
         }
 
         // 根據用戶角色設置重定向路徑
-        const userRole = getUserRole(user.email);
-        setRedirectPath(userRole.defaultPath);
+        const userRole = await getUserRoleFromDatabase(user.email);
+        if (userRole) {
+          setRedirectPath(userRole.defaultPath);
+        } else {
+          // 降級處理：預設為系統管理頁面
+          console.warn('[AccessPage] Could not determine user role, using default path');
+          setRedirectPath('/admin/analysis');
+        }
 
         // 認證成功
         setUserEmail(user.email);

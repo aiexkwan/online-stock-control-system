@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { createClient } from '@/app/utils/supabase/client';
 import type { User } from '@supabase/supabase-js';
 
@@ -10,29 +10,169 @@ export interface AuthState {
 }
 
 export interface UserRole {
-  type: 'production' | 'warehouse' | 'admin';
+  type: 'admin' | 'user';
+  department: string;
+  position: string;
   allowedPaths: string[];
   defaultPath: string;
+  navigationRestricted: boolean;
 }
 
+// 基於 department 和 position 的用戶角色映射
+const USER_ROUTING_MAP: Record<string, { defaultPath: string; allowedPaths: string[]; navigationRestricted: boolean }> = {
+  // Admin 用戶 (無限制)
+  'Injection_Admin': {
+    defaultPath: '/admin/injection',
+    allowedPaths: [],
+    navigationRestricted: false
+  },
+  'Office_Admin': {
+    defaultPath: '/admin/upload',
+    allowedPaths: [],
+    navigationRestricted: false
+  },
+  'Pipeline_Admin': {
+    defaultPath: '/admin/pipeline',
+    allowedPaths: [],
+    navigationRestricted: false
+  },
+  'System_Admin': {
+    defaultPath: '/admin/analysis',
+    allowedPaths: [],
+    navigationRestricted: false
+  },
+  'Warehouse_Admin': {
+    defaultPath: '/stock-transfer',
+    allowedPaths: [],
+    navigationRestricted: false
+  },
+  
+  // User 用戶 (有限制)
+  'Injection_User': {
+    defaultPath: '/print-label',
+    allowedPaths: ['/print-label'],
+    navigationRestricted: true
+  },
+  'Office_User': {
+    defaultPath: '/admin/upload',
+    allowedPaths: ['/admin/upload', '/admin/system'],
+    navigationRestricted: true
+  },
+  'Pipeline_User': {
+    defaultPath: '/print-label',
+    allowedPaths: ['/print-label'],
+    navigationRestricted: true
+  },
+  'Warehouse_User': {
+    defaultPath: '/stock-transfer',
+    allowedPaths: ['/stock-transfer'],
+    navigationRestricted: true
+  }
+};
+
+export const getUserRoleByDepartmentAndPosition = (department: string, position: string): UserRole => {
+  const key = `${department}_${position}`;
+  const config = USER_ROUTING_MAP[key];
+  
+  if (!config) {
+    // 降級處理：未知組合預設為受限用戶
+    console.warn(`[getUserRoleByDepartmentAndPosition] Unknown combination: ${department}_${position}`);
+    return {
+      type: 'user',
+      department,
+      position,
+      allowedPaths: ['/admin/upload'],
+      defaultPath: '/admin/upload',
+      navigationRestricted: true
+    };
+  }
+  
+  return {
+    type: position === 'Admin' ? 'admin' : 'user',
+    department,
+    position,
+    allowedPaths: config.allowedPaths,
+    defaultPath: config.defaultPath,
+    navigationRestricted: config.navigationRestricted
+  };
+};
+
+// 從資料庫獲取用戶角色
+export const getUserRoleFromDatabase = async (email: string): Promise<UserRole | null> => {
+  try {
+    const supabase = createClient();
+    
+    // 快速測試資料庫連接
+    const startTime = Date.now();
+    
+    const { data, error } = await supabase
+      .from('data_id')
+      .select('department, position')
+      .eq('email', email)
+      .single();
+    
+    const queryTime = Date.now() - startTime;
+    
+    if (error) {
+      if (error.code === 'PGRST116') {
+        // 用戶不存在，這是正常情況
+        return null;
+      }
+      
+      // 如果查詢時間過長，記錄警告
+      if (queryTime > 3000) {
+        console.warn(`[getUserRoleFromDatabase] Slow database query (${queryTime}ms) for ${email}`);
+      }
+      
+      console.error(`[getUserRoleFromDatabase] Database error for ${email}:`, error);
+      throw error;
+    }
+    
+    if (!data?.department || !data?.position) {
+      console.warn(`[getUserRoleFromDatabase] Missing department or position for ${email}:`, data);
+      return null;
+    }
+    
+    return getUserRoleByDepartmentAndPosition(data.department, data.position);
+  } catch (error: any) {
+    if (error.message === 'Database query timeout') {
+      console.warn(`[getUserRoleFromDatabase] Database query timeout for ${email}, falling back to legacy auth`);
+    } else {
+      console.error('[getUserRoleFromDatabase] Error:', error);
+    }
+    return null;
+  }
+};
+
+// 向後兼容的舊版本函數（降級使用）
 export const getUserRole = (email: string): UserRole => {
+  
   if (email === 'production@pennineindustries.com') {
     return {
-      type: 'production',
-      allowedPaths: ['/print-label', '/home'],
-      defaultPath: '/print-label'
+      type: 'user',
+      department: 'Pipeline',
+      position: 'User',
+      allowedPaths: ['/print-label'],
+      defaultPath: '/print-label',
+      navigationRestricted: true
     };
   } else if (email === 'warehouse@pennineindustries.com') {
     return {
-      type: 'warehouse', 
-      allowedPaths: ['/stock-transfer', '/order-loading', '/home'],
-      defaultPath: '/stock-transfer'
+      type: 'user',
+      department: 'Warehouse',
+      position: 'User',
+      allowedPaths: ['/stock-transfer'],
+      defaultPath: '/stock-transfer',
+      navigationRestricted: true
     };
   } else {
     return {
       type: 'admin',
-      allowedPaths: [], // No restrictions for admin
-      defaultPath: '/admin'
+      department: 'System',
+      position: 'Admin',
+      allowedPaths: [],
+      defaultPath: '/admin/analysis',
+      navigationRestricted: false
     };
   }
 };
@@ -52,9 +192,24 @@ export function useAuth(): AuthState {
         if (user) {
           setIsAuthenticated(true);
           setUser(user);
-          // Set user role based on email
-          const role = getUserRole(user.email || '');
-          setUserRole(role);
+          
+          // 嘗試從資料庫獲取用戶角色
+          try {
+            const role = await Promise.race([
+              getUserRoleFromDatabase(user.email || ''),
+              new Promise((_, reject) => setTimeout(() => reject(new Error('Role fetch timeout')), 10000)) // 增加到 10 秒
+            ]) as UserRole | null;
+            
+            if (role) {
+              setUserRole(role);
+            } else {
+              throw new Error('No role found in database');
+            }
+          } catch (error) {
+            // 降級到舊版本邏輯，但不顯示警告（這是正常的降級行為）
+            const legacyRole = getUserRole(user.email || '');
+            setUserRole(legacyRole);
+          }
         } else {
           setIsAuthenticated(false);
           setUser(null);
@@ -77,8 +232,24 @@ export function useAuth(): AuthState {
         if (event === 'SIGNED_IN' && session?.user) {
           setIsAuthenticated(true);
           setUser(session.user);
-          const role = getUserRole(session.user.email || '');
-          setUserRole(role);
+          
+          // 嘗試從資料庫獲取用戶角色
+          try {
+            const role = await Promise.race([
+              getUserRoleFromDatabase(session.user.email || ''),
+              new Promise((_, reject) => setTimeout(() => reject(new Error('Role fetch timeout')), 10000)) // 增加到 10 秒
+            ]) as UserRole | null;
+            
+            if (role) {
+              setUserRole(role);
+            } else {
+              throw new Error('No role found in database');
+            }
+          } catch (error) {
+            // 降級到舊版本邏輯，但不顯示警告（這是正常的降級行為）
+            const legacyRole = getUserRole(session.user.email || '');
+            setUserRole(legacyRole);
+          }
         } else if (event === 'SIGNED_OUT') {
           setIsAuthenticated(false);
           setUser(null);
@@ -161,28 +332,60 @@ export async function getCurrentUserClockNumberAsync(): Promise<string | null> {
   }
 }
 
-export const useAskDatabasePermission = () => {
-  const { user } = useAuth();
-  const [hasPermission, setHasPermission] = useState(false);
-
-  useEffect(() => {
-    const checkPermission = async () => {
-      if (!user?.email) {
-        setHasPermission(false);
-        return;
+// 頁面權限檢查 hook
+export const usePagePermission = (pagePath: string) => {
+  const { userRole } = useAuth();
+  
+  return useMemo(() => {
+    if (!userRole) {
+      return { allowed: false, type: 'deny' };
+    }
+    
+    // Admin 用戶無限制
+    if (userRole.type === 'admin') {
+      return { allowed: true, type: 'full' };
+    }
+    
+    // User 用戶檢查允許的頁面
+    if (userRole.allowedPaths.length === 0) {
+      return { allowed: false, type: 'deny' };
+    }
+    
+    // 檢查精確匹配
+    if (userRole.allowedPaths.includes(pagePath)) {
+      return { allowed: true, type: 'full' };
+    }
+    
+    // 檢查通配符匹配 (例如 /admin/* 匹配 /admin/anything)
+    const isAllowed = userRole.allowedPaths.some(allowedPath => {
+      if (allowedPath.endsWith('/*')) {
+        const basePath = allowedPath.slice(0, -2);
+        return pagePath.startsWith(basePath);
       }
-
-      // 檢查是否為被禁止的用戶（黑名單）
-      const blockedUsers = [
-        'warehouse@pennineindustries.com',
-        'production@pennineindustries.com'
-      ];
-
-      setHasPermission(!blockedUsers.includes(user.email));
+      return false;
+    });
+    
+    return { 
+      allowed: isAllowed, 
+      type: isAllowed ? 'full' : 'deny' 
     };
+  }, [userRole, pagePath]);
+};
 
-    checkPermission();
-  }, [user]);
-
-  return hasPermission;
+export const useAskDatabasePermission = () => {
+  const { userRole } = useAuth();
+  
+  // 基於新的權限系統
+  return useMemo(() => {
+    if (!userRole) return false;
+    
+    // User 角色的特定限制
+    if (userRole.position === 'User') {
+      const restrictedDepartments = ['Warehouse', 'Pipeline', 'Injection'];
+      return !restrictedDepartments.includes(userRole.department);
+    }
+    
+    // Admin 角色通常有權限
+    return userRole.type === 'admin';
+  }, [userRole]);
 }; 

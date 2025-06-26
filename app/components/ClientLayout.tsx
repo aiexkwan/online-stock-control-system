@@ -16,7 +16,6 @@ import { UniversalProvider } from '@/components/layout/universal';
 
 // Icons
 import { 
-  HomeIcon,
   PrinterIcon,
   ChartBarIcon,
   ClipboardDocumentCheckIcon,
@@ -52,11 +51,6 @@ export default function ClientLayout({ children }: ClientLayoutProps) {
   // Menu items
   const menuItems = [
     {
-      label: 'Home',
-      href: '/home',
-      icon: <HomeIcon className="w-5 h-5" />
-    },
-    {
       label: 'Print Labels',
       href: '/print-label',
       icon: <PrinterIcon className="w-5 h-5" />
@@ -85,21 +79,17 @@ export default function ClientLayout({ children }: ClientLayoutProps) {
 
   // Filter menu items based on user role
   const getFilteredMenuItems = () => {
-    if (!userRole || userRole.type === 'admin') {
-      return menuItems; // Admin sees all menu items
+    if (!userRole) {
+      return []; // No menu items if not authenticated
     }
     
-    // Filter based on allowed paths
-    const filteredItems = menuItems.filter(item => {
-      // Special handling for Order Loading
-      if (item.href === '/order-loading') {
-        // This will be handled by user email check in the future
-        return true;
-      }
-      return userRole.allowedPaths.includes(item.href);
-    });
+    // User 角色：導航被限制，動態操作欄只顯示基本資訊
+    if (userRole.navigationRestricted) {
+      return []; // User 角色不顯示導航菜單項
+    }
     
-    return filteredItems;
+    // Admin 角色：顯示所有菜單項
+    return menuItems;
   };
 
   const filteredMenuItems = getFilteredMenuItems();
