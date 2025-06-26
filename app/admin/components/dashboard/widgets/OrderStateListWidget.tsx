@@ -12,7 +12,7 @@ import { CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { WidgetCard } from '../WidgetCard';
 import { ClipboardDocumentListIcon, TruckIcon } from '@heroicons/react/24/outline';
 import { WidgetComponentProps } from '@/app/types/dashboard';
-import { useGraphQLQuery } from '@/lib/graphql-client';
+import { useGraphQLQuery } from '@/lib/graphql-client-stable';
 import { GET_ORDER_PROGRESS } from '@/lib/graphql/queries';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';

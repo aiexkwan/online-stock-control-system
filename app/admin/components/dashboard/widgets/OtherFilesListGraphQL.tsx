@@ -13,7 +13,7 @@ import { CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { WidgetCard } from '../WidgetCard';
 import { format } from 'date-fns';
 import { fromDbTime } from '@/app/utils/timezone';
-import { useGraphQLQuery } from '@/lib/graphql-client';
+import { useGraphQLQuery } from '@/lib/graphql-client-stable';
 import { GET_OTHER_UPLOADS, GET_USERS_BY_IDS } from '@/lib/graphql/queries';
 
 interface FileRecord {
@@ -31,10 +31,11 @@ export const OtherFilesListGraphQL = React.memo(function OtherFilesListGraphQL({
   const [hasMore, setHasMore] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   
-  const itemsPerPage = size === WidgetSize.LARGE ? 15 : size === WidgetSize.MEDIUM ? 10 : 5;
+  // 根據 widget size 設定每頁顯示數量，預設 15
+  const itemsPerPage = 15;
 
   // 初始載入
-  const { data: initialData, loading: initialLoading, error, refetch } = useGraphQLQuery(
+  const { data: initialData, loading: initialLoading, error, refetch, isRefetching } = useGraphQLQuery(
     GET_OTHER_UPLOADS,
     {
       offset: 0,
@@ -240,7 +241,7 @@ export const OtherFilesListGraphQL = React.memo(function OtherFilesListGraphQL({
           </div>
           
           {/* Content */}
-          {loading && files.length === 0 ? (
+          {loading && !initialData && files.length === 0 ? (
             <div className="animate-pulse space-y-2">
               {[...Array(5)].map((_, i) => (
                 <div key={i} className="h-10 bg-white/10 rounded-lg"></div>

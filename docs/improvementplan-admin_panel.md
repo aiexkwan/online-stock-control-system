@@ -44,6 +44,21 @@
   - Database Update → DatabaseUpdateWidget
   - User Management → 需要創建新 widget（待實施）
 
+### 2025-06-26 更新
+- ✅ GraphQL 閃爍問題解決方案實施
+  - 創建新嘅 graphql-client-stable.ts 解決畫面閃爍
+  - 實施全局緩存機制（5秒 TTL）
+  - 支援背景刷新狀態 (isRefetching)
+  - 多個 widget 開始採用新 client
+- ✅ Upload Refresh Context 優化
+  - 新增上傳刷新管理機制
+  - 使用版本號觸發更新
+  - 支援 Order History 同 Other Files 更新
+- ✅ Ask Database 功能改進
+  - 從 "Ask Me Anything" 改名為 "Ask Database"
+  - 整合到動態操作欄系統
+  - 所有 API key 正確使用環境變數（安全）
+
 ## 現有系統分析
 
 ### 架構優勢
@@ -67,6 +82,7 @@
 3. **硬編碼佈局**: 缺乏靈活性，難以自定義
 4. ~~**類型定義**: WidgetSize 定義同實際使用不一致~~ ✅ 已移除
 5. **History Tree 空白**: 所有頁面都有 History Tree widget 但目前冇實現
+6. **GraphQL 閃爍問題**: 部分 widget 仍未遷移到 stable client
 
 ## 改進計劃
 
@@ -502,11 +518,12 @@ export const AdvancedVisualization = ({ data, type }) => {
   - [x] 移除 gridstack 依賴同文件
   - [x] 移除 useGridSystem Hook
   - [x] 完成 Update 頁面功能移植
-- [ ] 統一 Widget 組件架構（部分完成）
-- [ ] 建立 deprecation 策略（如需要）
+- [x] 統一 Widget 組件架構 ✅ 完成
+- [x] 建立 deprecation 策略（已完成移除）
 
 ### 第 2 週（進行中）
 - [x] Phase 3.3：優化 3D 文件夾動畫 ✅ 完成
+- [x] GraphQL 閃爍問題解決方案 ✅ 部分完成
 - [ ] Phase 3.1：實施數據預取策略
 - [ ] Phase 3.2：虛擬化長列表
 
@@ -565,17 +582,17 @@ export const AdvancedVisualization = ({ data, type }) => {
 ## 下一步行動
 
 ### 立即行動（本週）
-1. ✅ 完成 Phase 1.2：統一所有響應式/非響應式 Widget 組件（部分完成）
+1. ✅ 完成 Phase 1.2：統一所有響應式/非響應式 Widget 組件
 2. ✅ 完成 Phase 1.3：刪除 useGridSystem
 3. ✅ 完成 Phase 3.3：優化 3D 文件夾動畫
 4. ✅ 完成舊導航欄系統移除
-5. 開始 Phase 3.1：實施數據預取策略
-6. 開始 Phase 2.1：設計增強主題配置系統
+5. ✅ 確認 Ask Database 安全性（所有 API key 使用環境變數）
+6. 繼續推廣 GraphQL stable client 到所有 widget
 7. 實現 History Tree 功能
 8. 創建 UserManagementWidget
 
 ### 短期目標（2 週內）
-1. 完成第一階段所有清理工作
+1. 完成所有 widget 遷移到 GraphQL stable client
 2. 實施主題配置優化
 3. 開發自適應佈局原型
 
@@ -610,5 +627,14 @@ export const AdvancedVisualization = ({ data, type }) => {
 - 簡化交互設計（移除點擊效果，只保留 hover）
 - 成功移除舊導航欄系統，簡化管理介面
 - 確認所有核心功能已移植到 widget 系統
+- 實施 GraphQL stable client 解決閃爍問題
+- 建立 Upload Refresh Context 機制
+- Ask Database 功能整合到動態操作欄
+
+### 待解決問題
+1. 完成所有 widget 遷移到 stable GraphQL client
+2. 實現 History Tree 功能
+3. 創建 UserManagementWidget
+4. 性能監控同優化持續進行
 
 成功實施後，NewPennine 管理面板將成為業界領先嘅倉庫管理系統界面。

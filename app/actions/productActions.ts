@@ -1,6 +1,7 @@
 'use server';
 
 import { createClient } from '@/app/utils/supabase/server';
+import { getUserIdFromEmail } from '@/lib/utils/getUserId';
 
 export interface ProductData {
   code: string;
@@ -20,7 +21,7 @@ export interface ProductActionResult {
  * 記錄產品操作歷史到 record_history 表
  */
 async function recordProductHistory(
-  action: 'Product Update' | 'Product Added',
+  action: 'Add' | 'Edit',
   productCode: string,
   userEmail?: string
 ): Promise<void> {
@@ -31,31 +32,26 @@ async function recordProductHistory(
     const { data: { user } } = await supabase.auth.getUser();
     const currentUserEmail = user?.email || userEmail || 'unknown';
     
-    // 從 email 中提取用戶名 (去掉 @pennineindustries.com 部分)
-    const userName = currentUserEmail.includes('@') 
-      ? currentUserEmail.split('@')[0] 
-      : currentUserEmail;
-    
-    // 構建 remark 字段: "產品代碼, By 用戶名"
-    const remark = `${productCode}, By ${userName}`;
+    // 獲取用戶 ID
+    const userId = await getUserIdFromEmail(currentUserEmail);
     
     // 插入歷史記錄
     const { error } = await supabase
       .from('record_history')
       .insert({
         time: new Date().toISOString(),
-        id: null, // id 是 data_id 的外鍵，產品操作時留空
+        id: userId, // 使用從 data_id 表獲取的 ID
         action: action,
         plt_num: null, // 產品操作不涉及棧板
         loc: null, // 產品操作不涉及位置
-        remark: remark
+        remark: productCode // 只記錄產品代碼
       });
     
     if (error) {
       console.error('[recordProductHistory] Error recording history:', error);
       // 不拋出錯誤，避免影響主要操作
     } else {
-      process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`[recordProductHistory] Recorded: ${action} for ${productCode} by ${userName}`);
+      process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`[recordProductHistory] Recorded: ${action} for ${productCode} by user ID ${userId}`);
     }
   } catch (error) {
     console.error('[recordProductHistory] Unexpected error:', error);
@@ -171,7 +167,7 @@ export async function updateProduct(code: string, productData: Partial<ProductDa
     }
 
     // 記錄操作歷史
-    await recordProductHistory('Product Update', actualCode);
+    await recordProductHistory('Edit', actualCode);
 
     return { success: true, data: data[0] };
   } catch (error) {
@@ -201,7 +197,7 @@ export async function createProduct(productData: ProductData): Promise<ProductAc
     }
 
     // 記錄操作歷史
-    await recordProductHistory('Product Added', productData.code);
+    await recordProductHistory('Add', productData.code);
 
     return { success: true, data };
   } catch (error) {

@@ -23,7 +23,7 @@ import { getTodayRange, getYesterdayRange, getDateRange, formatDbTime } from '@/
 import { format } from 'date-fns';
 import { UnifiedWidgetLayout, TableRow, ChartContainer } from '../UnifiedWidgetLayout';
 import { useWidgetData } from '@/app/admin/hooks/useWidgetData';
-import { useGraphQLQuery } from '@/lib/graphql-client';
+import { useGraphQLQuery } from '@/lib/graphql-client-stable';
 import { GET_PRODUCTION_STATS } from '@/lib/graphql/queries';
 
 interface OutputData {
@@ -45,10 +45,10 @@ export const OutputStatsWidgetGraphQL = React.memo(function OutputStatsWidgetGra
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-
+  // 暫時移除 size 邏輯，統一使用完整功能
   // 根據時間範圍設定查詢範圍
   const getDateRangeForQuery = () => {
-    if (size === WidgetSize.MEDIUM || size === WidgetSize.LARGE) {
+    // 支援時間範圍選擇
       switch (timeRange) {
         case 'Yesterday':
           return getYesterdayRange();
@@ -59,14 +59,13 @@ export const OutputStatsWidgetGraphQL = React.memo(function OutputStatsWidgetGra
         default:
           return getTodayRange();
       }
-    }
     return getTodayRange();
   };
 
   const dateRange = getDateRangeForQuery();
 
-  // 使用 GraphQL 查詢
-  const { data: graphqlData, loading, error } = useGraphQLQuery(
+  // 使用 GraphQL 查詢 - 使用新的 stable client
+  const { data: graphqlData, loading, error, isRefetching } = useGraphQLQuery(
     GET_PRODUCTION_STATS,
     {
       startDate: dateRange.start,
@@ -95,7 +94,8 @@ export const OutputStatsWidgetGraphQL = React.memo(function OutputStatsWidgetGra
     let productDetails: Array<{ product_code: string; quantity: number }> = [];
     let dailyData: any[] = [];
 
-    if (size === WidgetSize.MEDIUM || size === WidgetSize.LARGE) {
+    // 統計不同 product_code 的數量
+    if (palletCount > 0) {
       // 統計不同 product_code 的數量
       const productMap = new Map<string, number>();
       const dailyMap = new Map<string, Map<string, number>>();
@@ -107,7 +107,8 @@ export const OutputStatsWidgetGraphQL = React.memo(function OutputStatsWidgetGra
         productMap.set(p.product_code, (productMap.get(p.product_code) || 0) + qty);
         
         // 按日期統計 (for Large size)
-        if (size === WidgetSize.LARGE && p.generate_time) {
+        // 按日期統計 (for chart)
+        if (p.generate_time) {
           const date = formatDbTime(p.generate_time, 'yyyy-MM-dd');
           if (!dailyMap.has(date)) {
             dailyMap.set(date, new Map());
@@ -126,7 +127,8 @@ export const OutputStatsWidgetGraphQL = React.memo(function OutputStatsWidgetGra
         .map(([product_code, quantity]) => ({ product_code, quantity }))
         .sort((a, b) => b.quantity - a.quantity);
         
-      if (size === WidgetSize.LARGE) {
+      // 生成圖表數據
+      if (dailyMap.size > 0) {
         // 獲取前 3 個產品代碼
         const topProducts = productDetails.slice(0, 3).map(p => p.product_code);
         
@@ -230,7 +232,7 @@ export const OutputStatsWidgetGraphQL = React.memo(function OutputStatsWidgetGra
           </div>
         </CardHeader>
         <CardContent className="flex-1 flex flex-col overflow-hidden">
-          {loading ? (
+          {loading && !graphqlData ? (
             <div className="h-64 bg-white/10 rounded animate-pulse"></div>
           ) : error ? (
             <div className="text-red-400 text-sm">GraphQL Error: {error.message}</div>

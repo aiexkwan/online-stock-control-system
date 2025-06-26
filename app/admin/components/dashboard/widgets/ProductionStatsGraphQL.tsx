@@ -8,8 +8,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { ArrowTrendingUpIcon, ArrowTrendingDownIcon } from '@heroicons/react/24/outline';
-import { useGraphQLQuery } from '@/lib/graphql-client';
-import { gql } from '@/lib/graphql-client';
+import { useGraphQLQuery, gql } from '@/lib/graphql-client-stable';
 import { TimeFrame } from '@/app/components/admin/UniversalTimeRangeSelector';
 
 interface ProductionStatsGraphQLProps {
@@ -45,7 +44,7 @@ export const ProductionStatsGraphQL: React.FC<ProductionStatsGraphQLProps> = ({
   className 
 }) => {
   // 使用 GraphQL 查詢
-  const { data, loading, error } = useGraphQLQuery(
+  const { data, loading, error, isRefetching } = useGraphQLQuery(
     GET_PRODUCTION_STATS_SIMPLE,
     {
       startDate: timeFrame.start.toISOString(),
@@ -105,7 +104,7 @@ export const ProductionStatsGraphQL: React.FC<ProductionStatsGraphQLProps> = ({
             </div>
           </div>
           
-          {loading ? (
+          {loading && !data ? (
             <div className="space-y-2">
               <div className="h-8 bg-slate-700/50 rounded animate-pulse" />
               <div className="h-4 bg-slate-700/30 rounded animate-pulse w-2/3" />

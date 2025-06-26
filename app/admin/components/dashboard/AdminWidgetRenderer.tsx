@@ -96,12 +96,12 @@ const OtherFilesListGraphQL = React.lazy(() => import('./widgets/OtherFilesListG
 // Warehouse Dashboard 組件
 const AwaitLocationQtyWidget = React.lazy(() => import('./widgets/AwaitLocationQtyWidget').then(mod => ({ default: mod.AwaitLocationQtyWidget })));
 const YesterdayTransferCountWidget = React.lazy(() => import('./widgets/YesterdayTransferCountWidget').then(mod => ({ default: mod.YesterdayTransferCountWidget })));
-const StillInAwaitWidget = React.lazy(() => import('./widgets/StillInAwaitWidget').then(mod => ({ default: mod.StillInAwaitWidget })));
+const StillInAwaitWidget = React.lazy(() => import('./widgets/StillInAwaitWidgetGraphQL').then(mod => ({ default: mod.StillInAwaitWidgetGraphQL })));
 const StillInAwaitPercentageWidget = React.lazy(() => import('./widgets/StillInAwaitPercentageWidget').then(mod => ({ default: mod.StillInAwaitPercentageWidget })));
 const OrderStateListWidget = React.lazy(() => import('./widgets/OrderStateListWidget').then(mod => ({ default: mod.OrderStateListWidget })));
 const TransferTimeDistributionWidget = React.lazy(() => import('./widgets/TransferTimeDistributionWidget').then(mod => ({ default: mod.TransferTimeDistributionWidget })));
 const EmptyPlaceholderWidget = React.lazy(() => import('./widgets/EmptyPlaceholderWidget').then(mod => ({ default: mod.EmptyPlaceholderWidget })));
-const WarehouseTransferListWidget = React.lazy(() => import('./widgets/WarehouseTransferListWidget').then(mod => ({ default: mod.WarehouseTransferListWidget })));
+const WarehouseTransferListWidget = React.lazy(() => import('./widgets/WarehouseTransferListWidgetGraphQL').then(mod => ({ default: mod.WarehouseTransferListWidgetGraphQL })));
 const WarehouseWorkLevelAreaChart = React.lazy(() => import('./widgets/WarehouseWorkLevelAreaChart').then(mod => ({ default: mod.WarehouseWorkLevelAreaChart })));
 
 // GraphQL 功能開關

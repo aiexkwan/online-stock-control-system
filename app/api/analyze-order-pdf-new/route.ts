@@ -5,6 +5,7 @@ import { createClient } from '@supabase/supabase-js';
 import OpenAI from 'openai';
 import crypto from 'crypto';
 import { apiLogger, logApiRequest, logApiResponse, systemLogger } from '@/lib/logger';
+import { getUserIdFromEmail } from '@/lib/utils/getUserId';
 
 // 簡單的內存緩存（生產環境建議使用 Redis）
 const fileCache = new Map<string, any>();
@@ -34,6 +35,39 @@ function getCachedResult(fileHash: string): any | null {
     fileCache.delete(fileHash); // 清除過期緩存
   }
   return null;
+}
+
+// 記錄訂單上傳歷史
+async function recordOrderUploadHistory(
+  orderRef: string,
+  uploadedBy: string
+): Promise<void> {
+  try {
+    const supabaseAdmin = createSupabaseAdmin();
+    
+    // 獲取用戶 ID
+    const userId = await getUserIdFromEmail(`${uploadedBy}@pennineindustries.com`);
+    
+    // 插入歷史記錄
+    const { error } = await supabaseAdmin
+      .from('record_history')
+      .insert({
+        time: new Date().toISOString(),
+        id: userId, // 使用從 data_id 表獲取的 ID
+        action: 'Order Upload',
+        plt_num: null, // 訂單上傳不涉及棧板
+        loc: null, // 訂單上傳不涉及位置
+        remark: orderRef // 記錄訂單參考號
+      });
+    
+    if (error) {
+      apiLogger.error('[recordOrderUploadHistory] Error recording history:', error);
+    } else {
+      apiLogger.info(`[recordOrderUploadHistory] Recorded: Order Upload for ${orderRef} by user ID ${userId}`);
+    }
+  } catch (error) {
+    apiLogger.error('[recordOrderUploadHistory] Unexpected error:', error);
+  }
 }
 
 // 設置緩存
@@ -467,6 +501,11 @@ export async function POST(request: NextRequest) {
           
           apiLogger.info('[PDF Analysis] Cached data inserted', { recordCount: insertResults.length });
           
+          // 記錄操作歷史（緩存版本）
+          if (cachedResult.orderData && cachedResult.orderData.length > 0) {
+            await recordOrderUploadHistory(cachedResult.orderData[0].order_ref, uploadedBy);
+          }
+          
           // 🔥 更新 doc_upload 表的 json 欄位（緩存版本 - 總是嘗試更新）
           try {
             apiLogger.debug('[PDF Analysis] Updating doc_upload json field (cached)', {
@@ -821,6 +860,11 @@ export async function POST(request: NextRequest) {
           tokenPerRecord,
           totalTokens
         });
+        
+        // 記錄操作歷史（使用第一個訂單的 order_ref）
+        if (orderData && orderData.length > 0) {
+          await recordOrderUploadHistory(orderData[0].order_ref, uploadedBy);
+        }
         
         // 🔥 更新 doc_upload 表的 json 欄位（僅當不使用背景存儲時）
         if (!saveToStorage) {

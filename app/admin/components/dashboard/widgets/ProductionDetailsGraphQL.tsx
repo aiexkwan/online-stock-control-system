@@ -7,8 +7,7 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
-import { useGraphQLQuery } from '@/lib/graphql-client';
-import { gql } from '@/lib/graphql-client';
+import { useGraphQLQuery, gql } from '@/lib/graphql-client-stable';
 import { TimeFrame } from '@/app/components/admin/UniversalTimeRangeSelector';
 
 interface ProductionDetailsGraphQLProps {
@@ -71,7 +70,7 @@ export const ProductionDetailsGraphQL: React.FC<ProductionDetailsGraphQLProps> =
   const [tableData, setTableData] = React.useState<any[]>([]);
 
   // 使用綜合 GraphQL 查詢
-  const { data, loading, error } = useGraphQLQuery(
+  const { data, loading, error, isRefetching } = useGraphQLQuery(
     GET_PRODUCTION_WITH_QC,
     {
       startDate: timeFrame.start.toISOString(),
@@ -136,7 +135,7 @@ export const ProductionDetailsGraphQL: React.FC<ProductionDetailsGraphQLProps> =
         <div className="relative z-10 h-full flex flex-col">
           <h3 className="text-lg font-medium text-slate-200 mb-4">{title}</h3>
           
-          {loading ? (
+          {loading && !data ? (
             <div className="flex-1 overflow-hidden">
               <div className="h-full bg-slate-700/50 rounded animate-pulse" />
             </div>

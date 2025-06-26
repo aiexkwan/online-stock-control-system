@@ -3,7 +3,7 @@
  * 根據 Supabase 數據庫結構定義查詢
  */
 
-import { gql } from '../graphql-client';
+import { gql } from '../graphql-client-stable';
 
 // ============= Production Stats Queries =============
 
@@ -398,13 +398,13 @@ export const GET_ORDER_PROGRESS = gql`
 /**
  * 獲取倉庫部門轉移記錄
  * 用於 Warehouse Dashboard - Transfer List Widget
+ * 注意：需要在客戶端過濾部門，因為 GraphQL 不支援 nested filter
  */
 export const GET_WAREHOUSE_TRANSFERS = gql`
   query GetWarehouseTransfers($startDate: Datetime!, $endDate: Datetime!, $limit: Int = 50) {
     record_transferCollection(
       filter: {
         tran_date: { gte: $startDate, lte: $endDate }
-        data_id: { Department: { eq: "Warehouse" } }
       }
       orderBy: [{ tran_date: DescNullsLast }]
       first: $limit
@@ -415,8 +415,9 @@ export const GET_WAREHOUSE_TRANSFERS = gql`
           plt_num
           operator_id
           data_id {
+            id
             name
-            Department
+            department
           }
         }
       }
@@ -457,10 +458,11 @@ export const GET_WAREHOUSE_WORK_LEVEL = gql`
  * 用於 Warehouse Dashboard - Still in Await Stats
  */
 export const GET_STILL_IN_AWAIT_STATS = gql`
-  query GetStillInAwaitStats($yesterdayStart: Datetime!, $yesterdayEnd: Datetime!) {
-    record_historyCollection(
+  query GetStillInAwaitStats($startDate: Datetime!, $endDate: Datetime!) {
+    # 第一步：獲取指定時間範圍內移動到 Await 的記錄
+    historyRecords: record_historyCollection(
       filter: {
-        time: { gte: $yesterdayStart, lte: $yesterdayEnd }
+        time: { gte: $startDate, lte: $endDate }
         action: { eq: "Move" }
         loc: { eq: "Await" }
       }
@@ -469,9 +471,58 @@ export const GET_STILL_IN_AWAIT_STATS = gql`
         node {
           plt_num
           time
+        }
+      }
+    }
+    
+    # 第二步：獲取所有庫存中 await > 0 的記錄
+    inventoryRecords: record_inventoryCollection(
+      filter: {
+        await: { gt: 0 }
+      }
+    ) {
+      edges {
+        node {
+          plt_num
+          await
+          # 關聯 palletinfo 獲取數量
           record_palletinfo {
             product_qty
           }
+        }
+      }
+    }
+  }
+`;
+
+/**
+ * 獲取 Transfer 統計數據
+ * 用於 BookedOutStatsWidget
+ */
+export const GET_TRANSFER_STATS_DETAILED = gql`
+  query GetTransferStatsDetailed($startDate: Datetime!, $endDate: Datetime!) {
+    # 總數統計
+    transferStats: record_transferCollection(
+      filter: {
+        tran_date: { gte: $startDate, lt: $endDate }
+      }
+    ) {
+      aggregate {
+        count
+      }
+    }
+    
+    # 詳細記錄（用於操作員統計和圖表）
+    transferRecords: record_transferCollection(
+      filter: {
+        tran_date: { gte: $startDate, lt: $endDate }
+      }
+      orderBy: [{ tran_date: AscNullsLast }]
+    ) {
+      edges {
+        node {
+          operator_id
+          tran_date
         }
       }
     }

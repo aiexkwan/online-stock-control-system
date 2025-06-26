@@ -34,6 +34,8 @@ export const OrderAnalysisResultDialog: React.FC<OrderAnalysisResultDialogProps>
   const accountNumber = orders[0]?.account_num || null;
   const deliveryAddress = orders[0]?.delivery_add || null;
   const orderRef = orders[0]?.order_ref || null;
+  const invoiceTo = orders[0]?.invoice_to || null;
+  const customerRef = orders[0]?.customer_ref || null;
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -68,10 +70,22 @@ export const OrderAnalysisResultDialog: React.FC<OrderAnalysisResultDialogProps>
                       <p className="text-sm text-white mt-1">{accountNumber}</p>
                     </div>
                   )}
-                  {deliveryAddress && (
+                  {customerRef && (
                     <div>
+                      <span className="text-xs text-slate-500 uppercase tracking-wider">Customer Reference</span>
+                      <p className="text-sm text-white mt-1">{customerRef}</p>
+                    </div>
+                  )}
+                  {deliveryAddress && (
+                    <div className="col-span-2">
                       <span className="text-xs text-slate-500 uppercase tracking-wider">Delivery Address</span>
                       <p className="text-sm text-white mt-1">{deliveryAddress}</p>
+                    </div>
+                  )}
+                  {invoiceTo && invoiceTo !== '-' && (
+                    <div className="col-span-2">
+                      <span className="text-xs text-slate-500 uppercase tracking-wider">Invoice To</span>
+                      <p className="text-sm text-white mt-1">{invoiceTo}</p>
                     </div>
                   )}
                 </div>
@@ -87,7 +101,7 @@ export const OrderAnalysisResultDialog: React.FC<OrderAnalysisResultDialogProps>
                   {/* Single item display for simplified orders */}
                   {order.product_code && (
                     <div className="bg-black/20 backdrop-blur-sm rounded-lg p-4">
-                      <div className="grid grid-cols-3 gap-4">
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                         <div>
                           <span className="text-xs text-slate-500 uppercase tracking-wider">Product Code</span>
                           <p className="text-white mt-1 font-medium">{order.product_code}</p>
@@ -97,6 +111,14 @@ export const OrderAnalysisResultDialog: React.FC<OrderAnalysisResultDialogProps>
                           <p className="text-white mt-1 font-medium">{order.product_qty || 0}</p>
                         </div>
                         <div>
+                          <span className="text-xs text-slate-500 uppercase tracking-wider">Weight</span>
+                          <p className="text-white mt-1 font-medium">{order.weight ? `${order.weight} kg` : '-'}</p>
+                        </div>
+                        <div>
+                          <span className="text-xs text-slate-500 uppercase tracking-wider">Unit Price</span>
+                          <p className="text-white mt-1 font-medium">{order.unit_price && order.unit_price !== '-' ? `£${order.unit_price}` : '-'}</p>
+                        </div>
+                        <div className="col-span-2 md:col-span-4">
                           <span className="text-xs text-slate-500 uppercase tracking-wider">Description</span>
                           <p className="text-white mt-1 text-sm">{order.product_desc || 'N/A'}</p>
                         </div>

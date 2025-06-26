@@ -135,6 +135,12 @@ export const MAIN_NAVIGATION: NavigationItem[] = [
         description: 'Stock management'
       },
       {
+        id: 'stock-count',
+        label: 'Stock Count',
+        href: '/admin/stock-count',
+        description: 'Inventory cycle counting'
+      },
+      {
         id: 'system',
         label: 'System',
         href: '/admin/system',

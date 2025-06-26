@@ -98,7 +98,7 @@ export const UploadOrdersWidget = React.memo(function UploadOrdersWidget({ widge
 
       updateProgress(10);
       
-      // 🚀 直接發送 FormData 到 analyze-order-pdf-new（無需先上傳到 Storage）
+      // 🚀 直接發送 FormData 到 analyze-order-pdf-assistant（使用 Assistants API）
       setIsAnalyzing(true);
       process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[UploadOrdersWidget] Starting direct analysis with userId:', currentUserId);
       process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[UploadOrdersWidget] File size:', uploadingFile.file.size, 'bytes');
@@ -115,7 +115,7 @@ export const UploadOrdersWidget = React.memo(function UploadOrdersWidget({ widge
       updateProgress(50);
       
       // 🚀 直接發送到新的 API（一步完成分析）
-      const analyzeResponse = await fetch('/api/analyze-order-pdf-new', {
+      const analyzeResponse = await fetch('/api/analyze-order-pdf-assistant', {
         method: 'POST',
         body: formData // 直接發送文件，無需 JSON
       });

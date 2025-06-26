@@ -10,8 +10,7 @@ import { motion } from 'framer-motion';
 import { 
   PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend 
 } from 'recharts';
-import { useGraphQLQuery } from '@/lib/graphql-client';
-import { gql } from '@/lib/graphql-client';
+import { useGraphQLQuery, gql } from '@/lib/graphql-client-stable';
 import { TimeFrame } from '@/app/components/admin/UniversalTimeRangeSelector';
 
 interface ProductDistributionChartGraphQLProps {
@@ -61,7 +60,7 @@ export const ProductDistributionChartGraphQL: React.FC<ProductDistributionChartG
   limit = 10
 }) => {
   // 使用 GraphQL 查詢
-  const { data, loading, error } = useGraphQLQuery(
+  const { data, loading, error, isRefetching } = useGraphQLQuery(
     GET_PRODUCT_DISTRIBUTION,
     {
       startDate: timeFrame.start.toISOString(),
@@ -124,7 +123,7 @@ export const ProductDistributionChartGraphQL: React.FC<ProductDistributionChartG
         <div className="relative z-10 h-full flex flex-col">
           <h3 className="text-lg font-medium text-slate-200 mb-4">{title}</h3>
           
-          {loading ? (
+          {loading && !data ? (
             <div className="flex-1">
               <div className="h-full bg-slate-700/50 rounded animate-pulse" />
             </div>

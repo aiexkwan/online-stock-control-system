@@ -11,8 +11,7 @@ import { CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { WidgetCard } from '../WidgetCard';
 import { BuildingOfficeIcon, ArrowTrendingUpIcon, ArrowTrendingDownIcon } from '@heroicons/react/24/outline';
 import { WidgetComponentProps } from '@/app/types/dashboard';
-import { useGraphQLQuery } from '@/lib/graphql-client';
-import { gql } from '@/lib/graphql-client';
+import { useGraphQLQuery, gql } from '@/lib/graphql-client-stable';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 
@@ -34,8 +33,8 @@ export const AwaitLocationQtyWidget = React.memo(function AwaitLocationQtyWidget
   isEditMode,
   timeFrame 
 }: WidgetComponentProps) {
-  // 使用 GraphQL 查詢獲取數據
-  const { data, loading, error } = useGraphQLQuery(GET_AWAIT_LOCATION_QTY, {
+  // 使用 GraphQL 查詢獲取數據 - 使用新的 stable client
+  const { data, loading, error, isRefetching } = useGraphQLQuery(GET_AWAIT_LOCATION_QTY, {
     // 這個查詢不需要時間範圍參數，因為是當前庫存狀態
   });
 
@@ -70,10 +69,22 @@ export const AwaitLocationQtyWidget = React.memo(function AwaitLocationQtyWidget
           <CardTitle className="text-lg font-medium flex items-center gap-2">
             <BuildingOfficeIcon className="w-5 h-5" />
             Await Location Qty
+            {isRefetching && (
+              <motion.div
+                animate={{ rotate: 360 }}
+                transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                className="ml-auto"
+              >
+                <svg className="w-4 h-4 text-blue-400" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+              </motion.div>
+            )}
           </CardTitle>
         </CardHeader>
         <CardContent className="flex-1 flex items-center justify-center">
-          {loading ? (
+          {loading && !data ? (
             <div className="space-y-2 w-full">
               <div className="h-8 bg-slate-700/50 rounded animate-pulse" />
               <div className="h-4 bg-slate-700/50 rounded animate-pulse w-3/4" />

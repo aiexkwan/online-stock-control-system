@@ -484,8 +484,8 @@ export const UploadFilesDialog: React.FC<UploadFilesDialogProps> = ({
 
       process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[Order PDF Analysis] 開始分析 PDF...');
 
-      // 發送到 analyze-order-pdf-new API
-      const response = await fetch('/api/analyze-order-pdf-new', {
+      // 發送到 analyze-order-pdf-assistant API
+      const response = await fetch('/api/analyze-order-pdf-assistant', {
         method: 'POST',
         body: formData
       });

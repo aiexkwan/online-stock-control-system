@@ -11,7 +11,6 @@ import React, { createContext, useContext, useState, useCallback } from 'react';
 export type DialogType = 
   | 'uploadFiles'
   | 'uploadFilesOnly'
-  | 'uploadOrderPdf'
   | 'productSpec'
   | 'voidPallet'
   | 'viewHistory'
@@ -57,7 +56,6 @@ export function DialogProvider({ children }: { children: React.ReactNode }) {
   const [dialogs, setDialogs] = useState<Record<DialogType, boolean>>({
     uploadFiles: false,
     uploadFilesOnly: false,
-    uploadOrderPdf: false,
     productSpec: false,
     voidPallet: false,
     viewHistory: false,

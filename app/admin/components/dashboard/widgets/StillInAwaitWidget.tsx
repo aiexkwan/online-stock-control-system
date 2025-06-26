@@ -11,7 +11,7 @@ import { CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { WidgetCard } from '../WidgetCard';
 import { ClockIcon, ArrowTrendingUpIcon, ArrowTrendingDownIcon } from '@heroicons/react/24/outline';
 import { WidgetComponentProps } from '@/app/types/dashboard';
-import { useGraphQLQuery } from '@/lib/graphql-client';
+import { useGraphQLQuery } from '@/lib/graphql-client-stable';
 import { GET_STILL_IN_AWAIT_STATS } from '@/lib/graphql/queries';
 import { createClient } from '@/lib/supabase';
 import { motion } from 'framer-motion';

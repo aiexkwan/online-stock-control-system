@@ -2,7 +2,7 @@
 
 import React, { useMemo } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { gql, useGraphQLQuery } from '@/lib/graphql-client';
+import { gql, useGraphQLQuery } from '@/lib/graphql-client-stable';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';

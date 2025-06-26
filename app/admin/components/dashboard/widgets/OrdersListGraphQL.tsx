@@ -13,7 +13,7 @@ import { CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { WidgetCard } from '../WidgetCard';
 import { format } from 'date-fns';
 import { fromDbTime } from '@/app/utils/timezone';
-import { useGraphQLQuery } from '@/lib/graphql-client';
+import { useGraphQLQuery } from '@/lib/graphql-client-stable';
 import { GET_ORDER_UPLOADS, GET_USERS_BY_IDS } from '@/lib/graphql/queries';
 
 interface OrderRecord {
@@ -32,8 +32,8 @@ export const OrdersListGraphQL = React.memo(function OrdersListGraphQL({ widget,
   
   const itemsPerPage = 15; // Always show 15 items initially
 
-  // 初始載入
-  const { data: initialData, loading: initialLoading, error, refetch } = useGraphQLQuery(
+  // 初始載入 - 使用新的 stable client
+  const { data: initialData, loading: initialLoading, error, refetch, isRefetching } = useGraphQLQuery(
     GET_ORDER_UPLOADS,
     {
       offset: 0,
@@ -230,7 +230,7 @@ export const OrdersListGraphQL = React.memo(function OrdersListGraphQL({ widget,
           </div>
           
           {/* Content */}
-          {loading && orders.length === 0 ? (
+          {loading && !initialData && orders.length === 0 ? (
             <div className="animate-pulse space-y-2">
               {[...Array(5)].map((_, i) => (
                 <div key={i} className="h-10 bg-white/10 rounded-lg"></div>

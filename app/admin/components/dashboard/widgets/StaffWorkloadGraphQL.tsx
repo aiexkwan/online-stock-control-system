@@ -10,8 +10,7 @@ import { motion } from 'framer-motion';
 import { 
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend 
 } from 'recharts';
-import { useGraphQLQuery } from '@/lib/graphql-client';
-import { gql } from '@/lib/graphql-client';
+import { useGraphQLQuery, gql } from '@/lib/graphql-client-stable';
 import { TimeFrame } from '@/app/components/admin/UniversalTimeRangeSelector';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval } from 'date-fns';
 
@@ -100,8 +99,8 @@ export const StaffWorkloadGraphQL: React.FC<StaffWorkloadGraphQLProps> = ({
     return staffList.map(staff => staff.id);
   }, [staffList]);
 
-  // 使用 GraphQL 查詢獲取工作量數據
-  const { data: workloadData, loading: workloadLoading } = useGraphQLQuery(
+  // 使用 GraphQL 查詢獲取工作量數據 - 使用新的 stable client
+  const { data: workloadData, loading: workloadLoading, isRefetching } = useGraphQLQuery(
     GET_ALL_STAFF_WORKLOAD,
     staffIds.length > 0 ? {
       staffIds,
@@ -199,7 +198,7 @@ export const StaffWorkloadGraphQL: React.FC<StaffWorkloadGraphQLProps> = ({
         <div className="relative z-10 h-full flex flex-col">
           <h3 className="text-lg font-medium text-slate-200 mb-4">{title}</h3>
           
-          {loading ? (
+          {loading && !chartData.length ? (
             <div className="flex-1">
               <div className="h-full bg-slate-700/50 rounded animate-pulse" />
             </div>

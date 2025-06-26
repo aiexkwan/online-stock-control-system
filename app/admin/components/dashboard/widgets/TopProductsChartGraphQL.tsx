@@ -10,8 +10,7 @@ import { motion } from 'framer-motion';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer 
 } from 'recharts';
-import { useGraphQLQuery } from '@/lib/graphql-client';
-import { gql } from '@/lib/graphql-client';
+import { useGraphQLQuery, gql } from '@/lib/graphql-client-stable';
 import { TimeFrame } from '@/app/components/admin/UniversalTimeRangeSelector';
 
 interface TopProductsChartGraphQLProps {
@@ -47,7 +46,7 @@ export const TopProductsChartGraphQL: React.FC<TopProductsChartGraphQLProps> = (
   limit = 5
 }) => {
   // 使用 GraphQL 查詢
-  const { data, loading, error } = useGraphQLQuery(
+  const { data, loading, error, isRefetching } = useGraphQLQuery(
     GET_TOP_PRODUCTS,
     {
       startDate: timeFrame.start.toISOString(),
@@ -100,7 +99,7 @@ export const TopProductsChartGraphQL: React.FC<TopProductsChartGraphQLProps> = (
         <div className="relative z-10 h-full flex flex-col">
           <h3 className="text-lg font-medium text-slate-200 mb-4">{title}</h3>
           
-          {loading ? (
+          {loading && !data ? (
             <div className="flex-1">
               <div className="h-full bg-slate-700/50 rounded animate-pulse" />
             </div>

@@ -1,8 +1,8 @@
-# Ask Me Anything - AI驅動嘅智能資料庫查詢系統
+# Ask Database - AI驅動嘅智能資料庫查詢系統
 
 ## 概述
 
-Ask Me Anything係一個AI驅動嘅智能資料庫查詢系統，使用OpenAI嘅GPT-4o模型嚟處理自然語言問題並生成精確嘅SQL查詢。系統為用戶提供咗一個對話式介面嚟查詢倉庫資料庫，唔需要SQL知識，支援英文同中文。
+Ask Database（前身為 Ask Me Anything）係一個AI驅動嘅智能資料庫查詢系統，使用OpenAI嘅GPT-4o模型嚟處理自然語言問題並生成精確嘅SQL查詢。系統為用戶提供咗一個對話式介面嚟查詢倉庫資料庫，唔需要SQL知識，支援英文同中文。
 
 ## 系統架構
 
@@ -83,6 +83,12 @@ Ask Me Anything係一個AI驅動嘅智能資料庫查詢系統，使用OpenAI嘅
 - 清理錯誤消息
 - 完整嘅審計軌跡
 - 會話隔離
+
+### API Key 管理
+- 所有 API key 通過環境變數管理
+- 冇硬編碼敏感資料
+- 支援 OpenAI API key 同可選嘅 Mem0 API key
+- 開發同生產環境分離
 
 ## 性能優化
 

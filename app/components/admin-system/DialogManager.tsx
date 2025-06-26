@@ -15,7 +15,6 @@ import { dialogStyles, iconColors } from '@/app/utils/dialogStyles';
 // Import all dialog components
 import UploadFilesDialog from '@/app/components/admin-dialogs/UploadFilesDialog';
 import { UploadFilesOnlyDialog } from '@/app/components/admin-dialogs/UploadFilesOnlyDialog';
-import { UploadOrderPDFDialog } from '@/app/components/admin-dialogs/UploadOrderPDFDialog';
 import VoidPalletDialog from '@/app/components/admin-dialogs/VoidPalletDialog';
 import ViewHistoryDialog from '@/app/components/admin-dialogs/ViewHistoryDialog';
 import DatabaseUpdateDialog from '@/app/components/admin-dialogs/DatabaseUpdateDialog';
@@ -54,11 +53,6 @@ export function DialogManager({
         onOpenChange={(open) => !open && closeDialog('uploadFilesOnly')}
       />
 
-      {/* Upload Order PDF Dialog */}
-      <UploadOrderPDFDialog
-        isOpen={dialogs.uploadOrderPdf}
-        onOpenChange={(open) => !open && closeDialog('uploadOrderPdf')}
-      />
 
       {/* Product Spec Doc Dialog */}
       <Dialog 

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useMemo } from 'react';
-import { gql, useGraphQLQuery } from '@/lib/graphql-client';
+import { gql, useGraphQLQuery } from '@/lib/graphql-client-stable';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertCircle, Package } from 'lucide-react';

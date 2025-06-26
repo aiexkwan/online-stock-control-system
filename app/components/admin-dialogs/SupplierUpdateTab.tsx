@@ -13,6 +13,7 @@ import {
   ExclamationTriangleIcon
 } from '@heroicons/react/24/outline';
 import { createClient } from '@/lib/supabase';
+import { getUserIdFromEmail } from '@/lib/utils/getUserIdClient';
 
 interface SupplierData {
   supplier_code: string;
@@ -41,6 +42,41 @@ export default function SupplierUpdateTab() {
   });
 
   const supabase = createClient();
+
+  // 記錄供應商操作歷史
+  const recordSupplierHistory = useCallback(async (
+    action: 'Add' | 'Edit',
+    supplierCode: string
+  ): Promise<void> => {
+    try {
+      // 獲取當前用戶信息
+      const { data: { user } } = await supabase.auth.getUser();
+      const currentUserEmail = user?.email || 'unknown';
+      
+      // 獲取用戶 ID
+      const userId = await getUserIdFromEmail(currentUserEmail);
+      
+      // 插入歷史記錄
+      const { error } = await supabase
+        .from('record_history')
+        .insert({
+          time: new Date().toISOString(),
+          id: userId, // 使用從 data_id 表獲取的 ID
+          action: action,
+          plt_num: null, // 供應商操作不涉及位置
+          loc: null, // 供應商操作不涉及位置
+          remark: supplierCode // 只記錄供應商代碼
+        });
+      
+      if (error) {
+        console.error('[recordSupplierHistory] Error recording history:', error);
+      } else {
+        console.log(`[recordSupplierHistory] Recorded: ${action} for ${supplierCode} by user ID ${userId}`);
+      }
+    } catch (error) {
+      console.error('[recordSupplierHistory] Unexpected error:', error);
+    }
+  }, [supabase]);
 
   // 重置狀態
   const resetState = useCallback(() => {
@@ -164,6 +200,10 @@ export default function SupplierUpdateTab() {
         if (error) throw error;
         
         setSupplierData(data);
+        
+        // 記錄操作歷史
+        await recordSupplierHistory('Edit', supplierData.supplier_code);
+        
         setStatusMessage({
           type: 'success',
           message: 'Supplier details updated successfully!'
@@ -179,6 +219,10 @@ export default function SupplierUpdateTab() {
         if (error) throw error;
         
         setSupplierData(data);
+        
+        // 記錄操作歷史
+        await recordSupplierHistory('Add', formData.supplier_code);
+        
         setStatusMessage({
           type: 'success',
           message: 'Supplier created successfully!'
@@ -199,7 +243,7 @@ export default function SupplierUpdateTab() {
     } finally {
       setIsLoading(false);
     }
-  }, [isEditing, supplierData, formData, supabase]);
+  }, [isEditing, supplierData, formData, supabase, recordSupplierHistory]);
 
   // 處理表單輸入變化
   const handleInputChange = useCallback((field: keyof SupplierData, value: string) => {
