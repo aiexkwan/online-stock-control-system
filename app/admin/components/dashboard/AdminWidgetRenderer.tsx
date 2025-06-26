@@ -72,6 +72,11 @@ import { HistoryTree } from './widgets/HistoryTree';
 const OrdersListWidget = React.lazy(() => import('./widgets/OrdersListWidget').then(mod => ({ default: mod.OrdersListWidget })));
 const OtherFilesListWidget = React.lazy(() => import('./widgets/OtherFilesListWidget').then(mod => ({ default: mod.OtherFilesListWidget })));
 const UploadFilesWidget = React.lazy(() => import('./widgets/UploadFilesWidget').then(mod => ({ default: mod.UploadFilesWidget })));
+
+// Analysis page components
+const AnalysisPagedWidget = React.lazy(() => import('./widgets/AnalysisPagedWidget'));
+const AnalysisPagedWidgetV2 = React.lazy(() => import('./widgets/AnalysisPagedWidgetV2'));
+const AnalysisExpandableCards = React.lazy(() => import('./widgets/AnalysisExpandableCards'));
 const UploadOrdersWidget = React.lazy(() => import('./widgets/UploadOrdersWidget').then(mod => ({ default: mod.UploadOrdersWidget })));
 const UploadProductSpecWidget = React.lazy(() => import('./widgets/UploadProductSpecWidget').then(mod => ({ default: mod.UploadProductSpecWidget })));
 const UploadPhotoWidget = React.lazy(() => import('./widgets/UploadPhotoWidget').then(mod => ({ default: mod.UploadPhotoWidget })));
@@ -1294,6 +1299,24 @@ export const AdminWidgetRenderer: React.FC<AdminWidgetRendererProps> = ({
             size: config.size || 'MEDIUM'
           }
         }} isEditMode={false} />;
+      case 'AnalysisPagedWidget':
+        return (
+          <React.Suspense fallback={<div className="h-full w-full flex items-center justify-center"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div></div>}>
+            <AnalysisPagedWidget timeFrame={timeFrame} theme={theme} />
+          </React.Suspense>
+        );
+      case 'AnalysisPagedWidgetV2':
+        return (
+          <React.Suspense fallback={<div className="h-full w-full flex items-center justify-center"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div></div>}>
+            <AnalysisPagedWidgetV2 timeFrame={timeFrame} theme={theme} />
+          </React.Suspense>
+        );
+      case 'AnalysisExpandableCards':
+        return (
+          <React.Suspense fallback={<div className="h-full w-full flex items-center justify-center"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div></div>}>
+            <AnalysisExpandableCards timeFrame={timeFrame} theme={theme} />
+          </React.Suspense>
+        );
       case 'WarehouseHeatmap':
         return (
           <div className="h-full flex flex-col items-center justify-center text-white">

@@ -520,10 +520,14 @@ export const adminDashboardLayouts: Record<string, AdminDashboardLayout> = {
   analysis: {
     theme: 'analysis',
     gridTemplate: `
-      "widget2 widget2 widget2 widget2 widget3 widget3 widget3 widget3 widget1 widget1"
-      "widget2 widget2 widget2 widget2 widget3 widget3 widget3 widget3 widget1 widget1"
-      "widget4 widget4 widget4 widget4 widget5 widget5 widget5 widget5 widget1 widget1"
-      "widget4 widget4 widget4 widget4 widget5 widget5 widget5 widget5 widget1 widget1"
+      "widget2 widget2 widget2 widget2 widget2 widget2 widget2 widget2 widget1 widget1"
+      "widget2 widget2 widget2 widget2 widget2 widget2 widget2 widget2 widget1 widget1"
+      "widget2 widget2 widget2 widget2 widget2 widget2 widget2 widget2 widget1 widget1"
+      "widget2 widget2 widget2 widget2 widget2 widget2 widget2 widget2 widget1 widget1"
+      "widget2 widget2 widget2 widget2 widget2 widget2 widget2 widget2 widget1 widget1"
+      "widget2 widget2 widget2 widget2 widget2 widget2 widget2 widget2 widget1 widget1"
+      "widget2 widget2 widget2 widget2 widget2 widget2 widget2 widget2 widget1 widget1"
+      "widget2 widget2 widget2 widget2 widget2 widget2 widget2 widget2 widget1 widget1"
     `,
     widgets: [
       {
@@ -533,31 +537,11 @@ export const adminDashboardLayouts: Record<string, AdminDashboardLayout> = {
         component: 'HistoryTree'
       },
       {
-        type: 'chart',
-        title: 'Production Trend Analysis',
+        type: 'custom',
+        title: 'Data Analysis Center',
         gridArea: 'widget2',
-        dataSource: 'record_palletinfo',
-        chartType: 'line'
-      },
-      {
-        type: 'chart',
-        title: 'Product Mix Distribution',
-        gridArea: 'widget3',
-        dataSource: 'product_mix',
-        chartType: 'pie'
-      },
-      {
-        type: 'table',
-        title: 'Performance Metrics',
-        gridArea: 'widget4',
-        dataSource: 'analysis_details'
-      },
-      {
-        type: 'chart',
-        title: 'Comparative Analysis',
-        gridArea: 'widget5',
-        dataSource: 'period_comparison',
-        chartType: 'bar'
+        component: 'AnalysisExpandableCards',
+        description: 'Comprehensive data analysis dashboard'
       }
     ]
   }

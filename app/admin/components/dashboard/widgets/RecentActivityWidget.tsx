@@ -156,9 +156,9 @@ export const RecentActivityWidget = React.memo(function RecentActivityWidget({ w
               <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-lg flex items-center justify-center">
                 <Activity className="h-5 w-5 text-white" />
               </div>
-              <WidgetTitle size="small" glow="blue" className="bg-gradient-to-r from-blue-300 via-cyan-300 to-blue-200 bg-clip-text text-transparent">
+              <span className={`${WidgetStyles.text.widgetTitle} text-sm font-medium text-blue-400 [text-shadow:_0_0_10px_rgba(96,165,250,0.5),_0_0_20px_rgba(96,165,250,0.3)] bg-gradient-to-r from-blue-300 via-cyan-300 to-blue-200 bg-clip-text text-transparent`}>
                 Recent Activity
-              </WidgetTitle>
+              </span>
             </div>
             {activities.length > 0 && (
               <WidgetLabel size="xs" glow="gray">

@@ -85,7 +85,8 @@
       "mcp__supabase__search_docs",
       "Bash(npm view:*)",
       "Bash(npx graphql-codegen:*)",
-      "Bash(diff:*)"
+      "Bash(diff:*)",
+      "WebFetch(domain:aurachat.io)"
     ],
     "deny": []
   }

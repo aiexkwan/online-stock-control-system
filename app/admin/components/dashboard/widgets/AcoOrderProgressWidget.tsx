@@ -149,9 +149,9 @@ export const AcoOrderProgressWidget = React.memo(function AcoOrderProgressWidget
             <div className="w-8 h-8 bg-gradient-to-r from-orange-500 to-amber-500 rounded-lg flex items-center justify-center">
               <ClipboardDocumentListIcon className="h-5 w-5 text-white" />
             </div>
-            <WidgetTitle size="small" glow="orange" className="bg-gradient-to-r from-orange-300 via-amber-300 to-orange-200 bg-clip-text text-transparent">
+            <span className={`${WidgetStyles.text.widgetTitle} text-sm font-medium text-white [text-shadow:_0_0_10px_rgba(251,146,60,0.5),_0_0_20px_rgba(251,146,60,0.3)] bg-gradient-to-r from-orange-300 via-amber-300 to-orange-200 bg-clip-text text-transparent`}>
               ACO Order Progress
-            </WidgetTitle>
+            </span>
           </div>
           
           {/* Order Dropdown */}

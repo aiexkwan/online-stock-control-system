@@ -110,7 +110,7 @@ export function NewAdminDashboard() {
   const router = useRouter();
   const pathname = usePathname();
   const { isAuthenticated, loading } = useAuth();
-  const [isDashboardLoading, setIsDashboardLoading] = useState(true);
+  const [isDashboardLoading, setIsDashboardLoading] = useState(false);
   const [timeFrame, setTimeFrame] = useState<TimeFrame>({
     label: format(new Date(), 'MMM d, yyyy'),
     value: 'custom',
@@ -126,15 +126,8 @@ export function NewAdminDashboard() {
   
   // Universal background is handled at the app level
 
-  // Simulate loading state
-  useEffect(() => {
-    setIsDashboardLoading(true);
-    const timer = setTimeout(() => {
-      setIsDashboardLoading(false);
-    }, 1500); // 1.5 seconds loading time
-    
-    return () => clearTimeout(timer);
-  }, [currentTheme]); // Reload when theme changes
+  // Remove artificial loading state on theme change
+  // Theme switching should be instant without loading screen
   
   // Dialog hooks
   const { openDialog } = useDialog();

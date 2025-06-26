@@ -21,15 +21,12 @@ export const LoadingScreen: React.FC<LoadingScreenProps> = ({
   loadingText = "Loading",
   showMessages = true
 }) => {
-  const [showContent, setShowContent] = useState(false);
+  const [showContent, setShowContent] = useState(!isLoading);
 
   useEffect(() => {
     if (!isLoading) {
-      // Delay content reveal for smooth transition
-      const timer = setTimeout(() => {
-        setShowContent(true);
-      }, 150);
-      return () => clearTimeout(timer);
+      // Remove delay for instant content reveal
+      setShowContent(true);
     } else {
       setShowContent(false);
     }
@@ -37,7 +34,7 @@ export const LoadingScreen: React.FC<LoadingScreenProps> = ({
 
   return (
     <>
-      <AnimatePresence mode="wait">
+      <AnimatePresence>
         {isLoading && (
           <motion.div
             key="loading"

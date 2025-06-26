@@ -7,6 +7,7 @@
 
 import { DialogProvider } from '@/app/contexts/DialogContext';
 import { UploadRefreshProvider } from './contexts/UploadRefreshContext';
+import './styles/page-flip-animation.css';
 
 export default function AdminLayout({
   children,

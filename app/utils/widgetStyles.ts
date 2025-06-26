@@ -4,7 +4,7 @@
 
 export const WidgetStyles = {
   // 基礎樣式 - 透明背景
-  base: 'bg-white/5 backdrop-blur-md',
+  base: 'bg-white/3 backdrop-blur-md',
   
   // Widget 專屬邊框顏色 - 完全移除邊框效果
   borders: {

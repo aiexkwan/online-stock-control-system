@@ -1,12 +1,23 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  reactStrictMode: true,
+  // 暫時禁用 strict mode 以避免開發環境的 double rendering
+  reactStrictMode: false,
   typescript: {
     // 忽略構建時的 TypeScript 錯誤
     ignoreBuildErrors: true,
   },
   experimental: {
     serverComponentsExternalPackages: ['pdf-parse', 'pdfjs-dist', 'sharp'],
+  },
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'bbmkuiplnzvpudszrend.supabase.co',
+        port: '',
+        pathname: '/storage/v1/object/**',
+      },
+    ],
   },
   // 環境變數應該從 .env 或 .env.local 文件自動讀取
   // 不應在此處硬編碼任何 API keys

@@ -16,7 +16,7 @@ import { Timeline } from '@/components/ui/timeline';
 import { createClient } from '@/app/utils/supabase/client';
 import { format } from 'date-fns';
 import { fromDbTime } from '@/app/utils/timezone';
-import { WidgetTitle, WidgetText, WidgetLabel } from '../WidgetTypography';
+import { WidgetTitle, WidgetText, WidgetLabel, WidgetTextStyles, GlowStyles } from '../WidgetTypography';
 import { cn } from '@/lib/utils';
 
 interface HistoryRecord {
@@ -224,9 +224,13 @@ export const HistoryTree = React.memo(function HistoryTree({ widget, isEditMode 
             <div className="w-8 h-8 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-lg flex items-center justify-center">
               <ClockIcon className="h-5 w-5 text-white" />
             </div>
-            <WidgetTitle size="small" glow="purple" className="bg-gradient-to-r from-indigo-300 via-purple-300 to-indigo-200 bg-clip-text text-transparent">
+            <span className={cn(
+              WidgetTextStyles.title.small,
+              GlowStyles.purple,
+              "bg-gradient-to-r from-indigo-300 via-purple-300 to-indigo-200 bg-clip-text text-transparent"
+            )}>
               History Tree
-            </WidgetTitle>
+            </span>
           </CardTitle>
         </CardHeader>
         

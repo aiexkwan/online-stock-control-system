@@ -117,39 +117,50 @@ export function gql(strings: TemplateStringsArray, ...values: any[]): string {
  */
 export function useGraphQLQuery<T = any>(
   query: string,
-  variables?: Record<string, any>
+  variables?: Record<string, any>,
+  options?: { skip?: boolean }
 ) {
   const [data, setData] = React.useState<T | null>(null);
-  const [loading, setLoading] = React.useState(true);
+  const [loading, setLoading] = React.useState(!options?.skip);
   const [error, setError] = React.useState<Error | null>(null);
   const [refreshTrigger, setRefreshTrigger] = React.useState(0);
 
   // Memoize serialized variables to avoid complex expression in dependency array
   const serializedVariables = React.useMemo(
-    () => JSON.stringify(variables),
+    () => JSON.stringify(variables || {}),
     [variables]
   );
 
   const fetchData = React.useCallback(async () => {
+    if (options?.skip) return;
+    
     try {
       setLoading(true);
       setError(null);
-      const result = await graphqlClient.query<T>({ query, variables });
+      const parsedVariables = serializedVariables ? JSON.parse(serializedVariables) : undefined;
+      const result = await graphqlClient.query<T>({ query, variables: parsedVariables });
       
       if (result.errors) {
+        console.error('[useGraphQLQuery] GraphQL errors:', result.errors);
         setError(new Error(result.errors[0].message));
       } else {
         setData(result.data || null);
       }
     } catch (err) {
+      console.error('[useGraphQLQuery] Fetch error:', err);
       setError(err as Error);
     } finally {
       setLoading(false);
     }
-  }, [query, variables]);
+  }, [query, serializedVariables, options?.skip]);
 
   React.useEffect(() => {
-    fetchData();
+    // Add a small delay to debounce rapid changes
+    const timeoutId = setTimeout(() => {
+      fetchData();
+    }, 100);
+
+    return () => clearTimeout(timeoutId);
   }, [fetchData, refreshTrigger]);
 
   const refetch = React.useCallback(() => {
