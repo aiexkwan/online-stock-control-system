@@ -6,6 +6,24 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Admin Widget 統一樣式 */
+@layer components {
+  /* Widget Header 標題樣式 */
+  .widget-title {
+    @apply text-lg font-medium text-slate-300;
+  }
+  
+  /* Widget 副標題/標籤樣式 */
+  .widget-subtitle {
+    @apply text-sm font-medium text-slate-400;
+  }
+  
+  /* Widget 小字樣式 */
+  .widget-text-sm {
+    @apply text-xs text-slate-500;
+  }
+}
+
 /* Override calendar selected date styles for admin */
 .universal-date-picker [data-selected-single="true"],
 .universal-date-picker [data-range-start="true"],

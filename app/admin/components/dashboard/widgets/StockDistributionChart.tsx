@@ -112,7 +112,7 @@ export const StockDistributionChart: React.FC<StockDistributionChartProps> = ({ 
     } finally {
       setLoading(false);
     }
-  }, [supabase]);
+  }, [supabase, processStockData]);
 
   // 監聽類型變更事件
   useEffect(() => {
@@ -126,7 +126,7 @@ export const StockDistributionChart: React.FC<StockDistributionChartProps> = ({ 
     return () => {
       window.removeEventListener('stockTypeChanged', handleTypeChange as EventListener);
     };
-  }, []);
+  }, [processStockData]);
 
   // 初始化
   useEffect(() => {

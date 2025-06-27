@@ -12,8 +12,8 @@ import { CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { UniversalWidgetCard as WidgetCard } from '../UniversalWidgetCard';
 import { ClipboardDocumentListIcon, TruckIcon } from '@heroicons/react/24/outline';
 import { WidgetComponentProps } from '@/app/types/dashboard';
-import { useGraphQLQuery } from '@/lib/graphql-client-stable';
-import { GET_ORDER_PROGRESS } from '@/lib/graphql/queries';
+import { createClient } from '@/lib/supabase';
+import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { Progress } from '@/components/ui/progress';
@@ -35,24 +35,61 @@ export const OrderStateListWidget = React.memo(function OrderStateListWidget({
   isEditMode,
   timeFrame 
 }: WidgetComponentProps) {
-  // 使用 GraphQL 查詢獲取數據
-  const { data, loading, error } = useGraphQLQuery(GET_ORDER_PROGRESS, {
-    limit: 10 // 獲取更多數據以便滾動
-  });
+  const [data, setData] = useState<OrderProgress[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // 使用 Supabase client 查詢未完成訂單
+  useEffect(() => {
+    const fetchPendingOrders = async () => {
+      setLoading(true);
+      setError(null);
+      
+      try {
+        const supabase = createClient();
+        
+        // 查詢所有訂單
+        const { data: ordersData, error: ordersError } = await supabase
+          .from('data_order')
+          .select('*')
+          .order('created_at', { ascending: false });
+
+        if (ordersError) throw ordersError;
+
+        // 篩選未完成訂單 (loaded_qty < product_qty 或 loaded_qty 為 null)
+        const pendingOrders = ordersData?.filter(order => {
+          const loadedQty = order.loaded_qty || 0;
+          const productQty = order.product_qty || 0;
+          return productQty > 0 && loadedQty < productQty;
+        }) || [];
+
+        setData(pendingOrders);
+      } catch (err) {
+        console.error('Error fetching pending orders:', err);
+        setError(err instanceof Error ? err.message : 'Unknown error');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchPendingOrders();
+  }, []);
 
   // 處理訂單數據
   const orders = useMemo(() => {
-    if (!data?.data_orderCollection?.edges) return [];
-    
-    return data.data_orderCollection.edges.map((edge: any) => {
-      const order = edge.node as OrderProgress;
-      const progress = order.product_qty > 0 ? (order.loaded_qty / order.product_qty) * 100 : 0;
+    return data.map((order: OrderProgress) => {
+      const loadedQty = order.loaded_qty || 0;
+      const productQty = order.product_qty || 0;
+      const progress = productQty > 0 ? (loadedQty / productQty) * 100 : 0;
       
       return {
         ...order,
         progress: Math.min(100, Math.max(0, progress)),
-        progressText: `${order.loaded_qty || 0} / ${order.product_qty || 0}`,
-        status: progress >= 100 ? 'completed' : progress > 0 ? 'in_progress' : 'pending'
+        progressText: `${loadedQty} / ${productQty}`,
+        status: progress >= 100 ? 'completed' : progress > 0 ? 'in_progress' : 'pending',
+        statusColor: progress === 0 ? 'red' : 
+                     progress < 50 ? 'yellow' : 
+                     progress < 100 ? 'orange' : 'green'
       };
     });
   }, [data]);
@@ -61,7 +98,7 @@ export const OrderStateListWidget = React.memo(function OrderStateListWidget({
     return (
       <WidgetCard widget={widget} isEditMode={true}>
         <div className="h-full flex items-center justify-center">
-          <p className="text-gray-400">Order State List Widget</p>
+          <p className="text-slate-400 font-medium">Order State List Widget</p>
         </div>
       </WidgetCard>
     );
@@ -69,14 +106,13 @@ export const OrderStateListWidget = React.memo(function OrderStateListWidget({
 
   return (
     <WidgetCard widget={widget}>
-      <div className="h-full flex flex-col">
-        <CardHeader className="pb-2">
+      <CardHeader className="pb-2">
           <CardTitle className="text-lg font-medium flex items-center gap-2">
             <ClipboardDocumentListIcon className="w-5 h-5" />
             Order Progress
           </CardTitle>
-          <p className="text-xs text-gray-400 mt-1">
-            Latest {orders.length} orders
+          <p className="text-xs text-slate-400 font-medium mt-1">
+            {orders.length} pending orders
           </p>
         </CardHeader>
         <CardContent className="flex-1 overflow-hidden">
@@ -92,12 +128,12 @@ export const OrderStateListWidget = React.memo(function OrderStateListWidget({
           ) : error ? (
             <div className="text-red-400 text-sm text-center">
               <p>Error loading orders</p>
-              <p className="text-xs mt-1">{error.message}</p>
+              <p className="text-xs mt-1">{error}</p>
             </div>
           ) : orders.length === 0 ? (
-            <div className="text-center text-gray-400 py-8">
+            <div className="text-center text-slate-400 font-medium py-8">
               <ClipboardDocumentListIcon className="w-12 h-12 mx-auto mb-2 opacity-50" />
-              <p>No orders found</p>
+              <p>All orders completed</p>
             </div>
           ) : (
             <div className="space-y-3 overflow-y-auto h-full pr-2">
@@ -107,65 +143,44 @@ export const OrderStateListWidget = React.memo(function OrderStateListWidget({
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.3, delay: index * 0.1 }}
-                  className="bg-slate-700/30 rounded-lg p-3 border border-slate-600/50 hover:border-slate-500/50 transition-colors"
+                  className="bg-slate-700/30 rounded-lg p-2 border border-slate-600/50 hover:border-slate-500/50 transition-colors"
                 >
-                  {/* 訂單標題 */}
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-2">
+                  {/* 訂單標題和進度 */}
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2 flex-1 min-w-0">
                       <div className={cn(
-                        "w-2 h-2 rounded-full",
-                        order.status === 'completed' ? "bg-green-400" :
-                        order.status === 'in_progress' ? "bg-yellow-400" : "bg-gray-400"
+                        "w-2 h-2 rounded-full flex-shrink-0",
+                        order.statusColor === 'green' ? "bg-green-400" :
+                        order.statusColor === 'orange' ? "bg-orange-400" :
+                        order.statusColor === 'yellow' ? "bg-yellow-400" :
+                        order.statusColor === 'red' ? "bg-red-400" : "bg-slate-400"
                       )} />
                       <span className="text-sm font-medium text-white truncate">
                         {order.order_ref}
                       </span>
                     </div>
-                    <span className="text-xs text-gray-400">
-                      {format(new Date(order.created_at), 'MMM d')}
-                    </span>
-                  </div>
-                  
-                  {/* 客戶和產品信息 */}
-                  <div className="text-xs text-gray-400 mb-2">
-                    <div className="truncate">{order.account_num}</div>
-                    <div className="truncate">{order.product_code}</div>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <span className="text-lg font-bold text-white">
+                        {order.progress.toFixed(0)}%
+                      </span>
+                      {order.status === 'completed' && (
+                        <TruckIcon className="w-4 h-4 text-green-400" />
+                      )}
+                    </div>
                   </div>
                   
                   {/* 進度條 */}
-                  <div className="space-y-1">
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="text-gray-400">Progress</span>
-                      <span className="text-white font-medium">
-                        {order.progressText} ({order.progress.toFixed(0)}%)
-                      </span>
-                    </div>
+                  <div className="mt-2">
                     <Progress 
                       value={order.progress} 
-                      className="h-1.5"
+                      className="h-2"
                     />
-                  </div>
-                  
-                  {/* 狀態指示器 */}
-                  <div className="flex items-center gap-1 mt-2">
-                    {order.status === 'completed' && (
-                      <TruckIcon className="w-3 h-3 text-green-400" />
-                    )}
-                    <span className={cn(
-                      "text-xs font-medium",
-                      order.status === 'completed' ? "text-green-400" :
-                      order.status === 'in_progress' ? "text-yellow-400" : "text-gray-400"
-                    )}>
-                      {order.status === 'completed' ? 'Completed' :
-                       order.status === 'in_progress' ? 'In Progress' : 'Pending'}
-                    </span>
                   </div>
                 </motion.div>
               ))}
             </div>
           )}
         </CardContent>
-      </div>
     </WidgetCard>
   );
 });

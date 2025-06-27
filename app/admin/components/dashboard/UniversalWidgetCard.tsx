@@ -32,28 +32,21 @@ export function UniversalWidgetCard({
     <div 
       onClick={onClick}
       className={cn(
-        // 基礎樣式
-        'h-full rounded-xl transition-all duration-300',
-        // 透明背景樣式 - 使用白色透明度讓效果更明顯
-        'bg-white/3 backdrop-blur-md',
+        // 基礎樣式 - 移除背景，由 AdminWidgetRenderer 統一控制
+        'h-full',
         // Widget 專屬邊框（已移除）
         borderStyle,
         // 編輯模式樣式（保留編輯模式邊框）
-        isEditMode && 'border-dashed border-2 border-blue-500/50',
-        // 確保內容不會溢出圓角
-        'overflow-hidden',
+        isEditMode && 'border-dashed border-2 border-blue-500/50 rounded-xl',
+        // 確保內容不會溢出 + 直接處理 overflow
+        'overflow-y-auto widget-content',
         // Flex 佈局
         'flex flex-col',
         // 額外的自定義樣式
         className
       )}
     >
-      <div className={cn(
-        "flex-1 min-h-0",
-        "overflow-auto widget-content"
-      )}>
-        {children}
-      </div>
+      {children}
     </div>
   );
 }

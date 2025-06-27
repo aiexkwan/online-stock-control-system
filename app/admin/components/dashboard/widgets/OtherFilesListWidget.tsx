@@ -173,7 +173,7 @@ export const OtherFilesListWidget = React.memo(function OtherFilesListWidget({ w
           <div className="border-b border-slate-700 pb-2 mb-2">
             <div className="grid grid-cols-3 gap-2 px-2 text-xs font-medium text-slate-400">
               <span>Date</span>
-              <span>Order File</span>
+              <span>File Name</span>
               <span>Upload By</span>
             </div>
           </div>

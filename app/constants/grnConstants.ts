@@ -8,7 +8,7 @@ export const PALLET_WEIGHTS = {
   whiteDry: 14,
   whiteWet: 18,
   chepDry: 26,
-  chepWet: 38,
+  chepWet: 30,
   euro: 22,
   notIncluded: 0,
 } as const;
@@ -16,9 +16,9 @@ export const PALLET_WEIGHTS = {
 // 包裝重量常量 (單位: kg)
 export const PACKAGE_WEIGHTS = {
   still: 50,
-  bag: 1,
-  tote: 10,
-  octo: 20,
+  bag: 0,
+  tote: 6,
+  octo: 14,
   notIncluded: 0,
 } as const;
 
@@ -28,7 +28,7 @@ export const SYSTEM_LIMITS = {
   MIN_PALLETS: 1,
   MAX_WEIGHT: 9999,
   MIN_WEIGHT: 0,
-  MAX_QUANTITY: 99999,
+  MAX_QUANTITY: 9999,
   MIN_QUANTITY: 1,
 } as const;
 

@@ -31,7 +31,7 @@ export const CustomThemeLayout: React.FC<CustomThemeLayoutProps> = ({
 
   // Widget positions matching exact CSS
   const widgetStyles = [
-    // Item 1 - History Tree (right sidebar)
+    // Item 1 - Right sidebar widget
     { 
       gridRow: '1 / 9', 
       gridColumn: '9 / 11',
@@ -115,15 +115,15 @@ export const CustomThemeLayout: React.FC<CustomThemeLayoutProps> = ({
   return (
     <div className="custom-theme-container">
       {children.slice(0, 10).map((child, index) => {
-        const isHistoryTree = index === 0;
+        const isRightSidebar = index === 0;
         
         // Check if it's one of the transparent widgets
         const transparentWidgets = ['Pending Updates', 'Processing', 'Completed Today', 'Failed'];
         const widgetTitle = React.isValidElement(child) && child.props?.config?.title;
         const isTransparentWidget = transparentWidgets.includes(widgetTitle);
         
-        if (isHistoryTree) {
-          // History Tree without glassmorphism wrapper
+        if (isRightSidebar) {
+          // Right sidebar widget without glassmorphism wrapper
           return (
             <div key={`widget-${index}`} className="custom-theme-item">
               {child}
@@ -149,22 +149,11 @@ export const CustomThemeLayout: React.FC<CustomThemeLayoutProps> = ({
           );
         }
 
-        // Other widgets with glassmorphism effect
+        // Other widgets - render directly since UniversalWidgetCard handles styling
         return (
           <motion.div
             key={`widget-${index}`}
-            className="custom-theme-item"
-            style={{
-              background: 'rgba(255, 255, 255, 0.02)',
-              backdropFilter: 'blur(24px) saturate(180%)',
-              WebkitBackdropFilter: 'blur(24px) saturate(180%)',
-              border: '1px solid rgba(255, 255, 255, 0.05)',
-              borderRadius: '16px',
-              boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.15), inset 0 0 0 1px rgba(255, 255, 255, 0.05)',
-              overflow: 'hidden',
-              position: 'relative' as const,
-              transition: 'all 0.3s ease'
-            }}
+            className="custom-theme-item h-full"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{
@@ -172,28 +161,8 @@ export const CustomThemeLayout: React.FC<CustomThemeLayoutProps> = ({
               delay: index * 0.05,
               ease: [0.25, 0.1, 0.25, 1]
             }}
-            whileHover={{
-              y: -4,
-              boxShadow: '0 12px 48px 0 rgba(31, 38, 135, 0.25), inset 0 0 0 1px rgba(255, 255, 255, 0.08)',
-              background: 'rgba(255, 255, 255, 0.04)'
-            }}
           >
-            {/* Gradient overlay */}
-            <div 
-              style={{
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
-                background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0) 100%)',
-                pointerEvents: 'none',
-                zIndex: 0
-              }}
-            />
-            <div style={{ position: 'relative', zIndex: 1, height: '100%', width: '100%' }}>
-              {child}
-            </div>
+            {child}
           </motion.div>
         );
       })}

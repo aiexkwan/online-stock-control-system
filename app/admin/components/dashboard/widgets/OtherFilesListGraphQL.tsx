@@ -7,7 +7,7 @@
 
 import React, { useState, useCallback, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { DocumentIcon, CloudIcon, PhotoIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
+import { DocumentIcon, CloudIcon, PhotoIcon, ArrowPathIcon, FolderIcon } from '@heroicons/react/24/outline';
 import { WidgetComponentProps } from '@/app/types/dashboard';
 import { CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { UniversalWidgetCard as WidgetCard } from '../UniversalWidgetCard';
@@ -206,27 +206,11 @@ export const OtherFilesListGraphQL = React.memo(function OtherFilesListGraphQL({
       className="h-full"
     >
       <WidgetCard widgetType="CUSTOM" isEditMode={isEditMode} className="flex flex-col">
-        {/* GraphQL 標識 */}
-        <div className="absolute top-2 right-2 px-2 py-1 bg-gradient-to-r from-purple-600/80 to-pink-600/80 text-white text-xs rounded-full shadow-lg backdrop-blur-sm z-10">
-          GraphQL
-        </div>
         
         <CardHeader className="pb-3">
-          <CardTitle className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg flex items-center justify-center">
-                <CloudIcon className="h-5 w-5 text-white" />
-              </div>
-              <span className="text-base font-medium text-slate-200">Other File Upload History</span>
-            </div>
-            <button
-              onClick={() => !isEditMode && refetch()}
-              disabled={isEditMode || loading}
-              className="p-1.5 rounded-lg hover:bg-slate-700/50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              title="Refresh"
-            >
-              <ArrowPathIcon className={`w-4 h-4 text-slate-400 ${loading ? 'animate-spin' : ''}`} />
-            </button>
+          <CardTitle className="widget-title flex items-center gap-2">
+            <FolderIcon className="w-5 h-5" />
+            Other File Upload History
           </CardTitle>
         </CardHeader>
         
@@ -238,6 +222,17 @@ export const OtherFilesListGraphQL = React.memo(function OtherFilesListGraphQL({
               <span>File Name</span>
               <span>Upload By</span>
             </div>
+          </div>
+          
+          <div className="flex items-center justify-end mb-2">
+            <button
+              onClick={() => !isEditMode && refetch()}
+              disabled={isEditMode || loading}
+              className="p-1.5 rounded-lg hover:bg-slate-700/50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              title="Refresh"
+            >
+              <ArrowPathIcon className={`w-4 h-4 text-slate-400 ${loading ? 'animate-spin' : ''}`} />
+            </button>
           </div>
           
           {/* Content */}

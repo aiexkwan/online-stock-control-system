@@ -87,7 +87,11 @@
       "Bash(npx graphql-codegen:*)",
       "Bash(diff:*)",
       "WebFetch(domain:aurachat.io)",
-      "Bash(md5sum:*)"
+      "Bash(md5sum:*)",
+      "Bash(for file in *.tsx)",
+      "Bash(do if ! grep -q \"UniversalWidgetCard\\|WidgetCard\" \"$file\")",
+      "Bash(then echo \"$file\")",
+      "Bash(fi done)"
     ],
     "deny": []
   }

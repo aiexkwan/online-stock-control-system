@@ -6,48 +6,77 @@
 
 'use client';
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useEffect, useState } from 'react';
 import { CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { UniversalWidgetCard as WidgetCard } from '../UniversalWidgetCard';
 import { BuildingOfficeIcon, ArrowTrendingUpIcon, ArrowTrendingDownIcon } from '@heroicons/react/24/outline';
 import { WidgetComponentProps } from '@/app/types/dashboard';
-import { useGraphQLQuery, gql } from '@/lib/graphql-client-stable';
+import { createClient } from '@/lib/supabase';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
-
-// GraphQL 查詢 - 獲取所有 await 數值
-const GET_AWAIT_LOCATION_QTY = gql`
-  query GetAwaitLocationQty {
-    record_inventoryCollection {
-      edges {
-        node {
-          await
-        }
-      }
-    }
-  }
-`;
 
 export const AwaitLocationQtyWidget = React.memo(function AwaitLocationQtyWidget({ 
   widget, 
   isEditMode,
   timeFrame 
 }: WidgetComponentProps) {
-  // 使用 GraphQL 查詢獲取數據 - 使用新的 stable client
-  const { data, loading, error, isRefetching } = useGraphQLQuery(GET_AWAIT_LOCATION_QTY, {
-    // 這個查詢不需要時間範圍參數，因為是當前庫存狀態
-  });
+  const [palletCount, setPalletCount] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [isRefetching, setIsRefetching] = useState(false);
 
-  // 計算總數 - 從 edges 數據中計算
-  const totalQty = useMemo(() => {
-    if (!data?.record_inventoryCollection?.edges) return 0;
-    
-    return data.record_inventoryCollection.edges.reduce((sum: number, edge: any) => {
-      // 將 bigint 轉換為 number
-      const awaitValue = edge.node.await ? parseInt(edge.node.await.toString()) : 0;
-      return sum + awaitValue;
-    }, 0);
-  }, [data]);
+  useEffect(() => {
+    const fetchAwaitPalletCount = async () => {
+      setLoading(true);
+      setError(null);
+      
+      try {
+        const supabase = createClient();
+        
+        // 查詢當前在 Await 位置的棧板數量
+        // 使用 RPC 函數或者複合查詢來獲取每個棧板的最新位置
+        const { data, error } = await supabase.rpc('get_current_await_pallet_count');
+        
+        if (error) {
+          // 如果 RPC 函數不存在，使用備選查詢方法
+          console.warn('RPC function not found, using alternative query');
+          
+          // 備選方案：查詢所有棧板的最新歷史記錄
+          const { data: historyData, error: historyError } = await supabase
+            .from('record_history')
+            .select('plt_num, loc, time')
+            .not('plt_num', 'is', null)
+            .order('time', { ascending: false });
+            
+          if (historyError) throw historyError;
+          
+          // 計算每個棧板的最新位置
+          const palletLatestLocation = new Map<string, string>();
+          historyData?.forEach(record => {
+            if (!palletLatestLocation.has(record.plt_num)) {
+              palletLatestLocation.set(record.plt_num, record.loc);
+            }
+          });
+          
+          // 統計在 Await 位置的棧板數量
+          const awaitPallets = Array.from(palletLatestLocation.values())
+            .filter(loc => loc === 'Await' || loc === 'Awaiting')
+            .length;
+            
+          setPalletCount(awaitPallets);
+        } else {
+          setPalletCount(data || 0);
+        }
+      } catch (err) {
+        console.error('Error fetching await pallet count:', err);
+        setError(err instanceof Error ? err.message : 'Unknown error');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchAwaitPalletCount();
+  }, []);
 
   // 模擬趨勢數據（實際應用中應該比較不同時間段的數據）
   const trend = 0; // 暫時設為 0，可以之後加入趨勢計算
@@ -64,9 +93,8 @@ export const AwaitLocationQtyWidget = React.memo(function AwaitLocationQtyWidget
 
   return (
     <WidgetCard widget={widget}>
-      <div className="h-full flex flex-col">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-lg font-medium flex items-center gap-2">
+      <CardHeader className="pb-2">
+          <CardTitle className="widget-title flex items-center gap-2">
             <BuildingOfficeIcon className="w-5 h-5" />
             Await Location Qty
             {isRefetching && (
@@ -84,7 +112,7 @@ export const AwaitLocationQtyWidget = React.memo(function AwaitLocationQtyWidget
           </CardTitle>
         </CardHeader>
         <CardContent className="flex-1 flex items-center justify-center">
-          {loading && !data ? (
+          {loading ? (
             <div className="space-y-2 w-full">
               <div className="h-8 bg-slate-700/50 rounded animate-pulse" />
               <div className="h-4 bg-slate-700/50 rounded animate-pulse w-3/4" />
@@ -92,7 +120,7 @@ export const AwaitLocationQtyWidget = React.memo(function AwaitLocationQtyWidget
           ) : error ? (
             <div className="text-red-400 text-sm text-center">
               <p>Error loading data</p>
-              <p className="text-xs mt-1">{error.message}</p>
+              <p className="text-xs mt-1">{error}</p>
             </div>
           ) : (
             <div className="text-center">
@@ -102,9 +130,9 @@ export const AwaitLocationQtyWidget = React.memo(function AwaitLocationQtyWidget
                 transition={{ duration: 0.3 }}
                 className="text-4xl font-bold text-white mb-2"
               >
-                {totalQty.toLocaleString()}
+                {palletCount.toLocaleString()}
               </motion.div>
-              <p className="text-sm text-gray-400">Total Quantity</p>
+              <p className="text-xs text-slate-400">Pallets</p>
               
               {trend !== 0 && (
                 <div className={cn(
@@ -122,7 +150,6 @@ export const AwaitLocationQtyWidget = React.memo(function AwaitLocationQtyWidget
             </div>
           )}
         </CardContent>
-      </div>
     </WidgetCard>
   );
 });

@@ -1,8 +1,0 @@
-"use client";
-
-import React from 'react';
-import GrnLabelForm from './components/GrnLabelForm';
-
-export default function PrintGrnLabelPage() {
-  return <GrnLabelForm />;
-} 

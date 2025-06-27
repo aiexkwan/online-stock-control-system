@@ -1,6 +1,6 @@
 /**
  * Still In Await Percentage Widget
- * 顯示昨天完成但今天仍在 await location 的數量（以百分比顯示）
+ * 顯示指定時間生成的棧板中仍在 await location 的百分比
  * 支援頁面的 time frame selector
  */
 
@@ -50,18 +50,16 @@ export const StillInAwaitPercentageWidget = React.memo(function StillInAwaitPerc
       try {
         const supabase = createClient();
         
-        // 1. 獲取昨天移動到 Await 的所有棧板
-        const { data: historyData, error: historyError } = await supabase
-          .from('record_history')
-          .select('plt_num, time')
-          .eq('action', 'Move')
-          .eq('loc', 'Await')
-          .gte('time', dateRange.start.toISOString())
-          .lte('time', dateRange.end.toISOString());
+        // 1. 獲取指定時間生成的所有棧板
+        const { data: palletData, error: palletError } = await supabase
+          .from('record_palletinfo')
+          .select('plt_num, generate_time')
+          .gte('generate_time', dateRange.start.toISOString())
+          .lte('generate_time', dateRange.end.toISOString());
 
-        if (historyError) throw historyError;
+        if (palletError) throw palletError;
 
-        if (!historyData || historyData.length === 0) {
+        if (!palletData || palletData.length === 0) {
           setPercentage(0);
           setStillInAwait(0);
           setTotalMoved(0);
@@ -69,39 +67,36 @@ export const StillInAwaitPercentageWidget = React.memo(function StillInAwaitPerc
           return;
         }
 
-        const palletNumbers = historyData.map(h => h.plt_num);
+        const palletNumbers = palletData.map(p => p.plt_num);
+        const totalPallets = palletNumbers.length;
+        setTotalMoved(totalPallets);
         
-        // 2. 獲取這些棧板的數量信息
-        const { data: palletData, error: palletError } = await supabase
-          .from('record_palletinfo')
-          .select('plt_num, product_qty')
-          .in('plt_num', palletNumbers);
-
-        if (palletError) throw palletError;
-
-        // 計算總數量
-        const totalQty = palletData?.reduce((sum, pallet) => sum + (pallet.product_qty || 0), 0) || 0;
-        setTotalMoved(totalQty);
-
-        // 3. 獲取這些棧板中仍在 await 的
-        const { data: inventoryData, error: inventoryError } = await supabase
-          .from('record_inventory')
-          .select('plt_num, await')
+        // 2. 獲取這些棧板的最新位置
+        const { data: historyData, error: historyError } = await supabase
+          .from('record_history')
+          .select('plt_num, loc, time')
           .in('plt_num', palletNumbers)
-          .gt('await', 0);
+          .order('time', { ascending: false });
 
-        if (inventoryError) throw inventoryError;
+        if (historyError) throw historyError;
 
-        // 計算仍在 await 的數量
-        const stillInAwaitPallets = inventoryData?.map(inv => inv.plt_num) || [];
-        const stillInAwaitQty = palletData
-          ?.filter(p => stillInAwaitPallets.includes(p.plt_num))
-          ?.reduce((sum, pallet) => sum + (pallet.product_qty || 0), 0) || 0;
+        // 3. 找出每個棧板的最新位置
+        const latestLocations = new Map<string, string>();
+        historyData?.forEach(record => {
+          if (!latestLocations.has(record.plt_num)) {
+            latestLocations.set(record.plt_num, record.loc);
+          }
+        });
 
-        setStillInAwait(stillInAwaitQty);
+        // 4. 計算仍在 Await 的棧板數量
+        const stillInAwaitCount = Array.from(latestLocations.entries())
+          .filter(([_, loc]) => loc === 'Await' || loc === 'Awaiting')
+          .length;
+
+        setStillInAwait(stillInAwaitCount);
 
         // 計算百分比
-        const pct = totalQty > 0 ? (stillInAwaitQty / totalQty) * 100 : 0;
+        const pct = totalPallets > 0 ? (stillInAwaitCount / totalPallets) * 100 : 0;
         setPercentage(pct);
 
       } catch (err) {
@@ -119,7 +114,7 @@ export const StillInAwaitPercentageWidget = React.memo(function StillInAwaitPerc
     return (
       <WidgetCard widget={widget} isEditMode={true}>
         <div className="h-full flex items-center justify-center">
-          <p className="text-gray-400">Still In Await % Widget</p>
+          <p className="text-slate-400 font-medium">Still In Await % Widget</p>
         </div>
       </WidgetCard>
     );
@@ -127,13 +122,12 @@ export const StillInAwaitPercentageWidget = React.memo(function StillInAwaitPerc
 
   return (
     <WidgetCard widget={widget}>
-      <div className="h-full flex flex-col">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-lg font-medium flex items-center gap-2">
+      <CardHeader className="pb-2">
+          <CardTitle className="widget-title flex items-center gap-2">
             <ChartPieIcon className="w-5 h-5" />
             Still In Await %
           </CardTitle>
-          <p className="text-xs text-gray-400 mt-1">
+          <p className="text-xs text-slate-400 mt-1">
             From {format(dateRange.start, 'MMM d')}
           </p>
         </CardHeader>
@@ -159,8 +153,8 @@ export const StillInAwaitPercentageWidget = React.memo(function StillInAwaitPerc
                 <div className="text-4xl font-bold text-white mb-2">
                   {percentage.toFixed(1)}%
                 </div>
-                <div className="text-xs text-gray-400">
-                  {stillInAwait.toLocaleString()} / {totalMoved.toLocaleString()}
+                <div className="widget-text-sm">
+                  {stillInAwait.toLocaleString()} / {totalMoved.toLocaleString()} pallets
                 </div>
               </motion.div>
               
@@ -176,7 +170,6 @@ export const StillInAwaitPercentageWidget = React.memo(function StillInAwaitPerc
             </div>
           )}
         </CardContent>
-      </div>
     </WidgetCard>
   );
 });

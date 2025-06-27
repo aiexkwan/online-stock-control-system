@@ -80,7 +80,7 @@ export const StillInAwaitWidgetGraphQL = React.memo(function StillInAwaitWidgetG
     return (
       <WidgetCard widget={widget} isEditMode={true}>
         <div className="h-full flex items-center justify-center">
-          <p className="text-gray-400">Still In Await Widget (GraphQL)</p>
+          <p className="text-slate-400 font-medium">Still In Await Widget (GraphQL)</p>
         </div>
       </WidgetCard>
     );
@@ -88,14 +88,9 @@ export const StillInAwaitWidgetGraphQL = React.memo(function StillInAwaitWidgetG
 
   return (
     <WidgetCard widget={widget}>
-      <div className="relative h-full flex flex-col">
-        {/* GraphQL 標識 */}
-        <div className="absolute top-2 right-2 px-2 py-1 bg-gradient-to-r from-purple-600 to-pink-600 text-white text-xs rounded-full shadow-lg z-10">
-          GraphQL
-        </div>
-        
-        <CardHeader className="pb-2">
-          <CardTitle className="text-lg font-medium flex items-center gap-2">
+      
+      <CardHeader className="pb-2">
+          <CardTitle className="widget-title flex items-center gap-2">
             <ClockIcon className="w-5 h-5" />
             Still In Await
             {isRefetching && (
@@ -111,7 +106,7 @@ export const StillInAwaitWidgetGraphQL = React.memo(function StillInAwaitWidgetG
               </motion.div>
             )}
           </CardTitle>
-          <p className="text-xs text-gray-400 mt-1">
+          <p className="text-xs text-slate-400 mt-1">
             From {format(dateRange.start, 'MMM d')} to {format(dateRange.end, 'MMM d')}
           </p>
         </CardHeader>
@@ -137,11 +132,10 @@ export const StillInAwaitWidgetGraphQL = React.memo(function StillInAwaitWidgetG
               >
                 {stillInAwaitCount.toLocaleString()}
               </motion.div>
-              <p className="text-sm text-gray-400">Quantity</p>
+              <p className="text-xs text-slate-400">Quantity</p>
             </div>
           )}
         </CardContent>
-      </div>
     </WidgetCard>
   );
 });

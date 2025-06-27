@@ -34,7 +34,7 @@ export const adminDashboardLayouts: Record<string, AdminDashboardLayout> = {
     widgets: [
       {
         type: 'history-tree',
-        title: 'History Tree',
+        title: '',
         gridArea: 'widget1',
         component: 'HistoryTree'
       },
@@ -53,22 +53,20 @@ export const adminDashboardLayouts: Record<string, AdminDashboardLayout> = {
         metrics: ['quantity_sum']
       },
       {
-        type: 'stats',
-        title: 'Available Soon',
+        type: 'available-soon',
+        title: 'Coming Soon',
         gridArea: 'widget4',
-        dataSource: 'coming_soon',
-        metrics: ['placeholder']
+        component: 'AvailableSoonWidget'
       },
       {
-        type: 'stats',
-        title: 'Available Soon',
+        type: 'available-soon',
+        title: 'Coming Soon',
         gridArea: 'widget5',
-        dataSource: 'coming_soon',
-        metrics: ['placeholder']
+        component: 'AvailableSoonWidget'
       },
       {
         type: 'chart',
-        title: 'Top 5 Products by Quantity',
+        title: 'Top 10 Products by Quantity',
         gridArea: 'widget6',
         dataSource: 'record_palletinfo',
         chartType: 'bar'
@@ -81,11 +79,10 @@ export const adminDashboardLayouts: Record<string, AdminDashboardLayout> = {
         chartType: 'donut'
       },
       {
-        type: 'stats',
-        title: 'Available Soon',
+        type: 'available-soon',
+        title: 'Coming Soon',
         gridArea: 'widget8',
-        dataSource: 'coming_soon',
-        metrics: ['placeholder']
+        component: 'AvailableSoonWidget'
       },
       {
         type: 'table',
@@ -109,7 +106,7 @@ export const adminDashboardLayouts: Record<string, AdminDashboardLayout> = {
     widgets: [
       {
         type: 'history-tree',
-        title: 'History Tree',
+        title: '',
         gridArea: 'widget1',
         component: 'HistoryTree'
       },
@@ -128,25 +125,22 @@ export const adminDashboardLayouts: Record<string, AdminDashboardLayout> = {
         metrics: ['pipeline_quantity_sum']
       },
       {
-        type: 'stats',
-        title: 'Available Soon',
+        type: 'available-soon',
+        title: 'Coming Soon',
         gridArea: 'widget4',
-        dataSource: 'coming_soon',
-        metrics: ['placeholder']
+        component: 'AvailableSoonWidget'
       },
       {
-        type: 'stats',
-        title: 'Available Soon',
+        type: 'available-soon',
+        title: 'Coming Soon',
         gridArea: 'widget5',
-        dataSource: 'coming_soon',
-        metrics: ['placeholder']
+        component: 'AvailableSoonWidget'
       },
       {
-        type: 'stats',
-        title: 'Available Soon',
+        type: 'available-soon',
+        title: 'Coming Soon',
         gridArea: 'widget6',
-        dataSource: 'coming_soon',
-        metrics: ['placeholder']
+        component: 'AvailableSoonWidget'
       },
       {
         type: 'chart',
@@ -186,7 +180,7 @@ export const adminDashboardLayouts: Record<string, AdminDashboardLayout> = {
     widgets: [
       {
         type: 'history-tree',
-        title: 'History Tree',
+        title: '',
         gridArea: 'widget1',
         component: 'HistoryTree'
       },
@@ -239,11 +233,10 @@ export const adminDashboardLayouts: Record<string, AdminDashboardLayout> = {
         component: 'TransferTimeDistributionWidget'
       },
       {
-        type: 'placeholder',
-        title: 'Empty Placeholder',
+        type: 'available-soon',
+        title: 'Coming Soon',
         gridArea: 'widget8',
-        dataSource: 'none',
-        component: 'EmptyPlaceholderWidget'
+        component: 'AvailableSoonWidget'
       },
       {
         type: 'table',
@@ -274,7 +267,7 @@ export const adminDashboardLayouts: Record<string, AdminDashboardLayout> = {
     widgets: [
       {
         type: 'history-tree',
-        title: 'History Tree',
+        title: '',
         gridArea: 'widget7',
         component: 'HistoryTree'
       },
@@ -328,7 +321,7 @@ export const adminDashboardLayouts: Record<string, AdminDashboardLayout> = {
     widgets: [
       {
         type: 'history-tree',
-        title: 'History Tree',
+        title: '',
         gridArea: 'widget1',
         component: 'HistoryTree'
       },
@@ -387,7 +380,7 @@ export const adminDashboardLayouts: Record<string, AdminDashboardLayout> = {
     widgets: [
       {
         type: 'history-tree',
-        title: 'History Tree',
+        title: '',
         gridArea: 'widget1',
         component: 'HistoryTree'
       },
@@ -442,7 +435,7 @@ export const adminDashboardLayouts: Record<string, AdminDashboardLayout> = {
     widgets: [
       {
         type: 'history-tree',
-        title: 'History Tree',
+        title: '',
         gridArea: 'widget1',
         component: 'HistoryTree'
       },
@@ -543,7 +536,7 @@ export const adminDashboardLayouts: Record<string, AdminDashboardLayout> = {
     widgets: [
       {
         type: 'history-tree',
-        title: 'History Tree',
+        title: '',
         gridArea: 'widget1',
         component: 'HistoryTree'
       },

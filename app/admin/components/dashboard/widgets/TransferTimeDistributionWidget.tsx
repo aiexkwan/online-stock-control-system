@@ -100,7 +100,7 @@ export const TransferTimeDistributionWidget = React.memo(function TransferTimeDi
     return (
       <WidgetCard widget={widget} isEditMode={true}>
         <div className="h-full flex items-center justify-center">
-          <p className="text-gray-400">Transfer Time Distribution</p>
+          <p className="text-slate-400 font-medium">Transfer Time Distribution</p>
         </div>
       </WidgetCard>
     );
@@ -108,14 +108,13 @@ export const TransferTimeDistributionWidget = React.memo(function TransferTimeDi
 
   return (
     <WidgetCard widget={widget}>
-      <div className="h-full flex flex-col">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-lg font-medium flex items-center gap-2">
+      <CardHeader className="pb-2">
+          <CardTitle className="widget-title flex items-center gap-2">
             <ChartBarIcon className="w-5 h-5" />
             Transfer Time Distribution
           </CardTitle>
-          <p className="text-xs text-gray-400 mt-1">
-            {format(dateRange.start, 'MMM d')} - {format(dateRange.end, 'MMM d')}
+          <p className="text-xs text-slate-400 mt-1">
+            From {format(dateRange.start, 'MMM d')} to {format(dateRange.end, 'MMM d')}
           </p>
         </CardHeader>
         <CardContent className="flex-1">
@@ -177,7 +176,6 @@ export const TransferTimeDistributionWidget = React.memo(function TransferTimeDi
             </motion.div>
           )}
         </CardContent>
-      </div>
     </WidgetCard>
   );
 });

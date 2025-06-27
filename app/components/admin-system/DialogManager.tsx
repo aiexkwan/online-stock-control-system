@@ -18,7 +18,6 @@ import { UploadFilesOnlyDialog } from '@/app/components/admin-dialogs/UploadFile
 import VoidPalletDialog from '@/app/components/admin-dialogs/VoidPalletDialog';
 import ViewHistoryDialog from '@/app/components/admin-dialogs/ViewHistoryDialog';
 import DatabaseUpdateDialog from '@/app/components/admin-dialogs/DatabaseUpdateDialog';
-import AskDatabaseDialog from '@/app/components/admin-dialogs/AskDatabaseDialog';
 import { ReprintInfoDialog } from '@/app/void-pallet/components/ReprintInfoDialog';
 
 
@@ -119,11 +118,6 @@ export function DialogManager({
         defaultTab={dialogData?.defaultTab}
       />
 
-      {/* Ask Database Dialog */}
-      <AskDatabaseDialog
-        isOpen={dialogs.askDatabase}
-        onClose={() => closeDialog('askDatabase')}
-      />
 
       {/* Reprint Info Dialog */}
       {dialogs.reprint && reprintData && (

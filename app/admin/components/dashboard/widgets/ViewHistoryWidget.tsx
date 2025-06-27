@@ -103,7 +103,7 @@ function SearchResultsList({ searchQuery }: SearchResultsListProps) {
       <div className="text-center py-8 text-slate-500">
         <MagnifyingGlassIcon className="w-10 h-10 mx-auto mb-2 opacity-50" />
         <p>Enter complete pallet number or series to search</p>
-        <p className="text-xs mt-2 text-slate-600">
+        <p className="text-xs mt-2 text-slate-400 font-medium">
           Examples: 140625/4 or 140625-40X973
         </p>
       </div>
@@ -145,8 +145,8 @@ function SearchResultsList({ searchQuery }: SearchResultsListProps) {
               )}
             </div>
             <div className="text-right flex-shrink-0">
-              <div className="text-sm text-purple-300">{formatDbTime(record.time, 'MMM dd, yyyy')}</div>
-              <div className="text-xs text-purple-200">{formatDbTime(record.time, 'HH:mm:ss')}</div>
+              <div className="text-sm text-purple-300 font-medium">{formatDbTime(record.time, 'MMM dd, yyyy')}</div>
+              <div className="text-xs text-purple-200 font-medium">{formatDbTime(record.time, 'HH:mm:ss')}</div>
             </div>
           </div>
         </div>
@@ -175,14 +175,14 @@ export const ViewHistoryWidget = React.memo(function ViewHistoryWidget({ widget,
       animate={{ opacity: 1, y: 0 }}
       className="h-full"
     >
-      <WidgetCard widgetType="VIEW_HISTORY" isEditMode={isEditMode} className="hover:border-blue-400/50 transition-all duration-300 flex flex-col">
+      <WidgetCard widgetType="VIEW_HISTORY" isEditMode={isEditMode} className="hover:border-blue-400/50 transition-all duration-300">
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center gap-2">
             <ClockIcon className="w-6 h-6 text-blue-400" />
             <span className="text-xl">View Pallet History</span>
           </CardTitle>
         </CardHeader>
-        <CardContent className="flex-1 flex flex-col space-y-3 overflow-hidden">
+        <div className="flex-1 flex flex-col space-y-3 overflow-hidden px-4 pb-4">
           {/* 搜尋欄 */}
           <form onSubmit={handleSearch} className="flex gap-2 flex-shrink-0">
             <Input
@@ -200,13 +200,13 @@ export const ViewHistoryWidget = React.memo(function ViewHistoryWidget({ widget,
           {/* 搜尋結果列表 */}
           <div className="flex-1 flex flex-col min-h-0">
             <div className="flex items-center mb-2 flex-shrink-0">
-              <h4 className="text-sm font-medium text-slate-400">Search Results</h4>
+              <h4 className="text-sm font-medium text-slate-400 font-medium">Search Results</h4>
             </div>
             <div className="flex-1 overflow-hidden">
               <SearchResultsList searchQuery={searchQuery} />
             </div>
           </div>
-        </CardContent>
+        </div>
       </WidgetCard>
     </motion.div>
   );

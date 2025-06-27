@@ -156,7 +156,7 @@ export const WarehouseWorkLevelAreaChart = React.memo(function WarehouseWorkLeve
     return (
       <WidgetCard widget={widget} isEditMode={true}>
         <div className="h-full flex items-center justify-center">
-          <p className="text-gray-400">Warehouse Work Level Chart</p>
+          <p className="text-slate-400 font-medium">Warehouse Work Level Chart</p>
         </div>
       </WidgetCard>
     );
@@ -164,14 +164,13 @@ export const WarehouseWorkLevelAreaChart = React.memo(function WarehouseWorkLeve
 
   return (
     <WidgetCard widget={widget}>
-      <div className="h-full flex flex-col">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-lg font-medium flex items-center gap-2">
+      <CardHeader className="pb-2">
+          <CardTitle className="widget-title flex items-center gap-2">
             <ChartBarIcon className="w-5 h-5" />
             Warehouse Work Level
           </CardTitle>
-          <p className="text-xs text-gray-400 mt-1">
-            Move activities by day
+          <p className="text-xs text-slate-400 mt-1">
+            From {format(dateRange.start, 'MMM d')} to {format(dateRange.end, 'MMM d')}
           </p>
         </CardHeader>
         <CardContent className="flex-1">
@@ -185,7 +184,7 @@ export const WarehouseWorkLevelAreaChart = React.memo(function WarehouseWorkLeve
               <p className="text-xs mt-1">{error}</p>
             </div>
           ) : chartData.length === 0 ? (
-            <div className="text-center text-gray-400 py-8">
+            <div className="text-center text-slate-400 font-medium py-8">
               <ChartBarIcon className="w-12 h-12 mx-auto mb-2 opacity-50" />
               <p>No work level data found</p>
             </div>
@@ -238,7 +237,6 @@ export const WarehouseWorkLevelAreaChart = React.memo(function WarehouseWorkLeve
             </motion.div>
           )}
         </CardContent>
-      </div>
     </WidgetCard>
   );
 });

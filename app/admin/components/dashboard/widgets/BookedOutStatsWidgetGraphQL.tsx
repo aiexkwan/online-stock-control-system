@@ -160,24 +160,17 @@ export const BookedOutStatsWidgetGraphQL = React.memo(function BookedOutStatsWid
     setIsDropdownOpen(false);
   };
 
-  // GraphQL 標識
-  const GraphQLBadge = () => (
-    <div className="absolute top-2 right-2 px-2 py-1 bg-gradient-to-r from-purple-600 to-pink-600 text-white text-xs rounded-full shadow-lg z-10">
-      GraphQL
-    </div>
-  );
 
   return (
     <WidgetCard widgetType="TRANSFER_STATS" isEditMode={isEditMode}>
       <div className="relative h-full">
-        <GraphQLBadge />
         <CardHeader className="pb-2">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 bg-gradient-to-r from-green-500 to-emerald-500 rounded-lg flex items-center justify-center">
                 <TruckIcon className="h-5 w-5 text-white" />
               </div>
-              <CardTitle className="text-lg font-medium bg-gradient-to-r from-green-300 via-emerald-300 to-green-200 bg-clip-text text-transparent">
+              <CardTitle className="widget-title bg-gradient-to-r from-green-300 via-emerald-300 to-green-200 bg-clip-text text-transparent">
                 Stock Transfer
               </CardTitle>
             </div>
@@ -240,7 +233,7 @@ export const BookedOutStatsWidgetGraphQL = React.memo(function BookedOutStatsWid
               topContent={
                 <div className="text-center mb-2">
                   <p className="text-3xl font-bold text-green-300">{processedData.totalCount}</p>
-                  <p className="text-xs text-green-400">Total Transfers</p>
+                  <p className="widget-text-sm text-green-400">Total Transfers</p>
                 </div>
               }
               tableData={processedData.operatorData}
@@ -252,20 +245,20 @@ export const BookedOutStatsWidgetGraphQL = React.memo(function BookedOutStatsWid
               )}
               tableContent={
                 <div className="bg-black/20 rounded-lg p-2 h-full overflow-hidden flex flex-col">
-                  <p className="text-xs text-green-400 mb-1 flex-shrink-0">Operator Stats</p>
+                  <p className="widget-text-sm text-green-400 mb-1 flex-shrink-0">Operator Stats</p>
                   {processedData.operatorData && processedData.operatorData.length > 0 ? (
                     <div className="flex-1 overflow-y-auto pr-1">
                       <div className="space-y-0.5">
                         {processedData.operatorData.slice(0, 5).map((operator) => (
                           <TableRow key={operator.operator_id}>
-                            <span className="text-green-200 text-xs">{operator.operator_id}</span>
-                            <span className="text-green-200 font-medium text-xs">{operator.count} ({operator.percentage}%)</span>
+                            <span className="text-green-200 widget-text-sm">{operator.operator_id}</span>
+                            <span className="text-green-200 font-medium widget-text-sm">{operator.count} ({operator.percentage}%)</span>
                           </TableRow>
                         ))}
                       </div>
                     </div>
                   ) : (
-                    <div className="text-xs text-slate-500 text-center py-2">No data</div>
+                    <div className="widget-text-sm text-slate-500 text-center py-2">No data</div>
                   )}
                 </div>
               }

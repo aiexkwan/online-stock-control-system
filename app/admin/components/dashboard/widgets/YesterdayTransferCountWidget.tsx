@@ -94,14 +94,13 @@ export const YesterdayTransferCountWidget = React.memo(function YesterdayTransfe
 
   return (
     <WidgetCard widget={widget}>
-      <div className="h-full flex flex-col">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-lg font-medium flex items-center gap-2">
+      <CardHeader className="pb-2">
+          <CardTitle className="widget-title flex items-center gap-2">
             <TruckIcon className="w-5 h-5" />
             Transfer Done
           </CardTitle>
-          <p className="text-xs text-gray-400 mt-1">
-            {format(new Date(dateRange.start), 'MMM d')} - {format(new Date(dateRange.end), 'MMM d')}
+          <p className="text-xs text-slate-400 mt-1">
+            From {format(new Date(dateRange.start), 'MMM d')} to {format(new Date(dateRange.end), 'MMM d')}
           </p>
         </CardHeader>
         <CardContent className="flex-1 flex items-center justify-center">
@@ -125,7 +124,7 @@ export const YesterdayTransferCountWidget = React.memo(function YesterdayTransfe
               >
                 {transferCount.toLocaleString()}
               </motion.div>
-              <p className="text-sm text-gray-400">Total Transfers</p>
+              <p className="text-xs text-slate-400">Total Transfers</p>
               
               {trend !== 0 && (
                 <div className={cn(
@@ -143,7 +142,6 @@ export const YesterdayTransferCountWidget = React.memo(function YesterdayTransfe
             </div>
           )}
         </CardContent>
-      </div>
     </WidgetCard>
   );
 });

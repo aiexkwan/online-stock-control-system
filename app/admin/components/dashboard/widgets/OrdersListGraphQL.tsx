@@ -7,7 +7,7 @@
 
 import React, { useState, useCallback, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { DocumentArrowUpIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
+import { DocumentArrowDownIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
 import { WidgetComponentProps } from '@/app/types/dashboard';
 import { CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { UniversalWidgetCard as WidgetCard } from '../UniversalWidgetCard';
@@ -195,27 +195,11 @@ export const OrdersListGraphQL = React.memo(function OrdersListGraphQL({ widget,
       className="h-full"
     >
       <WidgetCard widgetType="CUSTOM" isEditMode={isEditMode} className="flex flex-col">
-        {/* GraphQL 標識 */}
-        <div className="absolute top-2 right-2 px-2 py-1 bg-gradient-to-r from-purple-600/80 to-pink-600/80 text-white text-xs rounded-full shadow-lg backdrop-blur-sm z-10">
-          GraphQL
-        </div>
         
         <CardHeader className="pb-3">
-          <CardTitle className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-lg flex items-center justify-center">
-                <DocumentArrowUpIcon className="h-5 w-5 text-white" />
-              </div>
-              <span className="text-base font-medium text-slate-200">Order Upload History</span>
-            </div>
-            <button
-              onClick={() => !isEditMode && refetch()}
-              disabled={isEditMode || loading}
-              className="p-1.5 rounded-lg hover:bg-slate-700/50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              title="Refresh"
-            >
-              <ArrowPathIcon className={`w-4 h-4 text-slate-400 ${loading ? 'animate-spin' : ''}`} />
-            </button>
+          <CardTitle className="widget-title flex items-center gap-2">
+            <DocumentArrowDownIcon className="w-5 h-5" />
+            Order Upload History
           </CardTitle>
         </CardHeader>
         
@@ -227,6 +211,17 @@ export const OrdersListGraphQL = React.memo(function OrdersListGraphQL({ widget,
               <span>Order File</span>
               <span>Upload By</span>
             </div>
+          </div>
+          
+          <div className="flex items-center justify-end mb-2">
+            <button
+              onClick={() => !isEditMode && refetch()}
+              disabled={isEditMode || loading}
+              className="p-1.5 rounded-lg hover:bg-slate-700/50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              title="Refresh"
+            >
+              <ArrowPathIcon className={`w-4 h-4 text-slate-400 ${loading ? 'animate-spin' : ''}`} />
+            </button>
           </div>
           
           {/* Content */}
@@ -245,7 +240,7 @@ export const OrdersListGraphQL = React.memo(function OrdersListGraphQL({ widget,
           ) : orders.length === 0 ? (
             <div className="flex-1 flex items-center justify-center">
               <div className="text-center">
-                <DocumentArrowUpIcon className="w-12 h-12 text-slate-600 mx-auto mb-2" />
+                <DocumentArrowDownIcon className="w-12 h-12 text-slate-600 mx-auto mb-2" />
                 <p className="text-slate-500 text-sm">No orders uploaded</p>
               </div>
             </div>

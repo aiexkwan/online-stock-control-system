@@ -30,6 +30,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { 
   getProductByCode, 
   createProduct, 
@@ -52,6 +53,43 @@ interface AdminWidgetRendererProps {
   timeFrame: TimeFrame;
   index?: number;
 }
+
+// 統一的 Widget Wrapper Component
+const UnifiedWidgetWrapper: React.FC<{
+  children: React.ReactNode;
+  isCustomTheme?: boolean;
+  hasError?: boolean;
+  className?: string;
+  style?: React.CSSProperties;
+}> = ({ children, isCustomTheme, hasError, className, style }) => {
+  // 統一的背景樣式
+  const baseStyles = cn(
+    "h-full w-full rounded-xl transition-all duration-300",
+    "bg-slate-900/50 backdrop-blur-sm",
+    "border border-slate-700/50",
+    "overflow-hidden"
+  );
+  
+  // Combine base styles with className overrides
+  const finalStyles = cn(baseStyles, className);
+
+  if (hasError) {
+    return (
+      <div className={finalStyles}>
+        <div className="p-4 text-red-400 text-sm">
+          {children}
+        </div>
+      </div>
+    );
+  }
+
+  // 所有 widgets 都需要統一背景，不管是否 custom theme
+  return (
+    <div className={finalStyles} style={style}>
+      {children}
+    </div>
+  );
+};
 
 // 顏色配置
 const CHART_COLORS = [
@@ -174,7 +212,7 @@ export const AdminWidgetRenderer: React.FC<AdminWidgetRendererProps> = ({
             setData({
               value: 'N/A',
               label: config.title,
-              icon: <ClockIcon className="w-8 h-8" />
+              icon: <ClockIcon className="w-5 h-5" />
             });
             break;
           default:
@@ -323,10 +361,10 @@ export const AdminWidgetRenderer: React.FC<AdminWidgetRendererProps> = ({
         productTotals[p.product_code] = (productTotals[p.product_code] || 0) + (p.product_qty || 0);
       });
 
-      // 排序並取前5
+      // 排序並取前10
       const chartData = Object.entries(productTotals)
         .sort((a, b) => b[1] - a[1])
-        .slice(0, 5)
+        .slice(0, 10)
         .map(([name, value]) => ({ name, value }));
 
       setData({ chartData });
@@ -864,10 +902,14 @@ export const AdminWidgetRenderer: React.FC<AdminWidgetRendererProps> = ({
 
   // 渲染統計卡片
   const renderStatsCard = () => {
-    // 檢查是否為需要透明的四個小 widget
-    const transparentWidgets = ['Pending Updates', 'Processing', 'Completed Today', 'Failed'];
-    if (transparentWidgets.includes(config.title)) {
-      return <div className="h-full" style={{ opacity: 0 }}></div>;
+    // 檢查是否為需要顯示 "Not available" 的四個小 widget
+    const notAvailableWidgets = ['Pending Updates', 'Processing', 'Completed Today', 'Failed'];
+    if (notAvailableWidgets.includes(config.title)) {
+      return (
+        <div className="h-full flex flex-col items-center justify-center">
+          <div className="text-gray-500 text-sm">Not available</div>
+        </div>
+      );
     }
 
     // 如果啟用 GraphQL 且是生產統計類型，使用 GraphQL 組件
@@ -906,50 +948,41 @@ export const AdminWidgetRenderer: React.FC<AdminWidgetRendererProps> = ({
 
     return (
       <div className="h-full flex flex-col">
-        {/* Icon Container with Glow Effect */}
-        <div className="mb-4">
-          <div 
-            className="w-12 h-12 rounded-xl flex items-center justify-center"
-            style={{
-              background: 'rgba(59, 130, 246, 0.05)',
-              boxShadow: '0 0 20px rgba(59, 130, 246, 0.2)',
-              border: '1px solid rgba(59, 130, 246, 0.1)'
-            }}
-          >
-            {icon && React.cloneElement(icon, { className: "w-6 h-6 text-blue-400" })}
+        {/* Header with unified icon design */}
+        <CardHeader className="pb-2">
+          <CardTitle className="widget-title flex items-center gap-2">
+            {icon && React.cloneElement(icon, { className: "w-5 h-5" })}
+            {label}
+          </CardTitle>
+        </CardHeader>
+        
+        <CardContent className="flex-1 flex items-center justify-center">
+          <div className="text-center">
+            {/* Value */}
+            <motion.div
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ duration: 0.3 }}
+              className="text-4xl font-bold text-white mb-2"
+            >
+              {value?.toLocaleString() || '0'}
+            </motion.div>
+            
+            {/* Trend with Animation */}
+            {trend !== undefined && (
+              <div className={cn(
+                "flex items-center gap-1 text-sm justify-center",
+                trend > 0 ? "text-green-400" : "text-red-400"
+              )}>
+                {trend > 0 ? 
+                  <ArrowTrendingUpIcon className="w-4 h-4" /> :
+                  <ArrowTrendingDownIcon className="w-4 h-4" />
+                }
+                <span>{trend > 0 ? '+' : ''}{trend.toFixed(1)}%</span>
+              </div>
+            )}
           </div>
-        </div>
-        
-        {/* Value with Gradient Text */}
-        <div 
-          className="text-3xl font-bold mb-2"
-          style={{
-            background: 'linear-gradient(135deg, #ffffff 0%, rgba(255, 255, 255, 0.8) 100%)',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
-            backgroundClip: 'text'
-          }}
-        >
-          {value?.toLocaleString() || '0'}
-        </div>
-        
-        {/* Label */}
-        <div className="text-sm text-gray-400 mb-3">{label}</div>
-        
-        {/* Trend with Animation */}
-        {trend !== undefined && (
-          <div className={cn(
-            "flex items-center gap-1 text-sm font-medium",
-            trend > 0 ? "text-green-400" : "text-red-400"
-          )}>
-            {trend > 0 ? 
-              <ArrowTrendingUpIcon className="w-4 h-4" /> :
-              <ArrowTrendingDownIcon className="w-4 h-4" />
-            }
-            <span>{trend > 0 ? '+' : ''}{trend.toFixed(1)}%</span>
-            <span className="text-gray-500 font-normal">vs yesterday</span>
-          </div>
-        )}
+        </CardContent>
       </div>
     );
   };
@@ -958,8 +991,8 @@ export const AdminWidgetRenderer: React.FC<AdminWidgetRendererProps> = ({
   const renderChart = () => {
     // 如果啟用 GraphQL，檢查是否有對應的 GraphQL 組件
     if (ENABLE_GRAPHQL) {
-      // Top 5 Products by Quantity
-      if (config.title === 'Top 5 Products by Quantity' && config.chartType === 'bar') {
+      // Top 10 Products by Quantity
+      if (config.title === 'Top 10 Products by Quantity' && config.chartType === 'bar') {
         return (
           <Suspense fallback={
             <div className="animate-pulse h-full bg-slate-700 rounded"></div>
@@ -990,7 +1023,7 @@ export const AdminWidgetRenderer: React.FC<AdminWidgetRendererProps> = ({
         );
       }
       
-      // Staff Workload
+      // Staff Workload - 使用 GraphQL 版本
       if (config.title === 'Staff Workload' && config.chartType === 'line') {
         return (
           <Suspense fallback={
@@ -1021,11 +1054,35 @@ export const AdminWidgetRenderer: React.FC<AdminWidgetRendererProps> = ({
       const isWorkloadData = data?.userNames && data.userNames.length > 0;
       
       if (isWorkloadData) {
+        // 計算最大值以設定 Y 軸範圍
+        let maxValue = 0;
+        chartData.forEach(dataPoint => {
+          data.userNames.forEach((userName: string) => {
+            if (dataPoint[userName] > maxValue) {
+              maxValue = dataPoint[userName];
+            }
+          });
+        });
+        
+        // 增加 20% 的空間避免穿圖
+        const yAxisMax = Math.ceil(maxValue * 1.2);
+        
         ChartComponent = (
-          <LineChart data={chartData} margin={{ top: 5, right: 5, left: 0, bottom: 5 }}>
+          <LineChart data={chartData} margin={{ top: 10, right: 10, left: 10, bottom: 40 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
-            <XAxis dataKey="date" stroke="#94a3b8" fontSize={11} />
-            <YAxis stroke="#94a3b8" fontSize={11} />
+            <XAxis 
+              dataKey="date" 
+              stroke="#94a3b8" 
+              fontSize={10}
+              angle={-45}
+              textAnchor="end"
+            />
+            <YAxis 
+              stroke="#94a3b8" 
+              fontSize={11}
+              domain={[0, yAxisMax || 'auto']}
+              ticks={Array.from({length: 6}, (_, i) => Math.round(yAxisMax * i / 5))}
+            />
             <Tooltip 
               contentStyle={{ 
                 backgroundColor: '#1e293b',
@@ -1037,11 +1094,11 @@ export const AdminWidgetRenderer: React.FC<AdminWidgetRendererProps> = ({
             {data.userNames.map((userName: string, index: number) => (
               <Line 
                 key={userName}
-                type="monotone" 
+                type="natural" 
                 dataKey={userName} 
                 stroke={CHART_COLORS[index % CHART_COLORS.length]}
                 strokeWidth={2}
-                dot={{ r: 4 }}
+                dot={false}
                 activeDot={{ r: 6 }}
               />
             ))}
@@ -1073,9 +1130,9 @@ export const AdminWidgetRenderer: React.FC<AdminWidgetRendererProps> = ({
       }
     } else if (config.chartType === 'bar') {
       ChartComponent = (
-        <BarChart data={chartData} margin={{ top: 5, right: 5, left: 0, bottom: 5 }}>
+        <BarChart data={chartData} margin={{ top: 10, right: 10, left: 10, bottom: 50 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
-          <XAxis dataKey="name" stroke="#94a3b8" fontSize={11} angle={-45} textAnchor="end" height={60} />
+          <XAxis dataKey="name" stroke="#94a3b8" fontSize={10} angle={-45} textAnchor="end" />
           <YAxis stroke="#94a3b8" fontSize={11} />
           <Tooltip 
             contentStyle={{ 
@@ -1151,12 +1208,18 @@ export const AdminWidgetRenderer: React.FC<AdminWidgetRendererProps> = ({
     
     return (
       <div className="h-full flex flex-col">
-        <ResponsiveContainer width="100%" height={data?.legendData || (config.chartType === 'donut' && chartData.length > 0) ? "85%" : "100%"}>
+        <ResponsiveContainer 
+          width="100%" 
+          height={
+            config.chartType === 'line' && data?.userNames ? "100%" : 
+            (data?.legendData || (config.chartType === 'donut' && chartData.length > 0) ? "85%" : "100%")
+          }
+        >
           {ChartComponent}
         </ResponsiveContainer>
         
-        {/* Legend for workload chart */}
-        {data?.legendData && data.legendData.length > 0 && (
+        {/* Legend for workload chart - 移除此部分 */}
+        {data?.legendData && data.legendData.length > 0 && config.title !== 'Staff Workload' && (
           <div className="flex flex-wrap gap-2 justify-center mt-1">
             {data.legendData.map((item: any, index: number) => (
               <div key={item.value} className="flex items-center gap-1">
@@ -1381,7 +1444,7 @@ export const AdminWidgetRenderer: React.FC<AdminWidgetRendererProps> = ({
       case 'AvailableSoonWidget':
         return (
           <Suspense fallback={<div className="h-full w-full animate-pulse bg-slate-800/50" />}>
-            <AvailableSoonWidget title={config.title} />
+            <AvailableSoonWidget widget={config} isEditMode={false} />
           </Suspense>
         );
       case 'StockInventoryTable':
@@ -1706,7 +1769,7 @@ export const AdminWidgetRenderer: React.FC<AdminWidgetRendererProps> = ({
       case 'available-soon':
         return (
           <Suspense fallback={<div className="h-full w-full animate-pulse bg-slate-800/50" />}>
-            <AvailableSoonWidget title={config.title} />
+            <AvailableSoonWidget widget={config} isEditMode={false} />
           </Suspense>
         );
       default:
@@ -1718,55 +1781,40 @@ export const AdminWidgetRenderer: React.FC<AdminWidgetRendererProps> = ({
     }
   };
 
-  // For special components like HistoryTree, return with special handling
-  const specialComponents = [
-    'HistoryTree', 'PipelineFlowDiagram', 'WarehouseHeatmap', 'UploadZone', 
-    'UpdateForm', 'StockInventoryTable', 'OrdersListWidget', 'OtherFilesListWidget'
-  ];
-  
-  // Upload widgets should be rendered without wrapper
-  const uploadComponents = ['UploadFilesWidget', 'UploadOrdersWidget', 'UploadProductSpecWidget', 'UploadPhotoWidget'];
-  
-  if (config.component && uploadComponents.includes(config.component)) {
-    return renderContent();
-  }
-  
-  if (config.component && specialComponents.includes(config.component)) {
-    return (
-      <div className="h-full w-full p-6">
-        {renderContent()}
-      </div>
-    );
-  }
-
-  // For regular widgets in custom themes, they're already wrapped by CustomThemeLayout
+  // Check if this is a custom theme
   const isCustomTheme = theme === 'injection' || theme === 'pipeline' || theme === 'warehouse' || theme === 'upload' || theme === 'update' || theme === 'stock-management' || theme === 'system' || theme === 'analysis';
-  if (isCustomTheme) {
-    // Use less padding for chart widgets to maximize space
-    const padding = config.type === 'chart' ? 'p-3' : 'p-6';
-    return (
-      <div className={`h-full w-full ${padding}`}>
-        {error ? (
-          <div className="text-red-400 text-sm">Error: {error}</div>
-        ) : (
-          renderContent()
-        )}
-      </div>
-    );
+  
+  // Special components that need minimal wrapper (like HistoryTree)
+  const minimalWrapperComponents = ['HistoryTree'];
+  
+  // Components that need their own padding
+  const paddedComponents = ['UploadFilesWidget', 'UploadOrdersWidget', 'UploadProductSpecWidget', 'UploadPhotoWidget'];
+  
+  // Determine wrapper class
+  let wrapperClass = '';
+  if (!isCustomTheme) {
+    wrapperClass = 'p-4';
+  } else if (config.component && paddedComponents.includes(config.component)) {
+    wrapperClass = 'p-6';
   }
-
-  // Default layout widgets
+  
+  // Special handling for components that need transparent background
+  const transparentComponents = ['HistoryTree', 'EmptyPlaceholderWidget'];
+  const isTransparent = config.component && transparentComponents.includes(config.component);
+  
+  // Use unified wrapper for ALL widgets
   return (
-    <div 
-      style={{ gridArea: config.gridArea }}
-      className="bg-slate-800/50 backdrop-blur rounded-lg p-4 overflow-hidden flex flex-col h-full"
-    >
-      {error ? (
-        <div className="text-red-400 text-sm">Error: {error}</div>
-      ) : (
-        renderContent()
+    <UnifiedWidgetWrapper 
+      isCustomTheme={isCustomTheme}
+      hasError={!!error}
+      className={cn(
+        wrapperClass,
+        isTransparent && '!bg-transparent !border-0 !backdrop-blur-0' // Override for transparent widgets
       )}
-    </div>
+      style={!isCustomTheme ? { gridArea: config.gridArea } : undefined}
+    >
+      {error ? `Error: ${error}` : renderContent()}
+    </UnifiedWidgetWrapper>
   );
 };
 
@@ -1778,7 +1826,7 @@ function getMockData(config: AdminWidgetConfig): any {
         value: Math.floor(Math.random() * 1000) + 100,
         trend: (Math.random() - 0.5) * 20,
         label: config.title,
-        icon: <CubeIcon className="w-8 h-8" />
+        icon: <CubeIcon className="w-5 h-5" />
       };
 
     case 'chart':
@@ -2021,14 +2069,12 @@ function ProductUpdateComponent() {
   };
 
   return (
-    <div className="h-full bg-gradient-to-br from-slate-900/50 via-orange-900/20 to-slate-800/50">
+    <div className="h-full">
       <div className="h-full overflow-y-auto">
         {/* Search Section */}
         {!showForm && (
           <div className="relative group mb-6 p-6">
-            <div className="absolute inset-0 bg-gradient-to-r from-slate-800/50 to-orange-900/30 rounded-2xl blur-xl"></div>
-            <div className="relative bg-slate-800/40 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-6 shadow-xl shadow-orange-900/20 hover:border-orange-500/30 transition-all duration-300">
-              <div className="absolute inset-0 bg-gradient-to-r from-orange-500/5 via-transparent to-amber-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-2xl"></div>
+            <div className="relative bg-slate-800/40 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-6">
               <div className="relative z-10">
                 <h3 className="text-lg font-medium bg-gradient-to-r from-orange-300 to-amber-300 bg-clip-text text-transparent mb-4">
                   Update Product
@@ -2050,7 +2096,7 @@ function ProductUpdateComponent() {
                           if (input) handleSearch(input.value);
                         }}
                         disabled={isLoading}
-                        className="bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-500 hover:to-amber-500 disabled:from-slate-600 disabled:to-slate-600 text-white px-6 shadow-lg hover:shadow-orange-500/25 hover:scale-105 active:scale-95 transition-all duration-300"
+                        className="bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-500 hover:to-amber-500 disabled:from-slate-600 disabled:to-slate-600 text-white px-6 transition-all duration-300"
                       >
                         {isLoading ? (
                           <>
@@ -2111,9 +2157,7 @@ function ProductUpdateComponent() {
         {/* Create Confirmation Dialog */}
         {showCreateDialog && (
           <div className="relative group mb-6 px-6">
-            <div className="absolute inset-0 bg-gradient-to-r from-slate-800/50 to-yellow-900/30 rounded-2xl blur-xl"></div>
-            <div className="relative bg-slate-800/40 backdrop-blur-xl border border-yellow-500/30 rounded-2xl p-6 shadow-xl shadow-yellow-900/20">
-              <div className="absolute inset-0 bg-gradient-to-r from-yellow-500/5 via-transparent to-amber-500/5 opacity-100 rounded-2xl"></div>
+            <div className="relative bg-slate-800/40 backdrop-blur-xl border border-yellow-500/30 rounded-2xl p-6">
               <div className="relative z-10">
                 <div className="flex items-start space-x-4">
                   <ExclamationTriangleIcon className="w-6 h-6 text-yellow-400 mt-1 flex-shrink-0" />
@@ -2128,7 +2172,7 @@ function ProductUpdateComponent() {
                     <div className="flex space-x-3">
                       <Button
                         onClick={handleConfirmCreate}
-                        className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white shadow-lg hover:shadow-green-500/25 hover:scale-105 active:scale-95 transition-all duration-300"
+                        className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white transition-all duration-300"
                       >
                         <CheckCircleIcon className="w-4 h-4 mr-2" />
                         Yes, Create Product
@@ -2152,10 +2196,7 @@ function ProductUpdateComponent() {
         {productData && !showForm && (
           <div className="px-6">
             <div className="relative group">
-              <div className="absolute inset-0 bg-gradient-to-r from-slate-800/50 to-orange-900/30 rounded-2xl blur-xl"></div>
-              <div className="relative bg-slate-800/40 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-6 shadow-xl shadow-orange-900/20 hover:border-orange-500/30 transition-all duration-300">
-                <div className="absolute inset-0 bg-gradient-to-r from-orange-500/5 via-transparent to-amber-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-2xl"></div>
-                <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-orange-400/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-t-2xl"></div>
+              <div className="relative bg-slate-800/40 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-6">
                 <div className="relative z-10">
                   <div className="flex items-center justify-between mb-4">
                     <h4 className="text-lg font-medium bg-gradient-to-r from-orange-300 to-amber-300 bg-clip-text text-transparent">
@@ -2164,7 +2205,7 @@ function ProductUpdateComponent() {
                     <Button
                       onClick={handleEdit}
                       size="sm"
-                      className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white shadow-lg hover:shadow-blue-500/25 hover:scale-105 active:scale-95 transition-all duration-300"
+                      className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white transition-all duration-300"
                     >
                       <PencilIcon className="w-4 h-4 mr-2" />
                       Edit Product
@@ -2187,9 +2228,7 @@ function ProductUpdateComponent() {
         {showForm && (
           <div className="px-6">
             <div className="relative group">
-              <div className="absolute inset-0 bg-gradient-to-r from-slate-800/50 to-orange-900/30 rounded-2xl blur-xl"></div>
-              <div className="relative bg-slate-800/40 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-6 shadow-xl shadow-orange-900/20">
-                <div className="absolute inset-0 bg-gradient-to-r from-orange-500/5 via-transparent to-amber-500/5 opacity-100 rounded-2xl"></div>
+              <div className="relative bg-slate-800/40 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-6">
                 <div className="relative z-10">
                   <form onSubmit={handleSubmit} className="space-y-6">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -2519,14 +2558,12 @@ function SupplierUpdateComponent() {
   };
 
   return (
-    <div className="h-full bg-gradient-to-br from-slate-900/50 via-blue-900/20 to-slate-800/50">
+    <div className="h-full">
       <div className="h-full overflow-y-auto">
         {/* Search Section */}
         {!showForm && (
           <div className="relative group mb-6 p-6">
-            <div className="absolute inset-0 bg-gradient-to-r from-slate-800/50 to-blue-900/30 rounded-2xl blur-xl"></div>
-            <div className="relative bg-slate-800/40 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-6 shadow-xl shadow-blue-900/20 hover:border-blue-500/30 transition-all duration-300">
-              <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 via-transparent to-cyan-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-2xl"></div>
+            <div className="relative bg-slate-800/40 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-6">
               <div className="relative z-10">
                 <h3 className="text-lg font-medium bg-gradient-to-r from-blue-300 to-cyan-300 bg-clip-text text-transparent mb-4">
                   Update Supplier
@@ -2548,7 +2585,7 @@ function SupplierUpdateComponent() {
                           if (input) handleSearch(input.value);
                         }}
                         disabled={isLoading}
-                        className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 disabled:from-slate-600 disabled:to-slate-600 text-white px-6 shadow-lg hover:shadow-blue-500/25 hover:scale-105 active:scale-95 transition-all duration-300"
+                        className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 disabled:from-slate-600 disabled:to-slate-600 text-white px-6 transition-all duration-300"
                       >
                         {isLoading ? (
                           <>
@@ -2609,9 +2646,7 @@ function SupplierUpdateComponent() {
         {/* Create Confirmation Dialog */}
         {showCreateDialog && (
           <div className="relative group mb-6 px-6">
-            <div className="absolute inset-0 bg-gradient-to-r from-slate-800/50 to-yellow-900/30 rounded-2xl blur-xl"></div>
-            <div className="relative bg-slate-800/40 backdrop-blur-xl border border-yellow-500/30 rounded-2xl p-6 shadow-xl shadow-yellow-900/20">
-              <div className="absolute inset-0 bg-gradient-to-r from-yellow-500/5 via-transparent to-amber-500/5 opacity-100 rounded-2xl"></div>
+            <div className="relative bg-slate-800/40 backdrop-blur-xl border border-yellow-500/30 rounded-2xl p-6">
               <div className="relative z-10">
                 <div className="flex items-start space-x-4">
                   <ExclamationTriangleIcon className="w-6 h-6 text-yellow-400 mt-1 flex-shrink-0" />
@@ -2626,7 +2661,7 @@ function SupplierUpdateComponent() {
                     <div className="flex space-x-3">
                       <Button
                         onClick={handleConfirmCreate}
-                        className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white shadow-lg hover:shadow-green-500/25 hover:scale-105 active:scale-95 transition-all duration-300"
+                        className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white transition-all duration-300"
                       >
                         <CheckCircleIcon className="w-4 h-4 mr-2" />
                         Yes, Create Supplier
@@ -2650,10 +2685,7 @@ function SupplierUpdateComponent() {
         {supplierData && !showForm && (
           <div className="px-6">
             <div className="relative group">
-              <div className="absolute inset-0 bg-gradient-to-r from-slate-800/50 to-blue-900/30 rounded-2xl blur-xl"></div>
-              <div className="relative bg-slate-800/40 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-6 shadow-xl shadow-blue-900/20 hover:border-blue-500/30 transition-all duration-300">
-                <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 via-transparent to-cyan-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-2xl"></div>
-                <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-blue-400/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-t-2xl"></div>
+              <div className="relative bg-slate-800/40 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-6">
                 <div className="relative z-10">
                   <div className="flex items-center justify-between mb-4">
                     <h4 className="text-lg font-medium bg-gradient-to-r from-blue-300 to-cyan-300 bg-clip-text text-transparent">
@@ -2662,7 +2694,7 @@ function SupplierUpdateComponent() {
                     <Button
                       onClick={handleEdit}
                       size="sm"
-                      className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white shadow-lg hover:shadow-blue-500/25 hover:scale-105 active:scale-95 transition-all duration-300"
+                      className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white transition-all duration-300"
                     >
                       <PencilIcon className="w-4 h-4 mr-2" />
                       Edit Supplier
@@ -2682,9 +2714,7 @@ function SupplierUpdateComponent() {
         {showForm && (
           <div className="px-6">
             <div className="relative group">
-              <div className="absolute inset-0 bg-gradient-to-r from-slate-800/50 to-blue-900/30 rounded-2xl blur-xl"></div>
-              <div className="relative bg-slate-800/40 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-6 shadow-xl shadow-blue-900/20">
-                <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 via-transparent to-cyan-500/5 opacity-100 rounded-2xl"></div>
+              <div className="relative bg-slate-800/40 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-6">
                 <div className="relative z-10">
                   <form onSubmit={handleSubmit} className="space-y-6">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -2731,7 +2761,7 @@ function SupplierUpdateComponent() {
                       <Button
                         type="submit"
                         disabled={isLoading}
-                        className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 disabled:from-slate-600 disabled:to-slate-600 text-white shadow-lg hover:shadow-blue-500/25 hover:scale-105 active:scale-95 transition-all duration-300"
+                        className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 disabled:from-slate-600 disabled:to-slate-600 text-white transition-all duration-300"
                       >
                         {isLoading ? (
                           <>

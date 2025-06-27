@@ -396,6 +396,37 @@ export const GET_ORDER_PROGRESS = gql`
 `;
 
 /**
+ * 獲取所有未完成訂單
+ * 用於 Warehouse Dashboard - Order State List Widget (未完成訂單)
+ */
+export const GET_PENDING_ORDERS = gql`
+  query GetPendingOrders {
+    data_orderCollection(
+      filter: {
+        or: [
+          { loaded_qty: { is: null } },
+          { loaded_qty: { lt: "product_qty" } }
+        ]
+      }
+      orderBy: [{ created_at: DescNullsLast }]
+    ) {
+      edges {
+        node {
+          uuid
+          order_ref
+          account_num
+          product_code
+          product_desc
+          product_qty
+          loaded_qty
+          created_at
+        }
+      }
+    }
+  }
+`;
+
+/**
  * 獲取倉庫部門轉移記錄
  * 用於 Warehouse Dashboard - Transfer List Widget
  * 注意：需要在客戶端過濾部門，因為 GraphQL 不支援 nested filter

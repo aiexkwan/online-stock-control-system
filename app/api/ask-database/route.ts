@@ -3,6 +3,7 @@ import { createClient } from '@/app/utils/supabase/server';
 import { LRUCache } from 'lru-cache';
 import OpenAI from 'openai';
 import type { ChatCompletionMessageParam } from 'openai/resources/chat/completions';
+import { enhanceQueryWithTemplate } from '@/lib/query-templates';
 
 // 不允許使用 Ask Database 功能的用戶（黑名單）
 const BLOCKED_USERS = [
@@ -57,8 +58,8 @@ interface QueryResult {
   timestamp: string;
 }
 
-process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[Ask Database] 🚀 OpenAI SQL Generation Mode - Build 2025-01-03');
-process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[Ask Database] ✅ Using OpenAI for SQL generation and natural language responses');
+process.env.NODE_ENV !== "production" && console.log('[Ask Database] 🚀 OpenAI SQL Generation Mode - Build 2025-01-03');
+process.env.NODE_ENV !== "production" && console.log('[Ask Database] ✅ Using OpenAI for SQL generation and natural language responses');
 
 export async function POST(request: NextRequest) {
   const startTime = Date.now();
@@ -66,14 +67,14 @@ export async function POST(request: NextRequest) {
   let userName: string | null = null;
   
   try {
-    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[Ask Database] 🚀 OpenAI Mode - Request received');
+    process.env.NODE_ENV !== "production" && console.log('[Ask Database] 🚀 OpenAI Mode - Request received');
     
     const { question, sessionId } = await request.json();
-    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[Ask Database] Question:', question);
-    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[Ask Database] Session ID:', sessionId);
+    process.env.NODE_ENV !== "production" && console.log('[Ask Database] Question:', question);
+    process.env.NODE_ENV !== "production" && console.log('[Ask Database] Session ID:', sessionId);
 
     // 1. 並行執行權限檢查和會話歷史獲取
-    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[Ask Database] Starting parallel operations...');
+    process.env.NODE_ENV !== "production" && console.log('[Ask Database] Starting parallel operations...');
     const [hasPermission, conversationHistory, userInfo] = await Promise.all([
       checkUserPermission(),
       Promise.resolve(getConversationHistory(sessionId)),
@@ -81,7 +82,7 @@ export async function POST(request: NextRequest) {
     ]);
 
     if (!hasPermission) {
-      process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[Ask Database] Permission denied');
+      process.env.NODE_ENV !== "production" && console.log('[Ask Database] Permission denied');
       return NextResponse.json(
         { error: 'You do not have permission to use the database query feature' },
         { status: 403 }
@@ -90,45 +91,92 @@ export async function POST(request: NextRequest) {
     
     userEmail = userInfo.email;
     userName = userInfo.name;
-    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[Ask Database] User info:', { email: userEmail, name: userName });
-    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[Ask Database] Permission granted, conversation history length:', conversationHistory.length);
+    process.env.NODE_ENV !== "production" && console.log('[Ask Database] User info:', { email: userEmail, name: userName });
+    process.env.NODE_ENV !== "production" && console.log('[Ask Database] Permission granted, conversation history length:', conversationHistory.length);
 
-    // 2. 檢查緩存
-    const cacheKey = generateCacheKey(question, conversationHistory);
-    const cachedResult = queryCache.get(cacheKey);
+    // 2. 檢查智能緩存（多層）
+    process.env.NODE_ENV !== "production" && console.log('[Ask Database] 🔍 Checking intelligent cache system...');
+    const cachedResult = await checkIntelligentCache(question, userEmail);
     if (cachedResult) {
-      process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[Ask Database] 🎯 Cache hit - returning cached result');
+      const cacheLevel = cachedResult.cacheLevel || 'L1';
+      process.env.NODE_ENV !== "production" && console.log(`[Ask Database] 🎯 ${cacheLevel} Cache hit - returning cached result`);
       
-      // 異步保存聊天記錄
-      saveQueryRecordAsync(question, cachedResult.answer, userName, cachedResult.tokensUsed, cachedResult.sql);
+      // 異步保存聊天記錄（記錄緩存命中）
+      const safeResult = cachedResult.result || {};
+      const safeData = safeResult.data || [];
+      const safeExecutionTime = cachedResult.responseTime || safeResult.executionTime || 0;
+      
+      saveQueryRecordEnhanced(
+        question, 
+        cachedResult.answer, 
+        userName, 
+        0, // 緩存命中不耗費 token
+        cachedResult.sql || '',
+        cachedResult.result || null,
+        safeExecutionTime,
+        safeData.length,
+        'cached'
+      );
       
       return NextResponse.json({
         ...cachedResult,
         cached: true,
+        cacheLevel,
         timestamp: new Date().toISOString(),
         responseTime: Date.now() - startTime,
       });
     }
-    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[Ask Database] Cache miss');
+    
+    // 3. 檢查舊版 LRU 緩存（向後兼容）
+    const lruCacheKey = generateCacheKey(question, conversationHistory);
+    const lruCachedResult = queryCache.get(lruCacheKey);
+    if (lruCachedResult) {
+      process.env.NODE_ENV !== "production" && console.log('[Ask Database] 🎯 LRU Cache hit - returning cached result');
+      
+      saveQueryRecordAsync(question, lruCachedResult.answer, userName, lruCachedResult.tokensUsed, lruCachedResult.sql);
+      
+      return NextResponse.json({
+        ...lruCachedResult,
+        cached: true,
+        cacheLevel: 'LRU',
+        timestamp: new Date().toISOString(),
+        responseTime: Date.now() - startTime,
+      });
+    }
+    process.env.NODE_ENV !== "production" && console.log('[Ask Database] All cache layers missed');
 
     // 3. 使用 OpenAI 生成 SQL 查詢
-    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[Ask Database] 🧠 Generating SQL with OpenAI...');
+    process.env.NODE_ENV !== "production" && console.log('[Ask Database] 🧠 Generating SQL with OpenAI...');
     const { sql, tokensUsed } = await generateSQLWithOpenAI(question, conversationHistory, userEmail);
-    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[Ask Database] Generated SQL:', sql);
-    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[Ask Database] Tokens used:', tokensUsed);
+    process.env.NODE_ENV !== "production" && console.log('[Ask Database] Generated SQL:', sql);
+    process.env.NODE_ENV !== "production" && console.log('[Ask Database] Tokens used:', tokensUsed);
 
-    // 4. 執行 SQL 查詢
-    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[Ask Database] 🚀 Executing SQL query...');
-    const queryResult = await executeSQLQuery(sql);
-    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[Ask Database] SQL result:', {
-      rowCount: queryResult.data.length,
-      executionTime: queryResult.executionTime
-    });
+    // 4. 檢查 SQL 結果緩存 (L3)
+    process.env.NODE_ENV !== "production" && console.log('[Ask Database] 🔍 Checking SQL cache (L3)...');
+    const sqlCacheResult = await checkSQLCache(sql);
+    let queryResult;
+    
+    if (sqlCacheResult) {
+      process.env.NODE_ENV !== "production" && console.log('[Ask Database] 🎯 L3 SQL cache hit');
+      queryResult = {
+        data: sqlCacheResult.result?.data || [],
+        rowCount: sqlCacheResult.result?.rowCount || 0,
+        executionTime: sqlCacheResult.executionTime || 0
+      };
+    } else {
+      // 5. 執行 SQL 查詢
+      process.env.NODE_ENV !== "production" && console.log('[Ask Database] 🚀 Executing SQL query...');
+      queryResult = await executeSQLQuery(sql);
+      process.env.NODE_ENV !== "production" && console.log('[Ask Database] SQL result:', {
+        rowCount: queryResult.data.length,
+        executionTime: queryResult.executionTime
+      });
+    }
 
     // 5. 使用 OpenAI 生成自然語言回應
-    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[Ask Database] 📝 Generating natural language response with OpenAI...');
+    process.env.NODE_ENV !== "production" && console.log('[Ask Database] 📝 Generating natural language response with OpenAI...');
     const { answer, additionalTokens } = await generateAnswerWithOpenAI(question, sql, queryResult);
-    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[Ask Database] Natural language response generated');
+    process.env.NODE_ENV !== "production" && console.log('[Ask Database] Natural language response generated');
 
     const totalTokens = tokensUsed + additionalTokens;
     const complexity = determineComplexity(sql, queryResult.data.length);
@@ -145,9 +193,10 @@ export async function POST(request: NextRequest) {
     };
 
     // 6. 並行執行緩存保存、會話歷史保存和聊天記錄保存
-    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[Ask Database] 💾 Saving results...');
+    process.env.NODE_ENV !== "production" && console.log('[Ask Database] 💾 Saving results...');
+    const finalCacheKey = generateCacheKey(question, conversationHistory);
     const saveOperations = [
-      Promise.resolve(queryCache.set(cacheKey, result)),
+      Promise.resolve(queryCache.set(finalCacheKey, result)),
       Promise.resolve(saveConversationHistory(sessionId, {
       timestamp: result.timestamp,
       question,
@@ -155,7 +204,17 @@ export async function POST(request: NextRequest) {
         answer,
       result: queryResult,
       })),
-      saveQueryRecordAsync(question, answer, userName, totalTokens, sql)
+      saveQueryRecordEnhanced(
+        question,
+        answer,
+        userName,
+        totalTokens,
+        sql,
+        queryResult,
+        (queryResult && queryResult.executionTime ? queryResult.executionTime : 0),
+        (queryResult && queryResult.data ? queryResult.data.length : 0),
+        complexity
+      )
     ];
 
     // 不等待保存操作完成，直接返回結果
@@ -163,7 +222,7 @@ export async function POST(request: NextRequest) {
       console.error('[Ask Database] Save operations failed:', error);
     });
 
-    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[Ask Database] 🎉 OpenAI request completed successfully in', Date.now() - startTime, 'ms');
+    process.env.NODE_ENV !== "production" && console.log('[Ask Database] 🎉 OpenAI request completed successfully in', Date.now() - startTime, 'ms');
     return NextResponse.json(result);
 
   } catch (error: any) {
@@ -209,11 +268,22 @@ async function generateSQLWithOpenAI(question: string, conversationHistory: Conv
     const promptPath = path.join(process.cwd(), 'docs', 'openAIprompt');
     const promptContent = fs.readFileSync(promptPath, 'utf8');
 
+    // 嘗試使用查詢模板系統
+    const templateResult = enhanceQueryWithTemplate(question);
+    
     // 獲取同日對話歷史
     const dailyHistory = await getDailyQueryHistory(userEmail);
     
     // 構建包含同日歷史的 prompt
     let enhancedPrompt = promptContent;
+    
+    // 如果有匹配的模板，加入提示
+    if (templateResult.enhanced && templateResult.hint) {
+      enhancedPrompt += '\n\n### Query Template Suggestion:\n';
+      enhancedPrompt += templateResult.hint;
+      enhancedPrompt += '\nConsider using this optimized SQL template:\n';
+      enhancedPrompt += '```sql\n' + templateResult.template + '\n```\n';
+    }
     
     if (dailyHistory.length > 0) {
       enhancedPrompt += '\n\n### Previous Q&A history:\n';
@@ -254,7 +324,7 @@ async function generateSQLWithOpenAI(question: string, conversationHistory: Conv
       content: question
     });
 
-    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[OpenAI SQL] Sending request to OpenAI...');
+    process.env.NODE_ENV !== "production" && console.log('[OpenAI SQL] Sending request to OpenAI...');
     const response = await openai.chat.completions.create({
       model: 'gpt-4o',
       messages: messages as any,
@@ -302,7 +372,7 @@ async function generateSQLWithOpenAI(question: string, conversationHistory: Conv
       throw new Error('Only SELECT queries are allowed');
     }
 
-    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[OpenAI SQL] SQL generated successfully');
+    process.env.NODE_ENV !== "production" && console.log('[OpenAI SQL] SQL generated successfully');
     return { sql, tokensUsed };
 
   } catch (error: any) {
@@ -317,7 +387,7 @@ async function executeSQLQuery(sql: string): Promise<{ data: any[]; rowCount: nu
   const startTime = Date.now();
 
   try {
-    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[SQL Execution] Executing query:', sql);
+    process.env.NODE_ENV !== "production" && console.log('[SQL Execution] Executing query:', sql);
     
     const { data, error } = await supabase.rpc('execute_sql_query', { query_text: sql });
     
@@ -329,7 +399,7 @@ async function executeSQLQuery(sql: string): Promise<{ data: any[]; rowCount: nu
     }
 
     const resultData = Array.isArray(data) ? data : [];
-    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[SQL Execution] Query executed successfully, rows:', resultData.length);
+    process.env.NODE_ENV !== "production" && console.log('[SQL Execution] Query executed successfully, rows:', resultData.length);
 
     return {
       data: resultData,
@@ -375,7 +445,7 @@ Please provide a natural English response to the user's question based on these 
       }
     ];
 
-    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[OpenAI Answer] Generating natural language response...');
+    process.env.NODE_ENV !== "production" && console.log('[OpenAI Answer] Generating natural language response...');
     const response = await openai.chat.completions.create({
       model: 'gpt-4o',
       messages: messages as any,
@@ -390,7 +460,7 @@ Please provide a natural English response to the user's question based on these 
       throw new Error('OpenAI returned empty answer');
     }
 
-    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[OpenAI Answer] Natural language response generated successfully');
+    process.env.NODE_ENV !== "production" && console.log('[OpenAI Answer] Natural language response generated successfully');
     return { answer: answer.trim(), additionalTokens: tokensUsed };
 
   } catch (error: any) {
@@ -457,10 +527,10 @@ async function getUserInfo(): Promise<{ email: string | null; name: string | nul
   try {
     // 在開發環境中，如果沒有認證用戶，使用測試用戶
     if (process.env.NODE_ENV === 'development') {
-    const { data: { user } } = await supabase.auth.getUser();
-    
-    if (!user?.email) {
-        process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[getUserInfo] Development mode: No authenticated user, using test user');
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user?.email) {
+        process.env.NODE_ENV !== "production" && console.log('[getUserInfo] Development mode: No authenticated user, using test user');
         const { data: testUser, error } = await supabase
           .from('data_id')
           .select('name, email')
@@ -469,7 +539,7 @@ async function getUserInfo(): Promise<{ email: string | null; name: string | nul
         
         if (testUser) {
           const testEmail = testUser.email || `test-user-${testUser.name.toLowerCase()}@pennineindustries.com`;
-          process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[getUserInfo] Using test user:', testUser.name, 'with email:', testEmail);
+          process.env.NODE_ENV !== "production" && console.log('[getUserInfo] Using test user:', testUser.name, 'with email:', testEmail);
           return { email: testEmail, name: testUser.name };
         }
       }
@@ -478,19 +548,19 @@ async function getUserInfo(): Promise<{ email: string | null; name: string | nul
     const { data: { user } } = await supabase.auth.getUser();
     
     if (!user?.email) {
-      process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[getUserInfo] No authenticated user found');
+      process.env.NODE_ENV !== "production" && console.log('[getUserInfo] No authenticated user found');
       return { email: null, name: null };
     }
 
     // 檢查緩存
     const cachedName = userNameCache.get(user.email);
     if (cachedName) {
-      process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[getUserInfo] Using cached user name for:', user.email);
+      process.env.NODE_ENV !== "production" && console.log('[getUserInfo] Using cached user name for:', user.email);
       return { email: user.email, name: cachedName };
     }
 
     // 從 data_id 表獲取用戶名
-    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[getUserInfo] Fetching user name from database for:', user.email);
+    process.env.NODE_ENV !== "production" && console.log('[getUserInfo] Fetching user name from database for:', user.email);
     const { data: userData, error } = await supabase
       .from('data_id')
       .select('name')
@@ -498,13 +568,13 @@ async function getUserInfo(): Promise<{ email: string | null; name: string | nul
       .single();
 
     if (error || !userData) {
-      process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[getUserInfo] User not found in data_id table:', user.email, 'Error:', error?.message);
+      process.env.NODE_ENV !== "production" && console.log('[getUserInfo] User not found in data_id table:', user.email, 'Error:', error?.message);
       return { email: user.email, name: user.email };
     }
 
     // 緩存用戶名
     userNameCache.set(user.email, userData.name);
-    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[getUserInfo] User name cached:', userData.name);
+    process.env.NODE_ENV !== "production" && console.log('[getUserInfo] User name cached:', userData.name);
     
     return { email: user.email, name: userData.name };
   } catch (error) {
@@ -513,11 +583,181 @@ async function getUserInfo(): Promise<{ email: string | null; name: string | nul
   }
 }
 
-// 異步保存聊天記錄
-async function saveQueryRecordAsync(query: string, answer: string, user: string | null, tokenUsage: number = 0, sqlQuery: string = ''): Promise<void> {
+// 生成查詢雜湊值
+function generateQueryHash(query: string): string {
+  const normalizedQuery = query.toLowerCase().trim().replace(/\s+/g, ' ');
+  return Buffer.from(normalizedQuery).toString('base64').slice(0, 32);
+}
+
+// 檢查智能緩存系統（多層）
+async function checkIntelligentCache(question: string, userEmail: string | null): Promise<any | null> {
+  const supabase = createClient();
+  
+  try {
+    // L1: 精確匹配緩存（最近24小時）
+    const queryHash = generateQueryHash(question);
+    const exactMatch = await supabase
+      .from('query_record')
+      .select('*')
+      .eq('query_hash', queryHash)
+      .gte('created_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString())
+      .order('created_at', { ascending: false })
+      .limit(1);
+
+    if (exactMatch.data && exactMatch.data.length > 0) {
+      const record = exactMatch.data[0];
+      process.env.NODE_ENV !== "production" && console.log('[checkIntelligentCache] L1 exact match found');
+      
+      // 安全處理 result_json，確保有正確結構
+      const safeResult = record.result_json || {
+        data: [],
+        rowCount: 0,
+        executionTime: record.execution_time || 0
+      };
+      
+      return {
+        question: record.query,
+        sql: record.sql_query,
+        result: safeResult,
+        answer: record.answer,
+        complexity: record.complexity || 'simple',
+        tokensUsed: 0,
+        cached: true,
+        cacheLevel: 'L1-exact',
+        responseTime: 50,
+        timestamp: record.created_at
+      };
+    }
+
+    // L2: 語義相似度緩存（最近7天，相似度 > 85%）
+    const similarQueries = await supabase
+      .from('query_record')
+      .select('*')
+      .gte('created_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString())
+      .order('created_at', { ascending: false })
+      .limit(50); // 取最近50條記錄進行相似度比較
+
+    if (similarQueries.data && similarQueries.data.length > 0) {
+      // 簡單的相似度計算
+      const questionWords = question.toLowerCase().split(/\s+/);
+      let bestMatch = null;
+      let bestSimilarity = 0;
+
+      for (const record of similarQueries.data) {
+        const recordWords = record.query.toLowerCase().split(/\s+/);
+        const similarity = calculateSimilarity(questionWords, recordWords);
+        
+        if (similarity > 0.85 && similarity > bestSimilarity) {
+          bestMatch = record;
+          bestSimilarity = similarity;
+        }
+      }
+
+      if (bestMatch) {
+        process.env.NODE_ENV !== "production" && console.log(`[checkIntelligentCache] L2 similar match found (${Math.round(bestSimilarity * 100)}% similarity)`);
+        
+        // 安全處理 result_json
+        const safeResult = bestMatch.result_json || {
+          data: [],
+          rowCount: 0,
+          executionTime: bestMatch.execution_time || 0
+        };
+        
+        return {
+          question: bestMatch.query,
+          sql: bestMatch.sql_query,
+          result: safeResult,
+          answer: bestMatch.answer,
+          complexity: bestMatch.complexity || 'simple',
+          tokensUsed: 0,
+          cached: true,
+          cacheLevel: 'L2-semantic',
+          similarity: bestSimilarity,
+          responseTime: 100,
+          timestamp: bestMatch.created_at
+        };
+      }
+    }
+
+    // L3: SQL 結果緩存（當有相同SQL時，最近1小時）
+    // 這個會在SQL生成後檢查
+
+    return null;
+  } catch (error) {
+    console.error('[checkIntelligentCache] Error:', error);
+    return null;
+  }
+}
+
+// 簡單相似度計算函數
+function calculateSimilarity(words1: string[], words2: string[]): number {
+  const set1 = new Set(words1);
+  const set2 = new Set(words2);
+  
+  // 計算交集
+  const intersectionArray = Array.from(set1).filter(x => set2.has(x));
+  const intersection = new Set(intersectionArray);
+  
+  // 計算聯集
+  const unionArray = Array.from(set1).concat(Array.from(set2));
+  const union = new Set(unionArray);
+  
+  // Jaccard 相似度
+  return intersection.size / union.size;
+}
+
+// 檢查 SQL 結果緩存
+async function checkSQLCache(sql: string): Promise<any | null> {
+  const supabase = createClient();
+  
+  try {
+    const sqlMatch = await supabase
+      .from('query_record')
+      .select('*')
+      .eq('sql_query', sql)
+      .gte('created_at', new Date(Date.now() - 60 * 60 * 1000).toISOString()) // 最近1小時
+      .order('created_at', { ascending: false })
+      .limit(1);
+
+    if (sqlMatch.data && sqlMatch.data.length > 0) {
+      const record = sqlMatch.data[0];
+      process.env.NODE_ENV !== "production" && console.log('[checkSQLCache] L3 SQL cache hit');
+      return {
+        result: record.result_json,
+        executionTime: record.execution_time || 0,
+        cached: true,
+        cacheLevel: 'L3-sql'
+      };
+    }
+
+    return null;
+  } catch (error) {
+    console.error('[checkSQLCache] Error:', error);
+    return null;
+  }
+}
+
+// 異步保存增強版聊天記錄
+async function saveQueryRecordEnhanced(
+  query: string, 
+  answer: string, 
+  user: string | null, 
+  tokenUsage: number = 0, 
+  sqlQuery: string = '',
+  resultJson: any = null,
+  executionTime: number = 0,
+  rowCount: number = 0,
+  complexity: string = 'simple'
+): Promise<void> {
   setImmediate(async () => {
     try {
       const supabase = createClient();
+      const queryHash = generateQueryHash(query);
+      
+      // 安全處理數值，確保不會有 null 值
+      const safeExecutionTime = typeof executionTime === 'number' ? executionTime : 0;
+      const safeRowCount = typeof rowCount === 'number' ? rowCount : 0;
+      const safeTokenUsage = typeof tokenUsage === 'number' ? tokenUsage : 0;
       
       const { error } = await supabase
         .from('query_record')
@@ -525,26 +765,36 @@ async function saveQueryRecordAsync(query: string, answer: string, user: string 
           query: query,
           answer: answer,
           user: user || 'Unknown User',
-          token: tokenUsage,
-          sql_query: sqlQuery
+          token: safeTokenUsage,
+          sql_query: sqlQuery,
+          result_json: resultJson,
+          query_hash: queryHash,
+          execution_time: safeExecutionTime,
+          row_count: safeRowCount,
+          complexity: complexity
         });
 
       if (error) {
-        console.error('[saveQueryRecordAsync] Failed to save query record:', error);
+        console.error('[saveQueryRecordEnhanced] Failed to save query record:', error);
       } else {
-        process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[saveQueryRecordAsync] Query record saved successfully with token usage:', tokenUsage);
+        process.env.NODE_ENV !== "production" && console.log('[saveQueryRecordEnhanced] Enhanced query record saved successfully');
       }
     } catch (error) {
-      console.error('[saveQueryRecordAsync] Error saving query record:', error);
+      console.error('[saveQueryRecordEnhanced] Error saving query record:', error);
     }
   });
+}
+
+// 舊版本保持兼容性
+async function saveQueryRecordAsync(query: string, answer: string, user: string | null, tokenUsage: number = 0, sqlQuery: string = ''): Promise<void> {
+  return saveQueryRecordEnhanced(query, answer, user, tokenUsage, sqlQuery);
 }
 
 // 用戶權限檢查
 async function checkUserPermission(): Promise<boolean> {
   // 開發環境下跳過權限檢查
   if (process.env.NODE_ENV === 'development') {
-    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[checkUserPermission] Development mode: skipping auth check for debugging');
+    process.env.NODE_ENV !== "production" && console.log('[checkUserPermission] Development mode: skipping auth check for debugging');
     return true;
   }
   
@@ -626,7 +876,7 @@ export async function GET(request: NextRequest) {
         };
       }
     } catch (authError) {
-      process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[Ask Database Status] Auth check failed:', authError);
+      process.env.NODE_ENV !== "production" && console.log('[Ask Database Status] Auth check failed:', authError);
     }
     
     // 檢查數據庫連接
@@ -642,7 +892,7 @@ export async function GET(request: NextRequest) {
         tablesAccessible: !!data
       };
     } catch (dbError) {
-      process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[Ask Database Status] DB check failed:', dbError);
+      process.env.NODE_ENV !== "production" && console.log('[Ask Database Status] DB check failed:', dbError);
     }
     
     const status = {
@@ -663,9 +913,19 @@ export async function GET(request: NextRequest) {
         style: 'british_professional'
       },
       cache: {
-        size: queryCache.size,
-        maxSize: 1000,
-        ttl: '2 hours'
+        lru: {
+          size: queryCache.size,
+          maxSize: 1000,
+          ttl: '2 hours'
+        },
+        intelligent: {
+          source: 'query_record table',
+          layers: {
+            L1: 'Exact match (24h)',
+            L2: 'Semantic similarity (7d, >85%)',
+            L3: 'SQL result cache (1h)'
+          }
+        }
       },
       features: {
         openaiIntegration: true,

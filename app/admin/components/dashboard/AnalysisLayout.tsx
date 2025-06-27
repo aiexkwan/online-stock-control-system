@@ -30,7 +30,7 @@ export const AnalysisLayout: React.FC<AnalysisLayoutProps> = ({
 
   // Widget positions for new layout
   const widgetStyles = [
-    // Item 1 - History Tree (right sidebar) - unchanged
+    // Item 1 - Right sidebar widget - unchanged
     { 
       gridRow: '1 / 9', 
       gridColumn: '9 / 11',
@@ -47,11 +47,11 @@ export const AnalysisLayout: React.FC<AnalysisLayoutProps> = ({
   return (
     <div className="analysis-container" style={containerStyle}>
       {children.slice(0, 2).map((child, index) => {
-        const isHistoryTree = index === 0;
+        const isRightSidebar = index === 0;
         const style = widgetStyles[index];
         
-        if (isHistoryTree) {
-          // History Tree without glassmorphism wrapper
+        if (isRightSidebar) {
+          // Right sidebar widget without glassmorphism wrapper
           return (
             <div key={`widget-${index}`} className="analysis-item" style={style}>
               {child}

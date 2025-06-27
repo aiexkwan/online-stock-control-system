@@ -13,6 +13,8 @@ import {
 import { useGraphQLQuery, gql } from '@/lib/graphql-client-stable';
 import { TimeFrame } from '@/app/components/admin/UniversalTimeRangeSelector';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval } from 'date-fns';
+import { CardHeader, CardTitle } from '@/components/ui/card';
+import { UserGroupIcon } from '@heroicons/react/24/outline';
 
 interface StaffWorkloadGraphQLProps {
   title: string;
@@ -79,6 +81,7 @@ export const StaffWorkloadGraphQL: React.FC<StaffWorkloadGraphQLProps> = ({
 }) => {
   const [chartData, setChartData] = React.useState<any[]>([]);
   const [staffList, setStaffList] = React.useState<any[]>([]);
+  const [displayStaffList, setDisplayStaffList] = React.useState<any[]>([]);
 
   // 獲取部門員工列表
   const { data: staffData, loading: staffLoading, error: staffError } = useGraphQLQuery(
@@ -117,6 +120,7 @@ export const StaffWorkloadGraphQL: React.FC<StaffWorkloadGraphQLProps> = ({
   React.useEffect(() => {
     if (!workloadData?.record_historyCollection || !staffList.length) {
       setChartData([]);
+      setDisplayStaffList([]);
       return;
     }
 
@@ -143,11 +147,14 @@ export const StaffWorkloadGraphQL: React.FC<StaffWorkloadGraphQLProps> = ({
 
     // 統計每個員工每天的操作次數
     const edges = workloadData.record_historyCollection.edges || [];
+    const staffWithWork = new Set<string>(); // 記錄有工作的員工名稱
+    
     edges.forEach((edge: any) => {
       const record = edge.node;
       const staffName = staffMap.get(record.id);
       if (!staffName) return;
 
+      staffWithWork.add(staffName); // 記錄這個員工有工作
       const recordDate = format(new Date(record.time), 'yyyy-MM-dd');
       const dayData = dailyData.find(d => d.fullDate === recordDate);
       if (dayData) {
@@ -155,24 +162,30 @@ export const StaffWorkloadGraphQL: React.FC<StaffWorkloadGraphQLProps> = ({
       }
     });
 
-    // 移除 fullDate 欄位，只保留顯示用的 date
-    const cleanedData = dailyData.map(({ fullDate, ...rest }) => rest);
-    
-    // 如果沒有真實數據，生成模擬數據供演示
-    if (edges.length === 0 && staffList.length > 0) {
-      const demoData = cleanedData.map(day => {
-        const newDay = { ...day };
-        staffList.forEach((staff, index) => {
-          // 生成基於員工索引的模擬工作量
-          const baseValue = 20 + (index * 5);
-          const variation = Math.floor(Math.random() * 10) - 5;
-          newDay[staff.name] = Math.max(0, baseValue + variation);
-        });
-        return newDay;
+    // 過濾圖表數據，只保留有工作記錄的員工欄位
+    const filteredData = dailyData.map(day => {
+      const { fullDate, ...dayWithoutFullDate } = day;
+      const filteredDay: any = { date: dayWithoutFullDate.date };
+      
+      // 只保留有工作記錄的員工數據
+      Object.keys(dayWithoutFullDate).forEach(key => {
+        if (key !== 'date' && staffWithWork.has(key)) {
+          filteredDay[key] = dayWithoutFullDate[key];
+        }
       });
-      setChartData(demoData);
+      
+      return filteredDay;
+    });
+    
+    // 更新顯示的員工列表
+    const activeStaffList = staffList.filter(staff => staffWithWork.has(staff.name));
+    
+    if (edges.length === 0) {
+      setChartData([]);
+      setDisplayStaffList([]);
     } else {
-      setChartData(cleanedData);
+      setChartData(filteredData);
+      setDisplayStaffList(activeStaffList);
     }
   }, [workloadData, staffList, timeFrame]);
 
@@ -184,36 +197,35 @@ export const StaffWorkloadGraphQL: React.FC<StaffWorkloadGraphQLProps> = ({
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.5 }}
-      className={`h-full ${className}`}
+      className={`h-full flex flex-col relative ${className}`}
     >
-      <div className="bg-gradient-to-br from-slate-800/50 to-slate-900/50 backdrop-blur-xl rounded-2xl p-6 h-full border border-slate-700/50 hover:border-slate-600/50 transition-all duration-300 group relative overflow-hidden">
-        {/* GraphQL 標識 */}
-        <div className="absolute top-2 right-2 px-2 py-1 bg-gradient-to-r from-purple-600/80 to-pink-600/80 text-white text-xs rounded-full shadow-lg backdrop-blur-sm">
-          GraphQL
+      
+      <CardHeader className="pb-3">
+        <CardTitle className="widget-title flex items-center gap-2">
+          <UserGroupIcon className="w-5 h-5" />
+          {title}
+        </CardTitle>
+        <p className="text-xs text-slate-400 mt-1">
+          From {format(new Date(timeFrame.start), 'MMM d')} to {format(new Date(timeFrame.end), 'MMM d')}
+        </p>
+      </CardHeader>
+      
+      {loading && !chartData.length ? (
+        <div className="flex-1">
+          <div className="h-full bg-slate-700/50 rounded animate-pulse" />
         </div>
-
-        {/* 背景裝飾 */}
-        <div className="absolute inset-0 bg-gradient-to-br from-green-500/5 to-blue-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-        
-        <div className="relative z-10 h-full flex flex-col">
-          <h3 className="text-lg font-medium text-slate-200 mb-4">{title}</h3>
-          
-          {loading && !chartData.length ? (
-            <div className="flex-1">
-              <div className="h-full bg-slate-700/50 rounded animate-pulse" />
-            </div>
-          ) : error ? (
-            <div className="flex-1 flex items-center justify-center">
-              <div className="text-red-400 text-sm">Error loading data</div>
-            </div>
-          ) : chartData.length === 0 ? (
-            <div className="flex-1 flex items-center justify-center">
-              <div className="text-slate-400 text-sm">No data available</div>
-            </div>
-          ) : (
-            <div className="flex-1">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={chartData} margin={{ top: 5, right: 10, left: 0, bottom: 40 }}>
+      ) : error ? (
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-red-400 text-sm">Error loading data</div>
+        </div>
+      ) : chartData.length === 0 ? (
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-slate-400 text-sm">No data available</div>
+        </div>
+      ) : (
+        <div className="flex-1">
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={chartData} margin={{ top: 10, right: 10, left: 10, bottom: 40 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
                   <XAxis 
                     dataKey="date" 
@@ -226,6 +238,7 @@ export const StaffWorkloadGraphQL: React.FC<StaffWorkloadGraphQLProps> = ({
                   <YAxis 
                     stroke="#9CA3AF" 
                     tick={{ fontSize: 11, fill: '#9CA3AF' }}
+                    domain={[0, 'dataMax + 1']}
                   />
                   <Tooltip 
                     contentStyle={{ 
@@ -235,29 +248,21 @@ export const StaffWorkloadGraphQL: React.FC<StaffWorkloadGraphQLProps> = ({
                       color: '#E5E7EB'
                     }}
                   />
-                  <Legend 
-                    wrapperStyle={{ 
-                      fontSize: '11px', 
-                      paddingTop: '10px',
-                      color: '#9CA3AF'
-                    }}
-                  />
-                  {staffList.slice(0, 8).map((staff, index) => (
-                    <Line
-                      key={staff.id}
-                      type="monotone"
-                      dataKey={staff.name}
-                      stroke={COLORS[index % COLORS.length]}
-                      strokeWidth={2}
-                      dot={false}
-                    />
-                  ))}
+              {displayStaffList.slice(0, 8).map((staff, index) => (
+                <Line
+                  key={staff.id}
+                  type="natural"
+                  dataKey={staff.name}
+                  stroke={COLORS[index % COLORS.length]}
+                  strokeWidth={2}
+                  dot={false}
+                  activeDot={{ r: 6 }}
+                />
+              ))}
                 </LineChart>
               </ResponsiveContainer>
-            </div>
-          )}
         </div>
-      </div>
+      )}
     </motion.div>
   );
 };

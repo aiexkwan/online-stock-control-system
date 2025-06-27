@@ -12,7 +12,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { UniversalWidgetCard as WidgetCard } from '../UniversalWidgetCard';
 import { MagnifyingGlassIcon, ExclamationCircleIcon } from '@heroicons/react/24/outline';
-import { WidgetComponentProps } from '@/app/types/dashboard';
+import { WidgetComponentProps, WidgetSize } from '@/app/types/dashboard';
 import { createClient } from '@/app/utils/supabase/client';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
@@ -47,6 +47,9 @@ export const InventorySearchWidget = React.memo(function InventorySearchWidget({
   const [chartData, setChartData] = useState<ChartData[]>([]);
   const [loadingChart, setLoadingChart] = useState(false);
   const { refreshTrigger } = useAdminRefresh();
+  
+  // Get widget size
+  const size = widget.size || WidgetSize.MEDIUM;
 
 
   const fetchChartData = useCallback(async (productCode: string) => {
@@ -167,7 +170,7 @@ export const InventorySearchWidget = React.memo(function InventorySearchWidget({
     if (size === WidgetSize.LARGE && searchResults && !isEditMode) {
       fetchChartData(searchResults.product_code);
     }
-  }, [searchResults, isEditMode, fetchChartData]);
+  }, [size, searchResults, isEditMode, fetchChartData]);
 
   const searchInventory = useCallback(async (productCode: string) => {
     if (!productCode.trim()) {
@@ -271,14 +274,10 @@ export const InventorySearchWidget = React.memo(function InventorySearchWidget({
   return (
     <WidgetCard widgetType="INVENTORY_SEARCH" isEditMode={isEditMode} className="flex flex-col">
       <CardHeader className="pb-2">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-lg flex items-center justify-center">
-            <MagnifyingGlassIcon className="h-5 w-5 text-white" />
-          </div>
-          <CardTitle className="text-lg font-medium bg-gradient-to-r from-blue-300 via-cyan-300 to-blue-200 bg-clip-text text-transparent">
-            Inventory Search
-          </CardTitle>
-        </div>
+        <CardTitle className="widget-title flex items-center gap-2">
+          <MagnifyingGlassIcon className="w-5 h-5" />
+          Inventory Search
+        </CardTitle>
       </CardHeader>
       <CardContent className="flex-1 flex flex-col p-4 min-h-0">
         {/* 上半部分 - 搜尋和結果 (2/3) */}

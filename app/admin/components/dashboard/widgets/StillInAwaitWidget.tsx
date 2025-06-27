@@ -1,6 +1,6 @@
 /**
  * Still In Await Widget
- * 顯示昨天完成但今天仍在 await location 的數量
+ * 顯示指定時間生成的棧板中仍在 await location 的數量
  * 支援頁面的 time frame selector
  */
 
@@ -52,50 +52,47 @@ export const StillInAwaitWidget = React.memo(function StillInAwaitWidget({
       try {
         const supabase = createClient();
         
-        // 1. 獲取昨天移動到 Await 的棧板
-        const { data: historyData, error: historyError } = await supabase
-          .from('record_history')
-          .select('plt_num, time')
-          .eq('action', 'Move')
-          .eq('loc', 'Await')
-          .gte('time', dateRange.start.toISOString())
-          .lte('time', dateRange.end.toISOString());
+        // 1. 獲取指定時間生成的棧板
+        const { data: palletData, error: palletError } = await supabase
+          .from('record_palletinfo')
+          .select('plt_num, generate_time')
+          .gte('generate_time', dateRange.start.toISOString())
+          .lte('generate_time', dateRange.end.toISOString());
 
-        if (historyError) throw historyError;
+        if (palletError) throw palletError;
 
-        if (!historyData || historyData.length === 0) {
+        if (!palletData || palletData.length === 0) {
           setStillInAwaitCount(0);
           setLoading(false);
           return;
         }
 
-        // 2. 獲取這些棧板的當前位置
-        const palletNumbers = historyData.map(h => h.plt_num);
-        const { data: inventoryData, error: inventoryError } = await supabase
-          .from('record_inventory')
-          .select('plt_num, await')
-          .in('plt_num', palletNumbers)
-          .gt('await', 0);
-
-        if (inventoryError) throw inventoryError;
-
-        // 3. 計算仍在 await 的數量
-        const stillInAwait = inventoryData?.filter(inv => inv.await > 0) || [];
+        // 2. 獲取這些棧板的最新位置
+        const palletNumbers = palletData.map(p => p.plt_num);
         
-        // 獲取這些棧板的數量總和
-        let totalQty = 0;
-        if (stillInAwait.length > 0) {
-          const { data: palletData, error: palletError } = await supabase
-            .from('record_palletinfo')
-            .select('plt_num, product_qty')
-            .in('plt_num', stillInAwait.map(p => p.plt_num));
+        // 查詢每個棧板的歷史記錄，找出最新位置
+        const { data: historyData, error: historyError } = await supabase
+          .from('record_history')
+          .select('plt_num, loc, time')
+          .in('plt_num', palletNumbers)
+          .order('time', { ascending: false });
 
-          if (palletError) throw palletError;
+        if (historyError) throw historyError;
 
-          totalQty = palletData?.reduce((sum, pallet) => sum + (pallet.product_qty || 0), 0) || 0;
-        }
+        // 3. 找出每個棧板的最新位置
+        const latestLocations = new Map<string, string>();
+        historyData?.forEach(record => {
+          if (!latestLocations.has(record.plt_num)) {
+            latestLocations.set(record.plt_num, record.loc);
+          }
+        });
 
-        setStillInAwaitCount(totalQty);
+        // 4. 計算仍在 Await 的棧板數量
+        const palletCount = Array.from(latestLocations.entries())
+          .filter(([_, loc]) => loc === 'Await' || loc === 'Awaiting')
+          .length;
+
+        setStillInAwaitCount(palletCount);
       } catch (err) {
         console.error('Error fetching still in await data:', err);
         setError(err instanceof Error ? err.message : 'Unknown error');
@@ -111,7 +108,7 @@ export const StillInAwaitWidget = React.memo(function StillInAwaitWidget({
     return (
       <WidgetCard widget={widget} isEditMode={true}>
         <div className="h-full flex items-center justify-center">
-          <p className="text-gray-400">Still In Await Widget</p>
+          <p className="text-slate-400 font-medium">Still In Await Widget</p>
         </div>
       </WidgetCard>
     );
@@ -119,13 +116,12 @@ export const StillInAwaitWidget = React.memo(function StillInAwaitWidget({
 
   return (
     <WidgetCard widget={widget}>
-      <div className="h-full flex flex-col">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-lg font-medium flex items-center gap-2">
+      <CardHeader className="pb-2">
+          <CardTitle className="widget-title flex items-center gap-2">
             <ClockIcon className="w-5 h-5" />
             Still In Await
           </CardTitle>
-          <p className="text-xs text-gray-400 mt-1">
+          <p className="text-xs text-slate-400 mt-1">
             From {format(dateRange.start, 'MMM d')}
           </p>
         </CardHeader>
@@ -150,11 +146,10 @@ export const StillInAwaitWidget = React.memo(function StillInAwaitWidget({
               >
                 {stillInAwaitCount.toLocaleString()}
               </motion.div>
-              <p className="text-sm text-gray-400">Quantity</p>
+              <p className="text-xs text-slate-400">Pallets</p>
             </div>
           )}
         </CardContent>
-      </div>
     </WidgetCard>
   );
 });

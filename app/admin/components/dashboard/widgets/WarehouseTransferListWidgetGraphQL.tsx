@@ -75,7 +75,7 @@ export const WarehouseTransferListWidgetGraphQL = React.memo(function WarehouseT
     return (
       <WidgetCard widget={widget} isEditMode={true}>
         <div className="h-full flex items-center justify-center">
-          <p className="text-gray-400">Warehouse Transfer List (GraphQL)</p>
+          <p className="text-slate-400 font-medium">Warehouse Transfer List (GraphQL)</p>
         </div>
       </WidgetCard>
     );
@@ -83,14 +83,9 @@ export const WarehouseTransferListWidgetGraphQL = React.memo(function WarehouseT
 
   return (
     <WidgetCard widget={widget}>
-      <div className="relative h-full flex flex-col">
-        {/* GraphQL 標識 */}
-        <div className="absolute top-2 right-2 px-2 py-1 bg-gradient-to-r from-purple-600 to-pink-600 text-white text-xs rounded-full shadow-lg z-10">
-          GraphQL
-        </div>
-        
-        <CardHeader className="pb-2">
-          <CardTitle className="text-lg font-medium flex items-center gap-2">
+      
+      <CardHeader className="pb-2">
+          <CardTitle className="widget-title flex items-center gap-2">
             <DocumentTextIcon className="w-5 h-5" />
             Warehouse Transfers
             {isRefetching && (
@@ -106,8 +101,8 @@ export const WarehouseTransferListWidgetGraphQL = React.memo(function WarehouseT
               </motion.div>
             )}
           </CardTitle>
-          <p className="text-xs text-gray-400 mt-1">
-            {format(dateRange.start, 'MMM d')} - {format(dateRange.end, 'MMM d')}
+          <p className="text-xs text-slate-400 mt-1">
+            From {format(dateRange.start, 'MMM d')} to {format(dateRange.end, 'MMM d')}
           </p>
         </CardHeader>
         
@@ -124,14 +119,14 @@ export const WarehouseTransferListWidgetGraphQL = React.memo(function WarehouseT
               <p className="text-xs mt-1">{error.message}</p>
             </div>
           ) : transfers.length === 0 ? (
-            <div className="text-center text-gray-400 py-8">
+            <div className="text-center text-slate-400 font-medium py-8">
               <DocumentTextIcon className="w-12 h-12 mx-auto mb-2 opacity-50" />
               <p>No warehouse transfers found</p>
             </div>
           ) : (
             <div className="h-full flex flex-col">
               {/* Column Headers */}
-              <div className="grid grid-cols-12 gap-2 pb-2 mb-2 border-b border-slate-600/50 text-xs font-medium text-gray-400 uppercase">
+              <div className="grid grid-cols-12 gap-2 pb-2 mb-2 border-b border-slate-600/50 widget-text-sm uppercase">
                 <div className="col-span-4 flex items-center gap-1">
                   <ClockIcon className="w-3 h-3" />
                   Time
@@ -156,13 +151,13 @@ export const WarehouseTransferListWidgetGraphQL = React.memo(function WarehouseT
                     transition={{ duration: 0.3, delay: Math.min(index * 0.05, 0.5) }}
                     className="grid grid-cols-12 gap-2 py-2 px-2 bg-slate-700/20 rounded hover:bg-slate-700/40 transition-colors text-sm"
                   >
-                    <div className="col-span-4 text-gray-300">
+                    <div className="col-span-4 text-slate-300 font-medium">
                       {format(parseISO(transfer.tran_date), 'HH:mm:ss')}
                     </div>
                     <div className="col-span-4 text-white font-medium truncate">
                       {transfer.plt_num}
                     </div>
-                    <div className="col-span-4 text-gray-300 truncate">
+                    <div className="col-span-4 text-slate-300 font-medium truncate">
                       {transfer.operator_name}
                     </div>
                   </motion.div>
@@ -170,13 +165,12 @@ export const WarehouseTransferListWidgetGraphQL = React.memo(function WarehouseT
               </div>
               
               {/* Footer with count */}
-              <div className="pt-2 mt-2 border-t border-slate-600/50 text-xs text-gray-400 text-center">
+              <div className="pt-2 mt-2 border-t border-slate-600/50 widget-text-sm text-center">
                 {transfers.length} transfers shown
               </div>
             </div>
           )}
         </CardContent>
-      </div>
     </WidgetCard>
   );
 });

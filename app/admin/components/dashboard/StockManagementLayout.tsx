@@ -30,7 +30,7 @@ export const StockManagementLayout: React.FC<StockManagementLayoutProps> = ({
 
   // Widget positions matching exact CSS for stock management layout
   const widgetStyles = [
-    // Item 1 - History Tree (right sidebar)
+    // Item 1 - Right sidebar widget
     { 
       gridRow: '1 / 9', 
       gridColumn: '9 / 11',
@@ -77,12 +77,12 @@ export const StockManagementLayout: React.FC<StockManagementLayoutProps> = ({
   return (
     <div className="stock-management-container" style={containerStyle}>
       {children.slice(0, 6).map((child, index) => {
-        const isHistoryTree = index === 0;
+        const isRightSidebar = index === 0;
         const isMainContent = index === 1 || index === 2; // Both stock selector and chart
         const style = widgetStyles[index];
         
-        if (isHistoryTree) {
-          // History Tree without glassmorphism wrapper
+        if (isRightSidebar) {
+          // Right sidebar widget without glassmorphism wrapper
           return (
             <div key={`widget-${index}`} className="stock-management-item" style={style}>
               {child}

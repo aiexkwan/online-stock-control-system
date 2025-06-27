@@ -169,12 +169,6 @@ export const OutputStatsWidgetGraphQL = React.memo(function OutputStatsWidgetGra
     setIsDropdownOpen(false);
   };
 
-  // GraphQL 標識
-  const GraphQLBadge = () => (
-    <div className="absolute top-2 right-2 px-2 py-1 bg-gradient-to-r from-purple-600 to-pink-600 text-white text-xs rounded-full shadow-lg">
-      GraphQL
-    </div>
-  );
 
   // Small size (1x1) - 只顯示文字和數據，無 icon
 
@@ -183,7 +177,6 @@ export const OutputStatsWidgetGraphQL = React.memo(function OutputStatsWidgetGra
   return (
     <WidgetCard widgetType="OUTPUT_STATS" isEditMode={isEditMode}>
       <div className="relative h-full">
-        <GraphQLBadge />
         <CardHeader className="pb-2">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">

@@ -9,6 +9,9 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { useGraphQLQuery, gql } from '@/lib/graphql-client-stable';
 import { TimeFrame } from '@/app/components/admin/UniversalTimeRangeSelector';
+import { format } from 'date-fns';
+import { CardHeader, CardTitle } from '@/components/ui/card';
+import { DocumentTextIcon } from '@heroicons/react/24/outline';
 
 interface ProductionDetailsGraphQLProps {
   title: string;
@@ -121,64 +124,61 @@ export const ProductionDetailsGraphQL: React.FC<ProductionDetailsGraphQLProps> =
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.4 }}
-      className={`h-full ${className}`}
+      className={`h-full flex flex-col relative ${className}`}
     >
-      <div className="bg-gradient-to-br from-slate-800/50 to-slate-900/50 backdrop-blur-xl rounded-2xl p-6 h-full border border-slate-700/50 hover:border-slate-600/50 transition-all duration-300 group relative overflow-hidden">
-        {/* GraphQL 標識 */}
-        <div className="absolute top-2 right-2 px-2 py-1 bg-gradient-to-r from-purple-600/80 to-pink-600/80 text-white text-xs rounded-full shadow-lg backdrop-blur-sm">
-          GraphQL
+      
+      <CardHeader className="pb-3">
+        <CardTitle className="widget-title flex items-center gap-2">
+          <DocumentTextIcon className="w-5 h-5" />
+          {title}
+        </CardTitle>
+        <p className="text-xs text-slate-400 mt-1">
+          From {format(new Date(timeFrame.start), 'MMM d')} to {format(new Date(timeFrame.end), 'MMM d')}
+        </p>
+      </CardHeader>
+      
+      {loading && !data ? (
+        <div className="flex-1 overflow-hidden">
+          <div className="h-full bg-slate-700/50 rounded animate-pulse" />
         </div>
-
-        {/* 背景裝飾 */}
-        <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/5 to-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-        
-        <div className="relative z-10 h-full flex flex-col">
-          <h3 className="text-lg font-medium text-slate-200 mb-4">{title}</h3>
-          
-          {loading && !data ? (
-            <div className="flex-1 overflow-hidden">
-              <div className="h-full bg-slate-700/50 rounded animate-pulse" />
-            </div>
-          ) : error ? (
-            <div className="flex-1 flex items-center justify-center">
-              <div className="text-red-400 text-sm">Error loading data</div>
-            </div>
-          ) : (
-            <div className="flex-1 overflow-hidden">
-              <div className="h-full overflow-auto custom-scrollbar">
-                <table className="w-full">
-                  <thead className="sticky top-0 bg-slate-800/90 backdrop-blur-sm">
-                    <tr className="border-b border-slate-700">
-                      <th className="text-left py-3 px-4 text-xs font-medium text-gray-400 uppercase">Pallet Num</th>
-                      <th className="text-left py-3 px-4 text-xs font-medium text-gray-400 uppercase">Product Code</th>
-                      <th className="text-right py-3 px-4 text-xs font-medium text-gray-400 uppercase">Qty</th>
-                      <th className="text-left py-3 px-4 text-xs font-medium text-gray-400 uppercase">Q.C. By</th>
+      ) : error ? (
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-red-400 text-sm">Error loading data</div>
+        </div>
+      ) : (
+        <div className="flex-1 overflow-hidden">
+          <div className="h-full overflow-auto custom-scrollbar">
+            <table className="w-full">
+              <thead className="sticky top-0 bg-slate-800/90 backdrop-blur-sm">
+                <tr className="border-b border-slate-700">
+                  <th className="text-left py-3 px-4 widget-text-sm text-gray-400 uppercase">Pallet Num</th>
+                  <th className="text-left py-3 px-4 widget-text-sm text-gray-400 uppercase">Product Code</th>
+                  <th className="text-right py-3 px-4 widget-text-sm text-gray-400 uppercase">Qty</th>
+                  <th className="text-left py-3 px-4 widget-text-sm text-gray-400 uppercase">Q.C. By</th>
+                </tr>
+              </thead>
+              <tbody>
+                {tableData.length === 0 ? (
+                  <tr>
+                    <td colSpan={4} className="text-center py-8 text-slate-400 text-sm">
+                      No production data available
+                    </td>
+                  </tr>
+                ) : (
+                  tableData.map((row, index) => (
+                    <tr key={index} className="border-b border-slate-700/50 hover:bg-slate-700/20 transition-colors">
+                      <td className="py-3 px-4 text-sm text-slate-300">{row.plt_num}</td>
+                      <td className="py-3 px-4 text-sm text-slate-300">{row.product_code}</td>
+                      <td className="py-3 px-4 text-sm text-slate-300 text-right">{row.product_qty}</td>
+                      <td className="py-3 px-4 text-sm text-slate-300">{row.qc_by}</td>
                     </tr>
-                  </thead>
-                  <tbody>
-                    {tableData.length === 0 ? (
-                      <tr>
-                        <td colSpan={4} className="text-center py-8 text-slate-400 text-sm">
-                          No production data available
-                        </td>
-                      </tr>
-                    ) : (
-                      tableData.map((row, index) => (
-                        <tr key={index} className="border-b border-slate-700/50 hover:bg-slate-700/20 transition-colors">
-                          <td className="py-3 px-4 text-sm text-slate-300">{row.plt_num}</td>
-                          <td className="py-3 px-4 text-sm text-slate-300">{row.product_code}</td>
-                          <td className="py-3 px-4 text-sm text-slate-300 text-right">{row.product_qty}</td>
-                          <td className="py-3 px-4 text-sm text-slate-300">{row.qc_by}</td>
-                        </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
-      </div>
+      )}
     </motion.div>
   );
 };

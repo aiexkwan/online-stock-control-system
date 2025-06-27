@@ -1,5 +1,5 @@
 /**
- * History Tree Widget - 統一歷史樹組件
+ * 統一歷史記錄組件
  * 顯示來自 record_history 表的歷史記錄，並合併相似事件
  */
 
@@ -113,29 +113,95 @@ const formatEventTitle = (event: MergedEvent): string => {
   if (event.count > 1) {
     // 批量操作
     if (event.action.includes('Print') || event.action.includes('Label')) {
-      return `${userName} printed ${event.count} pallet labels`;
+      return `Print Labels By ${userName}`;
     } else if (event.action.includes('Transfer')) {
-      return `${userName} transferred ${event.count} pallets`;
+      return `Transfer Done By ${userName}`;
     } else if (event.action.includes('QC')) {
-      return `${userName} completed QC for ${event.count} pallets`;
+      return `QC Done By ${userName}`;
+    } else if (event.action.includes('GRN') || event.action.includes('Receiving')) {
+      return `GRN Received By ${userName}`;
     } else {
-      return `${userName} performed ${event.action} (×${event.count})`;
+      return `${event.action} By ${userName}`;
     }
   } else {
     // 單個操作
-    const palletInfo = event.palletNumbers.length > 0 ? ` [${event.palletNumbers[0]}]` : '';
-    return `${userName} - ${event.action}${palletInfo}`;
+    if (event.action.includes('Order') && event.action.includes('Upload')) {
+      return `Order Upload By ${userName}`;
+    } else if (event.action.includes('GRN') || event.action.includes('Receiving')) {
+      return `GRN Received By ${userName}`;
+    } else if (event.action.includes('QC')) {
+      return `QC Done By ${userName}`;
+    } else if (event.action.includes('Transfer')) {
+      return `Transfer Done By ${userName}`;
+    } else if (event.action.includes('Product') && event.action.includes('Update')) {
+      return `Product Update By ${userName}`;
+    } else {
+      return `${event.action} By ${userName}`;
+    }
   }
 };
 
 // 格式化事件描述
 const formatEventDescription = (event: MergedEvent): string => {
-  // 只顯示 remark，不顯示位置信息
-  if (event.remark && event.remark !== '-') {
-    return event.remark;
+  const parts: string[] = [];
+  
+  // 根據事件類型添加具體信息
+  if (event.action.includes('Order') && event.action.includes('Upload')) {
+    // Order Upload - 顯示訂單號
+    const orderMatch = event.remark?.match(/\d{6}/);
+    if (orderMatch) {
+      parts.push(`Order: ${orderMatch[0]}`);
+    } else if (event.palletNumbers.length > 0) {
+      parts.push(`Order: ${event.palletNumbers[0]}`);
+    }
+  } else if (event.action.includes('GRN') || event.action.includes('Receiving')) {
+    // GRN - 顯示 GRN 號碼和數量
+    const grnMatch = event.remark?.match(/GRN:\s*(\w+)/i);
+    if (grnMatch) {
+      if (event.count > 1) {
+        parts.push(`GRN: ${grnMatch[1]}, ${event.count} PLT`);
+      } else {
+        parts.push(`GRN: ${grnMatch[1]}`);
+      }
+    } else if (event.count > 1) {
+      parts.push(`${event.count} PLT`);
+    }
+  } else if (event.action.includes('QC')) {
+    // QC - 顯示棧板數量
+    if (event.count > 1) {
+      parts.push(`${event.count} pallets`);
+    } else if (event.palletNumbers.length > 0) {
+      parts.push(`PLT: ${event.palletNumbers[0]}`);
+    }
+    // 顯示其他 QC 信息
+    if (event.remark && event.remark !== '-' && !event.remark.includes('Material:')) {
+      parts.push(event.remark);
+    }
+  } else if (event.action.includes('Transfer')) {
+    // Transfer - 顯示轉移數量
+    if (event.count > 1) {
+      parts.push(`${event.count} pallets`);
+    } else if (event.palletNumbers.length > 0) {
+      parts.push(`PLT: ${event.palletNumbers[0]}`);
+    }
+  } else if (event.action.includes('Print') || event.action.includes('Label')) {
+    // Print - 顯示打印數量
+    if (event.count > 1) {
+      parts.push(`${event.count} labels`);
+    } else {
+      parts.push(`1 label`);
+    }
+  } else {
+    // 其他操作 - 顯示基本信息
+    if (event.palletNumbers.length > 0) {
+      parts.push(`PLT: ${event.palletNumbers[0]}`);
+    }
+    if (event.remark && event.remark !== '-') {
+      parts.push(event.remark);
+    }
   }
   
-  return '';
+  return parts.join(' • ');
 };
 
 export const HistoryTree = React.memo(function HistoryTree({ widget, isEditMode }: WidgetComponentProps) {
@@ -181,8 +247,8 @@ export const HistoryTree = React.memo(function HistoryTree({ widget, isEditMode 
           }
         }
         
-        // 只取前10個合併後的事件
-        setEvents(mergedEvents.slice(0, 10));
+        // 只取前30個合併後的事件
+        setEvents(mergedEvents.slice(0, 30));
       }
       
       setError(null);
@@ -218,23 +284,11 @@ export const HistoryTree = React.memo(function HistoryTree({ widget, isEditMode 
       animate={{ opacity: 1, y: 0 }}
       className="h-full"
     >
-      <WidgetCard widgetType="history-tree" isEditMode={isEditMode} className="flex flex-col">
+      <WidgetCard widgetType="history-tree" isEditMode={isEditMode}>
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-lg flex items-center justify-center">
-              <ClockIcon className="h-5 w-5 text-white" />
-            </div>
-            <span className={cn(
-              WidgetTextStyles.title.small,
-              GlowStyles.purple,
-              "bg-gradient-to-r from-indigo-300 via-purple-300 to-indigo-200 bg-clip-text text-transparent"
-            )}>
-              History Tree
-            </span>
           </CardTitle>
         </CardHeader>
-        
-        <CardContent className="flex-1 overflow-hidden">
           {loading ? (
             <div className="space-y-4">
               {[...Array(3)].map((_, i) => (
@@ -258,21 +312,20 @@ export const HistoryTree = React.memo(function HistoryTree({ widget, isEditMode 
           ) : (
             <Timeline
               items={timelineItems}
-              initialCount={10}
+              initialCount={30}
               className="h-full"
               showMoreText="Show More"
               showLessText="Show Less"
               dotClassName="bg-gradient-to-r from-indigo-500 to-purple-500 border-2 border-slate-800"
               lineClassName="border-slate-600"
-              titleClassName="text-slate-200 text-sm font-medium"
-              descriptionClassName="text-slate-400 text-xs"
-              dateClassName="text-slate-500 text-xs"
+              titleClassName="text-slate-200 text-xs font-medium"
+              descriptionClassName="text-slate-400 text-[10px] font-medium"
+              dateClassName="text-slate-400 text-[10px] font-medium"
               buttonVariant="ghost"
               buttonSize="sm"
               showAnimation={!isEditMode}
             />
           )}
-        </CardContent>
       </WidgetCard>
     </motion.div>
   );

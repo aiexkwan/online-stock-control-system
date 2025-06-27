@@ -30,7 +30,7 @@ export const UploadUpdateLayout: React.FC<UploadUpdateLayoutProps> = ({
 
   // Widget positions matching exact CSS for upload/update layout
   const widgetStyles = [
-    // Item 1 - History Tree (right sidebar)
+    // Item 1 - Right sidebar widget
     { 
       gridRow: '1 / 9', 
       gridColumn: '9 / 11',
@@ -90,12 +90,12 @@ export const UploadUpdateLayout: React.FC<UploadUpdateLayoutProps> = ({
   return (
     <div className="upload-update-container" style={containerStyle}>
       {children.slice(0, 7).map((child, index) => {
-        const isHistoryTree = index === 0;
+        const isRightSidebar = index === 0;
         const isMainContent = index === 1 || index === 2;
         const style = widgetStyles[index];
         
-        if (isHistoryTree) {
-          // History Tree without glassmorphism wrapper
+        if (isRightSidebar) {
+          // Right sidebar widget without glassmorphism wrapper
           return (
             <div key={`widget-${index}`} className="upload-update-item" style={style}>
               {child}
