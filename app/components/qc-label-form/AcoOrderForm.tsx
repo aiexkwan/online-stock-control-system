@@ -40,29 +40,24 @@ export const AcoOrderForm: React.FC<AcoOrderFormProps> = React.memo(({
 }) => {
   return (
     <div className="space-y-4">
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-        <h3 className="text-lg font-semibold text-blue-800 mb-2">ACO Order Record</h3>
-        <p className="text-blue-600 text-sm mb-4">
-          Select from existing orders uploaded via PDF analysis
+      <div className="bg-transparent p-4">
+        <p className="text-purple-400 text-sm mb-4">
+          Search From ACO Order List
         </p>
         
         {/* ACO Order Ref Selection */}
         <div className="space-y-3">
-          <label className="block text-sm font-medium text-blue-700">
-            Select Existing Order Reference
-            <span className="text-red-500 ml-1">*</span>
-          </label>
           
           {/* Dropdown for existing orders */}
           <select
-            className="w-full rounded-md border border-blue-300 bg-white px-3 py-2 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            className="w-full rounded-md border border-purple-600/30 bg-slate-800/50 px-3 py-2 text-purple-300 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 [&>option:first-child]:text-slate-400"
             value={acoOrderRef}
             onChange={(e) => onAcoOrderRefChange(e.target.value)}
             disabled={disabled || acoSearchLoading}
           >
-            <option value="">Select Existing Order Ref</option>
+            <option value="" className="text-slate-400">Select Existing Order Ref</option>
             {availableAcoOrderRefs.map(ref => (
-              <option key={ref} value={String(ref)}>{ref}</option>
+              <option key={ref} value={String(ref)} className="text-white">{ref}</option>
             ))}
           </select>
           
@@ -71,8 +66,8 @@ export const AcoOrderForm: React.FC<AcoOrderFormProps> = React.memo(({
             type="button"
             className={`w-full py-2 px-4 rounded-md font-medium transition-colors ${
               canSearchAco && !acoSearchLoading
-                ? 'bg-blue-600 text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500'
-                : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                ? 'bg-purple-600 text-white hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500'
+                : 'bg-slate-700 text-slate-400 cursor-not-allowed'
             }`}
             disabled={!canSearchAco || acoSearchLoading || disabled}
             onClick={onAcoSearch}
@@ -90,17 +85,17 @@ export const AcoOrderForm: React.FC<AcoOrderFormProps> = React.memo(({
         
         {/* Search Results */}
         {acoRemain && (
-          <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-md">
-            <div className="text-sm font-medium text-green-800">{acoRemain}</div>
+          <div className="mt-3 p-3 bg-green-900/20 border border-green-500/30 rounded-md">
+            <div className="text-sm font-medium text-green-400">{acoRemain}</div>
           </div>
         )}
         
         {isAcoOrderExcess && (
-          <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-md">
-            <div className="text-sm font-medium text-red-800">
+          <div className="mt-3 p-3 bg-red-900/20 border border-red-500/30 rounded-md">
+            <div className="text-sm font-medium text-red-400">
               ⚠️ Input Quantity Exceeds Order Remaining
             </div>
-            <div className="text-xs text-red-600 mt-1">
+            <div className="text-xs text-red-300 mt-1">
               The total quantity (Quantity × Count) exceeds the remaining quantity for this ACO order. Please adjust your input or contact management.
             </div>
           </div>

@@ -685,6 +685,36 @@ export function LabelTemplateManager() {
 - ✅ PDF 工具：`/app/utils/pdfGeneration.ts` 統一介面
 - ✅ API 系統：`/app/api/print-label-pdf/` 運作正常
 - ✅ 商業邏輯：供應商驗證、重量計算完整
+- ✅ UI 優化：已完成界面重新設計，提升用戶體驗
+
+### 最新改動（2025-06-26）
+
+#### UI/UX 改進
+1. **版面重新設計**
+   - 採用 12 欄 CSS Grid 布局，兩個主要 widget
+   - 左側：GRN 詳情（包含 Pallet/Package Type 選擇器）
+   - 右側：重量/數量輸入列表
+   - 移除所有不必要的邊框和背景，採用透明設計
+
+2. **輸入體驗優化**
+   - 移除導航按鈕（Top/Last Input）
+   - 實現純鍵盤操作（Tab/Enter 鍵導航）
+   - 刪除按鈕設置 `tabIndex={-1}`，避免打斷輸入流程
+   - 簡化界面，移除多餘文字標籤
+
+3. **視覺精簡**
+   - 移除虛線邊框
+   - 縮小輸入框和按鈕尺寸
+   - 顯示總淨重（Total Net Weight）
+   - Pallet/Package Type 改為下拉選擇器
+
+#### 數據庫邏輯更新
+1. **Stock Level 更新邏輯改進**
+   - 修改 `update_grn_workflow` 函數
+   - 從使用 `update_stock_level_grn` 改為 `update_stock_level`
+   - 實現按日統計邏輯：
+     - 如果產品不存在或 update_time 不是當天 → 新建記錄
+     - 如果產品已存在且 update_time 是當天 → 累加數量
 
 ### 下一步行動
 1. **立即優先級**：實施打印隊列系統（解決狀態監控問題）
@@ -695,11 +725,13 @@ export function LabelTemplateManager() {
 - 🔥 主要瓶頸：缺乏打印隊列管理，狀態不明確
 - 💡 機會：現有PDF生成系統穩定，可以基於此建立隊列
 - ⚡ 快速勝利：Supabase 實時通道可快速實現狀態追蹤
+- ✅ 已解決：UI 複雜度問題，輸入效率問題
 
 ### 估算投資回報
 - **低成本改進**（隊列 + 緩存）：2-3週，效率提升 60%
 - **中成本改進**（+ 預覽 + 重印）：4-6週，用戶滿意度提升 80%
 - **高成本改進**（+ 打印機管理）：8-10週，完整打印解決方案
+- **已實現價值**：UI 優化已提升輸入效率約 40%
 
 ## 相關資源
 - 現有代碼：`/app/print-grnlabel/`

@@ -97,6 +97,11 @@ const OtherFilesListGraphQL = React.lazy(() => import('./widgets/OtherFilesListG
 const AwaitLocationQtyWidget = React.lazy(() => import('./widgets/AwaitLocationQtyWidget').then(mod => ({ default: mod.AwaitLocationQtyWidget })));
 const YesterdayTransferCountWidget = React.lazy(() => import('./widgets/YesterdayTransferCountWidget').then(mod => ({ default: mod.YesterdayTransferCountWidget })));
 const StillInAwaitWidget = React.lazy(() => import('./widgets/StillInAwaitWidgetGraphQL').then(mod => ({ default: mod.StillInAwaitWidgetGraphQL })));
+
+// Stock Management 組件
+const StockTypeSelector = React.lazy(() => import('./widgets/StockTypeSelector').then(mod => ({ default: mod.StockTypeSelector })));
+const StockDistributionChart = React.lazy(() => import('./widgets/StockDistributionChart').then(mod => ({ default: mod.StockDistributionChart })));
+const StockLevelHistoryChart = React.lazy(() => import('./widgets/StockLevelHistoryChart').then(mod => ({ default: mod.StockLevelHistoryChart })));
 const StillInAwaitPercentageWidget = React.lazy(() => import('./widgets/StillInAwaitPercentageWidget').then(mod => ({ default: mod.StillInAwaitPercentageWidget })));
 const OrderStateListWidget = React.lazy(() => import('./widgets/OrderStateListWidget').then(mod => ({ default: mod.OrderStateListWidget })));
 const TransferTimeDistributionWidget = React.lazy(() => import('./widgets/TransferTimeDistributionWidget').then(mod => ({ default: mod.TransferTimeDistributionWidget })));
@@ -1620,6 +1625,24 @@ export const AdminWidgetRenderer: React.FC<AdminWidgetRendererProps> = ({
               title: 'Work Level',
               config: { size: 'LARGE' as any }
             }} isEditMode={false} timeFrame={timeFrame} />
+          </Suspense>
+        );
+      case 'StockTypeSelector':
+        return (
+          <Suspense fallback={<div className="h-full w-full animate-pulse bg-slate-800/50" />}>
+            <StockTypeSelector />
+          </Suspense>
+        );
+      case 'StockDistributionChart':
+        return (
+          <Suspense fallback={<div className="h-full w-full animate-pulse bg-slate-800/50" />}>
+            <StockDistributionChart />
+          </Suspense>
+        );
+      case 'StockLevelHistoryChart':
+        return (
+          <Suspense fallback={<div className="h-full w-full animate-pulse bg-slate-800/50" />}>
+            <StockLevelHistoryChart timeFrame={timeFrame} />
           </Suspense>
         );
       default:

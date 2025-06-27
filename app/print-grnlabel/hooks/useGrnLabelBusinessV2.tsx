@@ -370,15 +370,8 @@ export const useGrnLabelBusinessV2 = ({
             }
           );
         } else {
-          grnErrorHandler.handleSuccess(
-            `All ${collectedPdfBlobs.length} labels generated successfully!`,
-            {
-              component: 'useGrnLabelBusinessV2',
-              action: 'batch_processing',
-              clockNumber
-            },
-            `GRN: ${state.formData.grnNumber}, Pallets: ${collectedPdfBlobs.length}`
-          );
+          // Success message removed - no need to log batch processing success to record_history
+          console.log(`[useGrnLabelBusinessV2] All ${collectedPdfBlobs.length} labels generated successfully!`);
         }
 
         // Confirm pallet usage to update status from "Holded" to "True"

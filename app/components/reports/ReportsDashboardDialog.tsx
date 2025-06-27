@@ -35,7 +35,7 @@ import { RegisteredReport } from '@/app/components/reports/core/ReportConfig';
 // Report Dialogs
 import { UnifiedVoidReportDialog } from '@/app/void-pallet/components/UnifiedVoidReportDialog';
 import { UnifiedLoadingReportDialog } from '@/app/order-loading/components/UnifiedLoadingReportDialog';
-import { UnifiedStockTakeReportDialog } from '@/app/stock-take/components/UnifiedStockTakeReportDialog';
+// import { UnifiedStockTakeReportDialog } from '@/app/stock-take/components/UnifiedStockTakeReportDialog'; // Component not found
 import { UnifiedAcoReportDialog } from '@/app/components/reports/UnifiedAcoReportDialog';
 import { UnifiedGrnReportDialog } from '@/app/components/reports/UnifiedGrnReportDialog';
 import { UnifiedTransactionReportDialog } from '@/app/components/reports/UnifiedTransactionReportDialog';
@@ -268,10 +268,11 @@ export function ReportsDashboardDialog({ isOpen, onClose }: ReportsDashboardDial
         onClose={() => closeReportDialog('order-loading-report')}
       />
       
+      {/* Stock Take Report Dialog - Component not found
       <UnifiedStockTakeReportDialog
         isOpen={dialogStates['stock-take-report'] || false}
         onClose={() => closeReportDialog('stock-take-report')}
-      />
+      /> */}
       
       <UnifiedAcoReportDialog
         isOpen={dialogStates['aco-order-report'] || false}

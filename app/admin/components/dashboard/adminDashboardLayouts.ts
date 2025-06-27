@@ -400,11 +400,11 @@ export const adminDashboardLayouts: Record<string, AdminDashboardLayout> = {
       },
       {
         type: 'chart',
-        title: 'Stock Distribution',
+        title: 'Stock Level History',
         gridArea: 'widget3',
         dataSource: 'stock_level',
-        chartType: 'pie',
-        component: 'StockDistributionChart'
+        chartType: 'line',
+        component: 'StockLevelHistoryChart'
       },
       {
         type: 'stats',
@@ -421,10 +421,12 @@ export const adminDashboardLayouts: Record<string, AdminDashboardLayout> = {
         chartType: 'donut'
       },
       {
-        type: 'alerts',
-        title: 'Stock Alerts',
+        type: 'chart',
+        title: 'Stock Distribution',
         gridArea: 'widget6',
-        dataSource: 'stock_alerts'
+        dataSource: 'stock_level',
+        chartType: 'pie',
+        component: 'StockDistributionChart'
       }
     ]
   },

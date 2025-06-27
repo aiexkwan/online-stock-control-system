@@ -6,9 +6,9 @@ export default function PrintGrnLabelLayout({
   children: React.ReactNode;
 }) {
   return (
-    <UniversalContainer variant="page" background="transparent" padding="none">
+    <div className="h-full">
       {/* Navigation removed - using dynamic action bar */}
       {children}
-    </UniversalContainer>
+    </div>
   );
 }

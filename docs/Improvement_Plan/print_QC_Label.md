@@ -667,8 +667,70 @@ export class AutoPrintService {
 - **中成本改進**（+ Worker池）：6-8週，性能提升 60%
 - **高成本改進**（+ ML + MES）：12-16週，全面自動化
 
+## 2025-06-26 更新：頁面布局重構及數據流程優化
+
+### 已完成更新
+1. **頁面布局重構**
+   - 實施 10x7 CSS Grid 布局系統
+   - 創建 `PrintLabelGrid.tsx` 統一布局組件
+   - 三個主要 widget 區域：main（中央）、bottom-left（左下）、bottom-right（右下）
+
+2. **表單布局優化**
+   - 創建 `GridBasicProductForm.tsx` 實現 2x2 表單布局
+   - Product Detail 以黃色背景顯示在兩列輸入格之間
+   - 修復重複標籤顯示問題（showLabel prop）
+   - 實施紫色主題配色及透明背景
+
+3. **表單重置功能**
+   - 頁面加載時自動清除表單
+   - 打印完成後重置所有輸入
+   - 離開頁面時清理 localStorage
+   - 停用表單持久化（isEnabled: false）
+
+4. **ACO 表單更新**
+   - 移除所有標題（"ACO Order Details"、"ACO Order Record"）
+   - 文字更新："Select from existing orders uploaded via PDF analysis" → "Search From ACO Order List"
+   - 統一紫色主題配色
+
+5. **數據流程驗證**
+   - 確認 stock_level 更新實施每日邏輯：
+     - 當天無記錄時創建新記錄
+     - 當天有記錄時累加數量
+   - 確認系統使用原子性事務（atomic transactions）
+   - 所有數據庫操作封裝在 PL/pgSQL functions 內
+   - 異常處理自動回滾確保數據一致性
+
+### 原子性事務機制
+系統通過以下方式確保原子性：
+
+1. **PL/pgSQL Functions**
+   - `handle_print_label_updates` - 主控制函數
+   - `update_stock_level` - 庫存更新（每日邏輯）
+   - `update_work_level_qc` - 工作量更新
+
+2. **錯誤處理**
+   ```sql
+   EXCEPTION
+     WHEN OTHERS THEN
+       -- 任何錯誤都會自動回滾所有更改
+       RETURN json_build_object('success', false...);
+   ```
+
+3. **行級鎖定**
+   - 使用 `FOR UPDATE` 防止並發衝突
+   - 確保數據更新的一致性
+
+4. **涉及的數據表**
+   - `record_palletinfo` - 棧板信息
+   - `record_history` - 歷史記錄
+   - `record_inventory` - 庫存記錄
+   - `stock_level` - 庫存水平（每日累加）
+   - `work_level` - 工作量統計
+
 ## 相關資源
 - 現有代碼：`/app/print-label/`
 - PDF生成：`/app/print-label/hooks/usePdfGeneration.tsx`
 - 數據庫操作：`/app/print-label/actions/qcActions.ts`
 - 文檔：`/docs/fn_print_QC_Label.md`
+- 布局組件：`/app/components/qc-label-form/PrintLabelGrid.tsx`
+- 表單組件：`/app/components/qc-label-form/GridBasicProductForm.tsx`

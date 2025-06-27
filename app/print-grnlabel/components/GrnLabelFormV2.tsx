@@ -5,14 +5,12 @@ import { createClient } from '@/app/utils/supabase/client';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 import { grnErrorHandler } from '../services/ErrorHandler';
-import { ResponsiveLayout, ResponsiveContainer, ResponsiveCard, ResponsiveStack, ResponsiveGrid } from '../../components/qc-label-form/ResponsiveLayout';
+import { UniversalContainer, UniversalCard, UniversalGrid } from '@/components/layout/universal';
 import { EnhancedProgressBar } from '../../components/qc-label-form/EnhancedProgressBar';
 import ClockNumberConfirmDialog from '../../components/qc-label-form/ClockNumberConfirmDialog';
 
 // Import new modular components
 import { GrnDetailCard } from './GrnDetailCard';
-import { PalletTypeSelector } from './PalletTypeSelector';
-import { PackageTypeSelector } from './PackageTypeSelector';
 import { WeightInputList } from './WeightInputList';
 
 // Import constants
@@ -52,6 +50,21 @@ const customStyles = `
   .package-type-card h2 {
     font-size: 1.25rem !important;
     white-space: nowrap;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(-10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .animate-fadeIn {
+    animation: fadeIn 0.3s ease-out forwards;
   }
 `;
 
@@ -264,12 +277,19 @@ export const GrnLabelFormV2: React.FC = () => {
       {/* Inject custom styles */}
       <style jsx global>{customStyles}</style>
       
-      <ResponsiveLayout>
-        <ResponsiveContainer maxWidth="xl">
-          <ResponsiveStack direction="responsive" spacing={8}>
-            {/* Left Column */}
-            <div className="flex-1 space-y-8">
-              {/* GRN Detail Card */}
+      <UniversalContainer variant="page" maxWidth="full" padding="none" className="h-screen">
+        <div className="grid grid-cols-12 gap-4 h-auto max-w-6xl mx-auto pt-4">
+          {/* Widget 1 - GRN Details (左邊) */}
+          <div className="col-start-2 col-end-6">
+            <UniversalCard
+              variant="widget"
+              theme="neutral"
+              glass={false}
+              glow={false}
+              title=""
+              padding="md"
+              className="w-full bg-transparent border-0 shadow-none"
+            >
               <GrnDetailCard
                 formData={state.formData}
                 labelMode={state.labelMode}
@@ -277,6 +297,8 @@ export const GrnLabelFormV2: React.FC = () => {
                 supplierInfo={state.supplierInfo}
                 supplierError={state.ui.supplierError}
                 currentUserId={currentUserId}
+                palletType={state.palletType}
+                packageType={state.packageType}
                 onFormChange={handleFormChange}
                 onSupplierBlur={handleSupplierBlur}
                 onProductInfoChange={(qcProductInfo) => {
@@ -284,90 +306,49 @@ export const GrnLabelFormV2: React.FC = () => {
                   actions.setProductInfo(adaptedInfo);
                 }}
                 onLabelModeChange={(mode) => handleLabelModeChange(mode)}
+                onPalletTypeChange={handlePalletTypeChange}
+                onPackageTypeChange={handlePackageTypeChange}
                 disabled={state.ui.isProcessing}
               />
+            </UniversalCard>
+          </div>
 
-              {/* Pallet & Package Type Row - Only show in Weight mode */}
-              {state.labelMode === 'weight' && (
-                <ResponsiveGrid columns={{ sm: 1, md: 2 }} gap={8}>
-                  <PalletTypeSelector
-                    palletType={state.palletType}
-                    onChange={handlePalletTypeChange}
-                    disabled={state.ui.isProcessing}
-                  />
-                  <PackageTypeSelector
-                    packageType={state.packageType}
-                    onChange={handlePackageTypeChange}
-                    disabled={state.ui.isProcessing}
-                  />
-                </ResponsiveGrid>
-              )}
-            </div>
 
-            {/* Right Column */}
-            <div className="flex-1 lg:max-w-md">
-              <ResponsiveCard 
-                title={state.labelMode === 'qty' ? 'Quantity Information' : 'Weight Information'} 
-                className="sticky top-8"
-              >
-                {/* Summary Information */}
-                <div className="mb-6 p-4 bg-gradient-to-r from-slate-800/60 to-slate-700/40 rounded-xl border border-slate-600/30">
-                  <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div className="flex items-center justify-between">
-                      <span className="text-slate-400">Total Pallets:</span>
-                      <span className="text-white font-semibold bg-orange-500/20 px-2 py-1 rounded-full">
-                        {state.grossWeights.filter(w => w.trim() !== '').length}
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-slate-400">Max Pallets:</span>
-                      <span className="text-white font-semibold bg-slate-600/50 px-2 py-1 rounded-full">22</span>
-                    </div>
-                    <div className="col-span-2 flex items-center justify-between">
-                      <span className="text-slate-400">Mode:</span>
-                      <span className={`font-semibold px-3 py-1 rounded-full text-sm ${
-                        state.labelMode === 'qty'
-                          ? 'text-blue-300 bg-blue-500/20 border border-blue-500/30'
-                          : 'text-purple-300 bg-purple-500/20 border border-purple-500/30'
-                      }`}>
-                        {state.labelMode === 'qty' ? '📦 Quantity' : '⚖️ Weight'}
-                      </span>
-                    </div>
-                    <div className="col-span-2 flex items-center justify-between">
-                      <span className="text-slate-400">Status:</span>
-                      <span className={`font-semibold px-3 py-1 rounded-full text-sm ${
-                        isFormValid 
-                          ? 'text-green-300 bg-green-500/20 border border-green-500/30' 
-                          : 'text-amber-300 bg-amber-500/20 border border-amber-500/30'
-                      }`}>
-                        {isFormValid ? 'Ready to Print' : 'Incomplete Form'}
-                      </span>
-                    </div>
-                  </div>
-                </div>
+          {/* Widget 3 - Weight/Qty Input (右邊) */}
+          <div className="col-start-6 col-end-11">
+            <UniversalCard
+              variant="widget"
+              theme="neutral"
+              glass={false}
+              glow={false}
+              title=""
+              padding="md"
+              className="w-full flex flex-col bg-transparent border-0 shadow-none"
+            >
 
-                {/* Weight/Quantity Input Section */}
-                <div className="mb-6">
-                  <WeightInputList
-                    grossWeights={state.grossWeights}
-                    onChange={handleGrossWeightChange}
-                    onRemove={useCallback((idx: number) => {
-                      actions.removeGrossWeight(idx);
-                      // 確保至少有一個輸入框
-                      if (state.grossWeights.length === 1 || 
-                          (state.grossWeights.length === 2 && state.grossWeights[state.grossWeights.length - 1].trim() !== '')) {
-                        actions.addGrossWeight();
-                      }
-                    }, [actions, state.grossWeights])}
-                    labelMode={state.labelMode}
-                    selectedPalletType={(Object.entries(state.palletType).find(([, value]) => (parseInt(value) || 0) > 0)?.[0] || 'notIncluded') as PalletTypeKey}
-                    selectedPackageType={(Object.entries(state.packageType).find(([, value]) => (parseInt(value) || 0) > 0)?.[0] || 'notIncluded') as PackageTypeKey}
-                    maxItems={22}
-                    disabled={state.ui.isProcessing}
-                  />
-                </div>
+              {/* Weight/Quantity Input Section */}
+              <div className="flex-1 overflow-hidden">
+                <WeightInputList
+                  grossWeights={state.grossWeights}
+                  onChange={handleGrossWeightChange}
+                  onRemove={useCallback((idx: number) => {
+                    actions.removeGrossWeight(idx);
+                    // 確保至少有一個輸入框
+                    if (state.grossWeights.length === 1 || 
+                        (state.grossWeights.length === 2 && state.grossWeights[state.grossWeights.length - 1].trim() !== '')) {
+                      actions.addGrossWeight();
+                    }
+                  }, [actions, state.grossWeights])}
+                  labelMode={state.labelMode}
+                  selectedPalletType={(Object.entries(state.palletType).find(([, value]) => (parseInt(value) || 0) > 0)?.[0] || 'notIncluded') as PalletTypeKey}
+                  selectedPackageType={(Object.entries(state.packageType).find(([, value]) => (parseInt(value) || 0) > 0)?.[0] || 'notIncluded') as PackageTypeKey}
+                  maxItems={22}
+                  disabled={state.ui.isProcessing}
+                />
+              </div>
 
-                {/* Action Button */}
+              {/* Action Button */}
+              <div className="mt-4">
                 <div className="relative group">
                   <button
                     onClick={handlePrintClick}
@@ -408,7 +389,7 @@ export const GrnLabelFormV2: React.FC = () => {
 
                 {/* Progress Bar */}
                 {state.progress.total > 0 && (
-                  <div className="mt-6">
+                  <div className="mt-4">
                     <EnhancedProgressBar
                       current={state.progress.current}
                       total={state.progress.total}
@@ -420,11 +401,11 @@ export const GrnLabelFormV2: React.FC = () => {
                     />
                   </div>
                 )}
-              </ResponsiveCard>
-            </div>
-          </ResponsiveStack>
-        </ResponsiveContainer>
-      </ResponsiveLayout>
+              </div>
+            </UniversalCard>
+          </div>
+        </div>
+      </UniversalContainer>
 
       <ClockNumberConfirmDialog
         isOpen={state.ui.isClockNumberDialogOpen}

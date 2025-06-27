@@ -80,7 +80,7 @@ export const useQcLabelBusiness = ({
   const { generatePalletNumbers, createQcRecords, warmupBuffer } = useDatabaseOperationsV2();
   const { updateStockAndWorkLevels, updateAcoOrderStatus, clearCache } = useStockUpdates();
   
-  // 表單持久化
+  // 表單持久化 - 已禁用以確保每次進入頁面都是全新狀態
   const {
     lastSaved,
     clearSavedData,
@@ -88,7 +88,7 @@ export const useQcLabelBusiness = ({
   } = useFormPersistence({
     formData,
     setFormData,
-    isEnabled: true,
+    isEnabled: false, // Disabled to ensure fresh form on each page load
     autoSaveDelay: 1000
   });
 

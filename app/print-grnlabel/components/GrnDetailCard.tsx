@@ -1,9 +1,11 @@
 'use client';
 
 import React from 'react';
-import { ResponsiveCard, ResponsiveGrid } from '../../components/qc-label-form/ResponsiveLayout';
+import { UniversalGrid } from '@/components/layout/universal';
 import { ProductCodeInput } from '../../components/qc-label-form/ProductCodeInput';
-import { LABEL_MODES, type LabelMode } from '../../constants/grnConstants';
+import { LABEL_MODES, type LabelMode, type PalletTypeKey, type PackageTypeKey } from '../../constants/grnConstants';
+import { PalletTypeSelector } from './PalletTypeSelector';
+import { PackageTypeSelector } from './PackageTypeSelector';
 
 interface FormData {
   grnNumber: string;
@@ -24,6 +26,23 @@ interface ProductInfo {
   type?: string;
 }
 
+interface PalletTypeData {
+  whiteDry: string;
+  whiteWet: string;
+  chepDry: string;
+  chepWet: string;
+  euro: string;
+  notIncluded: string;
+}
+
+interface PackageTypeData {
+  still: string;
+  bag: string;
+  tote: string;
+  octo: string;
+  notIncluded: string;
+}
+
 interface GrnDetailCardProps {
   formData: FormData;
   labelMode: LabelMode;
@@ -31,10 +50,14 @@ interface GrnDetailCardProps {
   supplierInfo: SupplierInfo | null;
   supplierError: string | null;
   currentUserId: string;
+  palletType: PalletTypeData;
+  packageType: PackageTypeData;
   onFormChange: (field: keyof FormData, value: string) => void;
   onSupplierBlur: (e: React.FocusEvent<HTMLInputElement>) => void;
   onProductInfoChange: (productInfo: any) => void;
   onLabelModeChange: (mode: LabelMode) => void;
+  onPalletTypeChange: (key: PalletTypeKey, value: string) => void;
+  onPackageTypeChange: (key: PackageTypeKey, value: string) => void;
   disabled?: boolean;
 }
 
@@ -45,18 +68,22 @@ export const GrnDetailCard: React.FC<GrnDetailCardProps> = ({
   supplierInfo,
   supplierError,
   currentUserId,
+  palletType,
+  packageType,
   onFormChange,
   onSupplierBlur,
   onProductInfoChange,
   onLabelModeChange,
+  onPalletTypeChange,
+  onPackageTypeChange,
   disabled = false
 }) => {
   return (
-    <ResponsiveCard title="GRN Detail">
-      <ResponsiveGrid columns={{ sm: 1, md: 2 }} gap={6}>
+    <div className="flex flex-col space-y-3">
+      <UniversalGrid columns={{ sm: 1, md: 2 }} gap="sm">
         {/* GRN Number */}
         <div className="group">
-          <label className="block text-sm font-medium mb-2 text-slate-300 group-focus-within:text-orange-400 transition-colors duration-200">
+          <label className="block text-sm font-medium mb-1 text-slate-300 group-focus-within:text-orange-400 transition-colors duration-200">
             GRN Number <span className="text-red-400">*</span>
           </label>
           <div className="relative">
@@ -64,7 +91,7 @@ export const GrnDetailCard: React.FC<GrnDetailCardProps> = ({
               type="text"
               value={formData.grnNumber}
               onChange={e => onFormChange('grnNumber', e.target.value)}
-              className="w-full px-4 py-3 bg-slate-800/50 border border-slate-600/50 rounded-xl text-white placeholder-slate-400 transition-all duration-300 ease-out focus:outline-none focus:ring-2 focus:ring-orange-400/30 focus:border-orange-400/70 focus:bg-slate-800/70 hover:border-orange-500/50 hover:bg-slate-800/60 backdrop-blur-sm"
+              className="w-full px-3 py-2 bg-slate-800/50 border border-slate-600/50 rounded-xl text-white placeholder-slate-400 transition-all duration-300 ease-out focus:outline-none focus:ring-2 focus:ring-orange-400/30 focus:border-orange-400/70 focus:bg-slate-800/70 hover:border-orange-500/50 hover:bg-slate-800/60 backdrop-blur-sm"
               placeholder="Please Enter..."
               required
               disabled={disabled}
@@ -75,7 +102,7 @@ export const GrnDetailCard: React.FC<GrnDetailCardProps> = ({
 
         {/* Material Supplier */}
         <div className="group">
-          <label className="block text-sm font-medium mb-2 text-slate-300 group-focus-within:text-orange-400 transition-colors duration-200">
+          <label className="block text-sm font-medium mb-1 text-slate-300 group-focus-within:text-orange-400 transition-colors duration-200">
             Material Supplier <span className="text-red-400">*</span>
           </label>
           <div className="relative">
@@ -84,7 +111,7 @@ export const GrnDetailCard: React.FC<GrnDetailCardProps> = ({
               value={formData.materialSupplier}
               onChange={e => onFormChange('materialSupplier', e.target.value)}
               onBlur={onSupplierBlur}
-              className="w-full px-4 py-3 bg-slate-800/50 border border-slate-600/50 rounded-xl text-white placeholder-slate-400 transition-all duration-300 ease-out focus:outline-none focus:ring-2 focus:ring-orange-400/30 focus:border-orange-400/70 focus:bg-slate-800/70 hover:border-orange-500/50 hover:bg-slate-800/60 backdrop-blur-sm"
+              className="w-full px-3 py-2 bg-slate-800/50 border border-slate-600/50 rounded-xl text-white placeholder-slate-400 transition-all duration-300 ease-out focus:outline-none focus:ring-2 focus:ring-orange-400/30 focus:border-orange-400/70 focus:bg-slate-800/70 hover:border-orange-500/50 hover:bg-slate-800/60 backdrop-blur-sm"
               placeholder="Please Enter..."
               required
               disabled={disabled}
@@ -199,19 +226,25 @@ export const GrnDetailCard: React.FC<GrnDetailCardProps> = ({
               </span>
             </label>
           </div>
-          
-          {/* Mode Description */}
-          <div className="mt-2 p-2 bg-blue-500/10 border border-blue-500/20 rounded-lg">
-            <p className="text-blue-300 text-xs">
-              {labelMode === LABEL_MODES.QUANTITY 
-                ? '📦 Quantity mode: Pallet & Package types will be set to "Not Included". Label will show "Quantity".'
-                : '⚖️ Weight mode: You can select specific Pallet & Package types. Label will show "Weight".'
-              }
-            </p>
-          </div>
         </div>
-      </ResponsiveGrid>
-    </ResponsiveCard>
+      </UniversalGrid>
+      
+      {/* Pallet & Package Type Section - Only show in Weight mode */}
+      {labelMode === 'weight' && (
+        <div className="grid grid-cols-2 gap-3">
+          <PalletTypeSelector
+            palletType={palletType}
+            onChange={onPalletTypeChange}
+            disabled={disabled}
+          />
+          <PackageTypeSelector
+            packageType={packageType}
+            onChange={onPackageTypeChange}
+            disabled={disabled}
+          />
+        </div>
+      )}
+    </div>
   );
 };
 

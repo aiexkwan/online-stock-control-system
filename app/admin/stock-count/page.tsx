@@ -6,7 +6,6 @@ import { toast } from 'sonner';
 import ScanToStart from './components/ScanToStart';
 import RemainToCount from './components/RemainToCount';
 import NumberPad from './components/NumberPad';
-import ManualInput from './components/ManualInput';
 import ErrorBoundary from './components/ErrorBoundary';
 import { ClipboardDocumentCheckIcon, QueueListIcon, CheckCircleIcon, XCircleIcon, ClockIcon } from '@heroicons/react/24/outline';
 import { UniversalBackground } from '@/app/components/UniversalBackground';
@@ -40,7 +39,6 @@ export default function AdminStockCountPage() {
   const [countData, setCountData] = useState<CountData | null>(null);
   const [showNumberPad, setShowNumberPad] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [showManualInput, setShowManualInput] = useState(false);
   const [batchMode, setBatchMode] = useState(false);
   const [batchScans, setBatchScans] = useState<BatchScanRecord[]>([]);
   const [sessionId, setSessionId] = useState<string | null>(null);
@@ -412,21 +410,6 @@ export default function AdminStockCountPage() {
       <ErrorBoundary>
         <div className="text-white">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            {/* 頁面標題 */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5 }}
-              className="text-center mb-8"
-            >
-              <ClipboardDocumentCheckIcon className="h-16 w-16 text-blue-400 mx-auto mb-4" />
-              <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-300 via-purple-300 to-cyan-300 bg-clip-text text-transparent mb-4">
-                Stock Count
-              </h1>
-              <p className="text-slate-300 max-w-2xl mx-auto">
-                Perform inventory cycle counting to maintain accurate stock levels.
-              </p>
-            </motion.div>
 
             <div className="space-y-8">
               {/* Batch Mode Toggle */}
@@ -572,16 +555,6 @@ export default function AdminStockCountPage() {
                 )}
               </AnimatePresence>
 
-              {/* Manual Input 區域 */}
-              <AnimatePresence>
-                {showManualInput && (
-                  <ManualInput 
-                    onScanSuccess={handleScanSuccess}
-                    isLoading={isLoading}
-                  />
-                )}
-              </AnimatePresence>
-
               {/* Remain To Count 區域 */}
               <AnimatePresence>
                 {countData && state === 'counting' && (
@@ -594,20 +567,9 @@ export default function AdminStockCountPage() {
                 )}
               </AnimatePresence>
 
-              {/* 操作按鈕區域 */}
-              <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                {/* 手動輸入按鈕 */}
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() => setShowManualInput(!showManualInput)}
-                  className="bg-purple-600 hover:bg-purple-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors"
-                >
-                  {showManualInput ? 'Hide Manual Input' : 'Manual Input'}
-                </motion.button>
-
-                {/* 重新開始按鈕 */}
-                {state === 'counting' && (
+              {/* 重新開始按鈕 */}
+              {state === 'counting' && (
+                <div className="flex justify-center">
                   <motion.button
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
@@ -616,8 +578,8 @@ export default function AdminStockCountPage() {
                   >
                     Scan Next Pallet
                   </motion.button>
-                )}
-              </div>
+                </div>
+              )}
             </div>
           </div>
 

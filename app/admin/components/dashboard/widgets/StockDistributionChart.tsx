@@ -1,16 +1,18 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
+import { Treemap, ResponsiveContainer, Tooltip } from 'recharts';
 import { WidgetComponentProps } from '@/app/types/dashboard';
 import { useAdminRefresh } from '@/app/admin/contexts/AdminRefreshContext';
 import { Loader2 } from 'lucide-react';
 import { createClient } from '@/app/utils/supabase/client';
 
-interface ChartData {
+interface TreemapData {
   name: string;
+  size: number;
   value: number;
   percentage: number;
+  color: string;
 }
 
 interface StockData {
@@ -22,56 +24,58 @@ interface StockData {
 
 interface StockDistributionChartProps extends WidgetComponentProps {}
 
-// 顏色調色板
-const COLORS = [
-  '#3B82F6', // blue-500
-  '#10B981', // emerald-500
-  '#F59E0B', // amber-500
-  '#EF4444', // red-500
-  '#8B5CF6', // violet-500
-  '#EC4899', // pink-500
-  '#06B6D4', // cyan-500
-  '#F97316', // orange-500
-  '#84CC16', // lime-500
-  '#6366F1', // indigo-500
+// 綠色系顏色 - 正庫存
+const GREEN_COLORS = [
+  '#10b981', // emerald-500
+  '#059669', // emerald-600
+  '#047857', // emerald-700
+  '#065f46', // emerald-800
+  '#22c55e', // green-500
+  '#16a34a', // green-600
+  '#15803d', // green-700
+  '#166534', // green-800
+];
+
+// 紅色系顏色 - 低庫存或特殊標記
+const RED_COLORS = [
+  '#ef4444', // red-500
+  '#dc2626', // red-600
+  '#b91c1c', // red-700
+  '#991b1b', // red-800
 ];
 
 export const StockDistributionChart: React.FC<StockDistributionChartProps> = ({ widget, isEditMode }) => {
-  const [chartData, setChartData] = useState<ChartData[]>([]);
+  const [chartData, setChartData] = useState<TreemapData[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedType, setSelectedType] = useState<string>('all');
   const { refreshTrigger } = useAdminRefresh();
   const supabase = createClient();
 
+  // 判斷是否為低庫存
+  const isLowStock = (stockLevel: number, average: number) => {
+    return stockLevel < average * 0.3; // 低於平均值30%視為低庫存
+  };
+
   // 處理庫存數據並生成圖表數據
   const processStockData = (data: StockData[]) => {
-    // 計算總庫存
+    // 計算總庫存和平均值
     const totalStock = data.reduce((sum, item) => sum + item.stock_level, 0);
+    const averageStock = totalStock / data.length;
     
-    // 按庫存量排序並取前10個
+    // 按庫存量排序
     const sortedData = [...data]
-      .sort((a, b) => b.stock_level - a.stock_level)
-      .slice(0, 10);
+      .sort((a, b) => b.stock_level - a.stock_level);
     
-    // 計算其他產品的總和
-    const topTenTotal = sortedData.reduce((sum, item) => sum + item.stock_level, 0);
-    const othersTotal = totalStock - topTenTotal;
-    
-    // 生成圖表數據
-    const processedData: ChartData[] = sortedData.map(item => ({
+    // 生成 Treemap 數據
+    const processedData: TreemapData[] = sortedData.map((item, index) => ({
       name: item.stock,
+      size: item.stock_level,
       value: item.stock_level,
-      percentage: (item.stock_level / totalStock) * 100
+      percentage: (item.stock_level / totalStock) * 100,
+      color: isLowStock(item.stock_level, averageStock) 
+        ? RED_COLORS[index % RED_COLORS.length]
+        : GREEN_COLORS[index % GREEN_COLORS.length]
     }));
-    
-    // 如果有其他產品，添加到圖表
-    if (othersTotal > 0 && data.length > 10) {
-      processedData.push({
-        name: 'Others',
-        value: othersTotal,
-        percentage: (othersTotal / totalStock) * 100
-      });
-    }
     
     setChartData(processedData);
   };
@@ -91,8 +95,7 @@ export const StockDistributionChart: React.FC<StockDistributionChartProps> = ({ 
           )
         `)
         .gt('stock_level', 0)
-        .order('stock_level', { ascending: false })
-        .limit(100);
+        .order('stock_level', { ascending: false });
 
       if (error) throw error;
 
@@ -133,14 +136,15 @@ export const StockDistributionChart: React.FC<StockDistributionChartProps> = ({ 
   // 自定義 Tooltip
   const CustomTooltip = ({ active, payload }: any) => {
     if (active && payload && payload[0]) {
+      const data = payload[0].payload;
       return (
-        <div className="bg-slate-800 border border-slate-700 p-3 rounded-lg shadow-lg">
-          <p className="text-white font-medium">{payload[0].name}</p>
-          <p className="text-gray-300 text-sm">
-            Stock: <span className="text-white font-medium">{payload[0].value.toLocaleString()}</span>
+        <div className="bg-slate-900 border border-slate-700 p-3 rounded-lg shadow-lg">
+          <p className="text-white font-medium text-sm">{data.name}</p>
+          <p className="text-gray-300 text-xs mt-1">
+            Stock: <span className="text-white font-medium">{data.value.toLocaleString()}</span>
           </p>
-          <p className="text-gray-300 text-sm">
-            Percentage: <span className="text-white font-medium">{payload[0].payload.percentage.toFixed(1)}%</span>
+          <p className="text-gray-300 text-xs">
+            Share: <span className="text-white font-medium">{data.percentage.toFixed(1)}%</span>
           </p>
         </div>
       );
@@ -148,12 +152,73 @@ export const StockDistributionChart: React.FC<StockDistributionChartProps> = ({ 
     return null;
   };
 
-  // 自定義 Label
-  const renderCustomLabel = ({ percentage }: any) => {
-    if (percentage > 3) { // 只顯示大於3%的標籤
-      return `${percentage.toFixed(1)}%`;
-    }
-    return null;
+  // 自定義內容渲染
+  const CustomizedContent = (props: any) => {
+    const { x, y, width, height, name, value, percentage } = props;
+    
+    // 只在有足夠空間時顯示內容
+    if (width < 50 || height < 40) return null;
+    
+    // 判斷是否需要使用白色文字（深色背景）
+    const useWhiteText = props.fill && (
+      props.fill.includes('#047857') || 
+      props.fill.includes('#065f46') ||
+      props.fill.includes('#166534') ||
+      props.fill.includes('#b91c1c') ||
+      props.fill.includes('#991b1b')
+    );
+    
+    const textColor = useWhiteText ? '#ffffff' : '#1f2937';
+    
+    return (
+      <g>
+        <rect
+          x={x}
+          y={y}
+          width={width}
+          height={height}
+          fill={props.fill}
+          stroke="rgba(0, 0, 0, 0.1)"
+          strokeWidth={1}
+        />
+        {width > 80 && height > 60 && (
+          <>
+            <text
+              x={x + width / 2}
+              y={y + height / 2 - 10}
+              textAnchor="middle"
+              fill={textColor}
+              fontSize={Math.min(width / 8, 18)}
+              fontWeight="600"
+            >
+              {name}
+            </text>
+            <text
+              x={x + width / 2}
+              y={y + height / 2 + 10}
+              textAnchor="middle"
+              fill={textColor}
+              fontSize={Math.min(width / 10, 14)}
+              opacity={0.8}
+            >
+              {value.toLocaleString()}
+            </text>
+          </>
+        )}
+        {width > 60 && height > 50 && width <= 80 && (
+          <text
+            x={x + width / 2}
+            y={y + height / 2}
+            textAnchor="middle"
+            fill={textColor}
+            fontSize={Math.min(width / 6, 14)}
+            fontWeight="500"
+          >
+            {name}
+          </text>
+        )}
+      </g>
+    );
   };
 
   if (loading) {
@@ -165,66 +230,24 @@ export const StockDistributionChart: React.FC<StockDistributionChartProps> = ({ 
   }
 
   return (
-    <div className="h-full flex flex-col p-6">
-      {/* Header */}
-      <div className="mb-4">
-        <h3 className="text-xl font-semibold text-white">Stock Distribution</h3>
-        {selectedType !== 'all' && (
-          <p className="text-sm text-gray-400 mt-1">Type: {selectedType}</p>
-        )}
-      </div>
-
-      {/* Chart */}
-      <div className="flex-1">
-        {chartData.length === 0 ? (
-          <div className="h-full flex items-center justify-center">
-            <p className="text-gray-400">No stock data available</p>
-          </div>
-        ) : (
-          <ResponsiveContainer width="100%" height="100%">
-            <PieChart>
-              <Pie
-                data={chartData}
-                cx="50%"
-                cy="50%"
-                labelLine={false}
-                label={renderCustomLabel}
-                outerRadius="80%"
-                fill="#8884d8"
-                dataKey="value"
-              >
-                {chartData.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                ))}
-              </Pie>
-              <Tooltip content={<CustomTooltip />} />
-              <Legend 
-                verticalAlign="bottom" 
-                height={36}
-                wrapperStyle={{
-                  paddingTop: '20px',
-                  fontSize: '12px'
-                }}
-                iconType="circle"
-                formatter={(value) => <span className="text-gray-300">{value}</span>}
-              />
-            </PieChart>
-          </ResponsiveContainer>
-        )}
-      </div>
-
-      {/* Summary */}
-      {chartData.length > 0 && (
-        <div className="mt-4 pt-4 border-t border-slate-700 text-sm text-gray-400">
-          <div className="flex justify-between">
-            <span>Total Products: {chartData.length}</span>
-            <span>
-              Total Stock: <span className="font-semibold text-white">
-                {chartData.reduce((sum, item) => sum + item.value, 0).toLocaleString()}
-              </span>
-            </span>
-          </div>
+    <div className="h-full w-full p-2">
+      {chartData.length === 0 ? (
+        <div className="h-full flex items-center justify-center">
+          <p className="text-gray-400">No stock data available</p>
         </div>
+      ) : (
+        <ResponsiveContainer width="100%" height="100%">
+          <Treemap
+            data={chartData}
+            dataKey="size"
+            aspectRatio={4 / 3}
+            stroke="rgba(0, 0, 0, 0.1)"
+            fill="#10b981"
+            content={<CustomizedContent />}
+          >
+            <Tooltip content={<CustomTooltip />} />
+          </Treemap>
+        </ResponsiveContainer>
       )}
     </div>
   );

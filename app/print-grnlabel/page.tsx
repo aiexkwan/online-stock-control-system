@@ -10,9 +10,9 @@ export default function PrintGrnLabelPage() {
   return (
     <div>
       {/* 主要內容區域 */}
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4">
           {/* Instructions Section */}
-          <div className="flex justify-end mb-6">
+          <div className="flex justify-end mb-1">
             <FloatingInstructions
               title="GRN Label Instructions"
               variant="hangover"
@@ -43,22 +43,6 @@ export default function PrintGrnLabelPage() {
 
           {/* 表單區域 - 獨立卡片佈局 */}
           <GrnLabelFormV2 />
-
-          {/* 底部資訊卡片 */}
-          <div className="relative mt-8">
-            {/* 底部卡片背景 */}
-            <div className="absolute inset-0 bg-gradient-to-r from-slate-800/30 to-orange-700/20 rounded-2xl blur-xl"></div>
-            
-            <div className="relative bg-slate-800/30 backdrop-blur-xl border border-slate-700/30 rounded-2xl p-4 shadow-xl shadow-orange-900/10">
-              <div className="text-center">
-                <div className="inline-flex items-center space-x-2 text-slate-400 text-sm">
-                  <div className="w-1 h-1 bg-slate-400 rounded-full"></div>
-                  <span>Pennine Manufacturing Stock Control System</span>
-                  <div className="w-1 h-1 bg-slate-400 rounded-full"></div>
-                </div>
-              </div>
-          </div>
-        </div>
       </div>
       
       {/* 錯誤統計組件 - 僅在開發環境顯示 */}

@@ -71,21 +71,6 @@ export const MAIN_NAVIGATION: NavigationItem[] = [
     iconColor: "text-orange-500"
   },
   {
-    id: 'stock-take',
-    label: 'Stock Take',
-    icon: CalculatorIcon,
-    gradient: "radial-gradient(circle, rgba(236,72,153,0.15) 0%, rgba(219,39,119,0.06) 50%)",
-    iconColor: "text-pink-500",
-    children: [
-      {
-        id: 'stock-report',
-        label: 'Stock Count Report',
-        href: '/stock-take/report',
-        description: 'Inventory reports'
-      }
-    ]
-  },
-  {
     id: 'admin',
     label: 'Admin',
     icon: ChartBarIcon,

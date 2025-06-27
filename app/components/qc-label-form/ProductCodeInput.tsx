@@ -19,6 +19,8 @@ interface ProductCodeInputProps {
   disabled?: boolean;
   required?: boolean;
   userId?: string; // Keep for backward compatibility
+  showLabel?: boolean; // Add prop to control label visibility
+  className?: string; // Add className prop
 }
 
 export const ProductCodeInput: React.FC<ProductCodeInputProps> = ({
@@ -28,7 +30,9 @@ export const ProductCodeInput: React.FC<ProductCodeInputProps> = ({
   onQuantityChange,
   disabled = false,
   required = true,
-  userId // Keep for backward compatibility but not used
+  userId, // Keep for backward compatibility but not used
+  showLabel = true, // Default to true for backward compatibility
+  className = ''
 }) => {
   const [productError, setProductError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -166,15 +170,17 @@ export const ProductCodeInput: React.FC<ProductCodeInputProps> = ({
   };
 
   return (
-    <div>
-      <label className="block text-sm text-gray-300 mb-1">
-        Product Code
-        {required && <span className="text-red-400 ml-1">*</span>}
-      </label>
+    <div className={className}>
+      {showLabel && (
+        <label className="block text-sm text-gray-300 mb-1">
+          Product Code
+          {required && <span className="text-red-400 ml-1">*</span>}
+        </label>
+      )}
       <div className="relative">
         <input
           type="text"
-          className={`w-full rounded-md bg-gray-900 border text-white px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+          className={`w-full rounded-md bg-gray-900 border text-white px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder:text-slate-400 ${
             productError 
               ? 'border-red-500 focus:ring-red-500' 
               : 'border-gray-700'
