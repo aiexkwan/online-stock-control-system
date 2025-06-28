@@ -47,7 +47,8 @@
 | generate_time  | 生成時間                 | timestamptz    |            |
 
 **查詢提示**: 
-- 要查詢生產完成的棧板，使用 `plt_remark LIKE '%finished in production%'`
+- 要查詢生產完成的棧板，使用 `plt_remark ILIKE '%finished in production%'` (ILIKE 不區分大小寫)
+- 實際數據中常見 "Finished In Production" (大寫 I)
 - 產品代碼模式：MH*, ALDR*, S*, SA*, U*, DB*
 
 #### 2. `record_inventory` — 實時庫存位置表
@@ -253,22 +254,34 @@
 ### 庫存查詢
 ```sql
 -- 查詢特定產品的總庫存（使用 stock_level 表，更快）
-SELECT sl.stock, sl.description, sl.stock_level, sl.update_time
+SELECT sl.stock as product_code, sl.description, sl.stock_level as quantity
 FROM stock_level sl
 WHERE sl.stock LIKE 'MH%'
-ORDER BY sl.stock_level DESC;
+ORDER BY sl.stock_level DESC
+LIMIT 10;
+
+-- 查詢前10個產品的庫存（避免重複）
+SELECT 
+  sl.stock as product_code,
+  sl.description as product_name,
+  sl.stock_level as total_quantity
+FROM stock_level sl
+WHERE sl.stock_level > 0
+ORDER BY sl.stock_level DESC
+LIMIT 10;
 
 -- 查詢棧板級別的庫存分佈
 SELECT p.product_code, 
-       dc.description,
+       MAX(dc.description) as product_name,
        COUNT(DISTINCT p.plt_num) as pallet_count,
        SUM(p.product_qty) as total_qty
 FROM record_palletinfo p
 JOIN record_inventory i ON p.plt_num = i.plt_num
 LEFT JOIN data_code dc ON p.product_code = dc.code
 WHERE (i.injection + i.pipeline + i.await + i.fold + i.bulk + i.backcarpark) > 0
-GROUP BY p.product_code, dc.description
-ORDER BY total_qty DESC;
+GROUP BY p.product_code
+ORDER BY total_qty DESC
+LIMIT 10;
 ```
 
 ### Await Location 查詢
@@ -310,15 +323,78 @@ WHERE DATE(w.latest_update) = CURRENT_DATE
 ORDER BY total_work DESC;
 ```
 
-### 今日生產統計
+### 生產統計
 ```sql
--- 今日生產的棧板統計
+-- 今日生產的單一統計
 SELECT COUNT(DISTINCT p.plt_num) as pallet_count,
        SUM(p.product_qty) as total_qty,
        COUNT(DISTINCT p.product_code) as product_types
 FROM record_palletinfo p
 WHERE DATE(p.generate_time) = CURRENT_DATE
-  AND p.plt_remark LIKE '%finished in production%';
+  AND p.plt_remark ILIKE '%finished in production%';
+
+-- 按產品代碼顯示今日生產（用於圖表）
+SELECT 
+  p.product_code,
+  MAX(dc.description) as product_name,
+  COUNT(DISTINCT p.plt_num) as pallets_produced,
+  SUM(p.product_qty) as quantity_produced
+FROM record_palletinfo p
+LEFT JOIN data_code dc ON p.product_code = dc.code
+WHERE DATE(p.generate_time) = CURRENT_DATE
+  AND p.plt_remark ILIKE '%finished in production%'
+GROUP BY p.product_code
+ORDER BY quantity_produced DESC
+LIMIT 10;
+
+-- 本月每日生產趨勢（用於線圖）
+SELECT 
+  DATE(p.generate_time) as production_date,
+  COUNT(DISTINCT p.plt_num) as pallets_count,
+  SUM(p.product_qty) as total_quantity
+FROM record_palletinfo p
+WHERE DATE_TRUNC('month', p.generate_time) = DATE_TRUNC('month', CURRENT_DATE)
+  AND p.plt_remark ILIKE '%finished in production%'
+GROUP BY DATE(p.generate_time)
+ORDER BY production_date;
+```
+
+### 月度總結（單一查詢範例）
+```sql
+-- 使用 CTE 組合多項統計成單一結果
+WITH production_stats AS (
+  SELECT 
+    COUNT(DISTINCT plt_num) as pallets_produced,
+    SUM(product_qty) as qty_produced
+  FROM record_palletinfo
+  WHERE DATE_TRUNC('month', generate_time) = DATE_TRUNC('month', CURRENT_DATE)
+    AND plt_remark ILIKE '%finished in production%'
+),
+shipment_stats AS (
+  SELECT 
+    COUNT(DISTINCT pallet_num) as pallets_shipped,
+    SUM(quantity) as qty_shipped
+  FROM order_loading_history
+  WHERE DATE_TRUNC('month', action_time) = DATE_TRUNC('month', CURRENT_DATE)
+    AND action_type = 'Loaded'
+),
+transfer_stats AS (
+  SELECT 
+    SUM(CASE WHEN t_loc = 'Await' THEN 1 ELSE 0 END) as moved_to_await,
+    SUM(CASE WHEN t_loc = 'Damage' THEN 1 ELSE 0 END) as moved_to_damage
+  FROM record_transfer
+  WHERE DATE_TRUNC('month', tran_date) = DATE_TRUNC('month', CURRENT_DATE)
+)
+SELECT 
+  p.pallets_produced,
+  p.qty_produced,
+  s.pallets_shipped,
+  s.qty_shipped,
+  t.moved_to_await,
+  t.moved_to_damage
+FROM production_stats p
+CROSS JOIN shipment_stats s
+CROSS JOIN transfer_stats t;
 ```
 
 ### 未完成訂單
@@ -357,12 +433,15 @@ ORDER BY o.created_at DESC;
 - 「在 Await」→ record_inventory.await > 0
 - 「今日」→ DATE(column) = CURRENT_DATE
 - 「收貨」→ record_grn 或 await_grn
-- 「生產」→ injection 或 plt_remark LIKE '%finished in production%'
+- 「生產」→ injection 或 plt_remark ILIKE '%finished in production%'
 - 「訂單」→ data_order
 - 「未完成」→ loaded_qty < product_qty
 - 「轉移」→ record_transfer
 - 「操作員」→ data_id.name (通過 id join)
 - 「工作量」→ work_level 表直接查詢
+- 「前10」「Top 10」→ 使用 GROUP BY + ORDER BY + LIMIT 10
+- 「按產品」→ GROUP BY product_code
+- 「每日」→ GROUP BY DATE(column)
 
 ### 時間處理
 - 系統使用英國時間
@@ -374,11 +453,18 @@ ORDER BY o.created_at DESC;
 ## 回覆格式與規則
 
 1. **只生成 SELECT 查詢**，拒絕任何修改操作
-2. 使用現有表名和欄位名，不創造新名稱
-3. **英文回覆**，簡潔專業
-4. 包含查詢結果摘要和關鍵洞察
-5. 空結果回覆 "No matching records found."
-6. 錯誤時提供友好建議
+2. **必須生成單一 SQL 查詢**，不能用分號分隔多個查詢
+3. 如需多項統計，使用 subqueries、CTEs 或 UNION ALL 合併成單一結果集
+4. 使用現有表名和欄位名，不創造新名稱
+5. **英文回覆**，簡潔專業
+6. 包含查詢結果摘要和關鍵洞察
+7. 空結果回覆 "No matching records found."
+8. 錯誤時提供友好建議
+9. **避免重複記錄**：使用 GROUP BY 聚合相同產品
+10. **圖表查詢優化**：
+    - 返回多條記錄時使用 GROUP BY 避免重複
+    - 限制結果數量（通常 LIMIT 10-20）
+    - 確保有清晰的標籤欄位（如 product_code）和數值欄位
 
 ---
 

@@ -4,6 +4,85 @@
 
 基於 NewPennine 倉庫管理系統的 Analysis Theme，數據分析系統旨在提供深度業務洞察、預測分析同決策支援。現時系統已具備基礎分析功能，包括庫存周轉分析、用戶活動熱力圖、盤點準確性趨勢等。本計劃將大幅增強分析能力，引入機器學習、實時分析同自動化洞察功能。
 
+## 最新更新 (2025-06-27)
+
+### Stock Management 頁面改進
+1. **Stock Distribution Widget 改造**
+   - 從 Pie Chart 改為 Treemap 視覺化
+   - 使用綠色系顯示正常庫存，紅色系顯示低庫存
+   - 移除 header 和數據摘要，專注顯示圖表
+
+2. **Stock Level History 新功能**
+   - 取代原有的 Stock Alerts widget
+   - 顯示多條產品線的庫存歷史趨勢
+   - 根據 StockTypeSelector 的類型選擇自動更新
+   - 12個時間段顯示，支援頁面時間選擇器
+
+### Warehouse 頁面 Widget 數據計算分析
+
+#### 1. Await Location Qty (等待位置數量)
+- **數據來源**: `record_inventory` 表
+- **計算方式**: 加總所有 `await` 欄位的值
+- **更新頻率**: 實時數據，無需時間範圍
+
+#### 2. Transfer Done (完成轉移)
+- **數據來源**: `record_transfer` 表
+- **計算方式**: 計算時間範圍內的記錄數量
+- **預設值**: 昨天的轉移數量
+- **趨勢分析**: 與今天比較顯示增減趨勢
+
+#### 3. Still In Await (仍在等待)
+- **數據來源**: `record_history`, `record_inventory`, `record_palletinfo`
+- **計算方式**: 
+  1. 查詢時間範圍內移到 'Await' 的棧板
+  2. 檢查這些棧板現在是否還在 await 位置
+  3. 計算仍在 await 的棧板產品數量總和
+- **性能考慮**: 需要跨三個表查詢，可能影響性能
+
+#### 4. Still In Await % (仍在等待百分比)
+- **數據來源**: 同上
+- **計算方式**: (仍在 await 的數量 / 移到 await 的總數量) × 100%
+- **視覺化**: 進度條顯示
+
+#### 5. Order Progress (訂單進度)
+- **數據來源**: `data_order` 表
+- **計算方式**: (已裝載數量 / 訂單數量) × 100%
+- **狀態分類**: 完成(≥100%)、進行中(>0%)、待處理(0%)
+
+#### 6. Transfer Time Distribution (轉移時間分布)
+- **數據來源**: `record_transfer` 表
+- **計算方式**: 將時間範圍分成12段，統計每段的轉移次數
+- **視覺化**: 線形圖顯示活動分布
+
+#### 7. Transfer List (轉移列表)
+- **數據來源**: `record_transfer`, `data_id` 表
+- **顯示內容**: 最近50條倉庫部門的轉移記錄
+- **過濾條件**: 操作員部門為 'Warehouse'
+
+#### 8. Work Level (工作水平)
+- **數據來源**: `work_level`, `data_id` 表
+- **計算方式**: 按日期分組統計倉庫部門的移動次數
+- **視覺化**: 面積圖顯示每日工作量趨勢
+
+### Supabase RPC Functions 清理成果
+
+已成功刪除以下過時的 RPC functions：
+- `generate_atomic_pallet_numbers_v5_with_cleanup`
+- `test_atomic_pallet_generation_v2`
+- `monitor_pallet_generation_performance_v2`
+
+保留的核心 functions：
+- `execute_sql_query` - Ask Database 功能
+- `generate_atomic_pallet_numbers_v3` - 棧板號碼生成（QC用）
+- `generate_atomic_pallet_numbers_v6` - 棧板號碼生成（GRN用）
+- `search_pallet_optimized_v2` - 棧板搜尋
+- `update_stock_level_void` - Void 操作
+
+建議未來行動：
+1. 刪除所有未使用的 buffer 相關函數
+2. 評估物化視圖函數的必要性
+3. 整合重複的函數
+
 ## 現狀分析
 
 ### 現有系統架構

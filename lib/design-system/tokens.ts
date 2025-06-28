@@ -1,0 +1,287 @@
+// Design System Tokens - NewPennine 統一設計系統
+// 基於 shadcn/ui 同 Tailwind CSS 建立
+
+export const designTokens = {
+  // 顏色系統 - 基於 HSL 色階
+  colors: {
+    // 主色調
+    primary: {
+      DEFAULT: 'hsl(var(--primary))',
+      foreground: 'hsl(var(--primary-foreground))',
+      50: 'hsl(210, 40%, 98%)',
+      100: 'hsl(210, 40%, 96%)',
+      200: 'hsl(210, 40%, 90%)',
+      300: 'hsl(210, 40%, 80%)',
+      400: 'hsl(210, 40%, 60%)',
+      500: 'hsl(210, 40%, 40%)',
+      600: 'hsl(210, 40%, 30%)',
+      700: 'hsl(210, 40%, 20%)',
+      800: 'hsl(210, 40%, 10%)',
+      900: 'hsl(210, 40%, 5%)',
+    },
+    
+    // 語義化顏色
+    semantic: {
+      success: {
+        DEFAULT: 'hsl(142, 76%, 36%)',
+        light: 'hsl(142, 76%, 45%)',
+        dark: 'hsl(142, 76%, 25%)',
+        foreground: 'hsl(0, 0%, 100%)',
+      },
+      warning: {
+        DEFAULT: 'hsl(38, 92%, 50%)',
+        light: 'hsl(38, 92%, 60%)',
+        dark: 'hsl(38, 92%, 40%)',
+        foreground: 'hsl(0, 0%, 0%)',
+      },
+      error: {
+        DEFAULT: 'hsl(0, 84%, 60%)',
+        light: 'hsl(0, 84%, 70%)',
+        dark: 'hsl(0, 84%, 50%)',
+        foreground: 'hsl(0, 0%, 100%)',
+      },
+      info: {
+        DEFAULT: 'hsl(199, 89%, 48%)',
+        light: 'hsl(199, 89%, 58%)',
+        dark: 'hsl(199, 89%, 38%)',
+        foreground: 'hsl(0, 0%, 100%)',
+      }
+    },
+    
+    // 中性色
+    neutral: {
+      0: 'hsl(0, 0%, 100%)',
+      50: 'hsl(0, 0%, 98%)',
+      100: 'hsl(0, 0%, 96%)',
+      200: 'hsl(0, 0%, 90%)',
+      300: 'hsl(0, 0%, 80%)',
+      400: 'hsl(0, 0%, 60%)',
+      500: 'hsl(0, 0%, 40%)',
+      600: 'hsl(0, 0%, 30%)',
+      700: 'hsl(0, 0%, 20%)',
+      800: 'hsl(0, 0%, 10%)',
+      900: 'hsl(0, 0%, 5%)',
+      1000: 'hsl(0, 0%, 0%)',
+    }
+  },
+  
+  // 間距系統 - 8px 基準
+  spacing: {
+    0: '0',
+    px: '1px',
+    0.5: '0.125rem',  // 2px
+    1: '0.25rem',     // 4px
+    1.5: '0.375rem',  // 6px
+    2: '0.5rem',      // 8px
+    2.5: '0.625rem',  // 10px
+    3: '0.75rem',     // 12px
+    3.5: '0.875rem',  // 14px
+    4: '1rem',        // 16px
+    5: '1.25rem',     // 20px
+    6: '1.5rem',      // 24px
+    7: '1.75rem',     // 28px
+    8: '2rem',        // 32px
+    9: '2.25rem',     // 36px
+    10: '2.5rem',     // 40px
+    11: '2.75rem',    // 44px
+    12: '3rem',       // 48px
+    14: '3.5rem',     // 56px
+    16: '4rem',       // 64px
+    20: '5rem',       // 80px
+    24: '6rem',       // 96px
+    28: '7rem',       // 112px
+    32: '8rem',       // 128px
+    36: '9rem',       // 144px
+    40: '10rem',      // 160px
+    44: '11rem',      // 176px
+    48: '12rem',      // 192px
+    52: '13rem',      // 208px
+    56: '14rem',      // 224px
+    60: '15rem',      // 240px
+    64: '16rem',      // 256px
+    72: '18rem',      // 288px
+    80: '20rem',      // 320px
+    96: '24rem',      // 384px
+  },
+  
+  // 字體系統
+  typography: {
+    // 字體家族
+    fontFamily: {
+      sans: ['Inter', 'Noto Sans HK', 'system-ui', '-apple-system', 'sans-serif'],
+      mono: ['JetBrains Mono', 'Consolas', 'monospace'],
+    },
+    
+    // 字體大小
+    fontSize: {
+      xs: ['0.75rem', { lineHeight: '1rem' }],       // 12px
+      sm: ['0.875rem', { lineHeight: '1.25rem' }],   // 14px
+      base: ['1rem', { lineHeight: '1.5rem' }],      // 16px
+      lg: ['1.125rem', { lineHeight: '1.75rem' }],   // 18px
+      xl: ['1.25rem', { lineHeight: '1.75rem' }],    // 20px
+      '2xl': ['1.5rem', { lineHeight: '2rem' }],     // 24px
+      '3xl': ['1.875rem', { lineHeight: '2.25rem' }],// 30px
+      '4xl': ['2.25rem', { lineHeight: '2.5rem' }],  // 36px
+      '5xl': ['3rem', { lineHeight: '1' }],          // 48px
+      '6xl': ['3.75rem', { lineHeight: '1' }],       // 60px
+      '7xl': ['4.5rem', { lineHeight: '1' }],        // 72px
+      '8xl': ['6rem', { lineHeight: '1' }],          // 96px
+      '9xl': ['8rem', { lineHeight: '1' }],          // 128px
+    },
+    
+    // 字重
+    fontWeight: {
+      thin: '100',
+      extralight: '200',
+      light: '300',
+      normal: '400',
+      medium: '500',
+      semibold: '600',
+      bold: '700',
+      extrabold: '800',
+      black: '900',
+    }
+  },
+  
+  // 圓角系統
+  borderRadius: {
+    none: '0',
+    sm: '0.125rem',    // 2px
+    DEFAULT: '0.25rem',// 4px
+    md: '0.375rem',    // 6px
+    lg: '0.5rem',      // 8px
+    xl: '0.75rem',     // 12px
+    '2xl': '1rem',     // 16px
+    '3xl': '1.5rem',   // 24px
+    full: '9999px',
+  },
+  
+  // 陰影系統
+  boxShadow: {
+    sm: '0 1px 2px 0 rgb(0 0 0 / 0.05)',
+    DEFAULT: '0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1)',
+    md: '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)',
+    lg: '0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)',
+    xl: '0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)',
+    '2xl': '0 25px 50px -12px rgb(0 0 0 / 0.25)',
+    inner: 'inset 0 2px 4px 0 rgb(0 0 0 / 0.05)',
+    none: 'none',
+  },
+  
+  // 觸控目標大小 (WCAG 2.1 AAA 標準)
+  touch: {
+    small: {
+      minHeight: '44px',
+      minWidth: '44px',
+      padding: '0.75rem',
+    },
+    medium: {
+      minHeight: '48px',
+      minWidth: '48px',
+      padding: '1rem',
+    },
+    large: {
+      minHeight: '56px',
+      minWidth: '56px',
+      padding: '1.25rem',
+    }
+  },
+  
+  // 動畫時長
+  duration: {
+    75: '75ms',
+    100: '100ms',
+    150: '150ms',
+    200: '200ms',
+    300: '300ms',
+    500: '500ms',
+    700: '700ms',
+    1000: '1000ms',
+  },
+  
+  // 動畫緩動函數
+  easing: {
+    linear: 'linear',
+    in: 'cubic-bezier(0.4, 0, 1, 1)',
+    out: 'cubic-bezier(0, 0, 0.2, 1)',
+    inOut: 'cubic-bezier(0.4, 0, 0.2, 1)',
+    bounce: 'cubic-bezier(0.68, -0.55, 0.265, 1.55)',
+  },
+  
+  // 斷點 (響應式設計)
+  breakpoints: {
+    xs: '475px',
+    sm: '640px',
+    md: '768px',
+    lg: '1024px',
+    xl: '1280px',
+    '2xl': '1536px',
+  },
+  
+  // Z-index 層級
+  zIndex: {
+    0: 0,
+    10: 10,
+    20: 20,
+    30: 30,
+    40: 40,
+    50: 50,
+    dialog: 100,
+    dropdown: 200,
+    sticky: 300,
+    fixed: 400,
+    modalBackdrop: 500,
+    modal: 600,
+    popover: 700,
+    tooltip: 800,
+    notification: 900,
+    max: 9999,
+  }
+} as const;
+
+// 輔助函數 - 生成 Tailwind class names
+export const cn = (...classes: (string | undefined | null | false)[]) => {
+  return classes.filter(Boolean).join(' ');
+};
+
+// 輔助函數 - 獲取觸控大小 class
+export const getTouchSizeClass = (size: keyof typeof designTokens.touch = 'medium') => {
+  const touchSize = designTokens.touch[size];
+  return `min-h-[${touchSize.minHeight}] min-w-[${touchSize.minWidth}] p-[${touchSize.padding}]`;
+};
+
+// 輔助函數 - 獲取語義化顏色 class
+export const getSemanticColorClass = (
+  type: keyof typeof designTokens.colors.semantic,
+  variant: 'bg' | 'text' | 'border' = 'bg'
+) => {
+  const colorMap = {
+    bg: {
+      success: 'bg-green-500',
+      warning: 'bg-yellow-500',
+      error: 'bg-red-500',
+      info: 'bg-blue-500',
+    },
+    text: {
+      success: 'text-green-500',
+      warning: 'text-yellow-500',
+      error: 'text-red-500',
+      info: 'text-blue-500',
+    },
+    border: {
+      success: 'border-green-500',
+      warning: 'border-yellow-500',
+      error: 'border-red-500',
+      info: 'border-blue-500',
+    },
+  };
+  
+  return colorMap[variant][type];
+};
+
+// 類型定義
+export type DesignTokens = typeof designTokens;
+export type ColorToken = keyof typeof designTokens.colors;
+export type SpacingToken = keyof typeof designTokens.spacing;
+export type TypographyToken = keyof typeof designTokens.typography;
+export type TouchSize = keyof typeof designTokens.touch;

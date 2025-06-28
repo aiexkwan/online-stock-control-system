@@ -6,6 +6,7 @@ import { User, Bot, Zap, Clock, Loader2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import type { ChatMessage as ChatMessageType } from './ChatInterface';
+import { ContextDebugger } from '@/components/ask-database/ContextDebugger';
 
 interface ChatMessageProps {
   message: ChatMessageType;
@@ -107,6 +108,17 @@ export default function ChatMessage({ message, isLoading }: ChatMessageProps) {
               </>
             )}
           </div>
+          
+          {/* 上下文解析信息 */}
+          {message.type === 'user' && message.metadata?.resolvedQuestion && (
+            <div className="mt-2 w-full max-w-md">
+              <ContextDebugger
+                originalQuestion={message.content}
+                resolvedQuestion={message.metadata.resolvedQuestion}
+                references={message.metadata.references}
+              />
+            </div>
+          )}
         </div>
       </div>
     </motion.div>

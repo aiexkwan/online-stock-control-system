@@ -91,7 +91,8 @@
       "Bash(for file in *.tsx)",
       "Bash(do if ! grep -q \"UniversalWidgetCard\\|WidgetCard\" \"$file\")",
       "Bash(then echo \"$file\")",
-      "Bash(fi done)"
+      "Bash(fi done)",
+      "mcp__supabase__list_organizations"
     ],
     "deny": []
   }

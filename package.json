@@ -60,6 +60,7 @@
     "@supabase/supabase-js": "^2.48.0",
     "@tanstack/react-query": "^5.62.11",
     "@tanstack/react-table": "^8.20.6",
+    "@tanstack/react-virtual": "^3.13.12",
     "@tremor/react": "^3.18.7",
     "@types/pdf-parse": "^1.1.4",
     "@vercel/analytics": "^1.4.1",

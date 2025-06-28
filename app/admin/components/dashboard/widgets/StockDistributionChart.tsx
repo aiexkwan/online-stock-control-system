@@ -57,7 +57,7 @@ export const StockDistributionChart: React.FC<StockDistributionChartProps> = ({ 
   };
 
   // 處理庫存數據並生成圖表數據
-  const processStockData = (data: StockData[]) => {
+  const processStockData = useCallback((data: StockData[]) => {
     // 計算總庫存和平均值
     const totalStock = data.reduce((sum, item) => sum + item.stock_level, 0);
     const averageStock = totalStock / data.length;
@@ -78,7 +78,7 @@ export const StockDistributionChart: React.FC<StockDistributionChartProps> = ({ 
     }));
     
     setChartData(processedData);
-  };
+  }, []);
 
   // 獲取初始數據
   const fetchInitialData = useCallback(async () => {

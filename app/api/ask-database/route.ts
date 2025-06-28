@@ -4,6 +4,8 @@ import { LRUCache } from 'lru-cache';
 import OpenAI from 'openai';
 import type { ChatCompletionMessageParam } from 'openai/resources/chat/completions';
 import { enhanceQueryWithTemplate } from '@/lib/query-templates';
+import { optimizeSQL } from '@/lib/sql-optimizer';
+import { DatabaseConversationContextManager } from '@/lib/conversation-context-db';
 
 // 不允許使用 Ask Database 功能的用戶（黑名單）
 const BLOCKED_USERS = [
@@ -22,11 +24,12 @@ const queryCache = new LRUCache<string, any>({
   ttl: 2 * 3600 * 1000, // 2小時
 });
 
-// 會話歷史緩存
-const conversationCache = new LRUCache<string, ConversationEntry[]>({
-  max: 300,
-  ttl: 24 * 60 * 60 * 1000, // 24小時
-});
+// 緩存版本號 - 更改此值以強制清除所有緩存
+const CACHE_VERSION = 'v2.1'; // Changed from v2.0 to force cache refresh
+
+// 會話歷史已經移到數據庫，不再使用內存緩存
+
+// 使用數據庫存儲對話上下文，不需要內存緩存
 
 // 用戶名稱緩存
 const userNameCache = new LRUCache<string, string>({
@@ -34,14 +37,6 @@ const userNameCache = new LRUCache<string, string>({
   ttl: 24 * 60 * 60 * 1000, // 24小時
 });
 
-// 對話記錄類型
-interface ConversationEntry {
-  timestamp: string;
-  question: string;
-  sql: string;
-  answer: string;
-  result: any;
-}
 
 interface QueryResult {
   question: string;
@@ -56,6 +51,8 @@ interface QueryResult {
   tokensUsed: number;
   cached: boolean;
   timestamp: string;
+  resolvedQuestion?: string;
+  references?: any[];
 }
 
 process.env.NODE_ENV !== "production" && console.log('[Ask Database] 🚀 OpenAI SQL Generation Mode - Build 2025-01-03');
@@ -69,16 +66,172 @@ export async function POST(request: NextRequest) {
   try {
     process.env.NODE_ENV !== "production" && console.log('[Ask Database] 🚀 OpenAI Mode - Request received');
     
-    const { question, sessionId } = await request.json();
+    const body = await request.json();
+    const question = body.question;
+    // 如果沒有提供 sessionId，生成一個新的
+    const sessionId = body.sessionId || `session_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+    
     process.env.NODE_ENV !== "production" && console.log('[Ask Database] Question:', question);
     process.env.NODE_ENV !== "production" && console.log('[Ask Database] Session ID:', sessionId);
 
+    // 獲取用戶信息（先獲取用戶信息，用於創建上下文管理器）
+    const userInfo = await getUserInfo();
+    userEmail = userInfo.email;
+    userName = userInfo.name;
+    
+    // 創建數據庫上下文管理器
+    const contextManager = new DatabaseConversationContextManager(sessionId, userEmail);
+    
+    // 檢查是否是詢問對話歷史的問題
+    const conversationHistoryPatterns = [
+      /what.*ask.*before/i,
+      /what.*previous.*conversation/i,
+      /what.*our.*conversation/i,
+      /where.*are.*we/i,  // "Where are we?" - 對話進展
+      /what.*we.*discuss/i,
+      /what.*talk.*about/i,
+      /previous.*question/i,
+      /previous.*conversation/i,
+      /history.*conversation/i,
+      /conversation.*history/i,
+      /forget.*what.*ask/i,
+      /show.*chat.*history/i,
+      /show.*conversation/i,
+      /past.*conversation/i,
+      /earlier.*question/i,
+      /recap.*conversation/i,
+      /summarize.*discussion/i,
+      /之前.*問.*什麼/i,
+      /忘記.*問/i,
+      /對話.*紀錄/i,
+      /之前.*對話/i,
+      /傾到邊/i,
+      /討論.*邊度/i
+    ];
+    
+    const isAskingForHistory = conversationHistoryPatterns.some(pattern => pattern.test(question));
+    
+    if (isAskingForHistory) {
+      process.env.NODE_ENV !== "production" && console.log('[Ask Database] User asking for conversation history');
+      
+      // 先嘗試獲取當前 session 的對話記錄
+      let recentHistory = await contextManager.getSessionHistory(10);
+      
+      // 如果當前 session 沒有記錄，從數據庫獲取該用戶最近的對話
+      if (recentHistory.length === 0 && userName) {
+        process.env.NODE_ENV !== "production" && console.log('[Ask Database] No session history, fetching user history from database');
+        
+        const supabase = createClient();
+        const { data: userHistory, error } = await supabase
+          .from('query_record')
+          .select('query, sql_query, answer, created_at')
+          .eq('user', userName)  // 使用 userName 而不是 userEmail
+          .order('created_at', { ascending: false })
+          .limit(10);
+        
+        if (!error && userHistory && userHistory.length > 0) {
+          // 轉換格式以匹配 recentHistory 的結構
+          recentHistory = userHistory.reverse().map(record => ({
+            question: record.query,
+            sql: record.sql_query,
+            answer: record.answer
+          }));
+        }
+      }
+      
+      if (recentHistory.length === 0) {
+        const answer = "You haven't asked any questions yet.";
+        
+        // 保存查詢記錄
+        saveQueryRecordEnhanced(
+          question,
+          answer,
+          userName,
+          0,
+          '',
+          { data: [], rowCount: 0, executionTime: 0 },
+          0,
+          0,
+          'simple',
+          sessionId
+        );
+        
+        return NextResponse.json({
+          question,
+          sql: '',
+          result: { data: [], rowCount: 0, executionTime: 0 },
+          answer,
+          complexity: 'simple',
+          tokensUsed: 0,
+          cached: false,
+          timestamp: new Date().toISOString()
+        });
+      }
+      
+      // 檢查是否值得使用 AI 生成（節省 token）
+      let shouldUseAI = recentHistory.length >= 3; // 只有超過 3 條記錄先用 AI
+      
+      let historyResponse = '';
+      let tokensUsed = 0;
+      
+      if (shouldUseAI) {
+        try {
+          const result = await generateConversationSummary(recentHistory.slice(-5), userName); // 最多只傳 5 條
+          historyResponse = result.summary;
+          tokensUsed = result.tokensUsed;
+        } catch (error) {
+          console.error('[Ask Database] AI summary generation failed:', error);
+          shouldUseAI = false; // 失敗就用簡單方案
+        }
+      }
+      
+      // 簡單方案（少於 3 條或 AI 失敗）
+      if (!shouldUseAI || !historyResponse) {
+        historyResponse = "Here's what we've discussed:\n\n";
+        recentHistory.forEach((entry, index) => {
+          historyResponse += `${index + 1}. "${entry.question}"\n`;
+          const shortAnswer = entry.answer.split('\n')[0].substring(0, 80);
+          historyResponse += `   → ${shortAnswer}${entry.answer.length > 80 ? '...' : ''}\n\n`;
+        });
+      }
+      
+      // 保存查詢記錄
+      saveQueryRecordEnhanced(
+        question,
+        historyResponse,
+        userName,
+        tokensUsed,
+        '',
+        { data: recentHistory, rowCount: recentHistory.length, executionTime: 0 },
+        0,
+        recentHistory.length,
+        'simple',
+        sessionId
+      );
+        
+      return NextResponse.json({
+        question,
+        sql: '',
+        result: { data: recentHistory, rowCount: recentHistory.length, executionTime: 0 },
+        answer: historyResponse,
+        complexity: 'simple',
+        tokensUsed: 0,
+        cached: false,
+        timestamp: new Date().toISOString()
+      });
+    }
+    
+    // 解析引用（使用數據庫中的歷史記錄）
+    const { resolved: resolvedQuestion, references } = await contextManager.resolveReferences(question);
+    if (references.length > 0) {
+      process.env.NODE_ENV !== "production" && console.log('[Ask Database] Resolved references:', references);
+    }
+    
     // 1. 並行執行權限檢查和會話歷史獲取
     process.env.NODE_ENV !== "production" && console.log('[Ask Database] Starting parallel operations...');
-    const [hasPermission, conversationHistory, userInfo] = await Promise.all([
+    const [hasPermission, conversationHistory] = await Promise.all([
       checkUserPermission(),
-      Promise.resolve(getConversationHistory(sessionId)),
-      getUserInfo()
+      contextManager.getSessionHistory(5) // 獲取最近5條對話記錄
     ]);
 
     if (!hasPermission) {
@@ -88,9 +241,6 @@ export async function POST(request: NextRequest) {
         { status: 403 }
       );
     }
-    
-    userEmail = userInfo.email;
-    userName = userInfo.name;
     process.env.NODE_ENV !== "production" && console.log('[Ask Database] User info:', { email: userEmail, name: userName });
     process.env.NODE_ENV !== "production" && console.log('[Ask Database] Permission granted, conversation history length:', conversationHistory.length);
 
@@ -115,7 +265,8 @@ export async function POST(request: NextRequest) {
         cachedResult.result || null,
         safeExecutionTime,
         safeData.length,
-        'cached'
+        'cached',
+        sessionId
       );
       
       return NextResponse.json({
@@ -145,10 +296,53 @@ export async function POST(request: NextRequest) {
     }
     process.env.NODE_ENV !== "production" && console.log('[Ask Database] All cache layers missed');
 
-    // 3. 使用 OpenAI 生成 SQL 查詢
+    // 3. 使用 OpenAI 生成 SQL 查詢（使用解析後的問題）
     process.env.NODE_ENV !== "production" && console.log('[Ask Database] 🧠 Generating SQL with OpenAI...');
-    const { sql, tokensUsed } = await generateSQLWithOpenAI(question, conversationHistory, userEmail);
-    process.env.NODE_ENV !== "production" && console.log('[Ask Database] Generated SQL:', sql);
+    const sqlResult = await generateSQLWithOpenAI(
+      resolvedQuestion, 
+      conversationHistory, 
+      userName,  // 使用 userName 而不是 userEmail
+      contextManager
+    );
+    
+    // 檢查是否需要澄清
+    if (sqlResult.clarification) {
+      process.env.NODE_ENV !== "production" && console.log('[Ask Database] Clarification needed:', sqlResult.clarification);
+      
+      // 保存澄清問題到記錄
+      saveQueryRecordEnhanced(
+        question,
+        sqlResult.clarification,
+        userName,
+        sqlResult.tokensUsed,
+        '',
+        { data: [], rowCount: 0, executionTime: 0 },
+        0,
+        0,
+        'clarification',
+        sessionId
+      );
+      
+      return NextResponse.json({
+        question,
+        sql: '',
+        result: { data: [], rowCount: 0, executionTime: 0 },
+        answer: sqlResult.clarification,
+        complexity: 'simple',
+        tokensUsed: sqlResult.tokensUsed,
+        cached: false,
+        timestamp: new Date().toISOString(),
+        needsClarification: true
+      });
+    }
+    
+    const { sql: rawSQL, tokensUsed } = sqlResult;
+    
+    // 優化 SQL 查詢
+    const sql = optimizeSQL(rawSQL, question);
+    
+    process.env.NODE_ENV !== "production" && console.log('[Ask Database] Generated SQL:', rawSQL);
+    process.env.NODE_ENV !== "production" && console.log('[Ask Database] Optimized SQL:', sql);
     process.env.NODE_ENV !== "production" && console.log('[Ask Database] Tokens used:', tokensUsed);
 
     // 4. 檢查 SQL 結果緩存 (L3)
@@ -173,6 +367,8 @@ export async function POST(request: NextRequest) {
       });
     }
 
+    // 上下文已經通過 saveQueryRecordEnhanced 保存到數據庫
+    
     // 5. 使用 OpenAI 生成自然語言回應
     process.env.NODE_ENV !== "production" && console.log('[Ask Database] 📝 Generating natural language response with OpenAI...');
     const { answer, additionalTokens } = await generateAnswerWithOpenAI(question, sql, queryResult);
@@ -190,6 +386,8 @@ export async function POST(request: NextRequest) {
       tokensUsed: totalTokens,
       cached: false,
       timestamp: new Date().toISOString(),
+      resolvedQuestion: resolvedQuestion !== question ? resolvedQuestion : undefined,
+      references: references.length > 0 ? references : undefined
     };
 
     // 6. 並行執行緩存保存、會話歷史保存和聊天記錄保存
@@ -197,13 +395,8 @@ export async function POST(request: NextRequest) {
     const finalCacheKey = generateCacheKey(question, conversationHistory);
     const saveOperations = [
       Promise.resolve(queryCache.set(finalCacheKey, result)),
-      Promise.resolve(saveConversationHistory(sessionId, {
-      timestamp: result.timestamp,
-      question,
-        sql,
-        answer,
-      result: queryResult,
-      })),
+      // 會話歷史已經通過 saveQueryRecordEnhanced 保存到數據庫
+      Promise.resolve(),
       saveQueryRecordEnhanced(
         question,
         answer,
@@ -213,7 +406,8 @@ export async function POST(request: NextRequest) {
         queryResult,
         (queryResult && queryResult.executionTime ? queryResult.executionTime : 0),
         (queryResult && queryResult.data ? queryResult.data.length : 0),
-        complexity
+        complexity,
+        sessionId
       )
     ];
 
@@ -260,7 +454,12 @@ export async function POST(request: NextRequest) {
 }
 
 // 使用 OpenAI 生成 SQL 查詢
-async function generateSQLWithOpenAI(question: string, conversationHistory: ConversationEntry[], userEmail: string | null): Promise<{ sql: string; tokensUsed: number }> {
+async function generateSQLWithOpenAI(
+  question: string, 
+  conversationHistory: Array<{ question: string; sql: string; answer: string }>, 
+  userName: string | null,
+  contextManager?: DatabaseConversationContextManager
+): Promise<{ sql: string; tokensUsed: number; clarification?: string }> {
   try {
     // 讀取 OpenAI prompt
     const fs = require('fs');
@@ -272,10 +471,18 @@ async function generateSQLWithOpenAI(question: string, conversationHistory: Conv
     const templateResult = enhanceQueryWithTemplate(question);
     
     // 獲取同日對話歷史
-    const dailyHistory = await getDailyQueryHistory(userEmail);
+    const dailyHistory = await getDailyQueryHistory(userName);
     
     // 構建包含同日歷史的 prompt
     let enhancedPrompt = promptContent;
+    
+    // 添加上下文信息（使用數據庫中的上下文）
+    if (contextManager) {
+      const contextPrompt = await contextManager.generateContextPrompt();
+      if (contextPrompt) {
+        enhancedPrompt += '\n' + contextPrompt;
+      }
+    }
     
     // 如果有匹配的模板，加入提示
     if (templateResult.enhanced && templateResult.hint) {
@@ -339,6 +546,22 @@ async function generateSQLWithOpenAI(question: string, conversationHistory: Conv
       throw new Error('OpenAI returned empty response');
     }
 
+    // 檢查是否是澄清問題
+    const isClarificationNeeded = content.toLowerCase().includes('clarify') || 
+                                  content.toLowerCase().includes('please specify') ||
+                                  content.toLowerCase().includes('could you') ||
+                                  content.toLowerCase().includes('what do you mean') ||
+                                  content.toLowerCase().includes('are you asking');
+    
+    if (isClarificationNeeded) {
+      // 返回澄清問題作為特殊結果
+      return { 
+        sql: '', 
+        tokensUsed, 
+        clarification: content 
+      };
+    }
+    
     // 提取 SQL 查詢 - 支援多種格式
     let sql = '';
     
@@ -367,9 +590,25 @@ async function generateSQLWithOpenAI(question: string, conversationHistory: Conv
       throw new Error('Empty SQL query extracted from OpenAI response');
     }
     
-    // 驗證 SQL 是否為 SELECT 查詢
-    if (!sql.toLowerCase().trim().startsWith('select')) {
+    // 驗證 SQL 是否為 SELECT 查詢（支援 WITH 語句）
+    const normalizedSql = sql.toLowerCase().trim();
+    const isSelectQuery = normalizedSql.startsWith('select') || 
+                         normalizedSql.startsWith('with') ||
+                         normalizedSql.startsWith('-- ');  // Allow comments before SELECT
+    
+    if (!isSelectQuery) {
       throw new Error('Only SELECT queries are allowed');
+    }
+    
+    // Additional safety check - ensure no dangerous keywords
+    const dangerousKeywords = ['insert', 'update', 'delete', 'drop', 'create', 'alter', 'truncate'];
+    const sqlLower = sql.toLowerCase();
+    for (const keyword of dangerousKeywords) {
+      // Check if keyword appears at word boundaries
+      const regex = new RegExp(`\\b${keyword}\\b`, 'i');
+      if (regex.test(sqlLower)) {
+        throw new Error(`Dangerous keyword "${keyword}" detected in query`);
+      }
     }
 
     process.env.NODE_ENV !== "production" && console.log('[OpenAI SQL] SQL generated successfully');
@@ -488,9 +727,71 @@ function determineComplexity(sql: string, resultCount: number): 'simple' | 'medi
   return 'simple';
 }
 
+// 使用 AI 生成自然嘅對話總結
+async function generateConversationSummary(
+  history: Array<{ question: string; sql: string; answer: string }>,
+  userName: string | null
+): Promise<{ summary: string; tokensUsed: number }> {
+  try {
+    const messages: Array<{role: 'system' | 'user', content: string}> = [
+      {
+        role: 'system',
+        content: `You are a helpful assistant summarizing a database conversation. 
+        Your task is to create a natural, conversational summary of what the user has been asking about.
+        
+        Guidelines:
+        - Write in a friendly, conversational tone
+        - Highlight key insights and findings
+        - Group related queries naturally
+        - Use "we" and "you" to make it personal
+        - Keep it concise but informative
+        - End with a helpful suggestion or question
+        - Do NOT use bullet points or numbered lists
+        - Write in flowing paragraphs
+        
+        The user's name is ${userName || 'there'}.`
+      },
+      {
+        role: 'user',
+        content: `Summarize:\n${history.map((h, i) => {
+          // 縮短答案以節省 token
+          let shortAnswer = h.answer;
+          if (h.answer.includes('**')) {
+            // 提取粗體內容（通常是重要信息）
+            const boldContent = h.answer.match(/\*\*([^*]+)\*\*/g)?.slice(0, 3).join(', ') || '';
+            shortAnswer = boldContent || h.answer.substring(0, 100);
+          } else {
+            shortAnswer = h.answer.substring(0, 100);
+          }
+          return `Q: ${h.question}\nA: ${shortAnswer}`;
+        }).join('\n')}`
+      }
+    ];
+
+    const response = await openai.chat.completions.create({
+      model: 'gpt-4o-mini',  // 使用較快嘅 model
+      messages: messages as any,
+      temperature: 0.7,  // 較高溫度令輸出更自然
+      max_tokens: 300,
+    });
+
+    const summary = response.choices[0]?.message?.content;
+    
+    if (!summary) {
+      throw new Error('AI returned empty summary');
+    }
+
+    const tokensUsed = response.usage?.total_tokens || 0;
+    return { summary: summary.trim(), tokensUsed };
+  } catch (error) {
+    console.error('[generateConversationSummary] Error:', error);
+    throw error;
+  }
+}
+
 // 獲取同日查詢歷史
-async function getDailyQueryHistory(userEmail: string | null): Promise<Array<{ question: string; answer: string }>> {
-  if (!userEmail) return [];
+async function getDailyQueryHistory(userName: string | null): Promise<Array<{ question: string; answer: string }>> {
+  if (!userName) return [];
   
   try {
     const supabase = createClient();
@@ -499,7 +800,7 @@ async function getDailyQueryHistory(userEmail: string | null): Promise<Array<{ q
     const { data, error } = await supabase
       .from('query_record')
       .select('query, answer')
-      .eq('user', userEmail)
+      .eq('user', userName)  // 使用 userName 而不是 userEmail
       .gte('created_at', today + 'T00:00:00')
       .lt('created_at', today + 'T23:59:59')
       .order('created_at', { ascending: true })
@@ -747,7 +1048,8 @@ async function saveQueryRecordEnhanced(
   resultJson: any = null,
   executionTime: number = 0,
   rowCount: number = 0,
-  complexity: string = 'simple'
+  complexity: string = 'simple',
+  sessionId?: string
 ): Promise<void> {
   setImmediate(async () => {
     try {
@@ -771,7 +1073,8 @@ async function saveQueryRecordEnhanced(
           query_hash: queryHash,
           execution_time: safeExecutionTime,
           row_count: safeRowCount,
-          complexity: complexity
+          complexity: complexity,
+          session_id: sessionId
         });
 
       if (error) {
@@ -815,35 +1118,16 @@ async function checkUserPermission(): Promise<boolean> {
 }
 
 // 生成緩存鍵
-function generateCacheKey(question: string, conversationHistory?: ConversationEntry[]): string {
+function generateCacheKey(question: string, conversationHistory?: Array<{ question: string; sql: string }>): string {
   const historyKey = conversationHistory && conversationHistory.length > 0 
     ? conversationHistory.slice(-2).map(entry => `${entry.question}:${entry.sql}`).join('|')
     : '';
   
-  const fullKey = `${question}|${historyKey}`;
+  const fullKey = `${CACHE_VERSION}|${question}|${historyKey}`;
   return `openai:${Buffer.from(fullKey).toString('base64')}`;
 }
 
-// 獲取會話歷史
-function getConversationHistory(sessionId: string): ConversationEntry[] {
-  if (!sessionId) return [];
-  return conversationCache.get(sessionId) || [];
-}
-
-// 保存會話歷史
-function saveConversationHistory(sessionId: string, entry: ConversationEntry): void {
-  if (!sessionId) return;
-  
-  const history = getConversationHistory(sessionId);
-  history.push(entry);
-  
-  // 只保留最近10次對話
-  if (history.length > 10) {
-    history.splice(0, history.length - 10);
-  }
-  
-  conversationCache.set(sessionId, history);
-}
+// 會話歷史現在已經由 DatabaseConversationContextManager 處理，直接從數據庫讀取
 
 export async function GET(request: NextRequest) {
   try {

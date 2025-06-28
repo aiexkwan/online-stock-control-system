@@ -13,6 +13,9 @@ import { useAuth } from '@/app/hooks/useAuth';
 import { DynamicActionBar } from '@/components/ui/dynamic-action-bar';
 import { AskDatabaseModal } from '@/components/ui/ask-database-modal';
 import { UniversalProvider } from '@/components/layout/universal';
+import { NavigationProvider } from '@/components/ui/dynamic-action-bar/NavigationProvider';
+import { SmartReminder } from '@/components/ui/dynamic-action-bar/SmartReminder';
+import { useAuth as useAuthForReminder } from '@/app/hooks/useAuth';
 
 // Icons
 import { 
@@ -28,7 +31,7 @@ interface ClientLayoutProps {
 
 export default function ClientLayout({ children }: ClientLayoutProps) {
   const pathname = usePathname();
-  const { isAuthenticated, userRole } = useAuth();
+  const { isAuthenticated, userRole, user } = useAuth();
   
   // Don't show sidebar on login pages and access page only
   const isLoginPage = pathname?.startsWith('/main-login') || pathname === '/';
@@ -169,11 +172,18 @@ export default function ClientLayout({ children }: ClientLayoutProps) {
         
         {/* Dynamic Navigation Bar - Show only when authenticated and not on login/access pages */}
         {isAuthenticated && !isLoginPage && !isAccessPage && (
-          <DynamicActionBar />
+          <NavigationProvider>
+            <DynamicActionBar />
+          </NavigationProvider>
         )}
         
         {/* Ask Database Modal */}
         <AskDatabaseModal />
+        
+        {/* Smart Reminder - Show for authenticated users */}
+        {isAuthenticated && user?.id && !isLoginPage && !isAccessPage && (
+          <SmartReminder userId={user.id} />
+        )}
       </AuthChecker>
     </UniversalProvider>
   );

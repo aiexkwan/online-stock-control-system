@@ -48,6 +48,7 @@ html {
 
 @layer base {
   :root {
+        /* 原有 Tailwind/shadcn 變量 */
         --background: 0 0% 100%;
         --foreground: 0 0% 3.9%;
         --card: 0 0% 100%;
@@ -73,8 +74,32 @@ html {
         --chart-4: 43 74% 66%;
         --chart-5: 27 87% 67%;
         --radius: 0.5rem;
+        
+        /* 設計系統 - Main Theme 變量 */
+        --background-primary: hsl(215, 40%, 10%);
+        --background-secondary: hsl(215, 30%, 15%);
+        --background-tertiary: hsl(215, 25%, 20%);
+        --background-overlay: hsla(215, 40%, 5%, 0.8);
+        
+        --foreground-primary: hsl(0, 0%, 95%);
+        --foreground-secondary: hsl(0, 0%, 70%);
+        --foreground-muted: hsl(0, 0%, 50%);
+        --foreground-inverted: hsl(0, 0%, 10%);
+        
+        --border-default: hsl(215, 20%, 25%);
+        --border-muted: hsl(215, 15%, 20%);
+        --border-strong: hsl(215, 25%, 35%);
+        
+        --accent-primary: hsl(217, 91%, 60%);
+        --accent-secondary: hsl(187, 74%, 48%);
+        --accent-tertiary: hsl(262, 83%, 58%);
+        
+        /* 字體 */
+        --font-sans: 'Inter', 'Noto Sans HK', system-ui, -apple-system, sans-serif;
+        --font-mono: 'JetBrains Mono', 'Consolas', monospace;
     }
   .dark {
+        /* 原有 Tailwind/shadcn 變量 */
         --background: 0 0% 3.9%;
         --foreground: 0 0% 98%;
         --card: 0 0% 3.9%;
@@ -99,6 +124,29 @@ html {
         --chart-3: 30 80% 55%;
         --chart-4: 280 65% 60%;
         --chart-5: 340 75% 55%;
+        
+        /* 設計系統變量保持不變（由 ThemeProvider 動態設置） */
+    }
+    
+    /* Admin Theme 變量（由 ThemeProvider 設置） */
+    [data-theme="admin"] {
+        --background-primary: hsl(240, 7%, 9%);
+        --background-secondary: hsl(240, 6%, 13%);
+        --background-tertiary: hsl(240, 5%, 17%);
+        --background-overlay: hsla(240, 7%, 5%, 0.9);
+        
+        --foreground-primary: hsl(0, 0%, 93%);
+        --foreground-secondary: hsl(0, 0%, 67%);
+        --foreground-muted: hsl(0, 0%, 47%);
+        --foreground-inverted: hsl(0, 0%, 9%);
+        
+        --border-default: hsl(240, 5%, 22%);
+        --border-muted: hsl(240, 4%, 18%);
+        --border-strong: hsl(240, 6%, 30%);
+        
+        --accent-primary: hsl(250, 89%, 65%);
+        --accent-secondary: hsl(187, 74%, 48%);
+        --accent-tertiary: hsl(28, 89%, 55%);
     }
 } 
 
@@ -187,6 +235,13 @@ input[type="number"] {
 
   .animate-dialogFadeOut {
     animation: dialogFadeOut 150ms ease-in;
+  }
+}
+
+/* Shimmer animation for animated borders */
+@keyframes shimmer {
+  to {
+    transform: translateX(100%);
   }
 }
 
