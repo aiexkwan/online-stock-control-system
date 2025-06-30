@@ -313,10 +313,10 @@ export const adminDashboardLayouts: Record<string, AdminDashboardLayout> = {
   update: {
     theme: 'update',
     gridTemplate: `
-      "widget2 widget2 widget2 widget3 widget3 widget3 widget4 widget4 widget1 widget1" 
-      "widget2 widget2 widget2 widget3 widget3 widget3 widget5 widget5 widget1 widget1" 
-      "widget8 widget8 widget8 widget3 widget3 widget3 widget6 widget6 widget1 widget1" 
-      "widget8 widget8 widget8 widget3 widget3 widget3 widget7 widget7 widget1 widget1"
+      "widget2 widget2 widget2 widget4 widget4 widget4 widget4 widget4 widget1 widget1" 
+      "widget2 widget2 widget2 widget4 widget4 widget4 widget4 widget4 widget1 widget1" 
+      "widget3 widget3 widget3 widget4 widget4 widget4 widget4 widget4 widget1 widget1" 
+      "widget3 widget3 widget3 widget5 widget5 widget5 widget5 widget5 widget1 widget1"
     `,
     widgets: [
       {
@@ -333,46 +333,25 @@ export const adminDashboardLayouts: Record<string, AdminDashboardLayout> = {
         component: 'ProductUpdateWidget'
       },
       {
-        type: 'empty',
-        title: 'Empty Space',
+        type: 'supplier-update',
+        title: 'Supplier Update',
         gridArea: 'widget3',
-        dataSource: 'none',
-        component: 'EmptyPlaceholderWidget'
+        dataSource: 'suppliers',
+        component: 'SupplierUpdateWidget'
+      },
+      {
+        type: 'void-pallet',
+        title: 'Void Pallet',
+        gridArea: 'widget4',
+        dataSource: 'void_pallets',
+        component: 'VoidPalletWidgetPlaceholder'
       },
       {
         type: 'stats',
         title: 'Pending Updates',
-        gridArea: 'widget4',
-        dataSource: 'update_stats',
-        metrics: ['pending_count']
-      },
-      {
-        type: 'stats',
-        title: 'Processing',
         gridArea: 'widget5',
         dataSource: 'update_stats',
-        metrics: ['processing_count']
-      },
-      {
-        type: 'stats',
-        title: 'Completed Today',
-        gridArea: 'widget6',
-        dataSource: 'update_stats',
-        metrics: ['completed_today']
-      },
-      {
-        type: 'stats',
-        title: 'Failed',
-        gridArea: 'widget7',
-        dataSource: 'update_stats',
-        metrics: ['failed_count']
-      },
-      {
-        type: 'supplier-update',
-        title: 'Supplier Update',
-        gridArea: 'widget8',
-        dataSource: 'suppliers',
-        component: 'SupplierUpdateWidget'
+        metrics: ['pending_count']
       }
     ]
   },

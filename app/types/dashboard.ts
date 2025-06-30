@@ -17,7 +17,6 @@ export enum WidgetType {
   VOID_STATS = 'void_stats',
   VOID_PALLET = 'void_pallet',
   VIEW_HISTORY = 'view_history',
-  DATABASE_UPDATE = 'database_update',
   UPLOAD_FILES = 'upload_files',
   PRODUCT_SPEC = 'product_spec',
   ANALYTICS_DASHBOARD = 'analytics_dashboard',

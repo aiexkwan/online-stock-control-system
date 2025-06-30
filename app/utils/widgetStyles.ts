@@ -27,7 +27,6 @@ export const WidgetStyles = {
     // System Tools 類
     VOID_PALLET: '',
     VIEW_HISTORY: '',
-    DATABASE_UPDATE: '',
     
     // Document Management 類
     UPLOAD_FILES: '',
@@ -46,7 +45,6 @@ export const WidgetStyles = {
     ask_database: '',
     void_pallet: '',
     view_history: '',
-    database_update: '',
     upload_files: '',
     reports: '',
     product_spec: '',
