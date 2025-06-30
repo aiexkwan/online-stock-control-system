@@ -19,6 +19,8 @@ interface MobileViewProps {
 export function MobileView({ items }: MobileViewProps) {
   const [expandedItem, setExpandedItem] = useState<string | null>(null);
   const [userData, setUserData] = useState<{ name: string; email: string; icon_url?: string | null } | null>(null);
+  const [isVisible, setIsVisible] = useState(false);
+  const [hideTimeout, setHideTimeout] = useState<NodeJS.Timeout | null>(null);
   const router = useRouter();
   const { user } = useAuth();
   const supabase = createClient();
@@ -67,25 +69,79 @@ export function MobileView({ items }: MobileViewProps) {
       item.onClick();
     } else if (item.href && !item.children) {
       router.push(item.href);
+      // Hide navigation after click
+      setIsVisible(false);
+      setExpandedItem(null);
     } else if (item.children) {
       setExpandedItem(expandedItem === item.id ? null : item.id);
     }
   };
 
+  // Handle show/hide with timeout
+  const handleShow = () => {
+    setIsVisible(true);
+    if (hideTimeout) {
+      clearTimeout(hideTimeout);
+      setHideTimeout(null);
+    }
+  };
+
+  const handleStartHideTimer = () => {
+    const timeout = setTimeout(() => {
+      setIsVisible(false);
+      setExpandedItem(null);
+    }, 3000);
+    setHideTimeout(timeout);
+  };
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (hideTimeout) {
+        clearTimeout(hideTimeout);
+      }
+    };
+  }, [hideTimeout]);
+
   return (
-    <motion.div 
-      initial={{ y: 100, opacity: 0 }}
-      animate={{ y: 0, opacity: 1 }}
-      className={cn(
-        "fixed left-4 right-4",
-        "bottom-[15%]", // Slightly lower on mobile
-        "bg-black/90 backdrop-blur-xl",
-        "rounded-2xl border border-white/10",
-        "shadow-2xl",
-        "p-4",
-        "z-50"
-      )}
-    >
+    <>
+      {/* Show Navigation Button */}
+      <AnimatePresence>
+        {!isVisible && (
+          <motion.button
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.8 }}
+            whileTap={{ scale: 0.9 }}
+            onClick={handleShow}
+            className="fixed bottom-[5%] left-1/2 transform -translate-x-1/2 z-50 bg-black/80 backdrop-blur-xl rounded-full p-4 shadow-2xl"
+          >
+            <div className="flex flex-col items-center gap-1">
+              <ChevronUpIcon className="w-6 h-6 text-white" />
+              <span className="text-xs text-white/80">Tap to open</span>
+            </div>
+          </motion.button>
+        )}
+      </AnimatePresence>
+
+      {/* Navigation Menu */}
+      <AnimatePresence>
+        {isVisible && (
+          <motion.div 
+            initial={{ y: 100, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: 100, opacity: 0 }}
+            className={cn(
+              "fixed left-4 right-4",
+              "bottom-[15%]", // Slightly lower on mobile
+              "bg-transparent",
+              "rounded-2xl",
+              "shadow-2xl",
+              "p-4",
+              "z-50"
+            )}
+            onTouchEnd={handleStartHideTimer}
+          >
       {/* User Info Header */}
       <div className="flex items-center justify-between mb-4 pb-4 border-b border-white/10">
         <div className="flex items-center gap-3">
@@ -195,6 +251,9 @@ export function MobileView({ items }: MobileViewProps) {
           </div>
         ))}
       </div>
-    </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </>
   );
 }

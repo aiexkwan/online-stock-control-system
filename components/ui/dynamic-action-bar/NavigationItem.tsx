@@ -38,7 +38,10 @@ export function NavigationItem({ item, isActive, onActiveChange }: NavigationIte
 
   const handleMouseLeave = () => {
     setIsHovered(false);
-    // Don't clear active state here - let the parent container handle it
+    // Immediately clear submenu when leaving the navigation item
+    if (item.children && (item.id === 'print-label' || item.id === 'admin')) {
+      onActiveChange(null);
+    }
   };
 
   const itemVariants = {
@@ -80,7 +83,7 @@ export function NavigationItem({ item, isActive, onActiveChange }: NavigationIte
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
         className={cn(
-          "relative px-4 py-3 rounded-lg",
+          "relative px-3 py-3 rounded-lg",
           "bg-white/5 backdrop-blur-md",
           "border border-white/10",
           "transition-all duration-200",
@@ -90,15 +93,25 @@ export function NavigationItem({ item, isActive, onActiveChange }: NavigationIte
       >
         <div className="flex items-center gap-2">
           <item.icon className={cn("w-5 h-5 transition-colors", item.iconColor)} />
-          <span className="text-sm font-medium text-white">
-            {item.label}
-          </span>
+          <AnimatePresence>
+            {isHovered && (
+              <motion.span 
+                initial={{ opacity: 0, width: 0 }}
+                animate={{ opacity: 1, width: "auto" }}
+                exit={{ opacity: 0, width: 0 }}
+                transition={{ duration: 0.2 }}
+                className="text-sm font-medium text-white overflow-hidden whitespace-nowrap"
+              >
+                {item.label}
+              </motion.span>
+            )}
+          </AnimatePresence>
         </div>
       </motion.button>
       
-      {/* Submenu */}
+      {/* Submenu - Only for Print Label and Admin */}
       <AnimatePresence>
-        {isActive && item.children && (
+        {isActive && item.children && (item.id === 'print-label' || item.id === 'admin') && (
           <SubMenu items={item.children} />
         )}
       </AnimatePresence>

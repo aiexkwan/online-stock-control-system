@@ -23,6 +23,7 @@ interface QuickAccessItem {
 export function QuickAccess({ userId, className }: QuickAccessProps) {
   const [frequentPaths, setFrequentPaths] = useState<QuickAccessItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
   const router = useRouter();
 
   useEffect(() => {
@@ -62,15 +63,6 @@ export function QuickAccess({ userId, className }: QuickAccessProps) {
 
   return (
     <div className={cn("flex items-center gap-2", className)}>
-      {/* Quick Access Label */}
-      <div className="flex items-center gap-1 text-white/60 text-xs">
-        <Zap className="w-3 h-3" />
-        <span>Quick</span>
-      </div>
-
-      {/* Divider */}
-      <div className="h-8 w-px bg-white/20" />
-
       {/* Quick Access Items */}
       <AnimatePresence>
         {frequentPaths.map((item, index) => {
@@ -99,11 +91,25 @@ export function QuickAccess({ userId, className }: QuickAccessProps) {
               <div className="absolute inset-0 rounded-xl bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity" />
               
               {/* Content */}
-              <div className="relative flex items-center gap-2">
+              <div 
+                className="relative flex items-center gap-2"
+                onMouseEnter={() => setHoveredIndex(index)}
+                onMouseLeave={() => setHoveredIndex(null)}
+              >
                 {Icon && <Icon className="w-4 h-4 text-white/80" />}
-                <span className="text-sm font-medium text-white/90">
-                  {item.label}
-                </span>
+                <AnimatePresence>
+                  {hoveredIndex === index && (
+                    <motion.span
+                      initial={{ opacity: 0, width: 0 }}
+                      animate={{ opacity: 1, width: "auto" }}
+                      exit={{ opacity: 0, width: 0 }}
+                      transition={{ duration: 0.2 }}
+                      className="text-sm font-medium text-white/90 overflow-hidden whitespace-nowrap"
+                    >
+                      {item.label}
+                    </motion.span>
+                  )}
+                </AnimatePresence>
               </div>
 
               {/* Tooltip */}

@@ -28,6 +28,9 @@ export function DynamicActionBar({ className }: DynamicActionBarProps) {
   const [userData, setUserData] = useState<{ name: string; email: string; icon_url?: string | null } | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [isHovered, setIsHovered] = useState(false);
+  const [showPrompt, setShowPrompt] = useState(true);
+  const [hideTimeout, setHideTimeout] = useState<NodeJS.Timeout | null>(null);
   const isMobile = useMediaQuery('(max-width: 768px)');
   const { user, userRole } = useAuth();
   const router = useRouter();
@@ -165,6 +168,44 @@ export function DynamicActionBar({ className }: DynamicActionBarProps) {
 
   const shouldUseVirtualization = allowedNavigation.length > 10;
 
+  // Handle hover logic
+  const handleMouseEnter = useCallback(() => {
+    setIsHovered(true);
+    setShowPrompt(false);
+    if (hideTimeout) {
+      clearTimeout(hideTimeout);
+      setHideTimeout(null);
+    }
+  }, [hideTimeout]);
+
+  const handleMouseLeave = useCallback(() => {
+    setActiveItem(null);
+    const timeout = setTimeout(() => {
+      setIsHovered(false);
+      setShowPrompt(true);
+    }, 3000);
+    setHideTimeout(timeout);
+  }, []);
+
+  const handleClick = useCallback(() => {
+    setIsHovered(false);
+    setShowPrompt(true);
+    setActiveItem(null);
+    if (hideTimeout) {
+      clearTimeout(hideTimeout);
+      setHideTimeout(null);
+    }
+  }, [hideTimeout]);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (hideTimeout) {
+        clearTimeout(hideTimeout);
+      }
+    };
+  }, [hideTimeout]);
+
   if (isMobile) {
     // Mobile view should also respect user role restrictions
     const allowedNavigation = userRole?.navigationRestricted ? [] : MAIN_NAVIGATION;
@@ -172,22 +213,52 @@ export function DynamicActionBar({ className }: DynamicActionBarProps) {
   }
 
   return (
-    <motion.div 
-      variants={containerVariants}
-      initial="hidden"
-      animate="visible"
-      className={cn(
-        "fixed inset-x-0 mx-auto w-fit",
-        "bottom-[1%]", // Very close to bottom
-        "bg-black/80 backdrop-blur-xl",
-        "rounded-2xl border border-white/10",
-        "shadow-2xl",
-        "p-2",
-        "z-50",
-        className
+    <>
+      {/* Invisible Hover Trigger Area */}
+      {!isMobile && !isHovered && (
+        <div
+          className="fixed bottom-0 left-0 right-0 h-20 z-40"
+          onMouseEnter={handleMouseEnter}
+        />
       )}
-      onMouseLeave={() => setActiveItem(null)} // Clear active item when mouse leaves the entire nav bar
-    >
+
+      {/* Hover Prompt */}
+      <AnimatePresence>
+        {showPrompt && !isHovered && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 20 }}
+            className="fixed bottom-[1%] left-1/2 transform -translate-x-1/2 z-40 pointer-events-none"
+          >
+            <div className="bg-black/60 backdrop-blur-sm rounded-lg px-4 py-2">
+              <p className="text-sm text-white/80">
+                {isMobile ? "Tap ↑ to open navigation" : "Hover to show navigation"}
+              </p>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Navigation Bar */}
+      <motion.div 
+        variants={containerVariants}
+        initial="hidden"
+        animate={isHovered ? "visible" : "hidden"}
+        className={cn(
+          "fixed inset-x-0 mx-auto w-fit",
+          "bottom-[1%]", // Very close to bottom
+          "bg-transparent",
+          "rounded-2xl",
+          "shadow-2xl",
+          "p-2",
+          "z-50",
+          className
+        )}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
+        onClick={handleClick}
+      >
       <div className="flex items-center justify-between gap-8 w-full">
         {/* Left side: Navigation and Quick Access */}
         <div className="flex items-center gap-4">
@@ -266,6 +337,23 @@ export function DynamicActionBar({ className }: DynamicActionBarProps) {
           </motion.button>
         </div>
       </div>
-    </motion.div>
+      </motion.div>
+
+      {/* Mobile Tap Indicator */}
+      {isMobile && showPrompt && (
+        <motion.button
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.9 }}
+          onClick={() => setIsHovered(true)}
+          className="fixed bottom-[1%] left-1/2 transform -translate-x-1/2 z-40 bg-black/80 backdrop-blur-xl rounded-full p-3 shadow-2xl"
+        >
+          <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
+          </svg>
+        </motion.button>
+      )}
+    </>
   );
 }

@@ -135,7 +135,7 @@ export const MAIN_NAVIGATION: NavigationItem[] = [
   },
   {
     id: 'ask-database',
-    label: 'Ask Database',
+    label: 'Start Chat',
     icon: Brain,
     onClick: openAskDatabaseModal,
     gradient: "radial-gradient(circle, rgba(168,85,247,0.15) 0%, rgba(147,51,234,0.06) 50%)",

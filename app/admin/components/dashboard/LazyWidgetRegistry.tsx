@@ -76,6 +76,11 @@ export const LazyComponents: Record<string, React.ComponentType<any>> = {
     () => import('./widgets/ReportGeneratorWithDialogWidget').then(m => ({ default: m.ReportGeneratorWithDialogWidget }))
   ),
   
+  // History widget (named export)
+  'HistoryTree': createLazyWidget(
+    () => import('./widgets/HistoryTree').then(m => ({ default: m.HistoryTree }))
+  ),
+  
   // Upload page widgets (named exports)
   'OrdersListWidget': createLazyWidget(
     () => import('./widgets/OrdersListWidget').then(m => ({ default: m.OrdersListWidget }))

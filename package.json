@@ -21,7 +21,6 @@
     "codegen:check": "graphql-codegen --config codegen.ts --check"
   },
   "dependencies": {
-    "@anthropic-ai/claude-code": "^1.0.31",
     "@anthropic-ai/sdk": "^0.40.1",
     "@apollo/client": "^3.8.8",
     "@fontsource/lato": "^5.2.6",
