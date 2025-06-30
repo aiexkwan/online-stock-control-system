@@ -81,6 +81,7 @@ export interface QcPalletInfoPayload {
   product_code: string;
   product_qty: number;
   plt_remark: string;
+  pdf_url?: string; // 新增 PDF URL 欄位
 }
 
 export interface QcHistoryPayload {
@@ -207,6 +208,34 @@ export async function createQcDatabaseEntries(
   } catch (error: any) {
     // console.error('[qcActions] Unexpected error in createQcDatabaseEntries:', error); // 保留錯誤日誌供生產環境調試
     return { error: `An unexpected error occurred: ${error.message || 'Unknown error.'}` };
+  }
+}
+
+/**
+ * Update pallet PDF URL in database
+ */
+export async function updatePalletPdfUrl(
+  pltNum: string,
+  pdfUrl: string
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const supabaseAdmin = createSupabaseAdmin();
+    
+    const { error } = await supabaseAdmin
+      .from('record_palletinfo')
+      .update({ pdf_url: pdfUrl })
+      .eq('plt_num', pltNum);
+
+    if (error) {
+      console.error('[qcActions] Error updating PDF URL:', error);
+      return { success: false, error: `Failed to update PDF URL: ${error.message}` };
+    }
+
+    // process.env.NODE_ENV !== "production" && console.log('[qcActions] PDF URL updated successfully for pallet:', pltNum);
+    return { success: true };
+  } catch (error: any) {
+    console.error('[qcActions] Unexpected error updating PDF URL:', error);
+    return { success: false, error: `Update PDF URL error: ${error.message || 'Unknown error'}` };
   }
 }
 

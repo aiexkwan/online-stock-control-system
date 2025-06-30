@@ -500,10 +500,10 @@ export const adminDashboardLayouts: Record<string, AdminDashboardLayout> = {
         apiEndpoint: '/api/reports/export-all'
       },
       {
-        type: 'reports',
-        title: 'Reports Center',
+        type: 'reprint-label',
+        title: 'Reprint Label',
         gridArea: 'widget9',
-        component: 'ReportsWidget'
+        component: 'ReprintLabelWidget'
       }
     ]
   },

@@ -483,6 +483,40 @@ export function useVoidPallet() {
 
         process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`[Auto Reprint] PDF blob generated, size: ${pdfBlob.size} bytes`);
 
+        // Upload PDF to storage and update database
+        try {
+          process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[Auto Reprint] Uploading PDF to storage...');
+          
+          // Convert blob to ArrayBuffer then to number array for server action
+          const arrayBuffer = await pdfBlob.arrayBuffer();
+          const uint8Array = new Uint8Array(arrayBuffer);
+          const numberArray = Array.from(uint8Array);
+          
+          // Import server actions
+          const { uploadPdfToStorage, updatePalletPdfUrl } = await import('@/app/actions/qcActions');
+          
+          // Upload PDF
+          const uploadResult = await uploadPdfToStorage(numberArray, fileName, 'qc-labels');
+          
+          if (uploadResult.error) {
+            console.error('[Auto Reprint] PDF upload failed:', uploadResult.error);
+            toast.warning(`PDF generated but upload failed: ${uploadResult.error}`);
+          } else if (uploadResult.publicUrl) {
+            process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[Auto Reprint] PDF uploaded successfully:', uploadResult.publicUrl);
+            
+            // Update database with PDF URL
+            const updateResult = await updatePalletPdfUrl(newPalletNumber, uploadResult.publicUrl);
+            if (updateResult.error) {
+              console.error('[Auto Reprint] Failed to update PDF URL in database:', updateResult.error);
+            } else {
+              process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[Auto Reprint] PDF URL updated in database successfully');
+            }
+          }
+        } catch (uploadError: any) {
+          console.error('[Auto Reprint] Error during PDF upload:', uploadError);
+          // Don't fail the whole operation, just log the error
+        }
+
         // Convert blob to ArrayBuffer for printing (exact same as QC Label)
         const pdfArrayBuffer = await pdfBlob.arrayBuffer();
         

@@ -8,7 +8,7 @@ import { toast } from 'sonner';
 import { pdf } from '@react-pdf/renderer';
 import { PrintLabelPdf } from '@/components/print-label-pdf/PrintLabelPdf';
 import { prepareQcLabelData, mergeAndPrintPdfs, type QcInputData } from '@/lib/pdfUtils';
-import { uploadPdfToStorage } from '@/app/actions/qcActions';
+import { uploadPdfToStorage, updatePalletPdfUrl } from '@/app/actions/qcActions';
 import { getOrdinalSuffix, getAcoPalletCount } from '@/app/utils/qcLabelHelpers';
 import { createClient } from '@/app/utils/supabase/client';
 import { format } from 'date-fns';
@@ -94,6 +94,13 @@ export const usePdfGeneration = (): UsePdfGenerationReturn => {
 
       if (!uploadResult.publicUrl) {
         throw new Error('PDF upload succeeded but no public URL returned.');
+      }
+
+      // Update PDF URL in database
+      const updateResult = await updatePalletPdfUrl(palletNum, uploadResult.publicUrl);
+      if (updateResult.error) {
+        console.error(`[usePdfGeneration] Failed to update PDF URL for pallet ${palletNum}:`, updateResult.error);
+        // Don't fail the entire operation, just log the error
       }
 
       return { blob: pdfBlob, url: uploadResult.publicUrl, error: null };

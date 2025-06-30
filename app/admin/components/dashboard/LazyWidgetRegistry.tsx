@@ -115,6 +115,11 @@ export const LazyComponents: Record<string, React.ComponentType<any>> = {
   'VoidPalletWidget': createLazyWidget(
     () => import('./widgets/VoidPalletWidget').then(m => ({ default: m.VoidPalletWidget }))
   ),
+  
+  // Reprint Label widget (named export)
+  'ReprintLabelWidget': createLazyWidget(
+    () => import('./widgets/ReprintLabelWidget').then(m => ({ default: m.ReprintLabelWidget }))
+  ),
 };
 
 // Helper to check if widget should be lazy loaded

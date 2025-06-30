@@ -8,6 +8,7 @@ import { grnErrorHandler } from '../services/ErrorHandler';
 import { 
   createGrnDatabaseEntries,
   uploadPdfToStorage as grnActionsUploadPdfToStorage,
+  updatePalletPdfUrl,
   type GrnPalletInfoPayload, 
   type GrnRecordPayload 
 } from '@/app/actions/grnActions';
@@ -335,6 +336,24 @@ export const useGrnLabelBusinessV2 = ({
             actions.updateProgressStatus(i, 'Failed');
             anyFailure = true;
             continue;
+          }
+
+          // Update PDF URL in database
+          if (uploadResult.publicUrl) {
+            const updateResult = await updatePalletPdfUrl(palletNum, uploadResult.publicUrl);
+            if (updateResult.error) {
+              console.error(`[useGrnLabelBusinessV2] Failed to update PDF URL for pallet ${i + 1}:`, updateResult.error);
+              // Don't fail the entire operation, just log the error
+              grnErrorHandler.handleWarning(
+                `PDF uploaded but URL not saved for pallet ${palletNum}`,
+                {
+                  component: 'useGrnLabelBusinessV2',
+                  action: 'pdf_url_update',
+                  clockNumber,
+                  additionalData: { palletNum, palletIndex: i }
+                }
+              );
+            }
           }
 
           collectedPdfBlobs.push(pdfBlob);
