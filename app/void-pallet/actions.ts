@@ -622,14 +622,7 @@ export async function voidPalletAction(params: Omit<VoidParams, 'userId'>): Prom
         );
       } else {
         process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[Void Pallet] Stock level updated successfully:', stockResult);
-        // 記錄成功的庫存更新
-        await recordHistoryAction(
-          clockNumber,
-          'Stock Level Updated',
-          palletInfo.plt_num,
-          'Voided',
-          `Stock level updated: ${stockResult}`
-        );
+        // 不需要記錄 Stock Level Updated，因為會同 Void Pallet 重複
       }
     } catch (stockUpdateError: any) {
       process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.warn('[Void Pallet] Stock level update error:', stockUpdateError);
@@ -877,18 +870,7 @@ export async function processDamageAction(params: Omit<VoidParams, 'userId'>): P
         );
       } else {
         process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[Damage Processing] Stock level updated successfully:', stockResult);
-        
-        // 🔥 優化 remark 格式
-        const optimizedRemark = `Stock level updated: ${palletInfo.product_code} - from ${palletInfo.product_qty} to 0`;
-        
-        // 記錄成功的庫存更新
-        await recordHistoryAction(
-          clockNumber,
-          'Stock Level Updated',
-          palletInfo.plt_num,
-          newLocation,
-          optimizedRemark
-        );
+        // 不需要記錄 Stock Level Updated，因為會同 Fully Damaged / Partially Damaged 重複
       }
     } catch (stockUpdateError: any) {
       process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.warn('[Damage Processing] Stock level update error:', stockUpdateError);

@@ -344,7 +344,7 @@ export const adminDashboardLayouts: Record<string, AdminDashboardLayout> = {
         title: 'Void Pallet',
         gridArea: 'widget4',
         dataSource: 'void_pallets',
-        component: 'VoidPalletWidgetPlaceholder'
+        component: 'VoidPalletWidget'
       },
       {
         type: 'stats',

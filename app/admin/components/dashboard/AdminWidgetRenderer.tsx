@@ -1578,6 +1578,22 @@ export const AdminWidgetRenderer: React.FC<AdminWidgetRendererProps> = ({
           );
         }
         return null;
+      case 'VoidPalletWidget':
+        const VoidPalletWidget = LazyComponents['VoidPalletWidget'];
+        if (VoidPalletWidget) {
+          return (
+            <VoidPalletWidget 
+              widget={{
+                id: 'void-pallet',
+                type: 'VOID_PALLET' as any,
+                title: config.title,
+                config: { size: 'MEDIUM' as any }
+              }}
+              isEditMode={false}
+            />
+          );
+        }
+        return null;
       // ReportGeneratorWidget 和 ReportGeneratorWithDialogWidget 已經在 LazyComponents 中處理
       case 'AvailableSoonWidget':
         return (

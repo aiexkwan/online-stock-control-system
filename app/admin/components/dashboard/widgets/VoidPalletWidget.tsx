@@ -1,26 +1,27 @@
+/**
+ * Void Pallet Widget
+ * Full featured version - migrated from original VoidPalletWidget
+ */
+
 'use client';
 
 import React, { useState, useCallback, useRef } from 'react';
+import { motion } from 'framer-motion';
 import { X, Search, QrCode, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
+import { useRouter } from 'next/navigation';
 import { useVoidPallet } from '@/app/void-pallet/hooks/useVoidPallet';
 import { VOID_REASONS } from '@/app/void-pallet/types';
 import { SimpleQRScanner } from '@/components/qr-scanner/simple-qr-scanner';
-import { TimeFrame } from '@/app/components/admin/UniversalTimeRangeSelector';
-
-interface VoidPalletWidgetProps {
-  widget: {
-    id: string;
-    type: string;
-    title: string;
-    config: any;
-  };
-  timeFrame: TimeFrame;
-}
+import { WidgetComponentProps } from '@/app/types/dashboard';
+import { CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { UniversalWidgetCard as WidgetCard } from '../UniversalWidgetCard';
+import { getProductByCode } from '@/app/actions/productActions';
 
 type VoidStep = 'search' | 'confirm' | 'result';
 
-export const VoidPalletWidget: React.FC<VoidPalletWidgetProps> = ({ widget, timeFrame }) => {
+export const VoidPalletWidget = React.memo(function VoidPalletWidget({ widget, isEditMode }: WidgetComponentProps) {
+  const router = useRouter();
   const {
     state,
     updateState,
@@ -36,12 +37,29 @@ export const VoidPalletWidget: React.FC<VoidPalletWidgetProps> = ({ widget, time
   const [currentStep, setCurrentStep] = useState<VoidStep>('search');
   const [searchValue, setSearchValue] = useState('');
   const [showQrScanner, setShowQrScanner] = useState(false);
-  const [voidResult, setVoidResult] = useState<{ success: boolean; message: string } | null>(null);
+  const [voidResult, setVoidResult] = useState<{ success: boolean; message: string; remainingQty?: number; requiresReprint?: boolean } | null>(null);
+  const [productDescription, setProductDescription] = useState<string>('');
+  const [password, setPassword] = useState<string>('');
   
   const searchInputRef = useRef<HTMLInputElement>(null);
   const isMobile = typeof window !== 'undefined' && /Mobi|Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
 
-  // 自動聚焦到搜尋欄位
+  // Watch for found pallet and move to confirm step
+  React.useEffect(() => {
+    if (state.foundPallet && currentStep === 'search') {
+      setCurrentStep('confirm');
+      // Fetch product description
+      getProductByCode(state.foundPallet.product_code).then(result => {
+        if (result.success && result.data) {
+          setProductDescription(result.data.description);
+        }
+      }).catch(error => {
+        console.error('Failed to fetch product description:', error);
+      });
+    }
+  }, [state.foundPallet, currentStep]);
+
+  // Auto focus search input
   const focusSearchInput = useCallback(() => {
     setTimeout(() => {
       if (searchInputRef.current) {
@@ -50,48 +68,77 @@ export const VoidPalletWidget: React.FC<VoidPalletWidgetProps> = ({ widget, time
     }, 100);
   }, []);
 
-  // 處理搜尋提交
+  // Handle search submission
   const handleSearch = async () => {
     if (!searchValue.trim()) {
-      toast.error('請輸入 Pallet 編號');
+      toast.error('Please enter a Pallet number');
       return;
     }
 
     try {
-      const result = await searchPallet(searchValue.trim(), 'pallet_num');
-      if (result.success && result.data) {
-        setCurrentStep('confirm');
-      }
+      await searchPallet(searchValue.trim(), 'pallet_num');
+      // The searchPallet function updates the state directly
+      // We'll check if pallet was found after state update
     } catch (error) {
       console.error('Search error:', error);
+      toast.error('An unexpected error occurred during search');
     }
   };
 
-  // 處理 QR 掃描結果
+  // Handle QR scan result
   const handleQrScan = async (qrValue: string) => {
     setShowQrScanner(false);
     setSearchValue(qrValue);
     
     try {
-      const result = await searchPallet(qrValue, 'qr');
-      if (result.success && result.data) {
-        setCurrentStep('confirm');
-      }
+      await searchPallet(qrValue, 'qr');
+      // The searchPallet function updates the state directly
+      // We'll check if pallet was found after state update
     } catch (error) {
       console.error('QR scan error:', error);
+      toast.error('An unexpected error occurred during QR scan');
     }
   };
 
-  // 處理 Void 提交
+  // Handle void submission
   const handleVoidSubmit = async () => {
-    if (!state.foundPallet || !canExecuteVoid()) {
+    if (!state.foundPallet || !state.voidReason || !password) {
       return;
     }
 
     try {
-      const result = await executeVoid(state.foundPallet, state.voidReason, '', state.damageQuantity);
+      // Call the void action directly with parameters
+      const { voidPalletAction, processDamageAction } = await import('@/app/void-pallet/actions');
+      
+      let result;
+      if (state.voidReason === 'Damage' && state.damageQuantity > 0) {
+        result = await processDamageAction({
+          palletInfo: state.foundPallet,
+          voidReason: state.voidReason,
+          password: password,
+          damageQuantity: state.damageQuantity
+        });
+      } else {
+        result = await voidPalletAction({
+          palletInfo: state.foundPallet,
+          voidReason: state.voidReason,
+          password: password
+        });
+      }
+      
+      if (!result) {
+        setVoidResult({ success: false, message: 'Void operation failed - no response' });
+        setCurrentStep('result');
+        return;
+      }
+      
       if (result.success) {
-        setVoidResult({ success: true, message: result.message || 'Pallet void successfully' });
+        setVoidResult({ 
+          success: true, 
+          message: result.message || 'Pallet void successfully',
+          remainingQty: result.remainingQty,
+          requiresReprint: result.requiresReprint
+        });
         setCurrentStep('result');
       } else {
         setVoidResult({ success: false, message: result.error || 'Void failed' });
@@ -104,22 +151,24 @@ export const VoidPalletWidget: React.FC<VoidPalletWidgetProps> = ({ widget, time
     }
   };
 
-  // 重置到搜尋步驟
+  // Reset to search step
   const resetToSearch = () => {
     setCurrentStep('search');
     setSearchValue('');
     setVoidResult(null);
+    setProductDescription('');
+    setPassword('');
     updateState({ foundPallet: null, voidReason: '', damageQuantity: 0 });
     clearError();
     focusSearchInput();
   };
 
-  // 清除錯誤
+  // Clear error
   const handleClearError = () => {
     clearError();
   };
 
-  // 渲染搜尋步驟
+  // Render search step
   const renderSearchStep = () => (
     <div className="space-y-4">
       <div className="flex flex-col space-y-3">
@@ -130,10 +179,10 @@ export const VoidPalletWidget: React.FC<VoidPalletWidgetProps> = ({ widget, time
               type="text"
               value={searchValue}
               onChange={(e) => setSearchValue(e.target.value)}
-              placeholder="輸入 Pallet 編號..."
+              placeholder="Enter Pallet number..."
               className="w-full px-3 py-2 bg-slate-800/50 border border-slate-700/50 rounded-lg text-white placeholder-gray-400 focus:border-blue-500/50 focus:outline-none"
               onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-              disabled={state.isSearching}
+              disabled={state.isSearching || isEditMode}
             />
             {state.isSearching && (
               <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
@@ -143,20 +192,21 @@ export const VoidPalletWidget: React.FC<VoidPalletWidgetProps> = ({ widget, time
           </div>
           <button
             onClick={handleSearch}
-            disabled={state.isSearching || !searchValue.trim()}
+            disabled={state.isSearching || !searchValue.trim() || isEditMode}
             className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
           >
             <Search className="w-4 h-4" />
-            <span>搜尋</span>
+            <span>Search</span>
           </button>
         </div>
         
         <button
           onClick={() => setShowQrScanner(true)}
-          className="w-full px-4 py-2 bg-slate-700 text-white rounded-lg hover:bg-slate-600 flex items-center justify-center space-x-2"
+          disabled={isEditMode}
+          className="w-full px-4 py-2 bg-slate-700 text-white rounded-lg hover:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
         >
           <QrCode className="w-4 h-4" />
-          <span>QR 掃描</span>
+          <span>QR Scan</span>
         </button>
       </div>
       
@@ -169,7 +219,7 @@ export const VoidPalletWidget: React.FC<VoidPalletWidgetProps> = ({ widget, time
               onClick={handleClearError}
               className="text-red-300 hover:text-red-200 text-xs mt-1 underline"
             >
-              清除錯誤
+              Clear error
             </button>
           </div>
         </div>
@@ -177,29 +227,46 @@ export const VoidPalletWidget: React.FC<VoidPalletWidgetProps> = ({ widget, time
     </div>
   );
 
-  // 渲染確認步驟
+  // Render confirm step
   const renderConfirmStep = () => (
     <div className="space-y-4">
-      {/* Pallet 資訊 */}
+      {/* Pallet information */}
       {state.foundPallet && (
         <div className="bg-slate-800/30 rounded-lg p-4 border border-slate-700/30">
-          <h4 className="text-sm font-medium text-gray-400 mb-2">Pallet 資訊</h4>
-          <div className="space-y-1">
-            <p className="text-white font-medium">{state.foundPallet.plt_num}</p>
-            <p className="text-gray-300 text-sm">{state.foundPallet.product_code}</p>
+          <h4 className="text-sm font-medium text-gray-400 mb-3">Pallet Information</h4>
+          <div className="grid grid-cols-2 gap-4">
+            {/* Row 1 */}
+            <div>
+              <p className="text-white font-medium">{state.foundPallet.plt_num}</p>
+              <p className="text-gray-400 text-xs">Pallet Number</p>
+            </div>
+            <div>
+              <p className="text-gray-300">{state.foundPallet.product_code}</p>
+              <p className="text-gray-400 text-xs">Product Code</p>
+            </div>
+            {/* Row 2 */}
+            <div>
+              <p className="text-gray-300">{productDescription || 'N/A'}</p>
+              <p className="text-gray-400 text-xs">Product Description</p>
+            </div>
+            <div>
+              <p className="text-gray-300">{state.foundPallet.product_qty} units</p>
+              <p className="text-gray-400 text-xs">Quantity on Pallet</p>
+            </div>
           </div>
         </div>
       )}
       
-      {/* Void 原因選擇 */}
+      {/* Void reason selection */}
       <div className="space-y-2">
-        <label className="text-sm font-medium text-gray-400">Void 原因</label>
+        <label className="text-sm font-medium text-gray-400">Void Reason</label>
         <select
           value={state.voidReason}
           onChange={(e) => handleVoidReasonChange(e.target.value)}
-          className="w-full px-3 py-2 bg-slate-800/50 border border-slate-700/50 rounded-lg text-white focus:border-blue-500/50 focus:outline-none"
+          disabled={isEditMode}
+          className="w-full px-3 py-2 bg-slate-800/50 border border-slate-700/50 rounded-lg text-white focus:border-blue-500/50 focus:outline-none disabled:opacity-50"
         >
-          <option value="">選擇原因...</option>
+          <option value="">Select reason...</option>
           {VOID_REASONS.map((reason) => (
             <option key={reason.value} value={reason.value}>
               {reason.label}
@@ -208,41 +275,58 @@ export const VoidPalletWidget: React.FC<VoidPalletWidgetProps> = ({ widget, time
         </select>
       </div>
       
-      {/* 損壞數量輸入 */}
-      {showDamageQuantityInput() && (
+      {/* Password input - show only when void reason is selected */}
+      {state.voidReason && (
         <div className="space-y-2">
-          <label className="text-sm font-medium text-gray-400">損壞數量</label>
+          <label className="text-sm font-medium text-gray-400">Password</label>
+          <input
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            disabled={isEditMode}
+            placeholder="Enter password to confirm..."
+            className="w-full px-3 py-2 bg-slate-800/50 border border-slate-700/50 rounded-lg text-white placeholder-gray-400 focus:border-blue-500/50 focus:outline-none disabled:opacity-50"
+          />
+        </div>
+      )}
+      
+      {/* Damage quantity input */}
+      {showDamageQuantityInput && (
+        <div className="space-y-2">
+          <label className="text-sm font-medium text-gray-400">Damage Quantity</label>
           <input
             type="number"
             value={state.damageQuantity}
             onChange={(e) => handleDamageQuantityChange(parseInt(e.target.value) || 0)}
-            className="w-full px-3 py-2 bg-slate-800/50 border border-slate-700/50 rounded-lg text-white focus:border-blue-500/50 focus:outline-none"
+            disabled={isEditMode}
+            className="w-full px-3 py-2 bg-slate-800/50 border border-slate-700/50 rounded-lg text-white focus:border-blue-500/50 focus:outline-none disabled:opacity-50"
             min="0"
             max={state.foundPallet?.product_qty}
           />
         </div>
       )}
       
-      {/* 操作按鈕 */}
+      {/* Action buttons */}
       <div className="flex space-x-3">
         <button
           onClick={resetToSearch}
-          className="flex-1 px-4 py-2 bg-slate-700 text-white rounded-lg hover:bg-slate-600"
+          disabled={isEditMode}
+          className="flex-1 px-4 py-2 bg-slate-700 text-white rounded-lg hover:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          返回搜尋
+          Back to Search
         </button>
         <button
           onClick={handleVoidSubmit}
-          disabled={!canExecuteVoid() || state.isProcessing}
+          disabled={!state.voidReason || !password || (showDamageQuantityInput && (!state.damageQuantity || state.damageQuantity <= 0 || state.damageQuantity > state.foundPallet.product_qty)) || state.isProcessing || isEditMode}
           className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
         >
           {state.isProcessing ? (
             <>
               <Loader2 className="w-4 h-4 animate-spin" />
-              <span>處理中...</span>
+              <span>Processing...</span>
             </>
           ) : (
-            <span>確認 Void</span>
+            <span>Confirm Void</span>
           )}
         </button>
       </div>
@@ -256,7 +340,7 @@ export const VoidPalletWidget: React.FC<VoidPalletWidgetProps> = ({ widget, time
               onClick={handleClearError}
               className="text-red-300 hover:text-red-200 text-xs mt-1 underline"
             >
-              清除錯誤
+              Clear error
             </button>
           </div>
         </div>
@@ -264,7 +348,7 @@ export const VoidPalletWidget: React.FC<VoidPalletWidgetProps> = ({ widget, time
     </div>
   );
 
-  // 渲染結果步驟
+  // Render result step
   const renderResultStep = () => (
     <div className="space-y-4 text-center">
       <div className={`mx-auto w-16 h-16 rounded-full flex items-center justify-center ${
@@ -281,88 +365,197 @@ export const VoidPalletWidget: React.FC<VoidPalletWidgetProps> = ({ widget, time
         <h4 className={`text-lg font-medium ${
           voidResult?.success ? 'text-green-400' : 'text-red-400'
         }`}>
-          {voidResult?.success ? '操作成功' : '操作失敗'}
+          {voidResult?.success ? 'Success' : 'Failed'}
         </h4>
         <p className="text-gray-400 text-sm mt-1">{voidResult?.message}</p>
       </div>
       
-      <button
-        onClick={resetToSearch}
-        className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-      >
-        繼續操作
-      </button>
+      <div className="flex flex-col space-y-3">
+        {voidResult?.requiresReprint && voidResult?.remainingQty && voidResult?.remainingQty > 0 && (
+          <button
+            onClick={async () => {
+              // Use auto-reprint functionality
+              if (state.foundPallet) {
+                try {
+                  toast.loading('Processing reprint...');
+                  
+                  // Get current user clock number
+                  const { getCurrentUserClockNumberAsync } = await import('@/app/hooks/useAuth');
+                  const clockNumber = await getCurrentUserClockNumberAsync();
+                  
+                  if (!clockNumber || clockNumber === 'unknown') {
+                    throw new Error('Unable to get user information. Please login again.');
+                  }
+                  
+                  // Call auto-reprint API
+                  const response = await fetch('/api/auto-reprint-label-v2', {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                      productCode: state.foundPallet.product_code,
+                      quantity: voidResult.remainingQty,
+                      originalPltNum: state.foundPallet.plt_num,
+                      originalLocation: state.foundPallet.plt_loc || 'Pipeline',
+                      sourceAction: 'void_damage',
+                      targetLocation: state.foundPallet.plt_loc || 'Pipeline',
+                      reason: state.voidReason,
+                      operatorClockNum: clockNumber
+                    }),
+                  });
+                  
+                  if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error('Reprint API error:', errorText);
+                    
+                    // Check for duplicate pallet number error
+                    if (errorText.includes('already exists')) {
+                      throw new Error('Duplicate pallet number detected. Please try again.');
+                    }
+                    throw new Error('Reprint failed. Please try again.');
+                  }
+                  
+                  const result = await response.json();
+                  if (result.success) {
+                    toast.dismiss();
+                    
+                    // Generate and print PDF
+                    try {
+                      const { prepareQcLabelData, mergeAndPrintPdfs } = await import('@/lib/pdfUtils');
+                      const { pdf } = await import('@react-pdf/renderer');
+                      const { PrintLabelPdf } = await import('@/components/print-label-pdf/PrintLabelPdf');
+                      
+                      // Prepare PDF data
+                      const pdfLabelProps = await prepareQcLabelData(result.data.qcInputData);
+                      
+                      // Generate PDF blob
+                      const pdfBlob = await pdf(<PrintLabelPdf {...pdfLabelProps} />).toBlob();
+                      
+                      if (!pdfBlob) {
+                        throw new Error('PDF generation failed');
+                      }
+                      
+                      // Convert blob to ArrayBuffer for printing
+                      const pdfArrayBuffer = await pdfBlob.arrayBuffer();
+                      
+                      // Auto-print the PDF
+                      await mergeAndPrintPdfs([pdfArrayBuffer], result.data.fileName);
+                      
+                      toast.success(`New pallet ${result.data.newPalletNumber} created and sent to printer`);
+                    } catch (printError: any) {
+                      console.error('Print error:', printError);
+                      toast.warning(`New pallet ${result.data.newPalletNumber} created but printing failed. Please print manually.`);
+                    }
+                    
+                    resetToSearch();
+                  } else {
+                    // Check for specific error types
+                    if (result.error && result.error.includes('already exists')) {
+                      throw new Error('Duplicate pallet number detected. Please try again.');
+                    }
+                    throw new Error(result.error || 'Reprint failed');
+                  }
+                } catch (error: any) {
+                  toast.dismiss();
+                  toast.error(`Reprint failed: ${error.message}`);
+                }
+              }
+            }}
+            disabled={isEditMode}
+            className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Reprint Label ({voidResult.remainingQty} units)
+          </button>
+        )}
+        <button
+          onClick={resetToSearch}
+          disabled={isEditMode}
+          className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          Continue
+        </button>
+      </div>
     </div>
   );
 
   return (
-    <div className="h-full p-6 flex flex-col">
-      <h3 className="text-lg font-semibold text-white mb-4">{widget.title}</h3>
-      
-      {/* 步驟指示器 */}
-      <div className="flex items-center justify-center space-x-4 mb-6">
-        <div className={`flex items-center space-x-2 ${
-          currentStep === 'search' ? 'text-blue-400' : 
-          currentStep === 'confirm' || currentStep === 'result' ? 'text-green-400' : 'text-gray-500'
-        }`}>
-          <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium border ${
-            currentStep === 'search' ? 'bg-blue-600 border-blue-500' :
-            currentStep === 'confirm' || currentStep === 'result' ? 'bg-green-600 border-green-500' : 'bg-gray-600 border-gray-500'
-          }`}>
-            1
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="h-full"
+    >
+      <WidgetCard widgetType="VOID_PALLET" isEditMode={isEditMode}>
+        <CardHeader className="pb-3">
+          <CardTitle className="widget-title">Void Pallet</CardTitle>
+        </CardHeader>
+        <CardContent className="p-6">
+          {/* Step indicator */}
+          <div className="flex items-center justify-center space-x-4 mb-6">
+            <div className={`flex items-center space-x-2 ${
+              currentStep === 'search' ? 'text-blue-400' : 
+              currentStep === 'confirm' || currentStep === 'result' ? 'text-green-400' : 'text-gray-500'
+            }`}>
+              <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium border ${
+                currentStep === 'search' ? 'bg-blue-600 border-blue-500' :
+                currentStep === 'confirm' || currentStep === 'result' ? 'bg-green-600 border-green-500' : 'bg-gray-600 border-gray-500'
+              }`}>
+                1
+              </div>
+              <span className="text-sm">Search</span>
+            </div>
+            
+            <div className={`w-8 h-px ${
+              currentStep === 'confirm' || currentStep === 'result' ? 'bg-green-500' : 'bg-gray-600'
+            }`} />
+            
+            <div className={`flex items-center space-x-2 ${
+              currentStep === 'confirm' ? 'text-blue-400' : 
+              currentStep === 'result' ? 'text-green-400' : 'text-gray-500'
+            }`}>
+              <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium border ${
+                currentStep === 'confirm' ? 'bg-blue-600 border-blue-500' :
+                currentStep === 'result' ? 'bg-green-600 border-green-500' : 'bg-gray-600 border-gray-500'
+              }`}>
+                2
+              </div>
+              <span className="text-sm">Confirm</span>
+            </div>
+            
+            <div className={`w-8 h-px ${
+              currentStep === 'result' ? 'bg-green-500' : 'bg-gray-600'
+            }`} />
+            
+            <div className={`flex items-center space-x-2 ${
+              currentStep === 'result' ? 'text-blue-400' : 'text-gray-500'
+            }`}>
+              <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium border ${
+                currentStep === 'result' ? 'bg-blue-600 border-blue-500' : 'bg-gray-600 border-gray-500'
+              }`}>
+                3
+              </div>
+              <span className="text-sm">Result</span>
+            </div>
           </div>
-          <span className="text-sm">搜尋</span>
-        </div>
-        
-        <div className={`w-8 h-px ${
-          currentStep === 'confirm' || currentStep === 'result' ? 'bg-green-500' : 'bg-gray-600'
-        }`} />
-        
-        <div className={`flex items-center space-x-2 ${
-          currentStep === 'confirm' ? 'text-blue-400' : 
-          currentStep === 'result' ? 'text-green-400' : 'text-gray-500'
-        }`}>
-          <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium border ${
-            currentStep === 'confirm' ? 'bg-blue-600 border-blue-500' :
-            currentStep === 'result' ? 'bg-green-600 border-green-500' : 'bg-gray-600 border-gray-500'
-          }`}>
-            2
+          
+          {/* Step content */}
+          <div className="flex-1">
+            {currentStep === 'search' && renderSearchStep()}
+            {currentStep === 'confirm' && renderConfirmStep()}
+            {currentStep === 'result' && renderResultStep()}
           </div>
-          <span className="text-sm">確認</span>
-        </div>
-        
-        <div className={`w-8 h-px ${
-          currentStep === 'result' ? 'bg-green-500' : 'bg-gray-600'
-        }`} />
-        
-        <div className={`flex items-center space-x-2 ${
-          currentStep === 'result' ? 'text-blue-400' : 'text-gray-500'
-        }`}>
-          <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium border ${
-            currentStep === 'result' ? 'bg-blue-600 border-blue-500' : 'bg-gray-600 border-gray-500'
-          }`}>
-            3
-          </div>
-          <span className="text-sm">結果</span>
-        </div>
-      </div>
+        </CardContent>
+      </WidgetCard>
       
-      {/* 步驟內容 */}
-      <div className="flex-1">
-        {currentStep === 'search' && renderSearchStep()}
-        {currentStep === 'confirm' && renderConfirmStep()}
-        {currentStep === 'result' && renderResultStep()}
-      </div>
-      
-      {/* QR 掃描器 */}
+      {/* QR Scanner */}
       {showQrScanner && (
         <SimpleQRScanner
           isOpen={showQrScanner}
           onClose={() => setShowQrScanner(false)}
           onScan={handleQrScan}
-          title="掃描 Pallet QR Code"
+          title="Scan Pallet QR Code"
         />
       )}
-    </div>
+    </motion.div>
   );
-};
+});

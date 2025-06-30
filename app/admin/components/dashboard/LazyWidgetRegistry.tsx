@@ -110,6 +110,11 @@ export const LazyComponents: Record<string, React.ComponentType<any>> = {
   'SupplierUpdateWidget': createLazyWidget(
     () => import('./widgets/SupplierUpdateWidget').then(m => ({ default: m.SupplierUpdateWidget }))
   ),
+  
+  // Void Pallet widget (named export)
+  'VoidPalletWidget': createLazyWidget(
+    () => import('./widgets/VoidPalletWidget').then(m => ({ default: m.VoidPalletWidget }))
+  ),
 };
 
 // Helper to check if widget should be lazy loaded
