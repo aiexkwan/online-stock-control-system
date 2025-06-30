@@ -11,7 +11,6 @@ import { DocumentIcon, CloudIcon, PhotoIcon, ArrowPathIcon } from '@heroicons/re
 import { createClient } from '@/lib/supabase';
 import { WidgetComponentProps } from '@/app/types/dashboard';
 import { CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { UniversalWidgetCard as WidgetCard } from '../UniversalWidgetCard';
 import { format } from 'date-fns';
 import { fromDbTime } from '@/app/utils/timezone';
 import { useUploadRefresh } from '@/app/admin/contexts/UploadRefreshContext';
@@ -146,9 +145,8 @@ export const OtherFilesListWidget = React.memo(function OtherFilesListWidget({ w
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="h-full"
+      className="h-full flex flex-col"
     >
-      <WidgetCard widgetType="CUSTOM" isEditMode={isEditMode} className="flex flex-col">
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -168,7 +166,7 @@ export const OtherFilesListWidget = React.memo(function OtherFilesListWidget({ w
           </CardTitle>
         </CardHeader>
         
-        <CardContent className="flex-1 flex flex-col overflow-hidden">
+        <CardContent className="flex-1 flex flex-col">
           {/* Column Headers */}
           <div className="border-b border-slate-700 pb-2 mb-2">
             <div className="grid grid-cols-3 gap-2 px-2 text-xs font-medium text-slate-400">
@@ -227,7 +225,6 @@ export const OtherFilesListWidget = React.memo(function OtherFilesListWidget({ w
             </div>
           )}
         </CardContent>
-      </WidgetCard>
     </motion.div>
   );
 });

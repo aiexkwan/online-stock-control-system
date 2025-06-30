@@ -14,7 +14,7 @@ interface ReportGeneratorWidgetProps {
   onGenerate?: () => Promise<void>;
 }
 
-export default function ReportGeneratorWidget({ 
+export const ReportGeneratorWidget = function ReportGeneratorWidget({ 
   title, 
   reportType,
   description,

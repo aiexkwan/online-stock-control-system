@@ -95,7 +95,7 @@ interface AnalysisExpandableCardsProps {
   theme?: string;
 }
 
-export default function AnalysisExpandableCards({ timeFrame, theme }: AnalysisExpandableCardsProps) {
+export const AnalysisExpandableCards = function AnalysisExpandableCards({ timeFrame, theme }: AnalysisExpandableCardsProps) {
   const [activeIndex, setActiveIndex] = useState(0);
   const [isAnimated, setIsAnimated] = useState(false);
   const [showContent, setShowContent] = useState(false);

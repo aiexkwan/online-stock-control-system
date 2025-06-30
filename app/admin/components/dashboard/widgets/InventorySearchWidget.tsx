@@ -12,7 +12,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { UniversalWidgetCard as WidgetCard } from '../UniversalWidgetCard';
 import { MagnifyingGlassIcon, ExclamationCircleIcon } from '@heroicons/react/24/outline';
-import { WidgetComponentProps, WidgetSize } from '@/app/types/dashboard';
+import { WidgetComponentProps } from '@/app/types/dashboard';
 import { createClient } from '@/app/utils/supabase/client';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
@@ -48,8 +48,8 @@ export const InventorySearchWidget = React.memo(function InventorySearchWidget({
   const [loadingChart, setLoadingChart] = useState(false);
   const { refreshTrigger } = useAdminRefresh();
   
-  // Get widget size
-  const size = widget.size || WidgetSize.MEDIUM;
+  // Get widget size (assuming medium as default since WidgetSize is removed)
+  const size = widget.size || 'MEDIUM';
 
 
   const fetchChartData = useCallback(async (productCode: string) => {
@@ -167,7 +167,7 @@ export const InventorySearchWidget = React.memo(function InventorySearchWidget({
 
   // 載入圖表數據 (用於 5x5 模式)
   useEffect(() => {
-    if (size === WidgetSize.LARGE && searchResults && !isEditMode) {
+    if (size === 'LARGE' && searchResults && !isEditMode) {
       fetchChartData(searchResults.product_code);
     }
   }, [size, searchResults, isEditMode, fetchChartData]);

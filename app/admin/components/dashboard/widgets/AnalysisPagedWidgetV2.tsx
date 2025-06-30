@@ -87,7 +87,7 @@ interface AnalysisPagedWidgetV2Props {
   theme?: string;
 }
 
-export default function AnalysisPagedWidgetV2({ timeFrame, theme }: AnalysisPagedWidgetV2Props) {
+export const AnalysisPagedWidgetV2 = function AnalysisPagedWidgetV2({ timeFrame, theme }: AnalysisPagedWidgetV2Props) {
   const [currentPage, setCurrentPage] = useState(0);
   const [isFlipping, setIsFlipping] = useState(false);
 

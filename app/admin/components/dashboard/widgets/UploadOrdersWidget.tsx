@@ -10,7 +10,6 @@ import { DocumentArrowUpIcon, SparklesIcon } from '@heroicons/react/24/outline';
 import { createClient } from '@/lib/supabase';
 import { WidgetComponentProps } from '@/app/types/dashboard';
 import { toast } from 'sonner';
-import { Folder3D } from './Folder3D';
 import { GoogleDriveUploadToast } from './GoogleDriveUploadToast';
 import { OrderAnalysisResultDialog } from './OrderAnalysisResultDialog';
 import { useUploadRefresh } from '@/app/admin/contexts/UploadRefreshContext';
@@ -280,14 +279,16 @@ export const UploadOrdersWidget = React.memo(function UploadOrdersWidget({ widge
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
       >
-        <Folder3D
-          color="#3b82f6"
-
-          icon={<DocumentArrowUpIcon />}
+        <div 
           onClick={handleClick}
-          label="Upload Orders"
-          description="Order PDF"
-        />
+          className="cursor-pointer transition-transform hover:scale-105 p-8"
+        >
+          <DocumentArrowUpIcon 
+            className="w-20 h-20 mx-auto mb-4 text-blue-500 transition-colors hover:text-blue-400"
+          />
+          <p className="text-center text-gray-400 font-medium">Upload Orders</p>
+          <p className="text-center text-gray-500 text-xs mt-1">Order PDF</p>
+        </div>
         {isAnalyzing && (
           <div className="flex items-center gap-1 mt-2">
             <SparklesIcon className="w-3 h-3 text-yellow-500 animate-pulse" />

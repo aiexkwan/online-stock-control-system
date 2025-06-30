@@ -34,7 +34,7 @@ interface ReportGeneratorWithDialogWidgetProps {
   apiEndpoint?: string;
 }
 
-export default function ReportGeneratorWithDialogWidget({ 
+export const ReportGeneratorWithDialogWidget = function ReportGeneratorWithDialogWidget({ 
   title, 
   reportType,
   description,

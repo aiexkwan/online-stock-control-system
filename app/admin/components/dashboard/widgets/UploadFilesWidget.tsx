@@ -11,7 +11,6 @@ import { CloudArrowUpIcon, DocumentIcon, PhotoIcon } from '@heroicons/react/24/o
 import { createClient } from '@/lib/supabase';
 import { WidgetComponentProps } from '@/app/types/dashboard';
 import { toast } from 'sonner';
-import { Folder3D } from './Folder3D';
 import { GoogleDriveUploadToast } from './GoogleDriveUploadToast';
 import { useUploadRefresh } from '@/app/admin/contexts/UploadRefreshContext';
 
@@ -232,13 +231,16 @@ export const UploadFilesWidget = React.memo(function UploadFilesWidget({ widget,
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
       >
-        <Folder3D
-          color={selectedFolder === 'stockPic' ? '#10b981' : '#8b5cf6'}
-
-          icon={<CloudArrowUpIcon />}
+        <div 
           onClick={handleClick}
-          label="Upload Files"
-        />
+          className="cursor-pointer transition-transform hover:scale-105 p-8"
+        >
+          <CloudArrowUpIcon 
+            className="w-20 h-20 mx-auto mb-4 transition-colors"
+            style={{ color: selectedFolder === 'stockPic' ? '#10b981' : '#8b5cf6' }}
+          />
+          <p className="text-center text-gray-400">Upload Files</p>
+        </div>
         <div className="flex gap-2 mt-2">
           <button
             onClick={(e) => {

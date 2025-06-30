@@ -11,6 +11,7 @@ import { AdminWidgetConfig } from './adminDashboardLayouts';
 import { TimeFrame } from '@/app/components/admin/UniversalTimeRangeSelector';
 import { createClient } from '@/lib/supabase';
 import { useAdminRefresh } from '@/app/admin/contexts/AdminRefreshContext';
+import { LazyComponents } from './LazyWidgetRegistry';
 import { 
   ArrowTrendingUpIcon,
   ArrowTrendingDownIcon,
@@ -61,12 +62,98 @@ const UnifiedWidgetWrapper: React.FC<{
   hasError?: boolean;
   className?: string;
   style?: React.CSSProperties;
-}> = ({ children, isCustomTheme, hasError, className, style }) => {
-  // 統一的背景樣式
+  theme?: string;
+}> = ({ children, isCustomTheme, hasError, className, style, theme }) => {
+  // 根據主題獲取邊框顏色
+  const getThemeColors = () => {
+    switch (theme) {
+      case 'injection':
+        return {
+          ring: 'ring-blue-500/30',
+          border: 'border-blue-700/50',
+          shadow: 'shadow-[0_0_30px_rgba(59,130,246,0.15)]',
+          hoverRing: 'hover:ring-blue-400/40',
+          hoverShadow: 'hover:shadow-[0_0_40px_rgba(59,130,246,0.25)]'
+        };
+      case 'pipeline':
+        return {
+          ring: 'ring-purple-500/30',
+          border: 'border-purple-700/50',
+          shadow: 'shadow-[0_0_30px_rgba(168,85,247,0.15)]',
+          hoverRing: 'hover:ring-purple-400/40',
+          hoverShadow: 'hover:shadow-[0_0_40px_rgba(168,85,247,0.25)]'
+        };
+      case 'warehouse':
+        return {
+          ring: 'ring-green-500/30',
+          border: 'border-green-700/50',
+          shadow: 'shadow-[0_0_30px_rgba(34,197,94,0.15)]',
+          hoverRing: 'hover:ring-green-400/40',
+          hoverShadow: 'hover:shadow-[0_0_40px_rgba(34,197,94,0.25)]'
+        };
+      case 'analysis':
+        return {
+          ring: 'ring-cyan-500/30',
+          border: 'border-cyan-700/50',
+          shadow: 'shadow-[0_0_30px_rgba(6,182,212,0.15)]',
+          hoverRing: 'hover:ring-cyan-400/40',
+          hoverShadow: 'hover:shadow-[0_0_40px_rgba(6,182,212,0.25)]'
+        };
+      case 'upload':
+        return {
+          ring: 'ring-indigo-500/30',
+          border: 'border-indigo-700/50',
+          shadow: 'shadow-[0_0_30px_rgba(99,102,241,0.15)]',
+          hoverRing: 'hover:ring-indigo-400/40',
+          hoverShadow: 'hover:shadow-[0_0_40px_rgba(99,102,241,0.25)]'
+        };
+      case 'update':
+        return {
+          ring: 'ring-orange-500/30',
+          border: 'border-orange-700/50',
+          shadow: 'shadow-[0_0_30px_rgba(251,146,60,0.15)]',
+          hoverRing: 'hover:ring-orange-400/40',
+          hoverShadow: 'hover:shadow-[0_0_40px_rgba(251,146,60,0.25)]'
+        };
+      case 'stock-management':
+        return {
+          ring: 'ring-yellow-500/30',
+          border: 'border-yellow-700/50',
+          shadow: 'shadow-[0_0_30px_rgba(250,204,21,0.15)]',
+          hoverRing: 'hover:ring-yellow-400/40',
+          hoverShadow: 'hover:shadow-[0_0_40px_rgba(250,204,21,0.25)]'
+        };
+      case 'system':
+        return {
+          ring: 'ring-red-500/30',
+          border: 'border-red-700/50',
+          shadow: 'shadow-[0_0_30px_rgba(239,68,68,0.15)]',
+          hoverRing: 'hover:ring-red-400/40',
+          hoverShadow: 'hover:shadow-[0_0_40px_rgba(239,68,68,0.25)]'
+        };
+      default:
+        return {
+          ring: 'ring-slate-500/30',
+          border: 'border-slate-600/50',
+          shadow: 'shadow-[0_0_30px_rgba(100,150,200,0.15)]',
+          hoverRing: 'hover:ring-slate-400/40',
+          hoverShadow: 'hover:shadow-[0_0_40px_rgba(100,150,200,0.25)]'
+        };
+    }
+  };
+
+  const themeColors = getThemeColors();
+
+  // 統一的背景樣式，加入更明顯嘅邊框效果
   const baseStyles = cn(
     "h-full w-full rounded-xl transition-all duration-300",
     "bg-slate-900/50 backdrop-blur-sm",
-    "border border-slate-700/50",
+    // 主題特定嘅邊框效果
+    themeColors.ring,
+    themeColors.border,
+    themeColors.shadow,
+    themeColors.hoverRing,
+    themeColors.hoverShadow,
     "overflow-hidden"
   );
   
@@ -112,15 +199,16 @@ const OtherFilesListWidget = React.lazy(() => import('./widgets/OtherFilesListWi
 const UploadFilesWidget = React.lazy(() => import('./widgets/UploadFilesWidget').then(mod => ({ default: mod.UploadFilesWidget })));
 
 // Analysis page components
-const AnalysisPagedWidget = React.lazy(() => import('./widgets/AnalysisPagedWidget'));
-const AnalysisPagedWidgetV2 = React.lazy(() => import('./widgets/AnalysisPagedWidgetV2'));
-const AnalysisExpandableCards = React.lazy(() => import('./widgets/AnalysisExpandableCards'));
+const AnalysisPagedWidget = React.lazy(() => import('./widgets/AnalysisPagedWidget').then(mod => ({ default: mod.AnalysisPagedWidget })));
+const AnalysisPagedWidgetV2 = React.lazy(() => import('./widgets/AnalysisPagedWidgetV2').then(mod => ({ default: mod.AnalysisPagedWidgetV2 })));
+const AnalysisExpandableCards = React.lazy(() => import('./widgets/AnalysisExpandableCards').then(mod => ({ default: mod.AnalysisExpandableCards })));
 const UploadOrdersWidget = React.lazy(() => import('./widgets/UploadOrdersWidget').then(mod => ({ default: mod.UploadOrdersWidget })));
 const UploadProductSpecWidget = React.lazy(() => import('./widgets/UploadProductSpecWidget').then(mod => ({ default: mod.UploadProductSpecWidget })));
 const UploadPhotoWidget = React.lazy(() => import('./widgets/UploadPhotoWidget').then(mod => ({ default: mod.UploadPhotoWidget })));
-const ReportGeneratorWidget = React.lazy(() => import('./widgets/ReportGeneratorWidget'));
-const ReportGeneratorWithDialogWidget = React.lazy(() => import('./widgets/ReportGeneratorWithDialogWidget'));
+const ReportGeneratorWidget = React.lazy(() => import('./widgets/ReportGeneratorWidget').then(mod => ({ default: mod.ReportGeneratorWidget })));
+const ReportGeneratorWithDialogWidget = React.lazy(() => import('./widgets/ReportGeneratorWithDialogWidget').then(mod => ({ default: mod.ReportGeneratorWithDialogWidget })));
 const AvailableSoonWidget = React.lazy(() => import('./widgets/AvailableSoonWidget'));
+const ReportsWidget = React.lazy(() => import('./widgets/ReportsWidget').then(mod => ({ default: mod.ReportsWidget })));
 
 // GraphQL 組件
 const ProductionStatsGraphQL = React.lazy(() => import('./widgets/ProductionStatsGraphQL').then(mod => ({ default: mod.ProductionStatsGraphQL })));
@@ -1359,32 +1447,78 @@ export const AdminWidgetRenderer: React.FC<AdminWidgetRendererProps> = ({
 
   // 渲染特殊組件
   const renderSpecialComponent = () => {
+    const componentName = config.component || '';
+    
+    // 檢查是否有懶加載版本
+    const LazyComponent = LazyComponents[componentName];
+    if (LazyComponent) {
+      // 根據不同組件傳遞適當的 props
+      const getComponentProps = () => {
+        switch (componentName) {
+          case 'HistoryTree':
+            return {
+              widget: {
+                config: {
+                  ...config,
+                  size: config.size || 'MEDIUM'
+                }
+              },
+              isEditMode: false
+            };
+          case 'AnalysisPagedWidget':
+          case 'AnalysisPagedWidgetV2':
+          case 'AnalysisExpandableCards':
+            return { timeFrame, theme };
+          case 'ReportGeneratorWidget':
+            return {
+              title: config.title,
+              reportType: config.reportType || '',
+              description: config.description,
+              apiEndpoint: config.apiEndpoint
+            };
+          case 'ReportGeneratorWithDialogWidget':
+            return {
+              title: config.title,
+              reportType: config.reportType || '',
+              description: config.description,
+              apiEndpoint: config.apiEndpoint,
+              dialogTitle: config.dialogTitle || '',
+              dialogDescription: config.dialogDescription || '',
+              selectLabel: config.selectLabel || '',
+              dataTable: config.dataTable || '',
+              referenceField: config.referenceField || ''
+            };
+          // Upload widgets
+          case 'OrdersListWidget':
+          case 'OtherFilesListWidget':
+          case 'UploadFilesWidget':
+          case 'UploadOrdersWidget':
+          case 'UploadProductSpecWidget':
+          case 'UploadPhotoWidget':
+            return {
+              widget: {
+                id: componentName,
+                type: 'CUSTOM' as any,
+                title: config.title,
+                config: { size: 'MEDIUM' as any }
+              },
+              isEditMode: false
+            };
+          case 'StockDistributionChart':
+          case 'StockTypeSelector':
+            return { widget: config as any };
+          case 'StockLevelHistoryChart':
+            return { widget: config as any, timeFrame };
+          default:
+            return { widget: config, isEditMode: false };
+        }
+      };
+      
+      return <LazyComponent {...getComponentProps()} />;
+    }
+    
+    // 原有的 switch 處理（只保留非懶加載組件）
     switch (config.component) {
-      case 'HistoryTree':
-        return <HistoryTree widget={{
-          config: {
-            ...config,
-            size: config.size || 'MEDIUM'
-          }
-        }} isEditMode={false} />;
-      case 'AnalysisPagedWidget':
-        return (
-          <React.Suspense fallback={<div className="h-full w-full flex items-center justify-center"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div></div>}>
-            <AnalysisPagedWidget timeFrame={timeFrame} theme={theme} />
-          </React.Suspense>
-        );
-      case 'AnalysisPagedWidgetV2':
-        return (
-          <React.Suspense fallback={<div className="h-full w-full flex items-center justify-center"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div></div>}>
-            <AnalysisPagedWidgetV2 timeFrame={timeFrame} theme={theme} />
-          </React.Suspense>
-        );
-      case 'AnalysisExpandableCards':
-        return (
-          <React.Suspense fallback={<div className="h-full w-full flex items-center justify-center"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div></div>}>
-            <AnalysisExpandableCards timeFrame={timeFrame} theme={theme} />
-          </React.Suspense>
-        );
       case 'WarehouseHeatmap':
         return (
           <div className="h-full flex flex-col items-center justify-center text-white">
@@ -1414,33 +1548,7 @@ export const AdminWidgetRenderer: React.FC<AdminWidgetRendererProps> = ({
         );
       case 'UpdateForm':
         return <ProductUpdateComponent />;
-      case 'ReportGeneratorWidget':
-        return (
-          <Suspense fallback={<div className="h-full w-full animate-pulse bg-slate-800/50" />}>
-            <ReportGeneratorWidget 
-              title={config.title}
-              reportType={config.reportType || ''}
-              description={config.description}
-              apiEndpoint={config.apiEndpoint}
-            />
-          </Suspense>
-        );
-      case 'ReportGeneratorWithDialogWidget':
-        return (
-          <Suspense fallback={<div className="h-full w-full animate-pulse bg-slate-800/50" />}>
-            <ReportGeneratorWithDialogWidget 
-              title={config.title}
-              reportType={config.reportType || ''}
-              description={config.description}
-              apiEndpoint={config.apiEndpoint}
-              dialogTitle={config.dialogTitle || ''}
-              dialogDescription={config.dialogDescription || ''}
-              selectLabel={config.selectLabel || ''}
-              dataTable={config.dataTable || ''}
-              referenceField={config.referenceField || ''}
-            />
-          </Suspense>
-        );
+      // ReportGeneratorWidget 和 ReportGeneratorWithDialogWidget 已經在 LazyComponents 中處理
       case 'AvailableSoonWidget':
         return (
           <Suspense fallback={<div className="h-full w-full animate-pulse bg-slate-800/50" />}>
@@ -1505,91 +1613,7 @@ export const AdminWidgetRenderer: React.FC<AdminWidgetRendererProps> = ({
             </div>
           </div>
         );
-      // Upload page widgets
-      case 'OrdersListWidget':
-        return (
-          <Suspense fallback={<div className="h-full flex items-center justify-center"><div className="animate-pulse">Loading orders...</div></div>}>
-            {ENABLE_GRAPHQL ? (
-              <OrdersListGraphQL widget={{ 
-                id: 'orders-list',
-                type: 'CUSTOM' as any,
-                title: 'Orders List',
-                config: { size: 'LARGE' as any }
-              }} isEditMode={false} />
-            ) : (
-              <OrdersListWidget widget={{ 
-                id: 'orders-list',
-                type: 'CUSTOM' as any,
-                title: 'Orders List',
-                config: { size: 'LARGE' as any }
-              }} isEditMode={false} />
-            )}
-          </Suspense>
-        );
-      case 'OtherFilesListWidget':
-        return (
-          <Suspense fallback={<div className="h-full flex items-center justify-center"><div className="animate-pulse">Loading files...</div></div>}>
-            {ENABLE_GRAPHQL ? (
-              <OtherFilesListGraphQL widget={{ 
-                id: 'other-files-list',
-                type: 'CUSTOM' as any,
-                title: 'Other Files',
-                config: { size: 'LARGE' as any }
-              }} isEditMode={false} />
-            ) : (
-              <OtherFilesListWidget widget={{ 
-                id: 'other-files-list',
-                type: 'CUSTOM' as any,
-                title: 'Other Files',
-                config: { size: 'LARGE' as any }
-              }} isEditMode={false} />
-            )}
-          </Suspense>
-        );
-      case 'UploadFilesWidget':
-        return (
-          <Suspense fallback={<div className="h-full flex items-center justify-center"><div className="animate-pulse">Loading...</div></div>}>
-            <UploadFilesWidget widget={{ 
-              id: 'upload-files',
-              type: 'UPLOAD_FILES' as any,
-              title: 'Upload Files',
-              config: { size: 'MEDIUM' as any }
-            }} isEditMode={false} />
-          </Suspense>
-        );
-      case 'UploadOrdersWidget':
-        return (
-          <Suspense fallback={<div className="h-full flex items-center justify-center"><div className="animate-pulse">Loading...</div></div>}>
-            <UploadOrdersWidget widget={{ 
-              id: 'upload-orders',
-              type: 'UPLOAD_ORDER_PDF' as any,
-              title: 'Upload Orders',
-              config: { size: 'MEDIUM' as any }
-            }} isEditMode={false} />
-          </Suspense>
-        );
-      case 'UploadProductSpecWidget':
-        return (
-          <Suspense fallback={<div className="h-full flex items-center justify-center"><div className="animate-pulse">Loading...</div></div>}>
-            <UploadProductSpecWidget widget={{ 
-              id: 'upload-product-spec',
-              type: 'PRODUCT_SPEC' as any,
-              title: 'Upload Product Spec',
-              config: { size: 'MEDIUM' as any }
-            }} isEditMode={false} />
-          </Suspense>
-        );
-      case 'UploadPhotoWidget':
-        return (
-          <Suspense fallback={<div className="h-full flex items-center justify-center"><div className="animate-pulse">Loading...</div></div>}>
-            <UploadPhotoWidget widget={{ 
-              id: 'upload-photo',
-              type: 'CUSTOM' as any,
-              title: 'Upload Photo',
-              config: { size: 'MEDIUM' as any }
-            }} isEditMode={false} />
-          </Suspense>
-        );
+      // Upload page widgets - all handled by LazyComponents now
       // Warehouse Dashboard Widgets
       case 'AwaitLocationQtyWidget':
         return (
@@ -1772,6 +1796,16 @@ export const AdminWidgetRenderer: React.FC<AdminWidgetRendererProps> = ({
             <AvailableSoonWidget widget={config} isEditMode={false} />
           </Suspense>
         );
+      case 'reports':
+        return (
+          <Suspense fallback={<div className="h-full w-full animate-pulse bg-slate-800/50" />}>
+            <ReportsWidget widget={config as any} isEditMode={false} />
+          </Suspense>
+        );
+      case 'orders-list':
+        return renderSpecialComponent();
+      case 'other-files-list':
+        return renderSpecialComponent();
       default:
         return (
           <div className="text-center text-gray-400">
@@ -1807,9 +1841,10 @@ export const AdminWidgetRenderer: React.FC<AdminWidgetRendererProps> = ({
     <UnifiedWidgetWrapper 
       isCustomTheme={isCustomTheme}
       hasError={!!error}
+      theme={theme}
       className={cn(
         wrapperClass,
-        isTransparent && '!bg-transparent !border-0 !backdrop-blur-0' // Override for transparent widgets
+        isTransparent && '!bg-transparent !backdrop-blur-0' // Override background for transparent widgets, keep border
       )}
       style={!isCustomTheme ? { gridArea: config.gridArea } : undefined}
     >

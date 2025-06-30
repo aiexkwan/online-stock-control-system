@@ -55,6 +55,48 @@ export const LazyWidgets: Partial<Record<WidgetType, React.ComponentType<WidgetC
   
 };
 
+// Component-based lazy widgets (for AdminWidgetRenderer)
+export const LazyComponents: Record<string, React.ComponentType<any>> = {
+  // 分析類重型 widget (named exports)
+  'AnalysisPagedWidget': createLazyWidget(
+    () => import('./widgets/AnalysisPagedWidget').then(m => ({ default: m.AnalysisPagedWidget }))
+  ),
+  'AnalysisPagedWidgetV2': createLazyWidget(
+    () => import('./widgets/AnalysisPagedWidgetV2').then(m => ({ default: m.AnalysisPagedWidgetV2 }))
+  ),
+  'AnalysisExpandableCards': createLazyWidget(
+    () => import('./widgets/AnalysisExpandableCards').then(m => ({ default: m.AnalysisExpandableCards }))
+  ),
+  
+  // 報表類重型 widget (named exports)
+  'ReportGeneratorWidget': createLazyWidget(
+    () => import('./widgets/ReportGeneratorWidget').then(m => ({ default: m.ReportGeneratorWidget }))
+  ),
+  'ReportGeneratorWithDialogWidget': createLazyWidget(
+    () => import('./widgets/ReportGeneratorWithDialogWidget').then(m => ({ default: m.ReportGeneratorWithDialogWidget }))
+  ),
+  
+  // Upload page widgets (named exports)
+  'OrdersListWidget': createLazyWidget(
+    () => import('./widgets/OrdersListWidget').then(m => ({ default: m.OrdersListWidget }))
+  ),
+  'OtherFilesListWidget': createLazyWidget(
+    () => import('./widgets/OtherFilesListWidget').then(m => ({ default: m.OtherFilesListWidget }))
+  ),
+  'UploadFilesWidget': createLazyWidget(
+    () => import('./widgets/UploadFilesWidget').then(m => ({ default: m.UploadFilesWidget }))
+  ),
+  'UploadOrdersWidget': createLazyWidget(
+    () => import('./widgets/UploadOrdersWidget').then(m => ({ default: m.UploadOrdersWidget }))
+  ),
+  'UploadProductSpecWidget': createLazyWidget(
+    () => import('./widgets/UploadProductSpecWidget').then(m => ({ default: m.UploadProductSpecWidget }))
+  ),
+  'UploadPhotoWidget': createLazyWidget(
+    () => import('./widgets/UploadPhotoWidget').then(m => ({ default: m.UploadPhotoWidget }))
+  ),
+};
+
 // Helper to check if widget should be lazy loaded
 export function shouldLazyLoad(widgetType: WidgetType): boolean {
   return widgetType in LazyWidgets;

@@ -11,7 +11,6 @@ import { PhotoIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import { createClient } from '@/lib/supabase';
 import { WidgetComponentProps } from '@/app/types/dashboard';
 import { toast } from 'sonner';
-import { Folder3D } from './Folder3D';
 import { GoogleDriveUploadToast } from './GoogleDriveUploadToast';
 import { useUploadRefresh } from '@/app/admin/contexts/UploadRefreshContext';
 
@@ -252,14 +251,16 @@ export const UploadPhotoWidget = React.memo(function UploadPhotoWidget({ widget,
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
       >
-        <Folder3D
-          color="#10b981"
-
-          icon={<PhotoIcon />}
+        <div 
           onClick={handleClick}
-          label="Upload Photo"
-          description="PNG, JPEG, JPG, GIF, WEBP"
-        />
+          className="cursor-pointer transition-transform hover:scale-105 p-8"
+        >
+          <PhotoIcon 
+            className="w-20 h-20 mx-auto mb-4 text-green-500 transition-colors hover:text-green-400"
+          />
+          <p className="text-center text-gray-400 font-medium">Upload Photo</p>
+          <p className="text-center text-gray-500 text-xs mt-1">PNG, JPEG, JPG, GIF, WEBP</p>
+        </div>
         {previews.length > 0 && (
           <div className="text-xs text-green-400 mt-2">
             {previews.length} photo{previews.length > 1 ? 's' : ''} selected

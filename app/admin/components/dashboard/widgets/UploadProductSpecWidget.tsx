@@ -9,7 +9,6 @@ import { DocumentTextIcon } from '@heroicons/react/24/outline';
 import { createClient } from '@/lib/supabase';
 import { WidgetComponentProps } from '@/app/types/dashboard';
 import { toast } from 'sonner';
-import { Folder3D } from './Folder3D';
 import { GoogleDriveUploadToast } from './GoogleDriveUploadToast';
 import { useUploadRefresh } from '@/app/admin/contexts/UploadRefreshContext';
 
@@ -222,14 +221,16 @@ export const UploadProductSpecWidget = React.memo(function UploadProductSpecWidg
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
       >
-        <Folder3D
-          color="#8b5cf6"
-
-          icon={<DocumentTextIcon />}
+        <div 
           onClick={handleClick}
-          label="Upload Product Spec"
-          description="PDF, DOC, DOCX"
-        />
+          className="cursor-pointer transition-transform hover:scale-105 p-8"
+        >
+          <DocumentTextIcon 
+            className="w-20 h-20 mx-auto mb-4 text-purple-500 transition-colors hover:text-purple-400"
+          />
+          <p className="text-center text-gray-400 font-medium">Upload Product Spec</p>
+          <p className="text-center text-gray-500 text-xs mt-1">PDF, DOC, DOCX</p>
+        </div>
         
         <input
           ref={fileInputRef}

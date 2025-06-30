@@ -513,10 +513,10 @@ export const adminDashboardLayouts: Record<string, AdminDashboardLayout> = {
         apiEndpoint: '/api/reports/export-all'
       },
       {
-        type: 'available-soon',
-        title: 'Additional Reports',
+        type: 'reports',
+        title: 'Reports Center',
         gridArea: 'widget9',
-        component: 'AvailableSoonWidget'
+        component: 'ReportsWidget'
       }
     ]
   },
