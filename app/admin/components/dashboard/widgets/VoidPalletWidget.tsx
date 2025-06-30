@@ -7,11 +7,14 @@
 
 import React, { useState, useCallback, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { X, Search, QrCode, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
+import { X, Search, QrCode, Loader2, CheckCircle, AlertCircle, Package2, List } from 'lucide-react';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
 import { useVoidPallet } from '@/app/void-pallet/hooks/useVoidPallet';
+import { useBatchVoid } from '@/app/void-pallet/hooks/useBatchVoid';
 import { VOID_REASONS } from '@/app/void-pallet/types';
+import { BatchPalletItem } from '@/app/void-pallet/types/batch';
+import { BatchVoidPanel } from '@/app/void-pallet/components/BatchVoidPanel';
 import { SimpleQRScanner } from '@/components/qr-scanner/simple-qr-scanner';
 import { WidgetComponentProps } from '@/app/types/dashboard';
 import { CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -34,6 +37,18 @@ export const VoidPalletWidget = React.memo(function VoidPalletWidget({ widget, i
     showDamageQuantityInput,
   } = useVoidPallet();
 
+  // Batch mode integration
+  const {
+    batchState,
+    toggleMode,
+    addToBatch,
+    removeFromBatch,
+    selectItem: toggleItemSelection,
+    selectAll: selectAllItems,
+    clearBatch,
+    executeBatchVoid,
+  } = useBatchVoid();
+
   const [currentStep, setCurrentStep] = useState<VoidStep>('search');
   const [searchValue, setSearchValue] = useState('');
   const [showQrScanner, setShowQrScanner] = useState(false);
@@ -41,12 +56,24 @@ export const VoidPalletWidget = React.memo(function VoidPalletWidget({ widget, i
   const [productDescription, setProductDescription] = useState<string>('');
   const [password, setPassword] = useState<string>('');
   
+  // Batch mode specific state
+  const [batchVoidResult, setBatchVoidResult] = useState<{ total: number; successful: number; failed: number; details: any[] } | null>(null);
+  
   const searchInputRef = useRef<HTMLInputElement>(null);
   const isMobile = typeof window !== 'undefined' && /Mobi|Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
 
-  // Watch for found pallet and move to confirm step
+  // Auto focus search input
+  const focusSearchInput = useCallback(() => {
+    setTimeout(() => {
+      if (searchInputRef.current) {
+        searchInputRef.current.focus();
+      }
+    }, 100);
+  }, []);
+
+  // Watch for found pallet and move to confirm step (single mode only)
   React.useEffect(() => {
-    if (state.foundPallet && currentStep === 'search') {
+    if (state.foundPallet && currentStep === 'search' && batchState.mode === 'single') {
       setCurrentStep('confirm');
       // Fetch product description
       getProductByCode(state.foundPallet.product_code).then(result => {
@@ -57,16 +84,23 @@ export const VoidPalletWidget = React.memo(function VoidPalletWidget({ widget, i
         console.error('Failed to fetch product description:', error);
       });
     }
-  }, [state.foundPallet, currentStep]);
+  }, [state.foundPallet, currentStep, batchState.mode]);
 
-  // Auto focus search input
-  const focusSearchInput = useCallback(() => {
-    setTimeout(() => {
-      if (searchInputRef.current) {
-        searchInputRef.current.focus();
-      }
-    }, 100);
-  }, []);
+  // Handle batch mode - add found pallet to batch list
+  React.useEffect(() => {
+    if (state.foundPallet && currentStep === 'search' && batchState.mode === 'batch') {
+      // Add to batch list
+      addToBatch(searchValue, state.searchType || 'pallet_num').then(success => {
+        if (success) {
+          toast.success(`Added ${state.foundPallet.plt_num} to batch list`);
+          // Clear search
+          setSearchValue('');
+          updateState({ foundPallet: null });
+          focusSearchInput();
+        }
+      });
+    }
+  }, [state.foundPallet, currentStep, batchState.mode, searchValue, state.searchType, addToBatch, updateState, focusSearchInput]);
 
   // Handle search submission
   const handleSearch = async () => {
@@ -156,11 +190,47 @@ export const VoidPalletWidget = React.memo(function VoidPalletWidget({ widget, i
     setCurrentStep('search');
     setSearchValue('');
     setVoidResult(null);
+    setBatchVoidResult(null);
     setProductDescription('');
     setPassword('');
     updateState({ foundPallet: null, voidReason: '', damageQuantity: 0 });
     clearError();
     focusSearchInput();
+  };
+
+  // Handle batch void submission
+  const handleBatchVoid = async () => {
+    if (!password || batchState.selectedCount === 0) {
+      toast.error('Please select items and enter password');
+      return;
+    }
+
+    try {
+      // Process batch with fixed void reason
+      const result = await executeBatchVoid({
+        voidReason: 'Print Extra Label',
+        password: password
+      });
+
+      if (result.success) {
+        setBatchVoidResult({
+          total: result.summary.total,
+          successful: result.summary.successful,
+          failed: result.summary.failed,
+          details: batchState.items.filter(item => item.status === 'completed' || item.status === 'error').map(item => ({
+            plt_num: item.palletInfo.plt_num,
+            success: item.status === 'completed',
+            error: item.error
+          }))
+        });
+        setCurrentStep('result');
+      } else {
+        toast.error('Batch void failed');
+      }
+    } catch (error: any) {
+      console.error('Batch void error:', error);
+      toast.error(`Batch void failed: ${error.message}`);
+    }
   };
 
   // Clear error
@@ -171,6 +241,42 @@ export const VoidPalletWidget = React.memo(function VoidPalletWidget({ widget, i
   // Render search step
   const renderSearchStep = () => (
     <div className="space-y-4">
+      {/* Mode toggle buttons */}
+      <div className="flex space-x-2 mb-4">
+        <button
+          onClick={() => {
+            toggleMode();
+            clearBatch();
+            resetToSearch();
+          }}
+          disabled={isEditMode || batchState.isProcessing}
+          className={`flex-1 px-4 py-2 rounded-lg font-medium flex items-center justify-center space-x-2 transition-colors ${
+            batchState.mode === 'single' 
+              ? 'bg-blue-600 text-white' 
+              : 'bg-slate-700 text-gray-300 hover:bg-slate-600'
+          } disabled:opacity-50 disabled:cursor-not-allowed`}
+        >
+          <Package2 className="w-4 h-4" />
+          <span>Single Mode</span>
+        </button>
+        <button
+          onClick={() => {
+            toggleMode();
+            clearBatch();
+            resetToSearch();
+          }}
+          disabled={isEditMode || batchState.isProcessing}
+          className={`flex-1 px-4 py-2 rounded-lg font-medium flex items-center justify-center space-x-2 transition-colors ${
+            batchState.mode === 'batch' 
+              ? 'bg-blue-600 text-white' 
+              : 'bg-slate-700 text-gray-300 hover:bg-slate-600'
+          } disabled:opacity-50 disabled:cursor-not-allowed`}
+        >
+          <List className="w-4 h-4" />
+          <span>Batch Mode</span>
+        </button>
+      </div>
+
       <div className="flex flex-col space-y-3">
         <div className="flex space-x-2">
           <div className="flex-1 relative">
@@ -224,14 +330,41 @@ export const VoidPalletWidget = React.memo(function VoidPalletWidget({ widget, i
           </div>
         </div>
       )}
+      
+      {/* Batch mode list */}
+      {batchState.mode === 'batch' && batchState.items.length > 0 && (
+        <div className="mt-4">
+          <div className="flex items-center justify-between mb-2">
+            <h4 className="text-sm font-medium text-gray-400">
+              Batch List ({batchState.items.length} items, {batchState.selectedCount} selected)
+            </h4>
+            <button
+              onClick={() => setCurrentStep('confirm')}
+              disabled={batchState.selectedCount === 0 || isEditMode}
+              className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Proceed to Confirm
+            </button>
+          </div>
+          <BatchVoidPanel
+            items={batchState.items}
+            onSelectItem={toggleItemSelection}
+            onSelectAll={selectAllItems}
+            onRemoveItem={removeFromBatch}
+            onClearAll={clearBatch}
+            isProcessing={batchState.isProcessing}
+            selectedCount={batchState.selectedCount}
+          />
+        </div>
+      )}
     </div>
   );
 
   // Render confirm step
   const renderConfirmStep = () => (
     <div className="space-y-4">
-      {/* Pallet information */}
-      {state.foundPallet && (
+      {/* Single mode - show pallet information */}
+      {batchState.mode === 'single' && state.foundPallet && (
         <div className="bg-slate-800/30 rounded-lg p-4 border border-slate-700/30">
           <h4 className="text-sm font-medium text-gray-400 mb-3">Pallet Information</h4>
           <div className="grid grid-cols-2 gap-4">
@@ -257,14 +390,41 @@ export const VoidPalletWidget = React.memo(function VoidPalletWidget({ widget, i
         </div>
       )}
       
+      {/* Batch mode - show selected items */}
+      {batchState.mode === 'batch' && (
+        <div className="bg-slate-800/30 rounded-lg p-4 border border-slate-700/30">
+          <h4 className="text-sm font-medium text-gray-400 mb-3">
+            Batch Void Confirmation ({batchState.selectedCount} items selected)
+          </h4>
+          <div className="max-h-40 overflow-y-auto">
+            <BatchVoidPanel
+              items={batchState.items.filter(item => item.selected)}
+              onSelectItem={toggleItemSelection}
+              onSelectAll={selectAllItems}
+              onRemoveItem={removeFromBatch}
+              onClearAll={clearBatch}
+              isProcessing={batchState.isProcessing}
+              selectedCount={batchState.selectedCount}
+            />
+          </div>
+        </div>
+      )}
+      
       {/* Void reason selection */}
       <div className="space-y-2">
-        <label className="text-sm font-medium text-gray-400">Void Reason</label>
+        <label className="text-sm font-medium text-gray-400">
+          Void Reason
+          {batchState.mode === 'batch' && (
+            <span className="text-xs text-blue-400 ml-2">(Batch mode: fixed to Print Extra Label)</span>
+          )}
+        </label>
         <select
-          value={state.voidReason}
-          onChange={(e) => handleVoidReasonChange(e.target.value)}
-          disabled={isEditMode}
-          className="w-full px-3 py-2 bg-slate-800/50 border border-slate-700/50 rounded-lg text-white focus:border-blue-500/50 focus:outline-none disabled:opacity-50"
+          value={batchState.mode === 'batch' ? 'Print Extra Label' : state.voidReason}
+          onChange={(e) => batchState.mode === 'single' && handleVoidReasonChange(e.target.value)}
+          disabled={isEditMode || batchState.mode === 'batch'}
+          className={`w-full px-3 py-2 bg-slate-800/50 border border-slate-700/50 rounded-lg text-white focus:border-blue-500/50 focus:outline-none disabled:opacity-50 ${
+            batchState.mode === 'batch' ? 'bg-slate-900/50 cursor-not-allowed' : ''
+          }`}
         >
           <option value="">Select reason...</option>
           {VOID_REASONS.map((reason) => (
@@ -275,8 +435,8 @@ export const VoidPalletWidget = React.memo(function VoidPalletWidget({ widget, i
         </select>
       </div>
       
-      {/* Password input - show only when void reason is selected */}
-      {state.voidReason && (
+      {/* Password input - show only when void reason is selected or in batch mode */}
+      {(state.voidReason || batchState.mode === 'batch') && (
         <div className="space-y-2">
           <label className="text-sm font-medium text-gray-400">Password</label>
           <input
@@ -290,8 +450,8 @@ export const VoidPalletWidget = React.memo(function VoidPalletWidget({ widget, i
         </div>
       )}
       
-      {/* Damage quantity input */}
-      {showDamageQuantityInput && (
+      {/* Damage quantity input - only show in single mode */}
+      {showDamageQuantityInput && batchState.mode === 'single' && (
         <div className="space-y-2">
           <label className="text-sm font-medium text-gray-400">Damage Quantity</label>
           <input
@@ -316,17 +476,26 @@ export const VoidPalletWidget = React.memo(function VoidPalletWidget({ widget, i
           Back to Search
         </button>
         <button
-          onClick={handleVoidSubmit}
-          disabled={!state.voidReason || !password || (showDamageQuantityInput && (!state.damageQuantity || state.damageQuantity <= 0 || state.damageQuantity > state.foundPallet.product_qty)) || state.isProcessing || isEditMode}
+          onClick={batchState.mode === 'batch' ? handleBatchVoid : handleVoidSubmit}
+          disabled={
+            batchState.mode === 'batch' 
+              ? (!password || batchState.selectedCount === 0 || batchState.isProcessing || isEditMode)
+              : (!state.voidReason || !password || (showDamageQuantityInput && (!state.damageQuantity || state.damageQuantity <= 0 || state.damageQuantity > state.foundPallet.product_qty)) || state.isProcessing || isEditMode)
+          }
           className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
         >
-          {state.isProcessing ? (
+          {(state.isProcessing || batchState.isProcessing) ? (
             <>
               <Loader2 className="w-4 h-4 animate-spin" />
               <span>Processing...</span>
             </>
           ) : (
-            <span>Confirm Void</span>
+            <span>
+              {batchState.mode === 'batch' 
+                ? `Confirm Batch Void (${batchState.selectedCount} items)`
+                : 'Confirm Void'
+              }
+            </span>
           )}
         </button>
       </div>
@@ -349,30 +518,82 @@ export const VoidPalletWidget = React.memo(function VoidPalletWidget({ widget, i
   );
 
   // Render result step
-  const renderResultStep = () => (
-    <div className="space-y-4 text-center">
-      <div className={`mx-auto w-16 h-16 rounded-full flex items-center justify-center ${
-        voidResult?.success ? 'bg-green-900/50 border border-green-700/50' : 'bg-red-900/50 border border-red-700/50'
-      }`}>
-        {voidResult?.success ? (
-          <CheckCircle className="w-8 h-8 text-green-400" />
-        ) : (
-          <AlertCircle className="w-8 h-8 text-red-400" />
-        )}
-      </div>
-      
-      <div>
-        <h4 className={`text-lg font-medium ${
-          voidResult?.success ? 'text-green-400' : 'text-red-400'
-        }`}>
-          {voidResult?.success ? 'Success' : 'Failed'}
-        </h4>
-        <p className="text-gray-400 text-sm mt-1">{voidResult?.message}</p>
-      </div>
-      
-      <div className="flex flex-col space-y-3">
-        {voidResult?.requiresReprint && voidResult?.remainingQty && voidResult?.remainingQty > 0 && (
+  const renderResultStep = () => {
+    // Batch mode result
+    if (batchState.mode === 'batch' && batchVoidResult) {
+      return (
+        <div className="space-y-4">
+          <div className={`mx-auto w-16 h-16 rounded-full flex items-center justify-center ${
+            batchVoidResult.failed === 0 ? 'bg-green-900/50 border border-green-700/50' : 'bg-yellow-900/50 border border-yellow-700/50'
+          }`}>
+            {batchVoidResult.failed === 0 ? (
+              <CheckCircle className="w-8 h-8 text-green-400" />
+            ) : (
+              <AlertCircle className="w-8 h-8 text-yellow-400" />
+            )}
+          </div>
+          
+          <div className="text-center">
+            <h4 className="text-lg font-medium text-white">
+              Batch Void Complete
+            </h4>
+            <p className="text-gray-400 text-sm mt-1">
+              Total: {batchVoidResult.total} | Success: {batchVoidResult.successful} | Failed: {batchVoidResult.failed}
+            </p>
+          </div>
+
+          {/* Show failed items if any */}
+          {batchVoidResult.failed > 0 && (
+            <div className="bg-red-900/20 border border-red-700/50 rounded-lg p-4 max-h-40 overflow-y-auto">
+              <h5 className="text-sm font-medium text-red-400 mb-2">Failed Items</h5>
+              {batchVoidResult.details
+                .filter(item => !item.success)
+                .map((item, index) => (
+                  <div key={index} className="text-xs text-red-300">
+                    {item.plt_num}: {item.error}
+                  </div>
+                ))}
+            </div>
+          )}
+
           <button
+            onClick={() => {
+              clearBatch();
+              resetToSearch();
+            }}
+            className="w-full px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+          >
+            Continue
+          </button>
+        </div>
+      );
+    }
+
+    // Single mode result
+    return (
+      <div className="space-y-4 text-center">
+        <div className={`mx-auto w-16 h-16 rounded-full flex items-center justify-center ${
+          voidResult?.success ? 'bg-green-900/50 border border-green-700/50' : 'bg-red-900/50 border border-red-700/50'
+        }`}>
+          {voidResult?.success ? (
+            <CheckCircle className="w-8 h-8 text-green-400" />
+          ) : (
+            <AlertCircle className="w-8 h-8 text-red-400" />
+          )}
+        </div>
+        
+        <div>
+          <h4 className={`text-lg font-medium ${
+            voidResult?.success ? 'text-green-400' : 'text-red-400'
+          }`}>
+            {voidResult?.success ? 'Success' : 'Failed'}
+          </h4>
+          <p className="text-gray-400 text-sm mt-1">{voidResult?.message}</p>
+        </div>
+        
+        <div className="flex flex-col space-y-3">
+          {voidResult?.requiresReprint && voidResult?.remainingQty && voidResult?.remainingQty > 0 && (
+            <button
             onClick={async () => {
               // Use auto-reprint functionality
               if (state.foundPallet) {
@@ -477,7 +698,8 @@ export const VoidPalletWidget = React.memo(function VoidPalletWidget({ widget, i
         </button>
       </div>
     </div>
-  );
+    );
+  };
 
   return (
     <motion.div
