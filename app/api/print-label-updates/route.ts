@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const supabase = createClient();
+    const supabase = await createClient();
 
     // Call the RPC function to handle both updates
     const { data, error } = await supabase.rpc('handle_print_label_updates', {

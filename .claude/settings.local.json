@@ -92,7 +92,25 @@
       "Bash(do if ! grep -q \"UniversalWidgetCard\\|WidgetCard\" \"$file\")",
       "Bash(then echo \"$file\")",
       "Bash(fi done)",
-      "mcp__supabase__list_organizations"
+      "mcp__supabase__list_organizations",
+      "Bash(npm ls:*)",
+      "Bash(app/api/reports/grn/route.ts )",
+      "Bash(app/api/reports/export-all/route.ts )",
+      "Bash(app/api/reports/transaction/route.ts )",
+      "Bash(app/api/reports/stock-take/route.ts )",
+      "Bash(app/api/reports/order-loading/route.ts )",
+      "Bash(app/api/reports/void-pallet/route.ts )",
+      "Bash(app/api/tables/route.ts )",
+      "Bash(app/api/stock-count/scan/route.ts )",
+      "Bash(app/api/stock-count/process/route.ts )",
+      "Bash(app/api/print-label-updates/route.ts)",
+      "Bash(for file in /mnt/c/Users/ccohen/Documents/NewPennine/online-stock-control-system/app/void-pallet/services/*.ts)",
+      "Bash(do)",
+      "Bash(echo \"Updating $file\")",
+      "Bash(done)",
+      "Bash(/mnt/c/Users/ccohen/Documents/NewPennine/online-stock-control-system/app/actions/reportActions.ts )",
+      "Bash(/mnt/c/Users/ccohen/Documents/NewPennine/online-stock-control-system/app/actions/viewHistoryActions.ts )",
+      "Bash(/mnt/c/Users/ccohen/Documents/NewPennine/online-stock-control-system/app/actions/newReportActions.ts)"
     ],
     "deny": []
   }

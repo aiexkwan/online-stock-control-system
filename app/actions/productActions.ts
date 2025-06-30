@@ -26,22 +26,26 @@ async function recordProductHistory(
   userEmail?: string
 ): Promise<void> {
   try {
-    const supabase = createClient();
+    const supabase = await createClient();
     
     // 獲取當前用戶信息
     const { data: { user } } = await supabase.auth.getUser();
     const currentUserEmail = user?.email || userEmail || 'unknown';
     
+    console.log('[recordProductHistory] Current user email:', currentUserEmail);
+    
     // 獲取用戶 ID
     const userId = await getUserIdFromEmail(currentUserEmail);
+    
+    console.log('[recordProductHistory] Retrieved user ID:', userId);
     
     // 插入歷史記錄
     const { error } = await supabase
       .from('record_history')
       .insert({
         time: new Date().toISOString(),
-        id: userId, // 使用從 data_id 表獲取的 ID
-        action: action,
+        id: userId || 999, // 使用從 data_id 表獲取的 ID，如果沒有則使用 999
+        action: action === 'Add' ? 'Product Added' : 'Product Update',
         plt_num: null, // 產品操作不涉及棧板
         loc: null, // 產品操作不涉及位置
         remark: productCode // 只記錄產品代碼
@@ -64,7 +68,7 @@ async function recordProductHistory(
  */
 export async function getProductByCode(code: string): Promise<ProductActionResult> {
   try {
-    const supabase = createClient();
+    const supabase = await createClient();
     
     // 第一步：嘗試精確匹配（原本工作的方式）
     const { data: exactData, error: exactError } = await supabase
@@ -123,7 +127,7 @@ export async function getProductByCode(code: string): Promise<ProductActionResul
  */
 export async function updateProduct(code: string, productData: Partial<ProductData>): Promise<ProductActionResult> {
   try {
-    const supabase = createClient();
+    const supabase = await createClient();
     
     // 第一步：檢查是否有匹配的產品代碼（大小寫不敏感）
     const { data: allMatches, error: checkError } = await supabase
@@ -181,7 +185,7 @@ export async function updateProduct(code: string, productData: Partial<ProductDa
  */
 export async function createProduct(productData: ProductData): Promise<ProductActionResult> {
   try {
-    const supabase = createClient();
+    const supabase = await createClient();
     const { data, error } = await supabase
       .from('data_code')
       .insert(productData)
@@ -211,7 +215,7 @@ export async function createProduct(productData: ProductData): Promise<ProductAc
  */
 export async function checkProductExists(code: string): Promise<{ exists: boolean; error?: string }> {
   try {
-    const supabase = createClient();
+    const supabase = await createClient();
     
     // 使用 ilike 進行大小寫不敏感的檢查
     const { data, error } = await supabase
@@ -244,7 +248,7 @@ export async function checkProductExists(code: string): Promise<{ exists: boolea
  */
 export async function updateProductSQL(code: string, productData: Partial<ProductData>): Promise<ProductActionResult> {
   try {
-    const supabase = createClient();
+    const supabase = await createClient();
     
     // 移除 code 字段，因為它是主鍵不應該被更新
     const { code: _, ...updateData } = productData;
@@ -306,7 +310,7 @@ export async function updateProductSQL(code: string, productData: Partial<Produc
  */
 export async function getProductByCodeSQL(code: string): Promise<ProductActionResult> {
   try {
-    const supabase = createClient();
+    const supabase = await createClient();
     
     // 使用 ilike 進行大小寫不敏感查詢（PostgreSQL 特有）
     const { data, error } = await supabase
@@ -337,7 +341,7 @@ export async function getProductByCodeSQL(code: string): Promise<ProductActionRe
  */
 export async function updateProductOptimized(code: string, productData: Partial<ProductData>): Promise<ProductActionResult> {
   try {
-    const supabase = createClient();
+    const supabase = await createClient();
     
     // 第一步：先確認產品確實存在
     const { data: existingData, error: checkError } = await supabase

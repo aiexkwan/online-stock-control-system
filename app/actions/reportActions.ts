@@ -14,7 +14,7 @@ import { format, isValid } from 'date-fns'; // 用於日期格式化
  *          Returns an empty array if an error occurs or no data is found.
  */
 export async function getUniqueAcoOrderRefs(): Promise<string[]> {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   try {
   const { data, error } = await supabase
@@ -89,7 +89,7 @@ export async function getAcoReportData(orderRef: string): Promise<AcoProductData
     return [];
   }
 
-  const supabase = createClient();
+  const supabase = await createClient();
 
   try {
     // 步驟 1: 根據 orderRef 從 record_aco 獲取產品代碼和對應的 required_qty
@@ -210,7 +210,7 @@ export async function getAcoReportData(orderRef: string): Promise<AcoProductData
 }
 
 export async function getUniqueGrnRefs(): Promise<string[]> {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   try {
   const { data, error } = await supabase
@@ -266,7 +266,7 @@ export async function getMaterialCodesForGrnRef(grnRef: string): Promise<string[
     return [];
   }
 
-  const supabase = createClient();
+  const supabase = await createClient();
 
   try {
   const { data, error } = await supabase
@@ -361,7 +361,7 @@ export async function getGrnReportData(
     return null;
   }
 
-  const supabase = createClient();
+  const supabase = await createClient();
   let supplierCode: string | null = null;
   let userId: string | null = null;
 
@@ -556,7 +556,7 @@ export async function getTransactionReportData(
     return null;
   }
 
-  const supabase = createClient();
+  const supabase = await createClient();
 
   try {
     // 1. 獲取指定日期範圍內的轉移記錄

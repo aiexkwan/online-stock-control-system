@@ -10,7 +10,7 @@ export interface SearchSuggestion {
 export async function getSearchSuggestions(query: string): Promise<SearchSuggestion[]> {
   if (!query || query.length < 2) return [];
   
-  const supabase = createClient();
+  const supabase = await createClient();
   const suggestions: SearchSuggestion[] = [];
   
   try {
@@ -105,7 +105,7 @@ export async function getSearchSuggestions(query: string): Promise<SearchSuggest
 }
 
 export async function getPopularSearches(): Promise<SearchSuggestion[]> {
-  const supabase = createClient();
+  const supabase = await createClient();
   const suggestions: SearchSuggestion[] = [];
   
   try {

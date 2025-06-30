@@ -29,7 +29,7 @@ export interface LoadingReportFilters {
 }
 
 export async function fetchLoadingRecords(filters: LoadingReportFilters): Promise<LoadingRecord[]> {
-  const supabase = createClient();
+  const supabase = await createClient();
   
   try {
     process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('Fetching loading records with filters:', filters);

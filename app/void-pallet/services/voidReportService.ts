@@ -42,7 +42,7 @@ export interface VoidReportFilters {
 }
 
 export async function fetchVoidRecords(filters: VoidReportFilters): Promise<VoidRecord[]> {
-  const supabase = createClient();
+  const supabase = await createClient();
   
   try {
     process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('Fetching void records with filters:', filters);
@@ -708,7 +708,7 @@ export function generateVoidReportExcel(records: VoidRecord[], filters: VoidRepo
 
 // Add an alternative fetch method that doesn't rely on joins
 export async function fetchVoidRecordsAlternative(filters: VoidReportFilters): Promise<VoidRecord[]> {
-  const supabase = createClient();
+  const supabase = await createClient();
   
   try {
     process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('Using alternative fetch method without joins');
@@ -846,7 +846,7 @@ export async function fetchVoidRecordsAlternative(filters: VoidReportFilters): P
 
 // Debug function to check table structure and data
 export async function debugVoidReportIssue(): Promise<void> {
-  const supabase = createClient();
+  const supabase = await createClient();
   
   try {
     process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('=== DEBUGGING VOID REPORT ISSUE ===');
@@ -901,7 +901,7 @@ export async function debugVoidReportIssue(): Promise<void> {
 }
 
 export async function generateBatchVoidSummary(batchId: string): Promise<string> {
-  const supabase = createClient();
+  const supabase = await createClient();
   
   // Fetch batch void records
   const { data: records, error } = await supabase

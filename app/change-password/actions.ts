@@ -21,7 +21,7 @@ export async function updateUserPasswordInDbAction(
   process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[updateUserPasswordInDbAction] Action started. PrevState:', prevState);
   // const cookieStore = cookies(); // 不再直接需要
 
-  const supabase = createClient(); // 使用新的輔助函數創建客戶端
+  const supabase = await createClient(); // 使用新的輔助函數創建客戶端
   process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[updateUserPasswordInDbAction] Supabase client (from @/app/utils/supabase/server) obtained.');
 
   const newPassword = formData.get('newPassword')?.toString();

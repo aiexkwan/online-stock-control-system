@@ -11,13 +11,14 @@ import {
   HistoryRecord 
 } from './types';
 
-// 恢復模塊級別的客戶端實例，因為這個文件使用的是服務端客戶端，不會有混合客戶端問題
-const supabase = createClient();
+// 移除模塊級別的客戶端實例，改為在每個函數內部創建
 
 /**
  * Get user ID from data_id table by email
  */
 async function getUserIdFromEmail(email: string): Promise<number | null> {
+  const supabase = await createClient();
+  
   try {
     process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`[getUserIdFromEmail] Looking up user ID for email: ${email}`);
     
@@ -88,6 +89,8 @@ async function updateACORecord(
   productCode: string,
   quantity: number
 ): Promise<{ success: boolean; error?: string }> {
+  const supabase = await createClient();
+  
   try {
     process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`[ACO Update] Starting update: ref=${refNumber}, code=${productCode}, qty=${quantity}`);
     
@@ -164,6 +167,8 @@ async function updateACORecord(
 export async function verifyPasswordWithSupabaseAuth(
   password: string
 ): Promise<{ success: boolean; error?: string; clockNumber?: string }> {
+  const supabase = await createClient();
+  
   try {
     // 1. Get current user session
     const { data: { user }, error: userError } = await supabase.auth.getUser();
@@ -230,6 +235,8 @@ export async function verifyPasswordWithSupabaseAuth(
  * Get latest pallet location from record_history
  */
 async function getLatestPalletLocation(plt_num: string): Promise<string | null> {
+  const supabase = await createClient();
+  
   try {
     const { data, error } = await supabase
       .from('record_history')
@@ -259,6 +266,8 @@ async function getLatestPalletLocation(plt_num: string): Promise<string | null> 
  * Search pallet information - using pure SQL syntax with auto-detection support
  */
 export async function searchPalletAction(params: SearchParams): Promise<SearchResult> {
+  const supabase = await createClient();
+  
   try {
     const { searchValue, searchType } = params;
     
@@ -396,6 +405,8 @@ export async function recordHistoryAction(
   loc: string | null,
   remark: string | null
 ): Promise<{ success: boolean; error?: string }> {
+  const supabase = await createClient();
+  
   try {
     let numericId: number | null = null;
 
@@ -457,6 +468,8 @@ export async function logErrorAction(
   clockNumber: string,
   errorInfo: string
 ): Promise<void> {
+  const supabase = await createClient();
+  
   try {
     let numericId: number | null = null;
 
@@ -501,6 +514,8 @@ export async function logErrorAction(
  * General void processing - using Supabase Auth verification
  */
 export async function voidPalletAction(params: Omit<VoidParams, 'userId'>): Promise<VoidResult> {
+  const supabase = await createClient();
+  
   try {
     const { palletInfo, voidReason, password } = params;
 
@@ -740,6 +755,8 @@ export async function voidPalletAction(params: Omit<VoidParams, 'userId'>): Prom
  * Damage processing - using Supabase Auth verification
  */
 export async function processDamageAction(params: Omit<VoidParams, 'userId'>): Promise<VoidResult> {
+  const supabase = await createClient();
+  
   try {
     const { palletInfo, voidReason, password, damageQuantity } = params;
 
@@ -1043,6 +1060,8 @@ function isMaterialGRNPallet(plt_remark: string | null): { isGRN: boolean; grnNu
 async function deleteGRNRecord(
   pltNum: string
 ): Promise<{ success: boolean; error?: string }> {
+  const supabase = await createClient();
+  
   try {
     process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`[GRN Delete] Starting deletion for plt_num: ${pltNum}`);
     
@@ -1119,6 +1138,8 @@ function getInventoryColumn(location: string | null): string {
 export async function getUserHistoryAction(
   limit: number = 50
 ): Promise<{ success: boolean; data?: HistoryRecord[]; error?: string }> {
+  const supabase = await createClient();
+  
   try {
     // Get current user from Supabase Auth
     const { data: { user }, error: userError } = await supabase.auth.getUser();

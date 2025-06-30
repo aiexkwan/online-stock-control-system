@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const supabase = createClient();
+    const supabase = await createClient();
 
     // Call the enhanced RPC function to update ACO order and check completion
     const { data, error } = await supabase.rpc('update_aco_order_with_completion_check', {
@@ -173,7 +173,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const supabase = createClient();
+    const supabase = await createClient();
 
     // Check order completion status
     const { data, error } = await supabase.rpc('check_aco_order_completion', {

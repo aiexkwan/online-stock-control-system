@@ -6,9 +6,7 @@ const nextConfig = {
     // 忽略構建時的 TypeScript 錯誤
     ignoreBuildErrors: true,
   },
-  experimental: {
-    serverComponentsExternalPackages: ['pdf-parse', 'pdfjs-dist', 'sharp'],
-  },
+  serverExternalPackages: ['pdf-parse', 'pdfjs-dist', 'sharp'],
   images: {
     remotePatterns: [
       {
@@ -55,12 +53,21 @@ const nextConfig = {
       },
     ];
   },
-  webpack: (config, { isServer }) => {
+  webpack: (config, { isServer, dev }) => {
     config.resolve.alias = {
       ...config.resolve.alias,
       '@': '.'
     };
     config.externals = [...(config.externals || []), { 'utf-8-validate': 'commonjs utf-8-validate', 'bufferutil': 'commonjs bufferutil' }];
+    
+    // 優化開發環境的 hot reload
+    if (dev && !isServer) {
+      config.watchOptions = {
+        poll: 1000,
+        aggregateTimeout: 300,
+        ignored: ['**/node_modules', '**/.git', '**/.next']
+      };
+    }
 
     // 新增：客戶端 fallback 配置
     if (!isServer) {
@@ -76,6 +83,9 @@ const nextConfig = {
     if (isServer) {
       // 在服務器端構建時，將 canvas 模塊設置為外部依賴
       config.externals = [...(config.externals || []), { canvas: 'canvas' }];
+      
+      // 添加 Supabase realtime-js 到外部依賴以消除警告
+      //config.externals = [...(config.externals || []), '@supabase/realtime-js'];
       
       // 為 pdfjs-dist 添加 fallback
       config.resolve.fallback = {

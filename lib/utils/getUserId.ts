@@ -4,30 +4,43 @@ import { createClient } from '@/app/utils/supabase/server';
 
 /**
  * 從用戶 email 獲取 data_id 表中的 ID
- * @param email 用戶 email
+ * 使用完整 email 地址查詢 data_id.email 欄位
+ * @param email 用戶完整 email 地址
  * @returns 用戶 ID 或 null
  */
 export async function getUserIdFromEmail(email: string): Promise<number | null> {
   try {
-    const supabase = createClient();
+    const supabase = await createClient();
     
-    // 從 email 提取用戶名（去掉 @pennineindustries.com）
-    const username = email.includes('@') 
-      ? email.split('@')[0] 
-      : email;
+    console.log('[getUserIdFromEmail] Looking up email:', email);
     
-    // 查詢 data_id 表
+    // 查詢 data_id 表 - 使用完整 email
     const { data, error } = await supabase
       .from('data_id')
-      .select('id')
-      .eq('name', username)
+      .select('id, name, email')
+      .eq('email', email)
       .single();
     
     if (error) {
-      console.error('[getUserIdFromEmail] Error:', error);
+      console.error('[getUserIdFromEmail] Error querying data_id:', error);
+      console.error('[getUserIdFromEmail] Email was:', email);
+      
+      // 嘗試用 ilike 進行不區分大小寫的查詢
+      const { data: ilikeData, error: ilikeError } = await supabase
+        .from('data_id')
+        .select('id, name, email')
+        .ilike('email', email)
+        .single();
+      
+      if (!ilikeError && ilikeData) {
+        console.log('[getUserIdFromEmail] Found user with ilike:', ilikeData);
+        return ilikeData.id;
+      }
+      
       return null;
     }
     
+    console.log('[getUserIdFromEmail] Found user:', data);
     return data?.id || null;
   } catch (error) {
     console.error('[getUserIdFromEmail] Unexpected error:', error);

@@ -68,7 +68,7 @@ export async function getPalletHistoryAndStockInfo(
   identifier: { type: 'palletNum'; value: string } | { type: 'series'; value: string }
 ): Promise<ViewHistoryResult> {
   // const cookieStore = cookies(); // OLD
-  const supabase = createClient(); // NEW: Create Supabase client instance
+  const supabase = await createClient(); // NEW: Create Supabase client instance
 
   const { type, value } = identifier;
 

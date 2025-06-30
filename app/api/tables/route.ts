@@ -2,7 +2,7 @@ import { createClient } from '../../../lib/supabase';
 import { NextResponse } from 'next/server';
 
 export async function GET() {
-  const supabase = createClient();
+  const supabase = await createClient();
   try {
     const { data, error } = await supabase
       .from('products')

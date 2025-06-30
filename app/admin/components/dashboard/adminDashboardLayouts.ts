@@ -315,8 +315,8 @@ export const adminDashboardLayouts: Record<string, AdminDashboardLayout> = {
     gridTemplate: `
       "widget2 widget2 widget2 widget3 widget3 widget3 widget4 widget4 widget1 widget1" 
       "widget2 widget2 widget2 widget3 widget3 widget3 widget5 widget5 widget1 widget1" 
-      "widget2 widget2 widget2 widget3 widget3 widget3 widget6 widget6 widget1 widget1" 
-      "widget2 widget2 widget2 widget3 widget3 widget3 widget7 widget7 widget1 widget1"
+      "widget8 widget8 widget8 widget3 widget3 widget3 widget6 widget6 widget1 widget1" 
+      "widget8 widget8 widget8 widget3 widget3 widget3 widget7 widget7 widget1 widget1"
     `,
     widgets: [
       {
@@ -326,17 +326,18 @@ export const adminDashboardLayouts: Record<string, AdminDashboardLayout> = {
         component: 'HistoryTree'
       },
       {
-        type: 'form',
+        type: 'product-update',
         title: 'Product Update',
         gridArea: 'widget2',
-        dataSource: 'data_forms',
-        component: 'UpdateForm'
+        dataSource: 'products',
+        component: 'ProductUpdateWidget'
       },
       {
-        type: 'preview',
-        title: 'Supplier Update',
+        type: 'empty',
+        title: 'Empty Space',
         gridArea: 'widget3',
-        dataSource: 'data_preview'
+        dataSource: 'none',
+        component: 'EmptyPlaceholderWidget'
       },
       {
         type: 'stats',
@@ -365,6 +366,13 @@ export const adminDashboardLayouts: Record<string, AdminDashboardLayout> = {
         gridArea: 'widget7',
         dataSource: 'update_stats',
         metrics: ['failed_count']
+      },
+      {
+        type: 'supplier-update',
+        title: 'Supplier Update',
+        gridArea: 'widget8',
+        dataSource: 'suppliers',
+        component: 'SupplierUpdateWidget'
       }
     ]
   },

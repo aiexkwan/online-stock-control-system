@@ -47,7 +47,7 @@ export async function updateInventoryForVoid(
   damageQuantity?: number
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    const supabase = createClient();
+    const supabase = await createClient();
     const inventoryColumn = getInventoryColumn(location);
     
     const inventoryUpdate: any = {
@@ -90,7 +90,7 @@ export async function updateStockLevel(
   operation: 'void' | 'damage'
 ): Promise<{ success: boolean; result?: any; error?: string }> {
   try {
-    const supabase = createClient();
+    const supabase = await createClient();
     
     process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[Stock Level] Updating:', {
       product_code: productCode,

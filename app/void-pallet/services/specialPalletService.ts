@@ -43,7 +43,7 @@ export async function updateACORecord(
   quantity: number
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    const supabase = createClient();
+    const supabase = await createClient();
     
     process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`[ACO Update] Starting update: ref=${refNumber}, code=${productCode}, qty=${quantity}`);
     
@@ -128,7 +128,7 @@ export async function deleteGRNRecord(
   pltNum: string
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    const supabase = createClient();
+    const supabase = await createClient();
     
     process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`[GRN Delete] Starting deletion for plt_num: ${pltNum}`);
     

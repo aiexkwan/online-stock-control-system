@@ -4,7 +4,7 @@ import * as XLSX from 'xlsx';
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = createClient();
+    const supabase = await createClient();
     
     // 查詢訂單裝載記錄
     const { data, error } = await supabase

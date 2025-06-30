@@ -121,7 +121,7 @@ export async function POST(request: NextRequest) {
       if (recentHistory.length === 0 && userName) {
         process.env.NODE_ENV !== "production" && console.log('[Ask Database] No session history, fetching user history from database');
         
-        const supabase = createClient();
+        const supabase = await createClient();
         const { data: userHistory, error } = await supabase
           .from('query_record')
           .select('query, sql_query, answer, created_at')
@@ -622,7 +622,7 @@ async function generateSQLWithOpenAI(
 
 // 執行 SQL 查詢
 async function executeSQLQuery(sql: string): Promise<{ data: any[]; rowCount: number; executionTime: number }> {
-  const supabase = createClient();
+  const supabase = await createClient();
   const startTime = Date.now();
 
   try {
@@ -794,7 +794,7 @@ async function getDailyQueryHistory(userName: string | null): Promise<Array<{ qu
   if (!userName) return [];
   
   try {
-    const supabase = createClient();
+    const supabase = await createClient();
     const today = new Date().toISOString().split('T')[0];
     
     const { data, error } = await supabase
@@ -823,7 +823,7 @@ async function getDailyQueryHistory(userName: string | null): Promise<Array<{ qu
 
 // 獲取用戶信息
 async function getUserInfo(): Promise<{ email: string | null; name: string | null }> {
-  const supabase = createClient();
+  const supabase = await createClient();
   
   try {
     // 在開發環境中，如果沒有認證用戶，使用測試用戶
@@ -892,7 +892,7 @@ function generateQueryHash(query: string): string {
 
 // 檢查智能緩存系統（多層）
 async function checkIntelligentCache(question: string, userEmail: string | null): Promise<any | null> {
-  const supabase = createClient();
+  const supabase = await createClient();
   
   try {
     // L1: 精確匹配緩存（最近24小時）
@@ -1009,7 +1009,7 @@ function calculateSimilarity(words1: string[], words2: string[]): number {
 
 // 檢查 SQL 結果緩存
 async function checkSQLCache(sql: string): Promise<any | null> {
-  const supabase = createClient();
+  const supabase = await createClient();
   
   try {
     const sqlMatch = await supabase
@@ -1053,7 +1053,7 @@ async function saveQueryRecordEnhanced(
 ): Promise<void> {
   setImmediate(async () => {
     try {
-      const supabase = createClient();
+      const supabase = await createClient();
       const queryHash = generateQueryHash(query);
       
       // 安全處理數值，確保不會有 null 值
@@ -1101,7 +1101,7 @@ async function checkUserPermission(): Promise<boolean> {
     return true;
   }
   
-  const supabase = createClient();
+  const supabase = await createClient();
   
   try {
     const { data: { user } } = await supabase.auth.getUser();
@@ -1131,7 +1131,7 @@ function generateCacheKey(question: string, conversationHistory?: Array<{ questi
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = createClient();
+    const supabase = await createClient();
     
     // 檢查URL參數
     const url = new URL(request.url);

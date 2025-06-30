@@ -1546,8 +1546,38 @@ export const AdminWidgetRenderer: React.FC<AdminWidgetRendererProps> = ({
             </button>
           </div>
         );
-      case 'UpdateForm':
-        return <ProductUpdateComponent />;
+      case 'ProductUpdateWidget':
+        const ProductUpdateWidget = LazyComponents['ProductUpdateWidget'];
+        if (ProductUpdateWidget) {
+          return (
+            <ProductUpdateWidget 
+              widget={{
+                id: 'product-update',
+                type: 'CUSTOM' as any,
+                title: config.title,
+                config: { size: 'MEDIUM' as any }
+              }}
+              isEditMode={false}
+            />
+          );
+        }
+        return null;
+      case 'SupplierUpdateWidget':
+        const SupplierUpdateWidget = LazyComponents['SupplierUpdateWidget'];
+        if (SupplierUpdateWidget) {
+          return (
+            <SupplierUpdateWidget 
+              widget={{
+                id: 'supplier-update',
+                type: 'CUSTOM' as any,
+                title: config.title,
+                config: { size: 'MEDIUM' as any }
+              }}
+              isEditMode={false}
+            />
+          );
+        }
+        return null;
       // ReportGeneratorWidget 和 ReportGeneratorWithDialogWidget 已經在 LazyComponents 中處理
       case 'AvailableSoonWidget':
         return (

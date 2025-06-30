@@ -30,22 +30,22 @@ export const UploadUpdateLayout: React.FC<UploadUpdateLayoutProps> = ({
 
   // Widget positions matching exact CSS for upload/update layout
   const widgetStyles = [
-    // Item 1 - Right sidebar widget
+    // Item 1 - Right sidebar widget (History Tree)
     { 
       gridRow: '1 / 9', 
       gridColumn: '9 / 11',
       height: 'auto',
       width: 'auto'
     },
-    // Item 2 - Main content area (left)
+    // Item 2 - Product Update (top left)
     { 
       gridArea: '1 / 1 / 2 / 2',
       gridColumn: '1 / 4',
-      gridRow: '1 / 9',
+      gridRow: '1 / 5',
       height: 'auto',
       width: 'auto'
     },
-    // Item 3 - Secondary content area (center)
+    // Item 3 - Empty placeholder (center)
     { 
       gridArea: '1 / 5 / 2 / 6',
       gridColumn: '4 / 7',
@@ -84,14 +84,22 @@ export const UploadUpdateLayout: React.FC<UploadUpdateLayoutProps> = ({
       gridRow: '7 / 9',
       height: 'auto',
       width: 'auto'
+    },
+    // Item 8 - Supplier Update (bottom left)
+    { 
+      gridArea: '5 / 1 / 9 / 4',
+      gridColumn: '1 / 4',
+      gridRow: '5 / 9',
+      height: 'auto',
+      width: 'auto'
     }
   ];
 
   return (
     <div className="upload-update-container" style={containerStyle}>
-      {children.slice(0, 7).map((child, index) => {
+      {children.slice(0, 8).map((child, index) => {
         const isRightSidebar = index === 0;
-        const isMainContent = index === 1 || index === 2;
+        const isMainContent = index === 1 || index === 2 || index === 7; // Include widget 8 (Supplier Update)
         const style = widgetStyles[index];
         
         if (isRightSidebar) {

@@ -44,7 +44,7 @@ export async function getVoidStatistics(
   endDate: Date
 ): Promise<{ success: boolean; data?: VoidStatistics; error?: string }> {
   try {
-    const supabase = createClient();
+    const supabase = await createClient();
     
     // Get void records within date range
     const { data: voidRecords, error: voidError } = await supabase
@@ -197,7 +197,7 @@ export async function getDamageTrend(
   days: number = 30
 ): Promise<{ success: boolean; data?: any; error?: string }> {
   try {
-    const supabase = createClient();
+    const supabase = await createClient();
     const endDate = new Date();
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - days);

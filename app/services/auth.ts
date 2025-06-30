@@ -39,7 +39,7 @@ export async function authenticateUser(userId: string, passwordInput: string): P
   isTemporaryLogin?: boolean; // Add new flag for temporary login
   error?: string;
 }> {
-  const supabase = createClient();
+  const supabase = await createClient();
   try {
     const { data: rawUserData, error: userFetchError } = await supabase
       .from('data_id')

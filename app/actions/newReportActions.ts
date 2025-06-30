@@ -4,7 +4,7 @@ import { createClient } from '@/app/utils/supabase/server';
 
 // Generate Code List report
 export const generateCodeListReport = async () => {
-  const supabase = createClient();
+  const supabase = await createClient();
   
   const { data, error } = await supabase
     .from('data_code')
@@ -31,7 +31,7 @@ export const generateCodeListReport = async () => {
 
 // Generate Inventory Transaction report
 export const generateInventoryTransactionReport = async (startDate: string, endDate: string) => {
-  const supabase = createClient();
+  const supabase = await createClient();
   
   const { data, error } = await supabase
     .from('record_transfer')
@@ -63,7 +63,7 @@ export const generateInventoryTransactionReport = async (startDate: string, endD
 
 // Generate All Data report
 export const generateAllDataReport = async () => {
-  const supabase = createClient();
+  const supabase = await createClient();
   
   const tables = ['data_code', 'record_palletinfo', 'record_transfer', 'record_history', 'record_inventory', 'record_aco'];
   const allData: Record<string, any[]> = {};

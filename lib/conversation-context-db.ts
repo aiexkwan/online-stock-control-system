@@ -27,20 +27,27 @@ export interface ConversationContext {
 
 export class DatabaseConversationContextManager {
   private sessionId: string;
-  private supabase: SupabaseClient;
+  private supabase: SupabaseClient | null = null;
   private userEmail: string | null;
 
   constructor(sessionId: string, userEmail: string | null) {
     this.sessionId = sessionId;
     this.userEmail = userEmail;
-    this.supabase = createClient();
+  }
+
+  private async getSupabase(): Promise<SupabaseClient> {
+    if (!this.supabase) {
+      this.supabase = await createClient();
+    }
+    return this.supabase;
   }
 
   // 從數據庫加載歷史對話記錄
   async loadContext(): Promise<ConversationContext> {
     try {
       // 獲取最近的對話記錄（最多20條）
-      const { data: records, error } = await this.supabase
+      const supabase = await this.getSupabase();
+      const { data: records, error } = await supabase
         .from('query_record')
         .select('*')
         .eq('session_id', this.sessionId)
@@ -369,7 +376,8 @@ export class DatabaseConversationContextManager {
   // 獲取同一 session 的歷史查詢（用於對話上下文）
   async getSessionHistory(limit: number = 10): Promise<Array<{ question: string; sql: string; answer: string }>> {
     try {
-      const { data, error } = await this.supabase
+      const supabase = await this.getSupabase();
+      const { data, error } = await supabase
         .from('query_record')
         .select('query, sql_query, answer')
         .eq('session_id', this.sessionId)

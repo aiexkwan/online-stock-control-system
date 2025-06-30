@@ -100,6 +100,16 @@ export const LazyComponents: Record<string, React.ComponentType<any>> = {
   'UploadPhotoWidget': createLazyWidget(
     () => import('./widgets/UploadPhotoWidget').then(m => ({ default: m.UploadPhotoWidget }))
   ),
+  
+  // Product Update widget (named export)
+  'ProductUpdateWidget': createLazyWidget(
+    () => import('./widgets/ProductUpdateWidget').then(m => ({ default: m.ProductUpdateWidget }))
+  ),
+  
+  // Supplier Update widget (named export)
+  'SupplierUpdateWidget': createLazyWidget(
+    () => import('./widgets/SupplierUpdateWidget').then(m => ({ default: m.SupplierUpdateWidget }))
+  ),
 };
 
 // Helper to check if widget should be lazy loaded

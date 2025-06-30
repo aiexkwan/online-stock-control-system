@@ -4,7 +4,7 @@ import * as XLSX from 'xlsx';
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = createClient();
+    const supabase = await createClient();
     
     // 創建 Excel 工作簿
     const workbook = XLSX.utils.book_new();

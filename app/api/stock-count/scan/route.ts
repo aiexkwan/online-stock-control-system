@@ -12,7 +12,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const supabase = createClient();
+    const supabase = await createClient();
 
     // 從輸入中提取 PALLET NUMBER 或 SERIES
     const input = qrCode.trim();

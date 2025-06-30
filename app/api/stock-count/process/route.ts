@@ -12,7 +12,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const supabase = createClient();
+    const supabase = await createClient();
 
     // 獲取當前用戶信息
     const { data: { user }, error: authError } = await supabase.auth.getUser();
