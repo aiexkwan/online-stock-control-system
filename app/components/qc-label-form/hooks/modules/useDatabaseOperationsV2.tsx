@@ -16,11 +16,10 @@ import {
   type QcInventoryPayload
 } from '@/app/actions/qcActions';
 import { 
-  generateOptimizedPalletNumbers, 
-  validatePalletNumbersUniqueness,
-  warmupPalletBuffer 
-} from '@/app/utils/optimizedPalletGeneration';
-import { generateOptimizedPalletNumbersV6, confirmPalletUsage, releasePalletReservation } from '@/app/utils/optimizedPalletGenerationV6';
+  generatePalletNumbers, 
+  confirmPalletUsage, 
+  releasePalletReservation 
+} from '@/app/utils/palletGeneration';
 import type { ProductInfo } from '../../types';
 
 interface DatabaseOperationOptions {

@@ -9,14 +9,7 @@ import React, { createContext, useContext, useState, useCallback } from 'react';
 
 // 定義所有對話框類型
 export type DialogType = 
-  | 'uploadFiles'
-  | 'uploadFilesOnly'
-  | 'productSpec'
-  | 'voidPallet'
-  | 'viewHistory'
-  | 'databaseUpdate'
   | 'askDatabase'
-  | 'reprint'
   | 'loadStock'
   | 'stockTransfer'
   | 'exportData';
@@ -54,14 +47,7 @@ const DialogContext = createContext<DialogContextType | undefined>(undefined);
 export function DialogProvider({ children }: { children: React.ReactNode }) {
   // 初始化所有對話框為關閉狀態
   const [dialogs, setDialogs] = useState<Record<DialogType, boolean>>({
-    uploadFiles: false,
-    uploadFilesOnly: false,
-    productSpec: false,
-    voidPallet: false,
-    viewHistory: false,
-    databaseUpdate: false,
     askDatabase: false,
-    reprint: false,
     loadStock: false,
     stockTransfer: false,
     exportData: false,
@@ -80,13 +66,6 @@ export function DialogProvider({ children }: { children: React.ReactNode }) {
   // 關閉對話框
   const closeDialog = useCallback((dialog: DialogType) => {
     setDialogs(prev => ({ ...prev, [dialog]: false }));
-    // 清除相關數據
-    if (dialog === 'reprint') {
-      setDialogData(prev => {
-        const { reprintData, ...rest } = prev;
-        return rest;
-      });
-    }
   }, []);
 
   // 切換對話框
@@ -138,24 +117,5 @@ export function useUploadDialog() {
     isOpen: dialogs.uploadFiles,
     open: () => openDialog('uploadFiles'),
     close: () => closeDialog('uploadFiles'),
-  };
-}
-
-export function useVoidPalletDialog() {
-  const { dialogs, openDialog, closeDialog } = useDialog();
-  return {
-    isOpen: dialogs.voidPallet,
-    open: () => openDialog('voidPallet'),
-    close: () => closeDialog('voidPallet'),
-  };
-}
-
-export function useReprintDialog() {
-  const { dialogs, dialogData, openDialog, closeDialog } = useDialog();
-  return {
-    isOpen: dialogs.reprint,
-    reprintData: dialogData.reprintData,
-    open: (data: any) => openDialog('reprint', { reprintData: data }),
-    close: () => closeDialog('reprint'),
   };
 }

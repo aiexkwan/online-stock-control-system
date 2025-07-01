@@ -41,11 +41,6 @@ export const GrnReportWidget = function GrnReportWidget({
   const [downloadStatus, setDownloadStatus] = useState<"idle" | "downloading" | "downloaded" | "complete">("idle");
   const [progress, setProgress] = useState(0);
 
-  // Fetch GRN references when component mounts
-  useEffect(() => {
-    fetchGrnRefs();
-  }, [fetchGrnRefs]);
-
   const fetchGrnRefs = useCallback(async () => {
     try {
       const supabase = createClient();
@@ -85,6 +80,11 @@ export const GrnReportWidget = function GrnReportWidget({
       });
     }
   }, [toast, selectedGrnRef]);
+
+  // Fetch GRN references when component mounts
+  useEffect(() => {
+    fetchGrnRefs();
+  }, [fetchGrnRefs]);
 
   const handleDownload = async () => {
     if (!selectedGrnRef) {

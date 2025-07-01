@@ -11,7 +11,6 @@ import {
   VOID_REASONS,
   SearchParams,
   VoidParams,
-  ReprintInfoInput,
   AutoReprintParams 
 } from '../types';
 import { 
@@ -38,8 +37,6 @@ const initialState: VoidPalletState = {
   showReprintDialog: false,
   isInputDisabled: false,
   // Enhanced reprint flow
-  showReprintInfoDialog: false,
-  reprintInfo: null,
   isAutoReprinting: false,
 };
 
@@ -573,11 +570,6 @@ export function useVoidPallet() {
     handleDamageQuantityChange,
     handleVoidReasonChange,
     
-    // Enhanced reprint flow functions
-    handleReprintInfoConfirm,
-    handleReprintInfoCancel,
-    shouldShowReprintDialog,
-    getReprintType,
     
     // Helper function
     validateVoidParams,

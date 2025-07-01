@@ -89,6 +89,7 @@ async function storeEnhancedOrderData(
   tokenUsed: number
 ) {
   const supabase = createSupabaseAdmin();
+  let insertResults: any[] = [];
   
   // 計算每條記錄的 token
   const tokenPerRecord = Math.ceil(tokenUsed / orderData.products.length);
@@ -105,7 +106,7 @@ async function storeEnhancedOrderData(
       product_qty: String(product.product_qty),
       unit_price: product.unit_price || '-',
       uploaded_by: String(uploadedBy),
-      token: tokenPerRecord,
+      token: String(tokenPerRecord), // 確保是字符串，Supabase 會自動轉換為 bigint
       loaded_qty: '0' // 預設值
     };
     
@@ -128,27 +129,48 @@ async function storeEnhancedOrderData(
     sampleRecord: orderRecords[0]
   });
   
-  const { data: insertResults, error } = await supabase
-    .from('data_order')
-    .insert(orderRecords)
-    .select();
+  try {
+    const { data, error } = await supabase
+      .from('data_order')
+      .insert(orderRecords)
+      .select();
 
-  if (error) {
-    apiLogger.error('[Assistant API] Database insert failed', {
-      error: error.message,
-      code: error.code,
-      details: error.details,
-      hint: error.hint,
-      sampleRecord: orderRecords[0]
+    if (error) {
+      apiLogger.error('[Assistant API] Database insert failed', {
+        error: error.message,
+        code: error.code,
+        details: error.details,
+        hint: error.hint,
+        sampleRecord: orderRecords[0],
+        allRecords: orderRecords // 記錄所有數據以便調試
+      });
+      
+      // 嘗試單獨插入第一筆記錄來診斷問題
+      const { error: singleError } = await supabase
+        .from('data_order')
+        .insert(orderRecords[0]);
+      
+      if (singleError) {
+        apiLogger.error('[Assistant API] Single record insert also failed', {
+          error: singleError.message,
+          code: singleError.code,
+          record: orderRecords[0]
+        });
+      }
+      
+      throw new Error(`資料庫插入失敗: ${error.message}`);
+    }
+
+    insertResults = data || [];
+    
+    apiLogger.info('[Assistant API] Records inserted successfully', {
+      recordCount: insertResults.length,
+      tokenPerRecord,
+      totalTokens: tokenUsed
     });
-    throw new Error(`資料庫插入失敗: ${error.message}`);
+  } catch (error) {
+    throw error;
   }
-
-  apiLogger.info('[Assistant API] Records inserted successfully', {
-    recordCount: insertResults.length,
-    tokenPerRecord,
-    totalTokens: tokenUsed
-  });
 
   // 處理 ACO 產品
   const acoProducts = orderData.products.filter(p => 

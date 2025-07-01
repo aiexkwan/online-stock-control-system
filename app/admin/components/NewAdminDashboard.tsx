@@ -16,8 +16,7 @@ import {
 import { useAuth } from '@/app/hooks/useAuth';
 import { format, startOfDay, endOfDay } from 'date-fns';
 // Universal background is now handled at the app level
-import { useDialog, useReprintDialog } from '@/app/contexts/DialogContext';
-import { DialogManager } from '@/app/components/admin-system/DialogManager';
+import { useDialog } from '@/app/contexts/DialogContext';
 import { useVoidPallet } from '@/app/void-pallet/hooks/useVoidPallet';
 import { UniversalTimeRangeSelector, TimeFrame } from '@/app/components/admin/UniversalTimeRangeSelector';
 import { AdminDashboardContent } from './dashboard/AdminDashboardContent';
@@ -131,37 +130,11 @@ export function NewAdminDashboard() {
   
   // Dialog hooks
   const { openDialog } = useDialog();
-  const { open: openReprintDialog } = useReprintDialog();
 
   // Void Pallet Hook
   const {
     state: voidState,
-    handleReprintInfoConfirm,
-    handleReprintInfoCancel,
-    getReprintType,
   } = useVoidPallet();
-
-  // Handle reprint needed callback
-  const handleReprintNeeded = useCallback((reprintInfo: any) => {
-    openReprintDialog(reprintInfo);
-  }, [openReprintDialog]);
-
-  // Handle reprint confirm
-  const handleReprintConfirm = useCallback(async (reprintInfo: any) => {
-    try {
-      const reprintInfoInput = {
-        type: reprintInfo.type,
-        originalPalletInfo: reprintInfo.palletInfo,
-        correctedProductCode: reprintInfo.correctedProductCode,
-        correctedQuantity: reprintInfo.correctedQuantity,
-        remainingQuantity: reprintInfo.reprintInfo?.remainingQuantity
-      };
-      
-      await handleReprintInfoConfirm(reprintInfoInput);
-    } catch (error) {
-      console.error('Reprint failed:', error);
-    }
-  }, [handleReprintInfoConfirm]);
 
 
   // Loading state
@@ -231,14 +204,6 @@ export function NewAdminDashboard() {
           </div>
         </div>
       </div>
-      
-      {/* Dialog Manager */}
-      <DialogManager
-        onReprintNeeded={handleReprintNeeded}
-        onReprintConfirm={handleReprintConfirm}
-        onReprintCancel={() => {}}
-        voidState={voidState}
-      />
       
       {/* Universal Chatbot removed - integrated into navigation bar */}
       </div>

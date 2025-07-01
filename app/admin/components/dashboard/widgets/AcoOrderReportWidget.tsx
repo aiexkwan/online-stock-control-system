@@ -34,11 +34,6 @@ export function AcoOrderReportWidget({ theme }: AcoOrderReportWidgetProps) {
   const [loading, setLoading] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
 
-  // Fetch ACO orders on mount
-  useEffect(() => {
-    fetchAcoOrders();
-  }, [fetchAcoOrders]);
-
   const fetchAcoOrders = useCallback(async () => {
     setLoading(true);
     try {
@@ -79,6 +74,11 @@ export function AcoOrderReportWidget({ theme }: AcoOrderReportWidgetProps) {
       setLoading(false);
     }
   }, [toast, selectedAcoOrder]);
+
+  // Fetch ACO orders on mount
+  useEffect(() => {
+    fetchAcoOrders();
+  }, [fetchAcoOrders]);
 
   const handleGenerateReport = async () => {
     if (!selectedAcoOrder) {
