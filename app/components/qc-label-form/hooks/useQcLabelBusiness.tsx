@@ -16,7 +16,7 @@ import { useStockUpdates } from './modules/useStockUpdates';
 import { useFormPersistence } from './modules/useFormPersistence';
 import { toast } from 'sonner';
 import type { ProductInfo, FormData, SlateDetail } from '../types';
-import { confirmPalletUsage, releasePalletReservation } from '@/app/utils/optimizedPalletGenerationV6';
+import { confirmPalletUsage, releasePalletReservation } from '@/app/utils/palletGeneration';
 import { createClient } from '@/app/utils/supabase/client';
 
 interface UseQcLabelBusinessProps {
@@ -77,7 +77,7 @@ export const useQcLabelBusiness = ({
   const { generatePdfs, printPdfs } = usePdfGeneration();
   const { generatePdfsStream, streamingStatus, cancelStreaming } = useStreamingPdfGeneration();
   // 使用優化版本的數據庫操作（如果需要回退，改回 useDatabaseOperations）
-  const { generatePalletNumbers, createQcRecords, warmupBuffer } = useDatabaseOperationsV2();
+  const { generatePalletNumbers, createQcRecords } = useDatabaseOperationsV2();
   const { updateStockAndWorkLevels, updateAcoOrderStatus, clearCache } = useStockUpdates();
   
   // 表單持久化 - 已禁用以確保每次進入頁面都是全新狀態

@@ -62,8 +62,8 @@ export const ProductCodeInput: React.FC<ProductCodeInputProps> = ({
       return;
     }
 
-    // 避免重複搜尋相同的值
-    if (trimmedValue === lastSearchValue && !productError) {
+    // 避免重複搜尋相同的值（只在沒有載入中時才跳過）
+    if (trimmedValue === lastSearchValue && !productError && !isLoading) {
       process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[ProductCodeInput] Skipping duplicate search for:', trimmedValue);
       return;
     }
@@ -77,7 +77,7 @@ export const ProductCodeInput: React.FC<ProductCodeInputProps> = ({
     process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[ProductCodeInput] Starting search for:', trimmedValue);
     setIsLoading(true);
     setProductError(null);
-    setLastSearchValue(trimmedValue);
+    // 移除這裡的 setLastSearchValue，改為搜尋完成後設置
 
     // 創建新的 AbortController
     const abortController = new AbortController();
@@ -101,6 +101,7 @@ export const ProductCodeInput: React.FC<ProductCodeInputProps> = ({
         // 找不到產品
         onProductInfoChange(null);
         setProductError(`Product Code ${trimmedValue} Not Found`);
+        setLastSearchValue(trimmedValue); // 記錄已搜尋的值
         process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[ProductCodeInput] Product not found:', trimmedValue);
       } else {
         // 找到產品
@@ -108,6 +109,7 @@ export const ProductCodeInput: React.FC<ProductCodeInputProps> = ({
         onProductInfoChange(productData);
         onChange(productData.code); // 使用資料庫中的標準化代碼
         setProductError(null);
+        setLastSearchValue(productData.code); // 使用標準化的代碼
         process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[ProductCodeInput] Product found:', productData);
         
         // 自動填充數量（如果有）
@@ -130,6 +132,7 @@ export const ProductCodeInput: React.FC<ProductCodeInputProps> = ({
       } else {
         setProductError('Search failed. Please try again.');
       }
+      // 發生錯誤時不設置 lastSearchValue，允許重試
     } finally {
       // 只有在沒有被取消的情況下才清除 loading 狀態
       if (abortControllerRef.current === abortController) {

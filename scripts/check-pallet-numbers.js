@@ -70,11 +70,15 @@ async function checkPalletNumbers() {
       console.log('  (沒有找到今天的棧板號)');
     }
     
-    // 測試原子性棧板號生成函數
-    console.log('\n🧪 測試原子性棧板號生成函數...');
-    const { data: generatedPallets, error: generateError } = await supabase.rpc('generate_atomic_pallet_numbers_v3', {
-      count: testCount
+    // 測試原子性棧板號生成函數 (V6)
+    console.log('\n🧪 測試原子性棧板號生成函數 (V6)...');
+    const { data: v6Result, error: generateError } = await supabase.rpc('generate_atomic_pallet_numbers_v6', {
+      p_count: testCount,
+      p_session_id: `check-script-${Date.now()}`
     });
+    
+    // 轉換 V6 結果格式
+    const generatedPallets = v6Result ? v6Result.map(item => item.pallet_number) : [];
     
     if (generateError) {
       console.error('❌ 原子性棧板號生成失敗:', generateError);

@@ -8,7 +8,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
 
 const GET_ACO_ORDERS = gql`
-  query GetAcoOrders {
+  query GetAcoOrdersForChart {
     record_acoCollection(
       orderBy: [{ order_ref: AscNullsLast }]
       first: 20

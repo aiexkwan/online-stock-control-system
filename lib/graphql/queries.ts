@@ -316,22 +316,24 @@ export const GET_USERS_BY_IDS = gql`
 
 /**
  * 獲取 Await Location 總數量
+ * @deprecated 使用 RPC function get_current_await_pallet_count 代替
  * 用於 Warehouse Dashboard - Await Location Qty Widget
  */
-export const GET_AWAIT_LOCATION_QTY = gql`
-  query GetAwaitLocationQty {
-    aggregatedAwaitQty: record_inventoryCollection {
-      aggregate {
-        sum {
-          await
-        }
-      }
-    }
-  }
-`;
+// export const GET_AWAIT_LOCATION_QTY = gql`
+//   query GetAwaitLocationQty {
+//     aggregatedAwaitQty: record_inventoryCollection {
+//       aggregate {
+//         sum {
+//           await
+//         }
+//       }
+//     }
+//   }
+// `;
 
 /**
  * 獲取轉移記錄統計
+ * @deprecated GraphQL 不支援 aggregate，改用 edges + totalCount
  * 用於 Warehouse Dashboard - Transfer Stats Widget
  */
 export const GET_TRANSFER_STATS = gql`
@@ -341,8 +343,10 @@ export const GET_TRANSFER_STATS = gql`
         tran_date: { gte: $startDate, lte: $endDate }
       }
     ) {
-      aggregate {
-        count
+      edges {
+        node {
+          nodeId
+        }
       }
     }
   }
@@ -465,7 +469,6 @@ export const GET_WAREHOUSE_WORK_LEVEL = gql`
     work_levelCollection(
       filter: {
         latest_update: { gte: $startDate, lte: $endDate }
-        data_id: { Department: { eq: "Warehouse" } }
       }
       orderBy: [{ latest_update: AscNullsLast }]
     ) {
@@ -476,7 +479,7 @@ export const GET_WAREHOUSE_WORK_LEVEL = gql`
           latest_update
           data_id {
             name
-            Department
+            department
           }
         }
       }
@@ -537,9 +540,12 @@ export const GET_TRANSFER_STATS_DETAILED = gql`
       filter: {
         tran_date: { gte: $startDate, lt: $endDate }
       }
+      first: 1000
     ) {
-      aggregate {
-        count
+      edges {
+        node {
+          nodeId
+        }
       }
     }
     

@@ -16,7 +16,7 @@ import {
   type QcInventoryPayload
 } from '@/app/actions/qcActions';
 import { 
-  generatePalletNumbers, 
+  generatePalletNumbers as generatePalletNumbersUtil, 
   confirmPalletUsage, 
   releasePalletReservation 
 } from '@/app/utils/palletGeneration';
@@ -53,33 +53,30 @@ interface UseDatabaseOperationsReturn {
     error?: string;
   }>;
   validatePalletUniqueness: (palletNumbers: string[]) => Promise<boolean>;
-  warmupBuffer: () => Promise<void>;
 }
 
 export const useDatabaseOperationsV2 = (): UseDatabaseOperationsReturn => {
   const supabase = createClient();
 
-  // 預熱緩衝區
-  const warmupBuffer = useCallback(async () => {
-    try {
-      const result = await warmupPalletBuffer(20);
-      if (!result.success) {
-        process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.warn('Buffer warmup failed:', result.message);
-      }
-    } catch (error) {
-      console.error('Buffer warmup error:', error);
-    }
-  }, []);
 
   // 驗證托盤編號唯一性
   const validatePalletUniqueness = useCallback(async (palletNumbers: string[]): Promise<boolean> => {
     try {
-      const validation = await validatePalletNumbersUniqueness(palletNumbers);
-      if (!validation.valid) {
-        console.error('Duplicate pallet numbers detected:', validation.duplicates);
-        toast.error(`Duplicate pallet numbers: ${validation.duplicates.join(', ')}`);
+      // V6 系統已經保證唯一性，這裡只做基本檢查
+      if (!palletNumbers || palletNumbers.length === 0) {
+        return false;
       }
-      return validation.valid;
+      
+      // 檢查是否有重複值（本地檢查）
+      const uniqueSet = new Set(palletNumbers);
+      if (uniqueSet.size !== palletNumbers.length) {
+        const duplicates = palletNumbers.filter((item, index) => palletNumbers.indexOf(item) !== index);
+        console.error('Duplicate pallet numbers detected:', duplicates);
+        toast.error(`Duplicate pallet numbers: ${duplicates.join(', ')}`);
+        return false;
+      }
+      
+      return true;
     } catch (error) {
       console.error('Error validating pallet uniqueness:', error);
       return false;
@@ -94,7 +91,7 @@ export const useDatabaseOperationsV2 = (): UseDatabaseOperationsReturn => {
       
       // 使用優化的生成函數
       // 使用 V6 版本（簡化的預生成托盤編號系統）
-      const result = await generateOptimizedPalletNumbersV6({
+      const result = await generatePalletNumbersUtil({
         count,
         sessionId: `qc-${Date.now()}`
       }, supabase);
@@ -242,7 +239,6 @@ export const useDatabaseOperationsV2 = (): UseDatabaseOperationsReturn => {
   return {
     generatePalletNumbers,
     createQcRecords,
-    validatePalletUniqueness,
-    warmupBuffer
+    validatePalletUniqueness
   };
 };

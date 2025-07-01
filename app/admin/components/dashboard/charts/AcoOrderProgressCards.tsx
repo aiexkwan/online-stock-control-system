@@ -8,7 +8,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertCircle, CheckCircle, ClipboardList } from 'lucide-react';
 
 const GET_ACO_ORDERS = gql`
-  query GetAcoOrders {
+  query GetAcoOrdersForCards {
     record_acoCollection(
       filter: { remain_qty: { gt: 0 } }
       orderBy: [{ order_ref: DescNullsLast }]

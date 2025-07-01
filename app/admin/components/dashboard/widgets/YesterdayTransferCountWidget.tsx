@@ -20,7 +20,7 @@ import { format } from 'date-fns';
 
 // GraphQL 查詢 - 獲取轉移記錄
 const GET_TRANSFER_STATS = gql`
-  query GetTransferStats($startDate: Datetime!, $endDate: Datetime!) {
+  query GetYesterdayTransferStats($startDate: Datetime!, $endDate: Datetime!) {
     record_transferCollection(
       filter: {
         tran_date: { gte: $startDate, lte: $endDate }

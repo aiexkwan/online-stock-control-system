@@ -542,19 +542,23 @@ export async function generatePalletNumbersDirectQuery(count: number): Promise<{
           .single();
         
         
-        // 使用單次 RPC 調用生成所有托盤編號
-        const { data: rpcResult, error: rpcError } = await supabaseAdmin.rpc('generate_atomic_pallet_numbers_v3', {
-          count: count
+        // 使用 V6 函數生成托盤編號和系列號
+        const { data: v6Data, error: rpcError } = await supabaseAdmin.rpc('generate_atomic_pallet_numbers_v6', {
+          p_count: count,
+          p_session_id: `qc-${Date.now()}`
         });
         
         if (rpcError) {
-          // console.error(`[qcActions] RPC 生成失敗:`, rpcError); // 保留錯誤日誌供生產環境調試
-          throw new Error(`RPC generation failed: ${rpcError.message}`);
+          throw new Error(`V6 RPC generation failed: ${rpcError.message}`);
         }
         
-        if (!rpcResult || !Array.isArray(rpcResult) || rpcResult.length !== count) {
-          throw new Error(`Invalid result from RPC function: expected ${count} pallet numbers, got ${rpcResult?.length || 0}`);
+        if (!v6Data || !Array.isArray(v6Data) || v6Data.length !== count) {
+          throw new Error(`Invalid result from V6 function: expected ${count} pallet numbers, got ${v6Data?.length || 0}`);
         }
+        
+        // Transform V6 format to arrays
+        const rpcResult = v6Data.map((item: any) => item.pallet_number);
+        const generatedSeries = v6Data.map((item: any) => item.series);
         
         // 🔥 強化唯一性驗證 - 檢查生成的托盤編號是否已存在
         const uniquenessChecks = [];
@@ -601,26 +605,26 @@ export async function generatePalletNumbersDirectQuery(count: number): Promise<{
     }
     
     
-    // Generate series with retry mechanism
-    let series: string[] = [];
-    let seriesAttempts = 0;
-    const seriesMaxAttempts = MAX_SERIES_GENERATION_RETRIES;
+    // V6 已經包含 series，不需要額外生成
+    // 直接使用 V6 返回的 series
+    const series = generatedSeries;
     
-    while (seriesAttempts < seriesMaxAttempts) {
-      try {
-        series = await generateMultipleUniqueSeries(count, supabaseAdmin);
-        break;
-      } catch (seriesError: any) {
-        // console.error(`[qcActions] 系列號生成失敗 (嘗試 ${seriesAttempts + 1}/${seriesMaxAttempts}):`, seriesError); // 保留錯誤日誌供生產環境調試
-        
-        if (seriesAttempts === seriesMaxAttempts - 1) {
-          throw seriesError;
-        }
-        
-        seriesAttempts++;
-        await new Promise(resolve => setTimeout(resolve, SERIES_RETRY_DELAY_BASE * seriesAttempts));
-      }
-    }
+    // V3 to V6 Migration: 保留原始 series 生成代碼作為備份
+    // let series: string[] = [];
+    // let seriesAttempts = 0;
+    // const seriesMaxAttempts = MAX_SERIES_GENERATION_RETRIES;
+    // while (seriesAttempts < seriesMaxAttempts) {
+    //   try {
+    //     series = await generateMultipleUniqueSeries(count, supabaseAdmin);
+    //     break;
+    //   } catch (seriesError: any) {
+    //     if (seriesAttempts === seriesMaxAttempts - 1) {
+    //       throw seriesError;
+    //     }
+    //     seriesAttempts++;
+    //     await new Promise(resolve => setTimeout(resolve, SERIES_RETRY_DELAY_BASE * seriesAttempts));
+    //   }
+    // }
     
     
     return {
@@ -652,38 +656,35 @@ export async function generatePalletNumbersAndSeries(count: number): Promise<{
     
     const supabaseAdmin = createSupabaseAdmin();
     
-    // 🔥 使用新的原子性棧板號碼生成函數，帶重試機制
+    // 🔥 使用 V6 函數生成棧板號碼和系列號，帶重試機制
     let palletNumbers: string[] = [];
+    let generatedSeries: string[] = [];
     let attempts = 0;
     const maxAttempts = MAX_ATTEMPTS_GENERAL;
     
     while (attempts < maxAttempts) {
       try {
-        const { data, error: palletError } = await supabaseAdmin.rpc('generate_atomic_pallet_numbers_v3', {
-          count: count
+        // 直接使用 V6 函數
+        const { data: v6Data, error: v6Error } = await supabaseAdmin.rpc('generate_atomic_pallet_numbers_v6', {
+          p_count: count,
+          p_session_id: `qc-${Date.now()}`
         });
         
-        if (palletError) {
-          // console.error(`[qcActions] 原子性棧板號碼生成失敗 (嘗試 ${attempts + 1}/${maxAttempts}):`, palletError); // 保留錯誤日誌供生產環境調試
-          
-          if (attempts === maxAttempts - 1) {
-            throw new Error(`Failed to generate atomic pallet numbers after ${maxAttempts} attempts: ${palletError.message}`);
-          }
-          
-          attempts++;
-          await new Promise(resolve => setTimeout(resolve, RPC_RETRY_DELAY_BASE * attempts)); // 遞增延遲
-          continue;
+        if (v6Error) {
+          throw new Error(`V6 RPC error: ${v6Error.message}`);
         }
         
-        if (!data || !Array.isArray(data)) {
-          throw new Error('Invalid pallet numbers returned from atomic function');
+        if (!v6Data || !Array.isArray(v6Data)) {
+          throw new Error('Invalid data returned from V6 function');
         }
         
-        palletNumbers = data;
+        // Transform V6 format to arrays
+        palletNumbers = v6Data.map((item: any) => item.pallet_number);
+        generatedSeries = v6Data.map((item: any) => item.series);
         break;
         
       } catch (rpcError: any) {
-        // console.error(`[qcActions] RPC 調用錯誤 (嘗試 ${attempts + 1}/${maxAttempts}):`, rpcError); // 保留錯誤日誌供生產環境調試
+        // console.error(`[qcActions] V6 調用錯誤 (嘗試 ${attempts + 1}/${maxAttempts}):`, rpcError); // 保留錯誤日誌供生產環境調試
         
         if (attempts === maxAttempts - 1) {
           throw rpcError;
@@ -695,25 +696,8 @@ export async function generatePalletNumbersAndSeries(count: number): Promise<{
     }
     
     
-    // Generate series with retry mechanism
-    let series: string[] = [];
-    attempts = 0;
-    
-    while (attempts < maxAttempts) {
-      try {
-        series = await generateMultipleUniqueSeries(count, supabaseAdmin);
-        break;
-      } catch (seriesError: any) {
-        console.error(`[qcActions] 系列號生成失敗 (嘗試 ${attempts + 1}/${maxAttempts}):`, seriesError);
-        
-        if (attempts === maxAttempts - 1) {
-          throw seriesError;
-        }
-        
-        attempts++;
-        await new Promise(resolve => setTimeout(resolve, RPC_RETRY_DELAY_BASE * attempts)); // 遞增延遲
-      }
-    }
+    // V6 已經包含 series，不需要額外生成
+    const series = generatedSeries;
     
     
     return {

@@ -43,14 +43,14 @@ BEGIN
     
     -- 清理已使用超過 2 小時的條目
     DELETE FROM pallet_number_buffer
-    WHERE used = TRUE 
-    AND used_at < NOW() - INTERVAL '2 hours';
+    WHERE used = 'True' 
+    AND updated_at < NOW() - INTERVAL '2 hours';
     GET DIAGNOSTICS v_deleted_used = ROW_COUNT;
     
     -- 清理未使用超過 30 分鐘的條目
     DELETE FROM pallet_number_buffer
-    WHERE used = FALSE 
-    AND allocated_at < NOW() - INTERVAL '30 minutes';
+    WHERE used = 'False' 
+    AND updated_at < NOW() - INTERVAL '30 minutes';
     GET DIAGNOSTICS v_deleted_unused = ROW_COUNT;
     
     -- 獲取清理後的總數
@@ -90,8 +90,8 @@ BEGIN
     RETURN QUERY
     SELECT 
         'Cleanup completed'::TEXT as status,
-        (SELECT COUNT(*)::INTEGER FROM pallet_number_buffer WHERE used = TRUE) as deleted_count,
-        (SELECT COUNT(*)::INTEGER FROM pallet_number_buffer WHERE used = FALSE) as remaining_count;
+        (SELECT COUNT(*)::INTEGER FROM pallet_number_buffer WHERE used = 'True') as deleted_count,
+        (SELECT COUNT(*)::INTEGER FROM pallet_number_buffer WHERE used = 'False') as remaining_count;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 

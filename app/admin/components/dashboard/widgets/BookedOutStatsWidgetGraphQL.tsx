@@ -78,7 +78,7 @@ export const BookedOutStatsWidgetGraphQL = React.memo(function BookedOutStatsWid
       };
     }
 
-    const totalCount = graphqlData.transferStats?.aggregate?.count || 0;
+    const totalCount = graphqlData.transferStats?.edges?.length || 0;
     const transfers = graphqlData.transferRecords?.edges?.map((edge: any) => edge.node) || [];
     
     let operatorData: TransferData['operatorData'] = [];

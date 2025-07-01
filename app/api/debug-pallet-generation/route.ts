@@ -60,8 +60,9 @@ export async function GET(request: NextRequest) {
     let rpcTestError = null;
     
     try {
-      const { data: rpcData, error: rpcError } = await supabase.rpc('generate_atomic_pallet_numbers_v3', {
-        count: 1
+      const { data: rpcData, error: rpcError } = await supabase.rpc('generate_atomic_pallet_numbers_v6', {
+        p_count: 1,
+        p_session_id: `debug-${Date.now()}`
       });
       rpcTestResult = rpcData;
       rpcTestError = rpcError;
@@ -130,9 +131,13 @@ export async function POST(request: NextRequest) {
     });
     
     // 測試生成托盤編號
-    const { data: palletNumbers, error: generateError } = await supabase.rpc('generate_atomic_pallet_numbers_v3', {
-      count: count
+    const { data: v6Result, error: generateError } = await supabase.rpc('generate_atomic_pallet_numbers_v6', {
+      p_count: count,
+      p_session_id: `debug-test-${Date.now()}`
     });
+    
+    // 轉換 V6 格式到陣列格式
+    const palletNumbers = v6Result ? v6Result.map((item: any) => item.pallet_number) : [];
     
     if (generateError) {
       console.error('[debug-pallet-generation] 生成失敗:', generateError);
