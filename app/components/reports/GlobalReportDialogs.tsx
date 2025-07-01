@@ -8,8 +8,8 @@
 import React, { useState, useEffect } from 'react';
 import { UnifiedVoidReportDialog } from '@/app/void-pallet/components/UnifiedVoidReportDialog';
 import { UnifiedLoadingReportDialog } from '@/app/order-loading/components/UnifiedLoadingReportDialog';
-import { UnifiedAcoReportDialog } from '@/app/components/reports/UnifiedAcoReportDialog';
-import { UnifiedGrnReportDialog } from '@/app/components/reports/UnifiedGrnReportDialog';
+// ACO Report now integrated directly into system page widget
+// GRN Report now integrated directly into system page widget
 // Transaction Report now integrated directly into system page widget
 import { UnifiedExportAllDataDialog } from '@/app/components/reports/UnifiedExportAllDataDialog';
 
@@ -17,9 +17,9 @@ interface ReportDialogState {
   voidPalletReport: boolean;
   orderLoadingReport: boolean;
   stockTakeReport: boolean;
-  acoOrderReport: boolean;
+  // acoOrderReport: boolean; // Now integrated into system page
   // transactionReport: boolean; // Now integrated into system page
-  grnReport: boolean;
+  // grnReport: boolean; // Now integrated into system page
   exportAllData: boolean;
 }
 
@@ -28,9 +28,9 @@ export function GlobalReportDialogs() {
     voidPalletReport: false,
     orderLoadingReport: false,
     stockTakeReport: false,
-    acoOrderReport: false,
+    // acoOrderReport: false, // Now integrated into system page
     // transactionReport: false, // Now integrated into system page
-    grnReport: false,
+    // grnReport: false, // Now integrated into system page
     exportAllData: false,
   });
 
@@ -48,18 +48,20 @@ export function GlobalReportDialogs() {
       setDialogStates(prev => ({ ...prev, stockTakeReport: true }));
     };
 
-    const handleOpenAcoOrderReport = () => {
-      setDialogStates(prev => ({ ...prev, acoOrderReport: true }));
-    };
+    // ACO Order Report now integrated into system page
+    // const handleOpenAcoOrderReport = () => {
+    //   setDialogStates(prev => ({ ...prev, acoOrderReport: true }));
+    // };
 
     // Transaction Report now integrated into system page
     // const handleOpenTransactionReport = () => {
     //   setDialogStates(prev => ({ ...prev, transactionReport: true }));
     // };
 
-    const handleOpenGrnReport = () => {
-      setDialogStates(prev => ({ ...prev, grnReport: true }));
-    };
+    // GRN Report now integrated into system page
+    // const handleOpenGrnReport = () => {
+    //   setDialogStates(prev => ({ ...prev, grnReport: true }));
+    // };
 
     const handleOpenExportAllData = () => {
       setDialogStates(prev => ({ ...prev, exportAllData: true }));
@@ -69,9 +71,9 @@ export function GlobalReportDialogs() {
     window.addEventListener('openVoidPalletReport', handleOpenVoidPalletReport);
     window.addEventListener('openOrderLoadingReport', handleOpenOrderLoadingReport);
     window.addEventListener('openStockTakeReport', handleOpenStockTakeReport);
-    window.addEventListener('openAcoOrderReport', handleOpenAcoOrderReport);
+    // window.addEventListener('openAcoOrderReport', handleOpenAcoOrderReport);
     // window.addEventListener('openTransactionReport', handleOpenTransactionReport);
-    window.addEventListener('openGrnReport', handleOpenGrnReport);
+    // window.addEventListener('openGrnReport', handleOpenGrnReport);
     window.addEventListener('openExportAllData', handleOpenExportAllData);
 
     // 清理函數
@@ -79,9 +81,9 @@ export function GlobalReportDialogs() {
       window.removeEventListener('openVoidPalletReport', handleOpenVoidPalletReport);
       window.removeEventListener('openOrderLoadingReport', handleOpenOrderLoadingReport);
       window.removeEventListener('openStockTakeReport', handleOpenStockTakeReport);
-      window.removeEventListener('openAcoOrderReport', handleOpenAcoOrderReport);
+      // window.removeEventListener('openAcoOrderReport', handleOpenAcoOrderReport);
       // window.removeEventListener('openTransactionReport', handleOpenTransactionReport);
-      window.removeEventListener('openGrnReport', handleOpenGrnReport);
+      // window.removeEventListener('openGrnReport', handleOpenGrnReport);
       window.removeEventListener('openExportAllData', handleOpenExportAllData);
     };
   }, []);
@@ -102,18 +104,10 @@ export function GlobalReportDialogs() {
         onClose={() => closeDialog('orderLoadingReport')}
       />
       
-      
-      <UnifiedAcoReportDialog
-        isOpen={dialogStates.acoOrderReport}
-        onClose={() => closeDialog('acoOrderReport')}
-      />
+      {/* ACO Order Report now integrated directly into system page widget */}
       
       {/* Transaction Report now integrated directly into system page widget */}
-      
-      <UnifiedGrnReportDialog
-        isOpen={dialogStates.grnReport}
-        onClose={() => closeDialog('grnReport')}
-      />
+      {/* GRN Report now integrated directly into system page widget */}
       
       <UnifiedExportAllDataDialog
         isOpen={dialogStates.exportAllData}

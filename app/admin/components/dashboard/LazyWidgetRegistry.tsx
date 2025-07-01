@@ -125,6 +125,16 @@ export const LazyComponents: Record<string, React.ComponentType<any>> = {
   'TransactionReportWidget': createLazyWidget(
     () => import('./widgets/TransactionReportWidget').then(m => ({ default: m.TransactionReportWidget }))
   ),
+  
+  // GRN Report widget (named export)
+  'GrnReportWidget': createLazyWidget(
+    () => import('./widgets/GrnReportWidget').then(m => ({ default: m.GrnReportWidget }))
+  ),
+  
+  // ACO Order Report widget (named export)
+  'AcoOrderReportWidget': createLazyWidget(
+    () => import('./widgets/AcoOrderReportWidget').then(m => ({ default: m.AcoOrderReportWidget }))
+  ),
 };
 
 // Helper to check if widget should be lazy loaded

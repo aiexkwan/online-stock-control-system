@@ -446,18 +446,13 @@ export const adminDashboardLayouts: Record<string, AdminDashboardLayout> = {
         apiEndpoint: '/api/reports/stock-take'
       },
       {
-        type: 'report-generator-dialog',
+        type: 'aco-order-report',
         title: 'ACO Order Report',
         gridArea: 'widget5',
-        component: 'ReportGeneratorWithDialogWidget',
+        component: 'AcoOrderReportWidget',
         reportType: 'aco-order',
         description: 'ACO Order Report',
-        apiEndpoint: '/api/reports/aco-order',
-        dialogTitle: 'Select ACO Order',
-        dialogDescription: 'Please select an ACO order reference to generate the report.',
-        selectLabel: 'ACO Order Reference',
-        dataTable: 'record_aco',
-        referenceField: 'order_ref'
+        apiEndpoint: '/api/reports/aco-order'
       },
       {
         type: 'transaction-report',
@@ -469,18 +464,13 @@ export const adminDashboardLayouts: Record<string, AdminDashboardLayout> = {
         apiEndpoint: '/api/reports/transaction'
       },
       {
-        type: 'report-generator-dialog',
+        type: 'grn-report',
         title: 'GRN Report',
         gridArea: 'widget7',
-        component: 'ReportGeneratorWithDialogWidget',
+        component: 'GrnReportWidget',
         reportType: 'grn',
         description: 'GRN Report',
-        apiEndpoint: '/api/reports/grn',
-        dialogTitle: 'Select GRN Reference',
-        dialogDescription: 'Please select a GRN reference to generate the report.',
-        selectLabel: 'GRN Reference',
-        dataTable: 'record_grn',
-        referenceField: 'grn_ref'
+        apiEndpoint: '/api/reports/grn'
       },
       {
         type: 'report-generator',

@@ -207,6 +207,8 @@ const UploadProductSpecWidget = React.lazy(() => import('./widgets/UploadProduct
 const UploadPhotoWidget = React.lazy(() => import('./widgets/UploadPhotoWidget').then(mod => ({ default: mod.UploadPhotoWidget })));
 const ReportGeneratorWidget = React.lazy(() => import('./widgets/ReportGeneratorWidget').then(mod => ({ default: mod.ReportGeneratorWidget })));
 const TransactionReportWidget = React.lazy(() => import('./widgets/TransactionReportWidget').then(mod => ({ default: mod.TransactionReportWidget })));
+const GrnReportWidget = React.lazy(() => import('./widgets/GrnReportWidget').then(mod => ({ default: mod.GrnReportWidget })));
+const AcoOrderReportWidget = React.lazy(() => import('./widgets/AcoOrderReportWidget').then(mod => ({ default: mod.AcoOrderReportWidget })));
 const ReportGeneratorWithDialogWidget = React.lazy(() => import('./widgets/ReportGeneratorWithDialogWidget').then(mod => ({ default: mod.ReportGeneratorWithDialogWidget })));
 const AvailableSoonWidget = React.lazy(() => import('./widgets/AvailableSoonWidget'));
 const ReportsWidget = React.lazy(() => import('./widgets/ReportsWidget').then(mod => ({ default: mod.ReportsWidget })));
@@ -1839,6 +1841,23 @@ export const AdminWidgetRenderer: React.FC<AdminWidgetRendererProps> = ({
               description={config.description}
               apiEndpoint={config.apiEndpoint}
             />
+          </Suspense>
+        );
+      case 'grn-report':
+        return (
+          <Suspense fallback={<div className="h-full w-full animate-pulse bg-slate-800/50" />}>
+            <GrnReportWidget 
+              title={config.title}
+              reportType={config.reportType || ''}
+              description={config.description}
+              apiEndpoint={config.apiEndpoint}
+            />
+          </Suspense>
+        );
+      case 'aco-order-report':
+        return (
+          <Suspense fallback={<div className="h-full w-full animate-pulse bg-slate-800/50" />}>
+            <AcoOrderReportWidget theme={theme} />
           </Suspense>
         );
       case 'report-generator-dialog':

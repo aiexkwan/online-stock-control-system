@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { WidgetComponentProps } from '@/app/types/dashboard';
 import { useAdminRefresh } from '@/app/admin/contexts/AdminRefreshContext';
@@ -295,10 +295,12 @@ export const StockLevelHistoryChart: React.FC<StockLevelHistoryChartProps> = ({ 
   }, [timeFrame]);
 
   // 當時間範圍或產品代碼改變時，重新加載數據
-  // 使用 JSON.stringify 來比較複雜對象，避免循環依賴
-  const timeFrameKey = adjustedTimeFrame ? 
-    `${adjustedTimeFrame.start.getTime()}-${adjustedTimeFrame.end.getTime()}` : '';
-  const productCodesKey = productCodes.join(',');
+  // 使用 useMemo 創建穩定的依賴值
+  const timeFrameKey = useMemo(() => 
+    adjustedTimeFrame ? `${adjustedTimeFrame.start.getTime()}-${adjustedTimeFrame.end.getTime()}` : '', 
+    [adjustedTimeFrame]
+  );
+  const productCodesKey = useMemo(() => productCodes.join(','), [productCodes]);
   
   useEffect(() => {
     if (productCodes.length > 0 && adjustedTimeFrame) {
@@ -310,7 +312,7 @@ export const StockLevelHistoryChart: React.FC<StockLevelHistoryChartProps> = ({ 
         })
         .finally(() => setLoading(false));
     }
-  }, [timeFrameKey, productCodesKey]); // 使用穩定的 key 作為依賴
+  }, [timeFrameKey, productCodesKey, processHistoryData, adjustedTimeFrame, productCodes]);
 
   // 當刷新觸發器改變時，重新加載數據
   const prevRefreshTriggerRef = React.useRef(refreshTrigger);
