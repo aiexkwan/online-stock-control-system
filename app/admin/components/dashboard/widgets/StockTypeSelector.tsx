@@ -31,25 +31,25 @@ export const StockTypeSelector: React.FC<StockTypeSelectorProps> = ({ widget, is
   // 前置聲明 fetchTypesFromStockData
   const fetchTypesFromStockData = useCallback(async () => {
     try {
-      // 獲取有庫存嘅產品
+      // 獲取所有唯一嘅產品代碼（唔限制日期）
       const { data: stockData, error: stockError } = await supabase
         .from('stock_level')
         .select('stock')
-        .gt('stock_level', 0)
-        .limit(100);
+        .gt('stock_level', 0);
 
       if (stockError) throw stockError;
 
       if (!stockData || stockData.length === 0) return;
 
-      // 獲取產品代碼
-      const productCodes = stockData.map(item => item.stock);
+      // 獲取唯一產品代碼
+      const uniqueProductCodes = [...new Set(stockData.map(item => item.stock))];
+      console.log('[StockTypeSelector] Unique product codes found:', uniqueProductCodes.length);
       
       // 查詢產品詳情
       const { data: productData, error: productError } = await supabase
         .from('data_code')
         .select('type')
-        .in('code', productCodes)
+        .in('code', uniqueProductCodes)
         .not('type', 'is', null)
         .neq('type', '')
         .neq('type', '-');
@@ -57,7 +57,7 @@ export const StockTypeSelector: React.FC<StockTypeSelectorProps> = ({ widget, is
       if (productError) throw productError;
       
       const uniqueTypes = [...new Set(productData?.map(item => item.type) || [])].filter(Boolean);
-      console.log('[StockTypeSelector] Types from stock data:', uniqueTypes);
+      console.log('[StockTypeSelector] Types from all stock data:', uniqueTypes);
       
       if (uniqueTypes.length > 0) {
         setProductTypes(uniqueTypes);
@@ -109,15 +109,56 @@ export const StockTypeSelector: React.FC<StockTypeSelectorProps> = ({ widget, is
   const fetchStockData = useCallback(async (type: string) => {
     setLoadingStock(true);
     try {
-      // 首先獲取庫存數據
-      const { data: stockData, error: stockError } = await supabase
+      // 先獲取每個產品的最新更新時間
+      const { data: latestDates, error: dateError } = await supabase
         .from('stock_level')
-        .select('stock, stock_level')
-        .gt('stock_level', 0)
-        .order('stock_level', { ascending: false })
-        .limit(100);
+        .select('stock, update_time')
+        .order('update_time', { ascending: false });
 
-      if (stockError) throw stockError;
+      if (dateError) throw dateError;
+
+      if (!latestDates || latestDates.length === 0) {
+        console.log('[StockTypeSelector] No stock data found');
+        setStockData([]);
+        return;
+      }
+
+      // 為每個產品找出最新日期
+      const latestByProduct = new Map<string, string>();
+      latestDates.forEach(item => {
+        if (!latestByProduct.has(item.stock)) {
+          latestByProduct.set(item.stock, item.update_time);
+        }
+      });
+
+      console.log('[StockTypeSelector] Products with latest dates:', latestByProduct.size);
+
+      // 構建查詢條件
+      const conditions = Array.from(latestByProduct.entries()).map(([stock, date]) => ({
+        stock,
+        update_time: date
+      }));
+
+      // 批量查詢每個產品的最新庫存
+      const stockPromises = conditions.map(async (condition) => {
+        const { data, error } = await supabase
+          .from('stock_level')
+          .select('stock, stock_level, update_time')
+          .eq('stock', condition.stock)
+          .eq('update_time', condition.update_time)
+          .single();
+        
+        if (error) {
+          console.error(`Error fetching stock for ${condition.stock}:`, error);
+          return null;
+        }
+        return data;
+      });
+
+      const stockResults = await Promise.all(stockPromises);
+      const stockData = stockResults.filter(item => item !== null && item.stock_level > 0);
+      
+      console.log('[StockTypeSelector] Latest stock data for all products:', stockData.length, 'items');
 
       if (!stockData || stockData.length === 0) {
         setStockData([]);
@@ -127,18 +168,11 @@ export const StockTypeSelector: React.FC<StockTypeSelectorProps> = ({ widget, is
       // 獲取產品代碼列表
       const productCodes = stockData.map(item => item.stock);
       
-      // 查詢產品詳情
-      let productQuery = supabase
+      // 查詢所有產品詳情（不在查詢階段過濾）
+      const { data: productData, error: productError } = await supabase
         .from('data_code')
         .select('code, description, type')
         .in('code', productCodes);
-      
-      // 如果選擇了特定類型，添加過濾
-      if (type !== 'all') {
-        productQuery = productQuery.eq('type', type);
-      }
-      
-      const { data: productData, error: productError } = await productQuery;
       
       if (productError) throw productError;
       
@@ -149,9 +183,11 @@ export const StockTypeSelector: React.FC<StockTypeSelectorProps> = ({ widget, is
       });
       
       // 合併數據
-      const formattedData: StockData[] = stockData
-        .filter(item => productMap.has(item.stock))
-        .map(item => {
+      let formattedData: StockData[];
+      
+      if (type === 'all') {
+        // 如果選擇 all，顯示所有庫存數據，包括沒有在 data_code 表的產品
+        formattedData = stockData.map(item => {
           const product = productMap.get(item.stock);
           return {
             stock: item.stock,
@@ -160,6 +196,46 @@ export const StockTypeSelector: React.FC<StockTypeSelectorProps> = ({ widget, is
             type: product?.type || '-'
           };
         });
+      } else if (type === 'non-material') {
+        // 如果選擇 non-material，顯示所有非 material 類型的產品
+        formattedData = stockData
+          .filter(item => {
+            const product = productMap.get(item.stock);
+            // 如果有產品資訊，檢查是否為 material
+            if (product && product.type) {
+              const productType = product.type.toLowerCase();
+              return productType !== 'material';
+            }
+            // 如果沒有產品資訊，包含它（假設不是 material）
+            return true;
+          })
+          .map(item => {
+            const product = productMap.get(item.stock);
+            return {
+              stock: item.stock,
+              stock_level: item.stock_level,
+              description: product?.description || '-',
+              type: product?.type || '-'
+            };
+          });
+      } else {
+        // 如果選擇特定類型，只顯示匹配的產品
+        formattedData = stockData
+          .filter(item => {
+            const product = productMap.get(item.stock);
+            // 只顯示有該類型的產品
+            return product && product.type === type;
+          })
+          .map(item => {
+            const product = productMap.get(item.stock);
+            return {
+              stock: item.stock,
+              stock_level: item.stock_level,
+              description: product?.description || '-',
+              type: product?.type || '-'
+            };
+          });
+      }
 
       console.log('[StockTypeSelector] Stock data loaded:', formattedData.length, 'items');
       setStockData(formattedData);
@@ -212,6 +288,7 @@ export const StockTypeSelector: React.FC<StockTypeSelectorProps> = ({ widget, is
           className="w-[200px] px-4 py-2 bg-slate-700 border border-slate-600 text-white rounded-lg focus:border-blue-500 focus:outline-none"
         >
           <option value="all">All Types</option>
+          <option value="non-material">Non-Material</option>
           {productTypes.map(type => (
             <option key={type} value={type}>
               {type}
@@ -233,14 +310,13 @@ export const StockTypeSelector: React.FC<StockTypeSelectorProps> = ({ widget, is
                 <th className="text-left py-3 px-4 text-xs font-medium text-gray-400 uppercase">Product Code</th>
                 <th className="text-left py-3 px-4 text-xs font-medium text-gray-400 uppercase">Description</th>
                 <th className="text-center py-3 px-4 text-xs font-medium text-gray-400 uppercase">Type</th>
-                <th className="text-right py-3 px-4 text-xs font-medium text-gray-400 uppercase">Stock Level</th>
-                <th className="text-center py-3 px-4 text-xs font-medium text-gray-400 uppercase">Status</th>
+                <th className="text-right py-3 px-4 text-xs font-medium text-gray-400 uppercase">Current Inventory</th>
               </tr>
             </thead>
             <tbody>
               {stockData.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="text-center py-8 text-gray-400">
+                  <td colSpan={4} className="text-center py-8 text-gray-400">
                     No stock data available {selectedType !== 'all' && `for type "${selectedType}"`}
                   </td>
                 </tr>
@@ -253,14 +329,7 @@ export const StockTypeSelector: React.FC<StockTypeSelectorProps> = ({ widget, is
                       <td className="py-3 px-4 text-sm text-gray-300">{item.description}</td>
                       <td className="py-3 px-4 text-sm text-gray-300 text-center">{item.type}</td>
                       <td className="py-3 px-4 text-sm text-white text-right font-medium">
-                        {item.stock_level.toLocaleString()}
-                      </td>
-                      <td className="py-3 px-4 text-center">
-                        <span className={`px-2 py-1 text-xs rounded-full ${
-                          isLowStock ? 'bg-red-500/20 text-red-400' : 'bg-green-500/20 text-green-400'
-                        }`}>
-                          {isLowStock ? 'Low Stock' : 'In Stock'}
-                        </span>
+                        {(item.stock_level || 0).toLocaleString()}
                       </td>
                     </tr>
                   );
@@ -279,7 +348,7 @@ export const StockTypeSelector: React.FC<StockTypeSelectorProps> = ({ widget, is
           </span>
           <span className="text-gray-300">
             Total Stock: <span className="font-semibold text-white">
-              {stockData.reduce((sum, item) => sum + item.stock_level, 0).toLocaleString()}
+              {stockData.reduce((sum, item) => sum + (item.stock_level || 0), 0).toLocaleString()}
             </span>
           </span>
         </div>

@@ -42,54 +42,163 @@ const LINE_COLORS = [
 export const StockLevelHistoryChart: React.FC<StockLevelHistoryChartProps> = ({ widget, isEditMode, timeFrame }) => {
   const [chartData, setChartData] = useState<ChartDataPoint[]>([]);
   const [productCodes, setProductCodes] = useState<string[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false); // 改為 false，等待選擇產品類型
   const [selectedType, setSelectedType] = useState<string>('all');
+  const [adjustedTimeFrame, setAdjustedTimeFrame] = useState<{ start: Date; end: Date } | null>(null);
   const { refreshTrigger } = useAdminRefresh();
   const supabase = createClient();
 
-  // 生成12個時間段
+  // 計算調整後的時間範圍
+  const calculateAdjustedTimeFrame = useCallback((originalTimeFrame?: { start: Date; end: Date }) => {
+    const now = new Date();
+    const twoWeeksAgo = new Date(now);
+    twoWeeksAgo.setDate(now.getDate() - 14);
+    
+    // 如果沒有提供時間範圍，使用預設2週
+    if (!originalTimeFrame) {
+      console.log('[StockLevelHistoryChart] No timeFrame provided, using default 2 weeks');
+      return { start: twoWeeksAgo, end: now };
+    }
+    
+    const duration = originalTimeFrame.end.getTime() - originalTimeFrame.start.getTime();
+    const days = duration / (1000 * 60 * 60 * 24);
+    
+    // 如果時間範圍太短（少於1天），使用預設2週
+    if (days < 1) {
+      console.log('[StockLevelHistoryChart] Time range too short, using default 2 weeks');
+      return { start: twoWeeksAgo, end: now };
+    }
+    
+    // 根據選擇的時間範圍調整顯示範圍
+    if (days <= 14) {
+      // 少於2週，使用原範圍
+      return originalTimeFrame;
+    } else if (days <= 21) {
+      // 2-3週，顯示3週
+      const threeWeeksAgo = new Date(now);
+      threeWeeksAgo.setDate(now.getDate() - 21);
+      return { start: threeWeeksAgo, end: now };
+    } else if (days <= 28) {
+      // 3-4週，顯示4週
+      const fourWeeksAgo = new Date(now);
+      fourWeeksAgo.setDate(now.getDate() - 28);
+      return { start: fourWeeksAgo, end: now };
+    } else if (days <= 60) {
+      // 4週-2個月，顯示2個月
+      const twoMonthsAgo = new Date(now);
+      twoMonthsAgo.setMonth(now.getMonth() - 2);
+      return { start: twoMonthsAgo, end: now };
+    } else if (days <= 90) {
+      // 2-3個月，顯示3個月
+      const threeMonthsAgo = new Date(now);
+      threeMonthsAgo.setMonth(now.getMonth() - 3);
+      return { start: threeMonthsAgo, end: now };
+    } else {
+      // 超過3個月，最多顯示6個月
+      const sixMonthsAgo = new Date(now);
+      sixMonthsAgo.setMonth(now.getMonth() - 6);
+      return { start: sixMonthsAgo, end: now };
+    }
+  }, []);
+
+  // 更新調整後的時間範圍
+  useEffect(() => {
+    console.log('[StockLevelHistoryChart] timeFrame prop:', timeFrame);
+    const adjusted = calculateAdjustedTimeFrame(timeFrame);
+    console.log('[StockLevelHistoryChart] adjusted timeFrame:', adjusted);
+    setAdjustedTimeFrame(adjusted);
+  }, [timeFrame, calculateAdjustedTimeFrame]);
+
+  // 生成24個時間段
   const generateTimeSegments = useCallback(() => {
-    if (!timeFrame) return [];
+    if (!adjustedTimeFrame) return [];
     
     const segments: { start: Date; end: Date; label: string }[] = [];
-    const totalDuration = timeFrame.end.getTime() - timeFrame.start.getTime();
-    const segmentDuration = totalDuration / 12;
+    const totalDuration = adjustedTimeFrame.end.getTime() - adjustedTimeFrame.start.getTime();
+    const segmentDuration = totalDuration / 24;
+    const days = totalDuration / (1000 * 60 * 60 * 24);
 
-    for (let i = 0; i < 12; i++) {
-      const segmentStart = new Date(timeFrame.start.getTime() + (segmentDuration * i));
-      const segmentEnd = new Date(timeFrame.start.getTime() + (segmentDuration * (i + 1)));
+    for (let i = 0; i < 24; i++) {
+      const segmentStart = new Date(adjustedTimeFrame.start.getTime() + (segmentDuration * i));
+      const segmentEnd = new Date(adjustedTimeFrame.start.getTime() + (segmentDuration * (i + 1)));
+      
+      // 根據時間範圍選擇顯示格式
+      let label: string;
+      if (days <= 1) {
+        // 一天內，顯示時間
+        label = format(segmentStart, 'HH:mm');
+      } else if (days <= 7) {
+        // 一週內，顯示星期和時間
+        label = format(segmentStart, 'EEE HH:mm');
+      } else if (days <= 30) {
+        // 一個月內，顯示日期
+        label = format(segmentStart, 'MM/dd');
+      } else {
+        // 超過一個月，顯示月份和日期
+        label = format(segmentStart, 'MMM dd');
+      }
       
       segments.push({
         start: segmentStart,
         end: segmentEnd,
-        label: format(segmentStart, 'HH:mm')
+        label
       });
     }
 
     return segments;
-  }, [timeFrame]);
+  }, [adjustedTimeFrame]);
 
   // 處理庫存歷史數據
   const processHistoryData = useCallback(async (products: string[]) => {
-    if (!timeFrame || products.length === 0) {
+    console.log('[StockLevelHistoryChart] processHistoryData called with:', products);
+    console.log('[StockLevelHistoryChart] adjustedTimeFrame:', adjustedTimeFrame);
+    
+    if (!adjustedTimeFrame || products.length === 0) {
+      console.log('[StockLevelHistoryChart] No adjustedTimeFrame or products, clearing data');
       setChartData([]);
       return;
     }
+    
+    // 限制顯示最多10款產品
+    const limitedProducts = products.slice(0, 10);
+    console.log('[StockLevelHistoryChart] Limited products:', limitedProducts);
 
     const segments = generateTimeSegments();
+    console.log('[StockLevelHistoryChart] Generated segments:', segments.length);
     const dataPoints: ChartDataPoint[] = [];
 
     try {
-      // 獲取所有產品在時間範圍內的數據
-      const { data, error } = await supabase
+      // 獲取所有產品在時間範圍內的數據，如果沒有數據就擴大範圍
+      let { data, error } = await supabase
         .from('stock_level')
         .select('stock, stock_level, update_time')
-        .in('stock', products)
-        .gte('update_time', timeFrame.start.toISOString())
-        .lte('update_time', timeFrame.end.toISOString())
+        .in('stock', limitedProducts)
+        .gte('update_time', adjustedTimeFrame.start.toISOString())
+        .lte('update_time', adjustedTimeFrame.end.toISOString())
         .order('update_time', { ascending: true });
 
       if (error) throw error;
+
+      console.log('[StockLevelHistoryChart] Query returned', data?.length || 0, 'records');
+      console.log('[StockLevelHistoryChart] Time range:', adjustedTimeFrame.start.toISOString(), 'to', adjustedTimeFrame.end.toISOString());
+      
+      // 如果沒有數據，嘗試獲取最近30天的數據
+      if (!data || data.length === 0) {
+        console.log('[StockLevelHistoryChart] No data found, trying last 30 days');
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+        
+        const result = await supabase
+          .from('stock_level')
+          .select('stock, stock_level, update_time')
+          .in('stock', limitedProducts)
+          .gte('update_time', thirtyDaysAgo.toISOString())
+          .order('update_time', { ascending: true });
+          
+        if (result.error) throw result.error;
+        data = result.data;
+        console.log('[StockLevelHistoryChart] Extended query returned', data?.length || 0, 'records');
+      }
 
       // 為每個產品建立最後已知的庫存水平
       const lastKnownStock = new Map<string, number>();
@@ -108,7 +217,7 @@ export const StockLevelHistoryChart: React.FC<StockLevelHistoryChartProps> = ({ 
         });
 
         // 為每個產品設置庫存值
-        for (const product of products) {
+        for (const product of limitedProducts) {
           // 查找該產品在這個時間段的最新數據
           const productData = segmentData
             .filter(item => item.stock === product)
@@ -127,27 +236,42 @@ export const StockLevelHistoryChart: React.FC<StockLevelHistoryChartProps> = ({ 
         dataPoints.push(dataPoint);
       }
 
+      console.log('[StockLevelHistoryChart] Setting chart data with', dataPoints.length, 'points');
       setChartData(dataPoints);
-      setProductCodes(products);
+      setProductCodes(limitedProducts);
+      console.log('[StockLevelHistoryChart] processHistoryData completed successfully');
     } catch (error) {
-      console.error('Error fetching stock history:', error);
+      console.error('[StockLevelHistoryChart] Error fetching stock history:', error);
       setChartData([]);
     }
-  }, [supabase, timeFrame, generateTimeSegments]);
+  }, [supabase, adjustedTimeFrame, generateTimeSegments]);
 
   // 監聽 StockTypeSelector 的類型變更事件
   useEffect(() => {
     const handleTypeChange = (event: CustomEvent) => {
+      console.log('[StockLevelHistoryChart] Received stockTypeChanged event:', event.detail);
       const { type, data } = event.detail;
       setSelectedType(type);
       
-      // 獲取該類型所有產品的代碼
-      const codes = data.map((item: any) => item.stock);
+      // 獲取該類型所有產品的代碼（限制最多10個）
+      const codes = data.map((item: any) => item.stock).slice(0, 10);
+      console.log('[StockLevelHistoryChart] Product codes:', codes);
       
       if (codes.length > 0) {
         setLoading(true);
-        processHistoryData(codes).finally(() => setLoading(false));
+        processHistoryData(codes)
+          .then(() => {
+            console.log('[StockLevelHistoryChart] processHistoryData completed successfully');
+          })
+          .catch((error) => {
+            console.error('[StockLevelHistoryChart] processHistoryData error:', error);
+          })
+          .finally(() => {
+            console.log('[StockLevelHistoryChart] Setting loading to false');
+            setLoading(false);
+          });
       } else {
+        console.log('[StockLevelHistoryChart] No product codes, clearing data');
         setChartData([]);
         setProductCodes([]);
         setLoading(false);
@@ -160,18 +284,49 @@ export const StockLevelHistoryChart: React.FC<StockLevelHistoryChartProps> = ({ 
     };
   }, [processHistoryData]);
 
-  // 初始化時顯示 loading，等待類型選擇
+  // 初始化時設定預設時間範圍
   useEffect(() => {
-    setLoading(false);
-  }, []);
-
-  // 當時間範圍或刷新觸發器改變時，重新加載數據
-  useEffect(() => {
-    if (productCodes.length > 0) {
-      setLoading(true);
-      processHistoryData(productCodes).finally(() => setLoading(false));
+    if (!timeFrame) {
+      const now = new Date();
+      const twoWeeksAgo = new Date(now);
+      twoWeeksAgo.setDate(now.getDate() - 14);
+      setAdjustedTimeFrame({ start: twoWeeksAgo, end: now });
     }
-  }, [productCodes, processHistoryData, refreshTrigger]);
+  }, [timeFrame]);
+
+  // 當時間範圍或產品代碼改變時，重新加載數據
+  // 使用 JSON.stringify 來比較複雜對象，避免循環依賴
+  const timeFrameKey = adjustedTimeFrame ? 
+    `${adjustedTimeFrame.start.getTime()}-${adjustedTimeFrame.end.getTime()}` : '';
+  const productCodesKey = productCodes.join(',');
+  
+  useEffect(() => {
+    if (productCodes.length > 0 && adjustedTimeFrame) {
+      console.log('[StockLevelHistoryChart] Dependencies changed, reloading data');
+      setLoading(true);
+      processHistoryData(productCodes)
+        .catch((error) => {
+          console.error('[StockLevelHistoryChart] Reload error:', error);
+        })
+        .finally(() => setLoading(false));
+    }
+  }, [timeFrameKey, productCodesKey]); // 使用穩定的 key 作為依賴
+
+  // 當刷新觸發器改變時，重新加載數據
+  const prevRefreshTriggerRef = React.useRef(refreshTrigger);
+  useEffect(() => {
+    // 只在 refreshTrigger 真正改變時重新加載
+    if (productCodes.length > 0 && refreshTrigger !== prevRefreshTriggerRef.current) {
+      console.log('[StockLevelHistoryChart] Refresh triggered, reloading data');
+      prevRefreshTriggerRef.current = refreshTrigger;
+      setLoading(true);
+      processHistoryData(productCodes)
+        .catch((error) => {
+          console.error('[StockLevelHistoryChart] Refresh error:', error);
+        })
+        .finally(() => setLoading(false));
+    }
+  }, [refreshTrigger, productCodes, processHistoryData]);
 
   // 自定義 Tooltip
   const CustomTooltip = ({ active, payload, label }: any) => {
@@ -182,7 +337,7 @@ export const StockLevelHistoryChart: React.FC<StockLevelHistoryChartProps> = ({ 
           {payload.map((entry: any, index: number) => (
             <p key={index} className="text-xs">
               <span style={{ color: entry.color }}>{entry.name}:</span>
-              <span className="text-white ml-2 font-medium">{entry.value.toLocaleString()}</span>
+              <span className="text-white ml-2 font-medium">{(entry.value || 0).toLocaleString()}</span>
             </p>
           ))}
         </div>
@@ -195,14 +350,14 @@ export const StockLevelHistoryChart: React.FC<StockLevelHistoryChartProps> = ({ 
   const renderLegend = (props: any) => {
     const { payload } = props;
     return (
-      <div className="flex flex-wrap gap-4 justify-center mt-4">
+      <div className="flex flex-wrap gap-2 justify-center mt-1">
         {payload.map((entry: any, index: number) => (
-          <div key={`legend-${index}`} className="flex items-center gap-2">
+          <div key={`legend-${index}`} className="flex items-center gap-1">
             <div 
-              className="w-3 h-3 rounded-full" 
+              className="w-2 h-2 rounded-full" 
               style={{ backgroundColor: entry.color }}
             />
-            <span className="text-xs text-gray-400">{entry.value}</span>
+            <span className="text-[10px] text-gray-400">{entry.value}</span>
           </div>
         ))}
       </div>
@@ -218,19 +373,20 @@ export const StockLevelHistoryChart: React.FC<StockLevelHistoryChartProps> = ({ 
   }
 
   return (
-    <div className="h-full w-full p-4">
+    <div className="h-full w-full p-2">
       {chartData.length === 0 || productCodes.length === 0 ? (
         <div className="h-full flex items-center justify-center">
           <p className="text-gray-400 text-sm text-center">
             Select a product type from the dropdown<br />
-            to view stock level history
+            to view stock level history<br />
+            <span className="text-xs">(最多顯示10款產品)</span>
           </p>
         </div>
       ) : (
         <ResponsiveContainer width="100%" height="100%">
           <LineChart
             data={chartData}
-            margin={{ top: 5, right: 5, left: 5, bottom: 60 }}
+            margin={{ top: 5, right: 5, left: 0, bottom: 35 }}
           >
             <CartesianGrid 
               strokeDasharray="3 3" 
@@ -240,19 +396,28 @@ export const StockLevelHistoryChart: React.FC<StockLevelHistoryChartProps> = ({ 
             <XAxis 
               dataKey="time" 
               stroke="#64748b"
-              fontSize={12}
+              fontSize={9}
               tickLine={false}
-              axisLine={{ stroke: '#334155' }}
+              axisLine={false}
+              angle={-45}
+              textAnchor="end"
+              height={50}
+              interval={Math.floor(chartData.length / 8)}
             />
             <YAxis 
               stroke="#64748b"
-              fontSize={12}
+              fontSize={10}
               tickLine={false}
-              axisLine={{ stroke: '#334155' }}
-              tickFormatter={(value) => value.toLocaleString()}
+              axisLine={false}
+              width={45}
+              tickFormatter={(value) => {
+                if (value >= 1000) {
+                  return `${(value / 1000).toFixed(0)}k`;
+                }
+                return value.toString();
+              }}
             />
             <Tooltip content={<CustomTooltip />} />
-            <Legend content={renderLegend} />
             
             {/* 為每個產品代碼創建一條線 */}
             {productCodes.map((code, index) => (

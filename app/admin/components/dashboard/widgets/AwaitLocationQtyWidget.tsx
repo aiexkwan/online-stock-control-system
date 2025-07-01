@@ -20,7 +20,7 @@ export const AwaitLocationQtyWidget = React.memo(function AwaitLocationQtyWidget
   isEditMode,
   timeFrame 
 }: WidgetComponentProps) {
-  const [palletCount, setPalletCount] = useState(0);
+  const [palletCount, setPalletCount] = useState<number>(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isRefetching, setIsRefetching] = useState(false);
@@ -130,7 +130,7 @@ export const AwaitLocationQtyWidget = React.memo(function AwaitLocationQtyWidget
                 transition={{ duration: 0.3 }}
                 className="text-4xl font-bold text-white mb-2"
               >
-                {palletCount.toLocaleString()}
+                {(palletCount || 0).toLocaleString()}
               </motion.div>
               <p className="text-xs text-slate-400">Pallets</p>
               

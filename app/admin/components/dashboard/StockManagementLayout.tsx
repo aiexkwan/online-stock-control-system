@@ -51,24 +51,17 @@ export const StockManagementLayout: React.FC<StockManagementLayoutProps> = ({
       height: 'auto',
       width: 'auto'
     },
-    // Item 4 - Total Stock Value (top right)
+    // Item 4 - Inventory Ordered Analysis (top-middle right)
     { 
       gridColumn: '6 / 9',
-      gridRow: '1 / 3',
+      gridRow: '1 / 5',
       height: 'auto',
       width: 'auto'
     },
-    // Item 5 - Stock Trend (middle right)
+    // Item 5 - Stock Distribution Chart (bottom right)
     { 
       gridColumn: '6 / 9',
-      gridRow: '3 / 6',
-      height: 'auto',
-      width: 'auto'
-    },
-    // Item 6 - Stock Alerts (bottom right)
-    { 
-      gridRow: '6 / 9',
-      gridColumn: '6 / 9',
+      gridRow: '5 / 9',
       height: 'auto',
       width: 'auto'
     }
@@ -76,7 +69,7 @@ export const StockManagementLayout: React.FC<StockManagementLayoutProps> = ({
 
   return (
     <div className="stock-management-container" style={containerStyle}>
-      {children.slice(0, 6).map((child, index) => {
+      {children.slice(0, 5).map((child, index) => {
         const isRightSidebar = index === 0;
         const isMainContent = index === 1 || index === 2; // Both stock selector and chart
         const style = widgetStyles[index];

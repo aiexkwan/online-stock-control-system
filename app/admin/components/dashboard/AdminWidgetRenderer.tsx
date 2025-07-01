@@ -228,6 +228,7 @@ const StillInAwaitWidget = React.lazy(() => import('./widgets/StillInAwaitWidget
 const StockTypeSelector = React.lazy(() => import('./widgets/StockTypeSelector').then(mod => ({ default: mod.StockTypeSelector })));
 const StockDistributionChart = React.lazy(() => import('./widgets/StockDistributionChart').then(mod => ({ default: mod.StockDistributionChart })));
 const StockLevelHistoryChart = React.lazy(() => import('./widgets/StockLevelHistoryChart').then(mod => ({ default: mod.StockLevelHistoryChart })));
+const InventoryOrderedAnalysisWidget = React.lazy(() => import('./widgets/InventoryOrderedAnalysisWidget').then(mod => ({ default: mod.InventoryOrderedAnalysisWidget })));
 const StillInAwaitPercentageWidget = React.lazy(() => import('./widgets/StillInAwaitPercentageWidget').then(mod => ({ default: mod.StillInAwaitPercentageWidget })));
 const OrderStateListWidget = React.lazy(() => import('./widgets/OrderStateListWidget').then(mod => ({ default: mod.OrderStateListWidget })));
 const TransferTimeDistributionWidget = React.lazy(() => import('./widgets/TransferTimeDistributionWidget').then(mod => ({ default: mod.TransferTimeDistributionWidget })));
@@ -561,21 +562,21 @@ export const AdminWidgetRenderer: React.FC<AdminWidgetRendererProps> = ({
     const { data: stockData } = await supabase
       .from('stock_level')
       .select('*')
-      .order('quantity', { ascending: false });
+      .order('stock_level', { ascending: false });
 
-    const totalStock = stockData?.reduce((sum: number, item: any) => sum + (item.quantity || 0), 0) || 0;
+    const totalStock = stockData?.reduce((sum: number, item: any) => sum + (item.stock_level || 0), 0) || 0;
 
     setData({
       value: totalStock,
       label: 'Total Stock Level',
       chartData: stockData?.slice(0, 10).map((s: any) => ({
-        name: s.product_code,
-        value: s.quantity
+        name: s.stock || s.product_code || 'Unknown',
+        value: s.stock_level || 0
       })),
       items: stockData?.slice(0, 5).map((s: any) => ({
-        title: s.product_code,
+        title: s.stock || s.product_code || 'Unknown',
         subtitle: `Stock Level`,
-        value: s.quantity.toLocaleString()
+        value: (s.stock_level || 0).toLocaleString()
       }))
     });
   };
@@ -623,7 +624,7 @@ export const AdminWidgetRenderer: React.FC<AdminWidgetRendererProps> = ({
       .slice(0, 10)
       .map(([code, qty]) => [
         code,
-        qty.toLocaleString(),
+        (qty || 0).toLocaleString(),
         'Active',
         format(new Date(), 'HH:mm')
       ]);
@@ -714,7 +715,7 @@ export const AdminWidgetRenderer: React.FC<AdminWidgetRendererProps> = ({
         rows.push([
           pallet.plt_num,
           pallet.product_code,
-          pallet.product_qty.toLocaleString(),
+          (pallet.product_qty || 0).toLocaleString(),
           qcOperator
         ]);
       }
@@ -778,7 +779,7 @@ export const AdminWidgetRenderer: React.FC<AdminWidgetRendererProps> = ({
         rows.push([
           pallet.plt_num,
           pallet.product_code,
-          pallet.product_qty.toLocaleString(),
+          (pallet.product_qty || 0).toLocaleString(),
           qcOperator
         ]);
       }
@@ -1053,7 +1054,7 @@ export const AdminWidgetRenderer: React.FC<AdminWidgetRendererProps> = ({
               transition={{ duration: 0.3 }}
               className="text-4xl font-bold text-white mb-2"
             >
-              {value?.toLocaleString() || '0'}
+              {(value !== undefined && value !== null) ? value.toLocaleString() : '0'}
             </motion.div>
             
             {/* Trend with Animation */}
@@ -1264,7 +1265,7 @@ export const AdminWidgetRenderer: React.FC<AdminWidgetRendererProps> = ({
               borderRadius: '8px'
             }}
             formatter={(value: any, name: any, props: any) => [
-              `${value.toLocaleString()} (${props.payload.percentage}%)`,
+              `${(value || 0).toLocaleString()} (${props.payload.percentage || 0}%)`,
               props.payload.name
             ]}
           />
@@ -1325,7 +1326,7 @@ export const AdminWidgetRenderer: React.FC<AdminWidgetRendererProps> = ({
         {(config.chartType === 'donut' || config.chartType === 'pie') && chartData.length > 0 && (
           <div className="flex flex-wrap gap-1 justify-center mt-1 px-1 overflow-y-auto max-h-20">
             {chartData.slice(0, 10).map((item: any, index: number) => (
-              <div key={item.name} className="flex items-center gap-1">
+              <div key={`${item.name}-${index}`} className="flex items-center gap-1">
                 <div 
                   className="w-2 h-2 rounded-full flex-shrink-0"
                   style={{ backgroundColor: CHART_COLORS[index % CHART_COLORS.length] }}
@@ -1509,6 +1510,8 @@ export const AdminWidgetRenderer: React.FC<AdminWidgetRendererProps> = ({
             return { widget: config as any };
           case 'StockLevelHistoryChart':
             return { widget: config as any, timeFrame };
+          case 'InventoryOrderedAnalysisWidget':
+            return { widget: config as any };
           default:
             return { widget: config, isEditMode: false };
         }
@@ -1776,6 +1779,12 @@ export const AdminWidgetRenderer: React.FC<AdminWidgetRendererProps> = ({
         return (
           <Suspense fallback={<div className="h-full w-full animate-pulse bg-slate-800/50" />}>
             <StockLevelHistoryChart timeFrame={timeFrame} />
+          </Suspense>
+        );
+      case 'InventoryOrderedAnalysisWidget':
+        return (
+          <Suspense fallback={<div className="h-full w-full animate-pulse bg-slate-800/50" />}>
+            <InventoryOrderedAnalysisWidget />
           </Suspense>
         );
       default:

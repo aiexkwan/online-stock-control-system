@@ -28,8 +28,60 @@ export const UploadUpdateLayout: React.FC<UploadUpdateLayoutProps> = ({
     padding: '20px'
   };
 
-  // Widget positions for update theme layout
-  const widgetStyles = [
+  // Widget positions based on theme
+  const uploadWidgetStyles = [
+    // Widget 1 - History Tree (far right) - index 0
+    { 
+      gridColumn: '9 / 11',
+      gridRow: '1 / 5',
+      height: 'auto',
+      width: 'auto'
+    },
+    // Widget 2 - Orders List (left) - index 1
+    { 
+      gridColumn: '1 / 4',
+      gridRow: '1 / 5',
+      height: 'auto',
+      width: 'auto'
+    },
+    // Widget 3 - Other Files List (center-left) - index 2
+    { 
+      gridColumn: '4 / 7',
+      gridRow: '1 / 5',
+      height: 'auto',
+      width: 'auto'
+    },
+    // Widget 4 - Upload Files (top right) - index 3
+    { 
+      gridColumn: '7 / 9',
+      gridRow: '1 / 2',
+      height: 'auto',
+      width: 'auto'
+    },
+    // Widget 5 - Upload Orders (right middle-top) - index 4
+    { 
+      gridColumn: '7 / 9',
+      gridRow: '2 / 3',
+      height: 'auto',
+      width: 'auto'
+    },
+    // Widget 6 - Upload Product Spec (right middle-bottom) - index 5
+    { 
+      gridColumn: '7 / 9',
+      gridRow: '3 / 4',
+      height: 'auto',
+      width: 'auto'
+    },
+    // Widget 7 - Upload Photo (bottom right) - index 6
+    { 
+      gridColumn: '7 / 9',
+      gridRow: '4 / 5',
+      height: 'auto',
+      width: 'auto'
+    }
+  ];
+
+  const updateWidgetStyles = [
     // Widget 1 - History Tree (right sidebar)
     { 
       gridColumn: '9 / 11',
@@ -51,7 +103,7 @@ export const UploadUpdateLayout: React.FC<UploadUpdateLayoutProps> = ({
       height: 'auto',
       width: 'auto'
     },
-    // Widget 4 - Empty placeholder (center)
+    // Widget 4 - Void Pallet (center)
     { 
       gridColumn: '4 / 9',
       gridRow: '1 / 4',
@@ -67,14 +119,21 @@ export const UploadUpdateLayout: React.FC<UploadUpdateLayoutProps> = ({
     }
   ];
 
+  // Select widget styles based on theme
+  const widgetStyles = theme === 'upload' ? uploadWidgetStyles : updateWidgetStyles;
+
   return (
     <div className="upload-update-container" style={containerStyle}>
-      {children.slice(0, 5).map((child, index) => {
-        const isRightSidebar = index === 0;
-        const isMainContent = index === 1 || index === 2; // Product Update and Supplier Update
-        const isVoidPallet = index === 3;
-        const isStatsWidget = index === 4;
-        const style = widgetStyles[index];
+      {children.map((child, index) => {
+        // Get the widget style, fallback to default if out of bounds
+        const style = widgetStyles[index] || { gridColumn: '1 / 2', gridRow: '1 / 2', height: 'auto', width: 'auto' };
+        
+        // Determine widget type based on theme and index
+        const isUploadTheme = theme === 'upload';
+        const isRightSidebar = (isUploadTheme && index === 0) || (!isUploadTheme && index === 0);
+        const isMainContent = isUploadTheme ? (index === 1 || index === 2) : (index === 1 || index === 2);
+        const isVoidPallet = !isUploadTheme && index === 3;
+        const isStatsWidget = (isUploadTheme && (index === 3 || index === 4 || index === 5 || index === 6)) || (!isUploadTheme && index === 4);
         
         if (isRightSidebar) {
           // Right sidebar widget without glassmorphism wrapper

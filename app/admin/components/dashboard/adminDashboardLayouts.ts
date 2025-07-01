@@ -360,9 +360,9 @@ export const adminDashboardLayouts: Record<string, AdminDashboardLayout> = {
     theme: 'stock-management',
     gridTemplate: `
       "widget2 widget2 widget2 widget2 widget2 widget4 widget4 widget4 widget1 widget1"
-      "widget2 widget2 widget2 widget2 widget2 widget5 widget5 widget5 widget1 widget1"
-      "widget3 widget3 widget3 widget3 widget3 widget6 widget6 widget6 widget1 widget1"
-      "widget3 widget3 widget3 widget3 widget3 widget6 widget6 widget6 widget1 widget1"
+      "widget2 widget2 widget2 widget2 widget2 widget4 widget4 widget4 widget1 widget1"
+      "widget3 widget3 widget3 widget3 widget3 widget5 widget5 widget5 widget1 widget1"
+      "widget3 widget3 widget3 widget3 widget3 widget5 widget5 widget5 widget1 widget1"
     `,
     widgets: [
       {
@@ -387,23 +387,15 @@ export const adminDashboardLayouts: Record<string, AdminDashboardLayout> = {
         component: 'StockLevelHistoryChart'
       },
       {
-        type: 'stats',
-        title: 'Total Stock Value',
+        type: 'custom',
+        title: 'Inventory Ordered Analysis',
         gridArea: 'widget4',
-        dataSource: 'stock_level',
-        metrics: ['total_value']
-      },
-      {
-        type: 'chart',
-        title: 'Stock Trend',
-        gridArea: 'widget5',
-        dataSource: 'stock_level',
-        chartType: 'donut'
+        component: 'InventoryOrderedAnalysisWidget'
       },
       {
         type: 'chart',
         title: 'Stock Distribution',
-        gridArea: 'widget6',
+        gridArea: 'widget5',
         dataSource: 'stock_level',
         chartType: 'pie',
         component: 'StockDistributionChart'
