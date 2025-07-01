@@ -61,6 +61,7 @@
     "@tanstack/react-table": "^8.20.6",
     "@tanstack/react-virtual": "^3.13.12",
     "@tremor/react": "^3.18.7",
+    "@types/exceljs": "^0.5.3",
     "@types/pdf-parse": "^1.1.4",
     "@vercel/analytics": "^1.4.1",
     "@vercel/speed-insights": "^1.1.0",

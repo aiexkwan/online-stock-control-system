@@ -5,12 +5,13 @@
 
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { CalendarIcon } from '@heroicons/react/24/outline';
 import { cn } from '@/lib/utils';
 import { format, startOfDay, endOfDay } from 'date-fns';
 import { type DateRange } from 'react-day-picker';
 import { Calendar } from '@/components/ui/calendar';
+import { createPortal } from 'react-dom';
 
 export interface TimeFrame {
   label: string;
@@ -35,6 +36,8 @@ export const UniversalTimeRangeSelector: React.FC<UniversalTimeRangeSelectorProp
     from: value.start,
     to: value.end
   });
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0 });
 
   // Update tempDateRange when value changes
   useEffect(() => {
@@ -43,6 +46,17 @@ export const UniversalTimeRangeSelector: React.FC<UniversalTimeRangeSelectorProp
       to: value.end
     });
   }, [value]);
+
+  // Update dropdown position when opening
+  useEffect(() => {
+    if (isOpen && buttonRef.current) {
+      const rect = buttonRef.current.getBoundingClientRect();
+      setDropdownPosition({
+        top: rect.bottom + window.scrollY + 8,
+        left: rect.right - 400 + window.scrollX // 400px is approximate width of calendar
+      });
+    }
+  }, [isOpen]);
 
   // Get display label
   const getDisplayLabel = () => {
@@ -86,6 +100,7 @@ export const UniversalTimeRangeSelector: React.FC<UniversalTimeRangeSelectorProp
   return (
     <div className={cn("relative", className)}>
       <button
+        ref={buttonRef}
         onClick={() => setIsOpen(!isOpen)}
         className={cn(
           "flex items-center gap-2 px-4 py-2",
@@ -100,21 +115,28 @@ export const UniversalTimeRangeSelector: React.FC<UniversalTimeRangeSelectorProp
         <span className="text-white flex-1 text-left">{getDisplayLabel()}</span>
       </button>
 
-      {isOpen && (
+      {isOpen && typeof window !== 'undefined' && createPortal(
         <>
           {/* Click outside to close */}
           <div 
-            className="fixed inset-0 z-10" 
+            className="fixed inset-0 z-[9998]" 
             onClick={handleCancel}
           />
           
           {/* Calendar dropdown */}
-          <div className={cn(
-            "absolute right-0 top-full mt-2 bg-slate-900/95",
-            "backdrop-blur-xl",
-            "border border-slate-700/50 rounded-xl shadow-2xl z-20",
-            "overflow-hidden p-4"
-          )}>
+          <div 
+            className={cn(
+              "fixed bg-slate-900/95",
+              "backdrop-blur-xl",
+              "border border-slate-700/50 rounded-xl shadow-2xl z-[9999]",
+              "p-4"
+            )}
+            style={{
+              top: `${dropdownPosition.top}px`,
+              left: `${dropdownPosition.left}px`,
+              width: '400px'
+            }}
+          >
             <div className="mb-3">
               <h3 className="text-sm font-medium text-white">Select Date Range</h3>
             </div>
@@ -169,7 +191,8 @@ export const UniversalTimeRangeSelector: React.FC<UniversalTimeRangeSelectorProp
               </button>
             </div>
           </div>
-        </>
+        </>,
+        document.body
       )}
     </div>
   );

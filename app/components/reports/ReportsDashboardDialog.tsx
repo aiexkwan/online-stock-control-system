@@ -38,7 +38,7 @@ import { UnifiedLoadingReportDialog } from '@/app/order-loading/components/Unifi
 // import { UnifiedStockTakeReportDialog } from '@/app/stock-take/components/UnifiedStockTakeReportDialog'; // Component not found
 import { UnifiedAcoReportDialog } from '@/app/components/reports/UnifiedAcoReportDialog';
 import { UnifiedGrnReportDialog } from '@/app/components/reports/UnifiedGrnReportDialog';
-import { UnifiedTransactionReportDialog } from '@/app/components/reports/UnifiedTransactionReportDialog';
+// Transaction Report now integrated directly into system page widget
 import { UnifiedExportAllDataDialog } from '@/app/components/reports/UnifiedExportAllDataDialog';
 
 interface ReportsDashboardDialogProps {
@@ -284,10 +284,7 @@ export function ReportsDashboardDialog({ isOpen, onClose }: ReportsDashboardDial
         onClose={() => closeReportDialog('grn-report')}
       />
       
-      <UnifiedTransactionReportDialog
-        isOpen={dialogStates['transaction-report'] || false}
-        onClose={() => closeReportDialog('transaction-report')}
-      />
+      {/* Transaction Report now integrated directly into system page widget */}
       
       <UnifiedExportAllDataDialog
         isOpen={dialogStates['export-all-data'] || false}

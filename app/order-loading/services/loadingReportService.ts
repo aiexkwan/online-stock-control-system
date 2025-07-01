@@ -1,6 +1,8 @@
+// 使用環境變數控制實現
+const USE_EXCELJS = process.env.USE_EXCELJS === 'true' || process.env.NODE_ENV === 'development';
+
 import { createClient } from '@/lib/supabase';
 import { jsPDF } from 'jspdf';
-import * as XLSX from 'xlsx';
 import { format } from 'date-fns';
 
 export interface LoadingRecord {
@@ -298,7 +300,16 @@ export function generateLoadingReportPDF(records: LoadingRecord[], filters: Load
   }
 }
 
-export function generateLoadingReportExcel(records: LoadingRecord[], filters: LoadingReportFilters): Blob {
+export async function generateLoadingReportExcel(records: LoadingRecord[], filters: LoadingReportFilters): Promise<Blob> {
+  if (USE_EXCELJS) {
+    const { generateLoadingReportExcel: newGenerateExcel } = await import('./loadingReportServiceNew');
+    return newGenerateExcel(records, filters);
+  }
+  return legacyGenerateLoadingReportExcel(records, filters);
+}
+
+function legacyGenerateLoadingReportExcel(records: LoadingRecord[], filters: LoadingReportFilters): Blob {
+  const XLSX = require('xlsx');
   try {
     const wb = XLSX.utils.book_new();
     

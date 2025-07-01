@@ -1,79 +1,110 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase';
-import * as XLSX from 'xlsx';
+import { buildTransactionReport } from '@/lib/exportReport';
+import { format } from 'date-fns';
+
+export interface TransactionReportData {
+  date_range: {
+    start_date: string;
+    end_date: string;
+  };
+  transfers: Array<{
+    from_location: string;
+    to_location: string;
+    product_code: string;
+    quantity: number;
+    operator_id: string;
+    operator_name: string;
+    transfer_date: string;
+    pallet_number: string;
+  }>;
+}
 
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createClient();
     
-    // 查詢交易記錄
-    const { data, error } = await supabase
+    // 獲取請求參數（如果有）
+    const body = await request.json().catch(() => ({}));
+    const { startDate, endDate } = body;
+    
+    // 查詢交易記錄，連同棧板資料
+    let query = supabase
       .from('record_transfer')
-      .select('*')
-      .order('transfer_time', { ascending: false });
+      .select(`
+        *,
+        record_palletinfo!plt_num (
+          product_code,
+          product_qty,
+          series,
+          plt_remark
+        ),
+        data_id!operator_id (
+          name,
+          department,
+          position
+        )
+      `)
+      .order('tran_date', { ascending: false })
+      .limit(1000); // 限制筆數避免過大
+    
+    // 如果有日期範圍，添加過濾
+    if (startDate) {
+      query = query.gte('tran_date', startDate);
+    }
+    if (endDate) {
+      query = query.lte('tran_date', endDate);
+    }
+
+    const { data, error } = await query;
 
     if (error) {
       throw error;
     }
 
-    // 創建 Excel 工作簿
-    const workbook = XLSX.utils.book_new();
-    
-    // 準備數據
-    const worksheetData = data?.map(transaction => ({
-      'Transaction ID': transaction.transfer_id,
-      'Pallet Number': transaction.plt_num,
-      'Product Code': transaction.product_code,
-      'Product Description': transaction.product_des,
-      'Quantity': transaction.qty,
-      'From Location': transaction.from_loc || '',
-      'To Location': transaction.to_loc || '',
-      'Transfer Time': transaction.transfer_time ? new Date(transaction.transfer_time).toLocaleString() : '',
-      'Transfer Type': transaction.transfer_type || 'Internal',
-      'Status': transaction.status || 'Completed',
-      'Transferred By': transaction.transferred_by || '',
-      'Reference': transaction.reference || '',
-      'Notes': transaction.notes || ''
-    })) || [];
+    if (!data || data.length === 0) {
+      throw new Error('No transaction data found');
+    }
 
-    // 創建工作表
-    const worksheet = XLSX.utils.json_to_sheet(worksheetData);
-    
-    // 設置列寬
-    const columnWidths = [
-      { wch: 15 }, // Transaction ID
-      { wch: 15 }, // Pallet Number
-      { wch: 15 }, // Product Code
-      { wch: 30 }, // Product Description
-      { wch: 10 }, // Quantity
-      { wch: 15 }, // From Location
-      { wch: 15 }, // To Location
-      { wch: 20 }, // Transfer Time
-      { wch: 15 }, // Transfer Type
-      { wch: 12 }, // Status
-      { wch: 15 }, // Transferred By
-      { wch: 15 }, // Reference
-      { wch: 30 }  // Notes
-    ];
-    worksheet['!cols'] = columnWidths;
+    // 轉換數據格式以符合 buildTransactionReport 的要求
+    const transfers = data.map(transaction => ({
+      from_location: transaction.f_loc || '',
+      to_location: transaction.t_loc || '',
+      product_code: transaction.record_palletinfo?.product_code || '',
+      quantity: transaction.record_palletinfo?.product_qty || 0,
+      operator_id: transaction.operator_id?.toString() || '',
+      operator_name: transaction.data_id?.name || `ID: ${transaction.operator_id}`,
+      transfer_date: transaction.tran_date ? format(new Date(transaction.tran_date), 'yyyy-MM-dd') : '',
+      pallet_number: transaction.plt_num || ''
+    }));
 
-    // 添加工作表到工作簿
-    XLSX.utils.book_append_sheet(workbook, worksheet, 'Transaction Report');
+    // 計算日期範圍
+    const dates = data.map(t => new Date(t.tran_date)).filter(d => !isNaN(d.getTime()));
+    const minDate = dates.length > 0 ? format(Math.min(...dates.map(d => d.getTime())), 'yyyy-MM-dd') : '';
+    const maxDate = dates.length > 0 ? format(Math.max(...dates.map(d => d.getTime())), 'yyyy-MM-dd') : '';
 
-    // 生成 Excel 文件
-    const buffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
+    const reportData: TransactionReportData = {
+      date_range: {
+        start_date: startDate || minDate,
+        end_date: endDate || maxDate
+      },
+      transfers
+    };
+
+    // 使用標準的 buildTransactionReport 函數生成報表
+    const buffer = await buildTransactionReport(reportData);
 
     // 返回文件
     return new NextResponse(buffer, {
       headers: {
         'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        'Content-Disposition': `attachment; filename="transaction-report-${new Date().toISOString().split('T')[0]}.xlsx"`
+        'Content-Disposition': `attachment; filename="product-movement-sheet-${new Date().toISOString().split('T')[0]}.xlsx"`
       }
     });
   } catch (error) {
     console.error('Error generating transaction report:', error);
     return NextResponse.json(
-      { error: 'Failed to generate report' },
+      { error: 'Failed to generate report', details: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     );
   }

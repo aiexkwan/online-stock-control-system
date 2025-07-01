@@ -1,8 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase';
-import * as XLSX from 'xlsx';
+
+// 使用環境變數控制實現
+const USE_EXCELJS = process.env.USE_EXCELJS === 'true' || process.env.NODE_ENV === 'development';
 
 export async function POST(request: NextRequest) {
+  if (USE_EXCELJS) {
+    // 使用新的 ExcelJS 實現
+    const { POST: newPOST } = await import('./route-new');
+    return newPOST(request);
+  }
+  
+  // 使用舊的 xlsx 實現
+  return legacyPOST(request);
+}
+
+async function legacyPOST(request: NextRequest) {
+  const { createClient } = await import('@/lib/supabase');
+  const XLSX = await import('xlsx');
   try {
     const supabase = await createClient();
     

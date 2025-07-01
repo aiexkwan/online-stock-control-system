@@ -201,13 +201,15 @@ export function NewAdminDashboard() {
         {/* Dashboard Content Area */}
         <div className="flex-1 pb-8">
           <div className="mx-auto max-w-[1920px] h-full px-4 sm:px-6 lg:px-8">
-            {/* 時間選擇器 */}
-            <div className="mb-6 flex items-center justify-end">
-              <UniversalTimeRangeSelector 
-                value={timeFrame}
-                onChange={setTimeFrame}
-              />
-            </div>
+            {/* 時間選擇器 - 除了 system 頁面 */}
+            {currentTheme !== 'system' && (
+              <div className="mb-6 flex items-center justify-end">
+                <UniversalTimeRangeSelector 
+                  value={timeFrame}
+                  onChange={setTimeFrame}
+                />
+              </div>
+            )}
 
             {/* 主內容區域 */}
             <div className={(currentTheme === 'injection' || currentTheme === 'pipeline' || currentTheme === 'warehouse') ? '' : 'h-full'} 

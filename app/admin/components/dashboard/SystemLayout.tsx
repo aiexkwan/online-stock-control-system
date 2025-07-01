@@ -19,69 +19,61 @@ export const SystemLayout: React.FC<SystemLayoutProps> = ({
   const containerStyle: React.CSSProperties = {
     display: 'grid',
     gridTemplateColumns: '1fr 1fr 1fr 1fr 1fr 1fr 1fr 1fr 1fr 1fr',
-    gridTemplateRows: '100px 100px 100px 100px 100px 100px 100px 100px',
+    gridTemplateRows: '150px 150px 150px 150px',
     gap: '10px 10px',
     gridAutoColumns: 'auto',
     justifyItems: 'stretch',
     width: '100%',
-    minHeight: '800px',
+    minHeight: '620px',
     padding: '20px'
   };
 
   // Widget positions matching exact CSS for system layout
   const widgetStyles = [
-    // Item 1 - Right sidebar widget
+    // Item 1 - Right sidebar widget (spans all 4 rows)
     { 
-      gridRow: '1 / 9', 
+      gridRow: '1 / 5', 
       gridColumn: '9 / 11',
       height: 'auto',
       width: 'auto'
     },
     // Item 2 - First row left
     { 
-      gridArea: '3 / 1 / 4 / 2',
       gridColumn: '1 / 4',
       gridRow: '1 / 2'
     },
     // Item 3 - Second row left
     { 
-      gridArea: '2 / 1 / 3 / 2',
       gridColumn: '1 / 4',
       gridRow: '2 / 3'
     },
     // Item 4 - Third row left
     { 
-      gridArea: '3 / 1 / 4 / 2',
       gridColumn: '1 / 4',
       gridRow: '3 / 4'
     },
     // Item 5 - First row right
     { 
-      gridArea: '1 / 5 / 2 / 6',
       gridRow: '1 / 2',
       gridColumn: '5 / 8'
     },
     // Item 6 - Second row right
     { 
-      gridArea: '2 / 5 / 3 / 6',
       gridRow: '2 / 3',
       gridColumn: '5 / 8'
     },
     // Item 7 - Third row right
     { 
-      gridArea: '3 / 5 / 4 / 6',
       gridRow: '3 / 4',
       gridColumn: '5 / 8'
     },
     // Item 8 - Fourth row left
     { 
-      gridArea: '4 / 1 / 5 / 2',
       gridColumn: '1 / 4',
       gridRow: '4 / 5'
     },
     // Item 9 - Fourth row right
     { 
-      gridArea: '4 / 5 / 5 / 6',
       gridRow: '4 / 5',
       gridColumn: '5 / 8'
     }
@@ -115,9 +107,10 @@ export const SystemLayout: React.FC<SystemLayoutProps> = ({
               border: '1px solid rgba(255, 255, 255, 0.05)',
               borderRadius: '16px',
               boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.15), inset 0 0 0 1px rgba(255, 255, 255, 0.05)',
-              overflow: 'hidden',
+              overflow: 'visible',
               position: 'relative' as const,
-              transition: 'all 0.3s ease'
+              transition: 'all 0.3s ease',
+              zIndex: 1
             }}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -145,7 +138,7 @@ export const SystemLayout: React.FC<SystemLayoutProps> = ({
                 zIndex: 0
               }}
             />
-            <div style={{ position: 'relative', zIndex: 1, height: '100%', width: '100%' }}>
+            <div style={{ position: 'relative', zIndex: 1, height: '100%', width: '100%', overflow: 'visible' }}>
               {child}
             </div>
           </motion.div>

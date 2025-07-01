@@ -10,7 +10,7 @@ import { UnifiedVoidReportDialog } from '@/app/void-pallet/components/UnifiedVoi
 import { UnifiedLoadingReportDialog } from '@/app/order-loading/components/UnifiedLoadingReportDialog';
 import { UnifiedAcoReportDialog } from '@/app/components/reports/UnifiedAcoReportDialog';
 import { UnifiedGrnReportDialog } from '@/app/components/reports/UnifiedGrnReportDialog';
-import { UnifiedTransactionReportDialog } from '@/app/components/reports/UnifiedTransactionReportDialog';
+// Transaction Report now integrated directly into system page widget
 import { UnifiedExportAllDataDialog } from '@/app/components/reports/UnifiedExportAllDataDialog';
 
 interface ReportDialogState {
@@ -18,7 +18,7 @@ interface ReportDialogState {
   orderLoadingReport: boolean;
   stockTakeReport: boolean;
   acoOrderReport: boolean;
-  transactionReport: boolean;
+  // transactionReport: boolean; // Now integrated into system page
   grnReport: boolean;
   exportAllData: boolean;
 }
@@ -29,7 +29,7 @@ export function GlobalReportDialogs() {
     orderLoadingReport: false,
     stockTakeReport: false,
     acoOrderReport: false,
-    transactionReport: false,
+    // transactionReport: false, // Now integrated into system page
     grnReport: false,
     exportAllData: false,
   });
@@ -52,9 +52,10 @@ export function GlobalReportDialogs() {
       setDialogStates(prev => ({ ...prev, acoOrderReport: true }));
     };
 
-    const handleOpenTransactionReport = () => {
-      setDialogStates(prev => ({ ...prev, transactionReport: true }));
-    };
+    // Transaction Report now integrated into system page
+    // const handleOpenTransactionReport = () => {
+    //   setDialogStates(prev => ({ ...prev, transactionReport: true }));
+    // };
 
     const handleOpenGrnReport = () => {
       setDialogStates(prev => ({ ...prev, grnReport: true }));
@@ -69,7 +70,7 @@ export function GlobalReportDialogs() {
     window.addEventListener('openOrderLoadingReport', handleOpenOrderLoadingReport);
     window.addEventListener('openStockTakeReport', handleOpenStockTakeReport);
     window.addEventListener('openAcoOrderReport', handleOpenAcoOrderReport);
-    window.addEventListener('openTransactionReport', handleOpenTransactionReport);
+    // window.addEventListener('openTransactionReport', handleOpenTransactionReport);
     window.addEventListener('openGrnReport', handleOpenGrnReport);
     window.addEventListener('openExportAllData', handleOpenExportAllData);
 
@@ -79,7 +80,7 @@ export function GlobalReportDialogs() {
       window.removeEventListener('openOrderLoadingReport', handleOpenOrderLoadingReport);
       window.removeEventListener('openStockTakeReport', handleOpenStockTakeReport);
       window.removeEventListener('openAcoOrderReport', handleOpenAcoOrderReport);
-      window.removeEventListener('openTransactionReport', handleOpenTransactionReport);
+      // window.removeEventListener('openTransactionReport', handleOpenTransactionReport);
       window.removeEventListener('openGrnReport', handleOpenGrnReport);
       window.removeEventListener('openExportAllData', handleOpenExportAllData);
     };
@@ -107,10 +108,7 @@ export function GlobalReportDialogs() {
         onClose={() => closeDialog('acoOrderReport')}
       />
       
-      <UnifiedTransactionReportDialog
-        isOpen={dialogStates.transactionReport}
-        onClose={() => closeDialog('transactionReport')}
-      />
+      {/* Transaction Report now integrated directly into system page widget */}
       
       <UnifiedGrnReportDialog
         isOpen={dialogStates.grnReport}

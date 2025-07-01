@@ -120,6 +120,11 @@ export const LazyComponents: Record<string, React.ComponentType<any>> = {
   'ReprintLabelWidget': createLazyWidget(
     () => import('./widgets/ReprintLabelWidget').then(m => ({ default: m.ReprintLabelWidget }))
   ),
+  
+  // Transaction Report widget (named export)
+  'TransactionReportWidget': createLazyWidget(
+    () => import('./widgets/TransactionReportWidget').then(m => ({ default: m.TransactionReportWidget }))
+  ),
 };
 
 // Helper to check if widget should be lazy loaded

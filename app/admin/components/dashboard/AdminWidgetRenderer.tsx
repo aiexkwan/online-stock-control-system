@@ -206,6 +206,7 @@ const UploadOrdersWidget = React.lazy(() => import('./widgets/UploadOrdersWidget
 const UploadProductSpecWidget = React.lazy(() => import('./widgets/UploadProductSpecWidget').then(mod => ({ default: mod.UploadProductSpecWidget })));
 const UploadPhotoWidget = React.lazy(() => import('./widgets/UploadPhotoWidget').then(mod => ({ default: mod.UploadPhotoWidget })));
 const ReportGeneratorWidget = React.lazy(() => import('./widgets/ReportGeneratorWidget').then(mod => ({ default: mod.ReportGeneratorWidget })));
+const TransactionReportWidget = React.lazy(() => import('./widgets/TransactionReportWidget').then(mod => ({ default: mod.TransactionReportWidget })));
 const ReportGeneratorWithDialogWidget = React.lazy(() => import('./widgets/ReportGeneratorWithDialogWidget').then(mod => ({ default: mod.ReportGeneratorWithDialogWidget })));
 const AvailableSoonWidget = React.lazy(() => import('./widgets/AvailableSoonWidget'));
 const ReportsWidget = React.lazy(() => import('./widgets/ReportsWidget').then(mod => ({ default: mod.ReportsWidget })));
@@ -1822,6 +1823,17 @@ export const AdminWidgetRenderer: React.FC<AdminWidgetRendererProps> = ({
         return (
           <Suspense fallback={<div className="h-full w-full animate-pulse bg-slate-800/50" />}>
             <ReportGeneratorWidget 
+              title={config.title}
+              reportType={config.reportType || ''}
+              description={config.description}
+              apiEndpoint={config.apiEndpoint}
+            />
+          </Suspense>
+        );
+      case 'transaction-report':
+        return (
+          <Suspense fallback={<div className="h-full w-full animate-pulse bg-slate-800/50" />}>
+            <TransactionReportWidget 
               title={config.title}
               reportType={config.reportType || ''}
               description={config.description}

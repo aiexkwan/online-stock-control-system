@@ -685,16 +685,14 @@ export async function buildTransactionReport(reportData?: TransactionReportData)
     const groupedTransfers = new Map<string, number>();
     
     reportData.transfers.forEach((transfer) => {
-      // 🆕 處理 f_loc 為 "Await" 的特殊條件
+      // 🆕 處理 f_loc 為 "Await" 或 "await_grn" 的特殊條件
       let actualFromLocation = transfer.from_location;
-      if (transfer.from_location === 'Await') {
-        // 如果產品代碼第一個字是 "Z"，則視為 "Fold Mill"
-        if (transfer.product_code && transfer.product_code.charAt(0).toUpperCase() === 'Z') {
-          actualFromLocation = 'Fold Mill';
-        } else {
-          // 否則視為 "Production"
-          actualFromLocation = 'Production';
-        }
+      if (transfer.from_location.toLowerCase() === 'await') {
+        actualFromLocation = 'Production';
+      } else if (transfer.from_location.toLowerCase() === 'await_grn') {
+        actualFromLocation = 'Fold Mill';
+      } else if (transfer.from_location.toLowerCase() === 'pipeline') {
+        actualFromLocation = 'Pipe Extrusion';
       }
       
       const key = `${transfer.product_code}|${transfer.operator_name}|${actualFromLocation}|${transfer.to_location}`;
@@ -705,16 +703,14 @@ export async function buildTransactionReport(reportData?: TransactionReportData)
     const uniqueTransfers = new Map<string, any>();
     
     reportData.transfers.forEach((transfer) => {
-      // 🆕 處理 f_loc 為 "Await" 的特殊條件
+      // 🆕 處理 f_loc 為 "Await" 或 "await_grn" 的特殊條件
       let actualFromLocation = transfer.from_location;
-      if (transfer.from_location === 'Await') {
-        // 如果產品代碼第一個字是 "Z"，則視為 "Fold Mill"
-        if (transfer.product_code && transfer.product_code.charAt(0).toUpperCase() === 'Z') {
-          actualFromLocation = 'Fold Mill';
-        } else {
-          // 否則視為 "Production"
-          actualFromLocation = 'Production';
-        }
+      if (transfer.from_location.toLowerCase() === 'await') {
+        actualFromLocation = 'Production';
+      } else if (transfer.from_location.toLowerCase() === 'await_grn') {
+        actualFromLocation = 'Fold Mill';
+      } else if (transfer.from_location.toLowerCase() === 'pipeline') {
+        actualFromLocation = 'Pipe Extrusion';
       }
       
       const key = `${transfer.product_code}|${transfer.operator_name}|${actualFromLocation}|${transfer.to_location}`;
@@ -741,7 +737,13 @@ export async function buildTransactionReport(reportData?: TransactionReportData)
       }
 
       // 根據 to_location 在 N-X 欄位標記（綠色 ✓）
-      const toIndex = locations.indexOf(transfer.to_location);
+      // 處理 PipeLine -> Pipe Extrusion 的映射
+      let actualToLocation = transfer.to_location;
+      if (transfer.to_location.toLowerCase() === 'pipeline') {
+        actualToLocation = 'Pipe Extrusion';
+      }
+      
+      const toIndex = locations.indexOf(actualToLocation);
       if (toIndex >= 0) {
         const toCol = 14 + toIndex * 2; // N, P, R, T, V, X
         row.getCell(toCol).value = '✓';

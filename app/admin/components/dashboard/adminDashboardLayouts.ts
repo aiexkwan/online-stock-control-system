@@ -460,10 +460,10 @@ export const adminDashboardLayouts: Record<string, AdminDashboardLayout> = {
         referenceField: 'order_ref'
       },
       {
-        type: 'report-generator',
+        type: 'transaction-report',
         title: 'Transaction Report',
         gridArea: 'widget6',
-        component: 'ReportGeneratorWidget',
+        component: 'TransactionReportWidget',
         reportType: 'transaction',
         description: 'Stock Transfer Report',
         apiEndpoint: '/api/reports/transaction'
