@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { StatusMessage } from '../../components/ui/universal-stock-movement-layout';
-import { useStockMovement } from '../hooks/useStockMovement';
+import { useStockMovementRPC } from '../hooks/useStockMovementRPC';
 
 // 導入拆分的組件
 import { PageHeader } from './components/PageHeader';
@@ -11,7 +11,7 @@ import { TransferLogSection } from './components/TransferLogSection';
 import { PageFooter } from './components/PageFooter';
 import { SkipNavigation } from './components/SkipNavigation';
 import { KeyboardShortcutsDialog } from './components/KeyboardShortcutsDialog';
-import { TransferConfirmDialog, TRANSFER_CODE_MAPPING } from './components/TransferConfirmDialog';
+import { TransferConfirmDialog } from './components/TransferConfirmDialogNew';
 
 // 導入鍵盤快捷鍵 Hook
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
@@ -34,7 +34,7 @@ export default function StockTransferPage() {
     addActivityLog,
     preloadPallets,
     getCacheStats
-  } = useStockMovement({
+  } = useStockMovementRPC({
     enableCache: true,
     cacheOptions: {
       ttl: 5 * 60 * 1000, // 5分鐘快取
@@ -53,7 +53,6 @@ export default function StockTransferPage() {
   const [pendingTransferData, setPendingTransferData] = useState<{
     palletInfo: PalletInfo;
     targetLocation: string;
-    transferCode?: string;
   } | null>(null);
   const [showShortcutsDialog, setShowShortcutsDialog] = useState(false);
 
@@ -107,35 +106,6 @@ export default function StockTransferPage() {
     };
   }, [optimisticTransfers]);
 
-  // 根據轉移代號計算目標位置
-  const calculateTargetLocationByCode = useCallback((currentLocation: string, transferCode: string): { location: string | null; error?: string } => {
-    // 檢查是否為 Voided 位置
-    if (currentLocation === 'Voided') {
-      return { 
-        location: null, 
-        error: 'Pallet is voided, cannot be moved' 
-      };
-    }
-
-    // 根據當前位置和轉移代號查找目標位置
-    const locationMappings = TRANSFER_CODE_MAPPING[currentLocation];
-    if (!locationMappings) {
-      return {
-        location: null,
-        error: `No transfer codes defined for location: ${currentLocation}`
-      };
-    }
-
-    const targetLocation = locationMappings[transferCode];
-    if (!targetLocation) {
-      return {
-        location: null,
-        error: `Invalid transfer code "${transferCode}" for location: ${currentLocation}`
-      };
-    }
-
-    return { location: targetLocation };
-  }, []);
 
   // Handle search selection - Optimized for speed
   const handleSearchSelect = useCallback(async (result: any) => {
@@ -191,21 +161,10 @@ export default function StockTransferPage() {
     }
   }, [searchPalletInfo, optimisticTransfers]);
 
-  // 處理轉移確認（包含轉移代號和員工ID）
-  const handleTransferConfirm = async (transferCode: string, clockNumber: string) => {
+  // 處理轉移確認（包含目標位置和員工ID）
+  const handleTransferConfirm = async (targetLocation: string, clockNumber: string) => {
     if (!pendingTransferData) return;
     
-    const currentLocation = pendingTransferData.palletInfo.current_plt_loc || 'Await';
-    const targetResult = calculateTargetLocationByCode(currentLocation, transferCode);
-    
-    if (!targetResult.location) {
-      setStatusMessage({
-        type: 'error',
-        message: `❌ ${targetResult.error}`
-      });
-      return;
-    }
-
     const { palletInfo } = pendingTransferData;
     setShowTransferDialog(false);
     
@@ -214,14 +173,14 @@ export default function StockTransferPage() {
       palletInfo.product_code,
       palletInfo.product_qty,
       palletInfo.current_plt_loc || 'Await',
-      targetResult.location,
+      targetLocation,
       clockNumber  // 傳遞 clock number
     );
 
     if (success) {
       setStatusMessage({
         type: 'success',
-        message: `✓ Pallet ${palletInfo.plt_num} successfully moved to ${targetResult.location}`
+        message: `✓ Pallet ${palletInfo.plt_num} successfully moved to ${targetLocation}`
       });
       // Reset for next operation
       setSearchValue('');
@@ -231,7 +190,7 @@ export default function StockTransferPage() {
       // 🚀 新增：設置錯誤狀態消息，觸發黑色背景紅色字體閃爍效果
       setStatusMessage({
         type: 'error',
-        message: `❌ TRANSFER FAILED: Pallet ${palletInfo.plt_num} could not be moved to ${targetResult.location}`
+        message: `❌ TRANSFER FAILED: Pallet ${palletInfo.plt_num} could not be moved to ${targetLocation}`
       });
     }
     

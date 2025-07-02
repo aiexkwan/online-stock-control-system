@@ -1,319 +1,289 @@
-# GRN標籤列印系統
+# GRN 標籤列印系統文檔
 
 ## 概述
 
-GRN（Goods Received Note）標籤列印系統係用嚟記錄同管理收貨資訊嘅核心功能模組。系統整合咗用戶認證、供應商驗證、重量計算、資料庫記錄同PDF生成功能，為每批來貨嘅每個棧板產生專業嘅收貨標籤。
+GRN（Goods Received Note）標籤列印系統係 NewPennine 倉庫管理系統嘅核心功能之一，負責處理收貨記錄同生成標準化嘅收貨標籤。系統採用最新嘅 React 技術棧，整合咗即時驗證、批量處理、事務管理同 PDF 生成功能。
 
 ## 系統架構
 
-### 主要頁面
-- `/print-grnlabel`: GRN標籤列印主頁面
+### 技術棧
+- **前端**: Next.js 14 (App Router), TypeScript, Tailwind CSS
+- **UI 框架**: shadcn/ui, Framer Motion
+- **狀態管理**: useReducer + Context Pattern
+- **後端**: Supabase (PostgreSQL + RPC Functions)
+- **PDF 生成**: @react-pdf/renderer
+- **日誌系統**: Pino Logger
 
-### 核心組件結構
+### 主要文件結構
+```
+/app/print-grnlabel/
+├── page.tsx                    # 主頁面入口
+├── components/
+│   ├── GrnLabelFormV2.tsx     # 核心表單組件
+│   ├── GrnDetailCard.tsx      # GRN 詳情顯示卡片
+│   └── WeightInputList.tsx    # 重量輸入列表組件
+├── hooks/
+│   ├── useGrnFormReducer.tsx  # 表單狀態管理
+│   ├── useGrnLabelBusinessV2.tsx # 業務邏輯處理
+│   └── useWeightCalculation.ts # 重量計算邏輯
+├── services/
+│   └── ErrorHandler.ts        # 錯誤處理服務
+└── constants/
+    └── grnConstants.ts        # 常數定義
+```
 
-#### 主要組件
-- `app/print-grnlabel/page.tsx`: 主頁面提供標題同佈局
-- `app/print-grnlabel/components/GrnLabelFormV2.tsx`: 核心表單組件處理所有GRN邏輯
+## 核心功能
 
-#### 業務邏輯Hooks
-- `app/print-grnlabel/hooks/useGrnLabelBusinessV2.ts`: 主要業務邏輯處理列印請求
-- `app/print-grnlabel/hooks/useSupplierValidation.ts`: 供應商代碼驗證
-- `app/print-grnlabel/hooks/useWeightCalculation.ts`: 重量計算邏輯
-- `app/print-grnlabel/hooks/usePalletGenerationGrn.ts`: 棧板號碼同系列生成
+### 1. 統一 RPC 批量處理 ⚡
+系統採用統一嘅 RPC 調用機制，通過單一事務處理所有數據操作：
 
-#### 服務同動作
-- `app/actions/grnActions.ts`: 處理所有GRN相關嘅資料庫操作
-- `app/services/generateUniqueSeriesService.ts`: 生成唯一系列號碼
-- `app/services/pdfGrnService.ts`: GRN標籤PDF生成
+```typescript
+// 統一 RPC 函數：process_grn_label_unified
+- 生成棧板號碼同系列號
+- 創建 record_palletinfo 記錄
+- 創建 record_grn 記錄
+- 創建 record_history 記錄
+- 創建 record_inventory 記錄
+- 更新 daily_pallet_sequence
+```
 
-## 數據流向
+### 2. 表單狀態管理
+使用 `useReducer` 模式管理複雜表單狀態：
 
-### 資料庫表
-- `record_palletinfo`: 棧板基本資訊（棧板號、系列號、產品代碼、數量）
-- `record_grn`: GRN詳細記錄（GRN參考、物料代碼、供應商、重量、計數）
-- `record_history`: 操作歷史追蹤
-- `record_inventory`: 庫存位置更新
-- `data_supplier`: 供應商資料驗證
-- `data_code`: 產品代碼驗證
-- `daily_pallet_sequence`: 每日棧板序列追蹤
+```typescript
+interface GrnFormState {
+  formData: {
+    grnNumber: string;
+    materialSupplier: string;
+    productCode: string;
+  };
+  productInfo: ProductInfo | null;
+  labelMode: 'single' | 'multiple';
+  containerSettings: {
+    palletType: PalletTypeKey;
+    packageType: PackageTypeKey;
+  };
+  weights: WeightEntry[];
+  uiState: {
+    isProcessing: boolean;
+    showInstructions: boolean;
+    activeField: string | null;
+  };
+  progress: ProgressInfo;
+}
+```
 
-### 重量計算系統
+### 3. 重量計算系統 📊
 
-#### 棧板類型重量 📏 最新重量標準
-- White Dry: 14kg（實際使用值）
-- White Wet: 18kg（已更新）
-- Chep Dry: 26kg（已更新）
+#### 最新重量標準（2025年1月）
+**棧板重量**:
+- White Dry: 14kg
+- White Wet: 18kg
+- Chep Dry: 26kg
 - Chep Wet: 38kg
-- Euro: 22kg（已更新）
+- Euro: 22kg
 - Not Included: 0kg
 
-#### 包裝類型重量 📦 最新包裝重量
+**包裝重量**:
 - Still: 50kg
 - Bag: 1kg
 - Tote: 10kg
-- Octo: 20kg（已更新）
+- Octo: 20kg
 - Not Included: 0kg
 
-#### 計算公式 🧮 已實現同驗證
+**計算公式**:
 ```typescript
-// 來自 app/constants/grnConstants.ts 
-export const calculateNetWeight = (
-  grossWeight: number,
-  palletType: PalletTypeKey,
-  packageType: PackageTypeKey
-): number => {
-  const palletWeight = PALLET_WEIGHTS[palletType] || 0;
-  const packageWeight = PACKAGE_WEIGHTS[packageType] || 0;
-  return Math.max(0, grossWeight - palletWeight - packageWeight);
-};
-
-// 實際公式：淨重 = max(0, 毛重 - 棧板重量 - 包裝重量)
+淨重 = Math.max(0, 毛重 - 棧板重量 - 包裝重量)
 ```
+
+### 4. 錯誤處理機制
+系統實現咗全面嘅錯誤處理同回滾機制：
+
+```typescript
+// 事務日誌記錄
+transaction_log 表：
+- transaction_id: 唯一事務 ID
+- source_module: 'GRN'
+- operation: 'CREATE_GRN_LABELS'
+- status: pending | completed | failed | rolled_back
+- rollback_data: JSONB 格式嘅回滾數據
+
+// 回滾功能
+- 刪除已創建嘅棧板記錄
+- 回收已使用嘅棧板號碼
+- 清理所有相關記錄
+```
+
+### 5. PDF 生成同列印
+系統為每個棧板生成標準化嘅 GRN 標籤：
+
+**標籤內容**:
+- Pennine 公司標誌
+- QR Code（包含棧板資訊）
+- 產品代碼同描述
+- 數量同重量資訊
+- GRN 號碼同供應商
+- 棧板號碼同系列號
+- 操作員同日期
 
 ## 工作流程
 
-### 1. 用戶認證
-- 自動獲取登入用戶嘅clock number
-- 設置操作員身份資訊
+### 1. 用戶認證同初始化
+```mermaid
+graph LR
+    A[用戶訪問頁面] --> B[自動獲取 Clock Number]
+    B --> C[初始化表單狀態]
+    C --> D[載入緩存數據]
+```
 
-### 2. 表單填寫
+### 2. 表單填寫同驗證
+```mermaid
+graph TD
+    A[輸入 GRN 號碼] --> B[輸入供應商代碼]
+    B --> C{即時驗證}
+    C -->|有效| D[輸入產品代碼]
+    C -->|無效| E[顯示錯誤提示]
+    D --> F{產品驗證}
+    F -->|有效| G[選擇容器類型]
+    F -->|無效| H[顯示錯誤提示]
+    G --> I[輸入重量數據]
+```
 
-#### GRN詳情
-- GRN號碼（必填）
-- 供應商代碼（必填，即時驗證）
-- 物料代碼（必填，即時驗證）
+### 3. 數據處理流程
+```mermaid
+graph TD
+    A[點擊列印按鈕] --> B[Clock Number 確認]
+    B --> C[開始事務]
+    C --> D[調用統一 RPC]
+    D --> E{處理成功?}
+    E -->|是| F[生成 PDF]
+    E -->|否| G[執行回滾]
+    F --> H[觸發列印]
+    G --> I[顯示錯誤]
+```
 
-#### 容器選擇
-- 棧板類型選擇
-- 包裝類型選擇
+## 數據庫架構
 
-#### 重量輸入
-- 支援最多22個棧板
-- 每個棧板輸入毛重
-- 系統自動計算淨重
-- 動態添加/刪除重量條目
+### 主要數據表
+1. **record_palletinfo** - 棧板基本資訊
+2. **record_grn** - GRN 詳細記錄
+3. **record_history** - 操作歷史
+4. **record_inventory** - 庫存位置
+5. **transaction_log** - 事務日誌
+6. **daily_pallet_sequence** - 每日序列管理
 
-### 3. 即時驗證
-- 供應商代碼查詢`data_supplier`表
-- 產品代碼查詢`data_code`表
-- 表單完整性檢查
-- 重量格式驗證
-
-### 4. Clock號碼確認
-- 點擊"列印GRN標籤"按鈕
-- 彈出確認對話框
-- 驗證操作員clock號碼
-
-### 5. 數據處理
-
-#### 棧板號碼生成
-- 使用原子RPC函數`generate_atomic_pallet_numbers_v5`
-- 格式：`DDMMYY/XX`（日期+序列號）
-- 確保每日序列唯一性
-
-#### 系列號碼生成
-- 調用`generateMultipleUniqueSeries`
-- 每個棧板獲得唯一系列號碼
-
-#### 資料庫事務
-- 使用`createGrnDatabaseEntriesWithTransaction`進行原子操作
-- 插入記錄到多個表
-- 確保數據一致性
-
-### 6. PDF生成
-- 為每個棧板生成GRN標籤PDF
-- 包含：
-  - Pennine標誌
-  - QR碼（系列或產品代碼）
-  - 產品資訊
-  - 重量/數量詳情
-  - GRN號碼同供應商名稱
-  - 日期同操作員資訊
-  - 棧板號碼
-- 上傳到Supabase Storage `pallet-label-pdf` bucket
-
-### 7. 列印執行
-- 收集所有生成嘅PDF
-- 合併多個PDF文件
-- 觸發瀏覽器列印對話框
-- 成功後重置表單
-
-## 技術實現
-
-### 前端技術
-- React配合TypeScript
-- 橙色主題UI設計
-- 玻璃擬態效果
-- 響應式佈局
-- Framer Motion動畫
-
-### 狀態管理
-- React Hook Form用於表單管理
-- 自定義hooks用於業務邏輯
-- 樂觀UI更新
-- 錯誤邊界保護
-
-### 後端整合
-- Supabase用於資料庫同存儲
-- 原子RPC函數用於關鍵操作
-- 即時數據驗證
-- Service role用於繞過RLS
-
-### UI設計特色
-- 深藍背景配橙色強調色
-- 工業設計風格
-- 動態背景元素
-- 現代卡片設計
-- 流暢過渡動畫
-
-## 介面佈局
-
-### 左側主區域
-- GRN詳細資訊輸入
-- 容器類型選擇
-- 表單驗證同提交
-
-### 右側固定區域
-- 重量摘要顯示
-- 單行棧板重量輸入
-- 即時淨重計算
-- 緊湊設計優化空間
-
-### 互動元素
-- 橙色聚焦效果
-- 漸變按鈕設計
-- 懸停動畫
-- 可收合說明部分
-
-## API端點同函數
-
-### RPC函數
-- `generate_atomic_pallet_numbers_v5`: 原子棧板號碼生成
-- `execute_sql_query`: SQL查詢執行
-
-### Server Actions
-- `createGrnDatabaseEntriesWithTransaction`: 創建GRN記錄
-- `uploadPdfToStorage`: PDF上傳到存儲
-
-### 驗證服務
-- 供應商代碼驗證
-- 產品代碼驗證
-- Clock號碼驗證
-
-## 錯誤處理
-
-### 驗證錯誤
-- 無效供應商代碼警告
-- 無效產品代碼警告
-- 重量格式錯誤
-- 缺少必填欄位
-
-### 資料庫錯誤
-- 事務回滾機制
-- 重複記錄檢測
-- 連接失敗處理
-- 詳細錯誤日誌
-
-### PDF生成錯誤
-- 生成失敗重試
-- 上傳錯誤處理
-- 列印服務異常
-- 用戶友好消息
+### RPC 函數
+- `process_grn_label_unified` - 統一處理函數
+- `rollback_transaction` - 事務回滾函數
+- `generate_pallet_numbers_batch_v7` - 批量號碼生成
 
 ## 性能優化
 
-### 前端優化
-- 表單狀態記憶化
-- 防抖輸入驗證
-- 虛擬化長列表
-- 懶加載組件
+### 1. 批量處理
+- 使用單一 RPC 調用處理多個棧板
+- 減少網絡往返次數
+- 提高處理效率
 
-### 後端優化
-- 批量資料庫操作
-- 連接池管理
-- 查詢結果緩存
-- PDF生成流式處理
+### 2. 緩存策略
+- 供應商資料緩存 5 分鐘
+- 產品資訊緩存 5 分鐘
+- 表單數據自動保存
 
-### 緩存策略
-- 供應商數據緩存
-- 產品資訊緩存
-- 表單數據持久化
-- PDF模板緩存
+### 3. 樂觀更新
+- UI 即時響應用戶操作
+- 背景處理數據同步
+- 失敗時自動回滾
 
-## 安全考慮
+## 安全措施
 
-### 認證同授權
-- 基於會話嘅認證
-- Clock號碼驗證
-- 角色基礎訪問
-- 操作審計跟蹤
+### 1. 身份驗證
+- Clock Number 雙重確認
+- 基於角色嘅訪問控制
+- 操作審計記錄
 
-### 數據驗證
-- 客戶端同服務器端驗證
-- SQL注入預防
-- XSS保護
-- CSRF令牌
+### 2. 數據驗證
+- 前端即時驗證
+- 後端二次驗證
+- SQL 注入防護
 
-### 存儲安全
-- 安全PDF上傳
-- 訪問控制列表
-- 加密傳輸
-- 定期安全審計
+### 3. 事務完整性
+- ACID 事務保證
+- 自動回滾機制
+- 數據一致性檢查
 
-## 監控同日誌
+## 監控同維護
 
-### 操作日誌
-- 每個GRN創建記錄
-- 用戶操作追蹤
-- 錯誤事件記錄
-- 性能指標
+### 1. 日誌系統
+```typescript
+// 使用 Pino Logger
+- API 請求日誌
+- 錯誤追蹤
+- 性能監控
+- 用戶操作記錄
+```
 
-### 系統監控
-- 資料庫性能
-- PDF生成時間
-- API響應時間
-- 存儲使用情況
+### 2. 錯誤追蹤
+- GrnErrorStats 組件（開發模式）
+- 實時錯誤統計
+- 詳細錯誤堆疊
 
-## 維護同故障排除
-
-### 常見問題
-1. **重複棧板號碼**
-   - 檢查`daily_pallet_sequence`表
-   - 驗證RPC函數操作
-   - 清除Next.js緩存
-
-2. **PDF生成失敗**
-   - 檢查存儲權限
-   - 驗證PDF模板
-   - 查看錯誤日誌
-
-3. **供應商驗證失敗**
-   - 確認供應商代碼存在
-   - 檢查資料庫連接
-   - 驗證查詢權限
-
-### 維護任務
-- 定期清理舊PDF文件
-- 更新供應商資料庫
-- 優化資料庫索引
+### 3. 維護建議
+- 定期清理舊 PDF 文件
+- 監控棧板序列使用情況
+- 優化數據庫索引
 - 備份關鍵數據
 
-## 未來改進
+## 常見問題處理
 
-### 計劃功能
-- 批量GRN導入
-- 條碼掃描整合
-- 移動應用支援
-- 高級報表功能
+### 1. 重複棧板號碼
+**原因**: 並發請求或緩存問題
+**解決**: 
+- 使用原子性 RPC 函數
+- 清除 Next.js 緩存
+- 檢查 daily_pallet_sequence 表
 
-### 技術升級
-- WebSocket即時更新
-- 離線模式支援
-- 改進緩存策略
-- 微服務架構
+### 2. PDF 生成失敗
+**原因**: 存儲權限或模板錯誤
+**解決**:
+- 檢查 Supabase Storage 權限
+- 驗證 PDF 模板完整性
+- 查看瀏覽器控制台錯誤
 
-### 用戶體驗
-- 鍵盤快捷鍵
-- 自動保存草稿
-- 多語言支援
-- 改進無障礙功能
+### 3. 統一 RPC 失敗
+**原因**: 網絡問題或數據驗證失敗
+**解決**:
+- 系統會自動 fallback 到逐個處理模式
+- 檢查網絡連接
+- 查看詳細錯誤日誌
+
+## 未來改進計劃
+
+### 短期目標
+- [ ] 完全移除 legacy 代碼
+- [ ] 優化 console.log 使用
+- [ ] 實現實時日誌查看器
+- [ ] 添加批量導入功能
+
+### 長期目標
+- [ ] WebSocket 實時更新
+- [ ] 離線模式支援
+- [ ] 移動應用整合
+- [ ] AI 輔助數據驗證
+
+## 版本歷史
+
+### V2.0 (2025年7月)
+- 實現統一 RPC 批量處理
+- 添加完整事務管理
+- 優化錯誤處理機制
+- 更新重量計算標準
+
+### V1.0 (2024年)
+- 初始版本發布
+- 基本 GRN 功能
+- PDF 生成同列印
+
+---
+
+*最後更新: 2025年7月*
+*維護者: NewPennine Development Team*

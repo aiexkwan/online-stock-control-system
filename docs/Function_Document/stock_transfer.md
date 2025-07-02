@@ -1,8 +1,8 @@
-# 庫存轉移系統
+# 庫存轉移系統 v2.0
 
 ## 概述
 
-庫存轉移系統係用嚟管理棧板喺唔同倉儲位置之間移動嘅核心功能。系統為倉庫員工提供快速、準確嘅棧板轉移操作，支援通過搜尋棧板號或系列號嚟轉移棧板，並使用預定義嘅轉移代碼確定目標位置。
+庫存轉移系統係用嚟管理棧板喺唔同倉儲位置之間移動嘅核心功能。系統已升級為 RPC 架構，提供原子性事務保證，並引入視覺化目標選擇界面，大幅提升用戶體驗同系統可靠性。
 
 ## 系統架構
 
@@ -11,272 +11,312 @@
 
 ### 核心組件結構
 
-#### 主頁面組件
-- `app/stock-transfer/page.tsx`: 庫存轉移頁面提供搜尋同轉移功能
-- `app/stock-transfer/StockTransferClient.tsx`: 客戶端組件處理所有轉移邏輯
+#### 前端組件
+- `app/stock-transfer/page.tsx`: 主頁面組件
+- `app/hooks/useStockMovementRPC.tsx`: RPC 實現嘅 Hook
+- `app/stock-transfer/components/`:
+  - `TransferConfirmDialogNew.tsx`: 新設計嘅轉移確認對話框
+  - `TransferDestinationSelector.tsx`: 視覺化目標選擇器
+  - `PalletSearchSection.tsx`: 棧板搜尋介面
+  - `TransferLogSection.tsx`: 活動日誌顯示
 
-#### UI組件
-- 搜尋框：支援棧板號同系列號搜尋
-- 轉移代碼輸入：數字代碼決定目標位置
-- 活動日誌：顯示最近轉移記錄
-- 狀態消息：即時操作回饋
-
-#### 業務邏輯 ⚡ 已實現性能優化
-- 棧板資訊緩存：5分鐘TTL，最多50項（實際已部署）
-- 預加載常用棧板前綴：['PM-', 'PT-', 'PL-']（頁面載入時自動執行）
-- 樂觀UI更新：即時狀態反饋同錯誤恢復
-- 防抖搜尋優化：減少不必要嘅API請求
-- 背景刷新：啟用自動緩存刷新機制
-
-## 數據流向
-
-### 資料庫表
-- `record_palletinfo`: 棧板主數據
-  - `plt_num`: 棧板號碼
-  - `series`: 系列號
-  - `product_code`: 產品代碼
-  - `product_qty`: 產品數量
-
-- `record_history`: 操作歷史記錄
-  - `operator_id`: 操作員ID
-  - `action`: 操作類型（Stock Transfer）
-  - `plt_num`: 棧板號碼
-  - `loc`: 新位置
-  - `time`: 時間戳
-  - `remark`: 轉移詳情
-
-- `record_transfer`: 轉移記錄
-  - `plt_num`: 棧板號碼
-  - `operator_id`: 操作員ID
-  - `date`: 轉移日期
-  - `f_loc`: 來源位置
-  - `t_loc`: 目標位置
-
-- `record_inventory`: 庫存數量
-  - `product_code`: 產品代碼
-  - 各位置欄位（await、production、fold_mill等）
-  - `latest_update`: 最後更新時間
-
-### 位置系統
-可用位置：
-- **Await**: 默認暫存區
-- **Await_grn**: 收貨暫存區
-- **Production**: 生產車間
-- **PipeLine**: 管道處理區
-- **Fold Mill**: 摺疊加工區
-- **Bulk Room**: 散裝儲存區
-- **Back Car Park**: 外部儲存區
-- **Pre-Book**: 預訂區
-- **Voided**: 作廢（無法移動）
+#### 後端 RPC Functions
+- `execute_stock_transfer`: 原子性庫存轉移
+- `search_pallet_info`: 優化棧板搜尋
 
 ## 工作流程
 
-### 1. 搜尋棧板
-- 輸入棧板號（如：PM-12345）或系列號
-- 系統查詢`record_palletinfo`獲取棧板資訊
-- 從最新`record_history`獲取當前位置
-
-### 2. 轉移代碼系統
-
-#### 轉移代碼映射
-```javascript
-{
-  'Await': {
-    '131415': 'Fold Mill',
-    '232425': 'PipeLine'
-  },
-  'Await_grn': {
-    '131415': 'Production',
-    '232425': 'PipeLine'
-  },
-  'Fold Mill': {
-    '131415': 'Production',
-    '232425': 'PipeLine'
-  },
-  'PipeLine': {
-    '131415': 'Production',
-    '232425': 'Fold Mill'
-  }
-}
+### 1. 棧板搜尋
+```mermaid
+graph LR
+    A[用戶輸入] --> B{搜尋類型}
+    B -->|棧板號| C[search_pallet_info RPC]
+    B -->|系列號| C
+    C --> D{緩存檢查}
+    D -->|命中| E[返回緩存數據]
+    D -->|未命中| F[數據庫查詢]
+    F --> G[更新緩存]
+    G --> E
 ```
 
-### 3. 員工認證
-- 輸入clock號碼（員工ID）
-- 系統驗證`data_id`表
-- 確保操作可追溯性
+### 2. 轉移流程
+```mermaid
+graph TD
+    A[選擇棧板] --> B[顯示轉移對話框]
+    B --> C[選擇目標位置]
+    C --> D[輸入員工號碼]
+    D --> E[驗證輸入]
+    E --> F[execute_stock_transfer RPC]
+    F --> G{事務處理}
+    G -->|成功| H[更新 UI + 記錄日誌]
+    G -->|失敗| I[回滾 + 錯誤處理]
+```
 
-### 4. 執行轉移
-當轉移執行時，系統更新三個表：
+## 主要功能改進
 
-#### record_history
-- 新增記錄追蹤移動
-- 記錄操作員、時間、位置
+### 1. 視覺化目標選擇器 🎯
 
-#### record_transfer
-- 記錄轉移詳情
-- 來源同目標位置
+取代舊有嘅轉移代號系統，使用直觀嘅選項按鈕：
 
-#### record_inventory
-- 扣減來源位置數量
-- 增加目標位置數量
-- 更新時間戳
+```
+┌─────────────────────────────────────┐
+│ Select Destination:                 │
+│                                     │
+│ ○ 📦 Fold Mill (Default)           │
+│   Transfer to Fold Mill warehouse   │
+│                                     │
+│ ○ 🏭 Production                    │
+│   Transfer to Production area       │
+│                                     │
+│ ○ 🚚 Pipeline                      │
+│   Transfer to Pipeline storage      │
+│                                     │
+│ 📍 Current location: Await          │
+└─────────────────────────────────────┘
+```
 
-### 5. 結果回饋
-- 成功：顯示綠色確認消息
-- 失敗：顯示紅色錯誤消息
-- 更新活動日誌
-- 清除輸入準備下次操作
+#### 位置轉移規則
+```typescript
+const LOCATION_DESTINATIONS = {
+  'Await': ['Fold Mill', 'Production', 'PipeLine'],
+  'Await_grn': ['Production', 'PipeLine'],
+  'Fold Mill': ['Production', 'PipeLine'],
+  'PipeLine': ['Production', 'Fold Mill'],
+  'Production': ['Fold Mill', 'PipeLine'],
+  'Damage': [],    // 不能轉移
+  'Voided': []     // 不能轉移
+};
+```
 
-## 技術實現
+### 2. 原子性事務保證 ⚡
 
-### 前端技術
-- React配合TypeScript
-- 深色主題優化倉庫環境
-- 鍵盤快捷鍵支援
-- 響應式設計
+所有操作喺一個數據庫事務內完成：
 
-### 性能功能 🚀 已完整實現
-- **智能緩存**: 5分鐘TTL緩存，最多50項，背景自動刷新
-- **預加載策略**: 頁面載入時自動預加載 PM-、PT-、PL- 前綴棧板
-- **樂觀更新**: UI即時更新，支援錯誤恢復同狀態追蹤
-- **防抖優化**: 搜尋操作防抖，減少API請求
-- **緩存統計**: 提供 getCacheStats() 監控緩存性能
-- **併發支援**: 支援多個轉移操作同時進行
+```sql
+BEGIN;
+  -- 驗證操作員
+  -- 驗證位置映射
+  -- 插入歷史記錄 (record_history)
+  -- 插入轉移記錄 (record_transfer)
+  -- 更新庫存數量 (record_inventory)
+  -- 更新工作量統計 (work_level)
+  -- 記錄審計日誌 (report_log)
+COMMIT;
+```
 
-### 狀態管理
-- React hooks管理組件狀態
-- 活動日誌本地狀態
-- 錯誤處理同重試機制
+### 3. 防錯機制 🛡️
 
-### UI設計特色
-- 深色背景減少眼睛疲勞
-- 大按鈕適合觸控操作
-- 清晰嘅視覺狀態指示
-- 活動日誌即時更新
+#### 多層防護
+1. **UI 層過濾**：排除當前位置，防止相同位置轉移
+2. **視覺提示**：清晰顯示當前位置同可選目標
+3. **輸入驗證**：實時驗證員工號碼
+4. **後端檢查**：最後防線確保數據正確
 
-## 安全考慮
+#### 錯誤代碼
+| 代碼 | 說明 | 用戶訊息 |
+|------|------|----------|
+| `SAME_LOCATION` | 來源同目標相同 | "Cannot transfer to the same location" |
+| `INVALID_OPERATOR` | 無效操作員 | "Operator ID not found in system" |
+| `INVALID_LOCATION` | 位置映射失敗 | "Invalid location mapping" |
+| `TRANSFER_ERROR` | 一般錯誤 | "Stock transfer failed" |
 
-### 訪問控制
-- 需要認證用戶
-- 每次轉移驗證操作員ID
-- 操作審計追蹤
+### 4. 審計追蹤 📊
 
-### 驗證規則
-- 棧板必須存在
-- 不能轉移已作廢棧板
-- 轉移代碼必須有效
-- 防止並發轉移衝突
+所有操作記錄到 `report_log` 表：
 
-### 錯誤處理
-防止以下情況嘅轉移：
-- 棧板已作廢
-- 當前位置無效轉移代碼
-- 無效操作員ID
-- 棧板有待處理轉移
-- 資料庫操作失敗
+```sql
+-- 成功記錄
+INSERT INTO report_log (error, error_info, state, user_id)
+VALUES ('STOCK_TRANSFER_SUCCESS', '詳細信息', true, 操作員ID);
+
+-- 失敗記錄
+INSERT INTO report_log (error, error_info, state, user_id)
+VALUES ('STOCK_TRANSFER_ERROR', '錯誤信息', false, 操作員ID);
+```
+
+## 性能優化 🚀
+
+### 緩存策略
+```typescript
+const cacheOptions = {
+  ttl: 5 * 60 * 1000,              // 5分鐘 TTL
+  maxSize: 50,                     // 最多緩存50個棧板
+  preloadPatterns: ['PM-', 'PT-'], // 預加載常用前綴
+  enableBackgroundRefresh: true    // 背景自動刷新
+};
+```
+
+### 網絡效率
+- **舊系統**：5次獨立請求
+- **新系統**：1次 RPC 調用
+- **改進**：延遲減少 ~80%
+
+### 樂觀更新
+- UI 立即反映操作
+- 失敗時自動回滾
+- 視覺狀態追蹤
+
+## 數據庫結構
+
+### 主要表格
+- `record_palletinfo`: 棧板主數據
+- `record_history`: 操作歷史
+- `record_transfer`: 轉移記錄
+- `record_inventory`: 庫存數量
+- `work_level`: 員工工作量
+- `report_log`: 審計日誌
+
+### 位置映射
+```typescript
+// 數據庫欄位映射
+const LOCATION_TO_COLUMN = {
+  'Await': 'await',
+  'Await_grn': 'await_grn',
+  'Fold Mill': 'fold',
+  'PipeLine': 'pipeline',
+  'Production': 'injection',
+  'Damage': 'damage',
+  'Bulk': 'bulk',
+  'Prebook': 'prebook',
+  'Backcarpark': 'backcarpark'
+};
+```
 
 ## 操作指南
 
-### 基本操作步驟
-1. 搜尋棧板號或掃描條碼
-2. 確認棧板資訊同當前位置
-3. 輸入轉移代碼（6位數字）
-4. 輸入你嘅clock號碼
-5. 系統自動完成轉移
-
-### 轉移代碼記憶
-- **131415**: 通常轉移到生產或摺疊區
-- **232425**: 通常轉移到管道區
-- 代碼根據當前位置有唔同目標
+### 基本步驟
+1. **搜尋棧板**：輸入棧板號或系列號
+2. **選擇目標**：點選目標位置（預設 Fold Mill）
+3. **輸入員工號**：輸入你嘅 clock number
+4. **確認轉移**：系統自動完成所有操作
 
 ### 快捷操作
-- Enter鍵快速提交
-- Tab鍵切換輸入欄位
-- Esc鍵清除當前輸入
+- **Enter**：快速提交
+- **Tab**：切換欄位
+- **Esc**：取消操作
 
-## 監控同維護
+### 最佳實踐
+1. 確認棧板資訊正確
+2. 留意當前位置提示
+3. 選擇正確目標位置
+4. 檢查活動日誌
 
-### 活動監控
-- 即時活動日誌顯示最近轉移
-- 成功/失敗狀態明確標示
-- 時間戳記錄每個操作
+## 監控工具
 
-### 性能監控
-- 緩存命中率
-- API響應時間
-- 資料庫查詢性能
-- 用戶操作統計
+### 實時監控
+```bash
+# 監控庫存轉移操作
+node scripts/monitor-stock-transfer.js
+```
 
-### 維護任務
-- 定期清理舊轉移記錄
-- 優化資料庫索引
-- 更新轉移代碼映射
-- 檢查數據一致性
+### 測試工具
+```bash
+# 測試 RPC 功能
+node scripts/test-stock-transfer-rpc.js
+
+# 測試防錯機制
+node scripts/test-same-location-prevention.js
+```
 
 ## 故障排除
 
 ### 常見問題
 
-#### 找唔到棧板
-- 確認棧板號正確
-- 檢查大小寫
-- 驗證棧板未被刪除
-- 嘗試用系列號搜尋
+#### "Cannot transfer from location"
+- 檢查是否為 Voided 或 Damage 位置
+- 確認位置名稱正確
 
-#### 無效轉移代碼
-- 檢查當前位置
-- 確認代碼輸入正確
-- 查看可用代碼列表
-- 聯繫管理員更新映射
+#### "Operator ID not found"
+- 確保員工存在於 `data_id` 表
+- 檢查輸入是否正確
 
-#### 轉移失敗
-- 檢查網絡連接
-- 確認操作員ID有效
-- 查看錯誤消息詳情
-- 檢查棧板狀態
+#### "Cannot transfer to the same location"
+- 系統防止轉移到相同位置
+- 選擇不同嘅目標位置
 
-### 數據修復
-- 檢查record_history最新記錄
-- 驗證inventory數量正確
-- 必要時手動調整
-- 記錄所有修正操作
+### 調試步驟
+1. 查看 `report_log` 錯誤詳情
+2. 確認棧板當前位置
+3. 驗證員工權限
+4. 檢查網絡連接
 
-## 最佳實踐
+## API 參考
 
-### 操作建議
-1. 每次轉移前確認棧板資訊
-2. 記住常用轉移代碼
-3. 定期檢查活動日誌
-4. 及時報告異常情況
+### search_pallet_info RPC
+```typescript
+// 輸入
+{
+  p_search_type: 'pallet_num' | 'series',
+  p_search_value: string
+}
 
-### 數據準確性
-1. 避免重複轉移
-2. 確保位置更新正確
-3. 監控庫存差異
-4. 定期核對實物
+// 輸出
+{
+  success: boolean,
+  data?: {
+    plt_num: string,
+    product_code: string,
+    product_qty: number,
+    plt_remark?: string,
+    series?: string,
+    current_plt_loc: string
+  },
+  message?: string
+}
+```
 
-### 團隊協作
-1. 統一使用轉移代碼
-2. 交接班檢查待處理轉移
-3. 記錄特殊情況
-4. 保持系統數據同步
+### execute_stock_transfer RPC
+```typescript
+// 輸入
+{
+  p_plt_num: string,
+  p_product_code: string,
+  p_product_qty: number,
+  p_from_location: string,
+  p_to_location: string,
+  p_operator_id: number
+}
 
-## 未來改進
+// 輸出
+{
+  success: boolean,
+  message: string,
+  data?: {
+    plt_num: string,
+    from_location: string,
+    to_location: string,
+    operator_id: number,
+    timestamp: string
+  },
+  error_code?: string,
+  error_detail?: string
+}
+```
 
-### 計劃功能
-- 批量轉移支援
-- 條碼掃描整合
-- 自動轉移規則
-- 移動應用支援
+## 版本歷史
 
-### 技術升級
-- WebSocket即時更新
-- 離線轉移隊列
-- 智能轉移建議
-- 高級報表功能
+### v2.0.0 (2025-01-02) - 現行版本
+- ✅ 遷移到 RPC 架構
+- ✅ 實現視覺化目標選擇器
+- ✅ 加入相同位置防錯檢查
+- ✅ 完善審計追蹤功能
+- ✅ 提升錯誤處理能力
 
-### 用戶體驗
-- 語音輸入支援
-- 多語言介面
-- 個性化快捷鍵
-- 增強視覺回饋
+### v1.0.0
+- 初始版本（5個獨立 SQL 操作）
+- 基於轉移代號系統
+- 基本錯誤處理
+
+## 未來改進計劃
+
+1. **批量轉移**：支援多個棧板同時轉移
+2. **轉移模板**：保存常用路線
+3. **移動優化**：整合掃描器功能
+4. **分析儀表板**：轉移模式分析
+5. **離線模式**：離線時隊列轉移操作
+
+---
+
+最後更新：2025-01-02  
+版本：2.0.0  
+作者：系統開發團隊

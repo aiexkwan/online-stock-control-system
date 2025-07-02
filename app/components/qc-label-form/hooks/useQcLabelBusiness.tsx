@@ -13,7 +13,6 @@ import { useStreamingPdfGeneration } from './modules/useStreamingPdfGeneration';
 // Using unified RPC for better performance and atomicity
 import { useDatabaseOperationsUnified } from './modules/useDatabaseOperationsUnified';
 import { useStockUpdates } from './modules/useStockUpdates';
-import { useFormPersistence } from './modules/useFormPersistence';
 import { toast } from 'sonner';
 import type { ProductInfo, FormData, SlateDetail } from '../types';
 import { confirmPalletUsage, releasePalletReservation } from '@/app/utils/palletGeneration';
@@ -80,17 +79,6 @@ export const useQcLabelBusiness = ({
   const { processQcLabelsUnified } = useDatabaseOperationsUnified();
   const { updateStockAndWorkLevels, updateAcoOrderStatus, clearCache } = useStockUpdates();
   
-  // 表單持久化 - 已禁用以確保每次進入頁面都是全新狀態
-  const {
-    lastSaved,
-    clearSavedData,
-    hasSavedData
-  } = useFormPersistence({
-    formData,
-    setFormData,
-    isEnabled: false, // Disabled to ensure fresh form on each page load
-    autoSaveDelay: 1000
-  });
 
   // State for preventing duplicate submissions
   const [isProcessing, setIsProcessing] = useState(false);
@@ -154,7 +142,6 @@ export const useQcLabelBusiness = ({
     const count = parseInt(countStr.trim(), 10);
     
     // 聲明在 try 外面以便 catch 中可以訪問
-    let generationResult: any = null;
     let sortedPalletNumbers: string[] = [];
 
     try {
@@ -338,8 +325,6 @@ export const useQcLabelBusiness = ({
           onProductInfoReset();
         }
         
-        // 清除已保存的表單數據
-        clearSavedData();
       }
 
     } catch (error: any) {
@@ -374,7 +359,6 @@ export const useQcLabelBusiness = ({
     generatePdfsStream,
     printPdfs,
     updateAcoOrderStatus,
-    clearSavedData,
     supabase
   ]);
 
@@ -407,11 +391,6 @@ export const useQcLabelBusiness = ({
     isAcoOrderExcess,
     isAcoOrderFulfilled,
     isAcoOrderIncomplete,
-    
-    // Form persistence
-    lastSaved,
-    clearSavedData,
-    hasSavedData,
     
     // Streaming PDF generation
     streamingStatus,

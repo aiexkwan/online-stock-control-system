@@ -134,52 +134,7 @@ export default function PrintLabelPage() {
     }
   });
 
-  // Reset form function
-  const resetForm = useCallback(() => {
-    setFormData(getInitialFormData());
-    setProductInfo(null);
-    setErrors({});
-    setTouched({});
-    // Clear saved data
-    businessLogic.clearSavedData();
-  }, [getInitialFormData, businessLogic]);
 
-  // 1. Disable form persistence on page load/refresh
-  useEffect(() => {
-    // Clear any saved form data when page loads
-    const clearOnMount = () => {
-      try {
-        localStorage.removeItem('qc-label-form-data');
-      } catch (error) {
-        console.error('Failed to clear form data on mount:', error);
-      }
-    };
-    clearOnMount();
-  }, []); // Only run on mount
-
-  // 2. Handle page unload/navigation - clear saved data
-  useEffect(() => {
-    const handleBeforeUnload = () => {
-      // Clear saved data when leaving the page
-      try {
-        localStorage.removeItem('qc-label-form-data');
-      } catch (error) {
-        console.error('Failed to clear form data on unload:', error);
-      }
-    };
-
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    
-    return () => {
-      window.removeEventListener('beforeunload', handleBeforeUnload);
-      // Also clear when component unmounts (navigation)
-      try {
-        localStorage.removeItem('qc-label-form-data');
-      } catch (error) {
-        console.error('Failed to clear form data on unmount:', error);
-      }
-    };
-  }, []);
 
   // Check if count exceeds limit
   const isCountExceeded = useMemo(() => {

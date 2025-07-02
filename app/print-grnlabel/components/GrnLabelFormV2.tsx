@@ -2,7 +2,6 @@
 
 import React, { useCallback, useEffect, useRef } from 'react';
 import { createClient } from '@/app/utils/supabase/client';
-import { format } from 'date-fns';
 import { toast } from 'sonner';
 import { grnErrorHandler } from '../services/ErrorHandler';
 import { UniversalContainer, UniversalCard, UniversalGrid } from '@/components/layout/universal';
@@ -69,7 +68,6 @@ const customStyles = `
 `;
 
 // Import reusable components from QC Label
-import { ProductCodeInput } from '../../components/qc-label-form/ProductCodeInput';
 
 // Import custom hooks
 import { useGrnFormReducer } from '../hooks/useGrnFormReducer';
