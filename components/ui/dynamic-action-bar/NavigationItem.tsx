@@ -88,7 +88,7 @@ export function NavigationItem({ item, isActive, onActiveChange }: NavigationIte
           "border border-white/10",
           "transition-all duration-200",
           "group",
-          isHovered && "bg-white/10 border-white/20"
+          isHovered && "bg-white/20 border-white/20"
         )}
       >
         <div className="flex items-center gap-2">

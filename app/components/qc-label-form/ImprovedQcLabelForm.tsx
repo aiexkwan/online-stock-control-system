@@ -430,7 +430,7 @@ export const ImprovedQcLabelForm: React.FC<ImprovedQcLabelFormProps> = React.mem
               )}
             </div>
 
-            {/* Sidebar */}
+            {/* Legacy comment - sidebar removed */}
             <div className={`${isMobile ? 'w-full' : 'w-80'} flex-shrink-0`}>
               <div className="space-y-6">
                 {/* Instructions */}

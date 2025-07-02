@@ -173,7 +173,7 @@ export function MobileView({ items }: MobileViewProps) {
         <motion.button
           whileTap={{ scale: 0.95 }}
           onClick={handleLogout}
-          className="p-2 rounded-lg bg-white/10 active:bg-white/20 transition-colors"
+                      className="p-2 rounded-lg bg-white/20 active:bg-white/20 transition-colors"
           title="Logout"
         >
           <ArrowRightOnRectangleIcon className="w-5 h-5 text-white" />
@@ -194,7 +194,7 @@ export function MobileView({ items }: MobileViewProps) {
                 "border border-white/10",
                 "transition-all duration-200",
                 "flex flex-col items-center gap-1",
-                expandedItem === item.id && "bg-white/10 border-white/20"
+                expandedItem === item.id && "bg-white/20 border-white/20"
               )}
             >
               <item.icon className={cn("w-6 h-6", item.iconColor)} />
@@ -237,7 +237,7 @@ export function MobileView({ items }: MobileViewProps) {
                           "rounded-lg",
                           "bg-white/5",
                           "text-xs font-medium text-white",
-                          "active:bg-white/10"
+                          "active:bg-white/20"
                         )}
                         onClick={() => setExpandedItem(null)}
                       >

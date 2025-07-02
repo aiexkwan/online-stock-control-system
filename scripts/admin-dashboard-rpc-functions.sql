@@ -269,9 +269,49 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+-- RPC function for ProductCodeInput - Fast product search
+CREATE OR REPLACE FUNCTION search_product_code(p_code TEXT)
+RETURNS JSON
+LANGUAGE plpgsql
+AS $$
+DECLARE
+  result JSON;
+BEGIN
+  -- Search for product code using case-insensitive match
+  SELECT json_build_object(
+    'code', code,
+    'description', description,
+    'standard_qty', standard_qty,
+    'type', type,
+    'remark', remark
+  ) INTO result
+  FROM data_code
+  WHERE UPPER(code) = UPPER(p_code)
+  LIMIT 1;
+  
+  -- If no exact match, try partial match
+  IF result IS NULL THEN
+    SELECT json_build_object(
+      'code', code,
+      'description', description,
+      'standard_qty', standard_qty,
+      'type', type,
+      'remark', remark
+    ) INTO result
+    FROM data_code
+    WHERE UPPER(code) LIKE UPPER(p_code || '%')
+    ORDER BY code
+    LIMIT 1;
+  END IF;
+  
+  RETURN result;
+END;
+$$;
+
 -- Grant execute permissions
 GRANT EXECUTE ON FUNCTION get_admin_dashboard_stats TO authenticated;
 GRANT EXECUTE ON FUNCTION get_time_range_stats TO authenticated;
 GRANT EXECUTE ON FUNCTION search_inventory_by_product TO authenticated;
 GRANT EXECUTE ON FUNCTION get_void_statistics TO authenticated;
 GRANT EXECUTE ON FUNCTION refresh_daily_stats TO authenticated;
+GRANT EXECUTE ON FUNCTION search_product_code TO authenticated;

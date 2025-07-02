@@ -308,7 +308,7 @@ export function DynamicActionBar({ className }: DynamicActionBarProps) {
           
           {/* User Avatar with loading state */}
           {isLoading ? (
-            <div className="w-10 h-10 rounded-full bg-white/10 animate-pulse" />
+            <div className="w-10 h-10 rounded-full bg-white/20 animate-pulse" />
           ) : avatarUrl ? (
             <Image 
               src={avatarUrl} 
@@ -330,7 +330,7 @@ export function DynamicActionBar({ className }: DynamicActionBarProps) {
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             onClick={handleLogout}
-            className="p-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors group"
+            className="p-2 rounded-lg bg-white/20 hover:bg-white/20 transition-colors group"
             title="Logout"
           >
             <ArrowRightOnRectangleIcon className="w-5 h-5 text-white group-hover:text-red-400 transition-colors" />

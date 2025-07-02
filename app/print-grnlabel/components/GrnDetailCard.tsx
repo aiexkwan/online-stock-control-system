@@ -3,6 +3,7 @@
 import React from 'react';
 import { UniversalGrid } from '@/components/layout/universal';
 import { ProductCodeInput } from '../../components/qc-label-form/ProductCodeInput';
+import { MaterialSupplierInput } from '@/app/components/grn-label-form/MaterialSupplierInput';
 import { LABEL_MODES, type LabelMode, type PalletTypeKey, type PackageTypeKey } from '../../constants/grnConstants';
 import { PalletTypeSelector } from './PalletTypeSelector';
 import { PackageTypeSelector } from './PackageTypeSelector';
@@ -53,7 +54,7 @@ interface GrnDetailCardProps {
   palletType: PalletTypeData;
   packageType: PackageTypeData;
   onFormChange: (field: keyof FormData, value: string) => void;
-  onSupplierBlur: (e: React.FocusEvent<HTMLInputElement>) => void;
+  onSupplierInfoChange: (supplierInfo: any) => void;
   onProductInfoChange: (productInfo: any) => void;
   onLabelModeChange: (mode: LabelMode) => void;
   onPalletTypeChange: (key: PalletTypeKey, value: string) => void;
@@ -71,7 +72,7 @@ export const GrnDetailCard: React.FC<GrnDetailCardProps> = ({
   palletType,
   packageType,
   onFormChange,
-  onSupplierBlur,
+  onSupplierInfoChange,
   onProductInfoChange,
   onLabelModeChange,
   onPalletTypeChange,
@@ -100,24 +101,15 @@ export const GrnDetailCard: React.FC<GrnDetailCardProps> = ({
           </div>
         </div>
 
-        {/* Material Supplier */}
+        {/* Material Supplier - 使用新的 MaterialSupplierInput 組件 */}
         <div className="group">
-          <label className="block text-sm font-medium mb-1 text-slate-300 group-focus-within:text-orange-400 transition-colors duration-200">
-            Material Supplier <span className="text-red-400">*</span>
-          </label>
-          <div className="relative">
-            <input
-              type="text"
-              value={formData.materialSupplier}
-              onChange={e => onFormChange('materialSupplier', e.target.value)}
-              onBlur={onSupplierBlur}
-              className="w-full px-3 py-2 bg-slate-800/50 border border-slate-600/50 rounded-xl text-white placeholder-slate-400 transition-all duration-300 ease-out focus:outline-none focus:ring-2 focus:ring-orange-400/30 focus:border-orange-400/70 focus:bg-slate-800/70 hover:border-orange-500/50 hover:bg-slate-800/60 backdrop-blur-sm"
-              placeholder="Please Enter..."
-              required
-              disabled={disabled}
-            />
-            <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-orange-500/5 via-transparent to-amber-500/5 opacity-0 group-focus-within:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
-          </div>
+          <MaterialSupplierInput
+            value={formData.materialSupplier}
+            onChange={(value) => onFormChange('materialSupplier', value)}
+            onSupplierInfoChange={onSupplierInfoChange}
+            disabled={disabled}
+            className="mb-0"
+          />
           {supplierError && (
             <div className="mt-2 p-2 bg-red-500/10 border border-red-500/20 rounded-lg">
               <p className="text-red-400 text-xs flex items-center">

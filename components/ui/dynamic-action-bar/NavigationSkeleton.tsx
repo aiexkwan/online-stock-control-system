@@ -27,15 +27,15 @@ export function NavigationSkeleton() {
           
           {/* Text Skeleton */}
           <div className="text-right">
-            <div className="w-20 h-3 bg-white/10 rounded animate-pulse mb-1" />
-            <div className="w-24 h-4 bg-white/10 rounded animate-pulse" />
+                          <div className="w-20 h-3 bg-white/20 rounded animate-pulse mb-1" />
+              <div className="w-24 h-4 bg-white/20 rounded animate-pulse" />
           </div>
           
           {/* Avatar Skeleton */}
-          <div className="w-10 h-10 rounded-full bg-white/10 animate-pulse" />
+                      <div className="w-10 h-10 rounded-full bg-white/20 animate-pulse" />
           
           {/* Logout Button Skeleton */}
-          <div className="w-10 h-10 rounded-lg bg-white/10 animate-pulse" />
+                      <div className="w-10 h-10 rounded-lg bg-white/20 animate-pulse" />
         </div>
       </div>
     </motion.div>

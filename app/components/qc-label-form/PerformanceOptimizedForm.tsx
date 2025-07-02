@@ -568,7 +568,7 @@ export const PerformanceOptimizedForm: React.FC<PerformanceOptimizedFormProps> =
               )}
             </div>
 
-            {/* Sidebar */}
+            {/* Right panel content */}
             <div className={`${isMobile ? 'w-full' : 'w-80'} flex-shrink-0`}>
               <div className="space-y-6">
                 {/* Progress */}

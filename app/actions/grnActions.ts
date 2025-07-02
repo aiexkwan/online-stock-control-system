@@ -99,7 +99,198 @@ export async function createGrnDatabaseEntries(
   const supabaseAdmin = createSupabaseAdmin();
 
   try {
-    // 🔥 改用與 QC Label 相同的直接資料庫插入方式，不使用 RPC
+    // 🚀 新功能：使用統一的 GRN Label RPC 處理所有操作
+    process.env.NODE_ENV !== "production" && console.log('[grnActions] 使用統一 GRN Label RPC 處理...', {
+      grnRef: payload.grnRecord.grn_ref,
+      materialCode: payload.grnRecord.material_code,
+      supplierCode: payload.grnRecord.sup_code,
+      labelMode,
+      operatorId: operatorIdForFunction
+    });
+
+    // 準備統一 RPC 的參數
+    const rpcParams: any = {
+      p_count: 1, // 每次處理一個棧板
+      p_grn_number: payload.grnRecord.grn_ref,
+      p_material_code: payload.grnRecord.material_code,
+      p_supplier_code: payload.grnRecord.sup_code,
+      p_clock_number: operatorIdForFunction.toString(),
+      p_label_mode: labelMode,
+      p_session_id: `grn-${payload.grnRecord.grn_ref}-${Date.now()}`,
+      p_pallet_count: payload.grnRecord.pallet_count,
+      p_package_count: payload.grnRecord.package_count,
+      p_pallet_type: payload.grnRecord.pallet,
+      p_package_type: payload.grnRecord.package
+    };
+
+    // 根據標籤模式設置相應的數據
+    if (labelMode === 'weight') {
+      rpcParams.p_gross_weights = [payload.grnRecord.gross_weight];
+      rpcParams.p_net_weights = [payload.grnRecord.net_weight];
+      rpcParams.p_quantities = null;
+    } else if (labelMode === 'qty') {
+      rpcParams.p_gross_weights = null;
+      rpcParams.p_net_weights = null;
+      rpcParams.p_quantities = [payload.palletInfo.product_qty];
+    }
+
+    // 如果有 PDF URL，添加到參數中
+    if (payload.palletInfo.pdf_url) {
+      rpcParams.p_pdf_urls = [payload.palletInfo.pdf_url];
+    }
+
+    process.env.NODE_ENV !== "production" && console.log('[grnActions] 統一 RPC 參數:', rpcParams);
+
+    // 調用統一 GRN RPC
+    const { data: rpcResult, error: rpcError } = await supabaseAdmin.rpc('process_grn_label_unified', rpcParams);
+
+    if (rpcError) {
+      console.error('[grnActions] 統一 GRN RPC 調用失敗:', rpcError);
+      return { error: `Failed to process GRN label: ${rpcError.message}` };
+    }
+
+    if (!rpcResult || !rpcResult.success) {
+      const errorMsg = rpcResult?.message || 'Unknown error from unified RPC';
+      console.error('[grnActions] 統一 GRN RPC 處理失敗:', errorMsg);
+      return { error: errorMsg };
+    }
+
+    process.env.NODE_ENV !== "production" && console.log('[grnActions] 統一 GRN RPC 處理成功:', rpcResult);
+
+    return { 
+      data: `GRN label processed successfully. ${rpcResult.data ? `Pallet: ${rpcResult.data.pallet_numbers?.[0] || 'N/A'}` : ''}` 
+    };
+
+  } catch (error: any) {
+    console.error('[grnActions] 統一 GRN RPC 處理異常:', error);
+    
+    // 備用方案：如果統一 RPC 失敗，回退到舊的逐個插入方式
+    console.log('[grnActions] 回退到逐個插入方式...');
+    return await createGrnDatabaseEntriesLegacy(payload, operatorClockNumberStr, labelMode);
+  }
+}
+
+/**
+ * 批量處理 GRN 標籤的統一 RPC 函數
+ * 使用新的統一 RPC 一次性處理多個棧板
+ */
+export async function createGrnDatabaseEntriesBatch(
+  grnNumber: string,
+  materialCode: string,
+  supplierCode: string,
+  operatorClockNumberStr: string,
+  labelMode: 'weight' | 'qty',
+  grossWeights: number[],
+  netWeights: number[],
+  quantities: number[],
+  palletCount: number,
+  packageCount: number,
+  palletType: string,
+  packageType: string,
+  pdfUrls?: string[]
+): Promise<{ data?: any; error?: string; warning?: string; palletNumbers?: string[]; series?: string[] }> {
+
+  const clockValidation = clockNumberSchema.safeParse(operatorClockNumberStr);
+  if (!clockValidation.success) {
+    console.error('[grnActions] Invalid Operator Clock Number format:', operatorClockNumberStr, clockValidation.error.flatten());
+    return { error: `Invalid Operator Clock Number: ${clockValidation.error.errors[0]?.message || 'Format error.'}` };
+  }
+  const operatorIdForFunction = clockValidation.data;
+
+  const supabaseAdmin = createSupabaseAdmin();
+
+  try {
+    // 🚀 使用統一的 GRN Label RPC 批量處理所有棧板
+    const count = Math.max(grossWeights.length, netWeights.length, quantities.length);
+    
+    process.env.NODE_ENV !== "production" && console.log('[grnActions] 批量處理 GRN 標籤，數量:', count, {
+      grnNumber,
+      materialCode,
+      supplierCode,
+      labelMode,
+      operatorId: operatorIdForFunction
+    });
+
+    // 準備統一 RPC 的參數
+    const rpcParams: any = {
+      p_count: count,
+      p_grn_number: grnNumber,
+      p_material_code: materialCode,
+      p_supplier_code: supplierCode,
+      p_clock_number: operatorIdForFunction.toString(),
+      p_label_mode: labelMode,
+      p_session_id: `grn-batch-${grnNumber}-${Date.now()}`,
+      p_pallet_count: palletCount,
+      p_package_count: packageCount,
+      p_pallet_type: palletType,
+      p_package_type: packageType
+    };
+
+    // 根據標籤模式設置相應的數據
+    if (labelMode === 'weight') {
+      rpcParams.p_gross_weights = grossWeights;
+      rpcParams.p_net_weights = netWeights;
+      rpcParams.p_quantities = null;
+    } else if (labelMode === 'qty') {
+      rpcParams.p_gross_weights = null;
+      rpcParams.p_net_weights = null;
+      rpcParams.p_quantities = quantities;
+    }
+
+    // 如果有 PDF URLs，添加到參數中
+    if (pdfUrls && pdfUrls.length > 0) {
+      rpcParams.p_pdf_urls = pdfUrls;
+    }
+
+    process.env.NODE_ENV !== "production" && console.log('[grnActions] 統一批量 RPC 參數:', rpcParams);
+
+    // 調用統一 GRN RPC
+    const { data: rpcResult, error: rpcError } = await supabaseAdmin.rpc('process_grn_label_unified', rpcParams);
+
+    if (rpcError) {
+      console.error('[grnActions] 統一批量 GRN RPC 調用失敗:', rpcError);
+      return { error: `Failed to process GRN labels: ${rpcError.message}` };
+    }
+
+    if (!rpcResult || !rpcResult.success) {
+      const errorMsg = rpcResult?.message || 'Unknown error from unified RPC';
+      console.error('[grnActions] 統一批量 GRN RPC 處理失敗:', errorMsg);
+      return { error: errorMsg };
+    }
+
+    process.env.NODE_ENV !== "production" && console.log('[grnActions] 統一批量 GRN RPC 處理成功:', rpcResult);
+
+    return { 
+      data: rpcResult,
+      palletNumbers: rpcResult.data?.pallet_numbers || [],
+      series: rpcResult.data?.series || []
+    };
+
+  } catch (error: any) {
+    console.error('[grnActions] 統一批量 GRN RPC 處理異常:', error);
+    return { error: `Batch processing failed: ${error.message}` };
+  }
+}
+
+/**
+ * 舊版本的 GRN 數據庫插入方式，作為統一 RPC 的備用方案
+ */
+async function createGrnDatabaseEntriesLegacy(
+  payload: GrnDatabaseEntryPayload, 
+  operatorClockNumberStr: string,
+  labelMode: 'weight' | 'qty' = 'weight'
+): Promise<{ data?: string; error?: string; warning?: string }> {
+
+  const clockValidation = clockNumberSchema.safeParse(operatorClockNumberStr);
+  if (!clockValidation.success) {
+    return { error: `Invalid Operator Clock Number: ${clockValidation.error.errors[0]?.message || 'Format error.'}` };
+  }
+  const operatorIdForFunction = clockValidation.data;
+
+  const supabaseAdmin = createSupabaseAdmin();
+
+  try {
+    // 🔥 舊版：逐個插入記錄的方式
     
     // 1. Insert pallet info record
     const { error: palletInfoError } = await supabaseAdmin

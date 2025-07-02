@@ -88,7 +88,7 @@ export function QuickAccess({ userId, className }: QuickAccessProps) {
               }}
             >
               {/* Hover Background */}
-              <div className="absolute inset-0 rounded-xl bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity" />
+              <div className="absolute inset-0 rounded-xl bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity" />
               
               {/* Content */}
               <div 

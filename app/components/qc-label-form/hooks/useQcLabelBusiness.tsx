@@ -10,8 +10,8 @@ import { useAcoManagement } from './modules/useAcoManagement';
 import { useSlateManagement } from './modules/useSlateManagement';
 import { usePdfGeneration } from './modules/usePdfGeneration';
 import { useStreamingPdfGeneration } from './modules/useStreamingPdfGeneration';
-// Removed unused import - using useDatabaseOperationsV2 instead
-import { useDatabaseOperationsV2 } from './modules/useDatabaseOperationsV2';
+// Using unified RPC for better performance and atomicity
+import { useDatabaseOperationsUnified } from './modules/useDatabaseOperationsUnified';
 import { useStockUpdates } from './modules/useStockUpdates';
 import { useFormPersistence } from './modules/useFormPersistence';
 import { toast } from 'sonner';
@@ -76,8 +76,8 @@ export const useQcLabelBusiness = ({
   
   const { generatePdfs, printPdfs } = usePdfGeneration();
   const { generatePdfsStream, streamingStatus, cancelStreaming } = useStreamingPdfGeneration();
-  // 使用優化版本的數據庫操作（如果需要回退，改回 useDatabaseOperations）
-  const { generatePalletNumbers, createQcRecords } = useDatabaseOperationsV2();
+  // 使用統一 RPC 進行所有 QC 標籤操作
+  const { processQcLabelsUnified } = useDatabaseOperationsUnified();
   const { updateStockAndWorkLevels, updateAcoOrderStatus, clearCache } = useStockUpdates();
   
   // 表單持久化 - 已禁用以確保每次進入頁面都是全新狀態
@@ -168,77 +168,39 @@ export const useQcLabelBusiness = ({
         }
       }));
 
-      // 生成托盤編號和系列號
-      generationResult = await generatePalletNumbers(count);
+      // 使用統一 RPC 處理所有 QC 標籤操作
+      const unifiedResult = await processQcLabelsUnified({
+        productInfo,
+        quantity,
+        count,
+        clockNumber,
+        formData,
+        sessionId: `qc-${Date.now()}`
+      });
       
-      if (generationResult.error || !generationResult.palletNumbers || !generationResult.series) {
-        toast.error(generationResult.error || 'Failed to generate pallet numbers');
+      if (!unifiedResult.success) {
+        toast.error(unifiedResult.error || 'Failed to process QC labels');
         setIsProcessing(false);
         setPrintEventToProceed(null);
         return;
       }
       
-      const { palletNumbers: generatedPalletNumbers, series: generatedSeries } = generationResult;
-      
-      // 再次確保排序正確（防禦性編程）
-      const sortedData = generatedPalletNumbers.map((pallet: string, index: number) => ({
-        pallet,
-        series: generatedSeries[index]
-      })).sort((a: any, b: any) => {
-        const numA = parseInt(a.pallet.split('/')[1]);
-        const numB = parseInt(b.pallet.split('/')[1]);
-        return numA - numB;
-      });
-      
-      sortedPalletNumbers = sortedData.map((item: any) => item.pallet);
-      const sortedSeries = sortedData.map((item: any) => item.series);
-      
-      process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[QC Label] Sorted pallet numbers for processing:', sortedPalletNumbers);
-
-      // 處理每個托盤 - 先創建數據庫記錄，再生成 PDF
-      for (let i = 0; i < count; i++) {
-        const palletNum = sortedPalletNumbers[i];
-        const series = sortedSeries[i];
-        
-        // 創建數據庫記錄
-        const dbResult = await createQcRecords({
-          productInfo,
-          quantity,
-          count,
-          clockNumber,
-          formData,
-          palletNum,
-          series,
-          palletIndex: i
-        });
-        
-        if (!dbResult.success) {
-          if (dbResult.error === 'DUPLICATE_PALLET') {
-            // 停止處理並重置表單
-            setFormData(prev => ({
-              ...prev,
-              pdfProgress: {
-                current: 0,
-                total: 0,
-                status: []
-              }
-            }));
-            setIsProcessing(false);
-            setPrintEventToProceed(null);
-            return;
-          }
-          
-          // 更新進度為失敗並繼續下一個
-          setFormData(prev => ({
-            ...prev,
-            pdfProgress: {
-              ...prev.pdfProgress,
-              status: prev.pdfProgress.status.map((s, idx) => idx === i ? 'Failed' : s)
-            }
-          }));
-          continue;
-        }
+      // 取得生成的托盤編號和系列號
+      if (!unifiedResult.data?.pallet_numbers || !unifiedResult.data?.series) {
+        toast.error('No pallet data returned from unified processing');
+        setIsProcessing(false);
+        setPrintEventToProceed(null);
+        return;
       }
+      
+      sortedPalletNumbers = unifiedResult.data.pallet_numbers;
+      const sortedSeries = unifiedResult.data.series;
+      
+      console.log('[QC Label Unified] Processing completed:', {
+        pallets: sortedPalletNumbers,
+        series: sortedSeries,
+        statistics: unifiedResult.statistics
+      });
       
       // 生成 PDFs - 自動選擇模式：count > 1 使用串流模式
       let pdfResult;
@@ -246,7 +208,7 @@ export const useQcLabelBusiness = ({
       
       if (shouldUseStreaming) {
         // 多個標籤時自動使用串流模式
-        process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`[QC Label] Auto-enabled streaming mode for ${count} labels`);
+        console.log(`[QC Label] Auto-enabled streaming mode for ${count} labels`);
         pdfResult = await generatePdfsStream({
           productInfo,
           quantity,
@@ -269,13 +231,13 @@ export const useQcLabelBusiness = ({
           },
           onStreamComplete: (blob, url, index) => {
             // 可以在這裡處理單個 PDF 完成的邏輯
-            process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`[QC Label] Label ${index + 1} completed in streaming mode`);
+            console.log(`[QC Label] Label ${index + 1} completed in streaming mode`);
           },
           batchSize: 5 // 每批處理 5 個
         });
       } else {
         // 單個標籤使用傳統模式
-        process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`[QC Label] Using normal mode for single label`);
+        console.log(`[QC Label] Using normal mode for single label`);
         pdfResult = await generatePdfs({
           productInfo,
           quantity,
@@ -311,26 +273,16 @@ export const useQcLabelBusiness = ({
         // 確認托盤編號已使用（v6 系統）
         const confirmResult = await confirmPalletUsage(sortedPalletNumbers, supabase);
         if (!confirmResult) {
-          process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.warn('[QC Label] Failed to confirm pallet usage for v6 system');
+          console.warn('[QC Label] Failed to confirm pallet usage for v6 system');
         }
         
-        // 更新庫存和工作記錄
-        const totalQuantity = quantity * count;
-        const stockUpdateResult = await updateStockAndWorkLevels({
-          productInfo,
-          totalQuantity,
-          palletCount: count,
-          clockNumber,
-          acoOrderRef: formData.acoOrderRef,
-          isNewAcoOrder: formData.acoNewRef
-        });
-        
-        if (!stockUpdateResult.success) {
-          toast.warning(`Print successful, but failed to update records: ${stockUpdateResult.error}`);
-        }
+        // 注意：統一 RPC 已經處理了所有庫存和工作記錄更新
+        // 包括 stock_level, work_level, record_palletinfo, record_history, record_inventory
+        // 因此不需要再次調用 updateStockAndWorkLevels 避免重複更新
         
         // 更新 ACO 訂單狀態
         if (productInfo.type === 'ACO' && !formData.acoNewRef && formData.acoOrderRef?.trim()) {
+          const totalQuantity = quantity * count; // 計算總數量供 ACO 使用
           const orderRefNum = parseInt(formData.acoOrderRef.trim(), 10);
           await updateAcoOrderStatus({
             orderRef: orderRefNum,
@@ -342,7 +294,7 @@ export const useQcLabelBusiness = ({
         // 打印失敗，釋放托盤編號（v6 系統）
         const releaseResult = await releasePalletReservation(sortedPalletNumbers, supabase);
         if (!releaseResult) {
-          process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.warn('[QC Label] Failed to release pallet reservation for v6 system');
+          console.warn('[QC Label] Failed to release pallet reservation for v6 system');
         }
         
         if (pdfResult.errors.length > 0) {
@@ -398,7 +350,7 @@ export const useQcLabelBusiness = ({
       if (sortedPalletNumbers && sortedPalletNumbers.length > 0) {
         const releaseResult = await releasePalletReservation(sortedPalletNumbers, supabase);
         if (!releaseResult) {
-          process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.warn('[QC Label] Failed to release pallet reservation after error');
+          console.warn('[QC Label] Failed to release pallet reservation after error');
         }
       }
     } finally {
@@ -417,12 +369,10 @@ export const useQcLabelBusiness = ({
     setCooldownTimer,
     clearCache,
     validateForm,
-    generatePalletNumbers,
-    createQcRecords,
+    processQcLabelsUnified,
     generatePdfs,
     generatePdfsStream,
     printPdfs,
-    updateStockAndWorkLevels,
     updateAcoOrderStatus,
     clearSavedData,
     supabase

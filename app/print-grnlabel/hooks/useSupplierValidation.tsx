@@ -20,6 +20,7 @@ interface UseSupplierValidationReturn {
 /**
  * Hook for handling supplier validation
  * 處理供應商代碼驗證邏輯
+ * 使用 RPC 函數提高效率
  */
 export const useSupplierValidation = (): UseSupplierValidationReturn => {
   const [supplierInfo, setSupplierInfo] = useState<SupplierInfo | null>(null);
@@ -39,17 +40,18 @@ export const useSupplierValidation = (): UseSupplierValidationReturn => {
 
     try {
       const supabase = createClient();
+      
+      // 使用 RPC 函數代替直接查詢
       const { data, error } = await supabase
-        .from('data_supplier')
-        .select('supplier_code, supplier_name')
-        .eq('supplier_code', supplierCode.toUpperCase())
-        .single();
+        .rpc('search_supplier_code', { 
+          p_code: supplierCode.toUpperCase() 
+        });
 
       if (error || !data) {
         setSupplierInfo(null);
         const errorMsg = 'Supplier Code Not Found';
         setSupplierError(errorMsg);
-        process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[useSupplierValidation] Supplier not found:', supplierCode);
+        process.env.NODE_ENV !== "production" && console.log('[useSupplierValidation] Supplier not found:', supplierCode);
         
         grnErrorHandler.handleSupplierError(
           error || errorMsg,
@@ -60,10 +62,12 @@ export const useSupplierValidation = (): UseSupplierValidationReturn => {
           }
         );
       } else {
-        setSupplierInfo(data);
+        // RPC 函數返回的數據直接使用
+        const supplierData = data as SupplierInfo;
+        setSupplierInfo(supplierData);
         setSupplierError(null);
-        process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[useSupplierValidation] Supplier found:', data);
-        return data; // Return the found supplier
+        process.env.NODE_ENV !== "production" && console.log('[useSupplierValidation] Supplier found:', supplierData);
+        return supplierData; // Return the found supplier
       }
     } catch (error) {
       console.error('[useSupplierValidation] Error validating supplier:', error);

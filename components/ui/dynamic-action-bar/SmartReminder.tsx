@@ -152,7 +152,7 @@ export function SmartReminder({ userId, className }: SmartReminderProps) {
         <div className="flex items-start gap-3">
           {/* Icon */}
           <div className="flex-shrink-0">
-            <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center">
+                            <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
               <Icon className="w-5 h-5 text-white" />
             </div>
           </div>
@@ -176,7 +176,7 @@ export function SmartReminder({ userId, className }: SmartReminderProps) {
           {/* Dismiss button */}
           <button
             onClick={handleDismiss}
-            className="flex-shrink-0 p-1 rounded-lg hover:bg-white/10 transition-colors"
+                          className="flex-shrink-0 p-1 rounded-lg hover:bg-white/20 transition-colors"
           >
             <X className="w-4 h-4 text-white/60" />
           </button>

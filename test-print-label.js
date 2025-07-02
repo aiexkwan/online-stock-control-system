@@ -9,13 +9,99 @@ const config = {
     { productCode: 'MEP9090150', speed: 'normal', testNumber: 1 },
     { productCode: 'ME4328150', speed: 'normal', testNumber: 2 },
     { productCode: 'MEL4545A', speed: 'fast', testNumber: 3 },
-    { productCode: 'MEL6060A', speed: 'fast', testNumber: 4 }
+    { productCode: 'MEL6060A', speed: 'fast', testNumber: 4 },
+    { productCode: 'MEL4545A', speed: 'normal', testNumber: 5 },    
+    { productCode: 'MEP9090150', speed: 'fast', testNumber: 6 }
   ],
   palletCount: '4'
 };
 
 async function delay(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+// Function to handle print dialog automatically
+async function handlePrintDialog(page) {
+  console.log('🖨️  Waiting for potential print dialog...');
+  
+  try {
+    // Wait for print dialog to appear (PDF generation)
+    await page.waitForSelector('iframe[src*="print-label-pdf"]', { timeout: 3000 });
+    console.log('✅ PDF print dialog detected');
+    
+    // Wait a moment for PDF generation
+    await delay(2000);
+    
+    // Look for print confirmation buttons
+    const confirmPrintButtons = await page.$$eval('button', buttons => 
+      buttons.filter(btn => 
+        btn.textContent.includes('Print') || 
+        btn.textContent.includes('確認') ||
+        btn.textContent.includes('Confirm') ||
+        btn.textContent.includes('OK')
+      ).map(btn => btn.textContent)
+    );
+    
+    if (confirmPrintButtons.length > 0) {
+      console.log('🖨️  Found print confirmation buttons:', confirmPrintButtons);
+      
+      // Try to click print/confirm button
+      const printConfirmButton = await page.evaluateHandle(() => {
+        const buttons = Array.from(document.querySelectorAll('button'));
+        return buttons.find(btn => 
+          btn.textContent.includes('Print') || 
+          btn.textContent.includes('確認') ||
+          btn.textContent.includes('Confirm') ||
+          btn.textContent.includes('OK')
+        );
+      });
+      
+      if (printConfirmButton && printConfirmButton.asElement()) {
+        await printConfirmButton.click();
+        console.log('✅ Clicked print confirmation button');
+        await delay(1000);
+      }
+    }
+    
+    // Handle browser print dialog (if any)
+    await page.evaluate(() => {
+      // Simulate Ctrl+P if print dialog is expected
+      if (window.print) {
+        console.log('Triggering browser print...');
+        // Don't actually call window.print() to avoid real printing
+        // window.print();
+      }
+    });
+    
+    return true;
+  } catch (error) {
+    console.log('ℹ️  No print dialog detected or timeout reached');
+    return false;
+  }
+}
+
+// Function to auto-confirm system print dialogs using keyboard shortcuts
+async function autoConfirmPrint(page) {
+  console.log('⌨️  Sending Enter key to confirm any system print dialogs...');
+  
+  try {
+    // Wait a moment for any system dialogs to appear
+    await delay(1500);
+    
+    // Send Enter key to confirm print (works for most system print dialogs)
+    await page.keyboard.press('Enter');
+    console.log('✅ Sent Enter key for print confirmation');
+    
+    await delay(500);
+    
+    // Alternative: Send Escape if we want to cancel instead
+    // await page.keyboard.press('Escape');
+    
+    return true;
+  } catch (error) {
+    console.log('⚠️  Could not send print confirmation keys:', error.message);
+    return false;
+  }
 }
 
 async function runTest() {
@@ -146,17 +232,33 @@ async function runTest() {
             if (confirmButton && confirmButton.asElement()) {
               await confirmButton.click();
               console.log('Confirmed clock number');
+              
+              // Handle print dialog after confirming clock number
+              console.log('🖨️  Handling print process...');
+              
+              // Method 1: Handle web-based print dialog
+              const printDialogHandled = await handlePrintDialog(page);
+              
+              // Method 2: Auto-confirm system print dialog
+              await autoConfirmPrint(page);
+              
+              if (printDialogHandled) {
+                console.log('✅ Print dialog was handled successfully');
+              } else {
+                console.log('ℹ️  No web print dialog found, system dialog may have been handled');
+              }
             }
           }
         } catch (e) {
           console.log('Clock number dialog handling failed:', e.message);
         }
         
-        // Wait for print process
+        // Wait for print process completion
+        console.log('⏳ Waiting for print process to complete...');
         if (test.speed === 'normal') {
-          await delay(5000); // Normal speed - wait for completion
+          await delay(8000); // Normal speed - wait longer for print completion
         } else {
-          await delay(2000); // Fast speed - shorter wait
+          await delay(4000); // Fast speed - moderate wait for print completion
         }
         
         // Check for success/error messages
@@ -172,7 +274,7 @@ async function runTest() {
       }
       
       // Small delay between tests
-      if (test.testNumber < 4) {
+      if (test.testNumber < config.tests.length) {
         console.log('Waiting before next test...');
         await delay(3000);
       }

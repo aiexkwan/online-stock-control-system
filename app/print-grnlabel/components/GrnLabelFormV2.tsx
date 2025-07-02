@@ -107,7 +107,6 @@ export const GrnLabelFormV2: React.FC = () => {
 
   // Use the business logic hook (V2 版本使用 reducer state)
   const {
-    validateSupplier,
     weightCalculation,
     processPrintRequest
   } = useGrnLabelBusinessV2({
@@ -169,14 +168,16 @@ export const GrnLabelFormV2: React.FC = () => {
     actions.setFormField(field, value);
   }, [actions, state]);
 
-  const handleSupplierBlur = useCallback(async (e: React.FocusEvent<HTMLInputElement>) => {
-    const inputValue = e.target.value;
-    const supplier = await validateSupplier(inputValue);
-    if (supplier) {
-      // Update the form with the correct supplier code
-      actions.setFormField('materialSupplier', supplier.supplier_code);
+  // 移除 handleSupplierBlur 函數，改為直接在 GrnDetailCard 中處理
+  const handleSupplierInfoChange = useCallback((supplierInfo: any) => {
+    if (supplierInfo) {
+      actions.setSupplierInfo({
+        code: supplierInfo.supplier_code,
+        name: supplierInfo.supplier_name
+      });
+      actions.setSupplierError(null);
     }
-  }, [validateSupplier, actions]);
+  }, [actions]);
 
   // Handle label mode change
   const handleLabelModeChange = useCallback((mode: LabelMode) => {
@@ -300,7 +301,7 @@ export const GrnLabelFormV2: React.FC = () => {
                 palletType={state.palletType}
                 packageType={state.packageType}
                 onFormChange={handleFormChange}
-                onSupplierBlur={handleSupplierBlur}
+                onSupplierInfoChange={handleSupplierInfoChange}
                 onProductInfoChange={(qcProductInfo) => {
                   const adaptedInfo = adaptProductInfo(qcProductInfo);
                   actions.setProductInfo(adaptedInfo);

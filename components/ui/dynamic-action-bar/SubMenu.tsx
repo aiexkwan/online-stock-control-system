@@ -75,7 +75,7 @@ export function SubMenu({ items }: SubMenuProps) {
               className={cn(
                 "block px-4 py-2.5",
                 "rounded-lg",
-                "hover:bg-white/10",
+                "hover:bg-white/20",
                 "transition-colors duration-200",
                 "group"
               )}

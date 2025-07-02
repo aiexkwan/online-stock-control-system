@@ -60,7 +60,7 @@ export class NavigationErrorBoundary extends Component<Props, State> {
               size="sm"
               variant="ghost"
               onClick={this.handleReset}
-              className="text-white hover:text-white hover:bg-white/10"
+              className="text-white hover:text-white hover:bg-white/20"
             >
               <RefreshCw className="w-4 h-4 mr-1" />
               Reload
