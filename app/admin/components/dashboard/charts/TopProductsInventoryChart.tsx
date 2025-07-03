@@ -41,27 +41,57 @@ export default function TopProductsInventoryChart({ timeFrame }: TopProductsInve
   const chartData = useMemo(() => {
     if (!data?.record_inventoryCollection?.edges) return [];
 
-    // Calculate total inventory for each product
-    const productTotals = data.record_inventoryCollection.edges.map(({ node }: any) => {
-      const total = (node.await || 0) + 
-                   (node.await_grn || 0) + 
-                   (node.backcarpark || 0) + 
-                   (node.bulk || 0) + 
-                   (node.fold || 0) + 
-                   (node.injection || 0) + 
-                   (node.pipeline || 0) + 
-                   (node.prebook || 0);
+    // Group by product code and sum up inventories
+    const productMap = new Map();
+    
+    data.record_inventoryCollection.edges.forEach(({ node }: any) => {
+      const code = node.product_code;
+      
+      if (productMap.has(code)) {
+        // Sum existing values
+        const existing = productMap.get(code);
+        existing.await += (node.await || 0);
+        existing.await_grn += (node.await_grn || 0);
+        existing.backcarpark += (node.backcarpark || 0);
+        existing.bulk += (node.bulk || 0);
+        existing.fold += (node.fold || 0);
+        existing.injection += (node.injection || 0);
+        existing.pipeline += (node.pipeline || 0);
+        existing.prebook += (node.prebook || 0);
+      } else {
+        // Create new entry
+        productMap.set(code, {
+          code: node.product_code,
+          description: node.data_code?.description || node.product_code,
+          colour: node.data_code?.colour || 'N/A',
+          await: node.await || 0,
+          await_grn: node.await_grn || 0,
+          backcarpark: node.backcarpark || 0,
+          bulk: node.bulk || 0,
+          fold: node.fold || 0,
+          injection: node.injection || 0,
+          pipeline: node.pipeline || 0,
+          prebook: node.prebook || 0
+        });
+      }
+    });
+
+    // Calculate totals and prepare chart data
+    const productTotals = Array.from(productMap.values()).map(item => {
+      const total = item.await + item.await_grn + item.backcarpark + 
+                   item.bulk + item.fold + item.injection + 
+                   item.pipeline + item.prebook;
 
       return {
-        code: node.product_code,
-        description: node.data_code?.description || node.product_code,
-        colour: node.data_code?.colour || 'N/A',
+        code: item.code,
+        description: item.description,
+        colour: item.colour,
         total,
-        await: node.await || 0,
-        bulk: node.bulk || 0,
-        fold: node.fold || 0,
-        other: (node.await_grn || 0) + (node.backcarpark || 0) + 
-                (node.injection || 0) + (node.pipeline || 0) + (node.prebook || 0)
+        await: item.await,
+        bulk: item.bulk,
+        fold: item.fold,
+        other: item.await_grn + item.backcarpark + item.injection + 
+               item.pipeline + item.prebook
       };
     });
 
@@ -161,7 +191,7 @@ export default function TopProductsInventoryChart({ timeFrame }: TopProductsInve
 
       <div className="mt-4 grid grid-cols-2 gap-2 text-xs">
         {chartData.slice(0, 4).map((item, index) => (
-          <div key={item.code} className="flex items-center gap-2">
+          <div key={`legend-${item.code}-${index}`} className="flex items-center gap-2">
             <div 
               className="w-3 h-3 rounded" 
               style={{ backgroundColor: colors[index % colors.length] }}
