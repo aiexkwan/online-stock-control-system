@@ -109,44 +109,6 @@ export const StockLevelHistoryChart: React.FC<StockLevelHistoryChartProps> = ({ 
     setAdjustedTimeFrame(adjusted);
   }, [timeFrame, calculateAdjustedTimeFrame]);
 
-  // 生成24個時間段
-  const generateTimeSegments = useCallback(() => {
-    if (!adjustedTimeFrame) return [];
-    
-    const segments: { start: Date; end: Date; label: string }[] = [];
-    const totalDuration = adjustedTimeFrame.end.getTime() - adjustedTimeFrame.start.getTime();
-    const segmentDuration = totalDuration / 24;
-    const days = totalDuration / (1000 * 60 * 60 * 24);
-
-    for (let i = 0; i < 24; i++) {
-      const segmentStart = new Date(adjustedTimeFrame.start.getTime() + (segmentDuration * i));
-      const segmentEnd = new Date(adjustedTimeFrame.start.getTime() + (segmentDuration * (i + 1)));
-      
-      // 根據時間範圍選擇顯示格式
-      let label: string;
-      if (days <= 1) {
-        // 一天內，顯示時間
-        label = format(segmentStart, 'HH:mm');
-      } else if (days <= 7) {
-        // 一週內，顯示星期和時間
-        label = format(segmentStart, 'EEE HH:mm');
-      } else if (days <= 30) {
-        // 一個月內，顯示日期
-        label = format(segmentStart, 'MM/dd');
-      } else {
-        // 超過一個月，顯示月份和日期
-        label = format(segmentStart, 'MMM dd');
-      }
-      
-      segments.push({
-        start: segmentStart,
-        end: segmentEnd,
-        label
-      });
-    }
-
-    return segments;
-  }, [adjustedTimeFrame]);
 
   // 處理庫存歷史數據
   const processHistoryData = useCallback(async (products: string[]) => {
@@ -163,7 +125,44 @@ export const StockLevelHistoryChart: React.FC<StockLevelHistoryChartProps> = ({ 
     const limitedProducts = products.slice(0, 10);
     console.log('[StockLevelHistoryChart] Limited products:', limitedProducts);
 
-    const segments = generateTimeSegments();
+    // 直接在這裡生成時間段，避免依賴循環
+    const segments = (() => {
+      if (!adjustedTimeFrame) return [];
+      
+      const segments: { start: Date; end: Date; label: string }[] = [];
+      const totalDuration = adjustedTimeFrame.end.getTime() - adjustedTimeFrame.start.getTime();
+      const segmentDuration = totalDuration / 24;
+      const days = totalDuration / (1000 * 60 * 60 * 24);
+
+      for (let i = 0; i < 24; i++) {
+        const segmentStart = new Date(adjustedTimeFrame.start.getTime() + (segmentDuration * i));
+        const segmentEnd = new Date(adjustedTimeFrame.start.getTime() + (segmentDuration * (i + 1)));
+        
+        // 根據時間範圍選擇顯示格式
+        let label: string;
+        if (days <= 1) {
+          // 一天內，顯示時間
+          label = format(segmentStart, 'HH:mm');
+        } else if (days <= 7) {
+          // 一週內，顯示星期和時間
+          label = format(segmentStart, 'EEE HH:mm');
+        } else if (days <= 30) {
+          // 一個月內，顯示日期
+          label = format(segmentStart, 'MM/dd');
+        } else {
+          // 超過一個月，顯示月份和日期
+          label = format(segmentStart, 'MMM dd');
+        }
+        
+        segments.push({
+          start: segmentStart,
+          end: segmentEnd,
+          label
+        });
+      }
+
+      return segments;
+    })();
     console.log('[StockLevelHistoryChart] Generated segments:', segments.length);
     const dataPoints: ChartDataPoint[] = [];
 
@@ -244,7 +243,7 @@ export const StockLevelHistoryChart: React.FC<StockLevelHistoryChartProps> = ({ 
       console.error('[StockLevelHistoryChart] Error fetching stock history:', error);
       setChartData([]);
     }
-  }, [supabase, adjustedTimeFrame, generateTimeSegments]);
+  }, [supabase, adjustedTimeFrame?.start?.getTime(), adjustedTimeFrame?.end?.getTime()]);
 
   // 監聽 StockTypeSelector 的類型變更事件
   useEffect(() => {
@@ -258,18 +257,8 @@ export const StockLevelHistoryChart: React.FC<StockLevelHistoryChartProps> = ({ 
       console.log('[StockLevelHistoryChart] Product codes:', codes);
       
       if (codes.length > 0) {
+        setProductCodes(codes);
         setLoading(true);
-        processHistoryData(codes)
-          .then(() => {
-            console.log('[StockLevelHistoryChart] processHistoryData completed successfully');
-          })
-          .catch((error) => {
-            console.error('[StockLevelHistoryChart] processHistoryData error:', error);
-          })
-          .finally(() => {
-            console.log('[StockLevelHistoryChart] Setting loading to false');
-            setLoading(false);
-          });
       } else {
         console.log('[StockLevelHistoryChart] No product codes, clearing data');
         setChartData([]);
@@ -282,7 +271,7 @@ export const StockLevelHistoryChart: React.FC<StockLevelHistoryChartProps> = ({ 
     return () => {
       window.removeEventListener('stockTypeChanged', handleTypeChange as EventListener);
     };
-  }, [processHistoryData]);
+  }, []);
 
   // 初始化時設定預設時間範圍
   useEffect(() => {
@@ -312,7 +301,7 @@ export const StockLevelHistoryChart: React.FC<StockLevelHistoryChartProps> = ({ 
         })
         .finally(() => setLoading(false));
     }
-  }, [timeFrameKey, productCodesKey, processHistoryData, adjustedTimeFrame, productCodes]);
+  }, [timeFrameKey, productCodesKey]);
 
   // 當刷新觸發器改變時，重新加載數據
   const prevRefreshTriggerRef = React.useRef(refreshTrigger);
@@ -328,7 +317,7 @@ export const StockLevelHistoryChart: React.FC<StockLevelHistoryChartProps> = ({ 
         })
         .finally(() => setLoading(false));
     }
-  }, [refreshTrigger, productCodes, processHistoryData]);
+  }, [refreshTrigger, productCodesKey]);
 
   // 自定義 Tooltip
   const CustomTooltip = ({ active, payload, label }: any) => {
