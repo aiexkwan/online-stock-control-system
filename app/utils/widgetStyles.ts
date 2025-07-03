@@ -26,7 +26,6 @@ export const WidgetStyles = {
     
     // System Tools 類
     VOID_PALLET: '',
-    VIEW_HISTORY: '',
     
     // Document Management 類
     UPLOAD_FILES: '',
@@ -44,7 +43,6 @@ export const WidgetStyles = {
     material_received: '',
     ask_database: '',
     void_pallet: '',
-    view_history: '',
     upload_files: '',
     reports: '',
     product_spec: '',
@@ -97,9 +95,6 @@ export const WidgetStyles = {
     
     // Void Pallet Widget
     voidPallet: 'bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500',
-    
-    // View History Widget
-    viewHistory: 'bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500',
   },
   
   // 圖表顏色配置
