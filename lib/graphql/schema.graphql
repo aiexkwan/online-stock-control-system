@@ -35,10 +35,24 @@ type Query {
     sort: SortInput
   ): MovementConnection!
   
-  # 業務邏輯查詢
-  getLowStockProducts(threshold: Int = 10): [Product!]!
-  getPendingOrders(status: OrderStatus): [Order!]!
-  getActiveTransfers: [Movement!]!
+  # 業務邏輯查詢 (使用 Connection 分頁模式)
+  getLowStockProducts(
+    threshold: Int = 10
+    pagination: PaginationInput
+    sort: SortInput
+  ): ProductConnection!
+  
+  getPendingOrders(
+    status: OrderStatus
+    pagination: PaginationInput
+    sort: SortInput
+  ): OrderConnection!
+  
+  getActiveTransfers(
+    dateRange: DateRangeInput
+    pagination: PaginationInput
+    sort: SortInput
+  ): MovementConnection!
 }
 
 type Mutation {
@@ -112,6 +126,11 @@ input SortInput {
   direction: SortDirection!
 }
 
+input DateRangeInput {
+  startDate: DateTime!
+  endDate: DateTime!
+}
+
 enum SortDirection {
   ASC
   DESC
@@ -144,10 +163,27 @@ type Product implements Node {
   standardQty: Int! # standard qty per pallet
   type: String!
   remark: String
-  # 關聯
-  pallets: [Pallet!]!
-  inventory: [InventoryRecord!]!
-  movements: [Movement!]!
+  # 關聯 (使用 Connection 分頁優化性能)
+  pallets(
+    first: Int = 20
+    after: String
+    filter: PalletFilter
+    sort: SortInput
+  ): PalletConnection
+  
+  inventory(
+    first: Int = 50
+    after: String
+    filter: InventoryFilter
+    sort: SortInput
+  ): InventoryConnection
+  
+  movements(
+    first: Int = 10
+    after: String
+    filter: MovementFilter
+    sort: SortInput
+  ): MovementConnection
 }
 
 input ProductFilter {
@@ -171,10 +207,28 @@ type Pallet implements Node {
   # 關聯
   product: Product!
   location: Location
-  movements: [Movement!]!
-  grnRecords: [GRNRecord!]!
-  inventoryRecords: [InventoryRecord!]!
   status: PalletStatus!
+  
+  # 關聯列表 (使用 Connection 分頁)
+  movements(
+    first: Int = 10
+    after: String
+    filter: MovementFilter
+    sort: SortInput
+  ): MovementConnection
+  
+  grnRecords(
+    first: Int = 20
+    after: String
+    sort: SortInput
+  ): GRNConnection
+  
+  inventoryRecords(
+    first: Int = 30
+    after: String
+    filter: InventoryFilter
+    sort: SortInput
+  ): InventoryConnection
 }
 
 enum PalletStatus {
@@ -610,13 +664,39 @@ extend type Query {
     pagination: PaginationInput
   ): StocktakeConnection!
   
-  # 業務邏輯查詢
-  palletsByLocation(location: LocationType!): [Pallet!]!
-  lowStockProducts(threshold: Int = 10): [Product!]!
-  pendingOrders: [Order!]!
-  recentMovements(limit: Int = 20): [Movement!]!
-  stockLevels: [InventoryRecord!]!
-  activeStocktakeSessions: [StocktakeSession!]!
+  # 業務邏輯查詢 (使用 Connection 分頁模式)
+  palletsByLocation(
+    location: LocationType!
+    pagination: PaginationInput
+    sort: SortInput
+  ): PalletConnection!
+  
+  lowStockProducts(
+    threshold: Int = 10
+    pagination: PaginationInput
+    sort: SortInput
+  ): ProductConnection!
+  
+  pendingOrders(
+    pagination: PaginationInput
+    sort: SortInput
+  ): OrderConnection!
+  
+  recentMovements(
+    limit: Int = 20
+    pagination: PaginationInput
+    sort: SortInput
+  ): MovementConnection!
+  
+  stockLevels(
+    pagination: PaginationInput
+    sort: SortInput
+  ): InventoryConnection!
+  
+  activeStocktakeSessions(
+    pagination: PaginationInput
+    sort: SortInput
+  ): StocktakeSessionConnection!
 }
 
 # 變更操作
@@ -624,24 +704,24 @@ extend type Mutation {
   # 產品管理
   createProduct(input: CreateProductInput!): ProductResult!
   updateProduct(id: ID!, input: UpdateProductInput!): ProductResult!
-  deleteProduct(id: ID!): Boolean!
+  deleteProduct(id: ID!): DeleteResult!
   
   # 托盤管理
   createPallet(input: CreatePalletInput!): PalletResult!
   updatePallet(id: ID!, input: UpdatePalletInput!): PalletResult!
-  deletePallet(id: ID!): Boolean!
+  deletePallet(id: ID!): DeleteResult!
   movePallet(input: MovePalletInput!): MovementResult!
   
   # 庫存管理
   updateInventory(input: UpdateInventoryInput!): InventoryResult!
-  adjustStock(input: StockAdjustmentInput!): InventoryResult!
-  transferStock(input: StockTransferInput!): MovementResult!
+  adjustStock(input: StockAdjustmentInput!): AdjustInventoryResult!
+  transferStock(input: StockTransferInput!): TransferResult!
   
   # 訂單管理
   createOrder(input: CreateOrderInput!): OrderResult!
   updateOrder(id: ID!, input: UpdateOrderInput!): OrderResult!
-  loadPalletToOrder(input: LoadPalletInput!): Boolean!
-  unloadPalletFromOrder(input: UnloadPalletInput!): Boolean!
+  loadPalletToOrder(input: LoadPalletInput!): OrderResult!
+  unloadPalletFromOrder(input: UnloadPalletInput!): OrderResult!
   completeOrder(id: ID!): OrderResult!
   
   # 庫存盤點
@@ -654,8 +734,8 @@ extend type Mutation {
   updateGRN(id: ID!, input: UpdateGRNInput!): GRNResult!
   
   # 批量操作
-  bulkUpdateInventory(inputs: [UpdateInventoryInput!]!): [InventoryResult!]!
-  bulkCreatePallets(inputs: [CreatePalletInput!]!): [PalletResult!]!
+  bulkUpdateInventory(inputs: [UpdateInventoryInput!]!): BulkInventoryResult!
+  bulkCreatePallets(inputs: [CreatePalletInput!]!): BulkPalletResult!
 }
 
 # 訂閱操作 (實時更新)
@@ -903,6 +983,28 @@ type OrderEdge implements Edge {
   cursor: String!
 }
 
+type GRNConnection implements Connection {
+  edges: [GRNEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+type GRNEdge implements Edge {
+  node: GRNRecord!
+  cursor: String!
+}
+
+type StocktakeSessionConnection implements Connection {
+  edges: [StocktakeSessionEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+type StocktakeSessionEdge implements Edge {
+  node: StocktakeSession!
+  cursor: String!
+}
+
 # Result 聯合類型 (錯誤處理)
 union ProductResult = Product | UserError | SystemError
 union PalletResult = Pallet | UserError | SystemError
@@ -917,6 +1019,8 @@ union StocktakeSessionResult = StocktakeSession | UserError | SystemError
 union GrnLabelResult = GrnLabel | UserError | SystemError
 union GRNResult = GRNRecord | UserError | SystemError
 union AdjustInventoryResult = InventoryRecord | UserError | SystemError
+union BulkInventoryResult = BulkInventorySuccess | UserError | SystemError
+union BulkPalletResult = BulkPalletSuccess | UserError | SystemError
 
 # 成功操作類型
 type DeleteSuccess {
@@ -931,6 +1035,18 @@ type VoidSuccess {
 
 type TransferSuccess {
   transferId: ID!
+  message: String!
+}
+
+type BulkInventorySuccess {
+  successfulUpdates: Int!
+  failedUpdates: Int!
+  message: String!
+}
+
+type BulkPalletSuccess {
+  successfulCreations: Int!
+  failedCreations: Int!
   message: String!
 }
 

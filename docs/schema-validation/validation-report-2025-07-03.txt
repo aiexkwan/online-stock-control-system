@@ -1,49 +1,17 @@
 ============================================================
 GraphQL Schema Validation Report
-Generated: 2025-07-03T08:44:13.059Z
+Generated: 2025-07-03T09:06:13.373Z
 Schema Version: 1.2.0
 ============================================================
 
 SUMMARY:
 ✅ Valid: YES
 ❌ Errors: 0
-⚠️  Warnings: 42
+⚠️  Warnings: 30
 💡 Suggestions: 4
 
 WARNINGS:
-⚠️ [PAGINATION] query.getLowStockProducts
-   List query should use Connection pattern for pagination
-   💡 Suggestion: Consider changing return type to a Connection
-
-⚠️ [PAGINATION] query.getPendingOrders
-   List query should use Connection pattern for pagination
-   💡 Suggestion: Consider changing return type to a Connection
-
-⚠️ [PAGINATION] query.getActiveTransfers
-   List query should use Connection pattern for pagination
-   💡 Suggestion: Consider changing return type to a Connection
-
 ⚠️ [PAGINATION] query.edges
-   List query should use Connection pattern for pagination
-   💡 Suggestion: Consider changing return type to a Connection
-
-⚠️ [PAGINATION] query.pallets
-   List query should use Connection pattern for pagination
-   💡 Suggestion: Consider changing return type to a Connection
-
-⚠️ [PAGINATION] query.movements
-   List query should use Connection pattern for pagination
-   💡 Suggestion: Consider changing return type to a Connection
-
-⚠️ [PAGINATION] query.movements
-   List query should use Connection pattern for pagination
-   💡 Suggestion: Consider changing return type to a Connection
-
-⚠️ [PAGINATION] query.grnRecords
-   List query should use Connection pattern for pagination
-   💡 Suggestion: Consider changing return type to a Connection
-
-⚠️ [PAGINATION] query.inventoryRecords
    List query should use Connection pattern for pagination
    💡 Suggestion: Consider changing return type to a Connection
 
@@ -91,27 +59,11 @@ WARNINGS:
    List query should use Connection pattern for pagination
    💡 Suggestion: Consider changing return type to a Connection
 
-⚠️ [PAGINATION] query.lowStockProducts
+⚠️ [PAGINATION] query.edges
    List query should use Connection pattern for pagination
    💡 Suggestion: Consider changing return type to a Connection
 
-⚠️ [PAGINATION] query.pendingOrders
-   List query should use Connection pattern for pagination
-   💡 Suggestion: Consider changing return type to a Connection
-
-⚠️ [PAGINATION] query.recentMovements
-   List query should use Connection pattern for pagination
-   💡 Suggestion: Consider changing return type to a Connection
-
-⚠️ [PAGINATION] query.stockLevels
-   List query should use Connection pattern for pagination
-   💡 Suggestion: Consider changing return type to a Connection
-
-⚠️ [PAGINATION] query.activeStocktakeSessions
-   List query should use Connection pattern for pagination
-   💡 Suggestion: Consider changing return type to a Connection
-
-⚠️ [PAGINATION] query.bulkCreatePallets
+⚠️ [PAGINATION] query.edges
    List query should use Connection pattern for pagination
    💡 Suggestion: Consider changing return type to a Connection
 
