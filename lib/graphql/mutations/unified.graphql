@@ -1,0 +1,426 @@
+# 統一數據層變更操作範例
+# 使用新的標準化 GraphQL Schema
+
+# 產品管理
+mutation CreateProduct($input: CreateProductInput!) {
+  createProduct(input: $input) {
+    ... on Product {
+      id
+      code
+      description
+      colour
+      standardQty
+      type
+      remark
+    }
+    ... on UserError {
+      message
+      code
+      field
+    }
+    ... on SystemError {
+      message
+      code
+      details
+    }
+  }
+}
+
+mutation UpdateProduct($id: ID!, $input: UpdateProductInput!) {
+  updateProduct(id: $id, input: $input) {
+    ... on Product {
+      id
+      code
+      description
+      colour
+      standardQty
+      type
+      remark
+    }
+    ... on UserError {
+      message
+      code
+      field
+    }
+    ... on SystemError {
+      message
+      code
+      details
+    }
+  }
+}
+
+# 托盤管理
+mutation CreatePallet($input: CreatePalletInput!) {
+  createPallet(input: $input) {
+    ... on Pallet {
+      id
+      palletNumber
+      productCode
+      series
+      generateTime
+      quantity
+      status
+      product {
+        code
+        description
+        colour
+      }
+    }
+    ... on UserError {
+      message
+      code
+      field
+    }
+    ... on SystemError {
+      message
+      code
+      details
+    }
+  }
+}
+
+mutation MovePallet($input: MovePalletInput!) {
+  movePallet(input: $input) {
+    ... on Movement {
+      id
+      palletNumber
+      fromLocation
+      toLocation
+      operatorId
+      transferDate
+      pallet {
+        id
+        palletNumber
+        productCode
+        product {
+          description
+        }
+      }
+      operator {
+        name
+        department
+      }
+    }
+    ... on UserError {
+      message
+      code
+      field
+    }
+    ... on SystemError {
+      message
+      code
+      details
+    }
+  }
+}
+
+# 庫存管理
+mutation UpdateInventory($input: UpdateInventoryInput!) {
+  updateInventory(input: $input) {
+    ... on InventoryRecord {
+      id
+      productCode
+      palletNumber
+      injection
+      pipeline
+      prebook
+      await
+      fold
+      bulk
+      backcarpark
+      damage
+      awaitGrn
+      totalQuantity
+      latestUpdate
+    }
+    ... on UserError {
+      message
+      code
+      field
+    }
+    ... on SystemError {
+      message
+      code
+      details
+    }
+  }
+}
+
+mutation AdjustStock($input: StockAdjustmentInput!) {
+  adjustStock(input: $input) {
+    ... on InventoryRecord {
+      id
+      productCode
+      palletNumber
+      totalQuantity
+      latestUpdate
+      product {
+        code
+        description
+      }
+    }
+    ... on UserError {
+      message
+      code
+      field
+    }
+    ... on SystemError {
+      message
+      code
+      details
+    }
+  }
+}
+
+mutation TransferStock($input: StockTransferInput!) {
+  transferStock(input: $input) {
+    ... on Movement {
+      id
+      palletNumber
+      fromLocation
+      toLocation
+      operatorId
+      transferDate
+    }
+    ... on UserError {
+      message
+      code
+      field
+    }
+    ... on SystemError {
+      message
+      code
+      details
+    }
+  }
+}
+
+# 訂單管理
+mutation CreateOrder($input: CreateOrderInput!) {
+  createOrder(input: $input) {
+    ... on Order {
+      id
+      orderRef
+      productCode
+      requiredQty
+      remainQty
+      latestUpdate
+      status
+      product {
+        code
+        description
+        colour
+      }
+    }
+    ... on UserError {
+      message
+      code
+      field
+    }
+    ... on SystemError {
+      message
+      code
+      details
+    }
+  }
+}
+
+mutation LoadPalletToOrder($input: LoadPalletInput!) {
+  loadPalletToOrder(input: $input)
+}
+
+mutation UnloadPalletFromOrder($input: UnloadPalletInput!) {
+  unloadPalletFromOrder(input: $input)
+}
+
+mutation CompleteOrder($id: ID!) {
+  completeOrder(id: $id) {
+    ... on Order {
+      id
+      orderRef
+      productCode
+      requiredQty
+      remainQty
+      latestUpdate
+      status
+    }
+    ... on UserError {
+      message
+      code
+      field
+    }
+    ... on SystemError {
+      message
+      code
+      details
+    }
+  }
+}
+
+# 庫存盤點
+mutation StartStocktakeSession($input: StartStocktakeSessionInput!) {
+  startStocktakeSession(input: $input) {
+    ... on StocktakeSession {
+      id
+      sessionDate
+      startTime
+      userId
+      userName
+      sessionStatus
+      totalScans
+      successScans
+      errorScans
+    }
+    ... on UserError {
+      message
+      code
+      field
+    }
+    ... on SystemError {
+      message
+      code
+      details
+    }
+  }
+}
+
+mutation RecordStocktakeCount($input: RecordStocktakeInput!) {
+  recordStocktakeCount(input: $input) {
+    ... on StocktakeRecord {
+      id
+      productCode
+      palletNumber
+      productDesc
+      remainQty
+      countedQty
+      countedName
+      createdAt
+      variance
+      variancePercentage
+    }
+    ... on UserError {
+      message
+      code
+      field
+    }
+    ... on SystemError {
+      message
+      code
+      details
+    }
+  }
+}
+
+mutation EndStocktakeSession($sessionId: ID!) {
+  endStocktakeSession(sessionId: $sessionId) {
+    ... on StocktakeSession {
+      id
+      sessionDate
+      startTime
+      endTime
+      userId
+      userName
+      sessionStatus
+      totalScans
+      successScans
+      errorScans
+    }
+    ... on UserError {
+      message
+      code
+      field
+    }
+    ... on SystemError {
+      message
+      code
+      details
+    }
+  }
+}
+
+# GRN 管理
+mutation CreateGRN($input: CreateGRNInput!) {
+  createGRN(input: $input) {
+    ... on GRNRecord {
+      id
+      grnRef
+      palletNumber
+      supplierCode
+      materialCode
+      grossWeight
+      netWeight
+      palletType
+      packageType
+      palletCount
+      packageCount
+      createTime
+      pallet {
+        palletNumber
+        product {
+          description
+        }
+      }
+      supplier {
+        supplierCode
+        supplierName
+      }
+    }
+    ... on UserError {
+      message
+      code
+      field
+    }
+    ... on SystemError {
+      message
+      code
+      details
+    }
+  }
+}
+
+# 批量操作
+mutation BulkUpdateInventory($inputs: [UpdateInventoryInput!]!) {
+  bulkUpdateInventory(inputs: $inputs) {
+    ... on InventoryRecord {
+      id
+      productCode
+      palletNumber
+      totalQuantity
+      latestUpdate
+    }
+    ... on UserError {
+      message
+      code
+      field
+    }
+    ... on SystemError {
+      message
+      code
+      details
+    }
+  }
+}
+
+mutation BulkCreatePallets($inputs: [CreatePalletInput!]!) {
+  bulkCreatePallets(inputs: $inputs) {
+    ... on Pallet {
+      id
+      palletNumber
+      productCode
+      quantity
+      generateTime
+      status
+    }
+    ... on UserError {
+      message
+      code
+      field
+    }
+    ... on SystemError {
+      message
+      code
+      details
+    }
+  }
+} 

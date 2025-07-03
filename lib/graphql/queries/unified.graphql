@@ -1,0 +1,384 @@
+# 統一數據層查詢範例
+# 使用新的標準化 GraphQL Schema
+
+# 產品查詢
+query GetProducts($filter: ProductFilter, $pagination: PaginationInput, $sort: [SortInput!]) {
+  products(filter: $filter, pagination: $pagination, sort: $sort) {
+    totalCount
+    pageInfo {
+      hasNextPage
+      hasPreviousPage
+      startCursor
+      endCursor
+    }
+    edges {
+      cursor
+      node {
+        id
+        code
+        description
+        colour
+        standardQty
+        type
+        remark
+        pallets {
+          id
+          palletNumber
+          status
+          quantity
+        }
+      }
+    }
+  }
+}
+
+# 單個產品查詢
+query GetProduct($id: ID!) {
+  product(id: $id) {
+    ... on Product {
+      id
+      code
+      description
+      colour
+      standardQty
+      type
+      remark
+      pallets {
+        id
+        palletNumber
+        generateTime
+        quantity
+        status
+        location {
+          name
+          currentStock
+          occupancyRate
+        }
+      }
+      inventory {
+        id
+        injection
+        pipeline
+        prebook
+        await
+        fold
+        bulk
+        backcarpark
+        damage
+        awaitGrn
+        totalQuantity
+        latestUpdate
+      }
+    }
+    ... on UserError {
+      message
+      code
+      field
+    }
+    ... on SystemError {
+      message
+      code
+      details
+    }
+  }
+}
+
+# 托盤查詢
+query GetPallets($filter: PalletFilter, $pagination: PaginationInput, $sort: [SortInput!]) {
+  pallets(filter: $filter, pagination: $pagination, sort: $sort) {
+    totalCount
+    pageInfo {
+      hasNextPage
+      hasPreviousPage
+      startCursor
+      endCursor
+    }
+    edges {
+      cursor
+      node {
+        id
+        palletNumber
+        productCode
+        series
+        generateTime
+        quantity
+        remark
+        status
+        product {
+          code
+          description
+          colour
+        }
+        location {
+          name
+          currentStock
+          occupancyRate
+        }
+      }
+    }
+  }
+}
+
+# 庫存查詢
+query GetInventory($filter: InventoryFilter, $pagination: PaginationInput) {
+  inventory(filter: $filter, pagination: $pagination) {
+    totalCount
+    edges {
+      node {
+        id
+        productCode
+        palletNumber
+        injection
+        pipeline
+        prebook
+        await
+        fold
+        bulk
+        backcarpark
+        damage
+        awaitGrn
+        totalQuantity
+        latestUpdate
+        product {
+          code
+          description
+          colour
+        }
+        pallet {
+          palletNumber
+          status
+          generateTime
+        }
+      }
+    }
+  }
+}
+
+# 移動記錄查詢
+query GetMovements($filter: MovementFilter, $pagination: PaginationInput) {
+  movements(filter: $filter, pagination: $pagination) {
+    totalCount
+    edges {
+      node {
+        id
+        palletNumber
+        fromLocation
+        toLocation
+        operatorId
+        transferDate
+        pallet {
+          productCode
+          quantity
+          product {
+            description
+          }
+        }
+        operator {
+          name
+          department
+        }
+      }
+    }
+  }
+}
+
+# 訂單查詢
+query GetOrders($filter: OrderFilter, $pagination: PaginationInput) {
+  orders(filter: $filter, pagination: $pagination) {
+    totalCount
+    edges {
+      node {
+        id
+        orderRef
+        productCode
+        requiredQty
+        remainQty
+        latestUpdate
+        status
+        product {
+          code
+          description
+          colour
+        }
+        orderDetails {
+          id
+          palletNumber
+          weight
+          length
+          width
+          height
+          createdAt
+        }
+      }
+    }
+  }
+}
+
+# 庫存盤點查詢
+query GetStocktakeRecords($filter: StocktakeFilter, $pagination: PaginationInput) {
+  stocktakeRecords(filter: $filter, pagination: $pagination) {
+    totalCount
+    edges {
+      node {
+        id
+        productCode
+        palletNumber
+        productDesc
+        remainQty
+        countedQty
+        countedName
+        createdAt
+        variance
+        variancePercentage
+        countedBy {
+          name
+          department
+        }
+      }
+    }
+  }
+}
+
+# 業務邏輯查詢
+query GetLowStockProducts($threshold: Int = 10) {
+  lowStockProducts(threshold: $threshold) {
+    id
+    code
+    description
+    colour
+    standardQty
+    inventory {
+      totalQuantity
+      latestUpdate
+    }
+  }
+}
+
+query GetPendingOrders {
+  pendingOrders {
+    id
+    orderRef
+    productCode
+    requiredQty
+    remainQty
+    latestUpdate
+    product {
+      description
+      colour
+    }
+  }
+}
+
+query GetRecentMovements($limit: Int = 20) {
+  recentMovements(limit: $limit) {
+    id
+    palletNumber
+    fromLocation
+    toLocation
+    transferDate
+    pallet {
+      productCode
+      product {
+        description
+      }
+    }
+    operator {
+      name
+    }
+  }
+}
+
+query GetStockLevels {
+  stockLevels {
+    id
+    productCode
+    injection
+    pipeline
+    prebook
+    await
+    fold
+    bulk
+    backcarpark
+    damage
+    awaitGrn
+    totalQuantity
+    latestUpdate
+    product {
+      code
+      description
+      colour
+    }
+  }
+}
+
+query GetPalletsByLocation($location: LocationType!) {
+  palletsByLocation(location: $location) {
+    id
+    palletNumber
+    productCode
+    quantity
+    generateTime
+    status
+    product {
+      description
+      colour
+    }
+  }
+}
+
+# Fragment 定義
+fragment ProductBasic on Product {
+  id
+  code
+  description
+  colour
+  standardQty
+  type
+  remark
+}
+
+fragment PalletBasic on Pallet {
+  id
+  palletNumber
+  productCode
+  series
+  generateTime
+  quantity
+  status
+}
+
+fragment InventoryBasic on InventoryRecord {
+  id
+  productCode
+  palletNumber
+  injection
+  pipeline
+  prebook
+  await
+  fold
+  bulk
+  backcarpark
+  damage
+  awaitGrn
+  totalQuantity
+  latestUpdate
+}
+
+fragment MovementBasic on Movement {
+  id
+  palletNumber
+  fromLocation
+  toLocation
+  operatorId
+  transferDate
+}
+
+fragment OrderBasic on Order {
+  id
+  orderRef
+  productCode
+  requiredQty
+  remainQty
+  latestUpdate
+  status
+} 

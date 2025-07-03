@@ -1,0 +1,300 @@
+# 統一數據層 GraphQL Operations
+# Query 和 Mutation 定義
+
+extend type Query {
+  # 產品查詢
+  product(id: ID!): ProductResult!
+  products(
+    filter: ProductFilter
+    sort: [SortInput!]
+    pagination: PaginationInput
+  ): ProductConnection!
+  
+  # 托盤查詢
+  pallet(id: ID!): PalletResult!
+  pallets(
+    filter: PalletFilter
+    sort: [SortInput!]
+    pagination: PaginationInput
+  ): PalletConnection!
+  
+  # 庫存查詢
+  inventoryRecord(id: ID!): InventoryResult!
+  inventory(
+    filter: InventoryFilter
+    sort: [SortInput!]
+    pagination: PaginationInput
+  ): InventoryConnection!
+  
+  # 移動記錄查詢
+  movement(id: ID!): MovementResult!
+  movements(
+    filter: MovementFilter
+    sort: [SortInput!]
+    pagination: PaginationInput
+  ): MovementConnection!
+  
+  # 訂單查詢
+  order(id: ID!): OrderResult!
+  orders(
+    filter: OrderFilter
+    sort: [SortInput!]
+    pagination: PaginationInput
+  ): OrderConnection!
+  
+  # 用戶查詢
+  user(id: ID!): UserResult!
+  users(
+    filter: UserFilter
+    sort: [SortInput!]
+    pagination: PaginationInput
+  ): UserConnection!
+  
+  # 庫存盤點查詢
+  stocktakeRecord(id: ID!): StocktakeResult!
+  stocktakeRecords(
+    filter: StocktakeFilter
+    sort: [SortInput!]
+    pagination: PaginationInput
+  ): StocktakeConnection!
+  
+  # 業務邏輯查詢
+  palletsByLocation(location: LocationType!): [Pallet!]!
+  lowStockProducts(threshold: Int = 10): [Product!]!
+  pendingOrders: [Order!]!
+  recentMovements(limit: Int = 20): [Movement!]!
+  stockLevels: [InventoryRecord!]!
+  activeStocktakeSessions: [StocktakeSession!]!
+}
+
+# Mutation 操作
+extend type Mutation {
+  # 產品管理
+  createProduct(input: CreateProductInput!): ProductResult!
+  updateProduct(id: ID!, input: UpdateProductInput!): ProductResult!
+  deleteProduct(id: ID!): Boolean!
+  
+  # 托盤管理
+  createPallet(input: CreatePalletInput!): PalletResult!
+  updatePallet(id: ID!, input: UpdatePalletInput!): PalletResult!
+  deletePallet(id: ID!): Boolean!
+  movePallet(input: MovePalletInput!): MovementResult!
+  
+  # 庫存管理
+  updateInventory(input: UpdateInventoryInput!): InventoryResult!
+  adjustStock(input: StockAdjustmentInput!): InventoryResult!
+  transferStock(input: StockTransferInput!): MovementResult!
+  
+  # 訂單管理
+  createOrder(input: CreateOrderInput!): OrderResult!
+  updateOrder(id: ID!, input: UpdateOrderInput!): OrderResult!
+  loadPalletToOrder(input: LoadPalletInput!): Boolean!
+  unloadPalletFromOrder(input: UnloadPalletInput!): Boolean!
+  completeOrder(id: ID!): OrderResult!
+  
+  # 庫存盤點
+  startStocktakeSession(input: StartStocktakeSessionInput!): StocktakeSessionResult!
+  recordStocktakeCount(input: RecordStocktakeInput!): StocktakeResult!
+  endStocktakeSession(sessionId: ID!): StocktakeSessionResult!
+  
+  # GRN 管理
+  createGRN(input: CreateGRNInput!): GRNResult!
+  updateGRN(id: ID!, input: UpdateGRNInput!): GRNResult!
+  
+  # 批量操作
+  bulkUpdateInventory(inputs: [UpdateInventoryInput!]!): [InventoryResult!]!
+  bulkCreatePallets(inputs: [CreatePalletInput!]!): [PalletResult!]!
+}
+
+# Subscription 操作 (實時更新)
+extend type Subscription {
+  # 庫存變化
+  inventoryUpdated(productCode: String): InventoryRecord!
+  stockLevelChanged: InventoryRecord!
+  
+  # 托盤移動
+  palletMoved: Movement!
+  palletStatusChanged(palletNumber: String): Pallet!
+  
+  # 訂單狀態
+  orderStatusChanged(orderRef: Int): Order!
+  orderCompleted: Order!
+  
+  # 庫存盤點
+  stocktakeCountRecorded(sessionId: ID): StocktakeRecord!
+  stocktakeSessionStatusChanged: StocktakeSession!
+  
+  # 系統通知
+  systemAlert: SystemAlert!
+  lowStockAlert: LowStockAlert!
+}
+
+# Input 類型定義
+input CreateProductInput {
+  code: String!
+  description: String!
+  colour: String!
+  standardQty: Int!
+  type: String!
+  remark: String
+}
+
+input UpdateProductInput {
+  description: String
+  colour: String
+  standardQty: Int
+  type: String
+  remark: String
+}
+
+input CreatePalletInput {
+  palletNumber: String!
+  productCode: String!
+  series: String!
+  quantity: Int!
+  remark: String
+}
+
+input UpdatePalletInput {
+  productCode: String
+  series: String
+  quantity: Int
+  remark: String
+  status: PalletStatus
+}
+
+input MovePalletInput {
+  palletNumber: String!
+  fromLocation: String!
+  toLocation: String!
+  operatorId: Int!
+  remark: String
+}
+
+input UpdateInventoryInput {
+  productCode: String!
+  palletNumber: String!
+  injection: Int
+  pipeline: Int
+  prebook: Int
+  await: Int
+  fold: Int
+  bulk: Int
+  backcarpark: Int
+  damage: Int
+  awaitGrn: Int
+}
+
+input StockAdjustmentInput {
+  productCode: String!
+  location: LocationType!
+  adjustmentQty: Int! # 正數增加，負數減少
+  reason: String!
+  operatorId: Int!
+}
+
+input StockTransferInput {
+  productCode: String!
+  fromLocation: LocationType!
+  toLocation: LocationType!
+  quantity: Int!
+  operatorId: Int!
+  remark: String
+}
+
+input CreateOrderInput {
+  orderRef: Int!
+  productCode: String!
+  requiredQty: Int!
+}
+
+input UpdateOrderInput {
+  requiredQty: Int
+  remainQty: Int
+}
+
+input LoadPalletInput {
+  orderRef: Int!
+  palletNumber: String!
+  operatorId: Int!
+}
+
+input UnloadPalletInput {
+  orderRef: Int!
+  palletNumber: String!
+  operatorId: Int!
+  reason: String
+}
+
+input StartStocktakeSessionInput {
+  userId: Int!
+  userName: String!
+  sessionDate: Date
+}
+
+input RecordStocktakeInput {
+  sessionId: ID!
+  productCode: String!
+  palletNumber: String
+  countedQty: Int!
+  batchId: String
+}
+
+input CreateGRNInput {
+  grnRef: Int!
+  palletNumber: String!
+  supplierCode: String!
+  materialCode: String!
+  grossWeight: Int!
+  netWeight: Int!
+  palletType: String!
+  packageType: String!
+  palletCount: Float!
+  packageCount: Float!
+}
+
+input UpdateGRNInput {
+  grossWeight: Int
+  netWeight: Int
+  palletType: String
+  packageType: String
+  palletCount: Float
+  packageCount: Float
+}
+
+# 結果類型
+union GRNResult = GRNRecord | UserError | SystemError
+union StocktakeSessionResult = StocktakeSession | UserError | SystemError
+
+# 通知類型
+type SystemAlert {
+  id: ID!
+  type: AlertType!
+  message: String!
+  severity: AlertSeverity!
+  timestamp: DateTime!
+  metadata: JSON
+}
+
+type LowStockAlert {
+  productCode: String!
+  currentQty: Int!
+  threshold: Int!
+  location: LocationType!
+  timestamp: DateTime!
+}
+
+enum AlertType {
+  LOW_STOCK
+  SYSTEM_ERROR
+  PALLET_MOVED
+  ORDER_COMPLETED
+  STOCKTAKE_VARIANCE
+}
+
+enum AlertSeverity {
+  INFO
+  WARNING
+  ERROR
+  CRITICAL
+} 

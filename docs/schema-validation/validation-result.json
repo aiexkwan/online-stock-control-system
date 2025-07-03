@@ -1,0 +1,270 @@
+{
+  "timestamp": "2025-07-03T08:44:13.061Z",
+  "isValid": true,
+  "summary": {
+    "errors": 0,
+    "warnings": 42,
+    "suggestions": 4
+  },
+  "errors": [],
+  "warnings": [
+    {
+      "type": "PAGINATION",
+      "path": "query.getLowStockProducts",
+      "message": "List query should use Connection pattern for pagination",
+      "suggestion": "Consider changing return type to a Connection"
+    },
+    {
+      "type": "PAGINATION",
+      "path": "query.getPendingOrders",
+      "message": "List query should use Connection pattern for pagination",
+      "suggestion": "Consider changing return type to a Connection"
+    },
+    {
+      "type": "PAGINATION",
+      "path": "query.getActiveTransfers",
+      "message": "List query should use Connection pattern for pagination",
+      "suggestion": "Consider changing return type to a Connection"
+    },
+    {
+      "type": "PAGINATION",
+      "path": "query.edges",
+      "message": "List query should use Connection pattern for pagination",
+      "suggestion": "Consider changing return type to a Connection"
+    },
+    {
+      "type": "PAGINATION",
+      "path": "query.pallets",
+      "message": "List query should use Connection pattern for pagination",
+      "suggestion": "Consider changing return type to a Connection"
+    },
+    {
+      "type": "PAGINATION",
+      "path": "query.movements",
+      "message": "List query should use Connection pattern for pagination",
+      "suggestion": "Consider changing return type to a Connection"
+    },
+    {
+      "type": "PAGINATION",
+      "path": "query.movements",
+      "message": "List query should use Connection pattern for pagination",
+      "suggestion": "Consider changing return type to a Connection"
+    },
+    {
+      "type": "PAGINATION",
+      "path": "query.grnRecords",
+      "message": "List query should use Connection pattern for pagination",
+      "suggestion": "Consider changing return type to a Connection"
+    },
+    {
+      "type": "PAGINATION",
+      "path": "query.inventoryRecords",
+      "message": "List query should use Connection pattern for pagination",
+      "suggestion": "Consider changing return type to a Connection"
+    },
+    {
+      "type": "PAGINATION",
+      "path": "query.grnRecords",
+      "message": "List query should use Connection pattern for pagination",
+      "suggestion": "Consider changing return type to a Connection"
+    },
+    {
+      "type": "PAGINATION",
+      "path": "query.movements",
+      "message": "List query should use Connection pattern for pagination",
+      "suggestion": "Consider changing return type to a Connection"
+    },
+    {
+      "type": "PAGINATION",
+      "path": "query.orderDetails",
+      "message": "List query should use Connection pattern for pagination",
+      "suggestion": "Consider changing return type to a Connection"
+    },
+    {
+      "type": "PAGINATION",
+      "path": "query.scans",
+      "message": "List query should use Connection pattern for pagination",
+      "suggestion": "Consider changing return type to a Connection"
+    },
+    {
+      "type": "PAGINATION",
+      "path": "query.edges",
+      "message": "List query should use Connection pattern for pagination",
+      "suggestion": "Consider changing return type to a Connection"
+    },
+    {
+      "type": "PAGINATION",
+      "path": "query.edges",
+      "message": "List query should use Connection pattern for pagination",
+      "suggestion": "Consider changing return type to a Connection"
+    },
+    {
+      "type": "PAGINATION",
+      "path": "query.edges",
+      "message": "List query should use Connection pattern for pagination",
+      "suggestion": "Consider changing return type to a Connection"
+    },
+    {
+      "type": "PAGINATION",
+      "path": "query.edges",
+      "message": "List query should use Connection pattern for pagination",
+      "suggestion": "Consider changing return type to a Connection"
+    },
+    {
+      "type": "PAGINATION",
+      "path": "query.edges",
+      "message": "List query should use Connection pattern for pagination",
+      "suggestion": "Consider changing return type to a Connection"
+    },
+    {
+      "type": "PAGINATION",
+      "path": "query.edges",
+      "message": "List query should use Connection pattern for pagination",
+      "suggestion": "Consider changing return type to a Connection"
+    },
+    {
+      "type": "PAGINATION",
+      "path": "query.edges",
+      "message": "List query should use Connection pattern for pagination",
+      "suggestion": "Consider changing return type to a Connection"
+    },
+    {
+      "type": "PAGINATION",
+      "path": "query.lowStockProducts",
+      "message": "List query should use Connection pattern for pagination",
+      "suggestion": "Consider changing return type to a Connection"
+    },
+    {
+      "type": "PAGINATION",
+      "path": "query.pendingOrders",
+      "message": "List query should use Connection pattern for pagination",
+      "suggestion": "Consider changing return type to a Connection"
+    },
+    {
+      "type": "PAGINATION",
+      "path": "query.recentMovements",
+      "message": "List query should use Connection pattern for pagination",
+      "suggestion": "Consider changing return type to a Connection"
+    },
+    {
+      "type": "PAGINATION",
+      "path": "query.stockLevels",
+      "message": "List query should use Connection pattern for pagination",
+      "suggestion": "Consider changing return type to a Connection"
+    },
+    {
+      "type": "PAGINATION",
+      "path": "query.activeStocktakeSessions",
+      "message": "List query should use Connection pattern for pagination",
+      "suggestion": "Consider changing return type to a Connection"
+    },
+    {
+      "type": "PAGINATION",
+      "path": "query.bulkCreatePallets",
+      "message": "List query should use Connection pattern for pagination",
+      "suggestion": "Consider changing return type to a Connection"
+    },
+    {
+      "type": "PAGINATION",
+      "path": "query.edges",
+      "message": "List query should use Connection pattern for pagination",
+      "suggestion": "Consider changing return type to a Connection"
+    },
+    {
+      "type": "PAGINATION",
+      "path": "query.edges",
+      "message": "List query should use Connection pattern for pagination",
+      "suggestion": "Consider changing return type to a Connection"
+    },
+    {
+      "type": "PAGINATION",
+      "path": "query.edges",
+      "message": "List query should use Connection pattern for pagination",
+      "suggestion": "Consider changing return type to a Connection"
+    },
+    {
+      "type": "PAGINATION",
+      "path": "query.edges",
+      "message": "List query should use Connection pattern for pagination",
+      "suggestion": "Consider changing return type to a Connection"
+    },
+    {
+      "type": "PAGINATION",
+      "path": "query.edges",
+      "message": "List query should use Connection pattern for pagination",
+      "suggestion": "Consider changing return type to a Connection"
+    },
+    {
+      "type": "ERROR_HANDLING",
+      "path": "mutation.createProduct(input",
+      "message": "Mutation should return a result union type for proper error handling",
+      "suggestion": "Consider using a Result union type"
+    },
+    {
+      "type": "ERROR_HANDLING",
+      "path": "mutation.updateProduct(id",
+      "message": "Mutation should return a result union type for proper error handling",
+      "suggestion": "Consider using a Result union type"
+    },
+    {
+      "type": "ERROR_HANDLING",
+      "path": "mutation.deleteProduct(id",
+      "message": "Mutation should return a result union type for proper error handling",
+      "suggestion": "Consider using a Result union type"
+    },
+    {
+      "type": "ERROR_HANDLING",
+      "path": "mutation.createPallet(input",
+      "message": "Mutation should return a result union type for proper error handling",
+      "suggestion": "Consider using a Result union type"
+    },
+    {
+      "type": "ERROR_HANDLING",
+      "path": "mutation.updatePallet(id",
+      "message": "Mutation should return a result union type for proper error handling",
+      "suggestion": "Consider using a Result union type"
+    },
+    {
+      "type": "ERROR_HANDLING",
+      "path": "mutation.voidPallet(id",
+      "message": "Mutation should return a result union type for proper error handling",
+      "suggestion": "Consider using a Result union type"
+    },
+    {
+      "type": "ERROR_HANDLING",
+      "path": "mutation.adjustInventory(input",
+      "message": "Mutation should return a result union type for proper error handling",
+      "suggestion": "Consider using a Result union type"
+    },
+    {
+      "type": "ERROR_HANDLING",
+      "path": "mutation.transferStock(input",
+      "message": "Mutation should return a result union type for proper error handling",
+      "suggestion": "Consider using a Result union type"
+    },
+    {
+      "type": "ERROR_HANDLING",
+      "path": "mutation.processStocktake(input",
+      "message": "Mutation should return a result union type for proper error handling",
+      "suggestion": "Consider using a Result union type"
+    },
+    {
+      "type": "ERROR_HANDLING",
+      "path": "mutation.generateGrnLabel(input",
+      "message": "Mutation should return a result union type for proper error handling",
+      "suggestion": "Consider using a Result union type"
+    },
+    {
+      "type": "PERFORMANCE",
+      "path": "field.movements",
+      "message": "Field 'movements' may be expensive to resolve",
+      "suggestion": "Consider making this field optional or implementing lazy loading"
+    }
+  ],
+  "suggestions": [
+    "Consider implementing query complexity analysis",
+    "Add rate limiting for mutations and subscriptions",
+    "Implement field-level caching for frequently accessed data",
+    "Use DataLoader pattern to prevent N+1 queries"
+  ]
+}

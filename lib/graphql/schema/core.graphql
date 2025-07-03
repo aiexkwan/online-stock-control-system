@@ -1,0 +1,476 @@
+# 統一數據層 GraphQL Schema - 核心業務實體
+# 第一週：GraphQL Schema 標準化
+
+# 通用分頁接口
+interface Connection {
+  edges: [Edge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+interface Edge {
+  node: Node!
+  cursor: String!
+}
+
+interface Node {
+  id: ID!
+}
+
+type PageInfo {
+  hasNextPage: Boolean!
+  hasPreviousPage: Boolean!
+  startCursor: String
+  endCursor: String
+}
+
+# 通用輸入類型
+input PaginationInput {
+  first: Int
+  after: String
+  last: Int
+  before: String
+}
+
+input SortInput {
+  field: String!
+  direction: SortDirection!
+}
+
+enum SortDirection {
+  ASC
+  DESC
+}
+
+# 統一錯誤處理
+interface BaseError {
+  message: String!
+  code: String!
+}
+
+type UserError implements BaseError {
+  message: String!
+  code: String!
+  field: String
+}
+
+type SystemError implements BaseError {
+  message: String!
+  code: String!
+  details: String
+}
+
+# 產品管理 Schema
+type Product implements Node {
+  id: ID! # data_code.code
+  code: String! # product sku
+  description: String!
+  colour: String!
+  standardQty: Int! # standard qty per pallet
+  type: String!
+  remark: String
+  # 關聯
+  pallets: [Pallet!]!
+  inventory: [InventoryRecord!]!
+  movements: [Movement!]!
+}
+
+input ProductFilter {
+  code: String
+  description: String
+  colour: String
+  type: String
+  search: String # 全文搜索
+}
+
+# 托盤管理 Schema
+type Pallet implements Node {
+  id: ID! # record_palletinfo.plt_num
+  palletNumber: String! # plt_num
+  productCode: String!
+  series: String!
+  generateTime: DateTime!
+  quantity: Int! # product_qty
+  remark: String
+  pdfUrl: String
+  # 關聯
+  product: Product!
+  location: Location
+  movements: [Movement!]!
+  grnRecords: [GRNRecord!]!
+  inventoryRecords: [InventoryRecord!]!
+  status: PalletStatus!
+}
+
+enum PalletStatus {
+  ACTIVE
+  LOADED
+  DAMAGED
+  VOID
+}
+
+input PalletFilter {
+  palletNumber: String
+  productCode: String
+  status: PalletStatus
+  location: String
+  dateRange: DateRangeInput
+}
+
+# 庫存管理 Schema
+type InventoryRecord implements Node {
+  id: ID! # record_inventory.uuid
+  productCode: String!
+  palletNumber: String!
+  # 各地點庫存數量
+  injection: Int!
+  pipeline: Int!
+  prebook: Int!
+  await: Int!
+  fold: Int!
+  bulk: Int!
+  backcarpark: Int!
+  damage: Int!
+  awaitGrn: Int
+  latestUpdate: DateTime!
+  # 關聯
+  product: Product!
+  pallet: Pallet!
+  totalQuantity: Int! # 計算欄位
+}
+
+type Location {
+  name: String!
+  capacity: Int
+  currentStock: Int!
+  occupancyRate: Float! # 計算欄位
+}
+
+input InventoryFilter {
+  productCode: String
+  location: LocationType
+  minQuantity: Int
+  maxQuantity: Int
+  lastUpdated: DateRangeInput
+}
+
+enum LocationType {
+  INJECTION
+  PIPELINE
+  PREBOOK
+  AWAIT
+  FOLD
+  BULK
+  BACKCARPARK
+  DAMAGE
+  AWAIT_GRN
+}
+
+# 移動記錄 Schema
+type Movement implements Node {
+  id: ID! # record_transfer.uuid
+  palletNumber: String!
+  fromLocation: String!
+  toLocation: String!
+  operatorId: Int!
+  transferDate: DateTime!
+  # 關聯
+  pallet: Pallet!
+  operator: User!
+}
+
+input MovementFilter {
+  palletNumber: String
+  fromLocation: String
+  toLocation: String
+  operatorId: Int
+  dateRange: DateRangeInput
+}
+
+# GRN (Goods Receipt Note) Schema
+type GRNRecord implements Node {
+  id: ID! # record_grn.uuid
+  grnRef: Int!
+  palletNumber: String!
+  supplierCode: String!
+  materialCode: String!
+  grossWeight: Int!
+  netWeight: Int!
+  palletType: String!
+  packageType: String!
+  palletCount: Float!
+  packageCount: Float!
+  createTime: DateTime!
+  # 關聯
+  pallet: Pallet!
+  supplier: Supplier!
+  product: Product!
+}
+
+type Supplier implements Node {
+  id: ID! # data_supplier.supplier_code
+  supplierCode: String!
+  supplierName: String!
+  # 關聯
+  grnRecords: [GRNRecord!]!
+}
+
+input GRNFilter {
+  grnRef: Int
+  supplierCode: String
+  materialCode: String
+  dateRange: DateRangeInput
+}
+
+# 用戶管理 Schema
+type User implements Node {
+  id: ID! # data_id.id
+  name: String!
+  email: String
+  department: String!
+  position: String!
+  iconUrl: String
+  uuid: String!
+  # 關聯
+  movements: [Movement!]!
+  workLevel: WorkLevel
+}
+
+type WorkLevel implements Node {
+  id: ID! # work_level.uuid
+  operatorId: Int!
+  qcCount: Int!
+  moveCount: Int!
+  grnCount: Int!
+  loadingCount: Int!
+  latestUpdate: DateTime!
+  # 關聯
+  user: User!
+}
+
+input UserFilter {
+  name: String
+  department: String
+  position: String
+  search: String
+}
+
+# 訂單管理 Schema
+type Order implements Node {
+  id: ID! # record_aco.uuid
+  orderRef: Int!
+  productCode: String!
+  requiredQty: Int!
+  remainQty: Int!
+  latestUpdate: DateTime!
+  status: OrderStatus! # 計算欄位
+  # 關聯
+  product: Product!
+  orderDetails: [OrderDetail!]!
+  loadingHistory: [LoadingHistory!]!
+}
+
+enum OrderStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+type OrderDetail implements Node {
+  id: ID! # record_aco_detail.uuid
+  palletNumber: String!
+  weight: Int
+  length: Int
+  width: Int
+  height: Int
+  createdAt: Time!
+  # 關聯
+  pallet: Pallet!
+}
+
+type LoadingHistory implements Node {
+  id: ID! # order_loading_history.uuid
+  orderRef: String!
+  palletNumber: String!
+  productCode: String!
+  quantity: Int!
+  actionType: String!
+  actionBy: String!
+  actionTime: DateTime!
+  remark: String
+}
+
+input OrderFilter {
+  orderRef: Int
+  productCode: String
+  status: OrderStatus
+  dateRange: DateRangeInput
+}
+
+# 庫存盤點 Schema
+type StocktakeRecord implements Node {
+  id: ID! # record_stocktake.uuid
+  productCode: String!
+  palletNumber: String
+  productDesc: String!
+  remainQty: Int
+  countedQty: Int!
+  countedBy: User
+  countedName: String
+  createdAt: DateTime!
+  variance: Int! # 計算欄位
+  variancePercentage: Float! # 計算欄位
+}
+
+type StocktakeSession implements Node {
+  id: ID! # stocktake_session.uuid
+  sessionDate: Date!
+  startTime: DateTime!
+  endTime: DateTime
+  userId: Int
+  userName: String
+  totalScans: Int!
+  successScans: Int!
+  errorScans: Int!
+  sessionStatus: StocktakeSessionStatus!
+  # 關聯
+  user: User
+  scans: [StocktakeBatchScan!]!
+}
+
+enum StocktakeSessionStatus {
+  ACTIVE
+  COMPLETED
+  CANCELLED
+}
+
+type StocktakeBatchScan implements Node {
+  id: ID! # stocktake_batch_scan.uuid
+  batchId: String!
+  palletNumber: String
+  productCode: String!
+  productDesc: String
+  countedQty: Int!
+  scanTimestamp: DateTime!
+  status: ScanStatus!
+  errorMessage: String
+  userId: Int
+  userName: String
+  # 關聯
+  pallet: Pallet
+  session: StocktakeSession
+}
+
+enum ScanStatus {
+  SUCCESS
+  ERROR
+  PENDING
+}
+
+input StocktakeFilter {
+  productCode: String
+  countedBy: Int
+  sessionDate: DateRangeInput
+  status: StocktakeSessionStatus
+}
+
+# 通用輸入類型
+input DateRangeInput {
+  from: Date
+  to: Date
+}
+
+# 自定義標量類型
+scalar DateTime
+scalar Date
+scalar Time
+scalar UUID
+scalar JSON
+
+# 統一結果類型
+union ProductResult = Product | UserError | SystemError
+union PalletResult = Pallet | UserError | SystemError
+union InventoryResult = InventoryRecord | UserError | SystemError
+union MovementResult = Movement | UserError | SystemError
+union OrderResult = Order | UserError | SystemError
+union UserResult = User | UserError | SystemError
+union StocktakeResult = StocktakeRecord | UserError | SystemError
+
+# Connection 類型
+type ProductConnection implements Connection {
+  edges: [ProductEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+type ProductEdge implements Edge {
+  node: Product!
+  cursor: String!
+}
+
+type PalletConnection implements Connection {
+  edges: [PalletEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+type PalletEdge implements Edge {
+  node: Pallet!
+  cursor: String!
+}
+
+type InventoryConnection implements Connection {
+  edges: [InventoryEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+type InventoryEdge implements Edge {
+  node: InventoryRecord!
+  cursor: String!
+}
+
+type MovementConnection implements Connection {
+  edges: [MovementEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+type MovementEdge implements Edge {
+  node: Movement!
+  cursor: String!
+}
+
+type OrderConnection implements Connection {
+  edges: [OrderEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+type OrderEdge implements Edge {
+  node: Order!
+  cursor: String!
+}
+
+type UserConnection implements Connection {
+  edges: [UserEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+type UserEdge implements Edge {
+  node: User!
+  cursor: String!
+}
+
+type StocktakeConnection implements Connection {
+  edges: [StocktakeEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+type StocktakeEdge implements Edge {
+  node: StocktakeRecord!
+  cursor: String!
+} 
