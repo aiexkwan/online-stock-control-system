@@ -1,135 +1,14 @@
 ============================================================
 GraphQL Schema Validation Report
-Generated: 2025-07-03T09:06:13.373Z
+Generated: 2025-07-03T09:38:48.772Z
 Schema Version: 1.2.0
 ============================================================
 
 SUMMARY:
 ✅ Valid: YES
 ❌ Errors: 0
-⚠️  Warnings: 30
+⚠️  Warnings: 0
 💡 Suggestions: 4
-
-WARNINGS:
-⚠️ [PAGINATION] query.edges
-   List query should use Connection pattern for pagination
-   💡 Suggestion: Consider changing return type to a Connection
-
-⚠️ [PAGINATION] query.grnRecords
-   List query should use Connection pattern for pagination
-   💡 Suggestion: Consider changing return type to a Connection
-
-⚠️ [PAGINATION] query.movements
-   List query should use Connection pattern for pagination
-   💡 Suggestion: Consider changing return type to a Connection
-
-⚠️ [PAGINATION] query.orderDetails
-   List query should use Connection pattern for pagination
-   💡 Suggestion: Consider changing return type to a Connection
-
-⚠️ [PAGINATION] query.scans
-   List query should use Connection pattern for pagination
-   💡 Suggestion: Consider changing return type to a Connection
-
-⚠️ [PAGINATION] query.edges
-   List query should use Connection pattern for pagination
-   💡 Suggestion: Consider changing return type to a Connection
-
-⚠️ [PAGINATION] query.edges
-   List query should use Connection pattern for pagination
-   💡 Suggestion: Consider changing return type to a Connection
-
-⚠️ [PAGINATION] query.edges
-   List query should use Connection pattern for pagination
-   💡 Suggestion: Consider changing return type to a Connection
-
-⚠️ [PAGINATION] query.edges
-   List query should use Connection pattern for pagination
-   💡 Suggestion: Consider changing return type to a Connection
-
-⚠️ [PAGINATION] query.edges
-   List query should use Connection pattern for pagination
-   💡 Suggestion: Consider changing return type to a Connection
-
-⚠️ [PAGINATION] query.edges
-   List query should use Connection pattern for pagination
-   💡 Suggestion: Consider changing return type to a Connection
-
-⚠️ [PAGINATION] query.edges
-   List query should use Connection pattern for pagination
-   💡 Suggestion: Consider changing return type to a Connection
-
-⚠️ [PAGINATION] query.edges
-   List query should use Connection pattern for pagination
-   💡 Suggestion: Consider changing return type to a Connection
-
-⚠️ [PAGINATION] query.edges
-   List query should use Connection pattern for pagination
-   💡 Suggestion: Consider changing return type to a Connection
-
-⚠️ [PAGINATION] query.edges
-   List query should use Connection pattern for pagination
-   💡 Suggestion: Consider changing return type to a Connection
-
-⚠️ [PAGINATION] query.edges
-   List query should use Connection pattern for pagination
-   💡 Suggestion: Consider changing return type to a Connection
-
-⚠️ [PAGINATION] query.edges
-   List query should use Connection pattern for pagination
-   💡 Suggestion: Consider changing return type to a Connection
-
-⚠️ [PAGINATION] query.edges
-   List query should use Connection pattern for pagination
-   💡 Suggestion: Consider changing return type to a Connection
-
-⚠️ [PAGINATION] query.edges
-   List query should use Connection pattern for pagination
-   💡 Suggestion: Consider changing return type to a Connection
-
-⚠️ [ERROR_HANDLING] mutation.createProduct(input
-   Mutation should return a result union type for proper error handling
-   💡 Suggestion: Consider using a Result union type
-
-⚠️ [ERROR_HANDLING] mutation.updateProduct(id
-   Mutation should return a result union type for proper error handling
-   💡 Suggestion: Consider using a Result union type
-
-⚠️ [ERROR_HANDLING] mutation.deleteProduct(id
-   Mutation should return a result union type for proper error handling
-   💡 Suggestion: Consider using a Result union type
-
-⚠️ [ERROR_HANDLING] mutation.createPallet(input
-   Mutation should return a result union type for proper error handling
-   💡 Suggestion: Consider using a Result union type
-
-⚠️ [ERROR_HANDLING] mutation.updatePallet(id
-   Mutation should return a result union type for proper error handling
-   💡 Suggestion: Consider using a Result union type
-
-⚠️ [ERROR_HANDLING] mutation.voidPallet(id
-   Mutation should return a result union type for proper error handling
-   💡 Suggestion: Consider using a Result union type
-
-⚠️ [ERROR_HANDLING] mutation.adjustInventory(input
-   Mutation should return a result union type for proper error handling
-   💡 Suggestion: Consider using a Result union type
-
-⚠️ [ERROR_HANDLING] mutation.transferStock(input
-   Mutation should return a result union type for proper error handling
-   💡 Suggestion: Consider using a Result union type
-
-⚠️ [ERROR_HANDLING] mutation.processStocktake(input
-   Mutation should return a result union type for proper error handling
-   💡 Suggestion: Consider using a Result union type
-
-⚠️ [ERROR_HANDLING] mutation.generateGrnLabel(input
-   Mutation should return a result union type for proper error handling
-   💡 Suggestion: Consider using a Result union type
-
-⚠️ [PERFORMANCE] field.movements
-   Field 'movements' may be expensive to resolve
-   💡 Suggestion: Consider making this field optional or implementing lazy loading
 
 SUGGESTIONS:
 💡 Consider implementing query complexity analysis

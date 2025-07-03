@@ -4,7 +4,7 @@
  * 第一週：GraphQL Schema 標準化實施
  */
 
-import { graphqlClient } from './graphql-client-stable';
+import { graphqlClient } from '../graphql-client-stable';
 
 // 定義統一的類型接口
 export interface Product {

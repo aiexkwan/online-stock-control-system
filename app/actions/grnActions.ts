@@ -157,8 +157,15 @@ export async function createGrnDatabaseEntries(
 
     process.env.NODE_ENV !== "production" && console.log('[grnActions] 統一 GRN RPC 處理成功:', rpcResult);
 
+    // 提取棧板號碼和系列號
+    const data = rpcResult.data || {};
+    const palletNumber = data.pallet_numbers?.[0] || '';
+    const series = data.series?.[0] || '';
+
     return { 
-      data: `GRN label processed successfully. ${rpcResult.data ? `Pallet: ${rpcResult.data.pallet_numbers?.[0] || 'N/A'}` : ''}` 
+      data: `GRN label processed successfully. ${palletNumber ? `Pallet: ${palletNumber}` : ''}`,
+      palletNumber,
+      series
     };
 
   } catch (error: any) {
@@ -260,11 +267,24 @@ export async function createGrnDatabaseEntriesBatch(
 
     process.env.NODE_ENV !== "production" && console.log('[grnActions] 統一批量 GRN RPC 處理成功:', rpcResult);
 
+    // 從 RPC 結果提取數據
+    // RPC 返回嘅數據結構係 { success: true, data: { pallet_numbers: [...], series: [...] } }
+    const data = rpcResult.data || {};
+    const palletNumbers = data.pallet_numbers || [];
+    const series = data.series || [];
+    
+    process.env.NODE_ENV !== "production" && console.log('[grnActions] 提取的棧板數據:', {
+      palletNumbers,
+      series,
+      palletNumbersCount: palletNumbers.length,
+      seriesCount: series.length
+    });
+
     return { 
       success: true,
-      data: rpcResult,
-      palletNumbers: rpcResult.data?.pallet_numbers || [],
-      series: rpcResult.data?.series || []
+      data: data,  // 返回 data 對象，而唔係整個 rpcResult
+      palletNumbers,
+      series
     };
 
   } catch (error: any) {

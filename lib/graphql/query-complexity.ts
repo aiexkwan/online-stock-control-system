@@ -289,11 +289,13 @@ export const apolloServerConfig = {
   playground: process.env.NODE_ENV !== 'production'
 };
 
-export default {
+const queryComplexity = {
   ComplexityAnalysis,
   complexityLimitRule,
   depthLimitRule,
   QueryAnalyzer,
   QueryPerformanceMonitor,
   apolloServerConfig
-}; 
+};
+
+export default queryComplexity; 

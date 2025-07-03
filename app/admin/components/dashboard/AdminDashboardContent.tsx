@@ -120,7 +120,19 @@ export const AdminDashboardContent: React.FC<AdminDashboardContentProps> = ({
   }
   
   // Default layout for other themes
-  const layout = adminDashboardLayouts[theme] || adminDashboardLayouts.overview;
+  const layout = adminDashboardLayouts[theme];
+  
+  // If no layout is found for the theme, show an empty state
+  if (!layout) {
+    return (
+      <div className="h-full w-full flex items-center justify-center">
+        <div className="text-center text-gray-500">
+          <h2 className="text-xl font-semibold mb-2">No Dashboard Available</h2>
+          <p>No dashboard layout is configured for the &quot;{theme}&quot; theme.</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div 

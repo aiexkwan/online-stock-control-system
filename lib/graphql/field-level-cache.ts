@@ -485,7 +485,7 @@ setInterval(() => {
   CacheMonitor.logCacheMetrics();
 }, 10 * 60 * 1000); // 每10分鐘
 
-export default {
+const fieldLevelCache = {
   FieldCacheConfigs,
   FieldCacheManager,
   fieldCacheManager,
@@ -493,4 +493,6 @@ export default {
   SmartCacheInvalidator,
   CacheWarmer,
   CacheMonitor
-}; 
+};
+
+export default fieldLevelCache; 

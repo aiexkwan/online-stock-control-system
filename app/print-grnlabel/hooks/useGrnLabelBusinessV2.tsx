@@ -153,6 +153,7 @@ export const useGrnLabelBusinessV2 = ({
       
       try {
         // 調用統一批量處理 RPC
+        console.log('[useGrnLabelBusinessV2] 調用 createGrnDatabaseEntriesBatch...');
         const batchResult = await createGrnDatabaseEntriesBatch(
           state.formData.grnNumber,
           state.productInfo.code,
@@ -173,8 +174,22 @@ export const useGrnLabelBusinessV2 = ({
           process.env.NODE_ENV !== "production" && console.log('[useGrnLabelBusinessV2] 統一 RPC 批量處理成功:', batchResult);
           
           // 從統一 RPC 結果中獲取棧板號碼和系列號
-          const rpcPalletNumbers = batchResult.data?.pallet_numbers || [];
-          const rpcSeries = batchResult.data?.series || [];
+          // 檢查多個可能嘅數據位置
+          const rpcPalletNumbers = batchResult.data?.pallet_numbers || batchResult.palletNumbers || [];
+          const rpcSeries = batchResult.data?.series || batchResult.series || [];
+          
+          // 添加詳細的調試信息
+          console.log('[useGrnLabelBusinessV2] RPC 返回數據:', {
+            expectedCount: numberOfPalletsToProcess,
+            actualPalletCount: rpcPalletNumbers.length,
+            actualSeriesCount: rpcSeries.length,
+            palletNumbers: rpcPalletNumbers,
+            series: rpcSeries,
+            fullData: batchResult.data,
+            fullResult: batchResult, // 查看完整的返回結構
+            dataKeys: Object.keys(batchResult || {}), // 顯示所有頂層鍵
+            dataDataKeys: batchResult.data ? Object.keys(batchResult.data) : [] // 顯示 data 對象的鍵
+          });
           
           if (rpcPalletNumbers.length === numberOfPalletsToProcess && rpcSeries.length === numberOfPalletsToProcess) {
             // 更新本地變數
@@ -231,8 +246,12 @@ export const useGrnLabelBusinessV2 = ({
              // 不需要確認棧板使用，因為統一 RPC 已經處理了
              
            } else {
-             console.error('[useGrnLabelBusinessV2] 統一 RPC 返回的棧板數量不匹配');
-             throw new Error('統一 RPC 返回的棧板數量不匹配');
+             console.error('[useGrnLabelBusinessV2] 統一 RPC 返回的棧板數量不匹配', {
+               expected: numberOfPalletsToProcess,
+               receivedPallets: rpcPalletNumbers.length,
+               receivedSeries: rpcSeries.length
+             });
+             throw new Error(`統一 RPC 返回的棧板數量不匹配: 預期 ${numberOfPalletsToProcess}, 實際收到 ${rpcPalletNumbers.length}`);
            }
          } else {
            console.error('[useGrnLabelBusinessV2] 統一 RPC 處理失敗:', batchResult.error);

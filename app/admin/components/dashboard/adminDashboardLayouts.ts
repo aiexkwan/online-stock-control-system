@@ -27,7 +27,48 @@ export interface AdminDashboardLayout {
   widgets: AdminWidgetConfig[];
 }
 
+// Default/overview layout for fallback
+const defaultLayout: AdminDashboardLayout = {
+  theme: 'overview',
+  gridTemplate: `
+    "widget1 widget1 widget1 widget1 widget2 widget2 widget2 widget2"
+    "widget1 widget1 widget1 widget1 widget2 widget2 widget2 widget2"
+    "widget3 widget3 widget3 widget3 widget4 widget4 widget4 widget4"
+    "widget3 widget3 widget3 widget3 widget4 widget4 widget4 widget4"
+  `,
+  widgets: [
+    {
+      type: 'stats',
+      title: 'Welcome to Admin Dashboard',
+      gridArea: 'widget1',
+      dataSource: 'overview',
+      metrics: ['total_products']
+    },
+    {
+      type: 'stats',
+      title: 'System Status',
+      gridArea: 'widget2',
+      dataSource: 'system_status',
+      metrics: ['active_users']
+    },
+    {
+      type: 'chart',
+      title: 'Daily Activity',
+      gridArea: 'widget3',
+      dataSource: 'daily_activity',
+      chartType: 'line'
+    },
+    {
+      type: 'table',
+      title: 'Recent Actions',
+      gridArea: 'widget4',
+      dataSource: 'recent_actions'
+    }
+  ]
+};
+
 export const adminDashboardLayouts: Record<string, AdminDashboardLayout> = {
+  overview: defaultLayout,
   injection: {
     theme: 'injection',
     gridTemplate: `"widget2 widget2 widget3 widget3 widget4 widget4 widget5 widget5 widget1 widget1" "widget2 widget2 widget3 widget3 widget4 widget4 widget5 widget5 widget1 widget1" "widget6 widget6 widget6 widget7 widget7 widget7 widget8 widget8 widget1 widget1" "widget6 widget6 widget6 widget7 widget7 widget7 widget8 widget8 widget1 widget1" "widget6 widget6 widget6 widget7 widget7 widget7 widget8 widget8 widget1 widget1" "widget9 widget9 widget9 widget9 widget10 widget10 widget10 widget10 widget1 widget1" "widget9 widget9 widget9 widget9 widget10 widget10 widget10 widget10 widget1 widget1"`,

@@ -415,7 +415,7 @@ export const PerformanceGuidelines = {
 };
 
 // Export all principles for use in schema validation and generation
-export default {
+const schemaDesignPrinciples = {
   NamingConventions,
   PaginationRules,
   UserErrorCode,
@@ -426,4 +426,6 @@ export default {
   CURRENT_SCHEMA_VERSION,
   SchemaBestPracticesChecker,
   PerformanceGuidelines
-}; 
+};
+
+export default schemaDesignPrinciples; 

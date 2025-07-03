@@ -340,8 +340,13 @@ type Supplier implements Node {
   id: ID! # data_supplier.supplier_code
   supplierCode: String!
   supplierName: String!
-  # 關聯
-  grnRecords: [GRNRecord!]!
+  # 關聯 (使用 Connection 分頁)
+  grnRecords(
+    first: Int = 20
+    after: String
+    filter: GRNFilter
+    sort: SortInput
+  ): GRNConnection
 }
 
 input GRNFilter {
@@ -360,8 +365,13 @@ type User implements Node {
   position: String!
   iconUrl: String
   uuid: String!
-  # 關聯
-  movements: [Movement!]!
+  # 關聯 (使用 Connection 分頁)
+  movements(
+    first: Int = 10
+    after: String
+    filter: MovementFilter
+    sort: SortInput
+  ): MovementConnection
   workLevel: WorkLevel
 }
 
@@ -395,8 +405,19 @@ type Order implements Node {
   status: OrderStatus! # 計算欄位
   # 關聯
   product: Product!
-  orderDetails: [OrderDetail!]!
-  loadingHistory: [LoadingHistory!]!
+  # 關聯列表 (使用 Connection 分頁)
+  orderDetails(
+    first: Int = 50
+    after: String
+    sort: SortInput
+  ): OrderDetailConnection
+  
+  loadingHistory(
+    first: Int = 20
+    after: String
+    filter: LoadingHistoryFilter
+    sort: SortInput
+  ): LoadingHistoryConnection
 }
 
 enum OrderStatus {
@@ -465,7 +486,13 @@ type StocktakeSession implements Node {
   sessionStatus: StocktakeSessionStatus!
   # 關聯
   user: User
-  scans: [StocktakeBatchScan!]!
+  # 關聯列表 (使用 Connection 分頁)
+  scans(
+    first: Int = 50
+    after: String
+    filter: ScanFilter
+    sort: SortInput
+  ): StocktakeBatchScanConnection
 }
 
 enum StocktakeSessionStatus {
@@ -502,6 +529,24 @@ input StocktakeFilter {
   countedBy: Int
   sessionDate: DateRangeInput
   status: StocktakeSessionStatus
+}
+
+input LoadingHistoryFilter {
+  orderRef: String
+  palletNumber: String
+  productCode: String
+  actionType: String
+  actionBy: String
+  dateRange: DateRangeInput
+}
+
+input ScanFilter {
+  batchId: String
+  palletNumber: String
+  productCode: String
+  status: ScanStatus
+  userId: Int
+  dateRange: DateRangeInput
 }
 
 # 通用輸入類型
@@ -1002,6 +1047,39 @@ type StocktakeSessionConnection implements Connection {
 
 type StocktakeSessionEdge implements Edge {
   node: StocktakeSession!
+  cursor: String!
+}
+
+type OrderDetailConnection implements Connection {
+  edges: [OrderDetailEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+type OrderDetailEdge implements Edge {
+  node: OrderDetail!
+  cursor: String!
+}
+
+type LoadingHistoryConnection implements Connection {
+  edges: [LoadingHistoryEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+type LoadingHistoryEdge implements Edge {
+  node: LoadingHistory!
+  cursor: String!
+}
+
+type StocktakeBatchScanConnection implements Connection {
+  edges: [StocktakeBatchScanEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+type StocktakeBatchScanEdge implements Edge {
+  node: StocktakeBatchScan!
   cursor: String!
 }
 

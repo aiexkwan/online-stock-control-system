@@ -6,7 +6,7 @@
 
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -53,7 +53,7 @@ export default function UnifiedDemoPage() {
   const [activeTab, setActiveTab] = useState('products');
 
   // Load products data
-  const loadProducts = async () => {
+  const loadProducts = useCallback(async () => {
     setLoading(prev => ({ ...prev, products: true }));
     try {
       const filter: ProductFilter = {};
@@ -68,10 +68,10 @@ export default function UnifiedDemoPage() {
     } finally {
       setLoading(prev => ({ ...prev, products: false }));
     }
-  };
+  }, [filters.productSearch]);
 
   // Load pallets data
-  const loadPallets = async () => {
+  const loadPallets = useCallback(async () => {
     setLoading(prev => ({ ...prev, pallets: true }));
     try {
       const filter: PalletFilter = {};
@@ -86,10 +86,10 @@ export default function UnifiedDemoPage() {
     } finally {
       setLoading(prev => ({ ...prev, pallets: false }));
     }
-  };
+  }, [filters.palletSearch]);
 
   // Load inventory data
-  const loadInventory = async () => {
+  const loadInventory = useCallback(async () => {
     setLoading(prev => ({ ...prev, inventory: true }));
     try {
       const filter: InventoryFilter = {};
@@ -104,10 +104,10 @@ export default function UnifiedDemoPage() {
     } finally {
       setLoading(prev => ({ ...prev, inventory: false }));
     }
-  };
+  }, [filters.inventoryProductCode]);
 
   // Load movement records
-  const loadMovements = async () => {
+  const loadMovements = useCallback(async () => {
     setLoading(prev => ({ ...prev, movements: true }));
     try {
       const filter: MovementFilter = {};
@@ -122,7 +122,7 @@ export default function UnifiedDemoPage() {
     } finally {
       setLoading(prev => ({ ...prev, movements: false }));
     }
-  };
+  }, [filters.movementPallet]);
 
   // Load low stock products
   const loadLowStockProducts = async () => {
@@ -141,7 +141,7 @@ export default function UnifiedDemoPage() {
   useEffect(() => {
     loadProducts();
     loadLowStockProducts();
-  }, []);
+  }, [loadProducts]);
 
   // Load data when tab changes
   useEffect(() => {
@@ -156,7 +156,7 @@ export default function UnifiedDemoPage() {
         loadMovements();
         break;
     }
-  }, [activeTab]);
+  }, [activeTab, loadPallets, loadInventory, loadMovements]);
 
   return (
     <div className="container mx-auto p-6 space-y-6">

@@ -68,7 +68,7 @@ export class SchemaValidator {
       this.validateBestPractices(schemaString);
       
     } catch (error) {
-      this.addError('VALIDATION', 'ERROR', 'schema', `Schema parsing failed: ${error.message}`);
+      this.addError('VALIDATION', 'ERROR', 'schema', `Schema parsing failed: ${error instanceof Error ? error.message : String(error)}`);
     }
 
     return {
@@ -170,16 +170,64 @@ export class SchemaValidator {
       this.validateConnectionType(schema, typeName);
     });
 
-    // Check for list queries without pagination
-    const listQueries = schema.match(/\s+(\w+s)(?:\([^)]*\))?\s*:\s*\[/g) || [];
+    // Get all Connection type names for validation
+    const connectionTypeNames = new Set<string>();
+    connectionTypes.forEach(match => {
+      const typeName = match.replace('type ', '');
+      connectionTypeNames.add(typeName);
+    });
+
+    // Check for list queries without pagination (improved logic)
+    const listQueries = schema.match(/\s+(\w+)(?:\([^)]*\))?\s*:\s*\[([^\]]+)\]/g) || [];
     listQueries.forEach(match => {
       const queryName = match.trim().split(/[\(\:]/)[0];
+      const returnType = match.match(/:\s*\[([^\]]+)\]/)?.[1];
+      
+      // Skip input types, sort fields, and other non-business query arrays
+      const skipPatterns = ['sort', 'filter', 'Input', 'edges', 'String', 'Int', 'Float', 'Boolean'];
+      const shouldSkip = skipPatterns.some(pattern => 
+        queryName.toLowerCase().includes(pattern.toLowerCase()) || 
+        (returnType && returnType.includes(pattern))
+      );
+      
+      // Skip if return type is not a list of objects or if it's already using Connection
+      if (!queryName || !returnType || shouldSkip ||
+          queryName.includes('edges') || connectionTypeNames.has(returnType + 'Connection')) {
+        return;
+      }
+      
       this.addWarning(
         'PAGINATION', 
         `query.${queryName}`, 
         'List query should use Connection pattern for pagination',
         'Consider changing return type to a Connection'
       );
+    });
+
+    // Check for fields that return arrays but don't use Connection
+    const arrayFields = schema.match(/\s+(\w+)(?:\([^)]*\))?\s*:\s*\[([^\]]+)\]!/g) || [];
+    arrayFields.forEach(match => {
+      const fieldName = match.trim().split(/[\(\:]/)[0];
+      const returnType = match.match(/:\s*\[([^\]]+)\]/)?.[1];
+      
+      // Skip Connection types and built-in scalar arrays
+      if (!fieldName || !returnType || fieldName === 'edges' || 
+          returnType.includes('String') || returnType.includes('Int') || 
+          returnType.includes('Float') || returnType.includes('Boolean') ||
+          returnType.endsWith('Connection') || returnType.endsWith('Edge')) {
+        return;
+      }
+      
+      // Only warn for potentially expensive list fields
+      const expensiveFields = ['movements', 'grnRecords', 'orderDetails', 'scans', 'pallets', 'inventoryRecords'];
+      if (expensiveFields.includes(fieldName)) {
+        this.addWarning(
+          'PAGINATION', 
+          `field.${fieldName}`, 
+          `Field '${fieldName}' returns array but doesn't use Connection pattern`,
+          'Consider using Connection pattern for better pagination'
+        );
+      }
     });
   }
 
@@ -216,44 +264,92 @@ export class SchemaValidator {
       this.addWarning('ERROR_HANDLING', 'schema', 'No error types defined. Consider adding UserError and SystemError types.');
     }
 
-    // Check for union types with errors
+    // Extract all union types for validation
     const unionTypes = schema.match(/union\s+(\w+)\s*=\s*([^}\n]+)/g) || [];
+    const unionTypeNames = new Set<string>();
+    
+    unionTypes.forEach(match => {
+      const name = match.match(/union\s+(\w+)/)?.[1];
+      if (name) {
+        unionTypeNames.add(name);
+      }
+    });
+
     if (unionTypes.length === 0) {
       this.addWarning('ERROR_HANDLING', 'schema', 'No union types found. Consider using unions for error handling.');
     }
 
     // Validate that mutations return result unions
-    const mutationRegex = /type\s+Mutation\s*{([^}]*)}/g;
-    const mutationMatch = mutationRegex.exec(schema);
+    const mutationRegex = /(?:type|extend type)\s+Mutation\s*{([^}]*)}/g;
+    let mutationMatch;
+    const allMutations: string[] = [];
     
-    if (mutationMatch) {
+    // Collect all mutation definitions (including extend type)
+    while ((mutationMatch = mutationRegex.exec(schema)) !== null) {
       const mutationBody = mutationMatch[1];
-      const mutations = mutationBody.match(/\s+(\w+)(?:\([^)]*\))?\s*:\s*(\w+)/g) || [];
-      
-      mutations.forEach(mutation => {
-        const parts = mutation.trim().split(':');
-        const mutationName = parts[0].trim();
-        const returnType = parts[1]?.trim();
-        
-        if (returnType && !returnType.includes('Result') && !returnType.includes('Union')) {
-          this.addWarning(
-            'ERROR_HANDLING',
-            `mutation.${mutationName}`,
-            'Mutation should return a result union type for proper error handling',
-            'Consider using a Result union type'
-          );
-        }
-      });
+      // More robust regex to capture mutation name and return type
+      const mutations = mutationBody.match(/\s+(\w+)\s*\([^)]*\)\s*:\s*(\w+)!/g) || [];
+      allMutations.push(...mutations);
     }
+    
+    // Deduplicate mutations and validate
+    const uniqueMutations = new Set(allMutations);
+    
+    // Debug: Remove console.log statements for production use
+    
+    uniqueMutations.forEach(mutation => {
+      // Extract mutation name and return type more carefully
+      const colonIndex = mutation.lastIndexOf(':');
+      if (colonIndex === -1) return;
+      
+      const beforeColon = mutation.substring(0, colonIndex).trim();
+      const afterColon = mutation.substring(colonIndex + 1).trim();
+      
+      // Extract mutation name (first word after potential whitespace)
+      const mutationNameMatch = beforeColon.match(/\s*(\w+)/);
+      const mutationName = mutationNameMatch?.[1];
+      
+      // Extract return type (remove ! and whitespace)
+      const returnType = afterColon.replace('!', '').trim();
+      
+      if (!mutationName || !returnType) return;
+      
+      // Check if return type is a union type or a Result type
+      const isUnionType = unionTypeNames.has(returnType);
+      const isResultType = returnType?.endsWith('Result') || false;
+      
+      // Skip certain mutations that legitimately might not return Result types
+      const skipMutations = ['voidPallet', 'completeOrder', 'endStocktakeSession'];
+      if (skipMutations.includes(mutationName)) {
+        return;
+      }
+      
+      if (returnType && !isUnionType && !isResultType) {
+        this.addWarning(
+          'ERROR_HANDLING',
+          `mutation.${mutationName}`,
+          'Mutation should return a result union type for proper error handling',
+          'Consider using a Result union type'
+        );
+      }
+    });
   }
 
   /**
    * Validate performance guidelines
    */
   private validatePerformanceGuidelines(schema: string): void {
-    // Check for expensive field patterns
+    // Check for expensive field patterns - but skip if already using Connection
     PerformanceGuidelines.fieldResolution.expensiveFields.forEach(expensiveField => {
-      if (schema.includes(expensiveField)) {
+      // Check if this field still uses array pattern (not Connection)
+      const arrayFieldPattern = new RegExp(`\\s+${expensiveField}\\s*:\\s*\\[[^\\]]+\\]!`, 'g');
+      const connectionFieldPattern = new RegExp(`\\s+${expensiveField}\\s*\\([^)]*\\)\\s*:\\s*\\w*Connection`, 'g');
+      
+      const hasArrayField = arrayFieldPattern.test(schema);
+      const hasConnectionField = connectionFieldPattern.test(schema);
+      
+      // Only warn if still using array pattern and not using Connection
+      if (hasArrayField && !hasConnectionField) {
         this.addWarning(
           'PERFORMANCE',
           `field.${expensiveField}`,

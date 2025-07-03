@@ -364,7 +364,7 @@ export const resolverHelpers = {
   }
 };
 
-export default {
+const dataLoaders = {
   productLoader,
   palletLoader,
   inventoryLoader,
@@ -376,4 +376,6 @@ export default {
   DataLoaderMonitor,
   DataLoaderConfig,
   resolverHelpers
-}; 
+};
+
+export default dataLoaders; 

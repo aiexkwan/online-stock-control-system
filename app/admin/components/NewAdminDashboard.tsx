@@ -119,7 +119,9 @@ export function NewAdminDashboard() {
   
   // 從路徑判斷當前主題
   const pathParts = pathname.split('/').filter(Boolean);
-  const currentTheme = pathParts.length > 1 ? pathParts[pathParts.length - 1] : 'injection';
+  const lastPart = pathParts[pathParts.length - 1];
+  // If on /admin root, redirect to injection theme
+  const currentTheme = (pathParts.length === 1 && lastPart === 'admin') ? 'injection' : lastPart || 'injection';
   
   // Navigation menu items grouped by category
   
