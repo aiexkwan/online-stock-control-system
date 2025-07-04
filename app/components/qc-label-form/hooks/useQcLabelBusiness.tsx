@@ -254,7 +254,9 @@ export const useQcLabelBusiness = ({
           pdfResult.pdfBlobs,
           productInfo.code,
           sortedPalletNumbers,
-          sortedSeries
+          sortedSeries,
+          quantity,
+          clockNumber
         );
         
         // 確認托盤編號已使用（v6 系統）

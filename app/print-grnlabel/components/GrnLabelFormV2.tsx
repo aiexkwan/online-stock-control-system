@@ -71,7 +71,7 @@ const customStyles = `
 
 // Import custom hooks
 import { useGrnFormReducer } from '../hooks/useGrnFormReducer';
-import { useGrnLabelBusinessV2 } from '../hooks/useGrnLabelBusinessV2';
+import { useGrnLabelBusinessV3 } from '../hooks/useGrnLabelBusinessV3';
 
 // Types for GRN Label (simplified from QC Label ProductInfo)
 interface GrnProductInfo {
@@ -107,7 +107,7 @@ export const GrnLabelFormV2: React.FC = () => {
   const {
     weightCalculation,
     processPrintRequest
-  } = useGrnLabelBusinessV2({
+  } = useGrnLabelBusinessV3({
     state,
     actions,
     currentUserId,

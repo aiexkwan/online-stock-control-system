@@ -529,7 +529,7 @@ Difference >> ${data.weight_difference}`;
 // Helper function to determine column for pallet type
 function getPalletColumn(palletType: string | null): string | null {
   if (!palletType) return null;
-  const type = palletType.trim().toLowerCase(); // Normalize to lowercase
+  const type = palletType.trim().toLowerCase().replace(/\s+/g, ''); // Normalize to lowercase and remove spaces
   switch (type) {
     case 'whitedry': return 'D';
     case 'whitewet': return 'E';
@@ -547,7 +547,7 @@ function getPalletColumn(palletType: string | null): string | null {
 // Helper function to determine which column (I-L) to put the package count based on package type
 function getPackageColumn(packageType: string | null): string | null {
   if (!packageType) return null;
-  const type = packageType.toLowerCase(); // Normalize to lowercase for case-insensitive comparison
+  const type = packageType.trim().toLowerCase(); // Normalize to lowercase and trim whitespace
 
   if (type.includes('still')) return 'I'; // Stillage
   if (type.includes('bag')) return 'J';   // Bag

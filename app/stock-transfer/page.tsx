@@ -11,7 +11,7 @@ import { TransferLogSection } from './components/TransferLogSection';
 import { PageFooter } from './components/PageFooter';
 import { SkipNavigation } from './components/SkipNavigation';
 import { KeyboardShortcutsDialog } from './components/KeyboardShortcutsDialog';
-import { TransferConfirmDialog } from './components/TransferConfirmDialogNew';
+import { TransferControlPanel } from './components/TransferControlPanel';
 
 // 導入鍵盤快捷鍵 Hook
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
@@ -49,12 +49,11 @@ export default function StockTransferPage() {
     type: 'success' | 'error' | 'warning' | 'info';
     message: string;
   } | null>(null);
-  const [showTransferDialog, setShowTransferDialog] = useState(false);
-  const [pendingTransferData, setPendingTransferData] = useState<{
-    palletInfo: PalletInfo;
-    targetLocation: string;
-  } | null>(null);
+  const [selectedPallet, setSelectedPallet] = useState<PalletInfo | null>(null);
   const [showShortcutsDialog, setShowShortcutsDialog] = useState(false);
+  const [selectedDestination, setSelectedDestination] = useState('');
+  const [verifiedClockNumber, setVerifiedClockNumber] = useState<string | null>(null);
+  const [verifiedName, setVerifiedName] = useState<string | null>(null);
 
   // 添加搜尋輸入框的 ref
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -106,21 +105,59 @@ export default function StockTransferPage() {
     };
   }, [optimisticTransfers]);
 
+  // Process transfer execution
+  const handleTransferExecute = useCallback(async (targetLocation: string, clockNumber: string) => {
+    if (!selectedPallet) return;
+    
+    const success = await executeStockTransfer(
+      selectedPallet.plt_num,
+      selectedPallet.product_code,
+      selectedPallet.product_qty,
+      selectedPallet.current_plt_loc || 'Await',
+      targetLocation,
+      clockNumber
+    );
+
+    if (success) {
+      setStatusMessage({
+        type: 'success',
+        message: `✓ Pallet ${selectedPallet.plt_num} successfully moved to ${targetLocation}`
+      });
+      // Clear only pallet search, keep destination and operator
+      setSearchValue('');
+      setSelectedPallet(null);
+      focusSearchInput();
+    } else {
+      setStatusMessage({
+        type: 'error',
+        message: `❌ TRANSFER FAILED: Pallet ${selectedPallet.plt_num} could not be moved to ${targetLocation}`
+      });
+      setSelectedPallet(null);
+    }
+  }, [selectedPallet, executeStockTransfer, focusSearchInput]);
 
   // Handle search selection - Optimized for speed
   const handleSearchSelect = useCallback(async (result: any) => {
     if (result.data.type === 'pallet') {
       setStatusMessage(null);
       
-      const searchValue = result.data.value;
-      // Get the detected search type from the result data
-      const searchType = result.data.searchType || 'pallet_num'; // Default to pallet_num if not provided
+      // Check if destination and operator are ready
+      if (!selectedDestination || !verifiedClockNumber) {
+        setStatusMessage({
+          type: 'warning',
+          message: '⚠️ Please select destination and verify operator first'
+        });
+        return;
+      }
       
-      // Search pallet information using the detected type
+      const searchValue = result.data.value;
+      const searchType = result.data.searchType || 'pallet_num';
+      
+      // Search pallet information
       const palletInfo = await searchPalletInfo(searchType, searchValue);
       
       if (palletInfo) {
-        // 檢查是否有待處理的轉移
+        // Check for pending transfers
         const hasPendingTransfer = optimisticTransfers.some(
           t => t.pltNum === palletInfo.plt_num && t.status === 'pending'
         );
@@ -133,8 +170,9 @@ export default function StockTransferPage() {
           return;
         }
         
-        // 檢查是否為 Voided 位置
         const currentLocation = palletInfo.current_plt_loc || 'Await';
+        
+        // Check if Voided
         if (currentLocation === 'Voided') {
           setStatusMessage({
             type: 'error',
@@ -143,15 +181,23 @@ export default function StockTransferPage() {
           return;
         }
         
-        // 儲存托盤資訊並顯示轉移對話框
-        setPendingTransferData({
-          palletInfo,
-          targetLocation: '' // 將在輸入轉移代號後設定
-        });
-        setShowTransferDialog(true);
+        // Validate transfer rules
+        const { validateTransfer } = await import('./components/TransferDestinationSelector');
+        const validation = validateTransfer(currentLocation, selectedDestination);
         
-        // 清除狀態訊息
-        setStatusMessage(null);
+        if (!validation.isValid) {
+          setStatusMessage({
+            type: 'error',
+            message: `❌ ${validation.errorMessage}`
+          });
+          return;
+        }
+        
+        // Set selected pallet and execute transfer immediately
+        setSelectedPallet(palletInfo);
+        
+        // Execute transfer
+        await handleTransferExecute(selectedDestination, verifiedClockNumber);
       } else {
         setStatusMessage({
           type: 'error',
@@ -159,60 +205,18 @@ export default function StockTransferPage() {
         });
       }
     }
-  }, [searchPalletInfo, optimisticTransfers]);
+  }, [searchPalletInfo, optimisticTransfers, selectedDestination, verifiedClockNumber, handleTransferExecute]);
 
-  // 處理轉移確認（包含目標位置和員工ID）
-  const handleTransferConfirm = async (targetLocation: string, clockNumber: string) => {
-    if (!pendingTransferData) return;
-    
-    const { palletInfo } = pendingTransferData;
-    setShowTransferDialog(false);
-    
-    const success = await executeStockTransfer(
-      palletInfo.plt_num,
-      palletInfo.product_code,
-      palletInfo.product_qty,
-      palletInfo.current_plt_loc || 'Await',
-      targetLocation,
-      clockNumber  // 傳遞 clock number
-    );
-
-    if (success) {
-      setStatusMessage({
-        type: 'success',
-        message: `✓ Pallet ${palletInfo.plt_num} successfully moved to ${targetLocation}`
-      });
-      // Reset for next operation
-      setSearchValue('');
-      // 自動聚焦到搜尋欄位以便快速執行下一個操作
-      focusSearchInput();
-    } else {
-      // 🚀 新增：設置錯誤狀態消息，觸發黑色背景紅色字體閃爍效果
-      setStatusMessage({
-        type: 'error',
-        message: `❌ TRANSFER FAILED: Pallet ${palletInfo.plt_num} could not be moved to ${targetLocation}`
-      });
-    }
-    
-    setPendingTransferData(null);
-  };
-
-  // Handle transfer dialog cancel
-  const handleTransferCancel = () => {
-    setShowTransferDialog(false);
-    setPendingTransferData(null);
-    // Reset search for quick retry
-    setSearchValue('');
-    focusSearchInput();
-  };
 
   // Reset operation - optimized for quick next scan
   const handleReset = useCallback(() => {
     // Clear all states
     setSearchValue('');
     setStatusMessage(null);
-    setShowTransferDialog(false);
-    setPendingTransferData(null);
+    setSelectedPallet(null);
+    setSelectedDestination('');
+    setVerifiedClockNumber(null);
+    setVerifiedName(null);
     
     // Auto-focus for immediate next operation
     focusSearchInput();
@@ -223,7 +227,7 @@ export default function StockTransferPage() {
     onSearch: focusSearchInput,
     onReset: handleReset,
     onHelp: () => setShowShortcutsDialog(true),
-    enabled: !showTransferDialog && !showShortcutsDialog // 在對話框開啟時禁用快捷鍵
+    enabled: !showShortcutsDialog // 在對話框開啟時禁用快捷鍵
   });
 
   return (
@@ -246,46 +250,61 @@ export default function StockTransferPage() {
             />
           )}
 
-          <div className="space-y-8">
-            {/* Operation Area */}
-            <section id="search-section" aria-label="Pallet search section">
-              <div className="space-y-8">
-                {/* Search Area */}
+          {/* Main Layout - 左邊 2/3，右邊 1/3 */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Left Column - 2/3 width */}
+            <div className="lg:col-span-2 space-y-6">
+              {/* Operation Area */}
+              <section id="search-section" aria-label="Pallet search section">
                 <PalletSearchSection
                   searchValue={searchValue}
                   onSearchValueChange={setSearchValue}
                   onSearchSelect={handleSearchSelect}
                   isLoading={isLoading}
                   searchInputRef={searchInputRef}
+                  disabled={!selectedDestination || !verifiedClockNumber}
+                  disabledMessage={
+                    !selectedDestination 
+                      ? "Please select a destination first" 
+                      : !verifiedClockNumber 
+                        ? "Please verify your clock number" 
+                        : "Please select destination and verify operator first"
+                  }
                 />
-              </div>
-            </section>
+              </section>
 
-            {/* Activity Log */}
-            <section id="transfer-log" aria-label="Transfer activity log section">
-              <TransferLogSection
-                activityLog={activityLog}
-                optimisticTransfers={optimisticTransfers}
-              />
-            </section>
+              {/* Activity Log */}
+              <section id="transfer-log" aria-label="Transfer activity log section">
+                <TransferLogSection
+                  activityLog={activityLog}
+                  optimisticTransfers={optimisticTransfers}
+                />
+              </section>
+            </div>
+
+            {/* Right Column - 1/3 width */}
+            <div className="lg:col-span-1">
+              <section id="transfer-control" aria-label="Transfer control panel">
+                <TransferControlPanel
+                  selectedPallet={selectedPallet}
+                  selectedDestination={selectedDestination}
+                  verifiedClockNumber={verifiedClockNumber}
+                  verifiedName={verifiedName}
+                  onDestinationChange={setSelectedDestination}
+                  onClockNumberVerified={(clockNum, name) => {
+                    setVerifiedClockNumber(clockNum);
+                    setVerifiedName(name);
+                  }}
+                  isProcessing={isLoading}
+                />
+              </section>
+            </div>
           </div>
 
           {/* 底部裝飾 */}
           <PageFooter />
         </main>
       </div>
-
-      {/* Transfer Confirm Dialog */}
-      <TransferConfirmDialog
-        isOpen={showTransferDialog}
-        onOpenChange={setShowTransferDialog}
-        onConfirm={handleTransferConfirm}
-        onCancel={handleTransferCancel}
-        title="Stock Transfer"
-        description=""
-        currentLocation={pendingTransferData?.palletInfo.current_plt_loc || 'Await'}
-        isLoading={isLoading}
-      />
 
       {/* Keyboard Shortcuts Dialog */}
       <KeyboardShortcutsDialog

@@ -113,7 +113,8 @@
       "Bash(/mnt/c/Users/ccohen/Documents/NewPennine/online-stock-control-system/app/actions/newReportActions.ts)",
       "Bash(npx swc:*)",
       "mcp__supabase__get_logs",
-      "Bash(jq:*)"
+      "Bash(jq:*)",
+      "Bash(npx prettier:*)"
     ],
     "deny": []
   }

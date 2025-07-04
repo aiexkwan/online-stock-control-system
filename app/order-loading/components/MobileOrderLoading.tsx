@@ -13,7 +13,7 @@ import {
   XMarkIcon
 } from '@heroicons/react/24/outline';
 import { UnifiedSearch } from '@/components/ui/unified-search';
-import { EnhancedMobileScanner } from './EnhancedMobileScanner';
+import { SimpleQRScanner } from '@/components/qr-scanner/simple-qr-scanner';
 import { toast } from 'sonner';
 
 interface MobileOrderLoadingProps {
@@ -249,16 +249,16 @@ export default function MobileOrderLoading({
                 </div>
               </div>
               
-              <EnhancedMobileScanner
+              <UnifiedSearch
                 value={searchValue}
                 onChange={onSearchChange}
                 onSelect={onSearchSelect}
                 isLoading={isSearching}
-                recentScans={recentLoads.slice(0, 5).map(load => ({
-                  value: load.pallet_num,
-                  timestamp: new Date(load.action_time),
-                  success: true
-                }))}
+                placeholder="Scan or enter pallet number..."
+                autoFocus
+                ref={searchInputRef}
+                productCodes={[]}
+                enableProductSearch={false}
               />
               
               

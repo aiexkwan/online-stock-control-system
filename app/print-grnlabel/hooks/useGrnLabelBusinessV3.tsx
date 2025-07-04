@@ -43,6 +43,7 @@ import type { GrnFormState, GrnFormAction } from './useGrnFormReducer';
 import { useWeightCalculation } from './useWeightCalculation';
 import { usePalletGenerationGrn } from './usePalletGenerationGrn';
 import { confirmPalletUsage } from '@/app/utils/palletGeneration';
+import { usePrintIntegration } from './usePrintIntegration';
 
 interface UseGrnLabelBusinessV3Props {
   state: GrnFormState;
@@ -79,6 +80,7 @@ export const useGrnLabelBusinessV3 = ({
     packageType: state.packageType 
   });
   const palletGeneration = usePalletGenerationGrn();
+  const { printGrnLabels } = usePrintIntegration();
 
   // Main processing function with transaction support
   const processPrintRequest = useCallback(async (clockNumber: string) => {
@@ -331,13 +333,16 @@ export const useGrnLabelBusinessV3 = ({
             console.log(`[useGrnLabelBusinessV3] 統一 RPC: All ${collectedPdfBlobs.length} labels generated successfully!`);
           }
   
-          // Convert Blobs to ArrayBuffers for merging
-          const pdfArrayBuffers = await Promise.all(
-            collectedPdfBlobs.map(blob => blob.arrayBuffer())
-          );
-          
-          // Print merged PDF
-          await pdfUtilsMergeAndPrintPdfs(pdfArrayBuffers);
+          // Use unified printing service
+          await printGrnLabels(collectedPdfBlobs, {
+            grnNumber: state.formData.grnNumber,
+            supplierCode: state.supplierInfo.code,
+            productCode: state.productInfo.code,
+            palletNumbers,
+            series,
+            userId: clockNumber, // Use clockNumber as userId for operatorClockNum
+            clockNumber
+          });
           
           // Complete transaction
           await transactionLog.completeTransaction(

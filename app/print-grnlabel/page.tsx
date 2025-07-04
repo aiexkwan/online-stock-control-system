@@ -5,10 +5,16 @@ import React from 'react';
 import GrnLabelFormV2 from './components/GrnLabelFormV2';
 import FloatingInstructions from '@/components/ui/floating-instructions';
 import GrnErrorStats from './components/ErrorStats';
+import { PrintQueueMonitor } from '@/lib/printing';
 
 export default function PrintGrnLabelPage() {
   return (
     <div>
+      {/* Print Queue Monitor - Fixed Position */}
+      <div className="fixed top-4 left-4 z-40 w-80">
+        <PrintQueueMonitor compact />
+      </div>
+
       {/* 主要內容區域 */}
       <div className="container mx-auto px-4">
           {/* Instructions Section */}

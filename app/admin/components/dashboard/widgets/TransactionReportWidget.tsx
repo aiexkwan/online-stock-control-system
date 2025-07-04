@@ -7,7 +7,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { Download, Loader2, CheckCircle, CalendarIcon } from 'lucide-react';
+import { Download, Loader2, CheckCircle, CalendarIcon, Printer } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { format, startOfDay, endOfDay } from 'date-fns';
@@ -16,6 +16,7 @@ import { buildTransactionReport } from '@/lib/exportReport';
 import { getTransactionReportData } from '@/app/actions/reportActions';
 import { type DateRange } from 'react-day-picker';
 import { Calendar } from '@/components/ui/calendar';
+import { useReportPrinting } from '@/app/admin/hooks/useReportPrinting';
 
 interface TransactionReportWidgetProps {
   title: string;
@@ -40,6 +41,24 @@ export const TransactionReportWidget = function TransactionReportWidget({
   const [calendarPosition, setCalendarPosition] = useState({ top: 0, left: 0 });
   const [downloadStatus, setDownloadStatus] = useState<"idle" | "downloading" | "downloaded" | "complete">("idle");
   const [progress, setProgress] = useState(0);
+  
+  // Use unified printing hook
+  const { printReport, downloadReport, isPrinting, isServiceAvailable } = useReportPrinting({
+    reportType: 'transaction',
+    onSuccess: () => {
+      toast({
+        title: "Success",
+        description: "Report processed successfully",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  });
 
   // Calculate calendar position when opening
   useEffect(() => {
@@ -99,27 +118,14 @@ export const TransactionReportWidget = function TransactionReportWidget({
       // Generate Excel report
       const buffer = await buildTransactionReport(reportData);
       
-      // Create blob and trigger download
-      const blob = new Blob([buffer], { 
-        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' 
-      });
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `transaction-report-${startDate}-to-${endDate}.xlsx`;
-      document.body.appendChild(link);
-      link.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(link);
+      // Use unified download function
+      const filename = `transaction-report-${startDate}-to-${endDate}.xlsx`;
+      downloadReport(buffer, filename);
       
       clearInterval(interval);
       setProgress(100);
       setDownloadStatus("downloaded");
       
-      toast({
-        title: "Success",
-        description: `Transaction report generated for ${format(fromDate, 'MMM d')} - ${format(toDate, 'MMM d, yyyy')}`,
-      });
       
       // Reset after 2 seconds
       setTimeout(() => {
@@ -256,36 +262,87 @@ export const TransactionReportWidget = function TransactionReportWidget({
             )}
           </div>
           
-          <Button
-            onClick={handleDownload}
-            disabled={downloadStatus !== "idle"}
-            className={cn(
-              "h-9 px-3 relative overflow-hidden select-none",
-              "bg-blue-600 hover:bg-blue-700 text-white",
-              downloadStatus === "downloading" && "bg-blue-600/50",
-              downloadStatus !== "idle" && "pointer-events-none"
+          <div className="flex gap-2">
+            {/* Print button */}
+            {isServiceAvailable && (
+              <Button
+                onClick={async () => {
+                  if (!dateRange?.from) {
+                    toast({
+                      title: "Invalid Date Range",
+                      description: "Please select a date range",
+                      variant: "destructive",
+                    });
+                    return;
+                  }
+                  
+                  const fromDate = dateRange.from;
+                  const toDate = dateRange.to || dateRange.from;
+                  const startDate = format(startOfDay(fromDate), 'yyyy-MM-dd');
+                  const endDate = format(endOfDay(toDate), 'yyyy-MM-dd');
+                  
+                  try {
+                    const reportData = await getTransactionReportData(startDate, endDate);
+                    if (!reportData) throw new Error('No data found');
+                    
+                    const buffer = await buildTransactionReport(reportData);
+                    await printReport(buffer, {
+                      dateRange: `${format(fromDate, 'MMM d')} - ${format(toDate, 'MMM d, yyyy')}`,
+                      startDate,
+                      endDate
+                    });
+                  } catch (error) {
+                    console.error('Print failed:', error);
+                  }
+                }}
+                disabled={isPrinting || downloadStatus !== "idle"}
+                className={cn(
+                  "h-9 px-3",
+                  "bg-gray-600 hover:bg-gray-700 text-white",
+                  isPrinting && "opacity-50"
+                )}
+                size="sm"
+              >
+                {isPrinting ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Printer className="h-4 w-4" />
+                )}
+              </Button>
             )}
-            size="sm"
-          >
-            {downloadStatus === "idle" && (
-              <Download className="h-4 w-4" />
-            )}
-            {downloadStatus === "downloading" && (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            )}
-            {downloadStatus === "downloaded" && (
-              <CheckCircle className="h-4 w-4" />
-            )}
-            {downloadStatus === "complete" && (
-              <Download className="h-4 w-4" />
-            )}
-            {downloadStatus === "downloading" && (
-              <div
-                className="absolute bottom-0 z-[3] h-full left-0 bg-blue-500 inset-0 transition-all duration-200 ease-in-out"
-                style={{ width: `${progress}%` }}
-              />
-            )}
-          </Button>
+            
+            {/* Download button */}
+            <Button
+              onClick={handleDownload}
+              disabled={downloadStatus !== "idle"}
+              className={cn(
+                "h-9 px-3 relative overflow-hidden select-none",
+                "bg-blue-600 hover:bg-blue-700 text-white",
+                downloadStatus === "downloading" && "bg-blue-600/50",
+                downloadStatus !== "idle" && "pointer-events-none"
+              )}
+              size="sm"
+            >
+              {downloadStatus === "idle" && (
+                <Download className="h-4 w-4" />
+              )}
+              {downloadStatus === "downloading" && (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              )}
+              {downloadStatus === "downloaded" && (
+                <CheckCircle className="h-4 w-4" />
+              )}
+              {downloadStatus === "complete" && (
+                <Download className="h-4 w-4" />
+              )}
+              {downloadStatus === "downloading" && (
+                <div
+                  className="absolute bottom-0 z-[3] h-full left-0 bg-blue-500 inset-0 transition-all duration-200 ease-in-out"
+                  style={{ width: `${progress}%` }}
+                />
+              )}
+            </Button>
+          </div>
         </div>
       </div>
     </div>

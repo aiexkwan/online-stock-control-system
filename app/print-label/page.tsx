@@ -10,9 +10,11 @@ import { SlateDetailsForm } from '../components/qc-label-form/SlateDetailsForm';
 import { useQcLabelBusiness } from '../components/qc-label-form/hooks/useQcLabelBusiness';
 import ClockNumberConfirmDialog from '../components/qc-label-form/ClockNumberConfirmDialog';
 import FloatingInstructions from '@/components/ui/floating-instructions';
+import { TestHardwareButton } from '../components/qc-label-form/TestHardwareButton';
 import { useSearchParams } from 'next/navigation';
 import { MAX_PALLET_COUNT } from '../components/qc-label-form/constants';
 import type { ProductInfo, FormData } from '../components/qc-label-form/types';
+import { PrintQueueMonitor } from '@/lib/printing';
 
 export default function PrintLabelPage() {
   const searchParams = useSearchParams();
@@ -180,6 +182,16 @@ export default function PrintLabelPage() {
 
   return (
     <>
+      {/* Hardware Test Button */}
+      <div className="fixed top-4 left-4 z-50">
+        <TestHardwareButton />
+      </div>
+      
+      {/* Print Queue Monitor - Compact Mode */}
+      <div className="fixed top-20 left-4 z-40 w-80">
+        <PrintQueueMonitor compact />
+      </div>
+      
       {/* Floating Instructions */}
       <div className="fixed top-4 right-4 z-50">
         <FloatingInstructions

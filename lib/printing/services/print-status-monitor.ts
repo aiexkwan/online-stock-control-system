@@ -1,0 +1,311 @@
+/**
+ * Print Status Monitor
+ * A facade over hardware monitoring service that provides additional status tracking
+ */
+
+import { EventEmitter } from 'events';
+import { getHardwareAbstractionLayer } from '@/lib/hardware/hardware-abstraction-layer';
+import type { HardwareEvent } from '@/lib/hardware/types';
+
+export interface PrintJobStatus {
+  jobId: string;
+  status: 'queued' | 'processing' | 'completed' | 'failed' | 'cancelled';
+  progress?: number;
+  message?: string;
+  startedAt?: string;
+  completedAt?: string;
+  error?: string;
+}
+
+export interface MonitorConfig {
+  updateInterval?: number;
+  retainCompleted?: number;
+}
+
+/**
+ * Print Status Monitor
+ * Extends hardware monitoring with job-specific status tracking
+ */
+export class PrintStatusMonitor extends EventEmitter {
+  private hal = getHardwareAbstractionLayer();
+  private statusMap: Map<string, PrintJobStatus> = new Map();
+  private updateInterval: NodeJS.Timeout | null = null;
+  private config: Required<MonitorConfig>;
+
+  constructor(config?: MonitorConfig) {
+    super();
+    
+    this.config = {
+      updateInterval: config?.updateInterval || 1000,
+      retainCompleted: config?.retainCompleted || 100
+    };
+    
+    // Defer HAL subscription until it's initialized
+    this.initializeHalSubscription();
+  }
+
+  /**
+   * Start monitoring
+   */
+  start(): void {
+    if (this.updateInterval) return;
+    
+    this.updateInterval = setInterval(() => {
+      this.cleanupOldStatuses();
+    }, this.config.updateInterval * 10); // Cleanup every 10 intervals
+  }
+
+  /**
+   * Stop monitoring
+   */
+  stop(): void {
+    if (this.updateInterval) {
+      clearInterval(this.updateInterval);
+      this.updateInterval = null;
+    }
+  }
+
+  /**
+   * Update job status
+   */
+  updateStatus(jobId: string, update: Partial<PrintJobStatus>): void {
+    const currentStatus = this.statusMap.get(jobId) || {
+      jobId,
+      status: 'queued' as const
+    };
+    
+    const newStatus: PrintJobStatus = {
+      ...currentStatus,
+      ...update
+    };
+    
+    // Set timestamps
+    if (update.status === 'processing' && !newStatus.startedAt) {
+      newStatus.startedAt = new Date().toISOString();
+    }
+    
+    if ((update.status === 'completed' || update.status === 'failed') && !newStatus.completedAt) {
+      newStatus.completedAt = new Date().toISOString();
+    }
+    
+    this.statusMap.set(jobId, newStatus);
+    
+    // Emit status update
+    this.emit('statusUpdate', newStatus);
+    
+    // Emit specific events
+    switch (update.status) {
+      case 'processing':
+        this.emit('jobStarted', jobId, newStatus);
+        break;
+      case 'completed':
+        this.emit('jobCompleted', jobId, newStatus);
+        break;
+      case 'failed':
+        this.emit('jobFailed', jobId, newStatus);
+        break;
+      case 'cancelled':
+        this.emit('jobCancelled', jobId, newStatus);
+        break;
+    }
+  }
+
+  /**
+   * Update job progress
+   */
+  updateProgress(jobId: string, progress: number, message?: string): void {
+    this.updateStatus(jobId, {
+      progress: Math.min(100, Math.max(0, progress)),
+      message
+    });
+  }
+
+  /**
+   * Get status for a specific job
+   */
+  getStatus(jobId: string): PrintJobStatus | null {
+    return this.statusMap.get(jobId) || null;
+  }
+
+  /**
+   * Get all active job statuses
+   */
+  getActiveStatuses(): PrintJobStatus[] {
+    return Array.from(this.statusMap.values()).filter(
+      status => status.status === 'queued' || status.status === 'processing'
+    );
+  }
+
+  /**
+   * Get recent completed job statuses
+   */
+  getCompletedStatuses(limit: number = 10): PrintJobStatus[] {
+    return Array.from(this.statusMap.values())
+      .filter(status => status.status === 'completed' || status.status === 'failed')
+      .sort((a, b) => {
+        const timeA = a.completedAt || a.startedAt || '';
+        const timeB = b.completedAt || b.startedAt || '';
+        return timeB.localeCompare(timeA);
+      })
+      .slice(0, limit);
+  }
+
+  /**
+   * Subscribe to status updates for a specific job
+   */
+  watchJob(jobId: string, callback: (status: PrintJobStatus) => void): () => void {
+    const listener = (status: PrintJobStatus) => {
+      if (status.jobId === jobId) {
+        callback(status);
+      }
+    };
+    
+    this.on('statusUpdate', listener);
+    
+    // Send current status immediately if available
+    const currentStatus = this.getStatus(jobId);
+    if (currentStatus) {
+      callback(currentStatus);
+    }
+    
+    // Return unsubscribe function
+    return () => {
+      this.off('statusUpdate', listener);
+    };
+  }
+
+  /**
+   * Get statistics from HAL queue
+   */
+  async getStatistics(): Promise<{
+    total: number;
+    queued: number;
+    processing: number;
+    completed: number;
+    failed: number;
+    cancelled: number;
+  }> {
+    // Get real queue status from HAL
+    const queueStatus = await this.hal.queue.getQueueStatus();
+    
+    // Count completed/failed from our status map
+    let completed = 0;
+    let failed = 0;
+    let cancelled = 0;
+    
+    this.statusMap.forEach(status => {
+      switch (status.status) {
+        case 'completed':
+          completed++;
+          break;
+        case 'failed':
+          failed++;
+          break;
+        case 'cancelled':
+          cancelled++;
+          break;
+      }
+    });
+    
+    return {
+      total: queueStatus.pending + queueStatus.processing + completed + failed,
+      queued: queueStatus.pending,
+      processing: queueStatus.processing,
+      completed,
+      failed,
+      cancelled
+    };
+  }
+
+  /**
+   * Clear all statuses
+   */
+  clear(): void {
+    this.statusMap.clear();
+    this.emit('cleared');
+  }
+
+  // Private methods
+  private async initializeHalSubscription(): Promise<void> {
+    try {
+      // Check if HAL is already initialized
+      if (!this.hal.isInitialized) {
+        await this.hal.initialize();
+      }
+      this.subscribeToHalEvents();
+    } catch (error) {
+      console.warn('[PrintStatusMonitor] Failed to initialize HAL subscription:', error);
+      // Try again later
+      setTimeout(() => this.initializeHalSubscription(), 1000);
+    }
+  }
+
+  private subscribeToHalEvents(): void {
+    // Subscribe to HAL queue events
+    this.hal.queue.on('job.added', (job) => {
+      this.updateStatus(job.id, {
+        jobId: job.id,
+        status: 'queued',
+        message: 'Job added to queue'
+      });
+    });
+    
+    this.hal.queue.on('job.processing', (job) => {
+      this.updateStatus(job.id, {
+        status: 'processing',
+        startedAt: new Date().toISOString()
+      });
+    });
+    
+    this.hal.queue.on('job.completed', (job, result) => {
+      this.updateStatus(job.id, {
+        status: 'completed',
+        completedAt: new Date().toISOString()
+      });
+    });
+    
+    this.hal.queue.on('job.failed', (job, error) => {
+      this.updateStatus(job.id, {
+        status: 'failed',
+        completedAt: new Date().toISOString(),
+        error: error
+      });
+    });
+  }
+
+  private cleanupOldStatuses(): void {
+    const completed = Array.from(this.statusMap.entries())
+      .filter(([_, status]) => 
+        status.status === 'completed' || 
+        status.status === 'failed' || 
+        status.status === 'cancelled'
+      )
+      .sort(([_, a], [__, b]) => {
+        const timeA = a.completedAt || '';
+        const timeB = b.completedAt || '';
+        return timeB.localeCompare(timeA);
+      });
+    
+    // Remove old completed jobs beyond retention limit
+    if (completed.length > this.config.retainCompleted) {
+      const toRemove = completed.slice(this.config.retainCompleted);
+      toRemove.forEach(([jobId]) => {
+        this.statusMap.delete(jobId);
+      });
+    }
+  }
+}
+
+// Singleton instance
+let monitorInstance: PrintStatusMonitor | null = null;
+
+/**
+ * Get or create monitor instance
+ */
+export function getPrintStatusMonitor(): PrintStatusMonitor {
+  if (!monitorInstance) {
+    monitorInstance = new PrintStatusMonitor();
+    monitorInstance.start();
+  }
+  return monitorInstance;
+}

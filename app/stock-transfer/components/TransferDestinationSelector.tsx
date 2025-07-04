@@ -46,6 +46,49 @@ const DESTINATION_CONFIG = {
   }
 };
 
+// Validate if transfer is allowed based on location rules
+export function validateTransfer(fromLocation: string, toLocation: string): {
+  isValid: boolean;
+  errorMessage?: string;
+} {
+  // Check if transferring from Voided location
+  if (fromLocation === 'Voided') {
+    return {
+      isValid: false,
+      errorMessage: 'Cannot transfer from Voided location'
+    };
+  }
+
+  // Check if transferring to same location
+  if (fromLocation === toLocation) {
+    return {
+      isValid: false,
+      errorMessage: 'Cannot transfer to the same location'
+    };
+  }
+
+  // Get allowed destinations
+  const allowedDestinations = LOCATION_DESTINATIONS[fromLocation] || [];
+  
+  // If no rules defined, default to not allowed
+  if (allowedDestinations.length === 0) {
+    return {
+      isValid: false,
+      errorMessage: `No transfer allowed from ${fromLocation}`
+    };
+  }
+
+  // Check if target location is in allowed list
+  if (!allowedDestinations.includes(toLocation)) {
+    return {
+      isValid: false,
+      errorMessage: `Cannot transfer from ${fromLocation} to ${toLocation}. Allowed destinations: ${allowedDestinations.join(', ')}`
+    };
+  }
+
+  return { isValid: true };
+}
+
 export function TransferDestinationSelector({
   currentLocation,
   selectedDestination,
@@ -139,16 +182,6 @@ export function TransferDestinationSelector({
           );
         })}
       </RadioGroup>
-      
-      {/* 顯示提示 */}
-      <div className="mt-3 p-3 bg-gray-800/50 rounded-lg border border-gray-700">
-        <p className="text-xs text-gray-400">
-          <span className="text-yellow-400">📍</span> Current location: <span className="text-white font-medium">{currentLocation}</span>
-        </p>
-        <p className="text-xs text-gray-500 mt-1">
-          Select a different location to transfer the pallet
-        </p>
-      </div>
     </div>
   );
 }

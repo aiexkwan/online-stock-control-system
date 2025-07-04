@@ -18,6 +18,8 @@ export const SimpleQRScanner: React.FC<SimpleQRScannerProps> = ({
   onScan, 
   title = "QR Code Scanner"
 }) => {
+  
+  // Initialize all hooks at the top level (legacy implementation)
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [status, setStatus] = useState<string>('Initializing...');
@@ -26,64 +28,67 @@ export const SimpleQRScanner: React.FC<SimpleQRScannerProps> = ({
   const animationRef = useRef<number | null>(null);
   const isScanningRef = useRef<boolean>(false);
   const isCleaningRef = useRef<boolean>(false);
-
-  // Cleanup function
+  const [isMobile, setIsMobile] = useState(false);
+  
+  // Detect mobile device
+  useEffect(() => {
+    const checkMobile = () => {
+      const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+                           window.innerWidth <= 768;
+      setIsMobile(isMobileDevice);
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+  
+  
+  // Cleanup function (legacy implementation)
   const cleanup = useCallback(() => {
     if (isCleaningRef.current) {
-      console.log('SimpleQRScanner: cleanup already in progress, skipping');
-      return;
+      return; // Silent skip to reduce log spam
     }
     
     isCleaningRef.current = true;
-    console.log('SimpleQRScanner: cleanup called');
     isScanningRef.current = false;
     setIsScanning(false);
     
+    // Cancel animation frame
     if (animationRef.current) {
-      console.log('Cancelling animation frame...');
       cancelAnimationFrame(animationRef.current);
       animationRef.current = null;
     }
     
+    // Stop video stream
     if (videoRef.current && videoRef.current.srcObject) {
-      console.log('Clearing video srcObject...');
       const stream = videoRef.current.srcObject as MediaStream;
       videoRef.current.srcObject = null;
       
-      // 停止 video element 嘅 stream tracks
       if (stream) {
-        stream.getTracks().forEach(track => {
-          console.log(`Stopping video stream track: ${track.kind}, enabled: ${track.enabled}`);
-          track.stop();
-        });
+        stream.getTracks().forEach(track => track.stop());
       }
     }
     
+    // Stop stream ref
     if (streamRef.current) {
-      console.log('Stopping camera tracks from streamRef...');
-      streamRef.current.getTracks().forEach(track => {
-        console.log(`Stopping track: ${track.kind}, enabled: ${track.enabled}`);
-        track.stop();
-        console.log(`Track ${track.kind} stopped`);
-      });
+      streamRef.current.getTracks().forEach(track => track.stop());
       streamRef.current = null;
     }
     
-    console.log('SimpleQRScanner: cleanup completed');
-    
-    // Reset cleaning flag after a short delay
+    // Reset cleaning flag
     setTimeout(() => {
       isCleaningRef.current = false;
-    }, 100);
+    }, 50);
   }, []);
 
-  // Handle close button click
+  // Handle close button click (legacy implementation)
   const handleClose = useCallback(() => {
-    console.log('SimpleQRScanner: handleClose called');
     cleanup();
     onClose();
   }, [onClose, cleanup]);
 
+  // Main scanning effect (legacy implementation)
   useEffect(() => {
     if (!open) {
       cleanup();
@@ -107,9 +112,9 @@ export const SimpleQRScanner: React.FC<SimpleQRScannerProps> = ({
         setStatus('Requesting camera permission...');
         const stream = await navigator.mediaDevices.getUserMedia({
           video: { 
-            facingMode: 'environment',
-            width: { ideal: 1280 },
-            height: { ideal: 720 }
+            facingMode: isMobile ? 'environment' : 'user',
+            width: { ideal: isMobile ? 1280 : 1920 },
+            height: { ideal: isMobile ? 720 : 1080 }
           }
         });
 
@@ -139,7 +144,7 @@ export const SimpleQRScanner: React.FC<SimpleQRScannerProps> = ({
 
         const video = videoRef.current;
         const canvas = canvasRef.current;
-        const context = canvas.getContext('2d');
+        const context = canvas.getContext('2d', { willReadFrequently: true });
 
         if (!context || video.readyState !== video.HAVE_ENOUGH_DATA) {
           animationRef.current = requestAnimationFrame(scan);
@@ -165,6 +170,11 @@ export const SimpleQRScanner: React.FC<SimpleQRScannerProps> = ({
             // 先 cleanup，然後延遲 call onScan
             cleanup();
             
+            // 添加觸覺反饋 (移動裝置)
+            if (isMobile && 'vibrate' in navigator) {
+              navigator.vibrate([50, 50, 50]); // 成功掃描振動
+            }
+            
             // 用 setTimeout 確保 cleanup 完成先 call onScan
             setTimeout(() => {
               onScan(code.data);
@@ -185,20 +195,16 @@ export const SimpleQRScanner: React.FC<SimpleQRScannerProps> = ({
     initializeScanner();
 
     return () => {
-      console.log('useEffect cleanup: stopping local stream');
-      
       // 停止 local stream
       if (localStream) {
-        localStream.getTracks().forEach(track => {
-          console.log(`useEffect cleanup: stopping track ${track.kind}`);
-          track.stop();
-        });
+        localStream.getTracks().forEach(track => track.stop());
       }
       
-      // 再 call 一次 cleanup 確保所有嘢都清理晒
+      // 最後清理
       cleanup();
     };
   }, [open, onScan, cleanup]);
+
 
   if (!open) return null;
 
@@ -223,7 +229,7 @@ export const SimpleQRScanner: React.FC<SimpleQRScannerProps> = ({
       }}
     >
       <div 
-        className="bg-white rounded-lg p-6 max-w-lg w-full relative" 
+        className={`bg-white rounded-lg relative ${isMobile ? 'h-full w-full max-h-screen p-4' : 'p-6 max-w-lg w-full'}`}
         style={{ zIndex: 10000 }}
         onClick={(e) => e.stopPropagation()}
       >
@@ -240,7 +246,7 @@ export const SimpleQRScanner: React.FC<SimpleQRScannerProps> = ({
         </div>
         
         <div className="space-y-4">
-          <div className="bg-black rounded-lg overflow-hidden relative" style={{ height: '300px' }}>
+          <div className="bg-black rounded-lg overflow-hidden relative" style={{ height: isMobile ? 'calc(100vh - 200px)' : '300px' }}>
             <video
               ref={videoRef}
               autoPlay
@@ -268,9 +274,10 @@ export const SimpleQRScanner: React.FC<SimpleQRScannerProps> = ({
           </div>
           
           <div className="text-sm text-gray-600 space-y-1">
-            <p>• Hold the QR code steady within the frame</p>
+            <p>• {isMobile ? 'Hold device steady when scanning' : 'Hold the QR code steady within the frame'}</p>
             <p>• Ensure good lighting conditions</p>
-            <p>• Keep the code flat and avoid reflections</p>
+            <p>• {isMobile ? 'Point camera at barcode/QR code' : 'Keep the code flat and avoid reflections'}</p>
+            {isMobile && <p>• Tap anywhere outside to close scanner</p>}
           </div>
           
           <Button 
