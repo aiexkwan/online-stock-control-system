@@ -1,11 +1,14 @@
 /**
  * Lazy Widget Registry
  * 提供懶加載版本嘅 widgets
+ * 擴展版本 - 支援新的 Widget 註冊系統但保持向後兼容
  */
 
 import React, { lazy, Suspense } from 'react';
 import { WidgetType, WidgetComponentProps } from '@/app/types/dashboard';
 import { Skeleton } from '@/components/ui/skeleton';
+import { widgetRegistry } from '@/lib/widgets/enhanced-registry';
+import { getRoutePreloadWidgets } from '@/lib/widgets/widget-mappings';
 
 // Default loading skeleton
 const DefaultWidgetSkeleton = () => (
@@ -148,4 +151,68 @@ export function getWidgetComponent(
   regularComponent: React.ComponentType<WidgetComponentProps>
 ): React.ComponentType<WidgetComponentProps> {
   return LazyWidgets[widgetType] || regularComponent;
+}
+
+// 新增：初始化增強版註冊表（向後兼容）
+export async function initializeEnhancedRegistry(): Promise<void> {
+  try {
+    // 自動註冊所有已知的 widgets
+    await widgetRegistry.autoRegisterWidgets();
+    
+    // 註冊現有的懶加載組件到新系統
+    Object.entries(LazyComponents).forEach(([widgetId, component]) => {
+      const existingDef = widgetRegistry.getDefinition(widgetId);
+      if (existingDef) {
+        // 更新現有定義，添加組件
+        widgetRegistry.register({
+          ...existingDef,
+          component,
+          lazyLoad: true
+        });
+      }
+    });
+    
+    console.log('[LazyWidgetRegistry] Enhanced registry initialized');
+  } catch (error) {
+    console.error('[LazyWidgetRegistry] Failed to initialize enhanced registry:', error);
+  }
+}
+
+// 新增：預加載路由相關的 widgets
+export async function preloadRouteWidgets(route: string): Promise<void> {
+  const widgetIds = getRoutePreloadWidgets(route);
+  if (widgetIds.length > 0) {
+    console.log(`[LazyWidgetRegistry] Preloading widgets for route: ${route}`);
+    await widgetRegistry.preloadWidgets(widgetIds);
+  }
+}
+
+// 新增：獲取組件（支援新舊系統）
+export function getEnhancedWidgetComponent(
+  widgetId: string,
+  enableGraphQL: boolean = false
+): React.ComponentType<any> | undefined {
+  // 首先嘗試從新系統獲取
+  const enhancedComponent = widgetRegistry.getWidgetComponent(widgetId, enableGraphQL);
+  if (enhancedComponent) {
+    return enhancedComponent;
+  }
+  
+  // 回退到舊系統
+  return LazyComponents[widgetId];
+}
+
+// 新增：性能監控包裝器
+export function withPerformanceTracking<P extends WidgetComponentProps>(
+  WidgetComponent: React.ComponentType<P>,
+  widgetId: string
+): React.ComponentType<P> {
+  return React.memo(function TrackedWidget(props: P) {
+    React.useEffect(() => {
+      // 記錄使用情況
+      widgetRegistry.recordUsage(widgetId);
+    }, []);
+    
+    return <WidgetComponent {...props} />;
+  });
 }

@@ -69,6 +69,20 @@ const nextConfig = {
       };
     }
 
+    // Bundle Analyzer 配置
+    if (!isServer && process.env.ANALYZE === 'true') {
+      const { BundleAnalyzerPlugin } = require('webpack-bundle-analyzer');
+      config.plugins.push(
+        new BundleAnalyzerPlugin({
+          analyzerMode: 'static',
+          reportFilename: '../bundle-analyzer/client.html',
+          openAnalyzer: true,
+          generateStatsFile: true,
+          statsFilename: '../bundle-analyzer/client-stats.json',
+        })
+      );
+    }
+
     // 新增：客戶端 fallback 配置
     if (!isServer) {
       config.resolve.fallback = {

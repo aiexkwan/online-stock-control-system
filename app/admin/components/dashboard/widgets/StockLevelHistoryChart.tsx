@@ -243,7 +243,7 @@ export const StockLevelHistoryChart: React.FC<StockLevelHistoryChartProps> = ({ 
       console.error('[StockLevelHistoryChart] Error fetching stock history:', error);
       setChartData([]);
     }
-  }, [supabase, adjustedTimeFrame?.start?.getTime(), adjustedTimeFrame?.end?.getTime()]);
+  }, [supabase, adjustedTimeFrame]);
 
   // 監聽 StockTypeSelector 的類型變更事件
   useEffect(() => {
@@ -301,7 +301,7 @@ export const StockLevelHistoryChart: React.FC<StockLevelHistoryChartProps> = ({ 
         })
         .finally(() => setLoading(false));
     }
-  }, [timeFrameKey, productCodesKey]);
+  }, [timeFrameKey, productCodesKey, adjustedTimeFrame, processHistoryData, productCodes]);
 
   // 當刷新觸發器改變時，重新加載數據
   const prevRefreshTriggerRef = React.useRef(refreshTrigger);
@@ -317,7 +317,7 @@ export const StockLevelHistoryChart: React.FC<StockLevelHistoryChartProps> = ({ 
         })
         .finally(() => setLoading(false));
     }
-  }, [refreshTrigger, productCodesKey]);
+  }, [refreshTrigger, productCodesKey, processHistoryData, productCodes]);
 
   // 自定義 Tooltip
   const CustomTooltip = ({ active, payload, label }: any) => {
