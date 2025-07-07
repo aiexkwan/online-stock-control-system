@@ -44,30 +44,23 @@ export const useAcoManagement = ({
     }
 
     try {
+      // 使用傳統方法
       const supabaseClient = createClientSupabase();
-      const { data, error } = await supabaseClient
-        .from('record_aco')
-        .select('order_ref, remain_qty, code')
-        .eq('code', productInfo.code);
+      // 使用新的 RPC function - 只獲取可用訂單列表
+      const { data, error } = await supabaseClient.rpc('get_aco_order_details', {
+        p_product_code: productInfo.code
+      });
 
       if (error) {
         console.error('Error fetching ACO order refs:', error);
         toast.error('Error fetching historical ACO order refs.');
         setFormData(prev => ({ ...prev, availableAcoOrderRefs: [] }));
-      } else if (data) {
-        // 處理 order_ref 的字符串和數字類型
-        const orderRefs: number[] = data
-          .filter((record: any) => record.order_ref !== null && record.order_ref !== undefined)
-          .map((record: any) => {
-            const orderRef = typeof record.order_ref === 'string' 
-              ? parseInt(record.order_ref, 10) 
-              : Number(record.order_ref);
-            return isNaN(orderRef) ? null : orderRef;
-          })
-          .filter((ref: number | null) => ref !== null) as number[];
-        
-        const allOrderRefs = Array.from(new Set(orderRefs)).sort((a, b) => a - b);
-        setFormData(prev => ({ ...prev, availableAcoOrderRefs: allOrderRefs }));
+      } else if (data?.success && data.available_orders) {
+        // RPC 返回的是 JSONB array，直接使用
+        const orderRefs = data.available_orders as number[];
+        setFormData(prev => ({ ...prev, availableAcoOrderRefs: orderRefs }));
+      } else {
+        setFormData(prev => ({ ...prev, availableAcoOrderRefs: [] }));
       }
     } catch (error) {
       console.error('Error fetching ACO order refs:', error);
@@ -99,19 +92,19 @@ export const useAcoManagement = ({
 
     const totalPalletQuantity = quantity * count;
     
-    // 從 acoRemain 字符串中提取剩餘數量
-    if (formData.acoRemain && formData.acoRemain.includes('Order Remain Qty for')) {
-      const remainQtyMatch = formData.acoRemain.match(/Order Remain Qty for .+: (\d+)/);
-      if (remainQtyMatch) {
-        const remainingQty = parseInt(remainQtyMatch[1], 10);
-        return totalPalletQuantity > remainingQty;
+    // 從 acoRemain 字符串中提取未完成數量
+    if (formData.acoRemain && formData.acoRemain.includes('Order Outstanding Qty for')) {
+      const outstandingQtyMatch = formData.acoRemain.match(/Order Outstanding Qty for .+: (\d+)/);
+      if (outstandingQtyMatch) {
+        const outstandingQty = parseInt(outstandingQtyMatch[1], 10);
+        return totalPalletQuantity > outstandingQty;
       }
     }
     
     return false;
   }, [productInfo?.type, formData.acoOrderRef, formData.acoNewRef, formData.quantity, formData.count, formData.acoRemain]);
 
-  // ACO 搜索邏輯
+  // ACO 搜索邏輯 - 使用 RPC function
   const handleAcoSearch = useCallback(async () => {
     if (!formData.acoOrderRef.trim() || formData.acoOrderRef.trim().length < MIN_ACO_ORDER_REF_LENGTH) {
       toast.error(`ACO Order Ref must be at least ${MIN_ACO_ORDER_REF_LENGTH} characters.`);
@@ -132,15 +125,16 @@ export const useAcoManagement = ({
     }));
 
     try {
-      const supabaseClient = createClientSupabase();
       const searchOrderRef = formData.acoOrderRef.trim();
       
-      // 搜索 ACO 訂單
-      const { data, error } = await supabaseClient
-        .from('record_aco')
-        .select('order_ref, code, remain_qty')
-        .or(`order_ref.eq.${searchOrderRef},order_ref.eq."${searchOrderRef}"`)
-        .eq('code', productInfo.code);
+      // 使用傳統方法
+      const supabaseClient = createClientSupabase();
+      
+      // 使用新的 RPC function - 獲取訂單詳情
+      const { data, error } = await supabaseClient.rpc('get_aco_order_details', {
+        p_product_code: productInfo.code,
+        p_order_ref: searchOrderRef
+      });
 
       if (error) {
         console.error('Error searching ACO order:', error);
@@ -149,33 +143,42 @@ export const useAcoManagement = ({
         return;
       }
 
-      if (!data || data.length === 0) {
-        // 沒有找到訂單 - 必須先通過 PDF 上傳訂單
+      if (!data?.success) {
+        toast.error(data?.error || 'Error searching ACO order.');
+        setFormData(prev => ({ ...prev, acoRemain: null }));
+        return;
+      }
+
+      // 更新可用訂單列表（如果有）
+      if (data.available_orders) {
         setFormData(prev => ({ 
           ...prev, 
-          acoNewRef: false,
-          acoRemain: `No Order Found for ${productInfo.code}. Please upload order via PDF first.`
+          availableAcoOrderRefs: data.available_orders as number[]
         }));
-        toast.warning(`No ACO order found for ${productInfo.code}. Please upload order via PDF first.`);
-      } else {
-        // 現有訂單 - 計算特定產品的總剩餘數量
-        const totalRemainQty = data.reduce((sum: number, record: any) => {
-          const remainQty = typeof record.remain_qty === 'string' 
-            ? parseInt(record.remain_qty, 10) 
-            : Number(record.remain_qty || 0);
-          return sum + (isNaN(remainQty) ? 0 : remainQty);
-        }, 0);
+      }
 
-        if (totalRemainQty <= 0) {
+      // 處理訂單詳情
+      if (data.order_details) {
+        const details = data.order_details;
+        
+        if (!details.exists) {
+          // 訂單不存在
           setFormData(prev => ({ 
             ...prev, 
-            acoRemain: `Order Been Fulfilled for ${productInfo.code}`
+            acoNewRef: false,
+            acoRemain: details.message
           }));
+          toast.warning(details.message);
         } else {
+          // 訂單存在 - 顯示狀態
           setFormData(prev => ({ 
             ...prev, 
-            acoRemain: `Order Remain Qty for ${productInfo.code}: ${totalRemainQty}`
+            acoRemain: details.message
           }));
+          
+          if (details.status === 'fulfilled') {
+            toast.warning('This order has already been fulfilled.');
+          }
         }
       }
     } catch (error) {

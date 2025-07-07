@@ -1,6 +1,7 @@
 'use server'
 
 import { createClient } from '@/app/utils/supabase/server'
+import { getUserIdFromEmail } from '@/lib/utils/getUserId'
 import { checkOperationAnomaly, logFailedScan } from '@/app/order-loading/services/anomalyDetectionService'
 
 export interface LoadPalletResult {
@@ -44,15 +45,22 @@ export async function undoLoadPallet(
     let userId = 0
     
     if (!userError && user?.email) {
-      const { data: userData } = await supabase
-        .from('data_id')
-        .select('id, name')
-        .eq('email', user.email)
-        .single()
+      // Use unified getUserIdFromEmail function
+      const userIdResult = await getUserIdFromEmail(user.email)
       
-      if (userData) {
-        userId = userData.id
-        userName = userData.name || user.email
+      if (userIdResult) {
+        userId = userIdResult
+        
+        // Get user name
+        const { data: userData } = await supabase
+          .from('data_id')
+          .select('name')
+          .eq('id', userId)
+          .single()
+          
+        if (userData) {
+          userName = userData.name || user.email
+        }
       }
     }
     
@@ -105,15 +113,22 @@ export async function loadPalletToOrder(
     let userName = 'System';
     
     if (!userError && user?.email) {
-      const { data: userData } = await supabase
-        .from('data_id')
-        .select('id, name')
-        .eq('email', user.email)
-        .single();
+      // Use unified getUserIdFromEmail function
+      const userIdResult = await getUserIdFromEmail(user.email);
       
-      if (userData) {
-        userId = userData.id;
-        userName = userData.name || user.email;
+      if (userIdResult) {
+        userId = userIdResult;
+        
+        // Get user name
+        const { data: userData } = await supabase
+          .from('data_id')
+          .select('name')
+          .eq('id', userId)
+          .single();
+          
+        if (userData) {
+          userName = userData.name || user.email;
+        }
       }
     }
     

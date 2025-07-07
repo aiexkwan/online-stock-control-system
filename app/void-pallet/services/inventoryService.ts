@@ -1,37 +1,20 @@
 'use server';
 
 import { createClient } from '@/app/utils/supabase/server';
+import { LocationMapper } from '@/lib/inventory/utils/locationMapper';
 
 /**
  * Get inventory column name based on location
+ * @deprecated Use LocationMapper.toDbColumn() directly
  */
 export function getInventoryColumn(location: string | null): string {
   if (!location) return 'injection'; // Default value
   
-  process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`[Inventory] Mapping location "${location}" to inventory column`);
+  process.env.NODE_ENV !== "production" && console.log(`[Inventory] Mapping location "${location}" to inventory column`);
   
-  const locationMap: { [key: string]: string } = {
-    // Exact matches for database locations
-    'Injection': 'injection',
-    'Pipeline': 'pipeline', 
-    'Prebook': 'prebook',
-    'Await': 'await',
-    'Awaiting': 'await', // Alternative spelling
-    'Fold Mill': 'fold',
-    'Bulk': 'bulk',
-    'Backcarpark': 'backcarpark',
-    'Back Car Park': 'backcarpark', // Alternative spelling
-    
-    // Fallback mappings for other locations
-    'Warehouse': 'injection',
-    'QC': 'injection', 
-    'Shipping': 'injection',
-    'Production': 'injection',
-    'Storage': 'injection',
-  };
-  
-  const column = locationMap[location] || 'injection';
-  process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`[Inventory] Location "${location}" mapped to column "${column}"`);
+  // Use the unified LocationMapper
+  const column = LocationMapper.toDbColumn(location) || 'injection';
+  process.env.NODE_ENV !== "production" && console.log(`[Inventory] Location "${location}" mapped to column "${column}"`);
   
   return column;
 }

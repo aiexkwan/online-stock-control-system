@@ -10,7 +10,6 @@ import { AlertCircle, CheckCircle, ClipboardList } from 'lucide-react';
 const GET_ACO_ORDERS = gql`
   query GetAcoOrdersForCards {
     record_acoCollection(
-      filter: { remain_qty: { gt: 0 } }
       orderBy: [{ order_ref: DescNullsLast }]
     ) {
       edges {
@@ -18,7 +17,7 @@ const GET_ACO_ORDERS = gql`
           order_ref
           code
           required_qty
-          remain_qty
+          finished_qty
           latest_update
         }
       }
@@ -30,7 +29,7 @@ interface AcoOrder {
   order_ref: number;
   code: string;
   required_qty: number;
-  remain_qty: number;
+  finished_qty: number;
   latest_update: string;
 }
 
@@ -45,7 +44,13 @@ export default function AcoOrderProgressCards({ timeFrame }: AcoOrderProgressCar
   const groupedOrders = useMemo(() => {
     if (!data?.record_acoCollection?.edges) return {};
 
-    const orders = data.record_acoCollection.edges.map(({ node }: any) => node as AcoOrder);
+    const orders = data.record_acoCollection.edges
+      .map(({ node }: any) => node as AcoOrder)
+      // Filter out completed orders
+      .filter(order => {
+        const remainingQty = order.required_qty - (order.finished_qty || 0);
+        return remainingQty > 0;
+      });
     
     return orders.reduce((groups, order) => {
       if (!groups[order.order_ref]) {
@@ -92,8 +97,8 @@ export default function AcoOrderProgressCards({ timeFrame }: AcoOrderProgressCar
     <div className="space-y-4 max-h-[600px] overflow-y-auto pr-2 custom-scrollbar">
       {orderEntries.map(([orderRef, orders], index) => {
         const totalRequired = orders.reduce((sum, order) => sum + order.required_qty, 0);
-        const totalRemaining = orders.reduce((sum, order) => sum + order.remain_qty, 0);
-        const totalCompleted = totalRequired - totalRemaining;
+        const totalCompleted = orders.reduce((sum, order) => sum + (order.finished_qty || 0), 0);
+        const totalRemaining = totalRequired - totalCompleted;
         const completionPercentage = Math.round((totalCompleted / totalRequired) * 100);
         
         return (

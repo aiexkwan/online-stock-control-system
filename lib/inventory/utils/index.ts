@@ -1,0 +1,5 @@
+/**
+ * Central export point for inventory utilities
+ */
+
+export * from './locationMapper';

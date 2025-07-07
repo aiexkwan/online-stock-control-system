@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/app/utils/supabase/server';
+import { createInventoryService } from '@/lib/inventory/services';
+import { detectSearchType } from '@/app/utils/palletSearchUtils';
 
 export async function POST(request: NextRequest) {
   try {
@@ -13,39 +15,26 @@ export async function POST(request: NextRequest) {
     }
 
     const supabase = await createClient();
+    const inventoryService = createInventoryService(supabase);
 
     // 從輸入中提取 PALLET NUMBER 或 SERIES
     const input = qrCode.trim();
 
-    // 判斷輸入類型
-    // Pallet number 格式: DDMMYY/X 或 DDMMYY/XX 或 DDMMYY/XXX (例如: 241224/1, 241224/01, 241224/101)
-    // Series 格式: 包含 "-" (例如: 240001-001)，只能通過 QR 掃描獲得
-    const isPalletNumber = /^\d{6}\/\d{1,3}$/.test(input); // 匹配 6位數字/1-3位數字
-    const isSeries = input.includes('-');
-
+    // 使用統一的搜尋類型檢測
+    const searchType = detectSearchType(input);
     let palletData = null;
 
-    if (isPalletNumber) {
-      // Manual input - 用 pallet number 搜尋
-      const { data, error } = await supabase
-        .from('record_palletinfo')
-        .select('plt_num, product_code, product_qty, series')
-        .eq('plt_num', input)
-        .single();
+    if (searchType === 'pallet_num' || searchType === 'series') {
+      // 使用統一的搜尋服務
+      const searchResult = await inventoryService.searchPallet(searchType, input);
       
-      if (!error && data) {
-        palletData = data;
-      }
-    } else if (isSeries) {
-      // QR scan - 用 series 搜尋
-      const { data, error } = await supabase
-        .from('record_palletinfo')
-        .select('plt_num, product_code, product_qty, series')
-        .eq('series', input)
-        .single();
-      
-      if (!error && data) {
-        palletData = data;
+      if (searchResult.pallet) {
+        palletData = {
+          plt_num: searchResult.pallet.plt_num,
+          product_code: searchResult.pallet.product_code,
+          product_qty: searchResult.pallet.product_qty,
+          series: searchResult.pallet.series
+        };
       }
     } else {
       // 如果格式不符，返回錯誤
@@ -72,10 +61,10 @@ export async function POST(request: NextRequest) {
     }
 
     // 如果搵唔到
-    const searchType = isPalletNumber ? 'pallet number' : 'series';
-    console.error(`Pallet not found for ${searchType}:`, input);
+    const searchTypeDisplay = searchType === 'pallet_num' ? 'pallet number' : 'series';
+    console.error(`Pallet not found for ${searchTypeDisplay}:`, input);
     return NextResponse.json(
-      { success: false, error: `Pallet not found for ${searchType}: ${input}` },
+      { success: false, error: `Pallet not found for ${searchTypeDisplay}: ${input}` },
       { status: 404 }
     );
 

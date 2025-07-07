@@ -13,7 +13,7 @@ interface TransferDestinationSelectorProps {
 // 定義每個位置可以轉移到嘅目標
 const LOCATION_DESTINATIONS: Record<string, string[]> = {
   'Await': ['Fold Mill', 'Production', 'PipeLine'],
-  'Await_grn': ['Production', 'PipeLine'],
+  'Await_grn': ['Fold Mill', 'Production', 'PipeLine'],
   'Fold Mill': ['Production', 'PipeLine'],
   'PipeLine': ['Production', 'Fold Mill'],
   'Production': ['Fold Mill', 'PipeLine'],
@@ -51,8 +51,28 @@ export function validateTransfer(fromLocation: string, toLocation: string): {
   isValid: boolean;
   errorMessage?: string;
 } {
+  // Normalize location names for comparison
+  const normalizeLocation = (loc: string) => {
+    // Handle special cases
+    if (loc.toLowerCase() === 'await_grn') return 'Await_grn';
+    if (loc.toLowerCase() === 'await') return 'Await';
+    if (loc.toLowerCase() === 'fold mill') return 'Fold Mill';
+    if (loc.toLowerCase() === 'pipeline') return 'PipeLine';
+    if (loc.toLowerCase() === 'production') return 'Production';
+    if (loc.toLowerCase() === 'damage') return 'Damage';
+    if (loc.toLowerCase() === 'voided') return 'Voided';
+    if (loc.toLowerCase() === 'bulk') return 'Bulk';
+    if (loc.toLowerCase() === 'injection') return 'Injection';
+    if (loc.toLowerCase() === 'prebook') return 'Prebook';
+    if (loc.toLowerCase() === 'backcarpark') return 'BackCarPark';
+    return loc;
+  };
+
+  const normalizedFrom = normalizeLocation(fromLocation);
+  const normalizedTo = normalizeLocation(toLocation);
+
   // Check if transferring from Voided location
-  if (fromLocation === 'Voided') {
+  if (normalizedFrom === 'Voided') {
     return {
       isValid: false,
       errorMessage: 'Cannot transfer from Voided location'
@@ -60,7 +80,7 @@ export function validateTransfer(fromLocation: string, toLocation: string): {
   }
 
   // Check if transferring to same location
-  if (fromLocation === toLocation) {
+  if (normalizedFrom === normalizedTo) {
     return {
       isValid: false,
       errorMessage: 'Cannot transfer to the same location'
@@ -68,21 +88,21 @@ export function validateTransfer(fromLocation: string, toLocation: string): {
   }
 
   // Get allowed destinations
-  const allowedDestinations = LOCATION_DESTINATIONS[fromLocation] || [];
+  const allowedDestinations = LOCATION_DESTINATIONS[normalizedFrom] || [];
   
   // If no rules defined, default to not allowed
   if (allowedDestinations.length === 0) {
     return {
       isValid: false,
-      errorMessage: `No transfer allowed from ${fromLocation}`
+      errorMessage: `No transfer allowed from ${normalizedFrom}`
     };
   }
 
   // Check if target location is in allowed list
-  if (!allowedDestinations.includes(toLocation)) {
+  if (!allowedDestinations.includes(normalizedTo)) {
     return {
       isValid: false,
-      errorMessage: `Cannot transfer from ${fromLocation} to ${toLocation}. Allowed destinations: ${allowedDestinations.join(', ')}`
+      errorMessage: `Cannot transfer from ${normalizedFrom} to ${normalizedTo}. Allowed destinations: ${allowedDestinations.join(', ')}`
     };
   }
 

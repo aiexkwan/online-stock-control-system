@@ -11,7 +11,7 @@ import {
   WidgetCategory,
   WidgetComponentProps 
 } from './types';
-import { widgetMapping, getGraphQLVersion, getPreloadPriority } from './widget-mappings';
+import { widgetMapping, getGraphQLVersion, getPreloadPriority, getRoutePreloadWidgets } from './widget-mappings';
 import { createLazyWidget, preloadWidget } from './widget-loader';
 import { registerStatsWidgets, preloadHighPriorityStatsWidgets } from './stats-widget-adapter';
 import { registerChartsWidgets, preloadHighPriorityChartsWidgets } from './charts-widget-adapter';
@@ -19,6 +19,213 @@ import { registerListsWidgets, preloadHighPriorityListsWidgets } from './lists-w
 import { registerReportsWidgets, preloadHighPriorityReportsWidgets } from './reports-widget-adapter';
 import { registerOperationsWidgets, preloadHighPriorityOperationsWidgets } from './operations-widget-adapter';
 import { registerAnalysisWidgets, preloadHighPriorityAnalysisWidgets } from './analysis-widget-adapter';
+import { performanceMonitor, PerformanceTimer } from './performance-monitor';
+
+/**
+ * Virtual Widget Container for performance optimization
+ */
+export interface VirtualContainerConfig {
+  widgets: WidgetDefinition[];
+  itemHeight: number;
+  containerHeight: number;
+  overscan?: number;
+}
+
+export class VirtualWidgetContainer {
+  private visibleRange: { start: number; end: number } = { start: 0, end: 0 };
+  private scrollTop: number = 0;
+  private config: VirtualContainerConfig;
+  
+  constructor(config: VirtualContainerConfig) {
+    this.config = {
+      ...config,
+      overscan: config.overscan || 2
+    };
+    this.calculateVisibleRange();
+  }
+  
+  updateScrollPosition(scrollTop: number): void {
+    this.scrollTop = scrollTop;
+    this.calculateVisibleRange();
+  }
+  
+  private calculateVisibleRange(): void {
+    const { itemHeight, containerHeight, widgets, overscan = 2 } = this.config;
+    const startIndex = Math.floor(this.scrollTop / itemHeight);
+    const endIndex = Math.ceil(
+      (this.scrollTop + containerHeight) / itemHeight
+    );
+    
+    this.visibleRange = {
+      start: Math.max(0, startIndex - overscan),
+      end: Math.min(widgets.length, endIndex + overscan)
+    };
+  }
+  
+  getVisibleWidgets(): WidgetDefinition[] {
+    return this.config.widgets.slice(this.visibleRange.start, this.visibleRange.end);
+  }
+  
+  getTotalHeight(): number {
+    return this.config.widgets.length * this.config.itemHeight;
+  }
+  
+  getOffsetForIndex(index: number): number {
+    return index * this.config.itemHeight;
+  }
+}
+
+/**
+ * Grid Virtualizer for fixed grid layouts
+ */
+export interface GridVirtualizerConfig {
+  widgets: Array<{ id: string; gridArea: string }>;
+  viewportHeight: number;
+  threshold?: number;
+}
+
+export class GridVirtualizer {
+  private intersectionObserver: IntersectionObserver | null = null;
+  private visibleWidgets = new Set<string>();
+  private widgetCallbacks = new Map<string, (isVisible: boolean) => void>();
+  
+  constructor(config: GridVirtualizerConfig) {
+    if (typeof window !== 'undefined' && 'IntersectionObserver' in window) {
+      this.intersectionObserver = new IntersectionObserver(
+        this.handleIntersection,
+        {
+          rootMargin: `${config.threshold || 50}px`,
+          threshold: 0
+        }
+      );
+    }
+  }
+  
+  observeWidget(element: Element, widgetId: string, callback: (isVisible: boolean) => void): void {
+    if (!this.intersectionObserver) return;
+    
+    element.setAttribute('data-widget-id', widgetId);
+    this.widgetCallbacks.set(widgetId, callback);
+    this.intersectionObserver.observe(element);
+  }
+  
+  unobserveWidget(element: Element, widgetId: string): void {
+    if (!this.intersectionObserver) return;
+    
+    this.intersectionObserver.unobserve(element);
+    this.widgetCallbacks.delete(widgetId);
+    this.visibleWidgets.delete(widgetId);
+  }
+  
+  private handleIntersection = (entries: IntersectionObserverEntry[]): void => {
+    entries.forEach(entry => {
+      const widgetId = entry.target.getAttribute('data-widget-id');
+      if (!widgetId) return;
+      
+      const callback = this.widgetCallbacks.get(widgetId);
+      if (callback) {
+        if (entry.isIntersecting) {
+          this.visibleWidgets.add(widgetId);
+          callback(true);
+        } else {
+          this.visibleWidgets.delete(widgetId);
+          callback(false);
+        }
+      }
+    });
+  };
+  
+  getVisibleWidgetIds(): string[] {
+    return Array.from(this.visibleWidgets);
+  }
+  
+  destroy(): void {
+    if (this.intersectionObserver) {
+      this.intersectionObserver.disconnect();
+      this.intersectionObserver = null;
+    }
+    this.visibleWidgets.clear();
+    this.widgetCallbacks.clear();
+  }
+}
+
+/**
+ * Widget State Manager for persisting widget business states
+ */
+export interface WidgetState {
+  id: string;
+  collapsed?: boolean;
+  settings?: Record<string, any>;
+  lastUpdated: number;
+}
+
+export class WidgetStateManager {
+  private storage: Storage | null = null;
+  private states = new Map<string, WidgetState>();
+  private storageKey = 'widget-states-v1';
+  
+  constructor() {
+    if (typeof window !== 'undefined' && window.localStorage) {
+      this.storage = window.localStorage;
+      this.loadStates();
+    }
+  }
+  
+  private loadStates(): void {
+    if (!this.storage) return;
+    
+    try {
+      const savedStates = this.storage.getItem(this.storageKey);
+      if (savedStates) {
+        const parsed = JSON.parse(savedStates);
+        Object.entries(parsed).forEach(([id, state]) => {
+          this.states.set(id, state as WidgetState);
+        });
+      }
+    } catch (error) {
+      console.error('[WidgetStateManager] Failed to load states:', error);
+    }
+  }
+  
+  saveState(widgetId: string, state: Partial<WidgetState>): void {
+    const currentState = this.states.get(widgetId) || { id: widgetId, lastUpdated: 0 };
+    const newState: WidgetState = {
+      ...currentState,
+      ...state,
+      lastUpdated: Date.now()
+    };
+    
+    this.states.set(widgetId, newState);
+    this.persistStates();
+  }
+  
+  private persistStates(): void {
+    if (!this.storage) return;
+    
+    try {
+      const statesObject = Object.fromEntries(this.states);
+      this.storage.setItem(this.storageKey, JSON.stringify(statesObject));
+    } catch (error) {
+      console.error('[WidgetStateManager] Failed to persist states:', error);
+    }
+  }
+  
+  getState(widgetId: string): WidgetState | undefined {
+    return this.states.get(widgetId);
+  }
+  
+  clearState(widgetId: string): void {
+    this.states.delete(widgetId);
+    this.persistStates();
+  }
+  
+  clearAllStates(): void {
+    this.states.clear();
+    if (this.storage) {
+      this.storage.removeItem(this.storageKey);
+    }
+  }
+}
 
 export class EnhancedWidgetRegistry implements IWidgetRegistry {
   // 內部存儲
@@ -33,6 +240,12 @@ export class EnhancedWidgetRegistry implements IWidgetRegistry {
     useCount: number;
   }>();
   
+  // Widget 狀態管理
+  private stateManager: WidgetStateManager;
+  
+  // 虛擬化支援
+  private gridVirtualizer: GridVirtualizer | null = null;
+  
   // 單例模式
   private static instance: EnhancedWidgetRegistry;
   
@@ -43,6 +256,9 @@ export class EnhancedWidgetRegistry implements IWidgetRegistry {
       'operations', 'uploads', 'reports', 'analysis', 'special'
     ];
     categories.forEach(cat => this.categories.set(cat, new Set()));
+    
+    // 初始化狀態管理器
+    this.stateManager = new WidgetStateManager();
   }
   
   static getInstance(): EnhancedWidgetRegistry {
@@ -211,6 +427,21 @@ export class EnhancedWidgetRegistry implements IWidgetRegistry {
   }
   
   /**
+   * 按分類獲取 widgets
+   */
+  getWidgetsByCategory(): Record<WidgetCategory, WidgetDefinition[]> {
+    const result: Record<WidgetCategory, WidgetDefinition[]> = {} as any;
+    
+    this.categories.forEach((widgetIds, category) => {
+      result[category] = Array.from(widgetIds)
+        .map(id => this.definitions.get(id))
+        .filter((def): def is WidgetDefinition => def !== undefined);
+    });
+    
+    return result;
+  }
+  
+  /**
    * 獲取加載統計
    */
   getLoadStatistics(): Map<string, WidgetRegistryItem> {
@@ -282,6 +513,9 @@ export class EnhancedWidgetRegistry implements IWidgetRegistry {
       throw new Error(`Widget not found: ${widgetId}`);
     }
     
+    // 使用性能監控器
+    const timer = performanceMonitor.startMonitoring(widgetId, 'v2');
+    
     try {
       // 更新狀態
       definition.loadStatus = 'loading';
@@ -308,6 +542,13 @@ export class EnhancedWidgetRegistry implements IWidgetRegistry {
         perfData.loadTime.shift(); // 只保留最近 10 次的加載時間
       }
       
+      // 完成性能監控
+      timer.complete({
+        route: typeof window !== 'undefined' ? window.location.pathname : 'unknown',
+        sessionId: this.getSessionId(),
+        userId: undefined // 可以從 auth context 獲取
+      });
+      
     } catch (error) {
       definition.loadStatus = 'error';
       definition.loadError = error as Error;
@@ -315,6 +556,20 @@ export class EnhancedWidgetRegistry implements IWidgetRegistry {
     } finally {
       this.loadingPromises.delete(widgetId);
     }
+  }
+  
+  /**
+   * 獲取或創建 session ID
+   */
+  private getSessionId(): string {
+    if (typeof window === 'undefined') return 'server';
+    
+    let sessionId = sessionStorage.getItem('widget-session-id');
+    if (!sessionId) {
+      sessionId = `session-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      sessionStorage.setItem('widget-session-id', sessionId);
+    }
+    return sessionId;
   }
   
   /**
@@ -344,7 +599,470 @@ export class EnhancedWidgetRegistry implements IWidgetRegistry {
       });
     }
   }
+  
+  /**
+   * Widget 狀態管理接口
+   */
+  getWidgetState(widgetId: string): WidgetState | undefined {
+    return this.stateManager.getState(widgetId);
+  }
+  
+  saveWidgetState(widgetId: string, state: Partial<WidgetState>): void {
+    this.stateManager.saveState(widgetId, state);
+  }
+  
+  clearWidgetState(widgetId: string): void {
+    this.stateManager.clearState(widgetId);
+  }
+  
+  /**
+   * 虛擬化支援接口
+   */
+  createVirtualContainer(config: VirtualContainerConfig): VirtualWidgetContainer {
+    return new VirtualWidgetContainer(config);
+  }
+  
+  createGridVirtualizer(config: GridVirtualizerConfig): GridVirtualizer {
+    if (this.gridVirtualizer) {
+      this.gridVirtualizer.destroy();
+    }
+    this.gridVirtualizer = new GridVirtualizer(config);
+    return this.gridVirtualizer;
+  }
+  
+  getGridVirtualizer(): GridVirtualizer | null {
+    return this.gridVirtualizer;
+  }
+  
+  /**
+   * 開始監控 Widget 性能
+   */
+  startWidgetMonitoring(widgetId: string, variant: 'v2' | 'legacy' = 'v2'): PerformanceTimer {
+    return performanceMonitor.startMonitoring(widgetId, variant);
+  }
+  
+  /**
+   * 獲取 Widget 性能報告
+   */
+  getWidgetPerformanceReport(widgetId: string, timeRange?: { start: Date; end: Date }) {
+    return performanceMonitor.getWidgetReport(widgetId, timeRange);
+  }
+  
+  /**
+   * 獲取實時性能數據
+   */
+  getRealtimePerformance() {
+    return performanceMonitor.getRealtimeMetrics();
+  }
+  
+  /**
+   * 性能監控增強
+   */
+  getPerformanceReport(): {
+    totalWidgets: number;
+    loadedWidgets: number;
+    averageLoadTime: number;
+    topUsedWidgets: Array<{ id: string; useCount: number; avgLoadTime: number }>;
+  } {
+    let totalLoadTime = 0;
+    let totalLoadCount = 0;
+    const widgetStats: Array<{ id: string; useCount: number; avgLoadTime: number }> = [];
+    
+    this.performanceData.forEach((data, widgetId) => {
+      const avgLoadTime = data.loadTime.length > 0
+        ? data.loadTime.reduce((a, b) => a + b, 0) / data.loadTime.length
+        : 0;
+      
+      totalLoadTime += avgLoadTime * data.loadTime.length;
+      totalLoadCount += data.loadTime.length;
+      
+      widgetStats.push({
+        id: widgetId,
+        useCount: data.useCount,
+        avgLoadTime
+      });
+    });
+    
+    const loadedWidgets = Array.from(this.definitions.values())
+      .filter(def => def.loadStatus === 'loaded').length;
+    
+    return {
+      totalWidgets: this.definitions.size,
+      loadedWidgets,
+      averageLoadTime: totalLoadCount > 0 ? totalLoadTime / totalLoadCount : 0,
+      topUsedWidgets: widgetStats
+        .sort((a, b) => b.useCount - a.useCount)
+        .slice(0, 10)
+    };
+  }
+  
+  /**
+   * 清理和銷毀
+   */
+  destroy(): void {
+    if (this.gridVirtualizer) {
+      this.gridVirtualizer.destroy();
+      this.gridVirtualizer = null;
+    }
+    this.loadingPromises.clear();
+    this.performanceData.clear();
+    // 注意：不清理 definitions 和 categories，因為它們可能需要保留
+  }
 }
 
 // 導出單例實例
 export const widgetRegistry = EnhancedWidgetRegistry.getInstance();
+
+// 新增：RoutePredictor - 路由預測器
+export class RoutePredictor {
+  private static instance: RoutePredictor;
+  private routeHistory: string[] = [];
+  private transitionMatrix: Map<string, Map<string, number>> = new Map();
+  private predictionConfidence: number = 0.7;
+  private maxHistoryLength: number = 50;
+  
+  private constructor() {
+    this.loadHistory();
+  }
+  
+  static getInstance(): RoutePredictor {
+    if (!RoutePredictor.instance) {
+      RoutePredictor.instance = new RoutePredictor();
+    }
+    return RoutePredictor.instance;
+  }
+  
+  // 記錄路由訪問
+  recordNavigation(route: string): void {
+    // 更新歷史記錄
+    this.routeHistory.push(route);
+    if (this.routeHistory.length > this.maxHistoryLength) {
+      this.routeHistory.shift();
+    }
+    
+    // 更新轉換矩陣
+    if (this.routeHistory.length >= 2) {
+      const prevRoute = this.routeHistory[this.routeHistory.length - 2];
+      this.updateTransitionMatrix(prevRoute, route);
+    }
+    
+    // 保存到 localStorage
+    this.saveHistory();
+  }
+  
+  // 預測下一個可能的路由
+  predictNextRoutes(currentRoute: string, limit: number = 3): string[] {
+    const transitions = this.transitionMatrix.get(currentRoute);
+    if (!transitions || transitions.size === 0) {
+      // 如果沒有歷史數據，返回常見路由
+      return this.getCommonRoutes(limit);
+    }
+    
+    // 計算概率並排序
+    const predictions = Array.from(transitions.entries())
+      .map(([route, count]) => {
+        const total = Array.from(transitions.values()).reduce((sum, c) => sum + c, 0);
+        return { route, probability: count / total };
+      })
+      .filter(p => p.probability >= this.predictionConfidence)
+      .sort((a, b) => b.probability - a.probability)
+      .slice(0, limit)
+      .map(p => p.route);
+    
+    return predictions.length > 0 ? predictions : this.getCommonRoutes(limit);
+  }
+  
+  // 更新轉換矩陣
+  private updateTransitionMatrix(from: string, to: string): void {
+    if (!this.transitionMatrix.has(from)) {
+      this.transitionMatrix.set(from, new Map());
+    }
+    
+    const transitions = this.transitionMatrix.get(from)!;
+    const currentCount = transitions.get(to) || 0;
+    transitions.set(to, currentCount + 1);
+  }
+  
+  // 獲取常見路由
+  private getCommonRoutes(limit: number): string[] {
+    const routeCounts = new Map<string, number>();
+    
+    this.routeHistory.forEach(route => {
+      routeCounts.set(route, (routeCounts.get(route) || 0) + 1);
+    });
+    
+    return Array.from(routeCounts.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, limit)
+      .map(([route]) => route);
+  }
+  
+  // 從 localStorage 加載歷史
+  private loadHistory(): void {
+    if (typeof window === 'undefined') return;
+    
+    try {
+      const saved = localStorage.getItem('route-predictor-history');
+      if (saved) {
+        const data = JSON.parse(saved);
+        this.routeHistory = data.history || [];
+        this.transitionMatrix = new Map(
+          data.transitions?.map(([key, value]: [string, [string, number][]]) => [
+            key,
+            new Map(value)
+          ]) || []
+        );
+      }
+    } catch (error) {
+      console.error('[RoutePredictor] Failed to load history:', error);
+    }
+  }
+  
+  // 保存歷史到 localStorage
+  private saveHistory(): void {
+    if (typeof window === 'undefined') return;
+    
+    try {
+      const data = {
+        history: this.routeHistory.slice(-20), // 只保存最近 20 條
+        transitions: Array.from(this.transitionMatrix.entries()).map(([key, value]) => [
+          key,
+          Array.from(value.entries())
+        ])
+      };
+      localStorage.setItem('route-predictor-history', JSON.stringify(data));
+    } catch (error) {
+      console.error('[RoutePredictor] Failed to save history:', error);
+    }
+  }
+  
+  // 清理歷史數據
+  clearHistory(): void {
+    this.routeHistory = [];
+    this.transitionMatrix.clear();
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('route-predictor-history');
+    }
+  }
+}
+
+// 新增：SmartPreloader - 智能預加載器
+export class SmartPreloader {
+  private static instance: SmartPreloader;
+  private preloadQueue: PriorityQueue<PreloadTask> = new PriorityQueue();
+  private activePreloads: Map<string, Promise<void>> = new Map();
+  private resourceTimings: Map<string, number> = new Map();
+  private routePredictor: RoutePredictor;
+  private monitor: typeof performanceMonitor;
+  
+  private constructor() {
+    this.routePredictor = RoutePredictor.getInstance();
+    this.monitor = performanceMonitor;
+    this.startPreloadWorker();
+  }
+  
+  static getInstance(): SmartPreloader {
+    if (!SmartPreloader.instance) {
+      SmartPreloader.instance = new SmartPreloader();
+    }
+    return SmartPreloader.instance;
+  }
+  
+  // 基於路由預測的預加載
+  async preloadForRoute(currentRoute: string): Promise<void> {
+    // 記錄當前路由
+    this.routePredictor.recordNavigation(currentRoute);
+    
+    // 獲取預測的下一個路由
+    const predictedRoutes = this.routePredictor.predictNextRoutes(currentRoute);
+    
+    // 為每個預測路由創建預加載任務
+    predictedRoutes.forEach((route, index) => {
+      const widgets = getRoutePreloadWidgets(route);
+      const priority = this.calculatePriority(route, index);
+      
+      widgets.forEach(widgetId => {
+        this.schedulePreload({
+          widgetId,
+          route,
+          priority,
+          timestamp: Date.now()
+        });
+      });
+    });
+  }
+  
+  // 調度預加載任務
+  private schedulePreload(task: PreloadTask): void {
+    // 檢查是否已在隊列或正在加載
+    if (this.activePreloads.has(task.widgetId)) {
+      return;
+    }
+    
+    // 根據優先級添加到隊列
+    this.preloadQueue.enqueue(task, task.priority);
+  }
+  
+  // 啟動預加載工作器
+  private startPreloadWorker(): void {
+    if (typeof window === 'undefined') return;
+    
+    const processQueue = async () => {
+      if (this.preloadQueue.isEmpty() || this.activePreloads.size >= 3) {
+        // 隊列為空或並行加載達到上限
+        return;
+      }
+      
+      const task = this.preloadQueue.dequeue();
+      if (!task) return;
+      
+      // 開始預加載
+      const startTime = performance.now();
+      const preloadPromise = this.performPreload(task);
+      
+      this.activePreloads.set(task.widgetId, preloadPromise);
+      
+      try {
+        await preloadPromise;
+        const loadTime = performance.now() - startTime;
+        this.resourceTimings.set(task.widgetId, loadTime);
+        
+        // 記錄性能數據 - 使用正確的方法
+        console.log(`[SmartPreloader] Preloaded ${task.widgetId} in ${loadTime.toFixed(2)}ms`, {
+          route: task.route,
+          priority: task.priority
+        });
+      } catch (error) {
+        console.error(`[SmartPreloader] Failed to preload ${task.widgetId}:`, error);
+      } finally {
+        this.activePreloads.delete(task.widgetId);
+      }
+    };
+    
+    // 使用 requestIdleCallback 在空閒時處理隊列
+    const scheduleWork = () => {
+      if ('requestIdleCallback' in window) {
+        window.requestIdleCallback((deadline) => {
+          while (deadline.timeRemaining() > 0 && !this.preloadQueue.isEmpty()) {
+            processQueue();
+          }
+          scheduleWork();
+        }, { timeout: 2000 });
+      } else {
+        // Fallback to setTimeout
+        setTimeout(() => {
+          processQueue();
+          scheduleWork();
+        }, 100);
+      }
+    };
+    
+    scheduleWork();
+  }
+  
+  // 執行預加載
+  private async performPreload(task: PreloadTask): Promise<void> {
+    const definition = widgetRegistry.getDefinition(task.widgetId);
+    
+    if (definition?.lazyLoad && definition.loadComponent) {
+      // 使用 webpack prefetch/preload hints
+      const link = document.createElement('link');
+      link.rel = task.priority > 0.8 ? 'preload' : 'prefetch';
+      link.as = 'script';
+      
+      // 觸發組件加載
+      await definition.loadComponent();
+    }
+    
+    // 使用 widget registry 的預加載功能
+    await widgetRegistry.preloadWidgets([task.widgetId]);
+  }
+  
+  // 計算優先級
+  private calculatePriority(route: string, predictionIndex: number): number {
+    // 基礎優先級根據預測排序
+    let priority = 1 - (predictionIndex * 0.2);
+    
+    // 根據歷史加載時間調整
+    const avgLoadTime = this.getAverageLoadTime(route);
+    if (avgLoadTime > 1000) {
+      // 慢加載的 widget 提高優先級
+      priority += 0.1;
+    }
+    
+    // 根據用戶行為模式調整
+    const timeOfDay = new Date().getHours();
+    if (timeOfDay >= 9 && timeOfDay <= 17) {
+      // 工作時間提高業務相關 widget 優先級
+      if (route.includes('analysis') || route.includes('warehouse')) {
+        priority += 0.15;
+      }
+    }
+    
+    return Math.min(1, Math.max(0, priority));
+  }
+  
+  // 獲取平均加載時間
+  private getAverageLoadTime(route: string): number {
+    const widgets = getRoutePreloadWidgets(route);
+    const timings = widgets
+      .map(id => this.resourceTimings.get(id))
+      .filter((t): t is number => t !== undefined);
+    
+    if (timings.length === 0) return 0;
+    return timings.reduce((sum, t) => sum + t, 0) / timings.length;
+  }
+  
+  // 清理緩存和隊列
+  clearCache(): void {
+    this.preloadQueue = new PriorityQueue();
+    this.activePreloads.clear();
+    this.resourceTimings.clear();
+  }
+}
+
+// 預加載任務接口
+interface PreloadTask {
+  widgetId: string;
+  route: string;
+  priority: number;
+  timestamp: number;
+}
+
+// 優先級隊列實現
+class PriorityQueue<T> {
+  private items: Array<{ element: T; priority: number }> = [];
+  
+  enqueue(element: T, priority: number): void {
+    const queueElement = { element, priority };
+    let added = false;
+    
+    for (let i = 0; i < this.items.length; i++) {
+      if (queueElement.priority > this.items[i].priority) {
+        this.items.splice(i, 0, queueElement);
+        added = true;
+        break;
+      }
+    }
+    
+    if (!added) {
+      this.items.push(queueElement);
+    }
+  }
+  
+  dequeue(): T | undefined {
+    return this.items.shift()?.element;
+  }
+  
+  isEmpty(): boolean {
+    return this.items.length === 0;
+  }
+  
+  size(): number {
+    return this.items.length;
+  }
+}
+
+// 導出其他單例實例
+export const routePredictor = RoutePredictor.getInstance();
+export const smartPreloader = SmartPreloader.getInstance();

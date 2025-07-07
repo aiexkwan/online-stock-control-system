@@ -7,7 +7,9 @@ export async function POST(request: NextRequest) {
     const { 
       orderRef, 
       productCode, 
-      quantityUsed 
+      quantityUsed,
+      skipUpdate = false, // 新增：是否跳過數據更新，只發送郵件
+      orderCompleted = false // 新增：訂單是否已完成
     } = body;
 
     // Validate required fields
@@ -37,35 +39,48 @@ export async function POST(request: NextRequest) {
 
     const supabase = await createClient();
 
-    // Call the enhanced RPC function to update ACO order and check completion
-    const { data, error } = await supabase.rpc('update_aco_order_with_completion_check', {
-      p_order_ref: orderRefNum,
-      p_product_code: productCode,
-      p_quantity_used: quantityUsedNum
-    });
+    let result;
+    
+    if (skipUpdate) {
+      // 如果跳過更新，只需要基本的訂單資訊來發送郵件
+      result = {
+        success: true,
+        order_ref: orderRefNum,
+        product_code: productCode,
+        order_completed: orderCompleted,
+        message: 'Email-only request'
+      };
+    } else {
+      // Call the enhanced RPC function to update ACO order and check completion
+      const { data, error } = await supabase.rpc('update_aco_order_with_completion_check', {
+        p_order_ref: orderRefNum,
+        p_product_code: productCode,
+        p_quantity_used: quantityUsedNum
+      });
 
-    if (error) {
-      console.error('Error calling update_aco_order_with_completion_check RPC:', error);
-      return NextResponse.json(
-        { 
-          success: false, 
-          error: `Database error: ${error.message}` 
-        },
-        { status: 500 }
-      );
-    }
+      if (error) {
+        console.error('Error calling update_aco_order_with_completion_check RPC:', error);
+        return NextResponse.json(
+          { 
+            success: false, 
+            error: `Database error: ${error.message}` 
+          },
+          { status: 500 }
+        );
+      }
 
-    // Parse the JSON result from the RPC function
-    const result = data;
+      // Parse the JSON result from the RPC function
+      result = data;
 
-    if (!result.success) {
-      return NextResponse.json(
-        { 
-          success: false, 
-          error: result.error || 'Unknown error occurred' 
-        },
-        { status: 500 }
-      );
+      if (!result.success) {
+        return NextResponse.json(
+          { 
+            success: false, 
+            error: result.error || 'Unknown error occurred' 
+          },
+          { status: 500 }
+        );
+      }
     }
 
     // Check if order is completed and send email notification
@@ -126,9 +141,10 @@ export async function POST(request: NextRequest) {
       message: result.message,
       orderRef: result.order_ref,
       productCode: result.product_code,
-      previousRemainQty: result.previous_remain_qty,
+      previousFinishedQty: result.previous_finished_qty,
       quantityUsed: result.quantity_used,
-      newRemainQty: result.new_remain_qty,
+      newFinishedQty: result.new_finished_qty,
+      requiredQty: result.required_qty,
       totalRemainingInOrder: result.total_remaining_in_order,
       orderCompleted: result.order_completed,
       emailNotification: emailResult

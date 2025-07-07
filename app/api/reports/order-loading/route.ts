@@ -1,77 +1,85 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase';
-import * as XLSX from 'xlsx';
+import { LoadingDetailsDataSource } from '@/app/components/reports/dataSources/OrderLoadingDataSource';
+import ExcelJS from 'exceljs';
+import { jsPDF } from 'jspdf';
+import 'jspdf-autotable';
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient();
+    // 解析請求參數
+    const body = await request.json();
     
-    // 查詢訂單裝載記錄
-    const { data, error } = await supabase
-      .from('record_customerorder_palletinfo')
-      .select(`
-        *,
-        data_customerorder (
-          customer_order_num,
-          customer_name,
-          order_date,
-          delivery_date
-        )
-      `)
-      .order('loading_time', { ascending: false });
-
-    if (error) {
-      throw error;
+    // 使用新的 DataSource 架構
+    const dataSource = new LoadingDetailsDataSource();
+    const filters = {
+      dateRange: `${body.startDate}|${body.endDate}`,
+      orderNumber: body.orderRef,
+      productCode: body.productCode,
+      userId: body.actionBy
+    };
+    
+    // 獲取報表數據
+    const rawData = await dataSource.fetch(filters);
+    const records = dataSource.transform(rawData);
+    
+    // 生成報表
+    const format = body.format || 'excel';
+    let blob: Blob;
+    let contentType: string;
+    let extension: string;
+    
+    if (format === 'pdf') {
+      // 生成 PDF
+      const doc = new jsPDF();
+      doc.text('Order Loading Report', 14, 15);
+      doc.text(`Period: ${body.startDate} to ${body.endDate}`, 14, 25);
+      
+      (doc as any).autoTable({
+        head: [['Timestamp', 'Order', 'Product', 'Qty', 'User', 'Action']],
+        body: records.map(r => [
+          new Date(r.timestamp).toLocaleString(),
+          r.order_number,
+          r.product_code,
+          r.loaded_qty,
+          r.user_name,
+          r.action
+        ]),
+        startY: 35
+      });
+      
+      blob = doc.output('blob');
+      contentType = 'application/pdf';
+      extension = 'pdf';
+    } else {
+      // 生成 Excel
+      const workbook = new ExcelJS.Workbook();
+      const worksheet = workbook.addWorksheet('Loading Report');
+      
+      worksheet.columns = [
+        { header: 'Timestamp', key: 'timestamp', width: 20 },
+        { header: 'Order Number', key: 'order_number', width: 15 },
+        { header: 'Product Code', key: 'product_code', width: 15 },
+        { header: 'Loaded Qty', key: 'loaded_qty', width: 12 },
+        { header: 'User', key: 'user_name', width: 20 },
+        { header: 'Action', key: 'action', width: 10 }
+      ];
+      
+      worksheet.addRows(records);
+      
+      const buffer = await workbook.xlsx.writeBuffer();
+      blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      contentType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+      extension = 'xlsx';
     }
-
-    // 創建 Excel 工作簿
-    const workbook = XLSX.utils.book_new();
     
-    // 準備數據
-    const worksheetData = data?.map(record => ({
-      'Order Number': record.customer_order_num,
-      'Customer Name': record.data_customerorder?.customer_name || '',
-      'Pallet Number': record.plt_num,
-      'Product Code': record.product_code,
-      'Product Description': record.product_des,
-      'Quantity': record.qty,
-      'Loading Time': record.loading_time ? new Date(record.loading_time).toLocaleString() : '',
-      'Loading Status': record.status || 'Pending',
-      'Loaded By': record.loaded_by || '',
-      'Order Date': record.data_customerorder?.order_date ? new Date(record.data_customerorder.order_date).toLocaleDateString() : '',
-      'Delivery Date': record.data_customerorder?.delivery_date ? new Date(record.data_customerorder.delivery_date).toLocaleDateString() : ''
-    })) || [];
-
-    // 創建工作表
-    const worksheet = XLSX.utils.json_to_sheet(worksheetData);
+    // 轉換 Blob 為 Buffer
+    const buffer = Buffer.from(await blob.arrayBuffer());
     
-    // 設置列寬
-    const columnWidths = [
-      { wch: 15 }, // Order Number
-      { wch: 25 }, // Customer Name
-      { wch: 15 }, // Pallet Number
-      { wch: 15 }, // Product Code
-      { wch: 30 }, // Product Description
-      { wch: 10 }, // Quantity
-      { wch: 20 }, // Loading Time
-      { wch: 15 }, // Loading Status
-      { wch: 15 }, // Loaded By
-      { wch: 15 }, // Order Date
-      { wch: 15 }  // Delivery Date
-    ];
-    worksheet['!cols'] = columnWidths;
-
-    // 添加工作表到工作簿
-    XLSX.utils.book_append_sheet(workbook, worksheet, 'Order Loading Report');
-
-    // 生成 Excel 文件
-    const buffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
-
     // 返回文件
     return new NextResponse(buffer, {
       headers: {
-        'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        'Content-Disposition': `attachment; filename="order-loading-report-${new Date().toISOString().split('T')[0]}.xlsx"`
+        'Content-Type': contentType,
+        'Content-Disposition': `attachment; filename="order-loading-report-${new Date().toISOString().split('T')[0]}.${extension}"`
       }
     });
   } catch (error) {

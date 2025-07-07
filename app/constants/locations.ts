@@ -1,4 +1,12 @@
+/**
+ * @deprecated Use LocationMapper from '@/lib/inventory/utils/locationMapper' instead
+ * This export is maintained for backward compatibility only
+ */
+
+import { LocationMapper } from '@/lib/inventory/utils/locationMapper';
+
 // Map location names to inventory column names
+// NOTE: This is now a wrapper around the centralized LocationMapper
 export const LOCATION_TO_COLUMN: { [key: string]: string } = {
   'Production': 'injection',
   'PipeLine': 'pipeline', 
@@ -13,3 +21,17 @@ export const LOCATION_TO_COLUMN: { [key: string]: string } = {
   'Backcarpark': 'backcarpark',  // Alternative spelling
   'Damage': 'damage'
 };
+
+/**
+ * Helper function that uses the new LocationMapper
+ * @param location - Location name in any format
+ * @returns Database column name or null
+ */
+export function getDbColumn(location: string): string | null {
+  return LocationMapper.toDbColumn(location);
+}
+
+/**
+ * Export the LocationMapper for new code to use directly
+ */
+export { LocationMapper } from '@/lib/inventory/utils/locationMapper';

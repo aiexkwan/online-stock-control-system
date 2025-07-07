@@ -1,0 +1,196 @@
+import puppeteer from 'puppeteer';
+
+interface TestResult {
+  test: string;
+  status: 'passed' | 'failed';
+  message?: string;
+  duration?: number;
+  details?: any;
+}
+
+async function runPhase12Tests() {
+  console.log('🚀 Starting Phase 1.2 Widget Registry automated tests...');
+  
+  // Launch browser
+  const browser = await puppeteer.launch({
+    headless: false, // Set to true for CI/CD
+    defaultViewport: { width: 1920, height: 1080 },
+    args: ['--no-sandbox', '--disable-setuid-sandbox']
+  });
+  
+  const page = await browser.newPage();
+  
+  try {
+    // Navigate to login page
+    console.log('📋 Navigating to login page...');
+    await page.goto('http://localhost:3000/main-login', { waitUntil: 'networkidle2' });
+    
+    // Login
+    console.log('🔐 Logging in...');
+    await page.type('input[type="email"]', 'akwan@pennineindustries.com');
+    await page.type('input[type="password"]', 'X315Y316');
+    await page.click('button[type="submit"]');
+    
+    // Wait for navigation after login
+    await page.waitForNavigation({ waitUntil: 'networkidle2' });
+    console.log('✅ Login successful');
+    
+    // Navigate to test page
+    console.log('🧪 Navigating to test page...');
+    await page.goto('http://localhost:3000/admin/test-widget-registry', { waitUntil: 'networkidle2' });
+    
+    // Wait for page to load
+    await page.waitForSelector('button', { timeout: 10000 });
+    
+    // Debug: Print all button texts
+    const buttonTexts = await page.evaluate(() => {
+      return Array.from(document.querySelectorAll('button')).map(btn => btn.textContent?.trim());
+    });
+    console.log('🔍 Found buttons:', buttonTexts);
+    
+    // Click run tests button - find button containing "Run All Tests" text
+    console.log('▶️ Starting tests...');
+    await page.evaluate(() => {
+      const buttons = Array.from(document.querySelectorAll('button'));
+      const runButton = buttons.find(btn => btn.textContent?.includes('Run All Tests'));
+      if (runButton) {
+        (runButton as HTMLButtonElement).click();
+      } else {
+        throw new Error('Run All Tests button not found');
+      }
+    });
+    
+    // Wait a bit for tests to start
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    
+    // Wait for tests to complete - look for test results
+    console.log('⏳ Waiting for tests to complete...');
+    await page.waitForFunction(
+      () => {
+        // Check if test results are visible by looking for status badges with specific content
+        const testResultItems = document.querySelectorAll('.border.rounded-lg');
+        if (testResultItems.length === 0) return false;
+        
+        // Check for badges with status text
+        const badges = Array.from(document.querySelectorAll('[class*="bg-"][class*="text-"]'));
+        const hasStatusBadges = badges.some(badge => {
+          const text = badge.textContent?.toLowerCase() || '';
+          return text === 'passed' || text === 'failed' || text === 'pending';
+        });
+        
+        // Also check if we have at least 10 test items (the expected number of tests)
+        return testResultItems.length >= 10 && hasStatusBadges;
+      },
+      { timeout: 60000, polling: 'mutation' }
+    );
+    
+    // Extract test results
+    console.log('📊 Extracting test results...');
+    const testResults = await page.evaluate(() => {
+      const results: TestResult[] = [];
+      const testItems = document.querySelectorAll('.border.rounded-lg');
+      
+      testItems.forEach((item) => {
+        const testName = item.querySelector('.font-medium')?.textContent || '';
+        // Look for badge-like elements with background colors
+        const badges = item.querySelectorAll('[class*="bg-"][class*="text-"]');
+        let statusText = '';
+        badges.forEach(badge => {
+          const text = badge.textContent?.toLowerCase() || '';
+          if (text === 'passed' || text === 'failed' || text === 'pending') {
+            statusText = text;
+          }
+        });
+        
+        const message = item.querySelector('.text-gray-500')?.textContent || '';
+        const durationText = item.querySelector('.text-sm.text-gray-500')?.textContent || '';
+        const duration = durationText.match(/(\d+\.?\d*)ms/)?.[1];
+        
+        if (testName && statusText) {
+          results.push({
+            test: testName,
+            status: statusText as 'passed' | 'failed',
+            message,
+            duration: duration ? parseFloat(duration) : undefined
+          });
+        }
+      });
+      
+      return results;
+    });
+    
+    // Extract summary stats
+    const summaryStats = await page.evaluate(() => {
+      const cards = document.querySelectorAll('[class*="Card"]');
+      const stats: any = {};
+      
+      cards.forEach((card) => {
+        const title = card.querySelector('[class*="CardTitle"]')?.textContent;
+        const value = card.querySelector('[class*="text-2xl font-bold"]')?.textContent;
+        
+        if (title && value) {
+          stats[title] = value;
+        }
+      });
+      
+      return stats;
+    });
+    
+    // Take screenshot
+    console.log('📸 Taking screenshot...');
+    await page.screenshot({ path: 'phase-1-2-test-results.png', fullPage: true });
+    
+    // Print results
+    console.log('\n═══════════════════════════════════════════════════════════════');
+    console.log('                     PHASE 1.2 TEST RESULTS                     ');
+    console.log('═══════════════════════════════════════════════════════════════\n');
+    
+    console.log('📊 Summary:');
+    Object.entries(summaryStats).forEach(([key, value]) => {
+      console.log(`   ${key}: ${value}`);
+    });
+    
+    console.log('\n📋 Individual Test Results:');
+    const passedTests = testResults.filter(r => r.status === 'passed').length;
+    const totalTests = testResults.length;
+    const passRate = ((passedTests / totalTests) * 100).toFixed(1);
+    
+    testResults.forEach((result, index) => {
+      const icon = result.status === 'passed' ? '✅' : '❌';
+      console.log(`   ${index + 1}. ${icon} ${result.test}`);
+      if (result.message) {
+        console.log(`      └─ ${result.message}`);
+      }
+      if (result.duration) {
+        console.log(`      └─ Duration: ${result.duration}ms`);
+      }
+    });
+    
+    console.log('\n📈 Overall Results:');
+    console.log(`   Total Tests: ${totalTests}`);
+    console.log(`   Passed: ${passedTests}`);
+    console.log(`   Failed: ${totalTests - passedTests}`);
+    console.log(`   Pass Rate: ${passRate}%`);
+    
+    console.log('\n═══════════════════════════════════════════════════════════════\n');
+    
+    // Performance metrics from the page
+    const performanceMetrics = await page.metrics();
+    console.log('🚀 Performance Metrics:');
+    console.log(`   JS Heap Used: ${((performanceMetrics.JSHeapUsedSize || 0) / 1024 / 1024).toFixed(2)} MB`);
+    console.log(`   JS Heap Total: ${((performanceMetrics.JSHeapTotalSize || 0) / 1024 / 1024).toFixed(2)} MB`);
+    
+    // Wait a bit to see results
+    await new Promise(resolve => setTimeout(resolve, 5000));
+    
+  } catch (error) {
+    console.error('❌ Test failed:', error);
+    await page.screenshot({ path: 'phase-1-2-test-error.png', fullPage: true });
+  } finally {
+    await browser.close();
+    console.log('✅ Test completed');
+  }
+}
+
+// Run the tests
+runPhase12Tests().catch(console.error);

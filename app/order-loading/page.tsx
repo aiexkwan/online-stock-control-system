@@ -50,6 +50,8 @@ interface OrderSummary {
 }
 
 export default function OrderLoadingPage() {
+  // 使用適配器進行漸進式遷移
+  const [adapter] = useState(() => new OrderLoadingAdapter());
   const supabase = createClient();
   
   // State management
@@ -168,19 +170,25 @@ export default function OrderLoadingPage() {
       const cachedSummaries = orderSummariesCache.get(cacheKey);
       
       if (cachedSummaries) {
-        process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[OrderCache] Using cached order summaries');
+        process.env.NODE_ENV !== "production" && console.log('[OrderCache] Using cached order summaries');
         setOrderSummaries(cachedSummaries);
         setAvailableOrders(Array.from(cachedSummaries.keys()));
         return;
       }
 
-      process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[OrderCache] Fetching fresh order summaries');
-      const { data, error } = await supabase
-        .from('data_order')
-        .select('order_ref, product_qty, loaded_qty')
-        .order('order_ref', { ascending: true });
-
-      if (error) {
+      process.env.NODE_ENV !== "production" && console.log('[OrderCache] Fetching fresh order summaries');
+      
+      // 使用適配器獲取訂單
+      try {
+        const data = await adapter.fetchAvailableOrders();
+        
+        if (!data || data.length === 0) {
+          console.log('No orders found');
+          setOrderSummaries(new Map());
+          setAvailableOrders([]);
+          return;
+        }
+      } catch (error) {
         console.error('Error fetching orders:', error);
         toast.error('Error occurred while fetching order list');
         return;
@@ -239,25 +247,22 @@ export default function OrderLoadingPage() {
       const cachedData = orderDataCache.get(cacheKey);
       
       if (cachedData) {
-        process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`[OrderCache] Using cached data for order: ${orderRef}`);
+        process.env.NODE_ENV !== "production" && console.log(`[OrderCache] Using cached data for order: ${orderRef}`);
         setOrderData(cachedData);
         setIsLoadingOrders(false);
         return;
       }
 
-      process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`[OrderCache] Fetching fresh data for order: ${orderRef}`);
-      const { data, error } = await supabase
-        .from('data_order')
-        .select('order_ref, product_code, product_desc, product_qty, loaded_qty')
-        .eq('order_ref', orderRef)
-        .order('product_code', { ascending: true });
-
-      if (error) {
-        console.error('Error fetching order data:', error);
-        toast.error('Error occurred while fetching order data');
+      process.env.NODE_ENV !== "production" && console.log(`[OrderCache] Fetching fresh data for order: ${orderRef}`);
+      
+      // 使用適配器獲取訂單詳情
+      const data = await adapter.fetchOrderData(orderRef);
+      
+      if (!data) {
+        toast.error('Order not found');
         return;
       }
-
+      
       const orderDataArray = data || [];
       setOrderData(orderDataArray);
       
@@ -436,7 +441,8 @@ export default function OrderLoadingPage() {
 
     setIsSearching(true);
     try {
-      const response = await loadPalletToOrder(selectedOrderRef, result.data.value);
+      // 使用適配器裝載棧板
+      const response = await adapter.loadPallet(selectedOrderRef, result.data.value, idNumber);
       
       if (response.success) {
         // Play success sound
@@ -859,6 +865,29 @@ export default function OrderLoadingPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Service Toggle - Development Only */}
+      {process.env.NODE_ENV !== 'production' && (
+        <div className="fixed bottom-4 right-4 bg-gray-800 p-4 rounded-lg shadow-lg border border-gray-700">
+          <div className="flex items-center space-x-2">
+            <label className="text-sm text-gray-300">Use Unified Service:</label>
+            <input
+              type="checkbox"
+              checked={adapter.isUsingUnifiedService()}
+              onChange={(e) => {
+                adapter.setUseUnifiedService(e.target.checked);
+                toast.info(`Switched to ${e.target.checked ? 'Unified' : 'Legacy'} service`);
+                // Refresh data with new service
+                if (selectedOrderRef) {
+                  fetchOrderData(selectedOrderRef);
+                  fetchAvailableOrders();
+                }
+              }}
+              className="w-4 h-4"
+            />
+          </div>
+        </div>
+      )}
 
       {/* Virtual Scroll Styles */}
       <style jsx global>{virtualScrollStyles}</style>

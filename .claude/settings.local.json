@@ -114,7 +114,9 @@
       "Bash(npx swc:*)",
       "mcp__supabase__get_logs",
       "Bash(jq:*)",
-      "Bash(npx prettier:*)"
+      "Bash(npx prettier:*)",
+      "Bash(ANALYZE=true npm run build)",
+      "Bash(npx playwright:*)"
     ],
     "deny": []
   }

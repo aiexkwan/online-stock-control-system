@@ -108,7 +108,7 @@ export const useDatabaseOperationsUnified = (): UseDatabaseOperationsUnifiedRetu
         : 'QC Finished';
 
       const acoOrderRef = productInfo.type === 'ACO' && formData.acoOrderRef?.trim()
-        ? parseInt(formData.acoOrderRef.trim(), 10)
+        ? formData.acoOrderRef.trim()
         : null;
 
       const acoQuantityUsed = productInfo.type === 'ACO' && acoOrderRef
@@ -118,6 +118,16 @@ export const useDatabaseOperationsUnified = (): UseDatabaseOperationsUnifiedRetu
       const slateBatchNumber = productInfo.type === 'Slate' && formData.slateDetail?.batchNumber?.trim()
         ? formData.slateDetail.batchNumber.trim()
         : null;
+
+      // Debug log for ACO parameters
+      if (productInfo.type === 'ACO') {
+        console.log('[UnifiedDB] ACO Parameters:', {
+          acoOrderRef,
+          acoQuantityUsed,
+          productType: productInfo.type,
+          formDataAcoOrderRef: formData.acoOrderRef
+        });
+      }
 
       // 調用統一 RPC 函數
       const { data: result, error: rpcError } = await supabase.rpc('process_qc_label_unified', {

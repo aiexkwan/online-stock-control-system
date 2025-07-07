@@ -5,13 +5,15 @@
 
 'use client';
 
-import React, { useState, useEffect, Suspense, useCallback } from 'react';
+import React, { useState, useEffect, Suspense, useCallback, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { AdminWidgetConfig } from './adminDashboardLayouts';
 import { TimeFrame } from '@/app/components/admin/UniversalTimeRangeSelector';
 import { createClient } from '@/lib/supabase';
 import { useAdminRefresh } from '@/app/admin/contexts/AdminRefreshContext';
 import { LazyComponents } from './LazyWidgetRegistry';
+import { widgetRegistry } from '@/lib/widgets/enhanced-registry';
+import { useWidgetState } from '@/app/hooks/useMemory';
 import { 
   ArrowTrendingUpIcon,
   ArrowTrendingDownIcon,
@@ -55,94 +57,94 @@ interface AdminWidgetRendererProps {
   index?: number;
 }
 
-// 統一的 Widget Wrapper Component
-const UnifiedWidgetWrapper: React.FC<{
+// 根據主題獲取邊框顏色 - 純函數，移到組件外部以避免重複創建
+const getThemeColors = (theme?: string) => {
+  switch (theme) {
+    case 'injection':
+      return {
+        ring: 'ring-blue-500/30',
+        border: 'border-blue-700/50',
+        shadow: 'shadow-[0_0_30px_rgba(59,130,246,0.15)]',
+        hoverRing: 'hover:ring-blue-400/40',
+        hoverShadow: 'hover:shadow-[0_0_40px_rgba(59,130,246,0.25)]'
+      };
+    case 'pipeline':
+      return {
+        ring: 'ring-purple-500/30',
+        border: 'border-purple-700/50',
+        shadow: 'shadow-[0_0_30px_rgba(168,85,247,0.15)]',
+        hoverRing: 'hover:ring-purple-400/40',
+        hoverShadow: 'hover:shadow-[0_0_40px_rgba(168,85,247,0.25)]'
+      };
+    case 'warehouse':
+      return {
+        ring: 'ring-green-500/30',
+        border: 'border-green-700/50',
+        shadow: 'shadow-[0_0_30px_rgba(34,197,94,0.15)]',
+        hoverRing: 'hover:ring-green-400/40',
+        hoverShadow: 'hover:shadow-[0_0_40px_rgba(34,197,94,0.25)]'
+      };
+    case 'analysis':
+      return {
+        ring: 'ring-cyan-500/30',
+        border: 'border-cyan-700/50',
+        shadow: 'shadow-[0_0_30px_rgba(6,182,212,0.15)]',
+        hoverRing: 'hover:ring-cyan-400/40',
+        hoverShadow: 'hover:shadow-[0_0_40px_rgba(6,182,212,0.25)]'
+      };
+    case 'upload':
+      return {
+        ring: 'ring-indigo-500/30',
+        border: 'border-indigo-700/50',
+        shadow: 'shadow-[0_0_30px_rgba(99,102,241,0.15)]',
+        hoverRing: 'hover:ring-indigo-400/40',
+        hoverShadow: 'hover:shadow-[0_0_40px_rgba(99,102,241,0.25)]'
+      };
+    case 'update':
+      return {
+        ring: 'ring-orange-500/30',
+        border: 'border-orange-700/50',
+        shadow: 'shadow-[0_0_30px_rgba(251,146,60,0.15)]',
+        hoverRing: 'hover:ring-orange-400/40',
+        hoverShadow: 'hover:shadow-[0_0_40px_rgba(251,146,60,0.25)]'
+      };
+    case 'stock-management':
+      return {
+        ring: 'ring-yellow-500/30',
+        border: 'border-yellow-700/50',
+        shadow: 'shadow-[0_0_30px_rgba(250,204,21,0.15)]',
+        hoverRing: 'hover:ring-yellow-400/40',
+        hoverShadow: 'hover:shadow-[0_0_40px_rgba(250,204,21,0.25)]'
+      };
+    case 'system':
+      return {
+        ring: 'ring-red-500/30',
+        border: 'border-red-700/50',
+        shadow: 'shadow-[0_0_30px_rgba(239,68,68,0.15)]',
+        hoverRing: 'hover:ring-red-400/40',
+        hoverShadow: 'hover:shadow-[0_0_40px_rgba(239,68,68,0.25)]'
+      };
+    default:
+      return {
+        ring: 'ring-slate-500/30',
+        border: 'border-slate-600/50',
+        shadow: 'shadow-[0_0_30px_rgba(100,150,200,0.15)]',
+        hoverRing: 'hover:ring-slate-400/40',
+        hoverShadow: 'hover:shadow-[0_0_40px_rgba(100,150,200,0.25)]'
+      };
+  }
+};
+
+// 統一的 Widget Wrapper Component - 使用 React.memo 優化
+const UnifiedWidgetWrapper = React.memo<{
   children: React.ReactNode;
   isCustomTheme?: boolean;
   hasError?: boolean;
   className?: string;
   style?: React.CSSProperties;
   theme?: string;
-}> = ({ children, isCustomTheme, hasError, className, style, theme }) => {
-  // 根據主題獲取邊框顏色
-  const getThemeColors = () => {
-    switch (theme) {
-      case 'injection':
-        return {
-          ring: 'ring-blue-500/30',
-          border: 'border-blue-700/50',
-          shadow: 'shadow-[0_0_30px_rgba(59,130,246,0.15)]',
-          hoverRing: 'hover:ring-blue-400/40',
-          hoverShadow: 'hover:shadow-[0_0_40px_rgba(59,130,246,0.25)]'
-        };
-      case 'pipeline':
-        return {
-          ring: 'ring-purple-500/30',
-          border: 'border-purple-700/50',
-          shadow: 'shadow-[0_0_30px_rgba(168,85,247,0.15)]',
-          hoverRing: 'hover:ring-purple-400/40',
-          hoverShadow: 'hover:shadow-[0_0_40px_rgba(168,85,247,0.25)]'
-        };
-      case 'warehouse':
-        return {
-          ring: 'ring-green-500/30',
-          border: 'border-green-700/50',
-          shadow: 'shadow-[0_0_30px_rgba(34,197,94,0.15)]',
-          hoverRing: 'hover:ring-green-400/40',
-          hoverShadow: 'hover:shadow-[0_0_40px_rgba(34,197,94,0.25)]'
-        };
-      case 'analysis':
-        return {
-          ring: 'ring-cyan-500/30',
-          border: 'border-cyan-700/50',
-          shadow: 'shadow-[0_0_30px_rgba(6,182,212,0.15)]',
-          hoverRing: 'hover:ring-cyan-400/40',
-          hoverShadow: 'hover:shadow-[0_0_40px_rgba(6,182,212,0.25)]'
-        };
-      case 'upload':
-        return {
-          ring: 'ring-indigo-500/30',
-          border: 'border-indigo-700/50',
-          shadow: 'shadow-[0_0_30px_rgba(99,102,241,0.15)]',
-          hoverRing: 'hover:ring-indigo-400/40',
-          hoverShadow: 'hover:shadow-[0_0_40px_rgba(99,102,241,0.25)]'
-        };
-      case 'update':
-        return {
-          ring: 'ring-orange-500/30',
-          border: 'border-orange-700/50',
-          shadow: 'shadow-[0_0_30px_rgba(251,146,60,0.15)]',
-          hoverRing: 'hover:ring-orange-400/40',
-          hoverShadow: 'hover:shadow-[0_0_40px_rgba(251,146,60,0.25)]'
-        };
-      case 'stock-management':
-        return {
-          ring: 'ring-yellow-500/30',
-          border: 'border-yellow-700/50',
-          shadow: 'shadow-[0_0_30px_rgba(250,204,21,0.15)]',
-          hoverRing: 'hover:ring-yellow-400/40',
-          hoverShadow: 'hover:shadow-[0_0_40px_rgba(250,204,21,0.25)]'
-        };
-      case 'system':
-        return {
-          ring: 'ring-red-500/30',
-          border: 'border-red-700/50',
-          shadow: 'shadow-[0_0_30px_rgba(239,68,68,0.15)]',
-          hoverRing: 'hover:ring-red-400/40',
-          hoverShadow: 'hover:shadow-[0_0_40px_rgba(239,68,68,0.25)]'
-        };
-      default:
-        return {
-          ring: 'ring-slate-500/30',
-          border: 'border-slate-600/50',
-          shadow: 'shadow-[0_0_30px_rgba(100,150,200,0.15)]',
-          hoverRing: 'hover:ring-slate-400/40',
-          hoverShadow: 'hover:shadow-[0_0_40px_rgba(100,150,200,0.25)]'
-        };
-    }
-  };
-
-  const themeColors = getThemeColors();
+}>(({ children, isCustomTheme, hasError, className, style, theme }) => {
+  const themeColors = getThemeColors(theme);
 
   // 統一的背景樣式，加入更明顯嘅邊框效果
   const baseStyles = cn(
@@ -176,7 +178,19 @@ const UnifiedWidgetWrapper: React.FC<{
       {children}
     </div>
   );
-};
+}, (prevProps, nextProps) => {
+  // 自定義比較函數 - 只比較真正會影響渲染的 props
+  return (
+    prevProps.isCustomTheme === nextProps.isCustomTheme &&
+    prevProps.hasError === nextProps.hasError &&
+    prevProps.className === nextProps.className &&
+    prevProps.theme === nextProps.theme &&
+    prevProps.style === nextProps.style &&
+    prevProps.children === nextProps.children
+  );
+});
+
+UnifiedWidgetWrapper.displayName = 'UnifiedWidgetWrapper';
 
 // 顏色配置
 const CHART_COLORS = [
@@ -192,6 +206,7 @@ const CHART_COLORS = [
 
 // 導入特殊組件 - 已移除舊 Dashboard 依賴
 import { HistoryTree } from './widgets/HistoryTree';
+import { getEnhancedWidgetComponent } from './LazyWidgetRegistry';
 
 // 新的上傳頁面組件 - 使用 lazy loading
 const OrdersListWidget = React.lazy(() => import('./widgets/OrdersListWidget').then(mod => ({ default: mod.OrdersListWidget })));
@@ -225,7 +240,7 @@ const OtherFilesListGraphQL = React.lazy(() => import('./widgets/OtherFilesListG
 // Warehouse Dashboard 組件
 const AwaitLocationQtyWidget = React.lazy(() => import('./widgets/AwaitLocationQtyWidget').then(mod => ({ default: mod.AwaitLocationQtyWidget })));
 const YesterdayTransferCountWidget = React.lazy(() => import('./widgets/YesterdayTransferCountWidget').then(mod => ({ default: mod.YesterdayTransferCountWidget })));
-const StillInAwaitWidget = React.lazy(() => import('./widgets/StillInAwaitWidgetGraphQL').then(mod => ({ default: mod.StillInAwaitWidgetGraphQL })));
+const StillInAwaitWidget = React.lazy(() => import('./widgets/StillInAwaitWidget').then(mod => ({ default: mod.StillInAwaitWidget })));
 
 // Stock Management 組件
 const StockTypeSelector = React.lazy(() => import('./widgets/StockTypeSelector').then(mod => ({ default: mod.StockTypeSelector })));
@@ -236,13 +251,216 @@ const StillInAwaitPercentageWidget = React.lazy(() => import('./widgets/StillInA
 const OrderStateListWidget = React.lazy(() => import('./widgets/OrderStateListWidget').then(mod => ({ default: mod.OrderStateListWidget })));
 const TransferTimeDistributionWidget = React.lazy(() => import('./widgets/TransferTimeDistributionWidget').then(mod => ({ default: mod.TransferTimeDistributionWidget })));
 const EmptyPlaceholderWidget = React.lazy(() => import('./widgets/EmptyPlaceholderWidget').then(mod => ({ default: mod.EmptyPlaceholderWidget })));
-const WarehouseTransferListWidget = React.lazy(() => import('./widgets/WarehouseTransferListWidgetGraphQL').then(mod => ({ default: mod.WarehouseTransferListWidgetGraphQL })));
+const WarehouseTransferListWidget = React.lazy(() => import('./widgets/WarehouseTransferListWidget').then(mod => ({ default: mod.WarehouseTransferListWidget })));
 const WarehouseWorkLevelAreaChart = React.lazy(() => import('./widgets/WarehouseWorkLevelAreaChart').then(mod => ({ default: mod.WarehouseWorkLevelAreaChart })));
 
 // GraphQL 功能開關
 const ENABLE_GRAPHQL = process.env.NEXT_PUBLIC_ENABLE_GRAPHQL === 'true';
 
-export const AdminWidgetRenderer: React.FC<AdminWidgetRendererProps> = ({ 
+// 組件 props 生成器 - 預先定義以減少重複計算
+const getComponentPropsFactory = (config: AdminWidgetConfig, timeFrame: TimeFrame, theme: string) => {
+  const propsMap: Record<string, any> = {
+    // History 組件
+    HistoryTree: {
+      widget: {
+        config: {
+          ...config,
+          size: config.size || 'MEDIUM'
+        }
+      },
+      isEditMode: false
+    },
+    // Analysis 組件
+    AnalysisPagedWidget: { timeFrame, theme },
+    AnalysisPagedWidgetV2: { timeFrame, theme },
+    AnalysisExpandableCards: { timeFrame, theme },
+    // Report 組件
+    ReportGeneratorWidget: {
+      title: config.title,
+      reportType: config.reportType || '',
+      description: config.description,
+      apiEndpoint: config.apiEndpoint
+    },
+    ReportGeneratorWithDialogWidget: {
+      title: config.title,
+      reportType: config.reportType || '',
+      description: config.description,
+      apiEndpoint: config.apiEndpoint,
+      dialogTitle: config.dialogTitle || '',
+      dialogDescription: config.dialogDescription || '',
+      selectLabel: config.selectLabel || '',
+      dataTable: config.dataTable || '',
+      referenceField: config.referenceField || ''
+    },
+    // Stock 組件
+    StockDistributionChart: { widget: config as any },
+    StockTypeSelector: { widget: config as any },
+    StockLevelHistoryChart: { widget: config as any, timeFrame },
+    InventoryOrderedAnalysisWidget: { widget: config as any }
+  };
+
+  // Upload widgets 共享配置
+  const uploadWidgetConfig = {
+    widget: {
+      id: config.component,
+      type: 'CUSTOM' as any,
+      title: config.title,
+      config: { size: 'MEDIUM' as any }
+    },
+    isEditMode: false
+  };
+
+  const uploadWidgets = [
+    'OrdersListWidget',
+    'OtherFilesListWidget',
+    'UploadFilesWidget',
+    'UploadOrdersWidget',
+    'UploadProductSpecWidget',
+    'UploadPhotoWidget'
+  ];
+
+  uploadWidgets.forEach(widgetName => {
+    propsMap[widgetName] = uploadWidgetConfig;
+  });
+
+  return propsMap;
+};
+
+// 虛擬化 Widget 包裝器 - 使用 React.memo 優化
+const VirtualizedWidget = React.memo<{
+  widgetId: string;
+  children: React.ReactNode;
+  gridArea: string;
+  theme: string;
+  isCustomTheme: boolean;
+  className?: string;
+  style?: React.CSSProperties;
+  index?: number;
+}>(({ widgetId, children, gridArea, theme, isCustomTheme, className, style, index = 0 }) => {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [isVisible, setIsVisible] = useState(true);  // 預設為可見
+  const [hasBeenVisible, setHasBeenVisible] = useState(true);  // 預設為已經可見過
+  
+  useEffect(() => {
+    const element = containerRef.current;
+    if (!element) return;
+    
+    // 使用 GridVirtualizer 如果可用
+    const gridVirtualizer = widgetRegistry.getGridVirtualizer();
+    if (gridVirtualizer) {
+      gridVirtualizer.observeWidget(
+        element,
+        widgetId,
+        (visible) => {
+          setIsVisible(visible);
+          if (visible && !hasBeenVisible) {
+            setHasBeenVisible(true);
+            // 記錄 widget 使用
+            widgetRegistry.recordUsage(widgetId);
+          }
+        }
+      );
+      
+      return () => {
+        gridVirtualizer.unobserveWidget(element, widgetId);
+      };
+    }
+    
+    // Fallback to standard Intersection Observer
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach(entry => {
+          const visible = entry.isIntersecting;
+          setIsVisible(visible);
+          if (visible && !hasBeenVisible) {
+            setHasBeenVisible(true);
+            widgetRegistry.recordUsage(widgetId);
+          }
+        });
+      },
+      {
+        rootMargin: '50px',
+        threshold: 0
+      }
+    );
+    
+    observer.observe(element);
+    
+    return () => {
+      observer.unobserve(element);
+    };
+  }, [widgetId, hasBeenVisible]);
+  
+  // Widget placeholder
+  const renderPlaceholder = () => (
+    <div className="h-full w-full animate-pulse">
+      <div className="h-full bg-slate-800/50 rounded-xl"></div>
+    </div>
+  );
+  
+  // For themes using nth-child CSS, don't set gridArea inline
+  // All custom themes use nth-child CSS
+  const finalStyle = isCustomTheme 
+    ? style 
+    : { ...style, gridArea };
+  
+  // Add theme-specific class based on theme
+  let themeClass = '';
+  if (isCustomTheme) {
+    switch (theme) {
+      case 'injection':
+      case 'pipeline':
+      case 'warehouse':
+        themeClass = 'custom-theme-item';
+        break;
+      case 'upload':
+        themeClass = 'upload-item';
+        break;
+      case 'update':
+        themeClass = 'update-item';
+        break;
+      case 'stock-management':
+        themeClass = 'stock-management-item';
+        break;
+      case 'system':
+        themeClass = 'system-item';
+        break;
+      case 'analysis':
+        themeClass = 'analysis-item';
+        break;
+    }
+  }
+  
+  return (
+    <div
+      ref={containerRef}
+      data-widget-id={widgetId}
+      data-widget-index={index}
+      className={cn(themeClass, className)}
+      style={finalStyle}
+    >
+      {/* 只有在可見或曾經可見時才渲染真正的內容 */}
+      {(isVisible || hasBeenVisible) ? children : renderPlaceholder()}
+    </div>
+  );
+}, (prevProps, nextProps) => {
+  // 自定義比較函數 - 只比較會影響渲染的 props
+  return (
+    prevProps.widgetId === nextProps.widgetId &&
+    prevProps.gridArea === nextProps.gridArea &&
+    prevProps.theme === nextProps.theme &&
+    prevProps.isCustomTheme === nextProps.isCustomTheme &&
+    prevProps.className === nextProps.className &&
+    prevProps.style === nextProps.style &&
+    prevProps.children === nextProps.children &&
+    prevProps.index === nextProps.index
+  );
+});
+
+VirtualizedWidget.displayName = 'VirtualizedWidget';
+
+// AdminWidgetRenderer - 使用 React.memo 優化以減少不必要的重新渲染
+const AdminWidgetRendererComponent: React.FC<AdminWidgetRendererProps> = ({ 
   config, 
   theme,
   timeFrame,
@@ -314,7 +532,13 @@ export const AdminWidgetRenderer: React.FC<AdminWidgetRendererProps> = ({
         }
         
       } catch (err: any) {
-        setError(err.message || 'Failed to load data');
+        console.error(`[AdminWidgetRenderer] Error loading ${config.dataSource}:`, err);
+        // Handle auth errors specifically
+        if (err.name === 'AuthRetryableFetchError' || err.message?.includes('AuthRetryableFetchError')) {
+          setError('Authentication error. Please refresh the page and login again.');
+        } else {
+          setError(err.message || 'Failed to load data');
+        }
       } finally {
         setLoading(false);
       }
@@ -324,8 +548,8 @@ export const AdminWidgetRenderer: React.FC<AdminWidgetRendererProps> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [config, timeFrame, refreshTrigger]);
 
-  // 載入 Pallet 數據
-  const loadPalletData = async (supabase: any, timeFrame: TimeFrame) => {
+  // 載入 Pallet 數據 - 使用 useCallback 避免重複創建
+  const loadPalletData = useCallback(async (supabase: any, timeFrame: TimeFrame) => {
     // 根據 metrics 判斷要載入什麼數據
     const metric = config.metrics?.[0];
     
@@ -500,10 +724,10 @@ export const AdminWidgetRenderer: React.FC<AdminWidgetRendererProps> = ({
 
       setData({ chartData });
     }
-  };
+  }, [config]);
 
-  // 載入庫存數據
-  const loadInventoryData = async (supabase: any, timeFrame: TimeFrame) => {
+  // 載入庫存數據 - 使用 useCallback 避免重複創建
+  const loadInventoryData = useCallback(async (supabase: any, timeFrame: TimeFrame) => {
     const { data: inventoryData } = await supabase
       .from('record_inventory')
       .select('*');
@@ -535,10 +759,10 @@ export const AdminWidgetRenderer: React.FC<AdminWidgetRendererProps> = ({
       chartData,
       locationTotals
     });
-  };
+  }, []);
 
-  // 載入轉移數據
-  const loadTransferData = async (supabase: any, timeFrame: TimeFrame) => {
+  // 載入轉移數據 - 使用 useCallback 避免重複創建
+  const loadTransferData = useCallback(async (supabase: any, timeFrame: TimeFrame) => {
     const { data: transferData, count } = await supabase
       .from('record_transfer')
       .select('*', { count: 'exact' })
@@ -558,10 +782,10 @@ export const AdminWidgetRenderer: React.FC<AdminWidgetRendererProps> = ({
       ]),
       headers: ['Pallet', 'From', 'To', 'Time']
     });
-  };
+  }, []);
 
-  // 載入庫存水平數據
-  const loadStockLevelData = async (supabase: any) => {
+  // 載入庫存水平數據 - 使用 useCallback 避免重複創建
+  const loadStockLevelData = useCallback(async (supabase: any) => {
     const { data: stockData } = await supabase
       .from('stock_level')
       .select('*')
@@ -582,10 +806,10 @@ export const AdminWidgetRenderer: React.FC<AdminWidgetRendererProps> = ({
         value: (s.stock_level || 0).toLocaleString()
       }))
     });
-  };
+  }, []);
 
-  // 載入歷史數據
-  const loadHistoryData = async (supabase: any, timeFrame: TimeFrame) => {
+  // 載入歷史數據 - 使用 useCallback 避免重複創建
+  const loadHistoryData = useCallback(async (supabase: any, timeFrame: TimeFrame) => {
     const { data: historyData } = await supabase
       .from('record_history')
       .select('*, data_id!inner(user_name)')
@@ -603,10 +827,10 @@ export const AdminWidgetRenderer: React.FC<AdminWidgetRendererProps> = ({
         icon: getActionIcon(h.action)
       }))
     });
-  };
+  }, []);
 
-  // 載入生產摘要數據
-  const loadProductionSummary = async (supabase: any, timeFrame: TimeFrame) => {
+  // 載入生產摘要數據 - 使用 useCallback 避免重複創建
+  const loadProductionSummary = useCallback(async (supabase: any, timeFrame: TimeFrame) => {
     const { data: summaryData } = await supabase
       .from('record_palletinfo')
       .select('product_code, product_qty')
@@ -633,323 +857,139 @@ export const AdminWidgetRenderer: React.FC<AdminWidgetRendererProps> = ({
       ]);
 
     setData({ headers, rows });
-  };
+  }, []); // Remove config.title dependency as it's not used in the function
+
+  // 載入生產詳情數據
+  const loadProductionDetails = useCallback(async (supabase: any, timeFrame: TimeFrame) => {
+    const { data: productionData } = await supabase
+      .from('record_palletinfo')
+      .select('plt_num, product_code, product_qty, operator, generate_time')
+      .gte('generate_time', timeFrame.start.toISOString())
+      .lte('generate_time', timeFrame.end.toISOString())
+      .order('generate_time', { ascending: false })
+      .limit(20);
+
+    const headers = ['Pallet', 'Product', 'Qty', 'Operator', 'Time'];
+    const rows = productionData?.map((item: any) => [
+      item.plt_num,
+      item.product_code,
+      item.product_qty?.toLocaleString() || '0',
+      item.operator || 'Unknown',
+      format(new Date(item.generate_time), 'HH:mm')
+    ]) || [];
+
+    setData({ headers, rows });
+  }, []);
+
+  // 載入工作量數據
+  const loadWorkLevel = useCallback(async (supabase: any, timeFrame: TimeFrame) => {
+    const { data: workData } = await supabase
+      .from('record_palletinfo')
+      .select('operator, generate_time')
+      .gte('generate_time', timeFrame.start.toISOString())
+      .lte('generate_time', timeFrame.end.toISOString());
+
+    // 按小時統計工作量
+    const hourlyData = generateHourlyData(workData || [], 'generate_time');
+
+    setData({
+      chartData: hourlyData
+    });
+  }, []);
+
+  // 載入 Pipeline 生產詳情數據
+  const loadPipelineProductionDetails = useCallback(async (supabase: any, timeFrame: TimeFrame) => {
+    const { data: productionData } = await supabase
+      .from('record_palletinfo')
+      .select('plt_num, product_code, product_qty, operator, generate_time')
+      .ilike('product_code', 'U%')  // Pipeline products start with U
+      .gte('generate_time', timeFrame.start.toISOString())
+      .lte('generate_time', timeFrame.end.toISOString())
+      .order('generate_time', { ascending: false })
+      .limit(20);
+
+    const headers = ['Pallet', 'Product', 'Qty', 'Operator', 'Time'];
+    const rows = productionData?.map((item: any) => [
+      item.plt_num,
+      item.product_code,
+      item.product_qty?.toLocaleString() || '0',
+      item.operator || 'Unknown',
+      format(new Date(item.generate_time), 'HH:mm')
+    ]) || [];
+
+    setData({ headers, rows });
+  }, []);
+
+  // 載入 Pipeline 工作量數據
+  const loadPipelineWorkLevel = useCallback(async (supabase: any, timeFrame: TimeFrame) => {
+    const { data: workData } = await supabase
+      .from('record_palletinfo')
+      .select('operator, generate_time')
+      .ilike('product_code', 'U%')  // Pipeline products start with U
+      .gte('generate_time', timeFrame.start.toISOString())
+      .lte('generate_time', timeFrame.end.toISOString());
+
+    // 按小時統計工作量
+    const hourlyData = generateHourlyData(workData || [], 'generate_time');
+
+    setData({
+      chartData: hourlyData
+    });
+  }, []);
 
   // 載入客戶訂單數據
-  const loadCustomerOrderData = async (supabase: any) => {
-    const { data: orders, count } = await supabase
-      .from('data_customerorder')
-      .select('*', { count: 'exact' })
-      .eq('order_status', 'active')
-      .limit(1);
+  const loadCustomerOrderData = useCallback(async (supabase: any) => {
+    const { data: orderData } = await supabase
+      .from('data_order')
+      .select('order_ref, account_num, created_at, product_code')
+      .order('created_at', { ascending: false })
+      .limit(10);
 
-    setData({
-      value: count || 0,
-      label: 'Active Orders',
-      icon: <DocumentArrowDownIcon className="w-8 h-8" />
-    });
-  };
+    const headers = ['Order', 'Account', 'Date', 'Product'];
+    const rows = orderData?.map((item: any) => [
+      item.order_ref,
+      item.account_num,
+      format(new Date(item.created_at), 'MM/dd'),
+      item.product_code
+    ]) || [];
+
+    setData({ headers, rows });
+  }, []);
 
   // 載入系統狀態數據
-  const loadSystemStatus = async (supabase: any) => {
-    // Check system health based on recent errors
-    const { count: errorCount } = await supabase
-      .from('record_history')
-      .select('*', { count: 'exact', head: true })
-      .ilike('action', '%error%')
-      .gte('time', new Date(Date.now() - 3600000).toISOString()); // Last hour
-
-    const healthScore = errorCount === 0 ? 100 : Math.max(0, 100 - (errorCount * 10));
-    
-    setData({
-      value: healthScore,
-      label: 'System Health',
-      icon: <ArrowPathIcon className="w-8 h-8" />,
-      trend: errorCount === 0 ? 5 : -5
-    });
-  };
-
-  // 載入生產明細數據
-  const loadProductionDetails = async (supabase: any, timeFrame: TimeFrame) => {
+  const loadSystemStatus = useCallback(async (supabase: any) => {
     try {
-      // 先獲取符合條件的棧板資料
-      const { data: palletData, error: palletError } = await supabase
-        .from('record_palletinfo')
-        .select('plt_num, product_code, product_qty, generate_time')
-        .ilike('plt_remark', '%finished in production%')
-        .not('product_code', 'ilike', 'U%')
-        .gte('generate_time', timeFrame.start.toISOString())
-        .lte('generate_time', timeFrame.end.toISOString())
-        .order('generate_time', { ascending: false })
-        .limit(50);
+      // 使用正確的資料表（已通過 MCP 工具確認）
+      const { count: userCount, error: userError } = await supabase
+        .from('data_id')
+        .select('*', { count: 'exact', head: true });
 
-      if (palletError) {
-        console.error('Error loading production details:', palletError);
-        setData({ headers: ['Pallet Num', 'Product Code', 'Qty', 'Q.C. By'], rows: [] });
-        return;
+      if (userError) {
+        console.error('[loadSystemStatus] Error fetching user count:', userError);
+        throw userError;
       }
 
-      // 對每個棧板查找 QC 操作員
-      const rows = [];
-      for (const pallet of palletData || []) {
-        // 查找 QC 記錄
-        const { data: historyData } = await supabase
-          .from('record_history')
-          .select('id')
-          .eq('plt_num', pallet.plt_num)
-          .eq('action', 'Finished QC')
-          .order('time', { ascending: false })
-          .limit(1);
+      const { count: productCount, error: productError } = await supabase
+        .from('data_code')
+        .select('*', { count: 'exact', head: true });
 
-        let qcOperator = 'N/A';
-        if (historyData && historyData.length > 0 && historyData[0].id) {
-          // 查找操作員名稱
-          const { data: operatorData, error: operatorError } = await supabase
-            .from('data_id')
-            .select('name')
-            .eq('id', historyData[0].id)
-            .limit(1);
-          
-          if (!operatorError && operatorData && operatorData.length > 0) {
-            qcOperator = operatorData[0].name;
-          }
-        }
-
-        rows.push([
-          pallet.plt_num,
-          pallet.product_code,
-          (pallet.product_qty || 0).toLocaleString(),
-          qcOperator
-        ]);
+      if (productError) {
+        console.error('[loadSystemStatus] Error fetching product count:', productError);
+        throw productError;
       }
 
       setData({
-        headers: ['Pallet Num', 'Product Code', 'Qty', 'Q.C. By'],
-        rows: rows.slice(0, 20) // 限制顯示20行
+        value: userCount || 0,
+        label: 'Active Users',
+        secondaryValue: productCount || 0,
+        secondaryLabel: 'Total Products',
+        icon: <CheckCircleIcon className="w-8 h-8 text-green-500" />
       });
     } catch (error) {
-      console.error('Error in loadProductionDetails:', error);
-      setData({ headers: ['Pallet Num', 'Product Code', 'Qty', 'Q.C. By'], rows: [] });
+      console.error('[loadSystemStatus] Failed:', error);
+      throw error;
     }
-  };
-
-  // 載入 Pipeline 生產明細數據
-  const loadPipelineProductionDetails = async (supabase: any, timeFrame: TimeFrame) => {
-    try {
-      // 先獲取符合條件的棧板資料
-      const { data: palletData, error: palletError } = await supabase
-        .from('record_palletinfo')
-        .select('plt_num, product_code, product_qty, generate_time')
-        .ilike('plt_remark', '%finished in production%')
-        .ilike('product_code', 'U%')
-        .gte('generate_time', timeFrame.start.toISOString())
-        .lte('generate_time', timeFrame.end.toISOString())
-        .order('generate_time', { ascending: false })
-        .limit(50);
-
-      if (palletError) {
-        console.error('Error loading pipeline production details:', palletError);
-        setData({ headers: ['Pallet Num', 'Product Code', 'Qty', 'Q.C. By'], rows: [] });
-        return;
-      }
-
-      // 對每個棧板查找 QC 操作員
-      const rows = [];
-      for (const pallet of palletData || []) {
-        // 查找 QC 記錄
-        const { data: historyData } = await supabase
-          .from('record_history')
-          .select('id')
-          .eq('plt_num', pallet.plt_num)
-          .eq('action', 'Finished QC')
-          .order('time', { ascending: false })
-          .limit(1);
-
-        let qcOperator = 'N/A';
-        if (historyData && historyData.length > 0 && historyData[0].id) {
-          // 查找操作員名稱
-          const { data: operatorData, error: operatorError } = await supabase
-            .from('data_id')
-            .select('name')
-            .eq('id', historyData[0].id)
-            .limit(1);
-          
-          if (!operatorError && operatorData && operatorData.length > 0) {
-            qcOperator = operatorData[0].name;
-          }
-        }
-
-        rows.push([
-          pallet.plt_num,
-          pallet.product_code,
-          (pallet.product_qty || 0).toLocaleString(),
-          qcOperator
-        ]);
-      }
-
-      setData({
-        headers: ['Pallet Num', 'Product Code', 'Qty', 'Q.C. By'],
-        rows: rows.slice(0, 20) // 限制顯示20行
-      });
-    } catch (error) {
-      console.error('Error in loadPipelineProductionDetails:', error);
-      setData({ headers: ['Pallet Num', 'Product Code', 'Qty', 'Q.C. By'], rows: [] });
-    }
-  };
-
-  // 載入員工工作量數據
-  const loadWorkLevel = async (supabase: any, timeFrame: TimeFrame) => {
-    try {
-      // 獲取 Injection 部門的員工
-      const { data: allUsers } = await supabase
-        .from('data_id')
-        .select('id, name')
-        .eq('department', 'Injection')
-        .order('name');
-
-      if (!allUsers || allUsers.length === 0) {
-        setData({ chartData: [], legendData: [] });
-        return;
-      }
-
-      // 計算時間範圍內的日期
-      const dates: Date[] = [];
-      const currentDate = new Date(timeFrame.start);
-      while (currentDate <= timeFrame.end) {
-        dates.push(new Date(currentDate));
-        currentDate.setDate(currentDate.getDate() + 1);
-      }
-
-      // 為每個日期構建數據點
-      const chartData: any[] = [];
-      
-      for (const date of dates) {
-        const dayStart = new Date(date);
-        dayStart.setHours(0, 0, 0, 0);
-        const dayEnd = new Date(date);
-        dayEnd.setHours(23, 59, 59, 999);
-
-        // 獲取當天的工作量數據
-        const { data: dayWorkData } = await supabase
-          .from('work_level')
-          .select('id, qc, grn, move')
-          .gte('latest_update', dayStart.toISOString())
-          .lte('latest_update', dayEnd.toISOString());
-
-        // 構建當天的數據點
-        const dataPoint: any = {
-          date: format(date, 'MMM d'),
-          fullDate: date.toISOString()
-        };
-
-        // 為每個用戶計算總工作量
-        allUsers.forEach((user: any) => {
-          const userWork = dayWorkData?.find((w: any) => w.id === user.id);
-          const total = userWork ? (userWork.qc || 0) + (userWork.grn || 0) + (userWork.move || 0) : 0;
-          dataPoint[user.name] = total;
-        });
-
-        chartData.push(dataPoint);
-      }
-
-      // 準備圖例數據 - 只顯示有數據的用戶
-      const legendData = allUsers
-        .filter((user: any) => {
-          // 檢查用戶是否有任何非零數據
-          return chartData.some(point => point[user.name] > 0);
-        })
-        .map((user: any) => ({
-          value: user.name,
-          color: CHART_COLORS[allUsers.indexOf(user) % CHART_COLORS.length]
-        }));
-
-      setData({ 
-        chartData, 
-        legendData,
-        userNames: legendData.map((l: any) => l.value)
-      });
-    } catch (error) {
-      console.error('Error in loadWorkLevel:', error);
-      setData({ chartData: [], legendData: [] });
-    }
-  };
-
-  // 載入 Pipeline 員工工作量數據
-  const loadPipelineWorkLevel = async (supabase: any, timeFrame: TimeFrame) => {
-    try {
-      // 獲取 Pipeline 部門的員工
-      const { data: allUsers } = await supabase
-        .from('data_id')
-        .select('id, name')
-        .eq('department', 'Pipeline')
-        .order('name');
-
-      if (!allUsers || allUsers.length === 0) {
-        setData({ chartData: [], legendData: [] });
-        return;
-      }
-
-      // 計算時間範圍內的日期
-      const dates: Date[] = [];
-      const currentDate = new Date(timeFrame.start);
-      while (currentDate <= timeFrame.end) {
-        dates.push(new Date(currentDate));
-        currentDate.setDate(currentDate.getDate() + 1);
-      }
-
-      // 為每個日期構建數據點
-      const chartData: any[] = [];
-      
-      for (const date of dates) {
-        const dayStart = new Date(date);
-        dayStart.setHours(0, 0, 0, 0);
-        const dayEnd = new Date(date);
-        dayEnd.setHours(23, 59, 59, 999);
-
-        // 獲取當天的工作量數據
-        const { data: dayWorkData } = await supabase
-          .from('work_level')
-          .select('id, qc, grn, move')
-          .gte('latest_update', dayStart.toISOString())
-          .lte('latest_update', dayEnd.toISOString());
-
-        // 構建當天的數據點
-        const dataPoint: any = {
-          date: format(date, 'MMM d'),
-          fullDate: date.toISOString()
-        };
-
-        // 為每個用戶計算總工作量
-        allUsers.forEach((user: any) => {
-          const userWork = dayWorkData?.find((w: any) => w.id === user.id);
-          const total = userWork ? (userWork.qc || 0) + (userWork.grn || 0) + (userWork.move || 0) : 0;
-          dataPoint[user.name] = total;
-        });
-
-        chartData.push(dataPoint);
-      }
-
-      // 準備圖例數據 - 只顯示有數據的用戶
-      const legendData = allUsers
-        .filter((user: any) => {
-          // 檢查用戶是否有任何非零數據
-          return chartData.some(point => point[user.name] > 0);
-        })
-        .map((user: any) => ({
-          value: user.name,
-          color: CHART_COLORS[allUsers.indexOf(user) % CHART_COLORS.length]
-        }));
-
-      setData({ 
-        chartData, 
-        legendData,
-        userNames: legendData.map((l: any) => l.value)
-      });
-    } catch (error) {
-      console.error('Error in loadPipelineWorkLevel:', error);
-      setData({ chartData: [], legendData: [] });
-    }
-  };
+  }, []);
 
   // 生成每小時數據
   const generateHourlyData = (data: any[], timeField: string) => {
@@ -992,8 +1032,8 @@ export const AdminWidgetRenderer: React.FC<AdminWidgetRendererProps> = ({
     return <ArrowPathIcon className="w-4 h-4 text-gray-400" />;
   };
 
-  // 渲染統計卡片
-  const renderStatsCard = () => {
+  // 渲染統計卡片 - 使用 useCallback 優化
+  const renderStatsCard = useCallback(() => {
     // 檢查是否為需要顯示 "Not available" 的四個小 widget
     const notAvailableWidgets = ['Pending Updates', 'Processing', 'Completed Today', 'Failed'];
     if (notAvailableWidgets.includes(config.title)) {
@@ -1077,10 +1117,10 @@ export const AdminWidgetRenderer: React.FC<AdminWidgetRendererProps> = ({
         </CardContent>
       </div>
     );
-  };
+  }, [config, data, loading, timeFrame]);
 
-  // 渲染圖表
-  const renderChart = () => {
+  // 渲染圖表 - 使用 useCallback 優化
+  const renderChart = useCallback(() => {
     // 如果啟用 GraphQL，檢查是否有對應的 GraphQL 組件
     if (ENABLE_GRAPHQL) {
       // Top 10 Products by Quantity
@@ -1343,10 +1383,10 @@ export const AdminWidgetRenderer: React.FC<AdminWidgetRendererProps> = ({
         )}
       </div>
     );
-  };
+  }, [config, data, loading, timeFrame]);
 
-  // 渲染列表
-  const renderList = () => {
+  // 渲染列表 - 使用 useCallback 優化
+  const renderList = useCallback(() => {
     if (loading) {
       return (
         <div className="space-y-2">
@@ -1380,10 +1420,10 @@ export const AdminWidgetRenderer: React.FC<AdminWidgetRendererProps> = ({
           ))}
         </div>
     );
-  };
+  }, [data, loading]);
 
-  // 渲染表格
-  const renderTable = () => {
+  // 渲染表格 - 使用 useCallback 優化
+  const renderTable = useCallback(() => {
     // 如果啟用 GraphQL 且是 Production Details
     if (ENABLE_GRAPHQL && config.title === 'Production Details') {
       return (
@@ -1447,80 +1487,34 @@ export const AdminWidgetRenderer: React.FC<AdminWidgetRendererProps> = ({
           </table>
         </div>
     );
-  };
+  }, [config, data, loading, timeFrame]);
 
-  // 渲染特殊組件
-  const renderSpecialComponent = () => {
+  // 渲染特殊組件 - 使用 useCallback 優化
+  const renderSpecialComponent = useCallback(() => {
     const componentName = config.component || '';
     
-    // 檢查是否有懶加載版本
+    // 優先從增強的 widget registry 獲取組件
+    const EnhancedComponent = getEnhancedWidgetComponent(componentName, false);
+    if (EnhancedComponent) {
+      // 使用預先定義的 props 查找對象
+      const propsMap = getComponentPropsFactory(config, timeFrame, theme);
+      const componentProps = propsMap[componentName] || { widget: config, isEditMode: false };
+      
+      return (
+        <Suspense fallback={<div className="h-full w-full animate-pulse bg-slate-800/50" />}>
+          <EnhancedComponent {...componentProps} />
+        </Suspense>
+      );
+    }
+    
+    // 回退到 LazyComponents
     const LazyComponent = LazyComponents[componentName];
     if (LazyComponent) {
-      // 根據不同組件傳遞適當的 props
-      const getComponentProps = () => {
-        switch (componentName) {
-          case 'HistoryTree':
-            return {
-              widget: {
-                config: {
-                  ...config,
-                  size: config.size || 'MEDIUM'
-                }
-              },
-              isEditMode: false
-            };
-          case 'AnalysisPagedWidget':
-          case 'AnalysisPagedWidgetV2':
-          case 'AnalysisExpandableCards':
-            return { timeFrame, theme };
-          case 'ReportGeneratorWidget':
-            return {
-              title: config.title,
-              reportType: config.reportType || '',
-              description: config.description,
-              apiEndpoint: config.apiEndpoint
-            };
-          case 'ReportGeneratorWithDialogWidget':
-            return {
-              title: config.title,
-              reportType: config.reportType || '',
-              description: config.description,
-              apiEndpoint: config.apiEndpoint,
-              dialogTitle: config.dialogTitle || '',
-              dialogDescription: config.dialogDescription || '',
-              selectLabel: config.selectLabel || '',
-              dataTable: config.dataTable || '',
-              referenceField: config.referenceField || ''
-            };
-          // Upload widgets
-          case 'OrdersListWidget':
-          case 'OtherFilesListWidget':
-          case 'UploadFilesWidget':
-          case 'UploadOrdersWidget':
-          case 'UploadProductSpecWidget':
-          case 'UploadPhotoWidget':
-            return {
-              widget: {
-                id: componentName,
-                type: 'CUSTOM' as any,
-                title: config.title,
-                config: { size: 'MEDIUM' as any }
-              },
-              isEditMode: false
-            };
-          case 'StockDistributionChart':
-          case 'StockTypeSelector':
-            return { widget: config as any };
-          case 'StockLevelHistoryChart':
-            return { widget: config as any, timeFrame };
-          case 'InventoryOrderedAnalysisWidget':
-            return { widget: config as any };
-          default:
-            return { widget: config, isEditMode: false };
-        }
-      };
+      // 使用預先定義的 props 查找對象
+      const propsMap = getComponentPropsFactory(config, timeFrame, theme);
+      const componentProps = propsMap[componentName] || { widget: config, isEditMode: false };
       
-      return <LazyComponent {...getComponentProps()} />;
+      return <LazyComponent {...componentProps} />;
     }
     
     // 原有的 switch 處理（只保留非懶加載組件）
@@ -1793,10 +1787,10 @@ export const AdminWidgetRenderer: React.FC<AdminWidgetRendererProps> = ({
       default:
         return <div>Component {config.component} not found</div>;
     }
-  };
+  }, [config, timeFrame, theme, loading]);
 
-  // 根據 widget 類型渲染內容
-  const renderContent = () => {
+  // 根據 widget 類型渲染內容 - 使用 useCallback 優化
+  const renderContent = useCallback(() => {
     // 如果有特殊組件，優先渲染
     if (config.component) {
       return renderSpecialComponent();
@@ -1899,10 +1893,10 @@ export const AdminWidgetRenderer: React.FC<AdminWidgetRendererProps> = ({
           </div>
         );
     }
-  };
+  }, [config, renderStatsCard, renderChart, renderList, renderTable, renderSpecialComponent, theme]);
 
   // Check if this is a custom theme
-  const isCustomTheme = theme === 'injection' || theme === 'pipeline' || theme === 'warehouse' || theme === 'upload' || theme === 'update' || theme === 'stock-management' || theme === 'system' || theme === 'analysis';
+  const isCustomTheme = theme === 'injection' || theme === 'pipeline' || theme === 'warehouse' || theme === 'upload' || theme === 'update' || theme === 'stock-management' || theme === 'system';
   
   // Special components that need minimal wrapper (like HistoryTree)
   const minimalWrapperComponents = ['HistoryTree'];
@@ -1922,20 +1916,83 @@ export const AdminWidgetRenderer: React.FC<AdminWidgetRendererProps> = ({
   const transparentComponents = ['HistoryTree', 'EmptyPlaceholderWidget'];
   const isTransparent = config.component && transparentComponents.includes(config.component);
   
-  // Use unified wrapper for ALL widgets
+  // Generate unique widget ID
+  const widgetId = `${config.type}-${config.title.replace(/\s+/g, '-')}-${index}`;
+  
+  // Use unified wrapper for ALL widgets with virtualization
+  // Re-enable VirtualizedWidget with data-widget-index support
+  const shouldUseVirtualization = true; // Enable virtualization
+  
+  if (shouldUseVirtualization) {
+    return (
+      <VirtualizedWidget
+        widgetId={widgetId}
+        gridArea={config.gridArea}
+        theme={theme}
+        isCustomTheme={isCustomTheme}
+        index={index}
+      >
+        <UnifiedWidgetWrapper 
+          isCustomTheme={isCustomTheme}
+          hasError={!!error}
+          theme={theme}
+          className={cn(
+            wrapperClass,
+            isTransparent && '!bg-transparent !backdrop-blur-0' // Override background for transparent widgets, keep border
+          )}
+        >
+          {error ? `Error: ${error}` : renderContent()}
+        </UnifiedWidgetWrapper>
+      </VirtualizedWidget>
+    );
+  }
+  
+  // Direct rendering without VirtualizedWidget
+  // Add theme-specific class and gridArea based on theme type
+  let themeClass = '';
+  if (isCustomTheme) {
+    switch (theme) {
+      case 'injection':
+      case 'pipeline':
+      case 'warehouse':
+        themeClass = 'custom-theme-item';
+        break;
+      case 'upload':
+        themeClass = 'upload-item';
+        break;
+      case 'update':
+        themeClass = 'update-item';
+        break;
+      case 'stock-management':
+        themeClass = 'stock-management-item';
+        break;
+      case 'system':
+        themeClass = 'system-item';
+        break;
+      case 'analysis':
+        themeClass = 'analysis-item';
+        break;
+    }
+  }
+  
   return (
-    <UnifiedWidgetWrapper 
-      isCustomTheme={isCustomTheme}
-      hasError={!!error}
-      theme={theme}
-      className={cn(
-        wrapperClass,
-        isTransparent && '!bg-transparent !backdrop-blur-0' // Override background for transparent widgets, keep border
-      )}
-      style={!isCustomTheme ? { gridArea: config.gridArea } : undefined}
+    <div
+      data-widget-index={index}
+      className={themeClass}
+      style={isCustomTheme ? undefined : { gridArea: config.gridArea }}
     >
-      {error ? `Error: ${error}` : renderContent()}
-    </UnifiedWidgetWrapper>
+      <UnifiedWidgetWrapper 
+        isCustomTheme={isCustomTheme}
+        hasError={!!error}
+        theme={theme}
+        className={cn(
+          wrapperClass,
+          isTransparent && '!bg-transparent !backdrop-blur-0'
+        )}
+      >
+        {error ? `Error: ${error}` : renderContent()}
+      </UnifiedWidgetWrapper>
+    </div>
   );
 };
 
@@ -2922,3 +2979,16 @@ function SupplierInfoRow({ label, value }: SupplierInfoRowProps) {
     </div>
   );
 }
+
+// Export AdminWidgetRenderer with React.memo
+export const AdminWidgetRenderer = React.memo(AdminWidgetRendererComponent, (prevProps, nextProps) => {
+  // 自定義比較函數 - 只比較會影響渲染的 props
+  return (
+    prevProps.config === nextProps.config &&
+    prevProps.theme === nextProps.theme &&
+    prevProps.timeFrame === nextProps.timeFrame &&
+    prevProps.index === nextProps.index
+  );
+});
+
+AdminWidgetRenderer.displayName = "AdminWidgetRenderer";

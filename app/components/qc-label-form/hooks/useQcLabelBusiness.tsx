@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { MIN_ACO_ORDER_REF_LENGTH } from '../constants';
 // 導入新的模組化 hooks
-import { useAuth } from './modules/useAuth';
+import { useUserId } from '@/app/hooks/useUserId';
 import { useFormValidation } from './modules/useFormValidation';
 import { useClockConfirmation } from './modules/useClockConfirmation';
 import { useAcoManagement } from './modules/useAcoManagement';
@@ -34,10 +34,15 @@ export const useQcLabelBusiness = ({
   // Supabase client for v6 operations
   const supabase = createClient();
 
-  // 使用模組化的 hooks
-  const { refreshAuth } = useAuth({ 
-    setUserId: (userId) => setFormData(prev => ({ ...prev, userId })) 
-  });
+  // 使用統一的 useUserId hook
+  const { userId, refreshUser } = useUserId();
+  
+  // 當 userId 改變時更新 formData
+  useEffect(() => {
+    if (userId) {
+      setFormData(prev => ({ ...prev, userId }));
+    }
+  }, [userId, setFormData]);
   
   const { 
     canSearchAco,

@@ -12,7 +12,8 @@ export const SEARCH_PATTERNS = {
     /^[A-Z]{2,3}-\d{6}$/,        // PM-240615, PT-240615
     /^[A-Z]{2,3}-\d{4}-\d{6}$/,  // PM-2024-060615
     /^[A-Z]+-[A-Z0-9]+$/,        // ACO-FEB24
-    /^[\w]+-[\w]+$/              // General series pattern
+    /^[\w]+-[\w]+$/,             // General series pattern
+    /^[A-Z0-9]{12}$/             // Legacy 12-digit alphanumeric series (舊系統 Excel VBA)
   ],
   
   // Pallet number patterns
@@ -60,6 +61,15 @@ export function detectSearchType(input: string): SearchType {
     return 'pallet_num';
   }
 
+  // 檢查是否為 12 位英數混合（舊系統格式）
+  // 必須至少包含一個字母和一個數字
+  if (trimmedInput.length === 12 && 
+      /^[A-Z0-9]+$/.test(trimmedInput) &&
+      /[A-Z]/.test(trimmedInput) && 
+      /[0-9]/.test(trimmedInput)) {
+    return 'series';
+  }
+
   return 'unknown';
 }
 
@@ -91,7 +101,22 @@ export function isValidPalletNumber(palletNum: string): boolean {
  * @returns 是否有效
  */
 export function isValidSeriesNumber(series: string): boolean {
-  return SEARCH_PATTERNS.series.some(pattern => pattern.test(series));
+  const upperSeries = series.toUpperCase();
+  
+  // 先檢查標準模式
+  if (SEARCH_PATTERNS.series.some(pattern => pattern.test(upperSeries))) {
+    return true;
+  }
+  
+  // 特別檢查 12 位英數混合（確保至少有字母和數字）
+  if (upperSeries.length === 12 && 
+      /^[A-Z0-9]+$/.test(upperSeries) &&
+      /[A-Z]/.test(upperSeries) && 
+      /[0-9]/.test(upperSeries)) {
+    return true;
+  }
+  
+  return false;
 }
 
 /**

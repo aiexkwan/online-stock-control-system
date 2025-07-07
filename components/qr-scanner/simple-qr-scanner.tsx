@@ -203,7 +203,7 @@ export const SimpleQRScanner: React.FC<SimpleQRScannerProps> = ({
       // 最後清理
       cleanup();
     };
-  }, [open, onScan, cleanup]);
+  }, [open, onScan, cleanup, isMobile]);
 
 
   if (!open) return null;

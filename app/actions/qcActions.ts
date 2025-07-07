@@ -294,41 +294,46 @@ export async function updateAcoOrderRemainQty(
     // 創建新的 Supabase 客戶端
     const supabaseAdmin = createSupabaseAdmin();
     
-    // First, get the current remain_qty
+    // First, get the current data
     const { data: currentData, error: selectError } = await supabaseAdmin
       .from('record_aco')
-      .select('remain_qty')
+      .select('required_qty, finished_qty')
       .eq('order_ref', orderRef)
       .eq('code', productCode)
       .single();
 
     if (selectError) {
-      // console.error('[qcActions] Error fetching current ACO remain_qty:', selectError); // 保留錯誤日誌供生產環境調試
-      return { error: `Failed to fetch current ACO remain quantity: ${selectError.message}` };
+      // console.error('[qcActions] Error fetching current ACO data:', selectError); // 保留錯誤日誌供生產環境調試
+      return { error: `Failed to fetch current ACO data: ${selectError.message}` };
     }
 
     if (!currentData) {
       return { error: 'ACO record not found' };
     }
 
-    const currentRemainQty = currentData.remain_qty || 0;
-    const newRemainQty = Math.max(0, currentRemainQty - quantityUsed); // 防止負數
+    const currentFinishedQty = currentData.finished_qty || 0;
+    const newFinishedQty = currentFinishedQty + quantityUsed;
+    const currentRemainQty = Math.max(0, currentData.required_qty - currentFinishedQty);
+    const newRemainQty = Math.max(0, currentData.required_qty - newFinishedQty);
 
-    // 檢查是否會導致負數
+    // 檢查是否會超過 required_qty
+    if (newFinishedQty > currentData.required_qty) {
+      return { error: `Cannot use ${quantityUsed} qty. Only ${currentRemainQty} qty remaining.` };
+    }
 
-    // Update the remain_qty
+    // Update the finished_qty
     const { error: updateError } = await supabaseAdmin
       .from('record_aco')
-      .update({ remain_qty: newRemainQty })
+      .update({ finished_qty: newFinishedQty })
       .eq('order_ref', orderRef)
       .eq('code', productCode);
 
     if (updateError) {
-      // console.error('[qcActions] Error updating ACO remain_qty:', updateError); // 保留錯誤日誌供生產環境調試
-      return { error: `Failed to update ACO remain quantity: ${updateError.message}` };
+      // console.error('[qcActions] Error updating ACO finished_qty:', updateError); // 保留錯誤日誌供生產環境調試
+      return { error: `Failed to update ACO finished quantity: ${updateError.message}` };
     }
 
-    return { data: `ACO remain quantity updated successfully. Previous: ${currentRemainQty}, Used: ${quantityUsed}, New remaining: ${newRemainQty}` };
+    return { data: `ACO quantity updated successfully. Previous finished: ${currentFinishedQty}, Used: ${quantityUsed}, New finished: ${newFinishedQty}, Remaining: ${newRemainQty}` };
 
   } catch (error: any) {
     // console.error('[qcActions] Unexpected error in updateAcoOrderRemainQty:', error); // 保留錯誤日誌供生產環境調試

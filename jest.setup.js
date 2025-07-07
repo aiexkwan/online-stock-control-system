@@ -1,5 +1,6 @@
 // Learn more: https://github.com/testing-library/jest-dom
 import '@testing-library/jest-dom'
+import './__tests__/utils/custom-matchers'
 
 // Mock window.matchMedia
 Object.defineProperty(window, 'matchMedia', {

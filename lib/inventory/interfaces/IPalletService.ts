@@ -1,0 +1,37 @@
+/**
+ * Interface for pallet-specific operations
+ * Handles all pallet-related functionality
+ */
+
+import { 
+  PalletInfo, 
+  PalletInfoWithLocation, 
+  PalletSearchResult,
+  VoidPalletDto,
+  HistoryRecord 
+} from '../types';
+
+export interface IPalletService {
+  // Search Operations
+  search(searchType: 'series' | 'pallet_num', value: string): Promise<PalletSearchResult>;
+  searchByProductCode(productCode: string): Promise<PalletInfo[]>;
+  searchByLocation(location: string): Promise<PalletInfoWithLocation[]>;
+  
+  // CRUD Operations
+  create(data: Partial<PalletInfo>): Promise<PalletInfo>;
+  update(palletNum: string, data: Partial<PalletInfo>): Promise<PalletInfo>;
+  delete(palletNum: string): Promise<void>;
+  
+  // Validation
+  exists(palletNum: string): Promise<boolean>;
+  validate(palletNum: string): Promise<{ valid: boolean; pallet?: PalletInfo; error?: string }>;
+  
+  // Special Operations
+  void(data: VoidPalletDto): Promise<void>;
+  getHistory(palletNum: string, limit?: number): Promise<HistoryRecord[]>;
+  getCurrentLocation(palletNum: string): Promise<string | null>;
+  
+  // Batch Operations
+  searchMultiple(palletNums: string[]): Promise<Map<string, PalletInfo>>;
+  validateMultiple(palletNums: string[]): Promise<Map<string, boolean>>;
+}

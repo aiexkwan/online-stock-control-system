@@ -2,6 +2,7 @@ import { useState, useCallback, useRef, useEffect } from 'react';
 import { createClient } from '@/app/utils/supabase/client';
 import { toast } from 'sonner';
 import type { PalletInfo } from '@/app/services/palletSearchService';
+import { LocationMapper } from '@/lib/inventory/utils/locationMapper';
 
 // 樂觀更新的轉移狀態
 export interface OptimisticTransfer {
@@ -140,18 +141,9 @@ export const useStockTransfer = (options: UseStockTransferOptions = {}) => {
       }
 
       // 3. 更新庫存記錄
-      const locationToColumn: { [key: string]: string } = {
-        'Production': 'injection',
-        'PipeLine': 'pipeline',
-        'Pre-Book': 'prebook',
-        'Await': 'await',
-        'Fold Mill': 'fold',
-        'Bulk Room': 'bulk',
-        'Back Car Park': 'backcarpark'
-      };
-
-      const fromColumn = locationToColumn[fromLocation];
-      const toColumn = locationToColumn[toLocation];
+      // Use the unified LocationMapper instead of local mapping
+      const fromColumn = LocationMapper.toDbColumn(fromLocation);
+      const toColumn = LocationMapper.toDbColumn(toLocation);
 
       if (!fromColumn || !toColumn) {
         throw new Error(`Invalid location mapping: ${fromLocation} → ${toLocation}`);

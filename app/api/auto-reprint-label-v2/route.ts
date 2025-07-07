@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { type QcInputData } from '@/lib/pdfUtils';
+import { LocationMapper } from '@/lib/inventory/utils/locationMapper';
 import { 
   createQcDatabaseEntriesWithTransaction,
   type QcDatabaseEntryPayload,
@@ -45,32 +46,11 @@ async function getProductInfo(productCode: string) {
 
 /**
  * Map location names to database field names
+ * @deprecated Use LocationMapper.toDbColumn() directly
  */
 function mapLocationToDbField(location: string): string {
-  const locationMap: { [key: string]: string } = {
-    'injection': 'injection',
-    'pipeline': 'pipeline', 
-    'prebook': 'prebook',
-    'await': 'await',
-    'fold': 'fold',
-    'bulk': 'bulk',
-    'backcarpark': 'backcarpark',
-    'damage': 'damage',
-    // Common alias mappings
-    'Injection': 'injection',
-    'Pipeline': 'pipeline',
-    'Prebook': 'prebook',
-    'Await': 'await',
-    'Awaiting': 'await',
-    'Fold Mill': 'fold',
-    'Bulk': 'bulk',
-    'Backcarpark': 'backcarpark',
-    'Damage': 'damage',
-    'Production': 'injection',
-    'production': 'injection'
-  };
-  
-  return locationMap[location] || 'await'; // Default to await
+  // Use the unified LocationMapper
+  return LocationMapper.toDbColumn(location) || 'await'; // Default to 'await' if not found
 }
 
 export async function POST(request: NextRequest) {

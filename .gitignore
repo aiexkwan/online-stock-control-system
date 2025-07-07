@@ -61,3 +61,7 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 supabase-mcp-server/
+
+# Bundle analyzer output
+bundle-analyzer/
+*.stats.json

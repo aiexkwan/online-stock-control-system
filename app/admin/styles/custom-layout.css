@@ -10,14 +10,14 @@
   padding: 20px;
 }
 
-.custom-theme-item:nth-child(1) {
+.custom-theme-item[data-widget-index="0"] {
   grid-row: 1 / 9;
   grid-column: 9 / 11;
   height: auto;
   width: auto;
 }
 
-.custom-theme-item:nth-child(2) {
+.custom-theme-item[data-widget-index="1"] {
   grid-area: 1 / 1 / 2 / 2;
   grid-column: 1 / 3;
   grid-row: 1 / 3;
@@ -25,7 +25,7 @@
   width: auto;
 }
 
-.custom-theme-item:nth-child(3) {
+.custom-theme-item[data-widget-index="2"] {
   grid-area: 1 / 3 / 2 / 4;
   grid-column: 3 / 5;
   grid-row: 1 / 3;
@@ -33,7 +33,7 @@
   width: auto;
 }
 
-.custom-theme-item:nth-child(4) {
+.custom-theme-item[data-widget-index="3"] {
   grid-area: 1 / 5 / 2 / 6;
   grid-column: 5 / 7;
   grid-row: 1 / 3;
@@ -41,7 +41,7 @@
   width: auto;
 }
 
-.custom-theme-item:nth-child(5) {
+.custom-theme-item[data-widget-index="4"] {
   grid-area: 1 / 7 / 2 / 8;
   grid-column: 7 / 9;
   grid-row: 1 / 3;
@@ -49,7 +49,7 @@
   width: auto;
 }
 
-.custom-theme-item:nth-child(6) {
+.custom-theme-item[data-widget-index="5"] {
   grid-area: 3 / 1 / 4 / 2;
   grid-column: 1 / 4;
   grid-row: 3 / 6;
@@ -57,7 +57,7 @@
   width: auto;
 }
 
-.custom-theme-item:nth-child(7) {
+.custom-theme-item[data-widget-index="6"] {
   grid-area: 3 / 4 / 4 / 5;
   grid-column: 4 / 7;
   grid-row: 3 / 6;
@@ -65,7 +65,7 @@
   width: auto;
 }
 
-.custom-theme-item:nth-child(8) {
+.custom-theme-item[data-widget-index="7"] {
   grid-area: 3 / 7 / 4 / 8;
   grid-column: 7 / 9;
   grid-row: 3 / 6;
@@ -73,7 +73,7 @@
   width: auto;
 }
 
-.custom-theme-item:nth-child(9) {
+.custom-theme-item[data-widget-index="8"] {
   grid-area: 6 / 1 / 7 / 2;
   grid-column: 1 / 5;
   grid-row: 6 / 9;
@@ -81,7 +81,7 @@
   width: auto;
 }
 
-.custom-theme-item:nth-child(10) {
+.custom-theme-item[data-widget-index="9"] {
   grid-area: 6 / 5 / 7 / 6;
   grid-row: 6 / 9;
   grid-column: 5 / 9;
@@ -89,8 +89,8 @@
   width: auto;
 }
 
-/* Upload/Update Layout Styles */
-.upload-update-container {
+/* Upload Layout Styles */
+.upload-container {
   display: grid;
   grid-template-columns: 1fr 1fr 1fr 1fr 1fr 1fr 1fr 1fr 1fr 1fr;
   grid-template-rows: 100px 100px 100px 100px 100px 100px 100px 100px;
@@ -99,14 +99,71 @@
   justify-items: stretch;
 }
 
-.upload-update-item:nth-child(1) {
+/* Update Layout Styles */
+.update-container {
+  display: grid;
+  grid-template-columns: repeat(10, 1fr);
+  grid-template-rows: repeat(8, 100px);
+  gap: 10px 10px;
+  grid-auto-columns: auto;
+  justify-items: stretch;
+  width: 100%;
+  height: 100%;
+  min-height: 800px;
+  padding: 20px;
+}
+
+.upload-item[data-widget-index="0"] {
   grid-row: 1 / 9;
   grid-column: 9 / 11;
   height: auto;
   width: auto;
 }
 
-.upload-update-item:nth-child(2) {
+/* Update page specific styles - 5 widgets */
+/* Widget order: 1=HistoryTree(右側), 2=ProductUpdate(左上), 3=SupplierUpdate(左下), 4=VoidPallet(中間大), 5=PendingUpdates(底部) */
+.update-item[data-widget-index="0"] {
+  /* History Tree - 最右邊 */
+  grid-row: 1 / 9;
+  grid-column: 9 / 11;
+  height: auto;
+  width: auto;
+}
+
+.update-item[data-widget-index="1"] {
+  /* Product Update - 左上 */
+  grid-column: 1 / 4;
+  grid-row: 1 / 5;
+  height: auto;
+  width: auto;
+}
+
+.update-item[data-widget-index="2"] {
+  /* Supplier Update - 左下 */
+  grid-column: 1 / 4;
+  grid-row: 5 / 9;
+  height: auto;
+  width: auto;
+}
+
+.update-item[data-widget-index="3"] {
+  /* Void Pallet - 中間大塊 */
+  grid-row: 1 / 6;
+  grid-column: 4 / 9;
+  height: auto;
+  width: auto;
+}
+
+.update-item[data-widget-index="4"] {
+  /* Pending Updates - 底部 */
+  grid-column: 4 / 9;
+  grid-row: 6 / 9;
+  height: auto;
+  width: auto;
+}
+
+/* Upload page specific styles - 7 widgets */
+.upload-item[data-widget-index="1"] {
   grid-area: 1 / 1 / 2 / 2;
   grid-column: 1 / 4;
   grid-row: 1 / 9;
@@ -114,7 +171,7 @@
   width: auto;
 }
 
-.upload-update-item:nth-child(3) {
+.upload-item[data-widget-index="2"] {
   grid-area: 1 / 5 / 2 / 6;
   grid-column: 4 / 7;
   grid-row: 1 / 9;
@@ -122,25 +179,25 @@
   width: auto;
 }
 
-.upload-update-item:nth-child(4) {
+.upload-item[data-widget-index="3"] {
   grid-area: 1 / 7 / 2 / 8;
   grid-column: 7 / 9;
   grid-row: 1 / 3;
 }
 
-.upload-update-item:nth-child(5) {
+.upload-item[data-widget-index="4"] {
   grid-area: 3 / 7 / 4 / 8;
   grid-column: 7 / 9;
   grid-row: 3 / 5;
 }
 
-.upload-update-item:nth-child(6) {
+.upload-item[data-widget-index="5"] {
   grid-area: 5 / 7 / 6 / 8;
   grid-column: 7 / 9;
   grid-row: 5 / 7;
 }
 
-.upload-update-item:nth-child(7) {
+.upload-item[data-widget-index="6"] {
   grid-area: 7 / 7 / 8 / 8;
   grid-column: 7 / 9;
   grid-row: 7 / 9;
@@ -156,14 +213,14 @@
   justify-items: stretch;
 }
 
-.stock-management-item:nth-child(1) {
+.stock-management-item[data-widget-index="0"] {
   grid-row: 1 / 9;
   grid-column: 9 / 11;
   height: auto;
   width: auto;
 }
 
-.stock-management-item:nth-child(2) {
+.stock-management-item[data-widget-index="1"] {
   grid-area: 1 / 1 / 2 / 2;
   grid-column: 1 / 6;
   grid-row: 1 / 9;
@@ -171,19 +228,19 @@
   width: auto;
 }
 
-.stock-management-item:nth-child(3) {
+.stock-management-item[data-widget-index="2"] {
   grid-area: 1 / 6 / 2 / 7;
   grid-column: 6 / 9;
   grid-row: 1 / 4;
 }
 
-.stock-management-item:nth-child(4) {
+.stock-management-item[data-widget-index="3"] {
   grid-area: 4 / 6 / 5 / 7;
   grid-column: 6 / 9;
   grid-row: 4 / 7;
 }
 
-.stock-management-item:nth-child(5) {
+.stock-management-item[data-widget-index="4"] {
   grid-area: 7 / 6 / 8 / 7;
   grid-row: 7 / 9;
   grid-column: 6 / 9;
@@ -199,56 +256,56 @@
   justify-items: stretch;
 }
 
-.system-item:nth-child(1) {
+.system-item[data-widget-index="0"] {
   grid-row: 1 / 9;
   grid-column: 9 / 11;
   height: auto;
   width: auto;
 }
 
-.system-item:nth-child(2) {
+.system-item[data-widget-index="1"] {
   grid-area: 3 / 1 / 4 / 2;
   grid-column: 1 / 4;
   grid-row: 1 / 2;
 }
 
-.system-item:nth-child(3) {
+.system-item[data-widget-index="2"] {
   grid-area: 2 / 1 / 3 / 2;
   grid-column: 1 / 4;
   grid-row: 2 / 3;
 }
 
-.system-item:nth-child(4) {
+.system-item[data-widget-index="3"] {
   grid-area: 3 / 1 / 4 / 2;
   grid-column: 1 / 4;
   grid-row: 3 / 4;
 }
 
-.system-item:nth-child(5) {
+.system-item[data-widget-index="4"] {
   grid-area: 1 / 5 / 2 / 6;
   grid-row: 1 / 2;
   grid-column: 5 / 8;
 }
 
-.system-item:nth-child(6) {
+.system-item[data-widget-index="5"] {
   grid-area: 2 / 5 / 3 / 6;
   grid-row: 2 / 3;
   grid-column: 5 / 8;
 }
 
-.system-item:nth-child(7) {
+.system-item[data-widget-index="6"] {
   grid-area: 3 / 5 / 4 / 6;
   grid-row: 3 / 4;
   grid-column: 5 / 8;
 }
 
-.system-item:nth-child(8) {
+.system-item[data-widget-index="7"] {
   grid-area: 4 / 1 / 5 / 2;
   grid-column: 1 / 4;
   grid-row: 4 / 5;
 }
 
-.system-item:nth-child(9) {
+.system-item[data-widget-index="8"] {
   grid-area: 4 / 5 / 5 / 6;
   grid-row: 4 / 5;
   grid-column: 5 / 8;
@@ -257,40 +314,29 @@
 /* Analysis Layout Styles */
 .analysis-container {
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr 1fr 1fr 1fr 1fr 1fr 1fr 1fr;
-  grid-template-rows: 100px 100px 100px 100px 100px 100px 100px 100px;
+  grid-template-columns: 1fr 1fr 1fr 1fr 1fr 1fr 1fr 1fr 1fr 1fr 1fr 1fr;
+  grid-template-rows: 1fr 1fr 1fr 1fr 1fr 1fr 1fr 1fr;
   gap: 10px 10px;
   grid-auto-columns: auto;
   justify-items: stretch;
+  width: 100%;
+  height: 100%;
+  min-height: 800px;
+  padding: 20px;
 }
 
-.analysis-item:nth-child(1) {
-  grid-row: 1 / 9;
-  grid-column: 9 / 11;
+/* Analysis page only has 2 widgets */
+/* 根據 adminDashboardLayouts.ts 配置：widget1=HistoryTree, widget2=AnalysisExpandableCards */
+.analysis-item[data-widget-index="0"] {
+  /* History Tree (widget1) - 右邊 */
+  grid-area: widget1;
   height: auto;
   width: auto;
 }
 
-.analysis-item:nth-child(2) {
-  grid-area: 3 / 1 / 4 / 2;
-  grid-column: 1 / 5;
-  grid-row: 1 / 5;
-}
-
-.analysis-item:nth-child(3) {
-  grid-area: 1 / 5 / 2 / 6;
-  grid-row: 1 / 5;
-  grid-column: 5 / 9;
-}
-
-.analysis-item:nth-child(4) {
-  grid-area: 5 / 1 / 6 / 2;
-  grid-column: 1 / 5;
-  grid-row: 5 / 9;
-}
-
-.analysis-item:nth-child(5) {
-  grid-area: 5 / 5 / 6 / 6;
-  grid-column: 5 / 9;
-  grid-row: 5 / 9;
+.analysis-item[data-widget-index="1"] {
+  /* AnalysisExpandableCards (widget2) - 主要區域 */
+  grid-area: widget2;
+  height: auto;
+  width: auto;
 }

@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ClipboardDocumentListIcon, ChevronDownIcon } from '@heroicons/react/24/outline';
 import { useAcoOrders, useAcoOrderProgress } from '../../hooks/useAdminDashboard';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 
 export function AcoOrderProgress() {
   const [selectedOrderRef, setSelectedOrderRef] = useState<number | null>(null);
@@ -32,6 +33,25 @@ export function AcoOrderProgress() {
       setSelectedOrderRef(orders[0].order_ref);
     }
   }, [orders, selectedOrderRef]);
+
+  // Check unified service state
+  const [isUsingUnifiedService, setIsUsingUnifiedService] = useState(false);
+  
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setIsUsingUnifiedService(localStorage.getItem('useUnifiedAcoOrderService') === 'true');
+    }
+  }, []);
+  
+  const toggleUnifiedService = (enabled: boolean) => {
+    setIsUsingUnifiedService(enabled);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('useUnifiedAcoOrderService', enabled.toString());
+      toast.info(`Switched to ${enabled ? 'Unified' : 'Legacy'} ACO order service`);
+      // Trigger reload to fetch with new service
+      window.location.reload();
+    }
+  };
 
   return (
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
@@ -151,6 +171,21 @@ export function AcoOrderProgress() {
           </div>
         </div>
       </div>
+      
+      {/* Service Toggle - Development Only */}
+      {process.env.NODE_ENV !== 'production' && (
+        <div className="mt-4 p-3 bg-gray-800/50 rounded-lg border border-gray-700">
+          <div className="flex items-center justify-between">
+            <label className="text-xs text-gray-400">Use Unified ACO Service:</label>
+            <input
+              type="checkbox"
+              checked={isUsingUnifiedService}
+              onChange={(e) => toggleUnifiedService(e.target.checked)}
+              className="w-4 h-4"
+            />
+          </div>
+        </div>
+      )}
     </motion.div>
   );
 }

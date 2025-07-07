@@ -549,11 +549,7 @@ input ScanFilter {
   dateRange: DateRangeInput
 }
 
-# 通用輸入類型
-input DateRangeInput {
-  from: Date
-  to: Date
-}
+# 通用輸入類型 (已經在上面定義了)
 
 # 自定義標量類型
 scalar DateTime
@@ -651,140 +647,13 @@ type StocktakeEdge implements Edge {
   cursor: String!
 }
 
-# 查詢操作
-extend type Query {
-  # 產品查詢
-  product(id: ID!): ProductResult!
-  products(
-    filter: ProductFilter
-    sort: [SortInput!]
-    pagination: PaginationInput
-  ): ProductConnection!
-  
-  # 托盤查詢
-  pallet(id: ID!): PalletResult!
-  pallets(
-    filter: PalletFilter
-    sort: [SortInput!]
-    pagination: PaginationInput
-  ): PalletConnection!
-  
-  # 庫存查詢
-  inventoryRecord(id: ID!): InventoryResult!
-  inventory(
-    filter: InventoryFilter
-    sort: [SortInput!]
-    pagination: PaginationInput
-  ): InventoryConnection!
-  
-  # 移動記錄查詢
-  movement(id: ID!): MovementResult!
-  movements(
-    filter: MovementFilter
-    sort: [SortInput!]
-    pagination: PaginationInput
-  ): MovementConnection!
-  
-  # 訂單查詢
-  order(id: ID!): OrderResult!
-  orders(
-    filter: OrderFilter
-    sort: [SortInput!]
-    pagination: PaginationInput
-  ): OrderConnection!
-  
-  # 用戶查詢
-  user(id: ID!): UserResult!
-  users(
-    filter: UserFilter
-    sort: [SortInput!]
-    pagination: PaginationInput
-  ): UserConnection!
-  
-  # 庫存盤點查詢
-  stocktakeRecord(id: ID!): StocktakeResult!
-  stocktakeRecords(
-    filter: StocktakeFilter
-    sort: [SortInput!]
-    pagination: PaginationInput
-  ): StocktakeConnection!
-  
-  # 業務邏輯查詢 (使用 Connection 分頁模式)
-  palletsByLocation(
-    location: LocationType!
-    pagination: PaginationInput
-    sort: SortInput
-  ): PalletConnection!
-  
-  lowStockProducts(
-    threshold: Int = 10
-    pagination: PaginationInput
-    sort: SortInput
-  ): ProductConnection!
-  
-  pendingOrders(
-    pagination: PaginationInput
-    sort: SortInput
-  ): OrderConnection!
-  
-  recentMovements(
-    limit: Int = 20
-    pagination: PaginationInput
-    sort: SortInput
-  ): MovementConnection!
-  
-  stockLevels(
-    pagination: PaginationInput
-    sort: SortInput
-  ): InventoryConnection!
-  
-  activeStocktakeSessions(
-    pagination: PaginationInput
-    sort: SortInput
-  ): StocktakeSessionConnection!
-}
+# 這部分已移至上面的 Query 定義中
 
-# 變更操作
-extend type Mutation {
-  # 產品管理
-  createProduct(input: CreateProductInput!): ProductResult!
-  updateProduct(id: ID!, input: UpdateProductInput!): ProductResult!
-  deleteProduct(id: ID!): DeleteResult!
-  
-  # 托盤管理
-  createPallet(input: CreatePalletInput!): PalletResult!
-  updatePallet(id: ID!, input: UpdatePalletInput!): PalletResult!
-  deletePallet(id: ID!): DeleteResult!
-  movePallet(input: MovePalletInput!): MovementResult!
-  
-  # 庫存管理
-  updateInventory(input: UpdateInventoryInput!): InventoryResult!
-  adjustStock(input: StockAdjustmentInput!): AdjustInventoryResult!
-  transferStock(input: StockTransferInput!): TransferResult!
-  
-  # 訂單管理
-  createOrder(input: CreateOrderInput!): OrderResult!
-  updateOrder(id: ID!, input: UpdateOrderInput!): OrderResult!
-  loadPalletToOrder(input: LoadPalletInput!): OrderResult!
-  unloadPalletFromOrder(input: UnloadPalletInput!): OrderResult!
-  completeOrder(id: ID!): OrderResult!
-  
-  # 庫存盤點
-  startStocktakeSession(input: StartStocktakeSessionInput!): StocktakeSessionResult!
-  recordStocktakeCount(input: RecordStocktakeInput!): StocktakeResult!
-  endStocktakeSession(sessionId: ID!): StocktakeSessionResult!
-  
-  # GRN 管理
-  createGRN(input: CreateGRNInput!): GRNResult!
-  updateGRN(id: ID!, input: UpdateGRNInput!): GRNResult!
-  
-  # 批量操作
-  bulkUpdateInventory(inputs: [UpdateInventoryInput!]!): BulkInventoryResult!
-  bulkCreatePallets(inputs: [CreatePalletInput!]!): BulkPalletResult!
-}
+# 額外的 Mutation 已整合到主要 Mutation 類型中
 
 # 訂閱操作 (實時更新)
-extend type Subscription {
+# 額外的 Subscription 方法
+type SubscriptionExtensions {
   # 庫存變化
   inventoryUpdated(productCode: String): InventoryRecord!
   stockLevelChanged: InventoryRecord!

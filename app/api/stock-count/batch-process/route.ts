@@ -1,11 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-import { cookies } from 'next/headers';
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+import { createClient } from '@/app/utils/supabase/server';
+import { createInventoryService } from '@/lib/inventory/services';
+import { getCurrentUserId, getUserDetails } from '@/lib/inventory/utils/authHelpers';
+import { getUserIdFromEmail } from '@/lib/utils/getUserId';
 
 export async function POST(req: NextRequest) {
   try {
@@ -19,30 +16,33 @@ export async function POST(req: NextRequest) {
       }, { status: 400 });
     }
 
+    // 創建 Supabase 客戶端和服務
+    const supabase = await createClient();
+    const inventoryService = createInventoryService(supabase);
+
     // 獲取當前用戶信息
-    const cookieStore = cookies();
-    const userEmail = cookieStore.get('user_email')?.value;
+    const { data: { user } } = await supabase.auth.getUser();
     
-    if (!userEmail) {
+    if (!user || !user.email) {
       return NextResponse.json({
         success: false,
         error: 'User not authenticated'
       }, { status: 401 });
     }
 
-    // 獲取用戶ID和名稱
-    const { data: userData, error: userError } = await supabase
-      .from('data_id')
-      .select('id, name')
-      .eq('email', userEmail)
-      .single();
-
-    if (userError || !userData) {
+    // 使用統一的 getUserIdFromEmail 函數
+    const userId = await getUserIdFromEmail(user.email);
+    
+    if (!userId) {
       return NextResponse.json({
         success: false,
-        error: 'User not found'
-      }, { status: 404 });
+        error: 'User ID not found'
+      }, { status: 401 });
     }
+
+    // 獲取用戶名稱
+    const userDetails = await getUserDetails(supabase, userId);
+    const userName = userDetails?.name || user.email;
 
     let successCount = 0;
     let errorCount = 0;
@@ -111,8 +111,8 @@ export async function POST(req: NextRequest) {
                 product_desc: productData?.description || scan.product_desc,
                 remain_qty: currentRemainQty,
                 counted_qty: 0,
-                counted_id: userData.id,
-                counted_name: userData.name
+                counted_id: userId,
+                counted_name: userName
               });
               
             if (initError) {
@@ -149,8 +149,8 @@ export async function POST(req: NextRequest) {
             product_desc: productData?.description || scan.product_desc,
             remain_qty: newRemainQty,
             counted_qty: scan.counted_qty,
-            counted_id: userData.id,
-            counted_name: userData.name
+            counted_id: userId,
+            counted_name: userName
           });
 
         if (insertError) {

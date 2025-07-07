@@ -1,19 +1,46 @@
 /**
  * Admin Dashboard Content Component
  * 根據不同主題渲染對應的儀表板內容
+ * Phase 3.1.2: 使用動態導入優化
  */
 
 'use client';
 
-import React from 'react';
+import React, { lazy, Suspense, useEffect, useMemo } from 'react';
 import { TimeFrame } from '@/app/components/admin/UniversalTimeRangeSelector';
 import { adminDashboardLayouts } from './adminDashboardLayouts';
 import { AdminWidgetRenderer } from './AdminWidgetRenderer';
-import { CustomThemeLayout } from './CustomThemeLayout';
-import { UploadUpdateLayout } from './UploadUpdateLayout';
-import { StockManagementLayout } from './StockManagementLayout';
-import { SystemLayout } from './SystemLayout';
-import { AnalysisLayout } from './AnalysisLayout';
+import { Skeleton } from '@/components/ui/skeleton';
+import { optimizedWidgetLoader, preloadRouteWidgets } from './LazyWidgetRegistry';
+import { smartPreloader } from '@/lib/widgets/enhanced-registry';
+import { useWidgetRegistry } from '@/app/hooks/useWidgetRegistry';
+
+// 動態導入 theme layouts - 使用 webpack magic comments
+const ThemeLayouts = {
+  injection: lazy(() => import(/* webpackChunkName: "theme-injection" */ './CustomThemeLayout').then(m => ({ default: m.CustomThemeLayout }))),
+  pipeline: lazy(() => import(/* webpackChunkName: "theme-pipeline" */ './CustomThemeLayout').then(m => ({ default: m.CustomThemeLayout }))),
+  warehouse: lazy(() => import(/* webpackChunkName: "theme-warehouse" */ './CustomThemeLayout').then(m => ({ default: m.CustomThemeLayout }))),
+  upload: lazy(() => import(/* webpackChunkName: "theme-upload" */ './UploadUpdateLayout').then(m => ({ default: m.UploadUpdateLayout }))),
+  update: lazy(() => import(/* webpackChunkName: "theme-update" */ './UploadUpdateLayout').then(m => ({ default: m.UploadUpdateLayout }))),
+  'stock-management': lazy(() => import(/* webpackChunkName: "theme-stock" */ './StockManagementLayout').then(m => ({ default: m.StockManagementLayout }))),
+  system: lazy(() => import(/* webpackChunkName: "theme-system" */ './SystemLayout').then(m => ({ default: m.SystemLayout }))),
+  analysis: lazy(() => import(/* webpackChunkName: "theme-analysis" */ './AnalysisLayout').then(m => ({ default: m.AnalysisLayout }))),
+};
+
+// Theme loading skeleton
+const ThemeLoadingSkeleton = () => (
+  <div className="h-full w-full p-6 space-y-4">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      {[1, 2, 3, 4, 5, 6].map(i => (
+        <div key={i} className="space-y-3">
+          <Skeleton className="h-48 w-full bg-slate-700" />
+          <Skeleton className="h-4 w-3/4 bg-slate-700" />
+          <Skeleton className="h-4 w-1/2 bg-slate-700" />
+        </div>
+      ))}
+    </div>
+  </div>
+);
 
 interface AdminDashboardContentProps {
   theme: string;
@@ -24,105 +51,54 @@ export const AdminDashboardContent: React.FC<AdminDashboardContentProps> = ({
   theme,
   timeFrame
 }) => {
-  // Use custom layout for injection, pipeline, and warehouse themes
-  if (theme === 'injection' || theme === 'pipeline' || theme === 'warehouse') {
-    const layout = adminDashboardLayouts[theme] || adminDashboardLayouts.overview;
-    
-    return (
-      <CustomThemeLayout theme={theme} timeFrame={timeFrame}>
-        {layout.widgets.map((widget, index) => (
-          <AdminWidgetRenderer
-            key={`${widget.gridArea}-${index}`}
-            config={widget}
-            theme={theme}
-            timeFrame={timeFrame}
-            index={index}
-          />
-        ))}
-      </CustomThemeLayout>
-    );
-  }
+  // 確保 widget registry 已初始化
+  const { isInitialized, error } = useWidgetRegistry();
   
-  // Use upload/update layout for upload and update themes
-  if (theme === 'upload' || theme === 'update') {
-    const layout = adminDashboardLayouts[theme] || adminDashboardLayouts.overview;
+  // 預加載當前路由的 widgets
+  useEffect(() => {
+    if (!isInitialized) return;
     
-    return (
-      <UploadUpdateLayout theme={theme} timeFrame={timeFrame}>
-        {layout.widgets.map((widget, index) => (
-          <AdminWidgetRenderer
-            key={`${widget.gridArea}-${index}`}
-            config={widget}
-            theme={theme}
-            timeFrame={timeFrame}
-            index={index}
-          />
-        ))}
-      </UploadUpdateLayout>
-    );
-  }
-  
-  // Use stock management layout for stock-management theme
-  if (theme === 'stock-management') {
-    const layout = adminDashboardLayouts[theme] || adminDashboardLayouts.overview;
+    const currentRoute = `/admin/${theme}`;
     
-    return (
-      <StockManagementLayout theme={theme} timeFrame={timeFrame}>
-        {layout.widgets.map((widget, index) => (
-          <AdminWidgetRenderer
-            key={`${widget.gridArea}-${index}`}
-            config={widget}
-            theme={theme}
-            timeFrame={timeFrame}
-            index={index}
-          />
-        ))}
-      </StockManagementLayout>
-    );
-  }
-  
-  // Use system layout for system theme
-  if (theme === 'system') {
-    const layout = adminDashboardLayouts[theme] || adminDashboardLayouts.overview;
+    // 使用 OptimizedWidgetLoader 預加載
+    optimizedWidgetLoader.preloadForRoute(currentRoute);
     
-    return (
-      <SystemLayout theme={theme} timeFrame={timeFrame}>
-        {layout.widgets.map((widget, index) => (
-          <AdminWidgetRenderer
-            key={`${widget.gridArea}-${index}`}
-            config={widget}
-            theme={theme}
-            timeFrame={timeFrame}
-            index={index}
-          />
-        ))}
-      </SystemLayout>
-    );
-  }
-  
-  // Use analysis layout for analysis theme
-  if (theme === 'analysis') {
-    const layout = adminDashboardLayouts[theme] || adminDashboardLayouts.overview;
+    // 使用 SmartPreloader 進行智能預測預加載
+    smartPreloader.preloadForRoute(currentRoute);
     
-    return (
-      <AnalysisLayout theme={theme} timeFrame={timeFrame}>
-        {layout.widgets.map((widget, index) => (
-          <AdminWidgetRenderer
-            key={`${widget.gridArea}-${index}`}
-            config={widget}
-            theme={theme}
-            timeFrame={timeFrame}
-            index={index}
-          />
-        ))}
-      </AnalysisLayout>
-    );
-  }
+    // 預加載當前主題的 widgets
+    preloadRouteWidgets(currentRoute).catch(console.error);
+  }, [theme, isInitialized]);
   
-  // Default layout for other themes
+  // 獲取對應的 Layout 組件
+  const ThemeLayout = useMemo(() => {
+    if (theme in ThemeLayouts) {
+      return ThemeLayouts[theme as keyof typeof ThemeLayouts];
+    }
+    return null;
+  }, [theme]);
+  
+  // 獲取 layout 配置
   const layout = adminDashboardLayouts[theme];
   
-  // If no layout is found for the theme, show an empty state
+  // 如果正在初始化，顯示加載狀態
+  if (!isInitialized) {
+    return <ThemeLoadingSkeleton />;
+  }
+  
+  // 如果初始化出錯，顯示錯誤
+  if (error) {
+    return (
+      <div className="h-full w-full flex items-center justify-center">
+        <div className="text-center text-red-500">
+          <h2 className="text-xl font-semibold mb-2">Failed to Initialize Widgets</h2>
+          <p>{error.message}</p>
+        </div>
+      </div>
+    );
+  }
+  
+  // 如果沒有找到對應的 layout，顯示空狀態
   if (!layout) {
     return (
       <div className="h-full w-full flex items-center justify-center">
@@ -133,7 +109,34 @@ export const AdminDashboardContent: React.FC<AdminDashboardContentProps> = ({
       </div>
     );
   }
-
+  
+  // 渲染 widgets
+  const renderWidgets = () => (
+    <>
+      {layout.widgets.map((widget, index) => (
+        <AdminWidgetRenderer
+          key={`${widget.gridArea}-${index}`}
+          config={widget}
+          theme={theme}
+          timeFrame={timeFrame}
+          index={index}
+        />
+      ))}
+    </>
+  );
+  
+  // 如果有對應的 ThemeLayout 組件，使用動態加載
+  if (ThemeLayout) {
+    return (
+      <Suspense fallback={<ThemeLoadingSkeleton />}>
+        <ThemeLayout theme={theme} timeFrame={timeFrame}>
+          {renderWidgets()}
+        </ThemeLayout>
+      </Suspense>
+    );
+  }
+  
+  // 默認佈局（如果沒有特定的 Layout 組件）
   return (
     <div 
       className="h-full w-full"
@@ -147,15 +150,7 @@ export const AdminDashboardContent: React.FC<AdminDashboardContentProps> = ({
         width: '100%'
       }}
     >
-      {layout.widgets.map((widget, index) => (
-        <AdminWidgetRenderer
-          key={`${widget.gridArea}-${index}`}
-          config={widget}
-          theme={theme}
-          timeFrame={timeFrame}
-          index={index}
-        />
-      ))}
+      {renderWidgets()}
     </div>
   );
 };

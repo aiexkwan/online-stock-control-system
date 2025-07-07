@@ -4,6 +4,7 @@
 // import { createServerActionClient } from '@supabase/auth-helpers-nextjs'; // OLD
 // import { cookies } from 'next/headers'; // Not needed directly, createClient handles it
 import { createClient } from '@/app/utils/supabase/server'; // NEW: Using @supabase/ssr helper
+import { getUserIdFromEmail } from '@/lib/utils/getUserId'; // 統一的用戶 ID 獲取函數
 import { format, isValid } from 'date-fns'; // 用於日期格式化
 // import type { Database } from '../lib/database.types'; // Path still incorrect, commenting out for now
 // 如果您有資料庫類型定義，例如： import { Database } from '@/types_db';
@@ -366,24 +367,15 @@ export async function getGrnReportData(
   let userId: string | null = null;
 
   try {
-    // 🆕 首先從 data_id 表中根據 email 查找對應的 id
-    const { data: userIdData, error: userIdError } = await supabase
-      .from('data_id')
-      .select('id')
-      .eq('email', trimmedUserEmail)
-      .single();
-
-    if (userIdError) {
-      console.error(`Error fetching user ID for email ${trimmedUserEmail}:`, userIdError.message);
-      return null;
-    }
-
-    if (!userIdData || !userIdData.id) {
+    // 🆕 使用統一的 getUserIdFromEmail 函數
+    const userIdResult = await getUserIdFromEmail(trimmedUserEmail);
+    
+    if (!userIdResult) {
       console.error(`No user ID found for email ${trimmedUserEmail}`);
       return null;
     }
 
-    userId = userIdData.id.toString();
+    userId = userIdResult.toString();
     process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`Found user ID ${userId} for email ${trimmedUserEmail}`);
 
     // 1. Fetch GRN records for the given grn_ref and material_code

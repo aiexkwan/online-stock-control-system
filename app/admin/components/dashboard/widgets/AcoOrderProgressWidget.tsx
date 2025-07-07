@@ -57,7 +57,7 @@ export const AcoOrderProgressWidget = React.memo(function AcoOrderProgressWidget
       const { data, error } = await supabase
         .from('record_aco')
         .select('*')
-        .gt('remain_qty', 0)
+        .or('finished_qty.is.null,finished_qty.lt.required_qty')
         .order('order_ref', { ascending: false });
 
       if (error) throw error;
@@ -104,14 +104,20 @@ export const AcoOrderProgressWidget = React.memo(function AcoOrderProgressWidget
 
       if (error) throw error;
 
-      const progress: AcoOrderProgress[] = (data || []).map(item => ({
-        code: item.code,
-        required_qty: item.required_qty,
-        remain_qty: item.remain_qty,
-        completed_qty: item.required_qty - item.remain_qty,
-        completion_percentage: Math.round(((item.required_qty - item.remain_qty) / item.required_qty) * 100),
-        latest_update: item.latest_update
-      }));
+      const progress: AcoOrderProgress[] = (data || []).map(item => {
+        const completed = item.finished_qty || 0;
+        const remaining = Math.max(0, item.required_qty - completed);
+        return {
+          code: item.code,
+          required_qty: item.required_qty,
+          remain_qty: remaining,
+          completed_qty: completed,
+          completion_percentage: item.required_qty > 0
+            ? Math.round((completed / item.required_qty) * 100)
+            : 0,
+          latest_update: item.latest_update
+        };
+      });
 
       setOrderProgress(progress);
     } catch (err: any) {

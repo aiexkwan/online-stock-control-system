@@ -3,7 +3,7 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import { getCurrentUserClockNumber, getCurrentUserClockNumberAsync } from '../../hooks/useAuth';
+import { useUserId } from '@/app/hooks/useUserId';
 import { 
   VoidPalletState, 
   PalletInfo, 

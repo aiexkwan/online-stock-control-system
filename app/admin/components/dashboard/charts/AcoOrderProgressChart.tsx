@@ -18,7 +18,7 @@ const GET_ACO_ORDERS = gql`
           order_ref
           code
           required_qty
-          remain_qty
+          finished_qty
           latest_update
         }
       }
@@ -37,14 +37,17 @@ export default function AcoOrderProgressChart({ timeFrame }: AcoOrderProgressCha
     if (!data?.record_acoCollection?.edges) return [];
 
     return data.record_acoCollection.edges.map(({ node }: any) => {
-      const completedQty = node.required_qty - node.remain_qty;
-      const completionRate = (completedQty / node.required_qty) * 100;
+      const completedQty = node.finished_qty || 0;
+      const remainingQty = Math.max(0, node.required_qty - completedQty);
+      const completionRate = node.required_qty > 0 
+        ? (completedQty / node.required_qty) * 100 
+        : 0;
 
       return {
         orderRef: `#${node.order_ref}`,
         code: node.code,
         completed: completedQty,
-        remaining: node.remain_qty,
+        remaining: remainingQty,
         total: node.required_qty,
         completionRate: Math.round(completionRate),
       };

@@ -2,6 +2,8 @@
 
 import { createClient } from '@/app/utils/supabase/server';
 import { clockNumberToEmail, emailToClockNumber } from '@/app/utils/authUtils';
+import { LocationMapper } from '@/lib/inventory/utils/locationMapper';
+import { createInventoryService } from '@/lib/inventory/services';
 import { 
   SearchParams, 
   SearchResult, 
@@ -97,7 +99,7 @@ async function updateACORecord(
     // Find the ACO record by order_ref and code (case-insensitive for product code)
     const { data: acoRecord, error: findError } = await supabase
       .from('record_aco')
-      .select('uuid, remain_qty, code')
+      .select('uuid, required_qty, finished_qty, code')
       .eq('order_ref', refNumber)
       .ilike('code', productCode) // Use ilike for case-insensitive matching
       .single();
@@ -111,7 +113,7 @@ async function updateACORecord(
         // Try to find any records with this order_ref to see what's available
         const { data: allRecords } = await supabase
           .from('record_aco')
-          .select('uuid, code, remain_qty')
+          .select('uuid, code, required_qty, finished_qty')
           .eq('order_ref', refNumber);
         
         process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`[ACO Update] Available records for ref=${refNumber}:`, allRecords);
@@ -132,16 +134,20 @@ async function updateACORecord(
       };
     }
 
-    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`[ACO Update] Found record: uuid=${acoRecord.uuid}, current_remain_qty=${acoRecord.remain_qty}`);
-
-    // Update remain_qty by adding back the voided quantity
-    const newRemainQty = acoRecord.remain_qty + quantity;
+    const currentFinishedQty = acoRecord.finished_qty || 0;
+    const currentRemainQty = Math.max(0, acoRecord.required_qty - currentFinishedQty);
     
-    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`[ACO Update] Updating remain_qty: ${acoRecord.remain_qty} + ${quantity} = ${newRemainQty}`);
+    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`[ACO Update] Found record: uuid=${acoRecord.uuid}, required_qty=${acoRecord.required_qty}, finished_qty=${currentFinishedQty}, current_remain_qty=${currentRemainQty}`);
+
+    // Update finished_qty by subtracting the voided quantity
+    const newFinishedQty = Math.max(0, currentFinishedQty - quantity);
+    const newRemainQty = acoRecord.required_qty - newFinishedQty;
+    
+    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`[ACO Update] Updating finished_qty: ${currentFinishedQty} - ${quantity} = ${newFinishedQty}, new_remain_qty=${newRemainQty}`);
     
     const { error: updateError } = await supabase
       .from('record_aco')
-      .update({ remain_qty: newRemainQty })
+      .update({ finished_qty: newFinishedQty })
       .eq('uuid', acoRecord.uuid);
 
     if (updateError) {
@@ -263,10 +269,11 @@ async function getLatestPalletLocation(plt_num: string): Promise<string | null> 
 }
 
 /**
- * Search pallet information - using pure SQL syntax with auto-detection support
+ * Search pallet information - using UnifiedInventoryService
  */
 export async function searchPalletAction(params: SearchParams): Promise<SearchResult> {
   const supabase = await createClient();
+  const inventoryService = createInventoryService(supabase);
   
   try {
     const { searchValue, searchType } = params;
@@ -275,116 +282,68 @@ export async function searchPalletAction(params: SearchParams): Promise<SearchRe
       return { success: false, error: 'Search value cannot be empty' };
     }
 
-    let query = supabase
-      .from('record_palletinfo')
-      .select('plt_num, product_code, product_qty, series, plt_remark, generate_time');
-
-    // Build query based on search type
-    // Auto-detect if searchType is 'qr' (which maps to series search)
+    // Auto-detect search type
+    let finalSearchType: 'series' | 'pallet_num';
     if (searchType === 'qr') {
-      // QR Code search (series) - try both series and plt_num fields
-      // First try series field
-      const { data: seriesData, error: seriesError } = await query.eq('series', searchValue.trim()).single();
+      // QR codes are usually series, but try to detect
+      finalSearchType = searchValue.includes('/') ? 'pallet_num' : 'series';
+    } else {
+      finalSearchType = searchType as 'series' | 'pallet_num';
+    }
+
+    // Use unified inventory service for search
+    const searchResult = await inventoryService.searchPallet(finalSearchType, searchValue.trim());
+    
+    if (!searchResult.pallet) {
+      // If not found by detected type, try the other type
+      const alternateType = finalSearchType === 'series' ? 'pallet_num' : 'series';
+      const alternateResult = await inventoryService.searchPallet(alternateType, searchValue.trim());
       
-      if (!seriesError && seriesData) {
-        // Found by series, proceed with this data
-        const latestLocation = await getLatestPalletLocation(seriesData.plt_num);
-        
-        // Check if pallet is already voided
-        if (latestLocation === 'Voided' || latestLocation === 'Damaged') {
-          return { success: false, error: `Pallet is already ${latestLocation.toLowerCase()}` };
-        }
-
-        const palletInfo: PalletInfo = {
-          plt_num: seriesData.plt_num,
-          product_code: seriesData.product_code,
-          product_qty: seriesData.product_qty,
-          series: seriesData.series,
-          plt_remark: seriesData.plt_remark,
-          plt_loc: latestLocation,
-          creation_date: seriesData.generate_time,
-          user_id: undefined,
-        };
-
-        return { success: true, data: palletInfo };
+      if (!alternateResult.pallet) {
+        return { success: false, error: searchResult.error || 'Pallet not found' };
       }
       
-      // If not found by series, try plt_num as fallback
-      const { data: pltData, error: pltError } = await supabase
-        .from('record_palletinfo')
-        .select('plt_num, product_code, product_qty, series, plt_remark, generate_time')
-        .eq('plt_num', searchValue.trim())
-        .single();
-        
-      if (pltError) {
-        if (pltError.code === 'PGRST116') {
-          return { success: false, error: 'Pallet not found' };
-        }
-        throw pltError;
-      }
+      // Use alternate result
+      const pallet = alternateResult.pallet;
       
-      if (!pltData) {
-        return { success: false, error: 'Pallet not found' };
-      }
-      
-      // Get latest location from record_history
-      const latestLocation = await getLatestPalletLocation(pltData.plt_num);
-
       // Check if pallet is already voided
-      if (latestLocation === 'Voided' || latestLocation === 'Damaged') {
-        return { success: false, error: `Pallet is already ${latestLocation.toLowerCase()}` };
+      if (pallet.is_voided) {
+        return { success: false, error: `Pallet is already voided` };
       }
 
       const palletInfo: PalletInfo = {
-        plt_num: pltData.plt_num,
-        product_code: pltData.product_code,
-        product_qty: pltData.product_qty,
-        series: pltData.series,
-        plt_remark: pltData.plt_remark,
-        plt_loc: latestLocation,
-        creation_date: pltData.generate_time,
+        plt_num: pallet.plt_num,
+        product_code: pallet.product_code,
+        product_qty: pallet.product_qty,
+        series: pallet.series,
+        plt_remark: pallet.plt_remark,
+        plt_loc: pallet.location || 'Await',
+        creation_date: pallet.generate_time,
         user_id: undefined,
       };
 
       return { success: true, data: palletInfo };
-    } else {
-      // Pallet number search
-      query = query.eq('plt_num', searchValue.trim());
-      
-      const { data, error } = await query.single();
-
-      if (error) {
-        if (error.code === 'PGRST116') {
-          return { success: false, error: 'Pallet not found' };
-        }
-        throw error;
-      }
-
-      if (!data) {
-        return { success: false, error: 'Pallet not found' };
-      }
-
-      // Get latest location from record_history
-      const latestLocation = await getLatestPalletLocation(data.plt_num);
-
-      // Check if pallet is already voided
-      if (latestLocation === 'Voided' || latestLocation === 'Damaged') {
-        return { success: false, error: `Pallet is already ${latestLocation.toLowerCase()}` };
-      }
-
-      const palletInfo: PalletInfo = {
-        plt_num: data.plt_num,
-        product_code: data.product_code,
-        product_qty: data.product_qty,
-        series: data.series,
-        plt_remark: data.plt_remark,
-        plt_loc: latestLocation,
-        creation_date: data.generate_time,
-        user_id: undefined, // user_id field doesn't exist in record_palletinfo
-      };
-
-      return { success: true, data: palletInfo };
     }
+    
+    const pallet = searchResult.pallet;
+    
+    // Check if pallet is already voided
+    if (pallet.is_voided) {
+      return { success: false, error: `Pallet is already voided` };
+    }
+
+    const palletInfo: PalletInfo = {
+      plt_num: pallet.plt_num,
+      product_code: pallet.product_code,
+      product_qty: pallet.product_qty,
+      series: pallet.series,
+      plt_remark: pallet.plt_remark,
+      plt_loc: pallet.location || 'Await',
+      creation_date: pallet.generate_time,
+      user_id: undefined,
+    };
+
+    return { success: true, data: palletInfo };
 
   } catch (error: any) {
     console.error('Error searching pallet:', error);
@@ -567,20 +526,17 @@ export async function voidPalletAction(params: Omit<VoidParams, 'userId'>): Prom
       };
     }
 
-    // 3. Update inventory - deduct from original location
-    const inventoryColumn = getInventoryColumn(palletInfo.plt_loc);
-    const inventoryUpdate: any = {
-      product_code: palletInfo.product_code,
-      latest_update: new Date().toISOString(),
-      plt_num: palletInfo.plt_num,
-    };
-    inventoryUpdate[inventoryColumn] = -palletInfo.product_qty;
-
-    const { error: inventoryError } = await supabase
-      .from('record_inventory')
-      .insert(inventoryUpdate);
-
-    if (inventoryError) {
+    // 3. Use UnifiedInventoryService for void operation
+    const inventoryService = createInventoryService(supabase);
+    
+    try {
+      await inventoryService.voidPallet({
+        palletNum: palletInfo.plt_num,
+        reason: voidReason,
+        operator: clockNumber,
+        remark: `Voided: ${voidReason} at ${new Date().toISOString()}`
+      });
+    } catch (voidError: any) {
       // Rollback pallet remark
       await supabase
         .from('record_palletinfo')
@@ -591,7 +547,7 @@ export async function voidPalletAction(params: Omit<VoidParams, 'userId'>): Prom
 
       return { 
         success: false, 
-        error: `Failed to update inventory: ${inventoryError.message}` 
+        error: `Failed to void pallet: ${voidError.message}` 
       };
     }
 
@@ -812,21 +768,51 @@ export async function processDamageAction(params: Omit<VoidParams, 'userId'>): P
       };
     }
 
-    // 3. Update inventory - deduct all from original location, add to damage
-    const inventoryColumn = getInventoryColumn(palletInfo.plt_loc);
-    const inventoryUpdate: any = {
-      product_code: palletInfo.product_code,
-      damage: damageQuantity,
-      latest_update: new Date().toISOString(),
-      plt_num: palletInfo.plt_num,
-    };
-    inventoryUpdate[inventoryColumn] = -palletInfo.product_qty;
+    // 3. Use TransactionService for damage operation
+    const inventoryService = createInventoryService(supabase);
+    const transactionService = (inventoryService as any).transactionService;
+    
+    try {
+      // Execute damage operation within transaction
+      const result = await transactionService.executeTransaction(async (client: any) => {
+        // Update inventory
+        const inventoryColumn = getInventoryColumn(palletInfo.plt_loc);
+        const inventoryUpdate: any = {
+          product_code: palletInfo.product_code,
+          damage: damageQuantity,
+          latest_update: new Date().toISOString(),
+          plt_num: palletInfo.plt_num,
+        };
+        inventoryUpdate[inventoryColumn] = -palletInfo.product_qty;
 
-    const { error: inventoryError } = await supabase
-      .from('record_inventory')
-      .insert(inventoryUpdate);
+        const { error: inventoryError } = await client
+          .from('record_inventory')
+          .insert(inventoryUpdate);
 
-    if (inventoryError) {
+        if (inventoryError) {
+          throw inventoryError;
+        }
+      }, {
+        description: `Damage processing: ${palletInfo.plt_num}`,
+        logTransaction: true
+      });
+
+      if (!result.success) {
+        // Rollback pallet changes
+        await supabase
+          .from('record_palletinfo')
+          .update({
+            product_qty: palletInfo.product_qty,
+            plt_remark: palletInfo.plt_remark
+          })
+          .eq('plt_num', palletInfo.plt_num);
+
+        return { 
+          success: false, 
+          error: `Failed to update inventory: ${result.error}` 
+        };
+      }
+    } catch (error: any) {
       // Rollback pallet changes
       await supabase
         .from('record_palletinfo')
@@ -838,7 +824,7 @@ export async function processDamageAction(params: Omit<VoidParams, 'userId'>): P
 
       return { 
         success: false, 
-        error: `Failed to update inventory: ${inventoryError.message}` 
+        error: `Failed to update inventory: ${error.message}` 
       };
     }
 
@@ -1082,34 +1068,16 @@ async function deleteGRNRecord(
 
 /**
  * Get inventory column name - corrected mapping based on database structure
+ * @deprecated Use LocationMapper.toDbColumn() directly
  */
 function getInventoryColumn(location: string | null): string {
   if (!location) return 'injection'; // Default value
   
-  process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`[Inventory] Mapping location "${location}" to inventory column`);
+  process.env.NODE_ENV !== "production" && console.log(`[Inventory] Mapping location "${location}" to inventory column`);
   
-  const locationMap: { [key: string]: string } = {
-    // Exact matches for database locations
-    'Injection': 'injection',
-    'Pipeline': 'pipeline', 
-    'Prebook': 'prebook',
-    'Await': 'await',
-    'Awaiting': 'await', // Alternative spelling
-    'Fold Mill': 'fold',
-    'Bulk': 'bulk',
-    'Backcarpark': 'backcarpark',
-    'Back Car Park': 'backcarpark', // Alternative spelling
-    
-    // Fallback mappings for other locations
-    'Warehouse': 'injection',
-    'QC': 'injection', 
-    'Shipping': 'injection',
-    'Production': 'injection',
-    'Storage': 'injection',
-  };
-  
-  const column = locationMap[location] || 'injection';
-  process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`[Inventory] Location "${location}" mapped to column "${column}"`);
+  // Use the unified LocationMapper
+  const column = LocationMapper.toDbColumn(location) || 'injection';
+  process.env.NODE_ENV !== "production" && console.log(`[Inventory] Location "${location}" mapped to column "${column}"`);
   
   return column;
 }

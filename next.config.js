@@ -110,6 +110,182 @@ const nextConfig = {
       };
     }
 
+    // Phase 3.1.2: 路由級代碼分割優化
+    if (!isServer) {
+      // 配置 chunk splitting 策略
+      config.optimization = {
+        ...config.optimization,
+        runtimeChunk: 'single',
+        splitChunks: {
+          chunks: 'all',
+          maxInitialRequests: 25,
+          minSize: 20000,
+          cacheGroups: {
+            // 默認緩存組
+            default: false,
+            vendors: false,
+            
+            // 框架核心
+            framework: {
+              chunks: 'all',
+              name: 'framework',
+              test: /[\\/]node_modules[\\/](react|react-dom|scheduler|prop-types|use-sync-external-store)[\\/]/,
+              priority: 40,
+              enforce: true,
+            },
+            
+            // UI 組件庫
+            lib: {
+              test(module) {
+                return module.size() > 160000 &&
+                  /node_modules[\\/]/.test(module.identifier());
+              },
+              name(module) {
+                const hash = require('crypto')
+                  .createHash('sha1')
+                  .update(module.identifier())
+                  .digest('hex')
+                  .substring(0, 8);
+                return `lib-${hash}`;
+              },
+              priority: 30,
+              minChunks: 1,
+              reuseExistingChunk: true,
+            },
+            
+            // 共用組件
+            commons: {
+              name: 'commons',
+              minChunks: 3, // 提高到 3 次引用才打包到 commons
+              priority: 10, // 降低優先級
+              maxSize: 200000, // 限制 commons chunk 大小為 200KB
+            },
+            
+            // 主題特定 chunks
+            adminThemes: {
+              test: /[\\/]app[\\/]admin[\\/]components[\\/]dashboard[\\/](CustomThemeLayout|UploadUpdateLayout|StockManagementLayout|SystemLayout|AnalysisLayout)/,
+              name: (module, chunks, key) => {
+                const path = module.identifier();
+                const layoutMatch = path.match(/([A-Z][a-z]+)+Layout/);
+                if (layoutMatch) {
+                  return `theme-${layoutMatch[0].toLowerCase().replace('layout', '')}`;
+                }
+                return 'theme-common';
+              },
+              priority: 25,
+              reuseExistingChunk: true,
+            },
+            
+            // Widget chunks
+            widgets: {
+              test: /[\\/]app[\\/]admin[\\/]components[\\/]dashboard[\\/]widgets[\\/]/,
+              name: (module, chunks, key) => {
+                const path = module.identifier();
+                const widgetMatch = path.match(/widgets[\\/]([^\/]+)/);
+                if (widgetMatch) {
+                  const widgetName = widgetMatch[1].replace(/\.tsx?$/, '');
+                  // 將相關 widgets 分組
+                  if (widgetName.includes('Analysis')) return 'widgets-analysis';
+                  if (widgetName.includes('Report')) return 'widgets-reports';
+                  if (widgetName.includes('Chart')) return 'widgets-charts';
+                  if (widgetName.includes('Upload')) return 'widgets-uploads';
+                  return 'widgets-common';
+                }
+                return 'widgets-misc';
+              },
+              priority: 15,
+              minChunks: 1,
+              reuseExistingChunk: true,
+            },
+            
+            // Recharts 單獨打包
+            recharts: {
+              test: /[\\/]node_modules[\\/](recharts|d3-[^\/]+|victory[^\/]*)[\\/]/,
+              name: 'charts-vendor',
+              priority: 35,
+              reuseExistingChunk: true,
+            },
+            
+            // Supabase SDK
+            supabase: {
+              test: /[\\/]node_modules[\\/]@supabase[\\/]/,
+              name: 'supabase-sdk',
+              priority: 35,
+              reuseExistingChunk: true,
+            },
+            
+            // Apollo GraphQL
+            apollo: {
+              test: /[\\/]node_modules[\\/](@apollo|graphql|apollo-[^\/]+)[\\/]/,
+              name: 'apollo-graphql',
+              priority: 34,
+              reuseExistingChunk: true,
+            },
+            
+            // PDF 相關庫
+            pdfLibs: {
+              test: /[\\/]node_modules[\\/](pdf-lib|pdf-parse|pdf2pic|@react-pdf|jspdf|puppeteer)[\\/]/,
+              name: 'pdf-libs',
+              priority: 33,
+              reuseExistingChunk: true,
+            },
+            
+            // Excel 處理庫
+            excelLibs: {
+              test: /[\\/]node_modules[\\/](exceljs|xlsx|file-saver|papaparse)[\\/]/,
+              name: 'excel-libs',
+              priority: 33,
+              reuseExistingChunk: true,
+            },
+            
+            // Radix UI
+            radixUI: {
+              test: /[\\/]node_modules[\\/]@radix-ui[\\/]/,
+              name: 'radix-ui',
+              priority: 32,
+              minChunks: 2,
+              reuseExistingChunk: true,
+            },
+            
+            // Tanstack 庫
+            tanstack: {
+              test: /[\\/]node_modules[\\/]@tanstack[\\/]/,
+              name: 'tanstack-libs',
+              priority: 32,
+              reuseExistingChunk: true,
+            },
+            
+            // AI/LLM 相關庫
+            aiLibs: {
+              test: /[\\/]node_modules[\\/](langchain|@anthropic-ai|openai)[\\/]/,
+              name: 'ai-libs',
+              priority: 31,
+              reuseExistingChunk: true,
+            },
+            
+            // 其他大型庫
+            largeVendors: {
+              test: /[\\/]node_modules[\\/](axios|lodash|date-fns|zod|framer-motion|formik)[\\/]/,
+              name: 'vendor-utils',
+              priority: 30,
+              reuseExistingChunk: true,
+            },
+          },
+        },
+      };
+      
+      // Next.js 已經內建支援 dynamic imports 和 webpack magic comments
+      // 不需要額外的 babel 配置
+      
+      // 配置 prefetch/preload 插件
+      const { DefinePlugin } = require('webpack');
+      config.plugins.push(
+        new DefinePlugin({
+          'process.env.ENABLE_ROUTE_PREFETCH': JSON.stringify(process.env.ENABLE_ROUTE_PREFETCH || 'true'),
+        })
+      );
+    }
+
     return config;
   },
   // 添加 Supabase WebSocket 域名到允許列表

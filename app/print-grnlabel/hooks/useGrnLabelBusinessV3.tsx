@@ -463,7 +463,8 @@ export const useGrnLabelBusinessV3 = ({
     actions,
     weightCalculation,
     palletGeneration,
-    currentUserId
+    currentUserId,
+    printGrnLabels
   ]);
 
   return {

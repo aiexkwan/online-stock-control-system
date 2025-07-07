@@ -42,7 +42,7 @@ export const AcoOrderForm: React.FC<AcoOrderFormProps> = React.memo(({
     <div className="space-y-4">
       <div className="bg-transparent p-4">
         <p className="text-purple-400 text-sm mb-4">
-          Search From ACO Order List
+          Select From ACO Order List
         </p>
         
         {/* ACO Order Ref Selection */}
@@ -61,7 +61,7 @@ export const AcoOrderForm: React.FC<AcoOrderFormProps> = React.memo(({
             ))}
           </select>
           
-          {/* Search Button */}
+          {/* Confirm Button */}
           <button
             type="button"
             className={`w-full py-2 px-4 rounded-md font-medium transition-colors ${
@@ -75,10 +75,10 @@ export const AcoOrderForm: React.FC<AcoOrderFormProps> = React.memo(({
             {acoSearchLoading ? (
               <span className="flex items-center justify-center">
                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                Searching...
+                Confirming...
               </span>
             ) : (
-              'Search Order'
+              'Confirm'
             )}
           </button>
         </div>
@@ -93,10 +93,10 @@ export const AcoOrderForm: React.FC<AcoOrderFormProps> = React.memo(({
         {isAcoOrderExcess && (
           <div className="mt-3 p-3 bg-red-900/20 border border-red-500/30 rounded-md">
             <div className="text-sm font-medium text-red-400">
-              ⚠️ Input Quantity Exceeds Order Remaining
+              ⚠️ Input Quantity Exceeds Order Outstanding
             </div>
             <div className="text-xs text-red-300 mt-1">
-              The total quantity (Quantity × Count) exceeds the remaining quantity for this ACO order. Please adjust your input or contact management.
+              The total quantity (Quantity × Count) exceeds the outstanding quantity for this ACO order. Please adjust your input or contact management.
             </div>
           </div>
         )}

@@ -1,0 +1,145 @@
+/**
+ * Tests for LocationMapper utility
+ */
+
+import { LocationMapper } from '../locationMapper';
+
+describe('LocationMapper', () => {
+  describe('toDbColumn', () => {
+    it('should convert standard location names to database columns', () => {
+      expect(LocationMapper.toDbColumn('PRODUCTION')).toBe('injection');
+      expect(LocationMapper.toDbColumn('PIPELINE')).toBe('pipeline');
+      expect(LocationMapper.toDbColumn('PREBOOK')).toBe('prebook');
+      expect(LocationMapper.toDbColumn('AWAITING')).toBe('await');
+      expect(LocationMapper.toDbColumn('FOLD')).toBe('fold');
+      expect(LocationMapper.toDbColumn('BULK')).toBe('bulk');
+      expect(LocationMapper.toDbColumn('BACK_CARPARK')).toBe('backcarpark');
+      expect(LocationMapper.toDbColumn('DAMAGE')).toBe('damage');
+      expect(LocationMapper.toDbColumn('AWAIT_GRN')).toBe('await_grn');
+    });
+
+    it('should handle aliases correctly', () => {
+      // Production aliases
+      expect(LocationMapper.toDbColumn('injection')).toBe('injection');
+      expect(LocationMapper.toDbColumn('production')).toBe('injection');
+      expect(LocationMapper.toDbColumn('Production')).toBe('injection');
+      
+      // Pipeline aliases
+      expect(LocationMapper.toDbColumn('pipe')).toBe('pipeline');
+      expect(LocationMapper.toDbColumn('PipeLine')).toBe('pipeline');
+      
+      // Awaiting aliases
+      expect(LocationMapper.toDbColumn('await')).toBe('await');
+      expect(LocationMapper.toDbColumn('awaiting')).toBe('await');
+      
+      // Back Carpark aliases
+      expect(LocationMapper.toDbColumn('back carpark')).toBe('backcarpark');
+      expect(LocationMapper.toDbColumn('Back Car Park')).toBe('backcarpark');
+      expect(LocationMapper.toDbColumn('carpark')).toBe('backcarpark');
+    });
+
+    it('should return null for invalid locations', () => {
+      expect(LocationMapper.toDbColumn('invalid')).toBeNull();
+      expect(LocationMapper.toDbColumn('')).toBeNull();
+      expect(LocationMapper.toDbColumn('unknown location')).toBeNull();
+    });
+
+    it('should handle case variations', () => {
+      expect(LocationMapper.toDbColumn('PRODUCTION')).toBe('injection');
+      expect(LocationMapper.toDbColumn('production')).toBe('injection');
+      expect(LocationMapper.toDbColumn('Production')).toBe('injection');
+      expect(LocationMapper.toDbColumn('PrOdUcTiOn')).toBe('injection');
+    });
+  });
+
+  describe('fromDbColumn', () => {
+    it('should convert database columns to standard location names', () => {
+      expect(LocationMapper.fromDbColumn('injection')).toBe('PRODUCTION');
+      expect(LocationMapper.fromDbColumn('pipeline')).toBe('PIPELINE');
+      expect(LocationMapper.fromDbColumn('prebook')).toBe('PREBOOK');
+      expect(LocationMapper.fromDbColumn('await')).toBe('AWAITING');
+      expect(LocationMapper.fromDbColumn('fold')).toBe('FOLD');
+      expect(LocationMapper.fromDbColumn('bulk')).toBe('BULK');
+      expect(LocationMapper.fromDbColumn('backcarpark')).toBe('BACK_CARPARK');
+      expect(LocationMapper.fromDbColumn('damage')).toBe('DAMAGE');
+      expect(LocationMapper.fromDbColumn('await_grn')).toBe('AWAIT_GRN');
+    });
+  });
+
+  describe('isValidLocation', () => {
+    it('should return true for valid locations', () => {
+      expect(LocationMapper.isValidLocation('PRODUCTION')).toBe(true);
+      expect(LocationMapper.isValidLocation('injection')).toBe(true);
+      expect(LocationMapper.isValidLocation('Production')).toBe(true);
+      expect(LocationMapper.isValidLocation('back carpark')).toBe(true);
+    });
+
+    it('should return false for invalid locations', () => {
+      expect(LocationMapper.isValidLocation('invalid')).toBe(false);
+      expect(LocationMapper.isValidLocation('')).toBe(false);
+      expect(LocationMapper.isValidLocation('unknown')).toBe(false);
+    });
+  });
+
+  describe('getDisplayName', () => {
+    it('should return human-readable display names', () => {
+      expect(LocationMapper.getDisplayName('PRODUCTION')).toBe('Production');
+      expect(LocationMapper.getDisplayName('injection')).toBe('Production');
+      expect(LocationMapper.getDisplayName('BACK_CARPARK')).toBe('Back Carpark');
+      expect(LocationMapper.getDisplayName('back carpark')).toBe('Back Carpark');
+      expect(LocationMapper.getDisplayName('AWAIT_GRN')).toBe('Awaiting GRN');
+    });
+
+    it('should return original for invalid locations', () => {
+      expect(LocationMapper.getDisplayName('invalid')).toBe('invalid');
+    });
+  });
+
+  describe('getAllStandardLocations', () => {
+    it('should return all standard location names', () => {
+      const locations = LocationMapper.getAllStandardLocations();
+      expect(locations).toHaveLength(9);
+      expect(locations).toContain('PRODUCTION');
+      expect(locations).toContain('PIPELINE');
+      expect(locations).toContain('PREBOOK');
+      expect(locations).toContain('AWAITING');
+      expect(locations).toContain('FOLD');
+      expect(locations).toContain('BULK');
+      expect(locations).toContain('BACK_CARPARK');
+      expect(locations).toContain('DAMAGE');
+      expect(locations).toContain('AWAIT_GRN');
+    });
+  });
+
+  describe('getAllDbColumns', () => {
+    it('should return all database column names', () => {
+      const columns = LocationMapper.getAllDbColumns();
+      expect(columns).toHaveLength(9);
+      expect(columns).toContain('injection');
+      expect(columns).toContain('pipeline');
+      expect(columns).toContain('prebook');
+      expect(columns).toContain('await');
+      expect(columns).toContain('fold');
+      expect(columns).toContain('bulk');
+      expect(columns).toContain('backcarpark');
+      expect(columns).toContain('damage');
+      expect(columns).toContain('await_grn');
+    });
+  });
+
+  describe('getAllMappings', () => {
+    it('should return complete mapping information', () => {
+      const mappings = LocationMapper.getAllMappings();
+      expect(mappings).toHaveProperty('standardToDb');
+      expect(mappings).toHaveProperty('aliases');
+      expect(mappings).toHaveProperty('displayNames');
+      
+      expect(mappings.displayNames).toHaveLength(9);
+      expect(mappings.displayNames[0]).toEqual({
+        standard: 'PRODUCTION',
+        database: 'injection',
+        display: 'Production'
+      });
+    });
+  });
+});

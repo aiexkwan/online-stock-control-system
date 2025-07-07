@@ -1,0 +1,243 @@
+import { renderHook } from '@testing-library/react';
+import { useRef } from 'react';
+import { useOnClickOutside } from '../useOnClickOutside';
+
+describe('useOnClickOutside', () => {
+  let container: HTMLDivElement;
+  let elementInside: HTMLDivElement;
+  let elementOutside: HTMLDivElement;
+  
+  beforeEach(() => {
+    // Setup DOM structure
+    container = document.createElement('div');
+    elementInside = document.createElement('div');
+    elementOutside = document.createElement('div');
+    
+    container.appendChild(elementInside);
+    document.body.appendChild(container);
+    document.body.appendChild(elementOutside);
+  });
+  
+  afterEach(() => {
+    // Cleanup
+    document.body.innerHTML = '';
+    jest.clearAllMocks();
+  });
+
+  it('should call handler when clicking outside the element', () => {
+    const handler = jest.fn();
+    
+    const { result } = renderHook(() => {
+      const ref = useRef<HTMLDivElement>(container);
+      useOnClickOutside(ref, handler);
+      return ref;
+    });
+    
+    // Click outside
+    const event = new MouseEvent('mousedown', { bubbles: true });
+    elementOutside.dispatchEvent(event);
+    
+    expect(handler).toHaveBeenCalledTimes(1);
+    expect(handler).toHaveBeenCalledWith(expect.any(MouseEvent));
+  });
+
+  it('should not call handler when clicking inside the element', () => {
+    const handler = jest.fn();
+    
+    const { result } = renderHook(() => {
+      const ref = useRef<HTMLDivElement>(container);
+      useOnClickOutside(ref, handler);
+      return ref;
+    });
+    
+    // Click inside
+    const event = new MouseEvent('mousedown', { bubbles: true });
+    elementInside.dispatchEvent(event);
+    
+    expect(handler).not.toHaveBeenCalled();
+  });
+
+  it('should work with different mouse events', () => {
+    const handler = jest.fn();
+    
+    const { result } = renderHook(() => {
+      const ref = useRef<HTMLDivElement>(container);
+      useOnClickOutside(ref, handler, 'mouseup');
+      return ref;
+    });
+    
+    // Mousedown should not trigger
+    const mousedownEvent = new MouseEvent('mousedown', { bubbles: true });
+    elementOutside.dispatchEvent(mousedownEvent);
+    expect(handler).not.toHaveBeenCalled();
+    
+    // Mouseup should trigger
+    const mouseupEvent = new MouseEvent('mouseup', { bubbles: true });
+    elementOutside.dispatchEvent(mouseupEvent);
+    expect(handler).toHaveBeenCalledTimes(1);
+  });
+
+  it('should handle touch events', () => {
+    const handler = jest.fn();
+    
+    const { result } = renderHook(() => {
+      const ref = useRef<HTMLDivElement>(container);
+      useOnClickOutside(ref, handler);
+      return ref;
+    });
+    
+    // Touch outside
+    const touchEvent = new TouchEvent('touchstart', { bubbles: true });
+    elementOutside.dispatchEvent(touchEvent);
+    
+    expect(handler).toHaveBeenCalledTimes(1);
+    expect(handler).toHaveBeenCalledWith(expect.any(TouchEvent));
+  });
+
+  it('should not attach listeners if ref is null', () => {
+    const handler = jest.fn();
+    const addEventListenerSpy = jest.spyOn(document, 'addEventListener');
+    
+    renderHook(() => {
+      const ref = useRef<HTMLDivElement>(null);
+      useOnClickOutside(ref, handler);
+      return ref;
+    });
+    
+    // Should not add listeners
+    expect(addEventListenerSpy).not.toHaveBeenCalled();
+  });
+
+  it('should not attach listeners if handler is null', () => {
+    const addEventListenerSpy = jest.spyOn(document, 'addEventListener');
+    
+    renderHook(() => {
+      const ref = useRef<HTMLDivElement>(container);
+      useOnClickOutside(ref, null as any);
+      return ref;
+    });
+    
+    // Should not add listeners
+    expect(addEventListenerSpy).not.toHaveBeenCalled();
+  });
+
+  it('should cleanup event listeners on unmount', () => {
+    const handler = jest.fn();
+    const removeEventListenerSpy = jest.spyOn(document, 'removeEventListener');
+    
+    const { unmount } = renderHook(() => {
+      const ref = useRef<HTMLDivElement>(container);
+      useOnClickOutside(ref, handler);
+      return ref;
+    });
+    
+    unmount();
+    
+    // Should remove both listeners
+    expect(removeEventListenerSpy).toHaveBeenCalledWith('mousedown', expect.any(Function));
+    expect(removeEventListenerSpy).toHaveBeenCalledWith('touchstart', expect.any(Function));
+  });
+
+  it('should update listeners when dependencies change', () => {
+    const handler1 = jest.fn();
+    const handler2 = jest.fn();
+    
+    const { rerender } = renderHook(
+      ({ handler }) => {
+        const ref = useRef<HTMLDivElement>(container);
+        useOnClickOutside(ref, handler);
+        return ref;
+      },
+      { initialProps: { handler: handler1 } }
+    );
+    
+    // Click with first handler
+    const event1 = new MouseEvent('mousedown', { bubbles: true });
+    elementOutside.dispatchEvent(event1);
+    expect(handler1).toHaveBeenCalledTimes(1);
+    expect(handler2).not.toHaveBeenCalled();
+    
+    // Change handler
+    rerender({ handler: handler2 });
+    
+    // Click with second handler
+    const event2 = new MouseEvent('mousedown', { bubbles: true });
+    elementOutside.dispatchEvent(event2);
+    expect(handler1).toHaveBeenCalledTimes(1); // Still 1
+    expect(handler2).toHaveBeenCalledTimes(1);
+  });
+
+  it('should handle clicks on the element itself', () => {
+    const handler = jest.fn();
+    
+    const { result } = renderHook(() => {
+      const ref = useRef<HTMLDivElement>(container);
+      useOnClickOutside(ref, handler);
+      return ref;
+    });
+    
+    // Click on the element itself (not inside)
+    const event = new MouseEvent('mousedown', { bubbles: true });
+    container.dispatchEvent(event);
+    
+    expect(handler).not.toHaveBeenCalled();
+  });
+
+  it('should work with nested elements', () => {
+    const handler = jest.fn();
+    const deeplyNested = document.createElement('div');
+    const nested1 = document.createElement('div');
+    const nested2 = document.createElement('div');
+    
+    nested1.appendChild(nested2);
+    nested2.appendChild(deeplyNested);
+    elementInside.appendChild(nested1);
+    
+    const { result } = renderHook(() => {
+      const ref = useRef<HTMLDivElement>(container);
+      useOnClickOutside(ref, handler);
+      return ref;
+    });
+    
+    // Click on deeply nested element
+    const event = new MouseEvent('mousedown', { bubbles: true });
+    deeplyNested.dispatchEvent(event);
+    
+    expect(handler).not.toHaveBeenCalled();
+  });
+
+  it('should handle rapid clicks', () => {
+    const handler = jest.fn();
+    
+    const { result } = renderHook(() => {
+      const ref = useRef<HTMLDivElement>(container);
+      useOnClickOutside(ref, handler);
+      return ref;
+    });
+    
+    // Multiple rapid clicks outside
+    for (let i = 0; i < 5; i++) {
+      const event = new MouseEvent('mousedown', { bubbles: true });
+      elementOutside.dispatchEvent(event);
+    }
+    
+    expect(handler).toHaveBeenCalledTimes(5);
+  });
+
+  it('should handle detached elements', () => {
+    const handler = jest.fn();
+    const detachedElement = document.createElement('div');
+    
+    const { result } = renderHook(() => {
+      const ref = useRef<HTMLDivElement>(detachedElement);
+      useOnClickOutside(ref, handler);
+      return ref;
+    });
+    
+    // Click anywhere should trigger handler since element is not in DOM
+    const event = new MouseEvent('mousedown', { bubbles: true });
+    document.body.dispatchEvent(event);
+    
+    expect(handler).toHaveBeenCalledTimes(1);
+  });
+});

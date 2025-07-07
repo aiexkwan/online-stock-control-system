@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 // Series generation is now handled by unified pallet generation
 import { type QcInputData } from '@/lib/pdfUtils';
+import { LocationMapper } from '@/lib/inventory/utils/locationMapper';
 import { 
   createQcDatabaseEntriesWithTransaction,
   type QcDatabaseEntryPayload,
@@ -45,32 +46,11 @@ async function getProductInfo(productCode: string) {
 
 /**
  * 映射位置名稱到數據庫欄位名稱
+ * @deprecated Use LocationMapper.toDbColumn() directly
  */
 function mapLocationToDbField(location: string): string {
-  const locationMap: { [key: string]: string } = {
-    'injection': 'injection',
-    'pipeline': 'pipeline', 
-    'prebook': 'prebook',
-    'await': 'await',
-    'fold': 'fold',
-    'bulk': 'bulk',
-    'backcarpark': 'backcarpark',
-    'damage': 'damage',
-    // 常見的別名映射
-    'Injection': 'injection',
-    'Pipeline': 'pipeline',
-    'Prebook': 'prebook',
-    'Await': 'await',
-    'Awaiting': 'await',
-    'Fold Mill': 'fold',
-    'Bulk': 'bulk',
-    'Backcarpark': 'backcarpark',
-    'Damage': 'damage',
-    'Production': 'injection', // Production 映射到 pipeline
-    'production': 'injection'
-  };
-  
-  return locationMap[location] || 'await'; // 默認使用 await
+  // Use the unified LocationMapper
+  return LocationMapper.toDbColumn(location) || 'await'; // Default to 'await' if not found
 }
 
 export async function POST(request: NextRequest) {

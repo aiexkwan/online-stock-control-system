@@ -3,6 +3,7 @@
 import React from 'react';
 import { TimeFrame } from '@/app/components/admin/UniversalTimeRangeSelector';
 import { motion } from 'framer-motion';
+import { useLayoutVirtualization } from '@/app/hooks/useLayoutVirtualization';
 
 interface UploadLayoutProps {
   theme: string;
@@ -15,6 +16,16 @@ export const UploadLayout: React.FC<UploadLayoutProps> = ({
   timeFrame, 
   children 
 }) => {
+  // Convert children to array to handle both single and multiple children
+  const childrenArray = React.Children.toArray(children);
+  
+  // 使用虛擬化 hook
+  const containerRef = useLayoutVirtualization({
+    widgetCount: childrenArray.length,
+    theme,
+    threshold: 100
+  });
+  
   // Container styles matching the upload theme grid template
   const containerStyle: React.CSSProperties = {
     display: 'grid',
@@ -33,8 +44,8 @@ export const UploadLayout: React.FC<UploadLayoutProps> = ({
   };
 
   return (
-    <div className="upload-container" style={containerStyle}>
-      {children.map((child, index) => {
+    <div ref={containerRef} className="upload-container" style={containerStyle}>
+      {childrenArray.map((child, index) => {
         // Simply render all children - AdminWidgetRenderer will handle gridArea positioning
         return (
           <div key={`widget-${index}`}>

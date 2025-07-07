@@ -12,7 +12,7 @@ describe('calculateNetWeight - GRN 淨重計算', () => {
       const expected = grossWeight - PALLET_WEIGHTS.whiteDry - PACKAGE_WEIGHTS.bag;
       
       expect(netWeight).toBe(expected);
-      expect(netWeight).toBe(100 - 14 - 1); // 85
+      expect(netWeight).toBe(100 - 14 - 0); // 86 (bag weight is 0)
     });
 
     test('Chep Wet 托盤配 Still 包裝', () => {
@@ -21,21 +21,21 @@ describe('calculateNetWeight - GRN 淨重計算', () => {
       const expected = grossWeight - PALLET_WEIGHTS.chepWet - PACKAGE_WEIGHTS.still;
       
       expect(netWeight).toBe(expected);
-      expect(netWeight).toBe(150 - 38 - 50); // 62
+      expect(netWeight).toBe(150 - 30 - 50); // 70 (chepWet is 30)
     });
 
     test('Euro 托盤配 Tote 包裝', () => {
       const grossWeight = 100;
       const netWeight = calculateNetWeight(grossWeight, 'euro', 'tote');
       
-      expect(netWeight).toBe(100 - 22 - 10); // 68
+      expect(netWeight).toBe(100 - 22 - 6); // 72 (tote is 6)
     });
 
     test('White Wet 托盤配 Octo 包裝', () => {
       const grossWeight = 200;
       const netWeight = calculateNetWeight(grossWeight, 'whiteWet', 'octo');
       
-      expect(netWeight).toBe(200 - 18 - 20); // 162
+      expect(netWeight).toBe(200 - 18 - 14); // 168 (octo is 14)
     });
   });
 
@@ -44,7 +44,7 @@ describe('calculateNetWeight - GRN 淨重計算', () => {
       const grossWeight = 100;
       const netWeight = calculateNetWeight(grossWeight, 'notIncluded', 'bag');
       
-      expect(netWeight).toBe(100 - 0 - 1); // 99
+      expect(netWeight).toBe(100 - 0 - 0); // 100 (bag is 0)
     });
 
     test('包裝為 Not Included', () => {
@@ -78,25 +78,25 @@ describe('calculateNetWeight - GRN 淨重計算', () => {
     });
 
     test('剛好等於托盤和包裝重量', () => {
-      const grossWeight = 88; // 38 + 50
+      const grossWeight = 80; // 30 + 50
       const netWeight = calculateNetWeight(grossWeight, 'chepWet', 'still');
       
-      expect(netWeight).toBe(0); // 88 - 38 - 50 = 0
+      expect(netWeight).toBe(0); // 80 - 30 - 50 = 0
     });
 
     test('小數點重量', () => {
       const grossWeight = 123.45;
       const netWeight = calculateNetWeight(grossWeight, 'whiteDry', 'bag');
       
-      expect(netWeight).toBe(123.45 - 14 - 1); // 108.45
-      expect(netWeight).toBeCloseTo(108.45, 2);
+      expect(netWeight).toBe(123.45 - 14 - 0); // 109.45 (bag is 0)
+      expect(netWeight).toBeCloseTo(109.45, 2);
     });
 
     test('大數值重量', () => {
       const grossWeight = 9999;
       const netWeight = calculateNetWeight(grossWeight, 'euro', 'tote');
       
-      expect(netWeight).toBe(9999 - 22 - 10); // 9967
+      expect(netWeight).toBe(9999 - 22 - 6); // 9971 (tote is 6)
     });
   });
 
@@ -106,7 +106,7 @@ describe('calculateNetWeight - GRN 淨重計算', () => {
       // @ts-ignore - 故意傳入無效類型測試
       const netWeight = calculateNetWeight(grossWeight, 'invalid', 'bag');
       
-      expect(netWeight).toBe(100 - 0 - 1); // 99
+      expect(netWeight).toBe(100 - 0 - 0); // 100 (bag is 0)
     });
 
     test('無效的包裝類型應使用 0 作為默認值', () => {
@@ -131,14 +131,14 @@ describe('calculateNetWeight - GRN 淨重計算', () => {
       const grossWeight = 500;
       const netWeight = calculateNetWeight(grossWeight, 'whiteDry', 'bag');
       
-      expect(netWeight).toBe(485); // 500 - 14 - 1
+      expect(netWeight).toBe(486); // 500 - 14 - 0 (bag is 0)
     });
 
     test('最重組合：Chep Wet + Still', () => {
       const grossWeight = 200;
       const netWeight = calculateNetWeight(grossWeight, 'chepWet', 'still');
       
-      expect(netWeight).toBe(112); // 200 - 38 - 50
+      expect(netWeight).toBe(120); // 200 - 30 - 50 (chepWet is 30)
     });
 
     test('最輕組合：Not Included + Not Included', () => {

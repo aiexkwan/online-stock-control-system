@@ -50,7 +50,7 @@ export async function updateACORecord(
     // Find the ACO record by order_ref and code
     const { data: acoRecord, error: findError } = await supabase
       .from('record_aco')
-      .select('uuid, remain_qty, code')
+      .select('uuid, required_qty, finished_qty, code')
       .eq('order_ref', refNumber)
       .ilike('code', productCode) // Case-insensitive matching
       .single();
@@ -73,12 +73,14 @@ export async function updateACORecord(
       };
     }
 
-    // Update remain_qty by adding back the voided quantity
-    const newRemainQty = acoRecord.remain_qty + quantity;
+    // Update finished_qty by subtracting the voided quantity
+    const currentFinishedQty = acoRecord.finished_qty || 0;
+    const newFinishedQty = Math.max(0, currentFinishedQty - quantity);
+    const newRemainQty = acoRecord.required_qty - newFinishedQty;
     
     const { error: updateError } = await supabase
       .from('record_aco')
-      .update({ remain_qty: newRemainQty })
+      .update({ finished_qty: newFinishedQty })
       .eq('uuid', acoRecord.uuid);
 
     if (updateError) {
@@ -86,7 +88,7 @@ export async function updateACORecord(
       throw updateError;
     }
 
-    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`[ACO Update] Successfully updated: new_remain_qty=${newRemainQty}`);
+    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`[ACO Update] Successfully updated: new_finished_qty=${newFinishedQty}, new_remain_qty=${newRemainQty}`);
     return { success: true };
   } catch (error: any) {
     console.error('[ACO Update] Error:', error);

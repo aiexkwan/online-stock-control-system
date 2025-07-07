@@ -3,6 +3,7 @@
 import React from 'react';
 import { TimeFrame } from '@/app/components/admin/UniversalTimeRangeSelector';
 import { motion } from 'framer-motion';
+import { useLayoutVirtualization } from '@/app/hooks/useLayoutVirtualization';
 import '../../styles/custom-layout.css';
 
 interface CustomThemeLayoutProps {
@@ -16,14 +17,30 @@ export const CustomThemeLayout: React.FC<CustomThemeLayoutProps> = ({
   timeFrame, 
   children 
 }) => {
-  // Container styles matching exact CSS
+  // Convert children to array to handle both single and multiple children
+  const childrenArray = React.Children.toArray(children);
+  
+  // 使用虛擬化 hook
+  const containerRef = useLayoutVirtualization({
+    widgetCount: childrenArray.length,
+    theme,
+    threshold: 100
+  });
+  
+  // Get the layout configuration from adminDashboardLayouts
+  const layoutConfig = theme === 'injection' || theme === 'pipeline' ? {
+    gridTemplate: `"widget2 widget2 widget3 widget3 widget4 widget4 widget5 widget5 widget1 widget1" "widget2 widget2 widget3 widget3 widget4 widget4 widget5 widget5 widget1 widget1" "widget6 widget6 widget6 widget7 widget7 widget7 widget8 widget8 widget1 widget1" "widget6 widget6 widget6 widget7 widget7 widget7 widget8 widget8 widget1 widget1" "widget6 widget6 widget6 widget7 widget7 widget7 widget8 widget8 widget1 widget1" "widget9 widget9 widget9 widget9 widget10 widget10 widget10 widget10 widget1 widget1" "widget9 widget9 widget9 widget9 widget10 widget10 widget10 widget10 widget1 widget1"`
+  } : {
+    gridTemplate: `"widget1 widget1 widget2 widget2 widget3 widget3 widget4 widget4 widget5 widget5" "widget1 widget1 widget2 widget2 widget3 widget3 widget4 widget4 widget5 widget5" "widget6 widget6 widget6 widget7 widget7 widget7 widget8 widget8 widget5 widget5" "widget6 widget6 widget6 widget7 widget7 widget7 widget8 widget8 widget5 widget5" "widget9 widget9 widget9 widget9 widget10 widget10 widget10 widget10 widget5 widget5" "widget9 widget9 widget9 widget9 widget10 widget10 widget10 widget10 widget5 widget5" "widget9 widget9 widget9 widget9 widget10 widget10 widget10 widget10 widget5 widget5"`
+  };
+  
+  // Container styles with dynamic grid template
   const containerStyle: React.CSSProperties = {
     display: 'grid',
-    gridTemplateColumns: '1fr 1fr 1fr 1fr 1fr 1fr 1fr 1fr 1fr 1fr',
-    gridTemplateRows: '100px 100px 100px 100px 100px 100px 100px 100px',
-    gap: '10px 10px',
-    gridAutoColumns: 'auto',
-    justifyItems: 'stretch',
+    gridTemplateColumns: 'repeat(10, 1fr)',
+    gridTemplateRows: 'repeat(7, 100px)',
+    gap: '10px',
+    gridTemplateAreas: layoutConfig.gridTemplate,
     width: '100%',
     minHeight: '800px',
     padding: '20px'
@@ -113,59 +130,8 @@ export const CustomThemeLayout: React.FC<CustomThemeLayoutProps> = ({
   ];
 
   return (
-    <div className="custom-theme-container">
-      {children.slice(0, 10).map((child, index) => {
-        const isRightSidebar = index === 0;
-        
-        // Check if it's one of the transparent widgets
-        const transparentWidgets = ['Pending Updates', 'Processing', 'Completed Today', 'Failed'];
-        const widgetTitle = React.isValidElement(child) && child.props?.config?.title;
-        const isTransparentWidget = transparentWidgets.includes(widgetTitle);
-        
-        if (isRightSidebar) {
-          // Right sidebar widget without glassmorphism wrapper
-          return (
-            <div key={`widget-${index}`} className="custom-theme-item">
-              {child}
-            </div>
-          );
-        }
-
-        if (isTransparentWidget) {
-          // Transparent widgets - completely invisible
-          return (
-            <div 
-              key={`widget-${index}`} 
-              className="custom-theme-item"
-              style={{
-                background: 'transparent',
-                border: 'none',
-                boxShadow: 'none',
-                opacity: 0
-              }}
-            >
-              {child}
-            </div>
-          );
-        }
-
-        // Other widgets - render directly since UniversalWidgetCard handles styling
-        return (
-          <motion.div
-            key={`widget-${index}`}
-            className="custom-theme-item h-full"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{
-              duration: 0.6,
-              delay: index * 0.05,
-              ease: [0.25, 0.1, 0.25, 1]
-            }}
-          >
-            {child}
-          </motion.div>
-        );
-      })}
+    <div ref={containerRef} className="custom-theme-container" style={containerStyle}>
+      {childrenArray}
     </div>
   );
 };

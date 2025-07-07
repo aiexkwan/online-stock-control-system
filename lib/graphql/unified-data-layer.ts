@@ -365,9 +365,12 @@ export class UnifiedDataLayer {
   /**
    * 業務邏輯查詢
    */
-  async getLowStockProducts(threshold: number = 10): Promise<Product[]> {
+  async getLowStockProducts(
+    threshold: number = 10,
+    pagination?: PaginationInput
+  ): Promise<Connection<Product>> {
     const query = `
-      query GetLowStockProducts($threshold: Int!) {
+      query GetLowStockProducts($threshold: Int!, $first: Int, $after: String) {
         record_inventoryCollection(
           filter: {
             and: [
@@ -376,8 +379,11 @@ export class UnifiedDataLayer {
               { prebook: { lt: $threshold } }
             ]
           }
+          first: $first
+          after: $after
         ) {
           edges {
+            cursor
             node {
               product_code
               data_code {
@@ -390,16 +396,44 @@ export class UnifiedDataLayer {
               }
             }
           }
+          pageInfo {
+            hasNextPage
+            hasPreviousPage
+            startCursor
+            endCursor
+          }
+          totalCount
         }
       }
     `;
 
     const result = await graphqlClient.query({
       query,
-      variables: { threshold }
+      variables: { 
+        threshold,
+        first: pagination?.first || 50,
+        after: pagination?.after
+      }
     });
 
-    return this.transformLowStockProducts(result.data?.record_inventoryCollection?.edges || []);
+    // Transform the low stock products to Product connection
+    const edges = (result.data?.record_inventoryCollection?.edges || [])
+      .filter((edge: any) => edge.node?.data_code)
+      .map((edge: any) => ({
+        cursor: edge.cursor,
+        node: this.transformProduct(edge.node.data_code)
+      }));
+
+    return {
+      totalCount: result.data?.record_inventoryCollection?.totalCount || 0,
+      pageInfo: result.data?.record_inventoryCollection?.pageInfo || {
+        hasNextPage: false,
+        hasPreviousPage: false,
+        startCursor: null,
+        endCursor: null
+      },
+      edges
+    };
   }
 
   async getStockLevels(): Promise<InventoryRecord[]> {

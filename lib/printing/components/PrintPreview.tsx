@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ChevronLeft, ChevronRight, ZoomIn, ZoomOut, RotateCw } from 'lucide-react';
@@ -26,12 +26,7 @@ export function PrintPreview({
   const [rotation, setRotation] = useState(0);
   const [previewContent, setPreviewContent] = useState<string>('');
 
-  useEffect(() => {
-    // Generate preview content based on type
-    generatePreview();
-  }, [type, data, options]);
-
-  const generatePreview = () => {
+  const generatePreview = useCallback(() => {
     // This would normally generate actual preview content
     // For now, we'll create a simple representation
     let content = '';
@@ -55,7 +50,12 @@ export function PrintPreview({
     // Calculate pages (simplified)
     const estimatedPages = Math.ceil((data.items?.length || 1) / 10);
     setTotalPages(Math.max(1, estimatedPages));
-  };
+  }, [type, data]); // Remove 'options' as it's not used in the function
+
+  useEffect(() => {
+    // Generate preview content based on type
+    generatePreview();
+  }, [generatePreview]);
 
   const generateQcLabelPreview = (data: any) => {
     return `

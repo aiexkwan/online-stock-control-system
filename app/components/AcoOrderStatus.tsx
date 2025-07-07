@@ -14,7 +14,7 @@ interface AcoRecord {
   order_ref: string;
   code: string;
   required_qty: number | null;
-  remain_qty: number | null;
+  finished_qty: number | null;
 }
 
 interface ProductDetail {
@@ -44,7 +44,7 @@ export default function AcoOrderStatus() {
       try {
         const { data, error: fetchError } = await supabase
           .from('record_aco')
-          .select('order_ref, code, required_qty, remain_qty');
+          .select('order_ref, code, required_qty, finished_qty');
 
         if (fetchError) throw fetchError;
 
@@ -58,13 +58,13 @@ export default function AcoOrderStatus() {
           const progressData: OrderProgress[] = Object.entries(groupedByOrderRef)
             .map(([orderRef, { items }]) => {
               const totalRequiredQty = items.reduce((sum, item) => sum + (item.required_qty || 0), 0);
-              const totalRemainQty = items.reduce((sum, item) => sum + (item.remain_qty || 0), 0);
+              const totalCompletedQty = items.reduce((sum, item) => sum + (item.finished_qty || 0), 0);
+              const totalRemainQty = totalRequiredQty - totalCompletedQty;
               
               if (totalRequiredQty === 0) { 
                 return null; 
               }
 
-              const totalCompletedQty = totalRequiredQty - totalRemainQty;
               let progressPercentage = 0;
               if (totalRequiredQty > 0) {
                 progressPercentage = Math.max(0, Math.min(100, Math.round((totalCompletedQty / totalRequiredQty) * 100)));
@@ -73,7 +73,7 @@ export default function AcoOrderStatus() {
               const productsDetails: ProductDetail[] = items.map(item => ({
                 code: item.code,
                 requiredQty: item.required_qty || 0,
-                completedQty: (item.required_qty || 0) - (item.remain_qty || 0),
+                completedQty: item.finished_qty || 0,
               }));
 
               if (totalRemainQty > 0) {

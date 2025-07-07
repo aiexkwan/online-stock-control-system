@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
+import { LocationMapper } from '@/lib/inventory/utils/locationMapper';
 import {
   Dialog,
   DialogContent,
@@ -25,7 +26,8 @@ interface TransferCodeDialogProps {
   currentLocation?: string;
 }
 
-// 轉移代號對應的目標位置
+// Transfer code mapping to target locations
+// Note: These mappings use display names that will be converted to DB columns by LocationMapper
 const TRANSFER_CODE_MAPPING: Record<string, Record<string, string>> = {
   'Await': {
     '131415': 'Fold Mill',
@@ -44,6 +46,12 @@ const TRANSFER_CODE_MAPPING: Record<string, Record<string, string>> = {
     '232425': 'Fold Mill'
   }
 };
+
+// Helper function to normalize location names for comparison
+function normalizeLocation(location: string): string {
+  const dbColumn = LocationMapper.toDbColumn(location);
+  return LocationMapper.getDisplayName(dbColumn || location);
+}
 
 export function TransferCodeDialog({
   isOpen,

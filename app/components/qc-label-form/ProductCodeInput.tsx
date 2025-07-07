@@ -82,25 +82,15 @@ export const ProductCodeInput: React.FC<ProductCodeInputProps> = ({
       process.env.NODE_ENV !== "production" && console.log('[ProductCodeInput] Creating Supabase client...');
       const client = createClient();
       
-      process.env.NODE_ENV !== "production" && console.log('[ProductCodeInput] Executing query for:', trimmedValue);
+      process.env.NODE_ENV !== "production" && console.log('[ProductCodeInput] Executing RPC query for:', trimmedValue);
       
-      // 設置超時機制 - 10秒後自動取消
-      const timeoutId = setTimeout(() => {
-        if (abortController === abortControllerRef.current) {
-          abortController.abort();
-          process.env.NODE_ENV !== "production" && console.log('[ProductCodeInput] Search timeout after 10 seconds');
-        }
-      }, 10000);
-
       // 使用 RPC 函數進行產品搜尋 - 在資料庫端執行，更穩定更快速
+      // 不需要超時機制，因為 RPC 是獨立事件
       const { data, error } = await client
-        .rpc('search_product_code', { 
+        .rpc('get_product_details_by_code', { 
           p_code: trimmedValue 
         })
         .abortSignal(abortController.signal); // 使用 abort signal
-
-      // 清除超時
-      clearTimeout(timeoutId);
 
       process.env.NODE_ENV !== "production" && console.log('[ProductCodeInput] Search result:', { data, error });
 
@@ -110,14 +100,14 @@ export const ProductCodeInput: React.FC<ProductCodeInputProps> = ({
         return;
       }
 
-      if (error || !data) {
+      if (error || !data || data.length === 0) {
         // 找不到產品
         onProductInfoChange(null);
         setProductError(`Product Code ${trimmedValue} Not Found`);
         process.env.NODE_ENV !== "production" && console.log('[ProductCodeInput] Product not found:', trimmedValue);
       } else {
-        // 找到產品 - RPC 函數返回 JSON，需要解析
-        const productData = data as ProductInfo;
+        // 找到產品 - get_product_details_by_code 返回數組，取第一個結果
+        const productData = data[0] as ProductInfo;
         onProductInfoChange(productData);
         onChange(productData.code); // 使用資料庫中的標準化代碼
         setProductError(null);
@@ -138,8 +128,9 @@ export const ProductCodeInput: React.FC<ProductCodeInputProps> = ({
       console.error('[ProductCodeInput] Search error:', error);
       onProductInfoChange(null);
       
-      if (error.message?.includes('timeout') || error.message?.includes('aborted')) {
-        setProductError('Search timeout. Please try again.');
+      if (error.message?.includes('aborted')) {
+        // 被取消的請求，不顯示錯誤
+        return;
       } else {
         setProductError('Search failed. Please try again.');
       }

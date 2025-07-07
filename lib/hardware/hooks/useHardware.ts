@@ -68,6 +68,49 @@ export function useHardware(options: UseHardwareOptions = {}): UseHardwareReturn
   useEffect(() => {
     if (!autoInitialize) return;
 
+    // Update device list
+    const updateDeviceList = () => {
+      const devices = halRef.current.monitoring.getAllDevicesStatus();
+      const printerDevices: DeviceStatus[] = [];
+      const scannerDevices: DeviceStatus[] = [];
+      
+      devices.forEach(device => {
+        if (device.deviceType === 'printer') {
+          printerDevices.push(device);
+        } else if (device.deviceType === 'scanner') {
+          scannerDevices.push(device);
+        }
+      });
+      
+      setPrinters(printerDevices);
+      setScanners(scannerDevices);
+    };
+
+    // Set up event listeners
+    const setupListeners = () => {
+      // Alert listener
+      if (onAlert) {
+        const unsubscribe = halRef.current.monitoring.onAlert(onAlert);
+        unsubscribesRef.current.push(unsubscribe);
+      }
+      
+      // Scan listener
+      if (onScan) {
+        const unsubscribe = halRef.current.scanner.onScan(onScan);
+        unsubscribesRef.current.push(unsubscribe);
+      }
+      
+      // Queue status listener
+      halRef.current.queue.on('queue.updated', (status: QueueStatus) => {
+        setQueueStatus(status);
+      });
+      
+      // Device status listener
+      halRef.current.monitoring.on('statusChange', () => {
+        updateDeviceList();
+      });
+    };
+
     const initializeHAL = async () => {
       try {
         await halRef.current.initialize();
@@ -93,53 +136,12 @@ export function useHardware(options: UseHardwareOptions = {}): UseHardwareReturn
       unsubscribesRef.current.forEach(unsubscribe => unsubscribe());
       unsubscribesRef.current = [];
       
+      // Copy ref to local variable to avoid stale closure warning
+      const hal = halRef.current;
       // Shutdown HAL
-      halRef.current.shutdown();
+      hal.shutdown();
     };
-  }, [autoInitialize]);
-
-  // Update device list
-  const updateDeviceList = useCallback(() => {
-    const devices = halRef.current.monitoring.getAllDevicesStatus();
-    const printerDevices: DeviceStatus[] = [];
-    const scannerDevices: DeviceStatus[] = [];
-    
-    devices.forEach(device => {
-      if (device.deviceType === 'printer') {
-        printerDevices.push(device);
-      } else if (device.deviceType === 'scanner') {
-        scannerDevices.push(device);
-      }
-    });
-    
-    setPrinters(printerDevices);
-    setScanners(scannerDevices);
-  }, []);
-
-  // Set up event listeners
-  const setupListeners = useCallback(() => {
-    // Alert listener
-    if (onAlert) {
-      const unsubscribe = halRef.current.monitoring.onAlert(onAlert);
-      unsubscribesRef.current.push(unsubscribe);
-    }
-    
-    // Scan listener
-    if (onScan) {
-      const unsubscribe = halRef.current.scanner.onScan(onScan);
-      unsubscribesRef.current.push(unsubscribe);
-    }
-    
-    // Queue status listener
-    halRef.current.queue.on('queue.updated', (status: QueueStatus) => {
-      setQueueStatus(status);
-    });
-    
-    // Device status listener
-    halRef.current.monitoring.on('statusChange', () => {
-      updateDeviceList();
-    });
-  }, [onAlert, onScan, updateDeviceList]);
+  }, [autoInitialize, onAlert, onScan]);
 
   // Print a job
   const print = useCallback(async (job: Omit<PrintJob, 'id'>): Promise<PrintResult> => {

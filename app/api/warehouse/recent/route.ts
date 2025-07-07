@@ -1,15 +1,15 @@
-import { createClient } from '../../../../lib/supabase';
+import { createClient } from '@/app/utils/supabase/server';
 import { NextResponse } from 'next/server';
 
 export async function GET() {
   try {
     const supabase = await createClient();
 
-    // 獲取最近的倉庫活動 - 這裡可以根據實際需求調整查詢
+    // 獲取最近的倉庫活動 - 使用 record_transfer 表
     const { data: recentActivity, error } = await supabase
-      .from('stock_transfer')
+      .from('record_transfer')
       .select('*')
-      .order('created_at', { ascending: false })
+      .order('update_time', { ascending: false })
       .limit(20);
 
     if (error) {

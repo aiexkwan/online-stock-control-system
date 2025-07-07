@@ -2,7 +2,8 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { StatusMessage } from '../../components/ui/universal-stock-movement-layout';
-import { useStockMovementRPC } from '../hooks/useStockMovementRPC';
+import { useUnifiedStockTransfer } from '../hooks/useUnifiedStockTransfer';
+import { useUnifiedPalletSearch } from '../hooks/useUnifiedPalletSearch';
 
 // 導入拆分的組件
 import { PageHeader } from './components/PageHeader';
@@ -12,6 +13,7 @@ import { PageFooter } from './components/PageFooter';
 import { SkipNavigation } from './components/SkipNavigation';
 import { KeyboardShortcutsDialog } from './components/KeyboardShortcutsDialog';
 import { TransferControlPanel } from './components/TransferControlPanel';
+import { validateTransfer } from './components/TransferDestinationSelector';
 
 // 導入鍵盤快捷鍵 Hook
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
@@ -22,27 +24,66 @@ interface PalletInfo {
   product_qty: number;
   plt_remark?: string | null;
   current_plt_loc?: string | null;
+  location?: string | null;
+  generate_time?: string;
+  series?: string;
 }
 
 export default function StockTransferPage() {
+  // 使用新的統一 hooks
   const {
-    isLoading,
-    activityLog,
+    isTransferring,
     optimisticTransfers,
-    searchPalletInfo,
-    executeStockTransfer,
-    addActivityLog,
-    preloadPallets,
-    getCacheStats
-  } = useStockMovementRPC({
-    enableCache: true,
-    cacheOptions: {
-      ttl: 5 * 60 * 1000, // 5分鐘快取
-      maxSize: 50, // 最多快取50個托盤
-      preloadPatterns: ['PM-', 'PT-'], // 預加載常用前綴
-      enableBackgroundRefresh: true
+    executeTransfer,
+    hasPendingTransfer
+  } = useUnifiedStockTransfer({
+    onTransferComplete: (success, pltNum) => {
+      if (success) {
+        addActivityLog({
+          id: Date.now().toString(),
+          type: 'transfer' as const,
+          message: `Pallet ${pltNum} transferred successfully`,
+          timestamp: new Date().toISOString(),
+          palletNum: pltNum
+        });
+      }
     }
   });
+
+  const {
+    isSearching,
+    searchPallet
+  } = useUnifiedPalletSearch({
+    autoDetectType: true,
+    cacheTimeout: 5 * 60 * 1000 // 5分鐘快取
+  });
+
+  // 模擬原有的 activityLog 和相關函數
+  const [activityLog, setActivityLog] = useState<any[]>([]);
+  const isLoading = isTransferring || isSearching;
+
+  const addActivityLog = useCallback((log: any) => {
+    setActivityLog(prev => [log, ...prev].slice(0, 50)); // 保留最近50條
+  }, []);
+
+  // 適配原有的 searchPalletInfo 函數
+  const searchPalletInfo = useCallback(async (searchType: string, value: string) => {
+    const result = await searchPallet(value, searchType as 'series' | 'pallet_num');
+    return result;
+  }, [searchPallet]);
+
+  // 適配原有的 executeStockTransfer 函數
+  const executeStockTransfer = useCallback(async (
+    palletInfo: PalletInfo,
+    toLocation: string,
+    operatorId: string
+  ) => {
+    const success = await executeTransfer(palletInfo, toLocation, operatorId);
+    return success;
+  }, [executeTransfer]);
+
+  // Placeholder 函數保持兼容性
+  const preloadPallets = useCallback(async () => {}, []);
 
   const [searchValue, setSearchValue] = useState('');
   const [statusMessage, setStatusMessage] = useState<{
@@ -74,8 +115,8 @@ export default function StockTransferPage() {
     // 預加載最近使用的托盤資料
     const initPreload = async () => {
       try {
-        await preloadPallets(['PM-', 'PT-', 'PL-']);
-        process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[Stock Transfer] 預加載完成');
+        await preloadPallets();
+        process.env.NODE_ENV !== "production" && console.log('[Stock Transfer] 預加載完成');
       } catch (error) {
         console.error('[Stock Transfer] 預加載失敗:', error);
       }
@@ -84,36 +125,13 @@ export default function StockTransferPage() {
     initPreload();
   }, [focusSearchInput, preloadPallets]);
 
-  // 獲取考慮樂觀更新的顯示位置
-  const getDisplayLocation = useCallback((pltNum: string, defaultLocation: string) => {
-    const optimistic = optimisticTransfers.find(
-      t => t.pltNum === pltNum && t.status === 'pending'
-    );
-    
-    if (optimistic) {
-      return {
-        location: optimistic.toLocation,
-        isPending: true,
-        fromLocation: optimistic.fromLocation
-      };
-    }
-    
-    return {
-      location: defaultLocation,
-      isPending: false,
-      fromLocation: null
-    };
-  }, [optimisticTransfers]);
 
   // Process transfer execution
   const handleTransferExecute = useCallback(async (targetLocation: string, clockNumber: string) => {
     if (!selectedPallet) return;
     
     const success = await executeStockTransfer(
-      selectedPallet.plt_num,
-      selectedPallet.product_code,
-      selectedPallet.product_qty,
-      selectedPallet.current_plt_loc || 'Await',
+      selectedPallet,
       targetLocation,
       clockNumber
     );
@@ -170,10 +188,10 @@ export default function StockTransferPage() {
           return;
         }
         
-        const currentLocation = palletInfo.current_plt_loc || 'Await';
+        const currentLocation = (palletInfo.location || 'Await') as string;
         
         // Check if Voided
-        if (currentLocation === 'Voided') {
+        if (currentLocation.toLowerCase() === 'voided') {
           setStatusMessage({
             type: 'error',
             message: `❌ TRANSFER BLOCKED: Pallet is voided, cannot be moved`
@@ -182,7 +200,6 @@ export default function StockTransferPage() {
         }
         
         // Validate transfer rules
-        const { validateTransfer } = await import('./components/TransferDestinationSelector');
         const validation = validateTransfer(currentLocation, selectedDestination);
         
         if (!validation.isValid) {

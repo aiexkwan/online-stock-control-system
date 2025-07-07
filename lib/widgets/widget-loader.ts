@@ -100,11 +100,16 @@ export function createLazyWidget(widgetId: string): React.ComponentType<WidgetCo
       default: mod[widgetId] || mod.default || Object.values(mod).find(exp => typeof exp === 'function')
     })),
     {
-      loading: () => null,
+      loading: () => React.createElement('div', { 
+        className: 'h-32 bg-gray-200 animate-pulse rounded' 
+      }),
       ssr: false
     }
   );
 }
+
+// 追蹤已預加載的 widgets
+export const preloadedWidgets = new Set<string>();
 
 // 批量創建懶加載 widgets
 export function createLazyWidgets(widgetIds: string[]): Map<string, React.ComponentType<WidgetComponentProps>> {
@@ -122,18 +127,25 @@ export function createLazyWidgets(widgetIds: string[]): Map<string, React.Compon
 
 // 預加載 widget
 export async function preloadWidget(widgetId: string): Promise<void> {
+  // 檢查是否已預加載
+  if (preloadedWidgets.has(widgetId)) {
+    return;
+  }
+  
   const importFn = getWidgetImport(widgetId);
   
   if (!importFn) {
-    throw new Error(`No import function found for widget: ${widgetId}`);
+    console.warn(`[WidgetLoader] No import function found for widget: ${widgetId}`);
+    return;
   }
   
   try {
     await importFn();
+    preloadedWidgets.add(widgetId);
     console.log(`[WidgetLoader] Preloaded: ${widgetId}`);
   } catch (error) {
-    console.error(`[WidgetLoader] Failed to preload ${widgetId}:`, error);
-    throw error;
+    console.error(`[WidgetLoader] Failed to preload widget: ${widgetId}`, error);
+    // Don't re-throw the error, just log it
   }
 }
 
@@ -141,4 +153,9 @@ export async function preloadWidget(widgetId: string): Promise<void> {
 export async function preloadWidgets(widgetIds: string[]): Promise<void> {
   const promises = widgetIds.map(widgetId => preloadWidget(widgetId));
   await Promise.allSettled(promises);
+}
+
+// 檢查 widget 是否已預加載
+export function isWidgetPreloaded(widgetId: string): boolean {
+  return preloadedWidgets.has(widgetId);
 }
