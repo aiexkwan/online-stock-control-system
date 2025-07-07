@@ -3,6 +3,11 @@
  * Area Chart 形式顯示 work_level 內容
  * 只顯示 operator department = "Warehouse"
  * 顯示 move 數據
+ * 
+ * OPTIMIZED VERSION (Phase 2.2)
+ * - 解決 N+1 查詢問題
+ * - 服務器端 JOIN 和過濾
+ * - 移除客戶端數據處理邏輯
  */
 
 'use client';
@@ -12,16 +17,26 @@ import { CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { UniversalWidgetCard as WidgetCard } from '../UniversalWidgetCard';
 import { ChartBarIcon } from '@heroicons/react/24/outline';
 import { WidgetComponentProps } from '@/app/types/dashboard';
-import { createClient } from '@/lib/supabase';
 import { motion } from 'framer-motion';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { format, parseISO, startOfDay, endOfDay, eachDayOfInterval } from 'date-fns';
+import { format } from 'date-fns';
 import { getYesterdayRange } from '@/app/utils/timezone';
+import { createDashboardAPI } from '@/lib/api/admin/DashboardAPI';
 
 interface WorkLevelData {
   date: string;
+  value: number;
+  fullDate?: string;
+}
+
+interface WorkLevelStats {
+  dailyStats: WorkLevelData[];
   totalMoves: number;
-  operators: { name: string; moves: number }[];
+  uniqueOperators: number;
+  avgMovesPerDay: number;
+  peakDay?: string;
+  optimized?: boolean;
+  calculationTime?: string;
 }
 
 export const WarehouseWorkLevelAreaChart = React.memo(function WarehouseWorkLevelAreaChart({ 
@@ -29,9 +44,18 @@ export const WarehouseWorkLevelAreaChart = React.memo(function WarehouseWorkLeve
   isEditMode,
   timeFrame 
 }: WidgetComponentProps) {
-  const [chartData, setChartData] = useState<any[]>([]);
+  const [data, setData] = useState<WorkLevelStats>({
+    dailyStats: [],
+    totalMoves: 0,
+    uniqueOperators: 0,
+    avgMovesPerDay: 0
+  });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [performanceMetrics, setPerformanceMetrics] = useState<{
+    fetchTime: number;
+    cacheHit: boolean;
+  } | null>(null);
 
   // 根據 timeFrame 設定查詢時間範圍
   const dateRange = useMemo(() => {
@@ -52,95 +76,51 @@ export const WarehouseWorkLevelAreaChart = React.memo(function WarehouseWorkLeve
     const fetchData = async () => {
       setLoading(true);
       setError(null);
+      const fetchStartTime = performance.now();
       
       try {
-        const supabase = createClient();
+        // Use optimized DashboardAPI with server-side JOIN and filtering
+        const dashboardAPI = createDashboardAPI();
+        const dashboardResult = await dashboardAPI.fetch({
+          widgetIds: ['warehouse_work_level'],
+          dateRange: {
+            start: dateRange.start.toISOString(),
+            end: dateRange.end.toISOString()
+          }
+        }, { 
+          strategy: 'client', // Force client strategy for client components
+          cache: { ttl: 180 } // 3-minute cache for work level analysis
+        });
         
-        // 先查詢 work_level 記錄
-        const { data: workData, error: workError } = await supabase
-          .from('work_level')
-          .select('id, move, latest_update')
-          .gte('latest_update', dateRange.start.toISOString())
-          .lte('latest_update', dateRange.end.toISOString())
-          .order('latest_update', { ascending: true });
-
-        if (workError) throw workError;
-        if (!workData || workData.length === 0) {
-          setChartData([]);
-          return;
-        }
-
-        // 獲取唯一的 operator IDs
-        const operatorIds = [...new Set(workData.map(w => w.id).filter(id => id != null))];
+        const fetchTime = performance.now() - fetchStartTime;
         
-        // 查詢 operator 資料 - 注意 select 語法唔使有空格
-        const { data: operatorData, error: operatorError } = await supabase
-          .from('data_id')
-          .select('id,name,department')
-          .in('id', operatorIds);
-          
-        if (operatorError) throw operatorError;
-        
-        // 建立 operator ID 到資料的映射
-        const operatorMap = new Map(
-          (operatorData || []).map(op => [op.id, op])
+        // Extract widget data
+        const widgetData = dashboardResult.widgets?.find(
+          w => w.widgetId === 'warehouse_work_level'
         );
         
-        // 過濾只顯示倉庫部門的記錄
-        const warehouseWork = workData
-          .filter(work => {
-            const operator = operatorMap.get(work.id);
-            return operator?.department === 'Warehouse';
+        if (widgetData && !widgetData.data.error) {
+          const dailyStats = widgetData.data.value || [];
+          
+          setData({
+            dailyStats,
+            totalMoves: widgetData.data.metadata?.totalMoves || 0,
+            uniqueOperators: widgetData.data.metadata?.uniqueOperators || 0,
+            avgMovesPerDay: widgetData.data.metadata?.avgMovesPerDay || 0,
+            peakDay: widgetData.data.metadata?.peakDay,
+            optimized: widgetData.data.metadata?.optimized,
+            calculationTime: widgetData.data.metadata?.calculationTime
           });
-
-        // 按日期分組數據
-        const dateMap = new Map<string, WorkLevelData>();
+          
+          setPerformanceMetrics({
+            fetchTime,
+            cacheHit: dashboardResult.metadata?.cacheHit || false
+          });
+        } else {
+          throw new Error(widgetData?.data.error || 'No data received');
+        }
         
-        // 獲取日期範圍內的所有日期
-        const days = eachDayOfInterval({ start: dateRange.start, end: dateRange.end });
-        
-        // 初始化每個日期
-        days.forEach(day => {
-          const dateStr = format(day, 'MMM d');
-          dateMap.set(dateStr, {
-            date: dateStr,
-            totalMoves: 0,
-            operators: []
-          });
-        });
-
-        // 處理實際數據
-        warehouseWork.forEach((work: any) => {
-          const workDate = format(parseISO(work.latest_update), 'MMM d');
-          
-          if (!dateMap.has(workDate)) {
-            dateMap.set(workDate, {
-              date: workDate,
-              totalMoves: 0,
-              operators: []
-            });
-          }
-          
-          const dayData = dateMap.get(workDate)!;
-          dayData.totalMoves += work.move || 0;
-          
-          // 添加操作員數據
-          const operator = operatorMap.get(work.id);
-          dayData.operators.push({
-            name: operator?.name || 'Unknown',
-            moves: work.move || 0
-          });
-        });
-
-        // 轉換為圖表數據格式
-        const chartDataArray = Array.from(dateMap.values()).map(dayData => ({
-          date: dayData.date,
-          value: dayData.totalMoves,
-          operators: dayData.operators.length,
-          details: dayData.operators
-        }));
-
-        setChartData(chartDataArray);
+        setError(null);
       } catch (err) {
         console.error('Error fetching warehouse work level:', err);
         setError(err instanceof Error ? err.message : 'Unknown error');
@@ -183,7 +163,7 @@ export const WarehouseWorkLevelAreaChart = React.memo(function WarehouseWorkLeve
               <p>Error loading data</p>
               <p className="text-xs mt-1">{error}</p>
             </div>
-          ) : chartData.length === 0 ? (
+          ) : data.dailyStats.length === 0 ? (
             <div className="text-center text-slate-400 font-medium py-8">
               <ChartBarIcon className="w-12 h-12 mx-auto mb-2 opacity-50" />
               <p>No work level data found</p>
@@ -195,48 +175,100 @@ export const WarehouseWorkLevelAreaChart = React.memo(function WarehouseWorkLeve
               transition={{ duration: 0.3 }}
               className="h-full"
             >
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart
-                  data={chartData}
-                  margin={{ top: 5, right: 5, left: 5, bottom: 5 }}
-                >
-                  <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
-                  <XAxis 
-                    dataKey="date" 
-                    stroke="#94a3b8" 
-                    fontSize={11}
-                  />
-                  <YAxis 
-                    stroke="#94a3b8" 
-                    fontSize={11}
-                    width={30}
-                  />
-                  <Tooltip 
-                    contentStyle={{ 
-                      backgroundColor: '#1e293b',
-                      border: '1px solid #334155',
-                      borderRadius: '8px',
-                      fontSize: '12px'
-                    }}
-                    labelFormatter={(label) => `Date: ${label}`}
-                    formatter={(value: any, name: any, props: any) => [
-                      `${value} moves`,
-                      'Total Moves'
-                    ]}
-                  />
-                  <Area 
-                    type="monotone" 
-                    dataKey="value" 
-                    stroke="#3b82f6" 
-                    fill="#3b82f6" 
-                    fillOpacity={0.3}
-                    strokeWidth={2}
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
+              <div className="h-full relative">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart
+                    data={data.dailyStats}
+                    margin={{ top: 5, right: 5, left: 5, bottom: 5 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
+                    <XAxis 
+                      dataKey="date" 
+                      stroke="#94a3b8" 
+                      fontSize={11}
+                    />
+                    <YAxis 
+                      stroke="#94a3b8" 
+                      fontSize={11}
+                      width={30}
+                    />
+                    <Tooltip 
+                      contentStyle={{ 
+                        backgroundColor: '#1e293b',
+                        border: '1px solid #334155',
+                        borderRadius: '8px',
+                        fontSize: '12px'
+                      }}
+                      labelFormatter={(label) => `Date: ${label}`}
+                      formatter={(value: any, name: any, props: any) => [
+                        `${value} moves`,
+                        'Total Moves'
+                      ]}
+                    />
+                    <Area 
+                      type="monotone" 
+                      dataKey="value" 
+                      stroke="#3b82f6" 
+                      fill="#3b82f6" 
+                      fillOpacity={0.3}
+                      strokeWidth={2}
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+                
+                {/* Performance and metadata indicators */}
+                {data.optimized && (
+                  <div className="absolute top-2 right-2 text-xs text-blue-400 flex items-center gap-1">
+                    <span>⚡</span>
+                    <span>Optimized</span>
+                    {performanceMetrics && (
+                      <span className="ml-1">({performanceMetrics.fetchTime.toFixed(0)}ms)</span>
+                    )}
+                  </div>
+                )}
+                
+                {/* Summary stats */}
+                <div className="absolute bottom-2 left-2 text-xs text-slate-400 space-y-0.5">
+                  <div>Total: {data.totalMoves.toLocaleString()} moves</div>
+                  <div>{data.uniqueOperators} operators</div>
+                  {data.peakDay && <div>Peak: {data.peakDay}</div>}
+                </div>
+                
+                {data.avgMovesPerDay > 0 && (
+                  <div className="absolute bottom-2 right-2 text-xs text-slate-400">
+                    Avg: {data.avgMovesPerDay.toFixed(0)} moves/day
+                  </div>
+                )}
+              </div>
             </motion.div>
           )}
         </CardContent>
     </WidgetCard>
   );
 });
+
+export default WarehouseWorkLevelAreaChart;
+
+/**
+ * @deprecated Legacy implementation with N+1 query problem
+ * Migrated to DashboardAPI hybrid architecture on 2025-07-07 (Phase 2.2)
+ * 
+ * Performance improvements achieved:
+ * - Query optimization: 2 separate queries → 1 optimized JOIN query
+ * - Server-side filtering: Department filter moved to SQL WHERE clause
+ * - Data transfer: All work_level records → Only Warehouse department records
+ * - Client processing: Complex Map operations + filtering → None
+ * - Network requests: 2 → 1 (50% reduction)
+ * - Caching: None → 3-minute TTL with automatic revalidation
+ * 
+ * N+1 Query Problem Solved:
+ * 1. Before: Query work_level → Extract IDs → Query data_id → Client-side JOIN
+ * 2. After: Single RPC with SQL JOIN and WHERE department = 'Warehouse'
+ * 3. Result: Eliminated unnecessary data transfer and client-side processing
+ * 
+ * New Features Added:
+ * - Peak day detection
+ * - Average moves per day calculation
+ * - Unique operators count
+ * - Performance metrics display
+ */

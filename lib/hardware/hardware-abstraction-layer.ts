@@ -6,6 +6,7 @@
 import { DefaultPrinterService, PrinterService } from './services/printer-service';
 import { HardwareMonitoringService } from './services/monitoring-service';
 import { PrintQueueManager } from './services/print-queue-manager';
+import { createLogger } from '../logger';
 import { 
   DeviceStatus, 
   HealthStatus, 
@@ -13,6 +14,8 @@ import {
   PrintJob,
   PrintResult
 } from './types';
+
+const logger = createLogger('hardware');
 
 export interface HardwareServices {
   printer: PrinterService;
@@ -40,7 +43,7 @@ export class HardwareAbstractionLayer {
     if (this.initialized) return;
 
     try {
-      console.log('[HAL] Starting initialization...');
+      logger.info('Starting Hardware Abstraction Layer initialization...');
       
       // Check if running in browser environment
       if (typeof window === 'undefined') {
@@ -58,9 +61,9 @@ export class HardwareAbstractionLayer {
       
       this.initialized = true;
       
-      console.log('[HAL] Hardware Abstraction Layer initialized successfully');
+      logger.info('Hardware Abstraction Layer initialized successfully');
     } catch (error) {
-      console.error('[HAL] Failed to initialize:', error);
+      logger.error({ err: error }, 'Failed to initialize Hardware Abstraction Layer');
       throw error;
     }
   }
@@ -143,9 +146,9 @@ export class HardwareAbstractionLayer {
           break;
       }
       
-      console.log(`Recovery completed for ${deviceType}`);
+      logger.info({ deviceType }, 'Device recovery completed successfully');
     } catch (error) {
-      console.error(`Recovery failed for ${deviceType}:`, error);
+      logger.error({ deviceType, err: error }, 'Device recovery failed');
       throw error;
     }
   }
@@ -215,58 +218,59 @@ export class HardwareAbstractionLayer {
       // Stop monitoring
       this.services.monitoring.stopMonitoring();
       
-      // Stop scanning if active
-      if (this.services.scanner.isScanning()) {
-        await this.services.scanner.stopScanning();
-      }
-      
       // Clear print queue
       await this.services.queue.clearQueue();
       
       this.initialized = false;
       
-      console.log('Hardware Abstraction Layer shut down successfully');
+      logger.info('Hardware Abstraction Layer shut down successfully');
     } catch (error) {
-      console.error('Error during HAL shutdown:', error);
+      logger.error({ err: error }, 'Error during HAL shutdown');
     }
   }
 
   // Private methods
   private async registerDevices(): Promise<void> {
-    // Register printer
-    const printers = await this.services.printer.listPrinters();
-    printers.forEach(printer => {
-      const device: DeviceStatus = {
-        deviceId: `printer-${printer.id}`,
-        deviceType: 'printer',
-        status: printer.isOnline ? 'online' : 'offline',
-        lastSeen: new Date().toISOString()
-      };
-      this.services.monitoring.registerDevice(device);
-    });
-
+    try {
+      // Register printer
+      const printers = await this.services.printer.listPrinters();
+      printers.forEach(printer => {
+        const device: DeviceStatus = {
+          deviceId: `printer-${printer.id}`,
+          deviceType: 'printer',
+          status: printer.isOnline ? 'online' : 'offline',
+          lastSeen: new Date().toISOString()
+        };
+        this.services.monitoring.registerDevice(device);
+      });
+      
+      logger.debug({ printerCount: printers.length }, 'Registered hardware devices');
+    } catch (error) {
+      logger.error({ err: error }, 'Failed to register devices');
+      throw error;
+    }
   }
 
   private setupEventListeners(): void {
     // Monitor printer status changes
-    this.services.printer.onStatusChange((status) => {
-      const device = this.services.monitoring.getDeviceStatus(`printer-${status.id}`);
+    this.services.printer.onStatusChange((printerStatus) => {
+      const device = this.services.monitoring.getDeviceStatus(`printer-${printerStatus.id}`);
       if (device) {
-        device.status = status.isOnline ? 'online' : 'offline';
+        device.status = printerStatus.isOnline ? 'online' : 'offline';
       }
     });
 
     // Monitor queue events
     this.services.queue.on('job.added', (job) => {
-      console.log('Print job added to queue:', job.id);
+      logger.debug({ jobId: job.id, jobType: job.type }, 'Print job added to queue');
     });
 
     this.services.queue.on('job.completed', (job) => {
-      console.log('Print job completed:', job.id);
+      logger.info({ jobId: job.id, jobType: job.type }, 'Print job completed successfully');
     });
 
     this.services.queue.on('job.failed', (job, error) => {
-      console.error('Print job failed:', job.id, error);
+      logger.error({ jobId: job.id, jobType: job.type, err: error }, 'Print job failed');
     });
   }
 

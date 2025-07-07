@@ -358,15 +358,16 @@
 
 ### 測試覆蓋率進展
 - **初始覆蓋率**: <1%
-- **當前覆蓋率**: 4.8%
+- **當前覆蓋率**: ~10%（持續提升中）
 - **短期目標**: 30%
 - **長期目標**: 80%
 
-### 已測試模組詳情
+### 已測試模組詳情（更新於 2025-07-07）
 | 模組類型 | 測試文件數 | 測試案例數 | 覆蓋情況 |
 |---------|-----------|------------|----------|
-| 工具函數 | 8 | 125 | debounce, timezone, auth, Excel |
-| React Hooks | 3 | 89 | useAuth, useOnClickOutside |
+| 工具函數 | 9 | 138 | debounce, timezone, auth, Excel, utils |
+| React Hooks | 4 | 108 | useAuth, useOnClickOutside, useStockTransfer |
+| UI 組件 | 6 | 143 | Button, Card, Input, WeightInputList |
 | 樣式系統 | 2 | 47 | dialogStyles, widgetStyles |
 | 數據驗證 | 1 | 23 | Zod schemas |
 | React 組件 | 1 | 15 | ErrorBoundary |
@@ -374,13 +375,19 @@
 | GraphQL | 3 | 35 | Schema、Resolver、DataLoader |
 | Widget 系統 | 3 | 32 | Registry、Loader、虛擬化 |
 | 庫存服務 | 4 | 28 | 位置映射、托盤、庫存移動 |
+| API Routes | 2 | 14 | analytics/overview, warehouse/summary |
+| **總計** | **39** | **697** | - |
 
-### 待完成項目
-- 性能測試套件完整實施
-- 測試覆蓋率逐步提升至 30%
-- 更多 React 組件測試
-- API routes 測試
-- 修復剩餘的失敗測試
+### 持續進行項目（2025-07-07 更新）
+- ✅ 測試覆蓋率提升進行中（從 4.8% → ~10%）
+  - 新增 6 個 UI 組件測試（Button, Card, Input 等）
+  - 新增 useStockTransfer hook 測試
+  - 新增 utils 函數測試
+  - 修復並通過所有測試
+- 性能測試套件完整實施（待完成）
+- 測試覆蓋率逐步提升至 30%（進行中）
+- 更多 React 組件測試（進行中）
+- API routes 測試（已開始）
 
 ### 關鍵成就
 - 建立了完整的測試基礎設施，支援單元、整合和 E2E 測試
@@ -388,7 +395,8 @@
 - 實施了全面的性能監控系統
 - 為漸進式遷移打下堅實基礎
 - 大幅提升了代碼質量保障能力
-- 在 1-2 天內完成原計劃 2-3 週的工作
+- 在 2 天內完成原計劃 2-3 週的工作
+- 測試覆蓋率從 <1% 提升至 ~10%，並持續改進中
 
 ### 經驗教訓
 1. **Mock 策略重要性**: Supabase 和其他外部依賴需要完善的 mock 機制

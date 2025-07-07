@@ -140,3 +140,5 @@ export const ReportGeneratorWidget = function ReportGeneratorWidget({
     </motion.div>
   );
 }
+
+export default ReportGeneratorWidget;

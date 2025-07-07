@@ -5,6 +5,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { getHardwareAbstractionLayer } from '../hardware-abstraction-layer';
+import { createLogger } from '../../logger';
 import { 
   PrintJob, 
   PrintResult, 
@@ -14,6 +15,8 @@ import {
   QueueStatus
 } from '../types';
 import { toast } from 'sonner';
+
+const logger = createLogger('hardware-hook');
 
 interface UseHardwareOptions {
   autoInitialize?: boolean;
@@ -94,10 +97,10 @@ export function useHardware(options: UseHardwareOptions = {}): UseHardwareReturn
         unsubscribesRef.current.push(unsubscribe);
       }
       
-      // Scan listener
+      // Scan listener - scanner functionality handled elsewhere
+      // TODO: Implement scanner service in HAL if needed
       if (onScan) {
-        const unsubscribe = halRef.current.scanner.onScan(onScan);
-        unsubscribesRef.current.push(unsubscribe);
+        logger.debug('Scan listener configured but scanner service not yet integrated');
       }
       
       // Queue status listener
@@ -124,7 +127,7 @@ export function useHardware(options: UseHardwareOptions = {}): UseHardwareReturn
         
         toast.success('Hardware services initialized');
       } catch (error) {
-        console.error('Failed to initialize hardware:', error);
+        logger.error({ err: error }, 'Failed to initialize hardware services');
         toast.error('Failed to initialize hardware services');
       }
     };
@@ -213,7 +216,9 @@ export function useHardware(options: UseHardwareOptions = {}): UseHardwareReturn
     }
     
     try {
-      await halRef.current.scanner.startScanning();
+      // TODO: Implement scanner service in HAL
+      logger.info('Start scanning requested - scanner service not yet integrated');
+      toast.info('Scanner service not yet integrated with HAL');
       setIsScanning(true);
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unknown error';
@@ -226,7 +231,8 @@ export function useHardware(options: UseHardwareOptions = {}): UseHardwareReturn
   const stopScanning = useCallback(async (): Promise<void> => {
     if (!initialized) return;
     
-    await halRef.current.scanner.stopScanning();
+    // TODO: Implement scanner service in HAL
+    logger.info('Stop scanning requested - scanner service not yet integrated');
     setIsScanning(false);
   }, [initialized]);
 

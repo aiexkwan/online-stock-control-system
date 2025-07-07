@@ -326,3 +326,5 @@ export const UploadOrdersWidget = React.memo(function UploadOrdersWidget({ widge
     </>
   );
 });
+
+export default UploadOrdersWidget;

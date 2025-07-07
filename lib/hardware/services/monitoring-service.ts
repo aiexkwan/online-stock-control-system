@@ -68,6 +68,7 @@ export class HardwareMonitoringService extends EventEmitter {
     this.metrics.set(device.deviceId, {
       usageCount: 0,
       errorCount: 0,
+      successCount: 0,
       successRate: 100,
       averageResponseTime: 0
     });
@@ -220,6 +221,7 @@ export class HardwareMonitoringService extends EventEmitter {
     return {
       usageCount,
       errorCount,
+      successCount,
       successRate,
       averageResponseTime
     };

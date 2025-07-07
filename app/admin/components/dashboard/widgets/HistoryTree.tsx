@@ -330,3 +330,5 @@ export const HistoryTree = React.memo(function HistoryTree({ widget, isEditMode 
     </motion.div>
   );
 });
+
+export default HistoryTree;

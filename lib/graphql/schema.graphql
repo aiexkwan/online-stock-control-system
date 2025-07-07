@@ -1,7 +1,11 @@
-# 統一數據層 GraphQL Schema
-# 合併核心實體和操作定義
+"""
+統一數據層 GraphQL Schema
+合併核心實體和操作定義
+"""
 
-# 根類型定義
+"""
+查詢根類型 - 提供所有只讀數據操作的入口點
+"""
 type Query {
   # 產品查詢
   product(id: ID!): Product
@@ -55,6 +59,9 @@ type Query {
   ): MovementConnection!
 }
 
+"""
+變更根類型 - 提供所有數據修改操作的入口點
+"""
 type Mutation {
   # 產品操作
   createProduct(input: CreateProductInput!): ProductResult!
@@ -75,6 +82,9 @@ type Mutation {
   generateGrnLabel(input: GenerateGrnLabelInput!): GrnLabelResult!
 }
 
+"""
+訂閱操作 - 提供實時數據更新功能，使用 WebSocket 連接
+"""
 type Subscription {
   # 實時庫存更新
   inventoryUpdated(locationId: ID): InventoryRecord!
@@ -154,7 +164,10 @@ type SystemError implements BaseError {
   details: String
 }
 
-# 產品管理 Schema
+"""
+產品實體 - 代表系統中的產品資訊
+包括產品代碼、描述、颜色、標準數量等
+"""
 type Product implements Node {
   id: ID! # data_code.code
   code: String! # product sku
@@ -194,7 +207,10 @@ input ProductFilter {
   search: String # 全文搜索
 }
 
-# 托盤管理 Schema
+"""
+托盤實體 - 代表倉庫中的托盤
+是庫存管理的基本單位，包含產品、數量和位置資訊
+"""
 type Pallet implements Node {
   id: ID! # record_palletinfo.plt_num
   palletNumber: String! # plt_num
@@ -246,7 +262,10 @@ input PalletFilter {
   dateRange: DateRangeInput
 }
 
-# 庫存管理 Schema
+"""
+庫存記錄 - 記錄產品在各個倉庫位置的庫存數量
+追蹤 injection, pipeline, prebook 等多個位置的實時庫存
+"""
 type InventoryRecord implements Node {
   id: ID! # record_inventory.uuid
   productCode: String!
@@ -295,7 +314,10 @@ enum LocationType {
   AWAIT_GRN
 }
 
-# 移動記錄 Schema
+"""
+移動記錄 - 記錄托盤在倉庫間的移動歷史
+包含操作員、時間、起點和終點等資訊
+"""
 type Movement implements Node {
   id: ID! # record_transfer.uuid
   palletNumber: String!
@@ -316,7 +338,10 @@ input MovementFilter {
   dateRange: DateRangeInput
 }
 
-# GRN (Goods Receipt Note) Schema
+"""
+GRN 記錄 - 收貨記錄 (Goods Receipt Note)
+記錄供應商收貨的詳細資訊，包括重量、包裝等
+"""
 type GRNRecord implements Node {
   id: ID! # record_grn.uuid
   grnRef: Int!
@@ -394,7 +419,10 @@ input UserFilter {
   search: String
 }
 
-# 訂單管理 Schema
+"""
+訂單實體 - 代表客戶訂單
+追蹤訂單狀態、裝載進度和相關托盤資訊
+"""
 type Order implements Node {
   id: ID! # record_aco.uuid
   orderRef: Int!
@@ -841,61 +869,7 @@ enum AlertSeverity {
   CRITICAL
 }
 
-# Connection 類型定義 (Relay 規範)
-type ProductConnection implements Connection {
-  edges: [ProductEdge!]!
-  pageInfo: PageInfo!
-  totalCount: Int!
-}
-
-type ProductEdge implements Edge {
-  node: Product!
-  cursor: String!
-}
-
-type PalletConnection implements Connection {
-  edges: [PalletEdge!]!
-  pageInfo: PageInfo!
-  totalCount: Int!
-}
-
-type PalletEdge implements Edge {
-  node: Pallet!
-  cursor: String!
-}
-
-type InventoryConnection implements Connection {
-  edges: [InventoryEdge!]!
-  pageInfo: PageInfo!
-  totalCount: Int!
-}
-
-type InventoryEdge implements Edge {
-  node: InventoryRecord!
-  cursor: String!
-}
-
-type MovementConnection implements Connection {
-  edges: [MovementEdge!]!
-  pageInfo: PageInfo!
-  totalCount: Int!
-}
-
-type MovementEdge implements Edge {
-  node: Movement!
-  cursor: String!
-}
-
-type OrderConnection implements Connection {
-  edges: [OrderEdge!]!
-  pageInfo: PageInfo!
-  totalCount: Int!
-}
-
-type OrderEdge implements Edge {
-  node: Order!
-  cursor: String!
-}
+# 額外的 Connection 類型定義 (非重複的)
 
 type GRNConnection implements Connection {
   edges: [GRNEdge!]!
@@ -952,19 +926,11 @@ type StocktakeBatchScanEdge implements Edge {
   cursor: String!
 }
 
-# Result 聯合類型 (錯誤處理)
-union ProductResult = Product | UserError | SystemError
-union PalletResult = Pallet | UserError | SystemError
-union InventoryResult = InventoryRecord | UserError | SystemError
-union MovementResult = Movement | UserError | SystemError
-union OrderResult = Order | UserError | SystemError
+# 額外的 Result 聯合類型 (非重複的)
 union DeleteResult = DeleteSuccess | UserError | SystemError
 union VoidResult = VoidSuccess | UserError | SystemError
 union TransferResult = TransferSuccess | UserError | SystemError
-union StocktakeResult = StocktakeRecord | UserError | SystemError
-union StocktakeSessionResult = StocktakeSession | UserError | SystemError
 union GrnLabelResult = GrnLabel | UserError | SystemError
-union GRNResult = GRNRecord | UserError | SystemError
 union AdjustInventoryResult = InventoryRecord | UserError | SystemError
 union BulkInventoryResult = BulkInventorySuccess | UserError | SystemError
 union BulkPalletResult = BulkPalletSuccess | UserError | SystemError
@@ -1022,8 +988,5 @@ input GenerateGrnLabelInput {
   materialCode: String!
 }
 
-# 自定義標量類型
-scalar DateTime
-scalar Date
-scalar JSON
+# 額外的標量類型
 scalar PositiveInt 

@@ -2,23 +2,24 @@
  * Still In Await Widget
  * 顯示指定時間生成的棧板中仍在 await location 的數量
  * 支援頁面的 time frame selector
+ * 
+ * 已遷移至統一架構：
+ * - 使用 DashboardAPI 統一數據訪問
+ * - 服務器端 JOIN 和計算
+ * - 優化性能和代碼結構
  */
 
 'use client';
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useEffect, useState } from 'react';
 import { CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { UniversalWidgetCard as WidgetCard } from '../UniversalWidgetCard';
-import { ClockIcon, ArrowTrendingUpIcon, ArrowTrendingDownIcon } from '@heroicons/react/24/outline';
+import { ClockIcon } from '@heroicons/react/24/outline';
 import { WidgetComponentProps } from '@/app/types/dashboard';
-import { useGraphQLQuery } from '@/lib/graphql-client-stable';
-import { GET_STILL_IN_AWAIT_STATS } from '@/lib/graphql/queries';
-import { createClient } from '@/lib/supabase';
+import { createDashboardAPI } from '@/lib/api/admin/DashboardAPI';
 import { motion } from 'framer-motion';
-import { cn } from '@/lib/utils';
-import { getYesterdayRange, getDateRange } from '@/app/utils/timezone';
+import { getYesterdayRange } from '@/app/utils/timezone';
 import { format } from 'date-fns';
-import { useEffect, useState } from 'react';
 
 export const StillInAwaitWidget = React.memo(function StillInAwaitWidget({ 
   widget, 
@@ -28,6 +29,8 @@ export const StillInAwaitWidget = React.memo(function StillInAwaitWidget({
   const [stillInAwaitCount, setStillInAwaitCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [metadata, setMetadata] = useState<any>({});
+  const dashboardAPI = useMemo(() => createDashboardAPI(), []);
 
   // 根據 timeFrame 設定查詢時間範圍
   const dateRange = useMemo(() => {
@@ -50,59 +53,57 @@ export const StillInAwaitWidget = React.memo(function StillInAwaitWidget({
       setError(null);
       
       try {
-        const supabase = createClient();
-        
-        // 1. 獲取指定時間生成的棧板
-        const { data: palletData, error: palletError } = await supabase
-          .from('record_palletinfo')
-          .select('plt_num, generate_time')
-          .gte('generate_time', dateRange.start.toISOString())
-          .lte('generate_time', dateRange.end.toISOString());
-
-        if (palletError) throw palletError;
-
-        if (!palletData || palletData.length === 0) {
-          setStillInAwaitCount(0);
-          setLoading(false);
-          return;
-        }
-
-        // 2. 獲取這些棧板的最新位置
-        const palletNumbers = palletData.map(p => p.plt_num);
-        
-        // 查詢每個棧板的歷史記錄，找出最新位置
-        const { data: historyData, error: historyError } = await supabase
-          .from('record_history')
-          .select('plt_num, loc, time')
-          .in('plt_num', palletNumbers)
-          .order('time', { ascending: false });
-
-        if (historyError) throw historyError;
-
-        // 3. 找出每個棧板的最新位置
-        const latestLocations = new Map<string, string>();
-        historyData?.forEach(record => {
-          if (!latestLocations.has(record.plt_num)) {
-            latestLocations.set(record.plt_num, record.loc);
+        // 使用統一的 DashboardAPI 獲取數據
+        const result = await dashboardAPI.fetch({
+          widgetIds: ['statsCard'],
+          dateRange: {
+            start: dateRange.start.toISOString(),
+            end: dateRange.end.toISOString()
+          },
+          params: {
+            dataSource: 'await_location_count_by_timeframe'
           }
+        }, {
+          strategy: 'server',
+          cache: { ttl: 120 } // 2分鐘緩存
         });
 
-        // 4. 計算仍在 Await 的棧板數量
-        const palletCount = Array.from(latestLocations.entries())
-          .filter(([_, loc]) => loc === 'Await' || loc === 'Awaiting')
-          .length;
+        if (result.widgets && result.widgets.length > 0) {
+          const widgetData = result.widgets[0];
+          
+          if (widgetData.data.error) {
+            console.error('[StillInAwaitWidget] API error:', widgetData.data.error);
+            setError(widgetData.data.error);
+            setStillInAwaitCount(0);
+            return;
+          }
 
-        setStillInAwaitCount(palletCount);
+          const awaitCount = widgetData.data.value || 0;
+          const widgetMetadata = widgetData.data.metadata || {};
+          
+          console.log('[StillInAwaitWidget] API returned count:', awaitCount);
+          console.log('[StillInAwaitWidget] Metadata:', widgetMetadata);
+
+          // 使用 API 返回的數據，已經經過優化處理
+          setStillInAwaitCount(awaitCount);
+          setMetadata(widgetMetadata);
+          
+          console.log('[StillInAwaitWidget] Data processed successfully using optimized API');
+        } else {
+          console.warn('[StillInAwaitWidget] No widget data returned from API');
+          setStillInAwaitCount(0);
+        }
       } catch (err) {
-        console.error('Error fetching still in await data:', err);
+        console.error('[StillInAwaitWidget] Error fetching data from API:', err);
         setError(err instanceof Error ? err.message : 'Unknown error');
+        setStillInAwaitCount(0);
       } finally {
         setLoading(false);
       }
     };
 
     fetchData();
-  }, [dateRange]);
+  }, [dateRange, dashboardAPI]);
 
   if (isEditMode) {
     return (
@@ -122,7 +123,12 @@ export const StillInAwaitWidget = React.memo(function StillInAwaitWidget({
             Still In Await
           </CardTitle>
           <p className="text-xs text-slate-400 mt-1">
-            From {format(dateRange.start, 'MMM d')}
+            From {format(dateRange.start, 'MMM d')} to {format(dateRange.end, 'MMM d')}
+            {metadata.calculationTime && (
+              <span className="ml-2 text-xs text-emerald-400">
+                ({metadata.calculationTime})
+              </span>
+            )}
           </p>
         </CardHeader>
         <CardContent className="flex-1 flex items-center justify-center">
@@ -146,10 +152,19 @@ export const StillInAwaitWidget = React.memo(function StillInAwaitWidget({
               >
                 {stillInAwaitCount.toLocaleString()}
               </motion.div>
-              <p className="text-xs text-slate-400">Pallets</p>
+              <p className="text-xs text-slate-400">
+                Pallets
+                {metadata.totalPallets && (
+                  <span className="block text-xs text-slate-500 mt-1">
+                    of {metadata.totalPallets.toLocaleString()} total
+                  </span>
+                )}
+              </p>
             </div>
           )}
         </CardContent>
     </WidgetCard>
   );
 });
+
+export default StillInAwaitWidget;

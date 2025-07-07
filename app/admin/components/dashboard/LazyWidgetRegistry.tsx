@@ -24,7 +24,27 @@ export function createLazyWidget(
   importFn: () => Promise<{ default: React.ComponentType<WidgetComponentProps> } | any>,
   LoadingComponent: React.ComponentType = DefaultWidgetSkeleton
 ) {
-  const LazyComponent = lazy(importFn);
+  // Wrap import function to ensure it returns the correct format for React.lazy
+  const wrappedImportFn = async () => {
+    const module = await importFn();
+    // Handle both default exports and named exports
+    if (module.default) {
+      return { default: module.default };
+    } else if (typeof module === 'function') {
+      return { default: module };
+    } else {
+      // Try to get the first exported component
+      const componentName = Object.keys(module).find(key => 
+        typeof module[key] === 'function' && key !== 'default'
+      );
+      if (componentName) {
+        return { default: module[componentName] };
+      }
+      throw new Error('No valid component found in module');
+    }
+  };
+  
+  const LazyComponent = lazy(wrappedImportFn);
   
   return React.memo(function LazyWidget(props: WidgetComponentProps) {
     return (
@@ -40,20 +60,20 @@ export const LazyWidgets: Partial<Record<WidgetType, React.ComponentType<WidgetC
   // Heavy widgets that benefit from lazy loading
   
   [WidgetType.ANALYTICS_DASHBOARD]: createLazyWidget(
-    () => import('./widgets/AnalyticsDashboardWidget').then(m => ({ default: m.AnalyticsDashboardWidget }))
+    () => import('./widgets/AnalyticsDashboardWidget')
   ),
   
   [WidgetType.REPORTS]: createLazyWidget(
-    () => import('./widgets/ReportsWidget').then(m => ({ default: m.ReportsWidget }))
+    () => import('./widgets/ReportsWidget')
   ),
   
   [WidgetType.INVENTORY_SEARCH]: createLazyWidget(
-    () => import('./widgets/InventorySearchWidget').then(m => ({ default: m.InventorySearchWidget }))
+    () => import('./widgets/InventorySearchWidget')
   ),
   
   // Chart widgets
   [WidgetType.PRODUCT_MIX_CHART]: createLazyWidget(
-    () => import('./widgets/ProductMixChartWidget').then(m => ({ default: m.ProductMixChartWidget }))
+    () => import('./widgets/ProductMixChartWidget')
   ),
   
 };
@@ -62,120 +82,120 @@ export const LazyWidgets: Partial<Record<WidgetType, React.ComponentType<WidgetC
 export const LazyComponents: Record<string, React.ComponentType<any>> = {
   // Chart widgets
   'ProductMixChartWidget': createLazyWidget(
-    () => import('./widgets/ProductMixChartWidget').then(m => ({ default: m.ProductMixChartWidget }))
+    () => import('./widgets/ProductMixChartWidget')
   ),
   'StockDistributionChart': createLazyWidget(
-    () => import('./widgets/StockDistributionChart').then(m => ({ default: m.StockDistributionChart }))
+    () => import('./widgets/StockDistributionChart')
   ),
   'StockLevelHistoryChart': createLazyWidget(
-    () => import('./widgets/StockLevelHistoryChart').then(m => ({ default: m.StockLevelHistoryChart }))
+    () => import('./widgets/StockLevelHistoryChart')
   ),
   'WarehouseWorkLevelAreaChart': createLazyWidget(
-    () => import('./widgets/WarehouseWorkLevelAreaChart').then(m => ({ default: m.WarehouseWorkLevelAreaChart }))
+    () => import('./widgets/WarehouseWorkLevelAreaChart')
   ),
   'InventoryOrderedAnalysisWidget': createLazyWidget(
-    () => import('./widgets/InventoryOrderedAnalysisWidget').then(m => ({ default: m.InventoryOrderedAnalysisWidget }))
+    () => import('./widgets/InventoryOrderedAnalysisWidget')
   ),
   
   // Stats widgets
   'StatsCardWidget': createLazyWidget(
-    () => import('./widgets/StatsCardWidget').then(m => ({ default: m.StatsCardWidget }))
+    () => import('./widgets/StatsCardWidget')
   ),
   'AwaitLocationQtyWidget': createLazyWidget(
-    () => import('./widgets/AwaitLocationQtyWidget').then(m => ({ default: m.AwaitLocationQtyWidget }))
+    () => import('./widgets/AwaitLocationQtyWidget')
   ),
   'YesterdayTransferCountWidget': createLazyWidget(
-    () => import('./widgets/YesterdayTransferCountWidget').then(m => ({ default: m.YesterdayTransferCountWidget }))
+    () => import('./widgets/YesterdayTransferCountWidget')
   ),
   'WarehouseTransferListWidget': createLazyWidget(
-    () => import('./widgets/WarehouseTransferListWidget').then(m => ({ default: m.WarehouseTransferListWidget }))
+    () => import('./widgets/WarehouseTransferListWidget')
   ),
   
   // GraphQL widgets
   'ProductionDetailsGraphQL': createLazyWidget(
-    () => import('./widgets/ProductionDetailsGraphQL').then(m => ({ default: m.ProductionDetailsGraphQL }))
+    () => import('./widgets/ProductionDetailsGraphQL')
   ),
   'ProductionStatsGraphQL': createLazyWidget(
-    () => import('./widgets/ProductionStatsGraphQL').then(m => ({ default: m.ProductionStatsGraphQL }))
+    () => import('./widgets/ProductionStatsGraphQL')
   ),
   
   // 分析類重型 widget (named exports)
   'AnalysisPagedWidget': createLazyWidget(
-    () => import('./widgets/AnalysisPagedWidget').then(m => ({ default: m.AnalysisPagedWidget }))
+    () => import('./widgets/AnalysisPagedWidget')
   ),
   'AnalysisPagedWidgetV2': createLazyWidget(
-    () => import('./widgets/AnalysisPagedWidgetV2').then(m => ({ default: m.AnalysisPagedWidgetV2 }))
+    () => import('./widgets/AnalysisPagedWidgetV2')
   ),
   'AnalysisExpandableCards': createLazyWidget(
-    () => import('./widgets/AnalysisExpandableCards').then(m => ({ default: m.AnalysisExpandableCards }))
+    () => import('./widgets/AnalysisExpandableCards')
   ),
   
   // 報表類重型 widget (named exports)
   'ReportGeneratorWidget': createLazyWidget(
-    () => import('./widgets/ReportGeneratorWidget').then(m => ({ default: m.ReportGeneratorWidget }))
+    () => import('./widgets/ReportGeneratorWidget')
   ),
   'ReportGeneratorWithDialogWidget': createLazyWidget(
-    () => import('./widgets/ReportGeneratorWithDialogWidget').then(m => ({ default: m.ReportGeneratorWithDialogWidget }))
+    () => import('./widgets/ReportGeneratorWithDialogWidget')
   ),
   
   // History widget (named export)
   'HistoryTree': createLazyWidget(
-    () => import('./widgets/HistoryTree').then(m => ({ default: m.HistoryTree }))
+    () => import('./widgets/HistoryTree')
   ),
   
   // Upload page widgets (named exports)
   'OrdersListWidget': createLazyWidget(
-    () => import('./widgets/OrdersListWidget').then(m => ({ default: m.OrdersListWidget }))
+    () => import('./widgets/OrdersListWidgetV2')
   ),
   'OtherFilesListWidget': createLazyWidget(
-    () => import('./widgets/OtherFilesListWidget').then(m => ({ default: m.OtherFilesListWidget }))
+    () => import('./widgets/OtherFilesListWidget')
   ),
   'UploadFilesWidget': createLazyWidget(
-    () => import('./widgets/UploadFilesWidget').then(m => ({ default: m.UploadFilesWidget }))
+    () => import('./widgets/UploadFilesWidget')
   ),
   'UploadOrdersWidget': createLazyWidget(
-    () => import('./widgets/UploadOrdersWidget').then(m => ({ default: m.UploadOrdersWidget }))
+    () => import('./widgets/UploadOrdersWidget')
   ),
   'UploadProductSpecWidget': createLazyWidget(
-    () => import('./widgets/UploadProductSpecWidget').then(m => ({ default: m.UploadProductSpecWidget }))
+    () => import('./widgets/UploadProductSpecWidget')
   ),
   'UploadPhotoWidget': createLazyWidget(
-    () => import('./widgets/UploadPhotoWidget').then(m => ({ default: m.UploadPhotoWidget }))
+    () => import('./widgets/UploadPhotoWidget')
   ),
   
   // Product Update widget (named export)
   'ProductUpdateWidget': createLazyWidget(
-    () => import('./widgets/ProductUpdateWidget').then(m => ({ default: m.ProductUpdateWidget }))
+    () => import('./widgets/ProductUpdateWidget')
   ),
   
   // Supplier Update widget (named export)
   'SupplierUpdateWidget': createLazyWidget(
-    () => import('./widgets/SupplierUpdateWidget').then(m => ({ default: m.SupplierUpdateWidget }))
+    () => import('./widgets/SupplierUpdateWidget')
   ),
   
   // Void Pallet widget (named export)
   'VoidPalletWidget': createLazyWidget(
-    () => import('./widgets/VoidPalletWidget').then(m => ({ default: m.VoidPalletWidget }))
+    () => import('./widgets/VoidPalletWidget')
   ),
   
   // Reprint Label widget (named export)
   'ReprintLabelWidget': createLazyWidget(
-    () => import('./widgets/ReprintLabelWidget').then(m => ({ default: m.ReprintLabelWidget }))
+    () => import('./widgets/ReprintLabelWidget')
   ),
   
   // Transaction Report widget (named export)
   'TransactionReportWidget': createLazyWidget(
-    () => import('./widgets/TransactionReportWidget').then(m => ({ default: m.TransactionReportWidget }))
+    () => import('./widgets/TransactionReportWidget')
   ),
   
   // GRN Report widget (named export)
   'GrnReportWidget': createLazyWidget(
-    () => import('./widgets/GrnReportWidget').then(m => ({ default: m.GrnReportWidget }))
+    () => import('./widgets/GrnReportWidget')
   ),
   
   // ACO Order Report widget (named export)
   'AcoOrderReportWidget': createLazyWidget(
-    () => import('./widgets/AcoOrderReportWidget').then(m => ({ default: m.AcoOrderReportWidget }))
+    () => import('./widgets/AcoOrderReportWidget')
   ),
 };
 

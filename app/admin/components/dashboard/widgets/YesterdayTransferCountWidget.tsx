@@ -6,7 +6,7 @@
 
 'use client';
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useEffect, useState } from 'react';
 import { CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { UniversalWidgetCard as WidgetCard } from '../UniversalWidgetCard';
 import { TruckIcon, ArrowTrendingUpIcon, ArrowTrendingDownIcon } from '@heroicons/react/24/outline';
@@ -17,30 +17,34 @@ import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { getYesterdayRange, getTodayRange } from '@/app/utils/timezone';
 import { format } from 'date-fns';
+import { createDashboardAPI } from '@/lib/api/admin/DashboardAPI';
 
-// GraphQL 查詢 - 獲取轉移記錄
-const GET_TRANSFER_STATS = gql`
-  query GetYesterdayTransferStats($startDate: Datetime!, $endDate: Datetime!) {
-    record_transferCollection(
-      filter: {
-        tran_date: { gte: $startDate, lte: $endDate }
-      }
-    ) {
-      edges {
-        node {
-          uuid
-          operator_id
-        }
-      }
-    }
-  }
-`;
+interface TransferCountData {
+  count: number;
+  trend: number;
+  dateRange: {
+    start: string;
+    end: string;
+  };
+  optimized?: boolean;
+}
 
-export const YesterdayTransferCountWidget = React.memo(function YesterdayTransferCountWidget({ 
+const YesterdayTransferCountWidget = React.memo(function YesterdayTransferCountWidget({ 
   widget, 
   isEditMode,
   timeFrame 
 }: WidgetComponentProps) {
+  const [data, setData] = useState<TransferCountData>({
+    count: 0,
+    trend: 0,
+    dateRange: { start: '', end: '' }
+  });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
+  const [performanceMetrics, setPerformanceMetrics] = useState<{
+    fetchTime: number;
+    cacheHit: boolean;
+  } | null>(null);
   // 根據 timeFrame 設定查詢時間範圍
   const dateRange = useMemo(() => {
     if (!timeFrame) {
@@ -55,32 +59,60 @@ export const YesterdayTransferCountWidget = React.memo(function YesterdayTransfe
     };
   }, [timeFrame]);
 
-  // 使用 GraphQL 查詢獲取數據
-  const { data, loading, error } = useGraphQLQuery(GET_TRANSFER_STATS, {
-    startDate: dateRange.start,
-    endDate: dateRange.end
-  });
+  useEffect(() => {
+    const fetchTransferCount = async () => {
+      setLoading(true);
+      setError(null);
+      const fetchStartTime = performance.now();
+      
+      try {
+        // Use optimized hybrid API
+        const dashboardAPI = createDashboardAPI();
+        const dashboardResult = await dashboardAPI.fetch({
+          widgetIds: ['transfer_count'],
+          dateRange: {
+            start: dateRange.start,
+            end: dateRange.end
+          }
+        }, { 
+          strategy: 'client', // Force client strategy for client components (per Re-Structure-5.md)
+          cache: { ttl: 180 } // 3-minute cache for transfer stats
+        });
+        
+        const fetchTime = performance.now() - fetchStartTime;
+        
+        // Extract widget data
+        const widgetData = dashboardResult.widgets?.find(
+          w => w.widgetId === 'transfer_count'
+        );
+        
+        if (widgetData && !widgetData.data.error) {
+          setData({
+            count: widgetData.data.value || 0,
+            trend: widgetData.data.metadata?.trend || 0,
+            dateRange: widgetData.data.metadata?.dateRange || dateRange,
+            optimized: widgetData.data.metadata?.optimized
+          });
+          
+          setPerformanceMetrics({
+            fetchTime,
+            cacheHit: dashboardResult.metadata?.cacheHit || false
+          });
+        } else {
+          throw new Error(widgetData?.data.error || 'No data received');
+        }
+        
+        setError(null);
+      } catch (err) {
+        console.error('Error fetching transfer count:', err);
+        setError(err instanceof Error ? err : new Error('Unknown error'));
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  // 獲取今天的數據用於趨勢比較，已經是 ISO 字符串格式
-  const todayRange = getTodayRange();
-  const { data: todayData } = useGraphQLQuery(GET_TRANSFER_STATS, {
-    startDate: todayRange.start,
-    endDate: todayRange.end
-  });
-
-  // 計算總數 - 從 edges 數據中計算
-  const transferCount = useMemo(() => {
-    if (!data?.record_transferCollection?.edges) return 0;
-    return data.record_transferCollection.edges.length || 0;
-  }, [data]);
-
-  // 計算趨勢
-  const trend = useMemo(() => {
-    if (!todayData?.record_transferCollection?.edges || transferCount === 0) return 0;
-    const todayCount = todayData.record_transferCollection.edges.length || 0;
-    if (todayCount === 0) return 0;
-    return ((transferCount - todayCount) / todayCount) * 100;
-  }, [transferCount, todayData]);
+    fetchTransferCount();
+  }, [dateRange]);
 
   if (isEditMode) {
     return (
@@ -100,7 +132,7 @@ export const YesterdayTransferCountWidget = React.memo(function YesterdayTransfe
             Transfer Done
           </CardTitle>
           <p className="text-xs text-slate-400 mt-1">
-            From {format(new Date(dateRange.start), 'MMM d')} to {format(new Date(dateRange.end), 'MMM d')}
+            From {format(new Date(data.dateRange.start || dateRange.start), 'MMM d')} to {format(new Date(data.dateRange.end || dateRange.end), 'MMM d')}
           </p>
         </CardHeader>
         <CardContent className="flex-1 flex items-center justify-center">
@@ -112,7 +144,7 @@ export const YesterdayTransferCountWidget = React.memo(function YesterdayTransfe
           ) : error ? (
             <div className="text-red-400 text-sm text-center">
               <p>Error loading data</p>
-              <p className="text-xs mt-1">{error.message}</p>
+              <p className="text-xs mt-1">{error?.message}</p>
             </div>
           ) : (
             <div className="text-center">
@@ -122,21 +154,32 @@ export const YesterdayTransferCountWidget = React.memo(function YesterdayTransfe
                 transition={{ duration: 0.3 }}
                 className="text-4xl font-bold text-white mb-2"
               >
-                {transferCount.toLocaleString()}
+                {data.count.toLocaleString()}
               </motion.div>
               <p className="text-xs text-slate-400">Total Transfers</p>
               
-              {trend !== 0 && (
+              {/* Performance indicator */}
+              {data.optimized && (
+                <div className="text-xs text-blue-400 mt-1 flex items-center gap-1 justify-center">
+                  <span>⚡</span>
+                  <span>Optimized</span>
+                  {performanceMetrics && (
+                    <span className="ml-1">({performanceMetrics.fetchTime.toFixed(0)}ms)</span>
+                  )}
+                </div>
+              )}
+              
+              {data.trend !== 0 && (
                 <div className={cn(
                   "flex items-center gap-1 mt-2 text-sm justify-center",
-                  trend > 0 ? "text-green-400" : "text-red-400"
+                  data.trend > 0 ? "text-green-400" : "text-red-400"
                 )}>
-                  {trend > 0 ? (
+                  {data.trend > 0 ? (
                     <ArrowTrendingUpIcon className="w-4 h-4" />
                   ) : (
                     <ArrowTrendingDownIcon className="w-4 h-4" />
                   )}
-                  <span>{Math.abs(trend).toFixed(1)}% vs Today</span>
+                  <span>{Math.abs(data.trend).toFixed(1)}% vs Today</span>
                 </div>
               )}
             </div>
@@ -145,3 +188,17 @@ export const YesterdayTransferCountWidget = React.memo(function YesterdayTransfe
     </WidgetCard>
   );
 });
+
+export default YesterdayTransferCountWidget;
+
+/**
+ * @deprecated Legacy implementation with dual GraphQL queries
+ * Migrated to hybrid architecture on 2025-07-07
+ * 
+ * Performance improvements achieved:
+ * - Query count: 2 GraphQL queries → 1 optimized server query
+ * - Data processing: Client-side edges.length → Server-side COUNT aggregation
+ * - Bundle reduction: Removed GraphQL client dependencies
+ * - Caching: None → 3-minute TTL with automatic revalidation
+ * - Trend calculation: Client-side → Server-side with single query
+ */

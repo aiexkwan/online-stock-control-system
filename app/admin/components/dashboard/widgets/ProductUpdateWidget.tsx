@@ -471,6 +471,8 @@ export const ProductUpdateWidget = React.memo(function ProductUpdateWidget({ wid
   );
 });
 
+export default ProductUpdateWidget;
+
 // Info Row Component
 interface InfoRowProps {
   label: string;

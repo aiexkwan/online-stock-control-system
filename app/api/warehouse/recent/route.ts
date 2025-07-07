@@ -9,7 +9,7 @@ export async function GET() {
     const { data: recentActivity, error } = await supabase
       .from('record_transfer')
       .select('*')
-      .order('update_time', { ascending: false })
+      .order('tran_date', { ascending: false })
       .limit(20);
 
     if (error) {

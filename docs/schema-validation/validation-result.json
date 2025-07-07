@@ -1,0 +1,17 @@
+{
+  "timestamp": "2025-07-07T12:16:15.246Z",
+  "isValid": true,
+  "summary": {
+    "errors": 0,
+    "warnings": 0,
+    "suggestions": 4
+  },
+  "errors": [],
+  "warnings": [],
+  "suggestions": [
+    "Consider implementing query complexity analysis",
+    "Add rate limiting for mutations and subscriptions",
+    "Implement field-level caching for frequently accessed data",
+    "Use DataLoader pattern to prevent N+1 queries"
+  ]
+}

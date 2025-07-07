@@ -7,7 +7,7 @@ import {
   PrintJob, 
   PrintResult, 
   PrinterStatus, 
-  StatusCallback, 
+  PrinterStatusCallback, 
   Unsubscribe,
   PrintJobType 
 } from '../types';
@@ -26,7 +26,7 @@ export interface PrinterService {
   
   // Status Monitoring
   getStatus(printerId?: string): Promise<PrinterStatus | PrinterStatus[]>;
-  onStatusChange(callback: StatusCallback): Unsubscribe;
+  onStatusChange(callback: PrinterStatusCallback): Unsubscribe;
   
   // Queue Management
   getQueueStatus(): Promise<{ pending: number; processing: number }>;
@@ -133,7 +133,7 @@ export class DefaultPrinterService extends EventEmitter implements PrinterServic
     return Array.from(this.printers.values());
   }
 
-  onStatusChange(callback: StatusCallback): Unsubscribe {
+  onStatusChange(callback: PrinterStatusCallback): Unsubscribe {
     const listener = (status: PrinterStatus) => callback(status);
     this.on('statusChange', listener);
     return () => this.off('statusChange', listener);

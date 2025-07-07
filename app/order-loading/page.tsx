@@ -24,7 +24,7 @@ import {
   ExclamationTriangleIcon,
   XMarkIcon
 } from '@heroicons/react/24/outline';
-import { loadPalletToOrder, undoLoadPallet } from '@/app/actions/orderLoadingActions';
+import { loadPalletToOrder, undoLoadPallet, getOrderInfo } from '@/app/actions/orderLoadingActions';
 import MobileOrderLoading from './components/MobileOrderLoading';
 import { VirtualizedOrderList, virtualScrollStyles } from './components/VirtualizedOrderList';
 import { useOrderDataCache, useOrderSummariesCache } from './hooks/useOrderCache';
@@ -50,8 +50,6 @@ interface OrderSummary {
 }
 
 export default function OrderLoadingPage() {
-  // 使用適配器進行漸進式遷移
-  const [adapter] = useState(() => new OrderLoadingAdapter());
   const supabase = createClient();
   
   // State management
@@ -178,23 +176,26 @@ export default function OrderLoadingPage() {
 
       process.env.NODE_ENV !== "production" && console.log('[OrderCache] Fetching fresh order summaries');
       
-      // 使用適配器獲取訂單
-      try {
-        const data = await adapter.fetchAvailableOrders();
+      // 直接從數據庫獲取訂單
+      const { data, error } = await supabase
+        .from('data_order')
+        .select('order_ref, product_code, product_desc, product_qty, loaded_qty')
+        .order('order_ref', { ascending: false });
         
-        if (!data || data.length === 0) {
-          console.log('No orders found');
-          setOrderSummaries(new Map());
-          setAvailableOrders([]);
-          return;
-        }
-      } catch (error) {
+      if (error) {
         console.error('Error fetching orders:', error);
         toast.error('Error occurred while fetching order list');
         return;
       }
+        
+      if (!data || data.length === 0) {
+        console.log('No orders found');
+        setOrderSummaries(new Map());
+        setAvailableOrders([]);
+        return;
+      }
 
-      // Group by order_ref and calculate completion
+        // Group by order_ref and calculate completion
       const orderMap = new Map<string, OrderSummary>();
       data.forEach(item => {
         const ref = item.order_ref;
@@ -255,9 +256,19 @@ export default function OrderLoadingPage() {
 
       process.env.NODE_ENV !== "production" && console.log(`[OrderCache] Fetching fresh data for order: ${orderRef}`);
       
-      // 使用適配器獲取訂單詳情
-      const data = await adapter.fetchOrderData(orderRef);
-      
+      // 獲取訂單詳情
+      const { data, error } = await supabase
+        .from('data_order')
+        .select('order_ref, product_code, product_desc, product_qty, loaded_qty')
+        .eq('order_ref', orderRef)
+        .order('product_code', { ascending: true });
+
+      if (error) {
+        console.error('Error fetching order data:', error);
+        toast.error('Error occurred while fetching order data');
+        return;
+      }
+
       if (!data) {
         toast.error('Order not found');
         return;
@@ -441,8 +452,8 @@ export default function OrderLoadingPage() {
 
     setIsSearching(true);
     try {
-      // 使用適配器裝載棧板
-      const response = await adapter.loadPallet(selectedOrderRef, result.data.value, idNumber);
+      // 使用 server action 裝載棧板
+      const response = await loadPalletToOrder(selectedOrderRef, result.data.value);
       
       if (response.success) {
         // Play success sound
@@ -575,14 +586,15 @@ export default function OrderLoadingPage() {
             {/* Left Column - ID Input and Order Selection */}
             <div className="space-y-6">
               {/* ID Input Card */}
-              <Card className="bg-slate-800/50 border-slate-700/50 backdrop-blur-sm">
-                <CardHeader>
-                  <CardTitle className="flex items-center text-slate-200">
-                    <UserIcon className="h-6 w-6 mr-2 text-blue-400" />
-                    Enter ID Number
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
+              <div className="operational-card operational-glow">
+                <Card className="bg-slate-800/50 border-slate-700/50 backdrop-blur-sm">
+                  <CardHeader>
+                    <CardTitle className="flex items-center text-slate-200">
+                      <UserIcon className="h-6 w-6 mr-2 text-blue-400" />
+                      Enter ID Number
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
                   <div className="space-y-4">
                     <div className="relative">
                       <input
@@ -619,10 +631,12 @@ export default function OrderLoadingPage() {
                   </div>
                 </CardContent>
               </Card>
+            </div>
 
               {/* Order Selection Card */}
               {isIdValid && availableOrders.length > 0 && !selectedOrderRef && (
-                <Card className="bg-slate-800/50 border-slate-700/50 backdrop-blur-sm">
+                <div className="operational-card">
+                  <Card className="bg-slate-800/50 border-slate-700/50 backdrop-blur-sm">
                   <CardHeader>
                     <CardTitle className="flex items-center text-slate-200">
                       <ClipboardDocumentListIcon className="h-6 w-6 mr-2 text-green-400" />
@@ -651,6 +665,7 @@ export default function OrderLoadingPage() {
                     />
                   </CardContent>
                 </Card>
+              </div>
               )}
             </div>
 
@@ -666,7 +681,8 @@ export default function OrderLoadingPage() {
               
               {/* Order Information Card */}
               {selectedOrderRef && (
-                <Card className="bg-slate-800/50 border-slate-700/50 backdrop-blur-sm">
+                <div className="operational-highlight">
+                  <Card className="bg-slate-800/50 border-slate-700/50 backdrop-blur-sm">
                   <CardHeader>
                     <CardTitle className="flex items-center justify-between text-slate-200">
                       <div className="flex items-center">
@@ -744,11 +760,13 @@ export default function OrderLoadingPage() {
                     )}
                   </CardContent>
                 </Card>
+              </div>
               )}
 
               {/* Search Card */}
               {selectedOrderRef && (
-                <Card className="bg-slate-800/50 border-slate-700/50 backdrop-blur-sm">
+                <div className="operational-card operational-glow">
+                  <Card className="bg-slate-800/50 border-slate-700/50 backdrop-blur-sm">
                   <CardHeader>
                     <CardTitle className="flex items-center justify-between text-slate-200">
                       <div className="flex items-center">
@@ -808,6 +826,7 @@ export default function OrderLoadingPage() {
                     )}
                   </CardContent>
                 </Card>
+              </div>
               )}
             </div>
           </div>
@@ -866,28 +885,6 @@ export default function OrderLoadingPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Service Toggle - Development Only */}
-      {process.env.NODE_ENV !== 'production' && (
-        <div className="fixed bottom-4 right-4 bg-gray-800 p-4 rounded-lg shadow-lg border border-gray-700">
-          <div className="flex items-center space-x-2">
-            <label className="text-sm text-gray-300">Use Unified Service:</label>
-            <input
-              type="checkbox"
-              checked={adapter.isUsingUnifiedService()}
-              onChange={(e) => {
-                adapter.setUseUnifiedService(e.target.checked);
-                toast.info(`Switched to ${e.target.checked ? 'Unified' : 'Legacy'} service`);
-                // Refresh data with new service
-                if (selectedOrderRef) {
-                  fetchOrderData(selectedOrderRef);
-                  fetchAvailableOrders();
-                }
-              }}
-              className="w-4 h-4"
-            />
-          </div>
-        </div>
-      )}
 
       {/* Virtual Scroll Styles */}
       <style jsx global>{virtualScrollStyles}</style>

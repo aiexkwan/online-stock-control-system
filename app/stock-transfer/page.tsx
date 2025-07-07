@@ -2,8 +2,8 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { StatusMessage } from '../../components/ui/universal-stock-movement-layout';
-import { useUnifiedStockTransfer } from '../hooks/useUnifiedStockTransfer';
-import { useUnifiedPalletSearch } from '../hooks/useUnifiedPalletSearch';
+import { searchPallet, transferPallet, getTransferHistory, validateTransferDestination } from '../actions/stockTransferActions';
+import { toast } from 'sonner';
 
 // 導入拆分的組件
 import { PageHeader } from './components/PageHeader';
@@ -29,62 +29,31 @@ interface PalletInfo {
   series?: string;
 }
 
+interface ActivityLogItem {
+  id: string;
+  type: 'search' | 'transfer' | 'error' | 'info';
+  message: string;
+  timestamp: string;
+  palletNum?: string;
+}
+
+// Optimistic transfer interface for UI updates
+interface OptimisticTransfer {
+  id: string;
+  pltNum: string;
+  fromLocation: string;
+  toLocation: string;
+  status: 'pending' | 'success' | 'failed';
+  timestamp: number;
+}
+
 export default function StockTransferPage() {
-  // 使用新的統一 hooks
-  const {
-    isTransferring,
-    optimisticTransfers,
-    executeTransfer,
-    hasPendingTransfer
-  } = useUnifiedStockTransfer({
-    onTransferComplete: (success, pltNum) => {
-      if (success) {
-        addActivityLog({
-          id: Date.now().toString(),
-          type: 'transfer' as const,
-          message: `Pallet ${pltNum} transferred successfully`,
-          timestamp: new Date().toISOString(),
-          palletNum: pltNum
-        });
-      }
-    }
-  });
-
-  const {
-    isSearching,
-    searchPallet
-  } = useUnifiedPalletSearch({
-    autoDetectType: true,
-    cacheTimeout: 5 * 60 * 1000 // 5分鐘快取
-  });
-
-  // 模擬原有的 activityLog 和相關函數
-  const [activityLog, setActivityLog] = useState<any[]>([]);
-  const isLoading = isTransferring || isSearching;
-
-  const addActivityLog = useCallback((log: any) => {
-    setActivityLog(prev => [log, ...prev].slice(0, 50)); // 保留最近50條
-  }, []);
-
-  // 適配原有的 searchPalletInfo 函數
-  const searchPalletInfo = useCallback(async (searchType: string, value: string) => {
-    const result = await searchPallet(value, searchType as 'series' | 'pallet_num');
-    return result;
-  }, [searchPallet]);
-
-  // 適配原有的 executeStockTransfer 函數
-  const executeStockTransfer = useCallback(async (
-    palletInfo: PalletInfo,
-    toLocation: string,
-    operatorId: string
-  ) => {
-    const success = await executeTransfer(palletInfo, toLocation, operatorId);
-    return success;
-  }, [executeTransfer]);
-
-  // Placeholder 函數保持兼容性
-  const preloadPallets = useCallback(async () => {}, []);
-
+  // State management
+  const [isLoading, setIsLoading] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
+  const [isTransferring, setIsTransferring] = useState(false);
+  const [activityLog, setActivityLog] = useState<ActivityLogItem[]>([]);
+  const [optimisticTransfers, setOptimisticTransfers] = useState<OptimisticTransfer[]>([]);
   const [searchValue, setSearchValue] = useState('');
   const [statusMessage, setStatusMessage] = useState<{
     type: 'success' | 'error' | 'warning' | 'info';
@@ -95,38 +64,188 @@ export default function StockTransferPage() {
   const [selectedDestination, setSelectedDestination] = useState('');
   const [verifiedClockNumber, setVerifiedClockNumber] = useState<string | null>(null);
   const [verifiedName, setVerifiedName] = useState<string | null>(null);
+  const [transferHistory, setTransferHistory] = useState<any[]>([]);
 
-  // 添加搜尋輸入框的 ref
+  // Refs
   const searchInputRef = useRef<HTMLInputElement>(null);
 
-  // 自動聚焦到搜尋欄位
+  // Add activity log helper
+  const addActivityLog = useCallback((log: ActivityLogItem) => {
+    setActivityLog(prev => [log, ...prev].slice(0, 50)); // Keep last 50 entries
+  }, []);
+
+  // Auto focus search input
   const focusSearchInput = useCallback(() => {
     setTimeout(() => {
       if (searchInputRef.current) {
         searchInputRef.current.focus();
       }
-    }, 100); // 短暫延遲確保 DOM 已更新
+    }, 100);
   }, []);
 
-  // 頁面載入時自動聚焦和預加載資料
+  // Load transfer history on mount
   useEffect(() => {
     focusSearchInput();
+    loadTransferHistory();
+  }, [focusSearchInput]);
+
+  // Load transfer history
+  const loadTransferHistory = async () => {
+    try {
+      const history = await getTransferHistory(20);
+      setTransferHistory(history);
+    } catch (error) {
+      console.error('Failed to load transfer history:', error);
+    }
+  };
+
+  // Cleanup optimistic transfers periodically
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setOptimisticTransfers(prev => 
+        prev.filter(t => 
+          t.status === 'pending' || 
+          (Date.now() - t.timestamp) < 5000 // Keep success/failed for 5 seconds
+        )
+      );
+    }, 1000);
     
-    // 預加載最近使用的托盤資料
-    const initPreload = async () => {
-      try {
-        await preloadPallets();
-        process.env.NODE_ENV !== "production" && console.log('[Stock Transfer] 預加載完成');
-      } catch (error) {
-        console.error('[Stock Transfer] 預加載失敗:', error);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Search pallet using Server Action
+  const searchPalletInfo = useCallback(async (searchType: string, value: string) => {
+    setIsSearching(true);
+    try {
+      const result = await searchPallet(value);
+      
+      if (result.success && result.data) {
+        addActivityLog({
+          id: Date.now().toString(),
+          type: 'search',
+          message: `Found pallet ${result.data.plt_num}`,
+          timestamp: new Date().toISOString(),
+          palletNum: result.data.plt_num
+        });
+        
+        return {
+          pallet: result.data,
+          error: null,
+          searchTime: 0
+        };
+      } else {
+        addActivityLog({
+          id: Date.now().toString(),
+          type: 'error',
+          message: result.error || 'Pallet not found',
+          timestamp: new Date().toISOString()
+        });
+        
+        return {
+          pallet: null,
+          error: result.error || 'Pallet not found',
+          searchTime: 0
+        };
       }
+    } catch (error) {
+      console.error('Search error:', error);
+      return {
+        pallet: null,
+        error: 'Search failed',
+        searchTime: 0
+      };
+    } finally {
+      setIsSearching(false);
+    }
+  }, [addActivityLog]);
+
+  // Execute stock transfer using Server Action
+  const executeStockTransfer = useCallback(async (
+    palletInfo: PalletInfo,
+    toLocation: string,
+    operatorId: string
+  ): Promise<boolean> => {
+    const transferId = `${palletInfo.plt_num}-${Date.now()}`;
+    const fromLocation = palletInfo.current_plt_loc || palletInfo.location || 'Unknown';
+    
+    // Check for pending transfers
+    const hasPending = optimisticTransfers.some(
+      t => t.pltNum === palletInfo.plt_num && t.status === 'pending'
+    );
+    
+    if (hasPending) {
+      toast.warning(`Pallet ${palletInfo.plt_num} has a pending transfer. Please wait.`);
+      return false;
+    }
+    
+    // Add optimistic update
+    const optimisticEntry: OptimisticTransfer = {
+      id: transferId,
+      pltNum: palletInfo.plt_num,
+      fromLocation,
+      toLocation,
+      status: 'pending',
+      timestamp: Date.now()
     };
     
-    initPreload();
-  }, [focusSearchInput, preloadPallets]);
+    setOptimisticTransfers(prev => [...prev, optimisticEntry]);
+    setIsTransferring(true);
+    
+    try {
+      // Validate transfer first
+      const validation = await validateTransferDestination(palletInfo.plt_num, toLocation);
+      if (!validation.valid) {
+        throw new Error(validation.message || 'Invalid transfer');
+      }
+      
+      // Execute transfer
+      const result = await transferPallet(palletInfo.plt_num, toLocation);
+      
+      if (result.success) {
+        // Update optimistic state
+        setOptimisticTransfers(prev =>
+          prev.map(t => t.id === transferId ? { ...t, status: 'success' } : t)
+        );
+        
+        // Add to activity log
+        addActivityLog({
+          id: Date.now().toString(),
+          type: 'transfer',
+          message: result.message,
+          timestamp: new Date().toISOString(),
+          palletNum: palletInfo.plt_num
+        });
+        
+        // Reload transfer history
+        loadTransferHistory();
+        
+        toast.success(result.message);
+        return true;
+      } else {
+        // Update optimistic state
+        setOptimisticTransfers(prev =>
+          prev.map(t => t.id === transferId ? { ...t, status: 'failed' } : t)
+        );
+        
+        toast.error(result.error || 'Transfer failed');
+        return false;
+      }
+    } catch (error) {
+      console.error('Transfer error:', error);
+      
+      // Update optimistic state
+      setOptimisticTransfers(prev =>
+        prev.map(t => t.id === transferId ? { ...t, status: 'failed' } : t)
+      );
+      
+      toast.error(error instanceof Error ? error.message : 'Transfer failed');
+      return false;
+    } finally {
+      setIsTransferring(false);
+    }
+  }, [optimisticTransfers, addActivityLog]);
 
-
-  // Process transfer execution
+  // Handle transfer execution
   const handleTransferExecute = useCallback(async (targetLocation: string, clockNumber: string) => {
     if (!selectedPallet) return;
     
@@ -148,208 +267,106 @@ export default function StockTransferPage() {
     } else {
       setStatusMessage({
         type: 'error',
-        message: `❌ TRANSFER FAILED: Pallet ${selectedPallet.plt_num} could not be moved to ${targetLocation}`
+        message: `✗ Failed to transfer pallet ${selectedPallet.plt_num}`
       });
-      setSelectedPallet(null);
     }
   }, [selectedPallet, executeStockTransfer, focusSearchInput]);
 
-  // Handle search selection - Optimized for speed
-  const handleSearchSelect = useCallback(async (result: any) => {
-    if (result.data.type === 'pallet') {
-      setStatusMessage(null);
-      
-      // Check if destination and operator are ready
-      if (!selectedDestination || !verifiedClockNumber) {
-        setStatusMessage({
-          type: 'warning',
-          message: '⚠️ Please select destination and verify operator first'
-        });
-        return;
-      }
-      
-      const searchValue = result.data.value;
-      const searchType = result.data.searchType || 'pallet_num';
-      
-      // Search pallet information
-      const palletInfo = await searchPalletInfo(searchType, searchValue);
-      
-      if (palletInfo) {
-        // Check for pending transfers
-        const hasPendingTransfer = optimisticTransfers.some(
-          t => t.pltNum === palletInfo.plt_num && t.status === 'pending'
-        );
-        
-        if (hasPendingTransfer) {
-          setStatusMessage({
-            type: 'warning',
-            message: `⏳ Pallet ${palletInfo.plt_num} has a pending transfer. Please wait.`
-          });
-          return;
-        }
-        
-        const currentLocation = (palletInfo.location || 'Await') as string;
-        
-        // Check if Voided
-        if (currentLocation.toLowerCase() === 'voided') {
-          setStatusMessage({
-            type: 'error',
-            message: `❌ TRANSFER BLOCKED: Pallet is voided, cannot be moved`
-          });
-          return;
-        }
-        
-        // Validate transfer rules
-        const validation = validateTransfer(currentLocation, selectedDestination);
-        
-        if (!validation.isValid) {
-          setStatusMessage({
-            type: 'error',
-            message: `❌ ${validation.errorMessage}`
-          });
-          return;
-        }
-        
-        // Set selected pallet and execute transfer immediately
-        setSelectedPallet(palletInfo);
-        
-        // Execute transfer
-        await handleTransferExecute(selectedDestination, verifiedClockNumber);
-      } else {
-        setStatusMessage({
-          type: 'error',
-          message: `❌ ${searchType === 'series' ? 'Series' : 'Pallet'} "${searchValue}" not found`
-        });
-      }
-    }
-  }, [searchPalletInfo, optimisticTransfers, selectedDestination, verifiedClockNumber, handleTransferExecute]);
+  // Helper functions for compatibility
+  const hasPendingTransfer = useCallback((pltNum: string): boolean => {
+    return optimisticTransfers.some(
+      t => t.pltNum === pltNum && t.status === 'pending'
+    );
+  }, [optimisticTransfers]);
 
+  const preloadPallets = useCallback(async () => {
+    // No-op for now - can implement caching strategy later
+  }, []);
 
-  // Reset operation - optimized for quick next scan
-  const handleReset = useCallback(() => {
-    // Clear all states
-    setSearchValue('');
-    setStatusMessage(null);
-    setSelectedPallet(null);
-    setSelectedDestination('');
-    setVerifiedClockNumber(null);
-    setVerifiedName(null);
-    
-    // Auto-focus for immediate next operation
-    focusSearchInput();
-  }, [focusSearchInput]);
-
-  // 設置鍵盤快捷鍵
-  const { shortcuts } = useKeyboardShortcuts({
-    onSearch: focusSearchInput,
-    onReset: handleReset,
-    onHelp: () => setShowShortcutsDialog(true),
-    enabled: !showShortcutsDialog // 在對話框開啟時禁用快捷鍵
+  // 使用鍵盤快捷鍵 Hook
+  useKeyboardShortcuts({
+    onSearchFocus: focusSearchInput,
+    onShowShortcuts: () => setShowShortcutsDialog(true),
+    onClearSearch: () => {
+      setSearchValue('');
+      setSelectedPallet(null);
+      focusSearchInput();
+    },
+    isEnabled: true
   });
 
   return (
-    <div className="min-h-screen">
-      {/* Skip Navigation Links */}
+    <div className="flex min-h-screen w-full flex-col bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900">
       <SkipNavigation />
       
-      {/* 主要內容區域 */}
-      <div className="relative">
-        <main id="main-content" className="container mx-auto px-4 py-8 max-w-5xl">
-          {/* 頁面標題區域 */}
-          <PageHeader />
-
-          {/* Status Messages */}
+      <PageHeader />
+      
+      <main id="main-content" className="flex-1 px-4 pt-20 pb-8 sm:px-6 md:px-8" role="main">
+        <div className="mx-auto max-w-7xl">
+          {/* Status Message */}
           {statusMessage && (
-            <StatusMessage
-              type={statusMessage.type}
-              message={statusMessage.message}
-              onDismiss={() => setStatusMessage(null)}
-            />
+            <div className="mb-6 animate-fade-in">
+              <StatusMessage
+                type={statusMessage.type}
+                message={statusMessage.message}
+                onDismiss={() => setStatusMessage(null)}
+              />
+            </div>
           )}
 
-          {/* Main Layout - 左邊 2/3，右邊 1/3 */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Left Column - 2/3 width */}
-            <div className="lg:col-span-2 space-y-6">
-              {/* Operation Area */}
-              <section id="search-section" aria-label="Pallet search section">
-                <PalletSearchSection
-                  searchValue={searchValue}
-                  onSearchValueChange={setSearchValue}
-                  onSearchSelect={handleSearchSelect}
-                  isLoading={isLoading}
-                  searchInputRef={searchInputRef}
-                  disabled={!selectedDestination || !verifiedClockNumber}
-                  disabledMessage={
-                    !selectedDestination 
-                      ? "Please select a destination first" 
-                      : !verifiedClockNumber 
-                        ? "Please verify your clock number" 
-                        : "Please select destination and verify operator first"
-                  }
-                />
-              </section>
-
-              {/* Activity Log */}
-              <section id="transfer-log" aria-label="Transfer activity log section">
-                <TransferLogSection
-                  activityLog={activityLog}
-                  optimisticTransfers={optimisticTransfers}
-                />
-              </section>
+          {/* Main Content Grid */}
+          <div className="grid gap-6 lg:grid-cols-2 xl:grid-cols-3">
+            {/* Pallet Search Section */}
+            <div className="lg:col-span-1 xl:col-span-1">
+              <PalletSearchSection
+                searchValue={searchValue}
+                setSearchValue={setSearchValue}
+                selectedPallet={selectedPallet}
+                setSelectedPallet={setSelectedPallet}
+                isLoading={isLoading || isSearching}
+                searchPalletInfo={searchPalletInfo}
+                optimisticTransfers={optimisticTransfers}
+                hasPendingTransfer={hasPendingTransfer}
+                searchInputRef={searchInputRef}
+              />
             </div>
 
-            {/* Right Column - 1/3 width */}
-            <div className="lg:col-span-1">
-              <section id="transfer-control" aria-label="Transfer control panel">
-                <TransferControlPanel
-                  selectedPallet={selectedPallet}
-                  selectedDestination={selectedDestination}
-                  verifiedClockNumber={verifiedClockNumber}
-                  verifiedName={verifiedName}
-                  onDestinationChange={setSelectedDestination}
-                  onClockNumberVerified={(clockNum, name) => {
-                    setVerifiedClockNumber(clockNum);
-                    setVerifiedName(name);
-                  }}
-                  isProcessing={isLoading}
-                />
-              </section>
+            {/* Transfer Control Panel */}
+            <div className="lg:col-span-1 xl:col-span-1">
+              <TransferControlPanel
+                selectedPallet={selectedPallet}
+                selectedDestination={selectedDestination}
+                setSelectedDestination={setSelectedDestination}
+                verifiedClockNumber={verifiedClockNumber}
+                setVerifiedClockNumber={setVerifiedClockNumber}
+                verifiedName={verifiedName}
+                setVerifiedName={setVerifiedName}
+                isTransferring={isTransferring}
+                onTransferExecute={handleTransferExecute}
+              />
+            </div>
+
+            {/* Transfer Log Section */}
+            <div className="lg:col-span-2 xl:col-span-1">
+              <TransferLogSection
+                activityLog={activityLog}
+              />
             </div>
           </div>
+        </div>
+      </main>
 
-          {/* 底部裝飾 */}
-          <PageFooter />
-        </main>
-      </div>
+      <PageFooter
+        isLoading={isLoading}
+        activityLogCount={activityLog.length}
+        optimisticTransfersCount={optimisticTransfers.filter(t => t.status === 'pending').length}
+      />
 
       {/* Keyboard Shortcuts Dialog */}
       <KeyboardShortcutsDialog
-        isOpen={showShortcutsDialog}
+        open={showShortcutsDialog}
         onOpenChange={setShowShortcutsDialog}
-        shortcuts={shortcuts}
       />
-
-      {/* 添加自定義滾動條樣式 */}
-      <style jsx global>{`
-        .custom-scrollbar::-webkit-scrollbar {
-          width: 6px;
-        }
-        
-        .custom-scrollbar::-webkit-scrollbar-track {
-          background: #374151;
-          border-radius: 3px;
-        }
-        
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-          background: #6B7280;
-          border-radius: 3px;
-        }
-        
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-          background: #9CA3AF;
-        }
-      `}</style>
     </div>
   );
 }

@@ -356,3 +356,5 @@ export const StockTypeSelector: React.FC<StockTypeSelectorProps> = ({ widget, is
     </div>
   );
 };
+
+export default StockTypeSelector;

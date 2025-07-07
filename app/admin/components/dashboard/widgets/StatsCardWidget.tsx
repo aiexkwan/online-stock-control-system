@@ -9,8 +9,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { TrendingUp, TrendingDown, Package, AlertCircle } from 'lucide-react';
 import { WidgetComponentProps } from '@/app/types/dashboard';
 import { useWidgetData } from '@/app/admin/hooks/useWidgetData';
-import { createClient } from '@/app/utils/supabase/client';
+import { createDashboardAPI } from '@/lib/api';
 import { dialogStyles, iconColors } from '@/app/utils/dialogStyles';
+import { systemLogger } from '@/lib/logger';
 
 interface StatsData {
   value: number | string;
@@ -18,7 +19,7 @@ interface StatsData {
   label?: string;
 }
 
-export const StatsCardWidget = React.memo(function StatsCardWidget({ widget, isEditMode }: WidgetComponentProps) {
+const StatsCardWidget = React.memo(function StatsCardWidget({ widget, isEditMode }: WidgetComponentProps) {
   const [data, setData] = useState<StatsData>({ value: 0 });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -26,59 +27,45 @@ export const StatsCardWidget = React.memo(function StatsCardWidget({ widget, isE
   const loadData = useCallback(async () => {
     try {
       setLoading(true);
-      const supabase = createClient();
       
-      // 根據數據源獲取數據
-      switch (widget.config.dataSource) {
-        case 'total_pallets':
-          const { count: palletCount } = await supabase
-            .from('record_palletinfo')
-            .select('*', { count: 'exact', head: true });
-          
-          setData({
-            value: palletCount || 0,
-            label: 'Total Pallets'
-          });
-          break;
-          
-        case 'today_transfers':
-          const today = new Date();
-          today.setHours(0, 0, 0, 0);
-          
-          const { count: transferCount } = await supabase
-            .from('record_transfer')
-            .select('*', { count: 'exact', head: true })
-            .gte('tran_date', today.toISOString());
-          
-          setData({
-            value: transferCount || 0,
-            label: 'Today\'s Transfers'
-          });
-          break;
-          
-        case 'active_products':
-          const { count: productCount } = await supabase
-            .from('data_code')
-            .select('*', { count: 'exact', head: true })
-            .eq('status', 'active');
-          
-          setData({
-            value: productCount || 0,
-            label: 'Active Products'
-          });
-          break;
-          
-        default:
-          setData({
-            value: widget.config.staticValue || 0,
-            label: widget.config.label || 'Stats'
-          });
+      // Use new hybrid API for data fetching
+      const dashboardAPI = createDashboardAPI();
+      const dashboardResult = await dashboardAPI.fetch({
+        widgetIds: [widget.config.dataSource || 'statsCard'],
+        params: {
+          dataSource: widget.config.dataSource,
+          staticValue: widget.config.staticValue,
+          label: widget.config.label
+        }
+      }, { 
+        strategy: 'client', // Force client strategy for client components (per Re-Structure-5.md)
+        cache: { ttl: 60 } // 1-minute cache for stats
+      });
+      
+      // Extract data for this widget
+      const widgetData = dashboardResult.widgets?.find(
+        w => w.widgetId === widget.config.dataSource || w.widgetId === 'statsCard'
+      );
+      
+      if (widgetData) {
+        setData({
+          value: widgetData.data.value || 0,
+          label: widgetData.data.label || widget.config.label || 'Stats',
+          trend: widgetData.data.trend
+        });
+      } else {
+        // Fallback for static values
+        setData({
+          value: widget.config.staticValue || 0,
+          label: widget.config.label || 'Stats'
+        });
       }
       
       setError(null);
-    } catch (err: any) {
-      console.error('Error loading stats:', err);
-      setError(err.message);
+    } catch (err) {
+      const error = err instanceof Error ? err : new Error(String(err));
+      systemLogger.error(error, 'Error loading stats with hybrid API');
+      setError(error.message);
     } finally {
       setLoading(false);
     }
@@ -135,3 +122,12 @@ export const StatsCardWidget = React.memo(function StatsCardWidget({ widget, isE
     </Card>
   );
 });
+
+export default StatsCardWidget;
+
+/**
+ * @deprecated
+ * Legacy direct Supabase access has been replaced with hybrid architecture.
+ * This component now uses the DashboardAPI for optimal performance.
+ * Migration completed on 2025-07-07.
+ */

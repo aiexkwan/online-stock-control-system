@@ -25,3 +25,5 @@ export const AnalyticsDashboardWidget = React.memo(function AnalyticsDashboardWi
     </Card>
   );
 });
+
+export default AnalyticsDashboardWidget;

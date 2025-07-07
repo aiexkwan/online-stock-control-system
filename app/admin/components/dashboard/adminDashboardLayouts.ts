@@ -316,7 +316,7 @@ export const adminDashboardLayouts: Record<string, AdminDashboardLayout> = {
         type: 'orders-list',
         title: 'Order Upload History',
         gridArea: 'widget1',
-        component: 'OrdersListWidget'
+        component: 'OrdersListWidgetV2'
       },
       {
         type: 'other-files-list',

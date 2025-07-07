@@ -12,7 +12,7 @@ import { createLazyWidget } from './widget-loader';
  * Lists widgets 的映射配置
  */
 export const listsWidgetConfigs: Record<string, Partial<WidgetDefinition>> = {
-  'OrdersListWidget': {
+  'OrdersListWidgetV2': {
     name: 'Orders List',
     category: 'lists',
     description: 'Displays list of customer orders',

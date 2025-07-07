@@ -288,3 +288,5 @@ export const UploadPhotoWidget = React.memo(function UploadPhotoWidget({ widget,
     </>
   );
 });
+
+export default UploadPhotoWidget;

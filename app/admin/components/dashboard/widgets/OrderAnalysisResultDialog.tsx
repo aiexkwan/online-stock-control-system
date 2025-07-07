@@ -179,3 +179,5 @@ export const OrderAnalysisResultDialog: React.FC<OrderAnalysisResultDialogProps>
     </Dialog>
   );
 };
+
+export default OrderAnalysisResultDialog;

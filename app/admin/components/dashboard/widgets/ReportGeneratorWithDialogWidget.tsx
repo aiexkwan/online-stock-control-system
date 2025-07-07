@@ -257,3 +257,5 @@ export const ReportGeneratorWithDialogWidget = function ReportGeneratorWithDialo
     </>
   );
 }
+
+export default ReportGeneratorWithDialogWidget;

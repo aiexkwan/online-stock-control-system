@@ -296,3 +296,5 @@ export const UploadFilesWidget = React.memo(function UploadFilesWidget({ widget,
     </>
   );
 });
+
+export default UploadFilesWidget;

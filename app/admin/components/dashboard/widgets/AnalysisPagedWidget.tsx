@@ -373,3 +373,5 @@ export const AnalysisPagedWidget = function AnalysisPagedWidget({ timeFrame, the
     </div>
   );
 }
+
+export default AnalysisPagedWidget;

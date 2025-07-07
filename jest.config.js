@@ -16,7 +16,17 @@ const customJestConfig = {
     '^@/app/(.*)$': '<rootDir>/app/$1',
     '^@/lib/(.*)$': '<rootDir>/lib/$1',
   },
-  testPathIgnorePatterns: ['<rootDir>/node_modules/', '<rootDir>/.next/', '<rootDir>/e2e/'],
+  testPathIgnorePatterns: [
+    '<rootDir>/node_modules/', 
+    '<rootDir>/.next/', 
+    '<rootDir>/e2e/',
+    '<rootDir>/__tests__/utils/',
+    '<rootDir>/__tests__/mocks/'
+  ],
+  testMatch: [
+    '**/__tests__/**/*.test.[jt]s?(x)',
+    '**/?(*.)+(spec|test).[jt]s?(x)'
+  ],
   transformIgnorePatterns: [
     'node_modules/(?!(.*\\.mjs$))'
   ],

@@ -56,11 +56,10 @@ describe('HardwareMonitoringService', () => {
       service.registerDevice(mockDevice);
 
       const stats = service.getUsageStats('printer-001');
-      // Note: There's a bug in the service - successCount is undefined because
-      // calculateMetrics doesn't return it even though getUsageStats expects it
+      // Now successCount is properly returned by calculateMetrics
       expect(stats).toEqual({
         totalUsage: 0,
-        successCount: undefined,
+        successCount: 0,
         errorCount: 0,
         averageResponseTime: 0,
         lastUsed: 'Never'
@@ -82,8 +81,7 @@ describe('HardwareMonitoringService', () => {
       const device2: DeviceStatus = {
         ...mockDevice,
         deviceId: 'scanner-001',
-        deviceName: 'Test Scanner',
-        type: 'scanner'
+        deviceType: 'scanner'
       };
 
       service.registerDevice(mockDevice);
@@ -139,7 +137,7 @@ describe('HardwareMonitoringService', () => {
 
       const stats = service.getUsageStats('printer-001');
       expect(stats?.totalUsage).toBe(3);
-      expect(stats?.successCount).toBe(undefined); // Bug: calculateMetrics doesn't return successCount
+      expect(stats?.successCount).toBe(2); // 2 success events (job.completed + scan.success)
       expect(stats?.errorCount).toBe(1);
     });
 

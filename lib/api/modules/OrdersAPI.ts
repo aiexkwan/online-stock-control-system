@@ -1,0 +1,213 @@
+/**
+ * Orders API Module
+ * Part of Phase 3.1: Real-time Component Migration
+ * 
+ * Provides server-side data access for Orders List Widget
+ * with optimized RPC calls and Server Actions
+ */
+
+import { createClient } from '@/app/utils/supabase/client';
+import { cache } from 'react';
+
+// ================================
+// Type Definitions
+// ================================
+
+export interface OrderRecord {
+  uuid: string;
+  time: string;
+  id: number | null;
+  action: string;
+  plt_num: string | null;
+  loc: string | null;
+  remark: string;
+  uploader_name: string;
+  doc_url: string | null;
+}
+
+export interface OrdersListResponse {
+  orders: OrderRecord[];
+  totalCount: number;
+  hasMore: boolean;
+  metadata?: {
+    executedAt: string;
+    queryTime?: string;
+    cached?: boolean;
+  };
+}
+
+export interface OrdersListParams {
+  limit?: number;
+  offset?: number;
+}
+
+// ================================
+// Orders API Class
+// ================================
+
+class OrdersAPI {
+  /**
+   * Get orders list with optimized RPC call
+   * Uses React cache() for automatic request deduplication
+   */
+  getOrdersList = cache(async (
+    limit: number = 15,
+    offset: number = 0
+  ): Promise<OrdersListResponse> => {
+    const startTime = performance.now();
+    
+    try {
+      // Use client for compatibility with both server and client components
+      const supabase = createClient();
+      
+      // Call the optimized RPC function
+      const { data, error } = await supabase
+        .rpc('rpc_get_orders_list', {
+          p_limit: limit,
+          p_offset: offset
+        });
+      
+      if (error) {
+        console.error('[OrdersAPI] Error fetching orders:', error);
+        throw new Error(`Failed to fetch orders: ${error.message}`);
+      }
+      
+      // Extract total count from first record (if exists)
+      const totalCount = data?.[0]?.total_count || 0;
+      const hasMore = offset + limit < totalCount;
+      
+      // Transform data to match interface
+      const orders: OrderRecord[] = (data || []).map(record => ({
+        uuid: record.uuid,
+        time: record.time,
+        id: record.id,
+        action: record.action,
+        plt_num: record.plt_num,
+        loc: record.loc,
+        remark: record.remark,
+        uploader_name: record.uploader_name,
+        doc_url: record.doc_url
+      }));
+      
+      const queryTime = `${(performance.now() - startTime).toFixed(2)}ms`;
+      
+      return {
+        orders,
+        totalCount,
+        hasMore,
+        metadata: {
+          executedAt: new Date().toISOString(),
+          queryTime,
+          cached: false
+        }
+      };
+    } catch (error) {
+      console.error('[OrdersAPI] getOrdersList error:', error);
+      
+      // Return empty result on error
+      return {
+        orders: [],
+        totalCount: 0,
+        hasMore: false,
+        metadata: {
+          executedAt: new Date().toISOString(),
+          queryTime: `${(performance.now() - startTime).toFixed(2)}ms`,
+          cached: false
+        }
+      };
+    }
+  });
+  
+  /**
+   * Server Action to get PDF URL for a specific order
+   * This is separated to avoid fetching all PDFs in the list query
+   */
+  async getPdfUrl(orderRef: string): Promise<string | null> {
+    'use server';
+    
+    if (!orderRef) return null;
+    
+    try {
+      const supabase = createClient();
+      
+      // Query for PDF URL
+      const { data, error } = await supabase
+        .from('doc_upload')
+        .select('doc_url')
+        .ilike('doc_name', `%${orderRef}%`)
+        .eq('doc_type', 'order')
+        .order('upload_time', { ascending: false })
+        .limit(1);
+      
+      if (error) {
+        console.error('[OrdersAPI] Error fetching PDF URL:', error);
+        return null;
+      }
+      
+      return data?.[0]?.doc_url || null;
+    } catch (error) {
+      console.error('[OrdersAPI] getPdfUrl error:', error);
+      return null;
+    }
+  }
+  
+  /**
+   * Subscribe to real-time order updates
+   * Returns a channel that can be used to listen for new orders
+   */
+  subscribeToOrderUpdates(onNewOrder: (order: any) => void) {
+    const supabase = createClient();
+    
+    const channel = supabase
+      .channel('orders-realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'record_history',
+          filter: 'action=eq.Order Upload'
+        },
+        (payload) => {
+          console.log('[OrdersAPI] New order received:', payload);
+          onNewOrder(payload.new);
+        }
+      );
+    
+    return channel;
+  }
+}
+
+// ================================
+// Singleton Export
+// ================================
+
+export const ordersAPI = new OrdersAPI();
+
+// ================================
+// Utility Functions
+// ================================
+
+/**
+ * Transform raw database record to OrderRecord type
+ */
+export function transformOrderRecord(raw: any): OrderRecord {
+  return {
+    uuid: raw.uuid,
+    time: raw.time,
+    id: raw.id,
+    action: raw.action,
+    plt_num: raw.plt_num,
+    loc: raw.loc,
+    remark: raw.remark,
+    uploader_name: raw.uploader_name || 'Unknown',
+    doc_url: raw.doc_url
+  };
+}
+
+/**
+ * Check if an order has a PDF attached
+ */
+export function orderHasPdf(order: OrderRecord): boolean {
+  return !!order.doc_url;
+}

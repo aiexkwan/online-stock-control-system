@@ -348,3 +348,5 @@ export const TransactionReportWidget = function TransactionReportWidget({
     </div>
   );
 }
+
+export default TransactionReportWidget;

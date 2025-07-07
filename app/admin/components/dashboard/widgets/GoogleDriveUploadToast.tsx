@@ -119,3 +119,5 @@ export const GoogleDriveUploadToast: React.FC<GoogleDriveUploadToastProps> = ({
     </AnimatePresence>
   );
 };
+
+export default GoogleDriveUploadToast;

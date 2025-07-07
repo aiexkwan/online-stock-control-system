@@ -781,3 +781,5 @@ export const VoidPalletWidget = React.memo(function VoidPalletWidget({ widget, i
     </motion.div>
   );
 });
+
+export default VoidPalletWidget;

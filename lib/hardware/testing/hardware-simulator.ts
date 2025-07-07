@@ -4,6 +4,7 @@
  */
 
 import { EventEmitter } from 'events';
+import { createLogger } from '../../logger';
 import { 
   PrintJob, 
   PrintResult, 
@@ -12,6 +13,8 @@ import {
   PrinterStatus,
   ScannerStatus 
 } from '../types';
+
+const logger = createLogger('hardware-simulator');
 
 export class HardwareSimulator extends EventEmitter {
   private printQueue: PrintJob[] = [];
@@ -77,7 +80,10 @@ export class HardwareSimulator extends EventEmitter {
     }
 
     // Simulate successful print
-    console.log(`[Simulator] Printing ${job.type} - ${job.data.fileName || 'document'}`);
+    logger.debug({ 
+      jobType: job.type, 
+      fileName: job.data.fileName || 'document' 
+    }, 'Simulating print job');
     
     return {
       success: true,
@@ -174,7 +180,7 @@ export class HardwareSimulator extends EventEmitter {
 
   // Test scenarios
   async runTestScenario(scenario: 'success' | 'failure' | 'mixed') {
-    console.log(`[Simulator] Running test scenario: ${scenario}`);
+    logger.info({ scenario }, 'Running hardware test scenario');
     
     switch (scenario) {
       case 'success':

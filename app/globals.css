@@ -258,3 +258,48 @@ input[type="number"] {
     }
   }
 }
+
+/* Operational Page Border Styles */
+@layer components {
+  /* Base operational border styles - only affects border, not layout */
+  .operational-border > * {
+    @apply transition-all duration-300;
+  }
+  
+  /* Card variant - standard operational card */
+  .operational-card > .card,
+  .operational-card > [class*="Card"] {
+    @apply !border-slate-700/50 !bg-slate-800/50;
+  }
+  
+  /* Section variant - lighter background */
+  .operational-section > .card,
+  .operational-section > [class*="Card"] {
+    @apply !border-slate-600/30 !bg-slate-700/30;
+  }
+  
+  /* Highlight variant - emphasized sections */
+  .operational-highlight > .card,
+  .operational-highlight > [class*="Card"] {
+    @apply !border-blue-500/30 !bg-slate-800/70 relative overflow-hidden;
+  }
+  
+  /* Glow effect */
+  .operational-glow > .card,
+  .operational-glow > [class*="Card"] {
+    @apply !shadow-lg !shadow-blue-500/10 hover:!shadow-blue-500/20;
+  }
+  
+  /* Corner accents for highlight variant */
+  .operational-highlight > .card::before,
+  .operational-highlight > [class*="Card"]::before {
+    content: '';
+    @apply absolute top-0 left-0 h-8 w-8 border-l-2 border-t-2 border-blue-500/50 rounded-tl-xl pointer-events-none;
+  }
+  
+  .operational-highlight > .card::after,
+  .operational-highlight > [class*="Card"]::after {
+    content: '';
+    @apply absolute bottom-0 right-0 h-8 w-8 border-r-2 border-b-2 border-blue-500/50 rounded-br-xl pointer-events-none;
+  }
+}

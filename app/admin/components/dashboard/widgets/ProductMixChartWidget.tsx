@@ -101,3 +101,5 @@ export const ProductMixChartWidget = React.memo(function ProductMixChartWidget({
     </WidgetCard>
   );
 });
+
+export default ProductMixChartWidget;

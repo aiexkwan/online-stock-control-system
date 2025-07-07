@@ -14,68 +14,77 @@ import { WidgetComponentProps } from '@/app/types/dashboard';
 import { createClient } from '@/lib/supabase';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
+import { createDashboardAPI } from '@/lib/api/admin/DashboardAPI';
 
-export const AwaitLocationQtyWidget = React.memo(function AwaitLocationQtyWidget({ 
+interface AwaitLocationData {
+  count: number;
+  calculationTime?: string;
+  optimized?: boolean;
+}
+
+const AwaitLocationQtyWidget = React.memo(function AwaitLocationQtyWidget({ 
   widget, 
   isEditMode,
   timeFrame 
 }: WidgetComponentProps) {
-  const [palletCount, setPalletCount] = useState<number>(0);
+  const [data, setData] = useState<AwaitLocationData>({
+    count: 0
+  });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [isRefetching, setIsRefetching] = useState(false);
+  const [performanceMetrics, setPerformanceMetrics] = useState<{
+    fetchTime: number;
+    cacheHit: boolean;
+  } | null>(null);
 
   useEffect(() => {
-    const fetchAwaitPalletCount = async () => {
+    const fetchAwaitLocationCount = async () => {
       setLoading(true);
       setError(null);
+      const fetchStartTime = performance.now();
       
       try {
-        const supabase = createClient();
+        // Use optimized hybrid API
+        const dashboardAPI = createDashboardAPI();
+        const dashboardResult = await dashboardAPI.fetch({
+          widgetIds: ['await_location_count']
+        }, { 
+          strategy: 'client', // Force client strategy for client components (per Re-Structure-5.md)
+          cache: { ttl: 90 } // 90-second cache for real-time stats
+        });
         
-        // 查詢當前在 Await 位置的棧板數量
-        // 使用 RPC 函數或者複合查詢來獲取每個棧板的最新位置
-        const { data, error } = await supabase.rpc('get_current_await_pallet_count');
+        const fetchTime = performance.now() - fetchStartTime;
         
-        if (error) {
-          // 如果 RPC 函數不存在，使用備選查詢方法
-          console.warn('RPC function not found, using alternative query');
-          
-          // 備選方案：查詢所有棧板的最新歷史記錄
-          const { data: historyData, error: historyError } = await supabase
-            .from('record_history')
-            .select('plt_num, loc, time')
-            .not('plt_num', 'is', null)
-            .order('time', { ascending: false });
-            
-          if (historyError) throw historyError;
-          
-          // 計算每個棧板的最新位置
-          const palletLatestLocation = new Map<string, string>();
-          historyData?.forEach(record => {
-            if (!palletLatestLocation.has(record.plt_num)) {
-              palletLatestLocation.set(record.plt_num, record.loc);
-            }
+        // Extract widget data
+        const widgetData = dashboardResult.widgets?.find(
+          w => w.widgetId === 'await_location_count'
+        );
+        
+        if (widgetData && !widgetData.data.error) {
+          setData({
+            count: widgetData.data.value || 0,
+            calculationTime: widgetData.data.metadata?.calculationTime,
+            optimized: widgetData.data.metadata?.optimized
           });
           
-          // 統計在 Await 位置的棧板數量
-          const awaitPallets = Array.from(palletLatestLocation.values())
-            .filter(loc => loc === 'Await' || loc === 'Awaiting')
-            .length;
-            
-          setPalletCount(awaitPallets);
+          setPerformanceMetrics({
+            fetchTime,
+            cacheHit: dashboardResult.metadata?.cacheHit || false
+          });
         } else {
-          setPalletCount(data || 0);
+          throw new Error(widgetData?.data.error || 'No data received');
         }
+        
+        setError(null);
       } catch (err) {
-        console.error('Error fetching await pallet count:', err);
+        console.error('Error fetching await location count:', err);
         setError(err instanceof Error ? err.message : 'Unknown error');
       } finally {
         setLoading(false);
       }
     };
 
-    fetchAwaitPalletCount();
+    fetchAwaitLocationCount();
   }, []);
 
   // 模擬趨勢數據（實際應用中應該比較不同時間段的數據）
@@ -97,18 +106,6 @@ export const AwaitLocationQtyWidget = React.memo(function AwaitLocationQtyWidget
           <CardTitle className="widget-title flex items-center gap-2">
             <BuildingOfficeIcon className="w-5 h-5" />
             Await Location Qty
-            {isRefetching && (
-              <motion.div
-                animate={{ rotate: 360 }}
-                transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                className="ml-auto"
-              >
-                <svg className="w-4 h-4 text-blue-400" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-              </motion.div>
-            )}
           </CardTitle>
         </CardHeader>
         <CardContent className="flex-1 flex items-center justify-center">
@@ -130,9 +127,20 @@ export const AwaitLocationQtyWidget = React.memo(function AwaitLocationQtyWidget
                 transition={{ duration: 0.3 }}
                 className="text-4xl font-bold text-white mb-2"
               >
-                {(palletCount || 0).toLocaleString()}
+                {(data.count || 0).toLocaleString()}
               </motion.div>
               <p className="text-xs text-slate-400">Pallets</p>
+              
+              {/* Performance indicator */}
+              {data.optimized && (
+                <div className="text-xs text-green-400 mt-1 flex items-center gap-1 justify-center">
+                  <span>⚡</span>
+                  <span>RPC Optimized</span>
+                  {performanceMetrics && (
+                    <span className="ml-1">({performanceMetrics.fetchTime.toFixed(0)}ms)</span>
+                  )}
+                </div>
+              )}
               
               {trend !== 0 && (
                 <div className={cn(
@@ -153,3 +161,16 @@ export const AwaitLocationQtyWidget = React.memo(function AwaitLocationQtyWidget
     </WidgetCard>
   );
 });
+
+export default AwaitLocationQtyWidget;
+
+/**
+ * @deprecated Legacy implementation with fallback client-side processing
+ * Migrated to hybrid architecture on 2025-07-07
+ * 
+ * Performance improvements achieved:
+ * - Query reliability: Fallback complexity → Single RPC call
+ * - Data processing: Client-side Map operations → Server-side aggregation
+ * - Caching: None → 90-second TTL with automatic revalidation
+ * - Bundle size: Reduced supabase client dependencies
+ */

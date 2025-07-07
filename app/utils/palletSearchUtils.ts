@@ -36,29 +36,38 @@ export function detectSearchType(input: string): SearchType {
 
   const trimmedInput = input.trim().toUpperCase();
 
-  // 檢查是否匹配 series 模式
-  for (const pattern of SEARCH_PATTERNS.series) {
-    if (pattern.test(trimmedInput)) {
-      return 'series';
-    }
-  }
-
-  // 檢查是否匹配 pallet 模式
+  // 檢查是否匹配 pallet 模式（先檢查 pallet，因為它更具體）
   for (const pattern of SEARCH_PATTERNS.pallet) {
     if (pattern.test(trimmedInput)) {
       return 'pallet_num';
     }
   }
 
-  // 額外的啟發式檢測
-  // 如果包含 '-' 但不包含 '/'，可能是 series
-  if (trimmedInput.includes('-') && !trimmedInput.includes('/')) {
-    return 'series';
+  // 檢查是否匹配 series 模式
+  for (const pattern of SEARCH_PATTERNS.series) {
+    if (pattern.test(trimmedInput)) {
+      // 特殊處理：如果是 12 位純數字或純字母，不應該是 series
+      if (trimmedInput.length === 12 && (/^\d+$/.test(trimmedInput) || /^[A-Z]+$/.test(trimmedInput))) {
+        continue;
+      }
+      return 'series';
+    }
   }
 
+  // 額外的啟發式檢測
   // 如果包含 '/'，可能是 pallet number
   if (trimmedInput.includes('/')) {
     return 'pallet_num';
+  }
+
+  // 檢查是否符合 pallet number 的格式（6位數字-1到3位數字）
+  if (/^\d{6}-\d{1,3}$/.test(trimmedInput)) {
+    return 'pallet_num';
+  }
+
+  // 如果包含 '-' 但不包含 '/'，且不是 pallet number 格式，可能是 series
+  if (trimmedInput.includes('-') && !trimmedInput.includes('/')) {
+    return 'series';
   }
 
   // 檢查是否為 12 位英數混合（舊系統格式）
@@ -104,8 +113,14 @@ export function isValidSeriesNumber(series: string): boolean {
   const upperSeries = series.toUpperCase();
   
   // 先檢查標準模式
-  if (SEARCH_PATTERNS.series.some(pattern => pattern.test(upperSeries))) {
-    return true;
+  for (const pattern of SEARCH_PATTERNS.series) {
+    if (pattern.test(upperSeries)) {
+      // 特殊處理：如果是 12 位純數字或純字母，不是有效的 series
+      if (upperSeries.length === 12 && (/^\d+$/.test(upperSeries) || /^[A-Z]+$/.test(upperSeries))) {
+        continue;
+      }
+      return true;
+    }
   }
   
   // 特別檢查 12 位英數混合（確保至少有字母和數字）

@@ -59,3 +59,5 @@ export const Folder3D: React.FC<Folder3DProps> = ({
     </div>
   );
 };
+
+export default Folder3D;

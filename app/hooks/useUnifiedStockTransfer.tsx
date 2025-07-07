@@ -1,3 +1,8 @@
+/**
+ * @deprecated This hook has been replaced by Server Actions. Use stockTransferActions.ts instead.
+ * Migration: Import { transferPallet, batchTransferPallets } from '@/app/actions/stockTransferActions'
+ * This file will be removed in the next major version.
+ */
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { createClient } from '@/app/utils/supabase/client';
 import { toast } from 'sonner';

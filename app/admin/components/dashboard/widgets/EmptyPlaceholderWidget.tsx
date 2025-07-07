@@ -27,3 +27,5 @@ export const EmptyPlaceholderWidget = React.memo(function EmptyPlaceholderWidget
     <div className="h-full w-full opacity-0 invisible" />
   );
 });
+
+export default EmptyPlaceholderWidget;

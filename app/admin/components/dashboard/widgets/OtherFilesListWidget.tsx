@@ -228,3 +228,5 @@ export const OtherFilesListWidget = React.memo(function OtherFilesListWidget({ w
     </motion.div>
   );
 });
+
+export default OtherFilesListWidget;

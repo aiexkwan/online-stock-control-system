@@ -184,3 +184,5 @@ export const OrderStateListWidget = React.memo(function OrderStateListWidget({
     </WidgetCard>
   );
 });
+
+export default OrderStateListWidget;

@@ -3,11 +3,16 @@
  * 統一的用戶 ID 獲取 Hook，整合不同模組的用戶身份邏輯
  * 
  * Features:
- * - 自動獲取當前登入用戶的 clock number
+ * - 自動獲取當前登入用戶的 clock number ID
  * - 支援實時監聽認證狀態變化
  * - 提供用戶詳細信息查詢
  * - 內建緩存機制減少重複查詢
  * - 統一錯誤處理
+ * 
+ * Email format: username@pennineindustries.com
+ * - Username must contain only English letters (a-z, A-Z)
+ * - Domain must be @pennineindustries.com
+ * - Clock number ID is retrieved from data_id table using email
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react';
@@ -16,17 +21,17 @@ import { toast } from 'sonner';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 interface UserDetails {
-  id: number;
+  id: string;
   name: string;
   email: string;
   department?: string;
-  clockNumber: string;
+  username: string;
 }
 
 interface UseUserIdReturn {
   // Core data
-  userId: string | null;           // Clock number (e.g., "1234")
-  userNumericId: number | null;    // Numeric ID from data_id table
+  userId: string | null;           // Clock number ID (e.g., "1234")
+  userNumericId: string | null;    // Same as userId, kept for backward compatibility
   userDetails: UserDetails | null;  // Full user details
   
   // State
@@ -36,7 +41,7 @@ interface UseUserIdReturn {
   
   // Actions
   refreshUser: () => Promise<void>;
-  verifyUserId: (userId: number) => Promise<boolean>;
+  verifyUserId: (userId: string) => Promise<boolean>;
 }
 
 // Cache for user details to avoid repeated queries
@@ -44,11 +49,11 @@ const userCache = new Map<string, { data: UserDetails; timestamp: number }>();
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
 /**
- * Extract clock number from email
- * Supports formats: "1234@pennine.com", "1234@example.com"
+ * Extract username from email
+ * Supports format: "username@pennineindustries.com" where username is English letters only
  */
-function extractClockNumberFromEmail(email: string): string | null {
-  const match = email.match(/^(\d+)@/);
+function extractUsernameFromEmail(email: string): string | null {
+  const match = email.match(/^([a-zA-Z]+)@pennineindustries\.com$/);
   return match ? match[1] : null;
 }
 
@@ -68,7 +73,7 @@ function extractClockNumberFromEmail(email: string): string | null {
  */
 export function useUserId(): UseUserIdReturn {
   const [userId, setUserId] = useState<string | null>(null);
-  const [userNumericId, setUserNumericId] = useState<number | null>(null);
+  const [userNumericId, setUserNumericId] = useState<string | null>(null);
   const [userDetails, setUserDetails] = useState<UserDetails | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
@@ -82,41 +87,40 @@ export function useUserId(): UseUserIdReturn {
   }, []);
   
   /**
-   * Get user details from data_id table
+   * Get user details from data_id table by clock number ID
    */
-  const fetchUserDetails = useCallback(async (clockNumber: string): Promise<UserDetails | null> => {
+  const fetchUserDetails = useCallback(async (clockNumberId: string): Promise<UserDetails | null> => {
     if (!supabaseRef.current) return null;
     
     // Check cache first
-    const cached = userCache.get(clockNumber);
+    const cached = userCache.get(clockNumberId);
     if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
       return cached.data;
     }
     
     try {
-      const numericId = parseInt(clockNumber, 10);
-      if (isNaN(numericId)) {
-        throw new Error('Invalid clock number format');
-      }
-      
+      // Query by clock number ID
       const { data, error } = await supabaseRef.current
         .from('data_id')
         .select('id, name, email, department')
-        .eq('id', numericId)
+        .eq('id', parseInt(clockNumberId, 10))
         .single();
       
       if (error) throw error;
       
+      // Extract username from email
+      const username = data.email ? extractUsernameFromEmail(data.email) : null;
+      
       const details: UserDetails = {
-        id: data.id,
+        id: data.id.toString(),
         name: data.name,
         email: data.email,
         department: data.department,
-        clockNumber
+        username: username || data.email?.split('@')[0] || clockNumberId
       };
       
       // Update cache
-      userCache.set(clockNumber, { data: details, timestamp: Date.now() });
+      userCache.set(clockNumberId, { data: details, timestamp: Date.now() });
       
       return details;
     } catch (err) {
@@ -140,20 +144,38 @@ export function useUserId(): UseUserIdReturn {
       if (authError) throw authError;
       
       if (user?.email) {
-        const clockNumber = extractClockNumberFromEmail(user.email);
+        setIsAuthenticated(true);
         
-        if (clockNumber) {
-          setUserId(clockNumber);
-          setUserNumericId(parseInt(clockNumber, 10));
-          setIsAuthenticated(true);
+        // Fetch user details using email
+        const { data, error } = await supabaseRef.current
+          .from('data_id')
+          .select('id, name, email, department')
+          .eq('email', user.email)
+          .single();
+        
+        if (error) {
+          throw new Error(`User not found in data_id table for email: ${user.email}`);
+        }
+        
+        if (data) {
+          // Extract username from email for backward compatibility
+          const username = extractUsernameFromEmail(user.email);
           
-          // Fetch full user details
-          const details = await fetchUserDetails(clockNumber);
-          if (details) {
-            setUserDetails(details);
-          }
-        } else {
-          throw new Error('Invalid email format - clock number not found');
+          setUserId(data.id.toString()); // Clock number ID
+          setUserNumericId(data.id.toString());
+          
+          const details: UserDetails = {
+            id: data.id.toString(),
+            name: data.name,
+            email: data.email,
+            department: data.department,
+            username: username || user.email.split('@')[0]
+          };
+          
+          setUserDetails(details);
+          
+          // Update cache
+          userCache.set(data.id.toString(), { data: details, timestamp: Date.now() });
         }
       } else {
         setIsAuthenticated(false);
@@ -174,12 +196,12 @@ export function useUserId(): UseUserIdReturn {
     } finally {
       setIsLoading(false);
     }
-  }, [fetchUserDetails]);
+  }, []);
   
   /**
    * Verify if a user ID exists in the system
    */
-  const verifyUserId = useCallback(async (userId: number): Promise<boolean> => {
+  const verifyUserId = useCallback(async (userId: string): Promise<boolean> => {
     if (!supabaseRef.current) return false;
     
     try {
@@ -244,7 +266,7 @@ export function useUserId(): UseUserIdReturn {
 }
 
 /**
- * Hook variant that only returns the clock number
+ * Hook variant that only returns the clock number ID
  * For backward compatibility with existing code
  */
 export function useClockNumber(): string | null {
@@ -254,9 +276,9 @@ export function useClockNumber(): string | null {
 
 /**
  * Hook variant that returns numeric user ID
- * For components that need the numeric ID from data_id table
+ * For components that need the ID from data_id table
  */
-export function useUserNumericId(): number | null {
+export function useUserNumericId(): string | null {
   const { userNumericId } = useUserId();
   return userNumericId;
 }

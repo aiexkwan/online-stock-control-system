@@ -77,6 +77,7 @@ export interface DeviceStatus {
 export interface DeviceMetrics {
   usageCount: number;
   errorCount: number;
+  successCount: number;
   successRate: number;
   averageResponseTime: number;
 }
@@ -121,6 +122,7 @@ export interface HardwareEvent {
 
 // Callback Types
 export type StatusCallback = (status: DeviceStatus) => void;
+export type PrinterStatusCallback = (status: PrinterStatus) => void;
 export type ScanCallback = (result: ScanResult) => void;
 export type AlertCallback = (alert: HardwareAlert) => void;
 export type Unsubscribe = () => void;

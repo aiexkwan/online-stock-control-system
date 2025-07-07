@@ -5,7 +5,7 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { WidgetComponentProps } from '@/app/types/dashboard';
 import { useAdminRefresh } from '@/app/admin/contexts/AdminRefreshContext';
 import { Loader2 } from 'lucide-react';
-import { createClient } from '@/app/utils/supabase/client';
+import { createDashboardAPI } from '@/lib/api/admin/DashboardAPI';
 import { format } from 'date-fns';
 
 interface ChartDataPoint {
@@ -42,11 +42,11 @@ const LINE_COLORS = [
 export const StockLevelHistoryChart: React.FC<StockLevelHistoryChartProps> = ({ widget, isEditMode, timeFrame }) => {
   const [chartData, setChartData] = useState<ChartDataPoint[]>([]);
   const [productCodes, setProductCodes] = useState<string[]>([]);
-  const [loading, setLoading] = useState(false); // 改為 false，等待選擇產品類型
+  const [loading, setLoading] = useState(false);
   const [selectedType, setSelectedType] = useState<string>('all');
   const [adjustedTimeFrame, setAdjustedTimeFrame] = useState<{ start: Date; end: Date } | null>(null);
   const { refreshTrigger } = useAdminRefresh();
-  const supabase = createClient();
+  const dashboardAPI = useMemo(() => createDashboardAPI(), []);
 
   // 計算調整後的時間範圍
   const calculateAdjustedTimeFrame = useCallback((originalTimeFrame?: { start: Date; end: Date }) => {
@@ -110,7 +110,7 @@ export const StockLevelHistoryChart: React.FC<StockLevelHistoryChartProps> = ({ 
   }, [timeFrame, calculateAdjustedTimeFrame]);
 
 
-  // 處理庫存歷史數據
+  // 優化版庫存歷史數據處理 - 使用統一架構
   const processHistoryData = useCallback(async (products: string[]) => {
     console.log('[StockLevelHistoryChart] processHistoryData called with:', products);
     console.log('[StockLevelHistoryChart] adjustedTimeFrame:', adjustedTimeFrame);
@@ -125,125 +125,51 @@ export const StockLevelHistoryChart: React.FC<StockLevelHistoryChartProps> = ({ 
     const limitedProducts = products.slice(0, 10);
     console.log('[StockLevelHistoryChart] Limited products:', limitedProducts);
 
-    // 直接在這裡生成時間段，避免依賴循環
-    const segments = (() => {
-      if (!adjustedTimeFrame) return [];
-      
-      const segments: { start: Date; end: Date; label: string }[] = [];
-      const totalDuration = adjustedTimeFrame.end.getTime() - adjustedTimeFrame.start.getTime();
-      const segmentDuration = totalDuration / 24;
-      const days = totalDuration / (1000 * 60 * 60 * 24);
-
-      for (let i = 0; i < 24; i++) {
-        const segmentStart = new Date(adjustedTimeFrame.start.getTime() + (segmentDuration * i));
-        const segmentEnd = new Date(adjustedTimeFrame.start.getTime() + (segmentDuration * (i + 1)));
-        
-        // 根據時間範圍選擇顯示格式
-        let label: string;
-        if (days <= 1) {
-          // 一天內，顯示時間
-          label = format(segmentStart, 'HH:mm');
-        } else if (days <= 7) {
-          // 一週內，顯示星期和時間
-          label = format(segmentStart, 'EEE HH:mm');
-        } else if (days <= 30) {
-          // 一個月內，顯示日期
-          label = format(segmentStart, 'MM/dd');
-        } else {
-          // 超過一個月，顯示月份和日期
-          label = format(segmentStart, 'MMM dd');
-        }
-        
-        segments.push({
-          start: segmentStart,
-          end: segmentEnd,
-          label
-        });
-      }
-
-      return segments;
-    })();
-    console.log('[StockLevelHistoryChart] Generated segments:', segments.length);
-    const dataPoints: ChartDataPoint[] = [];
-
     try {
-      // 獲取所有產品在時間範圍內的數據，如果沒有數據就擴大範圍
-      let { data, error } = await supabase
-        .from('stock_level')
-        .select('stock, stock_level, update_time')
-        .in('stock', limitedProducts)
-        .gte('update_time', adjustedTimeFrame.start.toISOString())
-        .lte('update_time', adjustedTimeFrame.end.toISOString())
-        .order('update_time', { ascending: true });
+      // 使用統一的 DashboardAPI 獲取數據
+      const result = await dashboardAPI.fetch({
+        widgetIds: ['statsCard'],
+        dateRange: {
+          start: adjustedTimeFrame.start.toISOString(),
+          end: adjustedTimeFrame.end.toISOString()
+        },
+        params: {
+          dataSource: 'stock_level_history',
+          productCodes: limitedProducts,
+          timeSegments: 24
+        }
+      }, {
+        strategy: 'server',
+        cache: { ttl: 60 } // 1分鐘緩存
+      });
 
-      if (error) throw error;
-
-      console.log('[StockLevelHistoryChart] Query returned', data?.length || 0, 'records');
-      console.log('[StockLevelHistoryChart] Time range:', adjustedTimeFrame.start.toISOString(), 'to', adjustedTimeFrame.end.toISOString());
-      
-      // 如果沒有數據，嘗試獲取最近30天的數據
-      if (!data || data.length === 0) {
-        console.log('[StockLevelHistoryChart] No data found, trying last 30 days');
-        const thirtyDaysAgo = new Date();
-        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      if (result.widgets && result.widgets.length > 0) {
+        const widgetData = result.widgets[0];
         
-        const result = await supabase
-          .from('stock_level')
-          .select('stock, stock_level, update_time')
-          .in('stock', limitedProducts)
-          .gte('update_time', thirtyDaysAgo.toISOString())
-          .order('update_time', { ascending: true });
-          
-        if (result.error) throw result.error;
-        data = result.data;
-        console.log('[StockLevelHistoryChart] Extended query returned', data?.length || 0, 'records');
-      }
-
-      // 為每個產品建立最後已知的庫存水平
-      const lastKnownStock = new Map<string, number>();
-      
-      // 為每個時間段建立數據點
-      for (const segment of segments) {
-        const dataPoint: ChartDataPoint = {
-          time: segment.label,
-          timestamp: segment.start
-        };
-
-        // 獲取該時間段內的數據
-        const segmentData = (data || []).filter(item => {
-          const updateTime = new Date(item.update_time);
-          return updateTime >= segment.start && updateTime < segment.end;
-        });
-
-        // 為每個產品設置庫存值
-        for (const product of limitedProducts) {
-          // 查找該產品在這個時間段的最新數據
-          const productData = segmentData
-            .filter(item => item.stock === product)
-            .sort((a, b) => new Date(b.update_time).getTime() - new Date(a.update_time).getTime());
-
-          if (productData.length > 0) {
-            // 使用該時間段內最新的數據
-            dataPoint[product] = productData[0].stock_level;
-            lastKnownStock.set(product, productData[0].stock_level);
-          } else {
-            // 使用最後已知的庫存水平，如果沒有則為 0
-            dataPoint[product] = lastKnownStock.get(product) || 0;
-          }
+        if (widgetData.data.error) {
+          console.error('[StockLevelHistoryChart] API error:', widgetData.data.error);
+          setChartData([]);
+          return;
         }
 
-        dataPoints.push(dataPoint);
-      }
+        const historyData = widgetData.data.value || [];
+        console.log('[StockLevelHistoryChart] API returned', historyData.length, 'data points');
+        console.log('[StockLevelHistoryChart] Metadata:', widgetData.data.metadata);
 
-      console.log('[StockLevelHistoryChart] Setting chart data with', dataPoints.length, 'points');
-      setChartData(dataPoints);
-      setProductCodes(limitedProducts);
-      console.log('[StockLevelHistoryChart] processHistoryData completed successfully');
+        // 直接使用 API 返回的數據，已經經過優化處理
+        setChartData(historyData);
+        setProductCodes(limitedProducts);
+        
+        console.log('[StockLevelHistoryChart] Data processed successfully using optimized API');
+      } else {
+        console.warn('[StockLevelHistoryChart] No widget data returned from API');
+        setChartData([]);
+      }
     } catch (error) {
-      console.error('[StockLevelHistoryChart] Error fetching stock history:', error);
+      console.error('[StockLevelHistoryChart] Error fetching stock history from API:', error);
       setChartData([]);
     }
-  }, [supabase, adjustedTimeFrame]);
+  }, [dashboardAPI, adjustedTimeFrame]);
 
   // 監聽 StockTypeSelector 的類型變更事件
   useEffect(() => {
@@ -429,3 +355,5 @@ export const StockLevelHistoryChart: React.FC<StockLevelHistoryChartProps> = ({ 
     </div>
   );
 };
+
+export default StockLevelHistoryChart;

@@ -70,7 +70,7 @@ export const LazyOrdersListWidget = lazy(() =>
   import(
     /* webpackChunkName: "list-orders" */
     /* webpackPreload: true */
-    '@/app/admin/components/dashboard/widgets/OrdersListWidget'
+    '@/app/admin/components/dashboard/widgets/OrdersListWidgetV2'
   )
 );
 

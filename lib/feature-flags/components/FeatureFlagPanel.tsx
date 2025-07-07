@@ -14,14 +14,14 @@ export const FeatureFlagPanel: React.FC = () => {
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const { flags: evaluations, refresh } = useAllFeatureFlags();
 
+  useEffect(() => {
+    loadFlags();
+  }, []);
+
   // 只在開發環境顯示
   if (process.env.NODE_ENV === 'production') {
     return null;
   }
-
-  useEffect(() => {
-    loadFlags();
-  }, []);
 
   const loadFlags = async () => {
     const allFlags = await featureFlagManager.getAllFlags();

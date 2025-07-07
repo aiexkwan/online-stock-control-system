@@ -224,7 +224,7 @@ export default function PrintLabelPage() {
 
       <PrintLabelGrid>
         {/* Main Form Widget */}
-        <GridWidget area="main">
+        <GridWidget area="main" borderStyle="default" glow>
           <ErrorBoundary>
             <GridBasicProductForm
               productCode={formData.productCode}
@@ -249,7 +249,7 @@ export default function PrintLabelPage() {
 
         {/* ACO/Slate Event Widget - Only show when needed */}
         {productInfo && (productInfo.type === 'ACO' || productInfo.type === 'Slate') && (
-          <GridWidget area="bottom-left">
+          <GridWidget area="bottom-left" borderStyle="highlight">
             <div className="h-full overflow-auto">
               {productInfo.type === 'Slate' && (
                 <h3 className="text-lg font-semibold text-white mb-4">
@@ -290,7 +290,7 @@ export default function PrintLabelPage() {
 
         {/* Progress Widget */}
         {formData.pdfProgress.total > 0 && (
-          <GridWidget area="bottom-right">
+          <GridWidget area="bottom-right" borderStyle="default">
             <div className="h-full flex flex-col">
               <h3 className="text-lg font-semibold text-white mb-4">Generation Progress</h3>
               <div className="flex-1 flex items-center">

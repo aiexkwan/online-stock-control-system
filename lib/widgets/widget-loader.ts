@@ -32,7 +32,7 @@ const widgetPaths: Record<string, string> = {
   'InventoryOrderedAnalysisWidget': '@/app/admin/components/dashboard/widgets/InventoryOrderedAnalysisWidget',
   
   // Lists Widgets
-  'OrdersListWidget': '@/app/admin/components/dashboard/widgets/OrdersListWidget',
+  'OrdersListWidget': '@/app/admin/components/dashboard/widgets/OrdersListWidgetV2',
   'OtherFilesListWidget': '@/app/admin/components/dashboard/widgets/OtherFilesListWidget',
   'WarehouseTransferListWidget': '@/app/admin/components/dashboard/widgets/WarehouseTransferListWidget',
   'OrderStateListWidget': '@/app/admin/components/dashboard/widgets/OrderStateListWidget',

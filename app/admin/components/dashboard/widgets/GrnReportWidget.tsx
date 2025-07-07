@@ -733,3 +733,5 @@ export const GrnReportWidget = function GrnReportWidget({
     </div>
   );
 }
+
+export default GrnReportWidget;

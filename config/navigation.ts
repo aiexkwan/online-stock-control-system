@@ -142,7 +142,7 @@ export const MAIN_NAVIGATION: NavigationItem[] = [
         label: 'Performance',
         href: '/admin/performance-dashboard',
         description: 'Widget performance monitoring'
-      }
+      },
     ]
   },
   {

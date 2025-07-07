@@ -73,7 +73,7 @@ export const widgetConfigMapping = {
   // List widgets
   'list': {
     widgetIds: [
-      'OrdersListWidget',
+      'OrdersListWidgetV2',
       'WarehouseTransferListWidget',
       'OrderStateListWidget'
     ],

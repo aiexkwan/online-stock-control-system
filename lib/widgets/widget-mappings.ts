@@ -30,7 +30,7 @@ const categoryMap: WidgetMapping['categoryMap'] = {
   'TopProductsChartGraphQL': 'charts',
   
   // Lists widgets
-  'OrdersListWidget': 'lists',
+  'OrdersListWidgetV2': 'lists',
   'OrdersListGraphQL': 'lists',
   'OtherFilesListWidget': 'lists',
   'OtherFilesListGraphQL': 'lists',
@@ -81,7 +81,7 @@ const categoryMap: WidgetMapping['categoryMap'] = {
 const graphqlVersionMap: WidgetMapping['graphqlVersionMap'] = {
   'StillInAwaitWidget': 'StillInAwaitWidgetGraphQL',
   'WarehouseTransferListWidget': 'WarehouseTransferListWidgetGraphQL',
-  'OrdersListWidget': 'OrdersListGraphQL',
+  'OrdersListWidgetV2': 'OrdersListGraphQL',
   'OtherFilesListWidget': 'OtherFilesListGraphQL',
 };
 
@@ -146,7 +146,7 @@ export const routePreloadMap: Record<string, string[]> = {
   '/admin/upload': [
     'UploadOrdersWidget',
     'UploadFilesWidget',
-    'OrdersListWidget',
+    'OrdersListWidgetV2',
     'OtherFilesListWidget'
   ],
   '/admin/update': [

@@ -4,28 +4,30 @@
  */
 
 import { getHardwareAbstractionLayer } from '../hardware-abstraction-layer';
+import { createLogger } from '../../logger';
+
+const logger = createLogger('hardware-test');
 import { hardwareSimulator } from './hardware-simulator';
 
 export async function testHardwareServices() {
-  console.log('🧪 Starting Hardware Services Tests...\n');
+  logger.info('🧪 Starting Hardware Services Tests...');
   
   const hal = getHardwareAbstractionLayer();
   
   try {
     // Test 1: Initialization
-    console.log('Test 1: Hardware Initialization');
+    logger.info('Test 1: Hardware Initialization');
     await hal.initialize();
-    console.log('✅ HAL initialized successfully\n');
+    logger.info('✅ HAL initialized successfully');
     
     // Test 2: Health Check
-    console.log('Test 2: Health Check');
+    logger.info('Test 2: Health Check');
     const health = await hal.healthCheck();
-    console.log(`✅ Health check passed: ${health.healthy ? 'Healthy' : 'Unhealthy'}`);
-    console.log(`   Devices: ${health.devices.size}`);
-    console.log('');
+    logger.info(`✅ Health check passed: ${health.healthy ? 'Healthy' : 'Unhealthy'}`);
+    logger.info(`   Devices: ${health.devices.size}`);
     
     // Test 3: Print Queue
-    console.log('Test 3: Print Queue Management');
+    logger.info('Test 3: Print Queue Management');
     const testJob = {
       type: 'qc-label' as const,
       data: {
@@ -37,46 +39,42 @@ export async function testHardwareServices() {
     };
     
     const jobId = await hal.queue.addToQueue(testJob);
-    console.log(`✅ Job added to queue: ${jobId}`);
+    logger.info(`✅ Job added to queue: ${jobId}`);
     
     const queueStatus = hal.queue.getQueueStatus();
-    console.log(`   Queue status: ${JSON.stringify(queueStatus)}`);
-    console.log('');
+    logger.info('Queue status:', queueStatus);
     
     // Test 4: Monitoring
-    console.log('Test 4: Device Monitoring');
+    logger.info('Test 4: Device Monitoring');
     const devices = hal.monitoring.getAllDevicesStatus();
-    console.log(`✅ Monitoring ${devices.size} devices`);
+    logger.info(`✅ Monitoring ${devices.size} devices`);
     devices.forEach((device, id) => {
-      console.log(`   ${id}: ${device.status}`);
+      logger.info(`   ${id}: ${device.status}`);
     });
-    console.log('');
     
     // Test 5: Simulated Print
-    console.log('Test 5: Simulated Print Job');
+    logger.info('Test 5: Simulated Print Job');
     hardwareSimulator.setSimulateDelays(true);
     hardwareSimulator.setPrintDelay(500);
     
     const printResult = await hardwareSimulator.simulatePrint(testJob);
-    console.log(`✅ Print simulation: ${printResult.success ? 'Success' : 'Failed'}`);
+    logger.info(`✅ Print simulation: ${printResult.success ? 'Success' : 'Failed'}`);
     if (printResult.error) {
-      console.log(`   Error: ${printResult.error}`);
+      logger.warn(`   Error: ${printResult.error}`);
     }
-    console.log('');
     
     // Test 6: Simulated Scan
-    console.log('Test 6: Simulated Scan');
+    logger.info('Test 6: Simulated Scan');
     const scanResult = await hardwareSimulator.simulateScan();
-    console.log(`✅ Scan simulation: ${scanResult.data}`);
-    console.log(`   Format: ${scanResult.format}`);
-    console.log('');
+    logger.info(`✅ Scan simulation: ${scanResult.data}`);
+    logger.info(`   Format: ${scanResult.format}`);
     
     // Cleanup
     await hal.shutdown();
-    console.log('✅ All tests completed successfully!');
+    logger.info('✅ All tests completed successfully!');
     
   } catch (error) {
-    console.error('❌ Test failed:', error);
+    logger.error({ err: error }, '❌ Test failed');
   }
 }
 

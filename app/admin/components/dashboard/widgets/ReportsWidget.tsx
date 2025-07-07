@@ -143,3 +143,5 @@ export const ReportsWidget = React.memo(function ReportsWidget({ widget, isEditM
     </motion.div>
   );
 });
+
+export default ReportsWidget;

@@ -1,41 +1,42 @@
 /**
- * ACO Order Progress 小部件
- * 支援三種尺寸：
- * - Small: 只顯示未完成訂單數量
- * - Medium: 顯示訂單列表和進度
- * - Large: 完整功能包括訂單選擇和詳細進度，加入 latest_update 顯示
+ * ACO Order Progress Widget
+ * 顯示 ACO 訂單進度和完成狀態
+ * 
+ * 已遷移至統一架構：
+ * - 使用 DashboardAPI 統一數據訪問
+ * - 服務器端 JOIN 和聚合計算
+ * - 優化性能和代碼結構
  */
 
 'use client';
 
-import React, { useEffect, useState, useRef, useCallback } from 'react';
+import React, { useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import { CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { UniversalWidgetCard as WidgetCard } from '../UniversalWidgetCard';
 import { ClipboardDocumentListIcon, ChevronDownIcon } from '@heroicons/react/24/outline';
 import { WidgetComponentProps } from '@/app/types/dashboard';
-import { createClient } from '@/app/utils/supabase/client';
+import { createDashboardAPI } from '@/lib/api/admin/DashboardAPI';
 import { WidgetStyles } from '@/app/utils/widgetStyles';
 import { motion, AnimatePresence } from 'framer-motion';
 import { format } from 'date-fns';
 import { WidgetTitle, WidgetText, WidgetLabel, WidgetValue } from '../WidgetTypography';
-import { useWidgetData } from '@/app/admin/hooks/useWidgetData';
 
 interface AcoOrder {
   order_ref: number;
-  code: string;
-  required_qty: number;
-  remain_qty: number;
   latest_update: string;
-  unique_id?: string; // 添加唯一標識符
+  total_required: number;
+  total_finished: number;
+  total_remaining: number;
+  product_count: number;
+  completion_percentage: number;
 }
 
 interface AcoOrderProgress {
   code: string;
   required_qty: number;
-  remain_qty: number;
   completed_qty: number;
+  remain_qty: number;
   completion_percentage: number;
-  latest_update?: string;
 }
 
 export const AcoOrderProgressWidget = React.memo(function AcoOrderProgressWidget({ widget, isEditMode }: WidgetComponentProps) {
@@ -45,44 +46,62 @@ export const AcoOrderProgressWidget = React.memo(function AcoOrderProgressWidget
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [ordersMetadata, setOrdersMetadata] = useState<any>({});
+  const [progressMetadata, setProgressMetadata] = useState<any>({});
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const dashboardAPI = useMemo(() => createDashboardAPI(), []);
 
-  // Fixed layout - no size configuration needed
-
-  // Define loadIncompleteOrders function
+  // Load incomplete orders using DashboardAPI
   const loadIncompleteOrders = useCallback(async () => {
     try {
       setLoading(true);
-      const supabase = createClient();
-      const { data, error } = await supabase
-        .from('record_aco')
-        .select('*')
-        .or('finished_qty.is.null,finished_qty.lt.required_qty')
-        .order('order_ref', { ascending: false });
+      setError(null);
+      
+      // 使用統一的 DashboardAPI 獲取未完成訂單列表
+      const result = await dashboardAPI.fetch({
+        widgetIds: ['statsCard'],
+        params: {
+          dataSource: 'aco_incomplete_orders',
+          limit: 50,
+          offset: 0
+        }
+      }, {
+        strategy: 'server',
+        cache: { ttl: 300 } // 5分鐘緩存
+      });
 
-      if (error) throw error;
+      if (result.widgets && result.widgets.length > 0) {
+        const widgetData = result.widgets[0];
+        
+        if (widgetData.data.error) {
+          console.error('[AcoOrderProgressWidget] API error:', widgetData.data.error);
+          setError(widgetData.data.error);
+          setIncompleteOrders([]);
+          return;
+        }
 
-      // 為每個訂單添加唯一標識符，避免重複 key 問題
-      const ordersWithUniqueId = (data || []).map((order, index) => ({
-        ...order,
-        unique_id: `${order.order_ref}-${order.code}-${index}`
-      }));
+        const orders = widgetData.data.value || [];
+        const metadata = widgetData.data.metadata || {};
+        
+        console.log('[AcoOrderProgressWidget] API returned', orders.length, 'orders');
+        console.log('[AcoOrderProgressWidget] Metadata:', metadata);
 
-      setIncompleteOrders(ordersWithUniqueId);
+        setIncompleteOrders(orders);
+        setOrdersMetadata(metadata);
+        
+        console.log('[AcoOrderProgressWidget] Orders loaded successfully using optimized API');
+      } else {
+        console.warn('[AcoOrderProgressWidget] No widget data returned from API');
+        setIncompleteOrders([]);
+      }
     } catch (err: any) {
-      console.error('Error loading ACO orders:', err);
+      console.error('[AcoOrderProgressWidget] Error loading ACO orders from API:', err);
       setError(err.message);
+      setIncompleteOrders([]);
     } finally {
       setLoading(false);
     }
-  }, []);
-
-  // Use widget data hook for refresh management
-  useWidgetData({
-    loadFunction: loadIncompleteOrders,
-    dependencies: [],
-    isEditMode
-  });
+  }, [dashboardAPI]);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -96,35 +115,48 @@ export const AcoOrderProgressWidget = React.memo(function AcoOrderProgressWidget
 
   const loadOrderProgress = useCallback(async (orderRef: number) => {
     try {
-      const supabase = createClient();
-      const { data, error } = await supabase
-        .from('record_aco')
-        .select('*')
-        .eq('order_ref', orderRef);
-
-      if (error) throw error;
-
-      const progress: AcoOrderProgress[] = (data || []).map(item => {
-        const completed = item.finished_qty || 0;
-        const remaining = Math.max(0, item.required_qty - completed);
-        return {
-          code: item.code,
-          required_qty: item.required_qty,
-          remain_qty: remaining,
-          completed_qty: completed,
-          completion_percentage: item.required_qty > 0
-            ? Math.round((completed / item.required_qty) * 100)
-            : 0,
-          latest_update: item.latest_update
-        };
+      // 使用統一的 DashboardAPI 獲取特定訂單進度
+      const result = await dashboardAPI.fetch({
+        widgetIds: ['statsCard'],
+        params: {
+          dataSource: 'aco_order_progress',
+          orderRef: orderRef
+        }
+      }, {
+        strategy: 'server',
+        cache: { ttl: 180 } // 3分鐘緩存
       });
 
-      setOrderProgress(progress);
+      if (result.widgets && result.widgets.length > 0) {
+        const widgetData = result.widgets[0];
+        
+        if (widgetData.data.error) {
+          console.error('[AcoOrderProgressWidget] Progress API error:', widgetData.data.error);
+          setError(widgetData.data.error);
+          setOrderProgress([]);
+          return;
+        }
+
+        const progress = widgetData.data.value || [];
+        const metadata = widgetData.data.metadata || {};
+        
+        console.log('[AcoOrderProgressWidget] Progress API returned', progress.length, 'products');
+        console.log('[AcoOrderProgressWidget] Progress Metadata:', metadata);
+
+        setOrderProgress(progress);
+        setProgressMetadata(metadata);
+        
+        console.log('[AcoOrderProgressWidget] Order progress loaded successfully using optimized API');
+      } else {
+        console.warn('[AcoOrderProgressWidget] No progress data returned from API');
+        setOrderProgress([]);
+      }
     } catch (err: any) {
-      console.error('Error loading order progress:', err);
+      console.error('[AcoOrderProgressWidget] Error loading order progress from API:', err);
       setError(err.message);
+      setOrderProgress([]);
     }
-  }, []);
+  }, [dashboardAPI]);
 
   // Load order progress when selected order changes
   useEffect(() => {
@@ -132,6 +164,13 @@ export const AcoOrderProgressWidget = React.memo(function AcoOrderProgressWidget
       loadOrderProgress(selectedOrderRef);
     }
   }, [selectedOrderRef, loadOrderProgress]);
+
+  // Initial load
+  useEffect(() => {
+    if (!isEditMode) {
+      loadIncompleteOrders();
+    }
+  }, [loadIncompleteOrders, isEditMode]);
 
   // Auto-select first order
   useEffect(() => {
@@ -188,7 +227,7 @@ export const AcoOrderProgressWidget = React.memo(function AcoOrderProgressWidget
                   ) : (
                     incompleteOrders.map((order, idx) => (
                       <button
-                        key={order.unique_id || `dropdown-order-${order.order_ref}-${idx}`}
+                        key={`dropdown-order-${order.order_ref}-${idx}`}
                         onClick={() => handleOrderSelect(order.order_ref)}
                         className={`w-full px-3 py-2 text-left text-xs hover:bg-white/10 transition-all duration-300 first:rounded-t-xl last:rounded-b-xl ${
                           selectedOrderRef === order.order_ref ? 'bg-white/10 text-orange-400' : 'text-slate-300'
@@ -196,8 +235,13 @@ export const AcoOrderProgressWidget = React.memo(function AcoOrderProgressWidget
                       >
                         <div className="flex justify-between items-center">
                           <span>Order {order.order_ref}</span>
-                          <div className="bg-orange-500/20 border border-orange-400/30 text-orange-300 px-2 py-0.5 rounded-lg text-[10px]">
-                            {order.remain_qty} remain
+                          <div className="flex flex-col items-end gap-1">
+                            <div className="bg-orange-500/20 border border-orange-400/30 text-orange-300 px-2 py-0.5 rounded-lg text-[10px]">
+                              {order.total_remaining} remain
+                            </div>
+                            <div className="text-[9px] text-slate-400">
+                              {order.completion_percentage}% done
+                            </div>
                           </div>
                         </div>
                       </button>
@@ -253,9 +297,9 @@ export const AcoOrderProgressWidget = React.memo(function AcoOrderProgressWidget
                   ) : (
                     <span></span>
                   )}
-                  {item.latest_update && (
+                  {progressMetadata.orderRef && (
                     <WidgetLabel size="xs" glow="subtle" className="text-[10px]">
-                      Last updated: {format(new Date(item.latest_update), 'MMM dd, yyyy HH:mm')}
+                      Order {progressMetadata.orderRef} • {progressMetadata.productCount} products
                     </WidgetLabel>
                   )}
                 </div>
@@ -267,3 +311,5 @@ export const AcoOrderProgressWidget = React.memo(function AcoOrderProgressWidget
     </WidgetCard>
   );
 });
+
+export default AcoOrderProgressWidget;

@@ -2,13 +2,13 @@
  * 將用戶 ID (時鐘編號) 轉換為 Supabase Auth 可用的電子郵件格式
  * 
  * 因為 Supabase Auth 需要電子郵件格式的帳戶名稱，所以我們需要將時鐘編號轉換為一個
- * 虛擬的電子郵件地址。這個函數將時鐘編號轉換為格式為 "[時鐘編號]@pennine.com" 的郵箱。
+ * 虛擬的電子郵件地址。這個函數將時鐘編號轉換為格式為 "[時鐘編號]@pennineindustries.com" 的郵箱。
  * 
  * @param clockNumber - 用戶的時鐘編號，可以是數字或字符串
  * @returns 格式化為電子郵件的時鐘編號
  */
 export function clockNumberToEmail(clockNumber: string): string {
-  return `${clockNumber}@pennine.com`;
+  return `${clockNumber}@pennineindustries.com`;
 }
 
 /**
@@ -22,10 +22,17 @@ export function clockNumberToEmail(clockNumber: string): string {
  */
 export function emailToClockNumber(email: string | null | undefined): string | null {
   if (!email) {
-    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.warn('[authUtils] emailToClockNumber called with null or undefined email');
+    if (process.env.NODE_ENV !== "production") {
+      console.warn('[authUtils] emailToClockNumber called with null or undefined email');
+    }
     return null;
   }
   
-  const match = email.match(/^(.+)@pennine\.com$/);
+  // Handle special case of "@pennineindustries.com" (empty clock number)
+  if (email === '@pennineindustries.com') {
+    return '';
+  }
+  
+  const match = email.match(/^(.+)@pennineindustries\.com$/);
   return match ? match[1] : null;
 } 

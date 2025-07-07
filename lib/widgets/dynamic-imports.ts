@@ -31,7 +31,8 @@ export const chartsWidgetImports = {
 
 // Lists Widgets
 export const listsWidgetImports = {
-  'OrdersListWidget': () => import('@/app/admin/components/dashboard/widgets/OrdersListWidget'),
+  'OrdersListWidget': () => import('@/app/admin/components/dashboard/widgets/OrdersListWidgetV2'),
+  'OrdersListWidgetV2': () => import('@/app/admin/components/dashboard/widgets/OrdersListWidgetV2'),
   'OtherFilesListWidget': () => import('@/app/admin/components/dashboard/widgets/OtherFilesListWidget'),
   'WarehouseTransferListWidget': () => import('@/app/admin/components/dashboard/widgets/WarehouseTransferListWidget'),
   'OrderStateListWidget': () => import('@/app/admin/components/dashboard/widgets/OrderStateListWidget'),

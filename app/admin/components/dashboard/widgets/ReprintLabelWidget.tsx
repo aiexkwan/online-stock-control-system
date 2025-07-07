@@ -6,7 +6,9 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { PrinterIcon, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
-import { createClient } from '@/lib/supabase';
+import { createDashboardAPI } from '@/lib/api/admin/DashboardAPI';
+import { TransactionLogService, TransactionSource, TransactionOperation } from '@/app/services/transactionLog.service';
+import { ErrorHandler } from '@/app/components/qc-label-form/services/ErrorHandler';
 
 interface ReprintLabelWidgetProps {
   title?: string;
@@ -16,7 +18,9 @@ interface ReprintLabelWidgetProps {
 export function ReprintLabelWidget({ title = 'Reprint Label', gridArea }: ReprintLabelWidgetProps) {
   const [palletNumber, setPalletNumber] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const supabase = createClient();
+  const dashboardAPI = createDashboardAPI();
+  const transactionLog = new TransactionLogService();
+  const errorHandler = new ErrorHandler('ReprintLabelWidget');
 
   const handleReprint = async () => {
     if (!palletNumber.trim()) {
@@ -24,40 +28,99 @@ export function ReprintLabelWidget({ title = 'Reprint Label', gridArea }: Reprin
       return;
     }
 
+    // Start transaction logging
+    const transactionId = transactionLog.generateTransactionId();
+    
     setIsLoading(true);
     try {
-      // Query record_palletinfo table - correct column name is plt_num
-      const { data, error } = await supabase
-        .from('record_palletinfo')
-        .select('pdf_url, plt_num, product_code, product_qty')
-        .eq('plt_num', palletNumber.toUpperCase()) // Ensure uppercase for pallet number
-        .maybeSingle(); // Use maybeSingle to handle no results gracefully
+      // Record transaction start
+      await transactionLog.startTransaction({
+        transactionId,
+        sourceModule: TransactionSource.REPRINT_LABEL,
+        sourcePage: 'AdminDashboard',
+        sourceAction: 'ReprintLabel',
+        operationType: TransactionOperation.PRINT_LABEL,
+        userId: 'system', // TODO: Get actual user ID
+        metadata: {
+          palletNumber: palletNumber.toUpperCase(),
+          widget: 'ReprintLabelWidget'
+        }
+      });
 
-      if (error) {
-        console.error('Database error:', error);
-        toast.error(`Database error: ${error.message}`);
+      // Step 1: Fetch pallet information
+      await transactionLog.recordStep(transactionId, {
+        name: 'fetch_pallet_info',
+        sequence: 1,
+        data: { palletNumber: palletNumber.toUpperCase() }
+      });
+
+      const result = await dashboardAPI.fetch({
+        widgetIds: ['reprint'],
+        params: {
+          dataSource: 'pallet_reprint',
+          palletNum: palletNumber.toUpperCase()
+        }
+      });
+
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to fetch pallet information');
+      }
+
+      const palletData = result.data?.widgets?.[0]?.data?.value;
+      
+      if (!palletData) {
+        const errorMsg = `Pallet number ${palletNumber} not found`;
+        await transactionLog.recordError(transactionId, new Error(errorMsg), 'PALLET_NOT_FOUND');
+        toast.error(errorMsg);
         return;
       }
 
-      if (!data) {
-        toast.error(`Pallet number ${palletNumber} not found`);
+      if (!palletData.pdf_url) {
+        const errorMsg = `No PDF label found for pallet ${palletNumber}`;
+        await transactionLog.recordError(transactionId, new Error(errorMsg), 'PDF_NOT_FOUND');
+        toast.error(errorMsg);
         return;
       }
 
-      if (!data.pdf_url) {
-        toast.error(`No PDF label found for pallet ${palletNumber}`);
-        return;
-      }
+      // Step 2: Execute print
+      await transactionLog.recordStep(transactionId, {
+        name: 'execute_print',
+        sequence: 2,
+        data: { 
+          pdfUrl: palletData.pdf_url,
+          palletInfo: {
+            plt_num: palletData.plt_num,
+            product_code: palletData.product_code,
+            product_description: palletData.product_description,
+            quantity: palletData.product_qty
+          }
+        }
+      });
 
-      // Execute print
-      await printPDF(data.pdf_url);
-      toast.success(`Label for ${data.plt_num} (${data.product_code}) sent to printer`);
+      await printPDF(palletData.pdf_url);
+      
+      // Complete transaction
+      await transactionLog.completeTransaction(transactionId, {
+        printSuccess: true,
+        palletPrinted: palletData.plt_num
+      });
+      
+      toast.success(
+        `Label for ${palletData.plt_num} (${palletData.product_description || palletData.product_code}) sent to printer`
+      );
       
       // Clear input
       setPalletNumber('');
     } catch (error) {
-      console.error('Reprint error:', error);
-      toast.error('Print failed, please try again');
+      const err = error instanceof Error ? error : new Error('Unknown error');
+      await transactionLog.recordError(transactionId, err, 'REPRINT_FAILED');
+      
+      const handledError = errorHandler.handleError(err, {
+        context: 'handleReprint',
+        palletNumber: palletNumber.toUpperCase()
+      });
+      
+      toast.error(handledError.userMessage || 'Print failed, please try again');
     } finally {
       setIsLoading(false);
     }
@@ -86,7 +149,10 @@ export function ReprintLabelWidget({ title = 'Reprint Label', gridArea }: Reprin
         toast.info('PDF downloaded. Please print it manually.');
       }
     } catch (error) {
-      console.error('Print error:', error);
+      errorHandler.handleError(error instanceof Error ? error : new Error('Print error'), {
+        context: 'printPDF',
+        pdfUrl
+      });
       // Final fallback: Just open the PDF
       window.open(pdfUrl, '_blank');
       toast.info('PDF opened in new tab. Please print it manually.');
@@ -135,3 +201,5 @@ export function ReprintLabelWidget({ title = 'Reprint Label', gridArea }: Reprin
     </div>
   );
 }
+
+export default ReprintLabelWidget;

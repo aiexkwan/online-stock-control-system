@@ -10,13 +10,15 @@ export function debounce<T extends (...args: any[]) => any>(
 ): (...args: Parameters<T>) => void {
   let timeout: NodeJS.Timeout | null = null;
 
-  return function debounced(...args: Parameters<T>) {
+  return function debounced(this: any, ...args: Parameters<T>) {
+    const context = this;
+    
     if (timeout) {
       clearTimeout(timeout);
     }
 
     timeout = setTimeout(() => {
-      func(...args);
+      func.apply(context, args);
       timeout = null;
     }, wait);
   };
@@ -34,13 +36,15 @@ export function debounceWithCancel<T extends (...args: any[]) => any>(
 } {
   let timeout: NodeJS.Timeout | null = null;
 
-  const debounced = (...args: Parameters<T>) => {
+  const debounced = function(this: any, ...args: Parameters<T>) {
+    const context = this;
+    
     if (timeout) {
       clearTimeout(timeout);
     }
 
     timeout = setTimeout(() => {
-      func(...args);
+      func.apply(context, args);
       timeout = null;
     }, wait);
   };

@@ -31,10 +31,16 @@ GraphQL Schema 標準化是整個系統重構的基礎階段，目標是建立�
 - Subscription 實時更新
 ```
 
-#### 1.3 統一數據適配器
-- 創建 `lib/graphql/unified-data-layer.ts`
-- 實現舊 Supabase GraphQL 到新 Schema 的適配
-- 建立標準化的數據轉換機制
+#### 1.3 統一數據適配器（2025-07-07 更新：演進為混合架構）
+- ~~創建 `lib/graphql/unified-data-layer.ts`~~ → 已演進為 `lib/api/core/DataAccessStrategy.ts`
+- ~~實現舊 Supabase GraphQL 到新 Schema 的適配~~ → 實現智能策略路由
+- ~~建立標準化的數據轉換機制~~ → 建立混合數據訪問架構
+
+**新架構特點**：
+- **智能策略選擇**：根據查詢複雜度和實時需求自動選擇 Server/Client
+- **統一接口**：所有數據訪問通過 DataAccessLayer 基類
+- **性能監控**：內建 metrics 收集和策略優化
+- **靈活擴展**：支持 Server Actions、GraphQL、REST、SWR 等多種實現
 
 #### 1.4 示例實現
 - Query/Mutation/Subscription 示例文件

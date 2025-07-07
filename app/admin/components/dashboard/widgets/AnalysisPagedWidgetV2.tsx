@@ -295,3 +295,5 @@ export const AnalysisPagedWidgetV2 = function AnalysisPagedWidgetV2({ timeFrame,
     </div>
   );
 }
+
+export default AnalysisPagedWidgetV2;

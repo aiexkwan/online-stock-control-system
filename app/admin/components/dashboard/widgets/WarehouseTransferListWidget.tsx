@@ -3,6 +3,11 @@
  * 列表形式顯示 record_transfer 內容
  * 只需顯示 "time", "pallet number", "operator"
  * 只顯示 operator department = "Warehouse" 的記錄
+ * 
+ * 已遷移至統一架構：
+ * - 使用 DashboardAPI 統一數據訪問
+ * - 服務器端 JOIN 和過濾
+ * - 優化性能和代碼結構
  */
 
 'use client';
@@ -12,7 +17,7 @@ import { CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { UniversalWidgetCard as WidgetCard } from '../UniversalWidgetCard';
 import { DocumentTextIcon, UserIcon, ClockIcon, CubeIcon } from '@heroicons/react/24/outline';
 import { WidgetComponentProps } from '@/app/types/dashboard';
-import { createClient } from '@/lib/supabase';
+import { createDashboardAPI } from '@/lib/api/admin/DashboardAPI';
 import { motion } from 'framer-motion';
 import { format, parseISO } from 'date-fns';
 import { getYesterdayRange } from '@/app/utils/timezone';
@@ -31,6 +36,7 @@ export const WarehouseTransferListWidget = React.memo(function WarehouseTransfer
   const [transfers, setTransfers] = useState<TransferRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const dashboardAPI = useMemo(() => createDashboardAPI(), []);
 
   // 根據 timeFrame 設定查詢時間範圍
   const dateRange = useMemo(() => {
@@ -53,65 +59,56 @@ export const WarehouseTransferListWidget = React.memo(function WarehouseTransfer
       setError(null);
       
       try {
-        const supabase = createClient();
-        
-        // 先查詢 transfer 記錄
-        const { data: transferData, error: transferError } = await supabase
-          .from('record_transfer')
-          .select('tran_date, plt_num, operator_id')
-          .gte('tran_date', dateRange.start.toISOString())
-          .lte('tran_date', dateRange.end.toISOString())
-          .order('tran_date', { ascending: false })
-          .limit(50);
+        // 使用統一的 DashboardAPI 獲取數據
+        const result = await dashboardAPI.fetch({
+          widgetIds: ['statsCard'],
+          dateRange: {
+            start: dateRange.start.toISOString(),
+            end: dateRange.end.toISOString()
+          },
+          params: {
+            dataSource: 'warehouse_transfer_list',
+            limit: 50,
+            offset: 0
+          }
+        }, {
+          strategy: 'server',
+          cache: { ttl: 60 } // 1分鐘緩存
+        });
 
-        if (transferError) throw transferError;
-        if (!transferData || transferData.length === 0) {
-          setTransfers([]);
-          return;
-        }
-
-        // 獲取唯一的 operator IDs
-        const operatorIds = [...new Set(transferData.map(t => t.operator_id).filter(id => id != null))];
-        
-        // 查詢 operator 資料
-        const { data: operatorData, error: operatorError } = await supabase
-          .from('data_id')
-          .select('id,name,department')
-          .in('id', operatorIds);
+        if (result.widgets && result.widgets.length > 0) {
+          const widgetData = result.widgets[0];
           
-        if (operatorError) throw operatorError;
-        
-        // 建立 operator ID 到資料的映射
-        const operatorMap = new Map(
-          (operatorData || []).map(op => [op.id, op])
-        );
-        
-        // 過濾只顯示倉庫部門的記錄
-        const warehouseTransfers = transferData
-          .filter(transfer => {
-            const operator = operatorMap.get(transfer.operator_id);
-            return operator?.department === 'Warehouse';
-          })
-          .map(transfer => {
-            const operator = operatorMap.get(transfer.operator_id);
-            return {
-              tran_date: transfer.tran_date,
-              plt_num: transfer.plt_num,
-              operator_name: operator?.name || 'Unknown'
-            };
-          });
+          if (widgetData.data.error) {
+            console.error('[WarehouseTransferListWidget] API error:', widgetData.data.error);
+            setError(widgetData.data.error);
+            setTransfers([]);
+            return;
+          }
 
-        setTransfers(warehouseTransfers);
+          const transferList = widgetData.data.value || [];
+          console.log('[WarehouseTransferListWidget] API returned', transferList.length, 'transfers');
+          console.log('[WarehouseTransferListWidget] Metadata:', widgetData.data.metadata);
+
+          // 直接使用 API 返回的數據，已經經過優化處理
+          setTransfers(transferList);
+          
+          console.log('[WarehouseTransferListWidget] Data processed successfully using optimized API');
+        } else {
+          console.warn('[WarehouseTransferListWidget] No widget data returned from API');
+          setTransfers([]);
+        }
       } catch (err) {
-        console.error('Error fetching warehouse transfers:', err);
+        console.error('[WarehouseTransferListWidget] Error fetching transfers from API:', err);
         setError(err instanceof Error ? err.message : 'Unknown error');
+        setTransfers([]);
       } finally {
         setLoading(false);
       }
     };
 
     fetchData();
-  }, [dateRange]);
+  }, [dateRange, dashboardAPI]);
 
   if (isEditMode) {
     return (
@@ -202,3 +199,5 @@ export const WarehouseTransferListWidget = React.memo(function WarehouseTransfer
     </WidgetCard>
   );
 });
+
+export default WarehouseTransferListWidget;

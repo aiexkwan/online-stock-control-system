@@ -473,6 +473,8 @@ export const SupplierUpdateWidget = React.memo(function SupplierUpdateWidget({ w
   );
 });
 
+export default SupplierUpdateWidget;
+
 // Info Row Component
 interface InfoRowProps {
   label: string;

@@ -209,7 +209,7 @@ import { HistoryTree } from './widgets/HistoryTree';
 import { getEnhancedWidgetComponent } from './LazyWidgetRegistry';
 
 // 新的上傳頁面組件 - 使用 lazy loading
-const OrdersListWidget = React.lazy(() => import('./widgets/OrdersListWidget').then(mod => ({ default: mod.OrdersListWidget })));
+const OrdersListWidget = React.lazy(() => import('./widgets/OrdersListWidgetV2').then(mod => ({ default: mod.OrdersListWidgetV2 })));
 const OtherFilesListWidget = React.lazy(() => import('./widgets/OtherFilesListWidget').then(mod => ({ default: mod.OtherFilesListWidget })));
 const UploadFilesWidget = React.lazy(() => import('./widgets/UploadFilesWidget').then(mod => ({ default: mod.UploadFilesWidget })));
 
@@ -311,7 +311,7 @@ const getComponentPropsFactory = (config: AdminWidgetConfig, timeFrame: TimeFram
   };
 
   const uploadWidgets = [
-    'OrdersListWidget',
+    'OrdersListWidgetV2',
     'OtherFilesListWidget',
     'UploadFilesWidget',
     'UploadOrdersWidget',
@@ -1781,7 +1781,7 @@ const AdminWidgetRendererComponent: React.FC<AdminWidgetRendererProps> = ({
       case 'InventoryOrderedAnalysisWidget':
         return (
           <Suspense fallback={<div className="h-full w-full animate-pulse bg-slate-800/50" />}>
-            <InventoryOrderedAnalysisWidget />
+            <InventoryOrderedAnalysisWidget widget={widget} isEditMode={isEditMode} />
           </Suspense>
         );
       default:

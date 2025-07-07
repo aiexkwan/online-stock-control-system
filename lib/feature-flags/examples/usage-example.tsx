@@ -194,8 +194,8 @@ export function Example9_GradualRollout() {
   return (
     <FeatureFlag flag="new_checkout_flow">
       <div className="p-4 border-2 border-green-500 rounded">
-        <p>🎉 You're seeing the new checkout flow!</p>
-        <p>You're part of the 30% rollout group.</p>
+        <p>🎉 You&apos;re seeing the new checkout flow!</p>
+        <p>You&apos;re part of the 30% rollout group.</p>
       </div>
     </FeatureFlag>
   );

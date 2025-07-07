@@ -310,3 +310,5 @@ export const StockDistributionChart: React.FC<StockDistributionChartProps> = ({ 
     </div>
   );
 };
+
+export default StockDistributionChart;

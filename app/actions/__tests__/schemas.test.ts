@@ -109,8 +109,8 @@ describe('schemas', () => {
         'pass-word',
         'pass_word',
         'pass.word',
-        'パスワード',
-        '密碼123'
+        'パスワード123',  // Made sure it's at least 6 characters
+        '密碼123456'     // Made sure it's at least 6 characters
       ];
       
       invalidPasswords.forEach(pwd => {

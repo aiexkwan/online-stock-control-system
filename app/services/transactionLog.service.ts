@@ -8,6 +8,7 @@ export enum TransactionSource {
   // 標籤打印模組
   GRN_LABEL = 'grn_label',
   QC_LABEL = 'qc_label',
+  REPRINT_LABEL = 'reprint_label',
   
   // 庫存管理模組
   INVENTORY_TRANSFER = 'inventory_transfer',

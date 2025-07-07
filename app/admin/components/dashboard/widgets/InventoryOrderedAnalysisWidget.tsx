@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { WidgetComponentProps } from '@/app/types/dashboard';
 import { useAdminRefresh } from '@/app/admin/contexts/AdminRefreshContext';
 import { Loader2, Package, TrendingUp, AlertTriangle, CheckCircle, AlertCircle } from 'lucide-react';
-import { createClient } from '@/app/utils/supabase/client';
+import { createDashboardAPI } from '@/lib/api/admin/DashboardAPI';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
 import { motion } from 'framer-motion';
 import { Progress } from '@/components/ui/progress';
@@ -18,6 +18,24 @@ interface ProductAnalysis {
   remainingStock: number;
   fulfillmentRate: number;
   isSufficient: boolean;
+}
+
+interface AnalysisSummary {
+  totalStock: number;
+  totalDemand: number;
+  totalRemaining: number;
+  overallSufficient: boolean;
+  insufficientCount: number;
+  sufficientCount: number;
+}
+
+interface InventoryAnalysisResponse {
+  products: ProductAnalysis[];
+  summary: AnalysisSummary;
+  metadata?: {
+    executed_at: string;
+    calculation_time?: string;
+  };
 }
 
 interface InventoryOrderedAnalysisWidgetProps extends WidgetComponentProps {}
@@ -33,136 +51,50 @@ export const InventoryOrderedAnalysisWidget: React.FC<InventoryOrderedAnalysisWi
   widget, 
   isEditMode 
 }) => {
-  const [productAnalysis, setProductAnalysis] = useState<ProductAnalysis[]>([]);
-  const [totalStock, setTotalStock] = useState(0);
-  const [totalDemand, setTotalDemand] = useState(0);
-  const [totalRemaining, setTotalRemaining] = useState(0);
-  const [overallSufficient, setOverallSufficient] = useState(true);
+  const [analysisData, setAnalysisData] = useState<InventoryAnalysisResponse | null>(null);
   const [selectedType, setSelectedType] = useState<string>('all');
+  const [selectedProductCodes, setSelectedProductCodes] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
+  const [queryTime, setQueryTime] = useState<string>('');
   const { refreshTrigger } = useAdminRefresh();
-  const supabase = createClient();
 
-  // 獲取庫存滿足分析數據
-  const fetchInventoryAnalysis = useCallback(async (productCodes?: string[]) => {
+  // 獲取庫存滿足分析數據 using DashboardAPI
+  const fetchInventoryAnalysis = useCallback(async (productCodes?: string[], productType?: string) => {
     setLoading(true);
     try {
-      // 1. 獲取庫存數據
-      let stockQuery = supabase
-        .from('stock_level')
-        .select('stock, stock_level, update_time')
-        .order('update_time', { ascending: false });
-
-      // 如果有指定產品代碼，則過濾
-      if (productCodes && productCodes.length > 0) {
-        stockQuery = stockQuery.in('stock', productCodes);
+      const dashboardAPI = createDashboardAPI();
+      
+      // Use DashboardAPI with appropriate parameters
+      const dashboardResult = await dashboardAPI.fetch({
+        widgetIds: ['inventory_ordered_analysis'],
+        params: {
+          dataSource: 'inventory_ordered_analysis',
+          productCodes: productCodes,
+          productType: productType === 'all' || productType === 'ALL TYPES' ? undefined : productType
+        }
+      }, { 
+        strategy: 'client', // Use client strategy as per Re-Structure-5.md
+        cache: { ttl: 180 } // 3 minutes cache
+      });
+      
+      const widgetData = dashboardResult.widgets.find(w => w.widgetId === 'inventory_ordered_analysis');
+      
+      if (widgetData?.data?.value) {
+        const analysisResponse = widgetData.data.value as InventoryAnalysisResponse;
+        setAnalysisData(analysisResponse);
+        
+        // Extract calculation time from metadata
+        if (widgetData.data.metadata?.calculationTime) {
+          setQueryTime(widgetData.data.metadata.calculationTime);
+        }
       }
-
-      const { data: stockData, error: stockError } = await stockQuery;
-      if (stockError) throw stockError;
-
-      // 計算每個產品的最新庫存
-      const latestStockByProduct = new Map<string, number>();
-      stockData?.forEach(item => {
-        if (!latestStockByProduct.has(item.stock)) {
-          latestStockByProduct.set(item.stock, item.stock_level);
-        }
-      });
-
-      // 2. 獲取訂單需求數據
-      let orderQuery = supabase
-        .from('data_order')
-        .select('product_code, product_desc, product_qty, loaded_qty');
-
-      // 如果有指定產品代碼，則過濾
-      if (productCodes && productCodes.length > 0) {
-        orderQuery = orderQuery.in('product_code', productCodes);
-      }
-
-      const { data: orderData, error: orderError } = await orderQuery;
-      if (orderError) throw orderError;
-
-      // 計算每個產品的訂單需求
-      const demandByProduct = new Map<string, { demand: number; description: string }>();
-      orderData?.forEach(order => {
-        const currentDemand = demandByProduct.get(order.product_code)?.demand || 0;
-        const remainingDemand = parseInt(order.product_qty) - parseInt(order.loaded_qty || '0');
-        
-        demandByProduct.set(order.product_code, {
-          demand: currentDemand + Math.max(0, remainingDemand),
-          description: order.product_desc
-        });
-      });
-
-      // 3. 獲取產品詳情（如果需要）
-      const productCodesToQuery = Array.from(new Set([
-        ...Array.from(latestStockByProduct.keys()),
-        ...Array.from(demandByProduct.keys())
-      ]));
-
-      let productInfoQuery = supabase
-        .from('data_code')
-        .select('code, description, type')
-        .in('code', productCodesToQuery);
-
-      const { data: productInfo, error: productInfoError } = await productInfoQuery;
-      if (productInfoError) throw productInfoError;
-
-      const productInfoMap = new Map(productInfo?.map(p => [p.code, p]) || []);
-
-      // 4. 分析每個產品的庫存滿足情況
-      const analysis: ProductAnalysis[] = [];
-      let totalStockForOrderedProducts = 0;  // 只計算有訂單產品的庫存
-      let totalDemandSum = 0;
-      let totalRemainingSum = 0;
-
-      // 只處理有訂單需求的產品
-      demandByProduct.forEach((demandInfo, productCode) => {
-        const stock = latestStockByProduct.get(productCode) || 0;
-        const demand = demandInfo.demand;
-        const productInfoData = productInfoMap.get(productCode);
-        const description = demandInfo.description || productInfoData?.description || productCode;
-        
-        const remaining = stock - demand;
-        const fulfillmentRate = demand > 0 ? (stock / demand) * 100 : 100;
-        
-        // 只有有訂單需求的產品才加入分析
-        if (demand > 0) {
-          analysis.push({
-            productCode,
-            description,
-            currentStock: stock,
-            orderDemand: demand,
-            remainingStock: remaining,
-            fulfillmentRate,
-            isSufficient: remaining >= 0
-          });
-
-          totalStockForOrderedProducts += stock;
-          totalDemandSum += demand;
-          totalRemainingSum += remaining;
-        }
-      });
-
-      // 排序：先顯示庫存不足的產品
-      analysis.sort((a, b) => {
-        if (a.isSufficient !== b.isSufficient) {
-          return a.isSufficient ? 1 : -1;
-        }
-        return b.orderDemand - a.orderDemand;
-      });
-
-      setProductAnalysis(analysis);
-      setTotalStock(totalStockForOrderedProducts);  // 只顯示有訂單產品的總庫存
-      setTotalDemand(totalDemandSum);
-      setTotalRemaining(totalRemainingSum);
-      setOverallSufficient(totalDemandSum === 0 || totalStockForOrderedProducts >= totalDemandSum);
     } catch (error) {
       console.error('Error fetching inventory analysis:', error);
+      setAnalysisData(null);
     } finally {
       setLoading(false);
     }
-  }, [supabase]);
+  }, []);
 
   // 監聽 StockTypeSelector 的類型變更事件
   useEffect(() => {
@@ -173,13 +105,14 @@ export const InventoryOrderedAnalysisWidget: React.FC<InventoryOrderedAnalysisWi
       
       // 獲取該類型所有產品的代碼
       const codes = data.map((item: any) => item.stock);
+      setSelectedProductCodes(codes);
       
       if (type === 'all' || type === 'ALL TYPES') {
         // 如果選擇全部，不傳入產品代碼過濾
         fetchInventoryAnalysis();
       } else {
         // 否則只分析選定類型的產品
-        fetchInventoryAnalysis(codes);
+        fetchInventoryAnalysis(codes, type);
       }
     };
 
@@ -197,12 +130,10 @@ export const InventoryOrderedAnalysisWidget: React.FC<InventoryOrderedAnalysisWi
   useEffect(() => {
     if (selectedType === 'all' || selectedType === 'ALL TYPES') {
       fetchInventoryAnalysis();
+    } else if (selectedProductCodes.length > 0) {
+      fetchInventoryAnalysis(selectedProductCodes, selectedType);
     }
-  }, [refreshTrigger, fetchInventoryAnalysis, selectedType]);
-
-  // 計算不足產品數量
-  const insufficientProducts = productAnalysis.filter(p => !p.isSufficient).length;
-  const sufficientProducts = productAnalysis.filter(p => p.isSufficient).length;
+  }, [refreshTrigger, fetchInventoryAnalysis, selectedType, selectedProductCodes]);
 
   if (loading) {
     return (
@@ -211,6 +142,24 @@ export const InventoryOrderedAnalysisWidget: React.FC<InventoryOrderedAnalysisWi
       </div>
     );
   }
+
+  if (!analysisData || !analysisData.products) {
+    return (
+      <div className="h-full flex flex-col p-4">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+            <Package className="w-5 h-5" />
+            Inventory Ordered Analysis
+          </h3>
+        </div>
+        <div className="flex-1 flex items-center justify-center">
+          <p className="text-gray-400">No inventory data available</p>
+        </div>
+      </div>
+    );
+  }
+
+  const { products, summary } = analysisData;
 
   return (
     <div className="h-full flex flex-col p-4">
@@ -227,35 +176,35 @@ export const InventoryOrderedAnalysisWidget: React.FC<InventoryOrderedAnalysisWi
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           className={`p-4 rounded-lg border ${
-            overallSufficient 
+            summary.overallSufficient 
               ? 'bg-emerald-900/20 border-emerald-700' 
               : 'bg-red-900/20 border-red-700'
           }`}
         >
           <div className="flex items-center gap-2">
-            {overallSufficient ? (
+            {summary.overallSufficient ? (
               <CheckCircle className="w-5 h-5 text-emerald-500" />
             ) : (
               <AlertCircle className="w-5 h-5 text-red-500" />
             )}
             <span className="text-sm font-medium text-white">
-              {overallSufficient ? 'Stock Sufficient' : 'Stock Insufficient'}
+              {summary.overallSufficient ? 'Stock Sufficient' : 'Stock Insufficient'}
             </span>
           </div>
           
           <div className="grid grid-cols-3 gap-3 mt-3">
             <div className="text-center">
               <p className="text-xs text-gray-400">Total Stock</p>
-              <p className="text-lg font-bold text-white">{totalStock.toLocaleString()}</p>
+              <p className="text-lg font-bold text-white">{summary.totalStock.toLocaleString()}</p>
             </div>
             <div className="text-center">
               <p className="text-xs text-gray-400">Order Demand</p>
-              <p className="text-lg font-bold text-amber-400">{totalDemand.toLocaleString()}</p>
+              <p className="text-lg font-bold text-amber-400">{summary.totalDemand.toLocaleString()}</p>
             </div>
             <div className="text-center">
               <p className="text-xs text-gray-400">Remaining Stock</p>
-              <p className={`text-lg font-bold ${totalRemaining >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-                {totalRemaining.toLocaleString()}
+              <p className={`text-lg font-bold ${summary.totalRemaining >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                {summary.totalRemaining.toLocaleString()}
               </p>
             </div>
           </div>
@@ -264,12 +213,24 @@ export const InventoryOrderedAnalysisWidget: React.FC<InventoryOrderedAnalysisWi
           <div className="mt-3">
             <div className="flex justify-between text-xs text-gray-400 mb-1">
               <span>Order Fulfillment Rate</span>
-              <span>{totalDemand > 0 ? ((totalStock / totalDemand) * 100).toFixed(1) : 100}%</span>
+              <span>{summary.totalDemand > 0 ? ((summary.totalStock / summary.totalDemand) * 100).toFixed(1) : 100}%</span>
             </div>
             <Progress 
-              value={Math.min(totalDemand > 0 ? (totalStock / totalDemand) * 100 : 100, 100)} 
+              value={Math.min(summary.totalDemand > 0 ? (summary.totalStock / summary.totalDemand) * 100 : 100, 100)} 
               className="h-2" 
             />
+          </div>
+          
+          {/* Products summary */}
+          <div className="grid grid-cols-2 gap-3 mt-3">
+            <div className="text-center">
+              <p className="text-xs text-gray-400">Sufficient Products</p>
+              <p className="text-sm font-bold text-emerald-400">{summary.sufficientCount}</p>
+            </div>
+            <div className="text-center">
+              <p className="text-xs text-gray-400">Insufficient Products</p>
+              <p className="text-sm font-bold text-red-400">{summary.insufficientCount}</p>
+            </div>
           </div>
         </motion.div>
       </div>
@@ -277,8 +238,8 @@ export const InventoryOrderedAnalysisWidget: React.FC<InventoryOrderedAnalysisWi
       {/* 產品詳細分析列表 */}
       <div className="flex-1 overflow-auto">
         <div className="space-y-2">
-          {productAnalysis.length > 0 ? (
-            productAnalysis.map((product, index) => (
+          {products.length > 0 ? (
+            products.map((product, index) => (
               <motion.div
                 key={product.productCode}
                 initial={{ opacity: 0, x: -20 }}
@@ -328,17 +289,26 @@ export const InventoryOrderedAnalysisWidget: React.FC<InventoryOrderedAnalysisWi
             ))
           ) : (
             <div className="h-full flex items-center justify-center">
-              <p className="text-gray-400">No inventory data available</p>
+              <p className="text-gray-400">No products with active orders</p>
             </div>
           )}
         </div>
         
-        {productAnalysis.length > 0 && (
-          <p className="text-xs text-gray-400 text-center mt-3">
-            Total: {productAnalysis.length} products
-          </p>
+        {products.length > 0 && (
+          <div className="mt-3 pt-3 border-t border-slate-700">
+            <p className="text-xs text-gray-400 text-center">
+              Total: {products.length} products analyzed
+            </p>
+            {queryTime && (
+              <p className="text-xs text-gray-500 text-center mt-1">
+                Query time: {queryTime}
+              </p>
+            )}
+          </div>
         )}
       </div>
     </div>
   );
 };
+
+export default InventoryOrderedAnalysisWidget;

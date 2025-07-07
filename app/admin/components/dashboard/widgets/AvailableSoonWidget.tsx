@@ -7,7 +7,7 @@ import { UniversalWidgetCard as WidgetCard } from '../UniversalWidgetCard';
 import { ClockIcon } from '@heroicons/react/24/outline';
 import { WidgetComponentProps } from '@/app/types/dashboard';
 
-export default function AvailableSoonWidget({ widget, isEditMode }: WidgetComponentProps) {
+function AvailableSoonWidget({ widget, isEditMode }: WidgetComponentProps) {
   if (isEditMode) {
     return (
       <WidgetCard widget={widget} isEditMode={true}>
@@ -40,3 +40,5 @@ export default function AvailableSoonWidget({ widget, isEditMode }: WidgetCompon
     </WidgetCard>
   );
 }
+
+export default AvailableSoonWidget;

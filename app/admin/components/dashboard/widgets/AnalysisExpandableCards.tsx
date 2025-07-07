@@ -14,12 +14,18 @@ import StocktakeAccuracyTrend from '../charts/StocktakeAccuracyTrend';
 import VoidRecordsAnalysis from '../charts/VoidRecordsAnalysis';
 import RealTimeInventoryMap from '../charts/RealTimeInventoryMap';
 
+interface TimeFrame {
+  label: string;
+  value: string;
+  days?: number;
+}
+
 interface ChartOption {
   id: number;
   title: string;
   subtitle: string;
   icon: React.ElementType;
-  component: React.ComponentType<any>;
+  component: React.ComponentType<{ timeFrame?: TimeFrame }>;
   backgroundGradient: string;
   iconColor: string;
 }
@@ -91,7 +97,7 @@ const chartOptions: ChartOption[] = [
 ];
 
 interface AnalysisExpandableCardsProps {
-  timeFrame?: any;
+  timeFrame?: TimeFrame;
   theme?: string;
 }
 
@@ -226,3 +232,5 @@ export const AnalysisExpandableCards = function AnalysisExpandableCards({ timeFr
     </div>
   );
 }
+
+export default AnalysisExpandableCards;

@@ -52,6 +52,10 @@ export function fromDbTime(isoString: string): Date {
  */
 export function formatDbTime(isoString: string, formatStr: string = 'yyyy-MM-dd HH:mm:ss'): string {
   const userDate = fromDbTime(isoString);
+  // Check if date is valid before formatting
+  if (isNaN(userDate.getTime())) {
+    return 'Invalid Date';
+  }
   return format(userDate, formatStr);
 }
 

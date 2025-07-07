@@ -253,3 +253,5 @@ export const UploadProductSpecWidget = React.memo(function UploadProductSpecWidg
     </>
   );
 });
+
+export default UploadProductSpecWidget;

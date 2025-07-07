@@ -202,3 +202,5 @@ export function AcoOrderReportWidget({ theme }: AcoOrderReportWidgetProps) {
     </Card>
   );
 }
+
+export default AcoOrderReportWidget;
