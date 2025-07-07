@@ -1,7 +1,6 @@
 /**
  * Product Update Widget
  * 將原本的 dialog 功能完整移植到 widget 內
- * 支援的尺寸：3x3 (medium)
  */
 
 'use client';

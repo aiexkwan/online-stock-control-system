@@ -11,7 +11,6 @@ export enum WidgetType {
   ALERTS = 'alerts',
   PRODUCT_MIX_CHART = 'product_mix_chart',
   ACO_ORDER_PROGRESS = 'aco_order_progress',
-  INVENTORY_SEARCH = 'inventory_search',
   VOID_STATS = 'void_stats',
   VOID_PALLET = 'void_pallet',
   UPLOAD_FILES = 'upload_files',
@@ -123,12 +122,4 @@ export interface WidgetRegistryItem {
   icon?: React.ComponentType | string;
   component: React.ComponentType<WidgetComponentProps>;
   defaultConfig: WidgetBaseConfig;
-  defaultSize: {
-    w: number;
-    h: number;
-    minW?: number;
-    minH?: number;
-    maxW?: number;
-    maxH?: number;
-  };
 }

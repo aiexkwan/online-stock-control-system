@@ -120,7 +120,11 @@
       "Bash(timeout 30s npm run dev)",
       "Bash(npx next build:*)",
       "Bash(npx supabase db remote commit:*)",
-      "Bash(supabase db remote query:*)"
+      "Bash(supabase db remote query:*)",
+      "Bash(for widget in \"OtherFilesListGraphQL\" \"OrdersListGraphQL\" \"ProductDistributionChartGraphQL\" \"ProductionDetailsGraphQL\" \"ProductionStatsGraphQL\" \"StaffWorkloadGraphQL\" \"StillInAwaitWidgetGraphQL\" \"TopProductsChartGraphQL\" \"WarehouseTransferListWidgetGraphQL\")",
+      "Bash(do echo \"=== $widget ===\")",
+      "Bash(for widget in \"OtherFilesListWidget\" \"OrdersListWidgetV2\" \"ProductDistributionChart\" \"StillInAwaitWidget\" \"TopProductsChart\" \"WarehouseTransferListWidget\")",
+      "Bash(do echo \"--- $widget ---\")"
     ],
     "deny": []
   }

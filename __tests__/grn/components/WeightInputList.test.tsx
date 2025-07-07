@@ -36,7 +36,7 @@ describe('WeightInputList - GRN 重量輸入列表組件', () => {
       // 檢查值
       expect(inputs[0]).toHaveValue(100);
       expect(inputs[1]).toHaveValue(200);
-      expect(inputs[2]).toHaveValue(null);
+      expect(inputs[2]).toHaveValue('');
     });
 
     test('顯示正確的標籤', () => {

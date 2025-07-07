@@ -154,6 +154,7 @@
     "sonner": "^1.7.1",
     "stream": "^0.0.3",
     "supabase": "^2.29.0",
+    "swr": "^2.3.4",
     "tailwind-merge": "^2.6.0",
     "tailwindcss-animate": "^1.0.7",
     "uniq": "^1.0.1",

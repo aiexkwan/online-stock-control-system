@@ -2,8 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { filename: string } }
+  { params }: { params: Promise<{ filename: string }> }
 ) {
+  const { filename } = await params;
   try {
     // 從 URL 參數獲取圖片大小和質量
     const { searchParams } = new URL(request.url);

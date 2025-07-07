@@ -13,7 +13,7 @@ describe('GrnErrorHandler - GRN 錯誤處理服務', () => {
   let consoleErrorSpy: jest.SpyInstance;
 
   beforeEach(() => {
-    errorHandler = new GrnErrorHandler();
+    errorHandler = GrnErrorHandler.getInstance();
     jest.clearAllMocks();
     // Mock console.error
     consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();

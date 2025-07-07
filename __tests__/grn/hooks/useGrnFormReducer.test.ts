@@ -270,7 +270,7 @@ describe('grnFormReducer - GRN 表單狀態管理', () => {
       const progress = {
         current: 5,
         total: 10,
-        status: ['Completed', 'Completed', 'Processing', 'Pending', 'Pending'] as const
+        status: ['Success', 'Success', 'Processing', 'Pending', 'Pending'] as ('Pending' | 'Processing' | 'Success' | 'Failed')[]
       };
 
       const newState = grnFormReducer(state, {
@@ -296,10 +296,10 @@ describe('grnFormReducer - GRN 表單狀態管理', () => {
       newState = grnFormReducer(newState, {
         type: 'UPDATE_PROGRESS_STATUS',
         index: 0,
-        status: 'Completed'
+        status: 'Success'
       });
 
-      expect(newState.progress.status[0]).toBe('Completed');
+      expect(newState.progress.status[0]).toBe('Success');
     });
   });
 

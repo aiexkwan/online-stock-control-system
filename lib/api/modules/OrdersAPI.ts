@@ -118,38 +118,6 @@ class OrdersAPI {
     }
   });
   
-  /**
-   * Server Action to get PDF URL for a specific order
-   * This is separated to avoid fetching all PDFs in the list query
-   */
-  async getPdfUrl(orderRef: string): Promise<string | null> {
-    'use server';
-    
-    if (!orderRef) return null;
-    
-    try {
-      const supabase = createClient();
-      
-      // Query for PDF URL
-      const { data, error } = await supabase
-        .from('doc_upload')
-        .select('doc_url')
-        .ilike('doc_name', `%${orderRef}%`)
-        .eq('doc_type', 'order')
-        .order('upload_time', { ascending: false })
-        .limit(1);
-      
-      if (error) {
-        console.error('[OrdersAPI] Error fetching PDF URL:', error);
-        return null;
-      }
-      
-      return data?.[0]?.doc_url || null;
-    } catch (error) {
-      console.error('[OrdersAPI] getPdfUrl error:', error);
-      return null;
-    }
-  }
   
   /**
    * Subscribe to real-time order updates

@@ -67,7 +67,7 @@ expect.extend({
   toHaveBeenCalledWithPartial(received: jest.Mock, expected: Record<string, any>) {
     const calls = received.mock.calls;
     const pass = calls.some(call =>
-      call.some(arg =>
+      call.some((arg: any) =>
         typeof arg === 'object' &&
         Object.entries(expected).every(([key, value]) => arg[key] === value)
       )

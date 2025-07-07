@@ -17,7 +17,6 @@ export const WidgetStyles = {
     // Operations 類
     RECENT_ACTIVITY: '',
     ACO_ORDER_PROGRESS: '',
-    INVENTORY_SEARCH: '',
     FINISHED_PRODUCT: '',
     MATERIAL_RECEIVED: '',
     
@@ -38,7 +37,6 @@ export const WidgetStyles = {
     product_mix_chart: '',
     recent_activity: '',
     aco_order_progress: '',
-    inventory_search: '',
     finished_product: '',
     material_received: '',
     ask_database: '',

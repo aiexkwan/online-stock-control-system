@@ -31,8 +31,7 @@ export const OtherFilesListGraphQL = React.memo(function OtherFilesListGraphQL({
   const [hasMore, setHasMore] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   
-  // 根據 widget size 設定每頁顯示數量，預設 15
-  const itemsPerPage = 15;
+  const itemsPerPage = 15; // 固定佈局系統，使用預設值
 
   // 初始載入
   const { data: initialData, loading: initialLoading, error, refetch, isRefetching } = useGraphQLQuery(

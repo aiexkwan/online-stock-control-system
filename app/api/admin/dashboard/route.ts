@@ -170,6 +170,92 @@ export async function GET(request: NextRequest) {
             };
             break;
             
+          case 'history_tree':
+            // History tree with server-side event merging
+            const historyLimit = parseInt(searchParams.get('limit') || '50');
+            const historyOffset = parseInt(searchParams.get('offset') || '0');
+            
+            const { data: historyData, error: historyError } = await supabase
+              .rpc('rpc_get_history_tree', {
+                p_limit: historyLimit,
+                p_offset: historyOffset
+              });
+            
+            if (historyError) {
+              console.error('API: Error fetching history tree:', historyError);
+              widgetData = {
+                value: [],
+                label: 'Error loading history',
+                error: historyError.message
+              };
+            } else if (historyData?.error) {
+              widgetData = {
+                value: [],
+                label: 'History Tree Error',
+                error: historyData.message || 'RPC function failed'
+              };
+            } else {
+              widgetData = {
+                value: historyData?.events || [],
+                label: 'History Tree',
+                metadata: {
+                  totalCount: historyData?.total_count || 0,
+                  mergedCount: historyData?.merged_count || 0,
+                  hasMore: historyData?.has_more || false,
+                  limit: historyLimit,
+                  offset: historyOffset,
+                  performanceMs: historyData?.performance_ms,
+                  queryTime: historyData?.query_time,
+                  optimized: true,
+                  rpcFunction: 'rpc_get_history_tree'
+                }
+              };
+            }
+            break;
+            
+          case 'order_state_list':
+            // Order state list with server-side progress calculation
+            const orderStateLimit = parseInt(searchParams.get('limit') || '50');
+            const orderStateOffset = parseInt(searchParams.get('offset') || '0');
+            
+            const { data: orderStateData, error: orderStateError } = await supabase
+              .rpc('rpc_get_order_state_list', {
+                p_limit: orderStateLimit,
+                p_offset: orderStateOffset
+              });
+            
+            if (orderStateError) {
+              console.error('API: Error fetching order state list:', orderStateError);
+              widgetData = {
+                value: [],
+                label: 'Error loading order states',
+                error: orderStateError.message
+              };
+            } else if (orderStateData?.error) {
+              widgetData = {
+                value: [],
+                label: 'Order State List Error',
+                error: orderStateData.message || 'RPC function failed'
+              };
+            } else {
+              widgetData = {
+                value: orderStateData?.orders || [],
+                label: 'Order State List',
+                metadata: {
+                  totalCount: orderStateData?.total_count || 0,
+                  pendingCount: orderStateData?.pending_count || 0,
+                  hasMore: orderStateData?.has_more || false,
+                  limit: orderStateLimit,
+                  offset: orderStateOffset,
+                  performanceMs: orderStateData?.performance_ms,
+                  queryTime: orderStateData?.query_time,
+                  optimized: true,
+                  rpcFunction: 'rpc_get_order_state_list'
+                }
+              };
+            }
+            break;
+            
           default:
             widgetData = {
               value: 0,

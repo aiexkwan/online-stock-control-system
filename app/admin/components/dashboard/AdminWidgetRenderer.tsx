@@ -57,82 +57,78 @@ interface AdminWidgetRendererProps {
   index?: number;
 }
 
-// 根據主題獲取邊框顏色 - 純函數，移到組件外部以避免重複創建
-const getThemeColors = (theme?: string) => {
-  switch (theme) {
-    case 'injection':
-      return {
-        ring: 'ring-blue-500/30',
-        border: 'border-blue-700/50',
-        shadow: 'shadow-[0_0_30px_rgba(59,130,246,0.15)]',
-        hoverRing: 'hover:ring-blue-400/40',
-        hoverShadow: 'hover:shadow-[0_0_40px_rgba(59,130,246,0.25)]'
-      };
-    case 'pipeline':
-      return {
-        ring: 'ring-purple-500/30',
-        border: 'border-purple-700/50',
-        shadow: 'shadow-[0_0_30px_rgba(168,85,247,0.15)]',
-        hoverRing: 'hover:ring-purple-400/40',
-        hoverShadow: 'hover:shadow-[0_0_40px_rgba(168,85,247,0.25)]'
-      };
-    case 'warehouse':
-      return {
-        ring: 'ring-green-500/30',
-        border: 'border-green-700/50',
-        shadow: 'shadow-[0_0_30px_rgba(34,197,94,0.15)]',
-        hoverRing: 'hover:ring-green-400/40',
-        hoverShadow: 'hover:shadow-[0_0_40px_rgba(34,197,94,0.25)]'
-      };
-    case 'analysis':
-      return {
-        ring: 'ring-cyan-500/30',
-        border: 'border-cyan-700/50',
-        shadow: 'shadow-[0_0_30px_rgba(6,182,212,0.15)]',
-        hoverRing: 'hover:ring-cyan-400/40',
-        hoverShadow: 'hover:shadow-[0_0_40px_rgba(6,182,212,0.25)]'
-      };
-    case 'upload':
-      return {
-        ring: 'ring-indigo-500/30',
-        border: 'border-indigo-700/50',
-        shadow: 'shadow-[0_0_30px_rgba(99,102,241,0.15)]',
-        hoverRing: 'hover:ring-indigo-400/40',
-        hoverShadow: 'hover:shadow-[0_0_40px_rgba(99,102,241,0.25)]'
-      };
-    case 'update':
-      return {
-        ring: 'ring-orange-500/30',
-        border: 'border-orange-700/50',
-        shadow: 'shadow-[0_0_30px_rgba(251,146,60,0.15)]',
-        hoverRing: 'hover:ring-orange-400/40',
-        hoverShadow: 'hover:shadow-[0_0_40px_rgba(251,146,60,0.25)]'
-      };
-    case 'stock-management':
-      return {
-        ring: 'ring-yellow-500/30',
-        border: 'border-yellow-700/50',
-        shadow: 'shadow-[0_0_30px_rgba(250,204,21,0.15)]',
-        hoverRing: 'hover:ring-yellow-400/40',
-        hoverShadow: 'hover:shadow-[0_0_40px_rgba(250,204,21,0.25)]'
-      };
-    case 'system':
-      return {
-        ring: 'ring-red-500/30',
-        border: 'border-red-700/50',
-        shadow: 'shadow-[0_0_30px_rgba(239,68,68,0.15)]',
-        hoverRing: 'hover:ring-red-400/40',
-        hoverShadow: 'hover:shadow-[0_0_40px_rgba(239,68,68,0.25)]'
-      };
-    default:
-      return {
-        ring: 'ring-slate-500/30',
-        border: 'border-slate-600/50',
-        shadow: 'shadow-[0_0_30px_rgba(100,150,200,0.15)]',
-        hoverRing: 'hover:ring-slate-400/40',
-        hoverShadow: 'hover:shadow-[0_0_40px_rgba(100,150,200,0.25)]'
-      };
+// 主題顏色映射 - 純函數，移到組件外部以避免重複創建
+const THEME_COLORS = {
+  injection: {
+    ring: 'ring-blue-500/30',
+    border: 'border-blue-700/50',
+    shadow: 'shadow-[0_0_30px_rgba(59,130,246,0.15)]',
+    hoverRing: 'hover:ring-blue-400/40',
+    hoverShadow: 'hover:shadow-[0_0_40px_rgba(59,130,246,0.25)]'
+  },
+  pipeline: {
+    ring: 'ring-purple-500/30',
+    border: 'border-purple-700/50',
+    shadow: 'shadow-[0_0_30px_rgba(168,85,247,0.15)]',
+    hoverRing: 'hover:ring-purple-400/40',
+    hoverShadow: 'hover:shadow-[0_0_40px_rgba(168,85,247,0.25)]'
+  },
+  warehouse: {
+    ring: 'ring-green-500/30',
+    border: 'border-green-700/50',
+    shadow: 'shadow-[0_0_30px_rgba(34,197,94,0.15)]',
+    hoverRing: 'hover:ring-green-400/40',
+    hoverShadow: 'hover:shadow-[0_0_40px_rgba(34,197,94,0.25)]'
+  },
+  analysis: {
+    ring: 'ring-cyan-500/30',
+    border: 'border-cyan-700/50',
+    shadow: 'shadow-[0_0_30px_rgba(6,182,212,0.15)]',
+    hoverRing: 'hover:ring-cyan-400/40',
+    hoverShadow: 'hover:shadow-[0_0_40px_rgba(6,182,212,0.25)]'
+  },
+  upload: {
+    ring: 'ring-indigo-500/30',
+    border: 'border-indigo-700/50',
+    shadow: 'shadow-[0_0_30px_rgba(99,102,241,0.15)]',
+    hoverRing: 'hover:ring-indigo-400/40',
+    hoverShadow: 'hover:shadow-[0_0_40px_rgba(99,102,241,0.25)]'
+  },
+  update: {
+    ring: 'ring-orange-500/30',
+    border: 'border-orange-700/50',
+    shadow: 'shadow-[0_0_30px_rgba(251,146,60,0.15)]',
+    hoverRing: 'hover:ring-orange-400/40',
+    hoverShadow: 'hover:shadow-[0_0_40px_rgba(251,146,60,0.25)]'
+  },
+  'stock-management': {
+    ring: 'ring-yellow-500/30',
+    border: 'border-yellow-700/50',
+    shadow: 'shadow-[0_0_30px_rgba(250,204,21,0.15)]',
+    hoverRing: 'hover:ring-yellow-400/40',
+    hoverShadow: 'hover:shadow-[0_0_40px_rgba(250,204,21,0.25)]'
+  },
+  system: {
+    ring: 'ring-red-500/30',
+    border: 'border-red-700/50',
+    shadow: 'shadow-[0_0_30px_rgba(239,68,68,0.15)]',
+    hoverRing: 'hover:ring-red-400/40',
+    hoverShadow: 'hover:shadow-[0_0_40px_rgba(239,68,68,0.25)]'
   }
+} as const;
+
+const DEFAULT_THEME_COLORS = {
+  ring: 'ring-slate-500/30',
+  border: 'border-slate-600/50',
+  shadow: 'shadow-[0_0_30px_rgba(100,150,200,0.15)]',
+  hoverRing: 'hover:ring-slate-400/40',
+  hoverShadow: 'hover:shadow-[0_0_40px_rgba(100,150,200,0.25)]'
+} as const;
+
+const getThemeColors = (theme?: string) => {
+  return theme && theme in THEME_COLORS 
+    ? THEME_COLORS[theme as keyof typeof THEME_COLORS] 
+    : DEFAULT_THEME_COLORS;
 };
 
 // 統一的 Widget Wrapper Component - 使用 React.memo 優化
@@ -205,26 +201,26 @@ const CHART_COLORS = [
 ];
 
 // 導入特殊組件 - 已移除舊 Dashboard 依賴
-import { HistoryTree } from './widgets/HistoryTree';
+import { HistoryTreeV2 as HistoryTree } from './widgets/HistoryTreeV2';
 import { getEnhancedWidgetComponent } from './LazyWidgetRegistry';
 
 // 新的上傳頁面組件 - 使用 lazy loading
 const OrdersListWidget = React.lazy(() => import('./widgets/OrdersListWidgetV2').then(mod => ({ default: mod.OrdersListWidgetV2 })));
-const OtherFilesListWidget = React.lazy(() => import('./widgets/OtherFilesListWidget').then(mod => ({ default: mod.OtherFilesListWidget })));
+const OtherFilesListWidget = React.lazy(() => import('./widgets/OtherFilesListWidgetV2').then(mod => ({ default: mod.OtherFilesListWidgetV2 })));
 const UploadFilesWidget = React.lazy(() => import('./widgets/UploadFilesWidget').then(mod => ({ default: mod.UploadFilesWidget })));
 
 // Analysis page components
-const AnalysisPagedWidget = React.lazy(() => import('./widgets/AnalysisPagedWidget').then(mod => ({ default: mod.AnalysisPagedWidget })));
+const AnalysisPagedWidget = React.lazy(() => import('./widgets/AnalysisPagedWidgetV2').then(mod => ({ default: mod.AnalysisPagedWidgetV2 })));
 const AnalysisPagedWidgetV2 = React.lazy(() => import('./widgets/AnalysisPagedWidgetV2').then(mod => ({ default: mod.AnalysisPagedWidgetV2 })));
 const AnalysisExpandableCards = React.lazy(() => import('./widgets/AnalysisExpandableCards').then(mod => ({ default: mod.AnalysisExpandableCards })));
-const UploadOrdersWidget = React.lazy(() => import('./widgets/UploadOrdersWidget').then(mod => ({ default: mod.UploadOrdersWidget })));
+const UploadOrdersWidget = React.lazy(() => import('./widgets/UploadOrdersWidgetV2').then(mod => ({ default: mod.UploadOrdersWidgetV2 })));
 const UploadProductSpecWidget = React.lazy(() => import('./widgets/UploadProductSpecWidget').then(mod => ({ default: mod.UploadProductSpecWidget })));
 const UploadPhotoWidget = React.lazy(() => import('./widgets/UploadPhotoWidget').then(mod => ({ default: mod.UploadPhotoWidget })));
 const ReportGeneratorWidget = React.lazy(() => import('./widgets/ReportGeneratorWidget').then(mod => ({ default: mod.ReportGeneratorWidget })));
 const TransactionReportWidget = React.lazy(() => import('./widgets/TransactionReportWidget').then(mod => ({ default: mod.TransactionReportWidget })));
-const GrnReportWidget = React.lazy(() => import('./widgets/GrnReportWidget').then(mod => ({ default: mod.GrnReportWidget })));
-const AcoOrderReportWidget = React.lazy(() => import('./widgets/AcoOrderReportWidget').then(mod => ({ default: mod.AcoOrderReportWidget })));
-const ReportGeneratorWithDialogWidget = React.lazy(() => import('./widgets/ReportGeneratorWithDialogWidget').then(mod => ({ default: mod.ReportGeneratorWithDialogWidget })));
+const GrnReportWidget = React.lazy(() => import('./widgets/GrnReportWidgetV2').then(mod => ({ default: mod.GrnReportWidgetV2 })));
+const AcoOrderReportWidget = React.lazy(() => import('./widgets/AcoOrderReportWidgetV2').then(mod => ({ default: mod.AcoOrderReportWidgetV2 })));
+const ReportGeneratorWithDialogWidget = React.lazy(() => import('./widgets/ReportGeneratorWithDialogWidgetV2').then(mod => ({ default: mod.ReportGeneratorWithDialogWidgetV2 })));
 const AvailableSoonWidget = React.lazy(() => import('./widgets/AvailableSoonWidget'));
 const ReportsWidget = React.lazy(() => import('./widgets/ReportsWidget').then(mod => ({ default: mod.ReportsWidget })));
 
@@ -244,11 +240,11 @@ const StillInAwaitWidget = React.lazy(() => import('./widgets/StillInAwaitWidget
 
 // Stock Management 組件
 const StockTypeSelector = React.lazy(() => import('./widgets/StockTypeSelector').then(mod => ({ default: mod.StockTypeSelector })));
-const StockDistributionChart = React.lazy(() => import('./widgets/StockDistributionChart').then(mod => ({ default: mod.StockDistributionChart })));
+const StockDistributionChart = React.lazy(() => import('./widgets/StockDistributionChartV2').then(mod => ({ default: mod.StockDistributionChartV2 })));
 const StockLevelHistoryChart = React.lazy(() => import('./widgets/StockLevelHistoryChart').then(mod => ({ default: mod.StockLevelHistoryChart })));
 const InventoryOrderedAnalysisWidget = React.lazy(() => import('./widgets/InventoryOrderedAnalysisWidget').then(mod => ({ default: mod.InventoryOrderedAnalysisWidget })));
 const StillInAwaitPercentageWidget = React.lazy(() => import('./widgets/StillInAwaitPercentageWidget').then(mod => ({ default: mod.StillInAwaitPercentageWidget })));
-const OrderStateListWidget = React.lazy(() => import('./widgets/OrderStateListWidget').then(mod => ({ default: mod.OrderStateListWidget })));
+const OrderStateListWidget = React.lazy(() => import('./widgets/OrderStateListWidgetV2').then(mod => ({ default: mod.OrderStateListWidgetV2 })));
 const TransferTimeDistributionWidget = React.lazy(() => import('./widgets/TransferTimeDistributionWidget').then(mod => ({ default: mod.TransferTimeDistributionWidget })));
 const EmptyPlaceholderWidget = React.lazy(() => import('./widgets/EmptyPlaceholderWidget').then(mod => ({ default: mod.EmptyPlaceholderWidget })));
 const WarehouseTransferListWidget = React.lazy(() => import('./widgets/WarehouseTransferListWidget').then(mod => ({ default: mod.WarehouseTransferListWidget })));
@@ -404,32 +400,22 @@ const VirtualizedWidget = React.memo<{
     ? style 
     : { ...style, gridArea };
   
+  // Theme class mapping
+  const THEME_CLASS_MAP = {
+    injection: 'custom-theme-item',
+    pipeline: 'custom-theme-item',
+    warehouse: 'custom-theme-item',
+    upload: 'upload-item',
+    update: 'update-item',
+    'stock-management': 'stock-management-item',
+    system: 'system-item',
+    analysis: 'analysis-item'
+  } as const;
+  
   // Add theme-specific class based on theme
-  let themeClass = '';
-  if (isCustomTheme) {
-    switch (theme) {
-      case 'injection':
-      case 'pipeline':
-      case 'warehouse':
-        themeClass = 'custom-theme-item';
-        break;
-      case 'upload':
-        themeClass = 'upload-item';
-        break;
-      case 'update':
-        themeClass = 'update-item';
-        break;
-      case 'stock-management':
-        themeClass = 'stock-management-item';
-        break;
-      case 'system':
-        themeClass = 'system-item';
-        break;
-      case 'analysis':
-        themeClass = 'analysis-item';
-        break;
-    }
-  }
+  const themeClass = isCustomTheme && theme && theme in THEME_CLASS_MAP
+    ? THEME_CLASS_MAP[theme as keyof typeof THEME_CLASS_MAP]
+    : '';
   
   return (
     <div
@@ -1781,7 +1767,7 @@ const AdminWidgetRendererComponent: React.FC<AdminWidgetRendererProps> = ({
       case 'InventoryOrderedAnalysisWidget':
         return (
           <Suspense fallback={<div className="h-full w-full animate-pulse bg-slate-800/50" />}>
-            <InventoryOrderedAnalysisWidget widget={widget} isEditMode={isEditMode} />
+            <InventoryOrderedAnalysisWidget widget={config as any} isEditMode={false} />
           </Suspense>
         );
       default:
@@ -1948,32 +1934,21 @@ const AdminWidgetRendererComponent: React.FC<AdminWidgetRendererProps> = ({
   }
   
   // Direct rendering without VirtualizedWidget
-  // Add theme-specific class and gridArea based on theme type
-  let themeClass = '';
-  if (isCustomTheme) {
-    switch (theme) {
-      case 'injection':
-      case 'pipeline':
-      case 'warehouse':
-        themeClass = 'custom-theme-item';
-        break;
-      case 'upload':
-        themeClass = 'upload-item';
-        break;
-      case 'update':
-        themeClass = 'update-item';
-        break;
-      case 'stock-management':
-        themeClass = 'stock-management-item';
-        break;
-      case 'system':
-        themeClass = 'system-item';
-        break;
-      case 'analysis':
-        themeClass = 'analysis-item';
-        break;
-    }
-  }
+  // Use the same theme class mapping
+  const THEME_CLASS_MAP = {
+    injection: 'custom-theme-item',
+    pipeline: 'custom-theme-item',
+    warehouse: 'custom-theme-item',
+    upload: 'upload-item',
+    update: 'update-item',
+    'stock-management': 'stock-management-item',
+    system: 'system-item',
+    analysis: 'analysis-item'
+  } as const;
+  
+  const themeClass = isCustomTheme && theme && theme in THEME_CLASS_MAP
+    ? THEME_CLASS_MAP[theme as keyof typeof THEME_CLASS_MAP]
+    : '';
   
   return (
     <div

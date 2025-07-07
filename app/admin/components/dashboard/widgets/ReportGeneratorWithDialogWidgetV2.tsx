@@ -1,6 +1,12 @@
+/**
+ * Report Generator With Dialog Widget V2
+ * 使用 DashboardAPI + 服務器端 reference 加載
+ * 遷移自原 ReportGeneratorWithDialogWidget
+ */
+
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { Download, Loader2, CheckCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -20,9 +26,9 @@ import {
   SelectValue,
 } from '@/components/ui/select-radix';
 import { cn } from '@/lib/utils';
-import { createClient } from '@/lib/supabase';
+import { createDashboardAPI } from '@/lib/api/admin/DashboardAPI';
 
-interface ReportGeneratorWithDialogWidgetProps {
+interface ReportGeneratorWithDialogWidgetV2Props {
   title: string;
   reportType: string;
   description?: string;
@@ -34,7 +40,7 @@ interface ReportGeneratorWithDialogWidgetProps {
   apiEndpoint?: string;
 }
 
-export const ReportGeneratorWithDialogWidget = function ReportGeneratorWithDialogWidget({ 
+export const ReportGeneratorWithDialogWidgetV2 = function ReportGeneratorWithDialogWidgetV2({ 
   title, 
   reportType,
   description,
@@ -44,33 +50,53 @@ export const ReportGeneratorWithDialogWidget = function ReportGeneratorWithDialo
   dataTable,
   referenceField,
   apiEndpoint
-}: ReportGeneratorWithDialogWidgetProps) {
+}: ReportGeneratorWithDialogWidgetV2Props) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedRef, setSelectedRef] = useState<string>('');
   const [references, setReferences] = useState<string[]>([]);
   const [isLoadingRefs, setIsLoadingRefs] = useState(false);
   const [downloadStatus, setDownloadStatus] = useState<"idle" | "downloading" | "downloaded" | "complete">("idle");
   const [progress, setProgress] = useState(0);
+  const [error, setError] = useState<string | null>(null);
+  const [metadata, setMetadata] = useState<any>({});
+  const [performanceMetrics, setPerformanceMetrics] = useState<{
+    apiResponseTime?: number;
+    optimized?: boolean;
+  }>({});
 
   const loadReferences = useCallback(async () => {
     setIsLoadingRefs(true);
+    setError(null);
+    const startTime = performance.now();
+    
     try {
-      const supabase = createClient();
-      const { data, error } = await supabase
-        .from(dataTable)
-        .select(referenceField)
-        .not(referenceField, 'is', null)
-        .order(referenceField);
-
-      if (error) throw error;
-
-      // Get unique references and convert to strings
-      const uniqueRefs = Array.from(new Set(data?.map(item => (item as any)[referenceField]) || []))
-        .filter(ref => ref !== null && ref !== undefined)
-        .map(ref => String(ref));
-      setReferences(uniqueRefs);
-    } catch (error) {
-      console.error('Error loading references:', error);
+      const api = createDashboardAPI();
+      const result = await api.fetchData({
+        widgetId: 'report_references',
+        params: {
+          tableName: dataTable,
+          fieldName: referenceField,
+          limit: 1000,
+          offset: 0
+        }
+      });
+      
+      const endTime = performance.now();
+      setPerformanceMetrics({
+        apiResponseTime: Math.round(endTime - startTime),
+        optimized: result.metadata?.optimized || false
+      });
+      
+      if (result.error) {
+        throw new Error(result.error);
+      }
+      
+      setReferences(result.value as string[] || []);
+      setMetadata(result.metadata || {});
+    } catch (err) {
+      console.error('Error loading references:', err);
+      setError(err instanceof Error ? err.message : 'Unknown error');
+      setReferences([]);
     } finally {
       setIsLoadingRefs(false);
     }
@@ -144,8 +170,22 @@ export const ReportGeneratorWithDialogWidget = function ReportGeneratorWithDialo
       clearInterval(interval);
       setDownloadStatus("idle");
       setProgress(0);
+      setError(error instanceof Error ? error.message : 'Download failed');
     }
   };
+
+  // Memoize sorted references for better performance
+  const sortedReferences = useMemo(() => {
+    return [...references].sort((a, b) => {
+      // Try to sort numerically if possible
+      const numA = parseInt(a);
+      const numB = parseInt(b);
+      if (!isNaN(numA) && !isNaN(numB)) {
+        return numB - numA; // Descending order for numbers
+      }
+      return a.localeCompare(b);
+    });
+  }, [references]);
 
   return (
     <>
@@ -158,6 +198,12 @@ export const ReportGeneratorWithDialogWidget = function ReportGeneratorWithDialo
           <p className="text-2xl text-muted-foreground">
             {description || `Generate ${title.toLowerCase()}`}
           </p>
+          {performanceMetrics.apiResponseTime && (
+            <p className="text-xs text-slate-500 mt-1">
+              Last loaded in {performanceMetrics.apiResponseTime}ms
+              {performanceMetrics.optimized && ' (server-optimized)'}
+            </p>
+          )}
         </div>
         
         <Button
@@ -182,6 +228,12 @@ export const ReportGeneratorWithDialogWidget = function ReportGeneratorWithDialo
           </DialogHeader>
           
           <div className="grid gap-4 py-4">
+            {error && (
+              <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-md">
+                <p className="text-sm text-red-400">{error}</p>
+              </div>
+            )}
+            
             <div className="grid gap-2">
               <label htmlFor="reference" className="text-sm font-medium text-slate-200">
                 {selectLabel}
@@ -191,10 +243,10 @@ export const ReportGeneratorWithDialogWidget = function ReportGeneratorWithDialo
                   id="reference" 
                   className="bg-slate-700/50 border-slate-600 text-white hover:bg-slate-700/70 focus:ring-blue-500/50 focus:border-blue-500"
                 >
-                  <SelectValue placeholder={isLoadingRefs ? "Loading..." : "Select a reference"} />
+                  <SelectValue placeholder={isLoadingRefs ? "Loading..." : `Select from ${references.length} options`} />
                 </SelectTrigger>
-                <SelectContent className="bg-slate-800 border-slate-700">
-                  {references.map((ref) => (
+                <SelectContent className="bg-slate-800 border-slate-700 max-h-[300px]">
+                  {sortedReferences.map((ref) => (
                     <SelectItem 
                       key={ref} 
                       value={ref}
@@ -205,6 +257,18 @@ export const ReportGeneratorWithDialogWidget = function ReportGeneratorWithDialo
                   ))}
                 </SelectContent>
               </Select>
+              
+              {metadata.totalCount && metadata.totalCount > references.length && (
+                <p className="text-xs text-slate-400">
+                  Showing first {references.length} of {metadata.totalCount} total references
+                </p>
+              )}
+              
+              {metadata.queryTime && (
+                <p className="text-[10px] text-green-400">
+                  ✓ Server-side query completed in {metadata.queryTime}
+                </p>
+              )}
             </div>
           </div>
           
@@ -258,4 +322,4 @@ export const ReportGeneratorWithDialogWidget = function ReportGeneratorWithDialo
   );
 }
 
-export default ReportGeneratorWithDialogWidget;
+export default ReportGeneratorWithDialogWidgetV2;

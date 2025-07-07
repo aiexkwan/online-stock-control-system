@@ -26,19 +26,19 @@ export function createLazyWidget(
 ) {
   // Wrap import function to ensure it returns the correct format for React.lazy
   const wrappedImportFn = async () => {
-    const module = await importFn();
+    const importedModule = await importFn();
     // Handle both default exports and named exports
-    if (module.default) {
-      return { default: module.default };
-    } else if (typeof module === 'function') {
-      return { default: module };
+    if (importedModule.default) {
+      return { default: importedModule.default };
+    } else if (typeof importedModule === 'function') {
+      return { default: importedModule };
     } else {
       // Try to get the first exported component
-      const componentName = Object.keys(module).find(key => 
-        typeof module[key] === 'function' && key !== 'default'
+      const componentName = Object.keys(importedModule).find(key => 
+        typeof importedModule[key] === 'function' && key !== 'default'
       );
       if (componentName) {
-        return { default: module[componentName] };
+        return { default: importedModule[componentName] };
       }
       throw new Error('No valid component found in module');
     }
@@ -67,9 +67,6 @@ export const LazyWidgets: Partial<Record<WidgetType, React.ComponentType<WidgetC
     () => import('./widgets/ReportsWidget')
   ),
   
-  [WidgetType.INVENTORY_SEARCH]: createLazyWidget(
-    () => import('./widgets/InventorySearchWidget')
-  ),
   
   // Chart widgets
   [WidgetType.PRODUCT_MIX_CHART]: createLazyWidget(
@@ -85,7 +82,7 @@ export const LazyComponents: Record<string, React.ComponentType<any>> = {
     () => import('./widgets/ProductMixChartWidget')
   ),
   'StockDistributionChart': createLazyWidget(
-    () => import('./widgets/StockDistributionChart')
+    () => import('./widgets/StockDistributionChartV2')
   ),
   'StockLevelHistoryChart': createLazyWidget(
     () => import('./widgets/StockLevelHistoryChart')
@@ -121,7 +118,7 @@ export const LazyComponents: Record<string, React.ComponentType<any>> = {
   
   // 分析類重型 widget (named exports)
   'AnalysisPagedWidget': createLazyWidget(
-    () => import('./widgets/AnalysisPagedWidget')
+    () => import('./widgets/AnalysisPagedWidgetV2')
   ),
   'AnalysisPagedWidgetV2': createLazyWidget(
     () => import('./widgets/AnalysisPagedWidgetV2')
@@ -135,12 +132,12 @@ export const LazyComponents: Record<string, React.ComponentType<any>> = {
     () => import('./widgets/ReportGeneratorWidget')
   ),
   'ReportGeneratorWithDialogWidget': createLazyWidget(
-    () => import('./widgets/ReportGeneratorWithDialogWidget')
+    () => import('./widgets/ReportGeneratorWithDialogWidgetV2')
   ),
   
   // History widget (named export)
   'HistoryTree': createLazyWidget(
-    () => import('./widgets/HistoryTree')
+    () => import('./widgets/HistoryTreeV2')
   ),
   
   // Upload page widgets (named exports)
@@ -148,13 +145,13 @@ export const LazyComponents: Record<string, React.ComponentType<any>> = {
     () => import('./widgets/OrdersListWidgetV2')
   ),
   'OtherFilesListWidget': createLazyWidget(
-    () => import('./widgets/OtherFilesListWidget')
+    () => import('./widgets/OtherFilesListWidgetV2')
   ),
   'UploadFilesWidget': createLazyWidget(
     () => import('./widgets/UploadFilesWidget')
   ),
   'UploadOrdersWidget': createLazyWidget(
-    () => import('./widgets/UploadOrdersWidget')
+    () => import('./widgets/UploadOrdersWidgetV2')
   ),
   'UploadProductSpecWidget': createLazyWidget(
     () => import('./widgets/UploadProductSpecWidget')
@@ -170,7 +167,7 @@ export const LazyComponents: Record<string, React.ComponentType<any>> = {
   
   // Supplier Update widget (named export)
   'SupplierUpdateWidget': createLazyWidget(
-    () => import('./widgets/SupplierUpdateWidget')
+    () => import('./widgets/SupplierUpdateWidgetV2')
   ),
   
   // Void Pallet widget (named export)
@@ -190,12 +187,12 @@ export const LazyComponents: Record<string, React.ComponentType<any>> = {
   
   // GRN Report widget (named export)
   'GrnReportWidget': createLazyWidget(
-    () => import('./widgets/GrnReportWidget')
+    () => import('./widgets/GrnReportWidgetV2')
   ),
   
   // ACO Order Report widget (named export)
   'AcoOrderReportWidget': createLazyWidget(
-    () => import('./widgets/AcoOrderReportWidget')
+    () => import('./widgets/AcoOrderReportWidgetV2')
   ),
 };
 
@@ -438,8 +435,7 @@ export class OptimizedWidgetLoader {
     // 定義核心 widgets
     const coreWidgets = new Set([
       'AnalyticsDashboardWidget',
-      'ReportsWidget',
-      'InventorySearchWidget'
+      'ReportsWidget'
     ]);
     
     const high: string[] = [];

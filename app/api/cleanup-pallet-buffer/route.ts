@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
       );
     }
     
-    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[Cleanup API] Starting pallet buffer cleanup...');
+    process.env.NODE_ENV !== "production" && console.log('[Cleanup API] Starting pallet buffer cleanup...');
     
     // 調用清理函數
     const { data, error } = await supabase.rpc('api_cleanup_pallet_buffer');
@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
       );
     }
     
-    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[Cleanup API] Cleanup completed:', data);
+    process.env.NODE_ENV !== "production" && console.log('[Cleanup API] Cleanup completed:', data);
     
     return NextResponse.json({
       success: true,

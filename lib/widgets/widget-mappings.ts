@@ -66,7 +66,6 @@ const categoryMap: WidgetMapping['categoryMap'] = {
   'AnalysisPagedWidgetV2': 'analysis',
   'AnalyticsDashboardWidget': 'analysis',
   'InventoryOrderedAnalysisWidget': 'analysis',
-  'InventorySearchWidget': 'analysis',
   
   // Special widgets
   'ProductionDetailsGraphQL': 'special',
