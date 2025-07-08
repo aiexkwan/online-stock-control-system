@@ -217,13 +217,6 @@ export const ProductUpdateWidget = React.memo(function ProductUpdateWidget({ wid
     }));
   }, []);
 
-  // Handle Enter key search
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !isLoading) {
-      const target = e.target as HTMLInputElement;
-      handleSearch(target.value);
-    }
-  };
 
   // Widget supports all sizes, but optimized for 3x3
 
@@ -252,7 +245,6 @@ export const ProductUpdateWidget = React.memo(function ProductUpdateWidget({ wid
                   id="search"
                   type="text"
                   placeholder="Enter code..."
-                  onKeyPress={handleKeyPress}
                   className="flex-1 h-8 text-sm bg-slate-700/50 border-slate-600/50"
                   disabled={isLoading || isEditMode}
                 />

@@ -55,83 +55,39 @@ interface AdminWidgetRendererProps {
   theme: string;
   timeFrame: TimeFrame;
   index?: number;
+  delay?: number;
 }
 
-// 主題顏色映射 - 純函數，移到組件外部以避免重複創建
-const THEME_COLORS = {
-  injection: {
-    ring: 'ring-blue-500/30',
-    border: 'border-blue-700/50',
-    shadow: 'shadow-[0_0_30px_rgba(59,130,246,0.15)]',
-    hoverRing: 'hover:ring-blue-400/40',
-    hoverShadow: 'hover:shadow-[0_0_40px_rgba(59,130,246,0.25)]'
-  },
-  pipeline: {
-    ring: 'ring-purple-500/30',
-    border: 'border-purple-700/50',
-    shadow: 'shadow-[0_0_30px_rgba(168,85,247,0.15)]',
-    hoverRing: 'hover:ring-purple-400/40',
-    hoverShadow: 'hover:shadow-[0_0_40px_rgba(168,85,247,0.25)]'
-  },
-  warehouse: {
-    ring: 'ring-green-500/30',
-    border: 'border-green-700/50',
-    shadow: 'shadow-[0_0_30px_rgba(34,197,94,0.15)]',
-    hoverRing: 'hover:ring-green-400/40',
-    hoverShadow: 'hover:shadow-[0_0_40px_rgba(34,197,94,0.25)]'
-  },
-  analysis: {
-    ring: 'ring-cyan-500/30',
-    border: 'border-cyan-700/50',
-    shadow: 'shadow-[0_0_30px_rgba(6,182,212,0.15)]',
-    hoverRing: 'hover:ring-cyan-400/40',
-    hoverShadow: 'hover:shadow-[0_0_40px_rgba(6,182,212,0.25)]'
-  },
-  upload: {
-    ring: 'ring-indigo-500/30',
-    border: 'border-indigo-700/50',
-    shadow: 'shadow-[0_0_30px_rgba(99,102,241,0.15)]',
-    hoverRing: 'hover:ring-indigo-400/40',
-    hoverShadow: 'hover:shadow-[0_0_40px_rgba(99,102,241,0.25)]'
-  },
-  update: {
-    ring: 'ring-orange-500/30',
-    border: 'border-orange-700/50',
-    shadow: 'shadow-[0_0_30px_rgba(251,146,60,0.15)]',
-    hoverRing: 'hover:ring-orange-400/40',
-    hoverShadow: 'hover:shadow-[0_0_40px_rgba(251,146,60,0.25)]'
-  },
-  'stock-management': {
-    ring: 'ring-yellow-500/30',
-    border: 'border-yellow-700/50',
-    shadow: 'shadow-[0_0_30px_rgba(250,204,21,0.15)]',
-    hoverRing: 'hover:ring-yellow-400/40',
-    hoverShadow: 'hover:shadow-[0_0_40px_rgba(250,204,21,0.25)]'
-  },
-  system: {
-    ring: 'ring-red-500/30',
-    border: 'border-red-700/50',
-    shadow: 'shadow-[0_0_30px_rgba(239,68,68,0.15)]',
-    hoverRing: 'hover:ring-red-400/40',
-    hoverShadow: 'hover:shadow-[0_0_40px_rgba(239,68,68,0.25)]'
-  }
+// 主題顏色映射 - 配合 GlowCard 效果
+const THEME_GLOW_COLORS = {
+  injection: 'blue',
+  pipeline: 'purple', 
+  warehouse: 'green',
+  analysis: 'blue', // cyan 映射到 blue
+  upload: 'purple', // indigo 映射到 purple
+  update: 'orange',
+  'stock-management': 'orange', // yellow 映射到 orange
+  system: 'red'
 } as const;
 
-const DEFAULT_THEME_COLORS = {
-  ring: 'ring-slate-500/30',
-  border: 'border-slate-600/50',
-  shadow: 'shadow-[0_0_30px_rgba(100,150,200,0.15)]',
-  hoverRing: 'hover:ring-slate-400/40',
-  hoverShadow: 'hover:shadow-[0_0_40px_rgba(100,150,200,0.25)]'
-} as const;
+type GlowColor = 'blue' | 'purple' | 'green' | 'red' | 'orange';
 
-const getThemeColors = (theme?: string) => {
-  return theme && theme in THEME_COLORS 
-    ? THEME_COLORS[theme as keyof typeof THEME_COLORS] 
-    : DEFAULT_THEME_COLORS;
+const getThemeGlowColor = (theme?: string): GlowColor => {
+  return theme && theme in THEME_GLOW_COLORS 
+    ? THEME_GLOW_COLORS[theme as keyof typeof THEME_GLOW_COLORS] as GlowColor
+    : 'blue'; // 默認藍色
 };
 
-// 統一的 Widget Wrapper Component - 使用 React.memo 優化
+// GlowCard 顏色配置
+const glowColorMap = {
+  blue: { base: 220, spread: 200 },
+  purple: { base: 280, spread: 300 },
+  green: { base: 120, spread: 200 },
+  red: { base: 0, spread: 200 },
+  orange: { base: 30, spread: 200 }
+};
+
+// 統一的 Widget Wrapper Component - 優化版本，移除高消耗的 spotlight 效果
 const UnifiedWidgetWrapper = React.memo<{
   children: React.ReactNode;
   isCustomTheme?: boolean;
@@ -140,27 +96,30 @@ const UnifiedWidgetWrapper = React.memo<{
   style?: React.CSSProperties;
   theme?: string;
 }>(({ children, isCustomTheme, hasError, className, style, theme }) => {
-  const themeColors = getThemeColors(theme);
+  const glowColor = getThemeGlowColor(theme);
+  const { base } = glowColorMap[glowColor];
 
-  // 統一的背景樣式，加入更明顯嘅邊框效果
-  const baseStyles = cn(
-    "h-full w-full rounded-xl transition-all duration-300",
-    "bg-slate-900/50 backdrop-blur-sm",
-    // 主題特定嘅邊框效果
-    themeColors.ring,
-    themeColors.border,
-    themeColors.shadow,
-    themeColors.hoverRing,
-    themeColors.hoverShadow,
-    "overflow-hidden"
-  );
-  
-  // Combine base styles with className overrides
-  const finalStyles = cn(baseStyles, className);
+  // 簡化樣式 - 移除 spotlight 效果以改善性能
+  const inlineStyles = {
+    backgroundColor: 'hsl(0 0% 20% / 0.5)',
+    border: '1px solid hsl(0 0% 60% / 0.12)',
+    borderRadius: '14px',
+    position: 'relative' as const,
+    // 保留輕量級的光暈效果
+    boxShadow: `0 0 20px hsl(${base} 100% 70% / 0.15)`,
+    transition: 'all 0.3s ease',
+    ...style
+  } as React.CSSProperties;
 
   if (hasError) {
     return (
-      <div className={finalStyles}>
+      <div
+        style={inlineStyles}
+        className={cn(
+          "h-full w-full rounded-2xl relative shadow-lg",
+          className
+        )}
+      >
         <div className="p-4 text-red-400 text-sm">
           {children}
         </div>
@@ -168,9 +127,15 @@ const UnifiedWidgetWrapper = React.memo<{
     );
   }
 
-  // 所有 widgets 都需要統一背景，不管是否 custom theme
+  // 簡化的 widget wrapper - 移除所有 spotlight 相關的元素
   return (
-    <div className={finalStyles} style={style}>
+    <div
+      style={inlineStyles}
+      className={cn(
+        "h-full w-full rounded-2xl relative shadow-lg",
+        className
+      )}
+    >
       {children}
     </div>
   );
@@ -230,8 +195,7 @@ const TopProductsChartGraphQL = React.lazy(() => import('./widgets/TopProductsCh
 const ProductDistributionChartGraphQL = React.lazy(() => import('./widgets/ProductDistributionChartGraphQL').then(mod => ({ default: mod.ProductDistributionChartGraphQL })));
 const ProductionDetailsGraphQL = React.lazy(() => import('./widgets/ProductionDetailsGraphQL').then(mod => ({ default: mod.ProductionDetailsGraphQL })));
 const StaffWorkloadGraphQL = React.lazy(() => import('./widgets/StaffWorkloadGraphQL').then(mod => ({ default: mod.StaffWorkloadGraphQL })));
-const OrdersListGraphQL = React.lazy(() => import('./widgets/OrdersListGraphQL').then(mod => ({ default: mod.OrdersListGraphQL })));
-const OtherFilesListGraphQL = React.lazy(() => import('./widgets/OtherFilesListGraphQL').then(mod => ({ default: mod.OtherFilesListGraphQL })));
+// GraphQL widgets removed - migrated to DashboardAPI
 
 // Warehouse Dashboard 組件
 const AwaitLocationQtyWidget = React.lazy(() => import('./widgets/AwaitLocationQtyWidget').then(mod => ({ default: mod.AwaitLocationQtyWidget })));
@@ -450,12 +414,24 @@ const AdminWidgetRendererComponent: React.FC<AdminWidgetRendererProps> = ({
   config, 
   theme,
   timeFrame,
-  index = 0
+  index = 0,
+  delay = 0
 }) => {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isDelayed, setIsDelayed] = useState(delay > 0);
   const { refreshTrigger } = useAdminRefresh();
+  
+  // 處理延遲加載
+  useEffect(() => {
+    if (delay > 0) {
+      const timer = setTimeout(() => {
+        setIsDelayed(false);
+      }, delay);
+      return () => clearTimeout(timer);
+    }
+  }, [delay]);
 
   // 根據數據源載入數據
   useEffect(() => {
@@ -1910,6 +1886,16 @@ const AdminWidgetRendererComponent: React.FC<AdminWidgetRendererProps> = ({
   const shouldUseVirtualization = true; // Enable virtualization
   
   if (shouldUseVirtualization) {
+    // 如果仍在延遲中，顯示佔位符
+    if (isDelayed) {
+      return (
+        <div
+          style={{ gridArea: config.gridArea }}
+          className="h-full w-full rounded-2xl bg-slate-800/30 animate-pulse"
+        />
+      );
+    }
+    
     return (
       <VirtualizedWidget
         widgetId={widgetId}
@@ -2213,13 +2199,6 @@ function ProductUpdateComponent() {
     }));
   }, []);
 
-  // 處理 Enter 鍵搜尋
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !isLoading) {
-      const target = e.target as HTMLInputElement;
-      handleSearch(target.value);
-    }
-  };
 
   return (
     <div className="h-full">
@@ -2239,7 +2218,6 @@ function ProductUpdateComponent() {
                         id="search"
                         type="text"
                         placeholder="Enter product code and press Enter..."
-                        onKeyPress={handleKeyPress}
                         className="flex-1 bg-slate-700/50 border-slate-600/50 text-slate-200 placeholder-slate-400 focus:border-orange-500/70 focus:bg-slate-700/70 hover:border-orange-500/50 hover:bg-slate-700/60 transition-all duration-300"
                         disabled={isLoading || showCreateDialog}
                       />
@@ -2702,13 +2680,6 @@ function SupplierUpdateComponent() {
     }));
   }, []);
 
-  // 處理 Enter 鍵搜尋
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !isLoading) {
-      const target = e.target as HTMLInputElement;
-      handleSearch(target.value);
-    }
-  };
 
   return (
     <div className="h-full">
@@ -2728,7 +2699,6 @@ function SupplierUpdateComponent() {
                         id="search"
                         type="text"
                         placeholder="Enter supplier code and press Enter..."
-                        onKeyPress={handleKeyPress}
                         className="flex-1 bg-slate-700/50 border-slate-600/50 text-slate-200 placeholder-slate-400 focus:border-blue-500/70 focus:bg-slate-700/70 hover:border-blue-500/50 hover:bg-slate-700/60 transition-all duration-300"
                         disabled={isLoading || showCreateDialog}
                       />

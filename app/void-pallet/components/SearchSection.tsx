@@ -18,7 +18,6 @@ interface SearchSectionProps {
   onSearch: () => void;
   onQRScan: (value: string) => void;
   onShowScanner: (show: boolean) => void;
-  onKeyDown: (e: React.KeyboardEvent) => void;
 }
 
 export function SearchSection({
@@ -32,7 +31,6 @@ export function SearchSection({
   onSearch,
   onQRScan,
   onShowScanner,
-  onKeyDown,
 }: SearchSectionProps) {
   const isMobile = typeof window !== 'undefined' && /Mobi|Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
   
@@ -85,7 +83,6 @@ export function SearchSection({
             type="text"
             value={searchInput}
             onChange={(e) => onSearchInputChange(e.target.value)}
-            onKeyDown={onKeyDown}
             placeholder={
               searchType === 'qr' 
                 ? "Scan or enter QR Code"

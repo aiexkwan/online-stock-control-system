@@ -159,11 +159,6 @@ export function ReprintLabelWidget({ title = 'Reprint Label', gridArea }: Reprin
     }
   };
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !isLoading) {
-      handleReprint();
-    }
-  };
 
   return (
     <div className="h-full w-full bg-gray-900/40 backdrop-blur-sm rounded-lg border border-gray-700/50 overflow-hidden flex flex-col">
@@ -178,7 +173,6 @@ export function ReprintLabelWidget({ title = 'Reprint Label', gridArea }: Reprin
               placeholder="Enter pallet number"
               value={palletNumber}
               onChange={(e) => setPalletNumber(e.target.value)}
-              onKeyPress={handleKeyPress}
               className="bg-gray-800/50 border-gray-700 text-white placeholder:text-gray-500 h-9 text-sm"
               disabled={isLoading}
             />

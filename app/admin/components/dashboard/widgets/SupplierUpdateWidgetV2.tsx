@@ -15,7 +15,8 @@ import { UniversalWidgetCard as WidgetCard } from '../UniversalWidgetCard';
 import { Button } from "@/components/ui/button";
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { createClient } from '@/lib/supabase';
+import { createClient } from '@/app/utils/supabase/client';
+import { errorHandler } from '@/app/components/qc-label-form/services/ErrorHandler';
 
 interface SupplierData {
   supplier_code: string;
@@ -69,13 +70,21 @@ export const SupplierUpdateWidgetV2 = React.memo(function SupplierUpdateWidgetV2
       console.log(`[SupplierUpdateWidgetV2] User ID lookup: ${Math.round(endTime - startTime)}ms`);
       
       if (error) {
-        console.error('[SupplierUpdateWidgetV2] Error getting user ID:', error);
+        errorHandler.handleApiError(
+          error,
+          { component: 'SupplierUpdateWidgetV2', action: 'get_user_id' },
+          'Failed to get user information'
+        );
         return 999; // Default value
       }
       
       return data || 999;
     } catch (error) {
-      console.error('[SupplierUpdateWidgetV2] Unexpected error getting user ID:', error);
+      errorHandler.handleApiError(
+        error as Error,
+        { component: 'SupplierUpdateWidgetV2', action: 'get_user_id' },
+        'Unexpected error getting user information'
+      );
       return 999;
     }
   }, [supabase]);
@@ -151,7 +160,11 @@ export const SupplierUpdateWidgetV2 = React.memo(function SupplierUpdateWidgetV2
         });
       }
     } catch (error: any) {
-      console.error('[SupplierUpdateWidgetV2] Search error:', error);
+      errorHandler.handleApiError(
+        error,
+        { component: 'SupplierUpdateWidgetV2', action: 'search_supplier', additionalData: { searchCode: code.trim() } },
+        'Search error occurred'
+      );
       setStatusMessage({
         type: 'error',
         message: 'Search error occurred'
@@ -257,7 +270,18 @@ export const SupplierUpdateWidgetV2 = React.memo(function SupplierUpdateWidgetV2
       setShowCreateDialog(false);
       
     } catch (error: any) {
-      console.error('[SupplierUpdateWidgetV2] Submit error:', error);
+      errorHandler.handleApiError(
+        error,
+        { 
+          component: 'SupplierUpdateWidgetV2', 
+          action: isEditing ? 'update_supplier' : 'create_supplier',
+          additionalData: { 
+            supplierCode: formData.supplier_code,
+            isEditing 
+          }
+        },
+        error.message || 'Unexpected error'
+      );
       setStatusMessage({
         type: 'error',
         message: error.message || 'Unexpected error'
@@ -275,12 +299,6 @@ export const SupplierUpdateWidgetV2 = React.memo(function SupplierUpdateWidgetV2
     }));
   }, []);
 
-  // Handle Enter key search
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !isLoading) {
-      handleSearch(searchInput);
-    }
-  };
 
   return (
     <motion.div
@@ -317,7 +335,6 @@ export const SupplierUpdateWidgetV2 = React.memo(function SupplierUpdateWidgetV2
                   value={searchInput}
                   onChange={(e) => setSearchInput(e.target.value)}
                   placeholder="Enter supplier code..."
-                  onKeyPress={handleKeyPress}
                   className="flex-1 h-9 text-sm bg-slate-700/50 border-slate-600/50"
                   disabled={isLoading || isEditMode}
                 />

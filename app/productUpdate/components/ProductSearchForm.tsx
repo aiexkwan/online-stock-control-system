@@ -32,16 +32,6 @@ export default function ProductSearchForm({
     setHasSearched(false);
   };
 
-  const handleKeyPress = async (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      const trimmedCode = productCode.trim();
-      if (trimmedCode) {
-        setHasSearched(true);
-        await onSearch(trimmedCode);
-      }
-    }
-  };
 
   return (
     <Card className="border-gray-600 bg-gray-800 text-white">
@@ -57,8 +47,7 @@ export default function ProductSearchForm({
             value={productCode}
             onChange={handleChange}
             onBlur={handleBlur}
-            onKeyPress={handleKeyPress}
-            placeholder="Enter product code and press Tab or Enter..."
+            placeholder="Enter product code and press Tab..."
             disabled={isLoading || disabled}
             className="bg-gray-700 border-gray-600 text-white placeholder-gray-400 focus:border-blue-400 focus:ring-blue-400"
           />
@@ -69,7 +58,7 @@ export default function ProductSearchForm({
           )}
         </div>
         <p className="text-xs text-gray-400 mt-2">
-          Enter a product code and press Tab or Enter to search (case-insensitive)
+          Enter a product code and press Tab to search (case-insensitive)
         </p>
       </CardContent>
     </Card>

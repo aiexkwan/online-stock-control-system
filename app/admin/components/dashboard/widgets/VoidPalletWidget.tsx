@@ -287,7 +287,6 @@ export const VoidPalletWidget = React.memo(function VoidPalletWidget({ widget, i
               onChange={(e) => setSearchValue(e.target.value)}
               placeholder="Enter Pallet number..."
               className="w-full px-3 py-2 bg-slate-800/50 border border-slate-700/50 rounded-lg text-white placeholder-gray-400 focus:border-blue-500/50 focus:outline-none"
-              onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
               disabled={state.isSearching || isEditMode}
             />
             {state.isSearching && (
