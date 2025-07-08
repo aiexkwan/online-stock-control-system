@@ -8,6 +8,9 @@ import { WidgetComponentProps } from '@/app/types/dashboard';
 import { useAdminRefresh } from '@/app/admin/contexts/AdminRefreshContext';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useGraphQLQuery } from '@/lib/graphql-client-stable';
+import { gql } from 'graphql-tag';
+import { print } from 'graphql';
 
 interface StockData {
   stock: string;
@@ -16,9 +19,54 @@ interface StockData {
   type?: string;
 }
 
-interface StockTypeSelectorProps extends WidgetComponentProps {}
+interface StockTypeSelectorProps extends WidgetComponentProps {
+  useGraphQL?: boolean;
+}
 
-export const StockTypeSelector: React.FC<StockTypeSelectorProps> = ({ widget, isEditMode }) => {
+// GraphQL query for stock types and latest stock levels
+const GET_STOCK_TYPES = gql`
+  query GetStockTypes {
+    data_codeCollection(
+      filter: {
+        type: { not: { is: null } }
+        type: { neq: "" }
+        type: { neq: "-" }
+      }
+      orderBy: [{ type: AscNullsLast }]
+    ) {
+      edges {
+        node {
+          type
+        }
+      }
+    }
+  }
+`;
+
+// GraphQL query for latest stock levels with type filter
+const GET_LATEST_STOCK_LEVELS = gql`
+  query GetLatestStockLevels($type: String) {
+    stock_levelCollection(
+      orderBy: [{ stock: AscNullsLast }, { update_time: DescNullsLast }]
+    ) {
+      edges {
+        node {
+          stock
+          stock_level
+          update_time
+          data_code {
+            description
+            type
+          }
+        }
+      }
+    }
+  }
+`;
+
+export const StockTypeSelector: React.FC<StockTypeSelectorProps> = ({ widget, isEditMode, useGraphQL }) => {
+  // 決定是否使用 GraphQL - 可以通過 widget config 或 props 控制
+  const shouldUseGraphQL = useGraphQL ?? (widget as any)?.useGraphQL ?? false;
   const [productTypes, setProductTypes] = useState<string[]>([]);
   const [selectedType, setSelectedType] = useState<string>('all');
   const [stockData, setStockData] = useState<StockData[]>([]);
@@ -26,6 +74,35 @@ export const StockTypeSelector: React.FC<StockTypeSelectorProps> = ({ widget, is
   const [loadingStock, setLoadingStock] = useState(false);
   const { refreshTrigger } = useAdminRefresh();
   const supabase = createClient();
+
+  // GraphQL queries
+  const {
+    data: typesData,
+    loading: typesLoading,
+    error: typesError,
+  } = useGraphQLQuery(
+    print(GET_STOCK_TYPES),
+    {},
+    {
+      enabled: shouldUseGraphQL && !isEditMode,
+      cacheTime: 600000, // 10分鐘快取 - types 很少變化
+    }
+  );
+
+  const {
+    data: stockLevelsData,
+    loading: stockLevelsLoading,
+    error: stockLevelsError,
+    refetch: refetchStockLevels,
+  } = useGraphQLQuery(
+    print(GET_LATEST_STOCK_LEVELS),
+    { type: selectedType === 'all' ? null : selectedType },
+    {
+      enabled: shouldUseGraphQL && !isEditMode,
+      cacheTime: 300000, // 5分鐘快取
+      refetchInterval: 300000, // 5分鐘自動刷新
+    }
+  );
 
   // 獲取所有產品類型
   // 前置聲明 fetchTypesFromStockData
@@ -264,24 +341,105 @@ export const StockTypeSelector: React.FC<StockTypeSelectorProps> = ({ widget, is
     [supabase]
   );
 
+  // Process GraphQL types data
+  useEffect(() => {
+    if (shouldUseGraphQL && typesData?.data_codeCollection) {
+      const edges = typesData.data_codeCollection.edges || [];
+      const types = edges
+        .map((edge: any) => edge.node.type)
+        .filter((type: string) => type && type !== '-' && type !== '');
+      const uniqueTypes = [...new Set(types)];
+      
+      if (uniqueTypes.length > 0) {
+        setProductTypes(uniqueTypes);
+      } else {
+        // 使用預設值
+        const defaultTypes = ['EasyLiner', 'EcoPlus', 'Slate', 'SupaStack', 'Manhole', 'ACO'];
+        setProductTypes(defaultTypes);
+      }
+    }
+  }, [shouldUseGraphQL, typesData]);
+
+  // Process GraphQL stock levels data
+  useEffect(() => {
+    if (shouldUseGraphQL && stockLevelsData?.stock_levelCollection) {
+      const edges = stockLevelsData.stock_levelCollection.edges || [];
+      
+      // Group by product to get latest stock level
+      const latestByProduct = new Map<string, any>();
+      edges.forEach((edge: any) => {
+        const { stock, stock_level, update_time, data_code } = edge.node;
+        if (!latestByProduct.has(stock) || latestByProduct.get(stock).update_time < update_time) {
+          latestByProduct.set(stock, {
+            stock,
+            stock_level,
+            update_time,
+            description: data_code?.description || '-',
+            type: data_code?.type || '-',
+          });
+        }
+      });
+
+      // Convert to array and filter based on selected type
+      let formattedData = Array.from(latestByProduct.values())
+        .filter(item => item.stock_level > 0);
+
+      if (selectedType !== 'all') {
+        if (selectedType === 'non-material') {
+          formattedData = formattedData.filter(item => 
+            item.type && item.type.toLowerCase() !== 'material'
+          );
+        } else {
+          formattedData = formattedData.filter(item => 
+            item.type === selectedType
+          );
+        }
+      }
+
+      setStockData(formattedData);
+      setLoadingStock(false);
+
+      // 通知圖表組件更新
+      window.dispatchEvent(
+        new CustomEvent('stockTypeChanged', {
+          detail: { type: selectedType, data: formattedData },
+        })
+      );
+    }
+  }, [shouldUseGraphQL, stockLevelsData, selectedType]);
+
   // 初始化
   useEffect(() => {
-    const init = async () => {
-      setLoading(true);
-      await fetchProductTypes();
-      await fetchStockData('all');
-      setLoading(false);
-    };
-    init();
-  }, [fetchProductTypes, fetchStockData, refreshTrigger]);
+    if (shouldUseGraphQL) {
+      setLoading(typesLoading);
+      setLoadingStock(stockLevelsLoading);
+    } else {
+      const init = async () => {
+        setLoading(true);
+        await fetchProductTypes();
+        await fetchStockData('all');
+        setLoading(false);
+      };
+      init();
+    }
+  }, [shouldUseGraphQL, typesLoading, stockLevelsLoading, fetchProductTypes, fetchStockData, refreshTrigger]);
 
   // 當選擇類型改變時
   const handleTypeChange = (type: string) => {
     setSelectedType(type);
-    fetchStockData(type);
+    if (shouldUseGraphQL) {
+      setLoadingStock(true);
+      refetchStockLevels({ type: type === 'all' ? null : type });
+    } else {
+      fetchStockData(type);
+    }
   };
 
-  if (loading) {
+  // Unified loading state
+  const isLoading = shouldUseGraphQL ? (typesLoading && !productTypes.length) : loading;
+  const isLoadingStock = shouldUseGraphQL ? stockLevelsLoading : loadingStock;
+
+  if (isLoading) {
     return (
       <div className='flex h-full items-center justify-center'>
         <Loader2 className='h-8 w-8 animate-spin text-gray-400' />
@@ -293,7 +451,12 @@ export const StockTypeSelector: React.FC<StockTypeSelectorProps> = ({ widget, is
     <div className='flex h-full flex-col p-6'>
       {/* Header with type selector */}
       <div className='mb-6 flex items-center justify-between'>
-        <h3 className='text-xl font-semibold text-white'>Stock Inventory</h3>
+        <h3 className='text-xl font-semibold text-white'>
+          Stock Inventory
+          {shouldUseGraphQL && (
+            <span className='ml-2 text-xs text-blue-400'>⚡ GraphQL</span>
+          )}
+        </h3>
         <select
           value={selectedType}
           onChange={e => handleTypeChange(e.target.value)}
@@ -311,7 +474,7 @@ export const StockTypeSelector: React.FC<StockTypeSelectorProps> = ({ widget, is
 
       {/* Stock table */}
       <div className='flex-1 overflow-auto'>
-        {loadingStock ? (
+        {isLoadingStock ? (
           <div className='flex h-32 items-center justify-center'>
             <Loader2 className='h-6 w-6 animate-spin text-gray-400' />
           </div>
@@ -364,7 +527,7 @@ export const StockTypeSelector: React.FC<StockTypeSelectorProps> = ({ widget, is
       </div>
 
       {/* Summary */}
-      {!loadingStock && stockData.length > 0 && (
+      {!isLoadingStock && stockData.length > 0 && (
         <div className='mt-4 flex justify-between border-t border-slate-700 pt-4 text-sm'>
           <span className='text-gray-400'>
             Showing {stockData.length} products{' '}

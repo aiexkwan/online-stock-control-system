@@ -19,6 +19,7 @@ export interface AdminWidgetConfig {
   selectLabel?: string;
   dataTable?: string;
   referenceField?: string;
+  useGraphQL?: boolean; // 是否使用 GraphQL 優化版本
 }
 
 export interface AdminDashboardLayout {
@@ -85,6 +86,7 @@ export const adminDashboardLayouts: Record<string, AdminDashboardLayout> = {
         gridArea: 'widget2',
         dataSource: 'record_palletinfo',
         metrics: ['pallet_count'],
+        component: 'InjectionProductionStatsWidget', // GraphQL optimized version
       },
       {
         type: 'stats',
@@ -92,6 +94,7 @@ export const adminDashboardLayouts: Record<string, AdminDashboardLayout> = {
         gridArea: 'widget3',
         dataSource: 'record_palletinfo',
         metrics: ['quantity_sum'],
+        component: 'InjectionProductionStatsWidget', // GraphQL optimized version
       },
       {
         type: 'available-soon',
@@ -204,6 +207,8 @@ export const adminDashboardLayouts: Record<string, AdminDashboardLayout> = {
         title: 'Production Details',
         gridArea: 'widget9',
         dataSource: 'pipeline_production_details',
+        component: 'ProductionDetailsWidget',
+        useGraphQL: true, // GraphQL optimized for frequent time switching
       },
       {
         type: 'chart',
@@ -211,6 +216,8 @@ export const adminDashboardLayouts: Record<string, AdminDashboardLayout> = {
         gridArea: 'widget10',
         dataSource: 'pipeline_work_level',
         chartType: 'line',
+        component: 'StaffWorkloadWidget',
+        useGraphQL: true, // GraphQL optimized for frequent time switching
       },
     ],
   },
@@ -317,12 +324,14 @@ export const adminDashboardLayouts: Record<string, AdminDashboardLayout> = {
         title: 'Order Upload History',
         gridArea: 'widget1',
         component: 'OrdersListWidgetV2',
+        useGraphQL: true, // GraphQL optimized for large datasets
       },
       {
         type: 'other-files-list',
         title: 'Other File Upload History',
         gridArea: 'widget2',
-        component: 'OtherFilesListWidget',
+        component: 'OtherFilesListWidgetV2',
+        useGraphQL: true, // GraphQL optimized for large datasets
       },
       {
         type: 'upload-files',
@@ -418,6 +427,7 @@ export const adminDashboardLayouts: Record<string, AdminDashboardLayout> = {
         gridArea: 'widget2',
         dataSource: 'stock_level',
         component: 'StockTypeSelector',
+        useGraphQL: true, // GraphQL optimized for complex queries
       },
       {
         type: 'chart',
@@ -439,7 +449,8 @@ export const adminDashboardLayouts: Record<string, AdminDashboardLayout> = {
         gridArea: 'widget5',
         dataSource: 'stock_level',
         chartType: 'pie',
-        component: 'StockDistributionChart',
+        component: 'StockDistributionChartV2',
+        useGraphQL: true, // GraphQL optimized for frequent interaction
       },
     ],
   },

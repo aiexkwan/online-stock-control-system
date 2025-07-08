@@ -1,6 +1,11 @@
 /**
  * OrdersListWidgetV2 - Real-time Orders List Widget
  * Part of Phase 3.1: Real-time Component Migration
+ * 
+ * Re-Structure-6 Update: Added GraphQL support for data-intensive queries
+ * - 200+ records benefit from GraphQL field selection
+ * - Hybrid architecture: Server Actions + GraphQL
+ * - Maintains real-time updates via Supabase Realtime
  *
  * Features:
  * - Server-side initial data loading
@@ -8,11 +13,12 @@
  * - SWR caching and optimistic updates
  * - Automatic fallback to polling
  * - PDF preview functionality
+ * - GraphQL optimization for large datasets
  */
 
 'use client';
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   DocumentArrowUpIcon,
@@ -26,9 +32,45 @@ import { CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { format } from 'date-fns';
 import { fromDbTime } from '@/app/utils/timezone';
 import { useRealtimeOrders } from '@/app/admin/hooks/useRealtimeOrders';
-import { ordersAPI, OrdersListResponse } from '@/lib/api/modules/OrdersAPI';
+import { ordersAPI, OrdersListResponse, OrderRecord } from '@/lib/api/modules/OrdersAPI';
+import { getPdfUrl } from '@/lib/api/modules/ordersActions';
 import { cn } from '@/lib/utils';
 import { errorHandler } from '@/app/components/qc-label-form/services/ErrorHandler';
+import { useGraphQLQuery } from '@/lib/graphql-client-stable';
+import { gql } from 'graphql-tag';
+import { print } from 'graphql';
+
+// GraphQL query for orders list
+const GET_ORDERS_LIST = gql`
+  query GetOrdersList($limit: Int!, $offset: Int!) {
+    record_historyCollection(
+      filter: { action: { eq: "Order Upload" } }
+      orderBy: [{ time: DescNullsLast }]
+      first: $limit
+      offset: $offset
+    ) {
+      edges {
+        node {
+          uuid
+          time
+          id
+          action
+          plt_num
+          loc
+          remark
+          data_id {
+            name
+          }
+        }
+      }
+      pageInfo {
+        hasNextPage
+        hasPreviousPage
+      }
+      totalCount
+    }
+  }
+`;
 
 // ================================
 // Types
@@ -36,6 +78,7 @@ import { errorHandler } from '@/app/components/qc-label-form/services/ErrorHandl
 
 export interface OrdersListWidgetV2Props extends WidgetComponentProps {
   initialData?: OrdersListResponse;
+  useGraphQL?: boolean;
 }
 
 // ================================
@@ -46,10 +89,34 @@ export const OrdersListWidgetV2 = React.memo(function OrdersListWidgetV2({
   widget,
   isEditMode,
   initialData,
+  useGraphQL,
 }: OrdersListWidgetV2Props) {
+  // 決定是否使用 GraphQL - 可以通過 widget config 或 props 控制
+  const shouldUseGraphQL = useGraphQL ?? (widget as any)?.useGraphQL ?? false;
   const [loadingPdf, setLoadingPdf] = useState<string | null>(null);
+  const [graphqlPage, setGraphqlPage] = useState(0);
+  const [graphqlOrders, setGraphqlOrders] = useState<OrderRecord[]>([]);
 
-  // Use real-time orders hook
+  // GraphQL query
+  const {
+    data: graphqlData,
+    loading: graphqlLoading,
+    error: graphqlError,
+    refetch: refetchGraphQL,
+  } = useGraphQLQuery(
+    print(GET_ORDERS_LIST),
+    {
+      limit: 15,
+      offset: graphqlPage * 15,
+    },
+    {
+      enabled: shouldUseGraphQL && !isEditMode,
+      refetchInterval: 30000, // 30秒刷新一次
+      cacheTime: 300000, // 5分鐘快取
+    }
+  );
+
+  // Use real-time orders hook (only when not using GraphQL)
   const {
     orders,
     loading,
@@ -64,8 +131,69 @@ export const OrdersListWidgetV2 = React.memo(function OrdersListWidgetV2({
   } = useRealtimeOrders({
     limit: 15,
     initialData,
-    autoRefresh: !isEditMode, // Disable real-time in edit mode
+    autoRefresh: !isEditMode && !shouldUseGraphQL, // Disable when using GraphQL
   });
+
+  // Process GraphQL data
+  useEffect(() => {
+    if (shouldUseGraphQL && graphqlData?.record_historyCollection) {
+      const edges = graphqlData.record_historyCollection.edges || [];
+      const newOrders: OrderRecord[] = edges.map((edge: any) => ({
+        uuid: edge.node.uuid,
+        time: edge.node.time,
+        id: edge.node.id,
+        action: edge.node.action,
+        plt_num: edge.node.plt_num,
+        loc: edge.node.loc,
+        remark: edge.node.remark,
+        uploader_name: edge.node.data_id?.name || 
+          (edge.node.id ? `User ${edge.node.id}` : 'Unknown'),
+        doc_url: null, // Will be fetched on demand
+      }));
+
+      if (graphqlPage === 0) {
+        setGraphqlOrders(newOrders);
+      } else {
+        // Append for pagination
+        setGraphqlOrders(prev => [...prev, ...newOrders]);
+      }
+    }
+  }, [shouldUseGraphQL, graphqlData, graphqlPage]);
+
+  // GraphQL load more function
+  const loadMoreGraphQL = useCallback(() => {
+    if (shouldUseGraphQL && !graphqlLoading && 
+        graphqlData?.record_historyCollection?.pageInfo?.hasNextPage) {
+      setGraphqlPage(prev => prev + 1);
+    }
+  }, [shouldUseGraphQL, graphqlLoading, graphqlData]);
+
+  // GraphQL refresh function
+  const refreshGraphQL = useCallback(async () => {
+    if (shouldUseGraphQL) {
+      setGraphqlPage(0);
+      setGraphqlOrders([]);
+      await refetchGraphQL();
+    }
+  }, [shouldUseGraphQL, refetchGraphQL]);
+
+  // Unified data source
+  const displayOrders = shouldUseGraphQL ? graphqlOrders : orders;
+  const isLoading = shouldUseGraphQL 
+    ? (graphqlLoading && graphqlPage === 0) 
+    : loading;
+  const isLoadingMore = shouldUseGraphQL 
+    ? (graphqlLoading && graphqlPage > 0) 
+    : loadingMore;
+  const displayError = shouldUseGraphQL ? graphqlError : error;
+  const displayHasMore = shouldUseGraphQL 
+    ? (graphqlData?.record_historyCollection?.pageInfo?.hasNextPage || false)
+    : hasMore;
+  const displayTotalCount = shouldUseGraphQL 
+    ? (graphqlData?.record_historyCollection?.totalCount || 0)
+    : totalCount;
+  const handleLoadMore = shouldUseGraphQL ? loadMoreGraphQL : loadMore;
+  const handleRefresh = shouldUseGraphQL ? refreshGraphQL : refresh;
 
   // Format timestamp
   const formatTime = useCallback((timestamp: string) => {
@@ -86,7 +214,7 @@ export const OrdersListWidgetV2 = React.memo(function OrdersListWidgetV2({
         setLoadingPdf(orderRef);
 
         // Use Server Action to get PDF URL
-        const pdfUrl = await ordersAPI.getPdfUrl(orderRef);
+        const pdfUrl = await getPdfUrl(orderRef);
 
         if (pdfUrl) {
           window.open(pdfUrl, '_blank');
@@ -121,7 +249,12 @@ export const OrdersListWidgetV2 = React.memo(function OrdersListWidgetV2({
   // Connection status indicator
   const ConnectionStatus = () => (
     <div className='flex items-center gap-1.5 text-xs'>
-      {isRealtimeConnected ? (
+      {shouldUseGraphQL ? (
+        <>
+          <WifiIcon className='h-3 w-3 text-blue-400' />
+          <span className='text-blue-400'>GraphQL</span>
+        </>
+      ) : isRealtimeConnected ? (
         <>
           <WifiIcon className='h-3 w-3 text-emerald-400' />
           <span className='text-emerald-400'>Real-time</span>
@@ -158,8 +291,8 @@ export const OrdersListWidgetV2 = React.memo(function OrdersListWidgetV2({
             </div>
           </div>
           <button
-            onClick={() => !isEditMode && refresh()}
-            disabled={isEditMode || loading}
+            onClick={() => !isEditMode && handleRefresh()}
+            disabled={isEditMode || isLoading}
             className={cn(
               'rounded-lg p-1.5 transition-colors',
               'hover:bg-slate-700/50',
@@ -167,7 +300,7 @@ export const OrdersListWidgetV2 = React.memo(function OrdersListWidgetV2({
             )}
             title='Refresh'
           >
-            <ArrowPathIcon className={cn('h-4 w-4 text-slate-400', loading && 'animate-spin')} />
+            <ArrowPathIcon className={cn('h-4 w-4 text-slate-400', isLoading && 'animate-spin')} />
           </button>
         </CardTitle>
       </CardHeader>
@@ -183,13 +316,13 @@ export const OrdersListWidgetV2 = React.memo(function OrdersListWidgetV2({
         </div>
 
         {/* Error State */}
-        {error && !loading && (
+        {displayError && !isLoading && (
           <div className='flex flex-1 items-center justify-center'>
             <div className='text-center'>
               <AlertCircle className='mx-auto mb-2 h-12 w-12 text-red-500' />
               <p className='mb-2 text-sm text-red-400'>Error loading orders</p>
               <button
-                onClick={refresh}
+                onClick={handleRefresh}
                 className='text-xs text-cyan-400 underline hover:text-cyan-300'
               >
                 Try again
@@ -199,13 +332,13 @@ export const OrdersListWidgetV2 = React.memo(function OrdersListWidgetV2({
         )}
 
         {/* Loading State */}
-        {loading && orders.length === 0 && !error ? (
+        {isLoading && displayOrders.length === 0 && !displayError ? (
           <div className='animate-pulse space-y-2'>
             {[...Array(5)].map((_, i) => (
               <div key={i} className='h-10 rounded-lg bg-white/10'></div>
             ))}
           </div>
-        ) : orders.length === 0 && !error ? (
+        ) : displayOrders.length === 0 && !displayError ? (
           <div className='flex flex-1 items-center justify-center'>
             <div className='text-center'>
               <DocumentArrowUpIcon className='mx-auto mb-2 h-12 w-12 text-slate-600' />
@@ -213,10 +346,10 @@ export const OrdersListWidgetV2 = React.memo(function OrdersListWidgetV2({
             </div>
           </div>
         ) : (
-          !error && (
+          !displayError && (
             <div className='flex-1 space-y-1 overflow-y-auto'>
               <AnimatePresence mode='popLayout'>
-                {orders.map((order, index) => (
+                {displayOrders.map((order, index) => (
                   <motion.div
                     key={order.uuid}
                     layout
@@ -270,23 +403,23 @@ export const OrdersListWidgetV2 = React.memo(function OrdersListWidgetV2({
               </AnimatePresence>
 
               {/* Load More Button */}
-              {hasMore && !loadingMore && !error && (
+              {displayHasMore && !isLoadingMore && !displayError && (
                 <motion.button
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
-                  onClick={loadMore}
+                  onClick={handleLoadMore}
                   className={cn(
                     'w-full py-2 text-sm text-cyan-400',
                     'transition-colors hover:text-cyan-300'
                   )}
                   disabled={isEditMode}
                 >
-                  Load more ({totalCount - orders.length} remaining)
+                  Load more ({displayTotalCount - displayOrders.length} remaining)
                 </motion.button>
               )}
 
               {/* Loading More Indicator */}
-              {loadingMore && (
+              {isLoadingMore && (
                 <motion.div
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
@@ -298,13 +431,13 @@ export const OrdersListWidgetV2 = React.memo(function OrdersListWidgetV2({
               )}
 
               {/* End of List */}
-              {!hasMore && orders.length > 0 && (
+              {!displayHasMore && displayOrders.length > 0 && (
                 <motion.div
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   className='w-full py-2 text-center text-sm text-slate-500'
                 >
-                  End of list ({orders.length} orders)
+                  End of list ({displayOrders.length} orders)
                 </motion.div>
               )}
             </div>

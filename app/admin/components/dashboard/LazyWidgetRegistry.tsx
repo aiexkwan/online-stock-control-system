@@ -115,6 +115,9 @@ export const LazyComponents: Record<string, React.ComponentType<any>> = {
   'ProductionStatsWidget': createLazyWidget(
     () => import('./widgets/ProductionStatsWidget')
   ),
+  'InjectionProductionStatsWidget': createLazyWidget(
+    () => import('./widgets/InjectionProductionStatsWidget')
+  ),
   
   // 分析類重型 widget (named exports)
   'AnalysisPagedWidget': createLazyWidget(

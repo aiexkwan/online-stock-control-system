@@ -76,6 +76,23 @@ export const statsWidgetConfigs: Record<string, Partial<WidgetDefinition>> = {
       supportedDataSources: ['total_pallets', 'today_transfers', 'active_products'],
     },
   },
+
+  InjectionProductionStatsWidget: {
+    name: 'Injection Production Stats',
+    category: 'stats',
+    description: 'GraphQL-optimized production stats for injection route',
+    lazyLoad: true,
+    preloadPriority: 9, // 高優先級 - 頻繁時間切換場景
+    useGraphQL: true, // 明確標記使用 GraphQL
+    metadata: {
+      dataSource: 'record_palletinfo',
+      refreshInterval: 300000, // 5分鐘刷新
+      supportTimeFrame: true,
+      supportedMetrics: ['pallet_count', 'quantity_sum'],
+      graphqlOptimized: true,
+      cachingStrategy: 'cache-first', // GraphQL 快取策略
+    },
+  },
 };
 
 /**

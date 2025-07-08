@@ -64,9 +64,10 @@ const categoryMap: WidgetMapping['categoryMap'] = {
   InventoryOrderedAnalysisWidget: 'analysis',
 
   // Production widgets (Server Actions versions)
-  ProductionDetailsWidget: 'production',
-  ProductionStatsWidget: 'production',
-  StaffWorkloadWidget: 'production',
+  ProductionDetailsWidget: 'lists',
+  ProductionStatsWidget: 'stats',
+  InjectionProductionStatsWidget: 'stats',
+  StaffWorkloadWidget: 'charts',
   OrderAnalysisResultDialog: 'special',
   StockTypeSelector: 'special',
   Folder3D: 'special',
@@ -82,6 +83,7 @@ const preloadPriorityMap: WidgetMapping['preloadPriorityMap'] = {
   // 核心必須組件 - 最高優先級
   HistoryTree: 10,
   StatsCardWidget: 9,
+  InjectionProductionStatsWidget: 9, // 高優先級 - GraphQL 優化版本
 
   // 常用統計組件 - 高優先級
   StillInAwaitWidget: 8,
@@ -119,6 +121,7 @@ const preloadPriorityMap: WidgetMapping['preloadPriorityMap'] = {
 export const routePreloadMap: Record<string, string[]> = {
   '/admin/injection': [
     'HistoryTree',
+    'InjectionProductionStatsWidget', // GraphQL 優化版本
     'StatsCardWidget',
     'ProductionDetailsWidget',
     'ProductMixChartWidget',

@@ -2,6 +2,7 @@
  * Stock Distribution Chart V2
  * 使用 RPC 函數和 DashboardAPI 優化圖表數據處理
  * 遷移自原 StockDistributionChart
+ * 根據 Re-Structure-6.md 建議，支持 GraphQL 優化頻繁時間切換場景
  */
 
 'use client';
@@ -12,6 +13,40 @@ import { WidgetComponentProps } from '@/app/types/dashboard';
 import { useAdminRefresh } from '@/app/admin/contexts/AdminRefreshContext';
 import { Loader2 } from 'lucide-react';
 import { createDashboardAPI } from '@/lib/api/admin/DashboardAPI';
+import { useGraphQLQuery } from '@/lib/graphql-client-stable';
+import { gql, print } from 'graphql-tag';
+
+// GraphQL query for stock distribution
+const GET_STOCK_DISTRIBUTION = gql`
+  query GetStockDistribution {
+    record_inventoryCollection(
+      filter: {
+        stock_total: { gt: 0 }
+      }
+      orderBy: [{ stock_total: DescNullsLast }]
+    ) {
+      edges {
+        node {
+          product_code
+          stock_total
+          injection
+          pipeline
+          prebook
+          await
+          fold
+          bulk
+          warehouse
+          type
+          data_code {
+            description
+            colour
+            type
+          }
+        }
+      }
+    }
+  }
+`;
 
 interface TreemapData {
   name: string;
@@ -24,12 +59,17 @@ interface TreemapData {
   type?: string;
 }
 
-interface StockDistributionChartProps extends WidgetComponentProps {}
+interface StockDistributionChartProps extends WidgetComponentProps {
+  useGraphQL?: boolean;
+}
 
 export const StockDistributionChartV2: React.FC<StockDistributionChartProps> = ({
   widget,
   isEditMode,
+  useGraphQL,
 }) => {
+  // 決定是否使用 GraphQL - 可以通過 widget config 或 props 控制
+  const shouldUseGraphQL = useGraphQL ?? (widget as any)?.useGraphQL ?? false;
   const [chartData, setChartData] = useState<TreemapData[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedType, setSelectedType] = useState<string>('all');
@@ -41,8 +81,71 @@ export const StockDistributionChartV2: React.FC<StockDistributionChartProps> = (
   const { refreshTrigger } = useAdminRefresh();
   const api = createDashboardAPI();
 
+  // GraphQL 查詢
+  const { 
+    data: graphqlData, 
+    loading: graphqlLoading, 
+    error: graphqlError,
+    refetch: refetchGraphQL
+  } = useGraphQLQuery(
+    print(GET_STOCK_DISTRIBUTION),
+    {},
+    {
+      enabled: shouldUseGraphQL && !isEditMode,
+      refetchInterval: 300000, // 5分鐘刷新一次
+      cacheTime: 300000, // 5分鐘快取
+      staleTime: 60000, // 1分鐘內認為數據是新鮮的
+    }
+  );
+
+  // 處理 GraphQL 數據
+  const processGraphQLData = useCallback((data: any) => {
+    if (!data?.record_inventoryCollection?.edges) return [];
+    
+    const edges = data.record_inventoryCollection.edges;
+    const items = edges.map((edge: any) => ({
+      stock: edge.node.product_code,
+      stock_level: edge.node.stock_total,
+      description: edge.node.data_code?.description,
+      type: edge.node.type || edge.node.data_code?.type,
+    }));
+    
+    // 過濾選定類型
+    let filteredItems = items;
+    if (selectedType !== 'all' && selectedType !== 'ALL TYPES') {
+      filteredItems = items.filter((item: any) => item.type === selectedType);
+    }
+    
+    const totalStock = filteredItems.reduce((sum: number, item: any) => sum + item.stock_level, 0);
+    
+    // 按庫存量排序
+    const sortedData = filteredItems
+      .filter((item: any) => item.stock_level > 0)
+      .sort((a: any, b: any) => b.stock_level - a.stock_level);
+    
+    const CHART_COLORS = [
+      '#10b981', '#3b82f6', '#8b5cf6', '#ec4899', '#f59e0b',
+      '#06b6d4', '#f97316', '#6366f1', '#84cc16', '#14b8a6',
+      '#a855f7', '#eab308', '#059669', '#2563eb', '#7c3aed',
+      '#db2777', '#d97706', '#0891b2', '#ea580c', '#4f46e5',
+    ];
+    
+    return sortedData.map((item: any, index: number) => ({
+      name: item.stock,
+      size: item.stock_level,
+      value: item.stock_level,
+      percentage: totalStock > 0 ? (item.stock_level / totalStock) * 100 : 0,
+      color: CHART_COLORS[index % CHART_COLORS.length],
+      fill: CHART_COLORS[index % CHART_COLORS.length],
+      description: item.description || '-',
+      type: item.type || '-',
+    }));
+  }, [selectedType]);
+
   // 獲取初始數據使用 DashboardAPI
   const fetchInitialData = useCallback(async () => {
+    if (shouldUseGraphQL) return; // 如果使用 GraphQL，跳過
+    
     setLoading(true);
     try {
       const startTime = performance.now();
@@ -79,7 +182,37 @@ export const StockDistributionChartV2: React.FC<StockDistributionChartProps> = (
     } finally {
       setLoading(false);
     }
-  }, [api, selectedType]);
+  }, [api, selectedType, shouldUseGraphQL]);
+
+  // 處理 GraphQL 數據更新
+  useEffect(() => {
+    if (shouldUseGraphQL && graphqlData && !graphqlLoading) {
+      const processedData = processGraphQLData(graphqlData);
+      setChartData(processedData);
+      setPerformanceMetrics({
+        lastFetchTime: 0,
+        optimized: true,
+        totalStock: processedData.reduce((sum, item) => sum + item.value, 0),
+      });
+      setLoading(false);
+    }
+  }, [shouldUseGraphQL, graphqlData, graphqlLoading, processGraphQLData]);
+
+  // 處理 GraphQL 錯誤
+  useEffect(() => {
+    if (shouldUseGraphQL && graphqlError) {
+      console.error('[StockDistributionChartV2] GraphQL error:', graphqlError);
+      setChartData([]);
+      setLoading(false);
+    }
+  }, [shouldUseGraphQL, graphqlError]);
+
+  // 處理 GraphQL 載入狀態
+  useEffect(() => {
+    if (shouldUseGraphQL) {
+      setLoading(graphqlLoading);
+    }
+  }, [shouldUseGraphQL, graphqlLoading]);
 
   // 監聽類型變更事件
   useEffect(() => {
@@ -154,8 +287,10 @@ export const StockDistributionChartV2: React.FC<StockDistributionChartProps> = (
 
   // 初始化
   useEffect(() => {
-    fetchInitialData();
-  }, [fetchInitialData, refreshTrigger]);
+    if (!shouldUseGraphQL) {
+      fetchInitialData();
+    }
+  }, [fetchInitialData, refreshTrigger, shouldUseGraphQL]);
 
   // 自定義 Tooltip
   const CustomTooltip = ({ active, payload }: any) => {
@@ -306,10 +441,16 @@ export const StockDistributionChartV2: React.FC<StockDistributionChartProps> = (
 
           {/* Performance indicator */}
           {performanceMetrics.optimized && (
-            <div className='absolute bottom-2 right-2 rounded bg-slate-900/80 px-2 py-1 text-[10px] text-green-400'>
-              ✓ Server-optimized ({performanceMetrics.lastFetchTime}ms)
+            <div className='absolute bottom-2 right-2 rounded bg-slate-900/80 px-2 py-1 text-[10px]'>
+              {shouldUseGraphQL ? (
+                <span className='text-blue-400'>⚡ GraphQL optimized</span>
+              ) : (
+                <span className='text-green-400'>
+                  ✓ Server-optimized ({performanceMetrics.lastFetchTime}ms)
+                </span>
+              )}
               {performanceMetrics.totalStock && (
-                <span className='ml-2'>
+                <span className='ml-2 text-gray-400'>
                   Total: {performanceMetrics.totalStock.toLocaleString()}
                 </span>
               )}

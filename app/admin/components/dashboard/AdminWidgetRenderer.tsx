@@ -252,10 +252,18 @@ const getComponentPropsFactory = (config: AdminWidgetConfig, timeFrame: TimeFram
       referenceField: config.referenceField || ''
     },
     // Stock 組件
-    StockDistributionChart: { widget: config as any },
+    StockDistributionChart: { widget: config as any, useGraphQL: config.useGraphQL },
     StockTypeSelector: { widget: config as any },
     StockLevelHistoryChart: { widget: config as any, timeFrame },
-    InventoryOrderedAnalysisWidget: { widget: config as any }
+    InventoryOrderedAnalysisWidget: { widget: config as any },
+    // Production 組件
+    InjectionProductionStatsWidget: {
+      widget: config,
+      title: config.title,
+      metric: config.metrics?.[0] as 'pallet_count' | 'quantity_sum',
+      timeFrame,
+      isEditMode: false
+    }
   };
 
   // Upload widgets 共享配置
@@ -1125,6 +1133,8 @@ const AdminWidgetRendererComponent: React.FC<AdminWidgetRendererProps> = ({
             timeFrame={timeFrame}
             isEditMode={false}
             department="Injection"
+            useGraphQL={config.useGraphQL}
+            widget={config}
           />
         </Suspense>
       );
@@ -1399,6 +1409,8 @@ const AdminWidgetRendererComponent: React.FC<AdminWidgetRendererProps> = ({
             title={config.title}
             timeFrame={timeFrame}
             isEditMode={false}
+            useGraphQL={config.useGraphQL}
+            widget={config}
           />
         </Suspense>
       );
@@ -1721,13 +1733,26 @@ const AdminWidgetRendererComponent: React.FC<AdminWidgetRendererProps> = ({
       case 'StockTypeSelector':
         return (
           <Suspense fallback={<div className="h-full w-full animate-pulse bg-slate-800/50" />}>
-            <StockTypeSelector />
+            <StockTypeSelector 
+              widget={{
+                id: 'stock-type-selector',
+                title: config.title || 'Stock Type Selector',
+                config: {
+                  type: 'table',
+                  title: config.title || 'Stock Type Selector',
+                  dataSource: 'stock_level'
+                }
+              }}
+              isEditMode={false}
+              useGraphQL={config.useGraphQL}
+            />
           </Suspense>
         );
       case 'StockDistributionChart':
+      case 'StockDistributionChartV2':
         return (
           <Suspense fallback={<div className="h-full w-full animate-pulse bg-slate-800/50" />}>
-            <StockDistributionChart />
+            <StockDistributionChart {...componentProps.StockDistributionChart} />
           </Suspense>
         );
       case 'StockLevelHistoryChart':

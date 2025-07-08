@@ -1,30 +1,68 @@
 /**
- * Production Details Widget - Server Actions Version
+ * Production Details Widget - Hybrid Version (Server Actions + GraphQL)
  * 顯示生產詳情表格
- * 使用 Server Actions 替代 GraphQL
+ * 根據 Re-Structure-6.md 建議，支持 GraphQL 優化頻繁時間切換場景
  */
 
 'use client';
 
 import React, { useMemo, useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { format } from 'date-fns';
+import { format, startOfDay, endOfDay } from 'date-fns';
 import { CardHeader, CardTitle } from '@/components/ui/card';
 import { TableCellsIcon } from '@heroicons/react/24/outline';
 import { createDashboardAPI } from '@/lib/api/admin/DashboardAPI';
+import { useGraphQLQuery } from '@/lib/graphql-client-stable';
+import { gql, print } from 'graphql-tag';
 import { WidgetComponentProps } from '@/app/types/dashboard';
+
+// GraphQL query for production details
+const GET_PRODUCTION_DETAILS_QUERY = gql`
+  query GetProductionDetails($startDate: Datetime!, $endDate: Datetime!, $limit: Int) {
+    record_palletinfoCollection(
+      filter: {
+        plt_remark: { ilike: "%finished in production%" }
+        generate_time: { gte: $startDate, lte: $endDate }
+      }
+      orderBy: [{ generate_time: DescNullsLast }]
+      first: $limit
+    ) {
+      edges {
+        node {
+          plt_num
+          product_code
+          product_qty
+          generate_time
+          qc_by
+          plt_remark
+          data_code {
+            description
+            colour
+            type
+          }
+        }
+      }
+      totalCount
+    }
+  }
+`;
 
 interface ProductionDetailsWidgetProps extends WidgetComponentProps {
   title: string;
   limit?: number;
+  useGraphQL?: boolean;
 }
 
 export const ProductionDetailsWidget: React.FC<ProductionDetailsWidgetProps> = ({ 
   title, 
   timeFrame,
   isEditMode,
-  limit = 50
+  limit = 50,
+  useGraphQL,
+  widget
 }) => {
+  // 決定是否使用 GraphQL - 可以通過 widget config 或 props 控制
+  const shouldUseGraphQL = useGraphQL ?? widget?.useGraphQL ?? false;
   const [tableData, setTableData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -51,8 +89,71 @@ export const ProductionDetailsWidget: React.FC<ProductionDetailsWidgetProps> = (
     };
   }, [timeFrame]);
 
+  // GraphQL 查詢參數
+  const graphqlVariables = useMemo(() => {
+    return {
+      startDate: startOfDay(dateRange.start).toISOString(),
+      endDate: endOfDay(dateRange.end).toISOString(),
+      limit: limit
+    };
+  }, [dateRange, limit]);
+
+  // GraphQL 查詢 - 只在 shouldUseGraphQL 為 true 時執行
+  const { 
+    data: graphqlData, 
+    loading: graphqlLoading, 
+    error: graphqlError 
+  } = useGraphQLQuery(
+    print(GET_PRODUCTION_DETAILS_QUERY),
+    graphqlVariables,
+    {
+      enabled: shouldUseGraphQL && !isEditMode,
+      refetchInterval: 300000, // 5分鐘刷新一次
+      cacheTime: 300000, // 5分鐘快取
+      staleTime: 60000, // 1分鐘內認為數據是新鮮的
+    }
+  );
+
+  // 處理 GraphQL 數據
   useEffect(() => {
-    if (isEditMode) return;
+    if (shouldUseGraphQL && graphqlData) {
+      const edges = graphqlData.record_palletinfoCollection?.edges || [];
+      const processedData = edges.map((edge: any) => ({
+        plt_num: edge.node.plt_num,
+        product_code: edge.node.product_code,
+        product_qty: edge.node.product_qty,
+        qc_by: edge.node.qc_by,
+        generate_time: edge.node.generate_time,
+        description: edge.node.data_code?.description,
+        colour: edge.node.data_code?.colour,
+      }));
+      setTableData(processedData);
+      setMetadata({ 
+        totalCount: graphqlData.record_palletinfoCollection?.totalCount || 0,
+        useGraphQL: true 
+      });
+      setLoading(false);
+      setError(null);
+    }
+  }, [shouldUseGraphQL, graphqlData]);
+
+  // 處理 GraphQL 錯誤
+  useEffect(() => {
+    if (shouldUseGraphQL && graphqlError) {
+      setError(graphqlError.message);
+      setLoading(false);
+    }
+  }, [shouldUseGraphQL, graphqlError]);
+
+  // 處理 GraphQL 載入狀態
+  useEffect(() => {
+    if (shouldUseGraphQL) {
+      setLoading(graphqlLoading);
+    }
+  }, [shouldUseGraphQL, graphqlLoading]);
+
+  useEffect(() => {
+    if (isEditMode || shouldUseGraphQL) return;
 
     const fetchData = async () => {
       setLoading(true);
@@ -95,7 +196,7 @@ export const ProductionDetailsWidget: React.FC<ProductionDetailsWidgetProps> = (
           console.log('[ProductionDetailsWidget] Metadata:', widgetMetadata);
 
           setTableData(detailsData);
-          setMetadata(widgetMetadata);
+          setMetadata({ ...widgetMetadata, useGraphQL: false });
 
         } else {
           console.warn('[ProductionDetailsWidget] No widget data returned from API');
@@ -111,7 +212,7 @@ export const ProductionDetailsWidget: React.FC<ProductionDetailsWidgetProps> = (
     };
 
     fetchData();
-  }, [dashboardAPI, dateRange, limit, isEditMode]);
+  }, [dashboardAPI, dateRange, limit, isEditMode, shouldUseGraphQL]);
 
   // 表格頭部
   const headers = ['Pallet Number', 'Product Code', 'Quantity', 'QC By', 'Generate Time'];
@@ -131,11 +232,15 @@ export const ProductionDetailsWidget: React.FC<ProductionDetailsWidgetProps> = (
         </CardTitle>
         <p className="text-xs text-slate-400 mt-1">
           From {format(new Date(dateRange.start), 'MMM d')} to {format(new Date(dateRange.end), 'MMM d')}
-          {metadata.rpcFunction && (
+          {metadata.useGraphQL ? (
+            <span className="text-blue-400/70 ml-2">
+              ⚡ GraphQL optimized
+            </span>
+          ) : metadata.rpcFunction ? (
             <span className="text-green-400/70 ml-2">
               ✓ Server optimized
             </span>
-          )}
+          ) : null}
         </p>
       </CardHeader>
       

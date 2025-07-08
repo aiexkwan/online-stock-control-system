@@ -16,6 +16,36 @@ import { useAdminRefresh } from '@/app/admin/contexts/AdminRefreshContext';
 import { Loader2 } from 'lucide-react';
 import { createDashboardAPI } from '@/lib/api/admin/DashboardAPI';
 import { format } from 'date-fns';
+import { useGraphQLQuery } from '@/lib/graphql-client-stable';
+import { gql, print } from 'graphql-tag';
+
+// GraphQL query for stock level snapshots from inventory table
+// 注意：這個查詢假設我們有一個方式追蹤庫存歷史快照
+// 實際上可能需要使用 RPC function 或專門的歷史表
+const GET_STOCK_LEVEL_HISTORY = gql`
+  query GetStockLevelHistory($productCodes: [String!]!) {
+    record_inventoryCollection(
+      filter: {
+        product_code: { in: $productCodes }
+      }
+    ) {
+      edges {
+        node {
+          product_code
+          injection
+          pipeline
+          prebook
+          await
+          fold
+          bulk
+          warehouse
+          stock_total
+          update_time
+        }
+      }
+    }
+  }
+`;
 
 interface ChartDataPoint {
   time: string;
@@ -34,6 +64,7 @@ interface StockLevelHistoryChartProps extends WidgetComponentProps {
     start: Date;
     end: Date;
   };
+  useGraphQL?: boolean;
 }
 
 // 顏色調色板
@@ -52,7 +83,10 @@ export const StockLevelHistoryChart: React.FC<StockLevelHistoryChartProps> = ({
   widget,
   isEditMode,
   timeFrame,
+  useGraphQL,
 }) => {
+  // 決定是否使用 GraphQL - 可以通過 widget config 或 props 控制
+  const shouldUseGraphQL = useGraphQL ?? (widget as any)?.useGraphQL ?? false;
   const [chartData, setChartData] = useState<ChartDataPoint[]>([]);
   const [productCodes, setProductCodes] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);

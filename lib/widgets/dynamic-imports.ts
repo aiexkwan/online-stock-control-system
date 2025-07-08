@@ -81,6 +81,7 @@ export const analysisWidgetImports = {
 export const productionWidgetImports = {
   'ProductionDetailsWidget': () => import('@/app/admin/components/dashboard/widgets/ProductionDetailsWidget'),
   'ProductionStatsWidget': () => import('@/app/admin/components/dashboard/widgets/ProductionStatsWidget'),
+  'InjectionProductionStatsWidget': () => import('@/app/admin/components/dashboard/widgets/InjectionProductionStatsWidget'),
   'StaffWorkloadWidget': () => import('@/app/admin/components/dashboard/widgets/StaffWorkloadWidget'),
   'TopProductsChartWidget': () => import('@/app/admin/components/dashboard/widgets/TopProductsChartWidget'),
   'ProductDistributionChartWidget': () => import('@/app/admin/components/dashboard/widgets/ProductDistributionChartWidget'),
