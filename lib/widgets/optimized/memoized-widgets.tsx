@@ -91,13 +91,13 @@ function defaultPropsComparison(
 export function withStatsOptimization<P extends WidgetComponentProps>(
   Component: React.ComponentType<P>
 ): React.ComponentType<P> {
-  const OptimizedComponent = memo((props: P) => {
+  const OptimizedComponent = memo<P>((props: P) => {
     // 緩存計算結果
     const processedData = useMemo(() => {
-      if (!props.widget.config?.data) return null;
+      if (!props.widget.config) return null;
       // 假設有數據處理邏輯
-      return props.widget.config.data;
-    }, [props.widget.config?.data]);
+      return props.widget.config;
+    }, [props.widget.config]);
 
     // 緩存事件處理器
     const handleClick = useCallback(() => {
@@ -119,7 +119,7 @@ export function withStatsOptimization<P extends WidgetComponentProps>(
 export function withListOptimization<P extends WidgetComponentProps>(
   Component: React.ComponentType<P>
 ): React.ComponentType<P> {
-  const OptimizedComponent = memo(
+  const OptimizedComponent = memo<P>(
     (props: P) => {
       // 虛擬滾動配置
       const virtualScrollConfig = useMemo(
@@ -133,21 +133,21 @@ export function withListOptimization<P extends WidgetComponentProps>(
 
       // 緩存過濾和排序邏輯
       const processedItems = useMemo(() => {
-        const items = props.widget.config?.items || [];
-        const filters = props.widget.config?.filters || {};
-        const sortBy = props.widget.config?.sortBy;
+        const items = (props.widget.config as any)?.items || [];
+        const filters = (props.widget.config as any)?.filters || {};
+        const sortBy = (props.widget.config as any)?.sortBy;
 
         // 過濾
         let filtered = items;
         if (filters.search) {
-          filtered = items.filter(item =>
+          filtered = items.filter((item: any) =>
             item.name?.toLowerCase().includes(filters.search.toLowerCase())
           );
         }
 
         // 排序
         if (sortBy) {
-          filtered.sort((a, b) => {
+          filtered.sort((a: any, b: any) => {
             if (sortBy === 'name') return a.name.localeCompare(b.name);
             if (sortBy === 'date') return new Date(b.date).getTime() - new Date(a.date).getTime();
             return 0;
@@ -167,17 +167,17 @@ export function withListOptimization<P extends WidgetComponentProps>(
     },
     (prevProps, nextProps) => {
       // 深度比較 items 數組的長度和 filters
-      const prevItems = prevProps.widget.config?.items || [];
-      const nextItems = nextProps.widget.config?.items || [];
+      const prevItems = (prevProps.widget.config as any)?.items || [];
+      const nextItems = (nextProps.widget.config as any)?.items || [];
 
       if (prevItems.length !== nextItems.length) return false;
 
-      const prevFilters = JSON.stringify(prevProps.widget.config?.filters || {});
-      const nextFilters = JSON.stringify(nextProps.widget.config?.filters || {});
+      const prevFilters = JSON.stringify((prevProps.widget.config as any)?.filters || {});
+      const nextFilters = JSON.stringify((nextProps.widget.config as any)?.filters || {});
 
       return (
         prevFilters === nextFilters &&
-        prevProps.widget.config?.sortBy === nextProps.widget.config?.sortBy
+        (prevProps.widget.config as any)?.sortBy === (nextProps.widget.config as any)?.sortBy
       );
     }
   );
@@ -193,20 +193,20 @@ export function withListOptimization<P extends WidgetComponentProps>(
 export function withChartOptimization<P extends WidgetComponentProps>(
   Component: React.ComponentType<P>
 ): React.ComponentType<P> {
-  const OptimizedComponent = memo(
+  const OptimizedComponent = memo<P>(
     (props: P) => {
       // 緩存圖表數據轉換
       const chartData = useMemo(() => {
-        const rawData = props.widget.config?.data || [];
+        const rawData = (props.widget.config as any)?.data || [];
 
         // 數據轉換邏輯
-        return rawData.map(item => ({
+        return rawData.map((item: any) => ({
           ...item,
           // 格式化數據
           value: parseFloat(item.value) || 0,
           label: item.label || 'Unknown',
         }));
-      }, [props.widget.config?.data]);
+      }, [(props.widget.config as any)?.data]);
 
       // 緩存圖表配置
       const chartConfig = useMemo(
@@ -232,13 +232,13 @@ export function withChartOptimization<P extends WidgetComponentProps>(
     },
     (prevProps, nextProps) => {
       // 比較數據長度和關鍵配置
-      const prevData = prevProps.widget.config?.data || [];
-      const nextData = nextProps.widget.config?.data || [];
+      const prevData = (prevProps.widget.config as any)?.data || [];
+      const nextData = (nextProps.widget.config as any)?.data || [];
 
       return (
         prevData.length === nextData.length &&
-        prevProps.widget.config?.chartType === nextProps.widget.config?.chartType &&
-        prevProps.widget.config?.showLegend === nextProps.widget.config?.showLegend
+        (prevProps.widget.config as any)?.chartType === (nextProps.widget.config as any)?.chartType &&
+        (prevProps.widget.config as any)?.showLegend === (nextProps.widget.config as any)?.showLegend
       );
     }
   );

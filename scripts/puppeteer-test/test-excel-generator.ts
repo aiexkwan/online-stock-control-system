@@ -3,8 +3,8 @@
  * 運行方法: npx ts-node scripts/test-excel-generator.ts
  */
 
-import { ExcelGenerator } from '../app/components/reports/generators/ExcelGenerator';
-import { testData, testConfig } from '../app/components/reports/generators/ExcelGenerator.test';
+import { ExcelGenerator } from '../../app/components/reports/generators/ExcelGenerator';
+import { testData, testConfig } from '../../app/components/reports/generators/ExcelGenerator.test';
 import * as fs from 'fs';
 import * as path from 'path';
 

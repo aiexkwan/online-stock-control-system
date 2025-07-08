@@ -40,13 +40,6 @@ interface SupplierRecord {
   supplier_name: string;
 }
 
-interface TransferRecord {
-  f_loc: string;
-  t_loc: string;
-  plt_num: string;
-  tran_date: string;
-  operator_id: number;
-}
 
 interface OperatorRecord {
   id: number;
@@ -70,8 +63,7 @@ export async function getUniqueAcoOrderRefs(): Promise<string[]> {
     }
 
     if (!data || data.length === 0) {
-      process.env.NODE_ENV !== 'production' &&
-        process.env.NODE_ENV !== 'production' &&
+      process.env.NODE_ENV === 'development' &&
         console.log('No ACO order references found in database.');
       return [];
     }
@@ -80,7 +72,7 @@ export async function getUniqueAcoOrderRefs(): Promise<string[]> {
     const uniqueRefs = Array.from(
       new Set(
         data
-          .map((item: AcoOrderRecord) => item.order_ref)
+          .map((item: { order_ref: any }) => item.order_ref)
           .filter((ref: number) => ref != null && !isNaN(Number(ref)))
           .map((ref: number) => ref.toString())
       )
@@ -152,8 +144,7 @@ export async function getAcoReportData(orderRef: string): Promise<AcoProductData
     }
 
     if (!acoCodesData || acoCodesData.length === 0) {
-      process.env.NODE_ENV !== 'production' &&
-        process.env.NODE_ENV !== 'production' &&
+      process.env.NODE_ENV === 'development' &&
         console.log(`No product codes found for orderRef ${orderRefNum}.`);
       return [];
     }
@@ -162,7 +153,7 @@ export async function getAcoReportData(orderRef: string): Promise<AcoProductData
     const productCodeToRequiredQty = new Map<string, number>();
     const uniqueProductCodes: string[] = [];
 
-    acoCodesData.forEach((item: AcoOrderRecord) => {
+    acoCodesData.forEach((item: { code: any; required_qty: any }) => {
       if (item.code && typeof item.code === 'string' && item.code.trim() !== '') {
         const productCode = item.code.trim();
         if (!uniqueProductCodes.includes(productCode)) {
@@ -176,8 +167,8 @@ export async function getAcoReportData(orderRef: string): Promise<AcoProductData
     });
 
     if (uniqueProductCodes.length === 0) {
-      process.env.NODE_ENV !== 'production' &&
-        process.env.NODE_ENV !== 'production' &&
+      process.env.NODE_ENV === 'development' &&
+        process.env.NODE_ENV === 'development' &&
         console.log(`No valid product codes extracted for orderRef ${orderRefNum}.`);
       return [];
     }
@@ -201,7 +192,7 @@ export async function getAcoReportData(orderRef: string): Promise<AcoProductData
     const palletsByProduct = new Map<string, any[]>();
 
     // 將棧板數據按產品代碼分組
-    (allPalletDetails || []).forEach((pallet: PalletRecord) => {
+    (allPalletDetails || []).forEach((pallet: any) => {
       const productCode = pallet.product_code;
       if (!palletsByProduct.has(productCode)) {
         palletsByProduct.set(productCode, []);
@@ -213,7 +204,7 @@ export async function getAcoReportData(orderRef: string): Promise<AcoProductData
     for (const productCode of uniqueProductCodes) {
       const palletDetails = palletsByProduct.get(productCode) || [];
 
-      const formattedPallets: PalletInfo[] = palletDetails.map((p: PalletRecord) => {
+      const formattedPallets: PalletInfo[] = palletDetails.map((p: any) => {
         let formattedDate: string | null = null;
         if (p.generate_time) {
           try {
@@ -221,15 +212,15 @@ export async function getAcoReportData(orderRef: string): Promise<AcoProductData
             if (isValid(dateObj)) {
               formattedDate = format(dateObj, 'dd-MMM-yy');
             } else {
-              process.env.NODE_ENV !== 'production' &&
-                process.env.NODE_ENV !== 'production' &&
+              process.env.NODE_ENV === 'development' &&
+                process.env.NODE_ENV === 'development' &&
                 console.warn(
                   `Invalid date value for generate_time: ${p.generate_time} for product ${productCode}`
                 );
             }
           } catch (dateError) {
-            process.env.NODE_ENV !== 'production' &&
-              process.env.NODE_ENV !== 'production' &&
+            process.env.NODE_ENV === 'development' &&
+              process.env.NODE_ENV === 'development' &&
               console.warn(
                 `Error parsing date ${p.generate_time} for product ${productCode}:`,
                 dateError
@@ -262,8 +253,8 @@ export async function getAcoReportData(orderRef: string): Promise<AcoProductData
     // 按產品代碼排序
     reportData.sort((a, b) => a.product_code.localeCompare(b.product_code));
 
-    process.env.NODE_ENV !== 'production' &&
-      process.env.NODE_ENV !== 'production' &&
+    process.env.NODE_ENV === 'development' &&
+      process.env.NODE_ENV === 'development' &&
       console.log(
         `Successfully fetched ACO report data for orderRef ${orderRefNum}: ${reportData.length} products, ${reportData.reduce((sum, p) => sum + p.pallets.length, 0)} pallets`
       );
@@ -290,8 +281,8 @@ export async function getUniqueGrnRefs(): Promise<string[]> {
     }
 
     if (!data || data.length === 0) {
-      process.env.NODE_ENV !== 'production' &&
-        process.env.NODE_ENV !== 'production' &&
+      process.env.NODE_ENV === 'development' &&
+        process.env.NODE_ENV === 'development' &&
         console.log('No GRN references found in database.');
       return [];
     }
@@ -302,7 +293,7 @@ export async function getUniqueGrnRefs(): Promise<string[]> {
         data
           .map((item: { grn_ref: number }) => item.grn_ref)
           .filter((ref: number) => ref !== null && ref !== undefined && !isNaN(Number(ref)))
-          .map(ref => ref.toString())
+          .map((ref: any) => ref.toString())
       )
     ) as string[];
 
@@ -349,8 +340,8 @@ export async function getMaterialCodesForGrnRef(grnRef: string): Promise<string[
     }
 
     if (!data || data.length === 0) {
-      process.env.NODE_ENV !== 'production' &&
-        process.env.NODE_ENV !== 'production' &&
+      process.env.NODE_ENV === 'development' &&
+        process.env.NODE_ENV === 'development' &&
         console.log(`No material codes found for grnRef ${grnRefNum}.`);
       return [];
     }
@@ -449,8 +440,8 @@ export async function getGrnReportData(
     }
 
     userId = userIdResult.toString();
-    process.env.NODE_ENV !== 'production' &&
-      process.env.NODE_ENV !== 'production' &&
+    process.env.NODE_ENV === 'development' &&
+      process.env.NODE_ENV === 'development' &&
       console.log(`Found user ID ${userId} for email ${trimmedUserEmail}`);
 
     // 1. Fetch GRN records for the given grn_ref and material_code
@@ -471,8 +462,8 @@ export async function getGrnReportData(
     }
 
     if (!grnRecords || grnRecords.length === 0) {
-      process.env.NODE_ENV !== 'production' &&
-        process.env.NODE_ENV !== 'production' &&
+      process.env.NODE_ENV === 'development' &&
+        process.env.NODE_ENV === 'development' &&
         console.log(
           `No GRN records found for grnRef ${grnRefNum} and materialCode ${trimmedMaterialCode}.`
         );
@@ -492,16 +483,16 @@ export async function getGrnReportData(
     }));
 
     // DEBUGGING LOG START
-    process.env.NODE_ENV !== 'production' &&
-      process.env.NODE_ENV !== 'production' &&
+    process.env.NODE_ENV === 'development' &&
+      process.env.NODE_ENV === 'development' &&
       console.log(
         `[DEBUG] GRN Ref: ${grnRefNum}, Material: ${trimmedMaterialCode}, User ID: ${userId}`
       );
-    process.env.NODE_ENV !== 'production' &&
-      process.env.NODE_ENV !== 'production' &&
+    process.env.NODE_ENV === 'development' &&
+      process.env.NODE_ENV === 'development' &&
       console.log('[DEBUG] grnRecords from DB:', JSON.stringify(grnRecords, null, 2));
-    process.env.NODE_ENV !== 'production' &&
-      process.env.NODE_ENV !== 'production' &&
+    process.env.NODE_ENV === 'development' &&
+      process.env.NODE_ENV === 'development' &&
       console.log('[DEBUG] Mapped recordsDetails:', JSON.stringify(recordsDetails, null, 2));
     // DEBUGGING LOG END
 
@@ -514,8 +505,8 @@ export async function getGrnReportData(
       .single();
 
     if (materialError) {
-      process.env.NODE_ENV !== 'production' &&
-        process.env.NODE_ENV !== 'production' &&
+      process.env.NODE_ENV === 'development' &&
+        process.env.NODE_ENV === 'development' &&
         console.warn(
           `Could not fetch description for materialCode ${trimmedMaterialCode}:`,
           materialError.message
@@ -535,8 +526,8 @@ export async function getGrnReportData(
         .single();
 
       if (supplierError) {
-        process.env.NODE_ENV !== 'production' &&
-          process.env.NODE_ENV !== 'production' &&
+        process.env.NODE_ENV === 'development' &&
+          process.env.NODE_ENV === 'development' &&
           console.warn(
             `Could not fetch supplier name for sup_code ${supplierCode}:`,
             supplierError.message
@@ -546,8 +537,8 @@ export async function getGrnReportData(
         supplierName = supplierData.supplier_name;
       }
     } else {
-      process.env.NODE_ENV !== 'production' &&
-        process.env.NODE_ENV !== 'production' &&
+      process.env.NODE_ENV === 'development' &&
+        process.env.NODE_ENV === 'development' &&
         console.warn('Supplier code was not found in GRN records, cannot fetch supplier name.');
     }
 
@@ -580,8 +571,8 @@ export async function getGrnReportData(
       weight_difference: Math.round(weightDifference * 100) / 100,
     };
 
-    process.env.NODE_ENV !== 'production' &&
-      process.env.NODE_ENV !== 'production' &&
+    process.env.NODE_ENV === 'development' &&
+      process.env.NODE_ENV === 'development' &&
       console.log(
         `Successfully generated GRN report data for grnRef ${grnRefNum}, materialCode ${trimmedMaterialCode}, userId ${userId}: ${recordsDetails.length} records`
       );
@@ -662,8 +653,8 @@ export async function getTransactionReportData(
 
   try {
     // 1. 獲取指定日期範圍內的轉移記錄
-    process.env.NODE_ENV !== 'production' &&
-      process.env.NODE_ENV !== 'production' &&
+    process.env.NODE_ENV === 'development' &&
+      process.env.NODE_ENV === 'development' &&
       console.log(`[DEBUG] Searching for transfers between ${startDate} and ${endDate}`);
 
     // 🆕 修復日期查詢：處理帶時間戳的日期格式
@@ -671,8 +662,8 @@ export async function getTransactionReportData(
     const startDateTime = `${startDate}T00:00:00.000Z`;
     const endDateTime = `${endDate}T23:59:59.999Z`;
 
-    process.env.NODE_ENV !== 'production' &&
-      process.env.NODE_ENV !== 'production' &&
+    process.env.NODE_ENV === 'development' &&
+      process.env.NODE_ENV === 'development' &&
       console.log(`[DEBUG] Using datetime range: ${startDateTime} to ${endDateTime}`);
 
     const { data: transferRecords, error: transferError } = await supabase
@@ -690,8 +681,8 @@ export async function getTransactionReportData(
       .lte('tran_date', endDateTime)
       .order('tran_date', { ascending: true });
 
-    process.env.NODE_ENV !== 'production' &&
-      process.env.NODE_ENV !== 'production' &&
+    process.env.NODE_ENV === 'development' &&
+      process.env.NODE_ENV === 'development' &&
       console.log(`[DEBUG] Transfer query result:`, {
         recordCount: transferRecords?.length || 0,
         error: transferError?.message,
@@ -705,13 +696,13 @@ export async function getTransactionReportData(
 
     // 如果沒有轉移記錄，返回空數據結構
     if (!transferRecords || transferRecords.length === 0) {
-      process.env.NODE_ENV !== 'production' &&
-        process.env.NODE_ENV !== 'production' &&
+      process.env.NODE_ENV === 'development' &&
+        process.env.NODE_ENV === 'development' &&
         console.log(`No transfer records found for date range ${startDate} to ${endDate}`);
 
       // 🆕 嘗試更寬鬆的日期查詢，以防日期格式問題
-      process.env.NODE_ENV !== 'production' &&
-        process.env.NODE_ENV !== 'production' &&
+      process.env.NODE_ENV === 'development' &&
+        process.env.NODE_ENV === 'development' &&
         console.log(`[DEBUG] Trying broader date search...`);
       const { data: allRecords, error: allError } = await supabase
         .from('record_transfer')
@@ -720,8 +711,8 @@ export async function getTransactionReportData(
         .limit(10);
 
       if (allRecords && allRecords.length > 0) {
-        process.env.NODE_ENV !== 'production' &&
-          process.env.NODE_ENV !== 'production' &&
+        process.env.NODE_ENV === 'development' &&
+          process.env.NODE_ENV === 'development' &&
           console.log(
             `[DEBUG] Sample dates in database:`,
             allRecords.map(r => r.tran_date)
@@ -745,8 +736,8 @@ export async function getTransactionReportData(
       .in('plt_num', palletNumbers);
 
     if (palletError) {
-      process.env.NODE_ENV !== 'production' &&
-        process.env.NODE_ENV !== 'production' &&
+      process.env.NODE_ENV === 'development' &&
+        process.env.NODE_ENV === 'development' &&
         console.warn('Error fetching pallet info:', palletError.message);
     }
 
@@ -760,8 +751,8 @@ export async function getTransactionReportData(
       .in('id', operatorIds);
 
     if (operatorError) {
-      process.env.NODE_ENV !== 'production' &&
-        process.env.NODE_ENV !== 'production' &&
+      process.env.NODE_ENV === 'development' &&
+        process.env.NODE_ENV === 'development' &&
         console.warn('Error fetching operator info:', operatorError.message);
     }
 
@@ -829,8 +820,8 @@ export async function getTransactionReportData(
       total_pallets: palletNumbers.length,
     };
 
-    process.env.NODE_ENV !== 'production' &&
-      process.env.NODE_ENV !== 'production' &&
+    process.env.NODE_ENV === 'development' &&
+      process.env.NODE_ENV === 'development' &&
       console.log(
         `Successfully fetched transaction report data: ${transfers.length} transfers, ${palletNumbers.length} unique pallets`
       );
@@ -1089,18 +1080,18 @@ export async function getVoidPalletSummary(filters: VoidPalletFilters): Promise<
     // Calculate summary statistics
     const totalVoided = data.length;
     const totalQuantity = data.reduce(
-      (sum, item) => sum + (item.record_palletinfo?.product_qty || 0),
+      (sum: number, item: any) => sum + (item.record_palletinfo?.product_qty || 0),
       0
     );
     const uniqueProducts = new Set(
-      data.map(item => item.record_palletinfo?.product_code).filter(Boolean)
+      data.map((item: any) => item.record_palletinfo?.product_code).filter(Boolean)
     ).size;
 
     // Calculate most common reason
-    const reasons = data.map(item => extractVoidReason(item.remark));
+    const reasons = data.map((item: any) => extractVoidReason(item.remark));
     const reasonCounts = new Map<string, number>();
 
-    reasons.forEach(reason => {
+    reasons.forEach((reason: string) => {
       reasonCounts.set(reason, (reasonCounts.get(reason) || 0) + 1);
     });
 
@@ -1180,7 +1171,7 @@ export async function getVoidReasonStats(filters: VoidPalletFilters): Promise<{
     // Calculate reason statistics
     const reasonStats = new Map<string, { count: number; quantity: number }>();
 
-    data.forEach(item => {
+    data.forEach((item: any) => {
       const reason = extractVoidReason(item.remark);
       const quantity = item.record_palletinfo?.product_qty || 0;
 
@@ -1271,7 +1262,7 @@ export async function getVoidPalletDetails(filters: VoidPalletFilters): Promise<
       return { success: true, data: [] };
     }
 
-    const result = data.map(item => ({
+    const result = data.map((item: any) => ({
       void_date: item.time,
       plt_num: item.plt_num,
       product_code: item.record_palletinfo?.product_code || '',
@@ -1351,7 +1342,7 @@ export async function getVoidProductStats(filters: VoidPalletFilters): Promise<{
       }
     >();
 
-    data.forEach(item => {
+    data.forEach((item: any) => {
       const code = item.record_palletinfo?.product_code;
       if (!code) return;
 
@@ -1392,7 +1383,7 @@ interface StockTakeFilters {
   stockTakeDate: string;
   productCode?: string;
   minVariance?: number;
-  countStatus?: 'counted' | 'not_counted' | 'high_variance' | '';
+  countStatus?: 'counted' | 'not_counted' | 'high_variance' | '' | null;
 }
 
 interface StockTakeRecord {
@@ -1601,7 +1592,7 @@ export async function getStockTakeDetails(filters: StockTakeFilters): Promise<{
     });
 
     // Add not counted products if needed
-    if (!filters.countStatus || filters.countStatus === '' || filters.countStatus === 'not_counted') {
+    if (!filters.countStatus || filters.countStatus === null || filters.countStatus === '' || filters.countStatus === 'not_counted') {
       stockLevels.forEach((stockItem: StockLevelRecord) => {
         if (!productGroups.has(stockItem.stock) && stockItem.stock_level > 0) {
           if (shouldIncludeStockTakeItem(stockItem.stock, -stockItem.stock_level, -100, 0, filters)) {
@@ -1917,15 +1908,13 @@ export async function getOrderLoadingSummary(filters: OrderLoadingFilters): Prom
       }
     >();
 
-    data.forEach(item => {
+    data.forEach((item: any) => {
       const orderNumber = item.order_number;
       if (!orderMap.has(orderNumber)) {
         orderMap.set(orderNumber, {
           totalQty: 0,
           loadedQty: 0,
-          status: Array.isArray(item.data_order)
-            ? item.data_order[0]?.status || 'pending'
-            : item.data_order?.status || 'pending',
+          status: (item as any).data_order?.status || 'pending',
         });
       }
 
@@ -2035,9 +2024,7 @@ export async function getOrderProgress(filters: OrderLoadingFilters): Promise<{
       if (!orderMap.has(orderNumber)) {
         orderMap.set(orderNumber, {
           order_number: orderNumber,
-          order_date: Array.isArray(item.data_order)
-            ? item.data_order[0]?.order_date
-            : item.data_order?.order_date,
+          order_date: (item as any).data_order?.order_date,
           total_qty: 0,
           loaded_qty: 0,
           products: new Set(),
@@ -2141,9 +2128,9 @@ export async function getLoadingDetails(filters: OrderLoadingFilters): Promise<{
       timestamp: item.created_at,
       order_number: item.order_number,
       product_code: item.product_code,
-      product_description: item.data_code?.description || '',
+      product_description: (item as any).data_code?.description || '',
       loaded_qty: item.loaded_qty,
-      user_name: item.data_id?.name || `User ${item.user_id}`,
+      user_name: (item as any).data_id?.name || `User ${item.user_id}`,
       action: item.action || 'Load',
     }));
 
@@ -2230,12 +2217,12 @@ export async function getUserPerformance(filters: OrderLoadingFilters): Promise<
       }
     >();
 
-    data.forEach(item => {
+    data.forEach((item: any) => {
       const userId = item.user_id?.toString() || 'unknown';
 
       if (!userStats.has(userId)) {
         userStats.set(userId, {
-          user_name: item.data_id?.name || `User ${item.user_id}`,
+          user_name: (item as any).data_id?.name || `User ${item.user_id}`,
           total_loads: 0,
           total_quantity: 0,
           load_times: [],

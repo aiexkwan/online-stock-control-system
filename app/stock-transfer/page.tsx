@@ -325,13 +325,14 @@ export default function StockTransferPage() {
               <TransferControlPanel
                 selectedPallet={selectedPallet}
                 selectedDestination={selectedDestination}
-                setSelectedDestination={setSelectedDestination}
                 verifiedClockNumber={verifiedClockNumber}
-                setVerifiedClockNumber={setVerifiedClockNumber}
                 verifiedName={verifiedName}
-                setVerifiedName={setVerifiedName}
-                isTransferring={isTransferring}
-                onTransferExecute={handleTransferExecute}
+                onDestinationChange={setSelectedDestination}
+                onClockNumberVerified={(clockNumber, name) => {
+                  setVerifiedClockNumber(clockNumber);
+                  setVerifiedName(name);
+                }}
+                isProcessing={isTransferring}
               />
             </div>
 

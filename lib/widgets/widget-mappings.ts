@@ -63,10 +63,10 @@ const categoryMap: WidgetMapping['categoryMap'] = {
   AnalyticsDashboardWidget: 'analysis',
   InventoryOrderedAnalysisWidget: 'analysis',
 
-  // Special widgets
-  ProductionDetailsGraphQL: 'special',
-  ProductionStatsGraphQL: 'special',
-  StaffWorkloadGraphQL: 'special',
+  // Production widgets (Server Actions versions)
+  ProductionDetailsWidget: 'production',
+  ProductionStatsWidget: 'production',
+  StaffWorkloadWidget: 'production',
   OrderAnalysisResultDialog: 'special',
   StockTypeSelector: 'special',
   Folder3D: 'special',
@@ -120,13 +120,13 @@ export const routePreloadMap: Record<string, string[]> = {
   '/admin/injection': [
     'HistoryTree',
     'StatsCardWidget',
-    'ProductionDetailsGraphQL',
+    'ProductionDetailsWidget',
     'ProductMixChartWidget',
   ],
   '/admin/pipeline': [
     'HistoryTree',
     'StatsCardWidget',
-    'ProductionDetailsGraphQL',
+    'ProductionDetailsWidget',
     'ProductMixChartWidget',
   ],
   '/admin/warehouse': [

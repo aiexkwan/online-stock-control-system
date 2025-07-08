@@ -92,7 +92,7 @@ async function main() {
     }
 
   } catch (error) {
-    console.error('💥 Validation failed with exception:', error.message);
+    console.error('💥 Validation failed with exception:', error instanceof Error ? error.message : 'Unknown error');
     process.exit(1);
   }
 }

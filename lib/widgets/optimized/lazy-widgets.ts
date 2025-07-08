@@ -36,7 +36,7 @@ export const LazyStockDistributionChart = lazy(
     import(
       /* webpackChunkName: "chart-stock-distribution" */
       /* webpackPrefetch: true */
-      '@/app/admin/components/dashboard/widgets/StockDistributionChart'
+      '@/app/admin/components/dashboard/widgets/StockDistributionChartV2'
     )
 );
 
@@ -99,7 +99,7 @@ export const LazyGrnReportWidget = lazy(
   () =>
     import(
       /* webpackChunkName: "report-grn" */
-      '@/app/admin/components/dashboard/widgets/GrnReportWidget'
+      '@/app/admin/components/dashboard/widgets/GrnReportWidgetV2'
     )
 );
 

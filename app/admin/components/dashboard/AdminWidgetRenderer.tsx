@@ -198,8 +198,8 @@ const StaffWorkloadWidget = React.lazy(() => import('./widgets/StaffWorkloadWidg
 // Server Actions widgets - optimized for performance
 
 // Warehouse Dashboard 組件
-const AwaitLocationQtyWidget = React.lazy(() => import('./widgets/AwaitLocationQtyWidget').then(mod => ({ default: mod.AwaitLocationQtyWidget })));
-const YesterdayTransferCountWidget = React.lazy(() => import('./widgets/YesterdayTransferCountWidget').then(mod => ({ default: mod.YesterdayTransferCountWidget })));
+const AwaitLocationQtyWidget = React.lazy(() => import('./widgets/AwaitLocationQtyWidget'));
+const YesterdayTransferCountWidget = React.lazy(() => import('./widgets/YesterdayTransferCountWidget'));
 const StillInAwaitWidget = React.lazy(() => import('./widgets/StillInAwaitWidget').then(mod => ({ default: mod.StillInAwaitWidget })));
 
 // Stock Management 組件
@@ -207,7 +207,7 @@ const StockTypeSelector = React.lazy(() => import('./widgets/StockTypeSelector')
 const StockDistributionChart = React.lazy(() => import('./widgets/StockDistributionChartV2').then(mod => ({ default: mod.StockDistributionChartV2 })));
 const StockLevelHistoryChart = React.lazy(() => import('./widgets/StockLevelHistoryChart').then(mod => ({ default: mod.StockLevelHistoryChart })));
 const InventoryOrderedAnalysisWidget = React.lazy(() => import('./widgets/InventoryOrderedAnalysisWidget').then(mod => ({ default: mod.InventoryOrderedAnalysisWidget })));
-const StillInAwaitPercentageWidget = React.lazy(() => import('./widgets/StillInAwaitPercentageWidget').then(mod => ({ default: mod.StillInAwaitPercentageWidget })));
+const StillInAwaitPercentageWidget = React.lazy(() => import('./widgets/StillInAwaitPercentageWidget'));
 const OrderStateListWidget = React.lazy(() => import('./widgets/OrderStateListWidgetV2').then(mod => ({ default: mod.OrderStateListWidgetV2 })));
 const TransferTimeDistributionWidget = React.lazy(() => import('./widgets/TransferTimeDistributionWidget').then(mod => ({ default: mod.TransferTimeDistributionWidget })));
 const EmptyPlaceholderWidget = React.lazy(() => import('./widgets/EmptyPlaceholderWidget').then(mod => ({ default: mod.EmptyPlaceholderWidget })));
@@ -224,7 +224,7 @@ const getComponentPropsFactory = (config: AdminWidgetConfig, timeFrame: TimeFram
       widget: {
         config: {
           ...config,
-          size: config.size || 'MEDIUM'
+          size: (config as any).size || 'MEDIUM'
         }
       },
       isEditMode: false

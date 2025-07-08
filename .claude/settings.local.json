@@ -126,7 +126,8 @@
       "Bash(for widget in \"OtherFilesListWidget\" \"OrdersListWidgetV2\" \"ProductDistributionChart\" \"StillInAwaitWidget\" \"TopProductsChart\" \"WarehouseTransferListWidget\")",
       "Bash(do echo \"--- $widget ---\")",
       "Bash(npx graphql-schema-linter:*)",
-      "Bash(git checkout:*)"
+      "Bash(git checkout:*)",
+      "Bash(perl:*)"
     ],
     "deny": []
   }

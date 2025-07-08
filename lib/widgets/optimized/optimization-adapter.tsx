@@ -122,7 +122,7 @@ export class OptimizationAdapter {
       return (
         <WidgetErrorBoundary widgetId={widgetId}>
           <Suspense fallback={<WidgetSkeleton widgetId={widgetId} />}>
-            <LazyComponent {...props} />
+            <LazyComponent {...props as any} />
           </Suspense>
         </WidgetErrorBoundary>
       );
@@ -162,7 +162,7 @@ export class OptimizationAdapter {
         'StockDistributionChart',
       ],
       '/admin/injection': ['HistoryTree', 'ProductMixChartWidget', 'StatsCardWidget'],
-      '/admin/pipeline': ['ProductionDetailsGraphQL', 'StaffWorkloadGraphQL', 'OrdersListWidget'],
+      '/admin/pipeline': ['ProductionDetailsWidget', 'StaffWorkloadWidget', 'OrdersListWidget'],
     };
 
     const widgetsToPreload = routeWidgetMap[route] || [];

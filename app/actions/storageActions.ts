@@ -14,7 +14,7 @@ export async function uploadPalletLabelPdfAction(
   fileContent: Uint8Array, // Changed from ArrayBuffer to Uint8Array
   contentType: string = 'application/pdf'
 ): Promise<UploadResult> {
-  const supabase = createServerSupabaseClient();
+  const supabase = await createServerSupabaseClient();
   const bucketName = 'pallet-label-pdf'; // As per loginBuild.md
 
   // Ensure a unique file path, perhaps with a UUID or timestamp if needed
@@ -22,7 +22,6 @@ export async function uploadPalletLabelPdfAction(
   const filePath = `${fileName}`;
 
   process.env.NODE_ENV !== 'production' &&
-    process.env.NODE_ENV !== 'production' &&
     console.log(
       `[uploadPalletLabelPdfAction] Attempting to upload ${filePath} to bucket ${bucketName}, size: ${fileContent.byteLength}`
     );
@@ -42,7 +41,6 @@ export async function uploadPalletLabelPdfAction(
     }
 
     process.env.NODE_ENV !== 'production' &&
-      process.env.NODE_ENV !== 'production' &&
       console.log(
         `[uploadPalletLabelPdfAction] File ${filePath} uploaded successfully to ${bucketName}. Path: ${data?.path}`
       );

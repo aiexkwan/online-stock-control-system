@@ -518,6 +518,7 @@ export async function generatePalletNumbersDirectQuery(count: number): Promise<{
   try {
     const supabaseAdmin = createSupabaseAdmin();
     const palletNumbers: string[] = [];
+  let generatedSeries: string[] = [];
 
     // 使用單次 RPC 調用生成所有托盤編號，避免循環中的併發問題
 
@@ -568,7 +569,7 @@ export async function generatePalletNumbersDirectQuery(count: number): Promise<{
 
         // Transform V6 format to arrays
         const rpcResult = v6Data.map((item: any) => item.pallet_number);
-        const generatedSeries = v6Data.map((item: any) => item.series);
+        generatedSeries = v6Data.map((item: any) => item.series);
 
         // 🔥 強化唯一性驗證 - 檢查生成的托盤編號是否已存在
         const uniquenessChecks = [];

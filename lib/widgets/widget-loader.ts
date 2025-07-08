@@ -79,10 +79,10 @@ const widgetPaths: Record<string, string> = {
   AcoOrderProgressCards: '@/app/admin/components/dashboard/widgets/AcoOrderProgressCards',
   AcoOrderProgressWidget: '@/app/admin/components/dashboard/widgets/AcoOrderProgressWidget',
 
-  // GraphQL Widgets (remaining ones)
-  ProductionDetailsGraphQL: '@/app/admin/components/dashboard/widgets/ProductionDetailsGraphQL',
-  ProductionStatsGraphQL: '@/app/admin/components/dashboard/widgets/ProductionStatsGraphQL',
-  StaffWorkloadGraphQL: '@/app/admin/components/dashboard/widgets/StaffWorkloadGraphQL',
+  // Production Widgets (Server Actions versions)
+  ProductionDetailsWidget: '@/app/admin/components/dashboard/widgets/ProductionDetailsWidget',
+  ProductionStatsWidget: '@/app/admin/components/dashboard/widgets/ProductionStatsWidget',
+  StaffWorkloadWidget: '@/app/admin/components/dashboard/widgets/StaffWorkloadWidget',
   TopProductsChartGraphQL: '@/app/admin/components/dashboard/widgets/TopProductsChartGraphQL',
   ProductDistributionChartGraphQL:
     '@/app/admin/components/dashboard/widgets/ProductDistributionChartGraphQL',

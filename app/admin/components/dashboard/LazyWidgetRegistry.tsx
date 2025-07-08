@@ -108,12 +108,12 @@ export const LazyComponents: Record<string, React.ComponentType<any>> = {
     () => import('./widgets/WarehouseTransferListWidget')
   ),
   
-  // GraphQL widgets
-  'ProductionDetailsGraphQL': createLazyWidget(
-    () => import('./widgets/ProductionDetailsGraphQL')
+  // Production widgets (Server Actions versions)
+  'ProductionDetailsWidget': createLazyWidget(
+    () => import('./widgets/ProductionDetailsWidget')
   ),
-  'ProductionStatsGraphQL': createLazyWidget(
-    () => import('./widgets/ProductionStatsGraphQL')
+  'ProductionStatsWidget': createLazyWidget(
+    () => import('./widgets/ProductionStatsWidget')
   ),
   
   // 分析類重型 widget (named exports)

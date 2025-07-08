@@ -6,7 +6,7 @@
 import React from 'react';
 import { WidgetComponentProps } from './types';
 import { performanceMonitor, PerformanceTimer } from './performance-monitor';
-import { dualLoadingAdapter } from './dual-loading-adapter';
+import { dualLoadingAdapter, getDualLoadingConfig } from './dual-loading-adapter';
 
 /**
  * 性能監控 HOC (Higher Order Component)
@@ -27,7 +27,7 @@ export function withPerformanceMonitoring<P extends WidgetComponentProps>(
       if (!isClient) return;
 
       // 獲取當前配置
-      const config = dualLoadingAdapter.getDualLoadingConfig();
+      const config = getDualLoadingConfig();
       const variant = config.enableV2 ? 'v2' : 'legacy';
 
       // 開始監控
@@ -89,7 +89,7 @@ export function usePerformanceMonitoring(widgetId: string) {
 
   React.useEffect(() => {
     // 獲取當前配置
-    const config = dualLoadingAdapter.getDualLoadingConfig();
+    const config = getDualLoadingConfig();
     const variant = config.enableV2 ? 'v2' : 'legacy';
 
     // 創建計時器
@@ -144,7 +144,7 @@ export async function loadWidgetWithMonitoring(
   widgetId: string,
   loader: () => Promise<React.ComponentType<any>>
 ): Promise<React.ComponentType<any>> {
-  const config = dualLoadingAdapter.getDualLoadingConfig();
+  const config = getDualLoadingConfig();
   const variant = config.enableV2 ? 'v2' : 'legacy';
 
   // 開始監控

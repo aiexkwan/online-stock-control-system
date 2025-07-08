@@ -126,8 +126,12 @@ export async function searchPallet(searchValue: string): Promise<SearchPalletRes
     return {
       success: true,
       data: {
-        ...data,
-        location: data.current_plt_loc || 'Unknown',
+        plt_num: (data as any).plt_num,
+        product_code: (data as any).product_code,
+        product_desc: (data as any).product_desc,
+        product_qty: (data as any).product_qty,
+        current_plt_loc: (data as any).current_plt_loc,
+        location: (data as any).current_plt_loc || 'Unknown',
       },
       searchType,
     };

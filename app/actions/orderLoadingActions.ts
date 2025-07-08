@@ -40,7 +40,6 @@ export async function undoLoadPallet(
 ): Promise<UndoLoadResult> {
   const supabase = await createClient();
   process.env.NODE_ENV !== 'production' &&
-    process.env.NODE_ENV !== 'production' &&
     console.log(`[undoLoadPallet] Starting undo for order: ${orderRef}, pallet: ${palletNum}`);
 
   try {
@@ -74,7 +73,6 @@ export async function undoLoadPallet(
 
     // Call RPC function for atomic transaction
     process.env.NODE_ENV !== 'production' &&
-      process.env.NODE_ENV !== 'production' &&
       console.log(`[undoLoadPallet] Calling RPC function`);
     const { data, error } = await supabase.rpc('rpc_undo_load_pallet', {
       p_order_ref: orderRef,
@@ -95,7 +93,6 @@ export async function undoLoadPallet(
 
     if (data.success) {
       process.env.NODE_ENV !== 'production' &&
-        process.env.NODE_ENV !== 'production' &&
         console.log(`[undoLoadPallet] Successfully undone:`, data);
     }
 
@@ -115,7 +112,6 @@ export async function loadPalletToOrder(
 ): Promise<LoadPalletResult> {
   const supabase = await createClient();
   process.env.NODE_ENV !== 'production' &&
-    process.env.NODE_ENV !== 'production' &&
     console.log(`[loadPalletToOrder] Started with orderRef: ${orderRef}, input: ${palletInput}`);
 
   try {
@@ -162,7 +158,6 @@ export async function loadPalletToOrder(
 
     // Call RPC function for atomic transaction
     process.env.NODE_ENV !== 'production' &&
-      process.env.NODE_ENV !== 'production' &&
       console.log(`[loadPalletToOrder] Calling RPC function`);
     const { data, error } = await supabase.rpc('rpc_load_pallet_to_order', {
       p_order_ref: orderRef,
@@ -186,7 +181,6 @@ export async function loadPalletToOrder(
 
     if (data.success) {
       process.env.NODE_ENV !== 'production' &&
-        process.env.NODE_ENV !== 'production' &&
         console.log(`[loadPalletToOrder] Successfully loaded:`, data);
       return {
         ...data,

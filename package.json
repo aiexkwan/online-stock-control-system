@@ -17,6 +17,7 @@
     "test:e2e:debug": "playwright test --debug",
     "test:e2e:report": "playwright show-report",
     "test:e2e:pdf": "ts-node __tests__/e2e/run-test.ts",
+    "typecheck": "tsc --noEmit",
     "mcpIOS": "node ./node_modules/@supabase/mcp-server-supabase/dist/index.js --access-token=sbp_1ed3abb4b23fcf1f8892e32d4b4ad8856d399fdb",
     "init-auth": "ts-node --project tsconfig.json scripts/init-auth.ts",
     "auto-push": "node scripts/auto-push.js",
@@ -205,7 +206,7 @@
     "tailwindcss": "^3.4.17",
     "ts-node": "^10.9.2",
     "tsx": "^4.20.3",
-    "typescript": "^5.7.2",
+    "typescript": "^5.8.3",
     "webpack-bundle-analyzer": "^4.10.2"
   }
 }

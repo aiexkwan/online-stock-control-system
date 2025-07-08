@@ -267,8 +267,6 @@ export async function createGrnDatabaseEntries(
 
     return {
       data: `GRN label processed successfully. ${palletNumber ? `Pallet: ${palletNumber}` : ''}`,
-      palletNumber,
-      series,
     };
   } catch (error: any) {
     // Record transaction error
@@ -517,7 +515,6 @@ async function createGrnDatabaseEntriesLegacy(
       console.error('[grnActions] Error inserting history record:', historyError);
       // Don't fail the whole operation for history logging
       process.env.NODE_ENV !== 'production' &&
-        process.env.NODE_ENV !== 'production' &&
         console.warn('[grnActions] History logging failed, but continuing with operation');
     }
 
@@ -526,7 +523,6 @@ async function createGrnDatabaseEntriesLegacy(
     // 🚀 新功能：調用 GRN workflow 優化函數
     try {
       process.env.NODE_ENV !== 'production' &&
-        process.env.NODE_ENV !== 'production' &&
         console.log('[grnActions] 調用 GRN workflow 優化函數...', {
           grnRef: payload.grnRecord.grn_ref,
           labelMode,
@@ -582,7 +578,6 @@ async function createGrnDatabaseEntriesLegacy(
 
       if (workflowData && !workflowData.success) {
         process.env.NODE_ENV !== 'production' &&
-          process.env.NODE_ENV !== 'production' &&
           console.warn('[grnActions] GRN workflow 更新部分失敗:', workflowData);
         const failureDetails = [
           workflowData.grn_level_result?.includes('ERROR:') ? 'GRN Level' : null,
@@ -599,7 +594,6 @@ async function createGrnDatabaseEntriesLegacy(
       }
 
       process.env.NODE_ENV !== 'production' &&
-        process.env.NODE_ENV !== 'production' &&
         console.log('[grnActions] GRN workflow 更新成功:', workflowData);
       return { data: 'GRN database entries created successfully' };
     } catch (workflowError: any) {
@@ -655,7 +649,6 @@ export async function uploadPdfToStorage(
 ): Promise<{ publicUrl?: string; error?: string }> {
   try {
     process.env.NODE_ENV !== 'production' &&
-      process.env.NODE_ENV !== 'production' &&
       console.log('[grnActions] 開始上傳 PDF 到 Storage...', {
         fileName,
         storagePath,
@@ -670,7 +663,6 @@ export async function uploadPdfToStorage(
     const pdfBlob = new Blob([uint8Array], { type: 'application/pdf' });
 
     process.env.NODE_ENV !== 'production' &&
-      process.env.NODE_ENV !== 'production' &&
       console.log('[grnActions] PDF Blob 創建完成:', {
         blobSize: pdfBlob.size,
         blobType: pdfBlob.type,
@@ -704,7 +696,6 @@ export async function uploadPdfToStorage(
     }
 
     process.env.NODE_ENV !== 'production' &&
-      process.env.NODE_ENV !== 'production' &&
       console.log('[grnActions] 文件上傳成功，路徑:', uploadData.path);
 
     const { data: urlData } = supabaseAdmin.storage
@@ -717,7 +708,6 @@ export async function uploadPdfToStorage(
     }
 
     process.env.NODE_ENV !== 'production' &&
-      process.env.NODE_ENV !== 'production' &&
       console.log('[grnActions] 公共 URL 生成成功:', urlData.publicUrl);
     return { publicUrl: urlData.publicUrl };
   } catch (error: any) {
