@@ -6,6 +6,7 @@
 import { useCallback } from 'react';
 import { toast } from 'sonner';
 import type { ProductInfo } from '../../types';
+import { isProduction, isNotProduction } from '@/lib/utils/env';
 
 interface StockUpdateOptions {
   productInfo: ProductInfo;
@@ -38,7 +39,7 @@ interface UseStockUpdatesReturn {
 export const useStockUpdates = (): UseStockUpdatesReturn => {
   // 清除緩存（針對 Vercel 環境）
   const clearCache = useCallback(async () => {
-    if (typeof window !== 'undefined' && process.env.NODE_ENV === 'production') {
+    if (typeof window !== 'undefined' && isProduction()) {
       try {
         // 清除瀏覽器緩存
         if ('caches' in window) {
@@ -56,13 +57,11 @@ export const useStockUpdates = (): UseStockUpdatesReturn => {
           });
 
           if (!cacheResponse.ok) {
-            process.env.NODE_ENV !== 'production' &&
-              process.env.NODE_ENV !== 'production' &&
+            isNotProduction() &&
               console.warn('Cache clear API returned non-OK status');
           }
         } catch (apiError) {
-          process.env.NODE_ENV !== 'production' &&
-            process.env.NODE_ENV !== 'production' &&
+          isNotProduction() &&
             console.warn('Failed to call cache clear API:', apiError);
         }
       } catch (cacheError) {

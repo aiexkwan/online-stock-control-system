@@ -453,34 +453,34 @@ Server      ██████████████████████�
 
 ---
 
-## Phase 2.3 🚧 進行中 (2025-07-08)
+## Phase 2.3 ✅ 已完成 (2025-07-08)
 **修復 Inventory Ordered Analysis Widget 和 Pending Updates Stats**
 
-### 任務列表：
-1. **修復 Inventory Ordered Analysis Widget**
-   - 創建缺失的 RPC 函數 `rpc_get_inventory_ordered_analysis`
-   - 實現庫存與訂單需求對比分析
-   - 支持產品類型過濾
+### 已完成任務：
 
-2. **實現 Pending Updates Stats 數據源**
-   - 在 DashboardAPI 中實現 `update_stats` 處理
-   - 統計需要更新的產品、供應商等
-   - 移除 AdminWidgetRenderer 中的硬編碼限制
+#### 1. **✅ 修復 Inventory Ordered Analysis Widget**
+創建了完整的 RPC 函數 `rpc_get_inventory_ordered_analysis`：
+- **SQL 文件**: `supabase/migrations/20250107_create_inventory_ordered_analysis_rpc.sql`
+- **功能特點**:
+  - 分析 9 個庫存位置的總庫存量
+  - 計算未完成訂單需求
+  - 計算滿足率和庫存缺口
+  - 支持產品類型過濾
+  - 自動分類產品狀態（充足/不足/缺貨）
+- **文檔**: `docs/rpc-functions/inventory-ordered-analysis.md`
+- **測試**: 已部署並通過測試
 
-### 實施方案：
+#### 2. **✅ 實現 Pending Updates Stats 數據源**
+在 `DashboardAPI.ts` 中實現了 `update_stats` 處理：
+- **統計內容**:
+  - 缺少信息的產品（description、colour、standard_qty）
+  - 缺少信息的供應商（contact、address）
+  - 待處理的作廢棧板（status='void_pending'）
+- **修復位置**:
+  - `lib/api/admin/DashboardAPI.ts`: 添加 case 'update_stats' 處理邏輯
+  - `app/admin/components/dashboard/AdminWidgetRenderer.tsx`: 移除硬編碼限制
+- **返回格式**: 包含總數和詳細分類的 metadata
 
-#### 方案 A：創建 RPC 函數（短期）
-```sql
-CREATE OR REPLACE FUNCTION rpc_get_inventory_ordered_analysis(
-  p_product_type TEXT DEFAULT NULL
-)
-RETURNS JSON
-```
-
-#### 方案 B：遷移到 GraphQL（長期）
-- 使用 GraphQL 聯合查詢 record_inventory 和 data_order
-- 在客戶端進行聚合計算
-- 支持更靈活的過濾和分析
 
 ---
 
@@ -508,7 +508,7 @@ RETURNS JSON
 
 ### 完成情況統計：
 - **Phase 1**: ✅ 完成 (8/10 widgets 遷移到 GraphQL)
-- **Phase 2**: ✅ 完成評估 (發現大部分已優化)
+- **Phase 2**: ✅ 完成 (評估 + 修復功能異常 widgets)
 - **Phase 3**: 🚧 待執行
 
 ### 關鍵成果：
@@ -528,9 +528,9 @@ RETURNS JSON
    - 混合架構提供最佳靈活性
 
 ### 待解決問題：
-1. Inventory Ordered Analysis widget 功能修復
-2. Update Widget5 (Pending Updates Stats) 數據源實現
-3. 建立正式的架構決策文檔
+1. ~~Inventory Ordered Analysis widget 功能修復~~ ✅ 已完成
+2. ~~Update Widget5 (Pending Updates Stats) 數據源實現~~ ✅ 已完成
+3. 建立正式的架構決策文檔 (Phase 3)
 
 ### 預期效益實現：
 ✅ 整體 dashboard 互動性能提升達到預期的 40-60%

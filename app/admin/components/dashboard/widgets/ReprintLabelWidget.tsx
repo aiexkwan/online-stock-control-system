@@ -24,7 +24,7 @@ export function ReprintLabelWidget({ title = 'Reprint Label', gridArea }: Reprin
   const [isLoading, setIsLoading] = useState(false);
   const dashboardAPI = createDashboardAPI();
   const transactionLog = new TransactionLogService();
-  const errorHandler = new ErrorHandler('ReprintLabelWidget');
+  const errorHandler = ErrorHandler.getInstance();
 
   const handleReprint = async () => {
     if (!palletNumber.trim()) {
@@ -66,11 +66,11 @@ export function ReprintLabelWidget({ title = 'Reprint Label', gridArea }: Reprin
         },
       });
 
-      if (!result.success) {
-        throw new Error(result.error || 'Failed to fetch pallet information');
+      if (!result.widgets || result.widgets.length === 0) {
+        throw new Error('Failed to fetch pallet information');
       }
 
-      const palletData = result.data?.widgets?.[0]?.data?.value;
+      const palletData = result.widgets[0]?.data;
 
       if (!palletData) {
         const errorMsg = `Pallet number ${palletNumber} not found`;
@@ -119,12 +119,13 @@ export function ReprintLabelWidget({ title = 'Reprint Label', gridArea }: Reprin
       const err = error instanceof Error ? error : new Error('Unknown error');
       await transactionLog.recordError(transactionId, err, 'REPRINT_FAILED');
 
-      const handledError = errorHandler.handleError(err, {
-        context: 'handleReprint',
-        palletNumber: palletNumber.toUpperCase(),
+      errorHandler.handleApiError(err, {
+        component: 'ReprintLabelWidget',
+        action: 'handleReprint',
+        additionalData: {
+          palletNumber: palletNumber.toUpperCase(),
+        },
       });
-
-      toast.error(handledError.userMessage || 'Print failed, please try again');
     } finally {
       setIsLoading(false);
     }
@@ -153,9 +154,12 @@ export function ReprintLabelWidget({ title = 'Reprint Label', gridArea }: Reprin
         toast.info('PDF downloaded. Please print it manually.');
       }
     } catch (error) {
-      errorHandler.handleError(error instanceof Error ? error : new Error('Print error'), {
-        context: 'printPDF',
-        pdfUrl,
+      errorHandler.handleApiError(error instanceof Error ? error : new Error('Print error'), {
+        component: 'ReprintLabelWidget',
+        action: 'printPDF',
+        additionalData: {
+          pdfUrl,
+        },
       });
       // Final fallback: Just open the PDF
       window.open(pdfUrl, '_blank');

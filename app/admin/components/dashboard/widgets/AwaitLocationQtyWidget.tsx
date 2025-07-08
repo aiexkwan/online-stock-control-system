@@ -98,7 +98,7 @@ const AwaitLocationQtyWidget = React.memo(function AwaitLocationQtyWidget({
 
   if (isEditMode) {
     return (
-      <WidgetCard widget={widget} isEditMode={true}>
+      <WidgetCard widgetType='custom' isEditMode={true}>
         <div className='flex h-full items-center justify-center'>
           <p className='text-gray-400'>Await Location Qty Widget</p>
         </div>
@@ -107,7 +107,7 @@ const AwaitLocationQtyWidget = React.memo(function AwaitLocationQtyWidget({
   }
 
   return (
-    <WidgetCard widget={widget}>
+    <WidgetCard widgetType='custom'>
       <CardHeader className='pb-2'>
         <CardTitle className='widget-title flex items-center gap-2'>
           <BuildingOfficeIcon className='h-5 w-5' />

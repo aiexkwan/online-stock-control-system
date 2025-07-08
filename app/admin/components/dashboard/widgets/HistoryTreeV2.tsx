@@ -10,7 +10,7 @@ import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import {
   ClockIcon,
-  Package2,
+  CubeIcon as Package2,
   TruckIcon,
   PrinterIcon,
   CheckCircleIcon,
@@ -248,7 +248,7 @@ export const HistoryTreeV2 = React.memo(function HistoryTreeV2({
 
   return (
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className='h-full'>
-      <WidgetCard widgetType='history-tree' isEditMode={isEditMode}>
+      <WidgetCard widgetType='custom' isEditMode={isEditMode}>
         <CardHeader className='pb-3'>
           <CardTitle className='flex items-center justify-between'>
             <span>History Tree</span>

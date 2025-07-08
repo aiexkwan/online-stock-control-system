@@ -45,13 +45,13 @@ export default function AcoOrderProgressCards({ timeFrame }: AcoOrderProgressCar
     const orders = data.record_acoCollection.edges
       .map(({ node }: any) => node as AcoOrder)
       // Filter out completed orders
-      .filter(order => {
+      .filter((order: AcoOrder) => {
         const remainingQty = order.required_qty - (order.finished_qty || 0);
         return remainingQty > 0;
       });
 
     return orders.reduce(
-      (groups, order) => {
+      (groups: Record<string, AcoOrder[]>, order: AcoOrder) => {
         if (!groups[order.order_ref]) {
           groups[order.order_ref] = [];
         }
@@ -97,8 +97,8 @@ export default function AcoOrderProgressCards({ timeFrame }: AcoOrderProgressCar
   return (
     <div className='custom-scrollbar max-h-[600px] space-y-4 overflow-y-auto pr-2'>
       {orderEntries.map(([orderRef, orders], index) => {
-        const totalRequired = orders.reduce((sum, order) => sum + order.required_qty, 0);
-        const totalCompleted = orders.reduce((sum, order) => sum + (order.finished_qty || 0), 0);
+        const totalRequired = (orders as AcoOrder[]).reduce((sum: number, order: AcoOrder) => sum + order.required_qty, 0);
+        const totalCompleted = (orders as AcoOrder[]).reduce((sum: number, order: AcoOrder) => sum + (order.finished_qty || 0), 0);
         const totalRemaining = totalRequired - totalCompleted;
         const completionPercentage = Math.round((totalCompleted / totalRequired) * 100);
 
@@ -137,9 +137,10 @@ export default function AcoOrderProgressCards({ timeFrame }: AcoOrderProgressCar
 
             {/* Product details */}
             <div className='grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3'>
-              {orders.map((order, index) => {
+              {(orders as AcoOrder[]).map((order: AcoOrder, index: number) => {
+                const remainingQty = order.required_qty - (order.finished_qty || 0);
                 const productCompletionPercentage = Math.round(
-                  ((order.required_qty - order.remain_qty) / order.required_qty) * 100
+                  ((order.finished_qty || 0) / order.required_qty) * 100
                 );
 
                 return (
@@ -152,7 +153,7 @@ export default function AcoOrderProgressCards({ timeFrame }: AcoOrderProgressCar
                       <span className='text-xs text-slate-400'>{productCompletionPercentage}%</span>
                     </div>
                     <div className='mb-2 text-sm text-slate-400'>
-                      Required: {order.required_qty} | Remaining: {order.remain_qty}
+                      Required: {order.required_qty} | Remaining: {remainingQty}
                     </div>
                     <div className='h-1 w-full rounded-full bg-slate-600/50'>
                       <motion.div

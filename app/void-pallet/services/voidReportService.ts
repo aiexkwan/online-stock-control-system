@@ -45,8 +45,8 @@ export async function fetchVoidRecords(filters: VoidReportFilters): Promise<Void
   const supabase = await createClient();
 
   try {
-    process.env.NODE_ENV !== 'production' &&
-      process.env.NODE_ENV !== 'production' &&
+    isNotProduction() &&
+      isNotProduction() &&
       console.log('Fetching void records with filters:', filters);
 
     // First, let's check if report_void table has any data
@@ -57,8 +57,8 @@ export async function fetchVoidRecords(filters: VoidReportFilters): Promise<Void
     if (countError) {
       console.error('Error counting report_void records:', countError);
     } else {
-      process.env.NODE_ENV !== 'production' &&
-        process.env.NODE_ENV !== 'production' &&
+      isNotProduction() &&
+        isNotProduction() &&
         console.log('Total report_void records in database:', voidCount);
     }
 
@@ -112,8 +112,8 @@ export async function fetchVoidRecords(filters: VoidReportFilters): Promise<Void
       if (simpleError) {
         console.error('Even simple query failed:', simpleError);
       } else {
-        process.env.NODE_ENV !== 'production' &&
-          process.env.NODE_ENV !== 'production' &&
+        isNotProduction() &&
+          isNotProduction() &&
           console.log('Simple query succeeded with data:', simpleData);
       }
 
@@ -121,11 +121,11 @@ export async function fetchVoidRecords(filters: VoidReportFilters): Promise<Void
     }
 
     if (!voidReports || voidReports.length === 0) {
-      process.env.NODE_ENV !== 'production' &&
-        process.env.NODE_ENV !== 'production' &&
+      isNotProduction() &&
+        isNotProduction() &&
         console.log('No void records found with current filters');
-      process.env.NODE_ENV !== 'production' &&
-        process.env.NODE_ENV !== 'production' &&
+      isNotProduction() &&
+        isNotProduction() &&
         console.log('Filters applied:', filters);
 
       // Check if there are any records without filters
@@ -134,23 +134,23 @@ export async function fetchVoidRecords(filters: VoidReportFilters): Promise<Void
         .select('*', { count: 'exact' })
         .limit(1);
 
-      process.env.NODE_ENV !== 'production' &&
-        process.env.NODE_ENV !== 'production' &&
+      isNotProduction() &&
+        isNotProduction() &&
         console.log('Total records in report_void (without filters):', count);
       if (allRecords && allRecords.length > 0) {
-        process.env.NODE_ENV !== 'production' &&
-          process.env.NODE_ENV !== 'production' &&
+        isNotProduction() &&
+          isNotProduction() &&
           console.log('Sample record:', allRecords[0]);
       }
 
       return [];
     }
 
-    process.env.NODE_ENV !== 'production' &&
-      process.env.NODE_ENV !== 'production' &&
+    isNotProduction() &&
+      isNotProduction() &&
       console.log(`Found ${voidReports.length} void records after filtering`);
-    process.env.NODE_ENV !== 'production' &&
-      process.env.NODE_ENV !== 'production' &&
+    isNotProduction() &&
+      isNotProduction() &&
       console.log('Sample void record:', JSON.stringify(voidReports[0], null, 2));
 
     // Step 2: Get unique pallet numbers for user lookup
@@ -181,8 +181,8 @@ export async function fetchVoidRecords(filters: VoidReportFilters): Promise<Void
           .order('time', { ascending: false });
 
         if (historyRecords) {
-          process.env.NODE_ENV !== 'production' &&
-            process.env.NODE_ENV !== 'production' &&
+          isNotProduction() &&
+            isNotProduction() &&
             console.log(`Found ${historyRecords.length} history records`);
           historyRecords.forEach(h => {
             if (!userMap.has(h.plt_num)) {
@@ -196,8 +196,8 @@ export async function fetchVoidRecords(filters: VoidReportFilters): Promise<Void
         }
       }
     } catch (historyError) {
-      process.env.NODE_ENV !== 'production' &&
-        process.env.NODE_ENV !== 'production' &&
+      isNotProduction() &&
+        isNotProduction() &&
         console.warn('Could not fetch history records:', historyError);
     }
 
@@ -208,8 +208,8 @@ export async function fetchVoidRecords(filters: VoidReportFilters): Promise<Void
 
       // Log if palletInfo is missing
       if (!palletInfo) {
-        process.env.NODE_ENV !== 'production' &&
-          process.env.NODE_ENV !== 'production' &&
+        isNotProduction() &&
+          isNotProduction() &&
           console.warn(`No pallet info found for plt_num: ${voidRecord.plt_num}`);
       }
 
@@ -244,8 +244,8 @@ export async function fetchVoidRecords(filters: VoidReportFilters): Promise<Void
       );
     }
 
-    process.env.NODE_ENV !== 'production' &&
-      process.env.NODE_ENV !== 'production' &&
+    isNotProduction() &&
+      isNotProduction() &&
       console.log(`Returning ${combinedRecords.length} records after filtering`);
     return combinedRecords;
   } catch (error) {
@@ -806,8 +806,8 @@ export async function fetchVoidRecordsAlternative(
   const supabase = await createClient();
 
   try {
-    process.env.NODE_ENV !== 'production' &&
-      process.env.NODE_ENV !== 'production' &&
+    isNotProduction() &&
+      isNotProduction() &&
       console.log('Using alternative fetch method without joins');
 
     // Step 1: Fetch void records without join
@@ -834,20 +834,20 @@ export async function fetchVoidRecordsAlternative(
     }
 
     if (!voidReports || voidReports.length === 0) {
-      process.env.NODE_ENV !== 'production' &&
-        process.env.NODE_ENV !== 'production' &&
+      isNotProduction() &&
+        isNotProduction() &&
         console.log('No void records found');
       return [];
     }
 
-    process.env.NODE_ENV !== 'production' &&
-      process.env.NODE_ENV !== 'production' &&
+    isNotProduction() &&
+      isNotProduction() &&
       console.log(`Found ${voidReports.length} void records`);
 
     // Step 2: Get pallet info separately
     const palletNumbers = [...new Set(voidReports.map(v => v.plt_num))];
-    process.env.NODE_ENV !== 'production' &&
-      process.env.NODE_ENV !== 'production' &&
+    isNotProduction() &&
+      isNotProduction() &&
       console.log(`Fetching info for ${palletNumbers.length} unique pallets`);
 
     const { data: palletInfos, error: palletError } = await supabase
@@ -899,8 +899,8 @@ export async function fetchVoidRecordsAlternative(
         });
       }
     } catch (historyError) {
-      process.env.NODE_ENV !== 'production' &&
-        process.env.NODE_ENV !== 'production' &&
+      isNotProduction() &&
+        isNotProduction() &&
         console.warn('Could not fetch history records:', historyError);
     }
 
@@ -940,8 +940,8 @@ export async function fetchVoidRecordsAlternative(
       );
     }
 
-    process.env.NODE_ENV !== 'production' &&
-      process.env.NODE_ENV !== 'production' &&
+    isNotProduction() &&
+      isNotProduction() &&
       console.log(`Returning ${combinedRecords.length} records after all filters`);
     return combinedRecords;
   } catch (error) {
@@ -955,8 +955,8 @@ export async function debugVoidReportIssue(): Promise<void> {
   const supabase = await createClient();
 
   try {
-    process.env.NODE_ENV !== 'production' &&
-      process.env.NODE_ENV !== 'production' &&
+    isNotProduction() &&
+      isNotProduction() &&
       console.log('=== DEBUGGING VOID REPORT ISSUE ===');
 
     // 1. Check if report_void table has data
@@ -966,17 +966,17 @@ export async function debugVoidReportIssue(): Promise<void> {
       count,
     } = await supabase.from('report_void').select('*', { count: 'exact' }).limit(5);
 
-    process.env.NODE_ENV !== 'production' &&
-      process.env.NODE_ENV !== 'production' &&
+    isNotProduction() &&
+      isNotProduction() &&
       console.log('Report void table:');
-    process.env.NODE_ENV !== 'production' &&
-      process.env.NODE_ENV !== 'production' &&
+    isNotProduction() &&
+      isNotProduction() &&
       console.log('- Total count:', count);
-    process.env.NODE_ENV !== 'production' &&
-      process.env.NODE_ENV !== 'production' &&
+    isNotProduction() &&
+      isNotProduction() &&
       console.log('- Sample data:', voidSample);
-    process.env.NODE_ENV !== 'production' &&
-      process.env.NODE_ENV !== 'production' &&
+    isNotProduction() &&
+      isNotProduction() &&
       console.log('- Error:', voidError);
 
     if (voidSample && voidSample.length > 0) {
@@ -988,19 +988,19 @@ export async function debugVoidReportIssue(): Promise<void> {
         .eq('plt_num', samplePltNum)
         .single();
 
-      process.env.NODE_ENV !== 'production' &&
-        process.env.NODE_ENV !== 'production' &&
+      isNotProduction() &&
+        isNotProduction() &&
         console.log(`\nPallet info for ${samplePltNum}:`);
-      process.env.NODE_ENV !== 'production' &&
-        process.env.NODE_ENV !== 'production' &&
+      isNotProduction() &&
+        isNotProduction() &&
         console.log('- Data:', palletInfo);
-      process.env.NODE_ENV !== 'production' &&
-        process.env.NODE_ENV !== 'production' &&
+      isNotProduction() &&
+        isNotProduction() &&
         console.log('- Error:', palletError);
 
       // 3. Test the join query
-      process.env.NODE_ENV !== 'production' &&
-        process.env.NODE_ENV !== 'production' &&
+      isNotProduction() &&
+        isNotProduction() &&
         console.log('\nTesting join query:');
       const { data: joinTest, error: joinError } = await supabase
         .from('report_void')
@@ -1017,16 +1017,16 @@ export async function debugVoidReportIssue(): Promise<void> {
         .eq('plt_num', samplePltNum)
         .single();
 
-      process.env.NODE_ENV !== 'production' &&
-        process.env.NODE_ENV !== 'production' &&
+      isNotProduction() &&
+        isNotProduction() &&
         console.log('- Join result:', joinTest);
-      process.env.NODE_ENV !== 'production' &&
-        process.env.NODE_ENV !== 'production' &&
+      isNotProduction() &&
+        isNotProduction() &&
         console.log('- Join error:', joinError);
     }
 
-    process.env.NODE_ENV !== 'production' &&
-      process.env.NODE_ENV !== 'production' &&
+    isNotProduction() &&
+      isNotProduction() &&
       console.log('\n=== END DEBUG ===');
   } catch (error) {
     console.error('Debug error:', error);

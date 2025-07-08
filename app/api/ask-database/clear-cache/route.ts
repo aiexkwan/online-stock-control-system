@@ -1,10 +1,11 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/app/utils/supabase/server';
+import { isProduction } from '@/lib/utils/env';
 
 export async function POST() {
   try {
     // 檢查權限（只允許開發環境或管理員）
-    if (process.env.NODE_ENV === 'production') {
+    if (isProduction()) {
       const supabase = await createClient();
       const {
         data: { user },

@@ -1,6 +1,6 @@
 /**
  * Product Update Widget
- * 將原本的 dialog 功能完整移植到 widget 內
+ * 支援產品創建、更新同搜索功能，整合統一錯誤處理機制
  */
 
 'use client';
@@ -27,6 +27,7 @@ import {
   updateProduct,
   ProductData,
 } from '@/app/actions/productActions';
+import { useWidgetErrorHandler } from '@/app/admin/hooks/useWidgetErrorHandler';
 
 interface StatusMessageType {
   type: 'success' | 'error' | 'warning' | 'info';
@@ -37,6 +38,10 @@ export const ProductUpdateWidget = React.memo(function ProductUpdateWidget({
   widget,
   isEditMode,
 }: WidgetComponentProps) {
+  // Error handler hook
+  const { handleError, handleFetchError, handleSubmitError, handleSuccess, handleWarning } =
+    useWidgetErrorHandler('ProductUpdateWidget');
+
   // State management
   const [productData, setProductData] = useState<ProductData | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -72,54 +77,62 @@ export const ProductUpdateWidget = React.memo(function ProductUpdateWidget({
     });
   }, []);
 
-  // Search product
-  const handleSearch = useCallback(async (code: string) => {
-    if (!code.trim()) {
-      setStatusMessage({
-        type: 'error',
-        message: 'Please enter a product code',
-      });
-      return;
-    }
-
-    setIsLoading(true);
-    setStatusMessage(null);
-    setSearchedCode(code.trim());
-
-    try {
-      const result = await getProductByCode(code.trim());
-
-      if (result.success && result.data) {
-        // Search success - show product info
-        setProductData(result.data);
-        setIsEditing(false);
-        setShowForm(false);
-        setShowCreateDialog(false);
+  // Search product with enhanced error handling
+  const handleSearch = useCallback(
+    async (code: string) => {
+      if (!code.trim()) {
+        handleWarning('Please enter a product code', 'search_validation');
         setStatusMessage({
-          type: 'success',
-          message: `Found: ${result.data.code}`,
+          type: 'error',
+          message: 'Please enter a product code',
         });
-      } else {
-        // Search failed - ask if create new
-        setProductData(null);
-        setShowCreateDialog(true);
-        setShowForm(false);
-        setIsEditing(false);
-        setStatusMessage({
-          type: 'warning',
-          message: `"${code.trim()}" not found`,
-        });
+        return;
       }
-    } catch (error) {
-      console.error('[ProductUpdate] Search error:', error);
-      setStatusMessage({
-        type: 'error',
-        message: error instanceof Error ? error.message : 'Search error occurred',
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
+
+      setIsLoading(true);
+      setStatusMessage(null);
+      setSearchedCode(code.trim());
+
+      try {
+        const result = await getProductByCode(code.trim());
+
+        if (result.success && result.data) {
+          // Search success
+          setProductData(result.data);
+          setIsEditing(false);
+          setShowForm(false);
+          setShowCreateDialog(false);
+          setStatusMessage({
+            type: 'success',
+            message: `Found: ${result.data.code}`,
+          });
+          handleSuccess(`Product ${result.data.code} found`, 'search_product', {
+            productCode: result.data.code,
+          });
+        } else {
+          // Product not found
+          setProductData(null);
+          setShowCreateDialog(true);
+          setShowForm(false);
+          setIsEditing(false);
+          setStatusMessage({
+            type: 'warning',
+            message: `"${code.trim()}" not found`,
+          });
+          handleWarning(`Product "${code.trim()}" not found`, 'search_product');
+        }
+      } catch (error) {
+        handleFetchError(error, 'product_search');
+        setStatusMessage({
+          type: 'error',
+          message: 'Search failed. Please try again.',
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [handleWarning, handleSuccess, handleFetchError]
+  );
 
   // Start editing
   const handleEdit = useCallback(() => {
@@ -157,7 +170,7 @@ export const ProductUpdateWidget = React.memo(function ProductUpdateWidget({
     setStatusMessage(null);
   }, []);
 
-  // Submit form
+  // Submit form with enhanced error handling
   const handleSubmit = useCallback(
     async (e: React.FormEvent) => {
       e.preventDefault();
@@ -183,6 +196,10 @@ export const ProductUpdateWidget = React.memo(function ProductUpdateWidget({
               type: 'success',
               message: 'Updated successfully!',
             });
+            handleSuccess('Product updated successfully', 'update_product', {
+              productCode: productData.code,
+              changes: updateData,
+            });
           }
         } else {
           // Create new product
@@ -193,15 +210,14 @@ export const ProductUpdateWidget = React.memo(function ProductUpdateWidget({
               type: 'success',
               message: 'Created successfully!',
             });
+            handleSuccess('Product created successfully', 'create_product', {
+              productCode: formData.code,
+            });
           }
         }
 
         if (!result.success) {
-          setStatusMessage({
-            type: 'error',
-            message: result.error || 'Operation failed',
-          });
-          return;
+          throw new Error(result.error || 'Operation failed');
         }
 
         // Reset form after success
@@ -209,16 +225,21 @@ export const ProductUpdateWidget = React.memo(function ProductUpdateWidget({
         setShowForm(false);
         setShowCreateDialog(false);
       } catch (error) {
-        console.error('[ProductUpdate] Error:', error);
+        const action = isEditing ? 'update_product' : 'create_product';
+        handleSubmitError(error, {
+          action,
+          productCode: isEditing ? productData?.code : formData.code,
+          formData,
+        });
         setStatusMessage({
           type: 'error',
-          message: 'Unexpected error',
+          message: 'Operation failed. Please try again.',
         });
       } finally {
         setIsLoading(false);
       }
     },
-    [isEditing, productData, formData]
+    [isEditing, productData, formData, handleSuccess, handleSubmitError]
   );
 
   // Handle form input change
@@ -229,11 +250,9 @@ export const ProductUpdateWidget = React.memo(function ProductUpdateWidget({
     }));
   }, []);
 
-  // Widget supports all sizes, but optimized for 3x3
-
   return (
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className='h-full'>
-      <WidgetCard widgetType='PRODUCT_UPDATE' isEditMode={isEditMode}>
+      <WidgetCard widgetType='custom' isEditMode={isEditMode}>
         <CardHeader className='pb-2'>
           <CardTitle className='widget-title flex items-center gap-2'>
             <CubeIcon className='h-5 w-5' />

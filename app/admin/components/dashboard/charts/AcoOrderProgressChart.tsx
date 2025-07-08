@@ -152,7 +152,7 @@ export default function AcoOrderProgressChart({ timeFrame }: AcoOrderProgressCha
               )}
             />
             <Bar dataKey='completionRate' radius={[8, 8, 0, 0]}>
-              {chartData.map((entry, index) => (
+              {chartData.map((entry: any, index: number) => (
                 <Cell key={`cell-${index}`} fill={getBarColor(entry.completionRate)} />
               ))}
             </Bar>

@@ -44,7 +44,7 @@ export default function ClientLayout({ children }: ClientLayoutProps) {
     <UniversalProvider
       defaultTheme={currentTheme}
       animationsEnabled={true}
-      debugMode={process.env.NODE_ENV === 'development'}
+      debugMode={isDevelopment()}
     >
       {/* Toast notifications */}
       <Toaster

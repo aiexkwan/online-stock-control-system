@@ -5,6 +5,7 @@ import { createClient } from '@supabase/supabase-js';
 import OpenAI from 'openai';
 import crypto from 'crypto';
 import { apiLogger, logApiRequest, logApiResponse, systemLogger } from '@/lib/logger';
+import { isDevelopment } from '@/lib/utils/env';
 
 // 簡單的內存緩存（生產環境建議使用 Redis）
 const fileCache = new Map<string, any>();
@@ -938,7 +939,7 @@ export async function POST(request: NextRequest) {
 
         // 記錄操作歷史（使用第一個訂單的 order_ref）
         if (orderData && orderData.length > 0) {
-          await recordOrderUploadHistory(orderData[0].order_ref, uploadedBy);
+          await recordOrderUploadHistory(orderData[0].order_ref.toString(), uploadedBy);
         }
 
         // 🔥 更新 doc_upload 表的 json 欄位（僅當不使用背景存儲時）
@@ -1158,7 +1159,7 @@ export async function POST(request: NextRequest) {
         details: error.message,
         errorType: error.name,
         errorCode: error.code,
-        ...(process.env.NODE_ENV === 'development' && { stack: error.stack }),
+        ...(isDevelopment() && { stack: error.stack }),
       },
       { status: 500 }
     );

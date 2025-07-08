@@ -1,3 +1,5 @@
+import { calculateStringSimilarity } from '@/lib/utils/string-similarity';
+
 interface ErrorPattern {
   pattern: RegExp;
   handler: (error: string) => ErrorResponse;
@@ -193,7 +195,7 @@ export class QueryErrorHandler {
 
     // 模糊匹配
     for (const col of commonColumns) {
-      if (this.calculateSimilarity(lowerColumn, col.toLowerCase()) > 0.6) {
+      if (calculateStringSimilarity(lowerColumn, col.toLowerCase()) > 0.6) {
         suggestions.push(col);
       }
     }
@@ -218,7 +220,7 @@ export class QueryErrorHandler {
 
     // 模糊匹配
     for (const table of allTables) {
-      if (this.calculateSimilarity(lowerTable, table.toLowerCase()) > 0.5) {
+      if (calculateStringSimilarity(lowerTable, table.toLowerCase()) > 0.5) {
         suggestions.push(table);
       }
     }
@@ -291,45 +293,6 @@ export class QueryErrorHandler {
     return suggestions.slice(0, 3);
   }
 
-  // 簡單的字符串相似度計算
-  private calculateSimilarity(str1: string, str2: string): number {
-    const longer = str1.length > str2.length ? str1 : str2;
-    const shorter = str1.length > str2.length ? str2 : str1;
-
-    if (longer.length === 0) return 1.0;
-
-    const editDistance = this.levenshteinDistance(longer, shorter);
-    return (longer.length - editDistance) / longer.length;
-  }
-
-  // Levenshtein 距離算法
-  private levenshteinDistance(str1: string, str2: string): number {
-    const matrix: number[][] = [];
-
-    for (let i = 0; i <= str2.length; i++) {
-      matrix[i] = [i];
-    }
-
-    for (let j = 0; j <= str1.length; j++) {
-      matrix[0][j] = j;
-    }
-
-    for (let i = 1; i <= str2.length; i++) {
-      for (let j = 1; j <= str1.length; j++) {
-        if (str2.charAt(i - 1) === str1.charAt(j - 1)) {
-          matrix[i][j] = matrix[i - 1][j - 1];
-        } else {
-          matrix[i][j] = Math.min(
-            matrix[i - 1][j - 1] + 1,
-            matrix[i][j - 1] + 1,
-            matrix[i - 1][j] + 1
-          );
-        }
-      }
-    }
-
-    return matrix[str2.length][str1.length];
-  }
 }
 
 // 導出單例

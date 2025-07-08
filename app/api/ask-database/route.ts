@@ -4,8 +4,18 @@ import { LRUCache } from 'lru-cache';
 import OpenAI from 'openai';
 import type { ChatCompletionMessageParam } from 'openai/resources/chat/completions';
 import { enhanceQueryWithTemplate } from '@/lib/query-templates';
-import { optimizeSQL } from '@/lib/sql-optimizer';
+import { optimizeSQL, analyzeQueryWithPlan, generatePerformanceReport } from '@/lib/sql-optimizer';
 import { DatabaseConversationContextManager } from '@/lib/conversation-context-db';
+import { 
+  classifyError, 
+  getRecoveryStrategy, 
+  enhanceErrorMessage, 
+  ErrorType,
+  logErrorPattern,
+  attemptErrorRecovery,
+  generateUserMessage
+} from '@/lib/unified-error-handler';
+import { isDevelopment, isNotProduction } from '@/lib/utils/env';
 
 // 不允許使用 Ask Database 功能的用戶（黑名單）
 const BLOCKED_USERS = ['warehouse@pennineindustries.com', 'production@pennineindustries.com'];
@@ -49,30 +59,32 @@ interface QueryResult {
   timestamp: string;
   resolvedQuestion?: string;
   references?: any[];
+  performanceAnalysis?: string;
 }
 
-process.env.NODE_ENV !== 'production' &&
+isNotProduction() &&
   console.log('[Ask Database] 🚀 OpenAI SQL Generation Mode - Build 2025-01-03');
-process.env.NODE_ENV !== 'production' &&
+isNotProduction() &&
   console.log('[Ask Database] ✅ Using OpenAI for SQL generation and natural language responses');
 
 export async function POST(request: NextRequest) {
   const startTime = Date.now();
   let userEmail: string | null = null;
   let userName: string | null = null;
+  let question: string = '';
 
   try {
-    process.env.NODE_ENV !== 'production' &&
+    isNotProduction() &&
       console.log('[Ask Database] 🚀 OpenAI Mode - Request received');
 
     const body = await request.json();
-    const question = body.question;
+    question = body.question;
     // 如果沒有提供 sessionId，生成一個新的
     const sessionId =
       body.sessionId || `session_${Date.now()}_${Math.random().toString(36).substring(7)}`;
 
-    process.env.NODE_ENV !== 'production' && console.log('[Ask Database] Question:', question);
-    process.env.NODE_ENV !== 'production' && console.log('[Ask Database] Session ID:', sessionId);
+    isNotProduction() && console.log('[Ask Database] Question:', question);
+    isNotProduction() && console.log('[Ask Database] Session ID:', sessionId);
 
     // 獲取用戶信息（先獲取用戶信息，用於創建上下文管理器）
     const userInfo = await getUserInfo();
@@ -112,7 +124,7 @@ export async function POST(request: NextRequest) {
     const isAskingForHistory = conversationHistoryPatterns.some(pattern => pattern.test(question));
 
     if (isAskingForHistory) {
-      process.env.NODE_ENV !== 'production' &&
+      isNotProduction() &&
         console.log('[Ask Database] User asking for conversation history');
 
       // 先嘗試獲取當前 session 的對話記錄
@@ -120,7 +132,7 @@ export async function POST(request: NextRequest) {
 
       // 如果當前 session 沒有記錄，從數據庫獲取該用戶最近的對話
       if (recentHistory.length === 0 && userName) {
-        process.env.NODE_ENV !== 'production' &&
+        isNotProduction() &&
           console.log('[Ask Database] No session history, fetching user history from database');
 
         const supabase = await createClient();
@@ -227,12 +239,12 @@ export async function POST(request: NextRequest) {
     const { resolved: resolvedQuestion, references } =
       await contextManager.resolveReferences(question);
     if (references.length > 0) {
-      process.env.NODE_ENV !== 'production' &&
+      isNotProduction() &&
         console.log('[Ask Database] Resolved references:', references);
     }
 
     // 1. 並行執行權限檢查和會話歷史獲取
-    process.env.NODE_ENV !== 'production' &&
+    isNotProduction() &&
       console.log('[Ask Database] Starting parallel operations...');
     const [hasPermission, conversationHistory] = await Promise.all([
       checkUserPermission(),
@@ -240,27 +252,27 @@ export async function POST(request: NextRequest) {
     ]);
 
     if (!hasPermission) {
-      process.env.NODE_ENV !== 'production' && console.log('[Ask Database] Permission denied');
+      isNotProduction() && console.log('[Ask Database] Permission denied');
       return NextResponse.json(
         { error: 'You do not have permission to use the database query feature' },
         { status: 403 }
       );
     }
-    process.env.NODE_ENV !== 'production' &&
+    isNotProduction() &&
       console.log('[Ask Database] User info:', { email: userEmail, name: userName });
-    process.env.NODE_ENV !== 'production' &&
+    isNotProduction() &&
       console.log(
         '[Ask Database] Permission granted, conversation history length:',
         conversationHistory.length
       );
 
     // 2. 檢查智能緩存（多層）
-    process.env.NODE_ENV !== 'production' &&
+    isNotProduction() &&
       console.log('[Ask Database] 🔍 Checking intelligent cache system...');
     const cachedResult = await checkIntelligentCache(question, userEmail);
     if (cachedResult) {
       const cacheLevel = cachedResult.cacheLevel || 'L1';
-      process.env.NODE_ENV !== 'production' &&
+      isNotProduction() &&
         console.log(`[Ask Database] 🎯 ${cacheLevel} Cache hit - returning cached result`);
 
       // 異步保存聊天記錄（記錄緩存命中）
@@ -294,7 +306,7 @@ export async function POST(request: NextRequest) {
     const lruCacheKey = generateCacheKey(question, conversationHistory);
     const lruCachedResult = queryCache.get(lruCacheKey);
     if (lruCachedResult) {
-      process.env.NODE_ENV !== 'production' &&
+      isNotProduction() &&
         console.log('[Ask Database] 🎯 LRU Cache hit - returning cached result');
 
       saveQueryRecordAsync(
@@ -313,10 +325,10 @@ export async function POST(request: NextRequest) {
         responseTime: Date.now() - startTime,
       });
     }
-    process.env.NODE_ENV !== 'production' && console.log('[Ask Database] All cache layers missed');
+    isNotProduction() && console.log('[Ask Database] All cache layers missed');
 
     // 3. 使用 OpenAI 生成 SQL 查詢（使用解析後的問題）
-    process.env.NODE_ENV !== 'production' &&
+    isNotProduction() &&
       console.log('[Ask Database] 🧠 Generating SQL with OpenAI...');
     const sqlResult = await generateSQLWithOpenAI(
       resolvedQuestion,
@@ -327,7 +339,7 @@ export async function POST(request: NextRequest) {
 
     // 檢查是否需要澄清
     if (sqlResult.clarification) {
-      process.env.NODE_ENV !== 'production' &&
+      isNotProduction() &&
         console.log('[Ask Database] Clarification needed:', sqlResult.clarification);
 
       // 保存澄清問題到記錄
@@ -360,53 +372,151 @@ export async function POST(request: NextRequest) {
     const { sql: rawSQL, tokensUsed } = sqlResult;
 
     // 優化 SQL 查詢
-    const sql = optimizeSQL(rawSQL, question);
+    let sql = optimizeSQL(rawSQL, question);
 
-    process.env.NODE_ENV !== 'production' && console.log('[Ask Database] Generated SQL:', rawSQL);
-    process.env.NODE_ENV !== 'production' && console.log('[Ask Database] Optimized SQL:', sql);
-    process.env.NODE_ENV !== 'production' && console.log('[Ask Database] Tokens used:', tokensUsed);
+    isNotProduction() && console.log('[Ask Database] Generated SQL:', rawSQL);
+    isNotProduction() && console.log('[Ask Database] Optimized SQL:', sql);
+    isNotProduction() && console.log('[Ask Database] Tokens used:', tokensUsed);
+
+    // 檢查查詢成本
+    const queryCost = await checkQueryCost(sql);
+    if (queryCost.blocked) {
+      isNotProduction() && 
+        console.log('[Ask Database] Query blocked due to high cost:', queryCost.estimatedCost);
+      
+      return NextResponse.json({
+        question,
+        sql: '',
+        result: { data: [], rowCount: 0, executionTime: 0 },
+        answer: `I notice this query might be too expensive to run (estimated cost: ${queryCost.estimatedCost}). ${queryCost.suggestion}`,
+        complexity: 'complex',
+        tokensUsed,
+        cached: false,
+        timestamp: new Date().toISOString(),
+        blockedReason: 'high_cost'
+      });
+    }
 
     // 4. 檢查 SQL 結果緩存 (L3)
-    process.env.NODE_ENV !== 'production' &&
+    isNotProduction() &&
       console.log('[Ask Database] 🔍 Checking SQL cache (L3)...');
     const sqlCacheResult = await checkSQLCache(sql);
-    let queryResult;
+    let queryResult: { data: any[]; rowCount: number; executionTime: number } | undefined = undefined;
 
     if (sqlCacheResult) {
-      process.env.NODE_ENV !== 'production' && console.log('[Ask Database] 🎯 L3 SQL cache hit');
+      isNotProduction() && console.log('[Ask Database] 🎯 L3 SQL cache hit');
       queryResult = {
         data: sqlCacheResult.result?.data || [],
         rowCount: sqlCacheResult.result?.rowCount || 0,
         executionTime: sqlCacheResult.executionTime || 0,
       };
     } else {
-      // 5. 執行 SQL 查詢
-      process.env.NODE_ENV !== 'production' &&
+      // 5. 執行 SQL 查詢（帶自動錯誤修復）
+      isNotProduction() &&
         console.log('[Ask Database] 🚀 Executing SQL query...');
-      queryResult = await executeSQLQuery(sql);
-      process.env.NODE_ENV !== 'production' &&
-        console.log('[Ask Database] SQL result:', {
-          rowCount: queryResult.data.length,
-          executionTime: queryResult.executionTime,
-        });
+      
+      let sqlExecutionAttempts = 0;
+      const maxAttempts = 3;
+      
+      while (sqlExecutionAttempts < maxAttempts) {
+        try {
+          sqlExecutionAttempts++;
+          queryResult = await executeSQLQuery(sql);
+          isNotProduction() &&
+            console.log('[Ask Database] SQL result:', {
+              rowCount: queryResult.data.length,
+              executionTime: queryResult.executionTime,
+            });
+          break; // 成功則跳出循環
+        } catch (execError: any) {
+          console.log(`[SQL Execution] Attempt ${sqlExecutionAttempts} failed:`, execError.message);
+          
+          // 如果已經是最後一次嘗試，拋出錯誤
+          if (sqlExecutionAttempts >= maxAttempts) {
+            throw execError;
+          }
+          
+          // 嘗試自動修復
+          const classificationResult = execError.errorType ? 
+            { errorType: execError.errorType } : 
+            classifyError(execError, sql);
+          const errorType = classificationResult.errorType;
+          const recoveryStrategy = getRecoveryStrategy(errorType);
+          
+          if (recoveryStrategy.canAutoRecover) {
+            try {
+              console.log(`[SQL Recovery] Attempting ${recoveryStrategy.strategy}...`);
+              const recoveryResult = await attemptErrorRecovery(errorType, sql, execError);
+              
+              if (recoveryResult.fixedSQL) {
+                sql = recoveryResult.fixedSQL;
+                console.log('[SQL Recovery] SQL has been fixed, retrying...');
+                
+                // 記錄成功的恢復
+                await logErrorPattern(errorType, execError, { 
+                  success: true, 
+                  fixedSQL: sql 
+                });
+                
+                // 如果有建議，記錄在日誌
+                if (recoveryResult.suggestion) {
+                  console.log('[SQL Recovery] Suggestion:', recoveryResult.suggestion);
+                }
+              } else {
+                throw new Error('Recovery failed');
+              }
+            } catch (recoveryError) {
+              console.error('[SQL Recovery] Recovery failed:', recoveryError);
+              throw execError; // 拋出原始錯誤
+            }
+          } else {
+            // 無法自動恢復，直接拋出
+            throw execError;
+          }
+        }
+      }
     }
 
     // 上下文已經通過 saveQueryRecordEnhanced 保存到數據庫
 
+    // 4.5 分析查詢計劃（新增）
+    let performanceAnalysis = null;
+    if (isNotProduction() && queryResult) {
+      try {
+        isNotProduction() &&
+          console.log('[Ask Database] 📊 Analyzing query performance...');
+        const analysis = await analyzeQueryWithPlan(sql, question);
+        
+        if ((analysis.performanceScore && analysis.performanceScore < 70) || 
+            (analysis.bottlenecks && analysis.bottlenecks.length > 0)) {
+          performanceAnalysis = generatePerformanceReport(analysis);
+          isNotProduction() &&
+            console.log('[Ask Database] Performance issues detected:', {
+              score: analysis.performanceScore,
+              bottlenecks: analysis.bottlenecks?.length || 0,
+              recommendations: analysis.recommendations?.length || 0
+            });
+        }
+      } catch (error) {
+        console.error('[Ask Database] Query plan analysis failed:', error);
+        // 不影響主流程
+      }
+    }
+
     // 5. 使用 OpenAI 生成自然語言回應
-    process.env.NODE_ENV !== 'production' &&
+    isNotProduction() &&
       console.log('[Ask Database] 📝 Generating natural language response with OpenAI...');
     const { answer, additionalTokens } = await generateAnswerWithOpenAI(question, sql, queryResult);
-    process.env.NODE_ENV !== 'production' &&
+    isNotProduction() &&
       console.log('[Ask Database] Natural language response generated');
 
     const totalTokens = tokensUsed + additionalTokens;
-    const complexity = determineComplexity(sql, queryResult.data.length);
+    const complexity = determineComplexity(sql, queryResult?.data.length || 0);
 
     const result: QueryResult = {
       question,
       sql,
-      result: queryResult,
+      result: queryResult || { data: [], rowCount: 0, executionTime: 0 },
       answer,
       complexity,
       tokensUsed: totalTokens,
@@ -414,10 +524,11 @@ export async function POST(request: NextRequest) {
       timestamp: new Date().toISOString(),
       resolvedQuestion: resolvedQuestion !== question ? resolvedQuestion : undefined,
       references: references.length > 0 ? references : undefined,
+      performanceAnalysis: performanceAnalysis || undefined,
     };
 
     // 6. 並行執行緩存保存、會話歷史保存和聊天記錄保存
-    process.env.NODE_ENV !== 'production' && console.log('[Ask Database] 💾 Saving results...');
+    isNotProduction() && console.log('[Ask Database] 💾 Saving results...');
     const finalCacheKey = generateCacheKey(question, conversationHistory);
     const saveOperations = [
       Promise.resolve(queryCache.set(finalCacheKey, result)),
@@ -442,7 +553,7 @@ export async function POST(request: NextRequest) {
       console.error('[Ask Database] Save operations failed:', error);
     });
 
-    process.env.NODE_ENV !== 'production' &&
+    isNotProduction() &&
       console.log(
         '[Ask Database] 🎉 OpenAI request completed successfully in',
         Date.now() - startTime,
@@ -450,31 +561,41 @@ export async function POST(request: NextRequest) {
       );
     return NextResponse.json(result);
   } catch (error: any) {
+    const classificationResult = error.errorType ? 
+      { errorType: error.errorType } : 
+      classifyError(error);
+    const errorType = classificationResult.errorType;
+    
     console.error('[Ask Database] Error details:', {
       message: error.message,
+      errorType: errorType,
       stack: error.stack,
       name: error.name,
       cause: error.cause,
       responseTime: Date.now() - startTime,
     });
 
-    // 根據錯誤類型提供更具體的錯誤訊息
-    let errorMessage = 'Query processing failed, please try again later';
+    // 記錄錯誤模式（用於改進系統）
+    await logErrorPattern(errorType, error, { 
+      question, 
+      success: false 
+    });
 
-    if (error.message?.includes('SQL')) {
-      errorMessage = 'SQL query generation failed, please try to rephrase your question';
-    } else if (error.message?.includes('OpenAI')) {
-      errorMessage = 'AI service temporarily unavailable, please try again later';
-    } else if (error.message?.includes('permission') || error.message?.includes('auth')) {
-      errorMessage = 'Permission verification failed, please log in again';
-    } else if (error.message?.includes('timeout')) {
-      errorMessage = 'Query timeout, please try to simplify your question';
+    // 獲取恢復策略建議
+    const recoveryStrategy = getRecoveryStrategy(errorType);
+
+    // 使用增強的錯誤訊息
+    let errorMessage = enhanceErrorMessage(errorType, error.message);
+    
+    // 如果有恢復建議，添加到錯誤訊息
+    if (recoveryStrategy.suggestion) {
+      errorMessage += `. Suggestion: ${recoveryStrategy.suggestion}`;
     }
 
     return NextResponse.json(
       {
         error: errorMessage,
-        details: process.env.NODE_ENV === 'development' ? error.message : undefined,
+        details: isDevelopment() ? error.message : undefined,
         responseTime: Date.now() - startTime,
         mode: 'OPENAI_SQL_GENERATION',
       },
@@ -561,7 +682,7 @@ async function generateSQLWithOpenAI(
       content: question,
     });
 
-    process.env.NODE_ENV !== 'production' &&
+    isNotProduction() &&
       console.log('[OpenAI SQL] Sending request to OpenAI...');
     const response = await openai.chat.completions.create({
       model: 'gpt-4o',
@@ -644,25 +765,97 @@ async function generateSQLWithOpenAI(
       }
     }
 
-    process.env.NODE_ENV !== 'production' && console.log('[OpenAI SQL] SQL generated successfully');
+    isNotProduction() && console.log('[OpenAI SQL] SQL generated successfully');
     return { sql, tokensUsed };
   } catch (error: any) {
     console.error('[OpenAI SQL] Error:', error);
-    throw new Error(`SQL generation failed: ${error.message}`);
+    
+    // 分類錯誤
+    const classificationResult = classifyError(error);
+    const errorType = classificationResult.errorType;
+    
+    // 錯誤恢復已經在主要錯誤處理系統中處理
+    // 這裡只需要拋出增強的錯誤訊息
+    
+    // 增強錯誤訊息
+    const enhancedMessage = enhanceErrorMessage(errorType, error.message);
+    throw new Error(enhancedMessage);
   }
 }
 
-// 執行 SQL 查詢
+// 檢查查詢成本
+async function checkQueryCost(sql: string): Promise<{
+  estimatedCost: number;
+  blocked: boolean;
+  suggestion?: string;
+}> {
+  const MAX_ALLOWED_COST = 10000; // 最大允許成本
+  
+  try {
+    // 使用 optimizeSQL 中的 estimateQueryCost 函數
+    const { estimateQueryCost } = await import('@/lib/sql-optimizer');
+    const estimatedCost = estimateQueryCost(sql);
+    
+    if (estimatedCost > MAX_ALLOWED_COST) {
+      // 分析原因並提供建議
+      const suggestions = [];
+      const sqlLower = sql.toLowerCase();
+      
+      if (!sqlLower.includes('limit')) {
+        suggestions.push('Try adding a LIMIT clause to reduce the result set');
+      }
+      
+      if (!sqlLower.includes('where')) {
+        suggestions.push('Add a WHERE clause to filter the data');
+      }
+      
+      if (sqlLower.includes('record_history')) {
+        suggestions.push('Consider adding a date range filter for the history table');
+      }
+      
+      if ((sqlLower.match(/join/g) || []).length > 3) {
+        suggestions.push('Try to reduce the number of JOINs or break the query into smaller parts');
+      }
+      
+      return {
+        estimatedCost,
+        blocked: true,
+        suggestion: suggestions.join('. ')
+      };
+    }
+    
+    return {
+      estimatedCost,
+      blocked: false
+    };
+  } catch (error) {
+    console.error('[checkQueryCost] Error:', error);
+    // 如果出錯，允許查詢繼續執行
+    return {
+      estimatedCost: 0,
+      blocked: false
+    };
+  }
+}
+
+// 執行 SQL 查詢（增加超時控制）
 async function executeSQLQuery(
   sql: string
 ): Promise<{ data: any[]; rowCount: number; executionTime: number }> {
   const supabase = await createClient();
   const startTime = Date.now();
+  const QUERY_TIMEOUT = 30000; // 30秒超時
 
   try {
-    process.env.NODE_ENV !== 'production' && console.log('[SQL Execution] Executing query:', sql);
+    isNotProduction() && console.log('[SQL Execution] Executing query:', sql);
 
-    const { data, error } = await supabase.rpc('execute_sql_query', { query_text: sql });
+    // 使用 Promise.race 實現超時控制
+    const queryPromise = supabase.rpc('execute_sql_query', { query_text: sql });
+    const timeoutPromise = new Promise((_, reject) => 
+      setTimeout(() => reject(new Error('Query timeout after 30 seconds')), QUERY_TIMEOUT)
+    );
+
+    const { data, error } = await Promise.race([queryPromise, timeoutPromise]) as any;
 
     const executionTime = Date.now() - startTime;
 
@@ -672,8 +865,13 @@ async function executeSQLQuery(
     }
 
     const resultData = Array.isArray(data) ? data : [];
-    process.env.NODE_ENV !== 'production' &&
+    isNotProduction() &&
       console.log('[SQL Execution] Query executed successfully, rows:', resultData.length);
+
+    // 如果返回太多行，發出警告
+    if (resultData.length > 1000) {
+      console.warn('[SQL Execution] Large result set returned:', resultData.length, 'rows');
+    }
 
     return {
       data: resultData,
@@ -682,7 +880,26 @@ async function executeSQLQuery(
     };
   } catch (error: any) {
     console.error('[SQL Execution] Error:', error);
-    throw new Error(`Database query failed: ${error.message}`);
+    
+    // 分類錯誤
+    const errorType = classifyError(error, sql);
+    
+    // 記錄錯誤模式
+    await logErrorPattern(
+      { errorType, originalError: error, sql },
+      { success: false }
+    );
+    
+    // 增強錯誤訊息
+    const enhancedMessage = enhanceErrorMessage(errorType, error.message);
+    
+    // 為了向上層傳遞錯誤類型，創建新錯誤
+    const enhancedError = new Error(enhancedMessage);
+    (enhancedError as any).errorType = errorType;
+    (enhancedError as any).originalError = error;
+    (enhancedError as any).sql = sql;
+    
+    throw enhancedError;
   }
 }
 
@@ -722,7 +939,7 @@ Please provide a natural English response to the user's question based on these 
       },
     ];
 
-    process.env.NODE_ENV !== 'production' &&
+    isNotProduction() &&
       console.log('[OpenAI Answer] Generating natural language response...');
     const response = await openai.chat.completions.create({
       model: 'gpt-4o',
@@ -738,7 +955,7 @@ Please provide a natural English response to the user's question based on these 
       throw new Error('OpenAI returned empty answer');
     }
 
-    process.env.NODE_ENV !== 'production' &&
+    isNotProduction() &&
       console.log('[OpenAI Answer] Natural language response generated successfully');
     return { answer: answer.trim(), additionalTokens: tokensUsed };
   } catch (error: any) {
@@ -878,13 +1095,13 @@ async function getUserInfo(): Promise<{ email: string | null; name: string | nul
 
   try {
     // 在開發環境中，如果沒有認證用戶，使用測試用戶
-    if (process.env.NODE_ENV === 'development') {
+    if (isDevelopment()) {
       const {
         data: { user },
       } = await supabase.auth.getUser();
 
       if (!user?.email) {
-        process.env.NODE_ENV !== 'production' &&
+        isNotProduction() &&
           console.log('[getUserInfo] Development mode: No authenticated user, using test user');
         const { data: testUser, error } = await supabase
           .from('data_id')
@@ -895,7 +1112,7 @@ async function getUserInfo(): Promise<{ email: string | null; name: string | nul
         if (testUser) {
           const testEmail =
             testUser.email || `test-user-${testUser.name.toLowerCase()}@pennineindustries.com`;
-          process.env.NODE_ENV !== 'production' &&
+          isNotProduction() &&
             console.log('[getUserInfo] Using test user:', testUser.name, 'with email:', testEmail);
           return { email: testEmail, name: testUser.name };
         }
@@ -907,7 +1124,7 @@ async function getUserInfo(): Promise<{ email: string | null; name: string | nul
     } = await supabase.auth.getUser();
 
     if (!user?.email) {
-      process.env.NODE_ENV !== 'production' &&
+      isNotProduction() &&
         console.log('[getUserInfo] No authenticated user found');
       return { email: null, name: null };
     }
@@ -915,13 +1132,13 @@ async function getUserInfo(): Promise<{ email: string | null; name: string | nul
     // 檢查緩存
     const cachedName = userNameCache.get(user.email);
     if (cachedName) {
-      process.env.NODE_ENV !== 'production' &&
+      isNotProduction() &&
         console.log('[getUserInfo] Using cached user name for:', user.email);
       return { email: user.email, name: cachedName };
     }
 
     // 從 data_id 表獲取用戶名
-    process.env.NODE_ENV !== 'production' &&
+    isNotProduction() &&
       console.log('[getUserInfo] Fetching user name from database for:', user.email);
     const { data: userData, error } = await supabase
       .from('data_id')
@@ -930,7 +1147,7 @@ async function getUserInfo(): Promise<{ email: string | null; name: string | nul
       .single();
 
     if (error || !userData) {
-      process.env.NODE_ENV !== 'production' &&
+      isNotProduction() &&
         console.log(
           '[getUserInfo] User not found in data_id table:',
           user.email,
@@ -942,7 +1159,7 @@ async function getUserInfo(): Promise<{ email: string | null; name: string | nul
 
     // 緩存用戶名
     userNameCache.set(user.email, userData.name);
-    process.env.NODE_ENV !== 'production' &&
+    isNotProduction() &&
       console.log('[getUserInfo] User name cached:', userData.name);
 
     return { email: user.email, name: userData.name };
@@ -952,10 +1169,56 @@ async function getUserInfo(): Promise<{ email: string | null; name: string | nul
   }
 }
 
-// 生成查詢雜湊值
+// 生成查詢雜湊值（改進版本）
 function generateQueryHash(query: string): string {
-  const normalizedQuery = query.toLowerCase().trim().replace(/\s+/g, ' ');
-  return Buffer.from(normalizedQuery).toString('base64').slice(0, 32);
+  const crypto = require('crypto');
+  // 標準化查詢
+  const normalizedQuery = query
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, ' ')  // 多個空格變成一個
+    .replace(/[^a-z0-9 ]/g, ''); // 移除特殊字符
+  
+  // 使用真正嘅 SHA256 hash
+  return crypto
+    .createHash('sha256')
+    .update(normalizedQuery)
+    .digest('hex')
+    .substring(0, 32);
+}
+
+// 生成模糊匹配 hash（用於語義相似查詢）
+function generateFuzzyHash(query: string): string {
+  const crypto = require('crypto');
+  // 提取關鍵詞
+  const keywords = extractKeywords(query);
+  const sorted = keywords.sort().join(' ');
+  
+  return crypto
+    .createHash('sha256')
+    .update(sorted)
+    .digest('hex')
+    .substring(0, 16);  // 更短嘅 hash 用於模糊匹配
+}
+
+// 提取查詢關鍵詞
+function extractKeywords(query: string): string[] {
+  // 停用詞列表
+  const stopWords = new Set([
+    'the', 'is', 'at', 'which', 'on', 'and', 'a', 'an', 'as', 'are', 'was', 'were',
+    'been', 'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'could', 'should',
+    'may', 'might', 'must', 'can', 'of', 'to', 'in', 'for', 'with', 'by', 'from', 'about',
+    'into', 'through', 'during', 'before', 'after', 'above', 'below', 'up', 'down', 'out',
+    'off', 'over', 'under', 'again', 'further', 'then', 'once', 'show', 'list', 'get', 'find'
+  ]);
+  
+  const words = query
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, '')
+    .split(/\s+/)
+    .filter(word => word.length > 2 && !stopWords.has(word));
+  
+  return words;
 }
 
 // 檢查智能緩存系統（多層）
@@ -966,19 +1229,26 @@ async function checkIntelligentCache(
   const supabase = await createClient();
 
   try {
+    // 檢查緩存是否過期
+    const checkExpired = (record: any) => {
+      return !record.expired_at; // 沒有 expired_at 表示未過期
+    };
     // L1: 精確匹配緩存（最近24小時）
     const queryHash = generateQueryHash(question);
+    const fuzzyHash = generateFuzzyHash(question); // 新增模糊 hash
+    
     const exactMatch = await supabase
       .from('query_record')
       .select('*')
       .eq('query_hash', queryHash)
+      .is('expired_at', null) // 檢查緩存是否過期
       .gte('created_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString())
       .order('created_at', { ascending: false })
       .limit(1);
 
     if (exactMatch.data && exactMatch.data.length > 0) {
       const record = exactMatch.data[0];
-      process.env.NODE_ENV !== 'production' &&
+      isNotProduction() &&
         console.log('[checkIntelligentCache] L1 exact match found');
 
       // 安全處理 result_json，確保有正確結構
@@ -1002,22 +1272,78 @@ async function checkIntelligentCache(
       };
     }
 
-    // L2: 語義相似度緩存（最近7天，相似度 > 85%）
+    // L2: 模糊 hash 匹配（最近7天）
+    // 新增：先查模糊 hash，如果有匹配再做語義相似度計算
+    const fuzzyMatches = await supabase
+      .from('query_record')
+      .select('*')
+      .eq('fuzzy_hash', fuzzyHash) // 需要在 query_record 表加入 fuzzy_hash 欄位
+      .is('expired_at', null) // 檢查緩存是否過期
+      .gte('created_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString())
+      .order('created_at', { ascending: false })
+      .limit(10);
+
+    if (fuzzyMatches.data && fuzzyMatches.data.length > 0) {
+      // 在模糊匹配中找最佳匹配
+      const questionWords = extractKeywords(question);
+      let bestMatch = null;
+      let bestSimilarity = 0;
+
+      for (const record of fuzzyMatches.data) {
+        const recordWords = extractKeywords(record.query);
+        const similarity = calculateSimilarity(questionWords, recordWords);
+
+        if (similarity > 0.8 && similarity > bestSimilarity) {
+          bestMatch = record;
+          bestSimilarity = similarity;
+        }
+      }
+      
+      if (bestMatch) {
+        isNotProduction() &&
+          console.log(
+            `[checkIntelligentCache] L2 fuzzy match found (${Math.round(bestSimilarity * 100)}% similarity)`
+          );
+
+        const safeResult = bestMatch.result_json || {
+          data: [],
+          rowCount: 0,
+          executionTime: bestMatch.execution_time || 0,
+        };
+
+        return {
+          question: bestMatch.query,
+          sql: bestMatch.sql_query,
+          result: safeResult,
+          answer: bestMatch.answer,
+          complexity: bestMatch.complexity || 'simple',
+          tokensUsed: 0,
+          cached: true,
+          cacheLevel: 'L2-fuzzy',
+          similarity: bestSimilarity,
+          responseTime: 80,
+          timestamp: bestMatch.created_at,
+        };
+      }
+    }
+    
+    // L3: 語義相似度緩存（最近7天，相似度 > 85%）
     const similarQueries = await supabase
       .from('query_record')
       .select('*')
+      .is('expired_at', null) // 檢查緩存是否過期
       .gte('created_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString())
       .order('created_at', { ascending: false })
       .limit(50); // 取最近50條記錄進行相似度比較
 
     if (similarQueries.data && similarQueries.data.length > 0) {
-      // 簡單的相似度計算
-      const questionWords = question.toLowerCase().split(/\s+/);
+      // 改進的相似度計算
+      const questionWords = extractKeywords(question);
       let bestMatch = null;
       let bestSimilarity = 0;
 
       for (const record of similarQueries.data) {
-        const recordWords = record.query.toLowerCase().split(/\s+/);
+        const recordWords = extractKeywords(record.query);
         const similarity = calculateSimilarity(questionWords, recordWords);
 
         if (similarity > 0.85 && similarity > bestSimilarity) {
@@ -1027,7 +1353,7 @@ async function checkIntelligentCache(
       }
 
       if (bestMatch) {
-        process.env.NODE_ENV !== 'production' &&
+        isNotProduction() &&
           console.log(
             `[checkIntelligentCache] L2 similar match found (${Math.round(bestSimilarity * 100)}% similarity)`
           );
@@ -1047,7 +1373,7 @@ async function checkIntelligentCache(
           complexity: bestMatch.complexity || 'simple',
           tokensUsed: 0,
           cached: true,
-          cacheLevel: 'L2-semantic',
+          cacheLevel: 'L3-semantic',
           similarity: bestSimilarity,
           responseTime: 100,
           timestamp: bestMatch.created_at,
@@ -1055,7 +1381,7 @@ async function checkIntelligentCache(
       }
     }
 
-    // L3: SQL 結果緩存（當有相同SQL時，最近1小時）
+    // L4: SQL 結果緩存（當有相同SQL時，最近1小時）
     // 這個會在SQL生成後檢查
 
     return null;
@@ -1065,8 +1391,12 @@ async function checkIntelligentCache(
   }
 }
 
-// 簡單相似度計算函數
+// 改進的相似度計算函數
 function calculateSimilarity(words1: string[], words2: string[]): number {
+  if (words1.length === 0 || words2.length === 0) {
+    return 0;
+  }
+  
   const set1 = new Set(words1);
   const set2 = new Set(words2);
 
@@ -1079,7 +1409,14 @@ function calculateSimilarity(words1: string[], words2: string[]): number {
   const union = new Set(unionArray);
 
   // Jaccard 相似度
-  return intersection.size / union.size;
+  const jaccard = intersection.size / union.size;
+  
+  // 加權重：如果關鍵詞完全相同，給予更高分數
+  if (intersection.size === set1.size && intersection.size === set2.size) {
+    return 1.0; // 完全匹配
+  }
+  
+  return jaccard;
 }
 
 // 檢查 SQL 結果緩存
@@ -1091,13 +1428,14 @@ async function checkSQLCache(sql: string): Promise<any | null> {
       .from('query_record')
       .select('*')
       .eq('sql_query', sql)
+      .is('expired_at', null) // 檢查緩存是否過期
       .gte('created_at', new Date(Date.now() - 60 * 60 * 1000).toISOString()) // 最近1小時
       .order('created_at', { ascending: false })
       .limit(1);
 
     if (sqlMatch.data && sqlMatch.data.length > 0) {
       const record = sqlMatch.data[0];
-      process.env.NODE_ENV !== 'production' && console.log('[checkSQLCache] L3 SQL cache hit');
+      isNotProduction() && console.log('[checkSQLCache] L3 SQL cache hit');
       return {
         result: record.result_json,
         executionTime: record.execution_time || 0,
@@ -1130,6 +1468,7 @@ async function saveQueryRecordEnhanced(
     try {
       const supabase = await createClient();
       const queryHash = generateQueryHash(query);
+      const fuzzyHash = generateFuzzyHash(query); // 新增模糊 hash
 
       // 安全處理數值，確保不會有 null 值
       const safeExecutionTime = typeof executionTime === 'number' ? executionTime : 0;
@@ -1144,6 +1483,7 @@ async function saveQueryRecordEnhanced(
         sql_query: sqlQuery,
         result_json: resultJson,
         query_hash: queryHash,
+        fuzzy_hash: fuzzyHash, // 新增 fuzzy_hash
         execution_time: safeExecutionTime,
         row_count: safeRowCount,
         complexity: complexity,
@@ -1153,7 +1493,7 @@ async function saveQueryRecordEnhanced(
       if (error) {
         console.error('[saveQueryRecordEnhanced] Failed to save query record:', error);
       } else {
-        process.env.NODE_ENV !== 'production' &&
+        isNotProduction() &&
           console.log('[saveQueryRecordEnhanced] Enhanced query record saved successfully');
       }
     } catch (error) {
@@ -1176,8 +1516,8 @@ async function saveQueryRecordAsync(
 // 用戶權限檢查
 async function checkUserPermission(): Promise<boolean> {
   // 開發環境下跳過權限檢查
-  if (process.env.NODE_ENV === 'development') {
-    process.env.NODE_ENV !== 'production' &&
+  if (isDevelopment()) {
+    isNotProduction() &&
       console.log('[checkUserPermission] Development mode: skipping auth check for debugging');
     return true;
   }
@@ -1219,6 +1559,106 @@ function generateCacheKey(
 
 // 會話歷史現在已經由 DatabaseConversationContextManager 處理，直接從數據庫讀取
 
+// 緩存預熱功能（整合在現有檔案中）
+export async function warmFrequentQueries(): Promise<void> {
+  try {
+    const supabase = await createClient();
+    
+    // 1. 獲取最常見的查詢（基於 fuzzy_hash）
+    const { data: frequentPatterns } = await supabase
+      .rpc('get_top_query_patterns', {
+        days_back: 30,
+        p_limit: 20
+      });
+      
+    if (!frequentPatterns || frequentPatterns.length === 0) {
+      console.log('[CacheWarmer] No frequent patterns found');
+      return;
+    }
+    
+    console.log(`[CacheWarmer] Found ${frequentPatterns.length} frequent query patterns`);
+    
+    // 2. 預熱每個查詢模式的最新結果
+    for (const pattern of frequentPatterns) {
+      const { data } = await supabase
+        .from('query_record')
+        .select('*')
+        .or(`fuzzy_hash.eq.${pattern.pattern},query_hash.like.${pattern.pattern}%`)
+        .not('sql_query', 'is', null)
+        .order('created_at', { ascending: false })
+        .limit(1);
+        
+      if (data && data.length > 0) {
+        console.log(`[CacheWarmer] Warmed pattern: ${pattern.pattern} (${pattern.count} uses)`);
+      }
+    }
+    
+    // 3. 預熱今日查詢
+    const today = new Date().toISOString().split('T')[0];
+    const { data: todayQueries } = await supabase
+      .from('query_record')
+      .select('*')
+      .gte('created_at', today + 'T00:00:00')
+      .not('sql_query', 'is', null)
+      .order('created_at', { ascending: false })
+      .limit(10);
+      
+    if (todayQueries && todayQueries.length > 0) {
+      console.log(`[CacheWarmer] Warmed ${todayQueries.length} queries from today`);
+    }
+    
+  } catch (error) {
+    console.error('[CacheWarmer] Error during cache warming:', error);
+  }
+}
+
+// 緩存失效策略（整合在現有檔案中）
+export async function invalidateCacheByTable(tableName: string): Promise<void> {
+  try {
+    const supabase = await createClient();
+    
+    // 定義表與查詢關鍵字的映射
+    const tableKeywordMap: Record<string, string[]> = {
+      'record_palletinfo': ['pallet', 'stock', 'inventory', 'product', 'await'],
+      'record_inventory': ['inventory', 'stock', 'location', 'await', 'warehouse'],
+      'record_history': ['history', 'movement', 'alex', 'staff', 'move'],
+      'record_transfer': ['transfer', 'movement', 'warehouse'],
+      'record_aco': ['order', 'aco', 'purchase'],
+      'record_grn': ['grn', 'goods', 'receipt', 'receiving'],
+      'data_code': ['product', 'material', 'code', 'description'],
+      'data_supplier': ['supplier', 'vendor'],
+      'data_id': ['staff', 'user', 'employee', 'alex']
+    };
+    
+    const keywords = tableKeywordMap[tableName] || [];
+    if (keywords.length === 0) {
+      console.log(`[CacheInvalidator] No keywords mapped for table: ${tableName}`);
+      return;
+    }
+    
+    // 標記相關緩存為過期
+    const now = new Date().toISOString();
+    
+    for (const keyword of keywords) {
+      const { error } = await supabase
+        .from('query_record')
+        .update({ 
+          expired_at: now,
+          expired_reason: `Table ${tableName} updated`
+        })
+        .ilike('query', `%${keyword}%`)
+        .is('expired_at', null)
+        .gte('created_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString());
+        
+      if (!error) {
+        console.log(`[CacheInvalidator] Invalidated cache entries containing: ${keyword}`);
+      }
+    }
+  } catch (error) {
+    console.error('[CacheInvalidator] Error:', error);
+  }
+}
+
 export async function GET(request: NextRequest) {
   try {
     const supabase = await createClient();
@@ -1226,6 +1666,7 @@ export async function GET(request: NextRequest) {
     // 檢查URL參數
     const url = new URL(request.url);
     const debug = url.searchParams.get('debug') === 'true';
+    const action = url.searchParams.get('action');
 
     // 檢查環境變數
     const envCheck = {
@@ -1252,7 +1693,7 @@ export async function GET(request: NextRequest) {
         };
       }
     } catch (authError) {
-      process.env.NODE_ENV !== 'production' &&
+      isNotProduction() &&
         console.log('[Ask Database Status] Auth check failed:', authError);
     }
 
@@ -1266,7 +1707,7 @@ export async function GET(request: NextRequest) {
         tablesAccessible: !!data,
       };
     } catch (dbError) {
-      process.env.NODE_ENV !== 'production' &&
+      isNotProduction() &&
         console.log('[Ask Database Status] DB check failed:', dbError);
     }
 
@@ -1310,6 +1751,73 @@ export async function GET(request: NextRequest) {
         caching: true,
       },
     };
+    
+    // 如果請求緩存統計
+    if (action === 'cache-stats') {
+      const cacheStats = await analyzeCachePerformance();
+      return NextResponse.json({
+        ...status,
+        cacheStats
+      });
+    }
+    
+    // 如果請求預熱緩存
+    if (action === 'warm-cache') {
+      // 檢查權限
+      if (!userCheck.authenticated || userCheck.email?.includes('warehouse@') || userCheck.email?.includes('production@')) {
+        return NextResponse.json(
+          { error: 'Unauthorized to perform cache warming' },
+          { status: 401 }
+        );
+      }
+      
+      // 異步執行預熱
+      setImmediate(async () => {
+        console.log('[Ask Database] Starting cache warming...');
+        await warmFrequentQueries();
+        console.log('[Ask Database] Cache warming completed');
+      });
+      
+      return NextResponse.json({
+        success: true,
+        message: 'Cache warming started',
+        timestamp: new Date().toISOString()
+      });
+    }
+    
+    // 如果請求分析查詢計劃
+    if (action === 'analyze-query') {
+      const sql = url.searchParams.get('sql');
+      if (!sql) {
+        return NextResponse.json(
+          { error: 'SQL query parameter is required' },
+          { status: 400 }
+        );
+      }
+      
+      try {
+        const analysis = await analyzeQueryWithPlan(sql);
+        const report = generatePerformanceReport(analysis);
+        
+        return NextResponse.json({
+          success: true,
+          analysis: {
+            performanceScore: analysis.performanceScore,
+            bottlenecks: analysis.bottlenecks,
+            recommendations: analysis.recommendations,
+            estimatedImprovement: analysis.estimatedImprovement,
+            optimizedQuery: analysis.optimizedQuery
+          },
+          report,
+          timestamp: new Date().toISOString()
+        });
+      } catch (error: any) {
+        return NextResponse.json(
+          { error: 'Query analysis failed', details: error.message },
+          { status: 500 }
+        );
+      }
+    }
 
     return NextResponse.json(status);
   } catch (error: any) {
@@ -1318,5 +1826,88 @@ export async function GET(request: NextRequest) {
       { error: 'Status check failed', details: error.message, mode: 'OPENAI_SQL_GENERATION' },
       { status: 500 }
     );
+  }
+}
+
+// 分析緩存效能
+async function analyzeCachePerformance(): Promise<{
+  hitRate: number;
+  totalQueries: number;
+  cacheHits: number;
+  avgResponseTime: number;
+  topPatterns: Array<{ pattern: string; count: number }>;
+}> {
+  try {
+    const supabase = await createClient();
+    
+    // 獲取最近7天的查詢統計
+    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+    
+    // 總查詢數
+    const { count: totalQueries } = await supabase
+      .from('query_record')
+      .select('id', { count: 'exact', head: true })
+      .gte('created_at', sevenDaysAgo);
+      
+    // 緩存命中數（基於重複的 query_hash 或 fuzzy_hash）
+    const { data: hashes } = await supabase
+      .from('query_record')
+      .select('query_hash, fuzzy_hash')
+      .gte('created_at', sevenDaysAgo)
+      .not('query_hash', 'is', null);
+      
+    const hashCounts = new Map<string, number>();
+    hashes?.forEach(record => {
+      if (record.query_hash) {
+        hashCounts.set(record.query_hash, (hashCounts.get(record.query_hash) || 0) + 1);
+      }
+      if (record.fuzzy_hash) {
+        hashCounts.set(record.fuzzy_hash, (hashCounts.get(record.fuzzy_hash) || 0) + 1);
+      }
+    });
+    
+    // 計算緩存命中（重複次數 > 1）
+    let cacheHits = 0;
+    hashCounts.forEach(count => {
+      if (count > 1) {
+        cacheHits += count - 1; // 第一次不算命中
+      }
+    });
+    
+    // 平均響應時間
+    const { data: timings } = await supabase
+      .from('query_record')
+      .select('execution_time')
+      .gte('created_at', sevenDaysAgo)
+      .not('execution_time', 'is', null);
+      
+    const avgResponseTime = timings?.length 
+      ? timings.reduce((sum, record) => sum + (record.execution_time || 0), 0) / timings.length
+      : 0;
+      
+    // 熱門查詢模式
+    const { data: patterns } = await supabase
+      .rpc('get_top_query_patterns', {
+        days_back: 7,
+        p_limit: 10
+      });
+      
+    return {
+      hitRate: totalQueries ? (cacheHits / totalQueries) * 100 : 0,
+      totalQueries: totalQueries || 0,
+      cacheHits,
+      avgResponseTime: Math.round(avgResponseTime),
+      topPatterns: patterns || []
+    };
+    
+  } catch (error) {
+    console.error('[analyzeCachePerformance] Error:', error);
+    return {
+      hitRate: 0,
+      totalQueries: 0,
+      cacheHits: 0,
+      avgResponseTime: 0,
+      topPatterns: []
+    };
   }
 }

@@ -171,26 +171,22 @@ export const AdminDashboardContent: React.FC<AdminDashboardContentProps> = ({
       HistoryTreeV2: 4,
     };
 
-    return (
-      <>
-        {layout.widgets.map((widget, index) => {
-          // 為低優先級 widgets 添加延遲，但保持原有順序
-          const priority = widgetPriority[widget.component || ''] || 99;
-          const delay = priority > 2 ? (priority - 2) * 100 : 0;
+    return layout.widgets.map((widget, index) => {
+      // 為低優先級 widgets 添加延遲，但保持原有順序
+      const priority = widgetPriority[widget.component || ''] || 99;
+      const delay = priority > 2 ? (priority - 2) * 100 : 0;
 
-          return (
-            <AdminWidgetRenderer
-              key={`${widget.gridArea}-${index}`}
-              config={widget}
-              theme={theme}
-              timeFrame={timeFrame}
-              index={index}
-              delay={delay}
-            />
-          );
-        })}
-      </>
-    );
+      return (
+        <AdminWidgetRenderer
+          key={`${widget.gridArea}-${index}`}
+          config={widget}
+          theme={theme}
+          timeFrame={timeFrame}
+          index={index}
+          delay={delay}
+        />
+      );
+    });
   };
 
   // 如果有對應的 ThemeLayout 組件，使用動態加載

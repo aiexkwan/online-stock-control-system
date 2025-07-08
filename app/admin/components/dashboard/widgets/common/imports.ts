@@ -10,10 +10,10 @@
 export * from './types';
 
 // Error handling
-export { ErrorHandler } from '@/app/services/ErrorHandler';
+export { ErrorHandler } from '@/app/components/qc-label-form/services/ErrorHandler';
 
 // Dashboard API
-export { createDashboardAPI } from '@/lib/dashboard-api';
+export { createDashboardAPI } from '@/lib/api/admin/DashboardAPI';
 
 // Chart components (for widgets that need charts)
 export {
@@ -35,14 +35,15 @@ export {
 } from 'recharts';
 
 // Form components (for widgets with forms)
-export {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/components/ui/form';
+// Form components - temporarily commented out until form UI is available
+// export {
+//   Form,
+//   FormControl,
+//   FormField,
+//   FormItem,
+//   FormLabel,
+//   FormMessage,
+// } from '@/components/ui/form';
 
 export { Input } from '@/components/ui/input';
 export {

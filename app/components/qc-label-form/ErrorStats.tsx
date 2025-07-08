@@ -7,6 +7,7 @@ import {
   ExclamationTriangleIcon,
   InformationCircleIcon,
 } from '@heroicons/react/24/outline';
+import { isProduction } from '@/lib/utils/env';
 
 interface ErrorStatsProps {
   showInProduction?: boolean;
@@ -27,7 +28,7 @@ export const ErrorStats: React.FC<ErrorStatsProps> = React.memo(
     }, [refreshInterval]);
 
     // Don't show in production unless explicitly enabled
-    if (process.env.NODE_ENV === 'production' && !showInProduction) {
+    if (isProduction() && !showInProduction) {
       return null;
     }
 

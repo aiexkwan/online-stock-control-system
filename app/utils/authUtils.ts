@@ -1,3 +1,5 @@
+import { isNotProduction } from '@/lib/utils/env';
+
 /**
  * 將用戶 ID (時鐘編號) 轉換為 Supabase Auth 可用的電子郵件格式
  *
@@ -22,7 +24,7 @@ export function clockNumberToEmail(clockNumber: string): string {
  */
 export function emailToClockNumber(email: string | null | undefined): string | null {
   if (!email) {
-    if (process.env.NODE_ENV !== 'production') {
+    if (isNotProduction()) {
       console.warn('[authUtils] emailToClockNumber called with null or undefined email');
     }
     return null;

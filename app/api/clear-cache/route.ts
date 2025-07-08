@@ -3,9 +3,9 @@ import { revalidatePath, revalidateTag } from 'next/cache';
 
 export async function POST(request: NextRequest) {
   try {
-    process.env.NODE_ENV !== 'production' &&
-      process.env.NODE_ENV !== 'production' &&
+    if (process.env.NODE_ENV !== 'production') {
       console.log('[clear-cache] 開始清除 Next.js 緩存...');
+    }
 
     // 清除特定路徑的緩存
     const pathsToRevalidate = ['/print-label', '/print-grnlabel', '/admin', '/dashboard', '/'];
@@ -13,13 +13,13 @@ export async function POST(request: NextRequest) {
     for (const path of pathsToRevalidate) {
       try {
         revalidatePath(path);
-        process.env.NODE_ENV !== 'production' &&
-          process.env.NODE_ENV !== 'production' &&
+        if (process.env.NODE_ENV !== 'production') {
           console.log(`[clear-cache] 已清除路徑緩存: ${path}`);
+        }
       } catch (error) {
-        process.env.NODE_ENV !== 'production' &&
-          process.env.NODE_ENV !== 'production' &&
+        if (process.env.NODE_ENV !== 'production') {
           console.warn(`[clear-cache] 清除路徑緩存失敗 ${path}:`, error);
+        }
       }
     }
 
@@ -29,32 +29,32 @@ export async function POST(request: NextRequest) {
     for (const tag of tagsToRevalidate) {
       try {
         revalidateTag(tag);
-        process.env.NODE_ENV !== 'production' &&
-          process.env.NODE_ENV !== 'production' &&
+        if (process.env.NODE_ENV !== 'production') {
           console.log(`[clear-cache] 已清除標籤緩存: ${tag}`);
+        }
       } catch (error) {
-        process.env.NODE_ENV !== 'production' &&
-          process.env.NODE_ENV !== 'production' &&
+        if (process.env.NODE_ENV !== 'production') {
           console.warn(`[clear-cache] 清除標籤緩存失敗 ${tag}:`, error);
+        }
       }
     }
 
     // 在 Vercel 環境中添加額外的緩存清除
     if (process.env.VERCEL_ENV) {
-      process.env.NODE_ENV !== 'production' &&
-        process.env.NODE_ENV !== 'production' &&
+      if (process.env.NODE_ENV !== 'production') {
         console.log('[clear-cache] Vercel 環境檢測，執行額外清除...');
+      }
 
       // 強制清除所有可能的緩存
       try {
         revalidatePath('/', 'layout');
-        process.env.NODE_ENV !== 'production' &&
-          process.env.NODE_ENV !== 'production' &&
+        if (process.env.NODE_ENV !== 'production') {
           console.log('[clear-cache] 已清除根布局緩存');
+        }
       } catch (error) {
-        process.env.NODE_ENV !== 'production' &&
-          process.env.NODE_ENV !== 'production' &&
+        if (process.env.NODE_ENV !== 'production') {
           console.warn('[clear-cache] 清除根布局緩存失敗:', error);
+        }
       }
     }
 

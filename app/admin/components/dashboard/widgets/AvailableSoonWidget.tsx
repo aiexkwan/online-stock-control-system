@@ -10,7 +10,7 @@ import { WidgetComponentProps } from '@/app/types/dashboard';
 function AvailableSoonWidget({ widget, isEditMode }: WidgetComponentProps) {
   if (isEditMode) {
     return (
-      <WidgetCard widget={widget} isEditMode={true}>
+      <WidgetCard widgetType='custom' isEditMode={true}>
         <div className='flex h-full items-center justify-center'>
           <p className='font-medium text-slate-400'>Coming Soon Widget</p>
         </div>
@@ -19,11 +19,11 @@ function AvailableSoonWidget({ widget, isEditMode }: WidgetComponentProps) {
   }
 
   return (
-    <WidgetCard widget={widget}>
+    <WidgetCard widgetType='custom'>
       <CardHeader className='pb-2'>
         <CardTitle className='widget-title flex items-center gap-2'>
           <ClockIcon className='h-5 w-5' />
-          {widget.title || 'Coming Soon'}
+          {(widget as any).title || 'Coming Soon'}
         </CardTitle>
       </CardHeader>
       <CardContent className='flex flex-1 items-center justify-center'>

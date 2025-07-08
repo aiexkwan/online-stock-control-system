@@ -35,9 +35,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    process.env.NODE_ENV !== 'production' &&
-      process.env.NODE_ENV !== 'production' &&
+    if (process.env.NODE_ENV !== 'production') {
       console.log('[Check File Exists] Checking file:', { fileName, folder });
+    }
 
     const supabaseAdmin = createSupabaseAdmin();
 
@@ -66,9 +66,9 @@ export async function POST(request: NextRequest) {
       const { data } = supabaseAdmin.storage.from(folder).getPublicUrl(fileName);
 
       publicUrl = data.publicUrl;
-      process.env.NODE_ENV !== 'production' &&
-        process.env.NODE_ENV !== 'production' &&
+      if (process.env.NODE_ENV !== 'production') {
         console.log('[Check File Exists] File exists, public URL:', publicUrl);
+      }
     }
 
     return NextResponse.json({

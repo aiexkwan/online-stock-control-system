@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { FeatureFlag, FeatureFlagStatus } from '../types';
 import { featureFlagManager } from '../FeatureFlagManager';
 import { useAllFeatureFlags } from '../hooks/useFeatureFlag';
+import { isProduction } from '@/lib/utils/env';
 
 /**
  * Feature Flag 開發面板
@@ -19,7 +20,7 @@ export const FeatureFlagPanel: React.FC = () => {
   }, []);
 
   // 只在開發環境顯示
-  if (process.env.NODE_ENV === 'production') {
+  if (isProduction()) {
     return null;
   }
 

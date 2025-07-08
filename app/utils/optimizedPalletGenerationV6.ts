@@ -1,5 +1,6 @@
 import { createClient } from '@/app/utils/supabase/client';
 import { SupabaseClient } from '@supabase/supabase-js';
+import { isNotProduction } from '@/lib/utils/env';
 
 export interface GenerationOptions {
   count: number;
@@ -34,8 +35,7 @@ export async function generateOptimizedPalletNumbersV6(
   }
 
   try {
-    process.env.NODE_ENV !== 'production' &&
-      process.env.NODE_ENV !== 'production' &&
+    isNotProduction() &&
       console.log('[PalletGenerationV6] Requesting', count, 'pallet numbers');
 
     // 調用 v6 RPC 函數，返回 pallet_number 和 series
@@ -70,8 +70,7 @@ export async function generateOptimizedPalletNumbersV6(
     const palletNumbers = data.map((item: PalletData) => item.pallet_number);
     const series = data.map((item: PalletData) => item.series);
 
-    process.env.NODE_ENV !== 'production' &&
-      process.env.NODE_ENV !== 'production' &&
+    isNotProduction() &&
       console.log('[PalletGenerationV6] Successfully reserved:', {
         palletNumbers,
         series,
@@ -103,8 +102,7 @@ export async function confirmPalletUsage(
   supabase?: SupabaseClient
 ): Promise<boolean> {
   if (!palletNumbers || palletNumbers.length === 0) {
-    process.env.NODE_ENV !== 'production' &&
-      process.env.NODE_ENV !== 'production' &&
+    isNotProduction() &&
       console.warn('[PalletGenerationV6] No pallet numbers to confirm');
     return true;
   }
@@ -114,8 +112,7 @@ export async function confirmPalletUsage(
   }
 
   try {
-    process.env.NODE_ENV !== 'production' &&
-      process.env.NODE_ENV !== 'production' &&
+    isNotProduction() &&
       console.log('[PalletGenerationV6] Confirming usage for:', palletNumbers);
 
     const { data, error } = await supabase.rpc('confirm_pallet_usage', {
@@ -127,8 +124,7 @@ export async function confirmPalletUsage(
       return false;
     }
 
-    process.env.NODE_ENV !== 'production' &&
-      process.env.NODE_ENV !== 'production' &&
+    isNotProduction() &&
       console.log('[PalletGenerationV6] Successfully confirmed usage');
     return true;
   } catch (error) {
@@ -145,8 +141,7 @@ export async function releasePalletReservation(
   supabase?: SupabaseClient
 ): Promise<boolean> {
   if (!palletNumbers || palletNumbers.length === 0) {
-    process.env.NODE_ENV !== 'production' &&
-      process.env.NODE_ENV !== 'production' &&
+    isNotProduction() &&
       console.warn('[PalletGenerationV6] No pallet numbers to release');
     return true;
   }
@@ -156,8 +151,7 @@ export async function releasePalletReservation(
   }
 
   try {
-    process.env.NODE_ENV !== 'production' &&
-      process.env.NODE_ENV !== 'production' &&
+    isNotProduction() &&
       console.log('[PalletGenerationV6] Releasing reservation for:', palletNumbers);
 
     const { data, error } = await supabase.rpc('release_pallet_reservation', {
@@ -169,8 +163,7 @@ export async function releasePalletReservation(
       return false;
     }
 
-    process.env.NODE_ENV !== 'production' &&
-      process.env.NODE_ENV !== 'production' &&
+    isNotProduction() &&
       console.log('[PalletGenerationV6] Successfully released reservation');
     return true;
   } catch (error) {

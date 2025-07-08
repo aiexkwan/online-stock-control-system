@@ -127,7 +127,8 @@
       "Bash(do echo \"--- $widget ---\")",
       "Bash(npx graphql-schema-linter:*)",
       "Bash(git checkout:*)",
-      "Bash(perl:*)"
+      "Bash(perl:*)",
+      "Bash(bash:*)"
     ],
     "deny": []
   }

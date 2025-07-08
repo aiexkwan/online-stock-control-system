@@ -2,6 +2,7 @@ import { RateLimiterMemory, RateLimiterRedis } from 'rate-limiter-flexible';
 import { GraphQLError } from 'graphql';
 import { logger } from '../logger';
 import { redisCacheAdapter } from './redis-cache-adapter';
+import { isDevelopment, isProduction } from '@/lib/utils/env';
 
 // 擴展原有的限流配置，添加更細粒度規則
 export interface EnhancedRateLimitConfig {
@@ -154,7 +155,7 @@ export class EnhancedRateLimiter {
   ) {
     // 在開發環境中，如果沒有明確啟用 Redis，則不使用 Redis
     const shouldUseRedis =
-      (useRedis && process.env.NODE_ENV !== 'development') || process.env.ENABLE_REDIS;
+      (useRedis && !isDevelopment()) || process.env.ENABLE_REDIS;
     this.initializeLimiters(shouldUseRedis);
     this.startSystemMonitoring();
   }
@@ -501,7 +502,7 @@ export class EnhancedRateLimiter {
 
 // 創建增強型限流器實例（開發環境使用內存版本）
 const useRedisForRateLimit =
-  process.env.NODE_ENV === 'production' || process.env.ENABLE_REDIS === 'true';
+  isProduction() || process.env.ENABLE_REDIS === 'true';
 export const enhancedRateLimiter = new EnhancedRateLimiter(
   enhancedRateLimitConfig,
   useRedisForRateLimit

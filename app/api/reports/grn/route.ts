@@ -209,8 +209,8 @@ export async function POST(request: NextRequest) {
       ];
       let colIndex = 1;
       headers.forEach(([text, span]) => {
-        const endCol = colIndex + span - 1;
-        if (span > 1) {
+        const endCol = colIndex + Number(span) - 1;
+        if (Number(span) > 1) {
           sheet.mergeCells(8, colIndex, 8, endCol);
         }
         const cell = sheet.getCell(8, colIndex);
@@ -231,11 +231,11 @@ export async function POST(request: NextRequest) {
       // Data rows
       reportData.records.forEach((record, index) => {
         const row = 11 + index;
-        sheet.getCell(row, 1).value = record.plt_num;
+        sheet.getCell(row, 1).value = record.pallet;
         sheet.getCell(row, 3).value = record.gross_weight;
-        sheet.getCell(row, 5).value = record.gross_weight - record.net_weight;
+        sheet.getCell(row, 5).value = (record.gross_weight || 0) - (record.net_weight || 0);
         sheet.getCell(row, 7).value = record.net_weight;
-        sheet.getCell(row, 9).value = record.units;
+        sheet.getCell(row, 9).value = record.pallet_count;
         sheet.getCell(row, 13).value = reportData.material_code;
         sheet.getCell(row, 16).value = record.package_count;
 
@@ -250,8 +250,8 @@ export async function POST(request: NextRequest) {
       const footer = [
         ['TOTAL GROSS WEIGHT', reportData.total_gross_weight],
         ['TOTAL NET WEIGHT', reportData.total_net_weight],
-        ['TOTAL UNITS', reportData.total_units],
-        ['TOTAL PALLETS', reportData.total_pallets],
+        ['TOTAL UNITS', reportData.records.reduce((sum, r) => sum + (r.pallet_count || 0), 0)],
+        ['TOTAL PALLETS', reportData.records.length],
       ];
       footer.forEach(([label, value], i) => {
         sheet.getCell(44 + i, 14).value = label;
@@ -290,7 +290,7 @@ export async function POST(request: NextRequest) {
 
       allReports.forEach((report, index) => {
         sheet.getCell(`A${4 + index}`).value =
-          `- ${report.materialCode}: ${report.data.material_desc || 'N/A'}`;
+          `- ${report.materialCode}: ${report.data.material_description || 'N/A'}`;
       });
 
       const buffer = await workbook.xlsx.writeBuffer();

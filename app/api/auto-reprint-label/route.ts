@@ -55,14 +55,14 @@ function mapLocationToDbField(location: string): string {
 
 export async function POST(request: NextRequest) {
   try {
-    process.env.NODE_ENV !== 'production' &&
-      process.env.NODE_ENV !== 'production' &&
+    if (process.env.NODE_ENV !== 'production') {
       console.log('[Auto Reprint API] Starting auto reprint process...');
+    }
     const data: AutoReprintRequest = await request.json();
 
-    process.env.NODE_ENV !== 'production' &&
-      process.env.NODE_ENV !== 'production' &&
+    if (process.env.NODE_ENV !== 'production') {
       console.log('[Auto Reprint API] Received request data:', data);
+    }
 
     // Validate input
     if (!data.productCode || !data.quantity || !data.operatorClockNum) {
@@ -78,21 +78,21 @@ export async function POST(request: NextRequest) {
     }
 
     // Get product information
-    process.env.NODE_ENV !== 'production' &&
-      process.env.NODE_ENV !== 'production' &&
+    if (process.env.NODE_ENV !== 'production') {
       console.log(`[Auto Reprint API] Getting product info for: ${data.productCode}`);
+    }
     const productInfo = await getProductInfo(data.productCode);
-    process.env.NODE_ENV !== 'production' &&
-      process.env.NODE_ENV !== 'production' &&
+    if (process.env.NODE_ENV !== 'production') {
       console.log('[Auto Reprint API] Product info retrieved:', productInfo);
+    }
 
     // Generate pallet number and series using unified V6 generation
-    process.env.NODE_ENV !== 'production' &&
-      process.env.NODE_ENV !== 'production' &&
+    if (process.env.NODE_ENV !== 'production') {
       console.log('[Auto Reprint API] Generating pallet number and series using V6 generation...');
-    process.env.NODE_ENV !== 'production' &&
-      process.env.NODE_ENV !== 'production' &&
+    }
+    if (process.env.NODE_ENV !== 'production') {
       console.log('[Auto Reprint API] Using unified generatePalletNumbers function');
+    }
 
     // Import the unified generation function
     const { generatePalletNumbers } = await import('@/app/actions/palletActions');
@@ -114,17 +114,17 @@ export async function POST(request: NextRequest) {
 
     const palletNum = palletNumbers[0];
     const seriesValue = series[0];
-    process.env.NODE_ENV !== 'production' &&
-      process.env.NODE_ENV !== 'production' &&
+    if (process.env.NODE_ENV !== 'production') {
       console.log(`[Auto Reprint API] Generated pallet: ${palletNum}, series: ${seriesValue}`);
-    process.env.NODE_ENV !== 'production' &&
-      process.env.NODE_ENV !== 'production' &&
+    }
+    if (process.env.NODE_ENV !== 'production') {
       console.log(`[Auto Reprint API] About to create database records with pallet: ${palletNum}`);
+    }
 
     // Prepare database records
-    process.env.NODE_ENV !== 'production' &&
-      process.env.NODE_ENV !== 'production' &&
+    if (process.env.NODE_ENV !== 'production') {
       console.log('[Auto Reprint API] Preparing database records...');
+    }
     const palletInfoRecord: QcPalletInfoPayload = {
       plt_num: palletNum,
       series: seriesValue,
@@ -150,11 +150,11 @@ export async function POST(request: NextRequest) {
 
     // 根據原棧板位置設置對應的庫存欄位
     const mappedLocation = mapLocationToDbField(data.originalLocation);
-    process.env.NODE_ENV !== 'production' &&
-      process.env.NODE_ENV !== 'production' &&
+    if (process.env.NODE_ENV !== 'production') {
       console.log(
         `[Auto Reprint API] Location mapping: "${data.originalLocation}" -> "${mappedLocation}"`
       );
+    }
     inventoryRecord[mappedLocation] = data.quantity;
 
     const databasePayload: QcDatabaseEntryPayload = {
@@ -164,9 +164,9 @@ export async function POST(request: NextRequest) {
     };
 
     // Insert database records
-    process.env.NODE_ENV !== 'production' &&
-      process.env.NODE_ENV !== 'production' &&
+    if (process.env.NODE_ENV !== 'production') {
       console.log('[Auto Reprint API] Inserting database records...');
+    }
     const dbResult = await createQcDatabaseEntriesWithTransaction(
       databasePayload,
       data.operatorClockNum
@@ -175,15 +175,15 @@ export async function POST(request: NextRequest) {
       console.error('[Auto Reprint API] Database operation failed:', dbResult.error);
       throw new Error(`Database operation failed: ${dbResult.error}`);
     }
-    process.env.NODE_ENV !== 'production' &&
-      process.env.NODE_ENV !== 'production' &&
+    if (process.env.NODE_ENV !== 'production') {
       console.log('[Auto Reprint API] Database records inserted successfully');
+    }
 
     // 🚀 新增：更新原始棧板的歷史記錄，將 "XX" 替換為實際的新棧板號
     try {
-      process.env.NODE_ENV !== 'production' &&
-        process.env.NODE_ENV !== 'production' &&
+      if (process.env.NODE_ENV !== 'production') {
         console.log('[Auto Reprint API] Updating original pallet history record...');
+      }
 
       // 查找原始棧板的 "Partially Damaged" 記錄
       const { data: historyRecords, error: findError } = await supabase
@@ -195,14 +195,14 @@ export async function POST(request: NextRequest) {
         .limit(1);
 
       if (findError) {
-        process.env.NODE_ENV !== 'production' &&
-          process.env.NODE_ENV !== 'production' &&
+        if (process.env.NODE_ENV !== 'production') {
           console.warn('[Auto Reprint API] Failed to find original history record:', findError);
+        }
       } else if (historyRecords && historyRecords.length > 0) {
         const originalRecord = historyRecords[0];
-        process.env.NODE_ENV !== 'production' &&
-          process.env.NODE_ENV !== 'production' &&
+        if (process.env.NODE_ENV !== 'production') {
           console.log('[Auto Reprint API] Found original history record:', originalRecord);
+        }
 
         // 更新 remark，將 "XX" 替換為實際的新棧板號
         if (originalRecord.remark && originalRecord.remark.includes('/XX')) {
@@ -214,47 +214,47 @@ export async function POST(request: NextRequest) {
             .eq('uuid', originalRecord.uuid);
 
           if (updateError) {
-            process.env.NODE_ENV !== 'production' &&
-              process.env.NODE_ENV !== 'production' &&
+            if (process.env.NODE_ENV !== 'production') {
               console.warn(
                 '[Auto Reprint API] Failed to update original history record:',
                 updateError
               );
+            }
           } else {
-            process.env.NODE_ENV !== 'production' &&
-              process.env.NODE_ENV !== 'production' &&
+            if (process.env.NODE_ENV !== 'production') {
               console.log('[Auto Reprint API] Successfully updated original history record:', {
                 original_remark: originalRecord.remark,
                 updated_remark: updatedRemark,
               });
+            }
           }
         }
       } else {
-        process.env.NODE_ENV !== 'production' &&
-          process.env.NODE_ENV !== 'production' &&
+        if (process.env.NODE_ENV !== 'production') {
           console.log(
             '[Auto Reprint API] No "Partially Damaged" history record found for original pallet'
           );
+        }
       }
     } catch (historyUpdateError: any) {
-      process.env.NODE_ENV !== 'production' &&
-        process.env.NODE_ENV !== 'production' &&
+      if (process.env.NODE_ENV !== 'production') {
         console.warn(
           '[Auto Reprint API] Error updating original history record:',
           historyUpdateError
         );
+      }
       // 不中斷主要流程
     }
 
     // 🚀 新增：更新 stock_level 表
     try {
-      process.env.NODE_ENV !== 'production' &&
-        process.env.NODE_ENV !== 'production' &&
+      if (process.env.NODE_ENV !== 'production') {
         console.log('[Auto Reprint API] Updating stock_level for product:', {
           product_code: productInfo.code,
           quantity: data.quantity,
           operation: 'auto_reprint',
         });
+      }
 
       const { data: stockResult, error: stockError } = await supabase.rpc(
         'update_stock_level_void',
@@ -266,26 +266,26 @@ export async function POST(request: NextRequest) {
       );
 
       if (stockError) {
-        process.env.NODE_ENV !== 'production' &&
-          process.env.NODE_ENV !== 'production' &&
+        if (process.env.NODE_ENV !== 'production') {
           console.warn('[Auto Reprint API] Stock level update failed:', stockError);
+        }
         // 記錄警告但不中斷主要流程
       } else {
-        process.env.NODE_ENV !== 'production' &&
-          process.env.NODE_ENV !== 'production' &&
+        if (process.env.NODE_ENV !== 'production') {
           console.log('[Auto Reprint API] Stock level updated successfully:', stockResult);
+        }
       }
     } catch (stockUpdateError: any) {
-      process.env.NODE_ENV !== 'production' &&
-        process.env.NODE_ENV !== 'production' &&
+      if (process.env.NODE_ENV !== 'production') {
         console.warn('[Auto Reprint API] Stock level update error:', stockUpdateError);
+      }
       // 記錄錯誤但不中斷主要流程
     }
 
     // Return success data for client-side PDF generation (same as QC Label)
-    process.env.NODE_ENV !== 'production' &&
-      process.env.NODE_ENV !== 'production' &&
+    if (process.env.NODE_ENV !== 'production') {
       console.log('[Auto Reprint API] Preparing data for client-side PDF generation...');
+    }
 
     // Prepare QC input data (same format as QC Label)
     const qcInputData = {
@@ -301,14 +301,14 @@ export async function POST(request: NextRequest) {
       productType: productInfo.type,
     };
 
-    process.env.NODE_ENV !== 'production' &&
-      process.env.NODE_ENV !== 'production' &&
+    if (process.env.NODE_ENV !== 'production') {
       console.log('[Auto Reprint API] QC input data prepared:', qcInputData);
+    }
 
     // Return QC input data for client-side PDF generation (same as QC Label)
-    process.env.NODE_ENV !== 'production' &&
-      process.env.NODE_ENV !== 'production' &&
+    if (process.env.NODE_ENV !== 'production') {
       console.log(`[Auto Reprint API] Returning QC input data for client-side PDF generation`);
+    }
 
     return NextResponse.json({
       success: true,

@@ -117,7 +117,7 @@ const StillInAwaitPercentageWidget = React.memo(function StillInAwaitPercentageW
 
   if (isEditMode) {
     return (
-      <WidgetCard widget={widget} isEditMode={true}>
+      <WidgetCard widgetType='custom' isEditMode={true}>
         <div className='flex h-full items-center justify-center'>
           <p className='font-medium text-slate-400'>Still In Await % Widget</p>
         </div>
@@ -126,7 +126,7 @@ const StillInAwaitPercentageWidget = React.memo(function StillInAwaitPercentageW
   }
 
   return (
-    <WidgetCard widget={widget}>
+    <WidgetCard widgetType='custom'>
       <CardHeader className='pb-2'>
         <CardTitle className='widget-title flex items-center gap-2'>
           <ChartPieIcon className='h-5 w-5' />

@@ -3,10 +3,11 @@
  * This file is kept for compatibility but no longer uses localStorage
  */
 
+import { isNotProduction } from '@/lib/utils/env';
+
 export function clearAdminDashboardLayout() {
   if (typeof window !== 'undefined') {
-    process.env.NODE_ENV !== 'production' &&
-      process.env.NODE_ENV !== 'production' &&
+    isNotProduction() &&
       console.log(
         'Admin dashboard uses database storage only. Use the Reset button in Edit Dashboard mode to clear widgets.'
       );

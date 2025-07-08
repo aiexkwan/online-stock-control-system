@@ -283,30 +283,3 @@ worksheet.getCell('C3').value = { formula: 'SUM(A1:B2)' };
 文檔版本：1.0  
 最後更新：2025-01-01 
 狀態：待核准
-
-
-根據搜尋結果，我總結一下：
-
-  1) 有幾多個生成 Excel 嘅組件？
-
-  總共有 3 種主要嘅 Excel 生成方式：
-
-  1. 統一報表系統 (ExcelGenerator 類)
-    - ExcelGeneratorNew.ts - 新版 (用 exceljs)
-    - ExcelGeneratorLegacy.ts - 舊版 (用 xlsx)
-    - 通過環境變數 USE_EXCELJS 控制使用邊個
-  2. 直接使用 ExcelJS 嘅組件
-    - exportReport.ts 入面嘅函數
-    - 各個 service 檔案（如 voidReportService.ts）
-  3. 直接使用 xlsx 嘅舊組件
-    - 部分 API routes 仍然用緊
-
-  2) 真正用緊嘅有邊個？
-
-  根據 import 分析，真正活躍使用緊嘅係：
-
-  1. 統一報表引擎 (ReportEngine.ts) - 使用 ExcelGenerator 類
-  2. exportReport.ts - 被多個 widget 同 API 使用
-  3. 各個報表 API routes - 混合使用統一系統同直接調用
-
-

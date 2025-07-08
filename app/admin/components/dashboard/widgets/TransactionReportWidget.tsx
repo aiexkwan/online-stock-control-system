@@ -122,7 +122,8 @@ export const TransactionReportWidget = function TransactionReportWidget({
 
       // Use unified download function
       const filename = `transaction-report-${startDate}-to-${endDate}.xlsx`;
-      downloadReport(buffer, filename);
+      const arrayBuffer = buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength) as ArrayBuffer;
+      downloadReport(arrayBuffer, filename);
 
       clearInterval(interval);
       setProgress(100);
@@ -288,7 +289,8 @@ export const TransactionReportWidget = function TransactionReportWidget({
                     if (!reportData) throw new Error('No data found');
 
                     const buffer = await buildTransactionReport(reportData);
-                    await printReport(buffer, {
+                    const arrayBuffer = buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength) as ArrayBuffer;
+                    await printReport(arrayBuffer, {
                       dateRange: `${format(fromDate, 'MMM d')} - ${format(toDate, 'MMM d, yyyy')}`,
                       startDate,
                       endDate,

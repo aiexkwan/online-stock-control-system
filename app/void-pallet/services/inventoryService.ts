@@ -2,6 +2,7 @@
 
 import { createClient } from '@/app/utils/supabase/server';
 import { LocationMapper } from '@/lib/inventory/utils/locationMapper';
+import { isNotProduction } from '@/lib/utils/environment';
 
 /**
  * Get inventory column name based on location
@@ -10,12 +11,12 @@ import { LocationMapper } from '@/lib/inventory/utils/locationMapper';
 export function getInventoryColumn(location: string | null): string {
   if (!location) return 'injection'; // Default value
 
-  process.env.NODE_ENV !== 'production' &&
+  isNotProduction() &&
     console.log(`[Inventory] Mapping location "${location}" to inventory column`);
 
   // Use the unified LocationMapper
   const column = LocationMapper.toDbColumn(location) || 'injection';
-  process.env.NODE_ENV !== 'production' &&
+  isNotProduction() &&
     console.log(`[Inventory] Location "${location}" mapped to column "${column}"`);
 
   return column;
@@ -56,8 +57,8 @@ export async function updateInventoryForVoid(
       return { success: false, error: error.message };
     }
 
-    process.env.NODE_ENV !== 'production' &&
-      process.env.NODE_ENV !== 'production' &&
+    isNotProduction() &&
+      isNotProduction() &&
       console.log('[Inventory] Successfully updated inventory:', inventoryUpdate);
     return { success: true };
   } catch (error: any) {
@@ -77,8 +78,8 @@ export async function updateStockLevel(
   try {
     const supabase = await createClient();
 
-    process.env.NODE_ENV !== 'production' &&
-      process.env.NODE_ENV !== 'production' &&
+    isNotProduction() &&
+      isNotProduction() &&
       console.log('[Stock Level] Updating:', {
         product_code: productCode,
         quantity: quantity,
@@ -96,8 +97,8 @@ export async function updateStockLevel(
       return { success: false, error: error.message };
     }
 
-    process.env.NODE_ENV !== 'production' &&
-      process.env.NODE_ENV !== 'production' &&
+    isNotProduction() &&
+      isNotProduction() &&
       console.log('[Stock Level] Updated successfully:', data);
     return { success: true, result: data };
   } catch (error: any) {

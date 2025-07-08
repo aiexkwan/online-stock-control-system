@@ -7,6 +7,7 @@ import React from 'react';
 import { WidgetComponentProps } from './types';
 import { widgetRegistry } from './enhanced-registry';
 import { dualRunVerifier, VerificationResult } from './dual-run-verification';
+import { isDevelopment } from '@/lib/utils/env';
 
 // Feature flag 控制新系統啟用
 const ENABLE_WIDGET_REGISTRY_V2 = process.env.NEXT_PUBLIC_ENABLE_WIDGET_REGISTRY_V2 === 'true';
@@ -27,7 +28,7 @@ const defaultConfig: DualLoadingConfig = {
   enableGraphQL: process.env.NEXT_PUBLIC_ENABLE_GRAPHQL === 'true',
   fallbackToLegacy: true,
   performanceMode: 'balanced',
-  enableVerification: process.env.NODE_ENV === 'development', // 開發環境默認開啟
+  enableVerification: isDevelopment(), // 開發環境默認開啟
   verificationSampleRate: 0.1 // 默認驗證 10% 的請求
 };
 

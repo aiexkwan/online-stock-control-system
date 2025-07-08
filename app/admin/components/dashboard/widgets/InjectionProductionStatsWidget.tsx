@@ -31,8 +31,10 @@ export const InjectionProductionStatsWidget: React.FC<InjectionProductionStatsWi
   widget
 }) => {
   // 從 widget config 提取數據
-  const widgetTitle = title || widget?.title || 'Production Stats';
-  const widgetMetric = metric || widget?.metrics?.[0] || 'pallet_count';
+  // 使用類型斷言處理擴展屬性
+  const widgetConfig = widget?.config as any;
+  const widgetTitle = title || widgetConfig?.title || 'Production Stats';
+  const widgetMetric = metric || widgetConfig?.metric || 'pallet_count';
   // 根據 timeFrame 設定查詢時間範圍
   const { startDate, endDate } = useMemo(() => {
     if (!timeFrame) {

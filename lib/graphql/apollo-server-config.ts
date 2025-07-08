@@ -30,6 +30,7 @@ import { cacheOptimizer } from './cache-strategy-optimizer';
 import { unifiedDataLayer } from './unified-data-layer';
 import { unifiedPreloadService } from '@/lib/preload/unified-preload-service';
 import { logger } from '@/lib/logger';
+import { isProduction, isNotProduction } from '@/lib/utils/env';
 
 // Load GraphQL schema
 const typeDefs = readFileSync(join(process.cwd(), 'lib/graphql/schema.graphql'), 'utf8');
@@ -402,7 +403,7 @@ export function createOptimizedApolloServer() {
       console.error('GraphQL Error:', error);
 
       // Don't expose internal errors in production
-      if (process.env.NODE_ENV === 'production') {
+      if (isProduction()) {
         if (error.message.includes('Rate limit exceeded')) {
           return new Error('Rate limit exceeded. Please try again later.');
         }
@@ -416,8 +417,8 @@ export function createOptimizedApolloServer() {
     },
 
     // Development tools
-    introspection: process.env.NODE_ENV !== 'production',
-    playground: process.env.NODE_ENV !== 'production',
+    introspection: isNotProduction(),
+    playground: isNotProduction(),
   });
 
   return server;

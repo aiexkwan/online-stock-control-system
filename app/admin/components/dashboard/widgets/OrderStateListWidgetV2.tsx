@@ -53,7 +53,7 @@ export const OrderStateListWidgetV2 = React.memo(function OrderStateListWidgetV2
       const startTime = performance.now();
 
       const api = createDashboardAPI();
-      const result = await api.fetchData({
+      const result = await api.fetch({
         widgetIds: ['statsCard'],
         params: {
           dataSource: 'order_state_list',
@@ -97,7 +97,7 @@ export const OrderStateListWidgetV2 = React.memo(function OrderStateListWidgetV2
 
   if (isEditMode) {
     return (
-      <WidgetCard widget={widget} isEditMode={true}>
+      <WidgetCard widgetType='custom' isEditMode={true}>
         <div className='flex h-full items-center justify-center'>
           <p className='font-medium text-slate-400'>Order State List Widget V2</p>
         </div>
@@ -106,7 +106,7 @@ export const OrderStateListWidgetV2 = React.memo(function OrderStateListWidgetV2
   }
 
   return (
-    <WidgetCard widget={widget}>
+    <WidgetCard widgetType='custom'>
       <CardHeader className='pb-2'>
         <CardTitle className='flex items-center justify-between text-lg font-medium'>
           <div className='flex items-center gap-2'>

@@ -1,8 +1,9 @@
 import pino from 'pino';
+import { isProduction, isNotProduction } from '@/lib/utils/env';
 
 // 基礎 logger 配置
 const baseOptions: pino.LoggerOptions = {
-  level: process.env.LOG_LEVEL || (process.env.NODE_ENV === 'production' ? 'info' : 'debug'),
+  level: process.env.LOG_LEVEL || (isProduction() ? 'info' : 'debug'),
   formatters: {
     bindings: () => ({
       env: process.env.NODE_ENV,
@@ -24,7 +25,7 @@ const baseOptions: pino.LoggerOptions = {
 // 建立主 logger - 在 Next.js 環境中避免使用 transport
 let logger: pino.Logger;
 
-if (process.env.NODE_ENV !== 'production' && typeof window === 'undefined') {
+if (isNotProduction() && typeof window === 'undefined') {
   // 只在 server-side 開發環境使用 pretty print
   try {
     const pretty = require('pino-pretty');
@@ -150,7 +151,7 @@ export const logPerformance = (
 };
 
 // 測試 logger 是否正常運作
-if (process.env.NODE_ENV !== 'production') {
+if (isNotProduction()) {
   logger.info('Logger initialized successfully');
 }
 

@@ -35,11 +35,11 @@ const StatsCardWidget = React.memo(function StatsCardWidget({
       const dashboardAPI = createDashboardAPI();
       const dashboardResult = await dashboardAPI.fetch(
         {
-          widgetIds: [widget.config.dataSource || 'statsCard'],
+          widgetIds: [(widget.config.dataSource as string) || 'statsCard'],
           params: {
-            dataSource: widget.config.dataSource,
-            staticValue: widget.config.staticValue,
-            label: widget.config.label,
+            dataSource: widget.config.dataSource as string | undefined,
+            staticValue: widget.config.staticValue as string | number | undefined,
+            label: widget.config.label as string | undefined,
           },
         },
         {
@@ -62,8 +62,8 @@ const StatsCardWidget = React.memo(function StatsCardWidget({
       } else {
         // Fallback for static values
         setData({
-          value: widget.config.staticValue || 0,
-          label: widget.config.label || 'Stats',
+          value: (widget.config.staticValue as string | number) || 0,
+          label: (widget.config.label as string) || 'Stats',
         });
       }
 

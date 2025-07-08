@@ -8,6 +8,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useFeatureFlag, useFeatureFlags } from './useFeatureFlag';
 import { shouldRunTests, getCurrentCoverageTarget } from '../configs/phase4-rollout';
 import { KnownFeatureFlags } from '../types';
+import { isTest } from '@/lib/utils/env';
 
 interface TestingFeatures {
   // Feature 狀態
@@ -213,14 +214,14 @@ export function withTestingFeature<P extends object>(
  */
 export function getJestConfig() {
   // 直接檢查特徵標誌而不使用 Hook
-  const jestEnabled = process.env.NODE_ENV === 'test' || process.env.JEST_WORKER_ID !== undefined;
+  const jestEnabled = isTest() || process.env.JEST_WORKER_ID !== undefined;
 
   if (!jestEnabled) {
     return null;
   }
 
   const coverageTarget = 80; // 默認覆蓋率目標
-  const shouldEnforce = process.env.NODE_ENV === 'test';
+  const shouldEnforce = isTest();
 
   return {
     collectCoverage: true,

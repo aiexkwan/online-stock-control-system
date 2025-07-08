@@ -2,12 +2,15 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getRateLimitingStats } from '@/lib/graphql/rate-limiting';
 import { enhancedRateLimiter } from '@/lib/graphql/enhanced-rate-limiting';
 import { cacheOptimizer } from '@/lib/graphql/cache-strategy-optimizer';
-import { redisCacheAdapter } from '@/lib/graphql/redis-cache-adapter';
+import { createCacheAdapter } from '@/lib/graphql/redis-cache-adapter';
 import { cacheWarmupManager } from '@/lib/graphql/cache-warmup-strategy';
 import { mlCacheOptimizer } from '@/lib/graphql/ml-cache-optimizer';
 import { createDistributedRateLimiter } from '@/lib/graphql/distributed-rate-limiting';
 import { AutomatedPerformanceTester } from '@/lib/graphql/automated-performance-testing';
 import { unifiedPreloadService } from '@/lib/preload/unified-preload-service';
+
+// 創建緩存適配器實例
+const redisCacheAdapter = createCacheAdapter();
 
 export async function GET(request: NextRequest) {
   try {

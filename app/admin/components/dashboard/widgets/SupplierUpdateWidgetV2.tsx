@@ -318,7 +318,7 @@ export const SupplierUpdateWidgetV2 = React.memo(function SupplierUpdateWidgetV2
 
   return (
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className='h-full'>
-      <WidgetCard widgetType='SUPPLIER_UPDATE' isEditMode={isEditMode}>
+      <WidgetCard widgetType='custom' isEditMode={isEditMode}>
         <CardHeader className='pb-3'>
           <CardTitle className='widget-title flex items-center justify-between'>
             <div className='flex items-center gap-2'>

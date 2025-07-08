@@ -332,7 +332,7 @@ async function sendEmailNotification(
       });
     } else {
       apiLogger.warn('[Assistant API] Failed to send order created email', {
-        error: emailResponse.error,
+        error: emailResponse.message || 'Unknown error',
       });
     }
 

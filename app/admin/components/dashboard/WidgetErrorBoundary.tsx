@@ -9,6 +9,7 @@ import React, { Component, ReactNode } from 'react';
 import { AlertTriangle, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { errorHandler } from '@/app/components/qc-label-form/services/ErrorHandler';
+import { isDevelopment } from '@/lib/utils/env';
 
 interface Props {
   children: ReactNode;
@@ -79,7 +80,7 @@ export class WidgetErrorBoundary extends Component<Props, State> {
             <div>
               <h3 className='mb-1 text-sm font-semibold text-red-400'>Widget Error</h3>
               <p className='text-xs text-gray-400'>{this.props.widgetName} encountered an error</p>
-              {process.env.NODE_ENV === 'development' && this.state.error && (
+              {isDevelopment() && this.state.error && (
                 <p className='mt-2 font-mono text-xs text-gray-500'>{this.state.error.message}</p>
               )}
             </div>

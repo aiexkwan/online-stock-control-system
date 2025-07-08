@@ -183,9 +183,8 @@ export function useReportPrinting({
             },
             metadata: {
               userId: metadata?.userId || 'report-user',
-              source: 'report-widget',
-              reportType,
-              timestamp: new Date().toISOString(),
+              reference: reportType,
+              tags: ['report', reportType],
             },
           };
 

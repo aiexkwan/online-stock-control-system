@@ -2,6 +2,7 @@
 
 import { createClient } from '@/app/utils/supabase/server';
 import { getUserIdFromEmail } from '@/lib/utils/getUserId';
+import { isDevelopment } from '@/lib/utils/env';
 
 export interface ProductData {
   code: string;
@@ -55,8 +56,8 @@ async function recordProductHistory(
       console.error('[recordProductHistory] Error recording history:', error);
       // 不拋出錯誤，避免影響主要操作
     } else {
-      process.env.NODE_ENV === 'development' &&
-        process.env.NODE_ENV === 'development' &&
+      isDevelopment() &&
+        isDevelopment() &&
         console.log(
           `[recordProductHistory] Recorded: ${action} for ${productCode} by user ID ${userId}`
         );
@@ -152,8 +153,8 @@ export async function updateProduct(
     }
 
     if (allMatches.length > 1) {
-      process.env.NODE_ENV === 'development' &&
-        process.env.NODE_ENV === 'development' &&
+      isDevelopment() &&
+        isDevelopment() &&
         console.warn(`Multiple products found for code "${code}":`, allMatches);
     }
 
@@ -240,8 +241,8 @@ export async function checkProductExists(
     }
 
     if (data.length > 1) {
-      process.env.NODE_ENV === 'development' &&
-        process.env.NODE_ENV === 'development' &&
+      isDevelopment() &&
+        isDevelopment() &&
         console.warn(
           `Multiple products found for code "${code}":`,
           data.map(p => p.code)

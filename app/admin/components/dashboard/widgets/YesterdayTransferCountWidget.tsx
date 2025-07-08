@@ -15,6 +15,7 @@ import { useGraphQLQuery } from '@/lib/graphql-client-stable';
 import { gql } from '@/lib/graphql-client-stable';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
+import { WidgetStyles } from '@/app/utils/widgetStyles';
 import { getYesterdayRange, getTodayRange } from '@/app/utils/timezone';
 import { format } from 'date-fns';
 import { createDashboardAPI } from '@/lib/api/admin/DashboardAPI';
@@ -117,7 +118,7 @@ const YesterdayTransferCountWidget = React.memo(function YesterdayTransferCountW
 
   if (isEditMode) {
     return (
-      <WidgetCard widget={widget} isEditMode={true}>
+      <WidgetCard widgetType={widget.type.toUpperCase() as keyof typeof WidgetStyles.borders} isEditMode={true}>
         <div className='flex h-full items-center justify-center'>
           <p className='text-gray-400'>Transfer Count Widget</p>
         </div>
@@ -126,7 +127,7 @@ const YesterdayTransferCountWidget = React.memo(function YesterdayTransferCountW
   }
 
   return (
-    <WidgetCard widget={widget}>
+    <WidgetCard widgetType={widget.type.toUpperCase() as keyof typeof WidgetStyles.borders}>
       <CardHeader className='pb-2'>
         <CardTitle className='widget-title flex items-center gap-2'>
           <TruckIcon className='h-5 w-5' />
@@ -146,7 +147,7 @@ const YesterdayTransferCountWidget = React.memo(function YesterdayTransferCountW
         ) : error ? (
           <div className='text-center text-sm text-red-400'>
             <p>Error loading data</p>
-            <p className='mt-1 text-xs'>{error?.message}</p>
+            <p className='mt-1 text-xs'>{String(error)}</p>
           </div>
         ) : (
           <div className='text-center'>

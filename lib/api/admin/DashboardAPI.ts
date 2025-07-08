@@ -361,7 +361,7 @@ export class DashboardAPI extends DataAccessLayer<DashboardParams, DashboardResu
             }
             
             // Get unique operator IDs
-            const operatorIds = [...new Set(workData.map(w => w.id).filter(id => id != null))];
+            const operatorIds = [...new Set(workData.map((w: any) => w.id).filter((id: any) => id != null))];
             
             // Query operator data
             const { data: operatorData, error: operatorError } = await supabase
@@ -375,10 +375,10 @@ export class DashboardAPI extends DataAccessLayer<DashboardParams, DashboardResu
             
             // Create operator map and filter for Warehouse department
             const operatorMap = new Map(
-              (operatorData || []).map(op => [op.id, op])
+              (operatorData || []).map((op: any) => [op.id, op])
             );
             
-            const warehouseWork = workData.filter(work => {
+            const warehouseWork = workData.filter((work: any) => {
               const operator = operatorMap.get(work.id);
               return operator?.department === 'Warehouse';
             });
@@ -403,8 +403,8 @@ export class DashboardAPI extends DataAccessLayer<DashboardParams, DashboardResu
               label: 'Warehouse Work Level',
               metadata: {
                 dateRange: { start: workStartDate, end: workEndDate },
-                totalMoves: warehouseWork.reduce((sum, w) => sum + (w.move || 0), 0),
-                uniqueOperators: new Set(warehouseWork.map(w => w.id)).size,
+                totalMoves: warehouseWork.reduce((sum: number, w: any) => sum + (w.move || 0), 0),
+                uniqueOperators: new Set(warehouseWork.map((w: any) => w.id)).size,
                 optimized: false,
                 fallback: true
               }
@@ -472,7 +472,7 @@ export class DashboardAPI extends DataAccessLayer<DashboardParams, DashboardResu
               const slotStart = new Date(startTime.getTime() + (i * intervalHours * 60 * 60 * 1000));
               const slotEnd = new Date(slotStart.getTime() + (intervalHours * 60 * 60 * 1000));
               
-              const count = transferData?.filter(transfer => {
+              const count = transferData?.filter((transfer: any) => {
                 const transferTime = new Date(transfer.tran_date);
                 return transferTime >= slotStart && transferTime < slotEnd;
               }).length || 0;
@@ -727,7 +727,7 @@ export class DashboardAPI extends DataAccessLayer<DashboardParams, DashboardResu
             const totalCount = transferListData[0]?.total_count || 0;
             
             // Format the transfer records
-            const formattedTransfers = transferListData.map(transfer => ({
+            const formattedTransfers = transferListData.map((transfer: any) => ({
               tran_date: transfer.tran_date,
               plt_num: transfer.plt_num,
               operator_name: transfer.operator_name,
@@ -1804,9 +1804,60 @@ export class DashboardAPI extends DataAccessLayer<DashboardParams, DashboardResu
             };
           }
           
+        case 'update_stats':
+          // Pending updates statistics
+          try {
+            // Count products missing information
+            const { count: productsMissingInfo } = await supabase
+              .from('data_code')
+              .select('*', { count: 'exact', head: true })
+              .or('description.is.null,colour.is.null,standard_qty.is.null');
+            
+            // Count suppliers missing information
+            const { count: suppliersMissingInfo } = await supabase
+              .from('data_supplier')
+              .select('*', { count: 'exact', head: true })
+              .or('contact.is.null,address.is.null');
+            
+            // Optional: Count void pallets pending approval
+            const { count: voidPalletsPending } = await supabase
+              .from('record_palletinfo')
+              .select('*', { count: 'exact', head: true })
+              .eq('status', 'void_pending');
+            
+            const totalPending = (productsMissingInfo || 0) + (suppliersMissingInfo || 0) + (voidPalletsPending || 0);
+            
+            return {
+              value: totalPending,
+              label: 'Pending Updates',
+              metadata: {
+                productsMissingInfo: productsMissingInfo || 0,
+                suppliersMissingInfo: suppliersMissingInfo || 0,
+                voidPalletsPending: voidPalletsPending || 0,
+                breakdown: {
+                  products: productsMissingInfo || 0,
+                  suppliers: suppliersMissingInfo || 0,
+                  voidPallets: voidPalletsPending || 0
+                },
+                optimized: true
+              }
+            };
+            
+          } catch (error) {
+            console.error('Error fetching update stats:', error);
+            return {
+              value: 0,
+              label: 'Pending Updates',
+              error: error instanceof Error ? error.message : 'Unknown error occurred',
+              metadata: {
+                fallback: false
+              }
+            };
+          }
+          
         default:
           // Log unknown data source in development
-          if (process.env.NODE_ENV !== 'production') {
+          if (isNotProduction()) {
             console.warn(`Unknown data source: ${dataSource}`);
           }
           return {
@@ -1865,7 +1916,8 @@ export class DashboardAPI extends DataAccessLayer<DashboardParams, DashboardResu
       product_distribution: 'Product Distribution',
       top_products: 'Top Products',
       production_details: 'Production Details',
-      staff_workload: 'Staff Workload'
+      staff_workload: 'Staff Workload',
+      update_stats: 'Pending Updates'
     };
     
     return titles[widgetId] || widgetId;

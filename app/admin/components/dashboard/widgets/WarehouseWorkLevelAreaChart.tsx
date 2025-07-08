@@ -29,6 +29,7 @@ import {
 } from 'recharts';
 import { format } from 'date-fns';
 import { getYesterdayRange } from '@/app/utils/timezone';
+import { WidgetStyles } from '@/app/utils/widgetStyles';
 import { createDashboardAPI } from '@/lib/api/admin/DashboardAPI';
 
 interface WorkLevelData {
@@ -145,7 +146,7 @@ export const WarehouseWorkLevelAreaChart = React.memo(function WarehouseWorkLeve
 
   if (isEditMode) {
     return (
-      <WidgetCard widget={widget} isEditMode={true}>
+      <WidgetCard widgetType={widget.type.toUpperCase() as keyof typeof WidgetStyles.borders} isEditMode={true}>
         <div className='flex h-full items-center justify-center'>
           <p className='font-medium text-slate-400'>Warehouse Work Level Chart</p>
         </div>
@@ -154,7 +155,7 @@ export const WarehouseWorkLevelAreaChart = React.memo(function WarehouseWorkLeve
   }
 
   return (
-    <WidgetCard widget={widget}>
+    <WidgetCard widgetType={widget.type.toUpperCase() as keyof typeof WidgetStyles.borders}>
       <CardHeader className='pb-2'>
         <CardTitle className='widget-title flex items-center gap-2'>
           <ChartBarIcon className='h-5 w-5' />

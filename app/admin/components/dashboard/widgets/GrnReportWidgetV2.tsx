@@ -74,7 +74,7 @@ export const GrnReportWidgetV2 = function GrnReportWidgetV2({
     try {
       const startTime = performance.now();
 
-      const result = await api.fetchData({
+      const result = await api.fetch({
         widgetIds: ['grn_references'],
         params: {
           dataSource: 'grn_references',
@@ -163,11 +163,11 @@ export const GrnReportWidgetV2 = function GrnReportWidgetV2({
       }
 
       // Get material codes for the selected grn_ref using RPC
-      const materialResult = await api.fetchData({
+      const materialResult = await api.fetch({
         widgetIds: ['grn_material_codes'],
         params: {
           dataSource: 'grn_material_codes',
-          grnRef: selectedGrnRef,
+          staticValue: selectedGrnRef,
         },
       });
 
@@ -185,12 +185,12 @@ export const GrnReportWidgetV2 = function GrnReportWidgetV2({
       let successCount = 0;
       for (const materialCode of materialCodes) {
         // Fetch report data using RPC
-        const reportResult = await api.fetchData({
+        const reportResult = await api.fetch({
           widgetIds: ['grn_report_data'],
           params: {
             dataSource: 'grn_report_data',
-            grnRef: selectedGrnRef,
-            materialCode: materialCode,
+            staticValue: selectedGrnRef,
+            productCodes: [materialCode],
           },
         });
 
@@ -251,11 +251,11 @@ export const GrnReportWidgetV2 = function GrnReportWidgetV2({
 
     try {
       // Get material codes using RPC
-      const materialResult = await api.fetchData({
+      const materialResult = await api.fetch({
         widgetIds: ['grn_material_codes'],
         params: {
           dataSource: 'grn_material_codes',
-          grnRef: selectedGrnRef,
+          staticValue: selectedGrnRef,
         },
       });
 
@@ -275,12 +275,12 @@ export const GrnReportWidgetV2 = function GrnReportWidgetV2({
 
       // For printing, we'll just print the first material code
       // Fetch report data using RPC
-      const reportResult = await api.fetchData({
+      const reportResult = await api.fetch({
         widgetIds: ['grn_report_data'],
         params: {
           dataSource: 'grn_report_data',
-          grnRef: selectedGrnRef,
-          materialCode: materialCodes[0],
+          staticValue: selectedGrnRef,
+          productCodes: [materialCodes[0]],
         },
       });
 

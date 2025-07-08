@@ -21,6 +21,7 @@ import { createDashboardAPI } from '@/lib/api/admin/DashboardAPI';
 import { motion } from 'framer-motion';
 import { format, parseISO } from 'date-fns';
 import { getYesterdayRange } from '@/app/utils/timezone';
+import { WidgetStyles } from '@/app/utils/widgetStyles';
 
 interface TransferRecord {
   tran_date: string;
@@ -121,7 +122,7 @@ export const WarehouseTransferListWidget = React.memo(function WarehouseTransfer
 
   if (isEditMode) {
     return (
-      <WidgetCard widget={widget} isEditMode={true}>
+      <WidgetCard widgetType={widget.type.toUpperCase() as keyof typeof WidgetStyles.borders} isEditMode={true}>
         <div className='flex h-full items-center justify-center'>
           <p className='font-medium text-slate-400'>Warehouse Transfer List</p>
         </div>
@@ -130,7 +131,7 @@ export const WarehouseTransferListWidget = React.memo(function WarehouseTransfer
   }
 
   return (
-    <WidgetCard widget={widget}>
+    <WidgetCard widgetType={widget.type.toUpperCase() as keyof typeof WidgetStyles.borders}>
       <CardHeader className='pb-2'>
         <CardTitle className='widget-title flex items-center gap-2'>
           <DocumentTextIcon className='h-5 w-5' />

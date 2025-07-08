@@ -128,7 +128,6 @@ export const AcoOrderProgressWidget = React.memo(function AcoOrderProgressWidget
             widgetIds: ['statsCard'],
             params: {
               dataSource: 'aco_order_progress',
-              orderRef: orderRef,
             },
           },
           {
@@ -212,7 +211,7 @@ export const AcoOrderProgressWidget = React.memo(function AcoOrderProgressWidget
               <ClipboardDocumentListIcon className='h-5 w-5 text-white' />
             </div>
             <span
-              className={`${WidgetStyles.text.widgetTitle} bg-gradient-to-r from-orange-300 via-amber-300 to-orange-200 bg-clip-text text-sm font-medium text-transparent text-white [text-shadow:_0_0_10px_rgba(251,146,60,0.5),_0_0_20px_rgba(251,146,60,0.3)]`}
+              className={`bg-gradient-to-r from-orange-300 via-amber-300 to-orange-200 bg-clip-text text-sm font-medium text-transparent text-white [text-shadow:_0_0_10px_rgba(251,146,60,0.5),_0_0_20px_rgba(251,146,60,0.3)]`}
             >
               ACO Order Progress
             </span>

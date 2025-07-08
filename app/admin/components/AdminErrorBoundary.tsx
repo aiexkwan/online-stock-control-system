@@ -6,6 +6,7 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
+import { isDevelopment } from '@/lib/utils/env';
 
 interface Props {
   children: React.ReactNode;
@@ -51,7 +52,7 @@ export class AdminErrorBoundary extends React.Component<Props, State> {
                 Try Again
               </Button>
             </div>
-            {process.env.NODE_ENV === 'development' && this.state.error && (
+            {isDevelopment() && this.state.error && (
               <details className='mt-4 text-left'>
                 <summary className='cursor-pointer text-sm text-gray-500'>Error Details</summary>
                 <pre className='mt-2 overflow-auto rounded bg-black/50 p-2 text-xs'>

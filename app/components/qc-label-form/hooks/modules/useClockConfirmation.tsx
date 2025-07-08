@@ -6,6 +6,7 @@
 import { useState, useCallback, useRef } from 'react';
 import { toast } from 'sonner';
 import { COOLDOWN_PERIOD_PROD, COOLDOWN_PERIOD_DEV } from '../../constants';
+import { isProduction } from '@/lib/utils/env';
 
 interface UseClockConfirmationReturn {
   isClockConfirmOpen: boolean;
@@ -39,7 +40,7 @@ export const useClockConfirmation = (): UseClockConfirmationReturn => {
 
     const now = Date.now();
     const cooldownPeriod =
-      process.env.NODE_ENV === 'production' ? COOLDOWN_PERIOD_PROD : COOLDOWN_PERIOD_DEV;
+      isProduction() ? COOLDOWN_PERIOD_PROD : COOLDOWN_PERIOD_DEV;
 
     const timeSinceLastConfirmation = now - lastConfirmationTimeRef.current;
     const isInCooldown = timeSinceLastConfirmation < cooldownPeriod;

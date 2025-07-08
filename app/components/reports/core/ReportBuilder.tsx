@@ -224,7 +224,7 @@ export function ReportBuilder({ config, onGenerate, className }: ReportBuilderPr
               {filter.label}
               {filter.required && <span className='ml-1 text-red-500'>*</span>}
             </Label>
-            <Select value={value} onChange={e => handleFilterChange(filter.id, e.target.value)}>
+            <Select value={value} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => handleFilterChange(filter.id, e.target.value)}>
               <option value=''>{filter.placeholder || 'Select an option'}</option>
               {filter.options?.map((option: any) => (
                 <option key={option.value} value={option.value} disabled={option.disabled}>
@@ -260,7 +260,7 @@ export function ReportBuilder({ config, onGenerate, className }: ReportBuilderPr
           <Label>Export Format</Label>
           <Select
             value={selectedFormat}
-            onChange={e => setSelectedFormat(e.target.value as ReportFormat)}
+            onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setSelectedFormat(e.target.value as ReportFormat)}
             className='w-full md:w-[200px]'
           >
             {config.formats.map(format => (

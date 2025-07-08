@@ -31,9 +31,9 @@ async function fixWidgetHooks() {
         const useWidgetDataIndex = content.indexOf(useWidgetDataCall);
 
         if (functionIndex > useWidgetDataIndex && functionIndex !== -1) {
-          process.env.NODE_ENV !== 'production' &&
-            process.env.NODE_ENV !== 'production' &&
+          if (process.env.NODE_ENV !== 'production') {
             console.log(`Fixing ${file}: Moving ${functionName} definition before useWidgetData`);
+          }
 
           // Extract the function definition
           const functionStart = functionIndex;
@@ -77,9 +77,9 @@ async function fixWidgetHooks() {
       }
 
       await writeFile(filePath, content, 'utf-8');
-      process.env.NODE_ENV !== 'production' &&
-        process.env.NODE_ENV !== 'production' &&
+      if (process.env.NODE_ENV !== 'production') {
         console.log(`Processed: ${file}`);
+      }
     }
   }
 }

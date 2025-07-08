@@ -1,4 +1,5 @@
 import { clockNumberToEmail, emailToClockNumber } from '../authUtils';
+import { isNotProduction } from '@/lib/utils/env';
 
 // Mock console methods
 const mockConsoleWarn = jest.spyOn(console, 'warn').mockImplementation();
@@ -61,7 +62,7 @@ describe('authUtils', () => {
       expect(emailToClockNumber(undefined)).toBeNull();
       
       // Should log warning in non-production
-      if (process.env.NODE_ENV !== 'production') {
+      if (isNotProduction()) {
         expect(mockConsoleWarn).toHaveBeenCalledWith('[authUtils] emailToClockNumber called with null or undefined email');
       }
     });
@@ -120,23 +121,39 @@ describe('authUtils', () => {
     const originalEnv = process.env.NODE_ENV;
 
     afterEach(() => {
-      process.env.NODE_ENV = originalEnv;
+      Object.defineProperty(process.env, 'NODE_ENV', {
+        value: originalEnv,
+        writable: true,
+        configurable: true
+      });
     });
 
     it('should not warn in production', () => {
-      process.env.NODE_ENV = 'production';
+      Object.defineProperty(process.env, 'NODE_ENV', {
+        value: 'production',
+        writable: true,
+        configurable: true
+      });
       emailToClockNumber(null);
       expect(mockConsoleWarn).not.toHaveBeenCalled();
     });
 
     it('should warn in development', () => {
-      process.env.NODE_ENV = 'development';
+      Object.defineProperty(process.env, 'NODE_ENV', {
+        value: 'development',
+        writable: true,
+        configurable: true
+      });
       emailToClockNumber(null);
       expect(mockConsoleWarn).toHaveBeenCalledWith('[authUtils] emailToClockNumber called with null or undefined email');
     });
 
     it('should warn in test environment', () => {
-      process.env.NODE_ENV = 'test';
+      Object.defineProperty(process.env, 'NODE_ENV', {
+        value: 'test',
+        writable: true,
+        configurable: true
+      });
       emailToClockNumber(undefined);
       expect(mockConsoleWarn).toHaveBeenCalledWith('[authUtils] emailToClockNumber called with null or undefined email');
     });

@@ -26,11 +26,9 @@ export const OrderAnalysisResultDialog: React.FC<OrderAnalysisResultDialogProps>
 
   // Debug log
   process.env.NODE_ENV !== 'production' &&
-    process.env.NODE_ENV !== 'production' &&
     console.log('[OrderAnalysisResultDialog] Orders:', orders);
   if (orders.length > 0) {
     process.env.NODE_ENV !== 'production' &&
-      process.env.NODE_ENV !== 'production' &&
       console.log('[OrderAnalysisResultDialog] First order:', orders[0]);
   }
 

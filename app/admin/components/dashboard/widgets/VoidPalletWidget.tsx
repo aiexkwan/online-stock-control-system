@@ -46,7 +46,6 @@ export const VoidPalletWidget = React.memo(function VoidPalletWidget({
     toggleMode,
     addToBatch,
     removeFromBatch,
-    selectItem: toggleItemSelection,
     selectAll: selectAllItems,
     clearBatch,
     executeBatchVoid,
@@ -109,7 +108,7 @@ export const VoidPalletWidget = React.memo(function VoidPalletWidget({
       // Add to batch list
       addToBatch(searchValue, state.searchType || 'pallet_num').then(success => {
         if (success) {
-          toast.success(`Added ${state.foundPallet.plt_num} to batch list`);
+          toast.success(`Added ${state.foundPallet?.plt_num} to batch list`);
           // Clear search
           setSearchValue('');
           updateState({ foundPallet: null });
@@ -240,9 +239,9 @@ export const VoidPalletWidget = React.memo(function VoidPalletWidget({
 
       if (result.success) {
         setBatchVoidResult({
-          total: result.summary.total,
-          successful: result.summary.successful,
-          failed: result.summary.failed,
+          total: result.summary?.total || 0,
+          successful: result.summary?.successful || 0,
+          failed: result.summary?.failed || 0,
           details: batchState.items
             .filter(item => item.status === 'completed' || item.status === 'error')
             .map(item => ({
@@ -375,7 +374,13 @@ export const VoidPalletWidget = React.memo(function VoidPalletWidget({
           </div>
           <BatchVoidPanel
             items={batchState.items}
-            onSelectItem={toggleItemSelection}
+            onSelectItem={(id, selected) => {
+              // Toggle selection by updating item
+              const item = batchState.items.find(i => i.id === id);
+              if (item) {
+                item.selected = selected;
+              }
+            }}
             onSelectAll={selectAllItems}
             onRemoveItem={removeFromBatch}
             onClearAll={clearBatch}
@@ -426,7 +431,13 @@ export const VoidPalletWidget = React.memo(function VoidPalletWidget({
           <div className='max-h-40 overflow-y-auto'>
             <BatchVoidPanel
               items={batchState.items.filter(item => item.selected)}
-              onSelectItem={toggleItemSelection}
+              onSelectItem={(id, selected) => {
+              // Toggle selection by updating item
+              const item = batchState.items.find(i => i.id === id);
+              if (item) {
+                item.selected = selected;
+              }
+            }}
               onSelectAll={selectAllItems}
               onRemoveItem={removeFromBatch}
               onClearAll={clearBatch}
@@ -514,7 +525,7 @@ export const VoidPalletWidget = React.memo(function VoidPalletWidget({
                 (showDamageQuantityInput &&
                   (!state.damageQuantity ||
                     state.damageQuantity <= 0 ||
-                    state.damageQuantity > state.foundPallet.product_qty)) ||
+                    state.damageQuantity > (state.foundPallet?.product_qty || 0))) ||
                 state.isProcessing ||
                 isEditMode
           }
@@ -854,7 +865,7 @@ export const VoidPalletWidget = React.memo(function VoidPalletWidget({
       {/* QR Scanner */}
       {showQrScanner && (
         <SimpleQRScanner
-          isOpen={showQrScanner}
+          open={showQrScanner}
           onClose={() => setShowQrScanner(false)}
           onScan={handleQrScan}
           title='Scan Pallet QR Code'

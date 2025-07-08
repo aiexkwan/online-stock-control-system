@@ -169,7 +169,26 @@ export default function PrintLabelPage() {
         return;
       }
 
-      businessLogic.handlePrintLabel(e || new Event('submit'));
+      // Create a synthetic form event if not provided
+      const formEvent = e || {
+        preventDefault: () => {},
+        type: 'submit',
+        target: null,
+        currentTarget: null,
+        nativeEvent: new Event('submit'),
+        bubbles: true,
+        cancelable: true,
+        defaultPrevented: false,
+        eventPhase: 0,
+        isTrusted: true,
+        timeStamp: Date.now(),
+        stopPropagation: () => {},
+        isDefaultPrevented: () => false,
+        isPropagationStopped: () => false,
+        persist: () => {},
+      } as React.FormEvent;
+      
+      businessLogic.handlePrintLabel(formEvent);
     },
     [validationState.isValid, businessLogic, productInfo]
   );

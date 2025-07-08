@@ -14,7 +14,8 @@ import { useAdminRefresh } from '@/app/admin/contexts/AdminRefreshContext';
 import { Loader2 } from 'lucide-react';
 import { createDashboardAPI } from '@/lib/api/admin/DashboardAPI';
 import { useGraphQLQuery } from '@/lib/graphql-client-stable';
-import { gql, print } from 'graphql-tag';
+import { gql } from 'graphql-tag';
+import { print } from 'graphql';
 
 // GraphQL query for stock distribution
 const GET_STOCK_DISTRIBUTION = gql`
@@ -94,7 +95,6 @@ export const StockDistributionChartV2: React.FC<StockDistributionChartProps> = (
       enabled: shouldUseGraphQL && !isEditMode,
       refetchInterval: 300000, // 5分鐘刷新一次
       cacheTime: 300000, // 5分鐘快取
-      staleTime: 60000, // 1分鐘內認為數據是新鮮的
     }
   );
 
@@ -150,11 +150,11 @@ export const StockDistributionChartV2: React.FC<StockDistributionChartProps> = (
     try {
       const startTime = performance.now();
 
-      const result = await api.fetchData({
+      const result = await api.fetch({
         widgetIds: ['stock_distribution_chart'],
         params: {
           dataSource: 'stock_distribution_chart',
-          stockType: selectedType === 'all' || selectedType === 'ALL TYPES' ? null : selectedType,
+          staticValue: selectedType === 'all' || selectedType === 'ALL TYPES' ? undefined : selectedType,
         },
       });
 
@@ -192,7 +192,7 @@ export const StockDistributionChartV2: React.FC<StockDistributionChartProps> = (
       setPerformanceMetrics({
         lastFetchTime: 0,
         optimized: true,
-        totalStock: processedData.reduce((sum, item) => sum + item.value, 0),
+        totalStock: processedData.reduce((sum: number, item: any) => sum + item.value, 0),
       });
       setLoading(false);
     }
@@ -216,8 +216,9 @@ export const StockDistributionChartV2: React.FC<StockDistributionChartProps> = (
 
   // 監聽類型變更事件
   useEffect(() => {
-    const handleTypeChange = async (event: CustomEvent) => {
-      const { type, data } = event.detail;
+    const handleTypeChange = async (event: Event) => {
+      const customEvent = event as CustomEvent;
+      const { type, data } = customEvent.detail;
       setSelectedType(type);
 
       // 如果選擇 all 或 ALL TYPES，重新獲取所有數據
@@ -279,9 +280,9 @@ export const StockDistributionChartV2: React.FC<StockDistributionChartProps> = (
       }
     };
 
-    window.addEventListener('stockTypeChanged', handleTypeChange as EventListener);
+    window.addEventListener('stockTypeChanged', handleTypeChange);
     return () => {
-      window.removeEventListener('stockTypeChanged', handleTypeChange as EventListener);
+      window.removeEventListener('stockTypeChanged', handleTypeChange);
     };
   }, [fetchInitialData]);
 

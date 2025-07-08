@@ -10,6 +10,7 @@ import {
 } from './types';
 import { LocalFeatureFlagProvider } from './providers/LocalProvider';
 import { SupabaseFeatureFlagProvider } from './providers/SupabaseProvider';
+import { isProduction } from '@/lib/utils/env';
 
 /**
  * Feature Flag 管理器
@@ -160,7 +161,7 @@ export class FeatureFlagManager {
    * 切換 Feature Flag（開發環境）
    */
   async toggleFlag(key: string): Promise<void> {
-    if (process.env.NODE_ENV === 'production') {
+    if (isProduction()) {
       throw new Error('Feature flag toggling is not allowed in production');
     }
 
@@ -292,10 +293,10 @@ export class FeatureFlagManager {
 
 // 創建默認實例
 const defaultConfig: FeatureFlagConfig = {
-  provider: process.env.NODE_ENV === 'production' ? 'supabase' : 'local',
+  provider: isProduction() ? 'supabase' : 'local',
   cacheEnabled: true,
   cacheTTL: 60000, // 1 分鐘
-  pollingInterval: process.env.NODE_ENV === 'production' ? 300000 : undefined, // 5 分鐘（生產環境）
+  pollingInterval: isProduction() ? 300000 : undefined, // 5 分鐘（生產環境）
 };
 
 export const featureFlagManager = new FeatureFlagManager(defaultConfig);

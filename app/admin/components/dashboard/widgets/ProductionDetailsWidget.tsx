@@ -13,7 +13,8 @@ import { CardHeader, CardTitle } from '@/components/ui/card';
 import { TableCellsIcon } from '@heroicons/react/24/outline';
 import { createDashboardAPI } from '@/lib/api/admin/DashboardAPI';
 import { useGraphQLQuery } from '@/lib/graphql-client-stable';
-import { gql, print } from 'graphql-tag';
+import { gql } from 'graphql-tag';
+import { print } from 'graphql';
 import { WidgetComponentProps } from '@/app/types/dashboard';
 
 // GraphQL query for production details
@@ -62,7 +63,8 @@ export const ProductionDetailsWidget: React.FC<ProductionDetailsWidgetProps> = (
   widget
 }) => {
   // 決定是否使用 GraphQL - 可以通過 widget config 或 props 控制
-  const shouldUseGraphQL = useGraphQL ?? widget?.useGraphQL ?? false;
+  const widgetConfig = widget?.config as any;
+  const shouldUseGraphQL = useGraphQL ?? widgetConfig?.useGraphQL ?? false;
   const [tableData, setTableData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -110,7 +112,6 @@ export const ProductionDetailsWidget: React.FC<ProductionDetailsWidgetProps> = (
       enabled: shouldUseGraphQL && !isEditMode,
       refetchInterval: 300000, // 5分鐘刷新一次
       cacheTime: 300000, // 5分鐘快取
-      staleTime: 60000, // 1分鐘內認為數據是新鮮的
     }
   );
 

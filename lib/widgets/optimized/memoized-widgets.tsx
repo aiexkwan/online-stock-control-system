@@ -132,10 +132,11 @@ export function withListOptimization<P extends WidgetComponentProps>(
       );
 
       // 緩存過濾和排序邏輯
+      const config = props.widget.config;
       const processedItems = useMemo(() => {
-        const items = (props.widget.config as any)?.items || [];
-        const filters = (props.widget.config as any)?.filters || {};
-        const sortBy = (props.widget.config as any)?.sortBy;
+        const items = (config as any)?.items || [];
+        const filters = (config as any)?.filters || {};
+        const sortBy = (config as any)?.sortBy;
 
         // 過濾
         let filtered = items;
@@ -155,7 +156,7 @@ export function withListOptimization<P extends WidgetComponentProps>(
         }
 
         return filtered;
-      }, [props.widget.config?.items, props.widget.config?.filters, props.widget.config?.sortBy]);
+      }, [config]);
 
       return (
         <Component
@@ -196,9 +197,9 @@ export function withChartOptimization<P extends WidgetComponentProps>(
   const OptimizedComponent = memo<P>(
     (props: P) => {
       // 緩存圖表數據轉換
+      const config = props.widget.config;
       const chartData = useMemo(() => {
-        const rawData = (props.widget.config as any)?.data || [];
-
+        const rawData = (config as any)?.data || [];
         // 數據轉換邏輯
         return rawData.map((item: any) => ({
           ...item,
@@ -206,7 +207,7 @@ export function withChartOptimization<P extends WidgetComponentProps>(
           value: parseFloat(item.value) || 0,
           label: item.label || 'Unknown',
         }));
-      }, [(props.widget.config as any)?.data]);
+      }, [config]);
 
       // 緩存圖表配置
       const chartConfig = useMemo(

@@ -73,11 +73,12 @@ export const ReportGeneratorWithDialogWidgetV2 = function ReportGeneratorWithDia
 
     try {
       const api = createDashboardAPI();
-      const result = await api.fetchData({
-        widgetId: 'report_references',
+      const result = await api.fetch({
+        widgetIds: ['report_references'],
         params: {
-          tableName: dataTable,
-          fieldName: referenceField,
+          dataSource: 'report_references',
+          staticValue: dataTable,
+          label: referenceField,
           limit: 1000,
           offset: 0,
         },
@@ -86,14 +87,15 @@ export const ReportGeneratorWithDialogWidgetV2 = function ReportGeneratorWithDia
       const endTime = performance.now();
       setPerformanceMetrics({
         apiResponseTime: Math.round(endTime - startTime),
-        optimized: result.metadata?.optimized || false,
+        optimized: false, // metadata doesn't have optimized property
       });
 
-      if (result.error) {
-        throw new Error(result.error);
+      // Check if widget data contains error
+      if (result.widgets?.[0]?.data?.error) {
+        throw new Error(result.widgets[0].data.error);
       }
 
-      setReferences((result.value as string[]) || []);
+      setReferences((result.widgets?.[0]?.data?.value as string[]) || []);
       setMetadata(result.metadata || {});
     } catch (err) {
       console.error('Error loading references:', err);

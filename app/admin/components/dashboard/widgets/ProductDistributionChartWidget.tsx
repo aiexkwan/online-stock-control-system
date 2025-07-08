@@ -212,7 +212,7 @@ export const ProductDistributionChartWidget: React.FC<ProductDistributionChartWi
                   height={36}
                   formatter={(value, entry) => (
                     <span className="text-xs text-slate-300">
-                      {value} ({((entry.payload.value / total) * 100).toFixed(1)}%)
+                      {value} ({entry?.payload ? ((entry.payload.value / total) * 100).toFixed(1) : '0'}%)
                     </span>
                   )}
                 />

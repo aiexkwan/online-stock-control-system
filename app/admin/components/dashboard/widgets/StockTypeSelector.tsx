@@ -137,7 +137,7 @@ export const StockTypeSelector: React.FC<StockTypeSelectorProps> = ({ widget, is
       console.log('[StockTypeSelector] Types from all stock data:', uniqueTypes);
 
       if (uniqueTypes.length > 0) {
-        setProductTypes(uniqueTypes);
+        setProductTypes(uniqueTypes as string[]);
       } else {
         // 使用預設值
         const defaultTypes = ['EasyLiner', 'EcoPlus', 'Slate', 'SupaStack', 'Manhole', 'ACO'];
@@ -177,7 +177,7 @@ export const StockTypeSelector: React.FC<StockTypeSelectorProps> = ({ widget, is
         // 從實際庫存數據獲取類型
         await fetchTypesFromStockData();
       } else {
-        setProductTypes(uniqueTypes);
+        setProductTypes(uniqueTypes as string[]);
       }
     } catch (error) {
       console.error('Error fetching product types:', error);
@@ -251,7 +251,7 @@ export const StockTypeSelector: React.FC<StockTypeSelectorProps> = ({ widget, is
         }
 
         // 獲取產品代碼列表
-        const productCodes = stockData.map(item => item.stock);
+        const productCodes = stockData.map(item => item?.stock).filter(Boolean);
 
         // 查詢所有產品詳情（不在查詢階段過濾）
         const { data: productData, error: productError } = await supabase
@@ -273,6 +273,7 @@ export const StockTypeSelector: React.FC<StockTypeSelectorProps> = ({ widget, is
         if (type === 'all') {
           // 如果選擇 all，顯示所有庫存數據，包括沒有在 data_code 表的產品
           formattedData = stockData.map(item => {
+            if (!item) return null;
             const product = productMap.get(item.stock);
             return {
               stock: item.stock,
@@ -280,11 +281,12 @@ export const StockTypeSelector: React.FC<StockTypeSelectorProps> = ({ widget, is
               description: product?.description || '-',
               type: product?.type || '-',
             };
-          });
+          }).filter(Boolean) as StockData[];
         } else if (type === 'non-material') {
           // 如果選擇 non-material，顯示所有非 material 類型的產品
           formattedData = stockData
             .filter(item => {
+              if (!item) return false;
               const product = productMap.get(item.stock);
               // 如果有產品資訊，檢查是否為 material
               if (product && product.type) {
@@ -295,6 +297,7 @@ export const StockTypeSelector: React.FC<StockTypeSelectorProps> = ({ widget, is
               return true;
             })
             .map(item => {
+              if (!item) return null;
               const product = productMap.get(item.stock);
               return {
                 stock: item.stock,
@@ -302,16 +305,18 @@ export const StockTypeSelector: React.FC<StockTypeSelectorProps> = ({ widget, is
                 description: product?.description || '-',
                 type: product?.type || '-',
               };
-            });
+            }).filter(Boolean) as StockData[];
         } else {
           // 如果選擇特定類型，只顯示匹配的產品
           formattedData = stockData
             .filter(item => {
+              if (!item) return false;
               const product = productMap.get(item.stock);
               // 只顯示有該類型的產品
               return product && product.type === type;
             })
             .map(item => {
+              if (!item) return null;
               const product = productMap.get(item.stock);
               return {
                 stock: item.stock,
@@ -319,7 +324,7 @@ export const StockTypeSelector: React.FC<StockTypeSelectorProps> = ({ widget, is
                 description: product?.description || '-',
                 type: product?.type || '-',
               };
-            });
+            }).filter(Boolean) as StockData[];
         }
 
         console.log('[StockTypeSelector] Stock data loaded:', formattedData.length, 'items');
@@ -351,7 +356,7 @@ export const StockTypeSelector: React.FC<StockTypeSelectorProps> = ({ widget, is
       const uniqueTypes = [...new Set(types)];
       
       if (uniqueTypes.length > 0) {
-        setProductTypes(uniqueTypes);
+        setProductTypes(uniqueTypes as string[]);
       } else {
         // 使用預設值
         const defaultTypes = ['EasyLiner', 'EcoPlus', 'Slate', 'SupaStack', 'Manhole', 'ACO'];
@@ -429,7 +434,7 @@ export const StockTypeSelector: React.FC<StockTypeSelectorProps> = ({ widget, is
     setSelectedType(type);
     if (shouldUseGraphQL) {
       setLoadingStock(true);
-      refetchStockLevels({ type: type === 'all' ? null : type });
+      refetchStockLevels();
     } else {
       fetchStockData(type);
     }

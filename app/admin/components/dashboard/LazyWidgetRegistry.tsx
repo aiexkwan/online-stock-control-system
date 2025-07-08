@@ -23,9 +23,9 @@ const DefaultWidgetSkeleton = () => (
 export function createLazyWidget(
   importFn: () => Promise<{ default: React.ComponentType<WidgetComponentProps> } | any>,
   LoadingComponent: React.ComponentType = DefaultWidgetSkeleton
-) {
+): React.ComponentType<WidgetComponentProps> {
   // Wrap import function to ensure it returns the correct format for React.lazy
-  const wrappedImportFn = async () => {
+  const wrappedImportFn = async (): Promise<{ default: React.ComponentType<WidgetComponentProps> }> => {
     const importedModule = await importFn();
     // Handle both default exports and named exports
     if (importedModule.default) {
@@ -44,7 +44,7 @@ export function createLazyWidget(
     }
   };
   
-  const LazyComponent = lazy(wrappedImportFn);
+  const LazyComponent = lazy<React.ComponentType<WidgetComponentProps>>(wrappedImportFn);
   
   return React.memo(function LazyWidget(props: WidgetComponentProps) {
     return (
@@ -132,7 +132,7 @@ export const LazyComponents: Record<string, React.ComponentType<any>> = {
   
   // 報表類重型 widget (named exports)
   'ReportGeneratorWidget': createLazyWidget(
-    () => import('./widgets/ReportGeneratorWidget')
+    () => import('./widgets/ReportGeneratorWithDialogWidgetV2')
   ),
   'ReportGeneratorWithDialogWidget': createLazyWidget(
     () => import('./widgets/ReportGeneratorWithDialogWidgetV2')
@@ -369,8 +369,8 @@ export class OptimizedWidgetLoader {
     if (!loadFn) {
       // 嘗試從增強註冊表加載
       const definition = widgetRegistry.getDefinition(widgetId);
-      if (definition?.lazyLoad && definition.loadComponent) {
-        return await definition.loadComponent();
+      if (definition?.lazyLoad && definition.component) {
+        return definition.component;
       }
       throw new Error(`Widget ${widgetId} not found`);
     }

@@ -54,8 +54,8 @@ export function AcoOrderReportWidgetV2({ widget, isEditMode }: WidgetComponentPr
       const startTime = performance.now();
       const api = createDashboardAPI();
 
-      const result = await api.fetchData({
-        widgetId: 'aco_order_refs',
+      const result = await api.fetch({
+        widgetIds: ['aco_order_refs'],
         params: {
           limit: 100,
           offset: 0,
@@ -65,14 +65,15 @@ export function AcoOrderReportWidgetV2({ widget, isEditMode }: WidgetComponentPr
       const endTime = performance.now();
       setPerformanceMetrics({
         apiResponseTime: Math.round(endTime - startTime),
-        optimized: result.metadata?.optimized || false,
+        optimized: false, // metadata doesn't have optimized property
       });
 
-      if (result.error) {
-        throw new Error(result.error);
+      // Check if widget data contains error
+      if (result.widgets?.[0]?.data?.error) {
+        throw new Error(result.widgets[0].data.error);
       }
 
-      const orderRefs = (result.value as string[]) || [];
+      const orderRefs = (result.widgets?.[0]?.data?.value as string[]) || [];
       setAcoOrders(orderRefs);
 
       // Set default selection
@@ -115,10 +116,12 @@ export function AcoOrderReportWidgetV2({ widget, isEditMode }: WidgetComponentPr
       const api = createDashboardAPI();
 
       // Get report data from server
-      const result = await api.fetchData({
-        widgetId: 'aco_order_report',
+      const result = await api.fetch({
+        widgetIds: ['aco_order_report'],
         params: {
-          orderRef: parseInt(selectedAcoOrder, 10),
+          // Use a generic param or extend DashboardParams type
+          staticValue: parseInt(selectedAcoOrder, 10),
+          dataSource: 'aco_order_report',
         },
       });
 
@@ -127,11 +130,12 @@ export function AcoOrderReportWidgetV2({ widget, isEditMode }: WidgetComponentPr
         `[AcoOrderReportWidgetV2] Server fetch time: ${Math.round(endTime - startTime)}ms`
       );
 
-      if (result.error) {
-        throw new Error(result.error);
+      // Check if widget data contains error
+      if (result.widgets?.[0]?.data?.error) {
+        throw new Error(result.widgets[0].data.error);
       }
 
-      const reportData = result.value as AcoProductData[];
+      const reportData = result.widgets?.[0]?.data?.value as AcoProductData[];
 
       // Generate Excel report
       await exportAcoReport(reportData, selectedAcoOrder);
@@ -142,9 +146,9 @@ export function AcoOrderReportWidgetV2({ widget, isEditMode }: WidgetComponentPr
       });
 
       // Log performance metrics
-      if (result.metadata?.performanceMs) {
+      if (result.metadata?.processingTime) {
         console.log(
-          `[AcoOrderReportWidgetV2] Server-side processing: ${result.metadata.performanceMs}ms`
+          `[AcoOrderReportWidgetV2] Server-side processing: ${result.metadata.processingTime}ms`
         );
       }
     } catch (error) {

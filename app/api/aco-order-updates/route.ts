@@ -87,16 +87,16 @@ export async function POST(request: NextRequest) {
     let emailResult = null;
     if (result.order_completed) {
       try {
-        process.env.NODE_ENV !== 'production' &&
-          process.env.NODE_ENV !== 'production' &&
+        if (process.env.NODE_ENV !== 'production') {
           console.log(`[ACO] Order ${orderRefNum} completed, sending email notification...`);
-        process.env.NODE_ENV !== 'production' &&
-          process.env.NODE_ENV !== 'production' &&
+        }
+        if (process.env.NODE_ENV !== 'production') {
           console.log('[ACO] Environment check:', {
             nodeEnv: process.env.NODE_ENV,
             isLocalhost: request.url.includes('localhost'),
             supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL?.substring(0, 20) + '...',
           });
+        }
 
         // Call Supabase Edge Function to send email
         const { data: emailData, error: emailError } = await supabase.functions.invoke(
@@ -110,26 +110,26 @@ export async function POST(request: NextRequest) {
           }
         );
 
-        process.env.NODE_ENV !== 'production' &&
-          process.env.NODE_ENV !== 'production' &&
+        if (process.env.NODE_ENV !== 'production') {
           console.log('[ACO] Edge Function response:', { emailData, emailError });
+        }
 
         if (emailError) {
           console.error('Error sending ACO completion email:', emailError);
           // Log the completion even if email fails
-          process.env.NODE_ENV !== 'production' &&
-            process.env.NODE_ENV !== 'production' &&
+          if (process.env.NODE_ENV !== 'production') {
             console.log(
               `🎉 ACO ORDER COMPLETED: Order ${orderRefNum} has been completed but email notification failed.`
             );
+          }
           emailResult = {
             success: false,
             error: emailError.message,
           };
         } else {
-          process.env.NODE_ENV !== 'production' &&
-            process.env.NODE_ENV !== 'production' &&
+          if (process.env.NODE_ENV !== 'production') {
             console.log('ACO completion email sent successfully:', emailData);
+          }
           emailResult = {
             success: true,
             message: emailData.message,
@@ -139,11 +139,11 @@ export async function POST(request: NextRequest) {
       } catch (emailError: any) {
         console.error('Error invoking email function:', emailError);
         // Log the completion even if email fails
-        process.env.NODE_ENV !== 'production' &&
-          process.env.NODE_ENV !== 'production' &&
+        if (process.env.NODE_ENV !== 'production') {
           console.log(
             `🎉 ACO ORDER COMPLETED: Order ${orderRefNum} has been completed but email service failed.`
           );
+        }
         emailResult = {
           success: false,
           error: `Email service error: ${emailError.message}`,

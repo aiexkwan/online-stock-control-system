@@ -1,5 +1,6 @@
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
+import { isDevelopment, isProduction } from '@/lib/utils/env';
 // import { emailToClockNumber } from './app/utils/authUtils'; // 可能不再需要在中間件中直接使用
 
 // 認證中間件 - 處理用戶會話和路由保護
@@ -7,7 +8,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 export async function middleware(request: NextRequest) {
   // 強制記錄所有路徑，用於調試 API 路由問題
   console.log(
-    `[Supabase SSR Middleware] Processing path: ${request.nextUrl.pathname} (Method: ${request.method}, ENV: ${process.env.NODE_ENV})`
+    `[Supabase SSR Middleware] Processing path: ${request.nextUrl.pathname} (Method: ${request.method}, ENV: ${process.env.NODE_ENV || 'development'})`
   );
 
   // 公開路由 - 只有主登入頁面、密碼重設頁面和特定的 API 路由不需要認證
@@ -80,7 +81,7 @@ export async function middleware(request: NextRequest) {
         const cookie = request.cookies.get(name);
         // 只在開發環境且第一次檢查主要認證 cookie 時記錄
         if (
-          process.env.NODE_ENV === 'development' &&
+          isDevelopment() &&
           name.includes('auth-token') &&
           !name.match(/\.\d+$/) &&
           !cookieLoggedForThisRequest
@@ -123,7 +124,7 @@ export async function middleware(request: NextRequest) {
           // 使用相同的站點策略
           sameSite: 'lax',
           // 本地開發使用 http
-          secure: process.env.NODE_ENV === 'production',
+          secure: isProduction(),
         });
       },
       remove(name: string, options: CookieOptions) {
@@ -192,7 +193,7 @@ export async function middleware(request: NextRequest) {
     } else {
       // 用戶已認證 - 只在首次訪問或重要頁面時記錄
       const shouldLogAuth =
-        process.env.NODE_ENV === 'development' &&
+        isDevelopment() &&
         (request.nextUrl.pathname === '/admin' ||
           request.nextUrl.pathname === '/access' ||
           !request.headers.get('referer')); // 首次訪問（沒有 referer）

@@ -148,7 +148,7 @@ export function TransferDestinationSelector({
         className='space-y-3'
       >
         {filteredDestinations.map(destination => {
-          const config = DESTINATION_CONFIG[destination];
+          const config = DESTINATION_CONFIG[destination as keyof typeof DESTINATION_CONFIG];
           const Icon = config?.icon || Package2;
 
           return (

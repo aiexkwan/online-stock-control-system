@@ -9,6 +9,7 @@ import {
   AcoOrderProgress,
   InventorySearchResult,
 } from '../services/AdminDataService';
+import { isNotProduction } from '@/lib/utils/env';
 
 // Cache configuration
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
@@ -221,8 +222,7 @@ export function useRealtimeStats() {
           table: 'record_palletinfo',
         },
         () => {
-          process.env.NODE_ENV !== 'production' &&
-            process.env.NODE_ENV !== 'production' &&
+          isNotProduction() &&
             console.log('Pallet data changed, refreshing stats...');
           refreshStats();
         }
@@ -240,8 +240,7 @@ export function useRealtimeStats() {
           table: 'record_transfer',
         },
         () => {
-          process.env.NODE_ENV !== 'production' &&
-            process.env.NODE_ENV !== 'production' &&
+          isNotProduction() &&
             console.log('Transfer data changed, refreshing stats...');
           refreshStats();
         }
@@ -259,8 +258,7 @@ export function useRealtimeStats() {
           table: 'record_aco',
         },
         () => {
-          process.env.NODE_ENV !== 'production' &&
-            process.env.NODE_ENV !== 'production' &&
+          isNotProduction() &&
             console.log('ACO data changed, refreshing orders...');
           refreshOrders();
         }

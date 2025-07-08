@@ -4,8 +4,9 @@
  */
 
 import { DataAccessLayer } from '../core/DataAccessStrategy';
-import { qcLabelGeneration, grnLabelGeneration } from '@/app/actions/qcActions';
-import { printGrnLabel } from '@/app/actions/grnActions';
+// TODO: Fix imports - these functions may have been moved or renamed
+// import { qcLabelGeneration, grnLabelGeneration } from '@/app/actions/qcActions';
+// import { printGrnLabel } from '@/app/actions/grnActions';
 
 // Type definitions
 export interface PrintJobParams {

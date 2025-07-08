@@ -30,6 +30,7 @@ import {
 import { format } from 'date-fns';
 import { getYesterdayRange } from '@/app/utils/timezone';
 import { createDashboardAPI } from '@/lib/api/admin/DashboardAPI';
+import { WidgetStyles } from '@/app/utils/widgetStyles';
 
 interface TimeDistributionData {
   timeSlots: Array<{
@@ -137,7 +138,7 @@ export const TransferTimeDistributionWidget = React.memo(function TransferTimeDi
 
   if (isEditMode) {
     return (
-      <WidgetCard widget={widget} isEditMode={true}>
+      <WidgetCard widgetType={widget.type.toUpperCase() as keyof typeof WidgetStyles.borders} isEditMode={true}>
         <div className='flex h-full items-center justify-center'>
           <p className='font-medium text-slate-400'>Transfer Time Distribution</p>
         </div>
@@ -146,7 +147,7 @@ export const TransferTimeDistributionWidget = React.memo(function TransferTimeDi
   }
 
   return (
-    <WidgetCard widget={widget}>
+    <WidgetCard widgetType={widget.type.toUpperCase() as keyof typeof WidgetStyles.borders}>
       <CardHeader className='pb-2'>
         <CardTitle className='widget-title flex items-center gap-2'>
           <ChartBarIcon className='h-5 w-5' />
@@ -164,7 +165,7 @@ export const TransferTimeDistributionWidget = React.memo(function TransferTimeDi
         ) : error ? (
           <div className='text-center text-sm text-red-400'>
             <p>Error loading data</p>
-            <p className='mt-1 text-xs'>{error.message}</p>
+            <p className='mt-1 text-xs'>{error}</p>
           </div>
         ) : (
           <motion.div

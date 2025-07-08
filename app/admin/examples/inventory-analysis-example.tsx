@@ -92,7 +92,7 @@ export function InventoryAnalysisExample() {
             <div className='mt-4 space-y-2'>
               <div className='flex justify-between text-sm'>
                 <span>Overall Stock Status</span>
-                <Badge variant={summary.overall_sufficient ? 'success' : 'destructive'}>
+                <Badge variant={summary.overall_sufficient ? 'default' : 'destructive'}>
                   {summary.overall_sufficient ? 'Sufficient' : 'Insufficient'}
                 </Badge>
               </div>
@@ -161,7 +161,7 @@ export function InventoryAnalysisExample() {
                     <span className='font-medium text-amber-600'>{product.order_demand}</span>
                   </div>
                   <Badge
-                    variant={product.is_sufficient ? 'success' : 'destructive'}
+                    variant={product.is_sufficient ? 'default' : 'destructive'}
                     className='ml-2'
                   >
                     {product.is_sufficient ? 'OK' : 'Short'}

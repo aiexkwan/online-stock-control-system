@@ -69,7 +69,7 @@ export const ProductionStatsWidget: React.FC<ProductionStatsWidgetProps> = ({
             },
             params: {
               dataSource: 'production_stats',
-              metric: metric,
+              staticValue: metric, // Use staticValue for metric
             },
           },
           {

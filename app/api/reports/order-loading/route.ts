@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
 
       (doc as any).autoTable({
         head: [['Timestamp', 'Order', 'Product', 'Qty', 'User', 'Action']],
-        body: records.map(r => [
+        body: records.map((r: any) => [
           new Date(r.timestamp).toLocaleString(),
           r.order_number,
           r.product_code,

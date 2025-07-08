@@ -17,7 +17,7 @@ import { Loader2 } from 'lucide-react';
 import { createDashboardAPI } from '@/lib/api/admin/DashboardAPI';
 import { format } from 'date-fns';
 import { useGraphQLQuery } from '@/lib/graphql-client-stable';
-import { gql, print } from 'graphql-tag';
+import gql from 'graphql-tag';
 
 // GraphQL query for stock level snapshots from inventory table
 // 注意：這個查詢假設我們有一個方式追蹤庫存歷史快照

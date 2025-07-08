@@ -16,13 +16,13 @@ export async function GET(request: NextRequest) {
     
     const result = await dashboardAPI.serverFetch({
       widgetIds: widgets,
-      warehouse,
+      warehouse: warehouse || undefined,
       dateRange: startDate && endDate ? { start: startDate, end: endDate } : undefined,
       params: {
         limit,
         offset,
-        startDate,
-        endDate,
+        startDate: startDate || undefined,
+        endDate: endDate || undefined,
       },
     });
 

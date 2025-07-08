@@ -4,6 +4,7 @@
  */
 
 // Removed React cache import to fix client component compatibility
+import { isProduction } from '@/lib/utils/env';
 
 export interface CacheConfig {
   ttl?: number; // Time to live in seconds
@@ -148,7 +149,7 @@ export abstract class DataAccessLayer<TParams, TResult> {
     if (typeof window !== 'undefined') {
       // Client-side: Send to analytics API
       // Only send metrics in production to avoid unnecessary 404s in development
-      if (process.env.NODE_ENV === 'production') {
+      if (isProduction()) {
         fetch('/api/analytics/data-access', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },

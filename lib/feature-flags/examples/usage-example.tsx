@@ -13,6 +13,7 @@ import {
   withFeatureFlag,
   KnownFeatureFlags,
 } from '../index';
+import { isDevelopment, isNotProduction } from '@/lib/utils/env';
 
 /**
  * 示例 1: 基本使用 - 條件渲染組件
@@ -156,7 +157,7 @@ export function Example7_ProgrammaticCheck() {
 export function Example8_DevToggle() {
   const { enabled, toggle, loading } = useFeatureFlag(KnownFeatureFlags.DEBUG_MODE);
 
-  if (process.env.NODE_ENV !== 'development') {
+  if (!isDevelopment()) {
     return null;
   }
 
@@ -211,7 +212,7 @@ export function Example10_CompleteApp() {
       </main>
 
       {/* 開發環境顯示 Feature Flag 面板 */}
-      {process.env.NODE_ENV === 'development' && <FeatureFlagPanel />}
+      {isDevelopment() && <FeatureFlagPanel />}
     </div>
   );
 }

@@ -73,10 +73,10 @@ export function useVoidPallet() {
 
         // Log error to database (使用異步方式獲取 clock number)
         getCurrentUserClockNumberAsync()
-          .then(clockNumber => {
+          .then((clockNumber: string | null) => {
             logErrorAction(clockNumber || 'unknown', `${error.type}: ${error.message}`);
           })
-          .catch(err => {
+          .catch((err: any) => {
             process.env.NODE_ENV !== 'production' &&
               process.env.NODE_ENV !== 'production' &&
               console.warn('[VoidPallet] Failed to get clock number for error logging:', err);

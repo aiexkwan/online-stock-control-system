@@ -181,7 +181,7 @@ const AnalysisExpandableCards = React.lazy(() => import('./widgets/AnalysisExpan
 const UploadOrdersWidget = React.lazy(() => import('./widgets/UploadOrdersWidgetV2').then(mod => ({ default: mod.UploadOrdersWidgetV2 })));
 const UploadProductSpecWidget = React.lazy(() => import('./widgets/UploadProductSpecWidget').then(mod => ({ default: mod.UploadProductSpecWidget })));
 const UploadPhotoWidget = React.lazy(() => import('./widgets/UploadPhotoWidget').then(mod => ({ default: mod.UploadPhotoWidget })));
-const ReportGeneratorWidget = React.lazy(() => import('./widgets/ReportGeneratorWidget').then(mod => ({ default: mod.ReportGeneratorWidget })));
+const ReportGeneratorWidget = React.lazy(() => import('./widgets/ReportGeneratorWithDialogWidgetV2').then(mod => ({ default: mod.ReportGeneratorWithDialogWidgetV2 })));
 const TransactionReportWidget = React.lazy(() => import('./widgets/TransactionReportWidget').then(mod => ({ default: mod.TransactionReportWidget })));
 const GrnReportWidget = React.lazy(() => import('./widgets/GrnReportWidgetV2').then(mod => ({ default: mod.GrnReportWidgetV2 })));
 const AcoOrderReportWidget = React.lazy(() => import('./widgets/AcoOrderReportWidgetV2').then(mod => ({ default: mod.AcoOrderReportWidgetV2 })));
@@ -1003,8 +1003,8 @@ const AdminWidgetRendererComponent: React.FC<AdminWidgetRendererProps> = ({
 
   // 渲染統計卡片 - 使用 useCallback 優化
   const renderStatsCard = useCallback(() => {
-    // 檢查是否為需要顯示 "Not available" 的四個小 widget
-    const notAvailableWidgets = ['Pending Updates', 'Processing', 'Completed Today', 'Failed'];
+    // 檢查是否為需要顯示 "Not available" 的三個小 widget
+    const notAvailableWidgets = ['Processing', 'Completed Today', 'Failed'];
     if (notAvailableWidgets.includes(config.title)) {
       return (
         <div className="h-full flex flex-col items-center justify-center">
@@ -1025,6 +1025,15 @@ const AdminWidgetRendererComponent: React.FC<AdminWidgetRendererProps> = ({
           </div>
         }>
           <ProductionStatsWidget
+            widget={{
+              id: `production-stats-${config.gridArea}`,
+              type: config.type as any,
+              title: config.title,
+              config: {
+                dataSource: config.dataSource,
+                metrics: config.metrics
+              }
+            }}
             title={config.title}
             metric={config.metrics[0] as 'pallet_count' | 'quantity_sum'}
             timeFrame={timeFrame}
@@ -1097,6 +1106,15 @@ const AdminWidgetRendererComponent: React.FC<AdminWidgetRendererProps> = ({
           <div className="animate-pulse h-full bg-slate-700 rounded"></div>
         }>
           <TopProductsChartWidget
+            widget={{
+              id: `top-products-${config.gridArea}`,
+              type: config.type as any,
+              title: config.title,
+              config: {
+                dataSource: config.dataSource,
+                chartType: config.chartType
+              }
+            }}
             title={config.title}
             timeFrame={timeFrame}
             isEditMode={false}
@@ -1113,6 +1131,15 @@ const AdminWidgetRendererComponent: React.FC<AdminWidgetRendererProps> = ({
           <div className="animate-pulse h-full bg-slate-700 rounded"></div>
         }>
           <ProductDistributionChartWidget
+            widget={{
+              id: `product-distribution-${config.gridArea}`,
+              type: config.type as any,
+              title: config.title,
+              config: {
+                dataSource: config.dataSource,
+                chartType: config.chartType
+              }
+            }}
             title={config.title}
             timeFrame={timeFrame}
             isEditMode={false}
@@ -1134,7 +1161,15 @@ const AdminWidgetRendererComponent: React.FC<AdminWidgetRendererProps> = ({
             isEditMode={false}
             department="Injection"
             useGraphQL={config.useGraphQL}
-            widget={config}
+            widget={{
+              id: `staff-workload-${config.gridArea}`,
+              type: config.type as any,
+              title: config.title,
+              config: {
+                dataSource: config.dataSource,
+                chartType: config.chartType
+              }
+            }}
           />
         </Suspense>
       );
@@ -1156,7 +1191,7 @@ const AdminWidgetRendererComponent: React.FC<AdminWidgetRendererProps> = ({
       if (isWorkloadData) {
         // 計算最大值以設定 Y 軸範圍
         let maxValue = 0;
-        chartData.forEach(dataPoint => {
+        chartData.forEach((dataPoint: any) => {
           data.userNames.forEach((userName: string) => {
             if (dataPoint[userName] > maxValue) {
               maxValue = dataPoint[userName];
@@ -1410,7 +1445,14 @@ const AdminWidgetRendererComponent: React.FC<AdminWidgetRendererProps> = ({
             timeFrame={timeFrame}
             isEditMode={false}
             useGraphQL={config.useGraphQL}
-            widget={config}
+            widget={{
+              id: `production-details-${config.gridArea}`,
+              type: config.type as any,
+              title: config.title,
+              config: {
+                dataSource: config.dataSource
+              }
+            }}
           />
         </Suspense>
       );
@@ -1568,7 +1610,14 @@ const AdminWidgetRendererComponent: React.FC<AdminWidgetRendererProps> = ({
       case 'AvailableSoonWidget':
         return (
           <Suspense fallback={<div className="h-full w-full animate-pulse bg-slate-800/50" />}>
-            <AvailableSoonWidget widget={config} isEditMode={false} />
+            <AvailableSoonWidget widget={{
+              id: `available-soon-${config.gridArea}`,
+              type: config.type as any,
+              title: config.title,
+              config: {
+                dataSource: config.dataSource
+              }
+            }} isEditMode={false} />
           </Suspense>
         );
       case 'StockInventoryTable':
@@ -1736,10 +1785,9 @@ const AdminWidgetRendererComponent: React.FC<AdminWidgetRendererProps> = ({
             <StockTypeSelector 
               widget={{
                 id: 'stock-type-selector',
+                type: config.type as any,
                 title: config.title || 'Stock Type Selector',
                 config: {
-                  type: 'table',
-                  title: config.title || 'Stock Type Selector',
                   dataSource: 'stock_level'
                 }
               }}
@@ -1752,13 +1800,20 @@ const AdminWidgetRendererComponent: React.FC<AdminWidgetRendererProps> = ({
       case 'StockDistributionChartV2':
         return (
           <Suspense fallback={<div className="h-full w-full animate-pulse bg-slate-800/50" />}>
-            <StockDistributionChart {...componentProps.StockDistributionChart} />
+            <StockDistributionChart widget={config as any} useGraphQL={config.useGraphQL} />
           </Suspense>
         );
       case 'StockLevelHistoryChart':
         return (
           <Suspense fallback={<div className="h-full w-full animate-pulse bg-slate-800/50" />}>
-            <StockLevelHistoryChart timeFrame={timeFrame} />
+            <StockLevelHistoryChart widget={{
+              id: `stock-level-history-${config.gridArea}`,
+              type: config.type as any,
+              title: config.title,
+              config: {
+                dataSource: config.dataSource
+              }
+            }} timeFrame={timeFrame} />
           </Suspense>
         );
       case 'InventoryOrderedAnalysisWidget':
@@ -1806,6 +1861,11 @@ const AdminWidgetRendererComponent: React.FC<AdminWidgetRendererProps> = ({
               reportType={config.reportType || ''}
               description={config.description}
               apiEndpoint={config.apiEndpoint}
+              dialogTitle={config.dialogTitle || config.title}
+              dialogDescription={config.dialogDescription || config.description || 'Generate report'}
+              selectLabel={config.selectLabel || 'Select option'}
+              dataTable={config.dataTable || ''}
+              referenceField={config.referenceField || ''}
             />
           </Suspense>
         );
@@ -1834,7 +1894,14 @@ const AdminWidgetRendererComponent: React.FC<AdminWidgetRendererProps> = ({
       case 'aco-order-report':
         return (
           <Suspense fallback={<div className="h-full w-full animate-pulse bg-slate-800/50" />}>
-            <AcoOrderReportWidget theme={theme} />
+            <AcoOrderReportWidget widget={{
+              id: `aco-order-report-${config.gridArea}`,
+              type: config.type as any,
+              title: config.title,
+              config: {
+                dataSource: config.dataSource
+              }
+            }} isEditMode={false} />
           </Suspense>
         );
       case 'report-generator-dialog':
@@ -1856,7 +1923,14 @@ const AdminWidgetRendererComponent: React.FC<AdminWidgetRendererProps> = ({
       case 'available-soon':
         return (
           <Suspense fallback={<div className="h-full w-full animate-pulse bg-slate-800/50" />}>
-            <AvailableSoonWidget widget={config} isEditMode={false} />
+            <AvailableSoonWidget widget={{
+              id: `available-soon-${config.gridArea}`,
+              type: config.type as any,
+              title: config.title,
+              config: {
+                dataSource: config.dataSource
+              }
+            }} isEditMode={false} />
           </Suspense>
         );
       case 'reports':

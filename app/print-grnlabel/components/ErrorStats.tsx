@@ -5,6 +5,7 @@ import { grnErrorHandler } from '../services/ErrorHandler';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { AlertCircle, CheckCircle, AlertTriangle, Info } from 'lucide-react';
+import { isDevelopment } from '@/lib/utils/env';
 
 /**
  * 錯誤統計組件 - 用於開發和調試
@@ -24,7 +25,7 @@ export const GrnErrorStats: React.FC = () => {
   };
 
   // 只在開發環境顯示
-  if (process.env.NODE_ENV !== 'development') {
+  if (!isDevelopment()) {
     return null;
   }
 
