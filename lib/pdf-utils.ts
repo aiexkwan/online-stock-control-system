@@ -8,7 +8,7 @@ export async function batchDownloadAndPrintPdfs(
   onStart();
 
   // PC check
-  if (typeof window === 'undefined' || !(!/Mobi|Android/i.test(navigator.userAgent))) {
+  if (typeof window === 'undefined' || !!/Mobi|Android/i.test(navigator.userAgent)) {
     console.warn('Batch print is only available on PC.');
     onFinish(false, 'Batch print is only available on PC.');
     return;
@@ -21,7 +21,7 @@ export async function batchDownloadAndPrintPdfs(
 
   try {
     const mergedPdf = await PDFDocument.create();
-    
+
     for (const url of pdfUrls) {
       try {
         const pdfBytes = await fetch(url).then(res => {
@@ -64,4 +64,4 @@ export async function batchDownloadAndPrintPdfs(
     console.error('Error during batch download and print:', error);
     onFinish(false, error instanceof Error ? error.message : String(error));
   }
-} 
+}

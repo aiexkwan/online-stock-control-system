@@ -13,7 +13,7 @@ interface AnalyticsDashboardStore {
   closeDashboard: () => void;
 }
 
-const useAnalyticsDashboardStore = create<AnalyticsDashboardStore>((set) => ({
+const useAnalyticsDashboardStore = create<AnalyticsDashboardStore>(set => ({
   isOpen: false,
   openDashboard: () => set({ isOpen: true }),
   closeDashboard: () => set({ isOpen: false }),
@@ -21,7 +21,7 @@ const useAnalyticsDashboardStore = create<AnalyticsDashboardStore>((set) => ({
 
 export function useAnalyticsDashboard() {
   const { isOpen, openDashboard, closeDashboard } = useAnalyticsDashboardStore();
-  
+
   return {
     isOpen,
     openDashboard,

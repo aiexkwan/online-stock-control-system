@@ -473,4 +473,4 @@ type StocktakeConnection implements Connection {
 type StocktakeEdge implements Edge {
   node: StocktakeRecord!
   cursor: String!
-} 
+}

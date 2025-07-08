@@ -120,7 +120,6 @@ export interface Connection<T> {
  * 將 Supabase 原始數據結構轉換為統一的 GraphQL Schema
  */
 export class UnifiedDataLayer {
-  
   /**
    * 產品管理
    */
@@ -130,7 +129,7 @@ export class UnifiedDataLayer {
   ): Promise<Connection<Product>> {
     // 映射過濾條件到 Supabase GraphQL
     const supabaseFilter = this.mapProductFilter(filter);
-    
+
     const query = `
       query GetProducts($filter: data_codeFilter, $first: Int, $after: String) {
         data_codeCollection(
@@ -166,8 +165,8 @@ export class UnifiedDataLayer {
       variables: {
         filter: supabaseFilter,
         first: pagination?.first || 50,
-        after: pagination?.after
-      }
+        after: pagination?.after,
+      },
     });
 
     // 轉換數據結構
@@ -194,7 +193,7 @@ export class UnifiedDataLayer {
 
     const result = await graphqlClient.query({
       query,
-      variables: { code: id }
+      variables: { code: id },
     });
 
     const productData = result.data?.data_codeCollection?.edges?.[0]?.node;
@@ -209,7 +208,7 @@ export class UnifiedDataLayer {
     pagination?: PaginationInput
   ): Promise<Connection<Pallet>> {
     const supabaseFilter = this.mapPalletFilter(filter);
-    
+
     const query = `
       query GetPallets($filter: record_palletinfoFilter, $first: Int, $after: String) {
         record_palletinfoCollection(
@@ -246,8 +245,8 @@ export class UnifiedDataLayer {
       variables: {
         filter: supabaseFilter,
         first: pagination?.first || 50,
-        after: pagination?.after
-      }
+        after: pagination?.after,
+      },
     });
 
     return this.transformPalletConnection(result.data?.record_palletinfoCollection);
@@ -261,7 +260,7 @@ export class UnifiedDataLayer {
     pagination?: PaginationInput
   ): Promise<Connection<InventoryRecord>> {
     const supabaseFilter = this.mapInventoryFilter(filter);
-    
+
     const query = `
       query GetInventory($filter: record_inventoryFilter, $first: Int, $after: String) {
         record_inventoryCollection(
@@ -304,8 +303,8 @@ export class UnifiedDataLayer {
       variables: {
         filter: supabaseFilter,
         first: pagination?.first || 50,
-        after: pagination?.after
-      }
+        after: pagination?.after,
+      },
     });
 
     return this.transformInventoryConnection(result.data?.record_inventoryCollection);
@@ -319,7 +318,7 @@ export class UnifiedDataLayer {
     pagination?: PaginationInput
   ): Promise<Connection<Movement>> {
     const supabaseFilter = this.mapMovementFilter(filter);
-    
+
     const query = `
       query GetMovements($filter: record_transferFilter, $first: Int, $after: String) {
         record_transferCollection(
@@ -355,8 +354,8 @@ export class UnifiedDataLayer {
       variables: {
         filter: supabaseFilter,
         first: pagination?.first || 50,
-        after: pagination?.after
-      }
+        after: pagination?.after,
+      },
     });
 
     return this.transformMovementConnection(result.data?.record_transferCollection);
@@ -409,11 +408,11 @@ export class UnifiedDataLayer {
 
     const result = await graphqlClient.query({
       query,
-      variables: { 
+      variables: {
         threshold,
         first: pagination?.first || 50,
-        after: pagination?.after
-      }
+        after: pagination?.after,
+      },
     });
 
     // Transform the low stock products to Product connection
@@ -421,7 +420,7 @@ export class UnifiedDataLayer {
       .filter((edge: any) => edge.node?.data_code)
       .map((edge: any) => ({
         cursor: edge.cursor,
-        node: this.transformProduct(edge.node.data_code)
+        node: this.transformProduct(edge.node.data_code),
       }));
 
     return {
@@ -430,9 +429,9 @@ export class UnifiedDataLayer {
         hasNextPage: false,
         hasPreviousPage: false,
         startCursor: null,
-        endCursor: null
+        endCursor: null,
       },
-      edges
+      edges,
     };
   }
 
@@ -477,12 +476,12 @@ export class UnifiedDataLayer {
         hasNextPage: false,
         hasPreviousPage: false,
         startCursor: null,
-        endCursor: null
+        endCursor: null,
       },
       edges: (data?.edges || []).map((edge: any) => ({
         cursor: edge.cursor,
-        node: this.transformProduct(edge.node)
-      }))
+        node: this.transformProduct(edge.node),
+      })),
     };
   }
 
@@ -494,7 +493,7 @@ export class UnifiedDataLayer {
       colour: data.colour || '',
       standardQty: data.standard_qty || 0,
       type: data.type || '',
-      remark: data.remark || null
+      remark: data.remark || null,
     };
   }
 
@@ -505,12 +504,12 @@ export class UnifiedDataLayer {
         hasNextPage: false,
         hasPreviousPage: false,
         startCursor: null,
-        endCursor: null
+        endCursor: null,
       },
       edges: (data?.edges || []).map((edge: any) => ({
         cursor: edge.cursor,
-        node: this.transformPallet(edge.node)
-      }))
+        node: this.transformPallet(edge.node),
+      })),
     };
   }
 
@@ -524,7 +523,7 @@ export class UnifiedDataLayer {
       quantity: data.product_qty || 0,
       remark: data.remark || null,
       pdfUrl: data.pdf_url || null,
-      status: this.determinePalletStatus(data)
+      status: this.determinePalletStatus(data),
     };
   }
 
@@ -535,21 +534,26 @@ export class UnifiedDataLayer {
         hasNextPage: false,
         hasPreviousPage: false,
         startCursor: null,
-        endCursor: null
+        endCursor: null,
       },
       edges: (data?.edges || []).map((edge: any) => ({
         cursor: edge.cursor,
-        node: this.transformInventoryRecord(edge.node)
-      }))
+        node: this.transformInventoryRecord(edge.node),
+      })),
     };
   }
 
   private transformInventoryRecord(data: any): InventoryRecord {
-    const totalQuantity = (data.injection || 0) + (data.pipeline || 0) + 
-                         (data.prebook || 0) + (data.await || 0) + 
-                         (data.fold || 0) + (data.bulk || 0) + 
-                         (data.backcarpark || 0) + (data.damage || 0) + 
-                         (data.await_grn || 0);
+    const totalQuantity =
+      (data.injection || 0) +
+      (data.pipeline || 0) +
+      (data.prebook || 0) +
+      (data.await || 0) +
+      (data.fold || 0) +
+      (data.bulk || 0) +
+      (data.backcarpark || 0) +
+      (data.damage || 0) +
+      (data.await_grn || 0);
 
     return {
       id: data.uuid,
@@ -565,7 +569,7 @@ export class UnifiedDataLayer {
       damage: data.damage || 0,
       awaitGrn: data.await_grn || 0,
       latestUpdate: data.latest_update,
-      totalQuantity
+      totalQuantity,
     };
   }
 
@@ -576,12 +580,12 @@ export class UnifiedDataLayer {
         hasNextPage: false,
         hasPreviousPage: false,
         startCursor: null,
-        endCursor: null
+        endCursor: null,
       },
       edges: (data?.edges || []).map((edge: any) => ({
         cursor: edge.cursor,
-        node: this.transformMovement(edge.node)
-      }))
+        node: this.transformMovement(edge.node),
+      })),
     };
   }
 
@@ -592,7 +596,7 @@ export class UnifiedDataLayer {
       fromLocation: data.from_location,
       toLocation: data.to_location,
       operatorId: data.operator_id,
-      transferDate: data.transfer_date
+      transferDate: data.transfer_date,
     };
   }
 
@@ -603,27 +607,27 @@ export class UnifiedDataLayer {
     if (!filter) return undefined;
 
     const conditions: any = {};
-    
+
     if (filter.code) {
       conditions.code = { ilike: `%${filter.code}%` };
     }
-    
+
     if (filter.description) {
       conditions.description = { ilike: `%${filter.description}%` };
     }
-    
+
     if (filter.colour) {
       conditions.colour = { eq: filter.colour };
     }
-    
+
     if (filter.type) {
       conditions.type = { eq: filter.type };
     }
-    
+
     if (filter.search) {
       conditions.or = [
         { code: { ilike: `%${filter.search}%` } },
-        { description: { ilike: `%${filter.search}%` } }
+        { description: { ilike: `%${filter.search}%` } },
       ];
     }
 
@@ -634,23 +638,23 @@ export class UnifiedDataLayer {
     if (!filter) return undefined;
 
     const conditions: any = {};
-    
+
     if (filter.palletNumber) {
       conditions.plt_num = { ilike: `%${filter.palletNumber}%` };
     }
-    
+
     if (filter.productCode) {
       conditions.product_code = { eq: filter.productCode };
     }
-    
+
     if (filter.dateRange?.from) {
       conditions.generate_time = { gte: filter.dateRange.from };
     }
-    
+
     if (filter.dateRange?.to) {
-      conditions.generate_time = { 
+      conditions.generate_time = {
         ...conditions.generate_time,
-        lte: filter.dateRange.to 
+        lte: filter.dateRange.to,
       };
     }
 
@@ -661,17 +665,17 @@ export class UnifiedDataLayer {
     if (!filter) return undefined;
 
     const conditions: any = {};
-    
+
     if (filter.productCode) {
       conditions.product_code = { eq: filter.productCode };
     }
-    
+
     if (filter.minQuantity !== undefined) {
       // 需要組合多個欄位的最小值檢查
       conditions.or = [
         { injection: { gte: filter.minQuantity } },
         { pipeline: { gte: filter.minQuantity } },
-        { prebook: { gte: filter.minQuantity } }
+        { prebook: { gte: filter.minQuantity } },
       ];
     }
 
@@ -682,19 +686,19 @@ export class UnifiedDataLayer {
     if (!filter) return undefined;
 
     const conditions: any = {};
-    
+
     if (filter.palletNumber) {
       conditions.plt_num = { eq: filter.palletNumber };
     }
-    
+
     if (filter.fromLocation) {
       conditions.from_location = { eq: filter.fromLocation };
     }
-    
+
     if (filter.toLocation) {
       conditions.to_location = { eq: filter.toLocation };
     }
-    
+
     if (filter.operatorId) {
       conditions.operator_id = { eq: filter.operatorId };
     }
@@ -733,32 +737,32 @@ export const createUnifiedDataHooks = () => {
       // 實現 React Hook 邏輯
       // 這裡會在第二週實施
     },
-    
+
     usePallets: (filter?: PalletFilter, pagination?: PaginationInput) => {
       // 實現 React Hook 邏輯
     },
-    
+
     useInventory: (filter?: InventoryFilter, pagination?: PaginationInput) => {
       // 實現 React Hook 邏輯
     },
-    
+
     useMovements: (filter?: MovementFilter, pagination?: PaginationInput) => {
       // 實現 React Hook 邏輯
     },
-    
+
     // 業務邏輯 Hooks
     useLowStockProducts: (threshold?: number) => {
       // 實現低庫存產品監控
     },
-    
+
     useStockLevels: () => {
       // 實現庫存水平監控
     },
-    
+
     useRealtimeInventory: (productCode?: string) => {
       // 實現實時庫存監控 (第三週 Subscription)
-    }
+    },
   };
 };
 
-export default unifiedDataLayer; 
+export default unifiedDataLayer;

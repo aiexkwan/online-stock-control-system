@@ -9,7 +9,7 @@ export const componentStandards = {
       examples: ['Button', 'DialogHeader', 'VirtualTable'],
       antiPatterns: ['button', 'dialog-header', 'virtual_table'],
     },
-    
+
     // 文件命名 - 組件文件使用 PascalCase
     files: {
       component: '{ComponentName}.tsx',
@@ -17,44 +17,44 @@ export const componentStandards = {
       test: '{ComponentName}.test.tsx',
       story: '{ComponentName}.stories.tsx',
     },
-    
+
     // Props 接口命名
     props: {
       pattern: '{ComponentName}Props',
       example: 'ButtonProps',
     },
-    
+
     // 變體命名 - 使用 kebab-case
     variants: {
       pattern: /^[a-z][a-z0-9-]*$/,
       examples: ['primary', 'secondary', 'danger-outline'],
-    }
+    },
   },
-  
+
   // 目錄結構
   structure: {
     // UI 組件目錄結構
     ui: {
       base: '/components/ui/',
       categories: {
-        core: 'core/',         // 核心組件 (Button, Input, etc.)
-        layout: 'layout/',     // 佈局組件 (Grid, Stack, etc.)
+        core: 'core/', // 核心組件 (Button, Input, etc.)
+        layout: 'layout/', // 佈局組件 (Grid, Stack, etc.)
         feedback: 'feedback/', // 反饋組件 (Dialog, Toast, etc.)
-        display: 'display/',   // 展示組件 (Card, Table, etc.)
+        display: 'display/', // 展示組件 (Card, Table, etc.)
         navigation: 'navigation/', // 導航組件 (Menu, Tabs, etc.)
-        forms: 'forms/',       // 表單組件 (Form, Field, etc.)
-        mobile: 'mobile/',     // 移動端組件
-      }
+        forms: 'forms/', // 表單組件 (Form, Field, etc.)
+        mobile: 'mobile/', // 移動端組件
+      },
     },
-    
+
     // 業務組件目錄結構
     business: {
       base: '/app/components/',
       pattern: '{feature}/{ComponentName}.tsx',
       example: 'inventory/InventoryTable.tsx',
-    }
+    },
   },
-  
+
   // 組件規範
   component: {
     // 基礎結構
@@ -93,7 +93,7 @@ export const {ComponentName} = React.forwardRef<
 
 {ComponentName}.displayName = '{ComponentName}'
     `.trim(),
-    
+
     // 必須包含
     requirements: [
       'TypeScript 類型定義',
@@ -103,7 +103,7 @@ export const {ComponentName} = React.forwardRef<
       '使用 cn 工具合併 className',
       '支持所有原生 HTML 屬性',
     ],
-    
+
     // 最佳實踐
     bestPractices: [
       '優先使用組合而非繼承',
@@ -113,9 +113,9 @@ export const {ComponentName} = React.forwardRef<
       '使用語義化 HTML',
       '確保鍵盤可訪問性',
       '支持 RTL 佈局',
-    ]
+    ],
   },
-  
+
   // Props 規範
   props: {
     // 通用 props
@@ -139,21 +139,21 @@ export const {ComponentName} = React.forwardRef<
         description: '是否加載中',
       },
     },
-    
+
     // 命名約定
     conventions: [
       '使用 is/has 前綴表示布爾值',
       '使用 on 前綴表示事件處理器',
       '使用複數形式表示數組',
       '避免縮寫（除非廣泛認可）',
-    ]
+    ],
   },
-  
+
   // 樣式規範
   styling: {
     // 使用 Tailwind CSS
     approach: 'utility-first',
-    
+
     // 樣式組織
     organization: {
       base: '基礎樣式（定位、尺寸）',
@@ -162,7 +162,7 @@ export const {ComponentName} = React.forwardRef<
       responsive: '響應式樣式',
       animation: '動畫樣式',
     },
-    
+
     // 樣式優先級
     priority: [
       '1. 設計系統 tokens',
@@ -170,16 +170,11 @@ export const {ComponentName} = React.forwardRef<
       '3. CSS modules（複雜樣式）',
       '4. 內聯樣式（動態值）',
     ],
-    
+
     // 禁止事項
-    avoid: [
-      '避免 !important',
-      '避免內聯樣式對象',
-      '避免硬編碼顏色值',
-      '避免硬編碼尺寸值',
-    ]
+    avoid: ['避免 !important', '避免內聯樣式對象', '避免硬編碼顏色值', '避免硬編碼尺寸值'],
   },
-  
+
   // 無障礙規範
   accessibility: {
     requirements: [
@@ -190,7 +185,7 @@ export const {ComponentName} = React.forwardRef<
       '錯誤提示明確',
       '加載狀態通知',
     ],
-    
+
     // ARIA 模式
     patterns: {
       button: {
@@ -204,10 +199,10 @@ export const {ComponentName} = React.forwardRef<
       navigation: {
         role: 'navigation',
         attributes: ['aria-label', 'aria-current'],
-      }
-    }
+      },
+    },
   },
-  
+
   // 性能規範
   performance: {
     guidelines: [
@@ -218,15 +213,15 @@ export const {ComponentName} = React.forwardRef<
       '優化圖片加載',
       '避免不必要的狀態提升',
     ],
-    
+
     // 性能指標
     metrics: {
       renderTime: '< 16ms',
       interactionDelay: '< 100ms',
       bundleSize: '< 50KB（單個組件）',
-    }
+    },
   },
-  
+
   // 測試規範
   testing: {
     requirements: [
@@ -236,15 +231,15 @@ export const {ComponentName} = React.forwardRef<
       '測試無障礙功能',
       '測試邊界情況',
     ],
-    
+
     // 測試模式
     patterns: {
       unit: 'Jest + React Testing Library',
       visual: 'Storybook + Chromatic',
       e2e: 'Playwright（關鍵流程）',
-    }
+    },
   },
-  
+
   // 文檔規範
   documentation: {
     // JSDoc 模板
@@ -264,18 +259,10 @@ export const {ComponentName} = React.forwardRef<
  * @see {@link https://example.com/docs} 文檔鏈接
  */
     `.trim(),
-    
+
     // README 結構
-    readme: [
-      '組件概述',
-      'API 文檔',
-      '使用示例',
-      '樣式定制',
-      '無障礙說明',
-      '性能考慮',
-      '常見問題',
-    ]
-  }
+    readme: ['組件概述', 'API 文檔', '使用示例', '樣式定制', '無障礙說明', '性能考慮', '常見問題'],
+  },
 } as const;
 
 // 輔助類型
@@ -293,6 +280,5 @@ export const validateVariantName = (name: string): boolean => {
 
 // 生成組件模板
 export const generateComponentTemplate = (name: string): string => {
-  return componentStandards.component.template
-    .replace(/{ComponentName}/g, name);
+  return componentStandards.component.template.replace(/{ComponentName}/g, name);
 };

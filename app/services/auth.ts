@@ -21,7 +21,7 @@ interface RawUserDataFromDB {
   id: string;
   name: string;
   department: string;
-  password?: string | null; 
+  password?: string | null;
   first_login?: boolean | null;
   // Individual permission fields as they are in the data_id table
   qc?: boolean | null;
@@ -32,9 +32,12 @@ interface RawUserDataFromDB {
   report?: boolean | null;
 }
 
-export async function authenticateUser(userId: string, passwordInput: string): Promise<{
+export async function authenticateUser(
+  userId: string,
+  passwordInput: string
+): Promise<{
   success: boolean;
-  user?: UserData; 
+  user?: UserData;
   isFirstLogin?: boolean;
   isTemporaryLogin?: boolean; // Add new flag for temporary login
   error?: string;
@@ -43,16 +46,18 @@ export async function authenticateUser(userId: string, passwordInput: string): P
   try {
     const { data: rawUserData, error: userFetchError } = await supabase
       .from('data_id')
-      .select('id, name, department, password, first_login, qc, receive, void, view, resume, report')
+      .select(
+        'id, name, department, password, first_login, qc, receive, void, view, resume, report'
+      )
       .eq('id', userId)
       .single();
 
     if (userFetchError) {
       console.error('User query error:', userFetchError);
-      if (userFetchError.code === 'PGRST116') { 
-         return { success: false, error: `User ${userId} not found.` };
+      if (userFetchError.code === 'PGRST116') {
+        return { success: false, error: `User ${userId} not found.` };
       }
-      return { success: false, error: 'Error fetching user data.' }; 
+      return { success: false, error: 'Error fetching user data.' };
     }
 
     if (!rawUserData) {
@@ -65,14 +70,15 @@ export async function authenticateUser(userId: string, passwordInput: string): P
       id: userDataFromDB.id,
       name: userDataFromDB.name,
       department: userDataFromDB.department,
-      permissions: { // Construct the permissions object here
+      permissions: {
+        // Construct the permissions object here
         qc: !!userDataFromDB.qc,
         receive: !!userDataFromDB.receive,
         void: !!userDataFromDB.void,
         view: !!userDataFromDB.view,
         resume: !!userDataFromDB.resume,
         report: !!userDataFromDB.report,
-      }
+      },
     };
 
     if (userDataFromDB.first_login === true) {
@@ -80,36 +86,39 @@ export async function authenticateUser(userId: string, passwordInput: string): P
         return {
           success: true,
           user: clientUserData,
-          isFirstLogin: true
+          isFirstLogin: true,
         };
       } else {
         return { success: false, error: 'Incorrect Clock Number for first login.' };
       }
-    } else { // This implies first_login is false or null/undefined (treat null/undefined as not first_login for robustness)
+    } else {
+      // This implies first_login is false or null/undefined (treat null/undefined as not first_login for robustness)
       if (!userDataFromDB.password) {
         console.error(`User ${userId} has first_login=false (or null) but no password set.`);
         return { success: false, error: 'User account configuration error. Please contact admin.' };
       }
-      
-      // --- Compare using bcrypt --- 
+
+      // --- Compare using bcrypt ---
       const isPasswordMatch = bcrypt.compareSync(passwordInput, userDataFromDB.password);
 
       if (isPasswordMatch) {
         return {
           success: true,
           user: clientUserData,
-          isFirstLogin: false
+          isFirstLogin: false,
         };
       } else {
-        // --- Password INCORRECT - Check for Pending Reset Request --- 
-        process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`Password mismatch for ${userId}. Checking for pending reset request...`);
-        
-        // --- Explicitly parse userId to integer for query --- 
+        // --- Password INCORRECT - Check for Pending Reset Request ---
+        process.env.NODE_ENV !== 'production' &&
+          process.env.NODE_ENV !== 'production' &&
+          console.log(`Password mismatch for ${userId}. Checking for pending reset request...`);
+
+        // --- Explicitly parse userId to integer for query ---
         const userIdInt = parseInt(userId, 10);
         if (isNaN(userIdInt)) {
-             console.error(`Invalid userId format for reset check: ${userId}`);
-             // Return generic password error if userId isn't a number somehow
-             return { success: false, error: 'Incorrect password.' }; 
+          console.error(`Invalid userId format for reset check: ${userId}`);
+          // Return generic password error if userId isn't a number somehow
+          return { success: false, error: 'Incorrect password.' };
         }
         // --- End of parsing ---
 
@@ -118,36 +127,39 @@ export async function authenticateUser(userId: string, passwordInput: string): P
           .select('id')
           .eq('user_id', userIdInt) // Use the integer userId for the query
           .eq('status', 'pending')
-          .maybeSingle(); 
+          .maybeSingle();
 
         if (requestCheckError) {
           console.error('Error checking password_reset_requests:', requestCheckError);
           // Don't expose db error, return generic password error
-          return { success: false, error: 'Incorrect password.' }; 
+          return { success: false, error: 'Incorrect password.' };
         }
 
         if (pendingRequest) {
           // Pending request FOUND - Grant temporary access
-          process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`Pending reset request found for ${userId}. Granting temporary access.`);
-          return { 
-            success: true, 
-            user: clientUserData, 
+          process.env.NODE_ENV !== 'production' &&
+            process.env.NODE_ENV !== 'production' &&
+            console.log(`Pending reset request found for ${userId}. Granting temporary access.`);
+          return {
+            success: true,
+            user: clientUserData,
             isFirstLogin: false, // Not a first login scenario
-            isTemporaryLogin: true // Indicate temporary access
-          }; 
+            isTemporaryLogin: true, // Indicate temporary access
+          };
         } else {
           // No pending request - Just an incorrect password
-          process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`No pending reset request found for ${userId}.`);
+          process.env.NODE_ENV !== 'production' &&
+            process.env.NODE_ENV !== 'production' &&
+            console.log(`No pending reset request found for ${userId}.`);
           return { success: false, error: 'Incorrect password.' };
         }
       }
     }
-
   } catch (error) {
     console.error('Unexpected authentication error:', error);
     return {
       success: false,
-      error: 'Login failed due to a system error. Please try again later.'
+      error: 'Login failed due to a system error. Please try again later.',
     };
   }
-} 
+}

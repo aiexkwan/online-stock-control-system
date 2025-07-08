@@ -15,31 +15,17 @@ export const MobileInput = forwardRef<HTMLInputElement, MobileInputProps>(
     const inputClass = getMobileInputClass(error ? 'error' : 'normal', size);
 
     return (
-      <div className="w-full">
-        {label && (
-          <label className="block text-sm font-medium text-slate-300 mb-2">
-            {label}
-          </label>
-        )}
-        <div className="relative">
+      <div className='w-full'>
+        {label && <label className='mb-2 block text-sm font-medium text-slate-300'>{label}</label>}
+        <div className='relative'>
           {icon && (
-            <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400">
+            <div className='absolute left-3 top-1/2 -translate-y-1/2 transform text-slate-400'>
               {icon}
             </div>
           )}
-          <input
-            ref={ref}
-            className={cn(
-              inputClass,
-              icon ? 'pl-10' : '',
-              className
-            )}
-            {...props}
-          />
+          <input ref={ref} className={cn(inputClass, icon ? 'pl-10' : '', className)} {...props} />
         </div>
-        {error && (
-          <p className="mt-1 text-sm text-red-400">{error}</p>
-        )}
+        {error && <p className='mt-1 text-sm text-red-400'>{error}</p>}
       </div>
     );
   }

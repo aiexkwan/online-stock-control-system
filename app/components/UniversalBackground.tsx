@@ -8,20 +8,23 @@ interface UniversalBackgroundProps {
   className?: string;
 }
 
-export const UniversalBackground: React.FC<UniversalBackgroundProps> = ({ children, className = "" }) => {
+export const UniversalBackground: React.FC<UniversalBackgroundProps> = ({
+  children,
+  className = '',
+}) => {
   return (
-    <div className={`min-h-screen relative ${className}`}>
+    <div className={`relative min-h-screen ${className}`}>
       {/* Starfield Background - Fixed position for universal coverage */}
       <StarfieldBackground />
-      
+
       {/* Dark background base */}
-      <div 
-        className="fixed inset-0 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900" 
+      <div
+        className='fixed inset-0 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900'
         style={{ zIndex: -1 }}
       />
-      
+
       {/* Content */}
-      <div className="relative" style={{ zIndex: 1 }}>
+      <div className='relative' style={{ zIndex: 1 }}>
         {children}
       </div>
     </div>

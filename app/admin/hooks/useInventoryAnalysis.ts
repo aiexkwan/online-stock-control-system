@@ -9,7 +9,7 @@ import type {
   InventoryAnalysisParams,
   InventoryAnalysisFilters,
   InventoryAnalysisSortBy,
-  ProductSufficiencyStatus
+  ProductSufficiencyStatus,
 } from '@/lib/types/inventory-analysis.types';
 import { INVENTORY_ANALYSIS_CONSTANTS } from '@/lib/types/inventory-analysis.types';
 
@@ -28,15 +28,11 @@ export function useInventoryAnalysis(
   const [data, setData] = useState<InventoryOrderedAnalysisResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
-  const [filters, setFilters] = useState<InventoryAnalysisFilters>(
-    options?.initialFilters || {}
-  );
+  const [filters, setFilters] = useState<InventoryAnalysisFilters>(options?.initialFilters || {});
   const [sortBy, setSortBy] = useState<InventoryAnalysisSortBy>(
     options?.initialSortBy || 'fulfillment_rate'
   );
-  const [sortAscending, setSortAscending] = useState(
-    options?.initialSortAscending ?? true
-  );
+  const [sortAscending, setSortAscending] = useState(options?.initialSortAscending ?? true);
 
   // Fetch data function
   const fetchData = useCallback(async () => {
@@ -92,7 +88,8 @@ export function useInventoryAnalysis(
   const getProductStatus = useCallback((fulfillmentRate: number): ProductSufficiencyStatus => {
     if (fulfillmentRate === 0) return 'critical';
     if (fulfillmentRate < INVENTORY_ANALYSIS_CONSTANTS.CRITICAL_FULFILLMENT_RATE) return 'critical';
-    if (fulfillmentRate < INVENTORY_ANALYSIS_CONSTANTS.WARNING_FULFILLMENT_RATE) return 'insufficient';
+    if (fulfillmentRate < INVENTORY_ANALYSIS_CONSTANTS.WARNING_FULFILLMENT_RATE)
+      return 'insufficient';
     return 'sufficient';
   }, []);
 
@@ -118,14 +115,17 @@ export function useInventoryAnalysis(
   }, []);
 
   // Update sort field
-  const updateSortBy = useCallback((newSortBy: InventoryAnalysisSortBy) => {
-    if (sortBy === newSortBy) {
-      toggleSortDirection();
-    } else {
-      setSortBy(newSortBy);
-      setSortAscending(true);
-    }
-  }, [sortBy, toggleSortDirection]);
+  const updateSortBy = useCallback(
+    (newSortBy: InventoryAnalysisSortBy) => {
+      if (sortBy === newSortBy) {
+        toggleSortDirection();
+      } else {
+        setSortBy(newSortBy);
+        setSortAscending(true);
+      }
+    },
+    [sortBy, toggleSortDirection]
+  );
 
   return {
     // Data
@@ -152,6 +152,6 @@ export function useInventoryAnalysis(
     getProductStatus,
 
     // Utilities
-    api: inventoryAnalysisAPI
+    api: inventoryAnalysisAPI,
   };
 }

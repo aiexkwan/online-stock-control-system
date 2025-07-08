@@ -1,6 +1,6 @@
 // Learn more: https://github.com/testing-library/jest-dom
-import '@testing-library/jest-dom'
-import './__tests__/utils/custom-matchers'
+import '@testing-library/jest-dom';
+import './__tests__/utils/custom-matchers';
 
 // Mock Next.js Request/Response for API routes
 global.Request = class Request {
@@ -10,7 +10,7 @@ global.Request = class Request {
     this.headers = new Map(Object.entries(init?.headers || {}));
     this.body = init?.body;
   }
-}
+};
 
 global.Response = class Response {
   constructor(body, init) {
@@ -19,11 +19,11 @@ global.Response = class Response {
     this.statusText = init?.statusText || '';
     this.headers = new Map(Object.entries(init?.headers || {}));
   }
-  
+
   async json() {
     return JSON.parse(this.body);
   }
-}
+};
 
 // Mock window.matchMedia
 Object.defineProperty(window, 'matchMedia', {
@@ -38,7 +38,7 @@ Object.defineProperty(window, 'matchMedia', {
     removeEventListener: jest.fn(),
     dispatchEvent: jest.fn(),
   })),
-})
+});
 
 // Mock IntersectionObserver
 global.IntersectionObserver = class IntersectionObserver {
@@ -46,14 +46,41 @@ global.IntersectionObserver = class IntersectionObserver {
   disconnect() {}
   observe() {}
   unobserve() {}
-}
+};
 
 // Mock scrollIntoView
-window.HTMLElement.prototype.scrollIntoView = jest.fn()
+window.HTMLElement.prototype.scrollIntoView = jest.fn();
 
 // Mock scrollTop getter/setter
 Object.defineProperty(window.HTMLElement.prototype, 'scrollTop', {
   writable: true,
   configurable: true,
-  value: 0
-})
+  value: 0,
+});
+
+// Mock Blob and URL for Excel generation tests
+global.Blob = class Blob {
+  constructor(content, options) {
+    this.content = content;
+    if (Array.isArray(content)) {
+      this.size = content.reduce((sum, chunk) => {
+        if (chunk instanceof ArrayBuffer) return sum + chunk.byteLength;
+        if (typeof chunk === 'string') return sum + chunk.length;
+        if (chunk && typeof chunk.length === 'number') return sum + chunk.length;
+        return sum + 1000; // fallback for buffer-like objects
+      }, 0);
+    } else if (content instanceof ArrayBuffer) {
+      this.size = content.byteLength;
+    } else if (content && typeof content.length === 'number') {
+      this.size = content.length;
+    } else {
+      this.size = 1000; // default size for mock
+    }
+    this.type = options?.type || '';
+  }
+};
+
+global.URL = {
+  createObjectURL: jest.fn(() => 'blob:mock-url'),
+  revokeObjectURL: jest.fn(),
+};

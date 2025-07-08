@@ -19,7 +19,10 @@ interface StatsData {
   label?: string;
 }
 
-const StatsCardWidget = React.memo(function StatsCardWidget({ widget, isEditMode }: WidgetComponentProps) {
+const StatsCardWidget = React.memo(function StatsCardWidget({
+  widget,
+  isEditMode,
+}: WidgetComponentProps) {
   const [data, setData] = useState<StatsData>({ value: 0 });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -27,40 +30,43 @@ const StatsCardWidget = React.memo(function StatsCardWidget({ widget, isEditMode
   const loadData = useCallback(async () => {
     try {
       setLoading(true);
-      
+
       // Use new hybrid API for data fetching
       const dashboardAPI = createDashboardAPI();
-      const dashboardResult = await dashboardAPI.fetch({
-        widgetIds: [widget.config.dataSource || 'statsCard'],
-        params: {
-          dataSource: widget.config.dataSource,
-          staticValue: widget.config.staticValue,
-          label: widget.config.label
+      const dashboardResult = await dashboardAPI.fetch(
+        {
+          widgetIds: [widget.config.dataSource || 'statsCard'],
+          params: {
+            dataSource: widget.config.dataSource,
+            staticValue: widget.config.staticValue,
+            label: widget.config.label,
+          },
+        },
+        {
+          strategy: 'client', // Force client strategy for client components (per Re-Structure-5.md)
+          cache: { ttl: 60 }, // 1-minute cache for stats
         }
-      }, { 
-        strategy: 'client', // Force client strategy for client components (per Re-Structure-5.md)
-        cache: { ttl: 60 } // 1-minute cache for stats
-      });
-      
+      );
+
       // Extract data for this widget
       const widgetData = dashboardResult.widgets?.find(
         w => w.widgetId === widget.config.dataSource || w.widgetId === 'statsCard'
       );
-      
+
       if (widgetData) {
         setData({
           value: widgetData.data.value || 0,
           label: widgetData.data.label || widget.config.label || 'Stats',
-          trend: widgetData.data.trend
+          trend: widgetData.data.trend,
         });
       } else {
         // Fallback for static values
         setData({
           value: widget.config.staticValue || 0,
-          label: widget.config.label || 'Stats'
+          label: widget.config.label || 'Stats',
         });
       }
-      
+
       setError(null);
     } catch (err) {
       const error = err instanceof Error ? err : new Error(String(err));
@@ -72,7 +78,6 @@ const StatsCardWidget = React.memo(function StatsCardWidget({ widget, isEditMode
   }, [widget.config]);
 
   useWidgetData({ loadFunction: loadData, isEditMode });
-
 
   const getIcon = () => {
     switch (widget.config.icon) {
@@ -90,30 +95,31 @@ const StatsCardWidget = React.memo(function StatsCardWidget({ widget, isEditMode
   };
 
   return (
-    <Card className={`h-full bg-slate-900/95 backdrop-blur-xl border border-slate-700/50 shadow-2xl ${isEditMode ? 'border-dashed border-2 border-blue-500/50' : ''}`}>
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-sm font-medium bg-gradient-to-r from-blue-300 via-cyan-300 to-blue-200 bg-clip-text text-transparent">
+    <Card
+      className={`h-full border border-slate-700/50 bg-slate-900/95 shadow-2xl backdrop-blur-xl ${isEditMode ? 'border-2 border-dashed border-blue-500/50' : ''}`}
+    >
+      <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
+        <CardTitle className='bg-gradient-to-r from-blue-300 via-cyan-300 to-blue-200 bg-clip-text text-sm font-medium text-transparent'>
           {'title' in widget ? widget.title : 'Stats'}
         </CardTitle>
         {getIcon()}
       </CardHeader>
       <CardContent>
         {loading ? (
-          <div className="animate-pulse">
-            <div className="h-8 bg-slate-700 rounded w-24"></div>
-            <div className="h-4 bg-slate-700 rounded w-16 mt-2"></div>
+          <div className='animate-pulse'>
+            <div className='h-8 w-24 rounded bg-slate-700'></div>
+            <div className='mt-2 h-4 w-16 rounded bg-slate-700'></div>
           </div>
         ) : error ? (
-          <div className="text-red-400 text-sm">{error}</div>
+          <div className='text-sm text-red-400'>{error}</div>
         ) : (
           <>
-            <div className="text-2xl font-bold text-white">{data.value}</div>
-            {data.label && (
-              <p className="text-xs text-slate-400">{data.label}</p>
-            )}
+            <div className='text-2xl font-bold text-white'>{data.value}</div>
+            {data.label && <p className='text-xs text-slate-400'>{data.label}</p>}
             {data.trend !== undefined && (
               <p className={`text-xs ${data.trend > 0 ? 'text-green-400' : 'text-red-400'}`}>
-                {data.trend > 0 ? '+' : ''}{data.trend}% from last period
+                {data.trend > 0 ? '+' : ''}
+                {data.trend}% from last period
               </p>
             )}
           </>

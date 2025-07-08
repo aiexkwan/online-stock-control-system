@@ -10,13 +10,13 @@ export enum PrintType {
   INVENTORY_REPORT = 'inventory-report',
   ACO_ORDER_REPORT = 'aco-order-report',
   GRN_REPORT = 'grn-report',
-  CUSTOM_DOCUMENT = 'custom-document'
+  CUSTOM_DOCUMENT = 'custom-document',
 }
 
 export enum PrintPriority {
   HIGH = 'high',
   NORMAL = 'normal',
-  LOW = 'low'
+  LOW = 'low',
 }
 
 export enum PaperSize {
@@ -24,7 +24,7 @@ export enum PaperSize {
   A5 = 'A5',
   LETTER = 'Letter',
   LEGAL = 'Legal',
-  CUSTOM = 'Custom'
+  CUSTOM = 'Custom',
 }
 
 export interface PrintRequest {

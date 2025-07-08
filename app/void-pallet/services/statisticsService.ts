@@ -45,16 +45,18 @@ export async function getVoidStatistics(
 ): Promise<{ success: boolean; data?: VoidStatistics; error?: string }> {
   try {
     const supabase = await createClient();
-    
+
     // Get void records within date range
     const { data: voidRecords, error: voidError } = await supabase
       .from('report_void')
-      .select(`
+      .select(
+        `
         plt_num,
         reason,
         damage_qty,
         time
-      `)
+      `
+      )
       .gte('time', startDate.toISOString())
       .lte('time', endDate.toISOString())
       .order('time', { ascending: false });
@@ -71,9 +73,7 @@ export async function getVoidStatistics(
     if (palletError) throw palletError;
 
     // Create a map for quick lookup
-    const palletMap = new Map(
-      palletInfo?.map(p => [p.plt_num, p]) || []
-    );
+    const palletMap = new Map(palletInfo?.map(p => [p.plt_num, p]) || []);
 
     // Calculate statistics
     const uniqueProducts = new Set<string>();
@@ -141,12 +141,15 @@ export async function getVoidStatistics(
     });
 
     // Calculate average per day
-    const daysDiff = Math.max(1, Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)));
-    stats.summary.averagePerDay = Math.round(stats.summary.totalVoids / daysDiff * 10) / 10;
+    const daysDiff = Math.max(
+      1,
+      Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24))
+    );
+    stats.summary.averagePerDay = Math.round((stats.summary.totalVoids / daysDiff) * 10) / 10;
 
     // Convert maps to arrays and calculate percentages
     const totalVoids = stats.summary.totalVoids;
-    
+
     return {
       success: true,
       data: {

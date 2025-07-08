@@ -47,7 +47,11 @@ export async function prepareGrnLabelData(input: GrnInputData): Promise<PrintLab
   const dataForQr = input.series || input.productCode; // Fallback logic for QR data
   let qrCodeDataUrl = '';
   try {
-    qrCodeDataUrl = await QRCode.toDataURL(dataForQr, { errorCorrectionLevel: 'M', margin: 1, width: 140 });
+    qrCodeDataUrl = await QRCode.toDataURL(dataForQr, {
+      errorCorrectionLevel: 'M',
+      margin: 1,
+      width: 140,
+    });
   } catch (err) {
     console.error('Failed to generate QR code data URL for GRN:', err);
     // Fallback or error handling for qrCodeDataUrl can be added here if necessary
@@ -80,24 +84,26 @@ export async function generateAndUploadPdf({
   fileName,
   storagePath, // e.g., 'grn_labels' or 'qc_labels'
   supabaseClient,
-  useApiUpload = false // 新參數：是否使用 API 路由上傳
+  useApiUpload = false, // 新參數：是否使用 API 路由上傳
 }: {
   pdfProps: PrintLabelPdfProps;
-  fileName?: string; 
-  storagePath?: string; 
+  fileName?: string;
+  storagePath?: string;
   supabaseClient: SupabaseClient;
   useApiUpload?: boolean;
 }): Promise<{ publicUrl: string; blob: Blob }> {
   const palletNum = pdfProps.palletNum;
   if (!palletNum) {
-    console.error('[pdfUtils.generateAndUploadPdf] Pallet number is missing in pdfProps. This is critical for naming and potentially content.');
+    console.error(
+      '[pdfUtils.generateAndUploadPdf] Pallet number is missing in pdfProps. This is critical for naming and potentially content.'
+    );
   }
 
   console.log('[pdfUtils.generateAndUploadPdf] 開始生成 PDF...', {
     palletNum,
     useApiUpload,
     storagePath: storagePath || 'pallet-label-pdf',
-    pdfPropsKeys: Object.keys(pdfProps)
+    pdfPropsKeys: Object.keys(pdfProps),
   });
 
   let blob: Blob | null = null;
@@ -107,31 +113,44 @@ export async function generateAndUploadPdf({
     console.log('[pdfUtils.generateAndUploadPdf] PDF 渲染完成:', {
       blobExists: !!blob,
       blobSize: blob?.size,
-      blobType: blob?.type
+      blobType: blob?.type,
     });
   } catch (renderError: any) {
-    console.error('[pdfUtils.generateAndUploadPdf] Error during @react-pdf/renderer toBlob():', renderError);
+    console.error(
+      '[pdfUtils.generateAndUploadPdf] Error during @react-pdf/renderer toBlob():',
+      renderError
+    );
     throw new Error(`PDF render failed for ${palletNum || 'UNKNOWN'}: ${renderError.message}`);
   }
-  
+
   if (!blob) {
-    console.error('[pdfUtils.generateAndUploadPdf] PDF generation returned a null or undefined blob.');
-    throw new Error(`[pdfUtils.generateAndUploadPdf] PDF generation did not return a Blob for pallet ${palletNum || 'UNKNOWN'}.`);
+    console.error(
+      '[pdfUtils.generateAndUploadPdf] PDF generation returned a null or undefined blob.'
+    );
+    throw new Error(
+      `[pdfUtils.generateAndUploadPdf] PDF generation did not return a Blob for pallet ${palletNum || 'UNKNOWN'}.`
+    );
   }
 
-  console.log(`[pdfUtils.generateAndUploadPdf] Generated blob for pallet ${palletNum || 'UNKNOWN'}. Size: ${blob.size}, Type: ${blob.type}`);
+  console.log(
+    `[pdfUtils.generateAndUploadPdf] Generated blob for pallet ${palletNum || 'UNKNOWN'}. Size: ${blob.size}, Type: ${blob.type}`
+  );
 
   if (blob.size === 0) {
-    console.warn(`[pdfUtils.generateAndUploadPdf] Generated PDF blob for pallet ${palletNum || 'UNKNOWN'} has a size of 0. This will likely result in an empty PDF.`);
+    console.warn(
+      `[pdfUtils.generateAndUploadPdf] Generated PDF blob for pallet ${palletNum || 'UNKNOWN'} has a size of 0. This will likely result in an empty PDF.`
+    );
   }
 
-  const finalSupabaseFileName = palletNum ? generatePalletPdfFileName(palletNum) : `unknown_pallet_${Date.now()}.pdf`;
+  const finalSupabaseFileName = palletNum
+    ? generatePalletPdfFileName(palletNum)
+    : `unknown_pallet_${Date.now()}.pdf`;
   const bucketName = storagePath || 'pallet-label-pdf';
 
   console.log(`[pdfUtils.generateAndUploadPdf] 準備上傳...`, {
     fileName: finalSupabaseFileName,
     bucketName,
-    useApiUpload
+    useApiUpload,
   });
 
   if (useApiUpload) {
@@ -157,7 +176,7 @@ export async function generateAndUploadPdf({
 
       const result = await response.json();
       console.log('[pdfUtils.generateAndUploadPdf] API 上傳成功:', result);
-      
+
       return { publicUrl: result.publicUrl, blob };
     } catch (apiError: any) {
       console.error('[pdfUtils.generateAndUploadPdf] API upload error:', apiError);
@@ -176,33 +195,50 @@ export async function generateAndUploadPdf({
 
     if (uploadError) {
       console.error('[pdfUtils.generateAndUploadPdf] Supabase Upload Error:', uploadError);
-      throw new Error(`[pdfUtils.generateAndUploadPdf] Supabase Upload Failed for ${finalSupabaseFileName}: ${uploadError.message}`);
+      throw new Error(
+        `[pdfUtils.generateAndUploadPdf] Supabase Upload Failed for ${finalSupabaseFileName}: ${uploadError.message}`
+      );
     }
-    
+
     if (!uploadData || !uploadData.path) {
-      console.error(`[pdfUtils.generateAndUploadPdf] Upload for ${finalSupabaseFileName} succeeded but no path was returned from Supabase.`);
-      throw new Error(`[pdfUtils.generateAndUploadPdf] Upload for ${finalSupabaseFileName} succeeded but no path was returned from Supabase.`);
+      console.error(
+        `[pdfUtils.generateAndUploadPdf] Upload for ${finalSupabaseFileName} succeeded but no path was returned from Supabase.`
+      );
+      throw new Error(
+        `[pdfUtils.generateAndUploadPdf] Upload for ${finalSupabaseFileName} succeeded but no path was returned from Supabase.`
+      );
     }
 
-    console.log(`[pdfUtils.generateAndUploadPdf] File uploaded successfully to Supabase. Path: ${uploadData.path}`);
+    console.log(
+      `[pdfUtils.generateAndUploadPdf] File uploaded successfully to Supabase. Path: ${uploadData.path}`
+    );
 
-    const publicUrlResult = await supabaseClient.storage
+    const publicUrlResult = (await supabaseClient.storage
       .from(bucketName)
-      .getPublicUrl(uploadData.path) as StoragePublicUrlResponse;
+      .getPublicUrl(uploadData.path)) as StoragePublicUrlResponse;
 
     const urlError = publicUrlResult.error;
     const urlData = publicUrlResult.data;
 
     if (urlError) {
-      console.error(`[pdfUtils.generateAndUploadPdf] Error getting public URL for ${uploadData.path}:`, urlError);
-      throw new Error(`[pdfUtils.generateAndUploadPdf] Failed to get public URL for ${uploadData.path}: ${urlError.message}`);
+      console.error(
+        `[pdfUtils.generateAndUploadPdf] Error getting public URL for ${uploadData.path}:`,
+        urlError
+      );
+      throw new Error(
+        `[pdfUtils.generateAndUploadPdf] Failed to get public URL for ${uploadData.path}: ${urlError.message}`
+      );
     }
 
     if (!urlData || !urlData.publicUrl) {
-      console.error(`[pdfUtils.generateAndUploadPdf] Failed to get public URL for ${uploadData.path} (no URL in data).`);
-      throw new Error(`[pdfUtils.generateAndUploadPdf] Failed to get public URL for ${uploadData.path}.`);
+      console.error(
+        `[pdfUtils.generateAndUploadPdf] Failed to get public URL for ${uploadData.path} (no URL in data).`
+      );
+      throw new Error(
+        `[pdfUtils.generateAndUploadPdf] Failed to get public URL for ${uploadData.path}.`
+      );
     }
-    
+
     const publicUrl = urlData.publicUrl;
     console.log(`[pdfUtils.generateAndUploadPdf] Public URL: ${publicUrl}`);
     return { publicUrl: publicUrl, blob };
@@ -219,7 +255,7 @@ export interface QcInputData {
   operatorClockNum: string;
   qcClockNum: string;
   workOrderNumber?: string; // User input for WO number (QC/ACO)
-  workOrderName?: string;   // User input for WO name (QC)
+  workOrderName?: string; // User input for WO name (QC)
   productType?: string | null;
 }
 
@@ -229,7 +265,11 @@ export async function prepareQcLabelData(input: QcInputData): Promise<PrintLabel
   const dataForQr = input.series || input.productCode;
   let qrCodeDataUrl = '';
   try {
-    qrCodeDataUrl = await QRCode.toDataURL(dataForQr, { errorCorrectionLevel: 'M', margin: 1, width: 140 });
+    qrCodeDataUrl = await QRCode.toDataURL(dataForQr, {
+      errorCorrectionLevel: 'M',
+      margin: 1,
+      width: 140,
+    });
   } catch (err) {
     console.error('Failed to generate QR code data URL for QC:', err);
   }
@@ -248,8 +288,8 @@ export async function prepareQcLabelData(input: QcInputData): Promise<PrintLabel
     productType: input.productType || undefined,
     labelType: 'QC',
     // Pass through raw/original inputs from the form
-    qcWorkOrderNumber: input.workOrderNumber, 
-    qcWorkOrderName: input.workOrderName, 
+    qcWorkOrderNumber: input.workOrderNumber,
+    qcWorkOrderName: input.workOrderName,
     // grnNumber and grnMaterialSupplier will be undefined here, which is fine
   };
 }
@@ -281,7 +321,7 @@ export async function mergeAndPrintPdfs(
       try {
         const pdfToMerge = await PDFDocument.load(pdfBuffer);
         const copiedPages = await mergedPdf.copyPages(pdfToMerge, pdfToMerge.getPageIndices());
-        copiedPages.forEach((page) => {
+        copiedPages.forEach(page => {
           mergedPdf.addPage(page);
         });
       } catch (loadError) {
@@ -319,7 +359,6 @@ export async function mergeAndPrintPdfs(
           }
           console.log('[mergeAndPrintPdfs] Iframe and blob URL cleaned up after timeout.');
         }, 10000); // Increased delay to 10 seconds
-
       } catch (printError) {
         console.error('[mergeAndPrintPdfs] Error triggering print dialog:', printError);
         // Cleanup in case of print error too
@@ -331,14 +370,13 @@ export async function mergeAndPrintPdfs(
     };
 
     iframe.onerror = () => {
-        console.error('[mergeAndPrintPdfs] Error loading PDF into iframe.');
-        URL.revokeObjectURL(url);
-        if (iframe.parentNode) {
-            iframe.parentNode.removeChild(iframe);
-        }
+      console.error('[mergeAndPrintPdfs] Error loading PDF into iframe.');
+      URL.revokeObjectURL(url);
+      if (iframe.parentNode) {
+        iframe.parentNode.removeChild(iframe);
+      }
     };
-
   } catch (error) {
     console.error('[mergeAndPrintPdfs] Failed to merge and print PDFs:', error);
   }
-} 
+}

@@ -18,23 +18,24 @@ interface LoadingProgressChartProps {
 
 export function LoadingProgressChart({ orderData }: LoadingProgressChartProps) {
   // Calculate total progress
-  const totalProgress = orderData.reduce((acc, item) => {
-    const totalQty = parseInt(item.product_qty || '0');
-    const loadedQty = parseInt(item.loaded_qty || '0');
-    const percentage = totalQty > 0 ? (loadedQty / totalQty) * 100 : 0;
-    return acc + percentage;
-  }, 0) / (orderData.length || 1);
+  const totalProgress =
+    orderData.reduce((acc, item) => {
+      const totalQty = parseInt(item.product_qty || '0');
+      const loadedQty = parseInt(item.loaded_qty || '0');
+      const percentage = totalQty > 0 ? (loadedQty / totalQty) * 100 : 0;
+      return acc + percentage;
+    }, 0) / (orderData.length || 1);
 
   return (
-    <div className="bg-slate-800/50 rounded-xl p-6 border border-slate-700/50">
-      <div className="mb-2">
-        <div className="flex justify-between text-sm mb-1">
-          <span className="text-slate-400">Total Progress</span>
-          <span className="text-cyan-400 font-medium">{totalProgress.toFixed(1)}%</span>
+    <div className='rounded-xl border border-slate-700/50 bg-slate-800/50 p-6'>
+      <div className='mb-2'>
+        <div className='mb-1 flex justify-between text-sm'>
+          <span className='text-slate-400'>Total Progress</span>
+          <span className='font-medium text-cyan-400'>{totalProgress.toFixed(1)}%</span>
         </div>
-        <div className="w-full bg-slate-700 rounded-full h-3 overflow-hidden">
-          <div 
-            className="h-full bg-gradient-to-r from-cyan-500 to-blue-500 transition-all duration-1000 ease-out"
+        <div className='h-3 w-full overflow-hidden rounded-full bg-slate-700'>
+          <div
+            className='h-full bg-gradient-to-r from-cyan-500 to-blue-500 transition-all duration-1000 ease-out'
             style={{ width: `${totalProgress}%` }}
           />
         </div>

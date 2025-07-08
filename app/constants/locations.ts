@@ -8,18 +8,18 @@ import { LocationMapper } from '@/lib/inventory/utils/locationMapper';
 // Map location names to inventory column names
 // NOTE: This is now a wrapper around the centralized LocationMapper
 export const LOCATION_TO_COLUMN: { [key: string]: string } = {
-  'Production': 'injection',
-  'PipeLine': 'pipeline', 
+  Production: 'injection',
+  PipeLine: 'pipeline',
   'Pre-Book': 'prebook',
-  'Prebook': 'prebook',  // Alternative spelling
-  'Await': 'await',
-  'Await_grn': 'await_grn',
+  Prebook: 'prebook', // Alternative spelling
+  Await: 'await',
+  Await_grn: 'await_grn',
   'Fold Mill': 'fold',
   'Bulk Room': 'bulk',
-  'Bulk': 'bulk',  // Alternative spelling
+  Bulk: 'bulk', // Alternative spelling
   'Back Car Park': 'backcarpark',
-  'Backcarpark': 'backcarpark',  // Alternative spelling
-  'Damage': 'damage'
+  Backcarpark: 'backcarpark', // Alternative spelling
+  Damage: 'damage',
 };
 
 /**

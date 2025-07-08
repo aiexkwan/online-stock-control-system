@@ -39,7 +39,7 @@ export class DashboardPage {
 
   async getStatValue(index: number): Promise<string> {
     const stat = this.statsCards.nth(index);
-    return await stat.locator('[data-testid="stat-value"]').textContent() || '';
+    return (await stat.locator('[data-testid="stat-value"]').textContent()) || '';
   }
 
   async navigateTo(menuItem: string) {

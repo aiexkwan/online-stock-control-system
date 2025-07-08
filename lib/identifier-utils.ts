@@ -75,4 +75,4 @@ export async function generateDailyPalletNumber(supabase: SupabaseClient): Promi
 
   const sequenceString = nextSequence.toString().padStart(2, '0');
   return `${datePrefix}/${sequenceString}`;
-} 
+}

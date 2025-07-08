@@ -10,16 +10,13 @@ export async function GET(request: NextRequest) {
       trends: {
         orders: [],
         revenue: [],
-        users: []
-      }
+        users: [],
+      },
     };
 
     return NextResponse.json(data);
   } catch (error) {
     console.error('Analytics trends error:', error);
-    return NextResponse.json(
-      { error: '無法獲取趨勢分析數據' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: '無法獲取趨勢分析數據' }, { status: 500 });
   }
-} 
+}

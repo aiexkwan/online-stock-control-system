@@ -7,15 +7,12 @@ export async function GET(request: NextRequest) {
       totalUsers: 0,
       totalOrders: 0,
       totalRevenue: 0,
-      growthRate: 0
+      growthRate: 0,
     };
 
     return NextResponse.json(data);
   } catch (error) {
     console.error('Analytics overview error:', error);
-    return NextResponse.json(
-      { error: '無法獲取分析概覽數據' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: '無法獲取分析概覽數據' }, { status: 500 });
   }
-} 
+}

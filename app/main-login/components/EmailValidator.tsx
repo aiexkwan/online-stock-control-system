@@ -9,7 +9,7 @@ export const validateEmailDomain = (email: string): boolean => {
   if (!email || typeof email !== 'string') {
     return false;
   }
-  
+
   return email.toLowerCase().endsWith(ALLOWED_DOMAIN.toLowerCase());
 };
 
@@ -28,7 +28,7 @@ const EmailValidator = {
     if (!validateEmailFormat(email)) {
       return false;
     }
-    
+
     return validateEmailDomain(email);
   },
 
@@ -49,17 +49,17 @@ const EmailValidator = {
     if (!email) {
       return 'Email address is required';
     }
-    
+
     if (!validateEmailFormat(email)) {
       return 'Please enter a valid email address';
     }
-    
+
     if (!validateEmailDomain(email)) {
       return `Only ${ALLOWED_DOMAIN} email addresses are allowed`;
     }
-    
+
     return 'Invalid email address';
-  }
+  },
 };
 
-export default EmailValidator; 
+export default EmailValidator;

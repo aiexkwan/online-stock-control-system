@@ -5,7 +5,7 @@
 export function getStartDate(timeRange: string): Date {
   const now = new Date();
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  
+
   switch (timeRange) {
     case '1d':
       return today;
@@ -38,8 +38,8 @@ export interface DailyData {
 }
 
 export function processOutputRatioData(
-  outputData: any[], 
-  transferData: any[], 
+  outputData: any[],
+  transferData: any[],
   timeRange: string
 ): HourlyData[] | DailyData[] {
   if (timeRange === '1d') {
@@ -54,7 +54,7 @@ function groupByHour(outputData: any[], transferData: any[]): HourlyData[] {
   const hourlyData: HourlyData[] = Array.from({ length: 24 }, (_, i) => ({
     hour: `${i.toString().padStart(2, '0')}:00`,
     output: 0,
-    booked_out: 0
+    booked_out: 0,
   }));
 
   // Count output by hour
@@ -68,7 +68,6 @@ function groupByHour(outputData: any[], transferData: any[]): HourlyData[] {
     const hour = new Date(record.tran_date).getHours();
     hourlyData[hour].booked_out++;
   });
-
 
   return hourlyData;
 }
@@ -110,21 +109,25 @@ export interface ProductTrendData {
   [productCode: string]: number | string;
 }
 
-export function processOrderTrendData(orderData: any[], timeRange: string): { detail: ProductTrendData[], summary: any[] } {
+export function processOrderTrendData(
+  orderData: any[],
+  timeRange: string
+): { detail: ProductTrendData[]; summary: any[] } {
   const trendData = new Map<string, Map<string, number>>();
   const productCodes = new Set<string>();
 
   orderData.forEach(record => {
-    const date = timeRange === '1d' 
-      ? new Date(record.created_at).getHours().toString().padStart(2, '0') + ':00'
-      : new Date(record.created_at).toLocaleDateString('en-GB');
-    
+    const date =
+      timeRange === '1d'
+        ? new Date(record.created_at).getHours().toString().padStart(2, '0') + ':00'
+        : new Date(record.created_at).toLocaleDateString('en-GB');
+
     productCodes.add(record.product_code);
-    
+
     if (!trendData.has(date)) {
       trendData.set(date, new Map());
     }
-    
+
     const dateData = trendData.get(date)!;
     dateData.set(record.product_code, (dateData.get(record.product_code) || 0) + 1);
   });
@@ -149,17 +152,19 @@ export function processOrderTrendData(orderData: any[], timeRange: string): { de
   });
 
   // Create summary data (total orders per time period)
-  const summaryData = Array.from(trendData.entries()).map(([date, products]) => {
-    const totalCount = Array.from(products.values()).reduce((sum, count) => sum + count, 0);
-    return { date, count: totalCount };
-  }).sort((a, b) => {
-    if (timeRange === '1d') {
-      return a.date.localeCompare(b.date);
-    }
-    const dateA = new Date(a.date.split('/').reverse().join('-'));
-    const dateB = new Date(b.date.split('/').reverse().join('-'));
-    return dateA.getTime() - dateB.getTime();
-  });
+  const summaryData = Array.from(trendData.entries())
+    .map(([date, products]) => {
+      const totalCount = Array.from(products.values()).reduce((sum, count) => sum + count, 0);
+      return { date, count: totalCount };
+    })
+    .sort((a, b) => {
+      if (timeRange === '1d') {
+        return a.date.localeCompare(b.date);
+      }
+      const dateA = new Date(a.date.split('/').reverse().join('-'));
+      const dateB = new Date(b.date.split('/').reverse().join('-'));
+      return dateA.getTime() - dateB.getTime();
+    });
 
   return { detail: sortedResult, summary: summaryData };
 }
@@ -182,32 +187,33 @@ export interface StaffWorkloadTimeData {
 }
 
 export function processStaffWorkloadData(
-  workData: any[], 
+  workData: any[],
   timeRange: string
-): { summary: StaffWorkloadData[], timeline: StaffWorkloadTimeData[] } {
+): { summary: StaffWorkloadData[]; timeline: StaffWorkloadTimeData[] } {
   const staffStats = new Map<string, number>();
   const timelineData = new Map<string, Map<string, number>>();
-  
+
   let totalWork = 0;
 
   workData.forEach(record => {
     if (!record.data_id?.name) return;
-    
+
     const staff = record.data_id.name;
     const workload = (record.qc || 0) + (record.move || 0) + (record.grn || 0);
-    
+
     staffStats.set(staff, (staffStats.get(staff) || 0) + workload);
     totalWork += workload;
 
     // Timeline data
-    const date = timeRange === '1d'
-      ? new Date(record.latest_update).getHours().toString().padStart(2, '0') + ':00'
-      : new Date(record.latest_update).toLocaleDateString('en-GB');
-    
+    const date =
+      timeRange === '1d'
+        ? new Date(record.latest_update).getHours().toString().padStart(2, '0') + ':00'
+        : new Date(record.latest_update).toLocaleDateString('en-GB');
+
     if (!timelineData.has(date)) {
       timelineData.set(date, new Map());
     }
-    
+
     const dateData = timelineData.get(date)!;
     dateData.set(staff, (dateData.get(staff) || 0) + workload);
   });
@@ -217,7 +223,7 @@ export function processStaffWorkloadData(
     .map(([name, pallets]) => ({
       name,
       pallets,
-      percentage: totalWork > 0 ? Math.round((pallets / totalWork) * 100) : 0
+      percentage: totalWork > 0 ? Math.round((pallets / totalWork) * 100) : 0,
     }))
     .sort((a, b) => b.pallets - a.pallets)
     .slice(0, 10); // Top 10 staff
@@ -225,7 +231,7 @@ export function processStaffWorkloadData(
   // Convert timeline to array
   const staffNames = Array.from(staffStats.keys()).slice(0, 5); // Top 5 for timeline
   const timeline: StaffWorkloadTimeData[] = [];
-  
+
   timelineData.forEach((staffData, date) => {
     const dataPoint: StaffWorkloadTimeData = { date };
     staffNames.forEach(name => {
@@ -243,6 +249,6 @@ export function processStaffWorkloadData(
       const dateA = new Date(a.date.split('/').reverse().join('-'));
       const dateB = new Date(b.date.split('/').reverse().join('-'));
       return dateA.getTime() - dateB.getTime();
-    })
+    }),
   };
 }

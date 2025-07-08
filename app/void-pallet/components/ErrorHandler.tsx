@@ -3,11 +3,11 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { 
-  ExclamationTriangleIcon, 
+import {
+  ExclamationTriangleIcon,
   XCircleIcon,
   InformationCircleIcon,
-  ExclamationCircleIcon 
+  ExclamationCircleIcon,
 } from '@heroicons/react/24/outline';
 import { ErrorState } from '../types';
 import { format } from 'date-fns';
@@ -22,15 +22,15 @@ export function ErrorHandler({ error, onConfirm, className = '' }: ErrorHandlerP
   const getErrorIcon = (type: ErrorState['type']) => {
     switch (type) {
       case 'search':
-        return <InformationCircleIcon className="h-5 w-5" />;
+        return <InformationCircleIcon className='h-5 w-5' />;
       case 'void':
-        return <ExclamationCircleIcon className="h-5 w-5" />;
+        return <ExclamationCircleIcon className='h-5 w-5' />;
       case 'system':
-        return <XCircleIcon className="h-5 w-5" />;
+        return <XCircleIcon className='h-5 w-5' />;
       case 'validation':
-        return <ExclamationTriangleIcon className="h-5 w-5" />;
+        return <ExclamationTriangleIcon className='h-5 w-5' />;
       default:
-        return <ExclamationCircleIcon className="h-5 w-5" />;
+        return <ExclamationCircleIcon className='h-5 w-5' />;
     }
   };
 
@@ -68,59 +68,69 @@ export function ErrorHandler({ error, onConfirm, className = '' }: ErrorHandlerP
 
   return (
     <Card className={`border-2 ${colorClasses} ${className}`}>
-      <CardContent className="p-6">
-        <div className="flex items-start space-x-4">
-          <div className={`flex-shrink-0 ${error.type === 'search' ? 'text-blue-400' : 
-            error.type === 'validation' ? 'text-yellow-400' : 'text-red-400'}`}>
+      <CardContent className='p-6'>
+        <div className='flex items-start space-x-4'>
+          <div
+            className={`flex-shrink-0 ${
+              error.type === 'search'
+                ? 'text-blue-400'
+                : error.type === 'validation'
+                  ? 'text-yellow-400'
+                  : 'text-red-400'
+            }`}
+          >
             {getErrorIcon(error.type)}
           </div>
-          
-          <div className="flex-1 min-w-0">
-            <h3 className={`text-lg font-semibold ${
-              error.type === 'search' ? 'text-blue-400' : 
-              error.type === 'validation' ? 'text-yellow-400' : 'text-red-400'
-            }`}>
+
+          <div className='min-w-0 flex-1'>
+            <h3
+              className={`text-lg font-semibold ${
+                error.type === 'search'
+                  ? 'text-blue-400'
+                  : error.type === 'validation'
+                    ? 'text-yellow-400'
+                    : 'text-red-400'
+              }`}
+            >
               {getErrorTitle(error.type)}
             </h3>
-            
-            <p className="mt-2 text-white text-sm leading-relaxed">
-              {error.message}
-            </p>
-            
+
+            <p className='mt-2 text-sm leading-relaxed text-white'>{error.message}</p>
+
             {error.details && (
-              <details className="mt-3">
-                <summary className="cursor-pointer text-xs text-gray-400 hover:text-gray-300">
+              <details className='mt-3'>
+                <summary className='cursor-pointer text-xs text-gray-400 hover:text-gray-300'>
                   Show details
                 </summary>
-                <div className="mt-2 p-3 bg-gray-900 rounded border border-gray-600">
-                  <pre className="text-xs text-gray-300 whitespace-pre-wrap overflow-x-auto">
+                <div className='mt-2 rounded border border-gray-600 bg-gray-900 p-3'>
+                  <pre className='overflow-x-auto whitespace-pre-wrap text-xs text-gray-300'>
                     {error.details}
                   </pre>
                 </div>
               </details>
             )}
-            
-            <div className="mt-4 flex items-center justify-between">
-              <span className="text-xs text-gray-500">
+
+            <div className='mt-4 flex items-center justify-between'>
+              <span className='text-xs text-gray-500'>
                 {format(error.timestamp, 'yyyy-MM-dd HH:mm:ss')}
               </span>
-              
+
               <Button
                 onClick={onConfirm}
                 variant={error.type === 'search' ? 'default' : 'destructive'}
-                size="sm"
-                className="ml-4"
+                size='sm'
+                className='ml-4'
               >
                 Confirm
               </Button>
             </div>
           </div>
         </div>
-        
+
         {error.isBlocking && (
-          <div className="mt-4 p-3 bg-gray-900 rounded border border-gray-600">
-            <p className="text-xs text-gray-400 flex items-center">
-              <ExclamationTriangleIcon className="h-3 w-3 mr-1" />
+          <div className='mt-4 rounded border border-gray-600 bg-gray-900 p-3'>
+            <p className='flex items-center text-xs text-gray-400'>
+              <ExclamationTriangleIcon className='mr-1 h-3 w-3' />
               This error blocks further operations. Please click confirm and retry.
             </p>
           </div>
@@ -128,4 +138,4 @@ export function ErrorHandler({ error, onConfirm, className = '' }: ErrorHandlerP
       </CardContent>
     </Card>
   );
-} 
+}

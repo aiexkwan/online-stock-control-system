@@ -29,15 +29,15 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
   render() {
     if (this.state.hasError) {
       return (
-        <div className="min-h-screen flex items-center justify-center bg-slate-900">
-          <div className="bg-slate-800 border border-red-500 rounded-lg p-8 max-w-md w-full">
-            <h2 className="text-xl font-bold text-red-500 mb-4">Something went wrong</h2>
-            <p className="text-gray-300 mb-4">
+        <div className='flex min-h-screen items-center justify-center bg-slate-900'>
+          <div className='w-full max-w-md rounded-lg border border-red-500 bg-slate-800 p-8'>
+            <h2 className='mb-4 text-xl font-bold text-red-500'>Something went wrong</h2>
+            <p className='mb-4 text-gray-300'>
               The QR scanner encountered an error. Please try again or use manual input.
             </p>
             <button
               onClick={() => this.setState({ hasError: false, error: null })}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg"
+              className='rounded-lg bg-blue-600 px-4 py-2 text-white hover:bg-blue-700'
             >
               Try Again
             </button>

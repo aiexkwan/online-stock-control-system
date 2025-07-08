@@ -267,4 +267,4 @@ subscription OrderFulfillmentProgress($orderRefs: [Int!]) {
       description
     }
   }
-} 
+}

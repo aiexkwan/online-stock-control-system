@@ -108,11 +108,11 @@ export class ABTestManager {
   private decisions = new Map<string, ABTestResult>(); // sessionId -> result
   private metrics = new Map<string, MetricDataPoint[]>();
   private rollbackHandlers = new Map<string, NodeJS.Timeout>();
-  
+
   constructor() {
     this.initializeDefaultTests();
   }
-  
+
   /**
    * 初始化默認測試
    */
@@ -130,14 +130,14 @@ export class ABTestManager {
           {
             type: 'percentage',
             value: 10, // 10% 用戶使用新系統
-            variantId: 'v2-system'
+            variantId: 'v2-system',
           },
           {
             type: 'percentage',
             value: 90, // 90% 用戶使用舊系統
-            variantId: 'legacy-system'
-          }
-        ]
+            variantId: 'legacy-system',
+          },
+        ],
       },
       variants: [
         {
@@ -146,8 +146,8 @@ export class ABTestManager {
           weight: 10,
           config: {
             useNewRegistry: true,
-            enableGraphQL: true
-          }
+            enableGraphQL: true,
+          },
         },
         {
           id: 'legacy-system',
@@ -155,37 +155,37 @@ export class ABTestManager {
           weight: 90,
           config: {
             useNewRegistry: false,
-            enableGraphQL: false
-          }
-        }
+            enableGraphQL: false,
+          },
+        },
       ],
       metrics: [
         {
           name: 'widget_load_time',
           type: 'performance',
           target: 50, // 目標 50ms
-          unit: 'ms'
+          unit: 'ms',
         },
         {
           name: 'error_rate',
           type: 'error',
           target: 0.01, // 目標錯誤率 < 1%
-          unit: '%'
+          unit: '%',
         },
         {
           name: 'user_engagement',
           type: 'engagement',
-          unit: 'interactions'
-        }
+          unit: 'interactions',
+        },
       ],
       rollback: {
         enabled: true,
-        threshold: 0.10, // 10% 錯誤率觸發回滾（提高閾值）
-        window: 5 * 60 * 1000 // 5分鐘窗口
-      }
+        threshold: 0.1, // 10% 錯誤率觸發回滾（提高閾值）
+        window: 5 * 60 * 1000, // 5分鐘窗口
+      },
     });
   }
-  
+
   /**
    * 創建新測試
    */
@@ -193,7 +193,7 @@ export class ABTestManager {
     this.tests.set(config.testId, config);
     console.log(`[ABTest] Created test: ${config.name}`);
   }
-  
+
   /**
    * 啟動測試
    */
@@ -202,18 +202,18 @@ export class ABTestManager {
     if (!test) {
       throw new Error(`Test not found: ${testId}`);
     }
-    
+
     test.status = 'active';
     this.activeTests.set(testId, test);
-    
+
     // 設置自動回滾監控
     if (test.rollback?.enabled) {
       this.setupRollbackMonitoring(testId);
     }
-    
+
     console.log(`[ABTest] Started test: ${test.name}`);
   }
-  
+
   /**
    * 暫停測試
    */
@@ -222,18 +222,18 @@ export class ABTestManager {
     if (test) {
       test.status = 'paused';
       this.activeTests.delete(testId);
-      
+
       // 清除回滾監控
       const handler = this.rollbackHandlers.get(testId);
       if (handler) {
         clearInterval(handler);
         this.rollbackHandlers.delete(testId);
       }
-      
+
       console.log(`[ABTest] Paused test: ${test.name}`);
     }
   }
-  
+
   /**
    * 獲取測試決策
    */
@@ -243,7 +243,7 @@ export class ABTestManager {
     if (cached) {
       return cached;
     }
-    
+
     // 尋找匹配的活躍測試
     for (const [testId, test] of this.activeTests) {
       const variant = this.selectVariant(test, context);
@@ -253,24 +253,24 @@ export class ABTestManager {
           context,
           decision: {
             timestamp: Date.now(),
-            reason: `Matched ${test.segmentation.type} rule`
-          }
+            reason: `Matched ${test.segmentation.type} rule`,
+          },
         };
-        
+
         // 緩存決策
         this.decisions.set(context.sessionId, result);
-        
+
         // 應用變體配置
         this.applyVariantConfig(variant);
-        
+
         console.log(`[ABTest] Decision for ${context.sessionId}: ${variant.name}`);
         return result;
       }
     }
-    
+
     return null;
   }
-  
+
   /**
    * 選擇變體
    */
@@ -280,11 +280,11 @@ export class ABTestManager {
         return test.variants.find(v => v.id === rule.variantId) || null;
       }
     }
-    
+
     // 默認選擇第一個變體
     return test.variants[0] || null;
   }
-  
+
   /**
    * 匹配規則
    */
@@ -295,50 +295,50 @@ export class ABTestManager {
         const hash = this.hashString(context.sessionId);
         const bucket = (hash % 100) + 1;
         return bucket <= (rule.value as number);
-        
+
       case 'userId':
         return context.userId === rule.value;
-        
+
       case 'route':
         if (rule.value instanceof RegExp) {
           return rule.value.test(context.route);
         }
         return context.route === rule.value;
-        
+
       case 'feature':
         return context.features?.includes(rule.value as string) || false;
-        
+
       case 'custom':
         if (typeof rule.value === 'function') {
           return rule.value(context);
         }
         return false;
-        
+
       default:
         return false;
     }
   }
-  
+
   /**
    * 應用變體配置
    */
   private applyVariantConfig(variant: ABTestVariant): void {
     const config = variant.config;
-    
+
     // 配置雙重加載適配器
     const dualConfig = {
       enableV2: config.useNewRegistry,
-      enableGraphQL: config.enableGraphQL || false
+      enableGraphQL: config.enableGraphQL || false,
     };
-    
+
     // Import and configure at runtime to avoid circular dependency
     import('./dual-loading-adapter').then(({ configureDualLoading }) => {
       configureDualLoading(dualConfig);
     });
-    
+
     console.log(`[ABTest] Applied variant config: ${variant.name}`, config);
   }
-  
+
   /**
    * 記錄指標
    */
@@ -347,16 +347,16 @@ export class ABTestManager {
     if (!this.metrics.has(key)) {
       this.metrics.set(key, []);
     }
-    
+
     this.metrics.get(key)!.push(data);
-    
+
     // 保留最近 10000 個數據點
     const metrics = this.metrics.get(key)!;
     if (metrics.length > 10000) {
       metrics.shift();
     }
   }
-  
+
   /**
    * 獲取測試報告
    */
@@ -365,7 +365,7 @@ export class ABTestManager {
     if (!test) {
       throw new Error(`Test not found: ${testId}`);
     }
-    
+
     const report: ABTestReport = {
       testId,
       name: test.name,
@@ -375,41 +375,39 @@ export class ABTestManager {
       variants: [],
       summary: {
         totalSessions: this.decisions.size,
-        variantDistribution: new Map()
-      }
+        variantDistribution: new Map(),
+      },
     };
-    
+
     // 計算每個變體的統計
     for (const variant of test.variants) {
       const variantReport = this.calculateVariantReport(testId, variant);
       report.variants.push(variantReport);
       report.summary.variantDistribution.set(variant.id, variantReport.sessions);
     }
-    
+
     return report;
   }
-  
+
   /**
    * 計算變體報告
    */
   private calculateVariantReport(testId: string, variant: ABTestVariant): VariantReport {
-    const decisions = Array.from(this.decisions.values())
-      .filter(d => d.variantId === variant.id);
-    
+    const decisions = Array.from(this.decisions.values()).filter(d => d.variantId === variant.id);
+
     const report: VariantReport = {
       variantId: variant.id,
       name: variant.name,
       sessions: decisions.length,
-      metrics: new Map()
+      metrics: new Map(),
     };
-    
+
     // 計算每個指標的統計
     const test = this.tests.get(testId)!;
     for (const metric of test.metrics) {
       const key = `${testId}-${metric.name}`;
-      const dataPoints = (this.metrics.get(key) || [])
-        .filter(dp => dp.variantId === variant.id);
-      
+      const dataPoints = (this.metrics.get(key) || []).filter(dp => dp.variantId === variant.id);
+
       if (dataPoints.length > 0) {
         const values = dataPoints.map(dp => dp.value);
         report.metrics.set(metric.name, {
@@ -417,75 +415,79 @@ export class ABTestManager {
           mean: this.calculateMean(values),
           median: this.calculateMedian(values),
           p95: this.calculatePercentile(values, 95),
-          p99: this.calculatePercentile(values, 99)
+          p99: this.calculatePercentile(values, 99),
         });
       }
     }
-    
+
     return report;
   }
-  
+
   /**
    * 設置回滾監控
    */
   private setupRollbackMonitoring(testId: string): void {
     const test = this.tests.get(testId)!;
     if (!test.rollback?.enabled) return;
-    
+
     const handler = setInterval(() => {
       this.checkRollbackConditions(testId);
     }, 10000); // 每10秒檢查一次
-    
+
     this.rollbackHandlers.set(testId, handler);
   }
-  
+
   /**
    * 檢查回滾條件
    */
   private checkRollbackConditions(testId: string): void {
     const test = this.activeTests.get(testId);
     if (!test || !test.rollback) return;
-    
+
     const errorMetrics = this.metrics.get(`${testId}-error_rate`) || [];
     const recentErrors = errorMetrics.filter(
       dp => dp.timestamp > Date.now() - test.rollback.window
     );
-    
+
     if (recentErrors.length > 0) {
       const errorRate = this.calculateMean(recentErrors.map(dp => dp.value));
-      
-      console.log(`[ABTest] Error rate check for ${test.name}: ${(errorRate * 100).toFixed(2)}% (threshold: ${test.rollback.threshold * 100}%)`);
-      
+
+      console.log(
+        `[ABTest] Error rate check for ${test.name}: ${(errorRate * 100).toFixed(2)}% (threshold: ${test.rollback.threshold * 100}%)`
+      );
+
       if (errorRate > test.rollback.threshold) {
-        console.warn(`[ABTest] Rollback triggered for ${test.name}: error rate ${(errorRate * 100).toFixed(2)}% > ${test.rollback.threshold * 100}%`);
+        console.warn(
+          `[ABTest] Rollback triggered for ${test.name}: error rate ${(errorRate * 100).toFixed(2)}% > ${test.rollback.threshold * 100}%`
+        );
         this.rollbackTest(testId);
       }
     }
   }
-  
+
   /**
    * 回滾測試
    */
   private rollbackTest(testId: string): void {
     const test = this.activeTests.get(testId);
     if (!test) return;
-    
+
     // 暫停測試
     this.pauseTest(testId);
-    
+
     // 恢復到安全配置（使用舊系統）
     import('./dual-loading-adapter').then(({ configureDualLoading }) => {
       configureDualLoading({
         enableV2: false,
         enableGraphQL: false,
-        fallbackToLegacy: true
+        fallbackToLegacy: true,
       });
     });
-    
+
     // 發送告警
     console.error(`[ABTest] Test ${test.name} has been rolled back due to high error rate`);
   }
-  
+
   /**
    * 工具方法：計算哈希值
    */
@@ -493,12 +495,12 @@ export class ABTestManager {
     let hash = 0;
     for (let i = 0; i < str.length; i++) {
       const char = str.charCodeAt(i);
-      hash = ((hash << 5) - hash) + char;
+      hash = (hash << 5) - hash + char;
       hash = hash & hash; // Convert to 32bit integer
     }
     return Math.abs(hash);
   }
-  
+
   /**
    * 工具方法：計算平均值
    */
@@ -506,7 +508,7 @@ export class ABTestManager {
     if (values.length === 0) return 0;
     return values.reduce((sum, val) => sum + val, 0) / values.length;
   }
-  
+
   /**
    * 工具方法：計算中位數
    */
@@ -516,7 +518,7 @@ export class ABTestManager {
     const mid = Math.floor(sorted.length / 2);
     return sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
   }
-  
+
   /**
    * 工具方法：計算百分位數
    */
@@ -568,20 +570,20 @@ export type { ABTestManager as ABTestManagerType };
 // React Hook
 export function useABTest(context: Partial<ABTestContext>) {
   const [variant, setVariant] = React.useState<string | null>(null);
-  
+
   React.useEffect(() => {
     const fullContext: ABTestContext = {
       sessionId: globalThis.crypto?.randomUUID?.() || Math.random().toString(36),
       route: window.location.pathname,
       timestamp: Date.now(),
-      ...context
+      ...context,
     };
-    
+
     const decision = abTestManager.getDecision(fullContext);
     if (decision) {
       setVariant(decision.variantId);
     }
   }, [context]);
-  
+
   return variant;
 }

@@ -27,15 +27,15 @@ interface MLFeatures {
   hourOfDay: number;
   dayOfWeek: number;
   isBusinessHours: boolean;
-  
+
   // 訪問模式特征
   accessFrequency: number;
   accessPattern: 'peak' | 'steady' | 'sporadic';
-  
+
   // 性能特征
   hitRate: number;
   avgResponseTime: number;
-  
+
   // 業務特征
   dataType: 'static' | 'transactional' | 'realtime';
   businessPriority: number;
@@ -53,12 +53,12 @@ class MLCacheOptimizer {
   recordMetrics(metrics: CacheMetrics): void {
     const history = this.metricsHistory.get(metrics.fieldName) || [];
     history.push(metrics);
-    
+
     // 保持歷史記錄在合理範圍內
     if (history.length > this.maxHistorySize) {
       history.splice(0, history.length - this.maxHistorySize);
     }
-    
+
     this.metricsHistory.set(metrics.fieldName, history);
   }
 
@@ -67,7 +67,7 @@ class MLCacheOptimizer {
    */
   private extractFeatures(fieldName: string, currentTime: Date = new Date()): MLFeatures {
     const history = this.metricsHistory.get(fieldName) || [];
-    
+
     if (history.length === 0) {
       return this.getDefaultFeatures(fieldName);
     }
@@ -80,7 +80,7 @@ class MLCacheOptimizer {
     const avgHitRate = this.average(recentHistory.map(m => m.hitRate));
     const avgResponseTime = this.average(recentHistory.map(m => m.avgResponseTime));
     const accessFrequency = this.calculateAccessFrequency(recentHistory);
-    
+
     return {
       hourOfDay: currentTime.getHours(),
       dayOfWeek: currentTime.getDay(),
@@ -131,15 +131,15 @@ class MLCacheOptimizer {
     let baseTTL = this.getBaseTTL(features.dataType);
 
     // 根據命中率調整：高命中率增加 TTL
-    const hitRateMultiplier = 0.5 + (features.hitRate * 1.5);
+    const hitRateMultiplier = 0.5 + features.hitRate * 1.5;
     baseTTL *= hitRateMultiplier;
 
     // 根據訪問頻率調整：高頻訪問增加 TTL
-    const frequencyMultiplier = Math.min(2.0, 0.8 + (features.accessFrequency / 100));
+    const frequencyMultiplier = Math.min(2.0, 0.8 + features.accessFrequency / 100);
     baseTTL *= frequencyMultiplier;
 
     // 根據業務優先級調整
-    baseTTL *= (0.7 + features.businessPriority * 0.6);
+    baseTTL *= 0.7 + features.businessPriority * 0.6;
 
     // 工作時間調整：工作時間內減少 TTL 以保持數據新鮮
     if (features.isBusinessHours) {
@@ -147,7 +147,7 @@ class MLCacheOptimizer {
     }
 
     // 數據新鮮度要求調整
-    baseTTL *= (1.1 - features.dataFreshness * 0.4);
+    baseTTL *= 1.1 - features.dataFreshness * 0.4;
 
     return Math.round(baseTTL);
   }
@@ -159,13 +159,13 @@ class MLCacheOptimizer {
     let baseSize = 50; // 基礎緩存大小
 
     // 根據訪問頻率調整
-    baseSize *= Math.min(3.0, 0.5 + (features.accessFrequency / 50));
+    baseSize *= Math.min(3.0, 0.5 + features.accessFrequency / 50);
 
     // 根據命中率調整
-    baseSize *= (0.3 + features.hitRate * 1.4);
+    baseSize *= 0.3 + features.hitRate * 1.4;
 
     // 根據業務優先級調整
-    baseSize *= (0.8 + features.businessPriority * 0.4);
+    baseSize *= 0.8 + features.businessPriority * 0.4;
 
     return Math.round(baseSize);
   }
@@ -259,7 +259,7 @@ class MLCacheOptimizer {
     reason: string;
   }> {
     const history = this.metricsHistory.get(fieldName) || [];
-    
+
     if (history.length < 10) {
       return { shouldUpdate: false, reason: '數據點不足，暫不更新' };
     }
@@ -311,11 +311,11 @@ class MLCacheOptimizer {
 
   private determineAccessPattern(history: CacheMetrics[]): 'peak' | 'steady' | 'sporadic' {
     if (history.length < 10) return 'sporadic';
-    
+
     const frequencies = history.map(m => m.accessFrequency);
     const variance = this.calculateVariance(frequencies);
     const avg = this.average(frequencies);
-    
+
     if (variance / avg > 0.5) return 'sporadic';
     if (Math.max(...frequencies) > avg * 2) return 'peak';
     return 'steady';
@@ -330,7 +330,7 @@ class MLCacheOptimizer {
   private inferDataType(fieldName: string): 'static' | 'transactional' | 'realtime' {
     const staticFields = ['products', 'users', 'warehouses', 'suppliers'];
     const realtimeFields = ['movements', 'notifications', 'stocktakeScans'];
-    
+
     if (staticFields.some(field => fieldName.includes(field))) return 'static';
     if (realtimeFields.some(field => fieldName.includes(field))) return 'realtime';
     return 'transactional';
@@ -340,7 +340,7 @@ class MLCacheOptimizer {
     const highPriorityFields = ['inventory', 'orders', 'pallets'];
     const mediumPriorityFields = ['products', 'movements'];
     const lowPriorityFields = ['logs', 'statistics'];
-    
+
     if (highPriorityFields.some(field => fieldName.includes(field))) return 0.9;
     if (mediumPriorityFields.some(field => fieldName.includes(field))) return 0.6;
     if (lowPriorityFields.some(field => fieldName.includes(field))) return 0.3;
@@ -349,9 +349,12 @@ class MLCacheOptimizer {
 
   private getBaseTTL(dataType: 'static' | 'transactional' | 'realtime'): number {
     switch (dataType) {
-      case 'static': return 1800000; // 30 分鐘
-      case 'transactional': return 300000; // 5 分鐘
-      case 'realtime': return 60000; // 1 分鐘
+      case 'static':
+        return 1800000; // 30 分鐘
+      case 'transactional':
+        return 300000; // 5 分鐘
+      case 'realtime':
+        return 60000; // 1 分鐘
     }
   }
 
@@ -384,4 +387,4 @@ class MLCacheOptimizer {
 
 // 導出單例實例
 export const mlCacheOptimizer = new MLCacheOptimizer();
-export type { CacheMetrics, PredictedCacheConfig, MLFeatures }; 
+export type { CacheMetrics, PredictedCacheConfig, MLFeatures };

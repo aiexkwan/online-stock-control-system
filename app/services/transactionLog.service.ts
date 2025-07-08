@@ -9,20 +9,20 @@ export enum TransactionSource {
   GRN_LABEL = 'grn_label',
   QC_LABEL = 'qc_label',
   REPRINT_LABEL = 'reprint_label',
-  
+
   // 庫存管理模組
   INVENTORY_TRANSFER = 'inventory_transfer',
   STOCK_ADJUSTMENT = 'stock_adjustment',
   CYCLE_COUNT = 'cycle_count',
-  
+
   // 訂單處理模組
   ACO_ORDER = 'aco_order',
   CUSTOMER_ORDER = 'customer_order',
   LOADING = 'loading',
-  
+
   // 其他模組
   PRODUCT_RECEIVE = 'product_receive',
-  LOCATION_MANAGEMENT = 'location_management'
+  LOCATION_MANAGEMENT = 'location_management',
 }
 
 // 事務操作類型
@@ -32,13 +32,13 @@ export enum TransactionOperation {
   UPDATE = 'update',
   DELETE = 'delete',
   BULK_PROCESS = 'bulk_process',
-  
+
   // 特定操作
   PRINT_LABEL = 'print_label',
   GENERATE_PDF = 'generate_pdf',
   ALLOCATE_RESOURCE = 'allocate_resource',
   TRANSFER_STOCK = 'transfer_stock',
-  ADJUST_QUANTITY = 'adjust_quantity'
+  ADJUST_QUANTITY = 'adjust_quantity',
 }
 
 // 事務狀態
@@ -48,7 +48,7 @@ export enum TransactionStatus {
   COMPLETED = 'completed',
   FAILED = 'failed',
   ROLLED_BACK = 'rolled_back',
-  ROLLBACK_FAILED = 'rollback_failed'
+  ROLLBACK_FAILED = 'rollback_failed',
 }
 
 // 事務記錄介面
@@ -61,14 +61,14 @@ export interface TransactionLogEntry {
   userId: string;
   userClockNumber?: string;
   sessionId?: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 // 事務步驟介面
 export interface TransactionStep {
   name: string;
   sequence: number;
-  data?: any;
+  data?: Record<string, unknown>;
 }
 
 // 回滾結果介面
@@ -89,24 +89,24 @@ export interface RollbackResult {
  */
 export class TransactionLogService {
   private supabase: SupabaseClient;
-  
+
   constructor(supabase?: SupabaseClient) {
     this.supabase = supabase || createClient();
   }
-  
+
   /**
    * 生成事務 ID
    */
   generateTransactionId(): string {
     return crypto.randomUUID();
   }
-  
+
   /**
    * 開始新事務
    */
   async startTransaction(
     entry: TransactionLogEntry,
-    preState?: any
+    preState?: Record<string, unknown>
   ): Promise<string> {
     try {
       const { data, error } = await this.supabase.rpc('start_transaction', {
@@ -119,14 +119,14 @@ export class TransactionLogService {
         p_user_clock_number: entry.userClockNumber,
         p_session_id: entry.sessionId,
         p_pre_state: preState,
-        p_metadata: entry.metadata
+        p_metadata: entry.metadata,
       });
-      
+
       if (error) {
         console.error('[TransactionLogService] Failed to start transaction:', error);
         throw error;
       }
-      
+
       console.log('[TransactionLogService] Transaction started:', entry.transactionId);
       return entry.transactionId;
     } catch (error) {
@@ -134,61 +134,58 @@ export class TransactionLogService {
       throw error;
     }
   }
-  
+
   /**
    * 記錄事務步驟
    */
-  async recordStep(
-    transactionId: string,
-    step: TransactionStep
-  ): Promise<void> {
+  async recordStep(transactionId: string, step: TransactionStep): Promise<void> {
     try {
       const { error } = await this.supabase.rpc('record_transaction_step', {
         p_transaction_id: transactionId,
         p_step_name: step.name,
         p_step_sequence: step.sequence,
-        p_step_data: step.data
+        p_step_data: step.data,
       });
-      
+
       if (error) {
         console.error('[TransactionLogService] Failed to record step:', error);
         throw error;
       }
-      
+
       console.log('[TransactionLogService] Step recorded:', step.name);
     } catch (error) {
       console.error('[TransactionLogService] Error recording step:', error);
       throw error;
     }
   }
-  
+
   /**
    * 完成事務
    */
   async completeTransaction(
     transactionId: string,
-    postState?: any,
-    affectedRecords?: any
+    postState?: Record<string, unknown>,
+    affectedRecords?: Record<string, unknown>
   ): Promise<void> {
     try {
       const { error } = await this.supabase.rpc('complete_transaction', {
         p_transaction_id: transactionId,
         p_post_state: postState,
-        p_affected_records: affectedRecords
+        p_affected_records: affectedRecords,
       });
-      
+
       if (error) {
         console.error('[TransactionLogService] Failed to complete transaction:', error);
         throw error;
       }
-      
+
       console.log('[TransactionLogService] Transaction completed:', transactionId);
     } catch (error) {
       console.error('[TransactionLogService] Error completing transaction:', error);
       throw error;
     }
   }
-  
+
   /**
    * 記錄事務錯誤
    */
@@ -196,7 +193,7 @@ export class TransactionLogService {
     transactionId: string,
     error: Error,
     errorCode?: string,
-    errorDetails?: any
+    errorDetails?: Record<string, unknown>
   ): Promise<string | null> {
     try {
       const { data, error: rpcError } = await this.supabase.rpc('record_transaction_error', {
@@ -204,14 +201,14 @@ export class TransactionLogService {
         p_error_code: errorCode || error.name,
         p_error_message: error.message,
         p_error_details: errorDetails,
-        p_error_stack: error.stack
+        p_error_stack: error.stack,
       });
-      
+
       if (rpcError) {
         console.error('[TransactionLogService] Failed to record error:', rpcError);
         return null;
       }
-      
+
       console.log('[TransactionLogService] Error recorded:', data);
       return data as string;
     } catch (err) {
@@ -219,7 +216,7 @@ export class TransactionLogService {
       return null;
     }
   }
-  
+
   /**
    * 執行回滾
    */
@@ -232,14 +229,14 @@ export class TransactionLogService {
       const { data, error } = await this.supabase.rpc('rollback_transaction', {
         p_transaction_id: transactionId,
         p_rollback_by: rollbackBy,
-        p_rollback_reason: reason
+        p_rollback_reason: reason,
       });
-      
+
       if (error) {
         console.error('[TransactionLogService] Failed to execute rollback:', error);
         throw error;
       }
-      
+
       console.log('[TransactionLogService] Rollback executed:', data);
       return data as RollbackResult;
     } catch (error) {
@@ -247,7 +244,7 @@ export class TransactionLogService {
       throw error;
     }
   }
-  
+
   /**
    * 查詢事務狀態
    */
@@ -259,19 +256,19 @@ export class TransactionLogService {
         .eq('transaction_id', transactionId)
         .is('step_name', null)
         .single();
-      
+
       if (error) {
         console.error('[TransactionLogService] Failed to get transaction status:', error);
         return null;
       }
-      
+
       return data?.status as TransactionStatus;
     } catch (error) {
       console.error('[TransactionLogService] Error getting transaction status:', error);
       return null;
     }
   }
-  
+
   /**
    * 查詢事務歷史
    */
@@ -279,29 +276,29 @@ export class TransactionLogService {
     sourceModule?: TransactionSource,
     userId?: string,
     limit: number = 50
-  ): Promise<any[]> {
+  ): Promise<Record<string, unknown>[]> {
     try {
       let query = this.supabase
         .from('v_transaction_report')
         .select('*')
         .order('created_at', { ascending: false })
         .limit(limit);
-      
+
       if (sourceModule) {
         query = query.eq('source_module', sourceModule);
       }
-      
+
       if (userId) {
         query = query.eq('user_id', userId);
       }
-      
+
       const { data, error } = await query;
-      
+
       if (error) {
         console.error('[TransactionLogService] Failed to get transaction history:', error);
         return [];
       }
-      
+
       return data || [];
     } catch (error) {
       console.error('[TransactionLogService] Error getting transaction history:', error);

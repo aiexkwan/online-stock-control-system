@@ -20,16 +20,17 @@ export const VirtualContainer: React.FC<VirtualContainerProps> = ({
   itemHeight,
   containerHeight,
   overscan = 2,
-  children
+  children,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
-  const [virtualizer] = useState(() => 
-    new VirtualWidgetContainer({
-      widgets,
-      itemHeight,
-      containerHeight,
-      overscan
-    })
+  const [virtualizer] = useState(
+    () =>
+      new VirtualWidgetContainer({
+        widgets,
+        itemHeight,
+        containerHeight,
+        overscan,
+      })
   );
   const [visibleWidgets, setVisibleWidgets] = useState<WidgetDefinition[]>([]);
 
@@ -51,33 +52,31 @@ export const VirtualContainer: React.FC<VirtualContainerProps> = ({
   return (
     <div
       ref={containerRef}
-      className="virtual-container"
+      className='virtual-container'
       style={{
         height: containerHeight,
         overflow: 'auto',
-        position: 'relative'
+        position: 'relative',
       }}
       onScroll={handleScroll}
     >
       <div style={{ height: totalHeight, position: 'relative' }}>
-        {children ? (
-          children(visibleWidgets)
-        ) : (
-          visibleWidgets.map((widget, index) => (
-            <div
-              key={widget.id}
-              data-testid={`widget-${widget.id}`}
-              style={{
-                position: 'absolute',
-                top: (visibleRange.start + index) * itemHeight,
-                height: itemHeight,
-                width: '100%'
-              }}
-            >
-              {widget.name || widget.id}
-            </div>
-          ))
-        )}
+        {children
+          ? children(visibleWidgets)
+          : visibleWidgets.map((widget, index) => (
+              <div
+                key={widget.id}
+                data-testid={`widget-${widget.id}`}
+                style={{
+                  position: 'absolute',
+                  top: (visibleRange.start + index) * itemHeight,
+                  height: itemHeight,
+                  width: '100%',
+                }}
+              >
+                {widget.name || widget.id}
+              </div>
+            ))}
       </div>
     </div>
   );
@@ -95,10 +94,13 @@ export const useVirtualization = (config: {
   const [virtualizer] = useState(() => new VirtualWidgetContainer(config));
   const [visibleWidgets, setVisibleWidgets] = useState<WidgetDefinition[]>([]);
 
-  const updateScrollPosition = useCallback((scrollTop: number) => {
-    virtualizer.updateScrollPosition(scrollTop);
-    setVisibleWidgets(virtualizer.getVisibleWidgets());
-  }, [virtualizer]);
+  const updateScrollPosition = useCallback(
+    (scrollTop: number) => {
+      virtualizer.updateScrollPosition(scrollTop);
+      setVisibleWidgets(virtualizer.getVisibleWidgets());
+    },
+    [virtualizer]
+  );
 
   useEffect(() => {
     setVisibleWidgets(virtualizer.getVisibleWidgets());
@@ -108,6 +110,6 @@ export const useVirtualization = (config: {
     visibleWidgets,
     totalHeight: config.widgets.length * config.itemHeight,
     updateScrollPosition,
-    visibleRange: virtualizer.getVisibleRange()
+    visibleRange: virtualizer.getVisibleRange(),
   };
 };

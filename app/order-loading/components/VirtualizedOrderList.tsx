@@ -30,14 +30,14 @@ export function VirtualizedOrderList({
   searchQuery,
   onOrderSelect,
   itemHeight = 80,
-  containerHeight = 400
+  containerHeight = 400,
 }: VirtualizedOrderListProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [scrollTop, setScrollTop] = useState(0);
   const [visibleRange, setVisibleRange] = useState({ start: 0, end: 0 });
 
   // Filter orders based on search query
-  const filteredOrders = orders.filter(orderRef => 
+  const filteredOrders = orders.filter(orderRef =>
     orderRef.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
@@ -79,9 +79,9 @@ export function VirtualizedOrderList({
   const visibleItems = filteredOrders.slice(visibleRange.start, visibleRange.end);
 
   return (
-    <div 
+    <div
       ref={containerRef}
-      className="relative overflow-y-auto custom-scrollbar border border-slate-600/30 rounded-lg"
+      className='custom-scrollbar relative overflow-y-auto rounded-lg border border-slate-600/30'
       style={{ height: `${containerHeight}px`, minHeight: '200px' }}
       onScroll={handleScroll}
     >
@@ -103,48 +103,47 @@ export function VirtualizedOrderList({
                 left: 0,
                 right: 0,
                 height: `${itemHeight}px`,
-                padding: '8px'
+                padding: '8px',
               }}
             >
               <button
                 onClick={() => onOrderSelect(orderRef)}
                 className={cn(
-                  "w-full px-4 py-3 rounded-lg border transition-all duration-200",
-                  "flex justify-between items-center",
+                  'w-full rounded-lg border px-4 py-3 transition-all duration-200',
+                  'flex items-center justify-between',
                   isSelected
-                    ? "bg-blue-500/20 border-blue-500 text-white"
+                    ? 'border-blue-500 bg-blue-500/20 text-white'
                     : isComplete
-                    ? "bg-green-500/10 border-green-500/50 text-green-400 hover:bg-green-500/20"
-                    : "bg-gray-800/50 border-gray-700 text-gray-300 hover:bg-gray-700/50"
+                      ? 'border-green-500/50 bg-green-500/10 text-green-400 hover:bg-green-500/20'
+                      : 'border-gray-700 bg-gray-800/50 text-gray-300 hover:bg-gray-700/50'
                 )}
               >
-                <div className="flex items-center gap-3">
-                  <span className="font-semibold">{orderRef}</span>
-                  {isComplete && (
-                    <CheckCircleIcon className="w-5 h-5 text-green-400" />
-                  )}
+                <div className='flex items-center gap-3'>
+                  <span className='font-semibold'>{orderRef}</span>
+                  {isComplete && <CheckCircleIcon className='h-5 w-5 text-green-400' />}
                 </div>
                 {summary && (
-                  <div className="flex items-center gap-4 text-sm">
-                    <span className={cn(
-                      "font-medium",
-                      isComplete ? "text-green-400" : "text-gray-400"
-                    )}>
+                  <div className='flex items-center gap-4 text-sm'>
+                    <span
+                      className={cn('font-medium', isComplete ? 'text-green-400' : 'text-gray-400')}
+                    >
                       {summary.loadedQty}/{summary.totalQty}
                     </span>
-                    <div className="w-20 bg-gray-700 rounded-full h-2">
+                    <div className='h-2 w-20 rounded-full bg-gray-700'>
                       <div
                         className={cn(
-                          "h-2 rounded-full transition-all duration-300",
-                          isComplete ? "bg-green-500" : "bg-blue-500"
+                          'h-2 rounded-full transition-all duration-300',
+                          isComplete ? 'bg-green-500' : 'bg-blue-500'
                         )}
                         style={{ width: `${summary.percentage}%` }}
                       />
                     </div>
-                    <span className={cn(
-                      "font-medium w-12 text-right",
-                      isComplete ? "text-green-400" : "text-gray-400"
-                    )}>
+                    <span
+                      className={cn(
+                        'w-12 text-right font-medium',
+                        isComplete ? 'text-green-400' : 'text-gray-400'
+                      )}
+                    >
                       {Math.round(summary.percentage)}%
                     </span>
                   </div>

@@ -31,19 +31,19 @@ export function WidgetWrapper({
   theme,
   padding = true,
   animationDelay = 0,
-  disableGlow = false
+  disableGlow = false,
 }: WidgetWrapperProps) {
   return (
     <GlowCard
       theme={theme}
       animationDelay={animationDelay}
       disableGlow={disableGlow}
-      className="w-full h-full"
+      className='h-full w-full'
     >
       <div
         className={cn(
           'widget-wrapper',
-          'w-full h-full',
+          'h-full w-full',
           'bg-[#18181C]',
           'border border-[#23232A]/40',
           'rounded-2xl',
@@ -56,38 +56,25 @@ export function WidgetWrapper({
       >
         {/* Widget Header */}
         {(title || headerAction) && (
-          <div className="widget-header px-4 py-3 border-b border-[#23232A]/30 flex items-center justify-between">
+          <div className='widget-header flex items-center justify-between border-b border-[#23232A]/30 px-4 py-3'>
             <div>
-              {title && (
-                <h3 className="text-sm font-medium text-[#EAEAEA]">{title}</h3>
-              )}
-              {subtitle && (
-                <p className="text-xs text-[#8E8EA0] mt-0.5">{subtitle}</p>
-              )}
+              {title && <h3 className='text-sm font-medium text-[#EAEAEA]'>{title}</h3>}
+              {subtitle && <p className='mt-0.5 text-xs text-[#8E8EA0]'>{subtitle}</p>}
             </div>
-            {headerAction && (
-              <div className="flex items-center gap-2">
-                {headerAction}
-              </div>
-            )}
+            {headerAction && <div className='flex items-center gap-2'>{headerAction}</div>}
           </div>
         )}
-        
+
         {/* Widget Content */}
-        <div className={cn(
-          'widget-content flex-1',
-          padding && 'p-4'
-        )}>
-          {children}
-        </div>
+        <div className={cn('widget-content flex-1', padding && 'p-4')}>{children}</div>
       </div>
-      
+
       {/* Inner border subtle effect */}
       <style jsx>{`
         .widget-wrapper {
           position: relative;
         }
-        
+
         .widget-wrapper::after {
           content: '';
           position: absolute;
@@ -96,7 +83,7 @@ export function WidgetWrapper({
           border: 1px solid rgba(120, 130, 150, 0.09);
           pointer-events: none;
         }
-        
+
         .widget-header {
           background: rgba(35, 35, 42, 0.3);
           backdrop-filter: blur(10px);

@@ -28,8 +28,8 @@ export const grnReportConfig: ReportConfig = {
           { id: 'package_type', label: 'Package Type', type: 'text' },
           { id: 'print_date', label: 'Print Date', type: 'date' },
         ],
-      }
-    }
+      },
+    },
   ],
   filters: [
     {
@@ -40,7 +40,7 @@ export const grnReportConfig: ReportConfig = {
       dataSource: {
         type: 'rpc',
         name: 'getUniqueGrnRefs',
-      }
-    }
+      },
+    },
   ],
 };

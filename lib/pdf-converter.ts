@@ -12,7 +12,7 @@ export async function convertToPDF({ html, outputPath }: ConvertToPDFOptions): P
 
   try {
     const page = await browser.newPage();
-    
+
     // 設置頁面大小為標籤尺寸
     await page.setViewport({
       width: 793, // 210mm in pixels at 96 DPI
@@ -31,11 +31,11 @@ export async function convertToPDF({ html, outputPath }: ConvertToPDFOptions): P
           src: url('/fonts/timesbold.ttf') format('truetype');
           font-weight: bold;
         }
-      `
+      `,
     });
 
     await page.setContent(html, {
-      waitUntil: 'networkidle0'
+      waitUntil: 'networkidle0',
     });
 
     const pdf = await page.pdf({
@@ -46,8 +46,8 @@ export async function convertToPDF({ html, outputPath }: ConvertToPDFOptions): P
         top: '0mm',
         right: '0mm',
         bottom: '0mm',
-        left: '0mm'
-      }
+        left: '0mm',
+      },
     });
 
     if (outputPath) {
@@ -59,4 +59,4 @@ export async function convertToPDF({ html, outputPath }: ConvertToPDFOptions): P
   } finally {
     await browser.close();
   }
-} 
+}

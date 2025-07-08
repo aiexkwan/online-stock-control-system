@@ -25,71 +25,59 @@ export const LabelTemplate = ({
   qcClockNum,
   workOrder,
   palletNumber,
-  className
+  className,
 }: LabelTemplateProps) => {
   return (
-    <div 
-      className={cn(
-        'relative w-[210mm] h-[145mm] p-5 font-times bg-white',
-        className
-      )}
-    >
+    <div className={cn('font-times relative h-[145mm] w-[210mm] bg-white p-5', className)}>
       {/* Logo */}
-      <div className="absolute top-5 left-5">
-        <Image
-          src="/images/logo.png"
-          alt="Company Logo"
-          width={210}
-          height={55}
-          priority
-        />
+      <div className='absolute left-5 top-5'>
+        <Image src='/images/logo.png' alt='Company Logo' width={210} height={55} priority />
       </div>
 
       {/* QR Code */}
-      <div className="absolute top-5 right-5">
-        <QRCodeSVG
-          value={`${productCode}-${palletNumber}`}
-          size={200}
-        />
+      <div className='absolute right-5 top-5'>
+        <QRCodeSVG value={`${productCode}-${palletNumber}`} size={200} />
       </div>
 
       {/* Product Information */}
-      <div className="mt-24 text-center">
-        <h1 className="text-[40px] font-bold">{productCode}</h1>
-        <p className="text-2xl mt-2">{description}</p>
+      <div className='mt-24 text-center'>
+        <h1 className='text-[40px] font-bold'>{productCode}</h1>
+        <p className='mt-2 text-2xl'>{description}</p>
       </div>
 
       {/* Main Data Table */}
-      <div className="mt-8 border border-black">
-        <table className="w-full">
+      <div className='mt-8 border border-black'>
+        <table className='w-full'>
           <thead>
-            <tr className="border-b border-black">
-              <th className="p-2 text-base font-bold border-r border-black">Quantity</th>
-              <th className="p-2 text-base font-bold border-r border-black">Date</th>
-              <th className="p-2 text-base font-bold border-r border-black">Operator Clock Num</th>
-              <th className="p-2 text-base font-bold">Q.C. Clock Num</th>
+            <tr className='border-b border-black'>
+              <th className='border-r border-black p-2 text-base font-bold'>Quantity</th>
+              <th className='border-r border-black p-2 text-base font-bold'>Date</th>
+              <th className='border-r border-black p-2 text-base font-bold'>Operator Clock Num</th>
+              <th className='p-2 text-base font-bold'>Q.C. Clock Num</th>
             </tr>
           </thead>
           <tbody>
             <tr>
-              <td className="p-2 text-[25px] text-center border-r border-black">{quantity}</td>
-              <td className="p-2 text-[25px] text-center border-r border-black">{date}</td>
-              <td className="p-2 text-[25px] text-center border-r border-black">{operatorClockNum}</td>
-              <td className="p-2 text-[25px] text-center">{qcClockNum}</td>
+              <td className='border-r border-black p-2 text-center text-[25px]'>{quantity}</td>
+              <td className='border-r border-black p-2 text-center text-[25px]'>{date}</td>
+              <td className='border-r border-black p-2 text-center text-[25px]'>
+                {operatorClockNum}
+              </td>
+              <td className='p-2 text-center text-[25px]'>{qcClockNum}</td>
             </tr>
           </tbody>
         </table>
       </div>
 
       {/* Work Order */}
-      <div className="mt-8 text-center">
-        <p className="text-2xl">Work Order: {workOrder}</p>
+      <div className='mt-8 text-center'>
+        <p className='text-2xl'>Work Order: {workOrder}</p>
       </div>
 
       {/* Pallet Number */}
-      <div className="absolute bottom-5 right-5">
-        <p className="text-base font-bold">Pallet Number: {palletNumber}</p>
+      <div className='absolute bottom-5 right-5'>
+        <p className='text-base font-bold'>Pallet Number: {palletNumber}</p>
       </div>
     </div>
   );
-}; 
+};

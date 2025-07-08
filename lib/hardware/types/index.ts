@@ -104,7 +104,7 @@ export interface RetryPolicy {
 }
 
 // Event Types
-export type HardwareEventType = 
+export type HardwareEventType =
   | 'device.connected'
   | 'device.disconnected'
   | 'job.started'

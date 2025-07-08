@@ -3,7 +3,7 @@
  * 列表形式顯示 record_transfer 內容
  * 只需顯示 "time", "pallet number", "operator"
  * 只顯示 operator department = "Warehouse" 的記錄
- * 
+ *
  * 已遷移至統一架構：
  * - 使用 DashboardAPI 統一數據訪問
  * - 服務器端 JOIN 和過濾
@@ -28,10 +28,10 @@ interface TransferRecord {
   operator_name: string;
 }
 
-export const WarehouseTransferListWidget = React.memo(function WarehouseTransferListWidget({ 
-  widget, 
+export const WarehouseTransferListWidget = React.memo(function WarehouseTransferListWidget({
+  widget,
   isEditMode,
-  timeFrame 
+  timeFrame,
 }: WidgetComponentProps) {
   const [transfers, setTransfers] = useState<TransferRecord[]>([]);
   const [loading, setLoading] = useState(true);
@@ -44,12 +44,12 @@ export const WarehouseTransferListWidget = React.memo(function WarehouseTransfer
       const range = getYesterdayRange();
       return {
         start: new Date(range.start),
-        end: new Date(range.end)
+        end: new Date(range.end),
       };
     }
     return {
       start: timeFrame.start,
-      end: timeFrame.end
+      end: timeFrame.end,
     };
   }, [timeFrame]);
 
@@ -57,28 +57,31 @@ export const WarehouseTransferListWidget = React.memo(function WarehouseTransfer
     const fetchData = async () => {
       setLoading(true);
       setError(null);
-      
+
       try {
         // 使用統一的 DashboardAPI 獲取數據
-        const result = await dashboardAPI.fetch({
-          widgetIds: ['statsCard'],
-          dateRange: {
-            start: dateRange.start.toISOString(),
-            end: dateRange.end.toISOString()
+        const result = await dashboardAPI.fetch(
+          {
+            widgetIds: ['statsCard'],
+            dateRange: {
+              start: dateRange.start.toISOString(),
+              end: dateRange.end.toISOString(),
+            },
+            params: {
+              dataSource: 'warehouse_transfer_list',
+              limit: 50,
+              offset: 0,
+            },
           },
-          params: {
-            dataSource: 'warehouse_transfer_list',
-            limit: 50,
-            offset: 0
+          {
+            strategy: 'server',
+            cache: { ttl: 60 }, // 1分鐘緩存
           }
-        }, {
-          strategy: 'server',
-          cache: { ttl: 60 } // 1分鐘緩存
-        });
+        );
 
         if (result.widgets && result.widgets.length > 0) {
           const widgetData = result.widgets[0];
-          
+
           if (widgetData.data.error) {
             console.error('[WarehouseTransferListWidget] API error:', widgetData.data.error);
             setError(widgetData.data.error);
@@ -87,13 +90,19 @@ export const WarehouseTransferListWidget = React.memo(function WarehouseTransfer
           }
 
           const transferList = widgetData.data.value || [];
-          console.log('[WarehouseTransferListWidget] API returned', transferList.length, 'transfers');
+          console.log(
+            '[WarehouseTransferListWidget] API returned',
+            transferList.length,
+            'transfers'
+          );
           console.log('[WarehouseTransferListWidget] Metadata:', widgetData.data.metadata);
 
           // 直接使用 API 返回的數據，已經經過優化處理
           setTransfers(transferList);
-          
-          console.log('[WarehouseTransferListWidget] Data processed successfully using optimized API');
+
+          console.log(
+            '[WarehouseTransferListWidget] Data processed successfully using optimized API'
+          );
         } else {
           console.warn('[WarehouseTransferListWidget] No widget data returned from API');
           setTransfers([]);
@@ -113,8 +122,8 @@ export const WarehouseTransferListWidget = React.memo(function WarehouseTransfer
   if (isEditMode) {
     return (
       <WidgetCard widget={widget} isEditMode={true}>
-        <div className="h-full flex items-center justify-center">
-          <p className="text-slate-400 font-medium">Warehouse Transfer List</p>
+        <div className='flex h-full items-center justify-center'>
+          <p className='font-medium text-slate-400'>Warehouse Transfer List</p>
         </div>
       </WidgetCard>
     );
@@ -122,80 +131,80 @@ export const WarehouseTransferListWidget = React.memo(function WarehouseTransfer
 
   return (
     <WidgetCard widget={widget}>
-      <CardHeader className="pb-2">
-          <CardTitle className="widget-title flex items-center gap-2">
-            <DocumentTextIcon className="w-5 h-5" />
-            Warehouse Transfers
-          </CardTitle>
-          <p className="text-xs text-slate-400 mt-1">
-            From {format(dateRange.start, 'MMM d')} to {format(dateRange.end, 'MMM d')}
-          </p>
-        </CardHeader>
-        <CardContent className="flex-1 overflow-hidden">
-          {loading ? (
-            <div className="space-y-2">
-              {[1, 2, 3, 4, 5].map(i => (
-                <div key={i} className="h-12 bg-slate-700/50 rounded animate-pulse" />
+      <CardHeader className='pb-2'>
+        <CardTitle className='widget-title flex items-center gap-2'>
+          <DocumentTextIcon className='h-5 w-5' />
+          Warehouse Transfers
+        </CardTitle>
+        <p className='mt-1 text-xs text-slate-400'>
+          From {format(dateRange.start, 'MMM d')} to {format(dateRange.end, 'MMM d')}
+        </p>
+      </CardHeader>
+      <CardContent className='flex-1 overflow-hidden'>
+        {loading ? (
+          <div className='space-y-2'>
+            {[1, 2, 3, 4, 5].map(i => (
+              <div key={i} className='h-12 animate-pulse rounded bg-slate-700/50' />
+            ))}
+          </div>
+        ) : error ? (
+          <div className='text-center text-sm text-red-400'>
+            <p>Error loading transfers</p>
+            <p className='mt-1 text-xs'>{error}</p>
+          </div>
+        ) : transfers.length === 0 ? (
+          <div className='py-8 text-center font-medium text-slate-400'>
+            <DocumentTextIcon className='mx-auto mb-2 h-12 w-12 opacity-50' />
+            <p>No warehouse transfers found</p>
+          </div>
+        ) : (
+          <div className='flex h-full flex-col'>
+            {/* Column Headers */}
+            <div className='widget-text-sm mb-2 grid grid-cols-12 gap-2 border-b border-slate-600/50 pb-2 uppercase'>
+              <div className='col-span-4 flex items-center gap-1'>
+                <ClockIcon className='h-3 w-3' />
+                Time
+              </div>
+              <div className='col-span-4 flex items-center gap-1'>
+                <CubeIcon className='h-3 w-3' />
+                Pallet Number
+              </div>
+              <div className='col-span-4 flex items-center gap-1'>
+                <UserIcon className='h-3 w-3' />
+                Operator
+              </div>
+            </div>
+
+            {/* Transfer Records */}
+            <div className='flex-1 space-y-1 overflow-y-auto'>
+              {transfers.map((transfer, index) => (
+                <motion.div
+                  key={`${transfer.plt_num}-${transfer.tran_date}`}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.3, delay: index * 0.05 }}
+                  className='grid grid-cols-12 gap-2 rounded bg-slate-700/20 px-2 py-2 text-sm transition-colors hover:bg-slate-700/40'
+                >
+                  <div className='col-span-4 font-medium text-slate-300'>
+                    {format(parseISO(transfer.tran_date), 'HH:mm:ss')}
+                  </div>
+                  <div className='col-span-4 truncate font-medium text-white'>
+                    {transfer.plt_num}
+                  </div>
+                  <div className='col-span-4 truncate font-medium text-slate-300'>
+                    {transfer.operator_name}
+                  </div>
+                </motion.div>
               ))}
             </div>
-          ) : error ? (
-            <div className="text-red-400 text-sm text-center">
-              <p>Error loading transfers</p>
-              <p className="text-xs mt-1">{error}</p>
+
+            {/* Footer with count */}
+            <div className='widget-text-sm mt-2 border-t border-slate-600/50 pt-2 text-center'>
+              {transfers.length} transfers shown
             </div>
-          ) : transfers.length === 0 ? (
-            <div className="text-center text-slate-400 font-medium py-8">
-              <DocumentTextIcon className="w-12 h-12 mx-auto mb-2 opacity-50" />
-              <p>No warehouse transfers found</p>
-            </div>
-          ) : (
-            <div className="h-full flex flex-col">
-              {/* Column Headers */}
-              <div className="grid grid-cols-12 gap-2 pb-2 mb-2 border-b border-slate-600/50 widget-text-sm uppercase">
-                <div className="col-span-4 flex items-center gap-1">
-                  <ClockIcon className="w-3 h-3" />
-                  Time
-                </div>
-                <div className="col-span-4 flex items-center gap-1">
-                  <CubeIcon className="w-3 h-3" />
-                  Pallet Number
-                </div>
-                <div className="col-span-4 flex items-center gap-1">
-                  <UserIcon className="w-3 h-3" />
-                  Operator
-                </div>
-              </div>
-              
-              {/* Transfer Records */}
-              <div className="flex-1 overflow-y-auto space-y-1">
-                {transfers.map((transfer, index) => (
-                  <motion.div
-                    key={`${transfer.plt_num}-${transfer.tran_date}`}
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ duration: 0.3, delay: index * 0.05 }}
-                    className="grid grid-cols-12 gap-2 py-2 px-2 bg-slate-700/20 rounded hover:bg-slate-700/40 transition-colors text-sm"
-                  >
-                    <div className="col-span-4 text-slate-300 font-medium">
-                      {format(parseISO(transfer.tran_date), 'HH:mm:ss')}
-                    </div>
-                    <div className="col-span-4 text-white font-medium truncate">
-                      {transfer.plt_num}
-                    </div>
-                    <div className="col-span-4 text-slate-300 font-medium truncate">
-                      {transfer.operator_name}
-                    </div>
-                  </motion.div>
-                ))}
-              </div>
-              
-              {/* Footer with count */}
-              <div className="pt-2 mt-2 border-t border-slate-600/50 widget-text-sm text-center">
-                {transfers.length} transfers shown
-              </div>
-            </div>
-          )}
-        </CardContent>
+          </div>
+        )}
+      </CardContent>
     </WidgetCard>
   );
 });

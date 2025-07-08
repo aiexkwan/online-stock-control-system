@@ -48,33 +48,33 @@ export function AcoOrderReportWidgetV2({ widget, isEditMode }: WidgetComponentPr
 
   const fetchAcoOrders = useCallback(async () => {
     if (isEditMode) return;
-    
+
     setLoading(true);
     try {
       const startTime = performance.now();
       const api = createDashboardAPI();
-      
+
       const result = await api.fetchData({
         widgetId: 'aco_order_refs',
         params: {
           limit: 100,
-          offset: 0
-        }
+          offset: 0,
+        },
       });
-      
+
       const endTime = performance.now();
       setPerformanceMetrics({
         apiResponseTime: Math.round(endTime - startTime),
-        optimized: result.metadata?.optimized || false
+        optimized: result.metadata?.optimized || false,
       });
-      
+
       if (result.error) {
         throw new Error(result.error);
       }
-      
-      const orderRefs = result.value as string[] || [];
+
+      const orderRefs = (result.value as string[]) || [];
       setAcoOrders(orderRefs);
-      
+
       // Set default selection
       if (orderRefs.length > 0 && !selectedAcoOrder) {
         setSelectedAcoOrder(orderRefs[0]);
@@ -82,9 +82,9 @@ export function AcoOrderReportWidgetV2({ widget, isEditMode }: WidgetComponentPr
     } catch (error) {
       console.error('[AcoOrderReportWidgetV2] Error fetching ACO orders:', error);
       toast({
-        title: "Error",
-        description: "Failed to fetch ACO orders",
-        variant: "destructive",
+        title: 'Error',
+        description: 'Failed to fetch ACO orders',
+        variant: 'destructive',
       });
     } finally {
       setLoading(false);
@@ -102,9 +102,9 @@ export function AcoOrderReportWidgetV2({ widget, isEditMode }: WidgetComponentPr
   const handleGenerateReport = async () => {
     if (!selectedAcoOrder) {
       toast({
-        title: "No Order Selected",
-        description: "Please select an ACO order",
-        variant: "destructive",
+        title: 'No Order Selected',
+        description: 'Please select an ACO order',
+        variant: 'destructive',
       });
       return;
     }
@@ -113,42 +113,46 @@ export function AcoOrderReportWidgetV2({ widget, isEditMode }: WidgetComponentPr
     try {
       const startTime = performance.now();
       const api = createDashboardAPI();
-      
+
       // Get report data from server
       const result = await api.fetchData({
         widgetId: 'aco_order_report',
         params: {
-          orderRef: parseInt(selectedAcoOrder, 10)
-        }
+          orderRef: parseInt(selectedAcoOrder, 10),
+        },
       });
-      
+
       const endTime = performance.now();
-      console.log(`[AcoOrderReportWidgetV2] Server fetch time: ${Math.round(endTime - startTime)}ms`);
-      
+      console.log(
+        `[AcoOrderReportWidgetV2] Server fetch time: ${Math.round(endTime - startTime)}ms`
+      );
+
       if (result.error) {
         throw new Error(result.error);
       }
-      
+
       const reportData = result.value as AcoProductData[];
-      
+
       // Generate Excel report
       await exportAcoReport(reportData, selectedAcoOrder);
-      
+
       toast({
-        title: "Success",
+        title: 'Success',
         description: `ACO order ${selectedAcoOrder} report generated successfully`,
       });
-      
+
       // Log performance metrics
       if (result.metadata?.performanceMs) {
-        console.log(`[AcoOrderReportWidgetV2] Server-side processing: ${result.metadata.performanceMs}ms`);
+        console.log(
+          `[AcoOrderReportWidgetV2] Server-side processing: ${result.metadata.performanceMs}ms`
+        );
       }
     } catch (error) {
       console.error('[AcoOrderReportWidgetV2] Error generating report:', error);
       toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to generate report",
-        variant: "destructive",
+        title: 'Error',
+        description: error instanceof Error ? error.message : 'Failed to generate report',
+        variant: 'destructive',
       });
     } finally {
       setIsGenerating(false);
@@ -156,24 +160,26 @@ export function AcoOrderReportWidgetV2({ widget, isEditMode }: WidgetComponentPr
   };
 
   return (
-    <Card className={cn(
-      "h-full bg-slate-900/50 backdrop-blur-xl",
-      "border border-slate-700/50",
-      "shadow-[0_0_30px_rgba(0,0,0,0.3)]",
-      "transition-all duration-300",
-      "hover:shadow-[0_0_40px_rgba(0,0,0,0.4)]",
-      "overflow-visible"
-    )}>
-      <CardContent className="h-full p-4 flex flex-col">
-        <div className="flex flex-col h-full">
+    <Card
+      className={cn(
+        'h-full bg-slate-900/50 backdrop-blur-xl',
+        'border border-slate-700/50',
+        'shadow-[0_0_30px_rgba(0,0,0,0.3)]',
+        'transition-all duration-300',
+        'hover:shadow-[0_0_40px_rgba(0,0,0,0.4)]',
+        'overflow-visible'
+      )}
+    >
+      <CardContent className='flex h-full flex-col p-4'>
+        <div className='flex h-full flex-col'>
           {/* Title */}
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2">
-              <DocumentArrowDownIcon className="h-5 w-5 text-cyan-500" />
-              <h3 className="text-sm font-semibold text-white">ACO Order Report</h3>
+          <div className='mb-3 flex items-center justify-between'>
+            <div className='flex items-center gap-2'>
+              <DocumentArrowDownIcon className='h-5 w-5 text-cyan-500' />
+              <h3 className='text-sm font-semibold text-white'>ACO Order Report</h3>
             </div>
             {performanceMetrics.apiResponseTime && (
-              <span className="text-xs text-slate-400">
+              <span className='text-xs text-slate-400'>
                 {performanceMetrics.apiResponseTime}ms
                 {performanceMetrics.optimized && ' (optimized)'}
               </span>
@@ -181,11 +187,11 @@ export function AcoOrderReportWidgetV2({ widget, isEditMode }: WidgetComponentPr
           </div>
 
           {/* Content */}
-          <div className="flex-1 flex items-center">
-            <div className="w-full flex items-center gap-3">
+          <div className='flex flex-1 items-center'>
+            <div className='flex w-full items-center gap-3'>
               {/* ACO Order Selector */}
-              <div className="flex-1">
-                <Label htmlFor="aco-order" className="sr-only">
+              <div className='flex-1'>
+                <Label htmlFor='aco-order' className='sr-only'>
                   ACO Order
                 </Label>
                 <Select
@@ -193,22 +199,26 @@ export function AcoOrderReportWidgetV2({ widget, isEditMode }: WidgetComponentPr
                   onValueChange={setSelectedAcoOrder}
                   disabled={isEditMode || loading || acoOrders.length === 0}
                 >
-                  <SelectTrigger 
-                    id="aco-order"
-                    className="w-full h-9 bg-slate-800 border-slate-600 text-white text-sm"
+                  <SelectTrigger
+                    id='aco-order'
+                    className='h-9 w-full border-slate-600 bg-slate-800 text-sm text-white'
                   >
-                    <SelectValue placeholder={
-                      loading ? "Loading..." : 
-                      acoOrders.length === 0 ? "No ACO orders" : 
-                      "Select ACO order"
-                    } />
+                    <SelectValue
+                      placeholder={
+                        loading
+                          ? 'Loading...'
+                          : acoOrders.length === 0
+                            ? 'No ACO orders'
+                            : 'Select ACO order'
+                      }
+                    />
                   </SelectTrigger>
-                  <SelectContent className="bg-slate-800 border-slate-600">
-                    {acoOrders.map((order) => (
-                      <SelectItem 
-                        key={order} 
+                  <SelectContent className='border-slate-600 bg-slate-800'>
+                    {acoOrders.map(order => (
+                      <SelectItem
+                        key={order}
                         value={order}
-                        className="text-white hover:bg-slate-700 text-sm"
+                        className='text-sm text-white hover:bg-slate-700'
                       >
                         {order}
                       </SelectItem>
@@ -220,19 +230,25 @@ export function AcoOrderReportWidgetV2({ widget, isEditMode }: WidgetComponentPr
               {/* Generate Button */}
               <Button
                 onClick={handleGenerateReport}
-                disabled={isEditMode || loading || isGenerating || acoOrders.length === 0 || !selectedAcoOrder}
+                disabled={
+                  isEditMode ||
+                  loading ||
+                  isGenerating ||
+                  acoOrders.length === 0 ||
+                  !selectedAcoOrder
+                }
                 className={cn(
-                  "h-9 px-3",
-                  "bg-cyan-600 hover:bg-cyan-700",
-                  "text-white text-sm font-medium",
-                  "border-0",
-                  "transition-all duration-200",
-                  "disabled:bg-slate-700 disabled:text-slate-400"
+                  'h-9 px-3',
+                  'bg-cyan-600 hover:bg-cyan-700',
+                  'text-sm font-medium text-white',
+                  'border-0',
+                  'transition-all duration-200',
+                  'disabled:bg-slate-700 disabled:text-slate-400'
                 )}
               >
                 {isGenerating ? (
                   <>
-                    <span className="animate-spin rounded-full h-3 w-3 border-b-2 border-white mr-2" />
+                    <span className='mr-2 h-3 w-3 animate-spin rounded-full border-b-2 border-white' />
                     Generating...
                   </>
                 ) : (
@@ -244,12 +260,12 @@ export function AcoOrderReportWidgetV2({ widget, isEditMode }: WidgetComponentPr
 
           {/* Helper Text */}
           {acoOrders.length === 0 && !loading && (
-            <p className="text-xs text-slate-500 mt-2">No ACO order data available</p>
+            <p className='mt-2 text-xs text-slate-500'>No ACO order data available</p>
           )}
-          
+
           {/* Performance indicator */}
           {performanceMetrics.optimized && (
-            <div className="mt-2 text-[10px] text-green-400 text-center">
+            <div className='mt-2 text-center text-[10px] text-green-400'>
               ✓ Server-side optimized
             </div>
           )}

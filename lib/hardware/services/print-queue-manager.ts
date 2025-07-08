@@ -23,7 +23,7 @@ export class PrintQueueManager extends EventEmitter {
   private retryPolicy: RetryPolicy = {
     maxRetries: 3,
     retryDelay: 2000, // 2 seconds
-    backoffMultiplier: 2
+    backoffMultiplier: 2,
   };
   private processInterval: NodeJS.Timeout | null = null;
 
@@ -45,7 +45,7 @@ export class PrintQueueManager extends EventEmitter {
       job,
       addedAt: new Date().toISOString(),
       attempts: 0,
-      status: 'pending'
+      status: 'pending',
     };
 
     // Add based on priority
@@ -98,7 +98,7 @@ export class PrintQueueManager extends EventEmitter {
     if (index !== -1 && this.queue[index].status === 'pending') {
       const job = this.queue.splice(index, 1)[0];
       job.job.priority = 'high';
-      
+
       // Re-add with high priority
       this.queue.unshift(job);
       this.emit('job.prioritized', jobId);
@@ -127,11 +127,10 @@ export class PrintQueueManager extends EventEmitter {
     const jobIds = await Promise.all(jobs.map(job => this.addToQueue(job)));
 
     // Wait for all jobs to complete
-    await new Promise<void>((resolve) => {
+    await new Promise<void>(resolve => {
       const checkCompletion = () => {
-        const pending = this.queue.filter(q => 
-          jobIds.includes(q.job.id!) && 
-          (q.status === 'pending' || q.status === 'processing')
+        const pending = this.queue.filter(
+          q => jobIds.includes(q.job.id!) && (q.status === 'pending' || q.status === 'processing')
         );
 
         if (pending.length === 0) {
@@ -165,7 +164,7 @@ export class PrintQueueManager extends EventEmitter {
       pending: this.queue.filter(q => q.status === 'pending').length,
       processing: this.queue.filter(q => q.status === 'processing').length,
       completed: this.queue.filter(q => q.status === 'completed').length,
-      failed: this.queue.filter(q => q.status === 'failed').length
+      failed: this.queue.filter(q => q.status === 'failed').length,
     };
   }
 
@@ -180,7 +179,7 @@ export class PrintQueueManager extends EventEmitter {
       status: q.status,
       addedAt: q.addedAt,
       attempts: q.attempts,
-      error: q.error
+      error: q.error,
     }));
   }
 
@@ -188,9 +187,7 @@ export class PrintQueueManager extends EventEmitter {
    * Clear completed and failed jobs
    */
   clearCompleted(): void {
-    this.queue = this.queue.filter(q => 
-      q.status !== 'completed' && q.status !== 'failed'
-    );
+    this.queue = this.queue.filter(q => q.status !== 'completed' && q.status !== 'failed');
     this.emit('queue.updated', this.getQueueStatus());
   }
 
@@ -224,7 +221,7 @@ export class PrintQueueManager extends EventEmitter {
         failedJob.status = 'pending';
         failedJob.attempts = 0;
         retried++;
-        
+
         const result = await this.processJob(failedJob);
         if (result && result.success) {
           successful++;
@@ -258,7 +255,7 @@ export class PrintQueueManager extends EventEmitter {
         if (!nextJob) break;
 
         await this.processJob(nextJob);
-        
+
         // Small delay between jobs
         await new Promise(resolve => setTimeout(resolve, 100));
       }
@@ -270,19 +267,19 @@ export class PrintQueueManager extends EventEmitter {
   private async processJob(queuedJob: QueuedJob): Promise<PrintResult> {
     queuedJob.status = 'processing';
     queuedJob.attempts++;
-    
+
     this.emit('job.processing', queuedJob.job);
     this.emit('queue.updated', this.getQueueStatus());
 
     try {
       const result = await this.printerService.print(queuedJob.job);
-      
+
       queuedJob.status = 'completed';
       queuedJob.result = result;
-      
+
       this.emit('job.completed', queuedJob.job, result);
       this.emit('queue.updated', this.getQueueStatus());
-      
+
       // Auto-remove completed jobs after 5 minutes
       setTimeout(() => {
         const index = this.queue.indexOf(queuedJob);
@@ -291,19 +288,20 @@ export class PrintQueueManager extends EventEmitter {
           this.emit('queue.updated', this.getQueueStatus());
         }
       }, 300000);
-      
+
       return result;
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       queuedJob.error = errorMessage;
-      
+
       if (queuedJob.attempts < this.retryPolicy.maxRetries) {
         // Retry with backoff
-        const delay = this.retryPolicy.retryDelay * 
+        const delay =
+          this.retryPolicy.retryDelay *
           Math.pow(this.retryPolicy.backoffMultiplier, queuedJob.attempts - 1);
-        
+
         queuedJob.status = 'pending';
-        
+
         setTimeout(() => {
           this.emit('job.retry', queuedJob.job, queuedJob.attempts);
         }, delay);
@@ -311,13 +309,13 @@ export class PrintQueueManager extends EventEmitter {
         queuedJob.status = 'failed';
         this.emit('job.failed', queuedJob.job, errorMessage);
       }
-      
+
       this.emit('queue.updated', this.getQueueStatus());
-      
+
       return {
         success: false,
         jobId: queuedJob.job.id!,
-        error: errorMessage
+        error: errorMessage,
       };
     }
   }

@@ -64,7 +64,7 @@ trailer
 startxref
 432
 %%EOF`;
-    
+
     return new Blob([pdfContent], { type: 'application/pdf' });
   };
 
@@ -77,39 +77,39 @@ startxref
 
     setIsTestingSingle(true);
     console.log('=== Testing Single PDF Print (10s timeout) ===');
-    
+
     try {
       const testBlob = createTestPdfBlob('Test Single PDF - 10 Second Timeout');
-      
+
       const printJob = {
         type: 'qc-label' as const,
         data: {
           pdfBlob: testBlob,
           productCode: 'TEST-001',
           palletNum: 'P/2025/000001',
-          series: 'S001'
+          series: 'S001',
         },
         copies: 1,
         priority: 'normal' as const,
         metadata: {
           source: 'test-fixes',
-          test: 'single-pdf-timeout'
-        }
+          test: 'single-pdf-timeout',
+        },
       };
-      
+
       console.log('📄 Sending single PDF to printer...');
       toast.info('Opening print dialog - You have 10 seconds to interact with it');
-      
+
       const startTime = Date.now();
       const result = await halRef.current.print(printJob);
       const endTime = Date.now();
-      
+
       console.log('✅ Print completed:', {
         success: result.success,
         duration: `${(endTime - startTime) / 1000}s`,
-        jobId: result.jobId
+        jobId: result.jobId,
       });
-      
+
       if (result.success) {
         toast.success(`Print dialog was open for ~${Math.round((endTime - startTime) / 1000)}s`);
       } else {
@@ -132,26 +132,26 @@ startxref
 
     setIsTestingMultiple(true);
     console.log('=== Testing Multiple PDF Print with Merging ===');
-    
+
     try {
       // Create 3 test PDFs
       const testBlobs = [
         createTestPdfBlob('Label 1 of 3'),
         createTestPdfBlob('Label 2 of 3'),
-        createTestPdfBlob('Label 3 of 3')
+        createTestPdfBlob('Label 3 of 3'),
       ];
-      
+
       // Import pdf-lib for merging
       const { PDFDocument } = await import('pdf-lib');
       console.log('📚 pdf-lib loaded for merging');
-      
+
       // Merge PDFs
       const mergedPdf = await PDFDocument.create();
-      
+
       for (let i = 0; i < testBlobs.length; i++) {
         console.log(`📄 Processing PDF ${i + 1} of ${testBlobs.length}...`);
         const pdfBuffer = await testBlobs[i].arrayBuffer();
-        
+
         try {
           const pdfToMerge = await PDFDocument.load(pdfBuffer);
           const pages = await mergedPdf.copyPages(pdfToMerge, pdfToMerge.getPageIndices());
@@ -161,18 +161,18 @@ startxref
           console.error(`Failed to process PDF ${i + 1}:`, error);
         }
       }
-      
+
       const pageCount = mergedPdf.getPageCount();
       console.log(`📑 Merged PDF has ${pageCount} pages`);
-      
+
       if (pageCount === 0) {
         throw new Error('No pages in merged PDF');
       }
-      
+
       const mergedPdfBytes = await mergedPdf.save();
       const mergedPdfBlob = new Blob([mergedPdfBytes], { type: 'application/pdf' });
       console.log(`📦 Created merged PDF blob: ${(mergedPdfBlob.size / 1024).toFixed(2)}KB`);
-      
+
       // Send merged PDF to hardware service
       const printJob = {
         type: 'qc-label' as const,
@@ -181,31 +181,31 @@ startxref
           productCode: 'TEST-MULTI',
           palletNumbers: ['P/2025/000001', 'P/2025/000002', 'P/2025/000003'],
           series: ['S001', 'S002', 'S003'],
-          merged: true
+          merged: true,
         },
         copies: 1,
         priority: 'normal' as const,
         metadata: {
           source: 'test-fixes',
           test: 'multiple-pdf-merge',
-          labelCount: 3
-        }
+          labelCount: 3,
+        },
       };
-      
+
       console.log('🖨️ Sending merged PDF to printer via hardware service...');
       toast.info('Printing 3 merged labels - You have 10 seconds to interact with print dialog');
-      
+
       const startTime = Date.now();
       const result = await halRef.current.print(printJob);
       const endTime = Date.now();
-      
+
       console.log('✅ Print completed:', {
         success: result.success,
         duration: `${(endTime - startTime) / 1000}s`,
         jobId: result.jobId,
-        mergedPages: pageCount
+        mergedPages: pageCount,
       });
-      
+
       if (result.success) {
         toast.success(`Successfully printed ${pageCount} merged labels using hardware service!`);
       } else {
@@ -220,44 +220,38 @@ startxref
   };
 
   return (
-    <Card className="p-6 max-w-2xl mx-auto">
-      <h2 className="text-xl font-semibold mb-4">Hardware Service Print Testing</h2>
-      <p className="text-sm text-muted-foreground mb-6">
-        Test the fixed print dialog timeout (10 seconds) and multiple PDF support with hardware services
+    <Card className='mx-auto max-w-2xl p-6'>
+      <h2 className='mb-4 text-xl font-semibold'>Hardware Service Print Testing</h2>
+      <p className='mb-6 text-sm text-muted-foreground'>
+        Test the fixed print dialog timeout (10 seconds) and multiple PDF support with hardware
+        services
       </p>
-      
-      <div className="space-y-4">
-        <div className="border rounded-lg p-4">
-          <h3 className="font-medium mb-2">Test 1: Print Dialog Timeout</h3>
-          <p className="text-sm text-muted-foreground mb-3">
-            Tests that the print dialog stays open for 10 seconds, giving users enough time to interact
+
+      <div className='space-y-4'>
+        <div className='rounded-lg border p-4'>
+          <h3 className='mb-2 font-medium'>Test 1: Print Dialog Timeout</h3>
+          <p className='mb-3 text-sm text-muted-foreground'>
+            Tests that the print dialog stays open for 10 seconds, giving users enough time to
+            interact
           </p>
-          <Button 
-            onClick={testSinglePdfPrint}
-            disabled={isTestingSingle}
-            variant="outline"
-          >
+          <Button onClick={testSinglePdfPrint} disabled={isTestingSingle} variant='outline'>
             {isTestingSingle ? 'Testing...' : 'Test Single PDF (10s timeout)'}
           </Button>
         </div>
 
-        <div className="border rounded-lg p-4">
-          <h3 className="font-medium mb-2">Test 2: Multiple PDF Printing</h3>
-          <p className="text-sm text-muted-foreground mb-3">
+        <div className='rounded-lg border p-4'>
+          <h3 className='mb-2 font-medium'>Test 2: Multiple PDF Printing</h3>
+          <p className='mb-3 text-sm text-muted-foreground'>
             Tests printing multiple PDFs using hardware service with PDF merging (pdf-lib)
           </p>
-          <Button 
-            onClick={testMultiplePdfPrint}
-            disabled={isTestingMultiple}
-            variant="outline"
-          >
+          <Button onClick={testMultiplePdfPrint} disabled={isTestingMultiple} variant='outline'>
             {isTestingMultiple ? 'Testing...' : 'Test Multiple PDFs (Merged)'}
           </Button>
         </div>
 
-        <div className="mt-6 p-4 bg-muted rounded-lg">
-          <h4 className="font-medium mb-2">Expected Results:</h4>
-          <ul className="text-sm space-y-1">
+        <div className='mt-6 rounded-lg bg-muted p-4'>
+          <h4 className='mb-2 font-medium'>Expected Results:</h4>
+          <ul className='space-y-1 text-sm'>
             <li>✓ Print dialog should stay open for ~10 seconds</li>
             <li>✓ You should have time to select printer settings</li>
             <li>✓ Multiple PDFs should be merged into one document</li>

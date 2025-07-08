@@ -6,8 +6,52 @@
 import { createClient } from '@/app/utils/supabase/server'; // NEW: Using @supabase/ssr helper
 import { getUserIdFromEmail } from '@/lib/utils/getUserId'; // 統一的用戶 ID 獲取函數
 import { format, isValid } from 'date-fns'; // 用於日期格式化
-// import type { Database } from '../lib/database.types'; // Path still incorrect, commenting out for now
-// 如果您有資料庫類型定義，例如： import { Database } from '@/types_db';
+// Database record types
+interface AcoOrderRecord {
+  order_ref: number;
+  code: string;
+  required_qty: number | null;
+}
+
+interface PalletRecord {
+  plt_num: string;
+  product_code: string;
+  product_qty: number;
+  generate_time: string;
+}
+
+interface GrnRecord {
+  grn_ref: number;
+  material_code: string;
+  sup_code: string;
+  gross_weight: number;
+  net_weight: number;
+  pallet: string;
+  package: string;
+  pallet_count: number;
+  package_count: number;
+}
+
+interface MaterialRecord {
+  description: string;
+}
+
+interface SupplierRecord {
+  supplier_name: string;
+}
+
+interface TransferRecord {
+  f_loc: string;
+  t_loc: string;
+  plt_num: string;
+  tran_date: string;
+  operator_id: number;
+}
+
+interface OperatorRecord {
+  id: number;
+  name: string;
+}
 
 /**
  * Fetches unique, non-null ACO order references from the 'record_aco' table.
@@ -18,29 +62,29 @@ export async function getUniqueAcoOrderRefs(): Promise<string[]> {
   const supabase = await createClient();
 
   try {
-  const { data, error } = await supabase
-      .from('record_aco')
-      .select('order_ref');
+    const { data, error } = await supabase.from('record_aco').select('order_ref');
 
-  if (error) {
-    console.error('Error fetching aco_order_refs:', error.message);
-    return [];
-  }
+    if (error) {
+      console.error('Error fetching aco_order_refs:', error.message);
+      return [];
+    }
 
     if (!data || data.length === 0) {
-      process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('No ACO order references found in database.');
-    return [];
-  }
+      process.env.NODE_ENV !== 'production' &&
+        process.env.NODE_ENV !== 'production' &&
+        console.log('No ACO order references found in database.');
+      return [];
+    }
 
     // 正確處理 number 到 string 的轉換，並過濾無效值
-  const uniqueRefs = Array.from(
+    const uniqueRefs = Array.from(
       new Set(
         data
-          .map((item: any) => item.order_ref)
-          .filter((ref: any) => ref != null && !isNaN(Number(ref)))
+          .map((item: AcoOrderRecord) => item.order_ref)
+          .filter((ref: number) => ref != null && !isNaN(Number(ref)))
           .map((ref: number) => ref.toString())
       )
-  ) as string[];
+    ) as string[];
 
     // 按數字大小排序而非字母順序
     return uniqueRefs.sort((a, b) => parseInt(a, 10) - parseInt(b, 10));
@@ -100,12 +144,17 @@ export async function getAcoReportData(orderRef: string): Promise<AcoProductData
       .eq('order_ref', orderRefNum); // 使用數字類型進行查詢
 
     if (acoCodesError) {
-      console.error(`Error fetching product codes for orderRef ${orderRefNum}:`, acoCodesError.message);
+      console.error(
+        `Error fetching product codes for orderRef ${orderRefNum}:`,
+        acoCodesError.message
+      );
       return [];
     }
-    
+
     if (!acoCodesData || acoCodesData.length === 0) {
-      process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`No product codes found for orderRef ${orderRefNum}.`);
+      process.env.NODE_ENV !== 'production' &&
+        process.env.NODE_ENV !== 'production' &&
+        console.log(`No product codes found for orderRef ${orderRefNum}.`);
       return [];
     }
 
@@ -113,7 +162,7 @@ export async function getAcoReportData(orderRef: string): Promise<AcoProductData
     const productCodeToRequiredQty = new Map<string, number>();
     const uniqueProductCodes: string[] = [];
 
-    acoCodesData.forEach((item: any) => {
+    acoCodesData.forEach((item: AcoOrderRecord) => {
       if (item.code && typeof item.code === 'string' && item.code.trim() !== '') {
         const productCode = item.code.trim();
         if (!uniqueProductCodes.includes(productCode)) {
@@ -127,7 +176,9 @@ export async function getAcoReportData(orderRef: string): Promise<AcoProductData
     });
 
     if (uniqueProductCodes.length === 0) {
-      process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`No valid product codes extracted for orderRef ${orderRefNum}.`);
+      process.env.NODE_ENV !== 'production' &&
+        process.env.NODE_ENV !== 'production' &&
+        console.log(`No valid product codes extracted for orderRef ${orderRefNum}.`);
       return [];
     }
 
@@ -136,7 +187,9 @@ export async function getAcoReportData(orderRef: string): Promise<AcoProductData
       .from('record_palletinfo')
       .select('product_code, plt_num, product_qty, generate_time')
       .in('product_code', uniqueProductCodes)
-      .or(`plt_remark.ilike.%ACO Ref : ${orderRefNum}%,plt_remark.ilike.%ACO Ref: ${orderRefNum}%,plt_remark.ilike.%ACO_Ref_${orderRefNum}%,plt_remark.ilike.%ACO-Ref-${orderRefNum}%`); // 改進容錯性
+      .or(
+        `plt_remark.ilike.%ACO Ref : ${orderRefNum}%,plt_remark.ilike.%ACO Ref: ${orderRefNum}%,plt_remark.ilike.%ACO_Ref_${orderRefNum}%,plt_remark.ilike.%ACO-Ref-${orderRefNum}%`
+      ); // 改進容錯性
 
     if (palletError) {
       console.error(`Error fetching pallet info for orderRef ${orderRefNum}:`, palletError.message);
@@ -148,7 +201,7 @@ export async function getAcoReportData(orderRef: string): Promise<AcoProductData
     const palletsByProduct = new Map<string, any[]>();
 
     // 將棧板數據按產品代碼分組
-    (allPalletDetails || []).forEach((pallet: any) => {
+    (allPalletDetails || []).forEach((pallet: PalletRecord) => {
       const productCode = pallet.product_code;
       if (!palletsByProduct.has(productCode)) {
         palletsByProduct.set(productCode, []);
@@ -160,18 +213,27 @@ export async function getAcoReportData(orderRef: string): Promise<AcoProductData
     for (const productCode of uniqueProductCodes) {
       const palletDetails = palletsByProduct.get(productCode) || [];
 
-      const formattedPallets: PalletInfo[] = palletDetails.map((p: any) => {
+      const formattedPallets: PalletInfo[] = palletDetails.map((p: PalletRecord) => {
         let formattedDate: string | null = null;
         if (p.generate_time) {
           try {
-          const dateObj = new Date(p.generate_time);
+            const dateObj = new Date(p.generate_time);
             if (isValid(dateObj)) {
-            formattedDate = format(dateObj, 'dd-MMM-yy');
-          } else {
-            process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.warn(`Invalid date value for generate_time: ${p.generate_time} for product ${productCode}`);
+              formattedDate = format(dateObj, 'dd-MMM-yy');
+            } else {
+              process.env.NODE_ENV !== 'production' &&
+                process.env.NODE_ENV !== 'production' &&
+                console.warn(
+                  `Invalid date value for generate_time: ${p.generate_time} for product ${productCode}`
+                );
             }
           } catch (dateError) {
-            process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.warn(`Error parsing date ${p.generate_time} for product ${productCode}:`, dateError);
+            process.env.NODE_ENV !== 'production' &&
+              process.env.NODE_ENV !== 'production' &&
+              console.warn(
+                `Error parsing date ${p.generate_time} for product ${productCode}:`,
+                dateError
+              );
           }
         }
 
@@ -200,12 +262,18 @@ export async function getAcoReportData(orderRef: string): Promise<AcoProductData
     // 按產品代碼排序
     reportData.sort((a, b) => a.product_code.localeCompare(b.product_code));
 
-    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`Successfully fetched ACO report data for orderRef ${orderRefNum}: ${reportData.length} products, ${reportData.reduce((sum, p) => sum + p.pallets.length, 0)} pallets`);
+    process.env.NODE_ENV !== 'production' &&
+      process.env.NODE_ENV !== 'production' &&
+      console.log(
+        `Successfully fetched ACO report data for orderRef ${orderRefNum}: ${reportData.length} products, ${reportData.reduce((sum, p) => sum + p.pallets.length, 0)} pallets`
+      );
     return reportData;
-
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
-    console.error(`Unexpected error in getAcoReportData for orderRef ${orderRefNum}:`, errorMessage);
+    console.error(
+      `Unexpected error in getAcoReportData for orderRef ${orderRefNum}:`,
+      errorMessage
+    );
     return [];
   }
 }
@@ -214,26 +282,26 @@ export async function getUniqueGrnRefs(): Promise<string[]> {
   const supabase = await createClient();
 
   try {
-  const { data, error } = await supabase
-    .from('record_grn')
-    .select('grn_ref');
+    const { data, error } = await supabase.from('record_grn').select('grn_ref');
 
-  if (error) {
+    if (error) {
       console.error('Error fetching GRN refs:', error.message);
-    throw new Error('Could not fetch GRN references. ' + error.message);
-  }
+      throw new Error('Could not fetch GRN references. ' + error.message);
+    }
 
     if (!data || data.length === 0) {
-      process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('No GRN references found in database.');
-    return [];
-  }
+      process.env.NODE_ENV !== 'production' &&
+        process.env.NODE_ENV !== 'production' &&
+        console.log('No GRN references found in database.');
+      return [];
+    }
 
     // 正確處理 number 到 string 的轉換，並過濾無效值
     const uniqueRefs = Array.from(
       new Set(
         data
-          .map(item => item.grn_ref)
-          .filter(ref => ref !== null && ref !== undefined && !isNaN(Number(ref)))
+          .map((item: { grn_ref: number }) => item.grn_ref)
+          .filter((ref: number) => ref !== null && ref !== undefined && !isNaN(Number(ref)))
           .map(ref => ref.toString())
       )
     ) as string[];
@@ -270,33 +338,38 @@ export async function getMaterialCodesForGrnRef(grnRef: string): Promise<string[
   const supabase = await createClient();
 
   try {
-  const { data, error } = await supabase
-    .from('record_grn')
-    .select('material_code')
+    const { data, error } = await supabase
+      .from('record_grn')
+      .select('material_code')
       .eq('grn_ref', grnRefNum); // 使用數字類型進行查詢
 
-  if (error) {
+    if (error) {
       console.error(`Error fetching material codes for grnRef ${grnRefNum}:`, error.message);
       return [];
     }
 
     if (!data || data.length === 0) {
-      process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`No material codes found for grnRef ${grnRefNum}.`);
-    return [];
-  }
+      process.env.NODE_ENV !== 'production' &&
+        process.env.NODE_ENV !== 'production' &&
+        console.log(`No material codes found for grnRef ${grnRefNum}.`);
+      return [];
+    }
 
     const uniqueMaterialCodes = Array.from(
       new Set(
         data
-          .map((item: any) => item.material_code)
-          .filter((code: any) => code != null && typeof code === 'string' && code.trim() !== '')
+          .map((item: { material_code: string }) => item.material_code)
+          .filter((code: string) => code != null && typeof code === 'string' && code.trim() !== '')
       )
     ) as string[];
 
     return uniqueMaterialCodes.sort();
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-    console.error(`Unexpected error in getMaterialCodesForGrnRef for grnRef ${grnRefNum}:`, errorMessage);
+    console.error(
+      `Unexpected error in getMaterialCodesForGrnRef for grnRef ${grnRefNum}:`,
+      errorMessage
+    );
     return [];
   }
 }
@@ -326,8 +399,8 @@ export interface GrnReportPageData {
 // --- End GRN Report Types ---
 
 export async function getGrnReportData(
-  grnRef: string, 
-  materialCode: string, 
+  grnRef: string,
+  materialCode: string,
   userEmail: string
 ): Promise<GrnReportPageData | null> {
   // 加強輸入驗證
@@ -369,29 +442,40 @@ export async function getGrnReportData(
   try {
     // 🆕 使用統一的 getUserIdFromEmail 函數
     const userIdResult = await getUserIdFromEmail(trimmedUserEmail);
-    
+
     if (!userIdResult) {
       console.error(`No user ID found for email ${trimmedUserEmail}`);
       return null;
     }
 
     userId = userIdResult.toString();
-    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`Found user ID ${userId} for email ${trimmedUserEmail}`);
+    process.env.NODE_ENV !== 'production' &&
+      process.env.NODE_ENV !== 'production' &&
+      console.log(`Found user ID ${userId} for email ${trimmedUserEmail}`);
 
     // 1. Fetch GRN records for the given grn_ref and material_code
     const { data: grnRecords, error: grnError } = await supabase
       .from('record_grn')
-      .select('sup_code, material_code, gross_weight, net_weight, pallet, package, pallet_count, package_count')
+      .select(
+        'sup_code, material_code, gross_weight, net_weight, pallet, package, pallet_count, package_count'
+      )
       .eq('grn_ref', grnRefNum) // 使用數字類型
       .eq('material_code', trimmedMaterialCode);
 
     if (grnError) {
-      console.error(`Error fetching GRN records for grnRef ${grnRefNum} and materialCode ${trimmedMaterialCode}:`, grnError.message);
+      console.error(
+        `Error fetching GRN records for grnRef ${grnRefNum} and materialCode ${trimmedMaterialCode}:`,
+        grnError.message
+      );
       return null;
     }
-    
+
     if (!grnRecords || grnRecords.length === 0) {
-      process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`No GRN records found for grnRef ${grnRefNum} and materialCode ${trimmedMaterialCode}.`);
+      process.env.NODE_ENV !== 'production' &&
+        process.env.NODE_ENV !== 'production' &&
+        console.log(
+          `No GRN records found for grnRef ${grnRefNum} and materialCode ${trimmedMaterialCode}.`
+        );
       return null;
     }
 
@@ -408,9 +492,17 @@ export async function getGrnReportData(
     }));
 
     // DEBUGGING LOG START
-    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`[DEBUG] GRN Ref: ${grnRefNum}, Material: ${trimmedMaterialCode}, User ID: ${userId}`);
-    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[DEBUG] grnRecords from DB:', JSON.stringify(grnRecords, null, 2));
-    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[DEBUG] Mapped recordsDetails:', JSON.stringify(recordsDetails, null, 2));
+    process.env.NODE_ENV !== 'production' &&
+      process.env.NODE_ENV !== 'production' &&
+      console.log(
+        `[DEBUG] GRN Ref: ${grnRefNum}, Material: ${trimmedMaterialCode}, User ID: ${userId}`
+      );
+    process.env.NODE_ENV !== 'production' &&
+      process.env.NODE_ENV !== 'production' &&
+      console.log('[DEBUG] grnRecords from DB:', JSON.stringify(grnRecords, null, 2));
+    process.env.NODE_ENV !== 'production' &&
+      process.env.NODE_ENV !== 'production' &&
+      console.log('[DEBUG] Mapped recordsDetails:', JSON.stringify(recordsDetails, null, 2));
     // DEBUGGING LOG END
 
     // 2. Fetch material description from data_code
@@ -422,7 +514,12 @@ export async function getGrnReportData(
       .single();
 
     if (materialError) {
-      process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.warn(`Could not fetch description for materialCode ${trimmedMaterialCode}:`, materialError.message);
+      process.env.NODE_ENV !== 'production' &&
+        process.env.NODE_ENV !== 'production' &&
+        console.warn(
+          `Could not fetch description for materialCode ${trimmedMaterialCode}:`,
+          materialError.message
+        );
     }
     if (materialData && materialData.description) {
       materialDescription = materialData.description;
@@ -438,13 +535,20 @@ export async function getGrnReportData(
         .single();
 
       if (supplierError) {
-        process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.warn(`Could not fetch supplier name for sup_code ${supplierCode}:`, supplierError.message);
+        process.env.NODE_ENV !== 'production' &&
+          process.env.NODE_ENV !== 'production' &&
+          console.warn(
+            `Could not fetch supplier name for sup_code ${supplierCode}:`,
+            supplierError.message
+          );
       }
       if (supplierData && supplierData.supplier_name) {
         supplierName = supplierData.supplier_name;
       }
     } else {
-        process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.warn('Supplier code was not found in GRN records, cannot fetch supplier name.');
+      process.env.NODE_ENV !== 'production' &&
+        process.env.NODE_ENV !== 'production' &&
+        console.warn('Supplier code was not found in GRN records, cannot fetch supplier name.');
     }
 
     // 4. Calculate totals with proper number validation
@@ -452,12 +556,12 @@ export async function getGrnReportData(
       const weight = rec.gross_weight;
       return sum + (typeof weight === 'number' && !isNaN(weight) ? weight : 0);
     }, 0);
-    
+
     const totalNetWeight = recordsDetails.reduce((sum, rec) => {
       const weight = rec.net_weight;
       return sum + (typeof weight === 'number' && !isNaN(weight) ? weight : 0);
     }, 0);
-    
+
     const weightDifference = totalGrossWeight - totalNetWeight;
 
     // 5. Format report date
@@ -476,12 +580,18 @@ export async function getGrnReportData(
       weight_difference: Math.round(weightDifference * 100) / 100,
     };
 
-    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`Successfully generated GRN report data for grnRef ${grnRefNum}, materialCode ${trimmedMaterialCode}, userId ${userId}: ${recordsDetails.length} records`);
+    process.env.NODE_ENV !== 'production' &&
+      process.env.NODE_ENV !== 'production' &&
+      console.log(
+        `Successfully generated GRN report data for grnRef ${grnRefNum}, materialCode ${trimmedMaterialCode}, userId ${userId}: ${recordsDetails.length} records`
+      );
     return result;
-
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
-    console.error(`Unexpected error in getGrnReportData for grnRef ${grnRefNum}, materialCode ${trimmedMaterialCode}:`, errorMessage);
+    console.error(
+      `Unexpected error in getGrnReportData for grnRef ${grnRefNum}, materialCode ${trimmedMaterialCode}:`,
+      errorMessage
+    );
     return null;
   }
 }
@@ -537,7 +647,7 @@ export async function getTransactionReportData(
   // 驗證日期格式
   const startDateObj = new Date(startDate);
   const endDateObj = new Date(endDate);
-  
+
   if (isNaN(startDateObj.getTime()) || isNaN(endDateObj.getTime())) {
     console.error('getTransactionReportData: Invalid date format');
     return null;
@@ -552,33 +662,41 @@ export async function getTransactionReportData(
 
   try {
     // 1. 獲取指定日期範圍內的轉移記錄
-    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`[DEBUG] Searching for transfers between ${startDate} and ${endDate}`);
-    
+    process.env.NODE_ENV !== 'production' &&
+      process.env.NODE_ENV !== 'production' &&
+      console.log(`[DEBUG] Searching for transfers between ${startDate} and ${endDate}`);
+
     // 🆕 修復日期查詢：處理帶時間戳的日期格式
     // 將結束日期設為當天的 23:59:59 以包含整天的記錄
     const startDateTime = `${startDate}T00:00:00.000Z`;
     const endDateTime = `${endDate}T23:59:59.999Z`;
-    
-    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`[DEBUG] Using datetime range: ${startDateTime} to ${endDateTime}`);
-    
+
+    process.env.NODE_ENV !== 'production' &&
+      process.env.NODE_ENV !== 'production' &&
+      console.log(`[DEBUG] Using datetime range: ${startDateTime} to ${endDateTime}`);
+
     const { data: transferRecords, error: transferError } = await supabase
       .from('record_transfer')
-      .select(`
+      .select(
+        `
         f_loc,
         t_loc,
         plt_num,
         tran_date,
         operator_id
-      `)
+      `
+      )
       .gte('tran_date', startDateTime)
       .lte('tran_date', endDateTime)
       .order('tran_date', { ascending: true });
 
-    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`[DEBUG] Transfer query result:`, { 
-      recordCount: transferRecords?.length || 0, 
-      error: transferError?.message,
-      sampleRecord: transferRecords?.[0] 
-    });
+    process.env.NODE_ENV !== 'production' &&
+      process.env.NODE_ENV !== 'production' &&
+      console.log(`[DEBUG] Transfer query result:`, {
+        recordCount: transferRecords?.length || 0,
+        error: transferError?.message,
+        sampleRecord: transferRecords?.[0],
+      });
 
     if (transferError) {
       console.error('Error fetching transfer records:', transferError.message);
@@ -587,20 +705,29 @@ export async function getTransactionReportData(
 
     // 如果沒有轉移記錄，返回空數據結構
     if (!transferRecords || transferRecords.length === 0) {
-      process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`No transfer records found for date range ${startDate} to ${endDate}`);
-      
+      process.env.NODE_ENV !== 'production' &&
+        process.env.NODE_ENV !== 'production' &&
+        console.log(`No transfer records found for date range ${startDate} to ${endDate}`);
+
       // 🆕 嘗試更寬鬆的日期查詢，以防日期格式問題
-      process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`[DEBUG] Trying broader date search...`);
+      process.env.NODE_ENV !== 'production' &&
+        process.env.NODE_ENV !== 'production' &&
+        console.log(`[DEBUG] Trying broader date search...`);
       const { data: allRecords, error: allError } = await supabase
         .from('record_transfer')
         .select('tran_date')
         .order('tran_date', { ascending: false })
         .limit(10);
-      
+
       if (allRecords && allRecords.length > 0) {
-        process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`[DEBUG] Sample dates in database:`, allRecords.map(r => r.tran_date));
+        process.env.NODE_ENV !== 'production' &&
+          process.env.NODE_ENV !== 'production' &&
+          console.log(
+            `[DEBUG] Sample dates in database:`,
+            allRecords.map(r => r.tran_date)
+          );
       }
-      
+
       return {
         date_range: { start_date: startDate, end_date: endDate },
         transfers: [],
@@ -618,27 +745,29 @@ export async function getTransactionReportData(
       .in('plt_num', palletNumbers);
 
     if (palletError) {
-      process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.warn('Error fetching pallet info:', palletError.message);
+      process.env.NODE_ENV !== 'production' &&
+        process.env.NODE_ENV !== 'production' &&
+        console.warn('Error fetching pallet info:', palletError.message);
     }
 
     // 3. 獲取操作員資訊 - 確保 operator_id 是 number 類型
-    const operatorIds = [...new Set(transferRecords.map(r => Number(r.operator_id)).filter(id => !isNaN(id)))];
+    const operatorIds = [
+      ...new Set(transferRecords.map(r => Number(r.operator_id)).filter(id => !isNaN(id))),
+    ];
     const { data: operatorInfo, error: operatorError } = await supabase
       .from('data_id')
       .select('id, name')
       .in('id', operatorIds);
 
     if (operatorError) {
-      process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.warn('Error fetching operator info:', operatorError.message);
+      process.env.NODE_ENV !== 'production' &&
+        process.env.NODE_ENV !== 'production' &&
+        console.warn('Error fetching operator info:', operatorError.message);
     }
 
     // 4. 創建查找映射
-    const palletMap = new Map(
-      (palletInfo || []).map(p => [p.plt_num, p])
-    );
-    const operatorMap = new Map(
-      (operatorInfo || []).map(o => [o.id, o.name])
-    );
+    const palletMap = new Map((palletInfo || []).map(p => [p.plt_num, p]));
+    const operatorMap = new Map((operatorInfo || []).map(o => [o.id, o.name]));
 
     // 5. 處理轉移記錄
     const transfers: TransferRecord[] = transferRecords.map(record => {
@@ -660,8 +789,15 @@ export async function getTransactionReportData(
 
     // 6. 計算位置統計
     const summary: LocationSummary = {};
-    const locations = ['Fold Mill', 'Extrusion Room', 'Pipe Extrusion', 'Production', 'Back Car Park', 'Bulk Room'];
-    
+    const locations = [
+      'Fold Mill',
+      'Extrusion Room',
+      'Pipe Extrusion',
+      'Production',
+      'Back Car Park',
+      'Bulk Room',
+    ];
+
     // 初始化所有位置
     locations.forEach(loc => {
       summary[loc] = { transfers_in: 0, transfers_out: 0, net_change: 0 };
@@ -693,12 +829,1438 @@ export async function getTransactionReportData(
       total_pallets: palletNumbers.length,
     };
 
-    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`Successfully fetched transaction report data: ${transfers.length} transfers, ${palletNumbers.length} unique pallets`);
+    process.env.NODE_ENV !== 'production' &&
+      process.env.NODE_ENV !== 'production' &&
+      console.log(
+        `Successfully fetched transaction report data: ${transfers.length} transfers, ${palletNumbers.length} unique pallets`
+      );
     return result;
-
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
     console.error('Unexpected error in getTransactionReportData:', errorMessage);
     return null;
   }
-} 
+}
+
+// ===== Warehouse Work Level Analytics =====
+
+import {
+  WarehouseWorkLevelParams,
+  WarehouseWorkLevelResponse,
+  isWarehouseWorkLevelError,
+  formatDateForRPC,
+  getDefaultDateRange,
+} from '@/app/types/warehouse-work-level';
+
+/**
+ * Get warehouse work level data
+ * Server Action for fetching warehouse work level analytics
+ */
+export async function getWarehouseWorkLevel(params?: WarehouseWorkLevelParams): Promise<{
+  success: boolean;
+  data?: WarehouseWorkLevelResponse;
+  error?: string;
+}> {
+  try {
+    const supabase = await createClient();
+
+    // Prepare parameters with defaults
+    const defaultRange = getDefaultDateRange();
+    const startDate = params?.startDate || defaultRange.startDate;
+    const endDate = params?.endDate || defaultRange.endDate;
+    const department = params?.department || 'Warehouse';
+
+    // Call RPC function
+    const { data: result, error: rpcError } = await supabase.rpc('rpc_get_warehouse_work_level', {
+      p_start_date: formatDateForRPC(startDate),
+      p_end_date: formatDateForRPC(endDate),
+      p_department: department,
+    });
+
+    if (rpcError) {
+      throw new Error(`RPC Error: ${rpcError.message}`);
+    }
+
+    const typedResult = result as WarehouseWorkLevelResponse;
+
+    // Check if result is an error
+    if (isWarehouseWorkLevelError(typedResult)) {
+      return {
+        success: false,
+        error: typedResult.message,
+      };
+    }
+
+    return {
+      success: true,
+      data: typedResult,
+    };
+  } catch (error) {
+    console.error('[reportActions] Error fetching warehouse work level:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error occurred',
+    };
+  }
+}
+
+/**
+ * Get today's warehouse work level
+ * Convenience Server Action for today's data
+ */
+export async function getTodayWarehouseWorkLevel(): Promise<{
+  success: boolean;
+  data?: WarehouseWorkLevelResponse;
+  error?: string;
+}> {
+  const today = new Date();
+  const tomorrow = new Date(today);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+
+  return getWarehouseWorkLevel({
+    startDate: today,
+    endDate: tomorrow,
+  });
+}
+
+/**
+ * Get this week's warehouse work level
+ * Convenience Server Action for this week's data
+ */
+export async function getThisWeekWarehouseWorkLevel(): Promise<{
+  success: boolean;
+  data?: WarehouseWorkLevelResponse;
+  error?: string;
+}> {
+  const now = new Date();
+  const startOfWeek = new Date(now);
+  startOfWeek.setDate(now.getDate() - now.getDay());
+  startOfWeek.setHours(0, 0, 0, 0);
+
+  return getWarehouseWorkLevel({
+    startDate: startOfWeek,
+    endDate: now,
+  });
+}
+
+/**
+ * Get this month's warehouse work level
+ * Convenience Server Action for this month's data
+ */
+export async function getThisMonthWarehouseWorkLevel(): Promise<{
+  success: boolean;
+  data?: WarehouseWorkLevelResponse;
+  error?: string;
+}> {
+  const now = new Date();
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+  return getWarehouseWorkLevel({
+    startDate: startOfMonth,
+    endDate: now,
+  });
+}
+
+// --- Void Pallet Report Functions ---
+
+interface VoidPalletFilters {
+  startDate: string;
+  endDate: string;
+  productCode?: string;
+  operatorId?: number;
+  voidReason?: string;
+}
+
+interface VoidPalletRecord {
+  plt_num: string;
+  time: string;
+  remark: string;
+  id: number;
+  record_palletinfo: {
+    product_code: string;
+    product_qty: number;
+  };
+  data_id?: {
+    name: string;
+  };
+  data_code?: {
+    description: string;
+  };
+}
+
+interface VoidPalletSummary {
+  totalVoided: number;
+  totalQuantity: number;
+  uniqueProducts: number;
+  topReason: string;
+}
+
+interface VoidReasonStats {
+  void_reason: string;
+  count: number;
+  total_quantity: number;
+  percentage: number;
+}
+
+interface VoidPalletDetails {
+  void_date: string;
+  plt_num: string;
+  product_code: string;
+  product_description: string;
+  quantity: number;
+  void_reason: string;
+  operator_name: string;
+  remark: string;
+}
+
+interface VoidProductStats {
+  product_code: string;
+  product_description: string;
+  void_count: number;
+  total_quantity: number;
+  avg_quantity: number;
+}
+
+/**
+ * Extract void reason from remark text
+ */
+function extractVoidReason(remark: string): string {
+  if (!remark) return 'Unknown';
+
+  const patterns = [/Reason:\s*([^,]+)/i, /void reason:\s*([^,]+)/i, /\(([^)]+)\)/];
+
+  for (const pattern of patterns) {
+    const match = remark.match(pattern);
+    if (match && match[1]) {
+      return match[1].trim();
+    }
+  }
+
+  return 'Other';
+}
+
+/**
+ * Get void pallet summary statistics
+ */
+export async function getVoidPalletSummary(filters: VoidPalletFilters): Promise<{
+  success: boolean;
+  data?: VoidPalletSummary;
+  error?: string;
+}> {
+  const supabase = await createClient();
+
+  try {
+    let query = supabase
+      .from('record_history')
+      .select(
+        `
+        plt_num,
+        time,
+        remark,
+        record_palletinfo!inner(
+          product_code,
+          product_qty
+        )
+      `
+      )
+      .eq('action', 'Void')
+      .gte('time', filters.startDate)
+      .lte('time', filters.endDate + 'T23:59:59');
+
+    if (filters.productCode) {
+      query = query.eq('record_palletinfo.product_code', filters.productCode);
+    }
+
+    if (filters.operatorId) {
+      query = query.eq('id', filters.operatorId);
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+      console.error('Error fetching void pallet summary:', error.message);
+      return { success: false, error: error.message };
+    }
+
+    if (!data) {
+      return { success: true, data: { totalVoided: 0, totalQuantity: 0, uniqueProducts: 0, topReason: 'Unknown' } };
+    }
+
+    // Calculate summary statistics
+    const totalVoided = data.length;
+    const totalQuantity = data.reduce(
+      (sum, item) => sum + (item.record_palletinfo?.product_qty || 0),
+      0
+    );
+    const uniqueProducts = new Set(
+      data.map(item => item.record_palletinfo?.product_code).filter(Boolean)
+    ).size;
+
+    // Calculate most common reason
+    const reasons = data.map(item => extractVoidReason(item.remark));
+    const reasonCounts = new Map<string, number>();
+
+    reasons.forEach(reason => {
+      reasonCounts.set(reason, (reasonCounts.get(reason) || 0) + 1);
+    });
+
+    let topReason = 'Unknown';
+    let maxCount = 0;
+
+    reasonCounts.forEach((count, reason) => {
+      if (count > maxCount) {
+        maxCount = count;
+        topReason = reason;
+      }
+    });
+
+    return {
+      success: true,
+      data: {
+        totalVoided,
+        totalQuantity,
+        uniqueProducts,
+        topReason,
+      },
+    };
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+    console.error('Unexpected error in getVoidPalletSummary:', errorMessage);
+    return { success: false, error: errorMessage };
+  }
+}
+
+/**
+ * Get void reason statistics
+ */
+export async function getVoidReasonStats(filters: VoidPalletFilters): Promise<{
+  success: boolean;
+  data?: VoidReasonStats[];
+  error?: string;
+}> {
+  const supabase = await createClient();
+
+  try {
+    let query = supabase
+      .from('record_history')
+      .select(
+        `
+        plt_num,
+        time,
+        remark,
+        record_palletinfo!inner(
+          product_code,
+          product_qty
+        )
+      `
+      )
+      .eq('action', 'Void')
+      .gte('time', filters.startDate)
+      .lte('time', filters.endDate + 'T23:59:59');
+
+    if (filters.productCode) {
+      query = query.eq('record_palletinfo.product_code', filters.productCode);
+    }
+
+    if (filters.operatorId) {
+      query = query.eq('id', filters.operatorId);
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+      console.error('Error fetching void reason stats:', error.message);
+      return { success: false, error: error.message };
+    }
+
+    if (!data) {
+      return { success: true, data: [] };
+    }
+
+    // Calculate reason statistics
+    const reasonStats = new Map<string, { count: number; quantity: number }>();
+
+    data.forEach(item => {
+      const reason = extractVoidReason(item.remark);
+      const quantity = item.record_palletinfo?.product_qty || 0;
+
+      if (!reasonStats.has(reason)) {
+        reasonStats.set(reason, { count: 0, quantity: 0 });
+      }
+
+      const stats = reasonStats.get(reason)!;
+      stats.count++;
+      stats.quantity += quantity;
+    });
+
+    const total = data.length;
+
+    const result = Array.from(reasonStats.entries())
+      .map(([reason, stats]) => ({
+        void_reason: reason,
+        count: stats.count,
+        total_quantity: stats.quantity,
+        percentage: total > 0 ? stats.count / total : 0,
+      }))
+      .sort((a, b) => b.count - a.count);
+
+    return { success: true, data: result };
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+    console.error('Unexpected error in getVoidReasonStats:', errorMessage);
+    return { success: false, error: errorMessage };
+  }
+}
+
+/**
+ * Get void pallet details
+ */
+export async function getVoidPalletDetails(filters: VoidPalletFilters): Promise<{
+  success: boolean;
+  data?: VoidPalletDetails[];
+  error?: string;
+}> {
+  const supabase = await createClient();
+
+  try {
+    let query = supabase
+      .from('record_history')
+      .select(
+        `
+        plt_num,
+        time,
+        remark,
+        id,
+        record_palletinfo!inner(
+          product_code,
+          product_qty
+        ),
+        data_id!inner(
+          name
+        ),
+        data_code!inner(
+          description
+        )
+      `
+      )
+      .eq('action', 'Void')
+      .gte('time', filters.startDate)
+      .lte('time', filters.endDate + 'T23:59:59')
+      .order('time', { ascending: false });
+
+    if (filters.productCode) {
+      query = query.eq('record_palletinfo.product_code', filters.productCode);
+    }
+
+    if (filters.operatorId) {
+      query = query.eq('id', filters.operatorId);
+    }
+
+    if (filters.voidReason) {
+      query = query.ilike('remark', `%${filters.voidReason}%`);
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+      console.error('Error fetching void pallet details:', error.message);
+      return { success: false, error: error.message };
+    }
+
+    if (!data) {
+      return { success: true, data: [] };
+    }
+
+    const result = data.map(item => ({
+      void_date: item.time,
+      plt_num: item.plt_num,
+      product_code: item.record_palletinfo?.product_code || '',
+      product_description: item.data_code?.description || '',
+      quantity: item.record_palletinfo?.product_qty || 0,
+      void_reason: extractVoidReason(item.remark),
+      operator_name: item.data_id?.name || `ID: ${item.id}`,
+      remark: item.remark || '',
+    }));
+
+    return { success: true, data: result };
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+    console.error('Unexpected error in getVoidPalletDetails:', errorMessage);
+    return { success: false, error: errorMessage };
+  }
+}
+
+/**
+ * Get void product statistics
+ */
+export async function getVoidProductStats(filters: VoidPalletFilters): Promise<{
+  success: boolean;
+  data?: VoidProductStats[];
+  error?: string;
+}> {
+  const supabase = await createClient();
+
+  try {
+    let query = supabase
+      .from('record_history')
+      .select(
+        `
+        plt_num,
+        time,
+        remark,
+        id,
+        record_palletinfo!inner(
+          product_code,
+          product_qty
+        ),
+        data_code!inner(
+          description
+        )
+      `
+      )
+      .eq('action', 'Void')
+      .gte('time', filters.startDate)
+      .lte('time', filters.endDate + 'T23:59:59');
+
+    if (filters.productCode) {
+      query = query.eq('record_palletinfo.product_code', filters.productCode);
+    }
+
+    if (filters.operatorId) {
+      query = query.eq('id', filters.operatorId);
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+      console.error('Error fetching void product stats:', error.message);
+      return { success: false, error: error.message };
+    }
+
+    if (!data) {
+      return { success: true, data: [] };
+    }
+
+    // Calculate product statistics
+    const productStats = new Map<
+      string,
+      {
+        description: string;
+        count: number;
+        totalQty: number;
+      }
+    >();
+
+    data.forEach(item => {
+      const code = item.record_palletinfo?.product_code;
+      if (!code) return;
+
+      if (!productStats.has(code)) {
+        productStats.set(code, {
+          description: item.data_code?.description || '',
+          count: 0,
+          totalQty: 0,
+        });
+      }
+
+      const stats = productStats.get(code)!;
+      stats.count++;
+      stats.totalQty += item.record_palletinfo?.product_qty || 0;
+    });
+
+    const result = Array.from(productStats.entries())
+      .map(([code, stats]) => ({
+        product_code: code,
+        product_description: stats.description,
+        void_count: stats.count,
+        total_quantity: stats.totalQty,
+        avg_quantity: stats.count > 0 ? stats.totalQty / stats.count : 0,
+      }))
+      .sort((a, b) => b.void_count - a.void_count);
+
+    return { success: true, data: result };
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+    console.error('Unexpected error in getVoidProductStats:', errorMessage);
+    return { success: false, error: errorMessage };
+  }
+}
+
+// --- Stock Take Report Functions ---
+
+interface StockTakeFilters {
+  stockTakeDate: string;
+  productCode?: string;
+  minVariance?: number;
+  countStatus?: 'counted' | 'not_counted' | 'high_variance' | '';
+}
+
+interface StockTakeRecord {
+  count_time: string;
+  product_code: string;
+  plt_num: string;
+  system_qty: string;
+  counted_qty: string;
+}
+
+interface StockLevelRecord {
+  stock: string;
+  stock_level: number;
+  description: string;
+}
+
+interface StockTakeSummary {
+  totalProducts: number;
+  countedProducts: number;
+  completionRate: number;
+  completionPercentage: number;
+  totalVariance: number;
+  highVarianceCount: number;
+}
+
+interface StockTakeDetails {
+  product_code: string;
+  description: string;
+  system_stock: number;
+  counted_qty: number;
+  variance: number;
+  variance_percentage: number;
+  pallet_count: number;
+  status: 'Counted' | 'Not Counted';
+  last_updated: string | null;
+}
+
+interface NotCountedItem {
+  product_code: string;
+  description: string;
+  system_stock: number;
+}
+
+/**
+ * Get stock take summary statistics
+ */
+export async function getStockTakeSummary(filters: StockTakeFilters): Promise<{
+  success: boolean;
+  data?: StockTakeSummary;
+  error?: string;
+}> {
+  const supabase = await createClient();
+
+  try {
+    const { stockTakeDate } = filters;
+
+    if (!stockTakeDate) {
+      return { success: false, error: 'Stock take date is required' };
+    }
+
+    // Get stock take records for the date
+    const { data: stockTakeData, error: stockTakeError } = await supabase
+      .from('record_stocktake')
+      .select('*')
+      .gte('count_time', stockTakeDate)
+      .lt('count_time', `${stockTakeDate}T23:59:59`);
+
+    if (stockTakeError) {
+      console.error('Error fetching stock take data:', stockTakeError.message);
+      return { success: false, error: stockTakeError.message };
+    }
+
+    // Get all stock levels
+    const { data: stockLevels, error: stockError } = await supabase
+      .from('stock_level')
+      .select('stock, stock_level, description');
+
+    if (stockError) {
+      console.error('Error fetching stock levels:', stockError.message);
+      return { success: false, error: stockError.message };
+    }
+
+    if (!stockTakeData || !stockLevels) {
+      return { success: true, data: { totalProducts: 0, countedProducts: 0, completionRate: 0, completionPercentage: 0, totalVariance: 0, highVarianceCount: 0 } };
+    }
+
+    // Group stock take data by product
+    const productGroups = groupStockTakeByProduct(stockTakeData);
+    const stockMap = new Map(stockLevels.map((item: StockLevelRecord) => [item.stock, item]));
+
+    let totalProducts = stockMap.size;
+    let countedProducts = 0;
+    let totalVariance = 0;
+    let highVarianceCount = 0;
+
+    // Calculate statistics
+    productGroups.forEach((items, productCode) => {
+      const stockInfo = stockMap.get(productCode);
+      const systemStock = stockInfo?.stock_level || 0;
+      const countedQty = calculateStockTakeTotalQty(items);
+      const variance = countedQty - systemStock;
+      const variancePercentage = systemStock > 0 ? Math.abs(variance / systemStock) : 0;
+
+      if (countedQty > 0) {
+        countedProducts++;
+      }
+
+      totalVariance += variance;
+
+      if (variancePercentage > 0.1) { // 10% variance
+        highVarianceCount++;
+      }
+    });
+
+    const completionRate = totalProducts > 0 ? countedProducts / totalProducts : 0;
+
+    return {
+      success: true,
+      data: {
+        totalProducts,
+        countedProducts,
+        completionRate,
+        completionPercentage: completionRate,
+        totalVariance,
+        highVarianceCount,
+      },
+    };
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+    console.error('Unexpected error in getStockTakeSummary:', errorMessage);
+    return { success: false, error: errorMessage };
+  }
+}
+
+/**
+ * Get stock take details
+ */
+export async function getStockTakeDetails(filters: StockTakeFilters): Promise<{
+  success: boolean;
+  data?: StockTakeDetails[];
+  error?: string;
+}> {
+  const supabase = await createClient();
+
+  try {
+    const { stockTakeDate } = filters;
+
+    if (!stockTakeDate) {
+      return { success: false, error: 'Stock take date is required' };
+    }
+
+    // Get stock take records for the date
+    const { data: stockTakeData, error: stockTakeError } = await supabase
+      .from('record_stocktake')
+      .select('*')
+      .gte('count_time', stockTakeDate)
+      .lt('count_time', `${stockTakeDate}T23:59:59`);
+
+    if (stockTakeError) {
+      console.error('Error fetching stock take data:', stockTakeError.message);
+      return { success: false, error: stockTakeError.message };
+    }
+
+    // Get all stock levels
+    const { data: stockLevels, error: stockError } = await supabase
+      .from('stock_level')
+      .select('stock, stock_level, description');
+
+    if (stockError) {
+      console.error('Error fetching stock levels:', stockError.message);
+      return { success: false, error: stockError.message };
+    }
+
+    if (!stockTakeData || !stockLevels) {
+      return { success: true, data: [] };
+    }
+
+    // Group stock take data by product
+    const productGroups = groupStockTakeByProduct(stockTakeData);
+    const stockMap = new Map(stockLevels.map((item: StockLevelRecord) => [item.stock, item]));
+
+    const results: StockTakeDetails[] = [];
+
+    // Process each product
+    productGroups.forEach((items, productCode) => {
+      const stockInfo = stockMap.get(productCode);
+      const systemStock = stockInfo?.stock_level || 0;
+      const countedQty = calculateStockTakeTotalQty(items);
+      const variance = countedQty - systemStock;
+      const variancePercentage = systemStock > 0 ? (variance / systemStock) * 100 : 0;
+
+      // Apply filters
+      if (shouldIncludeStockTakeItem(productCode, variance, variancePercentage, countedQty, filters)) {
+        results.push({
+          product_code: productCode,
+          description: stockInfo?.description || '',
+          system_stock: systemStock,
+          counted_qty: countedQty,
+          variance: variance,
+          variance_percentage: variancePercentage,
+          pallet_count: items.filter(item => item.plt_num && item.plt_num !== '').length,
+          status: countedQty > 0 ? 'Counted' : 'Not Counted',
+          last_updated: items[0]?.count_time || null,
+        });
+      }
+    });
+
+    // Add not counted products if needed
+    if (!filters.countStatus || filters.countStatus === '' || filters.countStatus === 'not_counted') {
+      stockLevels.forEach((stockItem: StockLevelRecord) => {
+        if (!productGroups.has(stockItem.stock) && stockItem.stock_level > 0) {
+          if (shouldIncludeStockTakeItem(stockItem.stock, -stockItem.stock_level, -100, 0, filters)) {
+            results.push({
+              product_code: stockItem.stock,
+              description: stockItem.description || '',
+              system_stock: stockItem.stock_level,
+              counted_qty: 0,
+              variance: -stockItem.stock_level,
+              variance_percentage: -100,
+              pallet_count: 0,
+              status: 'Not Counted',
+              last_updated: null,
+            });
+          }
+        }
+      });
+    }
+
+    // Sort by variance percentage descending
+    const sortedResults = results.sort(
+      (a, b) => Math.abs(b.variance_percentage) - Math.abs(a.variance_percentage)
+    );
+
+    return { success: true, data: sortedResults };
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+    console.error('Unexpected error in getStockTakeDetails:', errorMessage);
+    return { success: false, error: errorMessage };
+  }
+}
+
+/**
+ * Get not counted items
+ */
+export async function getNotCountedItems(filters: StockTakeFilters): Promise<{
+  success: boolean;
+  data?: NotCountedItem[];
+  error?: string;
+}> {
+  const supabase = await createClient();
+
+  try {
+    const { stockTakeDate } = filters;
+
+    if (!stockTakeDate) {
+      return { success: false, error: 'Stock take date is required' };
+    }
+
+    // Get stock take records for the date
+    const { data: stockTakeData, error: stockTakeError } = await supabase
+      .from('record_stocktake')
+      .select('*')
+      .gte('count_time', stockTakeDate)
+      .lt('count_time', `${stockTakeDate}T23:59:59`);
+
+    if (stockTakeError) {
+      console.error('Error fetching stock take data:', stockTakeError.message);
+      return { success: false, error: stockTakeError.message };
+    }
+
+    // Get all stock levels
+    const { data: stockLevels, error: stockError } = await supabase
+      .from('stock_level')
+      .select('stock, stock_level, description');
+
+    if (stockError) {
+      console.error('Error fetching stock levels:', stockError.message);
+      return { success: false, error: stockError.message };
+    }
+
+    if (!stockTakeData || !stockLevels) {
+      return { success: true, data: [] };
+    }
+
+    // Get counted products
+    const countedProducts = new Set(stockTakeData.map((item: StockTakeRecord) => item.product_code));
+
+    // Find not counted products
+    const notCountedItems = stockLevels
+      .filter((item: StockLevelRecord) => !countedProducts.has(item.stock) && item.stock_level > 0)
+      .map((item: StockLevelRecord) => ({
+        product_code: item.stock,
+        description: item.description || '',
+        system_stock: item.stock_level,
+      }))
+      .sort((a: NotCountedItem, b: NotCountedItem) => b.system_stock - a.system_stock);
+
+    return { success: true, data: notCountedItems };
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+    console.error('Unexpected error in getNotCountedItems:', errorMessage);
+    return { success: false, error: errorMessage };
+  }
+}
+
+/**
+ * Helper function to group stock take data by product
+ */
+function groupStockTakeByProduct(stockTakeData: StockTakeRecord[]): Map<string, StockTakeRecord[]> {
+  const groups = new Map<string, StockTakeRecord[]>();
+
+  stockTakeData.forEach(item => {
+    const productCode = item.product_code;
+    if (!groups.has(productCode)) {
+      groups.set(productCode, []);
+    }
+    groups.get(productCode)!.push(item);
+  });
+
+  return groups;
+}
+
+/**
+ * Helper function to calculate total quantity for stock take items
+ */
+function calculateStockTakeTotalQty(items: StockTakeRecord[]): number {
+  return items.reduce((sum, item) => {
+    // Handle initial records (without pallet number)
+    if (!item.plt_num || item.plt_num === '') {
+      return sum + (parseInt(item.system_qty || '0') || 0);
+    }
+    return sum + (parseInt(item.counted_qty || '0') || 0);
+  }, 0);
+}
+
+/**
+ * Helper function to determine if stock take item should be included based on filters
+ */
+function shouldIncludeStockTakeItem(
+  productCode: string,
+  variance: number,
+  variancePercentage: number,
+  countedQty: number,
+  filters: StockTakeFilters
+): boolean {
+  // Product code filter
+  if (filters.productCode && !productCode.includes(filters.productCode)) {
+    return false;
+  }
+
+  // Variance percentage filter
+  if (filters.minVariance && Math.abs(variancePercentage) < filters.minVariance) {
+    return false;
+  }
+
+  // Count status filter
+  if (filters.countStatus) {
+    switch (filters.countStatus) {
+      case 'counted':
+        return countedQty > 0;
+      case 'not_counted':
+        return countedQty === 0;
+      case 'high_variance':
+        return Math.abs(variancePercentage) > 10;
+    }
+  }
+
+  return true;
+}
+
+// --- Order Loading Report Functions ---
+
+interface OrderLoadingFilters {
+  dateRange: string; // "startDate|endDate" format
+  orderNumber?: string;
+  productCode?: string;
+  userId?: number;
+}
+
+interface OrderLoadingRecord {
+  order_number: string;
+  product_code: string;
+  product_qty: string;
+  loaded_qty: string;
+  user_id: number;
+  created_at: string;
+  updated_at: string;
+  data_order: {
+    order_date: string;
+    status: string;
+  };
+}
+
+interface OrderLoadingHistoryRecord {
+  id: number;
+  order_number: string;
+  product_code: string;
+  loaded_qty: number;
+  action: string;
+  user_id: number;
+  created_at: string;
+  data_id: {
+    name: string;
+  };
+  data_code: {
+    description: string;
+  };
+}
+
+interface OrderLoadingSummary {
+  totalOrders: number;
+  completedOrders: number;
+  totalItemsLoaded: number;
+  avgCompletionRate: number;
+}
+
+interface OrderProgress {
+  order_number: string;
+  order_date: string;
+  total_items: number;
+  loaded_items: number;
+  completion_rate: number;
+  status: 'Completed' | 'Partial' | 'Pending';
+}
+
+interface LoadingDetails {
+  timestamp: string;
+  order_number: string;
+  product_code: string;
+  product_description: string;
+  loaded_qty: number;
+  user_name: string;
+  action: string;
+}
+
+interface UserPerformance {
+  user_id: string;
+  user_name: string;
+  total_loads: number;
+  total_quantity: number;
+  avg_load_time: string;
+}
+
+/**
+ * Parse date range in format "startDate|endDate"
+ */
+function parseDateRange(dateRange: string): [string, string] {
+  if (dateRange && dateRange.includes('|')) {
+    return dateRange.split('|') as [string, string];
+  }
+  return ['', ''];
+}
+
+/**
+ * Get order loading summary statistics
+ */
+export async function getOrderLoadingSummary(filters: OrderLoadingFilters): Promise<{
+  success: boolean;
+  data?: OrderLoadingSummary;
+  error?: string;
+}> {
+  const supabase = await createClient();
+
+  try {
+    const [startDate, endDate] = parseDateRange(filters.dateRange);
+
+    if (!startDate || !endDate) {
+      return { success: false, error: 'Valid date range is required' };
+    }
+
+    let query = supabase
+      .from('record_order_loading')
+      .select(
+        `
+        order_number,
+        product_code,
+        product_qty,
+        loaded_qty,
+        user_id,
+        created_at,
+        updated_at,
+        data_order!inner(
+          order_date,
+          status
+        )
+      `
+      )
+      .gte('created_at', startDate)
+      .lte('created_at', endDate + 'T23:59:59');
+
+    // Apply filters
+    if (filters.orderNumber) {
+      query = query.eq('order_number', filters.orderNumber);
+    }
+
+    if (filters.productCode) {
+      query = query.eq('product_code', filters.productCode);
+    }
+
+    if (filters.userId) {
+      query = query.eq('user_id', filters.userId);
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+      console.error('Error fetching order loading summary:', error.message);
+      return { success: false, error: error.message };
+    }
+
+    if (!data) {
+      return { success: true, data: { totalOrders: 0, completedOrders: 0, totalItemsLoaded: 0, avgCompletionRate: 0 } };
+    }
+
+    // Group by order to calculate statistics
+    const orderMap = new Map<
+      string,
+      {
+        totalQty: number;
+        loadedQty: number;
+        status: string;
+      }
+    >();
+
+    data.forEach(item => {
+      const orderNumber = item.order_number;
+      if (!orderMap.has(orderNumber)) {
+        orderMap.set(orderNumber, {
+          totalQty: 0,
+          loadedQty: 0,
+          status: Array.isArray(item.data_order)
+            ? item.data_order[0]?.status || 'pending'
+            : item.data_order?.status || 'pending',
+        });
+      }
+
+      const order = orderMap.get(orderNumber)!;
+      order.totalQty += parseInt(item.product_qty || '0');
+      order.loadedQty += parseInt(item.loaded_qty || '0');
+    });
+
+    // Calculate statistics
+    const completedOrders = Array.from(orderMap.values()).filter(
+      order => order.loadedQty >= order.totalQty
+    ).length;
+
+    const totalItemsLoaded = data.reduce((sum, item) => sum + parseInt(item.loaded_qty || '0'), 0);
+
+    const completionRates = Array.from(orderMap.values()).map(order =>
+      order.totalQty > 0 ? order.loadedQty / order.totalQty : 0
+    );
+
+    const avgCompletionRate =
+      completionRates.length > 0
+        ? completionRates.reduce((sum, rate) => sum + rate, 0) / completionRates.length
+        : 0;
+
+    return {
+      success: true,
+      data: {
+        totalOrders: orderMap.size,
+        completedOrders,
+        totalItemsLoaded,
+        avgCompletionRate,
+      },
+    };
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+    console.error('Unexpected error in getOrderLoadingSummary:', errorMessage);
+    return { success: false, error: errorMessage };
+  }
+}
+
+/**
+ * Get order progress data
+ */
+export async function getOrderProgress(filters: OrderLoadingFilters): Promise<{
+  success: boolean;
+  data?: OrderProgress[];
+  error?: string;
+}> {
+  const supabase = await createClient();
+
+  try {
+    const [startDate, endDate] = parseDateRange(filters.dateRange);
+
+    if (!startDate || !endDate) {
+      return { success: false, error: 'Valid date range is required' };
+    }
+
+    let query = supabase
+      .from('record_order_loading')
+      .select(
+        `
+        order_number,
+        product_code,
+        product_qty,
+        loaded_qty,
+        user_id,
+        created_at,
+        updated_at,
+        data_order!inner(
+          order_date,
+          status
+        )
+      `
+      )
+      .gte('created_at', startDate)
+      .lte('created_at', endDate + 'T23:59:59');
+
+    // Apply filters
+    if (filters.orderNumber) {
+      query = query.eq('order_number', filters.orderNumber);
+    }
+
+    if (filters.productCode) {
+      query = query.eq('product_code', filters.productCode);
+    }
+
+    if (filters.userId) {
+      query = query.eq('user_id', filters.userId);
+    }
+
+    const { data: rawData, error } = await query;
+
+    if (error) {
+      console.error('Error fetching order progress:', error.message);
+      return { success: false, error: error.message };
+    }
+
+    if (!rawData) {
+      return { success: true, data: [] };
+    }
+
+    // Group by order
+    const orderMap = new Map<string, any>();
+
+    rawData.forEach(item => {
+      const orderNumber = item.order_number;
+      if (!orderMap.has(orderNumber)) {
+        orderMap.set(orderNumber, {
+          order_number: orderNumber,
+          order_date: Array.isArray(item.data_order)
+            ? item.data_order[0]?.order_date
+            : item.data_order?.order_date,
+          total_qty: 0,
+          loaded_qty: 0,
+          products: new Set(),
+        });
+      }
+
+      const order = orderMap.get(orderNumber)!;
+      order.total_qty += parseInt(item.product_qty || '0');
+      order.loaded_qty += parseInt(item.loaded_qty || '0');
+      order.products.add(item.product_code);
+    });
+
+    const result = Array.from(orderMap.values())
+      .map(order => {
+        const completionRate = order.total_qty > 0 ? order.loaded_qty / order.total_qty : 0;
+
+        return {
+          order_number: order.order_number,
+          order_date: order.order_date,
+          total_items: order.total_qty,
+          loaded_items: order.loaded_qty,
+          completion_rate: completionRate,
+          status: completionRate >= 1 ? 'Completed' : completionRate > 0 ? 'Partial' : 'Pending',
+        } as OrderProgress;
+      })
+      .sort((a, b) => new Date(b.order_date).getTime() - new Date(a.order_date).getTime());
+
+    return { success: true, data: result };
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+    console.error('Unexpected error in getOrderProgress:', errorMessage);
+    return { success: false, error: errorMessage };
+  }
+}
+
+/**
+ * Get loading details history
+ */
+export async function getLoadingDetails(filters: OrderLoadingFilters): Promise<{
+  success: boolean;
+  data?: LoadingDetails[];
+  error?: string;
+}> {
+  const supabase = await createClient();
+
+  try {
+    const [startDate, endDate] = parseDateRange(filters.dateRange);
+
+    if (!startDate || !endDate) {
+      return { success: false, error: 'Valid date range is required' };
+    }
+
+    let query = supabase
+      .from('record_order_loading_history')
+      .select(
+        `
+        id,
+        order_number,
+        product_code,
+        loaded_qty,
+        action,
+        user_id,
+        created_at,
+        data_id!inner(
+          name
+        ),
+        data_code!inner(
+          description
+        )
+      `
+      )
+      .gte('created_at', startDate)
+      .lte('created_at', endDate + 'T23:59:59')
+      .order('created_at', { ascending: false });
+
+    // Apply filters
+    if (filters.orderNumber) {
+      query = query.eq('order_number', filters.orderNumber);
+    }
+
+    if (filters.productCode) {
+      query = query.eq('product_code', filters.productCode);
+    }
+
+    if (filters.userId) {
+      query = query.eq('user_id', filters.userId);
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+      console.error('Error fetching loading details:', error.message);
+      return { success: false, error: error.message };
+    }
+
+    if (!data) {
+      return { success: true, data: [] };
+    }
+
+    const result = data.map(item => ({
+      timestamp: item.created_at,
+      order_number: item.order_number,
+      product_code: item.product_code,
+      product_description: item.data_code?.description || '',
+      loaded_qty: item.loaded_qty,
+      user_name: item.data_id?.name || `User ${item.user_id}`,
+      action: item.action || 'Load',
+    }));
+
+    return { success: true, data: result };
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+    console.error('Unexpected error in getLoadingDetails:', errorMessage);
+    return { success: false, error: errorMessage };
+  }
+}
+
+/**
+ * Get user performance statistics
+ */
+export async function getUserPerformance(filters: OrderLoadingFilters): Promise<{
+  success: boolean;
+  data?: UserPerformance[];
+  error?: string;
+}> {
+  const supabase = await createClient();
+
+  try {
+    const [startDate, endDate] = parseDateRange(filters.dateRange);
+
+    if (!startDate || !endDate) {
+      return { success: false, error: 'Valid date range is required' };
+    }
+
+    let query = supabase
+      .from('record_order_loading_history')
+      .select(
+        `
+        id,
+        order_number,
+        product_code,
+        loaded_qty,
+        action,
+        user_id,
+        created_at,
+        data_id!inner(
+          name
+        ),
+        data_code!inner(
+          description
+        )
+      `
+      )
+      .gte('created_at', startDate)
+      .lte('created_at', endDate + 'T23:59:59')
+      .order('created_at', { ascending: true });
+
+    // Apply filters
+    if (filters.orderNumber) {
+      query = query.eq('order_number', filters.orderNumber);
+    }
+
+    if (filters.productCode) {
+      query = query.eq('product_code', filters.productCode);
+    }
+
+    if (filters.userId) {
+      query = query.eq('user_id', filters.userId);
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+      console.error('Error fetching user performance:', error.message);
+      return { success: false, error: error.message };
+    }
+
+    if (!data) {
+      return { success: true, data: [] };
+    }
+
+    // Group by user for statistics
+    const userStats = new Map<
+      string,
+      {
+        user_name: string;
+        total_loads: number;
+        total_quantity: number;
+        load_times: number[];
+      }
+    >();
+
+    data.forEach(item => {
+      const userId = item.user_id?.toString() || 'unknown';
+
+      if (!userStats.has(userId)) {
+        userStats.set(userId, {
+          user_name: item.data_id?.name || `User ${item.user_id}`,
+          total_loads: 0,
+          total_quantity: 0,
+          load_times: [],
+        });
+      }
+
+      const stats = userStats.get(userId)!;
+      stats.total_loads++;
+      stats.total_quantity += item.loaded_qty || 0;
+    });
+
+    const result = Array.from(userStats.entries())
+      .map(([userId, stats]) => ({
+        user_id: userId,
+        user_name: stats.user_name,
+        total_loads: stats.total_loads,
+        total_quantity: stats.total_quantity,
+        avg_load_time: 'N/A', // Would need more complex calculation
+      }))
+      .sort((a, b) => b.total_loads - a.total_loads);
+
+    return { success: true, data: result };
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+    console.error('Unexpected error in getUserPerformance:', errorMessage);
+    return { success: false, error: errorMessage };
+  }
+}

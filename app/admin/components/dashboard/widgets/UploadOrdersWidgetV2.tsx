@@ -27,9 +27,9 @@ interface UploadingFile {
 
 const maxFileSize = 10 * 1024 * 1024; // 10MB
 
-export const UploadOrdersWidgetV2 = React.memo(function UploadOrdersWidgetV2({ 
-  widget, 
-  isEditMode 
+export const UploadOrdersWidgetV2 = React.memo(function UploadOrdersWidgetV2({
+  widget,
+  isEditMode,
 }: WidgetComponentProps) {
   const [currentUserId, setCurrentUserId] = useState<number | null>(null);
   const [isDragOver, setIsDragOver] = useState(false);
@@ -54,22 +54,22 @@ export const UploadOrdersWidgetV2 = React.memo(function UploadOrdersWidgetV2({
         console.error('[UploadOrdersWidgetV2] Error getting user:', error);
       }
     };
-    
+
     fetchUserId();
   }, []);
 
   // 驗證文件
   const validateFile = (file: File): string | null => {
     const fileExtension = '.' + file.name.split('.').pop()?.toLowerCase();
-    
+
     if (fileExtension !== '.pdf') {
       return 'Only PDF files are allowed';
     }
-    
+
     if (file.size > maxFileSize) {
       return 'File size must be less than 10MB';
     }
-    
+
     return null;
   };
 
@@ -80,118 +80,129 @@ export const UploadOrdersWidgetV2 = React.memo(function UploadOrdersWidgetV2({
   };
 
   // 使用 Server Action 分析訂單
-  const uploadAndAnalyzeOrder = useCallback(async (uploadingFile: UploadingFile) => {
-    try {
-      const startTime = performance.now();
-      
-      // 更新進度
-      const updateProgress = (progress: number) => {
-        setUploadingFiles(prev => 
-          prev.map(f => f.id === uploadingFile.id ? { ...f, progress } : f)
+  const uploadAndAnalyzeOrder = useCallback(
+    async (uploadingFile: UploadingFile) => {
+      try {
+        const startTime = performance.now();
+
+        // 更新進度
+        const updateProgress = (progress: number) => {
+          setUploadingFiles(prev =>
+            prev.map(f => (f.id === uploadingFile.id ? { ...f, progress } : f))
+          );
+        };
+
+        updateProgress(10);
+        setIsAnalyzing(true);
+
+        // 讀取文件為 ArrayBuffer
+        const arrayBuffer = await uploadingFile.file.arrayBuffer();
+
+        updateProgress(30);
+
+        // 使用 Server Action 分析 PDF
+        const result = await analyzeOrderPDF(
+          {
+            buffer: arrayBuffer,
+            name: uploadingFile.file.name,
+          },
+          currentUserId?.toString() || '',
+          true // saveToStorage
         );
-      };
 
-      updateProgress(10);
-      setIsAnalyzing(true);
-      
-      // 讀取文件為 ArrayBuffer
-      const arrayBuffer = await uploadingFile.file.arrayBuffer();
-      
-      updateProgress(30);
-      
-      // 使用 Server Action 分析 PDF
-      const result = await analyzeOrderPDF(
-        {
-          buffer: arrayBuffer,
-          name: uploadingFile.file.name
-        },
-        currentUserId?.toString() || '',
-        true // saveToStorage
-      );
-      
-      updateProgress(80);
-      
-      if (!result.success) {
-        throw new Error(result.error || 'Analysis failed');
+        updateProgress(80);
+
+        if (!result.success) {
+          throw new Error(result.error || 'Analysis failed');
+        }
+
+        updateProgress(90);
+
+        const endTime = performance.now();
+        setPerformanceMetrics({
+          lastAnalysisTime: Math.round(endTime - startTime),
+          optimized: true,
+        });
+
+        updateProgress(100);
+        setIsAnalyzing(false);
+
+        // 標記為完成
+        setUploadingFiles(prev =>
+          prev.map(f =>
+            f.id === uploadingFile.id ? { ...f, status: 'completed', progress: 100 } : f
+          )
+        );
+
+        // 顯示分析結果
+        if (result.extractedData && result.extractedData.length > 0) {
+          toast.success(`Successfully analyzed ${result.extractedData.length} orders`);
+          setAnalysisResult(result);
+          setShowAnalysisDialog(true);
+
+          // 觸發訂單歷史記錄更新
+          triggerOrderHistoryRefresh();
+        } else if (result.success && result.recordCount === 0) {
+          toast.warning('PDF processed but no orders found');
+        } else {
+          toast.error('Analysis completed but no data extracted');
+        }
+      } catch (error) {
+        console.error('[UploadOrdersWidgetV2] Upload/analyze error:', error);
+        setIsAnalyzing(false);
+        setUploadingFiles(prev =>
+          prev.map(f =>
+            f.id === uploadingFile.id
+              ? {
+                  ...f,
+                  status: 'error',
+                  error: error instanceof Error ? error.message : 'Upload failed',
+                }
+              : f
+          )
+        );
+
+        toast.error(error instanceof Error ? error.message : 'Failed to analyze PDF');
       }
-      
-      updateProgress(90);
-      
-      const endTime = performance.now();
-      setPerformanceMetrics({
-        lastAnalysisTime: Math.round(endTime - startTime),
-        optimized: true
-      });
-      
-      updateProgress(100);
-      setIsAnalyzing(false);
-
-      // 標記為完成
-      setUploadingFiles(prev => 
-        prev.map(f => f.id === uploadingFile.id ? { ...f, status: 'completed', progress: 100 } : f)
-      );
-
-      // 顯示分析結果
-      if (result.extractedData && result.extractedData.length > 0) {
-        toast.success(`Successfully analyzed ${result.extractedData.length} orders`);
-        setAnalysisResult(result);
-        setShowAnalysisDialog(true);
-        
-        // 觸發訂單歷史記錄更新
-        triggerOrderHistoryRefresh();
-      } else if (result.success && result.recordCount === 0) {
-        toast.warning('PDF processed but no orders found');
-      } else {
-        toast.error('Analysis completed but no data extracted');
-      }
-
-    } catch (error) {
-      console.error('[UploadOrdersWidgetV2] Upload/analyze error:', error);
-      setIsAnalyzing(false);
-      setUploadingFiles(prev => 
-        prev.map(f => f.id === uploadingFile.id ? { 
-          ...f, 
-          status: 'error', 
-          error: error instanceof Error ? error.message : 'Upload failed' 
-        } : f)
-      );
-      
-      toast.error(error instanceof Error ? error.message : 'Failed to analyze PDF');
-    }
-  }, [currentUserId, triggerOrderHistoryRefresh]);
+    },
+    [currentUserId, triggerOrderHistoryRefresh]
+  );
 
   // 處理文件選擇
-  const handleFiles = useCallback(async (files: FileList | null) => {
-    if (!files || files.length === 0 || isEditMode) return;
-    
-    if (!currentUserId) {
-      toast.error('User not authenticated. Please refresh and try again.');
-      return;
-    }
+  const handleFiles = useCallback(
+    async (files: FileList | null) => {
+      if (!files || files.length === 0 || isEditMode) return;
 
-    // 只處理第一個文件
-    const file = files[0];
-    const error = validateFile(file);
-    
-    if (error) {
-      toast.error(`${file.name}: ${error}`);
-      return;
-    }
-    
-    // 創建上傳文件對象
-    const uploadingFile: UploadingFile = {
-      id: `${Date.now()}`,
-      name: file.name,
-      progress: 0,
-      status: 'uploading',
-      file: file,
-      orderNumber: extractOrderNumber(file.name)
-    };
-    
-    // 開始分析
-    setUploadingFiles(prev => [...prev, uploadingFile]);
-    uploadAndAnalyzeOrder(uploadingFile);
-  }, [isEditMode, uploadAndAnalyzeOrder, currentUserId]);
+      if (!currentUserId) {
+        toast.error('User not authenticated. Please refresh and try again.');
+        return;
+      }
+
+      // 只處理第一個文件
+      const file = files[0];
+      const error = validateFile(file);
+
+      if (error) {
+        toast.error(`${file.name}: ${error}`);
+        return;
+      }
+
+      // 創建上傳文件對象
+      const uploadingFile: UploadingFile = {
+        id: `${Date.now()}`,
+        name: file.name,
+        progress: 0,
+        status: 'uploading',
+        file: file,
+        orderNumber: extractOrderNumber(file.name),
+      };
+
+      // 開始分析
+      setUploadingFiles(prev => [...prev, uploadingFile]);
+      uploadAndAnalyzeOrder(uploadingFile);
+    },
+    [isEditMode, uploadAndAnalyzeOrder, currentUserId]
+  );
 
   // 拖放處理
   const handleDragOver = (e: React.DragEvent) => {
@@ -230,55 +241,49 @@ export const UploadOrdersWidgetV2 = React.memo(function UploadOrdersWidgetV2({
   return (
     <>
       <div
-        className="h-full flex flex-col items-center justify-center relative"
+        className='relative flex h-full flex-col items-center justify-center'
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
       >
-        <div 
+        <div
           onClick={handleClick}
-          className={`
-            cursor-pointer transition-all duration-300 p-8
-            ${isDragOver ? 'scale-110 opacity-80' : 'hover:scale-105'}
-          `}
+          className={`cursor-pointer p-8 transition-all duration-300 ${isDragOver ? 'scale-110 opacity-80' : 'hover:scale-105'} `}
         >
-          <div className="relative">
-            <DocumentArrowUpIcon 
-              className={`
-                w-20 h-20 mx-auto mb-4 transition-all duration-300
-                ${isDragOver ? 'text-blue-400' : 'text-blue-500 hover:text-blue-400'}
-              `}
+          <div className='relative'>
+            <DocumentArrowUpIcon
+              className={`mx-auto mb-4 h-20 w-20 transition-all duration-300 ${isDragOver ? 'text-blue-400' : 'text-blue-500 hover:text-blue-400'} `}
             />
             {isAnalyzing && (
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="w-20 h-20 rounded-full border-4 border-blue-500/20 border-t-blue-500 animate-spin" />
+              <div className='absolute inset-0 flex items-center justify-center'>
+                <div className='h-20 w-20 animate-spin rounded-full border-4 border-blue-500/20 border-t-blue-500' />
               </div>
             )}
           </div>
-          <p className="text-center text-gray-400 font-medium">Upload Orders</p>
-          <p className="text-center text-gray-500 text-xs mt-1">Order PDF</p>
+          <p className='text-center font-medium text-gray-400'>Upload Orders</p>
+          <p className='mt-1 text-center text-xs text-gray-500'>Order PDF</p>
         </div>
-        
+
         {isAnalyzing && (
-          <div className="flex items-center gap-1 mt-2">
-            <SparklesIcon className="w-3 h-3 text-yellow-500 animate-pulse" />
-            <span className="text-xs text-yellow-500">Analyzing with AI...</span>
+          <div className='mt-2 flex items-center gap-1'>
+            <SparklesIcon className='h-3 w-3 animate-pulse text-yellow-500' />
+            <span className='text-xs text-yellow-500'>Analyzing with AI...</span>
           </div>
         )}
-        
+
         {/* Performance indicator */}
         {performanceMetrics.optimized && performanceMetrics.lastAnalysisTime && (
-          <div className="absolute bottom-2 right-2 text-[10px] text-green-400">
+          <div className='absolute bottom-2 right-2 text-[10px] text-green-400'>
             ✓ Server-optimized ({performanceMetrics.lastAnalysisTime}ms)
           </div>
         )}
-        
+
         <input
           ref={fileInputRef}
-          type="file"
-          accept=".pdf"
-          onChange={(e) => handleFiles(e.target.files)}
-          className="hidden"
+          type='file'
+          accept='.pdf'
+          onChange={e => handleFiles(e.target.files)}
+          className='hidden'
         />
       </div>
 
@@ -290,7 +295,7 @@ export const UploadOrdersWidgetV2 = React.memo(function UploadOrdersWidgetV2({
           onRemoveFile={handleRemoveFile}
         />
       )}
-      
+
       {/* Analysis Result Dialog */}
       {showAnalysisDialog && analysisResult && (
         <OrderAnalysisResultDialog

@@ -95,40 +95,40 @@ export class PerformanceMonitor {
   private aggregatedData = new Map<string, AggregatedPerformance>();
   private alertThresholds = new Map<string, number>();
   private observers = new Map<string, PerformanceObserver>();
-  
+
   private constructor() {
     this.initializeObservers();
     this.setDefaultThresholds();
   }
-  
+
   static getInstance(): PerformanceMonitor {
     if (!PerformanceMonitor.instance) {
       PerformanceMonitor.instance = new PerformanceMonitor();
     }
     return PerformanceMonitor.instance;
   }
-  
+
   /**
    * 初始化性能觀察器
    */
   private initializeObservers(): void {
     if (typeof window === 'undefined') return;
-    
+
     // Navigation Timing API
     if ('PerformanceObserver' in window) {
       try {
         // LCP (Largest Contentful Paint)
-        const lcpObserver = new PerformanceObserver((list) => {
+        const lcpObserver = new PerformanceObserver(list => {
           const entries = list.getEntries();
-          entries.forEach((entry) => {
+          entries.forEach(entry => {
             this.recordWebVital('LCP', entry.startTime);
           });
         });
         lcpObserver.observe({ entryTypes: ['largest-contentful-paint'] });
         this.observers.set('lcp', lcpObserver);
-        
+
         // FID (First Input Delay)
-        const fidObserver = new PerformanceObserver((list) => {
+        const fidObserver = new PerformanceObserver(list => {
           const entries = list.getEntries();
           entries.forEach((entry: any) => {
             this.recordWebVital('FID', entry.processingStart - entry.startTime);
@@ -136,9 +136,9 @@ export class PerformanceMonitor {
         });
         fidObserver.observe({ entryTypes: ['first-input'] });
         this.observers.set('fid', fidObserver);
-        
+
         // CLS (Cumulative Layout Shift)
-        const clsObserver = new PerformanceObserver((list) => {
+        const clsObserver = new PerformanceObserver(list => {
           const entries = list.getEntries();
           let clsValue = 0;
           entries.forEach((entry: any) => {
@@ -155,7 +155,7 @@ export class PerformanceMonitor {
       }
     }
   }
-  
+
   /**
    * 設置默認閾值
    */
@@ -169,39 +169,39 @@ export class PerformanceMonitor {
     this.alertThresholds.set('FID', 100); // 100ms
     this.alertThresholds.set('CLS', 0.1); // 0.1
   }
-  
+
   /**
    * 開始監控 Widget
    */
   startMonitoring(widgetId: string, variant: 'v2' | 'legacy' = 'v2'): PerformanceTimer {
     return new PerformanceTimer(widgetId, variant, this);
   }
-  
+
   /**
    * 記錄性能指標
    */
   recordMetrics(metrics: PerformanceMetrics): void {
     // 添加到指標列表
     this.metrics.push(metrics);
-    
+
     // 保留最近 10000 條記錄
     if (this.metrics.length > 10000) {
       this.metrics = this.metrics.slice(-10000);
     }
-    
+
     // 檢查性能問題
     this.checkPerformanceIssues(metrics);
-    
+
     // 更新聚合數據
     this.updateAggregatedData(metrics);
-    
+
     console.log(`[PerformanceMonitor] Recorded metrics for ${metrics.widgetId}:`, {
       loadTime: `${metrics.loadTime.toFixed(2)}ms`,
       renderTime: `${metrics.renderTime.toFixed(2)}ms`,
-      variant: metrics.variant
+      variant: metrics.variant,
     });
   }
-  
+
   /**
    * 記錄 Web Vitals
    */
@@ -211,13 +211,13 @@ export class PerformanceMonitor {
       console.warn(`[PerformanceMonitor] ${metric} exceeded threshold: ${value} > ${threshold}`);
     }
   }
-  
+
   /**
    * 檢查性能問題
    */
   private checkPerformanceIssues(metrics: PerformanceMetrics): void {
     const issues: PerformanceIssue[] = [];
-    
+
     // 檢查加載時間
     const loadThreshold = this.alertThresholds.get('loadTime')!;
     if (metrics.loadTime > loadThreshold) {
@@ -226,10 +226,10 @@ export class PerformanceMonitor {
         severity: metrics.loadTime > loadThreshold * 2 ? 'high' : 'medium',
         description: `Widget load time (${metrics.loadTime.toFixed(0)}ms) exceeds threshold (${loadThreshold}ms)`,
         affectedCount: 1,
-        recommendation: 'Consider implementing lazy loading or optimizing bundle size'
+        recommendation: 'Consider implementing lazy loading or optimizing bundle size',
       });
     }
-    
+
     // 檢查渲染時間
     const renderThreshold = this.alertThresholds.get('renderTime')!;
     if (metrics.renderTime > renderThreshold) {
@@ -238,22 +238,22 @@ export class PerformanceMonitor {
         severity: metrics.renderTime > renderThreshold * 2 ? 'high' : 'medium',
         description: `Widget render time (${metrics.renderTime.toFixed(0)}ms) exceeds threshold (${renderThreshold}ms)`,
         affectedCount: 1,
-        recommendation: 'Optimize component rendering, use React.memo or useMemo'
+        recommendation: 'Optimize component rendering, use React.memo or useMemo',
       });
     }
-    
+
     if (issues.length > 0) {
       console.warn(`[PerformanceMonitor] Issues detected for ${metrics.widgetId}:`, issues);
     }
   }
-  
+
   /**
    * 更新聚合數據
    */
   private updateAggregatedData(metrics: PerformanceMetrics): void {
     const key = `${metrics.widgetId}-${metrics.variant}`;
     const existing = this.aggregatedData.get(key);
-    
+
     if (!existing) {
       // 創建新的聚合數據
       const now = new Date();
@@ -262,21 +262,23 @@ export class PerformanceMonitor {
         variant: metrics.variant,
         timeRange: {
           start: now,
-          end: now
+          end: now,
         },
         metrics: {
           loadTime: this.createStatisticalSummary([metrics.loadTime]),
           renderTime: this.createStatisticalSummary([metrics.renderTime]),
-          dataFetchTime: this.createStatisticalSummary(metrics.dataFetchTime ? [metrics.dataFetchTime] : []),
+          dataFetchTime: this.createStatisticalSummary(
+            metrics.dataFetchTime ? [metrics.dataFetchTime] : []
+          ),
           errorRate: 0,
-          sampleCount: 1
+          sampleCount: 1,
         },
         byRoute: new Map(),
         trend: {
           direction: 'stable',
           changePercent: 0,
-          comparedTo: now
-        }
+          comparedTo: now,
+        },
       });
     } else {
       // 更新現有數據（簡化版本）
@@ -284,27 +286,34 @@ export class PerformanceMonitor {
       existing.timeRange.end = new Date();
     }
   }
-  
+
   /**
    * 創建統計摘要
    */
   private createStatisticalSummary(values: number[]): StatisticalSummary {
     if (values.length === 0) {
       return {
-        min: 0, max: 0, mean: 0, median: 0,
-        p50: 0, p75: 0, p90: 0, p95: 0, p99: 0,
-        stdDev: 0
+        min: 0,
+        max: 0,
+        mean: 0,
+        median: 0,
+        p50: 0,
+        p75: 0,
+        p90: 0,
+        p95: 0,
+        p99: 0,
+        stdDev: 0,
       };
     }
-    
+
     const sorted = [...values].sort((a, b) => a - b);
     const sum = values.reduce((a, b) => a + b, 0);
     const mean = sum / values.length;
-    
+
     // 計算標準差
     const variance = values.reduce((acc, val) => acc + Math.pow(val - mean, 2), 0) / values.length;
     const stdDev = Math.sqrt(variance);
-    
+
     return {
       min: sorted[0],
       max: sorted[sorted.length - 1],
@@ -315,10 +324,10 @@ export class PerformanceMonitor {
       p90: this.percentile(sorted, 90),
       p95: this.percentile(sorted, 95),
       p99: this.percentile(sorted, 99),
-      stdDev
+      stdDev,
     };
   }
-  
+
   /**
    * 計算百分位數
    */
@@ -326,11 +335,14 @@ export class PerformanceMonitor {
     const index = Math.ceil((p / 100) * sorted.length) - 1;
     return sorted[Math.max(0, index)];
   }
-  
+
   /**
    * 獲取 Widget 性能報告
    */
-  getWidgetReport(widgetId: string, timeRange?: { start: Date; end: Date }): WidgetPerformanceReport {
+  getWidgetReport(
+    widgetId: string,
+    timeRange?: { start: Date; end: Date }
+  ): WidgetPerformanceReport {
     const relevantMetrics = this.metrics.filter(m => {
       if (m.widgetId !== widgetId) return false;
       if (timeRange) {
@@ -339,143 +351,151 @@ export class PerformanceMonitor {
       }
       return true;
     });
-    
+
     // 按變體分組
     const v2Metrics = relevantMetrics.filter(m => m.variant === 'v2');
     const legacyMetrics = relevantMetrics.filter(m => m.variant === 'legacy');
-    
+
     return {
       widgetId,
       timeRange: timeRange || {
         start: new Date(Math.min(...relevantMetrics.map(m => m.timestamp))),
-        end: new Date(Math.max(...relevantMetrics.map(m => m.timestamp)))
+        end: new Date(Math.max(...relevantMetrics.map(m => m.timestamp))),
       },
       v2Performance: this.calculatePerformanceSummary(v2Metrics),
       legacyPerformance: this.calculatePerformanceSummary(legacyMetrics),
       improvement: this.calculateImprovement(v2Metrics, legacyMetrics),
-      recommendations: this.generateRecommendations(widgetId, relevantMetrics)
+      recommendations: this.generateRecommendations(widgetId, relevantMetrics),
     };
   }
-  
+
   /**
    * 計算性能摘要
    */
   private calculatePerformanceSummary(metrics: PerformanceMetrics[]): PerformanceSummary | null {
     if (metrics.length === 0) return null;
-    
+
     const loadTimes = metrics.map(m => m.loadTime);
     const renderTimes = metrics.map(m => m.renderTime);
-    
+
     return {
       sampleCount: metrics.length,
       loadTime: this.createStatisticalSummary(loadTimes),
       renderTime: this.createStatisticalSummary(renderTimes),
       errorRate: 0, // TODO: 整合錯誤率數據
-      byRoute: this.groupByRoute(metrics)
+      byRoute: this.groupByRoute(metrics),
     };
   }
-  
+
   /**
    * 按路由分組
    */
   private groupByRoute(metrics: PerformanceMetrics[]): Map<string, RoutePerformance> {
     const byRoute = new Map<string, PerformanceMetrics[]>();
-    
+
     metrics.forEach(m => {
       const existing = byRoute.get(m.route) || [];
       existing.push(m);
       byRoute.set(m.route, existing);
     });
-    
+
     const result = new Map<string, RoutePerformance>();
     byRoute.forEach((metrics, route) => {
       result.set(route, {
         route,
         loadTime: this.createStatisticalSummary(metrics.map(m => m.loadTime)),
         sampleCount: metrics.length,
-        topIssues: []
+        topIssues: [],
       });
     });
-    
+
     return result;
   }
-  
+
   /**
    * 計算改進幅度
    */
-  private calculateImprovement(v2Metrics: PerformanceMetrics[], legacyMetrics: PerformanceMetrics[]): PerformanceImprovement {
+  private calculateImprovement(
+    v2Metrics: PerformanceMetrics[],
+    legacyMetrics: PerformanceMetrics[]
+  ): PerformanceImprovement {
     if (v2Metrics.length === 0 || legacyMetrics.length === 0) {
       return { percentage: 0, absoluteMs: 0 };
     }
-    
+
     const v2AvgLoad = v2Metrics.reduce((sum, m) => sum + m.loadTime, 0) / v2Metrics.length;
-    const legacyAvgLoad = legacyMetrics.reduce((sum, m) => sum + m.loadTime, 0) / legacyMetrics.length;
-    
+    const legacyAvgLoad =
+      legacyMetrics.reduce((sum, m) => sum + m.loadTime, 0) / legacyMetrics.length;
+
     return {
       percentage: ((legacyAvgLoad - v2AvgLoad) / legacyAvgLoad) * 100,
-      absoluteMs: legacyAvgLoad - v2AvgLoad
+      absoluteMs: legacyAvgLoad - v2AvgLoad,
     };
   }
-  
+
   /**
    * 生成優化建議
    */
   private generateRecommendations(widgetId: string, metrics: PerformanceMetrics[]): string[] {
     const recommendations: string[] = [];
-    
+
     if (metrics.length === 0) return recommendations;
-    
+
     const avgLoadTime = metrics.reduce((sum, m) => sum + m.loadTime, 0) / metrics.length;
     const avgRenderTime = metrics.reduce((sum, m) => sum + m.renderTime, 0) / metrics.length;
-    
+
     // 基於性能數據生成建議
     if (avgLoadTime > 100) {
       recommendations.push('Consider implementing code splitting for this widget');
       recommendations.push('Review and optimize bundle dependencies');
     }
-    
+
     if (avgRenderTime > 50) {
       recommendations.push('Use React.memo to prevent unnecessary re-renders');
       recommendations.push('Optimize expensive computations with useMemo');
     }
-    
+
     // 檢查性能變異性
     const loadTimes = metrics.map(m => m.loadTime);
     const stdDev = this.createStatisticalSummary(loadTimes).stdDev;
     if (stdDev > avgLoadTime * 0.5) {
-      recommendations.push('High performance variability detected - investigate environmental factors');
+      recommendations.push(
+        'High performance variability detected - investigate environmental factors'
+      );
     }
-    
+
     return recommendations;
   }
-  
+
   /**
    * 獲取實時性能數據
    */
   getRealtimeMetrics(): RealtimePerformanceData {
     const last5Minutes = Date.now() - 5 * 60 * 1000;
     const recentMetrics = this.metrics.filter(m => m.timestamp > last5Minutes);
-    
+
     const v2Metrics = recentMetrics.filter(m => m.variant === 'v2');
     const legacyMetrics = recentMetrics.filter(m => m.variant === 'legacy');
-    
+
     return {
       timestamp: Date.now(),
       v2: {
-        avgLoadTime: v2Metrics.length > 0 
-          ? v2Metrics.reduce((sum, m) => sum + m.loadTime, 0) / v2Metrics.length 
-          : 0,
-        requestCount: v2Metrics.length
+        avgLoadTime:
+          v2Metrics.length > 0
+            ? v2Metrics.reduce((sum, m) => sum + m.loadTime, 0) / v2Metrics.length
+            : 0,
+        requestCount: v2Metrics.length,
       },
       legacy: {
-        avgLoadTime: legacyMetrics.length > 0 
-          ? legacyMetrics.reduce((sum, m) => sum + m.loadTime, 0) / legacyMetrics.length 
-          : 0,
-        requestCount: legacyMetrics.length
-      }
+        avgLoadTime:
+          legacyMetrics.length > 0
+            ? legacyMetrics.reduce((sum, m) => sum + m.loadTime, 0) / legacyMetrics.length
+            : 0,
+        requestCount: legacyMetrics.length,
+      },
     };
   }
-  
+
   /**
    * 清理舊數據
    */
@@ -494,7 +514,7 @@ export class PerformanceTimer {
   private marks = new Map<string, number>();
   private renderStartTime?: number;
   private dataFetchStartTime?: number;
-  
+
   constructor(
     private widgetId: string,
     private variant: 'v2' | 'legacy',
@@ -502,28 +522,28 @@ export class PerformanceTimer {
   ) {
     this.startTime = performance.now();
   }
-  
+
   /**
    * 標記時間點
    */
   mark(name: string): void {
     this.marks.set(name, performance.now());
   }
-  
+
   /**
    * 開始渲染計時
    */
   startRender(): void {
     this.renderStartTime = performance.now();
   }
-  
+
   /**
    * 開始數據獲取計時
    */
   startDataFetch(): void {
     this.dataFetchStartTime = performance.now();
   }
-  
+
   /**
    * 結束數據獲取計時
    */
@@ -531,7 +551,7 @@ export class PerformanceTimer {
     if (!this.dataFetchStartTime) return 0;
     return performance.now() - this.dataFetchStartTime;
   }
-  
+
   /**
    * 完成監控
    */
@@ -540,7 +560,7 @@ export class PerformanceTimer {
     const loadTime = endTime - this.startTime;
     const renderTime = this.renderStartTime ? endTime - this.renderStartTime : 0;
     const dataFetchTime = this.dataFetchStartTime ? this.endDataFetch() : undefined;
-    
+
     const metrics: PerformanceMetrics = {
       widgetId: this.widgetId,
       timestamp: Date.now(),
@@ -550,9 +570,9 @@ export class PerformanceTimer {
       route: context.route,
       variant: this.variant,
       sessionId: context.sessionId,
-      userId: context.userId
+      userId: context.userId,
     };
-    
+
     this.monitor.recordMetrics(metrics);
   }
 }

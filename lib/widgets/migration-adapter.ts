@@ -27,17 +27,17 @@ export const MigrationAdapter: React.FC<MigrationAdapterProps> = ({
 }) => {
   const oldLayoutRef = useRef<any>(null);
   const newLayoutRef = useRef<any>(null);
-  
+
   // 獲取新版本的組件
   const NewComponent = widgetRegistry.getComponent(widgetId);
-  
+
   // 監控布局變化
   useEffect(() => {
     if (enableDualRun && onLayoutChange && oldLayoutRef.current && newLayoutRef.current) {
       // 比較新舊布局
       const oldBounds = oldLayoutRef.current.getBoundingClientRect();
       const newBounds = newLayoutRef.current.getBoundingClientRect();
-      
+
       if (
         oldBounds.width !== newBounds.width ||
         oldBounds.height !== newBounds.height ||
@@ -46,42 +46,46 @@ export const MigrationAdapter: React.FC<MigrationAdapterProps> = ({
       ) {
         console.warn(`[MigrationAdapter] Layout mismatch detected for ${widgetId}:`, {
           old: oldBounds,
-          new: newBounds
+          new: newBounds,
         });
         onLayoutChange(oldBounds, newBounds);
       }
     }
   }, [widgetId, enableDualRun, onLayoutChange]);
-  
+
   // 如果啟用雙重運行且有舊組件，則並行顯示
   if (enableDualRun && OldComponent && NewComponent) {
-    return (
-      React.createElement('div', { className: 'migration-adapter-container' },
-        React.createElement('div', { 
-          className: 'migration-adapter-old', 
-          ref: oldLayoutRef, 
-          style: { display: 'none' } 
+    return React.createElement(
+      'div',
+      { className: 'migration-adapter-container' },
+      React.createElement(
+        'div',
+        {
+          className: 'migration-adapter-old',
+          ref: oldLayoutRef,
+          style: { display: 'none' },
         },
-          React.createElement(OldComponent, props)
-        ),
-        React.createElement('div', { 
-          className: 'migration-adapter-new', 
-          ref: newLayoutRef 
+        React.createElement(OldComponent, props)
+      ),
+      React.createElement(
+        'div',
+        {
+          className: 'migration-adapter-new',
+          ref: newLayoutRef,
         },
-          React.createElement(NewComponent, props)
-        )
+        React.createElement(NewComponent, props)
       )
     );
   }
-  
+
   // 優先使用新組件，如果沒有則使用舊組件
   const Component = NewComponent || OldComponent;
-  
+
   if (!Component) {
     console.error(`[MigrationAdapter] No component found for widget: ${widgetId}`);
     return React.createElement('div', {}, `Widget not found: ${widgetId}`);
   }
-  
+
   return React.createElement(Component, props);
 };
 
@@ -93,16 +97,16 @@ export function createMigrationWrapper(
   widgetId: string,
   oldComponent?: React.ComponentType<WidgetComponentProps>
 ): React.FC<WidgetComponentProps> {
-  const MigrationWrapper = (props: WidgetComponentProps) => 
+  const MigrationWrapper = (props: WidgetComponentProps) =>
     React.createElement(MigrationAdapter, {
       widgetId,
       oldComponent,
       enableDualRun: process.env.NEXT_PUBLIC_ENABLE_DUAL_RUN === 'true',
-      ...props
+      ...props,
     });
-  
+
   MigrationWrapper.displayName = `MigrationWrapper(${widgetId})`;
-  
+
   return MigrationWrapper;
 }
 
@@ -113,11 +117,11 @@ export function createMigrationWrappers(
   widgetMap: Record<string, React.ComponentType<WidgetComponentProps>>
 ): Record<string, React.FC<WidgetComponentProps>> {
   const wrappers: Record<string, React.FC<WidgetComponentProps>> = {};
-  
+
   Object.entries(widgetMap).forEach(([widgetId, component]) => {
     wrappers[widgetId] = createMigrationWrapper(widgetId, component);
   });
-  
+
   return wrappers;
 }
 
@@ -126,30 +130,33 @@ export function createMigrationWrappers(
  */
 export class MigrationTracker {
   private static instance: MigrationTracker;
-  private migrationStatus = new Map<string, {
-    status: 'pending' | 'in_progress' | 'completed' | 'failed';
-    startTime?: number;
-    endTime?: number;
-    error?: Error;
-    validationPassed?: boolean;
-  }>();
-  
+  private migrationStatus = new Map<
+    string,
+    {
+      status: 'pending' | 'in_progress' | 'completed' | 'failed';
+      startTime?: number;
+      endTime?: number;
+      error?: Error;
+      validationPassed?: boolean;
+    }
+  >();
+
   private constructor() {}
-  
+
   static getInstance(): MigrationTracker {
     if (!MigrationTracker.instance) {
       MigrationTracker.instance = new MigrationTracker();
     }
     return MigrationTracker.instance;
   }
-  
+
   startMigration(widgetId: string): void {
     this.migrationStatus.set(widgetId, {
       status: 'in_progress',
-      startTime: Date.now()
+      startTime: Date.now(),
     });
   }
-  
+
   completeMigration(widgetId: string, validationPassed: boolean): void {
     const status = this.migrationStatus.get(widgetId);
     if (status) {
@@ -158,7 +165,7 @@ export class MigrationTracker {
       status.validationPassed = validationPassed;
     }
   }
-  
+
   failMigration(widgetId: string, error: Error): void {
     const status = this.migrationStatus.get(widgetId);
     if (status) {
@@ -167,15 +174,15 @@ export class MigrationTracker {
       status.error = error;
     }
   }
-  
+
   getStatus(widgetId: string) {
     return this.migrationStatus.get(widgetId);
   }
-  
+
   getAllStatuses() {
     return new Map(this.migrationStatus);
   }
-  
+
   getMigratedWidgets(): Set<string> {
     const migrated = new Set<string>();
     this.migrationStatus.forEach((status, widgetId) => {
@@ -192,34 +199,35 @@ export class MigrationTracker {
     }
     return migrated;
   }
-  
+
   generateReport(): string {
     let report = '# Widget Migration Report\n\n';
     report += `Generated at: ${new Date().toISOString()}\n\n`;
-    
-    const completed = Array.from(this.migrationStatus.entries())
-      .filter(([_, status]) => status.status === 'completed');
-    const failed = Array.from(this.migrationStatus.entries())
-      .filter(([_, status]) => status.status === 'failed');
-    const inProgress = Array.from(this.migrationStatus.entries())
-      .filter(([_, status]) => status.status === 'in_progress');
-    
+
+    const completed = Array.from(this.migrationStatus.entries()).filter(
+      ([_, status]) => status.status === 'completed'
+    );
+    const failed = Array.from(this.migrationStatus.entries()).filter(
+      ([_, status]) => status.status === 'failed'
+    );
+    const inProgress = Array.from(this.migrationStatus.entries()).filter(
+      ([_, status]) => status.status === 'in_progress'
+    );
+
     report += `## Summary\n`;
     report += `- Completed: ${completed.length}\n`;
     report += `- Failed: ${failed.length}\n`;
     report += `- In Progress: ${inProgress.length}\n\n`;
-    
+
     if (completed.length > 0) {
       report += `## Completed Migrations\n`;
       completed.forEach(([widgetId, status]) => {
-        const duration = status.endTime && status.startTime 
-          ? status.endTime - status.startTime 
-          : 0;
+        const duration = status.endTime && status.startTime ? status.endTime - status.startTime : 0;
         report += `- ${widgetId}: ${duration}ms (Validation: ${status.validationPassed ? 'PASSED' : 'FAILED'})\n`;
       });
       report += '\n';
     }
-    
+
     if (failed.length > 0) {
       report += `## Failed Migrations\n`;
       failed.forEach(([widgetId, status]) => {
@@ -227,7 +235,7 @@ export class MigrationTracker {
       });
       report += '\n';
     }
-    
+
     return report;
   }
 }

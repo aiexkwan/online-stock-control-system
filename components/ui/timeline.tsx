@@ -1,11 +1,11 @@
-"use client";
+'use client';
 
-import { motion, AnimatePresence } from "framer-motion";
-import { Button } from "@/components/ui/button";
-import Link from "next/link";
-import { ChevronDown } from "lucide-react";
-import { useState } from "react";
-import { cn } from "@/lib/utils";
+import { motion, AnimatePresence } from 'framer-motion';
+import { Button } from '@/components/ui/button';
+import Link from 'next/link';
+import { ChevronDown } from 'lucide-react';
+import { useState } from 'react';
+import { cn } from '@/lib/utils';
 
 interface TimelineItem {
   date: string;
@@ -27,8 +27,8 @@ interface TimelineProps {
   titleClassName?: string;
   descriptionClassName?: string;
   dateClassName?: string;
-  buttonVariant?: "default" | "outline" | "ghost" | "link";
-  buttonSize?: "default" | "sm" | "lg";
+  buttonVariant?: 'default' | 'outline' | 'ghost' | 'link';
+  buttonSize?: 'default' | 'sm' | 'lg';
   animationDuration?: number;
   animationDelay?: number;
   showAnimation?: boolean;
@@ -55,20 +55,17 @@ function DesktopTimelineEntry({
   return (
     <div
       className={cn(
-        "group relative grid grid-cols-[1fr_auto_1fr] items-center gap-4 md:grid",
-        !item.href && "pointer-events-none"
+        'group relative grid grid-cols-[1fr_auto_1fr] items-center gap-4 md:grid',
+        !item.href && 'pointer-events-none'
       )}
     >
       {/* 左側內容 */}
-      <div className={cn(
-        "text-right",
-        !isLeft && "invisible"
-      )}>
+      <div className={cn('text-right', !isLeft && 'invisible')}>
         {isLeft && (
-          <div className="space-y-1">
+          <div className='space-y-1'>
             <h3
               className={cn(
-                "text-base font-medium tracking-tight text-muted-foreground transition-colors group-hover:text-foreground",
+                'text-base font-medium tracking-tight text-muted-foreground transition-colors group-hover:text-foreground',
                 titleClassName
               )}
             >
@@ -77,7 +74,7 @@ function DesktopTimelineEntry({
             {item.description && (
               <p
                 className={cn(
-                  "text-sm text-muted-foreground group-hover:text-muted-foreground/80",
+                  'text-sm text-muted-foreground group-hover:text-muted-foreground/80',
                   descriptionClassName
                 )}
               >
@@ -86,10 +83,7 @@ function DesktopTimelineEntry({
             )}
             <time
               dateTime={item.date}
-              className={cn(
-                "text-xs text-muted-foreground/70",
-                dateClassName
-              )}
+              className={cn('text-xs text-muted-foreground/70', dateClassName)}
             >
               {(() => {
                 const date = new Date(item.date);
@@ -103,35 +97,28 @@ function DesktopTimelineEntry({
           </div>
         )}
       </div>
-      
+
       {/* 中間線同點 */}
-      <div className="relative flex flex-col items-center">
-        <div
-          className={cn("h-16 border-l border-border", lineClassName)}
-        />
+      <div className='relative flex flex-col items-center'>
+        <div className={cn('h-16 border-l border-border', lineClassName)} />
         <div
           className={cn(
-            "absolute top-[1.6875rem] flex h-5 w-5 items-center justify-center rounded-full bg-primary/60 transition-colors group-hover:bg-primary",
-            !item.icon && "h-2.5 w-2.5",
+            'absolute top-[1.6875rem] flex h-5 w-5 items-center justify-center rounded-full bg-primary/60 transition-colors group-hover:bg-primary',
+            !item.icon && 'h-2.5 w-2.5',
             dotClassName
           )}
         >
-          {item.icon && (
-            <div className="h-3 w-3 text-primary-foreground">{item.icon}</div>
-          )}
+          {item.icon && <div className='h-3 w-3 text-primary-foreground'>{item.icon}</div>}
         </div>
       </div>
-      
+
       {/* 右側內容 */}
-      <div className={cn(
-        "text-left",
-        isLeft && "invisible"
-      )}>
+      <div className={cn('text-left', isLeft && 'invisible')}>
         {!isLeft && (
-          <div className="space-y-1">
+          <div className='space-y-1'>
             <h3
               className={cn(
-                "text-base font-medium tracking-tight text-muted-foreground transition-colors group-hover:text-foreground",
+                'text-base font-medium tracking-tight text-muted-foreground transition-colors group-hover:text-foreground',
                 titleClassName
               )}
             >
@@ -140,7 +127,7 @@ function DesktopTimelineEntry({
             {item.description && (
               <p
                 className={cn(
-                  "text-sm text-muted-foreground group-hover:text-muted-foreground/80",
+                  'text-sm text-muted-foreground group-hover:text-muted-foreground/80',
                   descriptionClassName
                 )}
               >
@@ -149,10 +136,7 @@ function DesktopTimelineEntry({
             )}
             <time
               dateTime={item.date}
-              className={cn(
-                "text-xs text-muted-foreground/70",
-                dateClassName
-              )}
+              className={cn('text-xs text-muted-foreground/70', dateClassName)}
             >
               {(() => {
                 const date = new Date(item.date);
@@ -191,52 +175,34 @@ function MobileTimelineEntry({
   return (
     <div
       className={cn(
-        "flex items-start space-x-4 rounded-lg px-4 py-3 transition-colors hover:bg-muted/50 md:hidden",
-        isLeft ? "flex-row" : "flex-row-reverse space-x-reverse"
+        'flex items-start space-x-4 rounded-lg px-4 py-3 transition-colors hover:bg-muted/50 md:hidden',
+        isLeft ? 'flex-row' : 'flex-row-reverse space-x-reverse'
       )}
     >
-      <div className="relative flex-shrink-0">
-        <div className={cn("h-16 border-l border-border", lineClassName)} />
+      <div className='relative flex-shrink-0'>
+        <div className={cn('h-16 border-l border-border', lineClassName)} />
         <div
           className={cn(
-            "absolute -left-1 top-5 flex h-5 w-5 items-center justify-center rounded-full bg-primary/60",
-            !item.icon && "h-2.5 w-2.5",
+            'absolute -left-1 top-5 flex h-5 w-5 items-center justify-center rounded-full bg-primary/60',
+            !item.icon && 'h-2.5 w-2.5',
             dotClassName
           )}
         >
-          {item.icon && (
-            <div className="h-3 w-3 text-primary-foreground">{item.icon}</div>
-          )}
+          {item.icon && <div className='h-3 w-3 text-primary-foreground'>{item.icon}</div>}
         </div>
       </div>
-      <div className={cn(
-        "flex-1 space-y-1",
-        !isLeft && "text-right"
-      )}>
-        <h3
-          className={cn(
-            "text-base font-medium tracking-tight text-foreground",
-            titleClassName
-          )}
-        >
+      <div className={cn('flex-1 space-y-1', !isLeft && 'text-right')}>
+        <h3 className={cn('text-base font-medium tracking-tight text-foreground', titleClassName)}>
           {item.title}
         </h3>
         {item.description && (
-          <p
-            className={cn(
-              "text-sm text-muted-foreground",
-              descriptionClassName
-            )}
-          >
+          <p className={cn('text-sm text-muted-foreground', descriptionClassName)}>
             {item.description}
           </p>
         )}
         <time
           dateTime={item.date}
-          className={cn(
-            "text-xs text-muted-foreground/70",
-            dateClassName
-          )}
+          className={cn('text-xs text-muted-foreground/70', dateClassName)}
         >
           {(() => {
             const date = new Date(item.date);
@@ -256,30 +222,28 @@ export function Timeline({
   items,
   initialCount = 5,
   className,
-  showMoreText = "Show More",
-  showLessText = "Show Less",
+  showMoreText = 'Show More',
+  showLessText = 'Show Less',
   dotClassName,
   lineClassName,
   titleClassName,
   descriptionClassName,
   dateClassName,
-  buttonVariant = "ghost",
-  buttonSize = "sm",
+  buttonVariant = 'ghost',
+  buttonSize = 'sm',
   animationDuration = 0.3,
   animationDelay = 0.1,
   showAnimation = true,
 }: TimelineProps) {
   const [showAll, setShowAll] = useState(false);
-  const sortedItems = items.sort(
-    (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
-  );
+  const sortedItems = items.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   const initialItems = sortedItems.slice(0, initialCount);
   const remainingItems = sortedItems.slice(initialCount);
 
   return (
-    <div className={cn("mx-5 max-w-2xl md:mx-auto", className)}>
+    <div className={cn('mx-5 max-w-2xl md:mx-auto', className)}>
       <div>
-        <ul className="space-y-4">
+        <ul className='space-y-4'>
           {initialItems.map((item, index) => (
             <motion.li
               key={index}
@@ -316,7 +280,7 @@ export function Timeline({
                 <motion.li
                   key={index}
                   initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: "auto" }}
+                  animate={{ opacity: 1, height: 'auto' }}
                   exit={{ opacity: 0, height: 0 }}
                   transition={{
                     duration: animationDuration,
@@ -350,20 +314,17 @@ export function Timeline({
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="mt-8 flex justify-center"
+          className='mt-8 flex justify-center'
         >
           <Button
             variant={buttonVariant}
             size={buttonSize}
-            className="gap-2"
+            className='gap-2'
             onClick={() => setShowAll(!showAll)}
           >
             {showAll ? showLessText : showMoreText}
-            <motion.div
-              animate={{ rotate: showAll ? 180 : 0 }}
-              transition={{ duration: 0.2 }}
-            >
-              <ChevronDown className="h-4 w-4" />
+            <motion.div animate={{ rotate: showAll ? 180 : 0 }} transition={{ duration: 0.2 }}>
+              <ChevronDown className='h-4 w-4' />
             </motion.div>
           </Button>
         </motion.div>

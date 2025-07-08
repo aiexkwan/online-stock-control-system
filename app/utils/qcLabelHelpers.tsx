@@ -12,7 +12,7 @@ import {
   ORDINAL_SUFFIX_REMAINDER_2,
   ORDINAL_SUFFIX_SPECIAL_CASE_13,
   ORDINAL_SUFFIX_REMAINDER_3,
-  DEFAULT_ACO_PALLET_START_COUNT
+  DEFAULT_ACO_PALLET_START_COUNT,
 } from '@/app/components/qc-label-form/constants';
 
 /**
@@ -23,7 +23,7 @@ import {
 export function getOrdinalSuffix(num: number): string {
   const j = num % ORDINAL_SUFFIX_REMAINDER_10;
   const k = num % HUNDRED_MODULO;
-  
+
   if (j === ORDINAL_SUFFIX_REMAINDER_1 && k !== ORDINAL_SUFFIX_SPECIAL_CASE_11) {
     return `${num}st`;
   }
@@ -48,13 +48,13 @@ export async function getAcoPalletCount(supabase: any, acoOrderRef: string): Pro
       .from('record_history')
       .select('id')
       .like('remark', `ACO Ref : ${acoOrderRef}%`);
-    
+
     if (error) {
       // 生產環境調試日誌
       console.error('Error fetching ACO pallet count:', error);
       return DEFAULT_ACO_PALLET_START_COUNT; // 如果出錯則從 1 開始
     }
-    
+
     // 返回下一個卡板編號
     return (data?.length || 0) + DEFAULT_ACO_PALLET_START_COUNT;
   } catch (error) {
@@ -85,7 +85,7 @@ export function isValidProductCode(productCode: string): boolean {
   if (!productCode || typeof productCode !== 'string') {
     return false;
   }
-  
+
   // 去除首尾空格後檢查
   const trimmedCode = productCode.trim();
   return trimmedCode.length > 0;
@@ -100,11 +100,11 @@ export function isValidProductCode(productCode: string): boolean {
 export function calculateTotalQuantity(quantity: string | number, count: string | number): number {
   const qty = typeof quantity === 'string' ? parseInt(quantity, 10) : quantity;
   const cnt = typeof count === 'string' ? parseInt(count, 10) : count;
-  
+
   if (isNaN(qty) || isNaN(cnt)) {
     return 0;
   }
-  
+
   return qty * cnt;
 }
 
@@ -118,7 +118,7 @@ export function generatePdfFileName(productCode: string, timestamp?: Date): stri
   const date = timestamp || new Date();
   const dateStr = date.toISOString().split('T')[0]; // YYYY-MM-DD
   const timeStr = date.toTimeString().split(' ')[0].replace(/:/g, '-'); // HH-MM-SS
-  
+
   return `QC-Label_${productCode}_${dateStr}_${timeStr}.pdf`;
 }
 
@@ -131,17 +131,17 @@ export function extractClockNumberFromEmail(email: string): string | null {
   if (!email || !email.includes('@')) {
     return null;
   }
-  
+
   const parts = email.split('@');
   if (parts.length !== 2) {
     return null;
   }
-  
+
   const clockNumber = parts[0];
   // 驗證時鐘編號格式（假設是數字）
   if (!/^\d+$/.test(clockNumber)) {
     return null;
   }
-  
+
   return clockNumber;
 }

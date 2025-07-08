@@ -9,7 +9,7 @@ export function SoundSettingsToggle() {
   const soundSettings = useSoundSettings();
   const [soundEnabled, setSoundEnabled] = useState(true);
   const sound = useSoundFeedback({ enabled: true, volume: soundSettings.getSoundVolume() });
-  
+
   // Initialize from localStorage
   useEffect(() => {
     setSoundEnabled(soundSettings.getSoundEnabled());
@@ -19,7 +19,7 @@ export function SoundSettingsToggle() {
     const newValue = !soundEnabled;
     setSoundEnabled(newValue);
     soundSettings.setSoundEnabled(newValue);
-    
+
     // Play a test sound if enabling
     if (newValue) {
       sound.playScan();
@@ -28,16 +28,16 @@ export function SoundSettingsToggle() {
 
   return (
     <Button
-      variant="ghost"
-      size="sm"
+      variant='ghost'
+      size='sm'
       onClick={toggleSound}
-      className="text-slate-400 hover:text-white"
+      className='text-slate-400 hover:text-white'
       title={soundEnabled ? 'Disable sound feedback' : 'Enable sound feedback'}
     >
       {soundEnabled ? (
-        <SpeakerWaveIcon className="h-5 w-5" />
+        <SpeakerWaveIcon className='h-5 w-5' />
       ) : (
-        <SpeakerXMarkIcon className="h-5 w-5" />
+        <SpeakerXMarkIcon className='h-5 w-5' />
       )}
     </Button>
   );

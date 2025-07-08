@@ -18,11 +18,7 @@ interface UseActivityLogOptions {
  * 可在多個組件間共享日誌狀態
  */
 export const useActivityLog = (options: UseActivityLogOptions = {}) => {
-  const {
-    maxEntries = 100,
-    persistToStorage = false,
-    storageKey = 'activity-log'
-  } = options;
+  const { maxEntries = 100, persistToStorage = false, storageKey = 'activity-log' } = options;
 
   // 初始化日誌（從 localStorage 恢復）
   const initializeLogs = (): ActivityLogEntry[] => {
@@ -44,68 +40,79 @@ export const useActivityLog = (options: UseActivityLogOptions = {}) => {
   /**
    * 添加新的活動日誌
    */
-  const addActivity = useCallback((
-    message: string, 
-    type: ActivityLogEntry['type'] = 'info',
-    metadata?: Record<string, any>
-  ) => {
-    const newEntry: ActivityLogEntry = {
-      message,
-      type,
-      timestamp: new Date().toLocaleString('en-US'),
-      metadata
-    };
+  const addActivity = useCallback(
+    (message: string, type: ActivityLogEntry['type'] = 'info', metadata?: Record<string, any>) => {
+      const newEntry: ActivityLogEntry = {
+        message,
+        type,
+        timestamp: new Date().toLocaleString('en-US'),
+        metadata,
+      };
 
-    setActivityLog(prev => {
-      const updated = [newEntry, ...prev].slice(0, maxEntries);
-      
-      // 持久化到 localStorage
-      if (persistToStorage && typeof window !== 'undefined') {
-        try {
-          localStorage.setItem(storageKey, JSON.stringify(updated));
-        } catch (error) {
-          console.error('Failed to persist activity log:', error);
+      setActivityLog(prev => {
+        const updated = [newEntry, ...prev].slice(0, maxEntries);
+
+        // 持久化到 localStorage
+        if (persistToStorage && typeof window !== 'undefined') {
+          try {
+            localStorage.setItem(storageKey, JSON.stringify(updated));
+          } catch (error) {
+            console.error('Failed to persist activity log:', error);
+          }
         }
-      }
-      
-      return updated;
-    });
-  }, [maxEntries, persistToStorage, storageKey]);
+
+        return updated;
+      });
+    },
+    [maxEntries, persistToStorage, storageKey]
+  );
 
   /**
    * 添加成功日誌
    */
-  const addSuccess = useCallback((message: string, metadata?: Record<string, any>) => {
-    addActivity(message, 'success', metadata);
-  }, [addActivity]);
+  const addSuccess = useCallback(
+    (message: string, metadata?: Record<string, any>) => {
+      addActivity(message, 'success', metadata);
+    },
+    [addActivity]
+  );
 
   /**
    * 添加錯誤日誌
    */
-  const addError = useCallback((message: string, metadata?: Record<string, any>) => {
-    addActivity(message, 'error', metadata);
-  }, [addActivity]);
+  const addError = useCallback(
+    (message: string, metadata?: Record<string, any>) => {
+      addActivity(message, 'error', metadata);
+    },
+    [addActivity]
+  );
 
   /**
    * 添加警告日誌
    */
-  const addWarning = useCallback((message: string, metadata?: Record<string, any>) => {
-    addActivity(message, 'warning', metadata);
-  }, [addActivity]);
+  const addWarning = useCallback(
+    (message: string, metadata?: Record<string, any>) => {
+      addActivity(message, 'warning', metadata);
+    },
+    [addActivity]
+  );
 
   /**
    * 添加信息日誌
    */
-  const addInfo = useCallback((message: string, metadata?: Record<string, any>) => {
-    addActivity(message, 'info', metadata);
-  }, [addActivity]);
+  const addInfo = useCallback(
+    (message: string, metadata?: Record<string, any>) => {
+      addActivity(message, 'info', metadata);
+    },
+    [addActivity]
+  );
 
   /**
    * 清除所有日誌
    */
   const clearLog = useCallback(() => {
     setActivityLog([]);
-    
+
     if (persistToStorage && typeof window !== 'undefined') {
       try {
         localStorage.removeItem(storageKey);
@@ -118,34 +125,43 @@ export const useActivityLog = (options: UseActivityLogOptions = {}) => {
   /**
    * 根據類型過濾日誌
    */
-  const filterByType = useCallback((type: ActivityLogEntry['type']): ActivityLogEntry[] => {
-    return activityLog.filter(entry => entry.type === type);
-  }, [activityLog]);
+  const filterByType = useCallback(
+    (type: ActivityLogEntry['type']): ActivityLogEntry[] => {
+      return activityLog.filter(entry => entry.type === type);
+    },
+    [activityLog]
+  );
 
   /**
    * 搜尋日誌
    */
-  const searchLog = useCallback((keyword: string): ActivityLogEntry[] => {
-    const lowercaseKeyword = keyword.toLowerCase();
-    return activityLog.filter(entry => 
-      entry.message.toLowerCase().includes(lowercaseKeyword) ||
-      JSON.stringify(entry.metadata || {}).toLowerCase().includes(lowercaseKeyword)
-    );
-  }, [activityLog]);
+  const searchLog = useCallback(
+    (keyword: string): ActivityLogEntry[] => {
+      const lowercaseKeyword = keyword.toLowerCase();
+      return activityLog.filter(
+        entry =>
+          entry.message.toLowerCase().includes(lowercaseKeyword) ||
+          JSON.stringify(entry.metadata || {})
+            .toLowerCase()
+            .includes(lowercaseKeyword)
+      );
+    },
+    [activityLog]
+  );
 
   /**
    * 導出日誌
    */
   const exportLog = useCallback((): string => {
-    return activityLog.map(entry => 
-      `[${entry.timestamp}] [${entry.type.toUpperCase()}] ${entry.message}`
-    ).join('\n');
+    return activityLog
+      .map(entry => `[${entry.timestamp}] [${entry.type.toUpperCase()}] ${entry.message}`)
+      .join('\n');
   }, [activityLog]);
 
   return {
     // 狀態
     activityLog,
-    
+
     // 基本操作
     addActivity,
     addSuccess,
@@ -153,10 +169,10 @@ export const useActivityLog = (options: UseActivityLogOptions = {}) => {
     addWarning,
     addInfo,
     clearLog,
-    
+
     // 進階功能
     filterByType,
     searchLog,
-    exportLog
+    exportLog,
   };
 };

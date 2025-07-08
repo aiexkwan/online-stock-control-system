@@ -27,38 +27,38 @@ export function QuickSearch() {
 
   return (
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-      <div className="relative group">
-        <div className="absolute inset-0 bg-gradient-to-r from-slate-800/50 to-blue-900/30 rounded-3xl blur-xl"></div>
-        
-        <div className="relative bg-slate-800/40 backdrop-blur-xl border border-slate-700/50 rounded-3xl p-8 shadow-2xl shadow-blue-900/20 hover:border-blue-500/30 transition-all duration-300">
-          <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 via-transparent to-cyan-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-3xl"></div>
-          
-          <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-blue-400/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-t-3xl"></div>
-          
-          <div className="relative z-10">
-            <h2 className="text-xl font-semibold bg-gradient-to-r from-blue-300 via-cyan-300 to-blue-200 bg-clip-text text-transparent flex items-center gap-3 mb-6">
-              <MagnifyingGlassIcon className="w-6 h-6 text-blue-400" />
+      <div className='group relative'>
+        <div className='absolute inset-0 rounded-3xl bg-gradient-to-r from-slate-800/50 to-blue-900/30 blur-xl'></div>
+
+        <div className='relative rounded-3xl border border-slate-700/50 bg-slate-800/40 p-8 shadow-2xl shadow-blue-900/20 backdrop-blur-xl transition-all duration-300 hover:border-blue-500/30'>
+          <div className='absolute inset-0 rounded-3xl bg-gradient-to-r from-blue-500/5 via-transparent to-cyan-500/5 opacity-0 transition-opacity duration-500 group-hover:opacity-100'></div>
+
+          <div className='absolute left-0 right-0 top-0 h-px rounded-t-3xl bg-gradient-to-r from-transparent via-blue-400/50 to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100'></div>
+
+          <div className='relative z-10'>
+            <h2 className='mb-6 flex items-center gap-3 bg-gradient-to-r from-blue-300 via-cyan-300 to-blue-200 bg-clip-text text-xl font-semibold text-transparent'>
+              <MagnifyingGlassIcon className='h-6 w-6 text-blue-400' />
               Quick Search
             </h2>
 
-            <form onSubmit={handleSubmit} className="mb-4">
-              <div className="relative">
+            <form onSubmit={handleSubmit} className='mb-4'>
+              <div className='relative'>
                 <input
-                  type="text"
+                  type='text'
                   value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Enter product code..."
-                  className="w-full px-4 py-3 bg-slate-700/50 border border-slate-600/50 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all duration-300 pr-12"
+                  onChange={e => setSearchQuery(e.target.value)}
+                  placeholder='Enter product code...'
+                  className='w-full rounded-xl border border-slate-600/50 bg-slate-700/50 px-4 py-3 pr-12 text-white placeholder-slate-400 transition-all duration-300 focus:border-blue-500/50 focus:outline-none focus:ring-2 focus:ring-blue-500/50'
                 />
                 <button
-                  type="submit"
+                  type='submit'
                   disabled={loading || !searchQuery.trim()}
-                  className="absolute right-2 top-1/2 transform -translate-y-1/2 p-2 text-blue-400 hover:text-blue-300 disabled:text-slate-500 transition-colors duration-300"
+                  className='absolute right-2 top-1/2 -translate-y-1/2 transform p-2 text-blue-400 transition-colors duration-300 hover:text-blue-300 disabled:text-slate-500'
                 >
                   {loading ? (
-                    <div className="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                    <div className='h-5 w-5 animate-spin rounded-full border-2 border-blue-500 border-t-transparent'></div>
                   ) : (
-                    <MagnifyingGlassIcon className="w-5 h-5" />
+                    <MagnifyingGlassIcon className='h-5 w-5' />
                   )}
                 </button>
               </div>
@@ -68,32 +68,32 @@ export function QuickSearch() {
               <motion.div
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="space-y-3"
+                className='space-y-3'
               >
-                <div className="bg-slate-700/30 rounded-lg p-4">
-                  <div className="flex justify-between items-center mb-3">
-                    <span className="text-sm font-medium text-slate-300">Product Code:</span>
-                    <span className="text-lg font-bold text-blue-400">{result.product_code}</span>
+                <div className='rounded-lg bg-slate-700/30 p-4'>
+                  <div className='mb-3 flex items-center justify-between'>
+                    <span className='text-sm font-medium text-slate-300'>Product Code:</span>
+                    <span className='text-lg font-bold text-blue-400'>{result.product_code}</span>
                   </div>
-                  
-                  <div className="space-y-2">
+
+                  <div className='space-y-2'>
                     {locations.map(({ key, label, color }) => {
                       const value = result[key as keyof typeof result] as number;
                       if (value === 0) return null;
-                      
+
                       return (
-                        <div key={key} className="flex justify-between items-center">
-                          <span className={cn("text-sm", color)}>{label}:</span>
-                          <span className="text-white font-medium">{value}</span>
+                        <div key={key} className='flex items-center justify-between'>
+                          <span className={cn('text-sm', color)}>{label}:</span>
+                          <span className='font-medium text-white'>{value}</span>
                         </div>
                       );
                     })}
                   </div>
-                  
-                  <div className="mt-3 pt-3 border-t border-slate-600/50">
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm font-medium text-slate-300">Total:</span>
-                      <span className="text-xl font-bold text-green-400">{result.total}</span>
+
+                  <div className='mt-3 border-t border-slate-600/50 pt-3'>
+                    <div className='flex items-center justify-between'>
+                      <span className='text-sm font-medium text-slate-300'>Total:</span>
+                      <span className='text-xl font-bold text-green-400'>{result.total}</span>
                     </div>
                   </div>
                 </div>
@@ -101,7 +101,7 @@ export function QuickSearch() {
             )}
 
             {searchQuery && !loading && !result && (
-              <div className="text-center py-4 text-slate-400 text-sm">
+              <div className='py-4 text-center text-sm text-slate-400'>
                 No inventory found for product code &quot;{searchQuery}&quot;
               </div>
             )}

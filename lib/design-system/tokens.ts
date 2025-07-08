@@ -19,7 +19,7 @@ export const designTokens = {
       800: 'hsl(210, 40%, 10%)',
       900: 'hsl(210, 40%, 5%)',
     },
-    
+
     // 語義化顏色
     semantic: {
       success: {
@@ -45,9 +45,9 @@ export const designTokens = {
         light: 'hsl(199, 89%, 58%)',
         dark: 'hsl(199, 89%, 38%)',
         foreground: 'hsl(0, 0%, 100%)',
-      }
+      },
     },
-    
+
     // 中性色
     neutral: {
       0: 'hsl(0, 0%, 100%)',
@@ -62,48 +62,48 @@ export const designTokens = {
       800: 'hsl(0, 0%, 10%)',
       900: 'hsl(0, 0%, 5%)',
       1000: 'hsl(0, 0%, 0%)',
-    }
+    },
   },
-  
+
   // 間距系統 - 8px 基準
   spacing: {
     0: '0',
     px: '1px',
-    0.5: '0.125rem',  // 2px
-    1: '0.25rem',     // 4px
-    1.5: '0.375rem',  // 6px
-    2: '0.5rem',      // 8px
-    2.5: '0.625rem',  // 10px
-    3: '0.75rem',     // 12px
-    3.5: '0.875rem',  // 14px
-    4: '1rem',        // 16px
-    5: '1.25rem',     // 20px
-    6: '1.5rem',      // 24px
-    7: '1.75rem',     // 28px
-    8: '2rem',        // 32px
-    9: '2.25rem',     // 36px
-    10: '2.5rem',     // 40px
-    11: '2.75rem',    // 44px
-    12: '3rem',       // 48px
-    14: '3.5rem',     // 56px
-    16: '4rem',       // 64px
-    20: '5rem',       // 80px
-    24: '6rem',       // 96px
-    28: '7rem',       // 112px
-    32: '8rem',       // 128px
-    36: '9rem',       // 144px
-    40: '10rem',      // 160px
-    44: '11rem',      // 176px
-    48: '12rem',      // 192px
-    52: '13rem',      // 208px
-    56: '14rem',      // 224px
-    60: '15rem',      // 240px
-    64: '16rem',      // 256px
-    72: '18rem',      // 288px
-    80: '20rem',      // 320px
-    96: '24rem',      // 384px
+    0.5: '0.125rem', // 2px
+    1: '0.25rem', // 4px
+    1.5: '0.375rem', // 6px
+    2: '0.5rem', // 8px
+    2.5: '0.625rem', // 10px
+    3: '0.75rem', // 12px
+    3.5: '0.875rem', // 14px
+    4: '1rem', // 16px
+    5: '1.25rem', // 20px
+    6: '1.5rem', // 24px
+    7: '1.75rem', // 28px
+    8: '2rem', // 32px
+    9: '2.25rem', // 36px
+    10: '2.5rem', // 40px
+    11: '2.75rem', // 44px
+    12: '3rem', // 48px
+    14: '3.5rem', // 56px
+    16: '4rem', // 64px
+    20: '5rem', // 80px
+    24: '6rem', // 96px
+    28: '7rem', // 112px
+    32: '8rem', // 128px
+    36: '9rem', // 144px
+    40: '10rem', // 160px
+    44: '11rem', // 176px
+    48: '12rem', // 192px
+    52: '13rem', // 208px
+    56: '14rem', // 224px
+    60: '15rem', // 240px
+    64: '16rem', // 256px
+    72: '18rem', // 288px
+    80: '20rem', // 320px
+    96: '24rem', // 384px
   },
-  
+
   // 字體系統
   typography: {
     // 字體家族
@@ -111,24 +111,24 @@ export const designTokens = {
       sans: ['Inter', 'Noto Sans HK', 'system-ui', '-apple-system', 'sans-serif'],
       mono: ['JetBrains Mono', 'Consolas', 'monospace'],
     },
-    
+
     // 字體大小
     fontSize: {
-      xs: ['0.75rem', { lineHeight: '1rem' }],       // 12px
-      sm: ['0.875rem', { lineHeight: '1.25rem' }],   // 14px
-      base: ['1rem', { lineHeight: '1.5rem' }],      // 16px
-      lg: ['1.125rem', { lineHeight: '1.75rem' }],   // 18px
-      xl: ['1.25rem', { lineHeight: '1.75rem' }],    // 20px
-      '2xl': ['1.5rem', { lineHeight: '2rem' }],     // 24px
-      '3xl': ['1.875rem', { lineHeight: '2.25rem' }],// 30px
-      '4xl': ['2.25rem', { lineHeight: '2.5rem' }],  // 36px
-      '5xl': ['3rem', { lineHeight: '1' }],          // 48px
-      '6xl': ['3.75rem', { lineHeight: '1' }],       // 60px
-      '7xl': ['4.5rem', { lineHeight: '1' }],        // 72px
-      '8xl': ['6rem', { lineHeight: '1' }],          // 96px
-      '9xl': ['8rem', { lineHeight: '1' }],          // 128px
+      xs: ['0.75rem', { lineHeight: '1rem' }], // 12px
+      sm: ['0.875rem', { lineHeight: '1.25rem' }], // 14px
+      base: ['1rem', { lineHeight: '1.5rem' }], // 16px
+      lg: ['1.125rem', { lineHeight: '1.75rem' }], // 18px
+      xl: ['1.25rem', { lineHeight: '1.75rem' }], // 20px
+      '2xl': ['1.5rem', { lineHeight: '2rem' }], // 24px
+      '3xl': ['1.875rem', { lineHeight: '2.25rem' }], // 30px
+      '4xl': ['2.25rem', { lineHeight: '2.5rem' }], // 36px
+      '5xl': ['3rem', { lineHeight: '1' }], // 48px
+      '6xl': ['3.75rem', { lineHeight: '1' }], // 60px
+      '7xl': ['4.5rem', { lineHeight: '1' }], // 72px
+      '8xl': ['6rem', { lineHeight: '1' }], // 96px
+      '9xl': ['8rem', { lineHeight: '1' }], // 128px
     },
-    
+
     // 字重
     fontWeight: {
       thin: '100',
@@ -140,22 +140,22 @@ export const designTokens = {
       bold: '700',
       extrabold: '800',
       black: '900',
-    }
+    },
   },
-  
+
   // 圓角系統
   borderRadius: {
     none: '0',
-    sm: '0.125rem',    // 2px
-    DEFAULT: '0.25rem',// 4px
-    md: '0.375rem',    // 6px
-    lg: '0.5rem',      // 8px
-    xl: '0.75rem',     // 12px
-    '2xl': '1rem',     // 16px
-    '3xl': '1.5rem',   // 24px
+    sm: '0.125rem', // 2px
+    DEFAULT: '0.25rem', // 4px
+    md: '0.375rem', // 6px
+    lg: '0.5rem', // 8px
+    xl: '0.75rem', // 12px
+    '2xl': '1rem', // 16px
+    '3xl': '1.5rem', // 24px
     full: '9999px',
   },
-  
+
   // 陰影系統
   boxShadow: {
     sm: '0 1px 2px 0 rgb(0 0 0 / 0.05)',
@@ -167,7 +167,7 @@ export const designTokens = {
     inner: 'inset 0 2px 4px 0 rgb(0 0 0 / 0.05)',
     none: 'none',
   },
-  
+
   // 觸控目標大小 (WCAG 2.1 AAA 標準)
   touch: {
     small: {
@@ -184,9 +184,9 @@ export const designTokens = {
       minHeight: '56px',
       minWidth: '56px',
       padding: '1.25rem',
-    }
+    },
   },
-  
+
   // 動畫時長
   duration: {
     75: '75ms',
@@ -198,7 +198,7 @@ export const designTokens = {
     700: '700ms',
     1000: '1000ms',
   },
-  
+
   // 動畫緩動函數
   easing: {
     linear: 'linear',
@@ -207,7 +207,7 @@ export const designTokens = {
     inOut: 'cubic-bezier(0.4, 0, 0.2, 1)',
     bounce: 'cubic-bezier(0.68, -0.55, 0.265, 1.55)',
   },
-  
+
   // 斷點 (響應式設計)
   breakpoints: {
     xs: '475px',
@@ -217,7 +217,7 @@ export const designTokens = {
     xl: '1280px',
     '2xl': '1536px',
   },
-  
+
   // Z-index 層級
   zIndex: {
     0: 0,
@@ -236,7 +236,7 @@ export const designTokens = {
     tooltip: 800,
     notification: 900,
     max: 9999,
-  }
+  },
 } as const;
 
 // 輔助函數 - 生成 Tailwind class names
@@ -275,7 +275,7 @@ export const getSemanticColorClass = (
       info: 'border-blue-500',
     },
   };
-  
+
   return colorMap[variant][type];
 };
 

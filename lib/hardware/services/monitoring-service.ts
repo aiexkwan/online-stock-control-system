@@ -3,15 +3,15 @@
  * Monitors and tracks hardware device status and usage
  */
 
-import { 
-  DeviceStatus, 
-  DeviceMetrics, 
-  HardwareAlert, 
-  AlertCallback, 
+import {
+  DeviceStatus,
+  DeviceMetrics,
+  HardwareAlert,
+  AlertCallback,
   AlertThresholds,
   Unsubscribe,
   HardwareEvent,
-  HardwareEventType
+  HardwareEventType,
 } from '../types';
 import { EventEmitter } from 'events';
 
@@ -30,7 +30,7 @@ export class HardwareMonitoringService extends EventEmitter {
   private alertThresholds: AlertThresholds = {
     errorRate: 10, // 10%
     responseTime: 5000, // 5 seconds
-    queueSize: 50 // 50 jobs
+    queueSize: 50, // 50 jobs
   };
   private monitoringInterval: NodeJS.Timeout | null = null;
   private isMonitoring = false;
@@ -42,12 +42,12 @@ export class HardwareMonitoringService extends EventEmitter {
   // Start monitoring all registered devices
   startMonitoring(intervalMs: number = 30000): void {
     if (this.isMonitoring) return;
-    
+
     this.isMonitoring = true;
     this.monitoringInterval = setInterval(() => {
       this.performHealthCheck();
     }, intervalMs);
-    
+
     // Perform initial check
     this.performHealthCheck();
   }
@@ -55,7 +55,7 @@ export class HardwareMonitoringService extends EventEmitter {
   // Stop monitoring
   stopMonitoring(): void {
     this.isMonitoring = false;
-    
+
     if (this.monitoringInterval) {
       clearInterval(this.monitoringInterval);
       this.monitoringInterval = null;
@@ -70,10 +70,10 @@ export class HardwareMonitoringService extends EventEmitter {
       errorCount: 0,
       successCount: 0,
       successRate: 100,
-      averageResponseTime: 0
+      averageResponseTime: 0,
     });
     this.usageHistory.set(device.deviceId, []);
-    
+
     this.emit('device.registered', device);
   }
 
@@ -82,7 +82,7 @@ export class HardwareMonitoringService extends EventEmitter {
     this.devices.delete(deviceId);
     this.metrics.delete(deviceId);
     this.usageHistory.delete(deviceId);
-    
+
     this.emit('device.unregistered', { deviceId });
   }
 
@@ -115,7 +115,7 @@ export class HardwareMonitoringService extends EventEmitter {
       successCount: metrics.successCount,
       errorCount: metrics.errorCount,
       averageResponseTime: metrics.averageResponseTime,
-      lastUsed: relevantEvents[relevantEvents.length - 1]?.timestamp || 'Never'
+      lastUsed: relevantEvents[relevantEvents.length - 1]?.timestamp || 'Never',
     };
   }
 
@@ -126,7 +126,7 @@ export class HardwareMonitoringService extends EventEmitter {
 
     // Add event to history
     history.push(event);
-    
+
     // Keep only last 1000 events per device
     if (history.length > 1000) {
       history.shift();
@@ -134,10 +134,10 @@ export class HardwareMonitoringService extends EventEmitter {
 
     // Update metrics
     this.updateMetrics(event.deviceId);
-    
+
     // Check for alerts
     this.checkAlerts(event.deviceId);
-    
+
     // Emit the event
     this.emit(event.type, event);
   }
@@ -159,12 +159,12 @@ export class HardwareMonitoringService extends EventEmitter {
     this.devices.forEach((device, deviceId) => {
       // Update device last seen
       device.lastSeen = new Date().toISOString();
-      
+
       // Check device health based on last activity
       const lastEvent = this.getLastEvent(deviceId);
       if (lastEvent) {
         const timeSinceLastEvent = Date.now() - new Date(lastEvent.timestamp).getTime();
-        
+
         // Mark as offline if no activity for 5 minutes
         if (timeSinceLastEvent > 300000) {
           if (device.status !== 'offline') {
@@ -182,7 +182,7 @@ export class HardwareMonitoringService extends EventEmitter {
 
     const metrics = this.calculateMetrics(history.slice(-100)); // Last 100 events
     this.metrics.set(deviceId, metrics);
-    
+
     // Update device metrics
     const device = this.devices.get(deviceId);
     if (device) {
@@ -192,38 +192,39 @@ export class HardwareMonitoringService extends EventEmitter {
 
   private calculateMetrics(events: HardwareEvent[]): DeviceMetrics {
     const usageCount = events.length;
-    const successCount = events.filter(e => 
-      e.type === 'job.completed' || e.type === 'scan.success'
+    const successCount = events.filter(
+      e => e.type === 'job.completed' || e.type === 'scan.success'
     ).length;
-    const errorCount = events.filter(e => 
-      e.type === 'job.failed' || e.type === 'scan.failed'
+    const errorCount = events.filter(
+      e => e.type === 'job.failed' || e.type === 'scan.failed'
     ).length;
-    
+
     const successRate = usageCount > 0 ? (successCount / usageCount) * 100 : 100;
-    
+
     // Calculate average response time from job events
     const responseTimes: number[] = [];
     events.forEach((event, index) => {
       if (event.type === 'job.started' && index < events.length - 1) {
         const nextEvent = events[index + 1];
         if (nextEvent && (nextEvent.type === 'job.completed' || nextEvent.type === 'job.failed')) {
-          const responseTime = new Date(nextEvent.timestamp).getTime() - 
-                              new Date(event.timestamp).getTime();
+          const responseTime =
+            new Date(nextEvent.timestamp).getTime() - new Date(event.timestamp).getTime();
           responseTimes.push(responseTime);
         }
       }
     });
-    
-    const averageResponseTime = responseTimes.length > 0
-      ? responseTimes.reduce((a, b) => a + b, 0) / responseTimes.length
-      : 0;
-    
+
+    const averageResponseTime =
+      responseTimes.length > 0
+        ? responseTimes.reduce((a, b) => a + b, 0) / responseTimes.length
+        : 0;
+
     return {
       usageCount,
       errorCount,
       successCount,
       successRate,
-      averageResponseTime
+      averageResponseTime,
     };
   }
 
@@ -234,14 +235,16 @@ export class HardwareMonitoringService extends EventEmitter {
     // Check error rate
     const errorRate = (metrics.errorCount / metrics.usageCount) * 100;
     if (errorRate > this.alertThresholds.errorRate) {
-      this.emitAlert('error', deviceId, 
-        `High error rate detected: ${errorRate.toFixed(1)}%`);
+      this.emitAlert('error', deviceId, `High error rate detected: ${errorRate.toFixed(1)}%`);
     }
 
     // Check response time
     if (metrics.averageResponseTime > this.alertThresholds.responseTime) {
-      this.emitAlert('warning', deviceId, 
-        `Slow response time: ${(metrics.averageResponseTime / 1000).toFixed(1)}s`);
+      this.emitAlert(
+        'warning',
+        deviceId,
+        `Slow response time: ${(metrics.averageResponseTime / 1000).toFixed(1)}s`
+      );
     }
   }
 
@@ -250,9 +253,9 @@ export class HardwareMonitoringService extends EventEmitter {
       level,
       deviceId,
       message,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     };
-    
+
     this.emit('alert', alert);
   }
 
@@ -268,23 +271,23 @@ export class HardwareMonitoringService extends EventEmitter {
     const totalDevices = devices.length;
     const onlineDevices = devices.filter(d => d.status === 'online').length;
     const errorDevices = devices.filter(d => d.status === 'error').length;
-    
+
     const overallMetrics = {
       totalUsage: 0,
       totalErrors: 0,
-      averageSuccessRate: 0
+      averageSuccessRate: 0,
     };
-    
+
     this.metrics.forEach(metric => {
       overallMetrics.totalUsage += metric.usageCount;
       overallMetrics.totalErrors += metric.errorCount;
       overallMetrics.averageSuccessRate += metric.successRate;
     });
-    
+
     if (this.metrics.size > 0) {
       overallMetrics.averageSuccessRate /= this.metrics.size;
     }
-    
+
     return {
       totalDevices,
       onlineDevices,
@@ -292,8 +295,8 @@ export class HardwareMonitoringService extends EventEmitter {
       overallMetrics,
       devices: devices.map(device => ({
         ...device,
-        metrics: this.metrics.get(device.deviceId)
-      }))
+        metrics: this.metrics.get(device.deviceId),
+      })),
     };
   }
 }

@@ -32,28 +32,28 @@ export interface FormData {
   count: string;
   operator: string;
   userId: string;
-  
+
   // ACO specific
   acoOrderRef: string;
   acoOrderDetails: AcoOrderDetail[];
   acoNewRef: boolean;
   acoNewProductCode: string;
   acoNewOrderQty: string;
-  
+
   // Slate specific
   slateDetail: SlateDetail;
-  
+
   // Progress tracking
   pdfProgress: PdfProgress;
-  
+
   // Loading states
   isLoading: boolean;
   acoSearchLoading: boolean;
-  
+
   // Error states
   productError: string | null;
   acoOrderDetailErrors: string[];
-  
+
   // Other states
   acoRemain: string | null;
   availableAcoOrderRefs: number[];
@@ -63,4 +63,4 @@ export interface FormValidation {
   isValid: boolean;
   errors: string[];
   fieldErrors: Record<string, string>;
-} 
+}

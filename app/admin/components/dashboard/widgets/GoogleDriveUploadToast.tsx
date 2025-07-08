@@ -35,69 +35,71 @@ export const GoogleDriveUploadToast: React.FC<GoogleDriveUploadToastProps> = ({
         initial={{ opacity: 0, y: 50, scale: 0.9 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
         exit={{ opacity: 0, y: 50, scale: 0.9 }}
-        className="fixed bottom-8 right-8 bg-slate-800 rounded-xl shadow-2xl border border-slate-700 overflow-hidden z-50"
+        className='fixed bottom-8 right-8 z-50 overflow-hidden rounded-xl border border-slate-700 bg-slate-800 shadow-2xl'
         style={{ width: '360px' }}
       >
         {/* Header */}
-        <div className="bg-slate-900 px-4 py-3 flex items-center justify-between border-b border-slate-700">
-          <div className="flex items-center gap-3">
-            <h3 className="text-sm font-medium text-white">
+        <div className='flex items-center justify-between border-b border-slate-700 bg-slate-900 px-4 py-3'>
+          <div className='flex items-center gap-3'>
+            <h3 className='text-sm font-medium text-white'>
               {uploadingCount > 0 ? 'Uploading files' : 'Upload complete'}
             </h3>
             {uploadingCount > 0 && (
-              <div className="flex items-center gap-1">
-                <div className="w-4 h-4 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
-                <span className="text-xs text-slate-400">{uploadingCount} of {files.length}</span>
+              <div className='flex items-center gap-1'>
+                <div className='h-4 w-4 animate-spin rounded-full border-2 border-blue-400 border-t-transparent' />
+                <span className='text-xs text-slate-400'>
+                  {uploadingCount} of {files.length}
+                </span>
               </div>
             )}
           </div>
           <button
             onClick={onClose}
-            className="text-slate-400 hover:text-white transition-colors p-1 rounded hover:bg-slate-700"
+            className='rounded p-1 text-slate-400 transition-colors hover:bg-slate-700 hover:text-white'
           >
-            <XMarkIcon className="w-4 h-4" />
+            <XMarkIcon className='h-4 w-4' />
           </button>
         </div>
 
         {/* File List */}
-        <div className="max-h-[300px] overflow-y-auto">
-          {files.map((file) => (
-            <div key={file.id} className="px-4 py-3 border-b border-slate-700/50 last:border-0">
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-2 flex-1 min-w-0">
+        <div className='max-h-[300px] overflow-y-auto'>
+          {files.map(file => (
+            <div key={file.id} className='border-b border-slate-700/50 px-4 py-3 last:border-0'>
+              <div className='mb-2 flex items-center justify-between'>
+                <div className='flex min-w-0 flex-1 items-center gap-2'>
                   {file.status === 'completed' && (
-                    <CheckCircleIcon className="w-4 h-4 text-green-400 flex-shrink-0" />
+                    <CheckCircleIcon className='h-4 w-4 flex-shrink-0 text-green-400' />
                   )}
                   {file.status === 'error' && (
-                    <XMarkIcon className="w-4 h-4 text-red-400 flex-shrink-0" />
+                    <XMarkIcon className='h-4 w-4 flex-shrink-0 text-red-400' />
                   )}
-                  <span className="text-sm text-slate-200 truncate" title={file.name}>
+                  <span className='truncate text-sm text-slate-200' title={file.name}>
                     {file.name}
                   </span>
                 </div>
                 {file.status !== 'uploading' && (
                   <button
                     onClick={() => onRemoveFile(file.id)}
-                    className="text-slate-500 hover:text-slate-300 transition-colors ml-2"
+                    className='ml-2 text-slate-500 transition-colors hover:text-slate-300'
                   >
-                    <XMarkIcon className="w-3 h-3" />
+                    <XMarkIcon className='h-3 w-3' />
                   </button>
                 )}
               </div>
-              
+
               {file.status === 'uploading' && (
-                <div className="relative w-full h-1 bg-slate-700 rounded-full overflow-hidden">
+                <div className='relative h-1 w-full overflow-hidden rounded-full bg-slate-700'>
                   <motion.div
-                    className="absolute left-0 top-0 h-full bg-blue-500"
+                    className='absolute left-0 top-0 h-full bg-blue-500'
                     initial={{ width: 0 }}
                     animate={{ width: `${file.progress}%` }}
                     transition={{ duration: 0.3 }}
                   />
                 </div>
               )}
-              
+
               {file.status === 'error' && file.error && (
-                <p className="text-xs text-red-400 mt-1">{file.error}</p>
+                <p className='mt-1 text-xs text-red-400'>{file.error}</p>
               )}
             </div>
           ))}
@@ -105,14 +107,12 @@ export const GoogleDriveUploadToast: React.FC<GoogleDriveUploadToastProps> = ({
 
         {/* Summary */}
         {uploadingCount === 0 && (
-          <div className="px-4 py-2 bg-slate-900/50 text-xs text-slate-400">
+          <div className='bg-slate-900/50 px-4 py-2 text-xs text-slate-400'>
             {completedCount > 0 && (
-              <span className="text-green-400">{completedCount} uploaded</span>
+              <span className='text-green-400'>{completedCount} uploaded</span>
             )}
             {completedCount > 0 && errorCount > 0 && <span> • </span>}
-            {errorCount > 0 && (
-              <span className="text-red-400">{errorCount} failed</span>
-            )}
+            {errorCount > 0 && <span className='text-red-400'>{errorCount} failed</span>}
           </div>
         )}
       </motion.div>

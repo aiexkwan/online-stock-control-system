@@ -2,13 +2,13 @@
 
 import React, { useState, useEffect } from 'react';
 // import { useGlobalPerformanceMonitor } from './hooks/usePerformanceMonitor';
-import { 
-  ChartBarIcon, 
-  ClockIcon, 
+import {
+  ChartBarIcon,
+  ClockIcon,
   ExclamationTriangleIcon,
   CheckCircleIcon,
   InformationCircleIcon,
-  CubeIcon
+  CubeIcon,
 } from '@heroicons/react/24/outline';
 
 interface PerformanceDashboardProps {
@@ -28,32 +28,28 @@ const PerformanceMetricCard: React.FC<{
   const statusColors = {
     good: 'bg-green-50 border-green-200 text-green-800',
     warning: 'bg-yellow-50 border-yellow-200 text-yellow-800',
-    critical: 'bg-red-50 border-red-200 text-red-800'
+    critical: 'bg-red-50 border-red-200 text-red-800',
   };
 
   const iconColors = {
     good: 'text-green-600',
     warning: 'text-yellow-600',
-    critical: 'text-red-600'
+    critical: 'text-red-600',
   };
 
   return (
-    <div className={`p-4 rounded-lg border ${statusColors[status]}`}>
-      <div className="flex items-center justify-between mb-2">
-        <div className={`${iconColors[status]}`}>
-          {icon}
-        </div>
-        <div className="text-right">
-          <div className="text-2xl font-bold">
+    <div className={`rounded-lg border p-4 ${statusColors[status]}`}>
+      <div className='mb-2 flex items-center justify-between'>
+        <div className={`${iconColors[status]}`}>{icon}</div>
+        <div className='text-right'>
+          <div className='text-2xl font-bold'>
             {value}
-            {unit && <span className="text-sm font-normal ml-1">{unit}</span>}
+            {unit && <span className='ml-1 text-sm font-normal'>{unit}</span>}
           </div>
         </div>
       </div>
-      <h3 className="font-medium text-sm">{title}</h3>
-      {description && (
-        <p className="text-xs mt-1 opacity-75">{description}</p>
-      )}
+      <h3 className='text-sm font-medium'>{title}</h3>
+      {description && <p className='mt-1 text-xs opacity-75'>{description}</p>}
     </div>
   );
 };
@@ -67,45 +63,44 @@ const ComponentBreakdown: React.FC<{
   }>;
 }> = ({ components }) => {
   return (
-    <div className="space-y-2">
-      <h4 className="font-medium text-gray-800 mb-3">Component Performance</h4>
-      {components.map((component) => {
+    <div className='space-y-2'>
+      <h4 className='mb-3 font-medium text-gray-800'>Component Performance</h4>
+      {components.map(component => {
         const isSlow = component.averageRenderTime > 16;
-        const slowPercentage = component.renderCount > 0 
-          ? (component.slowRenders / component.renderCount) * 100 
-          : 0;
+        const slowPercentage =
+          component.renderCount > 0 ? (component.slowRenders / component.renderCount) * 100 : 0;
 
         return (
-          <div 
+          <div
             key={component.name}
-            className={`p-3 rounded-lg border ${
-              isSlow ? 'bg-red-50 border-red-200' : 'bg-gray-50 border-gray-200'
+            className={`rounded-lg border p-3 ${
+              isSlow ? 'border-red-200 bg-red-50' : 'border-gray-200 bg-gray-50'
             }`}
           >
-            <div className="flex items-center justify-between mb-2">
-              <span className="font-medium text-sm">{component.name}</span>
-              <div className="flex items-center space-x-2">
-                {isSlow && (
-                  <ExclamationTriangleIcon className="h-4 w-4 text-red-500" />
-                )}
-                <span className={`text-xs px-2 py-1 rounded-full ${
-                  isSlow ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'
-                }`}>
+            <div className='mb-2 flex items-center justify-between'>
+              <span className='text-sm font-medium'>{component.name}</span>
+              <div className='flex items-center space-x-2'>
+                {isSlow && <ExclamationTriangleIcon className='h-4 w-4 text-red-500' />}
+                <span
+                  className={`rounded-full px-2 py-1 text-xs ${
+                    isSlow ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'
+                  }`}
+                >
                   {component.averageRenderTime.toFixed(1)}ms
                 </span>
               </div>
             </div>
-            <div className="grid grid-cols-3 gap-2 text-xs text-gray-600">
+            <div className='grid grid-cols-3 gap-2 text-xs text-gray-600'>
               <div>
-                <span className="font-medium">{component.renderCount}</span>
+                <span className='font-medium'>{component.renderCount}</span>
                 <div>renders</div>
               </div>
               <div>
-                <span className="font-medium">{component.slowRenders}</span>
+                <span className='font-medium'>{component.slowRenders}</span>
                 <div>slow</div>
               </div>
               <div>
-                <span className="font-medium">{slowPercentage.toFixed(1)}%</span>
+                <span className='font-medium'>{slowPercentage.toFixed(1)}%</span>
                 <div>slow rate</div>
               </div>
             </div>
@@ -121,29 +116,24 @@ const PerformanceRecommendations: React.FC<{
 }> = ({ recommendations }) => {
   if (recommendations.length === 0) {
     return (
-      <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
-        <div className="flex items-center">
-          <CheckCircleIcon className="h-5 w-5 text-green-600 mr-2" />
-          <span className="text-green-800 font-medium">
-            All components are performing well!
-          </span>
+      <div className='rounded-lg border border-green-200 bg-green-50 p-4'>
+        <div className='flex items-center'>
+          <CheckCircleIcon className='mr-2 h-5 w-5 text-green-600' />
+          <span className='font-medium text-green-800'>All components are performing well!</span>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-2">
-      <h4 className="font-medium text-gray-800 mb-3 flex items-center">
-        <InformationCircleIcon className="h-5 w-5 mr-2" />
+    <div className='space-y-2'>
+      <h4 className='mb-3 flex items-center font-medium text-gray-800'>
+        <InformationCircleIcon className='mr-2 h-5 w-5' />
         Performance Recommendations
       </h4>
       {recommendations.map((recommendation, index) => (
-        <div 
-          key={index}
-          className="p-3 bg-blue-50 border border-blue-200 rounded-lg"
-        >
-          <p className="text-blue-800 text-sm">{recommendation}</p>
+        <div key={index} className='rounded-lg border border-blue-200 bg-blue-50 p-3'>
+          <p className='text-sm text-blue-800'>{recommendation}</p>
         </div>
       ))}
     </div>
@@ -153,7 +143,7 @@ const PerformanceRecommendations: React.FC<{
 export const PerformanceDashboard: React.FC<PerformanceDashboardProps> = ({
   isVisible = false,
   onToggle,
-  className = ''
+  className = '',
 }) => {
   // Temporarily disabled performance monitoring
   const getGlobalSummary = () => ({
@@ -162,9 +152,9 @@ export const PerformanceDashboard: React.FC<PerformanceDashboardProps> = ({
     averageRenderTime: 0,
     slowComponents: 0,
     slowComponentPercentage: 0,
-    componentBreakdown: []
+    componentBreakdown: [],
   });
-  
+
   const [summary, setSummary] = useState(getGlobalSummary());
   const [isExpanded, setIsExpanded] = useState(false);
 
@@ -179,12 +169,12 @@ export const PerformanceDashboard: React.FC<PerformanceDashboardProps> = ({
   if (!isVisible) {
     return (
       <button
-        type="button"
+        type='button'
         onClick={onToggle}
-        className="fixed bottom-4 right-4 bg-blue-600 text-white p-3 rounded-full shadow-lg hover:bg-blue-700 transition-colors z-50"
-        title="Show Performance Dashboard"
+        className='fixed bottom-4 right-4 z-50 rounded-full bg-blue-600 p-3 text-white shadow-lg transition-colors hover:bg-blue-700'
+        title='Show Performance Dashboard'
       >
-        <ChartBarIcon className="h-6 w-6" />
+        <ChartBarIcon className='h-6 w-6' />
       </button>
     );
   }
@@ -197,22 +187,28 @@ export const PerformanceDashboard: React.FC<PerformanceDashboardProps> = ({
 
   const getAllRecommendations = () => {
     const recommendations: string[] = [];
-    
+
     if (summary.slowComponentPercentage > 30) {
       recommendations.push('Consider using React.memo for frequently re-rendering components');
     }
-    
+
     if (summary.averageRenderTime > 20) {
-      recommendations.push('Average render time is high. Review component complexity and use useMemo for expensive calculations');
+      recommendations.push(
+        'Average render time is high. Review component complexity and use useMemo for expensive calculations'
+      );
     }
-    
+
     if (summary.totalRenders > 1000) {
-      recommendations.push('High number of renders detected. Check for unnecessary re-renders and optimize dependencies');
+      recommendations.push(
+        'High number of renders detected. Check for unnecessary re-renders and optimize dependencies'
+      );
     }
 
     summary.componentBreakdown.forEach((component: any) => {
       if (component.averageRenderTime > 32) {
-        recommendations.push(`${component.name} is consistently slow. Consider code splitting or optimization`);
+        recommendations.push(
+          `${component.name} is consistently slow. Consider code splitting or optimization`
+        );
       }
     });
 
@@ -221,28 +217,30 @@ export const PerformanceDashboard: React.FC<PerformanceDashboardProps> = ({
 
   return (
     <div className={`fixed bottom-4 right-4 z-50 ${className}`}>
-      <div className={`bg-white rounded-lg shadow-xl border border-gray-200 transition-all duration-300 ${
-        isExpanded ? 'w-96 max-h-96 overflow-y-auto' : 'w-80'
-      }`}>
+      <div
+        className={`rounded-lg border border-gray-200 bg-white shadow-xl transition-all duration-300 ${
+          isExpanded ? 'max-h-96 w-96 overflow-y-auto' : 'w-80'
+        }`}
+      >
         {/* Header */}
-        <div className="p-4 border-b border-gray-200 bg-gray-50 rounded-t-lg">
-          <div className="flex items-center justify-between">
-            <h3 className="font-semibold text-gray-800 flex items-center">
-              <ChartBarIcon className="h-5 w-5 mr-2" />
+        <div className='rounded-t-lg border-b border-gray-200 bg-gray-50 p-4'>
+          <div className='flex items-center justify-between'>
+            <h3 className='flex items-center font-semibold text-gray-800'>
+              <ChartBarIcon className='mr-2 h-5 w-5' />
               Performance Monitor
             </h3>
-            <div className="flex items-center space-x-2">
+            <div className='flex items-center space-x-2'>
               <button
-                type="button"
+                type='button'
                 onClick={() => setIsExpanded(!isExpanded)}
-                className="text-gray-500 hover:text-gray-700 text-sm"
+                className='text-sm text-gray-500 hover:text-gray-700'
               >
                 {isExpanded ? 'Collapse' : 'Expand'}
               </button>
               <button
-                type="button"
+                type='button'
                 onClick={onToggle}
-                className="text-gray-500 hover:text-gray-700"
+                className='text-gray-500 hover:text-gray-700'
               >
                 ✕
               </button>
@@ -251,40 +249,40 @@ export const PerformanceDashboard: React.FC<PerformanceDashboardProps> = ({
         </div>
 
         {/* Content */}
-        <div className="p-4 space-y-4">
+        <div className='space-y-4 p-4'>
           {/* Key Metrics */}
-          <div className="grid grid-cols-2 gap-3">
+          <div className='grid grid-cols-2 gap-3'>
             <PerformanceMetricCard
-              title="Components"
+              title='Components'
               value={summary.totalComponents}
               status={getOverallStatus()}
-              icon={<CubeIcon className="h-5 w-5" />}
-              description="Active components"
+              icon={<CubeIcon className='h-5 w-5' />}
+              description='Active components'
             />
             <PerformanceMetricCard
-              title="Avg Render"
+              title='Avg Render'
               value={summary.averageRenderTime.toFixed(1)}
-              unit="ms"
+              unit='ms'
               status={summary.averageRenderTime > 16 ? 'warning' : 'good'}
-              icon={<ClockIcon className="h-5 w-5" />}
-              description="Average render time"
+              icon={<ClockIcon className='h-5 w-5' />}
+              description='Average render time'
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className='grid grid-cols-2 gap-3'>
             <PerformanceMetricCard
-              title="Total Renders"
+              title='Total Renders'
               value={summary.totalRenders}
               status={summary.totalRenders > 500 ? 'warning' : 'good'}
-              icon={<ChartBarIcon className="h-5 w-5" />}
-              description="Total render count"
+              icon={<ChartBarIcon className='h-5 w-5' />}
+              description='Total render count'
             />
             <PerformanceMetricCard
-              title="Slow Components"
+              title='Slow Components'
               value={`${summary.slowComponentPercentage.toFixed(1)}%`}
               status={summary.slowComponentPercentage > 20 ? 'critical' : 'good'}
-              icon={<ExclamationTriangleIcon className="h-5 w-5" />}
-              description="Components > 16ms"
+              icon={<ExclamationTriangleIcon className='h-5 w-5' />}
+              description='Components > 16ms'
             />
           </div>
 
@@ -308,4 +306,4 @@ export const PerformanceDashboard: React.FC<PerformanceDashboardProps> = ({
 
 PerformanceDashboard.displayName = 'PerformanceDashboard';
 
-export default PerformanceDashboard; 
+export default PerformanceDashboard;

@@ -20,7 +20,7 @@ interface LoginFormData {
 export default function LoginForm({ onSuccess, onError, isLoading, setIsLoading }: LoginFormProps) {
   const [formData, setFormData] = useState<LoginFormData>({
     email: '',
-    password: ''
+    password: '',
   });
   const [showPassword, setShowPassword] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<Partial<LoginFormData>>({});
@@ -50,7 +50,7 @@ export default function LoginForm({ onSuccess, onError, isLoading, setIsLoading 
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!validateForm()) {
       return;
     }
@@ -61,7 +61,7 @@ export default function LoginForm({ onSuccess, onError, isLoading, setIsLoading 
     try {
       // 使用 Supabase Auth 進行登入
       await mainLoginAuth.signIn(formData.email, formData.password);
-      
+
       // 登入成功，跳轉到 access 頁面
       onSuccess();
     } catch (error) {
@@ -73,7 +73,7 @@ export default function LoginForm({ onSuccess, onError, isLoading, setIsLoading 
 
   const handleInputChange = (field: keyof LoginFormData, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
-    
+
     // Clear field error when user starts typing
     if (fieldErrors[field]) {
       setFieldErrors(prev => ({ ...prev, [field]: undefined }));
@@ -81,72 +81,66 @@ export default function LoginForm({ onSuccess, onError, isLoading, setIsLoading 
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={handleSubmit} className='space-y-4'>
       {/* Email Field */}
       <div>
-        <label htmlFor="email" className="block text-sm font-medium text-gray-300 mb-2">
+        <label htmlFor='email' className='mb-2 block text-sm font-medium text-gray-300'>
           Email Address
         </label>
         <input
-          id="email"
-          type="email"
+          id='email'
+          type='email'
           value={formData.email}
-          onChange={(e) => handleInputChange('email', e.target.value)}
-          className={`w-full px-3 py-2 bg-gray-700 border rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors ${
+          onChange={e => handleInputChange('email', e.target.value)}
+          className={`w-full rounded-md border bg-gray-700 px-3 py-2 text-white placeholder-gray-400 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 ${
             fieldErrors.email ? 'border-red-500' : 'border-gray-600'
           }`}
-          placeholder="your.name@pennineindustries.com"
+          placeholder='your.name@pennineindustries.com'
           disabled={isLoading}
         />
-        {fieldErrors.email && (
-          <p className="mt-1 text-sm text-red-400">{fieldErrors.email}</p>
-        )}
+        {fieldErrors.email && <p className='mt-1 text-sm text-red-400'>{fieldErrors.email}</p>}
       </div>
 
       {/* Password Field */}
       <div>
-        <label htmlFor="password" className="block text-sm font-medium text-gray-300 mb-2">
+        <label htmlFor='password' className='mb-2 block text-sm font-medium text-gray-300'>
           Password
         </label>
-        <div className="relative">
+        <div className='relative'>
           <input
-            id="password"
+            id='password'
             type={showPassword ? 'text' : 'password'}
             value={formData.password}
-            onChange={(e) => handleInputChange('password', e.target.value)}
-            className={`w-full px-3 py-2 pr-10 bg-gray-700 border rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors ${
+            onChange={e => handleInputChange('password', e.target.value)}
+            className={`w-full rounded-md border bg-gray-700 px-3 py-2 pr-10 text-white placeholder-gray-400 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 ${
               fieldErrors.password ? 'border-red-500' : 'border-gray-600'
             }`}
-            placeholder="Enter your password"
+            placeholder='Enter your password'
             disabled={isLoading}
           />
           <button
-            type="button"
+            type='button'
             onClick={() => setShowPassword(!showPassword)}
-            className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-300"
+            className='absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-300'
             disabled={isLoading}
           >
-            {showPassword ? (
-              <EyeSlashIcon className="h-5 w-5" />
-            ) : (
-              <EyeIcon className="h-5 w-5" />
-            )}
+            {showPassword ? <EyeSlashIcon className='h-5 w-5' /> : <EyeIcon className='h-5 w-5' />}
           </button>
         </div>
         {fieldErrors.password && (
-          <p className="mt-1 text-sm text-red-400">{fieldErrors.password}</p>
+          <p className='mt-1 text-sm text-red-400'>{fieldErrors.password}</p>
         )}
       </div>
 
       {/* Submit Button */}
       <button
-        type="submit"
+        type='submit'
         disabled={isLoading}
-        className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-800 disabled:cursor-not-allowed text-white font-medium py-2 px-4 rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-gray-800"
+        className='w-full rounded-md bg-blue-600 px-4 py-2 font-medium text-white transition-colors hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-gray-800 disabled:cursor-not-allowed disabled:bg-blue-800'
       >
         {isLoading ? (
-          <div className="flex items-center justify-center">
-            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+          <div className='flex items-center justify-center'>
+            <div className='mr-2 h-4 w-4 animate-spin rounded-full border-b-2 border-white'></div>
             Signing in...
           </div>
         ) : (
@@ -155,4 +149,4 @@ export default function LoginForm({ onSuccess, onError, isLoading, setIsLoading 
       </button>
     </form>
   );
-} 
+}

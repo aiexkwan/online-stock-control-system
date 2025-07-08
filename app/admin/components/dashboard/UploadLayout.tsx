@@ -11,21 +11,17 @@ interface UploadLayoutProps {
   children: React.ReactNode[];
 }
 
-export const UploadLayout: React.FC<UploadLayoutProps> = ({ 
-  theme, 
-  timeFrame, 
-  children 
-}) => {
+export const UploadLayout: React.FC<UploadLayoutProps> = ({ theme, timeFrame, children }) => {
   // Convert children to array to handle both single and multiple children
   const childrenArray = React.Children.toArray(children);
-  
+
   // 使用虛擬化 hook
   const containerRef = useLayoutVirtualization({
     widgetCount: childrenArray.length,
     theme,
-    threshold: 100
+    threshold: 100,
   });
-  
+
   // Container styles matching the upload theme grid template
   const containerStyle: React.CSSProperties = {
     display: 'grid',
@@ -40,18 +36,14 @@ export const UploadLayout: React.FC<UploadLayoutProps> = ({
     `,
     width: '100%',
     minHeight: '800px',
-    padding: '20px'
+    padding: '20px',
   };
 
   return (
-    <div ref={containerRef} className="upload-container" style={containerStyle}>
+    <div ref={containerRef} className='upload-container' style={containerStyle}>
       {childrenArray.map((child, index) => {
         // Simply render all children - AdminWidgetRenderer will handle gridArea positioning
-        return (
-          <div key={`widget-${index}`}>
-            {child}
-          </div>
-        );
+        return <div key={`widget-${index}`}>{child}</div>;
       })}
     </div>
   );

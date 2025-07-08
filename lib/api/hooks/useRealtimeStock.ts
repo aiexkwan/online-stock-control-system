@@ -5,7 +5,7 @@
  */
 
 // import useSWR, { SWRConfiguration } from 'swr';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useCallback } from 'react';
 import { createClient } from '@/app/utils/supabase/client';
 import type { RealtimeChannel } from '@supabase/supabase-js';
 
@@ -55,10 +55,10 @@ export function useRealtimeStock(
 ) {
   const channelRef = useRef<RealtimeChannel | null>(null);
   const supabase = createClient();
-  
+
   // Build API URL with filters
   const apiUrl = `/api/inventory/realtime${warehouse ? `?warehouse=${warehouse}` : ''}`;
-  
+
   // Temporarily disabled SWR for build compatibility
   // const { data, error, mutate, isLoading } = useSWR<RealtimeStockData>(
   //   apiUrl,
@@ -68,21 +68,23 @@ export function useRealtimeStock(
   //     refreshInterval: options?.refreshInterval || swrConfig.refreshInterval,
   //   }
   // );
-  
+
   // Temporary mock data for build compatibility
   const data: RealtimeStockData = {
     movements: [],
     activeTransfers: 0,
-    lastUpdate: new Date().toISOString()
+    lastUpdate: new Date().toISOString(),
   };
   const error = null;
   const isLoading = false;
-  const mutate = () => Promise.resolve();
-  
+
+  // Wrap mutate in useCallback to prevent recreation on every render
+  const mutate = useCallback(() => Promise.resolve(), []);
+
   // WebSocket subscription for real-time updates
   useEffect(() => {
     if (!options?.enableWebSocket) return;
-    
+
     // Subscribe to real-time changes
     const channel = supabase
       .channel('stock-movements')
@@ -94,13 +96,13 @@ export function useRealtimeStock(
           table: 'record_history',
           filter: warehouse ? `loc=like.${warehouse}%` : undefined,
         },
-        (payload) => {
+        payload => {
           console.log('[Realtime] Stock movement:', payload);
-          
+
           // Optimistically update the data
-          mutate((currentData) => {
+          mutate(currentData => {
             if (!currentData) return currentData;
-            
+
             const movement: StockMovement = {
               id: payload.new?.uuid || crypto.randomUUID(),
               palletNum: payload.new?.plt_num || '',
@@ -111,7 +113,7 @@ export function useRealtimeStock(
               timestamp: payload.new?.time || new Date().toISOString(),
               operator: payload.new?.user_name || 'System',
             };
-            
+
             return {
               ...currentData,
               movements: [movement, ...currentData.movements.slice(0, 49)], // Keep last 50
@@ -121,12 +123,12 @@ export function useRealtimeStock(
           }, false); // Don't revalidate immediately
         }
       )
-      .subscribe((status) => {
+      .subscribe(status => {
         console.log('[Realtime] Subscription status:', status);
       });
-    
+
     channelRef.current = channel;
-    
+
     // Cleanup
     return () => {
       if (channelRef.current) {
@@ -135,7 +137,7 @@ export function useRealtimeStock(
       }
     };
   }, [warehouse, options?.enableWebSocket, supabase, mutate]);
-  
+
   // Calculate derived state
   const isRealtime = !!options?.enableWebSocket && channelRef.current?.state === 'joined';
   const movementsPerMinute = data?.movements
@@ -145,7 +147,7 @@ export function useRealtimeStock(
         return moveTime > oneMinuteAgo;
       }).length
     : 0;
-  
+
   return {
     data,
     error,
@@ -165,7 +167,7 @@ export function useRealtimeStock(
  */
 export function useRealtimePallet(palletNum: string) {
   const supabase = createClient();
-  
+
   // Temporarily disabled SWR
   // const { data, error, mutate } = useSWR<{
   //   location: string;
@@ -177,16 +179,18 @@ export function useRealtimePallet(palletNum: string) {
   //   {
   //     refreshInterval: 3000, // More frequent updates for single pallet
   //     revalidateOnFocus: true,
-  
+
   // Mock data for build compatibility
   const data = {
     location: 'Unknown',
     status: 'idle' as const,
-    lastUpdate: new Date().toISOString()
+    lastUpdate: new Date().toISOString(),
   };
   const error = null;
-  const mutate = () => Promise.resolve();
-  
+
+  // Wrap mutate in useCallback
+  const mutate = useCallback(() => Promise.resolve(), []);
+
   // Subscribe to specific pallet changes
   useEffect(() => {
     const channel = supabase
@@ -199,22 +203,25 @@ export function useRealtimePallet(palletNum: string) {
           table: 'data_product',
           filter: `plt_num=eq.${palletNum}`,
         },
-        (payload) => {
+        payload => {
           // Immediate optimistic update
-          mutate({
-            location: payload.new.current_plt_loc || 'Unknown',
-            status: 'transferred',
-            lastUpdate: new Date().toISOString(),
-          }, false);
+          mutate(
+            {
+              location: payload.new.current_plt_loc || 'Unknown',
+              status: 'transferred',
+              lastUpdate: new Date().toISOString(),
+            },
+            false
+          );
         }
       )
       .subscribe();
-    
+
     return () => {
       supabase.removeChannel(channel);
     };
   }, [palletNum, supabase, mutate]);
-  
+
   return {
     location: data?.location,
     status: data?.status,

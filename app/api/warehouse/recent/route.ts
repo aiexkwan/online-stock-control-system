@@ -20,11 +20,10 @@ export async function GET() {
     return NextResponse.json({
       success: true,
       data: recentActivity || [],
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
-
   } catch (error) {
     console.error('Warehouse recent API error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
-} 
+}

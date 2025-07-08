@@ -4,7 +4,11 @@
  */
 
 // 核心組件
-export { default as UniversalContainer, ResponsiveLayout, ResponsiveContainer } from './UniversalContainer';
+export {
+  default as UniversalContainer,
+  ResponsiveLayout,
+  ResponsiveContainer,
+} from './UniversalContainer';
 export { default as UniversalGrid, ResponsiveGrid } from './UniversalGrid';
 export { default as UniversalCard, ResponsiveCard } from './UniversalCard';
 export { default as UniversalStack, ResponsiveStack } from './UniversalStack';
@@ -39,10 +43,10 @@ export {
 } from './constants';
 
 // 便利組件和工具
-export { 
-  UniversalProvider, 
-  useUniversalLayout, 
-  useResponsive, 
+export {
+  UniversalProvider,
+  useUniversalLayout,
+  useResponsive,
   useUniversalTheme,
-  useMediaQuery 
+  useMediaQuery,
 } from './UniversalProvider';

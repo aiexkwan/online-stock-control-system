@@ -10,7 +10,7 @@ import { fromZonedTime, toZonedTime, formatInTimeZone } from 'date-fns-tz';
 export const TIMEZONES = {
   UK: 'Europe/London',
   US_EAST: 'America/New_York',
-  UTC: 'UTC'
+  UTC: 'UTC',
 } as const;
 
 // 用戶時區（英國）
@@ -89,10 +89,10 @@ export function getDateRange(days: number): { start: string; end: string } {
   const endDate = getEndOfDay(now);
   const startDate = getStartOfDay(now);
   startDate.setDate(startDate.getDate() - days);
-  
+
   return {
     start: toDbTime(startDate),
-    end: toDbTime(endDate)
+    end: toDbTime(endDate),
   };
 }
 
@@ -103,7 +103,7 @@ export function getDateRange(days: number): { start: string; end: string } {
 export function getTodayRange(): { start: string; end: string } {
   return {
     start: toDbTime(getStartOfDay()),
-    end: toDbTime(getEndOfDay())
+    end: toDbTime(getEndOfDay()),
   };
 }
 
@@ -114,10 +114,10 @@ export function getTodayRange(): { start: string; end: string } {
 export function getYesterdayRange(): { start: string; end: string } {
   const yesterday = new Date();
   yesterday.setDate(yesterday.getDate() - 1);
-  
+
   return {
     start: toDbTime(getStartOfDay(yesterday)),
-    end: toDbTime(getEndOfDay(yesterday))
+    end: toDbTime(getEndOfDay(yesterday)),
   };
 }
 
@@ -129,10 +129,10 @@ export function getThisWeekRange(): { start: string; end: string } {
   const now = new Date();
   const startOfWeek = getStartOfDay(now);
   startOfWeek.setDate(startOfWeek.getDate() - 7);
-  
+
   return {
     start: toDbTime(startOfWeek),
-    end: toDbTime(getEndOfDay())
+    end: toDbTime(getEndOfDay()),
   };
 }
 
@@ -144,10 +144,10 @@ export function getThisMonthRange(): { start: string; end: string } {
   const now = new Date();
   const startOfMonth = getStartOfDay(now);
   startOfMonth.setDate(1);
-  
+
   return {
     start: toDbTime(startOfMonth),
-    end: toDbTime(getEndOfDay())
+    end: toDbTime(getEndOfDay()),
   };
 }
 
@@ -159,10 +159,12 @@ export function getThisMonthRange(): { start: string; end: string } {
 export function isToday(isoString: string): boolean {
   const date = fromDbTime(isoString);
   const today = new Date();
-  
-  return date.getFullYear() === today.getFullYear() &&
-         date.getMonth() === today.getMonth() &&
-         date.getDate() === today.getDate();
+
+  return (
+    date.getFullYear() === today.getFullYear() &&
+    date.getMonth() === today.getMonth() &&
+    date.getDate() === today.getDate()
+  );
 }
 
 /**
@@ -174,10 +176,12 @@ export function isYesterday(isoString: string): boolean {
   const date = fromDbTime(isoString);
   const yesterday = new Date();
   yesterday.setDate(yesterday.getDate() - 1);
-  
-  return date.getFullYear() === yesterday.getFullYear() &&
-         date.getMonth() === yesterday.getMonth() &&
-         date.getDate() === yesterday.getDate();
+
+  return (
+    date.getFullYear() === yesterday.getFullYear() &&
+    date.getMonth() === yesterday.getMonth() &&
+    date.getDate() === yesterday.getDate()
+  );
 }
 
 /**
@@ -192,11 +196,11 @@ export function formatRelativeTime(isoString: string): string {
   const diffMins = Math.floor(diffMs / 60000);
   const diffHours = Math.floor(diffMins / 60);
   const diffDays = Math.floor(diffHours / 24);
-  
+
   if (diffMins < 1) return 'just now';
   if (diffMins < 60) return `${diffMins} minute${diffMins > 1 ? 's' : ''} ago`;
   if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
   if (diffDays < 7) return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
-  
+
   return formatDbTime(isoString, 'MMM dd, yyyy');
 }

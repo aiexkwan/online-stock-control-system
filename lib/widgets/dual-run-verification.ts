@@ -54,18 +54,18 @@ export class DualRunVerifier {
   private verificationResults: Map<string, VerificationResult[]> = new Map();
   private config: VerificationConfig;
   private legacyComponents: Map<string, React.ComponentType<any>> = new Map();
-  
+
   constructor(config: Partial<VerificationConfig> = {}) {
     this.config = { ...defaultConfig, ...config };
   }
-  
+
   /**
    * 註冊舊系統組件用於對比
    */
   registerLegacyComponent(widgetId: string, component: React.ComponentType<any>): void {
     this.legacyComponents.set(widgetId, component);
   }
-  
+
   /**
    * 驗證單個 widget
    */
@@ -86,64 +86,60 @@ export class DualRunVerifier {
       newSystemTime: 0,
       discrepancies: [],
     };
-    
+
     try {
       // 獲取組件
       const OldComponent = options?.oldComponent || this.legacyComponents.get(widgetId);
       const NewComponent = options?.newComponent || widgetRegistry.getComponent(widgetId);
-      
+
       if (!NewComponent) {
         throw new Error(`Missing new component for verification: ${widgetId}`);
       }
-      
+
       // 如果冇舊組件，使用新組件作為基準（開發階段）
       const ComponentToCompare = OldComponent || NewComponent;
-      
+
       // 運行舊系統（或使用新系統作為基準）
       const oldStartTime = performance.now();
       const oldResult = await this.runComponent(ComponentToCompare, props, 'old');
       result.oldSystemTime = performance.now() - oldStartTime;
-      
+
       // 運行新系統
       const newStartTime = performance.now();
       const newResult = await this.runComponent(NewComponent, props, 'new');
       result.newSystemTime = performance.now() - newStartTime;
-      
+
       // 執行驗證（如果使用相同組件，跳過比較）
       let discrepancies: DiscrepancyDetail[] = [];
       if (OldComponent && OldComponent !== NewComponent) {
-        discrepancies = await this.compareResults(
-          widgetId,
-          oldResult,
-          newResult,
-          props
-        );
+        discrepancies = await this.compareResults(widgetId, oldResult, newResult, props);
       } else {
         // 如果冇舊組件，只記錄性能數據
-        console.log(`[DualRunVerifier] No legacy component for ${widgetId}, using new component as baseline`);
+        console.log(
+          `[DualRunVerifier] No legacy component for ${widgetId}, using new component as baseline`
+        );
       }
-      
+
       if (discrepancies.length > 0) {
         result.success = false;
         result.discrepancies = discrepancies;
-        
+
         if (this.config.failOnDiscrepancy) {
           throw new Error(`Verification failed with ${discrepancies.length} discrepancies`);
         }
       }
-      
+
       // 記錄結果
       this.recordResult(widgetId, result);
-      
     } catch (error) {
       result.success = false;
       result.error = error instanceof Error ? error.message : 'Unknown error';
       this.recordResult(widgetId, result);
     }
-    
+
     return result;
   }
-  
+
   /**
    * 批量驗證 widgets
    */
@@ -154,19 +150,19 @@ export class DualRunVerifier {
     }>
   ): Promise<VerificationResult[]> {
     console.log(`[DualRunVerifier] Starting batch verification of ${verifications.length} widgets`);
-    
+
     const results = await Promise.all(
-      verifications.map(({ widgetId, props }) => 
-        this.verifyWidget(widgetId, props)
-      )
+      verifications.map(({ widgetId, props }) => this.verifyWidget(widgetId, props))
     );
-    
+
     const successCount = results.filter(r => r.success).length;
-    console.log(`[DualRunVerifier] Batch verification completed: ${successCount}/${results.length} successful`);
-    
+    console.log(
+      `[DualRunVerifier] Batch verification completed: ${successCount}/${results.length} successful`
+    );
+
     return results;
   }
-  
+
   /**
    * 運行組件並捕獲結果
    */
@@ -180,7 +176,7 @@ export class DualRunVerifier {
       error: null,
       warnings: [],
     };
-    
+
     try {
       // 捕獲 console warnings
       const originalWarn = console.warn;
@@ -191,29 +187,28 @@ export class DualRunVerifier {
           originalWarn.apply(console, args);
         }
       };
-      
+
       // 渲染組件
       const element = React.createElement(Component, props);
-      
+
       // 在客戶端環境中，我們只能檢查組件是否能正常創建
       // 真正的渲染測試需要在測試環境中進行
       result.renderOutput = 'client-render';
-      
+
       // 確保組件可以創建而不會拋出錯誤
       if (!element) {
         throw new Error('Failed to create component element');
       }
-      
+
       // 恢復 console.warn
       console.warn = originalWarn;
-      
     } catch (error) {
       result.error = error;
     }
-    
+
     return result;
   }
-  
+
   /**
    * 比較運行結果
    */
@@ -224,7 +219,7 @@ export class DualRunVerifier {
     props: WidgetComponentProps
   ): Promise<DiscrepancyDetail[]> {
     const discrepancies: DiscrepancyDetail[] = [];
-    
+
     // 比較錯誤
     if (oldResult.error || newResult.error) {
       if (!oldResult.error && newResult.error) {
@@ -241,10 +236,10 @@ export class DualRunVerifier {
         });
       }
     }
-    
+
     // 在客戶端環境，我們無法比較渲染輸出
     // 呢個功能需要在服務端或測試環境中實現
-    
+
     // 比較 warnings
     if (oldResult.warnings.length !== newResult.warnings.length) {
       discrepancies.push({
@@ -254,11 +249,12 @@ export class DualRunVerifier {
         newValue: newResult.warnings,
       });
     }
-    
+
     // 比較性能
     if (this.config.comparePerformance) {
       const perfDiff = Math.abs(oldResult.renderTime || 0 - (newResult.renderTime || 0));
-      if (perfDiff > 100) { // 100ms 差異閾值
+      if (perfDiff > 100) {
+        // 100ms 差異閾值
         discrepancies.push({
           type: 'output',
           description: `Significant performance difference: ${perfDiff.toFixed(2)}ms`,
@@ -267,23 +263,20 @@ export class DualRunVerifier {
         });
       }
     }
-    
+
     return discrepancies;
   }
-  
+
   /**
    * 比較渲染輸出（忽略一些無關緊要的差異）
    */
   private isRenderOutputEqual(oldOutput: string, newOutput: string): boolean {
     // 移除空白和換行的差異
-    const normalize = (str: string) => str
-      .replace(/\s+/g, ' ')
-      .replace(/>\s+</g, '><')
-      .trim();
-    
+    const normalize = (str: string) => str.replace(/\s+/g, ' ').replace(/>\s+</g, '><').trim();
+
     return normalize(oldOutput) === normalize(newOutput);
   }
-  
+
   /**
    * 記錄驗證結果
    */
@@ -291,15 +284,15 @@ export class DualRunVerifier {
     if (!this.verificationResults.has(widgetId)) {
       this.verificationResults.set(widgetId, []);
     }
-    
+
     const results = this.verificationResults.get(widgetId)!;
     results.push(result);
-    
+
     // 只保留最近 100 條記錄
     if (results.length > 100) {
       results.shift();
     }
-    
+
     if (this.config.logVerbose || !result.success) {
       console.log(`[DualRunVerifier] ${widgetId}:`, {
         success: result.success,
@@ -309,7 +302,7 @@ export class DualRunVerifier {
       });
     }
   }
-  
+
   /**
    * 獲取驗證報告
    */
@@ -327,10 +320,10 @@ export class DualRunVerifier {
       },
       widgetReports: [],
     };
-    
+
     let totalOldTime = 0;
     let totalNewTime = 0;
-    
+
     this.verificationResults.forEach((results, widgetId) => {
       const widgetReport: WidgetVerificationReport = {
         widgetId,
@@ -341,22 +334,25 @@ export class DualRunVerifier {
         averageNewTime: 0,
         commonDiscrepancies: [],
       };
-      
+
       // 計算平均時間
-      const times = results.reduce((acc, r) => ({
-        old: acc.old + r.oldSystemTime,
-        new: acc.new + r.newSystemTime,
-      }), { old: 0, new: 0 });
-      
+      const times = results.reduce(
+        (acc, r) => ({
+          old: acc.old + r.oldSystemTime,
+          new: acc.new + r.newSystemTime,
+        }),
+        { old: 0, new: 0 }
+      );
+
       widgetReport.averageOldTime = times.old / results.length;
       widgetReport.averageNewTime = times.new / results.length;
-      
+
       totalOldTime += times.old;
       totalNewTime += times.new;
       report.totalRuns += results.length;
       report.successfulRuns += widgetReport.successfulRuns;
       report.failedRuns += widgetReport.failedRuns;
-      
+
       // 收集常見差異
       const discrepancyCounts = new Map<string, number>();
       results.forEach(r => {
@@ -365,26 +361,26 @@ export class DualRunVerifier {
           discrepancyCounts.set(key, (discrepancyCounts.get(key) || 0) + 1);
         });
       });
-      
+
       widgetReport.commonDiscrepancies = Array.from(discrepancyCounts.entries())
         .map(([key, count]) => ({ issue: key, count }))
         .sort((a, b) => b.count - a.count)
         .slice(0, 5);
-      
+
       report.widgetReports.push(widgetReport);
     });
-    
+
     // 計算整體性能比較
     if (report.totalRuns > 0) {
       report.performanceComparison.averageOldSystemTime = totalOldTime / report.totalRuns;
       report.performanceComparison.averageNewSystemTime = totalNewTime / report.totalRuns;
-      report.performanceComparison.improvement = 
+      report.performanceComparison.improvement =
         ((totalOldTime - totalNewTime) / totalOldTime) * 100;
     }
-    
+
     return report;
   }
-  
+
   /**
    * 清除驗證結果
    */
@@ -437,20 +433,20 @@ export const dualRunVerifier = new DualRunVerifier();
 export function useDualRunVerification() {
   const [report, setReport] = React.useState<VerificationReport | null>(null);
   const [isVerifying, setIsVerifying] = React.useState(false);
-  
-  const runVerification = React.useCallback(async (
-    widgetId: string,
-    props: WidgetComponentProps
-  ) => {
-    setIsVerifying(true);
-    try {
-      await dualRunVerifier.verifyWidget(widgetId, props);
-      setReport(dualRunVerifier.getVerificationReport());
-    } finally {
-      setIsVerifying(false);
-    }
-  }, []);
-  
+
+  const runVerification = React.useCallback(
+    async (widgetId: string, props: WidgetComponentProps) => {
+      setIsVerifying(true);
+      try {
+        await dualRunVerifier.verifyWidget(widgetId, props);
+        setReport(dualRunVerifier.getVerificationReport());
+      } finally {
+        setIsVerifying(false);
+      }
+    },
+    []
+  );
+
   return {
     report,
     isVerifying,

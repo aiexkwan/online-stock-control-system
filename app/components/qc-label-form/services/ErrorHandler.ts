@@ -1,7 +1,7 @@
 'use client';
 
 import { toast } from 'sonner';
-import { createClient } from '@/lib/supabase';
+import { createClient } from '@/app/utils/supabase/client';
 
 export interface ErrorContext {
   component: string;
@@ -37,35 +37,31 @@ export class ErrorHandler {
   /**
    * Handle form validation errors
    */
-  public handleValidationError(
-    fieldName: string,
-    error: string,
-    context: ErrorContext
-  ): void {
+  public handleValidationError(fieldName: string, error: string, context: ErrorContext): void {
     console.warn(`[${context.component}] Validation error in ${fieldName}: ${error}`);
-    
+
     // Don't show toast for validation errors as they're handled by the form UI
     // Just log for debugging purposes
-    this.logError(new Error(`Validation: ${fieldName} - ${error}`), {
-      ...context,
-      action: 'validation',
-      additionalData: { fieldName, validationError: error }
-    }, 'low');
+    this.logError(
+      new Error(`Validation: ${fieldName} - ${error}`),
+      {
+        ...context,
+        action: 'validation',
+        additionalData: { fieldName, validationError: error },
+      },
+      'low'
+    );
   }
 
   /**
    * Handle API/Database errors
    */
-  public handleApiError(
-    error: Error,
-    context: ErrorContext,
-    userFriendlyMessage?: string
-  ): void {
+  public handleApiError(error: Error, context: ErrorContext, userFriendlyMessage?: string): void {
     const severity = this.determineSeverity(error);
     const userMessage = userFriendlyMessage || this.generateUserMessage(error, context);
-    
+
     console.error(`[${context.component}] API Error in ${context.action}:`, error);
-    
+
     // Show user-friendly toast
     toast.error(userMessage, {
       id: `${context.component}-${context.action}`,
@@ -79,12 +75,9 @@ export class ErrorHandler {
   /**
    * Handle network/connection errors
    */
-  public handleNetworkError(
-    error: Error,
-    context: ErrorContext
-  ): void {
+  public handleNetworkError(error: Error, context: ErrorContext): void {
     console.error(`[${context.component}] Network Error in ${context.action}:`, error);
-    
+
     toast.error('Network connection issue. Please check your internet connection and try again.', {
       id: `network-${context.component}`,
       duration: 8000,
@@ -96,12 +89,9 @@ export class ErrorHandler {
   /**
    * Handle authentication errors
    */
-  public handleAuthError(
-    error: Error,
-    context: ErrorContext
-  ): void {
+  public handleAuthError(error: Error, context: ErrorContext): void {
     console.error(`[${context.component}] Auth Error in ${context.action}:`, error);
-    
+
     toast.error('Authentication failed. Please log in again.', {
       id: 'auth-error',
       duration: 6000,
@@ -113,38 +103,34 @@ export class ErrorHandler {
   /**
    * Handle PDF generation errors
    */
-  public handlePdfError(
-    error: Error,
-    context: ErrorContext,
-    palletNumber?: string
-  ): void {
-    const userMessage = palletNumber 
+  public handlePdfError(error: Error, context: ErrorContext, palletNumber?: string): void {
+    const userMessage = palletNumber
       ? `Failed to generate PDF for pallet ${palletNumber}. Please try again.`
       : 'PDF generation failed. Please try again.';
-    
+
     console.error(`[${context.component}] PDF Error in ${context.action}:`, error);
-    
+
     toast.error(userMessage, {
       id: `pdf-${palletNumber || 'unknown'}`,
       duration: 6000,
     });
 
-    this.logError(error, {
-      ...context,
-      additionalData: { ...context.additionalData, palletNumber }
-    }, 'medium');
+    this.logError(
+      error,
+      {
+        ...context,
+        additionalData: { ...context.additionalData, palletNumber },
+      },
+      'medium'
+    );
   }
 
   /**
    * Handle success messages
    */
-  public handleSuccess(
-    message: string,
-    context: ErrorContext,
-    details?: string
-  ): void {
+  public handleSuccess(message: string, context: ErrorContext, details?: string): void {
     console.log(`[${context.component}] Success in ${context.action}: ${message}`);
-    
+
     toast.success(message, {
       id: `success-${context.component}-${context.action}`,
       duration: 3000,
@@ -157,13 +143,9 @@ export class ErrorHandler {
   /**
    * Handle warning messages
    */
-  public handleWarning(
-    message: string,
-    context: ErrorContext,
-    showToast: boolean = true
-  ): void {
+  public handleWarning(message: string, context: ErrorContext, showToast: boolean = true): void {
     console.warn(`[${context.component}] Warning in ${context.action}: ${message}`);
-    
+
     if (showToast) {
       toast.warning(message, {
         id: `warning-${context.component}`,
@@ -175,13 +157,9 @@ export class ErrorHandler {
   /**
    * Handle info messages
    */
-  public handleInfo(
-    message: string,
-    context: ErrorContext,
-    showToast: boolean = true
-  ): void {
+  public handleInfo(message: string, context: ErrorContext, showToast: boolean = true): void {
     console.info(`[${context.component}] Info in ${context.action}: ${message}`);
-    
+
     if (showToast) {
       toast.info(message, {
         id: `info-${context.component}`,
@@ -205,7 +183,7 @@ export class ErrorHandler {
       error,
       severity,
       userMessage: this.generateUserMessage(error, context),
-      technicalMessage: error.message
+      technicalMessage: error.message,
     };
 
     // Store in memory for debugging
@@ -220,7 +198,7 @@ export class ErrorHandler {
           plt_num: null,
           loc: null,
           action: `Error: ${context.component} - ${context.action}`,
-          remark: `${severity.toUpperCase()}: ${error.message}`
+          remark: `${severity.toUpperCase()}: ${error.message}`,
         });
       }
     } catch (dbError) {
@@ -244,7 +222,7 @@ export class ErrorHandler {
           plt_num: null,
           loc: null,
           action: `Success: ${context.component} - ${context.action}`,
-          remark: details || message
+          remark: details || message,
         });
       }
     } catch (dbError) {
@@ -257,23 +235,23 @@ export class ErrorHandler {
    */
   private determineSeverity(error: Error): 'low' | 'medium' | 'high' | 'critical' {
     const errorMessage = error.message.toLowerCase();
-    
+
     if (errorMessage.includes('network') || errorMessage.includes('fetch')) {
       return 'medium';
     }
-    
+
     if (errorMessage.includes('auth') || errorMessage.includes('permission')) {
       return 'high';
     }
-    
+
     if (errorMessage.includes('database') || errorMessage.includes('supabase')) {
       return 'high';
     }
-    
+
     if (errorMessage.includes('pdf') || errorMessage.includes('generation')) {
       return 'medium';
     }
-    
+
     return 'low';
   }
 
@@ -282,35 +260,35 @@ export class ErrorHandler {
    */
   private generateUserMessage(error: Error, context: ErrorContext): string {
     const errorMessage = error.message.toLowerCase();
-    
+
     if (errorMessage.includes('network') || errorMessage.includes('fetch')) {
       return 'Network connection issue. Please check your internet connection and try again.';
     }
-    
+
     if (errorMessage.includes('auth') || errorMessage.includes('permission')) {
       return 'Authentication failed. Please log in again.';
     }
-    
+
     if (errorMessage.includes('not found')) {
       return 'The requested information was not found. Please check your input and try again.';
     }
-    
+
     if (errorMessage.includes('timeout')) {
       return 'The operation timed out. Please try again.';
     }
-    
+
     if (context.action === 'product_search') {
       return 'Failed to search for product information. Please try again.';
     }
-    
+
     if (context.action === 'pdf_generation') {
       return 'Failed to generate PDF. Please try again.';
     }
-    
+
     if (context.action === 'form_submission') {
       return 'Failed to submit form. Please check your input and try again.';
     }
-    
+
     return 'An unexpected error occurred. Please try again or contact support if the problem persists.';
   }
 
@@ -346,15 +324,16 @@ export class ErrorHandler {
     const stats = {
       total: this.errorReports.length,
       bySeverity: {} as Record<string, number>,
-      byComponent: {} as Record<string, number>
+      byComponent: {} as Record<string, number>,
     };
 
     this.errorReports.forEach(report => {
       // Count by severity
       stats.bySeverity[report.severity] = (stats.bySeverity[report.severity] || 0) + 1;
-      
+
       // Count by component
-      stats.byComponent[report.context.component] = (stats.byComponent[report.context.component] || 0) + 1;
+      stats.byComponent[report.context.component] =
+        (stats.byComponent[report.context.component] || 0) + 1;
     });
 
     return stats;
@@ -362,4 +341,4 @@ export class ErrorHandler {
 }
 
 // Export singleton instance
-export const errorHandler = ErrorHandler.getInstance(); 
+export const errorHandler = ErrorHandler.getInstance();

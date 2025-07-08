@@ -9,8 +9,8 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     storage: undefined, // 不使用任何本地存儲
     autoRefreshToken: false, // 不自動刷新 token
     persistSession: false, // 不持久化 session
-    detectSessionInUrl: false // 不從 URL 檢測 session
-  }
+    detectSessionInUrl: false, // 不從 URL 檢測 session
+  },
 });
 
 // 簡化的認證函數
@@ -20,7 +20,7 @@ export const simpleAuth = {
       email,
       password,
     });
-    
+
     if (error) throw error;
     return data;
   },
@@ -30,7 +30,7 @@ export const simpleAuth = {
       email,
       password,
     });
-    
+
     if (error) throw error;
     return data;
   },
@@ -41,10 +41,13 @@ export const simpleAuth = {
   },
 
   getCurrentUser: async () => {
-    const { data: { user }, error } = await supabase.auth.getUser();
+    const {
+      data: { user },
+      error,
+    } = await supabase.auth.getUser();
     if (error && !error.message.includes('Auth session missing')) {
       throw error;
     }
     return user;
-  }
-}; 
+  },
+};

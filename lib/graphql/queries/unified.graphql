@@ -381,4 +381,4 @@ fragment OrderBasic on Order {
   remainQty
   latestUpdate
   status
-} 
+}

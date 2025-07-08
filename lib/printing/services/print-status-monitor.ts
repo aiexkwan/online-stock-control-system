@@ -34,12 +34,12 @@ export class PrintStatusMonitor extends EventEmitter {
 
   constructor(config?: MonitorConfig) {
     super();
-    
+
     this.config = {
       updateInterval: config?.updateInterval || 1000,
-      retainCompleted: config?.retainCompleted || 100
+      retainCompleted: config?.retainCompleted || 100,
     };
-    
+
     // Defer HAL subscription until it's initialized
     this.initializeHalSubscription();
   }
@@ -49,7 +49,7 @@ export class PrintStatusMonitor extends EventEmitter {
    */
   start(): void {
     if (this.updateInterval) return;
-    
+
     this.updateInterval = setInterval(() => {
       this.cleanupOldStatuses();
     }, this.config.updateInterval * 10); // Cleanup every 10 intervals
@@ -71,28 +71,28 @@ export class PrintStatusMonitor extends EventEmitter {
   updateStatus(jobId: string, update: Partial<PrintJobStatus>): void {
     const currentStatus = this.statusMap.get(jobId) || {
       jobId,
-      status: 'queued' as const
+      status: 'queued' as const,
     };
-    
+
     const newStatus: PrintJobStatus = {
       ...currentStatus,
-      ...update
+      ...update,
     };
-    
+
     // Set timestamps
     if (update.status === 'processing' && !newStatus.startedAt) {
       newStatus.startedAt = new Date().toISOString();
     }
-    
+
     if ((update.status === 'completed' || update.status === 'failed') && !newStatus.completedAt) {
       newStatus.completedAt = new Date().toISOString();
     }
-    
+
     this.statusMap.set(jobId, newStatus);
-    
+
     // Emit status update
     this.emit('statusUpdate', newStatus);
-    
+
     // Emit specific events
     switch (update.status) {
       case 'processing':
@@ -116,7 +116,7 @@ export class PrintStatusMonitor extends EventEmitter {
   updateProgress(jobId: string, progress: number, message?: string): void {
     this.updateStatus(jobId, {
       progress: Math.min(100, Math.max(0, progress)),
-      message
+      message,
     });
   }
 
@@ -159,15 +159,15 @@ export class PrintStatusMonitor extends EventEmitter {
         callback(status);
       }
     };
-    
+
     this.on('statusUpdate', listener);
-    
+
     // Send current status immediately if available
     const currentStatus = this.getStatus(jobId);
     if (currentStatus) {
       callback(currentStatus);
     }
-    
+
     // Return unsubscribe function
     return () => {
       this.off('statusUpdate', listener);
@@ -187,12 +187,12 @@ export class PrintStatusMonitor extends EventEmitter {
   }> {
     // Get real queue status from HAL
     const queueStatus = await this.hal.queue.getQueueStatus();
-    
+
     // Count completed/failed from our status map
     let completed = 0;
     let failed = 0;
     let cancelled = 0;
-    
+
     this.statusMap.forEach(status => {
       switch (status.status) {
         case 'completed':
@@ -206,14 +206,14 @@ export class PrintStatusMonitor extends EventEmitter {
           break;
       }
     });
-    
+
     return {
       total: queueStatus.pending + queueStatus.processing + completed + failed,
       queued: queueStatus.pending,
       processing: queueStatus.processing,
       completed,
       failed,
-      cancelled
+      cancelled,
     };
   }
 
@@ -242,50 +242,51 @@ export class PrintStatusMonitor extends EventEmitter {
 
   private subscribeToHalEvents(): void {
     // Subscribe to HAL queue events
-    this.hal.queue.on('job.added', (job) => {
+    this.hal.queue.on('job.added', job => {
       this.updateStatus(job.id, {
         jobId: job.id,
         status: 'queued',
-        message: 'Job added to queue'
+        message: 'Job added to queue',
       });
     });
-    
-    this.hal.queue.on('job.processing', (job) => {
+
+    this.hal.queue.on('job.processing', job => {
       this.updateStatus(job.id, {
         status: 'processing',
-        startedAt: new Date().toISOString()
+        startedAt: new Date().toISOString(),
       });
     });
-    
+
     this.hal.queue.on('job.completed', (job, result) => {
       this.updateStatus(job.id, {
         status: 'completed',
-        completedAt: new Date().toISOString()
+        completedAt: new Date().toISOString(),
       });
     });
-    
+
     this.hal.queue.on('job.failed', (job, error) => {
       this.updateStatus(job.id, {
         status: 'failed',
         completedAt: new Date().toISOString(),
-        error: error
+        error: error,
       });
     });
   }
 
   private cleanupOldStatuses(): void {
     const completed = Array.from(this.statusMap.entries())
-      .filter(([_, status]) => 
-        status.status === 'completed' || 
-        status.status === 'failed' || 
-        status.status === 'cancelled'
+      .filter(
+        ([_, status]) =>
+          status.status === 'completed' ||
+          status.status === 'failed' ||
+          status.status === 'cancelled'
       )
       .sort(([_, a], [__, b]) => {
         const timeA = a.completedAt || '';
         const timeB = b.completedAt || '';
         return timeB.localeCompare(timeA);
       });
-    
+
     // Remove old completed jobs beyond retention limit
     if (completed.length > this.config.retainCompleted) {
       const toRemove = completed.slice(this.config.retainCompleted);

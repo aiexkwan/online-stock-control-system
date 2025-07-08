@@ -48,10 +48,7 @@ class DistributedRateLimiter {
   private isLeader = false;
   private activeInstances = new Map<string, InstanceStatus>();
 
-  constructor(
-    cacheAdapter: RedisCacheAdapter,
-    config: DistributedRateLimitConfig
-  ) {
+  constructor(cacheAdapter: RedisCacheAdapter, config: DistributedRateLimitConfig) {
     this.cacheAdapter = cacheAdapter;
     this.config = config;
     this.startHeartbeat();
@@ -62,10 +59,7 @@ class DistributedRateLimiter {
   /**
    * 檢查分散式限流
    */
-  async checkLimit(
-    rule: RateLimitRule,
-    identifier: string
-  ): Promise<DistributedLimitResult> {
+  async checkLimit(rule: RateLimitRule, identifier: string): Promise<DistributedLimitResult> {
     const window = Math.floor(Date.now() / rule.windowMs);
     const distributedKey = `distributed_limit:${rule.key}:${identifier}:${window}`;
     const instanceKey = `instance_limit:${this.config.instanceId}:${rule.key}:${identifier}:${window}`;
@@ -235,7 +229,7 @@ class DistributedRateLimiter {
         await this.cacheAdapter.set(
           heartbeatKey,
           JSON.stringify(status),
-          Math.ceil(this.config.syncInterval * 2 / 1000) // TTL 為同步間隔的兩倍
+          Math.ceil((this.config.syncInterval * 2) / 1000) // TTL 為同步間隔的兩倍
         );
       } catch (error) {
         console.error('[DistributedRateLimiter] 心跳發送失敗:', error);
@@ -246,10 +240,7 @@ class DistributedRateLimiter {
     sendHeartbeat();
 
     // 定期發送心跳
-    this.heartbeatInterval = setInterval(
-      sendHeartbeat,
-      this.config.syncInterval / 2
-    );
+    this.heartbeatInterval = setInterval(sendHeartbeat, this.config.syncInterval / 2);
   }
 
   /**
@@ -294,9 +285,9 @@ class DistributedRateLimiter {
       try {
         const pattern = `instance_heartbeat:*`;
         const keys = await this.cacheAdapter.keys(pattern);
-        
+
         this.activeInstances.clear();
-        
+
         for (const key of keys) {
           const statusJson = await this.cacheAdapter.get(key);
           if (statusJson) {
@@ -431,8 +422,8 @@ class DistributedRateLimiter {
     // 標準化負載指標 (0-1)
     const requestLoad = Math.min(1, requestCount / 1000); // 假設 1000 為高負載閾值
     const memoryLoad = memoryUsage.heapUsed / memoryUsage.heapTotal;
-    
-    return (requestLoad * 0.4 + memoryLoad * 0.6);
+
+    return requestLoad * 0.4 + memoryLoad * 0.6;
   }
 
   /**
@@ -495,10 +486,5 @@ export function createDistributedRateLimiter(
   return new DistributedRateLimiter(cacheAdapter, config);
 }
 
-export type {
-  DistributedRateLimitConfig,
-  RateLimitRule,
-  InstanceStatus,
-  DistributedLimitResult,
-};
-export { DistributedRateLimiter }; 
+export type { DistributedRateLimitConfig, RateLimitRule, InstanceStatus, DistributedLimitResult };
+export { DistributedRateLimiter };

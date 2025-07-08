@@ -5,32 +5,43 @@ import { createClient } from '@/app/utils/supabase/server';
 /**
  * Check if pallet is an ACO Order Pallet
  */
-export function isACOOrderPallet(plt_remark: string | null): { isACO: boolean; refNumber?: string } {
+export function isACOOrderPallet(plt_remark: string | null): {
+  isACO: boolean;
+  refNumber?: string;
+} {
   if (!plt_remark) {
-    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[ACO Check] No plt_remark found');
+    process.env.NODE_ENV !== 'production' &&
+      process.env.NODE_ENV !== 'production' &&
+      console.log('[ACO Check] No plt_remark found');
     return { isACO: false };
   }
-  
-  process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`[ACO Check] Checking plt_remark: "${plt_remark}"`);
-  
+
+  process.env.NODE_ENV !== 'production' &&
+    process.env.NODE_ENV !== 'production' &&
+    console.log(`[ACO Check] Checking plt_remark: "${plt_remark}"`);
+
   // Look for ACO reference pattern in remarks - support multiple formats
   const acoPatterns = [
-    /ACO\s+Ref\s*:\s*(\d+)/i,           // "ACO Ref: 123456"
-    /ACO\s+Reference\s*:\s*(\d+)/i,     // "ACO Reference: 123456"
-    /ACO\s*:\s*(\d+)/i,                 // "ACO: 123456"
-    /ACO\s+(\d+)/i,                     // "ACO 123456"
-    /Ref\s*:\s*(\d+)/i,                 // "Ref: 123456"
+    /ACO\s+Ref\s*:\s*(\d+)/i, // "ACO Ref: 123456"
+    /ACO\s+Reference\s*:\s*(\d+)/i, // "ACO Reference: 123456"
+    /ACO\s*:\s*(\d+)/i, // "ACO: 123456"
+    /ACO\s+(\d+)/i, // "ACO 123456"
+    /Ref\s*:\s*(\d+)/i, // "Ref: 123456"
   ];
-  
+
   for (const pattern of acoPatterns) {
     const match = plt_remark.match(pattern);
     if (match) {
-      process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`[ACO Check] Found ACO reference: ${match[1]} using pattern: ${pattern}`);
+      process.env.NODE_ENV !== 'production' &&
+        process.env.NODE_ENV !== 'production' &&
+        console.log(`[ACO Check] Found ACO reference: ${match[1]} using pattern: ${pattern}`);
       return { isACO: true, refNumber: match[1] };
     }
   }
-  
-  process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[ACO Check] No ACO reference found');
+
+  process.env.NODE_ENV !== 'production' &&
+    process.env.NODE_ENV !== 'production' &&
+    console.log('[ACO Check] No ACO reference found');
   return { isACO: false };
 }
 
@@ -44,9 +55,13 @@ export async function updateACORecord(
 ): Promise<{ success: boolean; error?: string }> {
   try {
     const supabase = await createClient();
-    
-    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`[ACO Update] Starting update: ref=${refNumber}, code=${productCode}, qty=${quantity}`);
-    
+
+    process.env.NODE_ENV !== 'production' &&
+      process.env.NODE_ENV !== 'production' &&
+      console.log(
+        `[ACO Update] Starting update: ref=${refNumber}, code=${productCode}, qty=${quantity}`
+      );
+
     // Find the ACO record by order_ref and code
     const { data: acoRecord, error: findError } = await supabase
       .from('record_aco')
@@ -57,19 +72,21 @@ export async function updateACORecord(
 
     if (findError) {
       if (findError.code === 'PGRST116') {
-        process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`[ACO Update] No record found for ref=${refNumber}, code=${productCode}`);
-        return { 
-          success: false, 
-          error: `ACO record not found for ref: ${refNumber}, code: ${productCode}` 
+        process.env.NODE_ENV !== 'production' &&
+          process.env.NODE_ENV !== 'production' &&
+          console.log(`[ACO Update] No record found for ref=${refNumber}, code=${productCode}`);
+        return {
+          success: false,
+          error: `ACO record not found for ref: ${refNumber}, code: ${productCode}`,
         };
       }
       throw findError;
     }
 
     if (!acoRecord) {
-      return { 
-        success: false, 
-        error: `ACO record not found for ref: ${refNumber}, code: ${productCode}` 
+      return {
+        success: false,
+        error: `ACO record not found for ref: ${refNumber}, code: ${productCode}`,
       };
     }
 
@@ -77,7 +94,7 @@ export async function updateACORecord(
     const currentFinishedQty = acoRecord.finished_qty || 0;
     const newFinishedQty = Math.max(0, currentFinishedQty - quantity);
     const newRemainQty = acoRecord.required_qty - newFinishedQty;
-    
+
     const { error: updateError } = await supabase
       .from('record_aco')
       .update({ finished_qty: newFinishedQty })
@@ -88,13 +105,17 @@ export async function updateACORecord(
       throw updateError;
     }
 
-    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`[ACO Update] Successfully updated: new_finished_qty=${newFinishedQty}, new_remain_qty=${newRemainQty}`);
+    process.env.NODE_ENV !== 'production' &&
+      process.env.NODE_ENV !== 'production' &&
+      console.log(
+        `[ACO Update] Successfully updated: new_finished_qty=${newFinishedQty}, new_remain_qty=${newRemainQty}`
+      );
     return { success: true };
   } catch (error: any) {
     console.error('[ACO Update] Error:', error);
-    return { 
-      success: false, 
-      error: `Failed to update ACO record: ${error.message}` 
+    return {
+      success: false,
+      error: `Failed to update ACO record: ${error.message}`,
     };
   }
 }
@@ -102,24 +123,35 @@ export async function updateACORecord(
 /**
  * Check if pallet is a Material GRN pallet
  */
-export function isMaterialGRNPallet(plt_remark: string | null): { isGRN: boolean; grnNumber?: string } {
+export function isMaterialGRNPallet(plt_remark: string | null): {
+  isGRN: boolean;
+  grnNumber?: string;
+} {
   if (!plt_remark) {
-    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[GRN Check] No plt_remark found');
+    process.env.NODE_ENV !== 'production' &&
+      process.env.NODE_ENV !== 'production' &&
+      console.log('[GRN Check] No plt_remark found');
     return { isGRN: false };
   }
-  
-  process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`[GRN Check] Checking plt_remark: "${plt_remark}"`);
-  
+
+  process.env.NODE_ENV !== 'production' &&
+    process.env.NODE_ENV !== 'production' &&
+    console.log(`[GRN Check] Checking plt_remark: "${plt_remark}"`);
+
   // Look for Material GRN pattern in remarks
   const grnPattern = /Material\s+GRN\s*-\s*(\w+)/i;
   const match = plt_remark.match(grnPattern);
-  
+
   if (match) {
-    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`[GRN Check] Found GRN reference: ${match[1]}`);
+    process.env.NODE_ENV !== 'production' &&
+      process.env.NODE_ENV !== 'production' &&
+      console.log(`[GRN Check] Found GRN reference: ${match[1]}`);
     return { isGRN: true, grnNumber: match[1] };
   }
-  
-  process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[GRN Check] No GRN reference found');
+
+  process.env.NODE_ENV !== 'production' &&
+    process.env.NODE_ENV !== 'production' &&
+    console.log('[GRN Check] No GRN reference found');
   return { isGRN: false };
 }
 
@@ -131,9 +163,11 @@ export async function deleteGRNRecord(
 ): Promise<{ success: boolean; error?: string }> {
   try {
     const supabase = await createClient();
-    
-    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`[GRN Delete] Starting deletion for plt_num: ${pltNum}`);
-    
+
+    process.env.NODE_ENV !== 'production' &&
+      process.env.NODE_ENV !== 'production' &&
+      console.log(`[GRN Delete] Starting deletion for plt_num: ${pltNum}`);
+
     // Find and delete the GRN record by plt_num
     const { data: deletedRecord, error: deleteError } = await supabase
       .from('record_grn')
@@ -147,20 +181,24 @@ export async function deleteGRNRecord(
     }
 
     if (!deletedRecord || deletedRecord.length === 0) {
-      process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`[GRN Delete] No GRN record found for plt_num: ${pltNum}`);
-      return { 
-        success: false, 
-        error: `No GRN record found for pallet: ${pltNum}` 
+      process.env.NODE_ENV !== 'production' &&
+        process.env.NODE_ENV !== 'production' &&
+        console.log(`[GRN Delete] No GRN record found for plt_num: ${pltNum}`);
+      return {
+        success: false,
+        error: `No GRN record found for pallet: ${pltNum}`,
       };
     }
 
-    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`[GRN Delete] Successfully deleted ${deletedRecord.length} GRN record(s)`);
+    process.env.NODE_ENV !== 'production' &&
+      process.env.NODE_ENV !== 'production' &&
+      console.log(`[GRN Delete] Successfully deleted ${deletedRecord.length} GRN record(s)`);
     return { success: true };
   } catch (error: any) {
     console.error('[GRN Delete] Error:', error);
-    return { 
-      success: false, 
-      error: `Failed to delete GRN record: ${error.message}` 
+    return {
+      success: false,
+      error: `Failed to delete GRN record: ${error.message}`,
     };
   }
 }

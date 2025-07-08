@@ -12,7 +12,7 @@ export class PrintHistoryService {
     averageTime: 0,
     byType: {},
     byUser: {},
-    errorRate: 0
+    errorRate: 0,
   });
   deleteHistory = jest.fn().mockResolvedValue(true);
   cleanupOldHistory = jest.fn().mockResolvedValue(0);

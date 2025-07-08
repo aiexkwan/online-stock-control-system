@@ -1,6 +1,6 @@
 /**
  * Apollo Server Configuration with Rate Limiting & Performance Optimizations
- * 
+ *
  * Integrates:
  * - Rate limiting for mutations and subscriptions
  * - Query complexity analysis
@@ -17,8 +17,8 @@ import { readFileSync } from 'fs';
 import { join } from 'path';
 
 // Our optimization modules
-import { 
-  createRateLimitingPlugin, 
+import {
+  createRateLimitingPlugin,
   checkMutationRateLimit,
   checkSubscriptionRateLimit,
   removeSubscriptionConnection,
@@ -42,7 +42,7 @@ const createOptimizedResolvers = () => {
       async products(parent: any, args: any, context: any) {
         const config = cacheOptimizer.getOptimizedConfig('products');
         const startTime = Date.now();
-        
+
         // 觸發預加載
         if (context.user?.id) {
           context.preloadTracking = {
@@ -51,20 +51,20 @@ const createOptimizedResolvers = () => {
             timestamp: Date.now(),
           };
         }
-        
+
         try {
           const result = await unifiedDataLayer.getProducts(args);
           const responseTime = Date.now() - startTime;
-          
+
           if (config) {
             cacheOptimizer.recordCacheHit('products', responseTime);
           }
-          
+
           // 分析結果進行預加載
           if (result && context.user?.id) {
             analyzeForPreload(result, context.user.id, 'products');
           }
-          
+
           return result;
         } catch (error) {
           const responseTime = Date.now() - startTime;
@@ -76,15 +76,15 @@ const createOptimizedResolvers = () => {
       async inventory(parent: any, args: any, context: any) {
         const config = cacheOptimizer.getOptimizedConfig('inventory');
         const startTime = Date.now();
-        
+
         try {
           const result = await unifiedDataLayer.getInventory(args);
           const responseTime = Date.now() - startTime;
-          
+
           if (config) {
             cacheOptimizer.recordCacheHit('inventory', responseTime);
           }
-          
+
           return result;
         } catch (error) {
           const responseTime = Date.now() - startTime;
@@ -96,15 +96,15 @@ const createOptimizedResolvers = () => {
       async orders(parent: any, args: any, context: any) {
         const config = cacheOptimizer.getOptimizedConfig('orders');
         const startTime = Date.now();
-        
+
         try {
           const result = await unifiedDataLayer.getOrders(args);
           const responseTime = Date.now() - startTime;
-          
+
           if (config) {
             cacheOptimizer.recordCacheHit('orders', responseTime);
           }
-          
+
           return result;
         } catch (error) {
           const responseTime = Date.now() - startTime;
@@ -116,15 +116,15 @@ const createOptimizedResolvers = () => {
       async warehouseSummary(parent: any, args: any, context: any) {
         const config = cacheOptimizer.getOptimizedConfig('warehouseSummary');
         const startTime = Date.now();
-        
+
         try {
           const result = await unifiedDataLayer.getWarehouseSummary(args);
           const responseTime = Date.now() - startTime;
-          
+
           if (config) {
             cacheOptimizer.recordCacheHit('warehouseSummary', responseTime);
           }
-          
+
           return result;
         } catch (error) {
           const responseTime = Date.now() - startTime;
@@ -139,21 +139,21 @@ const createOptimizedResolvers = () => {
       async createProduct(parent: any, args: any, context: any) {
         const userId = context.user?.id;
         checkMutationRateLimit('createProduct', userId);
-        
+
         return unifiedDataLayer.createProduct(args.input);
       },
 
       async updateProduct(parent: any, args: any, context: any) {
         const userId = context.user?.id;
         checkMutationRateLimit('updateProduct', userId);
-        
+
         return unifiedDataLayer.updateProduct(args.id, args.input);
       },
 
       async deleteProduct(parent: any, args: any, context: any) {
         const userId = context.user?.id;
         checkMutationRateLimit('deleteProduct', userId);
-        
+
         return unifiedDataLayer.deleteProduct(args.id);
       },
 
@@ -161,14 +161,14 @@ const createOptimizedResolvers = () => {
       async createPallet(parent: any, args: any, context: any) {
         const userId = context.user?.id;
         checkMutationRateLimit('createPallet', userId);
-        
+
         return unifiedDataLayer.createPallet(args.input);
       },
 
       async movePallet(parent: any, args: any, context: any) {
         const userId = context.user?.id;
         checkMutationRateLimit('movePallet', userId);
-        
+
         return unifiedDataLayer.movePallet(args.input);
       },
 
@@ -176,14 +176,14 @@ const createOptimizedResolvers = () => {
       async adjustStock(parent: any, args: any, context: any) {
         const userId = context.user?.id;
         checkMutationRateLimit('adjustStock', userId);
-        
+
         return unifiedDataLayer.adjustStock(args.input);
       },
 
       async transferStock(parent: any, args: any, context: any) {
         const userId = context.user?.id;
         checkMutationRateLimit('transferStock', userId);
-        
+
         return unifiedDataLayer.transferStock(args.input);
       },
 
@@ -191,7 +191,7 @@ const createOptimizedResolvers = () => {
       async bulkUpdateInventory(parent: any, args: any, context: any) {
         const userId = context.user?.id;
         checkMutationRateLimit('bulkUpdateInventory', userId);
-        
+
         return unifiedDataLayer.bulkUpdateInventory(args.inputs);
       },
     },
@@ -201,12 +201,12 @@ const createOptimizedResolvers = () => {
         subscribe: async (parent: any, args: any, context: any) => {
           const userId = context.user?.id;
           const ipAddress = context.req?.ip || 'unknown';
-          
+
           const connectionId = checkSubscriptionRateLimit(userId, ipAddress);
-          
+
           // Set up cleanup on disconnect
           context.connectionParams = { connectionId, userId, ipAddress };
-          
+
           return unifiedDataLayer.subscribeToInventoryUpdates(args);
         },
       },
@@ -215,11 +215,11 @@ const createOptimizedResolvers = () => {
         subscribe: async (parent: any, args: any, context: any) => {
           const userId = context.user?.id;
           const ipAddress = context.req?.ip || 'unknown';
-          
+
           const connectionId = checkSubscriptionRateLimit(userId, ipAddress);
-          
+
           context.connectionParams = { connectionId, userId, ipAddress };
-          
+
           return unifiedDataLayer.subscribeToOrderStatusChanges(args);
         },
       },
@@ -228,11 +228,11 @@ const createOptimizedResolvers = () => {
         subscribe: async (parent: any, args: any, context: any) => {
           const userId = context.user?.id;
           const ipAddress = context.req?.ip || 'unknown';
-          
+
           const connectionId = checkSubscriptionRateLimit(userId, ipAddress);
-          
+
           context.connectionParams = { connectionId, userId, ipAddress };
-          
+
           return unifiedDataLayer.subscribeToPalletMovements(args);
         },
       },
@@ -282,7 +282,7 @@ export function createOptimizedApolloServer() {
 
   const server = new ApolloServer({
     schema,
-    
+
     // Context with DataLoaders and user info
     context: async ({ req, connection }) => {
       // Handle subscription context
@@ -300,7 +300,7 @@ export function createOptimizedApolloServer() {
         dataLoaders: createDataLoaders(),
         preloadTracking: null, // 用於追蹤預加載
       };
-      
+
       // 觸發用戶行為預加載
       if (req.user?.id && req.headers.referer) {
         const currentPath = new URL(req.headers.referer).pathname;
@@ -308,7 +308,7 @@ export function createOptimizedApolloServer() {
           logger.debug('預加載失敗:', err);
         });
       }
-      
+
       return context;
     },
 
@@ -316,7 +316,7 @@ export function createOptimizedApolloServer() {
     plugins: [
       // Rate limiting plugin
       createRateLimitingPlugin(defaultRateLimitConfig),
-      
+
       // Performance monitoring plugin
       {
         requestDidStart() {
@@ -324,12 +324,14 @@ export function createOptimizedApolloServer() {
             async willSendResponse(requestContext) {
               const { operationName, request, context } = requestContext;
               const complexity = complexityAnalyzer.calculateComplexity(request.query);
-              
+
               // Log slow queries
               if (requestContext.metrics?.executionTime > 2000) {
-                console.warn(`Slow query detected: ${operationName} (${requestContext.metrics.executionTime}ms, complexity: ${complexity})`);
+                console.warn(
+                  `Slow query detected: ${operationName} (${requestContext.metrics.executionTime}ms, complexity: ${complexity})`
+                );
               }
-              
+
               // 記錄預加載追蹤
               if (context.preloadTracking && context.user?.id) {
                 const tracking = context.preloadTracking;
@@ -339,14 +341,13 @@ export function createOptimizedApolloServer() {
                   executionTime: requestContext.metrics?.executionTime,
                   complexity,
                 });
-                
+
                 // 執行預加載
-                await unifiedPreloadService.preloadForUser(
-                  context.user.id,
-                  `graphql:${tracking.query}`
-                ).catch(err => {
-                  logger.debug('預加載失敗:', err);
-                });
+                await unifiedPreloadService
+                  .preloadForUser(context.user.id, `graphql:${tracking.query}`)
+                  .catch(err => {
+                    logger.debug('預加載失敗:', err);
+                  });
               }
             },
           };
@@ -358,7 +359,7 @@ export function createOptimizedApolloServer() {
     validationRules: [
       // Depth limiting
       depthLimit(10),
-      
+
       // Cost analysis
       costAnalysis({
         maximumCost: 1000,
@@ -384,10 +385,10 @@ export function createOptimizedApolloServer() {
           connectedAt: new Date(),
         };
       },
-      
+
       onDisconnect: async (webSocket: any, context: any) => {
         console.log('GraphQL subscription disconnected');
-        
+
         // Clean up rate limiting connection
         if (context.connectionParams) {
           const { userId, ipAddress } = context.connectionParams;
@@ -397,9 +398,9 @@ export function createOptimizedApolloServer() {
     },
 
     // Error formatting with monitoring
-    formatError: (error) => {
+    formatError: error => {
       console.error('GraphQL Error:', error);
-      
+
       // Don't expose internal errors in production
       if (process.env.NODE_ENV === 'production') {
         if (error.message.includes('Rate limit exceeded')) {
@@ -410,7 +411,7 @@ export function createOptimizedApolloServer() {
         }
         return new Error('Internal server error');
       }
-      
+
       return error;
     },
 
@@ -429,20 +430,17 @@ function analyzeForPreload(result: any, userId: string, queryType: string) {
       // 分析結果並預測下一步查詢
       if (Array.isArray(result) || result?.edges) {
         const items = Array.isArray(result) ? result : result.edges?.map((e: any) => e.node) || [];
-        
+
         // 預加載前幾個項目
         const preloadCount = Math.min(3, items.length);
         for (let i = 0; i < preloadCount; i++) {
           const item = items[i];
           if (item?.id) {
-            await unifiedPreloadService.preloadForUser(
-              userId,
-              `${queryType}/${item.id}`
-            );
+            await unifiedPreloadService.preloadForUser(userId, `${queryType}/${item.id}`);
           }
         }
       }
-      
+
       // 根據查詢類型預加載相關數據
       const relatedQueries: Record<string, string[]> = {
         products: ['inventory', 'movements'],
@@ -450,15 +448,11 @@ function analyzeForPreload(result: any, userId: string, queryType: string) {
         getLowStockProducts: ['suppliers', 'reorderHistory'],
         warehouseSummary: ['zones', 'pallets'],
       };
-      
+
       const related = relatedQueries[queryType] || [];
       for (const relatedQuery of related) {
-        await unifiedPreloadService.preloadForUser(
-          userId,
-          `related:${queryType}:${relatedQuery}`
-        );
+        await unifiedPreloadService.preloadForUser(userId, `related:${queryType}:${relatedQuery}`);
       }
-      
     } catch (error) {
       logger.debug('預加載分析失敗:', error);
     }
@@ -466,17 +460,13 @@ function analyzeForPreload(result: any, userId: string, queryType: string) {
 }
 
 // Export monitoring functions
-export { 
-  getRateLimitingStats,
-  cacheOptimizer,
-  defaultRateLimitConfig,
-};
+export { getRateLimitingStats, cacheOptimizer, defaultRateLimitConfig };
 
 // Health check function
 export function getGraphQLHealthStatus() {
   const rateLimitStats = getRateLimitingStats();
   const cacheStats = cacheOptimizer.getCacheStats();
-  
+
   return {
     healthy: rateLimitStats.activeQueries < 50 && cacheStats.avgHitRatio > 0.3,
     rateLimiting: {
@@ -489,4 +479,4 @@ export function getGraphQLHealthStatus() {
     },
     timestamp: new Date().toISOString(),
   };
-} 
+}

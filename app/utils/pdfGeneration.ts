@@ -1,7 +1,7 @@
 /**
  * Unified PDF Generation Module
  * 統一的 PDF 生成模組
- * 
+ *
  * This module provides a consistent interface for PDF generation across the application.
  * 這個模組為整個應用提供一致的 PDF 生成介面。
  */
@@ -49,7 +49,11 @@ export interface BatchPdfGenerationOptions {
   upload?: boolean;
   storagePath?: string;
   batchSize?: number;
-  onProgress?: (current: number, total: number, status: 'processing' | 'completed' | 'failed') => void;
+  onProgress?: (
+    current: number,
+    total: number,
+    status: 'processing' | 'completed' | 'failed'
+  ) => void;
   onItemComplete?: (index: number, result: PdfGenerationResult) => void;
 }
 
@@ -60,30 +64,30 @@ export interface BatchPdfGenerationOptions {
 export async function generatePdf(options: PdfGenerationOptions): Promise<PdfGenerationResult> {
   try {
     const { component, filename, upload = false, storagePath, onProgress } = options;
-    
+
     // Report initial progress
     onProgress?.(10);
-    
+
     // Generate PDF blob
     const pdfInstance = pdf(component);
     const blob = await pdfInstance.toBlob();
-    
+
     onProgress?.(50);
-    
+
     // Create object URL
     const url = URL.createObjectURL(blob);
-    
+
     const result: PdfGenerationResult = {
       success: true,
       blob,
       url,
-      filename: filename ? `${filename}.pdf` : undefined
+      filename: filename ? `${filename}.pdf` : undefined,
     };
-    
+
     // Upload to storage if requested
     if (upload && filename) {
       onProgress?.(70);
-      
+
       const uploadResult = await uploadPdfToStorage(blob, `${filename}.pdf`, storagePath);
       if (uploadResult.success) {
         result.publicUrl = uploadResult.publicUrl;
@@ -92,15 +96,15 @@ export async function generatePdf(options: PdfGenerationOptions): Promise<PdfGen
         result.success = false;
       }
     }
-    
+
     onProgress?.(100);
-    
+
     return result;
   } catch (error) {
     console.error('[generatePdf] Error:', error);
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Unknown error occurred'
+      error: error instanceof Error ? error.message : 'Unknown error occurred',
     };
   }
 }
@@ -109,7 +113,9 @@ export async function generatePdf(options: PdfGenerationOptions): Promise<PdfGen
  * Generate multiple PDFs in batches
  * 批量生成多個 PDF
  */
-export async function generatePdfsBatch(options: BatchPdfGenerationOptions): Promise<PdfGenerationResult[]> {
+export async function generatePdfsBatch(
+  options: BatchPdfGenerationOptions
+): Promise<PdfGenerationResult[]> {
   const {
     components,
     filenames = [],
@@ -117,41 +123,41 @@ export async function generatePdfsBatch(options: BatchPdfGenerationOptions): Pro
     storagePath,
     batchSize = 5,
     onProgress,
-    onItemComplete
+    onItemComplete,
   } = options;
-  
+
   const results: PdfGenerationResult[] = [];
   const total = components.length;
-  
+
   // Process in batches
   for (let i = 0; i < total; i += batchSize) {
     const batch = components.slice(i, i + batchSize);
     const batchFilenames = filenames.slice(i, i + batchSize);
-    
+
     // Process batch in parallel
     const batchPromises = batch.map(async (component, index) => {
       const actualIndex = i + index;
       const filename = batchFilenames[index];
-      
+
       onProgress?.(actualIndex + 1, total, 'processing');
-      
+
       const result = await generatePdf({
         component,
         filename,
         upload,
-        storagePath
+        storagePath,
       });
-      
+
       onProgress?.(actualIndex + 1, total, result.success ? 'completed' : 'failed');
       onItemComplete?.(actualIndex, result);
-      
+
       return result;
     });
-    
+
     const batchResults = await Promise.all(batchPromises);
     results.push(...batchResults);
   }
-  
+
   return results;
 }
 
@@ -163,16 +169,16 @@ export async function mergePdfs(pdfBlobs: Blob[]): Promise<Blob | null> {
   try {
     // Dynamic import to avoid loading pdf-lib unless needed
     const { PDFDocument } = await import('pdf-lib');
-    
+
     const mergedPdf = await PDFDocument.create();
-    
+
     for (const blob of pdfBlobs) {
       const arrayBuffer = await blob.arrayBuffer();
       const pdf = await PDFDocument.load(arrayBuffer);
       const pages = await mergedPdf.copyPages(pdf, pdf.getPageIndices());
       pages.forEach(page => mergedPdf.addPage(page));
     }
-    
+
     const mergedBytes = await mergedPdf.save();
     return new Blob([mergedBytes], { type: 'application/pdf' });
   } catch (error) {
@@ -188,7 +194,7 @@ export async function mergePdfs(pdfBlobs: Blob[]): Promise<Blob | null> {
 export async function printPdfs(pdfBlobs: Blob[], merge: boolean = true): Promise<void> {
   try {
     let blobToPrint: Blob;
-    
+
     if (merge && pdfBlobs.length > 1) {
       const mergedBlob = await mergePdfs(pdfBlobs);
       if (!mergedBlob) {
@@ -200,15 +206,15 @@ export async function printPdfs(pdfBlobs: Blob[], merge: boolean = true): Promis
     } else {
       throw new Error('No PDFs to print');
     }
-    
+
     // Create iframe for printing
     const url = URL.createObjectURL(blobToPrint);
     const iframe = document.createElement('iframe');
     iframe.style.display = 'none';
     iframe.src = url;
-    
+
     document.body.appendChild(iframe);
-    
+
     // Wait for iframe to load then print
     iframe.onload = () => {
       setTimeout(() => {
@@ -240,44 +246,45 @@ async function uploadPdfToStorage(
     const arrayBuffer = await blob.arrayBuffer();
     const uint8Array = new Uint8Array(arrayBuffer);
     const numberArray = Array.from(uint8Array);
-    
+
     // Use the appropriate upload action based on storage path
     let uploadResult;
     if (storagePath === 'qc-labels' || storagePath === 'grn-labels') {
       // Use server action for these paths
-      const importedModule = storagePath === 'qc-labels' 
-        ? await import('@/app/actions/qcActions')
-        : await import('@/app/actions/grnActions');
-      
+      const importedModule =
+        storagePath === 'qc-labels'
+          ? await import('@/app/actions/qcActions')
+          : await import('@/app/actions/grnActions');
+
       uploadResult = await importedModule.uploadPdfToStorage(numberArray, filename, storagePath);
     } else {
       // Use API route for other paths
       const formData = new FormData();
       formData.append('file', blob, filename);
       formData.append('path', storagePath);
-      
+
       const response = await fetch('/api/upload-pdf', {
         method: 'POST',
-        body: formData
+        body: formData,
       });
-      
+
       const data = await response.json();
       uploadResult = {
         publicUrl: data.publicUrl,
-        error: data.error
+        error: data.error,
       };
     }
-    
+
     if (uploadResult.error) {
       return { success: false, error: uploadResult.error };
     }
-    
+
     return { success: true, publicUrl: uploadResult.publicUrl };
   } catch (error) {
     console.error('[uploadPdfToStorage] Error:', error);
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Upload failed'
+      error: error instanceof Error ? error.message : 'Upload failed',
     };
   }
 }

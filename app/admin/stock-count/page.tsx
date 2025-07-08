@@ -7,7 +7,13 @@ import ScanToStart from './components/ScanToStart';
 import RemainToCount from './components/RemainToCount';
 import NumberPad from './components/NumberPad';
 import ErrorBoundary from './components/ErrorBoundary';
-import { ClipboardDocumentCheckIcon, QueueListIcon, CheckCircleIcon, XCircleIcon, ClockIcon } from '@heroicons/react/24/outline';
+import {
+  ClipboardDocumentCheckIcon,
+  QueueListIcon,
+  CheckCircleIcon,
+  XCircleIcon,
+  ClockIcon,
+} from '@heroicons/react/24/outline';
 import { UniversalBackground } from '@/app/components/UniversalBackground';
 
 // 定義狀態類型
@@ -77,7 +83,7 @@ export default function AdminStockCountPage() {
           setState('batch_mode');
           return;
         }
-        
+
         // 獲取產品的當前剩餘數量（如果今日已經有盤點記錄）
         const processResponse = await fetch('/api/stock-count/process', {
           method: 'POST',
@@ -92,22 +98,27 @@ export default function AdminStockCountPage() {
         });
 
         const processResult = await processResponse.json();
-        
+
         // 準備批量項目，等待輸入數量
         setPendingBatchItem({
           plt_num: scanResult.data.plt_num,
           product_code: scanResult.data.product_code,
-          product_desc: processResult.data?.product_desc || scanResult.data.product_desc || `Product ${scanResult.data.product_code}`,
+          product_desc:
+            processResult.data?.product_desc ||
+            scanResult.data.product_desc ||
+            `Product ${scanResult.data.product_code}`,
           timestamp: new Date().toISOString(),
           status: 'pending',
           current_remain_qty: processResult.data?.current_remain_qty,
         });
-        
+
         // 如果是第一次盤點，顯示提示
         if (processResult.data?.is_first_count) {
-          toast.info(`First count for ${scanResult.data.product_code}. Current stock: ${processResult.data?.current_remain_qty || 0}`);
+          toast.info(
+            `First count for ${scanResult.data.product_code}. Current stock: ${processResult.data?.current_remain_qty || 0}`
+          );
         }
-        
+
         setShowNumberPad(true);
         setState('need_input');
         return;
@@ -143,30 +154,33 @@ export default function AdminStockCountPage() {
         setCountData({
           plt_num: scanResult.data.plt_num,
           product_code: scanResult.data.product_code,
-          product_desc: processResult.data.product_desc || `Product ${scanResult.data.product_code}`,
+          product_desc:
+            processResult.data.product_desc || `Product ${scanResult.data.product_code}`,
           remain_qty: 0,
           current_remain_qty: processResult.data.current_remain_qty,
         });
         setState('need_input');
         setShowNumberPad(true);
-        
+
         // 如果是第一次盤點，顯示提示
         if (processResult.data.is_first_count) {
-          toast.info(`First count for ${scanResult.data.product_code}. Current stock: ${processResult.data.current_remain_qty}`);
+          toast.info(
+            `First count for ${scanResult.data.product_code}. Current stock: ${processResult.data.current_remain_qty}`
+          );
         }
       } else {
         // 處理完成
         setCountData({
           plt_num: scanResult.data.plt_num,
           product_code: scanResult.data.product_code,
-          product_desc: processResult.data.product_desc || `Product ${scanResult.data.product_code}`,
+          product_desc:
+            processResult.data.product_desc || `Product ${scanResult.data.product_code}`,
           remain_qty: processResult.data.remain_qty,
         });
         setState('counting');
-        
+
         toast.success('Count updated successfully!');
       }
-
     } catch (error) {
       console.error('Scan processing error:', error);
       toast.error('An error occurred during processing');
@@ -194,27 +208,29 @@ export default function AdminStockCountPage() {
         toast.success('Quantity updated');
         return;
       }
-      
+
       // 數據驗證
       const validation = await validateQuantity(pendingBatchItem.product_code!, countedQty);
       if (!validation.is_valid) {
         toast.error(validation.message || 'Invalid quantity');
-        
+
         // 如果有警告但允許繼續，顯示確認對話框
         if (validation.warnings && validation.warnings.length > 0) {
-          const confirmed = window.confirm(`Warning: ${validation.warnings.join('\n')}\n\nDo you want to continue?`);
+          const confirmed = window.confirm(
+            `Warning: ${validation.warnings.join('\n')}\n\nDo you want to continue?`
+          );
           if (!confirmed) return;
         } else {
           return; // 如果有錯誤，直接返回
         }
       }
-      
+
       // 添加到批量掃描列表
       addBatchScanRecord({
-        ...pendingBatchItem as BatchScanRecord,
+        ...(pendingBatchItem as BatchScanRecord),
         counted_qty: countedQty,
       });
-      
+
       setPendingBatchItem(null);
       setShowNumberPad(false);
       setState('batch_mode');
@@ -228,10 +244,12 @@ export default function AdminStockCountPage() {
     const validation = await validateQuantity(countData.product_code, countedQty);
     if (!validation.is_valid) {
       toast.error(validation.message || 'Invalid quantity');
-      
+
       // 如果有警告但允許繼續，顯示確認對話框
       if (validation.warnings && validation.warnings.length > 0) {
-        const confirmed = window.confirm(`Warning: ${validation.warnings.join('\n')}\n\nDo you want to continue?`);
+        const confirmed = window.confirm(
+          `Warning: ${validation.warnings.join('\n')}\n\nDo you want to continue?`
+        );
         if (!confirmed) return;
       } else {
         return; // 如果有錯誤，直接返回
@@ -261,16 +279,19 @@ export default function AdminStockCountPage() {
       }
 
       // 更新數據
-      setCountData(prev => prev ? {
-        ...prev,
-        remain_qty: result.data.remain_qty,
-        product_desc: result.data.product_desc || prev.product_desc
-      } : null);
+      setCountData(prev =>
+        prev
+          ? {
+              ...prev,
+              remain_qty: result.data.remain_qty,
+              product_desc: result.data.product_desc || prev.product_desc,
+            }
+          : null
+      );
 
       setState('counting');
       setShowNumberPad(false);
       toast.success('Count recorded successfully!');
-
     } catch (error) {
       console.error('Count submission error:', error);
       toast.error('An error occurred during count submission');
@@ -284,7 +305,7 @@ export default function AdminStockCountPage() {
     setShowNumberPad(false);
     setPendingBatchItem(null);
     setEditingIndex(null);
-    
+
     if (batchMode) {
       setState('batch_mode');
     } else {
@@ -306,26 +327,29 @@ export default function AdminStockCountPage() {
   };
 
   // 數據驗證函數
-  const validateQuantity = useCallback(async (productCode: string, quantity: number): Promise<any> => {
-    try {
-      const response = await fetch('/api/stock-count/validate', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          product_code: productCode,
-          counted_qty: quantity,
-        }),
-      });
+  const validateQuantity = useCallback(
+    async (productCode: string, quantity: number): Promise<any> => {
+      try {
+        const response = await fetch('/api/stock-count/validate', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            product_code: productCode,
+            counted_qty: quantity,
+          }),
+        });
 
-      const result = await response.json();
-      return result.data || { is_valid: true };
-    } catch (error) {
-      console.error('Validation error:', error);
-      return { is_valid: true }; // 驗證失敗時允許繼續
-    }
-  }, []);
+        const result = await response.json();
+        return result.data || { is_valid: true };
+      } catch (error) {
+        console.error('Validation error:', error);
+        return { is_valid: true }; // 驗證失敗時允許繼續
+      }
+    },
+    []
+  );
 
   // 處理批量掃描提交
   const handleBatchSubmit = async () => {
@@ -387,17 +411,17 @@ export default function AdminStockCountPage() {
       setState('initial');
     }
   };
-  
+
   // 編輯批量項目數量
   const handleEditBatchItem = (index: number) => {
     const item = batchScans[index];
     if (item.status !== 'pending') return;
-    
+
     setEditingIndex(index);
     setPendingBatchItem(item);
     setShowNumberPad(true);
   };
-  
+
   // 刪除批量項目
   const handleDeleteBatchItem = (index: number) => {
     const updatedScans = batchScans.filter((_, i) => i !== index);
@@ -408,31 +432,35 @@ export default function AdminStockCountPage() {
   return (
     <UniversalBackground>
       <ErrorBoundary>
-        <div className="text-white">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-
-            <div className="space-y-8">
+        <div className='text-white'>
+          <div className='mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8'>
+            <div className='space-y-8'>
               {/* Batch Mode Toggle */}
-              <div className="flex flex-col items-center mb-6">
+              <div className='mb-6 flex flex-col items-center'>
                 <button
                   onClick={toggleBatchMode}
-                  className={`flex items-center gap-2 px-6 py-3 rounded-lg font-semibold transition-all ${
-                    batchMode 
-                      ? 'bg-green-600 hover:bg-green-700 text-white' 
-                      : 'bg-slate-700 hover:bg-slate-600 text-white'
+                  className={`flex items-center gap-2 rounded-lg px-6 py-3 font-semibold transition-all ${
+                    batchMode
+                      ? 'bg-green-600 text-white hover:bg-green-700'
+                      : 'bg-slate-700 text-white hover:bg-slate-600'
                   }`}
                 >
-                  <QueueListIcon className="h-5 w-5" />
+                  <QueueListIcon className='h-5 w-5' />
                   {batchMode ? 'Exit Batch Mode' : 'Enable Batch Mode'}
                 </button>
                 {batchMode && (
                   <motion.p
                     initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="mt-3 text-sm text-green-400 flex items-center gap-2"
+                    className='mt-3 flex items-center gap-2 text-sm text-green-400'
                   >
-                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    <svg className='h-4 w-4' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+                      <path
+                        strokeLinecap='round'
+                        strokeLinejoin='round'
+                        strokeWidth={2}
+                        d='M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z'
+                      />
                     </svg>
                     Batch mode active - Scan multiple pallets and enter quantities before submitting
                   </motion.p>
@@ -446,77 +474,96 @@ export default function AdminStockCountPage() {
                     initial={{ opacity: 0, y: -20 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -20 }}
-                    className="bg-slate-800/30 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-6 shadow-xl"
+                    className='rounded-2xl border border-slate-700/50 bg-slate-800/30 p-6 shadow-xl backdrop-blur-xl'
                   >
-                    <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-                      <QueueListIcon className="h-5 w-5 text-blue-400" />
+                    <h3 className='mb-4 flex items-center gap-2 text-lg font-semibold text-white'>
+                      <QueueListIcon className='h-5 w-5 text-blue-400' />
                       Batch Scan List ({batchScans.length} items)
                     </h3>
-                    
-                    <div className="space-y-2 max-h-60 overflow-y-auto">
+
+                    <div className='max-h-60 space-y-2 overflow-y-auto'>
                       {batchScans.map((scan, index) => (
                         <motion.div
                           key={`${scan.plt_num}-${index}`}
                           initial={{ opacity: 0, x: -20 }}
                           animate={{ opacity: 1, x: 0 }}
                           transition={{ delay: index * 0.05 }}
-                          className={`flex items-center justify-between p-3 rounded-lg ${
-                            scan.status === 'error' 
-                              ? 'bg-red-900/20 border border-red-700/50' 
+                          className={`flex items-center justify-between rounded-lg p-3 ${
+                            scan.status === 'error'
+                              ? 'border border-red-700/50 bg-red-900/20'
                               : scan.status === 'success'
-                              ? 'bg-green-900/20 border border-green-700/50'
-                              : 'bg-slate-700/30 border border-slate-600/50'
+                                ? 'border border-green-700/50 bg-green-900/20'
+                                : 'border border-slate-600/50 bg-slate-700/30'
                           }`}
                         >
-                          <div className="flex items-center gap-3">
+                          <div className='flex items-center gap-3'>
                             {scan.status === 'error' ? (
-                              <XCircleIcon className="h-5 w-5 text-red-400" />
+                              <XCircleIcon className='h-5 w-5 text-red-400' />
                             ) : scan.status === 'success' ? (
-                              <CheckCircleIcon className="h-5 w-5 text-green-400" />
+                              <CheckCircleIcon className='h-5 w-5 text-green-400' />
                             ) : (
-                              <ClockIcon className="h-5 w-5 text-yellow-400" />
+                              <ClockIcon className='h-5 w-5 text-yellow-400' />
                             )}
                             <div>
-                              <p className="text-sm font-medium text-white">
+                              <p className='text-sm font-medium text-white'>
                                 {scan.product_code} - {scan.plt_num}
                               </p>
-                              <p className="text-xs text-slate-400">
+                              <p className='text-xs text-slate-400'>
                                 {scan.product_desc || 'No description'}
                               </p>
                               {scan.current_remain_qty !== undefined && (
-                                <p className="text-xs text-slate-500 mt-1">
-                                  Current Stock: {scan.current_remain_qty} → {scan.current_remain_qty - scan.counted_qty}
+                                <p className='mt-1 text-xs text-slate-500'>
+                                  Current Stock: {scan.current_remain_qty} →{' '}
+                                  {scan.current_remain_qty - scan.counted_qty}
                                 </p>
                               )}
                             </div>
                           </div>
-                          <div className="flex items-center gap-2">
-                            <div className="text-right">
-                              <p className="text-sm font-medium text-white">
+                          <div className='flex items-center gap-2'>
+                            <div className='text-right'>
+                              <p className='text-sm font-medium text-white'>
                                 Qty: {scan.counted_qty}
                               </p>
-                              {scan.error && (
-                                <p className="text-xs text-red-400">{scan.error}</p>
-                              )}
+                              {scan.error && <p className='text-xs text-red-400'>{scan.error}</p>}
                             </div>
                             {scan.status === 'pending' && (
-                              <div className="flex gap-1">
+                              <div className='flex gap-1'>
                                 <button
                                   onClick={() => handleEditBatchItem(index)}
-                                  className="p-1.5 bg-blue-600 hover:bg-blue-700 rounded text-white transition-colors"
-                                  title="Edit quantity"
+                                  className='rounded bg-blue-600 p-1.5 text-white transition-colors hover:bg-blue-700'
+                                  title='Edit quantity'
                                 >
-                                  <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                  <svg
+                                    className='h-4 w-4'
+                                    fill='none'
+                                    stroke='currentColor'
+                                    viewBox='0 0 24 24'
+                                  >
+                                    <path
+                                      strokeLinecap='round'
+                                      strokeLinejoin='round'
+                                      strokeWidth={2}
+                                      d='M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z'
+                                    />
                                   </svg>
                                 </button>
                                 <button
                                   onClick={() => handleDeleteBatchItem(index)}
-                                  className="p-1.5 bg-red-600 hover:bg-red-700 rounded text-white transition-colors"
-                                  title="Remove from batch"
+                                  className='rounded bg-red-600 p-1.5 text-white transition-colors hover:bg-red-700'
+                                  title='Remove from batch'
                                 >
-                                  <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                  <svg
+                                    className='h-4 w-4'
+                                    fill='none'
+                                    stroke='currentColor'
+                                    viewBox='0 0 24 24'
+                                  >
+                                    <path
+                                      strokeLinecap='round'
+                                      strokeLinejoin='round'
+                                      strokeWidth={2}
+                                      d='M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16'
+                                    />
                                   </svg>
                                 </button>
                               </div>
@@ -525,18 +572,20 @@ export default function AdminStockCountPage() {
                         </motion.div>
                       ))}
                     </div>
-                    
-                    <div className="mt-4 flex gap-4">
+
+                    <div className='mt-4 flex gap-4'>
                       <button
                         onClick={handleBatchSubmit}
-                        disabled={isLoading || batchScans.filter(s => s.status === 'pending').length === 0}
-                        className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-600 text-white font-semibold py-2 px-4 rounded-lg transition-colors disabled:cursor-not-allowed"
+                        disabled={
+                          isLoading || batchScans.filter(s => s.status === 'pending').length === 0
+                        }
+                        className='flex-1 rounded-lg bg-blue-600 px-4 py-2 font-semibold text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-600'
                       >
                         Submit Batch ({batchScans.filter(s => s.status === 'pending').length} items)
                       </button>
                       <button
                         onClick={() => setBatchScans([])}
-                        className="bg-slate-700 hover:bg-slate-600 text-white font-semibold py-2 px-4 rounded-lg transition-colors"
+                        className='rounded-lg bg-slate-700 px-4 py-2 font-semibold text-white transition-colors hover:bg-slate-600'
                       >
                         Clear All
                       </button>
@@ -546,12 +595,9 @@ export default function AdminStockCountPage() {
               </AnimatePresence>
 
               {/* Scan To Start 區域 */}
-              <AnimatePresence mode="wait">
+              <AnimatePresence mode='wait'>
                 {(state === 'initial' || state === 'scanning' || state === 'batch_mode') && (
-                  <ScanToStart 
-                    onScanSuccess={handleScanSuccess}
-                    isLoading={isLoading}
-                  />
+                  <ScanToStart onScanSuccess={handleScanSuccess} isLoading={isLoading} />
                 )}
               </AnimatePresence>
 
@@ -569,12 +615,12 @@ export default function AdminStockCountPage() {
 
               {/* 重新開始按鈕 */}
               {state === 'counting' && (
-                <div className="flex justify-center">
+                <div className='flex justify-center'>
                   <motion.button
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                     onClick={resetToInitial}
-                    className="bg-slate-700 hover:bg-slate-600 text-white font-semibold py-3 px-6 rounded-lg transition-colors"
+                    className='rounded-lg bg-slate-700 px-6 py-3 font-semibold text-white transition-colors hover:bg-slate-600'
                   >
                     Scan Next Pallet
                   </motion.button>
@@ -590,30 +636,42 @@ export default function AdminStockCountPage() {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50"
+                className='fixed inset-0 z-50 bg-black/50 backdrop-blur-sm'
               >
-                <div className="fixed inset-0 flex items-center justify-center p-4">
-                  <div className="bg-slate-800 rounded-2xl shadow-2xl max-w-md w-full">
+                <div className='fixed inset-0 flex items-center justify-center p-4'>
+                  <div className='w-full max-w-md rounded-2xl bg-slate-800 shadow-2xl'>
                     {pendingBatchItem && (
-                      <div className="p-6 border-b border-slate-700">
-                        <h3 className="text-lg font-semibold text-white mb-2">
+                      <div className='border-b border-slate-700 p-6'>
+                        <h3 className='mb-2 text-lg font-semibold text-white'>
                           {editingIndex !== null ? 'Edit Quantity' : 'Enter Quantity for Pallet'}
                         </h3>
-                        <div className="space-y-2">
-                          <p className="text-sm text-slate-300">
-                            Product: <span className="font-medium text-white">{pendingBatchItem.product_code}</span>
+                        <div className='space-y-2'>
+                          <p className='text-sm text-slate-300'>
+                            Product:{' '}
+                            <span className='font-medium text-white'>
+                              {pendingBatchItem.product_code}
+                            </span>
                           </p>
-                          <p className="text-sm text-slate-300">
-                            Pallet: <span className="font-medium text-white">{pendingBatchItem.plt_num}</span>
+                          <p className='text-sm text-slate-300'>
+                            Pallet:{' '}
+                            <span className='font-medium text-white'>
+                              {pendingBatchItem.plt_num}
+                            </span>
                           </p>
                           {pendingBatchItem.product_desc && (
-                            <p className="text-sm text-slate-300">
-                              Description: <span className="font-medium text-white">{pendingBatchItem.product_desc}</span>
+                            <p className='text-sm text-slate-300'>
+                              Description:{' '}
+                              <span className='font-medium text-white'>
+                                {pendingBatchItem.product_desc}
+                              </span>
                             </p>
                           )}
                           {pendingBatchItem.current_remain_qty !== undefined && (
-                            <p className="text-sm text-slate-300">
-                              Current Stock: <span className="font-medium text-white">{pendingBatchItem.current_remain_qty}</span>
+                            <p className='text-sm text-slate-300'>
+                              Current Stock:{' '}
+                              <span className='font-medium text-white'>
+                                {pendingBatchItem.current_remain_qty}
+                              </span>
                             </p>
                           )}
                         </div>

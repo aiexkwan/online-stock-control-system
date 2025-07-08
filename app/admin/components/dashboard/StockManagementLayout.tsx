@@ -10,21 +10,21 @@ interface StockManagementLayoutProps {
   children: React.ReactNode[];
 }
 
-export const StockManagementLayout: React.FC<StockManagementLayoutProps> = ({ 
-  theme, 
-  timeFrame, 
-  children 
+export const StockManagementLayout: React.FC<StockManagementLayoutProps> = ({
+  theme,
+  timeFrame,
+  children,
 }) => {
   // Convert children to array to handle both single and multiple children
   const childrenArray = React.Children.toArray(children);
-  
+
   // 使用虛擬化 hook
   const containerRef = useLayoutVirtualization({
     widgetCount: childrenArray.length,
     theme,
-    threshold: 100
+    threshold: 100,
   });
-  
+
   // Container styles matching exact CSS for stock management page
   const containerStyle: React.CSSProperties = {
     display: 'grid',
@@ -35,11 +35,11 @@ export const StockManagementLayout: React.FC<StockManagementLayoutProps> = ({
     justifyItems: 'stretch',
     width: '100%',
     minHeight: '800px',
-    padding: '20px'
+    padding: '20px',
   };
 
   return (
-    <div ref={containerRef} className="stock-management-container" style={containerStyle}>
+    <div ref={containerRef} className='stock-management-container' style={containerStyle}>
       {childrenArray}
     </div>
   );

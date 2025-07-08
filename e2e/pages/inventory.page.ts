@@ -47,7 +47,7 @@ export class InventoryPage {
   async getSearchResults(): Promise<any[]> {
     const rows = await this.inventoryTable.locator('tbody tr').all();
     const results = [];
-    
+
     for (const row of rows) {
       const cells = await row.locator('td').all();
       if (cells.length > 0) {
@@ -59,13 +59,13 @@ export class InventoryPage {
         });
       }
     }
-    
+
     return results;
   }
 
   async performTransfer(fromLocation: string, toLocation: string, quantity: string) {
     await this.transferButton.click();
-    
+
     // 填寫轉移表單
     const modal = this.page.locator('[role="dialog"]');
     await modal.locator('[name="fromLocation"]').selectOption(fromLocation);
@@ -79,7 +79,7 @@ export class InventoryPage {
   }
 
   async getErrorMessage(): Promise<string> {
-    return await this.errorAlert.textContent() || '';
+    return (await this.errorAlert.textContent()) || '';
   }
 
   async isSuccessDisplayed(): Promise<boolean> {
@@ -87,6 +87,6 @@ export class InventoryPage {
   }
 
   async getSuccessMessage(): Promise<string> {
-    return await this.successAlert.textContent() || '';
+    return (await this.successAlert.textContent()) || '';
   }
 }

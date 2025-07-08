@@ -19,8 +19,8 @@ export const exportAllDataReportConfig: ReportConfig = {
       dataSource: 'all-data',
       config: {
         columns: [], // Dynamic based on selected tables
-      }
-    }
+      },
+    },
   ],
   filters: [
     {
@@ -43,10 +43,10 @@ export const exportAllDataReportConfig: ReportConfig = {
       required: false, // Only required for certain tables
     },
     {
-      id: 'endDate', 
+      id: 'endDate',
       label: 'End Date',
       type: 'date',
       required: false, // Only required for certain tables
-    }
+    },
   ],
 };

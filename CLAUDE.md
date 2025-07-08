@@ -5,7 +5,7 @@
 
 ### 必須遵守事項
 - **長駐開啟ultrathink模式**
-- 優先編輯現有文件而非創建新文件
+- 優先編輯現有文件而非不停創建新文件,以減少冗碼
 - 只在用戶明確要求時創建文檔文件
 - 運行 lint 同 typecheck 確保代碼質量
 - 使用 MCP 工具確認數據庫結構，唔好假設
@@ -25,7 +25,7 @@ NewPennine 倉庫管理系統 - 基於 Next.js、TypeScript 同 Supabase 嘅現�
 - **儀表板**: 固定佈局系統 (無用戶自定義功能)
 - **實時功能**: Supabase Realtime
 - **認證**: Supabase Auth
-- **文件處理**: PDF 生成 (react-pdf)、Excel 處理 (需要從 xlsx 遷移到 ExcelJS)
+- **文件處理**: PDF 生成 (react-pdf)、Excel 處理 (ExcelJS)
 - **硬件整合**: 打印機、掃描器、RFID (計劃中)
 
 ## 開發規範

@@ -18,7 +18,7 @@ export const Folder3D: React.FC<Folder3DProps> = ({
   icon,
   onClick,
   label,
-  description
+  description,
 }) => {
   const handleClick = () => {
     if (onClick) onClick();
@@ -27,35 +27,28 @@ export const Folder3D: React.FC<Folder3DProps> = ({
   const folderStyle = {
     '--folder-color': color,
     '--folder-back-color': `color-mix(in srgb, ${color} 85%, black)`,
-    transform: `scale(${size})`
+    transform: `scale(${size})`,
   } as React.CSSProperties;
 
   return (
-    <div className="flex flex-col items-center justify-center">
-      <div 
-        className="folder"
-        style={folderStyle}
-        onClick={handleClick}
-      >
-        <div className="folder__back">
-          <div className="paper">
-            {icon && React.cloneElement(icon as React.ReactElement, { 
-              className: 'w-6 h-6 text-gray-600' 
-            })}
+    <div className='flex flex-col items-center justify-center'>
+      <div className='folder' style={folderStyle} onClick={handleClick}>
+        <div className='folder__back'>
+          <div className='paper'>
+            {icon &&
+              React.cloneElement(icon as React.ReactElement, {
+                className: 'w-6 h-6 text-gray-600',
+              })}
           </div>
-          <div className="paper"></div>
-          <div className="paper"></div>
-          <div className="folder__front"></div>
+          <div className='paper'></div>
+          <div className='paper'></div>
+          <div className='folder__front'></div>
         </div>
       </div>
-      
-      {label && (
-        <h3 className="text-sm font-medium text-slate-200 mt-4">{label}</h3>
-      )}
-      
-      {description && (
-        <p className="text-xs text-slate-500 mt-1">{description}</p>
-      )}
+
+      {label && <h3 className='mt-4 text-sm font-medium text-slate-200'>{label}</h3>}
+
+      {description && <p className='mt-1 text-xs text-slate-500'>{description}</p>}
     </div>
   );
 };

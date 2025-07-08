@@ -34,7 +34,7 @@ export interface SupplierFieldProps {
 /**
  * Compound supplier field with code input and name display
  * 包含代碼輸入和名稱顯示的複合供應商欄位
- * 
+ *
  * @example
  * ```tsx
  * <SupplierField
@@ -58,7 +58,7 @@ export function SupplierField({
   required = false,
   disabled = false,
   className,
-  error
+  error,
 }: SupplierFieldProps) {
   const [supplierCode, setSupplierCode] = useState(initialCode);
   const [supplierInfo, setSupplierInfo] = useState<SupplierInfo | null>(null);
@@ -73,7 +73,7 @@ export function SupplierField({
   };
 
   const content = (
-    <div className={cn("space-y-4", className)}>
+    <div className={cn('space-y-4', className)}>
       <SupplierInput
         label={codeLabel}
         required={required}
@@ -84,25 +84,18 @@ export function SupplierField({
         enableSuggestions
         autoSelectSingleMatch
         disabled={disabled}
-        placeholder="Enter supplier code"
+        placeholder='Enter supplier code'
         errorMessage={error}
       />
-      
+
       <div>
-        {nameLabel && (
-          <label className="text-sm font-medium text-gray-700">
-            {nameLabel}
-          </label>
-        )}
+        {nameLabel && <label className='text-sm font-medium text-gray-700'>{nameLabel}</label>}
         <Input
           value={supplierInfo?.supplier_name || ''}
           readOnly
           disabled
-          placeholder="Supplier name will appear here"
-          className={cn(
-            "bg-gray-50",
-            supplierInfo && "text-green-700 font-medium"
-          )}
+          placeholder='Supplier name will appear here'
+          className={cn('bg-gray-50', supplierInfo && 'font-medium text-green-700')}
         />
       </div>
     </div>
@@ -111,10 +104,10 @@ export function SupplierField({
   if (showCard) {
     return (
       <Card className={className}>
-        <div className="p-6">
-          <div className="flex items-center gap-2 mb-4">
-            <Building2 className="h-5 w-5 text-gray-500" />
-            <h3 className="text-lg font-semibold">{cardTitle}</h3>
+        <div className='p-6'>
+          <div className='mb-4 flex items-center gap-2'>
+            <Building2 className='h-5 w-5 text-gray-500' />
+            <h3 className='text-lg font-semibold'>{cardTitle}</h3>
           </div>
           {content}
         </div>

@@ -42,15 +42,15 @@ export function NavigationProvider({ children }: NavigationProviderProps) {
     const initializeNavigation = async () => {
       try {
         setIsLoading(true);
-        
+
         // 預熱緩存和加載歷史數據
         if (user?.id) {
           await Promise.all([
             navigationCacheManager.warmupCache([user.id]),
-            navigationPreloader.preloadUserData(user.id)
+            navigationPreloader.preloadUserData(user.id),
           ]);
         }
-        
+
         setIsReady(true);
       } catch (err) {
         setError(err as Error);
@@ -64,11 +64,14 @@ export function NavigationProvider({ children }: NavigationProviderProps) {
   }, [user?.id]);
 
   // 預加載路由
-  const preloadRoute = useCallback((route: string) => {
-    if (user?.id) {
-      navigationPreloader.predictAndPreload(user.id, route);
-    }
-  }, [user?.id]);
+  const preloadRoute = useCallback(
+    (route: string) => {
+      if (user?.id) {
+        navigationPreloader.predictAndPreload(user.id, route);
+      }
+    },
+    [user?.id]
+  );
 
   // 清理緩存
   const clearCache = useCallback(() => {
@@ -80,7 +83,7 @@ export function NavigationProvider({ children }: NavigationProviderProps) {
   const getCacheStats = useCallback(() => {
     return {
       preloader: navigationPreloader.getStats(),
-      cache: navigationCacheManager.getCacheStats()
+      cache: navigationCacheManager.getCacheStats(),
     };
   }, []);
 
@@ -89,7 +92,7 @@ export function NavigationProvider({ children }: NavigationProviderProps) {
     error,
     preloadRoute,
     clearCache,
-    getCacheStats
+    getCacheStats,
   };
 
   // 顯示加載狀態
@@ -99,9 +102,7 @@ export function NavigationProvider({ children }: NavigationProviderProps) {
 
   return (
     <NavigationContext.Provider value={contextValue}>
-      <NavigationErrorBoundary>
-        {children}
-      </NavigationErrorBoundary>
+      <NavigationErrorBoundary>{children}</NavigationErrorBoundary>
     </NavigationContext.Provider>
   );
 }
@@ -111,19 +112,21 @@ export function useNavigationPerformance() {
   const [metrics, setMetrics] = useState({
     loadTime: 0,
     renderTime: 0,
-    interactionTime: 0
+    interactionTime: 0,
   });
 
   useEffect(() => {
     // 使用 Performance API 監測性能
     if (typeof window !== 'undefined' && window.performance) {
-      const navigation = window.performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming;
-      
+      const navigation = window.performance.getEntriesByType(
+        'navigation'
+      )[0] as PerformanceNavigationTiming;
+
       if (navigation) {
         setMetrics({
           loadTime: navigation.loadEventEnd - navigation.fetchStart,
           renderTime: navigation.domComplete - navigation.responseEnd,
-          interactionTime: navigation.domInteractive - navigation.responseEnd
+          interactionTime: navigation.domInteractive - navigation.responseEnd,
         });
       }
     }

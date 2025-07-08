@@ -76,7 +76,7 @@ export class DatabaseConversationContextManager {
           question: record.query,
           sql: record.sql_query,
           resultCount: record.row_count || 0,
-          timestamp: record.created_at
+          timestamp: record.created_at,
         });
 
         // 從 result_json 提取實體
@@ -98,7 +98,7 @@ export class DatabaseConversationContextManager {
         lastQueryType: this.detectQueryType(latestRecord.sql_query),
         lastQueryTime: latestRecord.created_at,
         lastResults: latestRecord.result_json?.data?.slice(0, 10) || [],
-        queryHistory: queryHistory.slice(-10) // 只保留最近10條
+        queryHistory: queryHistory.slice(-10), // 只保留最近10條
       };
     } catch (error) {
       console.error('[DatabaseConversationContext] Error loading context:', error);
@@ -119,7 +119,7 @@ export class DatabaseConversationContextManager {
             type: 'product',
             value: row.product_code,
             displayName: row.product_name || row.description,
-            mentionedAt: timestamp
+            mentionedAt: timestamp,
           });
         }
       });
@@ -132,7 +132,7 @@ export class DatabaseConversationContextManager {
           entities.push({
             type: 'order',
             value: row.order_ref,
-            mentionedAt: timestamp
+            mentionedAt: timestamp,
           });
         }
       });
@@ -145,7 +145,7 @@ export class DatabaseConversationContextManager {
           entities.push({
             type: 'pallet',
             value: row.plt_num,
-            mentionedAt: timestamp
+            mentionedAt: timestamp,
           });
         }
       });
@@ -159,7 +159,7 @@ export class DatabaseConversationContextManager {
           entities.push({
             type: 'location',
             value: row[col],
-            mentionedAt: timestamp
+            mentionedAt: timestamp,
           });
         }
       });
@@ -172,7 +172,7 @@ export class DatabaseConversationContextManager {
   async resolveReferences(question: string): Promise<{ resolved: string; references: any[] }> {
     // 先加載最新的上下文
     const context = await this.loadContext();
-    
+
     let resolved = question;
     const references: any[] = [];
 
@@ -186,7 +186,7 @@ export class DatabaseConversationContextManager {
       { pattern: /\bthe last one\b/i, type: 'any', position: 'last' },
       { pattern: /\bit\b(?!em)/i, type: 'any', position: 'last' },
       { pattern: /\bthem\b/i, type: 'any', position: 'recent' },
-      
+
       // 中文代詞
       { pattern: /呢個產品/i, type: 'product', position: 'last' },
       { pattern: /嗰個產品/i, type: 'product', position: 'last' },
@@ -195,12 +195,12 @@ export class DatabaseConversationContextManager {
       { pattern: /嗰個/i, type: 'any', position: 'last' },
       { pattern: /佢/i, type: 'any', position: 'last' },
       { pattern: /佢哋/i, type: 'any', position: 'recent' },
-      
+
       // 位置引用
       { pattern: /\bsame location\b/i, type: 'location', position: 'last' },
       { pattern: /\bthere\b/i, type: 'location', position: 'last' },
       { pattern: /同一個位置/i, type: 'location', position: 'last' },
-      
+
       // 時間引用
       { pattern: /\bsame day\b/i, type: 'date', position: 'last' },
       { pattern: /\bthat day\b/i, type: 'date', position: 'last' },
@@ -216,9 +216,9 @@ export class DatabaseConversationContextManager {
             original: resolved.match(mapping.pattern)?.[0],
             resolved: entity.value,
             type: entity.type,
-            entity
+            entity,
           });
-          
+
           // 替換代詞
           resolved = resolved.replace(mapping.pattern, entity.value);
         }
@@ -233,7 +233,7 @@ export class DatabaseConversationContextManager {
         references.push({
           original: 'bottom',
           resolved: 'ORDER BY ... ASC instead of DESC',
-          type: 'query_modifier'
+          type: 'query_modifier',
         });
       }
     }
@@ -244,7 +244,7 @@ export class DatabaseConversationContextManager {
   // 查找實體
   private findEntity(context: ConversationContext, type: string, position: string): Entity | null {
     let candidates = context.entities;
-    
+
     // 按類型過濾
     if (type !== 'any') {
       candidates = candidates.filter(e => e.type === type);
@@ -253,16 +253,16 @@ export class DatabaseConversationContextManager {
     // 按位置返回
     switch (position) {
       case 'first':
-        return context.lastResults?.[0] ? 
-          this.extractEntityFromRow(context.lastResults[0]) : 
-          candidates[0];
-      
+        return context.lastResults?.[0]
+          ? this.extractEntityFromRow(context.lastResults[0])
+          : candidates[0];
+
       case 'last':
         return candidates[0]; // 最近提及的
-      
+
       case 'recent':
         return candidates.slice(0, 5) as any; // 返回最近5個
-      
+
       default:
         return candidates[0];
     }
@@ -276,28 +276,28 @@ export class DatabaseConversationContextManager {
         type: 'product',
         value: row.product_code,
         displayName: row.product_name || row.description,
-        mentionedAt: new Date().toISOString()
+        mentionedAt: new Date().toISOString(),
       };
     } else if (row.order_ref) {
       return {
         type: 'order',
         value: row.order_ref,
-        mentionedAt: new Date().toISOString()
+        mentionedAt: new Date().toISOString(),
       };
     } else if (row.plt_num) {
       return {
         type: 'pallet',
         value: row.plt_num,
-        mentionedAt: new Date().toISOString()
+        mentionedAt: new Date().toISOString(),
       };
     }
-    
+
     // 返回第一個非空值
     const firstValue = Object.values(row).find(v => v);
     return {
       type: 'any' as any,
       value: String(firstValue),
-      mentionedAt: new Date().toISOString()
+      mentionedAt: new Date().toISOString(),
     };
   }
 
@@ -312,7 +312,11 @@ export class DatabaseConversationContextManager {
       context.queryHistory.slice(-3).forEach((q, i) => {
         prompt += `${i + 1}. User asked: "${q.question}"\n`;
         prompt += `   Results: ${q.resultCount} records\n`;
-        if (i === context.queryHistory.length - 1 && context.lastResults && context.lastResults.length > 0) {
+        if (
+          i === context.queryHistory.length - 1 &&
+          context.lastResults &&
+          context.lastResults.length > 0
+        ) {
           prompt += `   Sample result: ${JSON.stringify(context.lastResults[0])}\n`;
         }
       });
@@ -323,14 +327,15 @@ export class DatabaseConversationContextManager {
       prompt += '\n### Recently Mentioned Entities:\n';
       const recentEntities = context.entities.slice(0, 10);
       const grouped = this.groupEntitiesByType(recentEntities);
-      
+
       Object.entries(grouped).forEach(([type, entities]) => {
         prompt += `- ${type}s: ${entities.map(e => e.value).join(', ')}\n`;
       });
     }
 
     prompt += '\n### Context Resolution:\n';
-    prompt += 'When the user uses pronouns like "it", "this", "that", refer to the entities mentioned above.\n';
+    prompt +=
+      'When the user uses pronouns like "it", "this", "that", refer to the entities mentioned above.\n';
     prompt += 'When the user asks follow-up questions, consider the previous query context.\n';
 
     return prompt;
@@ -338,19 +343,22 @@ export class DatabaseConversationContextManager {
 
   // 按類型分組實體
   private groupEntitiesByType(entities: Entity[]): Record<string, Entity[]> {
-    return entities.reduce((acc, entity) => {
-      if (!acc[entity.type]) {
-        acc[entity.type] = [];
-      }
-      acc[entity.type].push(entity);
-      return acc;
-    }, {} as Record<string, Entity[]>);
+    return entities.reduce(
+      (acc, entity) => {
+        if (!acc[entity.type]) {
+          acc[entity.type] = [];
+        }
+        acc[entity.type].push(entity);
+        return acc;
+      },
+      {} as Record<string, Entity[]>
+    );
   }
 
   // 檢測查詢類型
   private detectQueryType(sql: string): string {
     const sqlLower = sql.toLowerCase();
-    
+
     if (sqlLower.includes('product') || sqlLower.includes('stock')) {
       return 'product_query';
     } else if (sqlLower.includes('order')) {
@@ -360,7 +368,7 @@ export class DatabaseConversationContextManager {
     } else if (sqlLower.includes('history') || sqlLower.includes('transfer')) {
       return 'history_query';
     }
-    
+
     return 'general_query';
   }
 
@@ -369,12 +377,14 @@ export class DatabaseConversationContextManager {
     return {
       sessionId: this.sessionId,
       entities: [],
-      queryHistory: []
+      queryHistory: [],
     };
   }
 
   // 獲取同一 session 的歷史查詢（用於對話上下文）
-  async getSessionHistory(limit: number = 10): Promise<Array<{ question: string; sql: string; answer: string }>> {
+  async getSessionHistory(
+    limit: number = 10
+  ): Promise<Array<{ question: string; sql: string; answer: string }>> {
     try {
       const supabase = await this.getSupabase();
       const { data, error } = await supabase
@@ -393,7 +403,7 @@ export class DatabaseConversationContextManager {
       return (data || []).reverse().map(record => ({
         question: record.query,
         sql: record.sql_query,
-        answer: record.answer
+        answer: record.answer,
       }));
     } catch (error) {
       console.error('[getSessionHistory] Error:', error);

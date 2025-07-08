@@ -1,6 +1,6 @@
 /**
  * Performance Monitor
- * 
+ *
  * 系統性能監控服務
  */
 
@@ -55,14 +55,14 @@ export class PerformanceMonitor extends EventEmitter {
   private isMonitoring: boolean = false;
   private metricsBuffer: PerformanceMetric[] = [];
   private bufferFlushInterval: NodeJS.Timeout | null = null;
-  
+
   // 預設閾值
   private defaultThresholds: PerformanceThreshold[] = [
     { metric: 'api_response_time', warning: 1000, critical: 3000, unit: 'ms' },
     { metric: 'database_query_time', warning: 500, critical: 2000, unit: 'ms' },
     { metric: 'render_time', warning: 100, critical: 500, unit: 'ms' },
     { metric: 'memory_usage', warning: 80, critical: 95, unit: 'percentage' },
-    { metric: 'error_rate', warning: 1, critical: 5, unit: 'percentage' }
+    { metric: 'error_rate', warning: 1, critical: 5, unit: 'percentage' },
   ];
 
   private constructor() {
@@ -89,19 +89,19 @@ export class PerformanceMonitor extends EventEmitter {
    */
   public startMonitoring() {
     if (this.isMonitoring) return;
-    
+
     this.isMonitoring = true;
     this.startTime = new Date();
     this.metrics = [];
-    
+
     // 設置緩衝區刷新間隔（每5秒）
     this.bufferFlushInterval = setInterval(() => {
       this.flushMetricsBuffer();
     }, 5000);
-    
+
     // 監控系統資源
     this.startResourceMonitoring();
-    
+
     this.emit('monitoring:started');
   }
 
@@ -112,17 +112,17 @@ export class PerformanceMonitor extends EventEmitter {
     if (!this.isMonitoring) {
       return this.generateReport();
     }
-    
+
     this.isMonitoring = false;
-    
+
     if (this.bufferFlushInterval) {
       clearInterval(this.bufferFlushInterval);
       this.bufferFlushInterval = null;
     }
-    
+
     this.flushMetricsBuffer();
     this.emit('monitoring:stopped');
-    
+
     return this.generateReport();
   }
 
@@ -132,15 +132,15 @@ export class PerformanceMonitor extends EventEmitter {
   public recordMetric(metric: Omit<PerformanceMetric, 'timestamp'>) {
     const fullMetric: PerformanceMetric = {
       ...metric,
-      timestamp: new Date()
+      timestamp: new Date(),
     };
-    
+
     // 添加到緩衝區
     this.metricsBuffer.push(fullMetric);
-    
+
     // 檢查閾值
     this.checkThresholds(fullMetric);
-    
+
     // 如果緩衝區太大，立即刷新
     if (this.metricsBuffer.length > 1000) {
       this.flushMetricsBuffer();
@@ -156,30 +156,30 @@ export class PerformanceMonitor extends EventEmitter {
     operation: () => Promise<T>
   ): Promise<T> {
     const startTime = performance.now();
-    
+
     try {
       const result = await operation();
       const duration = performance.now() - startTime;
-      
+
       this.recordMetric({
         name,
         category,
         value: duration,
-        unit: 'ms'
+        unit: 'ms',
       });
-      
+
       return result;
     } catch (error) {
       const duration = performance.now() - startTime;
-      
+
       this.recordMetric({
         name: `${name}_error`,
         category,
         value: duration,
         unit: 'ms',
-        metadata: { error: error instanceof Error ? error.message : 'Unknown error' }
+        metadata: { error: error instanceof Error ? error.message : 'Unknown error' },
       });
-      
+
       throw error;
     }
   }
@@ -193,30 +193,30 @@ export class PerformanceMonitor extends EventEmitter {
     operation: () => T
   ): T {
     const startTime = performance.now();
-    
+
     try {
       const result = operation();
       const duration = performance.now() - startTime;
-      
+
       this.recordMetric({
         name,
         category,
         value: duration,
-        unit: 'ms'
+        unit: 'ms',
       });
-      
+
       return result;
     } catch (error) {
       const duration = performance.now() - startTime;
-      
+
       this.recordMetric({
         name: `${name}_error`,
         category,
         value: duration,
         unit: 'ms',
-        metadata: { error: error instanceof Error ? error.message : 'Unknown error' }
+        metadata: { error: error instanceof Error ? error.message : 'Unknown error' },
       });
-      
+
       throw error;
     }
   }
@@ -230,9 +230,9 @@ export class PerformanceMonitor extends EventEmitter {
       category: 'api',
       value: duration,
       unit: 'ms',
-      metadata: { endpoint, method, status }
+      metadata: { endpoint, method, status },
     });
-    
+
     // 記錄錯誤率
     if (status >= 400) {
       this.recordMetric({
@@ -240,7 +240,7 @@ export class PerformanceMonitor extends EventEmitter {
         category: 'api',
         value: 1,
         unit: 'count',
-        metadata: { endpoint, method, status }
+        metadata: { endpoint, method, status },
       });
     }
   }
@@ -254,10 +254,10 @@ export class PerformanceMonitor extends EventEmitter {
       category: 'database',
       value: duration,
       unit: 'ms',
-      metadata: { 
+      metadata: {
         query: query.substring(0, 100), // 只記錄前100個字符
-        rowCount 
-      }
+        rowCount,
+      },
     });
   }
 
@@ -277,13 +277,13 @@ export class PerformanceMonitor extends EventEmitter {
   } {
     const now = new Date();
     const fiveMinutesAgo = new Date(now.getTime() - 5 * 60 * 1000);
-    
+
     const recentMetrics = this.metrics.filter(m => m.timestamp > fiveMinutesAgo);
     const activeAlerts = this.checkAllThresholds(recentMetrics);
-    
+
     return {
       currentMetrics: recentMetrics,
-      activeAlerts
+      activeAlerts,
     };
   }
 
@@ -293,39 +293,38 @@ export class PerformanceMonitor extends EventEmitter {
   private generateReport(): PerformanceReport {
     const endTime = new Date();
     const allMetrics = [...this.metrics, ...this.metricsBuffer];
-    
+
     // 計算響應時間統計
     const responseTimes = allMetrics
       .filter(m => m.category === 'api' && m.name === 'api_request')
       .map(m => m.value)
       .sort((a, b) => a - b);
-    
-    const avgResponseTime = responseTimes.length > 0
-      ? responseTimes.reduce((sum, val) => sum + val, 0) / responseTimes.length
-      : 0;
-    
-    const p95ResponseTime = responseTimes.length > 0
-      ? responseTimes[Math.floor(responseTimes.length * 0.95)]
-      : 0;
-    
-    const p99ResponseTime = responseTimes.length > 0
-      ? responseTimes[Math.floor(responseTimes.length * 0.99)]
-      : 0;
-    
+
+    const avgResponseTime =
+      responseTimes.length > 0
+        ? responseTimes.reduce((sum, val) => sum + val, 0) / responseTimes.length
+        : 0;
+
+    const p95ResponseTime =
+      responseTimes.length > 0 ? responseTimes[Math.floor(responseTimes.length * 0.95)] : 0;
+
+    const p99ResponseTime =
+      responseTimes.length > 0 ? responseTimes[Math.floor(responseTimes.length * 0.99)] : 0;
+
     // 計算錯誤率
     const totalRequests = responseTimes.length;
     const errorCount = allMetrics.filter(m => m.name === 'api_error').length;
     const errorRate = totalRequests > 0 ? (errorCount / totalRequests) * 100 : 0;
-    
+
     // 計算內存使用
     const memoryMetrics = allMetrics.filter(m => m.name === 'memory_usage');
-    const avgMemoryUsage = memoryMetrics.length > 0
-      ? memoryMetrics.reduce((sum, m) => sum + m.value, 0) / memoryMetrics.length
-      : 0;
-    const peakMemoryUsage = memoryMetrics.length > 0
-      ? Math.max(...memoryMetrics.map(m => m.value))
-      : 0;
-    
+    const avgMemoryUsage =
+      memoryMetrics.length > 0
+        ? memoryMetrics.reduce((sum, m) => sum + m.value, 0) / memoryMetrics.length
+        : 0;
+    const peakMemoryUsage =
+      memoryMetrics.length > 0 ? Math.max(...memoryMetrics.map(m => m.value)) : 0;
+
     return {
       startTime: this.startTime,
       endTime,
@@ -337,9 +336,9 @@ export class PerformanceMonitor extends EventEmitter {
         totalRequests,
         errorRate,
         avgMemoryUsage,
-        peakMemoryUsage
+        peakMemoryUsage,
       },
-      alerts: this.checkAllThresholds(allMetrics)
+      alerts: this.checkAllThresholds(allMetrics),
     };
   }
 
@@ -349,7 +348,7 @@ export class PerformanceMonitor extends EventEmitter {
   private checkThresholds(metric: PerformanceMetric) {
     const threshold = this.thresholds.get(metric.name);
     if (!threshold) return;
-    
+
     if (metric.value >= threshold.critical) {
       const alert: PerformanceAlert = {
         level: 'critical',
@@ -357,9 +356,9 @@ export class PerformanceMonitor extends EventEmitter {
         value: metric.value,
         threshold: threshold.critical,
         timestamp: metric.timestamp,
-        message: `${metric.name} exceeded critical threshold: ${metric.value}${metric.unit} > ${threshold.critical}${threshold.unit}`
+        message: `${metric.name} exceeded critical threshold: ${metric.value}${metric.unit} > ${threshold.critical}${threshold.unit}`,
       };
-      
+
       this.emit('alert:critical', alert);
     } else if (metric.value >= threshold.warning) {
       const alert: PerformanceAlert = {
@@ -368,9 +367,9 @@ export class PerformanceMonitor extends EventEmitter {
         value: metric.value,
         threshold: threshold.warning,
         timestamp: metric.timestamp,
-        message: `${metric.name} exceeded warning threshold: ${metric.value}${metric.unit} > ${threshold.warning}${threshold.unit}`
+        message: `${metric.name} exceeded warning threshold: ${metric.value}${metric.unit} > ${threshold.warning}${threshold.unit}`,
       };
-      
+
       this.emit('alert:warning', alert);
     }
   }
@@ -380,13 +379,14 @@ export class PerformanceMonitor extends EventEmitter {
    */
   private checkAllThresholds(metrics: PerformanceMetric[]): PerformanceAlert[] {
     const alerts: PerformanceAlert[] = [];
-    
+
     this.thresholds.forEach((threshold, metricName) => {
       const relevantMetrics = metrics.filter(m => m.name === metricName);
       if (relevantMetrics.length === 0) return;
-      
-      const avgValue = relevantMetrics.reduce((sum, m) => sum + m.value, 0) / relevantMetrics.length;
-      
+
+      const avgValue =
+        relevantMetrics.reduce((sum, m) => sum + m.value, 0) / relevantMetrics.length;
+
       if (avgValue >= threshold.critical) {
         alerts.push({
           level: 'critical',
@@ -394,7 +394,7 @@ export class PerformanceMonitor extends EventEmitter {
           value: avgValue,
           threshold: threshold.critical,
           timestamp: new Date(),
-          message: `Average ${metricName} exceeded critical threshold`
+          message: `Average ${metricName} exceeded critical threshold`,
         });
       } else if (avgValue >= threshold.warning) {
         alerts.push({
@@ -403,11 +403,11 @@ export class PerformanceMonitor extends EventEmitter {
           value: avgValue,
           threshold: threshold.warning,
           timestamp: new Date(),
-          message: `Average ${metricName} exceeded warning threshold`
+          message: `Average ${metricName} exceeded warning threshold`,
         });
       }
     });
-    
+
     return alerts;
   }
 
@@ -416,10 +416,10 @@ export class PerformanceMonitor extends EventEmitter {
    */
   private flushMetricsBuffer() {
     if (this.metricsBuffer.length === 0) return;
-    
+
     this.metrics.push(...this.metricsBuffer);
     this.metricsBuffer = [];
-    
+
     // 保持合理的內存使用，只保留最近1小時的數據
     const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
     this.metrics = this.metrics.filter(m => m.timestamp > oneHourAgo);
@@ -430,16 +430,16 @@ export class PerformanceMonitor extends EventEmitter {
    */
   private startResourceMonitoring() {
     if (typeof process === 'undefined') return;
-    
+
     // 每30秒記錄一次內存使用
     setInterval(() => {
       if (!this.isMonitoring) return;
-      
+
       const memoryUsage = process.memoryUsage();
       const totalMemory = memoryUsage.heapTotal;
       const usedMemory = memoryUsage.heapUsed;
       const memoryPercentage = (usedMemory / totalMemory) * 100;
-      
+
       this.recordMetric({
         name: 'memory_usage',
         category: 'custom',
@@ -449,8 +449,8 @@ export class PerformanceMonitor extends EventEmitter {
           heapUsed: usedMemory,
           heapTotal: totalMemory,
           external: memoryUsage.external,
-          arrayBuffers: memoryUsage.arrayBuffers
-        }
+          arrayBuffers: memoryUsage.arrayBuffers,
+        },
       });
     }, 30000);
   }

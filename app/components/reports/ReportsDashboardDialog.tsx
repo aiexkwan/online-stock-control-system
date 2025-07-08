@@ -6,26 +6,26 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogHeader, 
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
   DialogTitle,
-  DialogDescription 
+  DialogDescription,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { 
-  FileText, 
-  Search, 
-  Package, 
+import {
+  FileText,
+  Search,
+  Package,
   TrendingUp,
   AlertCircle,
   BarChart3,
   Filter,
   X,
-  Building2
+  Building2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { dialogStyles, iconColors } from '@/app/utils/dialogStyles';
@@ -62,7 +62,7 @@ export function ReportsDashboardDialog({ isOpen, onClose }: ReportsDashboardDial
     if (isOpen) {
       const loadedReports = ReportRegistry.getAllReports();
       setReports(loadedReports);
-      
+
       // Initialize dialog states
       const initialStates: ReportDialogState = {};
       loadedReports.forEach(report => {
@@ -74,9 +74,11 @@ export function ReportsDashboardDialog({ isOpen, onClose }: ReportsDashboardDial
 
   // Filter reports
   const filteredReports = reports.filter(report => {
-    const matchesSearch = report.config.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         report.config.description.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = selectedCategory === 'all' || report.config.category === selectedCategory;
+    const matchesSearch =
+      report.config.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      report.config.description.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesCategory =
+      selectedCategory === 'all' || report.config.category === selectedCategory;
     return matchesSearch && matchesCategory;
   });
 
@@ -85,7 +87,7 @@ export function ReportsDashboardDialog({ isOpen, onClose }: ReportsDashboardDial
     setSelectedReport(reportId);
     setDialogStates(prev => ({
       ...prev,
-      [reportId]: true
+      [reportId]: true,
     }));
   };
 
@@ -93,7 +95,7 @@ export function ReportsDashboardDialog({ isOpen, onClose }: ReportsDashboardDial
   const closeReportDialog = (reportId: string) => {
     setDialogStates(prev => ({
       ...prev,
-      [reportId]: false
+      [reportId]: false,
     }));
     setSelectedReport(null);
   };
@@ -102,17 +104,17 @@ export function ReportsDashboardDialog({ isOpen, onClose }: ReportsDashboardDial
   const getCategoryIcon = (category: string) => {
     switch (category) {
       case 'operational':
-        return <TrendingUp className="h-4 w-4" />;
+        return <TrendingUp className='h-4 w-4' />;
       case 'inventory':
-        return <Package className="h-4 w-4" />;
+        return <Package className='h-4 w-4' />;
       case 'financial':
-        return <BarChart3 className="h-4 w-4" />;
+        return <BarChart3 className='h-4 w-4' />;
       case 'quality':
-        return <AlertCircle className="h-4 w-4" />;
+        return <AlertCircle className='h-4 w-4' />;
       case 'management':
-        return <Building2 className="h-4 w-4" />;
+        return <Building2 className='h-4 w-4' />;
       default:
-        return <FileText className="h-4 w-4" />;
+        return <FileText className='h-4 w-4' />;
     }
   };
 
@@ -136,8 +138,8 @@ export function ReportsDashboardDialog({ isOpen, onClose }: ReportsDashboardDial
 
   return (
     <>
-      <Dialog open={isOpen && !selectedReport} onOpenChange={(open) => !open && onClose()}>
-        <DialogContent className={`${dialogStyles.content} max-w-4xl max-h-[80vh]`}>
+      <Dialog open={isOpen && !selectedReport} onOpenChange={open => !open && onClose()}>
+        <DialogContent className={`${dialogStyles.content} max-h-[80vh] max-w-4xl`}>
           <DialogHeader>
             <DialogTitle className={dialogStyles.title}>
               <BarChart3 className={`h-6 w-6 ${iconColors.blue}`} />
@@ -148,86 +150,93 @@ export function ReportsDashboardDialog({ isOpen, onClose }: ReportsDashboardDial
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4">
+          <div className='space-y-4'>
             {/* Search and Filter */}
-            <div className="flex flex-col sm:flex-row gap-4">
-              <div className="flex-1 relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <div className='flex flex-col gap-4 sm:flex-row'>
+              <div className='relative flex-1'>
+                <Search className='absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 transform text-muted-foreground' />
                 <Input
-                  placeholder="Search reports..."
+                  placeholder='Search reports...'
                   value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
+                  onChange={e => setSearchTerm(e.target.value)}
                   className={`pl-10 ${dialogStyles.input}`}
                 />
               </div>
-              <div className="flex flex-wrap gap-2">
+              <div className='flex flex-wrap gap-2'>
                 {['all', 'operational', 'inventory', 'management'].map(category => (
                   <Button
                     key={category}
                     variant={selectedCategory === category ? 'default' : 'outline'}
-                    size="sm"
+                    size='sm'
                     onClick={() => setSelectedCategory(category)}
                     className={cn(
-                      "capitalize transition-all",
-                      selectedCategory === category 
-                        ? "bg-blue-600 text-white hover:bg-blue-700" 
-                        : "bg-slate-800 border-slate-600 text-slate-300 hover:bg-slate-700 hover:text-white"
+                      'capitalize transition-all',
+                      selectedCategory === category
+                        ? 'bg-blue-600 text-white hover:bg-blue-700'
+                        : 'border-slate-600 bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white'
                     )}
                   >
-                    {category === 'all' ? 'All' : 
-                     category === 'operational' ? 'Operational' :
-                     category === 'inventory' ? 'Inventory' :
-                     'Management'}
+                    {category === 'all'
+                      ? 'All'
+                      : category === 'operational'
+                        ? 'Operational'
+                        : category === 'inventory'
+                          ? 'Inventory'
+                          : 'Management'}
                   </Button>
                 ))}
               </div>
             </div>
 
             {/* Report List */}
-            <div className="h-[400px] overflow-y-auto pr-4 bg-slate-800/50 rounded-lg p-4 border border-slate-700">
-              <div className="space-y-6">
+            <div className='h-[400px] overflow-y-auto rounded-lg border border-slate-700 bg-slate-800/50 p-4 pr-4'>
+              <div className='space-y-6'>
                 {['operational', 'inventory', 'management'].map(category => {
-                  const categoryReports = filteredReports.filter(r => r.config.category === category);
-                  
+                  const categoryReports = filteredReports.filter(
+                    r => r.config.category === category
+                  );
+
                   if (categoryReports.length === 0 && selectedCategory !== 'all') return null;
-                  
+
                   return (
-                    <div key={category} className="space-y-3">
-                      <div className="flex items-center gap-2 text-sm font-medium text-slate-300">
-                        <div className={cn("p-1.5 rounded", getCategoryColor(category).split(' ')[0])}>
+                    <div key={category} className='space-y-3'>
+                      <div className='flex items-center gap-2 text-sm font-medium text-slate-300'>
+                        <div
+                          className={cn('rounded p-1.5', getCategoryColor(category).split(' ')[0])}
+                        >
                           {getCategoryIcon(category)}
                         </div>
-                        <span className="capitalize">{category} Reports</span>
-                        <Badge variant="secondary" className="text-xs bg-slate-700 text-slate-300">
+                        <span className='capitalize'>{category} Reports</span>
+                        <Badge variant='secondary' className='bg-slate-700 text-xs text-slate-300'>
                           {categoryReports.length}
                         </Badge>
                       </div>
-                      
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+
+                      <div className='grid grid-cols-1 gap-3 sm:grid-cols-2'>
                         {categoryReports.map(report => (
                           <Button
                             key={report.config.id}
-                            variant="outline"
+                            variant='outline'
                             className={cn(
-                              "h-auto p-4 justify-start text-left hover:shadow-md transition-all",
-                              "bg-slate-800 border-slate-600 hover:bg-slate-700",
+                              'h-auto justify-start p-4 text-left transition-all hover:shadow-md',
+                              'border-slate-600 bg-slate-800 hover:bg-slate-700',
                               getCategoryColor(report.config.category)
                             )}
                             onClick={() => selectReport(report.config.id)}
                           >
-                            <div className="flex items-start gap-3 w-full">
-                              <FileText className="h-5 w-5 mt-0.5 flex-shrink-0" />
-                              <div className="flex-1 space-y-1">
-                                <div className="font-medium text-white">{report.config.name}</div>
-                                <div className="text-xs text-slate-400 line-clamp-2">
+                            <div className='flex w-full items-start gap-3'>
+                              <FileText className='mt-0.5 h-5 w-5 flex-shrink-0' />
+                              <div className='flex-1 space-y-1'>
+                                <div className='font-medium text-white'>{report.config.name}</div>
+                                <div className='line-clamp-2 text-xs text-slate-400'>
                                   {report.config.description}
                                 </div>
-                                <div className="flex gap-1 mt-2">
+                                <div className='mt-2 flex gap-1'>
                                   {report.config.formats.map(format => (
-                                    <Badge 
-                                      key={format} 
-                                      variant="secondary" 
-                                      className="text-xs px-1.5 py-0 bg-slate-700 text-slate-300"
+                                    <Badge
+                                      key={format}
+                                      variant='secondary'
+                                      className='bg-slate-700 px-1.5 py-0 text-xs text-slate-300'
                                     >
                                       {format.toUpperCase()}
                                     </Badge>
@@ -244,11 +253,9 @@ export function ReportsDashboardDialog({ isOpen, onClose }: ReportsDashboardDial
 
                 {/* No Results */}
                 {filteredReports.length === 0 && (
-                  <div className="text-center py-12">
-                    <Filter className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                    <p className="text-slate-500">
-                      No reports found matching your criteria
-                    </p>
+                  <div className='py-12 text-center'>
+                    <Filter className='mx-auto mb-4 h-12 w-12 text-muted-foreground' />
+                    <p className='text-slate-500'>No reports found matching your criteria</p>
                   </div>
                 )}
               </div>
@@ -262,26 +269,26 @@ export function ReportsDashboardDialog({ isOpen, onClose }: ReportsDashboardDial
         isOpen={dialogStates['void-pallet-report'] || false}
         onClose={() => closeReportDialog('void-pallet-report')}
       />
-      
+
       <UnifiedLoadingReportDialog
         isOpen={dialogStates['order-loading-report'] || false}
         onClose={() => closeReportDialog('order-loading-report')}
       />
-      
+
       {/* Stock Take Report Dialog - Component not found
       <UnifiedStockTakeReportDialog
         isOpen={dialogStates['stock-take-report'] || false}
         onClose={() => closeReportDialog('stock-take-report')}
       /> */}
       {/* ACO Order Report now integrated directly into system page widget */}
-      
+
       <UnifiedGrnReportDialog
         isOpen={dialogStates['grn-report'] || false}
         onClose={() => closeReportDialog('grn-report')}
       />
-      
+
       {/* Transaction Report now integrated directly into system page widget */}
-      
+
       <UnifiedExportAllDataDialog
         isOpen={dialogStates['export-all-data'] || false}
         onClose={() => closeReportDialog('export-all-data')}

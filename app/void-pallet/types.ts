@@ -68,25 +68,25 @@ export interface VoidPalletState {
   searchInput: string;
   searchType: 'qr' | 'pallet_num';
   isSearching: boolean;
-  
+
   // Pallet information
   foundPallet: PalletInfo | null;
-  
+
   // Void process
   voidReason: string;
   damageQuantity: number;
   password: string;
   isProcessing: boolean;
-  
+
   // Error handling
   error: ErrorState | null;
-  
+
   // UI state
   showScanner: boolean;
   showConfirmDialog: boolean;
   showReprintDialog: boolean;
   isInputDisabled: boolean;
-  
+
   // UI state flags
   isAutoReprinting: boolean;
 }
@@ -102,47 +102,47 @@ export interface HistoryRecord {
 
 // Constants definition
 export const VOID_REASONS: VoidReason[] = [
-  { 
-    value: "Print Extra Label", 
-    label: "Print Extra Label", 
-    allowsReprint: false, 
-    requiresDamageQty: false 
+  {
+    value: 'Print Extra Label',
+    label: 'Print Extra Label',
+    allowsReprint: false,
+    requiresDamageQty: false,
   },
-  { 
-    value: "Wrong Label", 
-    label: "Wrong Label", 
-    allowsReprint: true, 
-    requiresDamageQty: false 
+  {
+    value: 'Wrong Label',
+    label: 'Wrong Label',
+    allowsReprint: true,
+    requiresDamageQty: false,
   },
-  { 
-    value: "Wrong Qty", 
-    label: "Wrong Qty", 
-    allowsReprint: true, 
-    requiresDamageQty: false 
+  {
+    value: 'Wrong Qty',
+    label: 'Wrong Qty',
+    allowsReprint: true,
+    requiresDamageQty: false,
   },
-  { 
-    value: "Wrong Product Code", 
-    label: "Wrong Product Code", 
-    allowsReprint: true, 
-    requiresDamageQty: false 
+  {
+    value: 'Wrong Product Code',
+    label: 'Wrong Product Code',
+    allowsReprint: true,
+    requiresDamageQty: false,
   },
-  { 
-    value: "Damage", 
-    label: "Damage", 
-    allowsReprint: true, 
-    requiresDamageQty: true 
+  {
+    value: 'Damage',
+    label: 'Damage',
+    allowsReprint: true,
+    requiresDamageQty: true,
   },
-  { 
-    value: "Used Material", 
-    label: "Used Material", 
-    allowsReprint: false, 
-    requiresDamageQty: false 
+  {
+    value: 'Used Material',
+    label: 'Used Material',
+    allowsReprint: false,
+    requiresDamageQty: false,
   },
-  { 
-    value: "Other", 
-    label: "Other (Specify if possible)", 
-    allowsReprint: false, 
-    requiresDamageQty: false 
+  {
+    value: 'Other',
+    label: 'Other (Specify if possible)',
+    allowsReprint: false,
+    requiresDamageQty: false,
   },
 ];
 
@@ -156,8 +156,7 @@ export const ERROR_TYPES = {
   VOID: 'void' as const,
   SYSTEM: 'system' as const,
   VALIDATION: 'validation' as const,
-} as const; 
-
+} as const;
 
 export interface AutoReprintParams {
   productCode: string;
@@ -182,4 +181,4 @@ export interface AutoReprintResult {
   error?: string;
   pdfUrl?: string;
   newPalletNum?: string;
-} 
+}

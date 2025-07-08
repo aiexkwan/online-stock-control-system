@@ -4,31 +4,26 @@ import { createClient } from '@/app/utils/supabase/server';
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createClient();
-    
+
     // 檢查用戶權限
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     if (!user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     // 執行異常檢測
     const anomalies = await detectAllAnomalies(supabase);
-    
+
     return NextResponse.json({
       success: true,
       anomalies,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
-    
   } catch (error) {
     console.error('[Anomaly Detection API] Error:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 
@@ -40,13 +35,12 @@ async function detectAllAnomalies(supabase: any) {
     const [stuckPallets, inventoryIssues, overdueOrders] = await Promise.all([
       detectStuckPallets(supabase),
       detectInventoryMismatch(supabase),
-      detectOverdueOrders(supabase)
+      detectOverdueOrders(supabase),
     ]);
 
     if (stuckPallets) anomalies.push(stuckPallets);
     if (inventoryIssues) anomalies.push(inventoryIssues);
     if (overdueOrders) anomalies.push(overdueOrders);
-
   } catch (error) {
     console.error('[Anomaly Detection] Error:', error);
   }
@@ -102,7 +96,7 @@ ORDER BY days_stuck DESC
 LIMIT 50`;
 
     const { data, error } = await supabase.rpc('execute_sql_query', {
-      query_text: query
+      query_text: query,
     });
 
     if (error) {
@@ -113,7 +107,7 @@ LIMIT 50`;
     if (data && data.length > 0) {
       // Convert JSONB result to proper format
       const formattedData = data.map((row: any) => row.result || row);
-      
+
       return {
         type: 'stuck_pallets',
         severity: formattedData.length > 20 ? 'high' : 'medium',
@@ -122,7 +116,7 @@ LIMIT 50`;
         count: formattedData.length,
         data: formattedData.slice(0, 10),
         suggestedAction: 'Review and relocate these pallets, or mark for disposal if damaged.',
-        detectedAt: new Date().toISOString()
+        detectedAt: new Date().toISOString(),
       };
     }
 
@@ -172,7 +166,7 @@ ORDER BY difference DESC
 LIMIT 20`;
 
     const { data, error } = await supabase.rpc('execute_sql_query', {
-      query_text: query
+      query_text: query,
     });
 
     if (error) {
@@ -183,8 +177,10 @@ LIMIT 20`;
     if (data && data.length > 0) {
       // Convert JSONB result to proper format
       const formattedData = data.map((row: any) => row.result || row);
-      const criticalCount = formattedData.filter((item: any) => item.variance_percentage > 20).length;
-      
+      const criticalCount = formattedData.filter(
+        (item: any) => item.variance_percentage > 20
+      ).length;
+
       return {
         type: 'inventory_mismatch',
         severity: criticalCount > 5 ? 'high' : 'medium',
@@ -192,8 +188,9 @@ LIMIT 20`;
         description: `Found ${formattedData.length} products where physical count doesn't match system records. ${criticalCount} have variance over 20%.`,
         count: formattedData.length,
         data: formattedData.slice(0, 10),
-        suggestedAction: 'Perform physical stock count for these products and update system records.',
-        detectedAt: new Date().toISOString()
+        suggestedAction:
+          'Perform physical stock count for these products and update system records.',
+        detectedAt: new Date().toISOString(),
       };
     }
 
@@ -228,7 +225,7 @@ ORDER BY o.created_at ASC
 LIMIT 50`;
 
     const { data, error } = await supabase.rpc('execute_sql_query', {
-      query_text: query
+      query_text: query,
     });
 
     if (error) {
@@ -240,7 +237,7 @@ LIMIT 50`;
       // Convert JSONB result to proper format
       const formattedData = data.map((row: any) => row.result || row);
       const criticalOrders = formattedData.filter((order: any) => order.days_overdue > 14).length;
-      
+
       return {
         type: 'overdue_orders',
         severity: criticalOrders > 0 ? 'critical' : 'high',
@@ -249,7 +246,7 @@ LIMIT 50`;
         count: formattedData.length,
         data: formattedData.slice(0, 10),
         suggestedAction: 'Contact customers for critical orders and expedite fulfillment.',
-        detectedAt: new Date().toISOString()
+        detectedAt: new Date().toISOString(),
       };
     }
 

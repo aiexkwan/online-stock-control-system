@@ -12,8 +12,8 @@ interface AuthCheckerProps {
 // 定義公開路由列表 - 只有主登入頁面和密碼重設頁面是公開的
 const publicPaths = [
   '/main-login',
-  '/new-password',  // 密碼重設頁面需要公開，用戶通過電郵連結訪問
-  '/print-label/html-preview'  // HTML 標籤預覽頁面（用於測試和預覽）
+  '/new-password', // 密碼重設頁面需要公開，用戶通過電郵連結訪問
+  '/print-label/html-preview', // HTML 標籤預覽頁面（用於測試和預覽）
 ];
 
 // 定義受保護路由列表 - 除了公開路由外的所有頁面都需要認證
@@ -24,7 +24,7 @@ const protectedPaths = [
   '/stock-transfer',
   //'/print-label',
   '/print-grnlabel',
-  '/change-password'  // 密碼修改頁面需要認證，用戶必須已登入
+  '/change-password', // 密碼修改頁面需要認證，用戶必須已登入
 ];
 
 export default function AuthChecker({ children }: AuthCheckerProps) {
@@ -35,12 +35,16 @@ export default function AuthChecker({ children }: AuthCheckerProps) {
 
   useEffect(() => {
     const checkAuthentication = async () => {
-      process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[AuthChecker] Checking authentication for path:', pathname);
+      process.env.NODE_ENV !== 'production' &&
+        process.env.NODE_ENV !== 'production' &&
+        console.log('[AuthChecker] Checking authentication for path:', pathname);
 
       // 如果是公開路由，直接通過
       const isPublicRoute = publicPaths.some(path => pathname.startsWith(path));
       if (isPublicRoute) {
-        process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[AuthChecker] Public route, skipping auth check');
+        process.env.NODE_ENV !== 'production' &&
+          process.env.NODE_ENV !== 'production' &&
+          console.log('[AuthChecker] Public route, skipping auth check');
         setIsAuthChecked(true);
         setIsAuthenticated(true);
         return;
@@ -48,21 +52,27 @@ export default function AuthChecker({ children }: AuthCheckerProps) {
 
       // 除了公開路由外，所有其他路由都需要認證
       try {
-        process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[AuthChecker] Checking user authentication...');
+        process.env.NODE_ENV !== 'production' &&
+          process.env.NODE_ENV !== 'production' &&
+          console.log('[AuthChecker] Checking user authentication...');
         const user = await unifiedAuth.getCurrentUser();
-        
+
         if (user) {
-          process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[AuthChecker] User authenticated:', user.email);
+          process.env.NODE_ENV !== 'production' &&
+            process.env.NODE_ENV !== 'production' &&
+            console.log('[AuthChecker] User authenticated:', user.email);
           setIsAuthenticated(true);
         } else {
-          process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[AuthChecker] No authenticated user found');
+          process.env.NODE_ENV !== 'production' &&
+            process.env.NODE_ENV !== 'production' &&
+            console.log('[AuthChecker] No authenticated user found');
           setIsAuthenticated(false);
-          
+
           toast.error('Please log in to access this page.', {
             id: 'auth-required',
             duration: 3000,
           });
-          
+
           setTimeout(() => {
             router.push('/main-login');
           }, 1000);
@@ -70,12 +80,12 @@ export default function AuthChecker({ children }: AuthCheckerProps) {
       } catch (error) {
         console.error('[AuthChecker] Authentication check failed:', error);
         setIsAuthenticated(false);
-        
+
         toast.error('Authentication failed. Please log in again.', {
           id: 'auth-failed',
           duration: 3000,
         });
-        
+
         setTimeout(() => {
           router.push('/main-login');
         }, 1000);
@@ -90,8 +100,8 @@ export default function AuthChecker({ children }: AuthCheckerProps) {
   // 如果還在檢查認證狀態，顯示載入畫面
   if (!isAuthChecked) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-[#181c2f]">
-        <div className="animate-pulse text-white text-lg">Checking authentication...</div>
+      <div className='flex min-h-screen items-center justify-center bg-[#181c2f]'>
+        <div className='animate-pulse text-lg text-white'>Checking authentication...</div>
       </div>
     );
   }
@@ -99,11 +109,11 @@ export default function AuthChecker({ children }: AuthCheckerProps) {
   // 如果未認證且不是公開路由，顯示載入畫面（等待重定向）
   if (!isAuthenticated && !publicPaths.some(path => pathname.startsWith(path))) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-[#181c2f]">
-        <div className="animate-pulse text-white text-lg">Redirecting to login...</div>
+      <div className='flex min-h-screen items-center justify-center bg-[#181c2f]'>
+        <div className='animate-pulse text-lg text-white'>Redirecting to login...</div>
       </div>
     );
   }
 
   return <>{children}</>;
-} 
+}

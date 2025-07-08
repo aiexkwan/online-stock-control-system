@@ -28,10 +28,10 @@ export function useWidgetRegistry() {
         // Initialize the registry
         console.log('[useWidgetRegistry] Initializing widget registry...');
         await initializeEnhancedRegistry();
-        
+
         // Auto register widgets
         await widgetRegistry.autoRegisterWidgets();
-        
+
         if (mounted) {
           setIsInitialized(true);
           console.log('[useWidgetRegistry] Widget registry initialized successfully');

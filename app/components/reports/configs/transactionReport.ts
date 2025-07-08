@@ -28,8 +28,8 @@ export const transactionReportConfig: ReportConfig = {
           { id: 'operator', label: 'Operator', type: 'text' },
           { id: 'transfer_type', label: 'Transfer Type', type: 'text' },
         ],
-      }
-    }
+      },
+    },
   ],
   filters: [
     {
@@ -43,6 +43,6 @@ export const transactionReportConfig: ReportConfig = {
       label: 'End Date',
       type: 'date',
       required: true,
-    }
+    },
   ],
 };

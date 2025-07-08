@@ -40,12 +40,12 @@ export default function ChatInterface({ onNewMessage }: ChatInterfaceProps) {
   }, [messages]);
 
   const exampleQuestions = [
-    "How many pallets were generated today?",
-    "Show the top 5 products with the highest stock",
-    "What are the transfer records for this week?",
-    "Which products have less than 100 units in stock?",
-    "How many GRN receipts were recorded today?",
-    "What is the total stock of MHCOL2 products?"
+    'How many pallets were generated today?',
+    'Show the top 5 products with the highest stock',
+    'What are the transfer records for this week?',
+    'Which products have less than 100 units in stock?',
+    'How many GRN receipts were recorded today?',
+    'What is the total stock of MHCOL2 products?',
   ];
 
   const handleSendMessage = async (question: string) => {
@@ -53,7 +53,7 @@ export default function ChatInterface({ onNewMessage }: ChatInterfaceProps) {
 
     setIsLoading(true);
     const userMessageId = `user_${Date.now()}`;
-    
+
     // 添加用戶訊息
     const userMessage: ChatMessage = {
       id: userMessageId,
@@ -61,7 +61,7 @@ export default function ChatInterface({ onNewMessage }: ChatInterfaceProps) {
       content: question,
       timestamp: new Date().toISOString(),
     };
-    
+
     setMessages(prev => [...prev, userMessage]);
     onNewMessage?.();
 
@@ -69,9 +69,9 @@ export default function ChatInterface({ onNewMessage }: ChatInterfaceProps) {
       const response = await fetch('/api/ask-database', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           question,
-          sessionId 
+          sessionId,
         }),
       });
 
@@ -81,7 +81,7 @@ export default function ChatInterface({ onNewMessage }: ChatInterfaceProps) {
       }
 
       const result = await response.json();
-      
+
       // 添加 AI 回應
       const aiMessage: ChatMessage = {
         id: `ai_${Date.now()}`,
@@ -93,9 +93,9 @@ export default function ChatInterface({ onNewMessage }: ChatInterfaceProps) {
           executionTime: result.result.executionTime,
           tokensUsed: result.tokensUsed,
           cached: result.cached,
-        }
+        },
       };
-      
+
       setMessages(prev => [...prev, aiMessage]);
       onNewMessage?.();
     } catch (error: any) {
@@ -106,7 +106,7 @@ export default function ChatInterface({ onNewMessage }: ChatInterfaceProps) {
         content: `Sorry, I encountered an error: ${error.message}`,
         timestamp: new Date().toISOString(),
       };
-      
+
       setMessages(prev => [...prev, errorMessage]);
       onNewMessage?.();
     } finally {
@@ -125,27 +125,24 @@ export default function ChatInterface({ onNewMessage }: ChatInterfaceProps) {
   return (
     <>
       {/* 訊息區域 */}
-      <div 
-        ref={messagesContainerRef}
-        className="flex-1 overflow-y-auto p-4 space-y-4"
-      >
+      <div ref={messagesContainerRef} className='flex-1 space-y-4 overflow-y-auto p-4'>
         {messages.length === 0 && (
-          <div className="space-y-4">
-            <div className="text-center text-slate-400 py-8">
-              <Brain className="h-12 w-12 mx-auto mb-4 text-purple-400/50" />
-              <p className="text-lg font-medium mb-2">Start a conversation</p>
-              <p className="text-sm">Ask me anything about your database</p>
+          <div className='space-y-4'>
+            <div className='py-8 text-center text-slate-400'>
+              <Brain className='mx-auto mb-4 h-12 w-12 text-purple-400/50' />
+              <p className='mb-2 text-lg font-medium'>Start a conversation</p>
+              <p className='text-sm'>Ask me anything about your database</p>
             </div>
-            
+
             {/* 範例問題 */}
-            <div className="space-y-3">
-              <h4 className="text-sm font-medium text-slate-300">Quick Query Examples:</h4>
-              <div className="grid grid-cols-1 gap-2">
+            <div className='space-y-3'>
+              <h4 className='text-sm font-medium text-slate-300'>Quick Query Examples:</h4>
+              <div className='grid grid-cols-1 gap-2'>
                 {exampleQuestions.map((example, index) => (
                   <button
                     key={index}
                     onClick={() => handleExampleClick(example)}
-                    className="p-3 text-left bg-slate-800/30 hover:bg-slate-700/50 rounded-lg border border-slate-700/30 hover:border-purple-500/50 transition-all duration-200 text-slate-300 hover:text-white text-sm"
+                    className='rounded-lg border border-slate-700/30 bg-slate-800/30 p-3 text-left text-sm text-slate-300 transition-all duration-200 hover:border-purple-500/50 hover:bg-slate-700/50 hover:text-white'
                     disabled={isLoading}
                   >
                     {example}
@@ -157,14 +154,14 @@ export default function ChatInterface({ onNewMessage }: ChatInterfaceProps) {
         )}
 
         <AnimatePresence>
-          {messages.map((message) => (
+          {messages.map(message => (
             <ChatMessage key={message.id} message={message} />
           ))}
         </AnimatePresence>
 
         {/* 加載指示器 */}
         {isLoading && (
-          <ChatMessage 
+          <ChatMessage
             message={{
               id: 'loading',
               type: 'ai',
@@ -179,7 +176,7 @@ export default function ChatInterface({ onNewMessage }: ChatInterfaceProps) {
       </div>
 
       {/* 輸入區域 */}
-      <ChatInput 
+      <ChatInput
         onSendMessage={handleSendMessage}
         disabled={isLoading}
         onClearChat={messages.length > 0 ? clearChat : undefined}

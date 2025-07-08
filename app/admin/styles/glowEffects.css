@@ -40,11 +40,12 @@
 }
 
 @keyframes pulse {
-  0%, 100% {
+  0%,
+  100% {
     opacity: 1;
   }
   50% {
-    opacity: .5;
+    opacity: 0.5;
   }
 }
 
@@ -68,11 +69,11 @@
 
 /* Animation classes */
 .animate-fade-in-scale {
-  animation: fadeInScale 0.7s cubic-bezier(.46,.03,.52,.96) forwards;
+  animation: fadeInScale 0.7s cubic-bezier(0.46, 0.03, 0.52, 0.96) forwards;
 }
 
 .animate-fade-up-cell {
-  animation: fadeUpCell 0.7s cubic-bezier(.64,.09,.08,1) forwards;
+  animation: fadeUpCell 0.7s cubic-bezier(0.64, 0.09, 0.08, 1) forwards;
   opacity: 0;
   transform: translateY(30px);
 }
@@ -97,10 +98,18 @@
 }
 
 /* Cell animation delays */
-.cell-1 { animation-delay: 0.2s; }
-.cell-2 { animation-delay: 0.35s; }
-.cell-3 { animation-delay: 0.5s; }
-.cell-4 { animation-delay: 0.65s; }
+.cell-1 {
+  animation-delay: 0.2s;
+}
+.cell-2 {
+  animation-delay: 0.35s;
+}
+.cell-3 {
+  animation-delay: 0.5s;
+}
+.cell-4 {
+  animation-delay: 0.65s;
+}
 
 /* Glow card styles */
 .glow-card {
@@ -127,7 +136,7 @@
 
 /* Subtle outline effects */
 .subtle-outline {
-  outline: 1.5px solid rgba(100, 112, 140, 0.10);
+  outline: 1.5px solid rgba(100, 112, 140, 0.1);
 }
 
 .subtle-outline-inner {
@@ -141,8 +150,8 @@
 
 /* Dark theme adjustments */
 body {
-  background-color: #16161A;
-  color: #EAEAEA;
+  background-color: #16161a;
+  color: #eaeaea;
 }
 
 /* Scrollbar styling */
@@ -152,15 +161,15 @@ body {
 }
 
 ::-webkit-scrollbar-track {
-  background: #18181C;
+  background: #18181c;
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #23232A;
+  background: #23232a;
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #2A2A32;
+  background: #2a2a32;
 }

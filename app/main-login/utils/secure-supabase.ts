@@ -42,7 +42,7 @@ class SecureStorage {
         value,
         expires: Date.now() + this.maxAge,
         domain: window.location.hostname,
-        timestamp: Date.now()
+        timestamp: Date.now(),
       };
       localStorage.setItem(this.keyPrefix + key, JSON.stringify(item));
     } catch (error) {
@@ -80,9 +80,12 @@ class SecureStorage {
 const secureStorage = new SecureStorage();
 
 // 定期清理過期項目
-setInterval(() => {
-  secureStorage.cleanup();
-}, 5 * 60 * 1000); // 每5分鐘清理一次
+setInterval(
+  () => {
+    secureStorage.cleanup();
+  },
+  5 * 60 * 1000
+); // 每5分鐘清理一次
 
 export const secureSupabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
@@ -92,8 +95,8 @@ export const secureSupabase = createClient(supabaseUrl, supabaseAnonKey, {
     detectSessionInUrl: false,
     // 額外的安全配置
     storageKey: 'pennine-auth-token',
-    flowType: 'pkce' // 使用更安全的 PKCE 流程
-  }
+    flowType: 'pkce', // 使用更安全的 PKCE 流程
+  },
 });
 
 // 安全的認證函數
@@ -108,15 +111,15 @@ export const secureAuth = {
       email,
       password,
     });
-    
+
     if (error) throw error;
-    
+
     // 記錄登入時間和IP（如果需要）
     if (data.session) {
       secureStorage.setItem('last_login', Date.now().toString());
       secureStorage.setItem('login_domain_verified', 'true');
     }
-    
+
     return data;
   },
 
@@ -129,7 +132,7 @@ export const secureAuth = {
       email,
       password,
     });
-    
+
     if (error) throw error;
     return data;
   },
@@ -149,17 +152,20 @@ export const secureAuth = {
       throw new Error('Domain verification failed');
     }
 
-    const { data: { user }, error } = await secureSupabase.auth.getUser();
+    const {
+      data: { user },
+      error,
+    } = await secureSupabase.auth.getUser();
     if (error && !error.message.includes('Auth session missing')) {
       throw error;
     }
-    
+
     // 額外驗證用戶 email 域名
     if (user && user.email && !user.email.endsWith('@pennineindustries.com')) {
       await secureSupabase.auth.signOut();
       throw new Error('Unauthorized domain detected');
     }
-    
+
     return user;
   },
 
@@ -167,12 +173,12 @@ export const secureAuth = {
   isSessionExpiringSoon: (): boolean => {
     const lastLogin = secureStorage.getItem('last_login');
     if (!lastLogin) return true;
-    
+
     const loginTime = parseInt(lastLogin);
     const now = Date.now();
     const timeElapsed = now - loginTime;
     const maxAge = 2 * 60 * 60 * 1000; // 2小時
-    
-    return timeElapsed > (maxAge * 0.8); // 如果已過80%時間，視為即將過期
-  }
-}; 
+
+    return timeElapsed > maxAge * 0.8; // 如果已過80%時間，視為即將過期
+  },
+};

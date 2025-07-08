@@ -18,7 +18,11 @@ interface MobileViewProps {
 
 export function MobileView({ items }: MobileViewProps) {
   const [expandedItem, setExpandedItem] = useState<string | null>(null);
-  const [userData, setUserData] = useState<{ name: string; email: string; icon_url?: string | null } | null>(null);
+  const [userData, setUserData] = useState<{
+    name: string;
+    email: string;
+    icon_url?: string | null;
+  } | null>(null);
   const [isVisible, setIsVisible] = useState(false);
   const [hideTimeout, setHideTimeout] = useState<NodeJS.Timeout | null>(null);
   const router = useRouter();
@@ -42,13 +46,13 @@ export function MobileView({ items }: MobileViewProps) {
           .select('name, email, icon_url')
           .eq('email', user.email)
           .single();
-        
+
         if (data) {
           setUserData(data);
         }
       }
     };
-    
+
     fetchUserData();
   }, [user, supabase]);
 
@@ -114,11 +118,11 @@ export function MobileView({ items }: MobileViewProps) {
             exit={{ opacity: 0, scale: 0.8 }}
             whileTap={{ scale: 0.9 }}
             onClick={handleShow}
-            className="fixed bottom-[5%] left-1/2 transform -translate-x-1/2 z-50 bg-black/80 backdrop-blur-xl rounded-full p-4 shadow-2xl"
+            className='fixed bottom-[5%] left-1/2 z-50 -translate-x-1/2 transform rounded-full bg-black/80 p-4 shadow-2xl backdrop-blur-xl'
           >
-            <div className="flex flex-col items-center gap-1">
-              <ChevronUpIcon className="w-6 h-6 text-white" />
-              <span className="text-xs text-white/80">Tap to open</span>
+            <div className='flex flex-col items-center gap-1'>
+              <ChevronUpIcon className='h-6 w-6 text-white' />
+              <span className='text-xs text-white/80'>Tap to open</span>
             </div>
           </motion.button>
         )}
@@ -127,130 +131,128 @@ export function MobileView({ items }: MobileViewProps) {
       {/* Navigation Menu */}
       <AnimatePresence>
         {isVisible && (
-          <motion.div 
+          <motion.div
             initial={{ y: 100, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: 100, opacity: 0 }}
             className={cn(
-              "fixed left-4 right-4",
-              "bottom-[15%]", // Slightly lower on mobile
-              "bg-transparent",
-              "rounded-2xl",
-              "shadow-2xl",
-              "p-4",
-              "z-50"
+              'fixed left-4 right-4',
+              'bottom-[15%]', // Slightly lower on mobile
+              'bg-transparent',
+              'rounded-2xl',
+              'shadow-2xl',
+              'p-4',
+              'z-50'
             )}
             onTouchEnd={handleStartHideTimer}
           >
-      {/* User Info Header */}
-      <div className="flex items-center justify-between mb-4 pb-4 border-b border-white/10">
-        <div className="flex items-center gap-3">
-          {/* User Avatar */}
-          {userData?.icon_url ? (
-            <Image 
-              src={userData.icon_url} 
-              alt={userData.name || 'User'} 
-              width={40}
-              height={40}
-              className="w-10 h-10 rounded-full shadow-lg object-cover"
-            />
-          ) : (
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold shadow-lg">
-              {userData?.name ? userData.name.charAt(0).toUpperCase() : 'U'}
-            </div>
-          )}
-          
-          {/* Greeting and User Name */}
-          <div>
-            <p className="text-xs text-white/70">{getGreeting()}</p>
-            <p className="text-sm font-medium text-white">
-              {userData?.name || user?.email || 'User'}
-            </p>
-          </div>
-        </div>
-        
-        {/* Logout Button */}
-        <motion.button
-          whileTap={{ scale: 0.95 }}
-          onClick={handleLogout}
-                      className="p-2 rounded-lg bg-white/20 active:bg-white/20 transition-colors"
-          title="Logout"
-        >
-          <ArrowRightOnRectangleIcon className="w-5 h-5 text-white" />
-        </motion.button>
-      </div>
-      
-      {/* Navigation Grid */}
-      <div className="grid grid-cols-3 gap-3">
-        {items.map((item) => (
-          <div key={item.id} className="relative">
-            {/* Item Button */}
-            <motion.button
-              whileTap={{ scale: 0.95 }}
-              onClick={() => handleItemClick(item)}
-              className={cn(
-                "w-full p-3 rounded-xl",
-                "bg-white/5 backdrop-blur-md",
-                "border border-white/10",
-                "transition-all duration-200",
-                "flex flex-col items-center gap-1",
-                expandedItem === item.id && "bg-white/20 border-white/20"
-              )}
-            >
-              <item.icon className={cn("w-6 h-6", item.iconColor)} />
-              <span className="text-xs font-medium text-white">
-                {item.label}
-              </span>
-              {item.children && (
-                <ChevronUpIcon 
-                  className={cn(
-                    "w-3 h-3 text-white/60 transition-transform",
-                    expandedItem === item.id && "rotate-180"
-                  )} 
-                />
-              )}
-            </motion.button>
-
-            {/* Expanded Submenu */}
-            <AnimatePresence>
-              {expandedItem === item.id && item.children && (
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: 10 }}
-                  className={cn(
-                    "absolute bottom-full mb-2 left-0 right-0",
-                    "bg-black/95 backdrop-blur-xl",
-                    "rounded-xl border border-white/10",
-                    "shadow-2xl",
-                    "p-2",
-                    "z-10"
-                  )}
-                >
-                  <div className="space-y-1">
-                    {item.children.map((child) => (
-                      <Link
-                        key={child.id}
-                        href={child.href}
-                        className={cn(
-                          "block px-3 py-2",
-                          "rounded-lg",
-                          "bg-white/5",
-                          "text-xs font-medium text-white",
-                          "active:bg-white/20"
-                        )}
-                        onClick={() => setExpandedItem(null)}
-                      >
-                        {child.label}
-                      </Link>
-                    ))}
+            {/* User Info Header */}
+            <div className='mb-4 flex items-center justify-between border-b border-white/10 pb-4'>
+              <div className='flex items-center gap-3'>
+                {/* User Avatar */}
+                {userData?.icon_url ? (
+                  <Image
+                    src={userData.icon_url}
+                    alt={userData.name || 'User'}
+                    width={40}
+                    height={40}
+                    className='h-10 w-10 rounded-full object-cover shadow-lg'
+                  />
+                ) : (
+                  <div className='flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-purple-600 font-bold text-white shadow-lg'>
+                    {userData?.name ? userData.name.charAt(0).toUpperCase() : 'U'}
                   </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
-        ))}
-      </div>
+                )}
+
+                {/* Greeting and User Name */}
+                <div>
+                  <p className='text-xs text-white/70'>{getGreeting()}</p>
+                  <p className='text-sm font-medium text-white'>
+                    {userData?.name || user?.email || 'User'}
+                  </p>
+                </div>
+              </div>
+
+              {/* Logout Button */}
+              <motion.button
+                whileTap={{ scale: 0.95 }}
+                onClick={handleLogout}
+                className='rounded-lg bg-white/20 p-2 transition-colors active:bg-white/20'
+                title='Logout'
+              >
+                <ArrowRightOnRectangleIcon className='h-5 w-5 text-white' />
+              </motion.button>
+            </div>
+
+            {/* Navigation Grid */}
+            <div className='grid grid-cols-3 gap-3'>
+              {items.map(item => (
+                <div key={item.id} className='relative'>
+                  {/* Item Button */}
+                  <motion.button
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => handleItemClick(item)}
+                    className={cn(
+                      'w-full rounded-xl p-3',
+                      'bg-white/5 backdrop-blur-md',
+                      'border border-white/10',
+                      'transition-all duration-200',
+                      'flex flex-col items-center gap-1',
+                      expandedItem === item.id && 'border-white/20 bg-white/20'
+                    )}
+                  >
+                    <item.icon className={cn('h-6 w-6', item.iconColor)} />
+                    <span className='text-xs font-medium text-white'>{item.label}</span>
+                    {item.children && (
+                      <ChevronUpIcon
+                        className={cn(
+                          'h-3 w-3 text-white/60 transition-transform',
+                          expandedItem === item.id && 'rotate-180'
+                        )}
+                      />
+                    )}
+                  </motion.button>
+
+                  {/* Expanded Submenu */}
+                  <AnimatePresence>
+                    {expandedItem === item.id && item.children && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: 10 }}
+                        className={cn(
+                          'absolute bottom-full left-0 right-0 mb-2',
+                          'bg-black/95 backdrop-blur-xl',
+                          'rounded-xl border border-white/10',
+                          'shadow-2xl',
+                          'p-2',
+                          'z-10'
+                        )}
+                      >
+                        <div className='space-y-1'>
+                          {item.children.map(child => (
+                            <Link
+                              key={child.id}
+                              href={child.href}
+                              className={cn(
+                                'block px-3 py-2',
+                                'rounded-lg',
+                                'bg-white/5',
+                                'text-xs font-medium text-white',
+                                'active:bg-white/20'
+                              )}
+                              onClick={() => setExpandedItem(null)}
+                            >
+                              {child.label}
+                            </Link>
+                          ))}
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              ))}
+            </div>
           </motion.div>
         )}
       </AnimatePresence>

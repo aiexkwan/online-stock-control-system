@@ -57,7 +57,9 @@ export class StockMovementService {
   /**
    * 記錄庫存移動
    */
-  async recordMovement(movement: MovementRequest | Omit<StockMovement, 'move_order'>): Promise<MovementResult | StockMovement> {
+  async recordMovement(
+    movement: MovementRequest | Omit<StockMovement, 'move_order'>
+  ): Promise<MovementResult | StockMovement> {
     // Handle test format (MovementRequest)
     if ('palletCode' in movement) {
       // Validate locations
@@ -68,12 +70,12 @@ export class StockMovementService {
       if (!validLocations.includes(movement.toLocation)) {
         return { success: false, error: 'Invalid to location' };
       }
-      
+
       // Validate quantity
       if (movement.quantity <= 0) {
         return { success: false, error: 'Quantity must be positive' };
       }
-      
+
       // Convert to database format
       const dbMovement = {
         pallet_number: movement.palletCode,
@@ -81,9 +83,9 @@ export class StockMovementService {
         to_location: movement.toLocation,
         transfer_date: new Date().toISOString(),
         operator_id: parseInt(movement.userId) || 1,
-        remark: `Transfer of ${movement.quantity} units`
+        remark: `Transfer of ${movement.quantity} units`,
       };
-      
+
       const { data, error } = await this.supabase
         .from('new_stockmovement')
         .insert([dbMovement])
@@ -96,7 +98,7 @@ export class StockMovementService {
 
       return { success: true, data };
     }
-    
+
     // Handle original format
     const { data, error } = await this.supabase
       .from('new_stockmovement')
@@ -114,7 +116,10 @@ export class StockMovementService {
   /**
    * 獲取托盤移動歷史
    */
-  async getMovementHistory(palletNumber: string, options?: { includeUser?: boolean; limit?: number }): Promise<MovementResult | StockMovement[]> {
+  async getMovementHistory(
+    palletNumber: string,
+    options?: { includeUser?: boolean; limit?: number }
+  ): Promise<MovementResult | StockMovement[]> {
     const limit = options?.limit || 100;
     let query = this.supabase
       .from('stock_movements')
@@ -133,13 +138,13 @@ export class StockMovementService {
         .eq('pallet_number', palletNumber)
         .order('transfer_date', { ascending: false })
         .limit(limit);
-      
+
       const { data: altData, error: altError } = await altQuery;
-      
+
       if (altError) {
         throw new Error(`Failed to fetch movement history: ${altError.message}`);
       }
-      
+
       // Return in test format if from test
       if (options?.includeUser !== undefined) {
         return { success: true, movements: altData || [] };
@@ -157,7 +162,9 @@ export class StockMovementService {
   /**
    * 批量記錄移動
    */
-  async recordBulkMovements(movements: Omit<StockMovement, 'move_order'>[]): Promise<StockMovement[]> {
+  async recordBulkMovements(
+    movements: Omit<StockMovement, 'move_order'>[]
+  ): Promise<StockMovement[]> {
     const { data, error } = await this.supabase
       .from('new_stockmovement')
       .insert(movements)
@@ -182,24 +189,24 @@ export class StockMovementService {
     if (new Date(startDate) > new Date(endDate)) {
       return { success: false, error: 'Invalid date range' };
     }
-    
+
     let query = this.supabase
       .from('stock_movements')
       .select('*')
       .gte('created_at', startDate)
       .lte('created_at', endDate);
-    
+
     if (options?.fromLocation) {
       query = query.eq('from_location', options.fromLocation);
     }
     if (options?.toLocation) {
       query = query.eq('to_location', options.toLocation);
     }
-    
+
     query = query.order('created_at', { ascending: false });
-    
+
     const { data, error } = await query;
-    
+
     if (error) {
       // Try alternative table
       let altQuery = this.supabase
@@ -207,24 +214,26 @@ export class StockMovementService {
         .select('*')
         .gte('transfer_date', startDate)
         .lte('transfer_date', endDate);
-      
+
       if (options?.fromLocation) {
         altQuery = altQuery.eq('from_location', options.fromLocation);
       }
       if (options?.toLocation) {
         altQuery = altQuery.eq('to_location', options.toLocation);
       }
-      
-      const { data: altData, error: altError } = await altQuery.order('transfer_date', { ascending: false });
-      
+
+      const { data: altData, error: altError } = await altQuery.order('transfer_date', {
+        ascending: false,
+      });
+
       if (altError) {
         return { success: false, error: altError.message };
       }
-      
+
       const totalQuantity = (altData || []).reduce((sum, m) => sum + (m.quantity || 0), 0);
       return { success: true, movements: altData || [], totalQuantity };
     }
-    
+
     const totalQuantity = (data || []).reduce((sum, m) => sum + (m.quantity || 0), 0);
     return { success: true, movements: data || [], totalQuantity };
   }
@@ -237,28 +246,27 @@ export class StockMovementService {
     endDate: string,
     minCount = 5
   ): Promise<MovementResult | MovementPattern[]> {
-    const { data, error } = await this.supabase
-      .rpc('analyze_movement_patterns', {
-        start_date: startDate,
-        end_date: endDate,
-        min_count: minCount
-      });
+    const { data, error } = await this.supabase.rpc('analyze_movement_patterns', {
+      start_date: startDate,
+      end_date: endDate,
+      min_count: minCount,
+    });
 
     if (error) {
       // 如果 RPC 不存在，使用直接查詢
       const patterns = await this.analyzeMovementPatternsManual(startDate, endDate, minCount);
-      
+
       // Return test format if called from test
       const result = await this.getMovementsByDateRange(startDate, endDate);
       if (!result.success) {
         return { success: false, error: result.error };
       }
-      
+
       // Calculate analysis
       const movements = result.movements || [];
       const totalMovements = movements.length;
       const totalQuantity = movements.reduce((sum, m) => sum + (m.quantity || 0), 0);
-      
+
       // Find most common route
       const routeCounts = new Map<string, { count: number; totalQuantity: number }>();
       movements.forEach(m => {
@@ -268,7 +276,7 @@ export class StockMovementService {
         existing.totalQuantity += m.quantity || 0;
         routeCounts.set(key, existing);
       });
-      
+
       let mostCommonRoute = { from: '', to: '', count: 0, totalQuantity: 0 };
       routeCounts.forEach((value, key) => {
         if (value.count > mostCommonRoute.count) {
@@ -276,20 +284,20 @@ export class StockMovementService {
           mostCommonRoute = { from, to, ...value };
         }
       });
-      
+
       // Calculate hourly distribution
       const hourlyDistribution: { [hour: number]: number } = {};
       movements.forEach(m => {
         const hour = new Date(m.created_at || m.transfer_date).getHours();
         hourlyDistribution[hour] = (hourlyDistribution[hour] || 0) + 1;
       });
-      
+
       // Find peak hours
       const peakHours = Object.entries(hourlyDistribution)
         .sort(([, a], [, b]) => b - a)
         .slice(0, 3)
         .map(([hour]) => parseInt(hour));
-      
+
       return {
         success: true,
         analysis: {
@@ -298,8 +306,8 @@ export class StockMovementService {
           mostCommonRoute,
           hourlyDistribution,
           peakHours,
-          patterns
-        }
+          patterns,
+        },
       };
     }
 
@@ -326,16 +334,16 @@ export class StockMovementService {
 
     // 手動聚合數據
     const patterns = new Map<string, MovementPattern>();
-    
+
     (data || []).forEach(movement => {
       const key = `${movement.from_location}-${movement.to_location}`;
       const existing = patterns.get(key) || {
         from_location: movement.from_location,
         to_location: movement.to_location,
         count: 0,
-        average_duration_hours: 0
+        average_duration_hours: 0,
       };
-      
+
       existing.count++;
       patterns.set(key, existing);
     });
@@ -354,7 +362,7 @@ export class StockMovementService {
     const palletNumber = 'palletCode' in movement ? movement.palletCode : movement.palletNumber;
     const fromLocation = movement.fromLocation;
     const toLocation = movement.toLocation;
-    
+
     // 檢查托盤是否存在
     const { data: pallet, error: palletError } = await this.supabase
       .from('record_palletinfo')
@@ -369,31 +377,37 @@ export class StockMovementService {
     // 檢查當前位置
     const currentLocation = await this.getCurrentLocation(palletNumber);
     if (currentLocation !== fromLocation) {
-      return { 
-        valid: false, 
+      return {
+        valid: false,
         reason: `Pallet is not in the specified location. Current: ${currentLocation}`,
-        errors: [`Pallet is not in the specified location. Current: ${currentLocation}`]
+        errors: [`Pallet is not in the specified location. Current: ${currentLocation}`],
       };
     }
 
     // 檢查目標位置是否有效
     const validLocations = this.locationMapper.getValidDatabaseLocations();
     if (!validLocations.includes(toLocation)) {
-      return { valid: false, reason: 'Invalid destination location', errors: ['Invalid destination location'] };
+      return {
+        valid: false,
+        reason: 'Invalid destination location',
+        errors: ['Invalid destination location'],
+      };
     }
 
     // Check for sufficient stock
     if ('quantity' in movement) {
       const inventory = await this.checkInventory(palletNumber, fromLocation);
       if (inventory && inventory[fromLocation] < movement.quantity) {
-        return { 
-          valid: false, 
+        return {
+          valid: false,
           reason: `Insufficient stock at ${fromLocation}. Available: ${inventory[fromLocation]}, Required: ${movement.quantity}`,
-          errors: [`Insufficient stock at ${fromLocation}. Available: ${inventory[fromLocation]}, Required: ${movement.quantity}`]
+          errors: [
+            `Insufficient stock at ${fromLocation}. Available: ${inventory[fromLocation]}, Required: ${movement.quantity}`,
+          ],
         };
       }
     }
-    
+
     return { valid: true, errors: [] };
   }
 
@@ -430,7 +444,7 @@ export class StockMovementService {
 
     return data.to_location;
   }
-  
+
   /**
    * 檢查庫存
    */
@@ -440,20 +454,20 @@ export class StockMovementService {
       .select('product_code')
       .eq('plt_num', palletNumber)
       .single();
-    
+
     if (error || !data) {
       return null;
     }
-    
+
     const { data: inventory } = await this.supabase
       .from('record_inventory')
       .select(`${location}`)
       .eq('product_code', data.product_code)
       .single();
-    
+
     return inventory;
   }
-  
+
   /**
    * 批量記錄移動（支援測試格式）
    */
@@ -465,28 +479,31 @@ export class StockMovementService {
       to_location: m.toLocation,
       transfer_date: new Date().toISOString(),
       operator_id: parseInt(m.userId) || 1,
-      remark: `Transfer of ${m.quantity} units`
+      remark: `Transfer of ${m.quantity} units`,
     }));
-    
+
     const { data, error } = await this.supabase.rpc('bulk_record_movements', {
-      movements: dbMovements
+      movements: dbMovements,
     });
-    
+
     if (error) {
       // Fallback to individual inserts
       const results = [];
       const errors = [];
-      
+
       for (let i = 0; i < movements.length; i++) {
         const movement = movements[i];
-        
+
         // Validate location
         const validLocations = this.locationMapper.getValidDatabaseLocations();
-        if (movement.fromLocation === 'INVALID' || !validLocations.includes(movement.fromLocation)) {
+        if (
+          movement.fromLocation === 'INVALID' ||
+          !validLocations.includes(movement.fromLocation)
+        ) {
           errors.push(`Invalid location for ${movement.palletCode}`);
           continue;
         }
-        
+
         const result = await this.recordMovement(movement);
         if ('success' in result && result.success) {
           results.push(`mov-${i + 1}`);
@@ -494,23 +511,23 @@ export class StockMovementService {
           errors.push(result.error || 'Unknown error');
         }
       }
-      
+
       return {
         success: errors.length === 0,
         movementIds: results,
-        errors: errors.length > 0 ? errors : undefined
+        errors: errors.length > 0 ? errors : undefined,
       };
     }
-    
+
     // Parse RPC result
     if (data && typeof data === 'object') {
       return {
         success: data.success || false,
         movementIds: data.movement_ids || [],
-        errors: data.errors
+        errors: data.errors,
       };
     }
-    
+
     return { success: false, error: 'Invalid response from RPC' };
   }
 }

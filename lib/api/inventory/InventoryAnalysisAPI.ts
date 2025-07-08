@@ -8,7 +8,7 @@ import type {
   InventoryAnalysisParams,
   InventoryAnalysisFilters,
   InventoryAnalysisSortBy,
-  InventoryAnalysisProduct
+  InventoryAnalysisProduct,
 } from '@/lib/types/inventory-analysis.types';
 
 export class InventoryAnalysisAPI {
@@ -33,7 +33,7 @@ export class InventoryAnalysisAPI {
     try {
       const { data, error } = await this.supabase.rpc('rpc_get_inventory_ordered_analysis', {
         p_product_codes: params?.p_product_codes || null,
-        p_product_type: params?.p_product_type || null
+        p_product_type: params?.p_product_type || null,
       });
 
       if (error) {
@@ -74,8 +74,8 @@ export class InventoryAnalysisAPI {
     }
 
     if (filters.productTypes && filters.productTypes.length > 0) {
-      filtered = filtered.filter(p => 
-        p.product_type && filters.productTypes!.includes(p.product_type)
+      filtered = filtered.filter(
+        p => p.product_type && filters.productTypes!.includes(p.product_type)
       );
     }
 
@@ -91,7 +91,7 @@ export class InventoryAnalysisAPI {
     ascending: boolean = true
   ): InventoryAnalysisProduct[] {
     const sorted = [...products];
-    
+
     sorted.sort((a, b) => {
       let aVal: any = a[sortBy];
       let bVal: any = b[sortBy];
@@ -134,17 +134,14 @@ export class InventoryAnalysisAPI {
    */
   calculateCriticalMetrics(products: InventoryAnalysisProduct[]) {
     const criticalProducts = products.filter(p => !p.is_sufficient);
-    const warningProducts = products.filter(p => 
-      p.is_sufficient && p.fulfillment_rate < 150
-    );
+    const warningProducts = products.filter(p => p.is_sufficient && p.fulfillment_rate < 150);
 
-    const totalShortage = criticalProducts.reduce((sum, p) => 
-      sum + Math.abs(p.remaining_stock), 0
-    );
+    const totalShortage = criticalProducts.reduce((sum, p) => sum + Math.abs(p.remaining_stock), 0);
 
-    const avgFulfillmentRate = products.length > 0
-      ? products.reduce((sum, p) => sum + p.fulfillment_rate, 0) / products.length
-      : 0;
+    const avgFulfillmentRate =
+      products.length > 0
+        ? products.reduce((sum, p) => sum + p.fulfillment_rate, 0) / products.length
+        : 0;
 
     return {
       criticalCount: criticalProducts.length,
@@ -152,7 +149,7 @@ export class InventoryAnalysisAPI {
       totalShortage,
       avgFulfillmentRate: Math.round(avgFulfillmentRate * 100) / 100,
       criticalProducts,
-      warningProducts
+      warningProducts,
     };
   }
 
@@ -170,21 +167,23 @@ export class InventoryAnalysisAPI {
       'Remaining Stock',
       'Fulfillment Rate %',
       'Status',
-      'Last Updated'
+      'Last Updated',
     ].join(',');
 
-    const rows = products.map(p => [
-      p.product_code,
-      `"${p.product_description}"`,
-      p.product_type || '',
-      p.product_colour || '',
-      p.current_stock,
-      p.order_demand,
-      p.remaining_stock,
-      p.fulfillment_rate,
-      p.is_sufficient ? 'Sufficient' : 'Insufficient',
-      new Date(p.last_updated).toLocaleString()
-    ].join(','));
+    const rows = products.map(p =>
+      [
+        p.product_code,
+        `"${p.product_description}"`,
+        p.product_type || '',
+        p.product_colour || '',
+        p.current_stock,
+        p.order_demand,
+        p.remaining_stock,
+        p.fulfillment_rate,
+        p.is_sufficient ? 'Sufficient' : 'Insufficient',
+        new Date(p.last_updated).toLocaleString(),
+      ].join(',')
+    );
 
     return [headers, ...rows].join('\n');
   }

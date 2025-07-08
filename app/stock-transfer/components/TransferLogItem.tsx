@@ -1,6 +1,6 @@
 import React from 'react';
 import type { ActivityLogEntry } from '@/app/hooks/useActivityLog';
-import type { OptimisticTransfer } from '@/app/hooks/useStockTransfer';
+import type { OptimisticTransfer } from '@/app/actions/stockTransferActions';
 
 interface TransferLogItemProps {
   activity: ActivityLogEntry;
@@ -11,75 +11,74 @@ interface TransferLogItemProps {
  * 單個轉移日誌項目組件
  * 顯示活動日誌的單條記錄
  */
-export const TransferLogItem: React.FC<TransferLogItemProps> = React.memo(({
-  activity,
-  relatedOptimistic
-}) => {
-  // 決定樣式類別
-  const getItemClasses = () => {
-    if (relatedOptimistic) {
-      return 'bg-amber-500/10 border-amber-500/30 text-amber-300 animate-pulse';
-    }
-    
-    switch (activity.type) {
-      case 'success':
-        return 'bg-green-500/10 border-green-500/30 text-green-300';
-      case 'error':
-        return 'bg-black border-red-500 text-red-500 font-bold animate-pulse shadow-lg shadow-red-500/30';
-      default:
-        return 'bg-blue-500/10 border-blue-500/30 text-blue-300';
-    }
-  };
+export const TransferLogItem: React.FC<TransferLogItemProps> = React.memo(
+  ({ activity, relatedOptimistic }) => {
+    // 決定樣式類別
+    const getItemClasses = () => {
+      if (relatedOptimistic) {
+        return 'bg-amber-500/10 border-amber-500/30 text-amber-300 animate-pulse';
+      }
 
-  // 決定圓點樣式
-  const getDotClasses = () => {
-    if (relatedOptimistic) {
-      return 'bg-amber-400 animate-pulse';
-    }
-    
-    switch (activity.type) {
-      case 'success':
-        return 'bg-green-400';
-      case 'error':
-        return 'bg-red-500 animate-pulse';
-      default:
-        return 'bg-blue-400';
-    }
-  };
+      switch (activity.type) {
+        case 'success':
+          return 'bg-green-500/10 border-green-500/30 text-green-300';
+        case 'error':
+          return 'bg-black border-red-500 text-red-500 font-bold animate-pulse shadow-lg shadow-red-500/30';
+        default:
+          return 'bg-blue-500/10 border-blue-500/30 text-blue-300';
+      }
+    };
 
-  return (
-    <div
-      className={`flex items-start space-x-3 p-4 rounded-xl border transition-all duration-300 ${getItemClasses()}`}
-      role="listitem"
-      aria-label={`${activity.type} log: ${activity.message}`}
-    >
-      <div 
-        className={`w-2 h-2 rounded-full mt-2 flex-shrink-0 ${getDotClasses()}`}
-        aria-hidden="true"
-      />
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center justify-between mb-1">
-          <span className={`text-xs font-mono ${
-            activity.type === 'error' ? 'text-red-400' : 'text-slate-400'
-          }`}>
-            <time dateTime={new Date(activity.timestamp).toISOString()}>
-              {activity.timestamp}
-            </time>
-          </span>
-        </div>
-        <p className={`text-sm leading-relaxed ${
-          activity.type === 'error' ? 'font-bold' : ''
-        }`}>
-          {activity.message}
-          {relatedOptimistic && (
-            <span className="ml-2 text-xs text-amber-400" aria-live="polite">
-              (Processing...)
+    // 決定圓點樣式
+    const getDotClasses = () => {
+      if (relatedOptimistic) {
+        return 'bg-amber-400 animate-pulse';
+      }
+
+      switch (activity.type) {
+        case 'success':
+          return 'bg-green-400';
+        case 'error':
+          return 'bg-red-500 animate-pulse';
+        default:
+          return 'bg-blue-400';
+      }
+    };
+
+    return (
+      <div
+        className={`flex items-start space-x-3 rounded-xl border p-4 transition-all duration-300 ${getItemClasses()}`}
+        role='listitem'
+        aria-label={`${activity.type} log: ${activity.message}`}
+      >
+        <div
+          className={`mt-2 h-2 w-2 flex-shrink-0 rounded-full ${getDotClasses()}`}
+          aria-hidden='true'
+        />
+        <div className='min-w-0 flex-1'>
+          <div className='mb-1 flex items-center justify-between'>
+            <span
+              className={`font-mono text-xs ${
+                activity.type === 'error' ? 'text-red-400' : 'text-slate-400'
+              }`}
+            >
+              <time dateTime={new Date(activity.timestamp).toISOString()}>
+                {activity.timestamp}
+              </time>
             </span>
-          )}
-        </p>
+          </div>
+          <p className={`text-sm leading-relaxed ${activity.type === 'error' ? 'font-bold' : ''}`}>
+            {activity.message}
+            {relatedOptimistic && (
+              <span className='ml-2 text-xs text-amber-400' aria-live='polite'>
+                (Processing...)
+              </span>
+            )}
+          </p>
+        </div>
       </div>
-    </div>
-  );
-});
+    );
+  }
+);
 
 TransferLogItem.displayName = 'TransferLogItem';

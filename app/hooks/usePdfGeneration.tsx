@@ -8,7 +8,7 @@ import {
   printPdfs,
   type PdfGenerationOptions,
   type BatchPdfGenerationOptions,
-  type PdfGenerationResult
+  type PdfGenerationResult,
 } from '@/app/utils/pdfGeneration';
 
 interface UsePdfGenerationOptions {
@@ -46,21 +46,21 @@ interface UsePdfGenerationReturn {
 /**
  * Unified PDF generation hook
  * 統一的 PDF 生成 Hook
- * 
+ *
  * @example
  * ```typescript
  * const pdfGeneration = usePdfGeneration({
  *   defaultStoragePath: 'qc-labels',
  *   autoPrint: true
  * });
- * 
+ *
  * // Generate single PDF
  * const result = await pdfGeneration.generateSinglePdf({
  *   component: <MyPdfComponent data={data} />,
  *   filename: 'my-document',
  *   upload: true
  * });
- * 
+ *
  * // Generate multiple PDFs
  * const results = await pdfGeneration.generateMultiplePdfs({
  *   components: components,
@@ -75,116 +75,117 @@ export function usePdfGeneration(options: UsePdfGenerationOptions = {}): UsePdfG
     defaultStoragePath = 'pdfs',
     defaultUpload = false,
     autoPrint = false,
-    mergePdfs: shouldMergePdfs = true
+    mergePdfs: shouldMergePdfs = true,
   } = options;
 
   const [isGenerating, setIsGenerating] = useState(false);
   const [progress, setProgress] = useState({ current: 0, total: 0, percentage: 0 });
   const [errors, setErrors] = useState<string[]>([]);
 
-  const generateSinglePdf = useCallback(async (
-    pdfOptions: PdfGenerationOptions
-  ): Promise<PdfGenerationResult> => {
-    try {
-      setIsGenerating(true);
-      setErrors([]);
-      
-      const result = await generatePdf({
-        ...pdfOptions,
-        upload: pdfOptions.upload ?? defaultUpload,
-        storagePath: pdfOptions.storagePath ?? defaultStoragePath,
-        onProgress: (prog) => {
-          setProgress({ current: 1, total: 1, percentage: prog });
-          pdfOptions.onProgress?.(prog);
-        }
-      });
+  const generateSinglePdf = useCallback(
+    async (pdfOptions: PdfGenerationOptions): Promise<PdfGenerationResult> => {
+      try {
+        setIsGenerating(true);
+        setErrors([]);
 
-      if (!result.success && result.error) {
-        setErrors([result.error]);
-        toast.error(result.error);
-      } else if (result.success) {
-        // Auto-print if enabled
-        if (autoPrint && result.blob) {
-          await printPdfs([result.blob], false);
+        const result = await generatePdf({
+          ...pdfOptions,
+          upload: pdfOptions.upload ?? defaultUpload,
+          storagePath: pdfOptions.storagePath ?? defaultStoragePath,
+          onProgress: prog => {
+            setProgress({ current: 1, total: 1, percentage: prog });
+            pdfOptions.onProgress?.(prog);
+          },
+        });
+
+        if (!result.success && result.error) {
+          setErrors([result.error]);
+          toast.error(result.error);
+        } else if (result.success) {
+          // Auto-print if enabled
+          if (autoPrint && result.blob) {
+            await printPdfs([result.blob], false);
+          }
         }
+
+        return result;
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'PDF generation failed';
+        setErrors([errorMessage]);
+        toast.error(errorMessage);
+        return { success: false, error: errorMessage };
+      } finally {
+        setIsGenerating(false);
       }
+    },
+    [defaultUpload, defaultStoragePath, autoPrint]
+  );
 
-      return result;
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'PDF generation failed';
-      setErrors([errorMessage]);
-      toast.error(errorMessage);
-      return { success: false, error: errorMessage };
-    } finally {
-      setIsGenerating(false);
-    }
-  }, [defaultUpload, defaultStoragePath, autoPrint]);
+  const generateMultiplePdfs = useCallback(
+    async (batchOptions: BatchPdfGenerationOptions): Promise<PdfGenerationResult[]> => {
+      try {
+        setIsGenerating(true);
+        setErrors([]);
 
-  const generateMultiplePdfs = useCallback(async (
-    batchOptions: BatchPdfGenerationOptions
-  ): Promise<PdfGenerationResult[]> => {
-    try {
-      setIsGenerating(true);
-      setErrors([]);
-      
-      const results = await generatePdfsBatch({
-        ...batchOptions,
-        upload: batchOptions.upload ?? defaultUpload,
-        storagePath: batchOptions.storagePath ?? defaultStoragePath,
-        onProgress: (current, total, status) => {
-          const percentage = Math.round((current / total) * 100);
-          setProgress({ current, total, percentage });
-          batchOptions.onProgress?.(current, total, status);
+        const results = await generatePdfsBatch({
+          ...batchOptions,
+          upload: batchOptions.upload ?? defaultUpload,
+          storagePath: batchOptions.storagePath ?? defaultStoragePath,
+          onProgress: (current, total, status) => {
+            const percentage = Math.round((current / total) * 100);
+            setProgress({ current, total, percentage });
+            batchOptions.onProgress?.(current, total, status);
+          },
+        });
+
+        // Collect errors
+        const failedResults = results.filter(r => !r.success);
+        if (failedResults.length > 0) {
+          const errorMessages = failedResults.map(r => r.error).filter(Boolean) as string[];
+          setErrors(errorMessages);
+
+          if (failedResults.length === results.length) {
+            toast.error('All PDF generations failed');
+          } else {
+            toast.warning(`${failedResults.length} of ${results.length} PDFs failed`);
+          }
         }
-      });
 
-      // Collect errors
-      const failedResults = results.filter(r => !r.success);
-      if (failedResults.length > 0) {
-        const errorMessages = failedResults
-          .map(r => r.error)
-          .filter(Boolean) as string[];
-        setErrors(errorMessages);
-        
-        if (failedResults.length === results.length) {
-          toast.error('All PDF generations failed');
-        } else {
-          toast.warning(`${failedResults.length} of ${results.length} PDFs failed`);
+        // Auto-print successful PDFs if enabled
+        if (autoPrint) {
+          const successfulBlobs = results.filter(r => r.success && r.blob).map(r => r.blob!);
+
+          if (successfulBlobs.length > 0) {
+            await printPdfs(successfulBlobs, shouldMergePdfs);
+          }
         }
+
+        return results;
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Batch PDF generation failed';
+        setErrors([errorMessage]);
+        toast.error(errorMessage);
+        return [];
+      } finally {
+        setIsGenerating(false);
       }
+    },
+    [defaultUpload, defaultStoragePath, autoPrint, shouldMergePdfs]
+  );
 
-      // Auto-print successful PDFs if enabled
-      if (autoPrint) {
-        const successfulBlobs = results
-          .filter(r => r.success && r.blob)
-          .map(r => r.blob!);
-        
-        if (successfulBlobs.length > 0) {
-          await printPdfs(successfulBlobs, shouldMergePdfs);
-        }
+  const print = useCallback(
+    async (blobs: Blob[]) => {
+      try {
+        await printPdfs(blobs, shouldMergePdfs);
+        toast.success('Print dialog opened');
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Print failed';
+        toast.error(errorMessage);
+        throw error;
       }
-
-      return results;
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Batch PDF generation failed';
-      setErrors([errorMessage]);
-      toast.error(errorMessage);
-      return [];
-    } finally {
-      setIsGenerating(false);
-    }
-  }, [defaultUpload, defaultStoragePath, autoPrint, shouldMergePdfs]);
-
-  const print = useCallback(async (blobs: Blob[]) => {
-    try {
-      await printPdfs(blobs, shouldMergePdfs);
-      toast.success('Print dialog opened');
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Print failed';
-      toast.error(errorMessage);
-      throw error;
-    }
-  }, [shouldMergePdfs]);
+    },
+    [shouldMergePdfs]
+  );
 
   const clearErrors = useCallback(() => {
     setErrors([]);
@@ -197,7 +198,7 @@ export function usePdfGeneration(options: UsePdfGenerationOptions = {}): UsePdfG
     isGenerating,
     progress,
     errors,
-    clearErrors
+    clearErrors,
   };
 }
 

@@ -3,7 +3,8 @@
 import React, { forwardRef } from 'react';
 import { ValidationInput, type ValidationInputProps } from './ValidationInput';
 
-export interface NumericInputProps extends Omit<ValidationInputProps, 'type' | 'pattern' | 'inputMode'> {
+export interface NumericInputProps
+  extends Omit<ValidationInputProps, 'type' | 'pattern' | 'inputMode'> {
   /** Minimum value */
   min?: number;
   /** Maximum value */
@@ -23,7 +24,7 @@ export interface NumericInputProps extends Omit<ValidationInputProps, 'type' | '
 /**
  * Numeric input component with validation
  * 具有驗證的數字輸入組件
- * 
+ *
  * @example
  * ```tsx
  * <NumericInput
@@ -37,21 +38,24 @@ export interface NumericInputProps extends Omit<ValidationInputProps, 'type' | '
  * ```
  */
 export const NumericInput = forwardRef<HTMLInputElement, NumericInputProps>(
-  ({ 
-    min,
-    max,
-    allowDecimals = false,
-    decimalPlaces = 2,
-    formatDisplay = false,
-    prefix,
-    suffix,
-    onChange,
-    value,
-    rules = [],
-    ...props 
-  }, ref) => {
+  (
+    {
+      min,
+      max,
+      allowDecimals = false,
+      decimalPlaces = 2,
+      formatDisplay = false,
+      prefix,
+      suffix,
+      onChange,
+      value,
+      rules = [],
+      ...props
+    },
+    ref
+  ) => {
     const [displayValue, setDisplayValue] = React.useState(String(value || ''));
-    
+
     // Add numeric validation rules
     const numericRules = [
       {
@@ -60,41 +64,53 @@ export const NumericInput = forwardRef<HTMLInputElement, NumericInputProps>(
           const num = parseFloat(v);
           return !isNaN(num);
         },
-        message: 'Must be a valid number'
+        message: 'Must be a valid number',
       },
-      ...(min !== undefined ? [{
-        validate: (v: string) => {
-          if (!v) return true;
-          const num = parseFloat(v);
-          return num >= min;
-        },
-        message: `Minimum value is ${min}`
-      }] : []),
-      ...(max !== undefined ? [{
-        validate: (v: string) => {
-          if (!v) return true;
-          const num = parseFloat(v);
-          return num <= max;
-        },
-        message: `Maximum value is ${max}`
-      }] : []),
-      ...(!allowDecimals ? [{
-        validate: (v: string) => {
-          if (!v) return true;
-          return Number.isInteger(parseFloat(v));
-        },
-        message: 'Decimals not allowed'
-      }] : []),
-      ...rules
+      ...(min !== undefined
+        ? [
+            {
+              validate: (v: string) => {
+                if (!v) return true;
+                const num = parseFloat(v);
+                return num >= min;
+              },
+              message: `Minimum value is ${min}`,
+            },
+          ]
+        : []),
+      ...(max !== undefined
+        ? [
+            {
+              validate: (v: string) => {
+                if (!v) return true;
+                const num = parseFloat(v);
+                return num <= max;
+              },
+              message: `Maximum value is ${max}`,
+            },
+          ]
+        : []),
+      ...(!allowDecimals
+        ? [
+            {
+              validate: (v: string) => {
+                if (!v) return true;
+                return Number.isInteger(parseFloat(v));
+              },
+              message: 'Decimals not allowed',
+            },
+          ]
+        : []),
+      ...rules,
     ];
-    
+
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
       let value = e.target.value;
-      
+
       // Remove prefix/suffix for processing
       if (prefix) value = value.replace(prefix, '');
       if (suffix) value = value.replace(suffix, '');
-      
+
       // Remove non-numeric characters (except decimal point if allowed)
       if (allowDecimals) {
         value = value.replace(/[^0-9.-]/g, '');
@@ -110,32 +126,32 @@ export const NumericInput = forwardRef<HTMLInputElement, NumericInputProps>(
       } else {
         value = value.replace(/[^0-9-]/g, '');
       }
-      
+
       // Ensure only one minus sign at the beginning
       if (value.includes('-')) {
         const isNegative = value[0] === '-';
         value = value.replace(/-/g, '');
         if (isNegative) value = '-' + value;
       }
-      
+
       setDisplayValue(value);
-      
+
       // Create synthetic event with numeric value
       const numericValue = value ? parseFloat(value) : '';
       const syntheticEvent = {
         ...e,
         target: {
           ...e.target,
-          value: String(numericValue)
-        }
+          value: String(numericValue),
+        },
       };
-      
+
       onChange?.(syntheticEvent as React.ChangeEvent<HTMLInputElement>);
     };
-    
+
     const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
       let value = displayValue;
-      
+
       // Format on blur if needed
       if (formatDisplay && value) {
         const num = parseFloat(value);
@@ -147,15 +163,15 @@ export const NumericInput = forwardRef<HTMLInputElement, NumericInputProps>(
           }
         }
       }
-      
+
       // Add prefix/suffix for display
       if (prefix && value) value = prefix + value;
       if (suffix && value) value = value + suffix;
-      
+
       setDisplayValue(value);
       props.onBlur?.(e);
     };
-    
+
     const handleFocus = (e: React.FocusEvent<HTMLInputElement>) => {
       // Remove prefix/suffix on focus
       let value = displayValue;
@@ -164,16 +180,16 @@ export const NumericInput = forwardRef<HTMLInputElement, NumericInputProps>(
       setDisplayValue(value);
       props.onFocus?.(e);
     };
-    
+
     React.useEffect(() => {
       setDisplayValue(String(value || ''));
     }, [value]);
-    
+
     return (
       <ValidationInput
         ref={ref}
-        type="text"
-        inputMode="decimal"
+        type='text'
+        inputMode='decimal'
         pattern={allowDecimals ? '[0-9]*\\.?[0-9]*' : '[0-9]*'}
         value={displayValue}
         onChange={handleChange}

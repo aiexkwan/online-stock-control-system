@@ -12,10 +12,10 @@ interface UseWidgetDataOptions {
   isEditMode?: boolean;
 }
 
-export function useWidgetData({ 
-  loadFunction, 
-  dependencies = [], 
-  isEditMode = false 
+export function useWidgetData({
+  loadFunction,
+  dependencies = [],
+  isEditMode = false,
 }: UseWidgetDataOptions) {
   const { refreshTrigger } = useAdminRefresh();
 
@@ -35,6 +35,6 @@ export function useWidgetData({
   }, [refreshTrigger, isEditMode, ...dependencies]);
 
   return {
-    reload: loadFunction
+    reload: loadFunction,
   };
 }

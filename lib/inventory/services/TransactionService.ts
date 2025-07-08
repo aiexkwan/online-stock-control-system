@@ -6,12 +6,12 @@
 
 import { SupabaseClient } from '@supabase/supabase-js';
 import { ITransactionService } from '../interfaces/ITransactionService';
-import { 
-  TransactionOptions, 
+import {
+  TransactionOptions,
   TransactionResult,
   HistoryRecord,
   StockTransferDto,
-  VoidPalletDto
+  VoidPalletDto,
 } from '../types';
 import { LocationMapper } from '../utils/locationMapper';
 import { validatePalletNumber } from '../utils/validators';
@@ -48,7 +48,7 @@ export class TransactionService implements ITransactionService {
         success: true,
         data: result,
         transactionId: txId,
-        executionTime: Date.now() - startTime
+        executionTime: Date.now() - startTime,
       };
     } catch (error: any) {
       console.error('[TransactionService] Transaction failed:', error);
@@ -62,7 +62,7 @@ export class TransactionService implements ITransactionService {
         success: false,
         error: error.message || 'Transaction failed',
         transactionId: txId,
-        executionTime: Date.now() - startTime
+        executionTime: Date.now() - startTime,
       };
     }
   }
@@ -72,147 +72,152 @@ export class TransactionService implements ITransactionService {
    * Ensures both inventory update and history record are created atomically
    */
   async executeStockTransfer(transfer: StockTransferDto): Promise<TransactionResult<void>> {
-    return this.executeTransaction(async (client) => {
-      // Validate transfer
-      if (!validatePalletNumber(transfer.palletNum)) {
-        throw new Error('Invalid pallet number format');
+    return this.executeTransaction(
+      async client => {
+        // Validate transfer
+        if (!validatePalletNumber(transfer.palletNum)) {
+          throw new Error('Invalid pallet number format');
+        }
+
+        const fromColumn = LocationMapper.toDbColumn(transfer.fromLocation);
+        const toColumn = LocationMapper.toDbColumn(transfer.toLocation);
+
+        if (!fromColumn || !toColumn) {
+          throw new Error('Invalid location mapping');
+        }
+
+        // Get current inventory
+        const { data: inventory, error: inventoryError } = await client
+          .from('record_inventory')
+          .select('*')
+          .eq('plt_num', transfer.palletNum)
+          .single();
+
+        if (inventoryError || !inventory) {
+          throw new Error('Pallet not found in inventory');
+        }
+
+        // Validate stock levels
+        const currentQty = inventory[fromColumn] || 0;
+        if (currentQty < transfer.quantity) {
+          throw new Error(
+            `Insufficient stock. Available: ${currentQty}, Requested: ${transfer.quantity}`
+          );
+        }
+
+        // Update inventory
+        const updates: any = {
+          [fromColumn]: currentQty - transfer.quantity,
+          [toColumn]: (inventory[toColumn] || 0) + transfer.quantity,
+          latest_update: new Date().toISOString(),
+        };
+
+        const { error: updateError } = await client
+          .from('record_inventory')
+          .update(updates)
+          .eq('plt_num', transfer.palletNum);
+
+        if (updateError) {
+          throw new Error(`Failed to update inventory: ${updateError.message}`);
+        }
+
+        // Create history record
+        const historyRecord: Partial<HistoryRecord> = {
+          plt_num: transfer.palletNum,
+          loc: toColumn,
+          loc_to: toColumn,
+          loc_fr: fromColumn,
+          action: 'Transfer',
+          qty: transfer.quantity,
+          time: new Date().toISOString(),
+          remark:
+            transfer.remark || `Transfer from ${transfer.fromLocation} to ${transfer.toLocation}`,
+          updated_by: transfer.operator || 'system',
+        };
+
+        const { error: historyError } = await client.from('record_history').insert([historyRecord]);
+
+        if (historyError) {
+          throw new Error(`Failed to create history record: ${historyError.message}`);
+        }
+      },
+      {
+        description: `Stock transfer: ${transfer.palletNum} from ${transfer.fromLocation} to ${transfer.toLocation}`,
+        logTransaction: true,
       }
-
-      const fromColumn = LocationMapper.toDbColumn(transfer.fromLocation);
-      const toColumn = LocationMapper.toDbColumn(transfer.toLocation);
-
-      if (!fromColumn || !toColumn) {
-        throw new Error('Invalid location mapping');
-      }
-
-      // Get current inventory
-      const { data: inventory, error: inventoryError } = await client
-        .from('record_inventory')
-        .select('*')
-        .eq('plt_num', transfer.palletNum)
-        .single();
-
-      if (inventoryError || !inventory) {
-        throw new Error('Pallet not found in inventory');
-      }
-
-      // Validate stock levels
-      const currentQty = inventory[fromColumn] || 0;
-      if (currentQty < transfer.quantity) {
-        throw new Error(`Insufficient stock. Available: ${currentQty}, Requested: ${transfer.quantity}`);
-      }
-
-      // Update inventory
-      const updates: any = {
-        [fromColumn]: currentQty - transfer.quantity,
-        [toColumn]: (inventory[toColumn] || 0) + transfer.quantity,
-        latest_update: new Date().toISOString()
-      };
-
-      const { error: updateError } = await client
-        .from('record_inventory')
-        .update(updates)
-        .eq('plt_num', transfer.palletNum);
-
-      if (updateError) {
-        throw new Error(`Failed to update inventory: ${updateError.message}`);
-      }
-
-      // Create history record
-      const historyRecord: Partial<HistoryRecord> = {
-        plt_num: transfer.palletNum,
-        loc: toColumn,
-        loc_to: toColumn,
-        loc_fr: fromColumn,
-        action: 'Transfer',
-        qty: transfer.quantity,
-        time: new Date().toISOString(),
-        remark: transfer.remark || `Transfer from ${transfer.fromLocation} to ${transfer.toLocation}`,
-        updated_by: transfer.operator || 'system'
-      };
-
-      const { error: historyError } = await client
-        .from('record_history')
-        .insert([historyRecord]);
-
-      if (historyError) {
-        throw new Error(`Failed to create history record: ${historyError.message}`);
-      }
-    }, {
-      description: `Stock transfer: ${transfer.palletNum} from ${transfer.fromLocation} to ${transfer.toLocation}`,
-      logTransaction: true
-    });
+    );
   }
 
   /**
    * Execute a void operation within a transaction
    */
   async executeVoidPallet(voidData: VoidPalletDto): Promise<TransactionResult<void>> {
-    return this.executeTransaction(async (client) => {
-      // Validate pallet
-      if (!validatePalletNumber(voidData.palletNum)) {
-        throw new Error('Invalid pallet number format');
+    return this.executeTransaction(
+      async client => {
+        // Validate pallet
+        if (!validatePalletNumber(voidData.palletNum)) {
+          throw new Error('Invalid pallet number format');
+        }
+
+        // Get current inventory
+        const { data: inventory, error: inventoryError } = await client
+          .from('record_inventory')
+          .select('*')
+          .eq('plt_num', voidData.palletNum)
+          .single();
+
+        if (inventoryError || !inventory) {
+          throw new Error('Pallet not found in inventory');
+        }
+
+        // Determine which location column has stock
+        const locationColumn = this.findLocationWithStock(inventory);
+        if (!locationColumn) {
+          throw new Error('No stock found for this pallet');
+        }
+
+        const currentQty = inventory[locationColumn];
+        const standardLocation = LocationMapper.fromDbColumn(locationColumn as any);
+
+        // Update inventory to zero
+        const updates: any = {
+          [locationColumn]: 0,
+          latest_update: new Date().toISOString(),
+        };
+
+        const { error: updateError } = await client
+          .from('record_inventory')
+          .update(updates)
+          .eq('plt_num', voidData.palletNum);
+
+        if (updateError) {
+          throw new Error(`Failed to update inventory: ${updateError.message}`);
+        }
+
+        // Create void history record
+        const historyRecord: Partial<HistoryRecord> = {
+          plt_num: voidData.palletNum,
+          loc: 'void',
+          loc_to: 'void',
+          loc_fr: locationColumn,
+          action: voidData.reason,
+          qty: -currentQty, // Negative to indicate removal
+          time: new Date().toISOString(),
+          remark: voidData.remark || `Void: ${voidData.reason}`,
+          updated_by: voidData.operator || 'system',
+        };
+
+        const { error: historyError } = await client.from('record_history').insert([historyRecord]);
+
+        if (historyError) {
+          throw new Error(`Failed to create history record: ${historyError.message}`);
+        }
+      },
+      {
+        description: `Void pallet: ${voidData.palletNum} - ${voidData.reason}`,
+        logTransaction: true,
       }
-
-      // Get current inventory
-      const { data: inventory, error: inventoryError } = await client
-        .from('record_inventory')
-        .select('*')
-        .eq('plt_num', voidData.palletNum)
-        .single();
-
-      if (inventoryError || !inventory) {
-        throw new Error('Pallet not found in inventory');
-      }
-
-      // Determine which location column has stock
-      const locationColumn = this.findLocationWithStock(inventory);
-      if (!locationColumn) {
-        throw new Error('No stock found for this pallet');
-      }
-
-      const currentQty = inventory[locationColumn];
-      const standardLocation = LocationMapper.fromDbColumn(locationColumn as any);
-
-      // Update inventory to zero
-      const updates: any = {
-        [locationColumn]: 0,
-        latest_update: new Date().toISOString()
-      };
-
-      const { error: updateError } = await client
-        .from('record_inventory')
-        .update(updates)
-        .eq('plt_num', voidData.palletNum);
-
-      if (updateError) {
-        throw new Error(`Failed to update inventory: ${updateError.message}`);
-      }
-
-      // Create void history record
-      const historyRecord: Partial<HistoryRecord> = {
-        plt_num: voidData.palletNum,
-        loc: 'void',
-        loc_to: 'void',
-        loc_fr: locationColumn,
-        action: voidData.reason,
-        qty: -currentQty, // Negative to indicate removal
-        time: new Date().toISOString(),
-        remark: voidData.remark || `Void: ${voidData.reason}`,
-        updated_by: voidData.operator || 'system'
-      };
-
-      const { error: historyError } = await client
-        .from('record_history')
-        .insert([historyRecord]);
-
-      if (historyError) {
-        throw new Error(`Failed to create history record: ${historyError.message}`);
-      }
-    }, {
-      description: `Void pallet: ${voidData.palletNum} - ${voidData.reason}`,
-      logTransaction: true
-    });
+    );
   }
 
   /**
@@ -220,12 +225,12 @@ export class TransactionService implements ITransactionService {
    */
   async createHistoryRecord(record: Partial<HistoryRecord>): Promise<void> {
     try {
-      const { error } = await this.supabase
-        .from('record_history')
-        .insert([{
+      const { error } = await this.supabase.from('record_history').insert([
+        {
           ...record,
-          time: record.time || new Date().toISOString()
-        }]);
+          time: record.time || new Date().toISOString(),
+        },
+      ]);
 
       if (error) {
         throw error;
@@ -243,12 +248,10 @@ export class TransactionService implements ITransactionService {
     try {
       const recordsWithTime = records.map(record => ({
         ...record,
-        time: record.time || new Date().toISOString()
+        time: record.time || new Date().toISOString(),
       }));
 
-      const { error } = await this.supabase
-        .from('record_history')
-        .insert(recordsWithTime);
+      const { error } = await this.supabase.from('record_history').insert(recordsWithTime);
 
       if (error) {
         throw error;
@@ -266,14 +269,14 @@ export class TransactionService implements ITransactionService {
     operations: Array<(client: SupabaseClient) => Promise<any>>,
     options?: TransactionOptions
   ): Promise<TransactionResult<T[]>> {
-    return this.executeTransaction(async (client) => {
+    return this.executeTransaction(async client => {
       const results: T[] = [];
-      
+
       for (const operation of operations) {
         const result = await operation(client);
         results.push(result);
       }
-      
+
       return results;
     }, options);
   }
@@ -308,7 +311,7 @@ export class TransactionService implements ITransactionService {
 
       // Calculate expected inventory from history
       const calculated = this.calculateInventoryFromHistory(history);
-      
+
       // Compare with actual inventory
       return this.compareInventory(inventory, calculated);
     } catch (error) {
@@ -320,9 +323,11 @@ export class TransactionService implements ITransactionService {
   /**
    * Get transaction logs
    */
-  async getTransactionLogs(
-    filter?: { startDate?: string; endDate?: string; status?: string }
-  ): Promise<any[]> {
+  async getTransactionLogs(filter?: {
+    startDate?: string;
+    endDate?: string;
+    status?: string;
+  }): Promise<any[]> {
     try {
       let query = this.supabase
         .from('transaction_logs')
@@ -341,7 +346,7 @@ export class TransactionService implements ITransactionService {
 
       const { data, error } = await query;
       if (error) throw error;
-      
+
       return data || [];
     } catch (error) {
       console.error('[TransactionService] Get transaction logs error:', error);
@@ -358,22 +363,22 @@ export class TransactionService implements ITransactionService {
 
   private async logTransactionStart(txId: string, description?: string): Promise<void> {
     try {
-      await this.supabase
-        .from('transaction_logs')
-        .insert([{
+      await this.supabase.from('transaction_logs').insert([
+        {
           transaction_id: txId,
           description,
           status: 'started',
-          created_at: new Date().toISOString()
-        }]);
+          created_at: new Date().toISOString(),
+        },
+      ]);
     } catch (error) {
       console.error('[TransactionService] Log transaction start error:', error);
     }
   }
 
   private async logTransactionEnd(
-    txId: string, 
-    status: 'success' | 'failed', 
+    txId: string,
+    status: 'success' | 'failed',
     error?: string
   ): Promise<void> {
     try {
@@ -382,7 +387,7 @@ export class TransactionService implements ITransactionService {
         .update({
           status,
           error_message: error,
-          completed_at: new Date().toISOString()
+          completed_at: new Date().toISOString(),
         })
         .eq('transaction_id', txId);
     } catch (error) {
@@ -392,19 +397,19 @@ export class TransactionService implements ITransactionService {
 
   private findLocationWithStock(inventory: any): string | null {
     const locationColumns = LocationMapper.getAllDbColumns();
-    
+
     for (const column of locationColumns) {
       if (inventory[column] && inventory[column] > 0) {
         return column;
       }
     }
-    
+
     return null;
   }
 
   private calculateInventoryFromHistory(history: HistoryRecord[]): any {
     const inventory: any = {};
-    
+
     for (const record of history) {
       if (record.loc_to && record.qty > 0) {
         inventory[record.loc_to] = (inventory[record.loc_to] || 0) + record.qty;
@@ -413,22 +418,22 @@ export class TransactionService implements ITransactionService {
         inventory[record.loc_fr] = (inventory[record.loc_fr] || 0) - record.qty;
       }
     }
-    
+
     return inventory;
   }
 
   private compareInventory(actual: any, calculated: any): boolean {
     const locationColumns = LocationMapper.getAllDbColumns();
-    
+
     for (const column of locationColumns) {
       const actualQty = actual[column] || 0;
       const calculatedQty = calculated[column] || 0;
-      
+
       if (Math.abs(actualQty - calculatedQty) > 0.01) {
         return false;
       }
     }
-    
+
     return true;
   }
 }

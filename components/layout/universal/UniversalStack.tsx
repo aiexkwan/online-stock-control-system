@@ -28,118 +28,113 @@ interface ResponsiveStackCompatProps {
   className?: string;
 }
 
-export const UniversalStack = forwardRef<
-  HTMLDivElement,
-  UniversalStackProps
->(({
-  children,
-  direction = 'vertical',
-  spacing = 'md',
-  align = 'stretch',
-  wrap = false,
-  className = '',
-}, ref) => {
-  // 方向類名
-  const directionClasses = {
-    vertical: 'flex-col',
-    horizontal: 'flex-row',
-    responsive: 'flex-col lg:flex-row',
-  };
+export const UniversalStack = forwardRef<HTMLDivElement, UniversalStackProps>(
+  (
+    {
+      children,
+      direction = 'vertical',
+      spacing = 'md',
+      align = 'stretch',
+      wrap = false,
+      className = '',
+    },
+    ref
+  ) => {
+    // 方向類名
+    const directionClasses = {
+      vertical: 'flex-col',
+      horizontal: 'flex-row',
+      responsive: 'flex-col lg:flex-row',
+    };
 
-  // 對齊類名
-  const alignClasses = {
-    start: 'items-start',
-    center: 'items-center',
-    end: 'items-end',
-    stretch: 'items-stretch',
-  };
+    // 對齊類名
+    const alignClasses = {
+      start: 'items-start',
+      center: 'items-center',
+      end: 'items-end',
+      stretch: 'items-stretch',
+    };
 
-  // 間距類名 (根據方向調整)
-  const getSpacingClass = (): string => {
-    const spacingValue = SPACING_CLASSES[spacing];
-    
-    switch (direction) {
-      case 'vertical':
-        return `space-y-${spacingValue}`;
-      case 'horizontal':
-        return `space-x-${spacingValue}`;
-      case 'responsive':
-        return `space-y-${spacingValue} lg:space-y-0 lg:space-x-${spacingValue}`;
-      default:
-        return `space-y-${spacingValue}`;
-    }
-  };
+    // 間距類名 (根據方向調整)
+    const getSpacingClass = (): string => {
+      const spacingValue = SPACING_CLASSES[spacing];
 
-  const stackClasses = cn(
-    // 基礎 flex
-    'flex',
-    
-    // 方向
-    directionClasses[direction],
-    
-    // 對齊
-    alignClasses[align],
-    
-    // 間距
-    getSpacingClass(),
-    
-    // 換行
-    wrap && 'flex-wrap',
-    
-    // 自定義類名
-    className
-  );
+      switch (direction) {
+        case 'vertical':
+          return `space-y-${spacingValue}`;
+        case 'horizontal':
+          return `space-x-${spacingValue}`;
+        case 'responsive':
+          return `space-y-${spacingValue} lg:space-y-0 lg:space-x-${spacingValue}`;
+        default:
+          return `space-y-${spacingValue}`;
+      }
+    };
 
-  return (
-    <div ref={ref} className={stackClasses}>
-      {children}
-    </div>
-  );
-});
+    const stackClasses = cn(
+      // 基礎 flex
+      'flex',
+
+      // 方向
+      directionClasses[direction],
+
+      // 對齊
+      alignClasses[align],
+
+      // 間距
+      getSpacingClass(),
+
+      // 換行
+      wrap && 'flex-wrap',
+
+      // 自定義類名
+      className
+    );
+
+    return (
+      <div ref={ref} className={stackClasses}>
+        {children}
+      </div>
+    );
+  }
+);
 
 // 兼容現有 ResponsiveStack 的包裝器
-export const ResponsiveStack = forwardRef<
-  HTMLDivElement,
-  ResponsiveStackCompatProps
->(({
-  children,
-  direction = 'vertical',
-  spacing = 4,
-  align = 'stretch',
-  className = ''
-}, ref) => {
-  // 轉換舊格式的 spacing 數字到新的 SpacingSize
-  const convertSpacingToSize = (spacingNum: number): SpacingSize => {
-    const spacingMap: Record<number, SpacingSize> = {
-      0: 'none',
-      1: 'xs',
-      2: 'sm',
-      3: 'sm',
-      4: 'md',
-      5: 'md',
-      6: 'lg',
-      7: 'lg',
-      8: 'xl',
-      9: 'xl',
-      10: '2xl',
-      11: '2xl',
-      12: '2xl',
+export const ResponsiveStack = forwardRef<HTMLDivElement, ResponsiveStackCompatProps>(
+  ({ children, direction = 'vertical', spacing = 4, align = 'stretch', className = '' }, ref) => {
+    // 轉換舊格式的 spacing 數字到新的 SpacingSize
+    const convertSpacingToSize = (spacingNum: number): SpacingSize => {
+      const spacingMap: Record<number, SpacingSize> = {
+        0: 'none',
+        1: 'xs',
+        2: 'sm',
+        3: 'sm',
+        4: 'md',
+        5: 'md',
+        6: 'lg',
+        7: 'lg',
+        8: 'xl',
+        9: 'xl',
+        10: '2xl',
+        11: '2xl',
+        12: '2xl',
+      };
+      return spacingMap[spacingNum] || 'md';
     };
-    return spacingMap[spacingNum] || 'md';
-  };
 
-  return (
-    <UniversalStack
-      ref={ref}
-      direction={direction}
-      spacing={convertSpacingToSize(spacing)}
-      align={align}
-      className={className}
-    >
-      {children}
-    </UniversalStack>
-  );
-});
+    return (
+      <UniversalStack
+        ref={ref}
+        direction={direction}
+        spacing={convertSpacingToSize(spacing)}
+        align={align}
+        className={className}
+      >
+        {children}
+      </UniversalStack>
+    );
+  }
+);
 
 // 設置 displayName 以便調試
 UniversalStack.displayName = 'UniversalStack';

@@ -1,57 +1,45 @@
-"""
-統一數據層 GraphQL Schema
-合併核心實體和操作定義
-"""
+# Unified Data Layer GraphQL Schema
+# Combined core entities and operations definitions
 
-"""
-查詢根類型 - 提供所有只讀數據操作的入口點
-"""
+# Query root type - provides entry points for all read-only data operations
 type Query {
-  # 產品查詢
+  # Product queries
   product(id: ID!): Product
-  products(
-    filter: ProductFilter
-    pagination: PaginationInput
-    sort: SortInput
-  ): ProductConnection!
-  
-  # 托盤查詢
+  products(filter: ProductFilter, pagination: PaginationInput, sort: SortInput): ProductConnection!
+
+  # Pallet queries
   pallet(id: ID!): Pallet
-  pallets(
-    filter: PalletFilter
-    pagination: PaginationInput
-    sort: SortInput
-  ): PalletConnection!
-  
-  # 庫存查詢
+  pallets(filter: PalletFilter, pagination: PaginationInput, sort: SortInput): PalletConnection!
+
+  # Inventory queries
   inventory(id: ID!): InventoryRecord
   inventories(
     filter: InventoryFilter
     pagination: PaginationInput
     sort: SortInput
   ): InventoryConnection!
-  
-  # 移動記錄查詢
+
+  # Movement record queries
   movement(id: ID!): Movement
   movements(
     filter: MovementFilter
     pagination: PaginationInput
     sort: SortInput
   ): MovementConnection!
-  
-  # 業務邏輯查詢 (使用 Connection 分頁模式)
+
+  # Business logic queries (using Connection pagination mode)
   getLowStockProducts(
     threshold: Int = 10
     pagination: PaginationInput
     sort: SortInput
   ): ProductConnection!
-  
+
   getPendingOrders(
     status: OrderStatus
     pagination: PaginationInput
     sort: SortInput
   ): OrderConnection!
-  
+
   getActiveTransfers(
     dateRange: DateRangeInput
     pagination: PaginationInput
@@ -60,47 +48,47 @@ type Query {
 }
 
 """
-變更根類型 - 提供所有數據修改操作的入口點
+Mutation root type - provides entry points for all data modification operations
 """
 type Mutation {
-  # 產品操作
+  # Product operations
   createProduct(input: CreateProductInput!): ProductResult!
   updateProduct(id: ID!, input: UpdateProductInput!): ProductResult!
   deleteProduct(id: ID!): DeleteResult!
-  
-  # 托盤操作
+
+  # Pallet operations
   createPallet(input: CreatePalletInput!): PalletResult!
   updatePallet(id: ID!, input: UpdatePalletInput!): PalletResult!
   voidPallet(id: ID!, reason: String): VoidResult!
-  
-  # 庫存操作
+
+  # Inventory operations
   adjustInventory(input: StockAdjustmentInput!): AdjustInventoryResult!
   transferStock(input: TransferStockInput!): TransferResult!
-  
-  # 業務邏輯操作
+
+  # Business logic operations
   processStocktake(input: ProcessStocktakeInput!): StocktakeResult!
   generateGrnLabel(input: GenerateGrnLabelInput!): GrnLabelResult!
 }
 
 """
-訂閱操作 - 提供實時數據更新功能，使用 WebSocket 連接
+Subscription operations - provides real-time data update functionality using WebSocket connections
 """
 type Subscription {
-  # 實時庫存更新
+  # Real-time inventory updates
   inventoryUpdated(locationId: ID): InventoryRecord!
-  
-  # 托盤移動追蹤
+
+  # Pallet movement tracking
   palletMoved(warehouseId: ID): Movement!
-  
-  # 訂單狀態變更
+
+  # Order status changes
   orderStatusChanged(orderId: ID): Order!
-  
-  # 系統警報
+
+  # System alerts
   lowStockAlert(threshold: Int = 10): Product!
   systemAlert: SystemAlert!
 }
 
-# 通用分頁接口
+# Common pagination interfaces
 interface Connection {
   edges: [Edge!]!
   pageInfo: PageInfo!
@@ -123,7 +111,7 @@ type PageInfo {
   endCursor: String
 }
 
-# 通用輸入類型
+# Common input types
 input PaginationInput {
   first: Int
   after: String
@@ -146,7 +134,7 @@ enum SortDirection {
   DESC
 }
 
-# 統一錯誤處理
+# Unified error handling
 interface BaseError {
   message: String!
   code: String!
@@ -176,21 +164,16 @@ type Product implements Node {
   standardQty: Int! # standard qty per pallet
   type: String!
   remark: String
-  # 關聯 (使用 Connection 分頁優化性能)
-  pallets(
-    first: Int = 20
-    after: String
-    filter: PalletFilter
-    sort: SortInput
-  ): PalletConnection
-  
+  # Relations (using Connection pagination for performance optimization)
+  pallets(first: Int = 20, after: String, filter: PalletFilter, sort: SortInput): PalletConnection
+
   inventory(
     first: Int = 50
     after: String
     filter: InventoryFilter
     sort: SortInput
   ): InventoryConnection
-  
+
   movements(
     first: Int = 10
     after: String
@@ -204,7 +187,7 @@ input ProductFilter {
   description: String
   colour: String
   type: String
-  search: String # 全文搜索
+  search: String # Full text search
 }
 
 """
@@ -220,25 +203,21 @@ type Pallet implements Node {
   quantity: Int! # product_qty
   remark: String
   pdfUrl: String
-  # 關聯
+  # Relations
   product: Product!
   location: Location
   status: PalletStatus!
-  
-  # 關聯列表 (使用 Connection 分頁)
+
+  # Related lists (using Connection pagination)
   movements(
     first: Int = 10
     after: String
     filter: MovementFilter
     sort: SortInput
   ): MovementConnection
-  
-  grnRecords(
-    first: Int = 20
-    after: String
-    sort: SortInput
-  ): GRNConnection
-  
+
+  grnRecords(first: Int = 20, after: String, sort: SortInput): GRNConnection
+
   inventoryRecords(
     first: Int = 30
     after: String
@@ -263,14 +242,14 @@ input PalletFilter {
 }
 
 """
-庫存記錄 - 記錄產品在各個倉庫位置的庫存數量
-追蹤 injection, pipeline, prebook 等多個位置的實時庫存
+Inventory Record - tracks product quantities at various warehouse locations
+Tracks real-time inventory across injection, pipeline, prebook, and other locations
 """
 type InventoryRecord implements Node {
   id: ID! # record_inventory.uuid
   productCode: String!
   palletNumber: String!
-  # 各地點庫存數量
+  # Inventory quantities at various locations
   injection: Int!
   pipeline: Int!
   prebook: Int!
@@ -281,10 +260,10 @@ type InventoryRecord implements Node {
   damage: Int!
   awaitGrn: Int
   latestUpdate: DateTime!
-  # 關聯
+  # Relations
   product: Product!
   pallet: Pallet!
-  totalQuantity: Int! # 計算欄位
+  totalQuantity: Int! # Calculated field
 }
 
 type Location {
@@ -325,7 +304,7 @@ type Movement implements Node {
   toLocation: String!
   operatorId: Int!
   transferDate: DateTime!
-  # 關聯
+  # Relations
   pallet: Pallet!
   operator: User!
 }
@@ -355,7 +334,7 @@ type GRNRecord implements Node {
   palletCount: Float!
   packageCount: Float!
   createTime: DateTime!
-  # 關聯
+  # Relations
   pallet: Pallet!
   supplier: Supplier!
   product: Product!
@@ -365,13 +344,8 @@ type Supplier implements Node {
   id: ID! # data_supplier.supplier_code
   supplierCode: String!
   supplierName: String!
-  # 關聯 (使用 Connection 分頁)
-  grnRecords(
-    first: Int = 20
-    after: String
-    filter: GRNFilter
-    sort: SortInput
-  ): GRNConnection
+  # Relations (using Connection pagination)
+  grnRecords(first: Int = 20, after: String, filter: GRNFilter, sort: SortInput): GRNConnection
 }
 
 input GRNFilter {
@@ -381,7 +355,7 @@ input GRNFilter {
   dateRange: DateRangeInput
 }
 
-# 用戶管理 Schema
+# User Management Schema
 type User implements Node {
   id: ID! # data_id.id
   name: String!
@@ -390,7 +364,7 @@ type User implements Node {
   position: String!
   iconUrl: String
   uuid: String!
-  # 關聯 (使用 Connection 分頁)
+  # Relations (using Connection pagination)
   movements(
     first: Int = 10
     after: String
@@ -408,7 +382,7 @@ type WorkLevel implements Node {
   grnCount: Int!
   loadingCount: Int!
   latestUpdate: DateTime!
-  # 關聯
+  # Relations
   user: User!
 }
 
@@ -431,15 +405,11 @@ type Order implements Node {
   remainQty: Int!
   latestUpdate: DateTime!
   status: OrderStatus! # 計算欄位
-  # 關聯
+  # Relations
   product: Product!
-  # 關聯列表 (使用 Connection 分頁)
-  orderDetails(
-    first: Int = 50
-    after: String
-    sort: SortInput
-  ): OrderDetailConnection
-  
+  # Related lists (using Connection pagination)
+  orderDetails(first: Int = 50, after: String, sort: SortInput): OrderDetailConnection
+
   loadingHistory(
     first: Int = 20
     after: String
@@ -463,7 +433,7 @@ type OrderDetail implements Node {
   width: Int
   height: Int
   createdAt: Time!
-  # 關聯
+  # Relations
   pallet: Pallet!
 }
 
@@ -486,7 +456,7 @@ input OrderFilter {
   dateRange: DateRangeInput
 }
 
-# 庫存盤點 Schema
+# Stocktake Schema
 type StocktakeRecord implements Node {
   id: ID! # record_stocktake.uuid
   productCode: String!
@@ -512,9 +482,9 @@ type StocktakeSession implements Node {
   successScans: Int!
   errorScans: Int!
   sessionStatus: StocktakeSessionStatus!
-  # 關聯
+  # Relations
   user: User
-  # 關聯列表 (使用 Connection 分頁)
+  # Related lists (using Connection pagination)
   scans(
     first: Int = 50
     after: String
@@ -541,7 +511,7 @@ type StocktakeBatchScan implements Node {
   errorMessage: String
   userId: Int
   userName: String
-  # 關聯
+  # Relations
   pallet: Pallet
   session: StocktakeSession
 }
@@ -577,16 +547,16 @@ input ScanFilter {
   dateRange: DateRangeInput
 }
 
-# 通用輸入類型 (已經在上面定義了)
+# Common input types (已經在上面定義了)
 
-# 自定義標量類型
+# Custom scalar types
 scalar DateTime
 scalar Date
 scalar Time
 scalar UUID
 scalar JSON
 
-# 統一結果類型
+# Unified result types
 union ProductResult = Product | UserError | SystemError
 union PalletResult = Pallet | UserError | SystemError
 union InventoryResult = InventoryRecord | UserError | SystemError
@@ -597,7 +567,7 @@ union StocktakeResult = StocktakeRecord | UserError | SystemError
 union GRNResult = GRNRecord | UserError | SystemError
 union StocktakeSessionResult = StocktakeSession | UserError | SystemError
 
-# Connection 類型
+# Connection types
 type ProductConnection implements Connection {
   edges: [ProductEdge!]!
   pageInfo: PageInfo!
@@ -679,31 +649,31 @@ type StocktakeEdge implements Edge {
 
 # 額外的 Mutation 已整合到主要 Mutation 類型中
 
-# 訂閱操作 (實時更新)
+# Subscription operations (real-time updates)
 # 額外的 Subscription 方法
 type SubscriptionExtensions {
-  # 庫存變化
+  # Inventory changes
   inventoryUpdated(productCode: String): InventoryRecord!
   stockLevelChanged: InventoryRecord!
-  
-  # 托盤移動
+
+  # Pallet movement
   palletMoved: Movement!
   palletStatusChanged(palletNumber: String): Pallet!
-  
-  # 訂單狀態
+
+  # Order status
   orderStatusChanged(orderRef: Int): Order!
   orderCompleted: Order!
-  
-  # 庫存盤點
+
+  # Stocktake
   stocktakeCountRecorded(sessionId: ID): StocktakeRecord!
   stocktakeSessionStatusChanged: StocktakeSession!
-  
-  # 系統通知
+
+  # System notifications
   systemAlert: SystemAlert!
   lowStockAlert: LowStockAlert!
 }
 
-# Input 類型定義
+# Input type definitions
 input CreateProductInput {
   code: String!
   description: String!
@@ -762,7 +732,7 @@ input UpdateInventoryInput {
 input StockAdjustmentInput {
   productCode: String!
   location: LocationType!
-  adjustmentQty: Int! # 正數增加，負數減少
+  adjustmentQty: Int! # Positive to increase, negative to decrease
   reason: String!
   operatorId: Int!
 }
@@ -836,7 +806,7 @@ input UpdateGRNInput {
   packageCount: Float
 }
 
-# 通知類型
+# Notification types
 type SystemAlert {
   id: ID!
   type: AlertType!
@@ -869,7 +839,7 @@ enum AlertSeverity {
   CRITICAL
 }
 
-# 額外的 Connection 類型定義 (非重複的)
+# Additional Connection type definitions (non-duplicate)
 
 type GRNConnection implements Connection {
   edges: [GRNEdge!]!
@@ -926,16 +896,27 @@ type StocktakeBatchScanEdge implements Edge {
   cursor: String!
 }
 
-# 額外的 Result 聯合類型 (非重複的)
+# Additional Result union types (non-duplicate)
 union DeleteResult = DeleteSuccess | UserError | SystemError
 union VoidResult = VoidSuccess | UserError | SystemError
 union TransferResult = TransferSuccess | UserError | SystemError
+# GRN Label type
+type GrnLabel {
+  id: ID!
+  grnRef: Int!
+  palletNumber: String!
+  supplierCode: String!
+  materialCode: String!
+  generatedAt: DateTime!
+  pdfUrl: String
+}
+
 union GrnLabelResult = GrnLabel | UserError | SystemError
 union AdjustInventoryResult = InventoryRecord | UserError | SystemError
 union BulkInventoryResult = BulkInventorySuccess | UserError | SystemError
 union BulkPalletResult = BulkPalletSuccess | UserError | SystemError
 
-# 成功操作類型
+# Success operation types
 type DeleteSuccess {
   id: ID!
   message: String!
@@ -963,7 +944,7 @@ type BulkPalletSuccess {
   message: String!
 }
 
-# 缺失的輸入類型
+# Missing input types
 input TransferStockInput {
   productCode: String!
   fromLocation: LocationType!
@@ -988,5 +969,5 @@ input GenerateGrnLabelInput {
   materialCode: String!
 }
 
-# 額外的標量類型
-scalar PositiveInt 
+# Additional scalar types
+scalar PositiveInt

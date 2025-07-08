@@ -19,13 +19,7 @@ export enum FeatureFlagStatus {
 /**
  * Feature Flag 規則類型
  */
-export type FeatureRuleType = 
-  | 'user'
-  | 'group'
-  | 'percentage'
-  | 'date'
-  | 'environment'
-  | 'custom';
+export type FeatureRuleType = 'user' | 'group' | 'percentage' | 'date' | 'environment' | 'custom';
 
 /**
  * Feature Flag 規則
@@ -185,17 +179,17 @@ export enum KnownFeatureFlags {
   DARK_MODE = 'dark_mode',
   ADVANCED_SEARCH = 'advanced_search',
   BATCH_OPERATIONS = 'batch_operations',
-  
+
   // 性能優化
   LAZY_LOADING = 'lazy_loading',
   VIRTUAL_SCROLLING = 'virtual_scrolling',
   CODE_SPLITTING = 'code_splitting',
-  
+
   // 實驗性功能
   AI_PREDICTIONS = 'ai_predictions',
   VOICE_COMMANDS = 'voice_commands',
   AR_SCANNING = 'ar_scanning',
-  
+
   // 系統功能
   MAINTENANCE_MODE = 'maintenance_mode',
   READ_ONLY_MODE = 'read_only_mode',

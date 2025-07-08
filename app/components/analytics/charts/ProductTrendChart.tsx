@@ -6,18 +6,26 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { 
-  BarChart, Bar, LineChart, Line, XAxis, YAxis, 
-  CartesianGrid, Tooltip, Legend, ResponsiveContainer 
+import {
+  BarChart,
+  Bar,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
 } from 'recharts';
 import { Loader2 } from 'lucide-react';
 import { createClient } from '@/lib/supabase';
 import { dialogStyles } from '@/app/utils/dialogStyles';
-import { 
-  getStartDate, 
-  getEndDate, 
+import {
+  getStartDate,
+  getEndDate,
   processOrderTrendData,
-  ProductTrendData 
+  ProductTrendData,
 } from '@/app/utils/analyticsDataProcessors';
 
 interface ProductTrendChartProps {
@@ -45,7 +53,7 @@ export function ProductTrendChart({ timeRange }: ProductTrendChartProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [view, setView] = useState<'summary' | 'detail'>('summary');
-  
+
   useEffect(() => {
     loadData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -54,12 +62,12 @@ export function ProductTrendChart({ timeRange }: ProductTrendChartProps) {
   const loadData = async () => {
     setLoading(true);
     setError(null);
-    
+
     try {
       const supabase = createClient();
       const startDate = getStartDate(timeRange);
       const endDate = getEndDate();
-      
+
       // Fetch order data
       const { data: orderData, error: orderError } = await supabase
         .from('data_order')
@@ -67,26 +75,23 @@ export function ProductTrendChart({ timeRange }: ProductTrendChartProps) {
         .gte('created_at', startDate.toISOString())
         .lte('created_at', endDate.toISOString())
         .order('created_at');
-      
+
       if (orderError) throw orderError;
-      
+
       // Process data for both views
       const { detail, summary } = processOrderTrendData(orderData || [], timeRange);
-      
+
       // Extract product codes (top 10 by order count)
       const productTotals = new Map<string, number>();
       (orderData || []).forEach(record => {
-        productTotals.set(
-          record.product_code, 
-          (productTotals.get(record.product_code) || 0) + 1
-        );
+        productTotals.set(record.product_code, (productTotals.get(record.product_code) || 0) + 1);
       });
-      
+
       const topProducts = Array.from(productTotals.entries())
         .sort((a, b) => b[1] - a[1])
         .slice(0, 10)
         .map(([code]) => code);
-      
+
       setProductCodes(topProducts);
       setData(detail);
       setSummaryData(summary);
@@ -100,7 +105,7 @@ export function ProductTrendChart({ timeRange }: ProductTrendChartProps) {
 
   const chartProps = {
     data,
-    margin: { top: 20, right: 30, left: 20, bottom: 60 }
+    margin: { top: 20, right: 30, left: 20, bottom: 60 },
   };
 
   const tooltipStyle = {
@@ -109,7 +114,7 @@ export function ProductTrendChart({ timeRange }: ProductTrendChartProps) {
     borderRadius: '8px',
     padding: '8px 12px',
     maxHeight: '300px',
-    overflow: 'auto'
+    overflow: 'auto',
   };
 
   const CustomTooltip = ({ active, payload, label }: any) => {
@@ -117,9 +122,9 @@ export function ProductTrendChart({ timeRange }: ProductTrendChartProps) {
       const sortedPayload = [...payload].sort((a, b) => b.value - a.value);
       return (
         <div style={tooltipStyle}>
-          <p className="text-slate-300 font-medium mb-2">{label}</p>
+          <p className='mb-2 font-medium text-slate-300'>{label}</p>
           {sortedPayload.map((entry: any, index: number) => (
-            <p key={index} className="text-sm" style={{ color: entry.color }}>
+            <p key={index} className='text-sm' style={{ color: entry.color }}>
               {entry.name}: {entry.value}
             </p>
           ))}
@@ -132,8 +137,8 @@ export function ProductTrendChart({ timeRange }: ProductTrendChartProps) {
   if (loading) {
     return (
       <div className={dialogStyles.card}>
-        <div className="flex items-center justify-center h-[400px]">
-          <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
+        <div className='flex h-[400px] items-center justify-center'>
+          <Loader2 className='h-8 w-8 animate-spin text-blue-500' />
         </div>
       </div>
     );
@@ -142,8 +147,8 @@ export function ProductTrendChart({ timeRange }: ProductTrendChartProps) {
   if (error) {
     return (
       <div className={dialogStyles.card}>
-        <div className="flex items-center justify-center h-[400px]">
-          <p className="text-red-400">{error}</p>
+        <div className='flex h-[400px] items-center justify-center'>
+          <p className='text-red-400'>{error}</p>
         </div>
       </div>
     );
@@ -152,8 +157,8 @@ export function ProductTrendChart({ timeRange }: ProductTrendChartProps) {
   if (data.length === 0 && summaryData.length === 0) {
     return (
       <div className={dialogStyles.card}>
-        <div className="flex items-center justify-center h-[400px]">
-          <p className="text-slate-400">No order data available for this period</p>
+        <div className='flex h-[400px] items-center justify-center'>
+          <p className='text-slate-400'>No order data available for this period</p>
         </div>
       </div>
     );
@@ -161,16 +166,16 @@ export function ProductTrendChart({ timeRange }: ProductTrendChartProps) {
 
   return (
     <div className={dialogStyles.card}>
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold text-white">
+      <div className='mb-4 flex items-center justify-between'>
+        <h3 className='text-lg font-semibold text-white'>
           Order Trend {view === 'summary' ? 'Summary' : 'by Product'}
         </h3>
-        <div className="flex gap-2">
+        <div className='flex gap-2'>
           <button
             onClick={() => setView('summary')}
-            className={`px-3 py-1 rounded-lg text-sm transition-colors ${
-              view === 'summary' 
-                ? 'bg-blue-600 text-white' 
+            className={`rounded-lg px-3 py-1 text-sm transition-colors ${
+              view === 'summary'
+                ? 'bg-blue-600 text-white'
                 : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
             }`}
           >
@@ -178,9 +183,9 @@ export function ProductTrendChart({ timeRange }: ProductTrendChartProps) {
           </button>
           <button
             onClick={() => setView('detail')}
-            className={`px-3 py-1 rounded-lg text-sm transition-colors ${
-              view === 'detail' 
-                ? 'bg-blue-600 text-white' 
+            className={`rounded-lg px-3 py-1 text-sm transition-colors ${
+              view === 'detail'
+                ? 'bg-blue-600 text-white'
                 : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
             }`}
           >
@@ -192,57 +197,34 @@ export function ProductTrendChart({ timeRange }: ProductTrendChartProps) {
       {view === 'summary' ? (
         // Summary view - show total orders by time period
         <>
-          <ResponsiveContainer width="100%" height={400}>
+          <ResponsiveContainer width='100%' height={400}>
             {timeRange === '1d' ? (
               <BarChart data={summaryData} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                <XAxis 
-                  dataKey="date" 
-                  stroke="#9CA3AF"
-                  angle={-45}
-                  textAnchor="end"
-                  height={80}
-                />
-                <YAxis stroke="#9CA3AF" />
-                <Tooltip 
+                <CartesianGrid strokeDasharray='3 3' stroke='#374151' />
+                <XAxis dataKey='date' stroke='#9CA3AF' angle={-45} textAnchor='end' height={80} />
+                <YAxis stroke='#9CA3AF' />
+                <Tooltip
                   contentStyle={tooltipStyle}
                   formatter={(value: any) => `${value} orders`}
                 />
-                <Legend 
-                  wrapperStyle={{ paddingTop: '20px' }}
-                  iconType="rect"
-                />
-                <Bar 
-                  dataKey="count" 
-                  fill="#3B82F6" 
-                  name="Orders" 
-                  radius={[4, 4, 0, 0]}
-                />
+                <Legend wrapperStyle={{ paddingTop: '20px' }} iconType='rect' />
+                <Bar dataKey='count' fill='#3B82F6' name='Orders' radius={[4, 4, 0, 0]} />
               </BarChart>
             ) : (
               <LineChart data={summaryData} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                <XAxis 
-                  dataKey="date" 
-                  stroke="#9CA3AF"
-                  angle={-45}
-                  textAnchor="end"
-                  height={80}
-                />
-                <YAxis stroke="#9CA3AF" />
-                <Tooltip 
+                <CartesianGrid strokeDasharray='3 3' stroke='#374151' />
+                <XAxis dataKey='date' stroke='#9CA3AF' angle={-45} textAnchor='end' height={80} />
+                <YAxis stroke='#9CA3AF' />
+                <Tooltip
                   contentStyle={tooltipStyle}
                   formatter={(value: any) => `${value} orders`}
                 />
-                <Legend 
-                  wrapperStyle={{ paddingTop: '20px' }}
-                  iconType="line"
-                />
-                <Line 
-                  type="monotone" 
-                  dataKey="count" 
-                  stroke="#3B82F6" 
-                  name="Orders" 
+                <Legend wrapperStyle={{ paddingTop: '20px' }} iconType='line' />
+                <Line
+                  type='monotone'
+                  dataKey='count'
+                  stroke='#3B82F6'
+                  name='Orders'
                   strokeWidth={2}
                   dot={{ r: 3 }}
                   activeDot={{ r: 5 }}
@@ -250,60 +232,42 @@ export function ProductTrendChart({ timeRange }: ProductTrendChartProps) {
               </LineChart>
             )}
           </ResponsiveContainer>
-          <div className="mt-4 text-sm text-slate-400">
+          <div className='mt-4 text-sm text-slate-400'>
             <p>Total orders created per {timeRange === '1d' ? 'hour' : 'day'}</p>
           </div>
         </>
       ) : (
         // Detail view - show orders by product
         <>
-          <ResponsiveContainer width="100%" height={400}>
+          <ResponsiveContainer width='100%' height={400}>
             {timeRange === '1d' ? (
               <BarChart {...chartProps}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                <XAxis 
-                  dataKey="date" 
-                  stroke="#9CA3AF"
-                  angle={-45}
-                  textAnchor="end"
-                  height={80}
-                />
-                <YAxis stroke="#9CA3AF" />
+                <CartesianGrid strokeDasharray='3 3' stroke='#374151' />
+                <XAxis dataKey='date' stroke='#9CA3AF' angle={-45} textAnchor='end' height={80} />
+                <YAxis stroke='#9CA3AF' />
                 <Tooltip content={<CustomTooltip />} />
-                <Legend 
-                  wrapperStyle={{ paddingTop: '20px' }}
-                  iconType="rect"
-                />
+                <Legend wrapperStyle={{ paddingTop: '20px' }} iconType='rect' />
                 {productCodes.map((code, index) => (
                   <Bar
                     key={code}
                     dataKey={code}
                     fill={PRODUCT_COLORS[index % PRODUCT_COLORS.length]}
-                    stackId="products"
+                    stackId='products'
                     radius={index === productCodes.length - 1 ? [4, 4, 0, 0] : [0, 0, 0, 0]}
                   />
                 ))}
               </BarChart>
             ) : (
               <LineChart {...chartProps}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                <XAxis 
-                  dataKey="date" 
-                  stroke="#9CA3AF"
-                  angle={-45}
-                  textAnchor="end"
-                  height={80}
-                />
-                <YAxis stroke="#9CA3AF" />
+                <CartesianGrid strokeDasharray='3 3' stroke='#374151' />
+                <XAxis dataKey='date' stroke='#9CA3AF' angle={-45} textAnchor='end' height={80} />
+                <YAxis stroke='#9CA3AF' />
                 <Tooltip content={<CustomTooltip />} />
-                <Legend 
-                  wrapperStyle={{ paddingTop: '20px' }}
-                  iconType="line"
-                />
+                <Legend wrapperStyle={{ paddingTop: '20px' }} iconType='line' />
                 {productCodes.map((code, index) => (
                   <Line
                     key={code}
-                    type="monotone"
+                    type='monotone'
                     dataKey={code}
                     stroke={PRODUCT_COLORS[index % PRODUCT_COLORS.length]}
                     strokeWidth={2}
@@ -314,7 +278,7 @@ export function ProductTrendChart({ timeRange }: ProductTrendChartProps) {
               </LineChart>
             )}
           </ResponsiveContainer>
-          <div className="mt-4 text-sm text-slate-400">
+          <div className='mt-4 text-sm text-slate-400'>
             <p>Top 10 products by order count</p>
           </div>
         </>

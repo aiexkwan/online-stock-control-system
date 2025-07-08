@@ -44,21 +44,21 @@ export class PalletSearchService {
     if (!searchValue.trim()) {
       return {
         success: false,
-        error: `Please enter ${searchType === 'series' ? 'series number' : 'pallet number'}`
+        error: `Please enter ${searchType === 'series' ? 'series number' : 'pallet number'}`,
       };
     }
 
     try {
       // 1. 從 record_palletinfo 獲取基本信息
       let palletData;
-      
+
       if (searchType === 'series') {
         const { data, error } = await this.supabase
           .from('record_palletinfo')
           .select('plt_num, product_code, product_qty, plt_remark, series')
           .eq('series', searchValue.trim())
           .single();
-        
+
         if (error) throw error;
         palletData = data;
       } else {
@@ -67,7 +67,7 @@ export class PalletSearchService {
           .select('plt_num, product_code, product_qty, plt_remark, series')
           .eq('plt_num', searchValue.trim())
           .single();
-        
+
         if (error) throw error;
         palletData = data;
       }
@@ -75,7 +75,7 @@ export class PalletSearchService {
       if (!palletData) {
         return {
           success: false,
-          error: `${searchType === 'series' ? 'Series' : 'Pallet'} ${searchValue} not found`
+          error: `${searchType === 'series' ? 'Series' : 'Pallet'} ${searchValue} not found`,
         };
       }
 
@@ -95,7 +95,7 @@ export class PalletSearchService {
       if (historyData && historyData.length > 0) {
         const latestRecord = historyData[0];
         currentLocation = latestRecord.loc || 'Await';
-        
+
         // 檢查是否已作廢
         if (checkVoided && latestRecord.loc === 'Voided') {
           isVoided = true;
@@ -112,15 +112,14 @@ export class PalletSearchService {
           plt_remark: palletData.plt_remark,
           series: palletData.series,
           current_plt_loc: currentLocation,
-          is_voided: isVoided
-        }
+          is_voided: isVoided,
+        },
       };
-
     } catch (error: any) {
       console.error('Pallet search failed:', error);
       return {
         success: false,
-        error: error.message || 'Search failed'
+        error: error.message || 'Search failed',
       };
     }
   }
@@ -138,10 +137,10 @@ export class PalletSearchService {
         .in('plt_num', palletNumbers);
 
       if (error) throw error;
-      
+
       // 獲取所有托盤的最新位置
       const palletInfos: PalletInfo[] = [];
-      
+
       for (const pallet of data || []) {
         const { data: historyData } = await this.supabase
           .from('record_history')
@@ -152,7 +151,7 @@ export class PalletSearchService {
 
         palletInfos.push({
           ...pallet,
-          current_plt_loc: historyData?.[0]?.loc || 'Await'
+          current_plt_loc: historyData?.[0]?.loc || 'Await',
         });
       }
 

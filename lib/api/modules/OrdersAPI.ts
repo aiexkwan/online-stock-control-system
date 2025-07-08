@@ -1,7 +1,7 @@
 /**
  * Orders API Module
  * Part of Phase 3.1: Real-time Component Migration
- * 
+ *
  * Provides server-side data access for Orders List Widget
  * with optimized RPC calls and Server Actions
  */
@@ -50,98 +50,93 @@ class OrdersAPI {
    * Get orders list with optimized RPC call
    * Uses React cache() for automatic request deduplication
    */
-  getOrdersList = cache(async (
-    limit: number = 15,
-    offset: number = 0
-  ): Promise<OrdersListResponse> => {
-    const startTime = performance.now();
-    
-    try {
-      // Use client for compatibility with both server and client components
-      const supabase = createClient();
-      
-      // Call the optimized RPC function
-      const { data, error } = await supabase
-        .rpc('rpc_get_orders_list', {
+  getOrdersList = cache(
+    async (limit: number = 15, offset: number = 0): Promise<OrdersListResponse> => {
+      const startTime = performance.now();
+
+      try {
+        // Use client for compatibility with both server and client components
+        const supabase = createClient();
+
+        // Call the optimized RPC function
+        const { data, error } = await supabase.rpc('rpc_get_orders_list', {
           p_limit: limit,
-          p_offset: offset
+          p_offset: offset,
         });
-      
-      if (error) {
-        console.error('[OrdersAPI] Error fetching orders:', error);
-        throw new Error(`Failed to fetch orders: ${error.message}`);
+
+        if (error) {
+          console.error('[OrdersAPI] Error fetching orders:', error);
+          throw new Error(`Failed to fetch orders: ${error.message}`);
+        }
+
+        // Extract total count from first record (if exists)
+        const totalCount = data?.[0]?.total_count || 0;
+        const hasMore = offset + limit < totalCount;
+
+        // Transform data to match interface
+        const orders: OrderRecord[] = (data || []).map(record => ({
+          uuid: record.uuid,
+          time: record.time,
+          id: record.id,
+          action: record.action,
+          plt_num: record.plt_num,
+          loc: record.loc,
+          remark: record.remark,
+          uploader_name: record.uploader_name,
+          doc_url: record.doc_url,
+        }));
+
+        const queryTime = `${(performance.now() - startTime).toFixed(2)}ms`;
+
+        return {
+          orders,
+          totalCount,
+          hasMore,
+          metadata: {
+            executedAt: new Date().toISOString(),
+            queryTime,
+            cached: false,
+          },
+        };
+      } catch (error) {
+        console.error('[OrdersAPI] getOrdersList error:', error);
+
+        // Return empty result on error
+        return {
+          orders: [],
+          totalCount: 0,
+          hasMore: false,
+          metadata: {
+            executedAt: new Date().toISOString(),
+            queryTime: `${(performance.now() - startTime).toFixed(2)}ms`,
+            cached: false,
+          },
+        };
       }
-      
-      // Extract total count from first record (if exists)
-      const totalCount = data?.[0]?.total_count || 0;
-      const hasMore = offset + limit < totalCount;
-      
-      // Transform data to match interface
-      const orders: OrderRecord[] = (data || []).map(record => ({
-        uuid: record.uuid,
-        time: record.time,
-        id: record.id,
-        action: record.action,
-        plt_num: record.plt_num,
-        loc: record.loc,
-        remark: record.remark,
-        uploader_name: record.uploader_name,
-        doc_url: record.doc_url
-      }));
-      
-      const queryTime = `${(performance.now() - startTime).toFixed(2)}ms`;
-      
-      return {
-        orders,
-        totalCount,
-        hasMore,
-        metadata: {
-          executedAt: new Date().toISOString(),
-          queryTime,
-          cached: false
-        }
-      };
-    } catch (error) {
-      console.error('[OrdersAPI] getOrdersList error:', error);
-      
-      // Return empty result on error
-      return {
-        orders: [],
-        totalCount: 0,
-        hasMore: false,
-        metadata: {
-          executedAt: new Date().toISOString(),
-          queryTime: `${(performance.now() - startTime).toFixed(2)}ms`,
-          cached: false
-        }
-      };
     }
-  });
-  
-  
+  );
+
   /**
    * Subscribe to real-time order updates
    * Returns a channel that can be used to listen for new orders
    */
   subscribeToOrderUpdates(onNewOrder: (order: any) => void) {
     const supabase = createClient();
-    
-    const channel = supabase
-      .channel('orders-realtime')
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'record_history',
-          filter: 'action=eq.Order Upload'
-        },
-        (payload) => {
-          console.log('[OrdersAPI] New order received:', payload);
-          onNewOrder(payload.new);
-        }
-      );
-    
+
+    const channel = supabase.channel('orders-realtime').on(
+      'postgres_changes',
+      {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'record_history',
+        filter: 'action=eq.Order Upload',
+      },
+      payload => {
+        console.log('[OrdersAPI] New order received:', payload);
+        onNewOrder(payload.new);
+      }
+    );
+
     return channel;
   }
 }
@@ -169,7 +164,7 @@ export function transformOrderRecord(raw: any): OrderRecord {
     loc: raw.loc,
     remark: raw.remark,
     uploader_name: raw.uploader_name || 'Unknown',
-    doc_url: raw.doc_url
+    doc_url: raw.doc_url,
   };
 }
 

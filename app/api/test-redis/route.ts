@@ -6,13 +6,16 @@ export async function GET(request: NextRequest) {
   try {
     // 測試基本 Redis 連接
     const isConnected = await testRedisConnection();
-    
+
     if (!isConnected) {
-      return NextResponse.json({
-        status: 'error',
-        message: 'Redis connection failed',
-        timestamp: new Date().toISOString(),
-      }, { status: 500 });
+      return NextResponse.json(
+        {
+          status: 'error',
+          message: 'Redis connection failed',
+          timestamp: new Date().toISOString(),
+        },
+        { status: 500 }
+      );
     }
 
     // 測試 Redis 基本操作
@@ -22,7 +25,7 @@ export async function GET(request: NextRequest) {
 
     // 寫入測試
     await redis.set(testKey, JSON.stringify(testValue), 'EX', 60);
-    
+
     // 讀取測試
     const retrieved = await redis.get(testKey);
     const parsedValue = retrieved ? JSON.parse(retrieved) : null;
@@ -30,7 +33,7 @@ export async function GET(request: NextRequest) {
     // 測試緩存適配器
     const cacheKey = 'test:cache:adapter';
     const cacheValue = { test: 'cache adapter working', time: new Date().toISOString() };
-    
+
     await redisCacheAdapter.set(cacheKey, cacheValue, 30);
     const cachedValue = await redisCacheAdapter.get(cacheKey);
 
@@ -59,16 +62,18 @@ export async function GET(request: NextRequest) {
       cacheStats: await redisCacheAdapter.getStats(),
       timestamp: new Date().toISOString(),
     });
-
   } catch (error) {
     console.error('Redis test error:', error);
-    
-    return NextResponse.json({
-      status: 'error',
-      message: 'Redis test failed',
-      error: error instanceof Error ? error.message : 'Unknown error',
-      timestamp: new Date().toISOString(),
-    }, { status: 500 });
+
+    return NextResponse.json(
+      {
+        status: 'error',
+        message: 'Redis test failed',
+        error: error instanceof Error ? error.message : 'Unknown error',
+        timestamp: new Date().toISOString(),
+      },
+      { status: 500 }
+    );
   }
 }
 
@@ -112,19 +117,24 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    return NextResponse.json({
-      status: 'error',
-      message: `Unknown test type: ${testType}`,
-    }, { status: 400 });
-
+    return NextResponse.json(
+      {
+        status: 'error',
+        message: `Unknown test type: ${testType}`,
+      },
+      { status: 400 }
+    );
   } catch (error) {
     console.error('Redis POST test error:', error);
-    
-    return NextResponse.json({
-      status: 'error',
-      message: 'Redis POST test failed',
-      error: error instanceof Error ? error.message : 'Unknown error',
-      timestamp: new Date().toISOString(),
-    }, { status: 500 });
+
+    return NextResponse.json(
+      {
+        status: 'error',
+        message: 'Redis POST test failed',
+        error: error instanceof Error ? error.message : 'Unknown error',
+        timestamp: new Date().toISOString(),
+      },
+      { status: 500 }
+    );
   }
-} 
+}

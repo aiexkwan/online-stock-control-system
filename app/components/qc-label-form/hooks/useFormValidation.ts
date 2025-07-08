@@ -11,7 +11,7 @@ interface ValidationInput {
   count: string;
   operator: string;
   userId: string;
-  
+
   // ACO specific
   acoOrderRef: string;
   acoOrderDetails: AcoOrderDetail[];
@@ -22,10 +22,10 @@ interface ValidationInput {
   isAcoOrderExcess: boolean;
   isProductIncludedInOrder: boolean;
   isAcoOrderFullfilled: boolean;
-  
+
   // Slate specific
   slateDetail: SlateDetail;
-  
+
   // Source action (for void correction)
   sourceAction?: string | null;
 }
@@ -40,12 +40,12 @@ export const useFormValidation = (input: ValidationInput): FormValidation => {
   return useMemo(() => {
     const errors: string[] = [];
     const fieldErrors: Record<string, string> = {};
-    
+
     // Determine validation rules based on product type
     const rules: ValidationRules = {
       validateBasicFields: true,
       validateAcoFields: input.productInfo?.type === 'ACO',
-      validateSlateFields: input.productInfo?.type === 'Slate'
+      validateSlateFields: input.productInfo?.type === 'Slate',
     };
 
     // Basic field validation
@@ -117,8 +117,6 @@ export const useFormValidation = (input: ValidationInput): FormValidation => {
       }
     }
 
-
-
     // Slate specific validation
     if (rules.validateSlateFields) {
       if (!input.slateDetail.batchNumber.trim()) {
@@ -132,7 +130,7 @@ export const useFormValidation = (input: ValidationInput): FormValidation => {
     return {
       isValid,
       errors,
-      fieldErrors
+      fieldErrors,
     };
   }, [input]);
 };
@@ -147,7 +145,7 @@ export const getValidationSummary = (validation: FormValidation) => {
   return {
     type: 'error',
     message: `${errorCount} validation error${errorCount > 1 ? 's' : ''} found.`,
-    details: validation.errors
+    details: validation.errors,
   };
 };
 
@@ -157,6 +155,9 @@ export const isFieldValid = (validation: FormValidation, fieldName: string): boo
 };
 
 // Helper function to get field error message
-export const getFieldError = (validation: FormValidation, fieldName: string): string | undefined => {
+export const getFieldError = (
+  validation: FormValidation,
+  fieldName: string
+): string | undefined => {
   return validation.fieldErrors[fieldName];
-}; 
+};

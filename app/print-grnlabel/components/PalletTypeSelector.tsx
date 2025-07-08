@@ -21,13 +21,13 @@ interface PalletTypeSelectorProps {
 export const PalletTypeSelector: React.FC<PalletTypeSelectorProps> = ({
   palletType,
   onChange,
-  disabled = false
+  disabled = false,
 }) => {
   // 找出當前選中的托盤類型
   const selectedType = Object.entries(palletType).find(
     ([_, value]) => value && parseInt(value) > 0
   )?.[0] as PalletTypeKey | undefined;
-  
+
   const selectedQuantity = selectedType ? palletType[selectedType] : '';
 
   const handleTypeChange = (newType: string) => {
@@ -46,43 +46,45 @@ export const PalletTypeSelector: React.FC<PalletTypeSelectorProps> = ({
   };
 
   return (
-    <div className="space-y-2">
-      <div className="group">
-        <label className="block text-xs font-medium mb-1 text-slate-300 group-focus-within:text-orange-400 transition-colors duration-200">
+    <div className='space-y-2'>
+      <div className='group'>
+        <label className='mb-1 block text-xs font-medium text-slate-300 transition-colors duration-200 group-focus-within:text-orange-400'>
           Pallet Type
         </label>
         <select
           value={selectedType || ''}
-          onChange={(e) => handleTypeChange(e.target.value)}
-          className="w-full px-3 py-2 bg-slate-800/50 border border-slate-600/50 rounded-xl text-sm text-white placeholder-slate-400 transition-all duration-300 ease-out focus:outline-none focus:ring-2 focus:ring-orange-400/30 focus:border-orange-400/70 focus:bg-slate-800/70 hover:border-orange-500/50 hover:bg-slate-800/60 backdrop-blur-sm appearance-none cursor-pointer"
+          onChange={e => handleTypeChange(e.target.value)}
+          className='w-full cursor-pointer appearance-none rounded-xl border border-slate-600/50 bg-slate-800/50 px-3 py-2 text-sm text-white placeholder-slate-400 backdrop-blur-sm transition-all duration-300 ease-out hover:border-orange-500/50 hover:bg-slate-800/60 focus:border-orange-400/70 focus:bg-slate-800/70 focus:outline-none focus:ring-2 focus:ring-orange-400/30'
           disabled={disabled}
         >
-          <option value="" className="bg-slate-800">Select pallet type...</option>
-          {PALLET_TYPE_OPTIONS.map((option) => (
-            <option key={option.key} value={option.key} className="bg-slate-800">
+          <option value='' className='bg-slate-800'>
+            Select pallet type...
+          </option>
+          {PALLET_TYPE_OPTIONS.map(option => (
+            <option key={option.key} value={option.key} className='bg-slate-800'>
               {option.label}
             </option>
           ))}
         </select>
-        <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-orange-500/5 via-transparent to-amber-500/5 opacity-0 group-focus-within:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
+        <div className='pointer-events-none absolute inset-0 rounded-xl bg-gradient-to-r from-orange-500/5 via-transparent to-amber-500/5 opacity-0 transition-opacity duration-300 group-focus-within:opacity-100'></div>
       </div>
-      
+
       {selectedType && (
-        <div className="group animate-fadeIn">
-          <label className="block text-xs font-medium mb-1 text-slate-300 group-focus-within:text-orange-400 transition-colors duration-200">
+        <div className='animate-fadeIn group'>
+          <label className='mb-1 block text-xs font-medium text-slate-300 transition-colors duration-200 group-focus-within:text-orange-400'>
             Quantity
           </label>
-          <div className="relative">
+          <div className='relative'>
             <input
-              type="number"
+              type='number'
               value={selectedQuantity}
-              onChange={(e) => handleQuantityChange(e.target.value)}
-              className="w-full px-3 py-2 bg-slate-800/50 border border-slate-600/50 rounded-xl text-sm text-white placeholder-slate-400 transition-all duration-300 ease-out focus:outline-none focus:ring-2 focus:ring-orange-400/30 focus:border-orange-400/70 focus:bg-slate-800/70 hover:border-orange-500/50 hover:bg-slate-800/60 backdrop-blur-sm"
-              placeholder="Enter quantity..."
-              min="1"
+              onChange={e => handleQuantityChange(e.target.value)}
+              className='w-full rounded-xl border border-slate-600/50 bg-slate-800/50 px-3 py-2 text-sm text-white placeholder-slate-400 backdrop-blur-sm transition-all duration-300 ease-out hover:border-orange-500/50 hover:bg-slate-800/60 focus:border-orange-400/70 focus:bg-slate-800/70 focus:outline-none focus:ring-2 focus:ring-orange-400/30'
+              placeholder='Enter quantity...'
+              min='1'
               disabled={disabled}
             />
-            <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-orange-500/5 via-transparent to-amber-500/5 opacity-0 group-focus-within:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
+            <div className='pointer-events-none absolute inset-0 rounded-xl bg-gradient-to-r from-orange-500/5 via-transparent to-amber-500/5 opacity-0 transition-opacity duration-300 group-focus-within:opacity-100'></div>
           </div>
         </div>
       )}

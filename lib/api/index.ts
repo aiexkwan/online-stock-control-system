@@ -4,29 +4,29 @@
  */
 
 // Core exports
-export { DataAccessLayer, DataAccessMetricsManager, type DataAccessConfig } from './core/DataAccessStrategy';
+export {
+  DataAccessLayer,
+  DataAccessMetricsManager,
+  type DataAccessConfig,
+} from './core/DataAccessStrategy';
 
 // Inventory APIs
 export { StockLevelsAPI, createStockLevelsAPI, useStockLevels } from './inventory/StockLevelsAPI';
 
-// Admin APIs  
+// Admin APIs
 export { DashboardAPI, createDashboardAPI, getDashboardData } from './admin/DashboardAPI';
 
 // Real-time hooks
 export { useRealtimeStock, useRealtimePallet } from './hooks/useRealtimeStock';
 
 // Type exports
-export type { 
-  StockLevelParams, 
+export type {
+  StockLevelParams,
   StockLevelResult,
-  StockLevelItem 
+  StockLevelItem,
 } from './inventory/StockLevelsAPI';
 
-export type {
-  DashboardParams,
-  DashboardResult,
-  DashboardWidgetData
-} from './admin/DashboardAPI';
+export type { DashboardParams, DashboardResult, DashboardWidgetData } from './admin/DashboardAPI';
 
 /**
  * API Factory - Creates all API instances with shared configuration
@@ -34,14 +34,14 @@ export type {
 export class APIFactory {
   private static instance: APIFactory;
   private apis: Map<string, DataAccessLayer<any, any>> = new Map();
-  
+
   static getInstance(): APIFactory {
     if (!this.instance) {
       this.instance = new APIFactory();
     }
     return this.instance;
   }
-  
+
   /**
    * Get or create an API instance
    */
@@ -54,7 +54,7 @@ export class APIFactory {
     }
     return this.apis.get(type) as T;
   }
-  
+
   /**
    * Clear all cached API instances
    */

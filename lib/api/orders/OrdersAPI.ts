@@ -55,18 +55,16 @@ export class OrdersAPI extends DataAccessLayer<OrderSearchParams, OrdersResult> 
   constructor() {
     super('orders');
   }
-  
+
   /**
    * Server-side implementation with complex aggregations
    */
   async serverFetch(params: OrderSearchParams): Promise<OrdersResult> {
     const supabase = await createClient();
-    
+
     // Build query
-    let query = supabase
-      .from('data_order')
-      .select('*', { count: 'exact' });
-    
+    let query = supabase.from('data_order').select('*', { count: 'exact' });
+
     // Apply filters
     if (params.orderRef) {
       query = query.eq('order_ref', params.orderRef);
@@ -80,18 +78,18 @@ export class OrdersAPI extends DataAccessLayer<OrderSearchParams, OrdersResult> 
     if (params.dateTo) {
       query = query.lte('created_at', params.dateTo);
     }
-    
+
     const { data, error, count } = await query;
-    
+
     if (error) throw error;
-    
+
     // Group by order and calculate aggregates
     const orderMap = new Map<string, Order>();
     const orderItemsMap = new Map<string, OrderItem[]>();
-    
+
     (data || []).forEach(row => {
       const orderRef = row.order_ref;
-      
+
       // Initialize order if not exists
       if (!orderMap.has(orderRef)) {
         orderMap.set(orderRef, {
@@ -103,14 +101,14 @@ export class OrdersAPI extends DataAccessLayer<OrderSearchParams, OrdersResult> 
           completedItems: 0,
           totalQty: 0,
           loadedQty: 0,
-          completionPercentage: 0
+          completionPercentage: 0,
         });
         orderItemsMap.set(orderRef, []);
       }
-      
+
       const order = orderMap.get(orderRef)!;
       const items = orderItemsMap.get(orderRef)!;
-      
+
       // Create order item
       const orderedQty = parseInt(row.product_qty || '0');
       const loadedQty = parseInt(row.loaded_qty || '0');
@@ -120,27 +118,26 @@ export class OrdersAPI extends DataAccessLayer<OrderSearchParams, OrdersResult> 
         orderedQty,
         loadedQty,
         remainingQty: orderedQty - loadedQty,
-        completionPercentage: orderedQty > 0 ? (loadedQty / orderedQty) * 100 : 0
+        completionPercentage: orderedQty > 0 ? (loadedQty / orderedQty) * 100 : 0,
       };
-      
+
       items.push(item);
-      
+
       // Update order aggregates
       order.totalItems++;
       order.totalQty += orderedQty;
       order.loadedQty += loadedQty;
-      
+
       if (loadedQty >= orderedQty && orderedQty > 0) {
         order.completedItems++;
       }
     });
-    
+
     // Calculate order status and completion
     orderMap.forEach((order, orderRef) => {
-      order.completionPercentage = order.totalQty > 0 
-        ? (order.loadedQty / order.totalQty) * 100 
-        : 0;
-      
+      order.completionPercentage =
+        order.totalQty > 0 ? (order.loadedQty / order.totalQty) * 100 : 0;
+
       // Determine status
       if (order.completionPercentage === 0) {
         order.status = 'pending';
@@ -149,37 +146,38 @@ export class OrdersAPI extends DataAccessLayer<OrderSearchParams, OrdersResult> 
       } else {
         order.status = 'in_progress';
       }
-      
+
       // Add items if requested
       if (params.includeDetails) {
         order.items = orderItemsMap.get(orderRef);
       }
     });
-    
+
     // Apply status filter after calculation
     let orders = Array.from(orderMap.values());
     if (params.status) {
       orders = orders.filter(o => o.status === params.status);
     }
-    
+
     // Calculate summary
     const summary = {
       totalOrders: orders.length,
       pendingOrders: orders.filter(o => o.status === 'pending').length,
       inProgressOrders: orders.filter(o => o.status === 'in_progress').length,
       completedOrders: orders.filter(o => o.status === 'completed').length,
-      avgCompletionRate: orders.length > 0
-        ? orders.reduce((sum, o) => sum + o.completionPercentage, 0) / orders.length
-        : 0
+      avgCompletionRate:
+        orders.length > 0
+          ? orders.reduce((sum, o) => sum + o.completionPercentage, 0) / orders.length
+          : 0,
     };
-    
+
     return {
       orders,
       total: orders.length,
-      summary
+      summary,
     };
   }
-  
+
   /**
    * Client-side implementation
    */
@@ -190,15 +188,15 @@ export class OrdersAPI extends DataAccessLayer<OrderSearchParams, OrdersResult> 
         queryParams.append(key, String(value));
       }
     });
-    
+
     const response = await fetch(`/api/orders?${queryParams}`);
     if (!response.ok) {
       throw new Error('Failed to fetch orders');
     }
-    
+
     return response.json();
   }
-  
+
   /**
    * Complex queries with aggregations should use server-side
    */
@@ -220,7 +218,7 @@ export class OrderLoadingAPI {
     // Uses existing Server Action
     return loadPalletToOrder(orderRef, palletInput);
   }
-  
+
   /**
    * Undo pallet loading - always server-side
    */
@@ -233,7 +231,7 @@ export class OrderLoadingAPI {
     // Uses existing Server Action
     return undoLoadPallet(orderRef, palletNum, productCode, quantity);
   }
-  
+
   /**
    * Get single order info - can use cache
    */
@@ -253,15 +251,19 @@ export function useOrders(params: OrderSearchParams) {
   const [data, setData] = useState<OrdersResult | null>(null);
   const [error, setError] = useState<Error | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  
+
+  // Extract complex expression to separate variable for static checking
+  const paramsKey = JSON.stringify(params);
+
   useEffect(() => {
     const api = createOrdersAPI();
-    
-    api.fetch(params, { strategy: 'auto' })
+
+    api
+      .fetch(params, { strategy: 'auto' })
       .then(setData)
       .catch(setError)
       .finally(() => setIsLoading(false));
-  }, [JSON.stringify(params)]);
-  
+  }, [paramsKey, params]);
+
   return { data, error, isLoading };
 }

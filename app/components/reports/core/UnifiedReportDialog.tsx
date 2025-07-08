@@ -39,9 +39,7 @@ export function UnifiedReportDialog({
   loading = false,
   children,
 }: UnifiedReportDialogProps) {
-  const [selectedFormat, setSelectedFormat] = React.useState<'pdf' | 'excel'>(
-    formats[0]
-  );
+  const [selectedFormat, setSelectedFormat] = React.useState<'pdf' | 'excel'>(formats[0]);
   const [isGenerating, setIsGenerating] = React.useState(false);
 
   const handleGenerate = async () => {
@@ -61,30 +59,26 @@ export function UnifiedReportDialog({
             <FileText className={`h-5 w-5 ${iconColors.blue}`} />
             {title}
           </DialogTitle>
-          <DialogDescription className={dialogStyles.description}>
-            {description}
-          </DialogDescription>
+          <DialogDescription className={dialogStyles.description}>{description}</DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-6 py-4">
+        <div className='space-y-6 py-4'>
           {children}
 
           {formats.length > 1 && (
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-200">
-                Export Format
-              </label>
-              <div className="flex gap-2">
-                {formats.map((format) => (
+            <div className='space-y-2'>
+              <label className='text-sm font-medium text-slate-200'>Export Format</label>
+              <div className='flex gap-2'>
+                {formats.map(format => (
                   <Button
                     key={format}
                     variant={selectedFormat === format ? 'default' : 'outline'}
-                    size="sm"
+                    size='sm'
                     onClick={() => setSelectedFormat(format)}
                     className={
                       selectedFormat === format
                         ? 'bg-blue-600 hover:bg-blue-700'
-                        : 'bg-slate-800 border-slate-600 text-slate-300 hover:bg-slate-700 hover:text-white'
+                        : 'border-slate-600 bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white'
                     }
                   >
                     {format === 'pdf' ? 'PDF' : 'Excel'}
@@ -97,7 +91,7 @@ export function UnifiedReportDialog({
 
         <DialogFooter>
           <Button
-            variant="outline"
+            variant='outline'
             onClick={onClose}
             disabled={isGenerating || loading}
             className={dialogStyles.secondaryButton}
@@ -111,12 +105,12 @@ export function UnifiedReportDialog({
           >
             {isGenerating || loading ? (
               <>
-                <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                <div className='mr-2 h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent' />
                 Generating...
               </>
             ) : (
               <>
-                <Download className="mr-2 h-4 w-4" />
+                <Download className='mr-2 h-4 w-4' />
                 Generate Report
               </>
             )}

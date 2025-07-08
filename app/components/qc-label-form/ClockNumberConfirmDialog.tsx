@@ -29,9 +29,9 @@ export const ClockNumberConfirmDialog: React.FC<ClockNumberConfirmDialogProps> =
   onOpenChange,
   onConfirm,
   onCancel,
-  title = "Confirm Print Action",
-  description = "Please enter your clock number to proceed with printing.",
-  isLoading = false
+  title = 'Confirm Print Action',
+  description = 'Please enter your clock number to proceed with printing.',
+  isLoading = false,
 }) => {
   const [clockNumber, setClockNumber] = useState('');
   const [isVerifying, setIsVerifying] = useState(false);
@@ -40,23 +40,25 @@ export const ClockNumberConfirmDialog: React.FC<ClockNumberConfirmDialogProps> =
 
   const validateClockNumber = useCallback(async (clockNum: string): Promise<boolean> => {
     try {
-      process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[ClockNumberConfirmDialog] Validating clock number:', clockNum);
-      
+      process.env.NODE_ENV !== 'production' &&
+        process.env.NODE_ENV !== 'production' &&
+        console.log('[ClockNumberConfirmDialog] Validating clock number:', clockNum);
+
       // 使用標準 browser client
       const client = createClient();
-      
+
       // 創建超時 Promise
       const timeoutPromise = new Promise<never>((_, reject) => {
         setTimeout(() => reject(new Error('Validation timeout')), 10000); // 10 秒超時
       });
-      
+
       // 執行查詢
       const queryPromise = client
         .from('data_id')
         .select('id, name')
         .eq('id', parseInt(clockNum, 10))
         .single();
-      
+
       // 使用 Promise.race 處理超時
       const { data, error } = await Promise.race([queryPromise, timeoutPromise]);
 
@@ -65,7 +67,9 @@ export const ClockNumberConfirmDialog: React.FC<ClockNumberConfirmDialogProps> =
         return false;
       }
 
-      process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[ClockNumberConfirmDialog] Validation result:', data);
+      process.env.NODE_ENV !== 'production' &&
+        process.env.NODE_ENV !== 'production' &&
+        console.log('[ClockNumberConfirmDialog] Validation result:', data);
       return !!data;
     } catch (error: any) {
       console.error('[ClockNumberConfirmDialog] Exception during validation:', error);
@@ -100,7 +104,7 @@ export const ClockNumberConfirmDialog: React.FC<ClockNumberConfirmDialogProps> =
 
     try {
       const isValid = await validateClockNumber(clockNum);
-      
+
       if (isValid) {
         onConfirm(clockNum);
         setClockNumber('');
@@ -118,16 +122,19 @@ export const ClockNumberConfirmDialog: React.FC<ClockNumberConfirmDialogProps> =
     }
   }, [clockNumber, onConfirm, validateClockNumber]);
 
-  const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    // Only allow numeric input
-    if (/^\d*$/.test(value)) {
-      setClockNumber(value);
-      if (error) {
-        setError(null);
+  const handleInputChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const value = e.target.value;
+      // Only allow numeric input
+      if (/^\d*$/.test(value)) {
+        setClockNumber(value);
+        if (error) {
+          setError(null);
+        }
       }
-    }
-  }, [error]);
+    },
+    [error]
+  );
 
   // Focus input when dialog opens
   useEffect(() => {
@@ -140,95 +147,87 @@ export const ClockNumberConfirmDialog: React.FC<ClockNumberConfirmDialogProps> =
     }
   }, [isOpen]);
 
-  // Handle keyboard events
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (!isOpen) return;
-
-      if (event.key === 'Escape') {
-        event.preventDefault();
-        handleCancel();
-      } else if (event.key === 'Enter') {
-        event.preventDefault();
-        if (!isVerifying && !isLoading && clockNumber.trim()) {
-          handleConfirm();
-        }
-      }
-    };
-
-    document.addEventListener('keydown', handleKeyDown);
-    return () => {
-      document.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [isOpen, isVerifying, isLoading, clockNumber, handleConfirm, handleCancel]);
+  // Keyboard event handling removed as per system requirements
 
   return (
-    <Dialog 
-      open={isOpen} 
-      onOpenChange={(open) => {
+    <Dialog
+      open={isOpen}
+      onOpenChange={open => {
         if (!open) {
           handleCancel();
         }
         onOpenChange(open);
       }}
     >
-      <DialogContent className="sm:max-w-[425px] bg-gray-800 border-gray-700 text-white">
+      <DialogContent className='border-gray-700 bg-gray-800 text-white sm:max-w-[425px]'>
         <DialogHeader>
-          <DialogTitle className="text-blue-400">{title}</DialogTitle>
-          <DialogDescription className="text-gray-300">
-            {description}
-          </DialogDescription>
+          <DialogTitle className='text-blue-400'>{title}</DialogTitle>
+          <DialogDescription className='text-gray-300'>{description}</DialogDescription>
         </DialogHeader>
-        
-        <div className="grid gap-4 py-4">
-          <div className="space-y-2">
-            <label htmlFor="clock-number" className="text-sm font-medium text-gray-300">
+
+        <div className='grid gap-4 py-4'>
+          <div className='space-y-2'>
+            <label htmlFor='clock-number' className='text-sm font-medium text-gray-300'>
               Clock Number
             </label>
             <Input
-              id="clock-number"
-              type="text"
-              inputMode="numeric"
-              pattern="[0-9]*"
+              id='clock-number'
+              type='text'
+              inputMode='numeric'
+              pattern='[0-9]*'
               ref={clockNumberInputRef}
               value={clockNumber}
               onChange={handleInputChange}
-              placeholder="Enter your clock number"
-              className={`bg-gray-700 border-gray-600 placeholder-gray-500 text-white focus:ring-blue-500 focus:border-blue-500 ${
+              placeholder='Enter your clock number'
+              className={`border-gray-600 bg-gray-700 text-white placeholder-gray-500 focus:border-blue-500 focus:ring-blue-500 ${
                 error ? 'border-red-500 focus:ring-red-500' : ''
               }`}
               disabled={isVerifying || isLoading}
             />
-            {error && (
-              <p className="text-red-400 text-sm">{error}</p>
-            )}
+            {error && <p className='text-sm text-red-400'>{error}</p>}
           </div>
         </div>
 
         <DialogFooter>
-          <Button 
-            variant="outline" 
-            onClick={handleCancel} 
+          <Button
+            variant='outline'
+            onClick={handleCancel}
             disabled={isVerifying || isLoading}
-            className="text-gray-300 border-gray-600 hover:bg-gray-700 hover:text-white"
+            className='border-gray-600 text-gray-300 hover:bg-gray-700 hover:text-white'
           >
             Cancel
           </Button>
-          <Button 
-            onClick={handleConfirm} 
+          <Button
+            onClick={handleConfirm}
             disabled={isVerifying || isLoading || !clockNumber.trim()}
-            className="bg-blue-600 hover:bg-blue-700 text-white disabled:bg-gray-500"
+            className='bg-blue-600 text-white hover:bg-blue-700 disabled:bg-gray-500'
           >
             {isVerifying ? (
               <>
-                <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                <svg
+                  className='-ml-1 mr-3 h-5 w-5 animate-spin text-white'
+                  xmlns='http://www.w3.org/2000/svg'
+                  fill='none'
+                  viewBox='0 0 24 24'
+                >
+                  <circle
+                    className='opacity-25'
+                    cx='12'
+                    cy='12'
+                    r='10'
+                    stroke='currentColor'
+                    strokeWidth='4'
+                  ></circle>
+                  <path
+                    className='opacity-75'
+                    fill='currentColor'
+                    d='M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z'
+                  ></path>
                 </svg>
                 Verifying...
               </>
             ) : (
-              "Confirm"
+              'Confirm'
             )}
           </Button>
         </DialogFooter>

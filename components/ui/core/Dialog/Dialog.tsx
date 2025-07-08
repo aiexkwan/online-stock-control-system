@@ -14,22 +14,21 @@ import { designTokens } from '@/lib/design-system/tokens';
 import { useMediaQuery } from '@/hooks/use-media-query';
 
 // Dialog 動畫變體
-const dialogAnimationVariants = cva(
-  'fixed inset-0 z-50 flex items-center justify-center',
-  {
-    variants: {
-      animation: {
-        fade: 'data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0',
-        slide: 'data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:slide-out-to-bottom-4 data-[state=open]:slide-in-from-bottom-4',
-        scale: 'data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95',
-        none: '',
-      },
+const dialogAnimationVariants = cva('fixed inset-0 z-50 flex items-center justify-center', {
+  variants: {
+    animation: {
+      fade: 'data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0',
+      slide:
+        'data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:slide-out-to-bottom-4 data-[state=open]:slide-in-from-bottom-4',
+      scale:
+        'data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95',
+      none: '',
     },
-    defaultVariants: {
-      animation: 'fade',
-    },
-  }
-);
+  },
+  defaultVariants: {
+    animation: 'fade',
+  },
+});
 
 // Dialog 內容變體
 const dialogContentVariants = cva(
@@ -74,21 +73,20 @@ export interface DialogProps extends DialogPrimitive.DialogProps {
   severity?: 'info' | 'success' | 'warning' | 'error';
 }
 
-export const Dialog = React.forwardRef<
-  React.ElementRef<typeof DialogPrimitive.Root>,
-  DialogProps
->(({ children, variant, size, severity, ...props }, ref) => {
-  const contextValue = React.useMemo(
-    () => ({ variant, size, severity }),
-    [variant, size, severity]
-  );
+export const Dialog = React.forwardRef<React.ElementRef<typeof DialogPrimitive.Root>, DialogProps>(
+  ({ children, variant, size, severity, ...props }, ref) => {
+    const contextValue = React.useMemo(
+      () => ({ variant, size, severity }),
+      [variant, size, severity]
+    );
 
-  return (
-    <DialogContext.Provider value={contextValue}>
-      <DialogPrimitive.Root {...props}>{children}</DialogPrimitive.Root>
-    </DialogContext.Provider>
-  );
-});
+    return (
+      <DialogContext.Provider value={contextValue}>
+        <DialogPrimitive.Root {...props}>{children}</DialogPrimitive.Root>
+      </DialogContext.Provider>
+    );
+  }
+);
 
 Dialog.displayName = 'Dialog';
 
@@ -150,10 +148,10 @@ export const DialogContent = React.forwardRef<
   ) => {
     const context = React.useContext(DialogContext);
     const isMobile = useMediaQuery('(max-width: 768px)');
-    
+
     const size = sizeProp ?? context.size ?? 'md';
     const variant = variantProp ?? context.variant ?? 'default';
-    
+
     // 移動端全屏處理
     const effectiveSize = isMobile && mobileFullscreen ? 'full' : size;
     const effectiveVariant = isMobile && mobileFullscreen ? 'fullscreen' : variant;
@@ -168,11 +166,8 @@ export const DialogContent = React.forwardRef<
               dialogContentVariants({ size: effectiveSize, variant: effectiveVariant }),
               'p-6',
               showAnimatedBorder && 'relative overflow-hidden',
-              showAnimatedBorder && `
-                before:absolute before:inset-0 before:-translate-x-full
-                before:bg-gradient-to-r before:from-transparent before:via-white/20 before:to-transparent
-                before:animate-[shimmer_2s_infinite]
-              `,
+              showAnimatedBorder &&
+                `before:absolute before:inset-0 before:-translate-x-full before:animate-[shimmer_2s_infinite] before:bg-gradient-to-r before:from-transparent before:via-white/20 before:to-transparent`,
               className
             )}
             {...props}
@@ -189,8 +184,8 @@ export const DialogContent = React.forwardRef<
                   'data-[state=open]:bg-accent data-[state=open]:text-muted-foreground'
                 )}
               >
-                <X className="h-4 w-4" />
-                <span className="sr-only">關閉</span>
+                <X className='h-4 w-4' />
+                <span className='sr-only'>關閉</span>
               </DialogPrimitive.Close>
             )}
           </DialogPrimitive.Content>
@@ -203,12 +198,9 @@ export const DialogContent = React.forwardRef<
 DialogContent.displayName = 'DialogContent';
 
 // Dialog Header
-export const DialogHeader = ({
-  className,
-  ...props
-}: React.HTMLAttributes<HTMLDivElement>) => {
+export const DialogHeader = ({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) => {
   const { severity } = React.useContext(DialogContext);
-  
+
   return (
     <div
       className={cn(
@@ -231,7 +223,7 @@ export const DialogTitle = React.forwardRef<
   }
 >(({ className, children, icon, ...props }, ref) => {
   const { severity } = React.useContext(DialogContext);
-  
+
   // 語義化顏色
   const severityColors = {
     info: 'text-blue-500',
@@ -239,7 +231,7 @@ export const DialogTitle = React.forwardRef<
     warning: 'text-yellow-500',
     error: 'text-red-500',
   };
-  
+
   return (
     <DialogPrimitive.Title
       ref={ref}
@@ -250,11 +242,7 @@ export const DialogTitle = React.forwardRef<
       )}
       {...props}
     >
-      {icon && (
-        <span className={cn(severity && severityColors[severity])}>
-          {icon}
-        </span>
-      )}
+      {icon && <span className={cn(severity && severityColors[severity])}>{icon}</span>}
       {children}
     </DialogPrimitive.Title>
   );
@@ -277,23 +265,14 @@ export const DialogDescription = React.forwardRef<
 DialogDescription.displayName = 'DialogDescription';
 
 // Dialog Body (新增)
-export const DialogBody = ({
-  className,
-  ...props
-}: React.HTMLAttributes<HTMLDivElement>) => (
-  <div
-    className={cn('flex-1 overflow-y-auto py-4', className)}
-    {...props}
-  />
+export const DialogBody = ({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
+  <div className={cn('flex-1 overflow-y-auto py-4', className)} {...props} />
 );
 
 DialogBody.displayName = 'DialogBody';
 
 // Dialog Footer
-export const DialogFooter = ({
-  className,
-  ...props
-}: React.HTMLAttributes<HTMLDivElement>) => (
+export const DialogFooter = ({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
   <div
     className={cn(
       'flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2',
@@ -307,8 +286,4 @@ export const DialogFooter = ({
 DialogFooter.displayName = 'DialogFooter';
 
 // 導出所有組件
-export {
-  DialogContext,
-  dialogContentVariants,
-  dialogAnimationVariants,
-};
+export { DialogContext, dialogContentVariants, dialogAnimationVariants };

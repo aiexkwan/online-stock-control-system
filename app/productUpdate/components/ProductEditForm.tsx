@@ -24,21 +24,21 @@ interface FormErrors {
   type?: string;
 }
 
-export default function ProductEditForm({ 
-  initialData, 
-  isCreating, 
-  onSubmit, 
+export default function ProductEditForm({
+  initialData,
+  isCreating,
+  onSubmit,
   onCancel,
-  isLoading = false
+  isLoading = false,
 }: ProductEditFormProps) {
   const [formData, setFormData] = useState<ProductData>({
     code: '',
     description: '',
     colour: '',
     standard_qty: 0,
-    type: ''
+    type: '',
   });
-  
+
   const [errors, setErrors] = useState<FormErrors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -50,7 +50,7 @@ export default function ProductEditForm({
         description: initialData.description || '',
         colour: initialData.colour || '',
         standard_qty: initialData.standard_qty || 0,
-        type: initialData.type || ''
+        type: initialData.type || '',
       });
     }
   }, [initialData]);
@@ -86,14 +86,14 @@ export default function ProductEditForm({
   const handleInputChange = (field: keyof ProductData, value: string | number) => {
     setFormData(prev => ({
       ...prev,
-      [field]: value
+      [field]: value,
     }));
 
     // 清除該字段的錯誤
     if (errors[field]) {
       setErrors(prev => ({
         ...prev,
-        [field]: undefined
+        [field]: undefined,
       }));
     }
   };
@@ -106,7 +106,7 @@ export default function ProductEditForm({
   // 處理表單提交
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!validateForm()) {
       return;
     }
@@ -124,144 +124,134 @@ export default function ProductEditForm({
   const isFormDisabled = isLoading || isSubmitting;
 
   return (
-    <Card className="border-blue-400 bg-gray-800 text-white">
+    <Card className='border-blue-400 bg-gray-800 text-white'>
       <CardHeader>
-        <CardTitle className="text-blue-400 flex items-center">
+        <CardTitle className='flex items-center text-blue-400'>
           {isCreating ? (
             <>
-              <Plus className="w-5 h-5 mr-2" />
+              <Plus className='mr-2 h-5 w-5' />
               Create New Product
             </>
           ) : (
             <>
-              <Edit className="w-5 h-5 mr-2" />
+              <Edit className='mr-2 h-5 w-5' />
               Edit Product
             </>
           )}
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className='space-y-4'>
           {/* Product Code */}
-          <div className="space-y-2">
-            <label htmlFor="code" className="text-gray-300 text-sm font-medium">
-              Product Code <span className="text-red-400">*</span>
+          <div className='space-y-2'>
+            <label htmlFor='code' className='text-sm font-medium text-gray-300'>
+              Product Code <span className='text-red-400'>*</span>
             </label>
             <Input
-              id="code"
+              id='code'
               value={formData.code}
-              onChange={(e) => handleInputChange('code', e.target.value)}
+              onChange={e => handleInputChange('code', e.target.value)}
               disabled={isFormDisabled || !isCreating} // 編輯時不允許修改代碼
-              placeholder="Enter product code..."
-              className="bg-gray-700 border-gray-600 text-white placeholder-gray-400 focus:border-blue-400 focus:ring-blue-400"
+              placeholder='Enter product code...'
+              className='border-gray-600 bg-gray-700 text-white placeholder-gray-400 focus:border-blue-400 focus:ring-blue-400'
             />
-            {errors.code && (
-              <p className="text-red-400 text-sm">{errors.code}</p>
-            )}
+            {errors.code && <p className='text-sm text-red-400'>{errors.code}</p>}
           </div>
 
           {/* Product Description */}
-          <div className="space-y-2">
-            <label htmlFor="description" className="text-gray-300 text-sm font-medium">
-              Product Description <span className="text-red-400">*</span>
+          <div className='space-y-2'>
+            <label htmlFor='description' className='text-sm font-medium text-gray-300'>
+              Product Description <span className='text-red-400'>*</span>
             </label>
             <Input
-              id="description"
+              id='description'
               value={formData.description}
-              onChange={(e) => handleInputChange('description', e.target.value)}
+              onChange={e => handleInputChange('description', e.target.value)}
               disabled={isFormDisabled}
-              placeholder="Enter product description..."
-              className="bg-gray-700 border-gray-600 text-white placeholder-gray-400 focus:border-blue-400 focus:ring-blue-400"
+              placeholder='Enter product description...'
+              className='border-gray-600 bg-gray-700 text-white placeholder-gray-400 focus:border-blue-400 focus:ring-blue-400'
             />
-            {errors.description && (
-              <p className="text-red-400 text-sm">{errors.description}</p>
-            )}
+            {errors.description && <p className='text-sm text-red-400'>{errors.description}</p>}
           </div>
 
           {/* Product Colour */}
-          <div className="space-y-2">
-            <label htmlFor="colour" className="text-gray-300 text-sm font-medium">
+          <div className='space-y-2'>
+            <label htmlFor='colour' className='text-sm font-medium text-gray-300'>
               Product Colour
             </label>
             <select
-              id="colour"
+              id='colour'
               value={formData.colour}
-              onChange={(e) => handleSelectChange('colour', e.target.value)}
+              onChange={e => handleSelectChange('colour', e.target.value)}
               disabled={isFormDisabled}
-              className="w-full px-3 py-2 bg-gray-700 border border-gray-600 text-white rounded-md focus:border-blue-400 focus:ring-1 focus:ring-blue-400 focus:outline-none"
+              className='w-full rounded-md border border-gray-600 bg-gray-700 px-3 py-2 text-white focus:border-blue-400 focus:outline-none focus:ring-1 focus:ring-blue-400'
             >
-              {PRODUCT_COLOURS.map((colour) => (
+              {PRODUCT_COLOURS.map(colour => (
                 <option key={colour.value} value={colour.value}>
                   {colour.label}
                 </option>
               ))}
             </select>
-            {errors.colour && (
-              <p className="text-red-400 text-sm">{errors.colour}</p>
-            )}
+            {errors.colour && <p className='text-sm text-red-400'>{errors.colour}</p>}
           </div>
 
           {/* Standard Qty */}
-          <div className="space-y-2">
-            <label htmlFor="standard_qty" className="text-gray-300 text-sm font-medium">
+          <div className='space-y-2'>
+            <label htmlFor='standard_qty' className='text-sm font-medium text-gray-300'>
               Standard Qty
             </label>
             <Input
-              id="standard_qty"
-              type="number"
-              min="0"
+              id='standard_qty'
+              type='number'
+              min='0'
               value={formData.standard_qty}
-              onChange={(e) => handleInputChange('standard_qty', parseInt(e.target.value) || 0)}
+              onChange={e => handleInputChange('standard_qty', parseInt(e.target.value) || 0)}
               disabled={isFormDisabled}
-              placeholder="Enter standard quantity..."
-              className="bg-gray-700 border-gray-600 text-white placeholder-gray-400 focus:border-blue-400 focus:ring-blue-400"
+              placeholder='Enter standard quantity...'
+              className='border-gray-600 bg-gray-700 text-white placeholder-gray-400 focus:border-blue-400 focus:ring-blue-400'
             />
-            {errors.standard_qty && (
-              <p className="text-red-400 text-sm">{errors.standard_qty}</p>
-            )}
+            {errors.standard_qty && <p className='text-sm text-red-400'>{errors.standard_qty}</p>}
           </div>
 
           {/* Product Type */}
-          <div className="space-y-2">
-            <label htmlFor="type" className="text-gray-300 text-sm font-medium">
+          <div className='space-y-2'>
+            <label htmlFor='type' className='text-sm font-medium text-gray-300'>
               Product Type
             </label>
             <select
-              id="type"
+              id='type'
               value={formData.type}
-              onChange={(e) => handleSelectChange('type', e.target.value)}
+              onChange={e => handleSelectChange('type', e.target.value)}
               disabled={isFormDisabled}
-              className="w-full px-3 py-2 bg-gray-700 border border-gray-600 text-white rounded-md focus:border-blue-400 focus:ring-1 focus:ring-blue-400 focus:outline-none"
+              className='w-full rounded-md border border-gray-600 bg-gray-700 px-3 py-2 text-white focus:border-blue-400 focus:outline-none focus:ring-1 focus:ring-blue-400'
             >
-              {PRODUCT_TYPES.map((type) => (
+              {PRODUCT_TYPES.map(type => (
                 <option key={type.value} value={type.value}>
                   {type.label}
                 </option>
               ))}
             </select>
-            {errors.type && (
-              <p className="text-red-400 text-sm">{errors.type}</p>
-            )}
+            {errors.type && <p className='text-sm text-red-400'>{errors.type}</p>}
           </div>
 
           {/* 按鈕區域 */}
-          <div className="flex space-x-3 pt-4 border-t border-gray-600">
+          <div className='flex space-x-3 border-t border-gray-600 pt-4'>
             <Button
-              type="submit"
+              type='submit'
               disabled={isFormDisabled}
-              className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
+              className='flex-1 bg-blue-600 text-white hover:bg-blue-700'
             >
-              <Save className="w-4 h-4 mr-2" />
+              <Save className='mr-2 h-4 w-4' />
               {isCreating ? 'Create Product' : 'Update Product'}
             </Button>
             <Button
-              type="button"
+              type='button'
               onClick={onCancel}
               disabled={isFormDisabled}
-              variant="outline"
-              className="flex-1 border-gray-600 text-gray-300 hover:bg-gray-700"
+              variant='outline'
+              className='flex-1 border-gray-600 text-gray-300 hover:bg-gray-700'
             >
-              <X className="w-4 h-4 mr-2" />
+              <X className='mr-2 h-4 w-4' />
               Cancel
             </Button>
           </div>
@@ -269,4 +259,4 @@ export default function ProductEditForm({
       </CardContent>
     </Card>
   );
-} 
+}

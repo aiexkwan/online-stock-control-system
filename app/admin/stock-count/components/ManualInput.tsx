@@ -15,7 +15,7 @@ export default function ManualInput({ onScanSuccess, isLoading }: ManualInputPro
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!inputValue.trim()) {
       setError('Please enter pallet number');
       return;
@@ -31,63 +31,59 @@ export default function ManualInput({ onScanSuccess, isLoading }: ManualInputPro
     if (error) setError('');
   };
 
-
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="bg-slate-800/50 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-6 shadow-xl"
+      className='rounded-2xl border border-slate-700/50 bg-slate-800/50 p-6 shadow-xl backdrop-blur-xl'
     >
-      <div className="flex items-center mb-6">
-        <PencilSquareIcon className="h-8 w-8 text-green-400 mr-3" />
-        <h2 className="text-xl font-bold text-white">Manual Pallet Number Input</h2>
+      <div className='mb-6 flex items-center'>
+        <PencilSquareIcon className='mr-3 h-8 w-8 text-green-400' />
+        <h2 className='text-xl font-bold text-white'>Manual Pallet Number Input</h2>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className='space-y-4'>
         <div>
-          <label htmlFor="qr-input" className="block text-sm font-medium text-gray-300 mb-2">
+          <label htmlFor='qr-input' className='mb-2 block text-sm font-medium text-gray-300'>
             Enter Pallet Number:
           </label>
           <input
-            id="qr-input"
-            type="text"
+            id='qr-input'
+            type='text'
             value={inputValue}
             onChange={handleInputChange}
-            placeholder="e.g.: 241224/01"
-            className="w-full px-4 py-3 bg-slate-700/50 border border-slate-600/50 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            placeholder='e.g.: 241224/01'
+            className='w-full rounded-lg border border-slate-600/50 bg-slate-700/50 px-4 py-3 text-white placeholder-gray-400 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-500'
             disabled={isLoading}
           />
-          {error && (
-            <p className="mt-2 text-sm text-red-400">{error}</p>
-          )}
+          {error && <p className='mt-2 text-sm text-red-400'>{error}</p>}
         </div>
 
         <button
-          type="submit"
+          type='submit'
           disabled={isLoading || !inputValue.trim()}
-          className="w-full bg-green-600 hover:bg-green-700 disabled:bg-gray-600 text-white font-semibold py-3 px-6 rounded-lg transition-colors flex items-center justify-center"
+          className='flex w-full items-center justify-center rounded-lg bg-green-600 px-6 py-3 font-semibold text-white transition-colors hover:bg-green-700 disabled:bg-gray-600'
         >
           {isLoading ? (
             <>
-              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+              <div className='mr-2 h-5 w-5 animate-spin rounded-full border-b-2 border-white'></div>
               Processing...
             </>
           ) : (
             <>
-              <QrCodeIcon className="h-5 w-5 mr-2" />
+              <QrCodeIcon className='mr-2 h-5 w-5' />
               Submit Pallet Number
             </>
           )}
         </button>
       </form>
 
-
       {/* 說明 */}
-      <div className="mt-4 p-3 bg-blue-900/20 border border-blue-700/30 rounded-lg">
-        <p className="text-blue-200 text-sm">
+      <div className='mt-4 rounded-lg border border-blue-700/30 bg-blue-900/20 p-3'>
+        <p className='text-sm text-blue-200'>
           💡 Manual input only accepts pallet numbers. Series can only be read by scanning QR codes.
         </p>
       </div>
     </motion.div>
   );
-} 
+}

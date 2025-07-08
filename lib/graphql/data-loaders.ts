@@ -2,7 +2,7 @@
  * GraphQL DataLoader Implementation
  * Week 1.2b: High Priority Pagination and Performance Optimization
  * Date: 2025-07-03
- * 
+ *
  * This module implements DataLoader pattern to prevent N+1 query problems.
  */
 
@@ -18,10 +18,10 @@ export const productLoader = new DataLoader<string, any>(
     try {
       // 批量查詢產品
       const products = await unifiedDataLayer.getProductsByCodes(Array.from(productCodes));
-      
+
       // 建立 code -> product 映射
       const productMap = new Map(products.map(p => [p.code, p]));
-      
+
       // 確保返回順序與輸入順序一致
       return productCodes.map(code => productMap.get(code) || null);
     } catch (error) {
@@ -34,7 +34,7 @@ export const productLoader = new DataLoader<string, any>(
     batchScheduleFn: callback => setTimeout(callback, 10), // 10ms 延遲批處理
     maxBatchSize: 100, // 最大批處理大小
     cacheKeyFn: key => key, // 緩存鍵函數
-    cache: true // 啟用緩存
+    cache: true, // 啟用緩存
   }
 );
 
@@ -47,7 +47,7 @@ export const palletLoader = new DataLoader<string, any>(
     try {
       const pallets = await unifiedDataLayer.getPalletsByNumbers(Array.from(palletNumbers));
       const palletMap = new Map(pallets.map(p => [p.palletNumber, p]));
-      
+
       return palletNumbers.map(number => palletMap.get(number) || null);
     } catch (error) {
       console.error('Pallet batch loading failed:', error);
@@ -57,7 +57,7 @@ export const palletLoader = new DataLoader<string, any>(
   {
     batchScheduleFn: callback => setTimeout(callback, 10),
     maxBatchSize: 100,
-    cache: true
+    cache: true,
   }
 );
 
@@ -69,8 +69,10 @@ export const inventoryLoader = new DataLoader<string, any[]>(
   async (productCodes: readonly string[]) => {
     try {
       // 批量查詢庫存記錄
-      const inventoryRecords = await unifiedDataLayer.getInventoryByProductCodes(Array.from(productCodes));
-      
+      const inventoryRecords = await unifiedDataLayer.getInventoryByProductCodes(
+        Array.from(productCodes)
+      );
+
       // 按產品代碼分組
       const inventoryMap = new Map<string, any[]>();
       inventoryRecords.forEach(record => {
@@ -80,7 +82,7 @@ export const inventoryLoader = new DataLoader<string, any[]>(
         }
         inventoryMap.get(productCode)!.push(record);
       });
-      
+
       return productCodes.map(code => inventoryMap.get(code) || []);
     } catch (error) {
       console.error('Inventory batch loading failed:', error);
@@ -90,7 +92,7 @@ export const inventoryLoader = new DataLoader<string, any[]>(
   {
     batchScheduleFn: callback => setTimeout(callback, 15),
     maxBatchSize: 50, // 庫存查詢可能較重，減少批次大小
-    cache: true
+    cache: true,
   }
 );
 
@@ -101,8 +103,10 @@ export const inventoryLoader = new DataLoader<string, any[]>(
 export const movementLoader = new DataLoader<string, any[]>(
   async (palletNumbers: readonly string[]) => {
     try {
-      const movements = await unifiedDataLayer.getMovementsByPalletNumbers(Array.from(palletNumbers));
-      
+      const movements = await unifiedDataLayer.getMovementsByPalletNumbers(
+        Array.from(palletNumbers)
+      );
+
       // 按托盤號分組
       const movementMap = new Map<string, any[]>();
       movements.forEach(movement => {
@@ -112,7 +116,7 @@ export const movementLoader = new DataLoader<string, any[]>(
         }
         movementMap.get(palletNumber)!.push(movement);
       });
-      
+
       return palletNumbers.map(number => movementMap.get(number) || []);
     } catch (error) {
       console.error('Movement batch loading failed:', error);
@@ -122,7 +126,7 @@ export const movementLoader = new DataLoader<string, any[]>(
   {
     batchScheduleFn: callback => setTimeout(callback, 20), // 移動記錄查詢可能更重
     maxBatchSize: 30,
-    cache: true
+    cache: true,
   }
 );
 
@@ -133,8 +137,10 @@ export const movementLoader = new DataLoader<string, any[]>(
 export const grnRecordLoader = new DataLoader<string, any[]>(
   async (palletNumbers: readonly string[]) => {
     try {
-      const grnRecords = await unifiedDataLayer.getGRNRecordsByPalletNumbers(Array.from(palletNumbers));
-      
+      const grnRecords = await unifiedDataLayer.getGRNRecordsByPalletNumbers(
+        Array.from(palletNumbers)
+      );
+
       const grnMap = new Map<string, any[]>();
       grnRecords.forEach(grn => {
         const palletNumber = grn.palletNumber;
@@ -143,7 +149,7 @@ export const grnRecordLoader = new DataLoader<string, any[]>(
         }
         grnMap.get(palletNumber)!.push(grn);
       });
-      
+
       return palletNumbers.map(number => grnMap.get(number) || []);
     } catch (error) {
       console.error('GRN batch loading failed:', error);
@@ -153,7 +159,7 @@ export const grnRecordLoader = new DataLoader<string, any[]>(
   {
     batchScheduleFn: callback => setTimeout(callback, 10),
     maxBatchSize: 80,
-    cache: true
+    cache: true,
   }
 );
 
@@ -166,7 +172,7 @@ export const orderLoader = new DataLoader<number, any>(
     try {
       const orders = await unifiedDataLayer.getOrdersByRefs(Array.from(orderRefs));
       const orderMap = new Map(orders.map(o => [o.orderRef, o]));
-      
+
       return orderRefs.map(ref => orderMap.get(ref) || null);
     } catch (error) {
       console.error('Order batch loading failed:', error);
@@ -176,7 +182,7 @@ export const orderLoader = new DataLoader<number, any>(
   {
     batchScheduleFn: callback => setTimeout(callback, 10),
     maxBatchSize: 100,
-    cache: true
+    cache: true,
   }
 );
 
@@ -189,7 +195,7 @@ export const userLoader = new DataLoader<number, any>(
     try {
       const users = await unifiedDataLayer.getUsersByIds(Array.from(userIds));
       const userMap = new Map(users.map(u => [u.id, u]));
-      
+
       return userIds.map(id => userMap.get(id) || null);
     } catch (error) {
       console.error('User batch loading failed:', error);
@@ -200,7 +206,7 @@ export const userLoader = new DataLoader<number, any>(
     batchScheduleFn: callback => setTimeout(callback, 5), // 用戶數據快速加載
     maxBatchSize: 200,
     cache: true,
-    cacheMap: new Map() // 自定義緩存，用戶數據可長時間緩存
+    cacheMap: new Map(), // 自定義緩存，用戶數據可長時間緩存
   }
 );
 
@@ -227,7 +233,7 @@ export function createDataLoaderContext(): DataLoaderContext {
     movementLoader: new DataLoader(movementLoader._batchLoadFn, movementLoader._options),
     grnRecordLoader: new DataLoader(grnRecordLoader._batchLoadFn, grnRecordLoader._options),
     orderLoader: new DataLoader(orderLoader._batchLoadFn, orderLoader._options),
-    userLoader: new DataLoader(userLoader._batchLoadFn, userLoader._options)
+    userLoader: new DataLoader(userLoader._batchLoadFn, userLoader._options),
   };
 }
 
@@ -236,13 +242,16 @@ export function createDataLoaderContext(): DataLoaderContext {
 // ================================
 
 export class DataLoaderMonitor {
-  private static stats = new Map<string, {
-    totalLoads: number;
-    batchLoads: number;
-    cacheHits: number;
-    totalTime: number;
-    maxTime: number;
-  }>();
+  private static stats = new Map<
+    string,
+    {
+      totalLoads: number;
+      batchLoads: number;
+      cacheHits: number;
+      totalTime: number;
+      maxTime: number;
+    }
+  >();
 
   static trackLoad(loaderName: string, isBatch: boolean, cacheHit: boolean, time: number) {
     const stats = this.stats.get(loaderName) || {
@@ -250,7 +259,7 @@ export class DataLoaderMonitor {
       batchLoads: 0,
       cacheHits: 0,
       totalTime: 0,
-      maxTime: 0
+      maxTime: 0,
     };
 
     stats.totalLoads++;
@@ -271,7 +280,7 @@ export class DataLoaderMonitor {
       cacheHitRate: stats.cacheHits / stats.totalLoads,
       batchEfficiency: stats.batchLoads / stats.totalLoads,
       avgTime: stats.totalTime / stats.totalLoads,
-      maxTime: stats.maxTime
+      maxTime: stats.maxTime,
     }));
 
     return {
@@ -279,8 +288,9 @@ export class DataLoaderMonitor {
       summary: {
         totalDataLoads: report.reduce((sum, r) => sum + r.totalLoads, 0),
         overallCacheHitRate: report.reduce((sum, r) => sum + r.cacheHitRate, 0) / report.length,
-        overallBatchEfficiency: report.reduce((sum, r) => sum + r.batchEfficiency, 0) / report.length
-      }
+        overallBatchEfficiency:
+          report.reduce((sum, r) => sum + r.batchEfficiency, 0) / report.length,
+      },
     };
   }
 
@@ -299,7 +309,7 @@ export const DataLoaderConfig = {
     batchScheduleFn: (callback: () => void) => setTimeout(callback, 5), // 更快的批處理
     maxBatchSize: 200, // 更大的批次
     cache: true,
-    cacheMap: new Map() // 使用共享緩存
+    cacheMap: new Map(), // 使用共享緩存
   },
 
   // 開發環境配置
@@ -307,15 +317,15 @@ export const DataLoaderConfig = {
     batchScheduleFn: (callback: () => void) => setTimeout(callback, 10),
     maxBatchSize: 50,
     cache: true,
-    cacheMap: new Map()
+    cacheMap: new Map(),
   },
 
   // 測試環境配置
   test: {
     batchScheduleFn: (callback: () => void) => setImmediate(callback), // 立即執行
     maxBatchSize: 10,
-    cache: false // 測試時禁用緩存
-  }
+    cache: false, // 測試時禁用緩存
+  },
 };
 
 // ================================
@@ -342,26 +352,29 @@ export const resolverHelpers = {
   // 移動記錄解析器輔助函數
   async resolveMovements(parent: any, args: any, context: DataLoaderContext) {
     const movements = await context.movementLoader.load(parent.palletNumber || parent.id);
-    
+
     // 應用分頁
     if (args.first) {
       return {
         edges: movements.slice(0, args.first).map((movement, index) => ({
           node: movement,
-          cursor: Buffer.from(`${index}`).toString('base64')
+          cursor: Buffer.from(`${index}`).toString('base64'),
         })),
         pageInfo: {
           hasNextPage: movements.length > args.first,
           hasPreviousPage: false,
           startCursor: movements.length > 0 ? Buffer.from('0').toString('base64') : null,
-          endCursor: movements.length > 0 ? Buffer.from(`${Math.min(args.first - 1, movements.length - 1)}`).toString('base64') : null
+          endCursor:
+            movements.length > 0
+              ? Buffer.from(`${Math.min(args.first - 1, movements.length - 1)}`).toString('base64')
+              : null,
         },
-        totalCount: movements.length
+        totalCount: movements.length,
       };
     }
 
     return movements;
-  }
+  },
 };
 
 const dataLoaders = {
@@ -375,7 +388,7 @@ const dataLoaders = {
   createDataLoaderContext,
   DataLoaderMonitor,
   DataLoaderConfig,
-  resolverHelpers
+  resolverHelpers,
 };
 
-export default dataLoaders; 
+export default dataLoaders;

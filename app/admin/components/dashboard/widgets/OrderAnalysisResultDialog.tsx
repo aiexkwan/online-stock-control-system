@@ -6,7 +6,7 @@
 'use client';
 
 import React from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { CheckCircleIcon } from '@heroicons/react/24/outline';
 
 interface OrderAnalysisResultDialogProps {
@@ -15,19 +15,23 @@ interface OrderAnalysisResultDialogProps {
   data: any;
 }
 
-export const OrderAnalysisResultDialog: React.FC<OrderAnalysisResultDialogProps> = ({ 
-  isOpen, 
-  onClose, 
-  data 
+export const OrderAnalysisResultDialog: React.FC<OrderAnalysisResultDialogProps> = ({
+  isOpen,
+  onClose,
+  data,
 }) => {
   if (!data || !data.extractedData) return null;
 
   const orders = Array.isArray(data.extractedData) ? data.extractedData : [data.extractedData];
-  
+
   // Debug log
-  process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[OrderAnalysisResultDialog] Orders:', orders);
+  process.env.NODE_ENV !== 'production' &&
+    process.env.NODE_ENV !== 'production' &&
+    console.log('[OrderAnalysisResultDialog] Orders:', orders);
   if (orders.length > 0) {
-    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[OrderAnalysisResultDialog] First order:', orders[0]);
+    process.env.NODE_ENV !== 'production' &&
+      process.env.NODE_ENV !== 'production' &&
+      console.log('[OrderAnalysisResultDialog] First order:', orders[0]);
   }
 
   // Extract common info from first order (since only one order upload is allowed)
@@ -39,138 +43,167 @@ export const OrderAnalysisResultDialog: React.FC<OrderAnalysisResultDialogProps>
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] bg-black/90 backdrop-blur-xl border border-white/10">
+      <DialogContent className='max-h-[90vh] max-w-4xl border border-white/10 bg-black/90 backdrop-blur-xl'>
         <DialogHeader>
-          <DialogTitle className="text-xl font-semibold text-white flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-r from-green-500 to-emerald-500 rounded-lg flex items-center justify-center">
-              <CheckCircleIcon className="w-6 h-6 text-white" />
+          <DialogTitle className='flex items-center gap-3 text-xl font-semibold text-white'>
+            <div className='flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-r from-green-500 to-emerald-500'>
+              <CheckCircleIcon className='h-6 w-6 text-white' />
             </div>
             Order Analysis Complete
           </DialogTitle>
         </DialogHeader>
-        
-        <div className="h-[60vh] overflow-y-auto pr-4">
-          <div className="space-y-4">
-            <div className="text-sm text-slate-400">
-              Order details from PDF analysis
-            </div>
-            
+
+        <div className='h-[60vh] overflow-y-auto pr-4'>
+          <div className='space-y-4'>
+            <div className='text-sm text-slate-400'>Order details from PDF analysis</div>
+
             {/* Display order info once at the top */}
             {(orderRef || accountNumber || deliveryAddress) && (
-              <div className="bg-white/5 backdrop-blur-md rounded-xl p-5 border border-white/10">
+              <div className='rounded-xl border border-white/10 bg-white/5 p-5 backdrop-blur-md'>
                 {orderRef && (
-                  <div className="mb-4">
-                    <h3 className="text-lg font-medium text-white">Order #{orderRef}</h3>
+                  <div className='mb-4'>
+                    <h3 className='text-lg font-medium text-white'>Order #{orderRef}</h3>
                   </div>
                 )}
-                <div className="grid grid-cols-2 gap-4">
+                <div className='grid grid-cols-2 gap-4'>
                   {accountNumber && (
                     <div>
-                      <span className="text-xs text-slate-500 uppercase tracking-wider">Account Number</span>
-                      <p className="text-sm text-white mt-1">{accountNumber}</p>
+                      <span className='text-xs uppercase tracking-wider text-slate-500'>
+                        Account Number
+                      </span>
+                      <p className='mt-1 text-sm text-white'>{accountNumber}</p>
                     </div>
                   )}
                   {customerRef && (
                     <div>
-                      <span className="text-xs text-slate-500 uppercase tracking-wider">Customer Reference</span>
-                      <p className="text-sm text-white mt-1">{customerRef}</p>
+                      <span className='text-xs uppercase tracking-wider text-slate-500'>
+                        Customer Reference
+                      </span>
+                      <p className='mt-1 text-sm text-white'>{customerRef}</p>
                     </div>
                   )}
                   {deliveryAddress && (
-                    <div className="col-span-2">
-                      <span className="text-xs text-slate-500 uppercase tracking-wider">Delivery Address</span>
-                      <p className="text-sm text-white mt-1">{deliveryAddress}</p>
+                    <div className='col-span-2'>
+                      <span className='text-xs uppercase tracking-wider text-slate-500'>
+                        Delivery Address
+                      </span>
+                      <p className='mt-1 text-sm text-white'>{deliveryAddress}</p>
                     </div>
                   )}
                   {invoiceTo && invoiceTo !== '-' && (
-                    <div className="col-span-2">
-                      <span className="text-xs text-slate-500 uppercase tracking-wider">Invoice To</span>
-                      <p className="text-sm text-white mt-1">{invoiceTo}</p>
+                    <div className='col-span-2'>
+                      <span className='text-xs uppercase tracking-wider text-slate-500'>
+                        Invoice To
+                      </span>
+                      <p className='mt-1 text-sm text-white'>{invoiceTo}</p>
                     </div>
                   )}
                 </div>
               </div>
             )}
-            
+
             {/* Order Items */}
-            <div className="bg-white/5 backdrop-blur-md rounded-xl p-5 space-y-4 border border-white/10">
-              <h4 className="text-sm font-medium text-white uppercase tracking-wider">Order Items</h4>
-              
+            <div className='space-y-4 rounded-xl border border-white/10 bg-white/5 p-5 backdrop-blur-md'>
+              <h4 className='text-sm font-medium uppercase tracking-wider text-white'>
+                Order Items
+              </h4>
+
               {orders.map((order: any, index: number) => (
-                <div key={index} className="space-y-3">
+                <div key={index} className='space-y-3'>
                   {/* Single item display for simplified orders */}
                   {order.product_code && (
-                    <div className="bg-black/20 backdrop-blur-sm rounded-lg p-4">
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div className='rounded-lg bg-black/20 p-4 backdrop-blur-sm'>
+                      <div className='grid grid-cols-2 gap-4 md:grid-cols-4'>
                         <div>
-                          <span className="text-xs text-slate-500 uppercase tracking-wider">Product Code</span>
-                          <p className="text-white mt-1 font-medium">{order.product_code}</p>
+                          <span className='text-xs uppercase tracking-wider text-slate-500'>
+                            Product Code
+                          </span>
+                          <p className='mt-1 font-medium text-white'>{order.product_code}</p>
                         </div>
                         <div>
-                          <span className="text-xs text-slate-500 uppercase tracking-wider">Quantity</span>
-                          <p className="text-white mt-1 font-medium">{order.product_qty || 0}</p>
+                          <span className='text-xs uppercase tracking-wider text-slate-500'>
+                            Quantity
+                          </span>
+                          <p className='mt-1 font-medium text-white'>{order.product_qty || 0}</p>
                         </div>
                         <div>
-                          <span className="text-xs text-slate-500 uppercase tracking-wider">Weight</span>
-                          <p className="text-white mt-1 font-medium">{order.weight ? `${order.weight} kg` : '-'}</p>
+                          <span className='text-xs uppercase tracking-wider text-slate-500'>
+                            Weight
+                          </span>
+                          <p className='mt-1 font-medium text-white'>
+                            {order.weight ? `${order.weight} kg` : '-'}
+                          </p>
                         </div>
                         <div>
-                          <span className="text-xs text-slate-500 uppercase tracking-wider">Unit Price</span>
-                          <p className="text-white mt-1 font-medium">{order.unit_price && order.unit_price !== '-' ? `£${order.unit_price}` : '-'}</p>
+                          <span className='text-xs uppercase tracking-wider text-slate-500'>
+                            Unit Price
+                          </span>
+                          <p className='mt-1 font-medium text-white'>
+                            {order.unit_price && order.unit_price !== '-'
+                              ? `£${order.unit_price}`
+                              : '-'}
+                          </p>
                         </div>
-                        <div className="col-span-2 md:col-span-4">
-                          <span className="text-xs text-slate-500 uppercase tracking-wider">Description</span>
-                          <p className="text-white mt-1 text-sm">{order.product_desc || 'N/A'}</p>
+                        <div className='col-span-2 md:col-span-4'>
+                          <span className='text-xs uppercase tracking-wider text-slate-500'>
+                            Description
+                          </span>
+                          <p className='mt-1 text-sm text-white'>{order.product_desc || 'N/A'}</p>
                         </div>
                       </div>
                     </div>
                   )}
-                
+
                   {/* Multiple items display */}
                   {order.items && order.items.length > 0 && (
-                    <div className="space-y-2">
+                    <div className='space-y-2'>
                       {order.items.map((item: any, itemIndex: number) => (
-                        <div key={itemIndex} className="bg-black/20 backdrop-blur-sm rounded-lg p-3 grid grid-cols-3 gap-2 text-sm">
+                        <div
+                          key={itemIndex}
+                          className='grid grid-cols-3 gap-2 rounded-lg bg-black/20 p-3 text-sm backdrop-blur-sm'
+                        >
                           <div>
-                            <span className="text-xs text-slate-500">Product</span>
-                            <p className="text-white mt-1">{item.productCode || item.product_code || 'N/A'}</p>
+                            <span className='text-xs text-slate-500'>Product</span>
+                            <p className='mt-1 text-white'>
+                              {item.productCode || item.product_code || 'N/A'}
+                            </p>
                           </div>
                           <div>
-                            <span className="text-xs text-slate-500">Quantity</span>
-                            <p className="text-white mt-1">{item.quantity || item.product_qty || 0}</p>
+                            <span className='text-xs text-slate-500'>Quantity</span>
+                            <p className='mt-1 text-white'>
+                              {item.quantity || item.product_qty || 0}
+                            </p>
                           </div>
                           <div>
-                            <span className="text-xs text-slate-500">Unit Price</span>
-                            <p className="text-white mt-1">${item.unitPrice || 0}</p>
+                            <span className='text-xs text-slate-500'>Unit Price</span>
+                            <p className='mt-1 text-white'>${item.unitPrice || 0}</p>
                           </div>
                         </div>
                       ))}
                     </div>
                   )}
-                
                 </div>
               ))}
-              
+
               {/* Total Amount */}
               {orders[0]?.totalAmount && (
-                <div className="pt-3 border-t border-white/10">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-slate-400">Total Amount</span>
-                    <span className="text-lg font-semibold text-white">
+                <div className='border-t border-white/10 pt-3'>
+                  <div className='flex items-center justify-between'>
+                    <span className='text-sm text-slate-400'>Total Amount</span>
+                    <span className='text-lg font-semibold text-white'>
                       ${orders[0].totalAmount}
                     </span>
                   </div>
                 </div>
               )}
             </div>
-            
           </div>
         </div>
-        
-        <div className="flex justify-end gap-3 pt-4 border-t border-white/10">
+
+        <div className='flex justify-end gap-3 border-t border-white/10 pt-4'>
           <button
             onClick={onClose}
-            className="px-4 py-2 bg-white/10 backdrop-blur-sm text-white rounded-lg hover:bg-white/20 transition-all duration-200 border border-white/10"
+            className='rounded-lg border border-white/10 bg-white/10 px-4 py-2 text-white backdrop-blur-sm transition-all duration-200 hover:bg-white/20'
           >
             Close
           </button>

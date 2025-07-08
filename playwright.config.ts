@@ -2,7 +2,7 @@ import { defineConfig, devices } from '@playwright/test';
 
 /**
  * Playwright E2E 測試配置
- * 
+ *
  * 測試策略：
  * 1. 多瀏覽器支援 (Chromium, Firefox, WebKit)
  * 2. 移動設備測試
@@ -11,19 +11,19 @@ import { defineConfig, devices } from '@playwright/test';
  */
 export default defineConfig({
   testDir: './e2e',
-  
+
   // 測試超時設置
   timeout: 30 * 1000,
   expect: {
-    timeout: 5000
+    timeout: 5000,
   },
-  
+
   // 全局設置
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
   workers: process.env.CI ? 1 : undefined,
-  
+
   // 報告器配置
   reporter: [
     ['html', { open: 'never', outputFolder: 'playwright-report' }],
@@ -31,22 +31,22 @@ export default defineConfig({
     ['junit', { outputFile: 'test-results/e2e-junit.xml' }],
     ['list'],
   ],
-  
+
   // 全局測試配置
   use: {
     // 基礎 URL
     baseURL: process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:3000',
-    
+
     // 追蹤和截圖設置
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
-    
+
     // 瀏覽器選項
     headless: !!process.env.CI,
     viewport: { width: 1280, height: 720 },
     ignoreHTTPSErrors: true,
-    
+
     // 用戶操作設置
     actionTimeout: 10 * 1000,
     navigationTimeout: 30 * 1000,
@@ -77,13 +77,15 @@ export default defineConfig({
   ],
 
   // 開發服務器配置
-  webServer: process.env.CI ? undefined : {
-    command: 'npm run dev',
-    port: 3000,
-    reuseExistingServer: !process.env.CI,
-    timeout: 120 * 1000,
-  },
-  
+  webServer: process.env.CI
+    ? undefined
+    : {
+        command: 'npm run dev',
+        port: 3000,
+        reuseExistingServer: !process.env.CI,
+        timeout: 120 * 1000,
+      },
+
   // 輸出目錄
   outputDir: 'test-results/',
 });

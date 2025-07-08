@@ -3,7 +3,12 @@
 import { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@/lib/supabase';
 import { toast } from 'sonner';
-import { adminDataService, DashboardStats, AcoOrderProgress, InventorySearchResult } from '../services/AdminDataService';
+import {
+  adminDataService,
+  DashboardStats,
+  AcoOrderProgress,
+  InventorySearchResult,
+} from '../services/AdminDataService';
 
 // Cache configuration
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
@@ -12,12 +17,12 @@ const cache = new Map<string, { data: any; timestamp: number }>();
 function getCachedData<T>(key: string): T | null {
   const cached = cache.get(key);
   if (!cached) return null;
-  
+
   if (Date.now() - cached.timestamp > CACHE_DURATION) {
     cache.delete(key);
     return null;
   }
-  
+
   return cached.data as T;
 }
 
@@ -42,7 +47,7 @@ export function useDashboardStats() {
 
   const loadStats = useCallback(async (forceRefresh = false) => {
     const cacheKey = 'dashboard-stats';
-    
+
     // Check cache first
     if (!forceRefresh) {
       const cachedStats = getCachedData<DashboardStats>(cacheKey);
@@ -56,7 +61,7 @@ export function useDashboardStats() {
     try {
       setLoading(true);
       setError(null);
-      
+
       const data = await adminDataService.getDashboardStats();
       setStats(data);
       setCachedData(cacheKey, data);
@@ -84,7 +89,7 @@ export function useAcoOrders() {
 
   const loadOrders = useCallback(async (forceRefresh = false) => {
     const cacheKey = 'aco-orders';
-    
+
     if (!forceRefresh) {
       const cachedOrders = getCachedData<any[]>(cacheKey);
       if (cachedOrders) {
@@ -96,7 +101,7 @@ export function useAcoOrders() {
     try {
       setLoading(true);
       setError(null);
-      
+
       const data = await adminDataService.getIncompleteAcoOrders();
       setOrders(data);
       setCachedData(cacheKey, data);
@@ -138,7 +143,7 @@ export function useAcoOrderProgress(orderRef: number | null) {
     try {
       setLoading(true);
       setError(null);
-      
+
       const data = await adminDataService.getAcoOrderProgress(orderRef);
       setProgress(data);
       setCachedData(cacheKey, data);
@@ -180,7 +185,7 @@ export function useInventorySearch() {
     try {
       setLoading(true);
       setError(null);
-      
+
       const data = await adminDataService.searchInventory(productCode);
       setResult(data);
       if (data) {
@@ -213,10 +218,12 @@ export function useRealtimeStats() {
         {
           event: '*',
           schema: 'public',
-          table: 'record_palletinfo'
+          table: 'record_palletinfo',
         },
         () => {
-          process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('Pallet data changed, refreshing stats...');
+          process.env.NODE_ENV !== 'production' &&
+            process.env.NODE_ENV !== 'production' &&
+            console.log('Pallet data changed, refreshing stats...');
           refreshStats();
         }
       )
@@ -230,10 +237,12 @@ export function useRealtimeStats() {
         {
           event: '*',
           schema: 'public',
-          table: 'record_transfer'
+          table: 'record_transfer',
         },
         () => {
-          process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('Transfer data changed, refreshing stats...');
+          process.env.NODE_ENV !== 'production' &&
+            process.env.NODE_ENV !== 'production' &&
+            console.log('Transfer data changed, refreshing stats...');
           refreshStats();
         }
       )
@@ -247,10 +256,12 @@ export function useRealtimeStats() {
         {
           event: '*',
           schema: 'public',
-          table: 'record_aco'
+          table: 'record_aco',
         },
         () => {
-          process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('ACO data changed, refreshing orders...');
+          process.env.NODE_ENV !== 'production' &&
+            process.env.NODE_ENV !== 'production' &&
+            console.log('ACO data changed, refreshing orders...');
           refreshOrders();
         }
       )
@@ -269,27 +280,36 @@ export function useTimeRange(defaultRange: string = 'Today') {
   const [timeRange, setTimeRange] = useState(defaultRange);
   const [isOpen, setIsOpen] = useState(false);
 
-  const getDataForTimeRange = useCallback((stats: DashboardStats, type: 'generated' | 'transferred') => {
-    switch (timeRange) {
-      case 'Today':
-        return type === 'generated' ? stats.dailyDonePallets : stats.dailyTransferredPallets;
-      case 'Yesterday':
-        return type === 'generated' ? stats.yesterdayDonePallets : stats.yesterdayTransferredPallets;
-      case 'Past 3 days':
-        return type === 'generated' ? stats.past3DaysGenerated : stats.past3DaysTransferredPallets;
-      case 'This week':
-      case 'Past 7 days':
-        return type === 'generated' ? stats.past7DaysGenerated : stats.past7DaysTransferredPallets;
-      default:
-        return 0;
-    }
-  }, [timeRange]);
+  const getDataForTimeRange = useCallback(
+    (stats: DashboardStats, type: 'generated' | 'transferred') => {
+      switch (timeRange) {
+        case 'Today':
+          return type === 'generated' ? stats.dailyDonePallets : stats.dailyTransferredPallets;
+        case 'Yesterday':
+          return type === 'generated'
+            ? stats.yesterdayDonePallets
+            : stats.yesterdayTransferredPallets;
+        case 'Past 3 days':
+          return type === 'generated'
+            ? stats.past3DaysGenerated
+            : stats.past3DaysTransferredPallets;
+        case 'This week':
+        case 'Past 7 days':
+          return type === 'generated'
+            ? stats.past7DaysGenerated
+            : stats.past7DaysTransferredPallets;
+        default:
+          return 0;
+      }
+    },
+    [timeRange]
+  );
 
   return {
     timeRange,
     setTimeRange,
     isOpen,
     setIsOpen,
-    getDataForTimeRange
+    getDataForTimeRange,
   };
 }

@@ -14,7 +14,7 @@ interface RefreshContextType {
 
 const RefreshContext = createContext<RefreshContextType>({
   refreshTrigger: 0,
-  triggerRefresh: () => {}
+  triggerRefresh: () => {},
 });
 
 export function AdminRefreshProvider({ children }: { children: React.ReactNode }) {

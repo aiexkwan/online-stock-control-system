@@ -1,6 +1,6 @@
 /**
  * GraphQL Rate Limiting Implementation
- * 
+ *
  * Features:
  * - Mutation rate limiting by user
  * - Subscription connection limits
@@ -18,20 +18,20 @@ export interface RateLimitConfig {
       windowMs: number;
     };
   };
-  
+
   // Subscription limits (concurrent connections)
   subscriptionLimits: {
     maxConnectionsPerUser: number;
     maxConnectionsPerIP: number;
     maxTotalConnections: number;
   };
-  
+
   // IP-based limits (per IP per time window)
   ipLimits: {
     maxRequests: number;
     windowMs: number;
   };
-  
+
   // Global limits
   globalLimits: {
     maxConcurrentQueries: number;
@@ -46,41 +46,41 @@ export const defaultRateLimitConfig: RateLimitConfig = {
     createProduct: { maxRequests: 20, windowMs: 60000 }, // 20/min
     updateProduct: { maxRequests: 30, windowMs: 60000 }, // 30/min
     deleteProduct: { maxRequests: 10, windowMs: 60000 }, // 10/min
-    
+
     // Pallet operations - higher frequency
     createPallet: { maxRequests: 50, windowMs: 60000 }, // 50/min
     updatePallet: { maxRequests: 100, windowMs: 60000 }, // 100/min
     movePallet: { maxRequests: 200, windowMs: 60000 }, // 200/min
-    
+
     // Stock operations - business critical
     adjustStock: { maxRequests: 100, windowMs: 60000 }, // 100/min
     transferStock: { maxRequests: 150, windowMs: 60000 }, // 150/min
-    
+
     // Order operations - moderate limits
     createOrder: { maxRequests: 30, windowMs: 60000 }, // 30/min
     updateOrder: { maxRequests: 50, windowMs: 60000 }, // 50/min
     loadPalletToOrder: { maxRequests: 100, windowMs: 60000 }, // 100/min
-    
+
     // Stocktake operations - periodic usage
     startStocktakeSession: { maxRequests: 10, windowMs: 60000 }, // 10/min
     recordStocktakeCount: { maxRequests: 500, windowMs: 60000 }, // 500/min (scanning)
-    
+
     // Bulk operations - lower limits
     bulkUpdateInventory: { maxRequests: 5, windowMs: 60000 }, // 5/min
     bulkCreatePallets: { maxRequests: 5, windowMs: 60000 }, // 5/min
   },
-  
+
   subscriptionLimits: {
     maxConnectionsPerUser: 10, // Max 10 subscriptions per user
     maxConnectionsPerIP: 50, // Max 50 connections per IP
     maxTotalConnections: 1000, // Max 1000 total active subscriptions
   },
-  
+
   ipLimits: {
     maxRequests: 1000, // 1000 requests per IP per minute
     windowMs: 60000,
   },
-  
+
   globalLimits: {
     maxConcurrentQueries: 100, // Max 100 concurrent queries
     maxQueryComplexity: 1000, // Max complexity per query
@@ -96,13 +96,13 @@ class RateLimitStore {
 
   // Mutation rate limiting
   checkMutationLimit(
-    userId: string, 
-    operationName: string, 
+    userId: string,
+    operationName: string,
     config: RateLimitConfig
   ): { allowed: boolean; retryAfter?: number } {
     const key = `${userId}:${operationName}`;
     const limit = config.mutationLimits[operationName];
-    
+
     if (!limit) {
       return { allowed: true }; // No limit configured
     }
@@ -136,8 +136,10 @@ class RateLimitStore {
   ): { allowed: boolean; reason?: string } {
     const userConnections = this.subscriptionCounts.get(`user:${userId}`) || 0;
     const ipConnections = this.subscriptionCounts.get(`ip:${ipAddress}`) || 0;
-    const totalConnections = Array.from(this.subscriptionCounts.values())
-      .reduce((sum, count) => sum + count, 0);
+    const totalConnections = Array.from(this.subscriptionCounts.values()).reduce(
+      (sum, count) => sum + count,
+      0
+    );
 
     if (userConnections >= config.subscriptionLimits.maxConnectionsPerUser) {
       return { allowed: false, reason: 'Too many connections for this user' };
@@ -158,7 +160,7 @@ class RateLimitStore {
   addSubscriptionConnection(userId: string, ipAddress: string) {
     const userKey = `user:${userId}`;
     const ipKey = `ip:${ipAddress}`;
-    
+
     this.subscriptionCounts.set(userKey, (this.subscriptionCounts.get(userKey) || 0) + 1);
     this.subscriptionCounts.set(ipKey, (this.subscriptionCounts.get(ipKey) || 0) + 1);
   }
@@ -167,16 +169,16 @@ class RateLimitStore {
   removeSubscriptionConnection(userId: string, ipAddress: string) {
     const userKey = `user:${userId}`;
     const ipKey = `ip:${ipAddress}`;
-    
+
     const userCount = this.subscriptionCounts.get(userKey) || 0;
     const ipCount = this.subscriptionCounts.get(ipKey) || 0;
-    
+
     if (userCount > 1) {
       this.subscriptionCounts.set(userKey, userCount - 1);
     } else {
       this.subscriptionCounts.delete(userKey);
     }
-    
+
     if (ipCount > 1) {
       this.subscriptionCounts.set(ipKey, ipCount - 1);
     } else {
@@ -225,14 +227,14 @@ class RateLimitStore {
   // Cleanup expired entries (should be called periodically)
   cleanup() {
     const now = Date.now();
-    
+
     // Clean up request counts
     for (const [key, record] of this.requestCounts.entries()) {
       if (now > record.resetTime) {
         this.requestCounts.delete(key);
       }
     }
-    
+
     // Clean up IP counts
     for (const [key, record] of this.ipCounts.entries()) {
       if (now > record.resetTime) {
@@ -246,8 +248,10 @@ class RateLimitStore {
     return {
       activeQueries: this.activeQueries,
       totalRequestKeys: this.requestCounts.size,
-      totalSubscriptions: Array.from(this.subscriptionCounts.values())
-        .reduce((sum, count) => sum + count, 0),
+      totalSubscriptions: Array.from(this.subscriptionCounts.values()).reduce(
+        (sum, count) => sum + count,
+        0
+      ),
       totalIPKeys: this.ipCounts.size,
     };
   }
@@ -313,7 +317,7 @@ export function checkMutationRateLimit(
   }
 
   const result = rateLimitStore.checkMutationLimit(userId, operationName, config);
-  
+
   if (!result.allowed) {
     throw new ForbiddenError(
       `Rate limit exceeded for ${operationName}. Retry after ${result.retryAfter} seconds.`
@@ -332,7 +336,7 @@ export function checkSubscriptionRateLimit(
   }
 
   const result = rateLimitStore.checkSubscriptionLimit(userId, ipAddress, config);
-  
+
   if (!result.allowed) {
     throw new ForbiddenError(`Subscription limit exceeded: ${result.reason}`);
   }
@@ -340,15 +344,12 @@ export function checkSubscriptionRateLimit(
   // Generate unique connection ID
   const connectionId = `${userId}:${ipAddress}:${Date.now()}:${Math.random()}`;
   rateLimitStore.addSubscriptionConnection(userId, ipAddress);
-  
+
   return connectionId;
 }
 
 // Remove subscription connection
-export function removeSubscriptionConnection(
-  userId: string,
-  ipAddress: string
-) {
+export function removeSubscriptionConnection(userId: string, ipAddress: string) {
   rateLimitStore.removeSubscriptionConnection(userId, ipAddress);
 }
 
@@ -370,12 +371,12 @@ export function rateLimit(operationName?: string) {
     descriptor.value = async function (...args: any[]) {
       const context = args[2]; // GraphQL context is the third argument
       const userId = context.user?.id;
-      
+
       checkMutationRateLimit(mutationName, userId);
-      
+
       return originalMethod.apply(this, args);
     };
 
     return descriptor;
   };
-} 
+}

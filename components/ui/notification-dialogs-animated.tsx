@@ -6,14 +6,7 @@
 'use client';
 
 import React from 'react';
-import { 
-  CheckCircle2, 
-  XCircle, 
-  AlertTriangle,
-  Info,
-  Bell,
-  Trash2 
-} from 'lucide-react';
+import { CheckCircle2, XCircle, AlertTriangle, Info, Bell, Trash2 } from 'lucide-react';
 import {
   AnimatedDialog,
   AnimatedDialogContent,
@@ -21,7 +14,7 @@ import {
   DialogFooter,
   DialogTitle,
   DialogDescription,
-  type DialogType
+  type DialogType,
 } from './animated-border-dialog';
 import { Button } from './button';
 import { dialogButtonStyles } from '@/lib/dialog-animation';
@@ -40,27 +33,25 @@ interface NotificationDialogProps {
 export function NotificationDialog({
   isOpen,
   onOpenChange,
-  title = "通知",
+  title = '通知',
   message,
   onConfirm,
-  enableAnimatedBorder = true
+  enableAnimatedBorder = true,
 }: NotificationDialogProps) {
   return (
     <AnimatedDialog open={isOpen} onOpenChange={onOpenChange}>
-      <AnimatedDialogContent 
-        type="notification" 
-        size="sm"
+      <AnimatedDialogContent
+        type='notification'
+        size='sm'
         enableAnimatedBorder={enableAnimatedBorder}
       >
-        <DialogHeader className="space-y-4">
-          <DialogTitle type="notification" icon={<Bell className="w-7 h-7" />}>
+        <DialogHeader className='space-y-4'>
+          <DialogTitle type='notification' icon={<Bell className='h-7 w-7' />}>
             {title}
           </DialogTitle>
-          <DialogDescription className="text-base pt-2">
-            {message}
-          </DialogDescription>
+          <DialogDescription className='pt-2 text-base'>{message}</DialogDescription>
         </DialogHeader>
-        <DialogFooter className="pt-6">
+        <DialogFooter className='pt-6'>
           <Button
             onClick={() => {
               onConfirm?.();
@@ -68,7 +59,7 @@ export function NotificationDialog({
             }}
             className={cn(
               dialogButtonStyles.primary.notification,
-              "shadow-lg hover:shadow-blue-500/25 px-8 py-2.5 text-base"
+              'px-8 py-2.5 text-base shadow-lg hover:shadow-blue-500/25'
             )}
           >
             確定
@@ -84,34 +75,29 @@ interface SuccessDialogProps extends NotificationDialogProps {
   title?: string;
 }
 
-export function SuccessDialog({
-  title = "操作成功",
-  ...props
-}: SuccessDialogProps) {
+export function SuccessDialog({ title = '操作成功', ...props }: SuccessDialogProps) {
   return (
     <AnimatedDialog open={props.isOpen} onOpenChange={props.onOpenChange}>
-      <AnimatedDialogContent 
-        type="notification" 
-        size="sm"
+      <AnimatedDialogContent
+        type='notification'
+        size='sm'
         enableAnimatedBorder={props.enableAnimatedBorder}
       >
-        <DialogHeader className="space-y-4">
-          <DialogTitle type="notification" icon={<CheckCircle2 className="w-7 h-7" />}>
+        <DialogHeader className='space-y-4'>
+          <DialogTitle type='notification' icon={<CheckCircle2 className='h-7 w-7' />}>
             {title}
           </DialogTitle>
-          <DialogDescription className="text-base pt-2">
-            {props.message}
-          </DialogDescription>
+          <DialogDescription className='pt-2 text-base'>{props.message}</DialogDescription>
         </DialogHeader>
-        <DialogFooter className="pt-6">
+        <DialogFooter className='pt-6'>
           <Button
             onClick={() => {
               props.onConfirm?.();
               props.onOpenChange(false);
             }}
             className={cn(
-              "bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500",
-              "shadow-lg hover:shadow-green-500/25 px-8 py-2.5 text-base"
+              'bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500',
+              'px-8 py-2.5 text-base shadow-lg hover:shadow-green-500/25'
             )}
           >
             確定
@@ -137,43 +123,37 @@ interface ErrorDialogProps {
 export function ErrorDialog({
   isOpen,
   onOpenChange,
-  title = "錯誤",
+  title = '錯誤',
   message,
   errorCode,
   onRetry,
   onDismiss,
-  enableAnimatedBorder = true
+  enableAnimatedBorder = true,
 }: ErrorDialogProps) {
   return (
     <AnimatedDialog open={isOpen} onOpenChange={onOpenChange}>
-      <AnimatedDialogContent 
-        type="error" 
-        size="sm"
-        enableAnimatedBorder={enableAnimatedBorder}
-      >
-        <DialogHeader className="space-y-4">
-          <DialogTitle type="error" icon={<XCircle className="w-7 h-7" />}>
+      <AnimatedDialogContent type='error' size='sm' enableAnimatedBorder={enableAnimatedBorder}>
+        <DialogHeader className='space-y-4'>
+          <DialogTitle type='error' icon={<XCircle className='h-7 w-7' />}>
             {title}
           </DialogTitle>
-          <DialogDescription className="text-base pt-2">
-            {message}
-          </DialogDescription>
+          <DialogDescription className='pt-2 text-base'>{message}</DialogDescription>
         </DialogHeader>
-        
+
         {errorCode && (
-          <div className="bg-red-900/20 border border-red-700/30 p-4 rounded-xl my-4 text-sm text-red-300 font-mono">
+          <div className='my-4 rounded-xl border border-red-700/30 bg-red-900/20 p-4 font-mono text-sm text-red-300'>
             錯誤代碼: {errorCode}
           </div>
         )}
-        
-        <DialogFooter className="gap-3 pt-6">
+
+        <DialogFooter className='gap-3 pt-6'>
           <Button
             onClick={() => {
               onDismiss?.();
               onOpenChange(false);
             }}
-            variant="outline"
-            className={cn(dialogButtonStyles.secondary, "px-6 py-2.5 text-base")}
+            variant='outline'
+            className={cn(dialogButtonStyles.secondary, 'px-6 py-2.5 text-base')}
           >
             關閉
           </Button>
@@ -185,7 +165,7 @@ export function ErrorDialog({
               }}
               className={cn(
                 dialogButtonStyles.primary.error,
-                "shadow-lg hover:shadow-red-500/25 px-6 py-2.5 text-base"
+                'px-6 py-2.5 text-base shadow-lg hover:shadow-red-500/25'
               )}
             >
               重試
@@ -215,42 +195,33 @@ interface WarningDialogProps {
 export function WarningDialog({
   isOpen,
   onOpenChange,
-  title = "警告",
+  title = '警告',
   message,
-  confirmText = "確定",
-  cancelText = "取消",
+  confirmText = '確定',
+  cancelText = '取消',
   onConfirm,
   onCancel,
   destructive = false,
   icon,
-  enableAnimatedBorder = true
+  enableAnimatedBorder = true,
 }: WarningDialogProps) {
   return (
     <AnimatedDialog open={isOpen} onOpenChange={onOpenChange}>
-      <AnimatedDialogContent 
-        type="warning" 
-        size="sm"
-        enableAnimatedBorder={enableAnimatedBorder}
-      >
-        <DialogHeader className="space-y-4">
-          <DialogTitle 
-            type="warning" 
-            icon={icon || <AlertTriangle className="w-7 h-7" />}
-          >
+      <AnimatedDialogContent type='warning' size='sm' enableAnimatedBorder={enableAnimatedBorder}>
+        <DialogHeader className='space-y-4'>
+          <DialogTitle type='warning' icon={icon || <AlertTriangle className='h-7 w-7' />}>
             {title}
           </DialogTitle>
-          <DialogDescription className="text-base pt-2">
-            {message}
-          </DialogDescription>
+          <DialogDescription className='pt-2 text-base'>{message}</DialogDescription>
         </DialogHeader>
-        <DialogFooter className="gap-3 pt-6">
+        <DialogFooter className='gap-3 pt-6'>
           <Button
             onClick={() => {
               onCancel?.();
               onOpenChange(false);
             }}
-            variant="outline"
-            className={cn(dialogButtonStyles.secondary, "px-6 py-2.5 text-base")}
+            variant='outline'
+            className={cn(dialogButtonStyles.secondary, 'px-6 py-2.5 text-base')}
           >
             {cancelText}
           </Button>
@@ -260,13 +231,9 @@ export function WarningDialog({
               onOpenChange(false);
             }}
             className={cn(
-              destructive 
-                ? dialogButtonStyles.primary.error 
-                : dialogButtonStyles.primary.warning,
-              "shadow-lg px-6 py-2.5 text-base",
-              destructive 
-                ? "hover:shadow-red-500/25" 
-                : "hover:shadow-yellow-500/25"
+              destructive ? dialogButtonStyles.primary.error : dialogButtonStyles.primary.warning,
+              'px-6 py-2.5 text-base shadow-lg',
+              destructive ? 'hover:shadow-red-500/25' : 'hover:shadow-yellow-500/25'
             )}
           >
             {confirmText}
@@ -293,20 +260,20 @@ export function DeleteConfirmDialog({
   itemName,
   onConfirm,
   onCancel,
-  enableAnimatedBorder = true
+  enableAnimatedBorder = true,
 }: DeleteConfirmDialogProps) {
   return (
     <WarningDialog
       isOpen={isOpen}
       onOpenChange={onOpenChange}
-      title="刪除確認"
+      title='刪除確認'
       message={`此操作無法撤銷。這將永久刪除 "${itemName}" 並從我們的伺服器中移除相關數據。`}
-      confirmText="刪除"
-      cancelText="取消"
+      confirmText='刪除'
+      cancelText='取消'
       onConfirm={onConfirm}
       onCancel={onCancel}
       destructive={true}
-      icon={<Trash2 className="w-7 h-7" />}
+      icon={<Trash2 className='h-7 w-7' />}
       enableAnimatedBorder={enableAnimatedBorder}
     />
   );
@@ -326,35 +293,33 @@ interface InfoDialogProps {
 export function InfoDialog({
   isOpen,
   onOpenChange,
-  title = "信息",
+  title = '信息',
   message,
   details,
   onConfirm,
-  enableAnimatedBorder = true
+  enableAnimatedBorder = true,
 }: InfoDialogProps) {
   return (
     <AnimatedDialog open={isOpen} onOpenChange={onOpenChange}>
-      <AnimatedDialogContent 
-        type="information" 
-        size="md"
+      <AnimatedDialogContent
+        type='information'
+        size='md'
         enableAnimatedBorder={enableAnimatedBorder}
       >
-        <DialogHeader className="space-y-4">
-          <DialogTitle type="information" icon={<Info className="w-7 h-7" />}>
+        <DialogHeader className='space-y-4'>
+          <DialogTitle type='information' icon={<Info className='h-7 w-7' />}>
             {title}
           </DialogTitle>
-          <DialogDescription className="text-base pt-2">
-            {message}
-          </DialogDescription>
+          <DialogDescription className='pt-2 text-base'>{message}</DialogDescription>
         </DialogHeader>
-        
+
         {details && (
-          <div className="bg-cyan-900/20 border border-cyan-700/30 p-5 rounded-xl my-6">
+          <div className='my-6 rounded-xl border border-cyan-700/30 bg-cyan-900/20 p-5'>
             {details}
           </div>
         )}
-        
-        <DialogFooter className="pt-6">
+
+        <DialogFooter className='pt-6'>
           <Button
             onClick={() => {
               onConfirm?.();
@@ -362,7 +327,7 @@ export function InfoDialog({
             }}
             className={cn(
               dialogButtonStyles.primary.information,
-              "shadow-lg hover:shadow-cyan-500/25 px-8 py-2.5 text-base"
+              'px-8 py-2.5 text-base shadow-lg hover:shadow-cyan-500/25'
             )}
           >
             確定

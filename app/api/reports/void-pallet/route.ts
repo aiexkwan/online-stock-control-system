@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase';
-import * as XLSX from 'xlsx';
+import ExcelJS from 'exceljs';
 
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createClient();
-    
+
     // 查詢作廢棧板記錄
     const { data, error } = await supabase
       .from('record_palletinfo')
@@ -18,58 +18,69 @@ export async function POST(request: NextRequest) {
     }
 
     // 創建 Excel 工作簿
-    const workbook = XLSX.utils.book_new();
-    
-    // 準備數據
-    const worksheetData = data?.map(pallet => ({
-      'Pallet Number': pallet.plt_num,
-      'Product Code': pallet.product_code,
-      'Product Description': pallet.product_des,
-      'Quantity': pallet.qty,
-      'Void Time': pallet.void_time ? new Date(pallet.void_time).toLocaleString() : '',
-      'Void Reason': pallet.void_reason || '',
-      'Voided By': pallet.void_by || '',
-      'Original Generate Time': pallet.generate_time ? new Date(pallet.generate_time).toLocaleString() : '',
-      'Location': pallet.loc || '',
-      'Remark': pallet.plt_remark || ''
-    })) || [];
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('Void Pallet Report');
 
-    // 創建工作表
-    const worksheet = XLSX.utils.json_to_sheet(worksheetData);
-    
-    // 設置列寬
-    const columnWidths = [
-      { wch: 15 }, // Pallet Number
-      { wch: 15 }, // Product Code
-      { wch: 30 }, // Product Description
-      { wch: 10 }, // Quantity
-      { wch: 20 }, // Void Time
-      { wch: 20 }, // Void Reason
-      { wch: 15 }, // Voided By
-      { wch: 20 }, // Original Generate Time
-      { wch: 15 }, // Location
-      { wch: 30 }  // Remark
+    // 定義列
+    worksheet.columns = [
+      { header: 'Pallet Number', key: 'plt_num', width: 15 },
+      { header: 'Product Code', key: 'product_code', width: 15 },
+      { header: 'Product Description', key: 'product_des', width: 30 },
+      { header: 'Quantity', key: 'qty', width: 10 },
+      { header: 'Void Time', key: 'void_time', width: 20 },
+      { header: 'Void Reason', key: 'void_reason', width: 20 },
+      { header: 'Voided By', key: 'void_by', width: 15 },
+      { header: 'Original Generate Time', key: 'generate_time', width: 20 },
+      { header: 'Location', key: 'loc', width: 15 },
+      { header: 'Remark', key: 'plt_remark', width: 30 },
     ];
-    worksheet['!cols'] = columnWidths;
 
-    // 添加工作表到工作簿
-    XLSX.utils.book_append_sheet(workbook, worksheet, 'Void Pallet Report');
+    // 設置標題行樣式
+    worksheet.getRow(1).font = { bold: true };
+    worksheet.getRow(1).alignment = { vertical: 'middle', horizontal: 'center' };
+
+    // 添加數據
+    data?.forEach(pallet => {
+      worksheet.addRow({
+        plt_num: pallet.plt_num,
+        product_code: pallet.product_code,
+        product_des: pallet.product_des,
+        qty: pallet.qty,
+        void_time: pallet.void_time ? new Date(pallet.void_time).toLocaleString() : '',
+        void_reason: pallet.void_reason || '',
+        void_by: pallet.void_by || '',
+        generate_time: pallet.generate_time
+          ? new Date(pallet.generate_time).toLocaleString()
+          : '',
+        loc: pallet.loc || '',
+        plt_remark: pallet.plt_remark || '',
+      });
+    });
+
+    // 添加邊框
+    worksheet.eachRow({ includeEmpty: false }, (row, rowNumber) => {
+      row.eachCell({ includeEmpty: false }, (cell) => {
+        cell.border = {
+          top: { style: 'thin' },
+          left: { style: 'thin' },
+          bottom: { style: 'thin' },
+          right: { style: 'thin' },
+        };
+      });
+    });
 
     // 生成 Excel 文件
-    const buffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
+    const buffer = await workbook.xlsx.writeBuffer();
 
     // 返回文件
     return new NextResponse(buffer, {
       headers: {
         'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        'Content-Disposition': `attachment; filename="void-pallet-report-${new Date().toISOString().split('T')[0]}.xlsx"`
-      }
+        'Content-Disposition': `attachment; filename="void-pallet-report-${new Date().toISOString().split('T')[0]}.xlsx"`,
+      },
     });
   } catch (error) {
     console.error('Error generating void pallet report:', error);
-    return NextResponse.json(
-      { error: 'Failed to generate report' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to generate report' }, { status: 500 });
   }
 }

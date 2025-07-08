@@ -14,34 +14,34 @@ export interface ThemeConfig {
 interface ThemeColors {
   // 背景層級
   background: {
-    primary: string;    // 主背景
-    secondary: string;  // 次要背景（卡片、面板）
-    tertiary: string;   // 第三層背景
-    overlay: string;    // 遮罩層
+    primary: string; // 主背景
+    secondary: string; // 次要背景（卡片、面板）
+    tertiary: string; // 第三層背景
+    overlay: string; // 遮罩層
   };
-  
+
   // 前景顏色
   foreground: {
-    primary: string;    // 主要文字
-    secondary: string;  // 次要文字
-    muted: string;      // 輔助文字
-    inverted: string;   // 反色文字
+    primary: string; // 主要文字
+    secondary: string; // 次要文字
+    muted: string; // 輔助文字
+    inverted: string; // 反色文字
   };
-  
+
   // 邊框顏色
   border: {
     default: string;
     muted: string;
     strong: string;
   };
-  
+
   // 功能色彩
   accent: {
     primary: string;
     secondary: string;
     tertiary: string;
   };
-  
+
   // 語義化顏色（繼承自 design tokens）
   semantic: typeof designTokens.colors.semantic;
 }
@@ -53,21 +53,21 @@ interface ThemeEffects {
     colors: Record<string, string>;
     intensity: 'subtle' | 'moderate' | 'strong';
   };
-  
+
   // 玻璃擬態
   glassmorphism: {
     enabled: boolean;
     blur: string;
     opacity: number;
   };
-  
+
   // 動畫
   animations: {
     enabled: boolean;
     duration: 'fast' | 'normal' | 'slow';
     easing: string;
   };
-  
+
   // 特殊效果
   special: {
     starfield?: boolean;
@@ -83,7 +83,7 @@ interface ThemeTypography {
     mono: string;
     display?: string;
   };
-  
+
   // 字重映射
   weights: {
     normal: number;
@@ -119,8 +119,8 @@ export const mainTheme: ThemeConfig = {
   mode: 'dark',
   colors: {
     background: {
-      primary: 'hsl(215, 40%, 10%)',      // #0f172a
-      secondary: 'hsl(215, 30%, 15%)',    
+      primary: 'hsl(215, 40%, 10%)', // #0f172a
+      secondary: 'hsl(215, 30%, 15%)',
       tertiary: 'hsl(215, 25%, 20%)',
       overlay: 'hsla(215, 40%, 5%, 0.8)',
     },
@@ -173,26 +173,26 @@ export const adminTheme: ThemeConfig = {
   mode: 'dark',
   colors: {
     background: {
-      primary: 'hsl(240, 7%, 9%)',        // #16161A
-      secondary: 'hsl(240, 6%, 13%)',     // #1F1F23
-      tertiary: 'hsl(240, 5%, 17%)',      // #28282E
+      primary: 'hsl(240, 7%, 9%)', // #16161A
+      secondary: 'hsl(240, 6%, 13%)', // #1F1F23
+      tertiary: 'hsl(240, 5%, 17%)', // #28282E
       overlay: 'hsla(240, 7%, 5%, 0.9)',
     },
     foreground: {
-      primary: 'hsl(0, 0%, 93%)',         // #EEEEEE
-      secondary: 'hsl(0, 0%, 67%)',       // #AAAAAA
-      muted: 'hsl(0, 0%, 47%)',           // #777777
+      primary: 'hsl(0, 0%, 93%)', // #EEEEEE
+      secondary: 'hsl(0, 0%, 67%)', // #AAAAAA
+      muted: 'hsl(0, 0%, 47%)', // #777777
       inverted: 'hsl(0, 0%, 9%)',
     },
     border: {
-      default: 'hsl(240, 5%, 22%)',       // #353539
+      default: 'hsl(240, 5%, 22%)', // #353539
       muted: 'hsl(240, 4%, 18%)',
       strong: 'hsl(240, 6%, 30%)',
     },
     accent: {
-      primary: 'hsl(250, 89%, 65%)',      // #7C4DFF
-      secondary: 'hsl(187, 74%, 48%)',    // #21C7EC
-      tertiary: 'hsl(28, 89%, 55%)',      // #FF7522
+      primary: 'hsl(250, 89%, 65%)', // #7C4DFF
+      secondary: 'hsl(187, 74%, 48%)', // #21C7EC
+      tertiary: 'hsl(28, 89%, 55%)', // #FF7522
     },
     semantic: designTokens.colors.semantic,
   },
@@ -275,31 +275,31 @@ export type ThemeName = keyof typeof themes;
 // CSS 變量生成器
 export const generateCSSVariables = (theme: ThemeConfig): Record<string, string> => {
   const vars: Record<string, string> = {};
-  
+
   // 背景顏色
   Object.entries(theme.colors.background).forEach(([key, value]) => {
     vars[`--background-${key}`] = value;
   });
-  
+
   // 前景顏色
   Object.entries(theme.colors.foreground).forEach(([key, value]) => {
     vars[`--foreground-${key}`] = value;
   });
-  
+
   // 邊框顏色
   Object.entries(theme.colors.border).forEach(([key, value]) => {
     vars[`--border-${key}`] = value;
   });
-  
+
   // 強調色
   Object.entries(theme.colors.accent).forEach(([key, value]) => {
     vars[`--accent-${key}`] = value;
   });
-  
+
   // 字體
   vars['--font-sans'] = theme.typography.fonts.sans;
   vars['--font-mono'] = theme.typography.fonts.mono;
-  
+
   return vars;
 };
 
@@ -346,15 +346,15 @@ export const getCurrentTheme = (pathname: string): ThemeName => {
 export const applyTheme = (theme: ThemeConfig): void => {
   const root = document.documentElement;
   const cssVars = generateCSSVariables(theme);
-  
+
   Object.entries(cssVars).forEach(([key, value]) => {
     root.style.setProperty(key, value);
   });
-  
+
   // 設置 mode class
   root.classList.remove('light', 'dark');
   root.classList.add(theme.mode);
-  
+
   // 設置主題 data attribute
   root.setAttribute('data-theme', theme.name);
 };

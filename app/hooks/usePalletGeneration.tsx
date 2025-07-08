@@ -2,18 +2,24 @@
 
 import { useState, useCallback } from 'react';
 import { toast } from 'sonner';
-import { createClient } from '@/app/utils/supabase/client';
-import { 
+import {
   generatePalletNumbers,
   confirmPalletUsage,
   releasePalletReservation,
-  type GenerationResult 
-} from '@/app/utils/palletGeneration';
+} from '@/app/actions/palletActions';
 
 interface UsePalletGenerationReturn {
   isGenerating: boolean;
   generationError: string | null;
-  generatePalletNumbersAndSeries: (count: number, sessionId?: string) => Promise<GenerationResult>;
+  generatePalletNumbersAndSeries: (
+    count: number,
+    sessionId?: string
+  ) => Promise<{
+    palletNumbers: string[];
+    series: string[];
+    success: boolean;
+    error?: string;
+  }>;
   confirmUsage: (palletNumbers: string[]) => Promise<boolean>;
   releaseReservation: (palletNumbers: string[]) => Promise<boolean>;
   clearError: () => void;
@@ -22,21 +28,21 @@ interface UsePalletGenerationReturn {
 /**
  * Unified hook for pallet number generation
  * 統一的托盤號碼生成 Hook - 供 QC Label 和 GRN Label 共用
- * 
+ *
  * @example
  * ```typescript
  * const palletGeneration = usePalletGeneration();
- * 
+ *
  * // Generate pallet numbers
  * const result = await palletGeneration.generatePalletNumbersAndSeries(5, 'my-session');
  * if (result.success) {
  *   process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(result.palletNumbers);
  *   process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(result.series);
  * }
- * 
+ *
  * // Confirm usage after successful printing
  * await palletGeneration.confirmUsage(result.palletNumbers);
- * 
+ *
  * // Or release if printing failed
  * await palletGeneration.releaseReservation(result.palletNumbers);
  * ```
@@ -45,73 +51,88 @@ export const usePalletGeneration = (): UsePalletGenerationReturn => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [generationError, setGenerationError] = useState<string | null>(null);
 
-  const generatePalletNumbersAndSeries = useCallback(async (
-    count: number, 
-    sessionId?: string
-  ): Promise<GenerationResult> => {
-    if (count <= 0) {
-      const error = 'Invalid pallet count';
-      setGenerationError(error);
-      toast.error(error);
-      return { 
-        palletNumbers: [], 
-        series: [], 
-        success: false, 
-        error,
-        method: 'invalid_input' 
-      };
-    }
-
-    setIsGenerating(true);
-    setGenerationError(null);
-
-    try {
-      process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[usePalletGeneration] Generating pallet numbers:', count);
-      
-      // 使用統一的托盤生成函數
-      const supabase = createClient();
-      const result = await generatePalletNumbers({ count, sessionId }, supabase);
-      
-      if (!result.success) {
-        const error = result.error || 'Failed to generate pallet numbers';
+  const generatePalletNumbersAndSeries = useCallback(
+    async (
+      count: number,
+      sessionId?: string
+    ): Promise<{
+      palletNumbers: string[];
+      series: string[];
+      success: boolean;
+      error?: string;
+    }> => {
+      if (count <= 0) {
+        const error = 'Invalid pallet count';
         setGenerationError(error);
         toast.error(error);
-        console.error('[usePalletGeneration] Generation failed:', result);
-        return result;
+        return {
+          palletNumbers: [],
+          series: [],
+          success: false,
+          error,
+        };
       }
 
-      process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[usePalletGeneration] Generated successfully:', {
-        count: result.palletNumbers.length,
-        method: result.method
-      });
+      setIsGenerating(true);
+      setGenerationError(null);
 
-      return result;
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-      setGenerationError(errorMessage);
-      toast.error(`Error generating pallet numbers: ${errorMessage}`);
-      console.error('[usePalletGeneration] Exception:', error);
-      
-      return { 
-        palletNumbers: [], 
-        series: [], 
-        success: false, 
-        error: errorMessage,
-        method: 'exception' 
-      };
-    } finally {
-      setIsGenerating(false);
-    }
-  }, []);
+      try {
+        process.env.NODE_ENV !== 'production' &&
+          console.log('[usePalletGeneration] Generating pallet numbers:', count);
+
+        // 使用 Server Action
+        const result = await generatePalletNumbers(count, sessionId);
+
+        if (result.error) {
+          const error = result.error;
+          setGenerationError(error);
+          toast.error(error);
+          console.error('[usePalletGeneration] Generation failed:', result);
+          return {
+            palletNumbers: [],
+            series: [],
+            success: false,
+            error,
+          };
+        }
+
+        process.env.NODE_ENV !== 'production' &&
+          console.log('[usePalletGeneration] Generated successfully:', {
+            count: result.palletNumbers.length,
+          });
+
+        return {
+          palletNumbers: result.palletNumbers,
+          series: result.series,
+          success: true,
+        };
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+        setGenerationError(errorMessage);
+        toast.error(`Error generating pallet numbers: ${errorMessage}`);
+        console.error('[usePalletGeneration] Exception:', error);
+
+        return {
+          palletNumbers: [],
+          series: [],
+          success: false,
+          error: errorMessage,
+        };
+      } finally {
+        setIsGenerating(false);
+      }
+    },
+    []
+  );
 
   const confirmUsage = useCallback(async (palletNumbers: string[]): Promise<boolean> => {
     try {
-      const supabase = createClient();
-      const success = await confirmPalletUsage(palletNumbers, supabase);
-      if (!success) {
-        toast.error('Failed to confirm pallet usage');
+      const result = await confirmPalletUsage(palletNumbers);
+      if (!result.success) {
+        toast.error(result.error || 'Failed to confirm pallet usage');
+        return false;
       }
-      return success;
+      return true;
     } catch (error) {
       console.error('[usePalletGeneration] Error confirming usage:', error);
       toast.error('Error confirming pallet usage');
@@ -121,12 +142,12 @@ export const usePalletGeneration = (): UsePalletGenerationReturn => {
 
   const releaseReservation = useCallback(async (palletNumbers: string[]): Promise<boolean> => {
     try {
-      const supabase = createClient();
-      const success = await releasePalletReservation(palletNumbers, supabase);
-      if (!success) {
-        toast.error('Failed to release pallet reservation');
+      const result = await releasePalletReservation(palletNumbers);
+      if (!result.success) {
+        toast.error(result.error || 'Failed to release pallet reservation');
+        return false;
       }
-      return success;
+      return true;
     } catch (error) {
       console.error('[usePalletGeneration] Error releasing reservation:', error);
       toast.error('Error releasing pallet reservation');
@@ -144,7 +165,7 @@ export const usePalletGeneration = (): UsePalletGenerationReturn => {
     generatePalletNumbersAndSeries,
     confirmUsage,
     releaseReservation,
-    clearError
+    clearError,
   };
 };
 

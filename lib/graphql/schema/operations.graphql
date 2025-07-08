@@ -9,15 +9,11 @@ extend type Query {
     sort: [SortInput!]
     pagination: PaginationInput
   ): ProductConnection!
-  
+
   # 托盤查詢
   pallet(id: ID!): PalletResult!
-  pallets(
-    filter: PalletFilter
-    sort: [SortInput!]
-    pagination: PaginationInput
-  ): PalletConnection!
-  
+  pallets(filter: PalletFilter, sort: [SortInput!], pagination: PaginationInput): PalletConnection!
+
   # 庫存查詢
   inventoryRecord(id: ID!): InventoryResult!
   inventory(
@@ -25,7 +21,7 @@ extend type Query {
     sort: [SortInput!]
     pagination: PaginationInput
   ): InventoryConnection!
-  
+
   # 移動記錄查詢
   movement(id: ID!): MovementResult!
   movements(
@@ -33,23 +29,15 @@ extend type Query {
     sort: [SortInput!]
     pagination: PaginationInput
   ): MovementConnection!
-  
+
   # 訂單查詢
   order(id: ID!): OrderResult!
-  orders(
-    filter: OrderFilter
-    sort: [SortInput!]
-    pagination: PaginationInput
-  ): OrderConnection!
-  
+  orders(filter: OrderFilter, sort: [SortInput!], pagination: PaginationInput): OrderConnection!
+
   # 用戶查詢
   user(id: ID!): UserResult!
-  users(
-    filter: UserFilter
-    sort: [SortInput!]
-    pagination: PaginationInput
-  ): UserConnection!
-  
+  users(filter: UserFilter, sort: [SortInput!], pagination: PaginationInput): UserConnection!
+
   # 庫存盤點查詢
   stocktakeRecord(id: ID!): StocktakeResult!
   stocktakeRecords(
@@ -57,7 +45,7 @@ extend type Query {
     sort: [SortInput!]
     pagination: PaginationInput
   ): StocktakeConnection!
-  
+
   # 業務邏輯查詢
   palletsByLocation(location: LocationType!): [Pallet!]!
   lowStockProducts(threshold: Int = 10): [Product!]!
@@ -73,34 +61,34 @@ extend type Mutation {
   createProduct(input: CreateProductInput!): ProductResult!
   updateProduct(id: ID!, input: UpdateProductInput!): ProductResult!
   deleteProduct(id: ID!): Boolean!
-  
+
   # 托盤管理
   createPallet(input: CreatePalletInput!): PalletResult!
   updatePallet(id: ID!, input: UpdatePalletInput!): PalletResult!
   deletePallet(id: ID!): Boolean!
   movePallet(input: MovePalletInput!): MovementResult!
-  
+
   # 庫存管理
   updateInventory(input: UpdateInventoryInput!): InventoryResult!
   adjustStock(input: StockAdjustmentInput!): InventoryResult!
   transferStock(input: StockTransferInput!): MovementResult!
-  
+
   # 訂單管理
   createOrder(input: CreateOrderInput!): OrderResult!
   updateOrder(id: ID!, input: UpdateOrderInput!): OrderResult!
   loadPalletToOrder(input: LoadPalletInput!): Boolean!
   unloadPalletFromOrder(input: UnloadPalletInput!): Boolean!
   completeOrder(id: ID!): OrderResult!
-  
+
   # 庫存盤點
   startStocktakeSession(input: StartStocktakeSessionInput!): StocktakeSessionResult!
   recordStocktakeCount(input: RecordStocktakeInput!): StocktakeResult!
   endStocktakeSession(sessionId: ID!): StocktakeSessionResult!
-  
+
   # GRN 管理
   createGRN(input: CreateGRNInput!): GRNResult!
   updateGRN(id: ID!, input: UpdateGRNInput!): GRNResult!
-  
+
   # 批量操作
   bulkUpdateInventory(inputs: [UpdateInventoryInput!]!): [InventoryResult!]!
   bulkCreatePallets(inputs: [CreatePalletInput!]!): [PalletResult!]!
@@ -111,19 +99,19 @@ extend type Subscription {
   # 庫存變化
   inventoryUpdated(productCode: String): InventoryRecord!
   stockLevelChanged: InventoryRecord!
-  
+
   # 托盤移動
   palletMoved: Movement!
   palletStatusChanged(palletNumber: String): Pallet!
-  
+
   # 訂單狀態
   orderStatusChanged(orderRef: Int): Order!
   orderCompleted: Order!
-  
+
   # 庫存盤點
   stocktakeCountRecorded(sessionId: ID): StocktakeRecord!
   stocktakeSessionStatusChanged: StocktakeSession!
-  
+
   # 系統通知
   systemAlert: SystemAlert!
   lowStockAlert: LowStockAlert!
@@ -297,4 +285,4 @@ enum AlertSeverity {
   WARNING
   ERROR
   CRITICAL
-} 
+}

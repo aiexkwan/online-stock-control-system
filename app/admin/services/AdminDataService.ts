@@ -41,7 +41,7 @@ export interface InventorySearchResult {
 
 class AdminDataService {
   private acoOrderAdapter: any = null;
-  
+
   // 初始化適配器（延遲加載，避免 server-side 問題）
   private getAcoOrderAdapter() {
     if (typeof window !== 'undefined' && !this.acoOrderAdapter) {
@@ -53,24 +53,25 @@ class AdminDataService {
   // Cache dashboard stats for 5 minutes
   getDashboardStats = cache(async (): Promise<DashboardStats> => {
     const supabase = await createClient();
-    
+
     try {
       // Call RPC function to get all stats in one query
-      const { data, error } = await supabase
-        .rpc('get_admin_dashboard_stats');
+      const { data, error } = await supabase.rpc('get_admin_dashboard_stats');
 
       if (error) throw error;
 
-      return data || {
-        dailyDonePallets: 0,
-        dailyTransferredPallets: 0,
-        yesterdayDonePallets: 0,
-        yesterdayTransferredPallets: 0,
-        past3DaysGenerated: 0,
-        past3DaysTransferredPallets: 0,
-        past7DaysGenerated: 0,
-        past7DaysTransferredPallets: 0,
-      };
+      return (
+        data || {
+          dailyDonePallets: 0,
+          dailyTransferredPallets: 0,
+          yesterdayDonePallets: 0,
+          yesterdayTransferredPallets: 0,
+          past3DaysGenerated: 0,
+          past3DaysTransferredPallets: 0,
+          past7DaysGenerated: 0,
+          past7DaysTransferredPallets: 0,
+        }
+      );
     } catch (error) {
       console.error('Error loading dashboard stats:', error);
       throw error;
@@ -78,21 +79,26 @@ class AdminDataService {
   });
 
   // Get stats for specific time range
-  getTimeRangeStats = cache(async (timeRange: 'today' | 'yesterday' | 'past3days' | 'past7days'): Promise<TimeRangeData> => {
-    const supabase = await createClient();
-    
-    try {
-      const { data, error } = await supabase
-        .rpc('get_time_range_stats', { time_range: timeRange });
+  getTimeRangeStats = cache(
+    async (
+      timeRange: 'today' | 'yesterday' | 'past3days' | 'past7days'
+    ): Promise<TimeRangeData> => {
+      const supabase = await createClient();
 
-      if (error) throw error;
+      try {
+        const { data, error } = await supabase.rpc('get_time_range_stats', {
+          time_range: timeRange,
+        });
 
-      return data || { generated: 0, transferred: 0 };
-    } catch (error) {
-      console.error(`Error loading ${timeRange} stats:`, error);
-      throw error;
+        if (error) throw error;
+
+        return data || { generated: 0, transferred: 0 };
+      } catch (error) {
+        console.error(`Error loading ${timeRange} stats:`, error);
+        throw error;
+      }
     }
-  });
+  );
 
   // Get incomplete ACO orders
   getIncompleteAcoOrders = cache(async () => {
@@ -105,10 +111,10 @@ class AdminDataService {
         console.warn('Adapter failed, falling back to direct query:', error);
       }
     }
-    
+
     // Server side 或適配器失敗時使用直接查詢
     const supabase = await createClient();
-    
+
     try {
       const { data, error } = await supabase
         .from('record_aco')
@@ -136,10 +142,10 @@ class AdminDataService {
         console.warn('Adapter failed, falling back to direct query:', error);
       }
     }
-    
+
     // Server side 或適配器失敗時使用直接查詢
     const supabase = await createClient();
-    
+
     try {
       const { data, error } = await supabase
         .from('record_aco')
@@ -156,9 +162,8 @@ class AdminDataService {
           required_qty: item.required_qty,
           remain_qty: remaining,
           completed_qty: completed,
-          completion_percentage: item.required_qty > 0 
-            ? Math.round((completed / item.required_qty) * 100)
-            : 0
+          completion_percentage:
+            item.required_qty > 0 ? Math.round((completed / item.required_qty) * 100) : 0,
         };
       });
     } catch (error) {
@@ -172,26 +177,27 @@ class AdminDataService {
     if (!productCode.trim()) return null;
 
     const supabase = await createClient();
-    
+
     try {
-      const { data, error } = await supabase
-        .rpc('search_inventory_by_product', { 
-          p_product_code: productCode.toUpperCase() 
-        });
+      const { data, error } = await supabase.rpc('search_inventory_by_product', {
+        p_product_code: productCode.toUpperCase(),
+      });
 
       if (error) throw error;
 
-      return data || {
-        product_code: productCode.toUpperCase(),
-        injection: 0,
-        pipeline: 0,
-        await: 0,
-        fold: 0,
-        bulk: 0,
-        backcarpark: 0,
-        damage: 0,
-        total: 0
-      };
+      return (
+        data || {
+          product_code: productCode.toUpperCase(),
+          injection: 0,
+          pipeline: 0,
+          await: 0,
+          fold: 0,
+          bulk: 0,
+          backcarpark: 0,
+          damage: 0,
+          total: 0,
+        }
+      );
     } catch (error) {
       console.error('Error searching inventory:', error);
       throw error;
@@ -201,10 +207,9 @@ class AdminDataService {
   // Get void statistics
   getVoidStatistics = cache(async (timeRange: 'today' | 'week' | 'month') => {
     const supabase = await createClient();
-    
+
     try {
-      const { data, error } = await supabase
-        .rpc('get_void_statistics', { time_range: timeRange });
+      const { data, error } = await supabase.rpc('get_void_statistics', { time_range: timeRange });
 
       if (error) throw error;
 

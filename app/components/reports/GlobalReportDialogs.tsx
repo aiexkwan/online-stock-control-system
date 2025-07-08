@@ -98,17 +98,17 @@ export function GlobalReportDialogs() {
         isOpen={dialogStates.voidPalletReport}
         onClose={() => closeDialog('voidPalletReport')}
       />
-      
+
       <UnifiedLoadingReportDialog
         isOpen={dialogStates.orderLoadingReport}
         onClose={() => closeDialog('orderLoadingReport')}
       />
-      
+
       {/* ACO Order Report now integrated directly into system page widget */}
-      
+
       {/* Transaction Report now integrated directly into system page widget */}
       {/* GRN Report now integrated directly into system page widget */}
-      
+
       <UnifiedExportAllDataDialog
         isOpen={dialogStates.exportAllData}
         onClose={() => closeDialog('exportAllData')}

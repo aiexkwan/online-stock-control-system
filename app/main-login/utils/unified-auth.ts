@@ -41,7 +41,7 @@ class SecureStorage {
         value,
         expires: Date.now() + this.maxAge,
         domain: window.location.hostname,
-        timestamp: Date.now()
+        timestamp: Date.now(),
       };
       localStorage.setItem(this.keyPrefix + key, JSON.stringify(item));
     } catch (error) {
@@ -88,7 +88,9 @@ class UnifiedAuth {
 
     // 檢查並清理舊版認證數據
     if (shouldCleanupLegacyAuth()) {
-      process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[UnifiedAuth] Detected legacy auth data, cleaning up...');
+      process.env.NODE_ENV !== 'production' &&
+        process.env.NODE_ENV !== 'production' &&
+        console.log('[UnifiedAuth] Detected legacy auth data, cleaning up...');
       cleanupLegacyAuth();
     }
 
@@ -97,9 +99,12 @@ class UnifiedAuth {
 
     // 如果使用安全存儲，設置定期清理
     if (this.config.useLocalStorage) {
-      setInterval(() => {
-        this.secureStorage.cleanup();
-      }, 5 * 60 * 1000); // 每5分鐘清理一次
+      setInterval(
+        () => {
+          this.secureStorage.cleanup();
+        },
+        5 * 60 * 1000
+      ); // 每5分鐘清理一次
     }
 
     return this.supabaseClient;
@@ -112,21 +117,23 @@ class UnifiedAuth {
     }
 
     const supabase = this.getSupabaseClient();
-    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`[UnifiedAuth] Using ${this.config.mode} mode for sign in`);
-    
+    process.env.NODE_ENV !== 'production' &&
+      process.env.NODE_ENV !== 'production' &&
+      console.log(`[UnifiedAuth] Using ${this.config.mode} mode for sign in`);
+
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
-    
+
     if (error) throw error;
-    
+
     // 記錄登入時間（僅在安全模式下）
     if (this.config.useLocalStorage && data.session) {
       this.secureStorage.setItem('last_login', Date.now().toString());
       this.secureStorage.setItem('login_domain_verified', 'true');
     }
-    
+
     return data;
   }
 
@@ -136,39 +143,43 @@ class UnifiedAuth {
     }
 
     const supabase = this.getSupabaseClient();
-    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`[UnifiedAuth] Using ${this.config.mode} mode for sign up`);
-    
+    process.env.NODE_ENV !== 'production' &&
+      process.env.NODE_ENV !== 'production' &&
+      console.log(`[UnifiedAuth] Using ${this.config.mode} mode for sign up`);
+
     // 設置正確的重定向 URL
     const redirectTo = `${window.location.origin}/main-login?confirmed=true`;
-    
+
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
-        emailRedirectTo: redirectTo
-      }
+        emailRedirectTo: redirectTo,
+      },
     });
-    
+
     if (error) throw error;
     return data;
   }
 
   async signOut() {
     const supabase = this.getSupabaseClient();
-    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`[UnifiedAuth] Using ${this.config.mode} mode for sign out`);
-    
+    process.env.NODE_ENV !== 'production' &&
+      process.env.NODE_ENV !== 'production' &&
+      console.log(`[UnifiedAuth] Using ${this.config.mode} mode for sign out`);
+
     // 清理本地存儲（如果使用的話）
     if (this.config.useLocalStorage) {
       this.secureStorage.cleanup();
     }
-    
+
     const { error } = await supabase.auth.signOut();
     if (error) throw error;
   }
 
   async getCurrentUser() {
     const supabase = this.getSupabaseClient();
-    
+
     // 檢查域名驗證標記（僅在安全模式下）
     if (this.config.useLocalStorage) {
       const domainVerified = this.secureStorage.getItem('login_domain_verified');
@@ -178,17 +189,20 @@ class UnifiedAuth {
       }
     }
 
-    const { data: { user }, error } = await supabase.auth.getUser();
+    const {
+      data: { user },
+      error,
+    } = await supabase.auth.getUser();
     if (error && !error.message.includes('Auth session missing')) {
       throw error;
     }
-    
+
     // 額外驗證用戶 email 域名
     if (user && user.email && !user.email.endsWith('@pennineindustries.com')) {
       await supabase.auth.signOut();
       throw new Error('Unauthorized domain detected');
     }
-    
+
     return user;
   }
 
@@ -200,13 +214,13 @@ class UnifiedAuth {
 
     const lastLogin = this.secureStorage.getItem('last_login');
     if (!lastLogin) return true;
-    
+
     const loginTime = parseInt(lastLogin);
     const now = Date.now();
     const timeElapsed = now - loginTime;
     const maxAge = this.config.sessionTimeout;
-    
-    return timeElapsed > (maxAge * 0.8); // 如果已過80%時間，視為即將過期
+
+    return timeElapsed > maxAge * 0.8; // 如果已過80%時間，視為即將過期
   }
 
   // 獲取當前配置信息
@@ -216,7 +230,7 @@ class UnifiedAuth {
       useLocalStorage: this.config.useLocalStorage,
       sessionTimeout: this.config.sessionTimeout,
       autoRefreshToken: this.config.autoRefreshToken,
-      extraSecurityChecks: this.config.extraSecurityChecks
+      extraSecurityChecks: this.config.extraSecurityChecks,
     };
   }
 
@@ -230,4 +244,4 @@ class UnifiedAuth {
 export const unifiedAuth = new UnifiedAuth();
 
 // 為了向後兼容，也導出原來的接口
-export const mainLoginAuth = unifiedAuth; 
+export const mainLoginAuth = unifiedAuth;

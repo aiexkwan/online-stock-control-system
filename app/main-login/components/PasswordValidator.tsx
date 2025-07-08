@@ -16,7 +16,7 @@ const DEFAULT_REQUIREMENTS: PasswordRequirements = {
   requireUppercase: false,
   requireLowercase: true,
   requireNumbers: true,
-  requireSpecialChars: false
+  requireSpecialChars: false,
 };
 
 const PasswordValidator = {
@@ -26,7 +26,10 @@ const PasswordValidator = {
    * @param requirements - Custom requirements (optional)
    * @returns Array of error messages (empty if valid)
    */
-  validate: (password: string, requirements: PasswordRequirements = DEFAULT_REQUIREMENTS): string[] => {
+  validate: (
+    password: string,
+    requirements: PasswordRequirements = DEFAULT_REQUIREMENTS
+  ): string[] => {
     const errors: string[] = [];
 
     if (!password) {
@@ -73,7 +76,10 @@ const PasswordValidator = {
    * @param requirements - Custom requirements (optional)
    * @returns boolean - true if valid, false otherwise
    */
-  isValid: (password: string, requirements: PasswordRequirements = DEFAULT_REQUIREMENTS): boolean => {
+  isValid: (
+    password: string,
+    requirements: PasswordRequirements = DEFAULT_REQUIREMENTS
+  ): boolean => {
     return PasswordValidator.validate(password, requirements).length === 0;
   },
 
@@ -86,24 +92,24 @@ const PasswordValidator = {
     if (!password) return 0;
 
     let score = 0;
-    
+
     // Length bonus
     score += Math.min(password.length * 4, 25);
-    
+
     // Character variety bonus
     if (/[a-z]/.test(password)) score += 5;
     if (/[A-Z]/.test(password)) score += 5;
     if (/\d/.test(password)) score += 5;
     if (/[!@#$%^&*(),.?":{}|<>]/.test(password)) score += 10;
-    
+
     // Length bonus for longer passwords
     if (password.length >= 12) score += 10;
     if (password.length >= 16) score += 10;
-    
+
     // Penalty for common patterns
     if (/(.)\1{2,}/.test(password)) score -= 10; // Repeated characters
     if (/123|abc|qwe/i.test(password)) score -= 10; // Sequential patterns
-    
+
     return Math.max(0, Math.min(100, score));
   },
 
@@ -137,7 +143,7 @@ const PasswordValidator = {
    */
   getDefaultRequirements: (): PasswordRequirements => {
     return { ...DEFAULT_REQUIREMENTS };
-  }
+  },
 };
 
-export default PasswordValidator; 
+export default PasswordValidator;

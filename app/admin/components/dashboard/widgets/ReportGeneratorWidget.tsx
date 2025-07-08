@@ -14,25 +14,27 @@ interface ReportGeneratorWidgetProps {
   onGenerate?: () => Promise<void>;
 }
 
-export const ReportGeneratorWidget = function ReportGeneratorWidget({ 
-  title, 
+export const ReportGeneratorWidget = function ReportGeneratorWidget({
+  title,
   reportType,
   description,
   apiEndpoint,
-  onGenerate 
+  onGenerate,
 }: ReportGeneratorWidgetProps) {
-  const [downloadStatus, setDownloadStatus] = useState<"idle" | "downloading" | "downloaded" | "complete">("idle");
+  const [downloadStatus, setDownloadStatus] = useState<
+    'idle' | 'downloading' | 'downloaded' | 'complete'
+  >('idle');
   const [progress, setProgress] = useState(0);
 
   const handleDownload = async () => {
-    if (downloadStatus !== "idle") return;
-    
-    setDownloadStatus("downloading");
+    if (downloadStatus !== 'idle') return;
+
+    setDownloadStatus('downloading');
     setProgress(0);
 
     // Simulate download progress
     const interval = setInterval(() => {
-      setProgress((prev) => {
+      setProgress(prev => {
         if (prev >= 95) {
           clearInterval(interval);
           return prev;
@@ -53,11 +55,11 @@ export const ReportGeneratorWidget = function ReportGeneratorWidget({
           },
           body: JSON.stringify({ reportType }),
         });
-        
+
         if (!response.ok) {
           throw new Error('Failed to generate report');
         }
-        
+
         // Download the report
         const blob = await response.blob();
         const url = window.URL.createObjectURL(blob);
@@ -69,23 +71,23 @@ export const ReportGeneratorWidget = function ReportGeneratorWidget({
         window.URL.revokeObjectURL(url);
         document.body.removeChild(a);
       }
-      
+
       clearInterval(interval);
       setProgress(100);
-      setDownloadStatus("downloaded");
-      
+      setDownloadStatus('downloaded');
+
       // Reset after 2 seconds
       setTimeout(() => {
-        setDownloadStatus("complete");
+        setDownloadStatus('complete');
         setTimeout(() => {
-          setDownloadStatus("idle");
+          setDownloadStatus('idle');
           setProgress(0);
         }, 500);
       }, 2000);
     } catch (error) {
       console.error('Download failed:', error);
       clearInterval(interval);
-      setDownloadStatus("idle");
+      setDownloadStatus('idle');
       setProgress(0);
     }
   };
@@ -94,51 +96,51 @@ export const ReportGeneratorWidget = function ReportGeneratorWidget({
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="h-full flex items-center justify-between px-6"
+      className='flex h-full items-center justify-between px-6'
     >
-      <div className="flex-1">
-        <p className="text-2xl text-muted-foreground">
+      <div className='flex-1'>
+        <p className='text-2xl text-muted-foreground'>
           {description || `Generate ${title.toLowerCase()}`}
         </p>
       </div>
-      
+
       <Button
         onClick={handleDownload}
-        size="lg"
+        size='lg'
         className={cn(
-          "ml-4 relative overflow-hidden select-none text-lg px-8 py-6",
-          downloadStatus === "downloading" && "bg-primary/50 hover:bg-primary/50",
-          downloadStatus !== "idle" && "pointer-events-none"
+          'relative ml-4 select-none overflow-hidden px-8 py-6 text-lg',
+          downloadStatus === 'downloading' && 'bg-primary/50 hover:bg-primary/50',
+          downloadStatus !== 'idle' && 'pointer-events-none'
         )}
       >
-        {downloadStatus === "idle" && (
+        {downloadStatus === 'idle' && (
           <>
-            <Download className="h-6 w-6 mr-3" />
+            <Download className='mr-3 h-6 w-6' />
             Download
           </>
         )}
-        {downloadStatus === "downloading" && (
-          <div className="z-[5] flex items-center justify-center">
-            <Loader2 className="mr-3 h-6 w-6 animate-spin" />
+        {downloadStatus === 'downloading' && (
+          <div className='z-[5] flex items-center justify-center'>
+            <Loader2 className='mr-3 h-6 w-6 animate-spin' />
             {Math.round(progress)}%
           </div>
         )}
-        {downloadStatus === "downloaded" && (
+        {downloadStatus === 'downloaded' && (
           <>
-            <CheckCircle className="h-6 w-6 mr-3" />
+            <CheckCircle className='mr-3 h-6 w-6' />
             <span>Downloaded</span>
           </>
         )}
-        {downloadStatus === "complete" && <span>Download</span>}
-        {downloadStatus === "downloading" && (
+        {downloadStatus === 'complete' && <span>Download</span>}
+        {downloadStatus === 'downloading' && (
           <div
-            className="absolute bottom-0 z-[3] h-full left-0 bg-primary inset-0 transition-all duration-200 ease-in-out"
+            className='absolute inset-0 bottom-0 left-0 z-[3] h-full bg-primary transition-all duration-200 ease-in-out'
             style={{ width: `${progress}%` }}
           />
         )}
       </Button>
     </motion.div>
   );
-}
+};
 
 export default ReportGeneratorWidget;

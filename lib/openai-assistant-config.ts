@@ -5,11 +5,11 @@ import { AssistantCreateParams } from 'openai/resources/beta/assistants';
  * 使用 file_search 工具實現 100% PDF 內容讀取
  */
 export const ORDER_ANALYZER_CONFIG: AssistantCreateParams = {
-  name: "Pennine Order PDF Analyzer Enhanced",
-  description: "Expert at analyzing order PDFs with complete data extraction including new fields",
-  model: "gpt-4-turbo-preview",
-  tools: [{ type: "file_search" }],
-  
+  name: 'Pennine Order PDF Analyzer Enhanced',
+  description: 'Expert at analyzing order PDFs with complete data extraction including new fields',
+  model: 'gpt-4-turbo-preview',
+  tools: [{ type: 'file_search' }],
+
   instructions: `You are an expert order PDF analyzer for Pennine warehouse system.
 
 TASK: Extract ALL order information from uploaded PDFs with maximum accuracy.
@@ -65,7 +65,7 @@ CRITICAL:
 - Analyze the complete document, don't skip any content
 - Return ONLY the JSON object, no additional text
 - Ensure all product quantities are numbers, not strings
-- Include ALL products found in the document`
+- Include ALL products found in the document`,
 };
 
 /**
@@ -84,9 +84,9 @@ export const SYSTEM_PROMPT = `請分析這份訂單 PDF 並提取所有訂單詳
  * Assistant 重試配置
  */
 export const ASSISTANT_RETRY_CONFIG = {
-  maxAttempts: 120,  // 最多嘗試次數（2分鐘）
+  maxAttempts: 120, // 最多嘗試次數（2分鐘）
   pollInterval: 1000, // 輪詢間隔（毫秒）
-  timeout: 120000    // 總超時時間（2分鐘）
+  timeout: 120000, // 總超時時間（2分鐘）
 };
 
 /**
@@ -95,5 +95,5 @@ export const ASSISTANT_RETRY_CONFIG = {
 export const FILE_UPLOAD_CONFIG = {
   maxFileSize: 20 * 1024 * 1024, // 20MB
   allowedTypes: ['application/pdf'],
-  purpose: 'assistants' as const
+  purpose: 'assistants' as const,
 };

@@ -25,7 +25,11 @@ interface DynamicActionBarProps {
 
 export function DynamicActionBar({ className }: DynamicActionBarProps) {
   const [activeItem, setActiveItem] = useState<string | null>(null);
-  const [userData, setUserData] = useState<{ name: string; email: string; icon_url?: string | null } | null>(null);
+  const [userData, setUserData] = useState<{
+    name: string;
+    email: string;
+    icon_url?: string | null;
+  } | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [isHovered, setIsHovered] = useState(false);
@@ -69,9 +73,9 @@ export function DynamicActionBar({ className }: DynamicActionBarProps) {
           setUserData({
             name: cachedData.name,
             email: cachedData.email,
-            icon_url: cachedData.icon_url
+            icon_url: cachedData.icon_url,
           });
-          
+
           // 獲取優化的頭像 URL
           if (cachedData.icon_url) {
             const optimizedUrl = await navigationCacheManager.getOptimizedAvatar(user.id);
@@ -87,19 +91,19 @@ export function DynamicActionBar({ className }: DynamicActionBarProps) {
           .select('name, email, icon_url')
           .eq('email', user.email)
           .single();
-        
+
         if (data && !error) {
           setUserData(data);
-          
+
           // 更新緩存
           navigationCacheManager.setUserData(user.id, {
             id: user.id,
             name: data.name,
             email: data.email,
             icon_url: data.icon_url,
-            role: userRole?.navigationRestricted ? 'restricted' : 'admin'
+            role: userRole?.navigationRestricted ? 'restricted' : 'admin',
           });
-          
+
           // 獲取優化的頭像
           if (data.icon_url) {
             await navigationCacheManager.setAvatarUrl(user.id, data.icon_url);
@@ -113,7 +117,7 @@ export function DynamicActionBar({ className }: DynamicActionBarProps) {
         setIsLoading(false);
       }
     };
-    
+
     fetchUserData();
   }, [user, userRole, supabase]);
 
@@ -125,7 +129,7 @@ export function DynamicActionBar({ className }: DynamicActionBarProps) {
         navigationCacheManager.clearUserCache(user.id);
       }
       navigationPreloader.clearCache();
-      
+
       const { error } = await supabase.auth.signOut();
       if (!error) {
         localStorage.removeItem('loggedInUserClockNumber');
@@ -141,28 +145,31 @@ export function DynamicActionBar({ className }: DynamicActionBarProps) {
   }, [user?.id, supabase, router]);
 
   // 優化動畫性能
-  const containerVariants = useMemo(() => ({
-    hidden: { 
-      y: 100, 
-      opacity: 0,
-      scale: 0.8
-    },
-    visible: {
-      y: 0,
-      opacity: 1,
-      scale: 1,
-      transition: {
-        type: "spring",
-        stiffness: 300,
-        damping: 30,
-        staggerChildren: 0.05
-      }
-    }
-  }), []);
+  const containerVariants = useMemo(
+    () => ({
+      hidden: {
+        y: 100,
+        opacity: 0,
+        scale: 0.8,
+      },
+      visible: {
+        y: 0,
+        opacity: 1,
+        scale: 1,
+        transition: {
+          type: 'spring',
+          stiffness: 300,
+          damping: 30,
+          staggerChildren: 0.05,
+        },
+      },
+    }),
+    []
+  );
 
   // 根據導航項目數量決定是否使用虛擬化
-  const allowedNavigation = useMemo(() => 
-    userRole?.navigationRestricted ? [] : MAIN_NAVIGATION,
+  const allowedNavigation = useMemo(
+    () => (userRole?.navigationRestricted ? [] : MAIN_NAVIGATION),
     [userRole?.navigationRestricted]
   );
 
@@ -216,10 +223,7 @@ export function DynamicActionBar({ className }: DynamicActionBarProps) {
     <>
       {/* Invisible Hover Trigger Area */}
       {!isMobile && !isHovered && (
-        <div
-          className="fixed bottom-0 left-0 right-0 h-20 z-40"
-          onMouseEnter={handleMouseEnter}
-        />
+        <div className='fixed bottom-0 left-0 right-0 z-40 h-20' onMouseEnter={handleMouseEnter} />
       )}
 
       {/* Hover Prompt */}
@@ -229,11 +233,11 @@ export function DynamicActionBar({ className }: DynamicActionBarProps) {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 20 }}
-            className="fixed bottom-[1%] left-1/2 transform -translate-x-1/2 z-40 pointer-events-none"
+            className='pointer-events-none fixed bottom-[1%] left-1/2 z-40 -translate-x-1/2 transform'
           >
-            <div className="bg-black/60 backdrop-blur-sm rounded-lg px-4 py-2">
-              <p className="text-sm text-white/80">
-                {isMobile ? "Tap ↑ to open navigation" : "Hover to show navigation"}
+            <div className='rounded-lg bg-black/60 px-4 py-2 backdrop-blur-sm'>
+              <p className='text-sm text-white/80'>
+                {isMobile ? 'Tap ↑ to open navigation' : 'Hover to show navigation'}
               </p>
             </div>
           </motion.div>
@@ -241,102 +245,97 @@ export function DynamicActionBar({ className }: DynamicActionBarProps) {
       </AnimatePresence>
 
       {/* Navigation Bar */}
-      <motion.div 
+      <motion.div
         variants={containerVariants}
-        initial="hidden"
-        animate={isHovered ? "visible" : "hidden"}
+        initial='hidden'
+        animate={isHovered ? 'visible' : 'hidden'}
         className={cn(
-          "fixed inset-x-0 mx-auto w-fit",
-          "bottom-[1%]", // Very close to bottom
-          "bg-transparent",
-          "rounded-2xl",
-          "shadow-2xl",
-          "p-2",
-          "z-50",
+          'fixed inset-x-0 mx-auto w-fit',
+          'bottom-[1%]', // Very close to bottom
+          'bg-transparent',
+          'rounded-2xl',
+          'shadow-2xl',
+          'p-2',
+          'z-50',
           className
         )}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
         onClick={handleClick}
       >
-      <div className="flex items-center justify-between gap-8 w-full">
-        {/* Left side: Navigation and Quick Access */}
-        <div className="flex items-center gap-4">
-          {/* Navigation Items - Only show for Admin users */}
-          {!userRole?.navigationRestricted && (
-            shouldUseVirtualization ? (
-              <VirtualizedNavigation
-                items={allowedNavigation}
-                activeItem={activeItem}
-                onActiveChange={setActiveItem}
-                className="flex-1"
+        <div className='flex w-full items-center justify-between gap-8'>
+          {/* Left side: Navigation and Quick Access */}
+          <div className='flex items-center gap-4'>
+            {/* Navigation Items - Only show for Admin users */}
+            {!userRole?.navigationRestricted &&
+              (shouldUseVirtualization ? (
+                <VirtualizedNavigation
+                  items={allowedNavigation}
+                  activeItem={activeItem}
+                  onActiveChange={setActiveItem}
+                  className='flex-1'
+                />
+              ) : (
+                <div className='flex items-center gap-2'>
+                  {allowedNavigation.map(item => (
+                    <NavigationItem
+                      key={item.id}
+                      item={item}
+                      isActive={activeItem === item.id}
+                      onActiveChange={setActiveItem}
+                    />
+                  ))}
+                </div>
+              ))}
+
+            {/* Quick Access - Only show for authenticated users with ID */}
+            {user?.id && !isLoading && <QuickAccess userId={user.id} />}
+          </div>
+
+          {/* User Info Section */}
+          <div className='flex items-center gap-4'>
+            {/* Divider - Only show if navigation items are present */}
+            {!userRole?.navigationRestricted && <div className='h-8 w-px bg-white/20' />}
+
+            {/* Greeting and User Name */}
+            <div className='text-right'>
+              <p className='text-xs text-white/70'>{getGreeting()}</p>
+              <p className='text-sm font-medium text-white'>
+                {userData?.name || user?.email || 'User'}
+              </p>
+            </div>
+
+            {/* User Avatar with loading state */}
+            {isLoading ? (
+              <div className='h-10 w-10 animate-pulse rounded-full bg-white/20' />
+            ) : avatarUrl ? (
+              <Image
+                src={avatarUrl}
+                alt={userData?.name || 'User'}
+                width={40}
+                height={40}
+                className='h-10 w-10 rounded-full object-cover shadow-lg'
+                loading='eager'
+                priority
               />
             ) : (
-              <div className="flex items-center gap-2">
-                {allowedNavigation.map((item) => (
-                  <NavigationItem
-                    key={item.id}
-                    item={item}
-                    isActive={activeItem === item.id}
-                    onActiveChange={setActiveItem}
-                  />
-                ))}
+              <div className='flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-purple-600 font-bold text-white shadow-lg'>
+                {userData?.name ? userData.name.charAt(0).toUpperCase() : 'U'}
               </div>
-            )
-          )}
-          
-          {/* Quick Access - Only show for authenticated users with ID */}
-          {user?.id && !isLoading && (
-            <QuickAccess userId={user.id} />
-          )}
-        </div>
-        
-        {/* User Info Section */}
-        <div className="flex items-center gap-4">
-          {/* Divider - Only show if navigation items are present */}
-          {!userRole?.navigationRestricted && (
-            <div className="h-8 w-px bg-white/20" />
-          )}
-          
-          {/* Greeting and User Name */}
-          <div className="text-right">
-            <p className="text-xs text-white/70">{getGreeting()}</p>
-            <p className="text-sm font-medium text-white">
-              {userData?.name || user?.email || 'User'}
-            </p>
+            )}
+
+            {/* Logout Button */}
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={handleLogout}
+              className='group rounded-lg bg-white/20 p-2 transition-colors hover:bg-white/20'
+              title='Logout'
+            >
+              <ArrowRightOnRectangleIcon className='h-5 w-5 text-white transition-colors group-hover:text-red-400' />
+            </motion.button>
           </div>
-          
-          {/* User Avatar with loading state */}
-          {isLoading ? (
-            <div className="w-10 h-10 rounded-full bg-white/20 animate-pulse" />
-          ) : avatarUrl ? (
-            <Image 
-              src={avatarUrl} 
-              alt={userData?.name || 'User'} 
-              width={40}
-              height={40}
-              className="w-10 h-10 rounded-full shadow-lg object-cover"
-              loading="eager"
-              priority
-            />
-          ) : (
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold shadow-lg">
-              {userData?.name ? userData.name.charAt(0).toUpperCase() : 'U'}
-            </div>
-          )}
-          
-          {/* Logout Button */}
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={handleLogout}
-            className="p-2 rounded-lg bg-white/20 hover:bg-white/20 transition-colors group"
-            title="Logout"
-          >
-            <ArrowRightOnRectangleIcon className="w-5 h-5 text-white group-hover:text-red-400 transition-colors" />
-          </motion.button>
         </div>
-      </div>
       </motion.div>
 
       {/* Mobile Tap Indicator */}
@@ -347,10 +346,15 @@ export function DynamicActionBar({ className }: DynamicActionBarProps) {
           whileHover={{ scale: 1.1 }}
           whileTap={{ scale: 0.9 }}
           onClick={() => setIsHovered(true)}
-          className="fixed bottom-[1%] left-1/2 transform -translate-x-1/2 z-40 bg-black/80 backdrop-blur-xl rounded-full p-3 shadow-2xl"
+          className='fixed bottom-[1%] left-1/2 z-40 -translate-x-1/2 transform rounded-full bg-black/80 p-3 shadow-2xl backdrop-blur-xl'
         >
-          <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
+          <svg className='h-6 w-6 text-white' fill='none' viewBox='0 0 24 24' stroke='currentColor'>
+            <path
+              strokeLinecap='round'
+              strokeLinejoin='round'
+              strokeWidth={2}
+              d='M5 10l7-7m0 0l7 7m-7-7v18'
+            />
           </svg>
         </motion.button>
       )}

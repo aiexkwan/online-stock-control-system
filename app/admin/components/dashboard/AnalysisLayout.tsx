@@ -10,21 +10,17 @@ interface AnalysisLayoutProps {
   children: React.ReactNode[];
 }
 
-export const AnalysisLayout: React.FC<AnalysisLayoutProps> = ({ 
-  theme, 
-  timeFrame, 
-  children 
-}) => {
+export const AnalysisLayout: React.FC<AnalysisLayoutProps> = ({ theme, timeFrame, children }) => {
   // 確保 children 是數組
   const childrenArray = React.Children.toArray(children);
-  
+
   // 使用虛擬化 hook
   const containerRef = useLayoutVirtualization({
     widgetCount: childrenArray.length,
     theme,
-    threshold: 100
+    threshold: 100,
   });
-  
+
   // Container styles for new layout with paged widget
   const containerStyle: React.CSSProperties = {
     display: 'grid',
@@ -43,11 +39,11 @@ export const AnalysisLayout: React.FC<AnalysisLayoutProps> = ({
     gap: '10px 10px',
     width: '100%',
     minHeight: '800px',
-    padding: '20px'
+    padding: '20px',
   };
 
   return (
-    <div ref={containerRef} className="analysis-container" style={containerStyle}>
+    <div ref={containerRef} className='analysis-container' style={containerStyle}>
       {childrenArray}
     </div>
   );

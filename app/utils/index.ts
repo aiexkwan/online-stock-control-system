@@ -1,6 +1,6 @@
 /**
  * Centralized exports for utility functions
- * 
+ *
  * Import pallet generation functions from here for cleaner imports:
  * import { generatePalletNumbers } from '@/app/utils';
  */
@@ -12,7 +12,7 @@ export {
   releasePalletReservation,
   getPalletBufferStatus,
   type GenerationOptions,
-  type GenerationResult
+  type GenerationResult,
 } from './palletGeneration';
 
 // Other utilities can be added here as needed

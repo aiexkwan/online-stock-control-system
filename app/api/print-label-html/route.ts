@@ -3,7 +3,7 @@ import QRCode from 'qrcode';
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
-  
+
   // 從 URL 參數獲取數據，如果沒有則使用測試數據
   const productCode = searchParams.get('productCode') || 'ME4545150';
   const description = searchParams.get('description') || 'Easy Stack 4 Full Wedges (300mm)';
@@ -18,10 +18,10 @@ export async function GET(request: NextRequest) {
   // 生成 QR 碼
   let qrCodeDataUrl = '';
   try {
-    qrCodeDataUrl = await QRCode.toDataURL(qrValue, { 
-      errorCorrectionLevel: 'M', 
-      margin: 1, 
-      width: 140
+    qrCodeDataUrl = await QRCode.toDataURL(qrValue, {
+      errorCorrectionLevel: 'M',
+      margin: 1,
+      width: 140,
     });
   } catch (err) {
     console.error('Failed to generate QR code:', err);
@@ -279,4 +279,4 @@ export async function GET(request: NextRequest) {
       'Content-Type': 'text/html; charset=utf-8',
     },
   });
-} 
+}

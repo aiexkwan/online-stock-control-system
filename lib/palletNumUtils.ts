@@ -10,7 +10,10 @@ import { format } from 'date-fns';
  * @returns A promise that resolves to an array of pallet number strings.
  * @throws Error if Supabase query fails.
  */
-export async function generatePalletNumbers(supabaseClient: SupabaseClient, count: number): Promise<string[]> {
+export async function generatePalletNumbers(
+  supabaseClient: SupabaseClient,
+  count: number
+): Promise<string[]> {
   if (count <= 0) {
     return [];
   }
@@ -25,13 +28,14 @@ export async function generatePalletNumbers(supabaseClient: SupabaseClient, coun
     .like('plt_num', `${dateStr}/%`);
 
   if (queryError) {
-    console.error('Error querying today\'s pallets for numbering:', queryError);
+    console.error("Error querying today's pallets for numbering:", queryError);
     throw new Error(`Failed to query today\'s pallets: ${queryError.message}`);
   }
 
   if (todayPlts && todayPlts.length > 0) {
     todayPlts.forEach(row => {
-      if (row.plt_num) { // Ensure plt_num is not null or undefined
+      if (row.plt_num) {
+        // Ensure plt_num is not null or undefined
         const parts = row.plt_num.split('/');
         if (parts.length === 2 && !isNaN(Number(parts[1]))) {
           maxNum = Math.max(maxNum, parseInt(parts[1]));
@@ -46,4 +50,4 @@ export async function generatePalletNumbers(supabaseClient: SupabaseClient, coun
   }
 
   return palletNumbersGenerated;
-} 
+}

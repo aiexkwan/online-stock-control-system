@@ -24,20 +24,20 @@ export async function GET(request: NextRequest) {
           activeConnections: basicStats.activeQueries || 0,
           topBlockedIPs: [
             { ip: '192.168.1.100', count: 5 },
-            { ip: '10.0.0.50', count: 3 }
+            { ip: '10.0.0.50', count: 3 },
           ],
           ...enhancedStats,
         });
 
       case 'cache-stats':
         const cacheStats = cacheOptimizer.getCacheStats();
-        const redisStats = await redisCacheAdapter.getStats().catch(() => ({ 
-          memory: '0MB', 
-          connections: 0, 
-          operations: 0, 
-          hitRate: undefined 
+        const redisStats = await redisCacheAdapter.getStats().catch(() => ({
+          memory: '0MB',
+          connections: 0,
+          operations: 0,
+          hitRate: undefined,
         }));
-        
+
         return NextResponse.json({
           hitRate: redisStats.hitRate || cacheStats.avgHitRatio * 100 || 75.5,
           totalRequests: cacheStats.totalRequests || 5000,
@@ -45,11 +45,11 @@ export async function GET(request: NextRequest) {
           topPerformingQueries: [
             { query: 'getWarehouseSummary', hitRate: 95.2 },
             { query: 'getActiveOrders', hitRate: 89.7 },
-            { query: 'getProductCatalog', hitRate: 85.1 }
+            { query: 'getProductCatalog', hitRate: 85.1 },
           ],
           underPerformingQueries: [
             { query: 'getDetailedAnalytics', hitRate: 45.2 },
-            { query: 'getRealTimeInventory', hitRate: 38.9 }
+            { query: 'getRealTimeInventory', hitRate: 38.9 },
           ],
         });
 
@@ -84,14 +84,17 @@ export async function GET(request: NextRequest) {
           recommendations: [
             '庫存查詢建議使用 5 分鐘 TTL',
             '用戶數據可增加緩存大小至 100',
-            '實時數據建議短期緩存策略'
+            '實時數據建議短期緩存策略',
           ],
         });
 
       case 'distributed-cluster':
         // 分散式限流集群狀態
         try {
-          if (redisCacheAdapter instanceof (await import('@/lib/graphql/redis-cache-adapter')).RedisCacheAdapter) {
+          if (
+            redisCacheAdapter instanceof
+            (await import('@/lib/graphql/redis-cache-adapter')).RedisCacheAdapter
+          ) {
             const distributedLimiter = createDistributedRateLimiter(redisCacheAdapter as any);
             const clusterStatus = await distributedLimiter.getClusterStatus();
             return NextResponse.json({
@@ -198,22 +201,22 @@ export async function GET(request: NextRequest) {
         // 生成過去一小時的性能歷史數據
         const now = Date.now();
         const history = [];
-        
+
         // 生成60個數據點（每分鐘一個）
         for (let i = 59; i >= 0; i--) {
           const timestamp = new Date(now - i * 60 * 1000).toISOString();
-          
+
           // 模擬真實數據波動
           const baseResponseTime = 150;
           const baseCacheHitRate = 80;
           const baseErrorRate = 0.5;
           const baseThroughput = 100;
-          
+
           // 添加一些隨機波動和趨勢
           const timeOfDay = new Date(timestamp).getHours();
           const isBusinessHours = timeOfDay >= 8 && timeOfDay <= 18;
           const loadFactor = isBusinessHours ? 1.5 : 0.8;
-          
+
           history.push({
             timestamp,
             responseTime: baseResponseTime * loadFactor + Math.random() * 50 - 25,
@@ -222,27 +225,30 @@ export async function GET(request: NextRequest) {
             throughput: baseThroughput * loadFactor + Math.random() * 40 - 20,
           });
         }
-        
+
         // 計算統計摘要
-        const stats = history.reduce((acc, item) => {
-          acc.totalResponseTime += item.responseTime;
-          acc.totalCacheHitRate += item.cacheHitRate;
-          acc.totalErrorRate += item.errorRate;
-          acc.totalThroughput += item.throughput;
-          acc.maxResponseTime = Math.max(acc.maxResponseTime, item.responseTime);
-          acc.minResponseTime = Math.min(acc.minResponseTime, item.responseTime);
-          return acc;
-        }, {
-          totalResponseTime: 0,
-          totalCacheHitRate: 0,
-          totalErrorRate: 0,
-          totalThroughput: 0,
-          maxResponseTime: 0,
-          minResponseTime: Infinity,
-        });
-        
+        const stats = history.reduce(
+          (acc, item) => {
+            acc.totalResponseTime += item.responseTime;
+            acc.totalCacheHitRate += item.cacheHitRate;
+            acc.totalErrorRate += item.errorRate;
+            acc.totalThroughput += item.throughput;
+            acc.maxResponseTime = Math.max(acc.maxResponseTime, item.responseTime);
+            acc.minResponseTime = Math.min(acc.minResponseTime, item.responseTime);
+            return acc;
+          },
+          {
+            totalResponseTime: 0,
+            totalCacheHitRate: 0,
+            totalErrorRate: 0,
+            totalThroughput: 0,
+            maxResponseTime: 0,
+            minResponseTime: Infinity,
+          }
+        );
+
         const count = history.length;
-        
+
         return NextResponse.json({
           history,
           summary: {
@@ -261,7 +267,7 @@ export async function GET(request: NextRequest) {
         const rateLimitStats = getRateLimitingStats();
         const systemCacheStats = cacheOptimizer.getCacheStats();
         const memUsage = process.memoryUsage();
-        
+
         // 測試 Redis 連接狀態
         let redisHealthy = false;
         let redisError = null;
@@ -271,7 +277,7 @@ export async function GET(request: NextRequest) {
           redisError = error instanceof Error ? error.message : 'Unknown Redis error';
           console.warn('Redis health check failed:', error);
         }
-        
+
         return NextResponse.json({
           status: redisHealthy ? 'healthy' : 'degraded',
           uptime: process.uptime() * 1000, // Convert to milliseconds
@@ -304,16 +310,23 @@ export async function GET(request: NextRequest) {
         });
 
       default:
-        return NextResponse.json({
-          error: 'Invalid type. Available types: rate-limiting, cache-stats, cache-configs, warmup-stats, health',
-        }, { status: 400 });
+        return NextResponse.json(
+          {
+            error:
+              'Invalid type. Available types: rate-limiting, cache-stats, cache-configs, warmup-stats, health',
+          },
+          { status: 400 }
+        );
     }
   } catch (error) {
     console.error('GraphQL Monitoring API Error:', error);
-    return NextResponse.json({
-      success: false,
-      error: 'Internal server error',
-    }, { status: 500 });
+    return NextResponse.json(
+      {
+        success: false,
+        error: 'Internal server error',
+      },
+      { status: 500 }
+    );
   }
 }
 
@@ -350,11 +363,14 @@ export async function POST(request: NextRequest) {
             newConfig: adaptiveUpdate.newConfig,
           });
         } catch (error) {
-          return NextResponse.json({
-            success: false,
-            error: 'ML optimization failed',
-            details: error instanceof Error ? error.message : 'Unknown error',
-          }, { status: 500 });
+          return NextResponse.json(
+            {
+              success: false,
+              error: 'ML optimization failed',
+              details: error instanceof Error ? error.message : 'Unknown error',
+            },
+            { status: 500 }
+          );
         }
 
       case 'run-performance-test':
@@ -369,7 +385,7 @@ export async function POST(request: NextRequest) {
             expectedMaxComplexity: 50,
             expectedMinCacheHitRate: 0.7,
           };
-          
+
           const result = await tester.runScenario(testScenario);
           return NextResponse.json({
             success: true,
@@ -377,11 +393,14 @@ export async function POST(request: NextRequest) {
             result,
           });
         } catch (error) {
-          return NextResponse.json({
-            success: false,
-            error: 'Performance test failed',
-            details: error instanceof Error ? error.message : 'Unknown error',
-          }, { status: 500 });
+          return NextResponse.json(
+            {
+              success: false,
+              error: 'Performance test failed',
+              details: error instanceof Error ? error.message : 'Unknown error',
+            },
+            { status: 500 }
+          );
         }
 
       case 'record-cache-metrics':
@@ -394,30 +413,42 @@ export async function POST(request: NextRequest) {
               message: 'Cache metrics recorded successfully',
             });
           } else {
-            return NextResponse.json({
-              success: false,
-              error: 'No metrics provided',
-            }, { status: 400 });
+            return NextResponse.json(
+              {
+                success: false,
+                error: 'No metrics provided',
+              },
+              { status: 400 }
+            );
           }
         } catch (error) {
-          return NextResponse.json({
-            success: false,
-            error: 'Failed to record metrics',
-            details: error instanceof Error ? error.message : 'Unknown error',
-          }, { status: 500 });
+          return NextResponse.json(
+            {
+              success: false,
+              error: 'Failed to record metrics',
+              details: error instanceof Error ? error.message : 'Unknown error',
+            },
+            { status: 500 }
+          );
         }
 
       default:
-        return NextResponse.json({
-          success: false,
-          error: 'Invalid action. Available actions: reset-cache-metrics, optimize-cache',
-        }, { status: 400 });
+        return NextResponse.json(
+          {
+            success: false,
+            error: 'Invalid action. Available actions: reset-cache-metrics, optimize-cache',
+          },
+          { status: 400 }
+        );
     }
   } catch (error) {
     console.error('GraphQL Monitoring API Error:', error);
-    return NextResponse.json({
-      success: false,
-      error: 'Internal server error',
-    }, { status: 500 });
+    return NextResponse.json(
+      {
+        success: false,
+        error: 'Internal server error',
+      },
+      { status: 500 }
+    );
   }
-} 
+}

@@ -23,15 +23,16 @@ export interface TransactionReportData {
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createClient();
-    
+
     // 獲取請求參數（如果有）
     const body = await request.json().catch(() => ({}));
     const { startDate, endDate } = body;
-    
+
     // 查詢交易記錄，連同棧板資料
     let query = supabase
       .from('record_transfer')
-      .select(`
+      .select(
+        `
         *,
         record_palletinfo!plt_num (
           product_code,
@@ -44,10 +45,11 @@ export async function POST(request: NextRequest) {
           department,
           position
         )
-      `)
+      `
+      )
       .order('tran_date', { ascending: false })
       .limit(1000); // 限制筆數避免過大
-    
+
     // 如果有日期範圍，添加過濾
     if (startDate) {
       query = query.gte('tran_date', startDate);
@@ -74,21 +76,25 @@ export async function POST(request: NextRequest) {
       quantity: transaction.record_palletinfo?.product_qty || 0,
       operator_id: transaction.operator_id?.toString() || '',
       operator_name: transaction.data_id?.name || `ID: ${transaction.operator_id}`,
-      transfer_date: transaction.tran_date ? format(new Date(transaction.tran_date), 'yyyy-MM-dd') : '',
-      pallet_number: transaction.plt_num || ''
+      transfer_date: transaction.tran_date
+        ? format(new Date(transaction.tran_date), 'yyyy-MM-dd')
+        : '',
+      pallet_number: transaction.plt_num || '',
     }));
 
     // 計算日期範圍
     const dates = data.map(t => new Date(t.tran_date)).filter(d => !isNaN(d.getTime()));
-    const minDate = dates.length > 0 ? format(Math.min(...dates.map(d => d.getTime())), 'yyyy-MM-dd') : '';
-    const maxDate = dates.length > 0 ? format(Math.max(...dates.map(d => d.getTime())), 'yyyy-MM-dd') : '';
+    const minDate =
+      dates.length > 0 ? format(Math.min(...dates.map(d => d.getTime())), 'yyyy-MM-dd') : '';
+    const maxDate =
+      dates.length > 0 ? format(Math.max(...dates.map(d => d.getTime())), 'yyyy-MM-dd') : '';
 
     const reportData: TransactionReportData = {
       date_range: {
         start_date: startDate || minDate,
-        end_date: endDate || maxDate
+        end_date: endDate || maxDate,
       },
-      transfers
+      transfers,
     };
 
     // 使用標準的 buildTransactionReport 函數生成報表
@@ -98,13 +104,16 @@ export async function POST(request: NextRequest) {
     return new NextResponse(buffer, {
       headers: {
         'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        'Content-Disposition': `attachment; filename="product-movement-sheet-${new Date().toISOString().split('T')[0]}.xlsx"`
-      }
+        'Content-Disposition': `attachment; filename="product-movement-sheet-${new Date().toISOString().split('T')[0]}.xlsx"`,
+      },
     });
   } catch (error) {
     console.error('Error generating transaction report:', error);
     return NextResponse.json(
-      { error: 'Failed to generate report', details: error instanceof Error ? error.message : 'Unknown error' },
+      {
+        error: 'Failed to generate report',
+        details: error instanceof Error ? error.message : 'Unknown error',
+      },
       { status: 500 }
     );
   }

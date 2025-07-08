@@ -60,7 +60,7 @@ export const PACKAGE_TYPE_OPTIONS = [
 // 類型定義
 export type PalletTypeKey = keyof typeof PALLET_WEIGHTS;
 export type PackageTypeKey = keyof typeof PACKAGE_WEIGHTS;
-export type LabelMode = typeof LABEL_MODES[keyof typeof LABEL_MODES];
+export type LabelMode = (typeof LABEL_MODES)[keyof typeof LABEL_MODES];
 
 // 輔助函數
 export const getPalletLabel = (index: number): string => {
@@ -87,15 +87,19 @@ export const calculateNetWeight = (
 // 驗證重量輸入
 export const validateWeight = (weight: string): boolean => {
   const numWeight = parseFloat(weight);
-  return !isNaN(numWeight) && 
-         numWeight > SYSTEM_LIMITS.MIN_WEIGHT && 
-         numWeight <= SYSTEM_LIMITS.MAX_WEIGHT;
+  return (
+    !isNaN(numWeight) &&
+    numWeight > SYSTEM_LIMITS.MIN_WEIGHT &&
+    numWeight <= SYSTEM_LIMITS.MAX_WEIGHT
+  );
 };
 
 // 驗證數量輸入
 export const validateQuantity = (quantity: string): boolean => {
   const numQuantity = parseInt(quantity);
-  return !isNaN(numQuantity) && 
-         numQuantity >= SYSTEM_LIMITS.MIN_QUANTITY && 
-         numQuantity <= SYSTEM_LIMITS.MAX_QUANTITY;
+  return (
+    !isNaN(numQuantity) &&
+    numQuantity >= SYSTEM_LIMITS.MIN_QUANTITY &&
+    numQuantity <= SYSTEM_LIMITS.MAX_QUANTITY
+  );
 };

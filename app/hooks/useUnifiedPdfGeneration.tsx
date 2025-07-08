@@ -16,13 +16,13 @@ interface UseUnifiedPdfGenerationOptions {
 /**
  * Unified PDF generation hook for QC and GRN labels
  * QC 和 GRN 標籤的統一 PDF 生成 Hook
- * 
+ *
  * @example
  * ```typescript
  * // For QC Labels
  * const qcPdfGenerator = useUnifiedPdfGeneration({ labelType: 'qc' });
  * const results = await qcPdfGenerator.generateLabels(qcDataArray);
- * 
+ *
  * // For GRN Labels
  * const grnPdfGenerator = useUnifiedPdfGeneration({ labelType: 'grn' });
  * const results = await grnPdfGenerator.generateLabels(grnDataArray);
@@ -30,16 +30,16 @@ interface UseUnifiedPdfGenerationOptions {
  */
 export function useUnifiedPdfGeneration(options: UseUnifiedPdfGenerationOptions) {
   const { labelType, autoUpload = true, autoPrint = true } = options;
-  
+
   const storagePath = labelType === 'qc' ? 'qc-labels' : 'grn-labels';
-  
+
   const pdfGeneration = usePdfGeneration({
     defaultStoragePath: storagePath,
     defaultUpload: autoUpload,
     autoPrint: autoPrint,
-    mergePdfs: true
+    mergePdfs: true,
   });
-  
+
   /**
    * Generate QC label PDFs
    */
@@ -48,19 +48,17 @@ export function useUnifiedPdfGeneration(options: UseUnifiedPdfGenerationOptions)
     onProgress?: (current: number, total: number) => void
   ) => {
     const components = dataArray.map(data => (
-      <PrintLabelPdf 
-        key={data.palletNum} 
+      <PrintLabelPdf
+        key={data.palletNum}
         {...data}
         productType={data.productType || undefined}
         description={data.productDescription}
         date={new Date().toISOString().split('T')[0]}
       />
     ));
-    
-    const filenames = dataArray.map(data => 
-      `qc-label-${data.palletNum.replace(/\//g, '_')}`
-    );
-    
+
+    const filenames = dataArray.map(data => `qc-label-${data.palletNum.replace(/\//g, '_')}`);
+
     return pdfGeneration.generateMultiplePdfs({
       components,
       filenames,
@@ -70,10 +68,10 @@ export function useUnifiedPdfGeneration(options: UseUnifiedPdfGenerationOptions)
         if (status === 'failed') {
           console.error(`Failed to generate PDF ${current}/${total}`);
         }
-      }
+      },
     });
   };
-  
+
   /**
    * Generate GRN label PDFs
    */
@@ -83,13 +81,11 @@ export function useUnifiedPdfGeneration(options: UseUnifiedPdfGenerationOptions)
   ) => {
     const components = dataArray.map(data => (
       // <GrnLabelPdf key={data.palletNumber} {...data} />
-      <PrintLabelPdf key={data.palletNumber} {...data as any} /> // Temporary: use PrintLabelPdf until GrnLabelPdf is created
+      <PrintLabelPdf key={data.palletNumber} {...(data as any)} /> // Temporary: use PrintLabelPdf until GrnLabelPdf is created
     ));
-    
-    const filenames = dataArray.map(data => 
-      `grn-label-${data.palletNumber.replace(/\//g, '_')}`
-    );
-    
+
+    const filenames = dataArray.map(data => `grn-label-${data.palletNumber.replace(/\//g, '_')}`);
+
     return pdfGeneration.generateMultiplePdfs({
       components,
       filenames,
@@ -99,10 +95,10 @@ export function useUnifiedPdfGeneration(options: UseUnifiedPdfGenerationOptions)
         if (status === 'failed') {
           console.error(`Failed to generate PDF ${current}/${total}`);
         }
-      }
+      },
     });
   };
-  
+
   /**
    * Generate labels based on type
    */
@@ -116,35 +112,39 @@ export function useUnifiedPdfGeneration(options: UseUnifiedPdfGenerationOptions)
       return generateGrnLabels(dataArray as GrnLabelData[], onProgress);
     }
   };
-  
+
   /**
    * Generate a single label
    */
   const generateSingleLabel = async (data: any) => {
-    const component = labelType === 'qc' 
-      ? <PrintLabelPdf 
+    const component =
+      labelType === 'qc' ? (
+        <PrintLabelPdf
           {...(data as QcInputData)}
           productType={data.productType || undefined}
           description={data.productDescription}
           date={new Date().toISOString().split('T')[0]}
         />
-      : <PrintLabelPdf {...(data as any)} />; // Temporary: use PrintLabelPdf until GrnLabelPdf is created
-    
-    const filename = labelType === 'qc'
-      ? `qc-label-${data.palletNum?.replace(/\//g, '_')}`
-      : `grn-label-${data.palletNumber?.replace(/\//g, '_')}`;
-    
+      ) : (
+        <PrintLabelPdf {...(data as any)} />
+      ); // Temporary: use PrintLabelPdf until GrnLabelPdf is created
+
+    const filename =
+      labelType === 'qc'
+        ? `qc-label-${data.palletNum?.replace(/\//g, '_')}`
+        : `grn-label-${data.palletNumber?.replace(/\//g, '_')}`;
+
     return pdfGeneration.generateSinglePdf({
       component,
-      filename
+      filename,
     });
   };
-  
+
   return {
     ...pdfGeneration,
     generateLabels,
     generateSingleLabel,
     generateQcLabels,
-    generateGrnLabels
+    generateGrnLabels,
   };
 }

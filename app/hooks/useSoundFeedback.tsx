@@ -9,7 +9,7 @@ interface SoundOptions {
 
 export function useSoundFeedback(options: SoundOptions = {}) {
   const { volume = 0.5, enabled = true } = options;
-  
+
   // Audio contexts
   const audioContextRef = useRef<AudioContext | null>(null);
   const oscillatorRef = useRef<OscillatorNode | null>(null);
@@ -20,13 +20,13 @@ export function useSoundFeedback(options: SoundOptions = {}) {
     if (typeof window !== 'undefined' && !audioContextRef.current) {
       audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
     }
-    
+
     return () => {
       // Capture the current ref values to avoid stale closure issues
       // eslint-disable-next-line react-hooks/exhaustive-deps
       const oscillator = oscillatorRef.current;
       const audioContext = audioContextRef.current;
-      
+
       if (oscillator) {
         oscillator.stop();
         oscillator.disconnect();
@@ -52,11 +52,11 @@ export function useSoundFeedback(options: SoundOptions = {}) {
 
       // Configure success sound (two quick rising tones)
       const now = context.currentTime;
-      
+
       // First beep
       oscillator.frequency.setValueAtTime(800, now);
       oscillator.frequency.exponentialRampToValueAtTime(1200, now + 0.1);
-      
+
       // Second beep (higher)
       oscillator.frequency.setValueAtTime(1000, now + 0.15);
       oscillator.frequency.exponentialRampToValueAtTime(1400, now + 0.25);
@@ -99,7 +99,7 @@ export function useSoundFeedback(options: SoundOptions = {}) {
 
       // Configure error sound (descending buzzer)
       const now = context.currentTime;
-      
+
       // Buzzing error sound
       oscillator.frequency.setValueAtTime(300, now);
       oscillator.frequency.linearRampToValueAtTime(150, now + 0.3);
@@ -148,22 +148,22 @@ export function useSoundFeedback(options: SoundOptions = {}) {
 
       // Configure warning sound (three short beeps)
       const now = context.currentTime;
-      
+
       oscillator.frequency.setValueAtTime(600, now);
 
       // Three beeps
       gainNode.gain.setValueAtTime(0, now);
-      
+
       // Beep 1
       gainNode.gain.linearRampToValueAtTime(volume * 0.7, now + 0.01);
       gainNode.gain.linearRampToValueAtTime(volume * 0.7, now + 0.08);
       gainNode.gain.linearRampToValueAtTime(0, now + 0.09);
-      
+
       // Beep 2
       gainNode.gain.linearRampToValueAtTime(volume * 0.7, now + 0.15);
       gainNode.gain.linearRampToValueAtTime(volume * 0.7, now + 0.22);
       gainNode.gain.linearRampToValueAtTime(0, now + 0.23);
-      
+
       // Beep 3
       gainNode.gain.linearRampToValueAtTime(volume * 0.7, now + 0.29);
       gainNode.gain.linearRampToValueAtTime(volume * 0.7, now + 0.36);
@@ -198,7 +198,7 @@ export function useSoundFeedback(options: SoundOptions = {}) {
 
       // Configure scan sound (quick high beep)
       const now = context.currentTime;
-      
+
       oscillator.frequency.setValueAtTime(1500, now);
 
       // Quick beep
@@ -225,7 +225,7 @@ export function useSoundFeedback(options: SoundOptions = {}) {
     playSuccess,
     playError,
     playWarning,
-    playScan
+    playScan,
   };
 }
 
@@ -257,6 +257,6 @@ export function useSoundSettings() {
     getSoundEnabled,
     setSoundEnabled,
     getSoundVolume,
-    setSoundVolume
+    setSoundVolume,
   };
 }

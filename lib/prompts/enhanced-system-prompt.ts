@@ -12,75 +12,75 @@ const DATABASE_SCHEMA = {
     record_palletinfo: {
       description: '棧板主資料表',
       key_columns: ['plt_num (PK)', 'product_code', 'product_qty', 'generate_time'],
-      notes: '棧板號格式: DDMMYY#### (例: 280625001)'
+      notes: '棧板號格式: DDMMYY#### (例: 280625001)',
     },
     record_inventory: {
       description: '實時庫存位置表',
       key_columns: ['plt_num', 'injection', 'pipeline', 'await', 'fold', 'bulk', 'damage'],
-      notes: '每個位置欄位代表該位置的數量，0表示不在該位置'
-    }
+      notes: '每個位置欄位代表該位置的數量，0表示不在該位置',
+    },
   },
-  
+
   // 操作歷史
   history: {
     record_history: {
       description: '所有操作歷史記錄',
       key_columns: ['plt_num', 'action', 'loc', 'time', 'id (操作員)'],
-      notes: 'action包括: Move, Stock Transfer, Finish QC, Loaded等'
+      notes: 'action包括: Move, Stock Transfer, Finish QC, Loaded等',
     },
     record_transfer: {
       description: '倉庫轉移記錄',
       key_columns: ['plt_num', 'f_loc', 't_loc', 'tran_date', 'operator_id'],
-      notes: '記錄所有位置間的轉移'
-    }
+      notes: '記錄所有位置間的轉移',
+    },
   },
-  
+
   // 訂單管理
   orders: {
     data_order: {
       description: '客戶訂單',
       key_columns: ['order_ref', 'product_code', 'product_qty', 'loaded_qty', 'created_at'],
-      notes: 'loaded_qty < product_qty 表示未完成'
+      notes: 'loaded_qty < product_qty 表示未完成',
     },
     record_aco: {
       description: 'ACO訂單主表',
-      key_columns: ['order_ref', 'created_at', 'latest_update']
-    }
+      key_columns: ['order_ref', 'created_at', 'latest_update'],
+    },
   },
-  
+
   // 基礎資料
   master: {
     data_code: {
       description: '產品主數據',
       key_columns: ['code (PK)', 'description', 'type', 'standard_qty'],
-      notes: '產品代碼模式: MH*, ALDR*, S*, SA*'
+      notes: '產品代碼模式: MH*, ALDR*, S*, SA*',
     },
     data_id: {
       description: '用戶資料',
-      key_columns: ['id (PK)', 'name', 'department', 'position']
-    }
-  }
+      key_columns: ['id (PK)', 'name', 'department', 'position'],
+    },
+  },
 };
 
 // 業務規則說明
 const BUSINESS_RULES = {
   locations: {
-    'Await': '默認暫存區，新收貨或待處理的棧板',
-    'Await_grn': '收貨暫存區，剛完成GRN的棧板',
-    'Injection': '生產區，正在生產的材料',
-    'Pipeline': '管道處理區',
-    'Fold': '摺疊加工區',
-    'Bulk': '散裝儲存區',
-    'Backcarpark': '外部停車場儲存',
-    'Damage': '損壞品區'
+    Await: '默認暫存區，新收貨或待處理的棧板',
+    Await_grn: '收貨暫存區，剛完成GRN的棧板',
+    Injection: '生產區，正在生產的材料',
+    Pipeline: '管道處理區',
+    Fold: '摺疊加工區',
+    Bulk: '散裝儲存區',
+    Backcarpark: '外部停車場儲存',
+    Damage: '損壞品區',
   },
-  
+
   workflows: {
     receiving: 'GRN收貨 → await_grn → 轉移到其他位置',
     production: '材料 → injection(生產) → 完成QC → await',
-    shipping: 'await → 分配到訂單 → loaded → 出貨'
+    shipping: 'await → 分配到訂單 → loaded → 出貨',
   },
-  
+
   common_queries: {
     stock_in_await: `
       -- 查詢在Await的棧板
@@ -102,14 +102,14 @@ const BUSINESS_RULES = {
              (product_qty - COALESCE(loaded_qty, 0)) as remaining_qty
       FROM data_order
       WHERE COALESCE(loaded_qty, 0) < product_qty
-    `
-  }
+    `,
+  },
 };
 
 // 生成增強的系統提示詞
 export function generateEnhancedSystemPrompt(): string {
   const currentDate = format(new Date(), 'yyyy-MM-dd');
-  
+
   return `You are an expert SQL assistant for Pennine warehouse management system.
 Current date: ${currentDate} (UK timezone)
 
@@ -150,7 +150,7 @@ You must ONLY generate SELECT queries. Any other operation should be rejected.
 // 生成 Schema 描述
 function generateSchemaDescription(): string {
   let description = '';
-  
+
   for (const [category, tables] of Object.entries(DATABASE_SCHEMA)) {
     description += `\n${category.toUpperCase()} TABLES:\n`;
     for (const [tableName, info] of Object.entries(tables)) {
@@ -161,35 +161,35 @@ function generateSchemaDescription(): string {
       }
     }
   }
-  
+
   return description;
 }
 
 // 生成業務規則
 function generateBusinessRules(): string {
   let rules = '';
-  
+
   rules += '\nLOCATION MEANINGS:\n';
   for (const [loc, desc] of Object.entries(BUSINESS_RULES.locations)) {
     rules += `- ${loc}: ${desc}\n`;
   }
-  
+
   rules += '\nWORKFLOWS:\n';
   for (const [workflow, desc] of Object.entries(BUSINESS_RULES.workflows)) {
     rules += `- ${workflow}: ${desc}\n`;
   }
-  
+
   return rules;
 }
 
 // 生成常見查詢模式
 function generateCommonPatterns(): string {
   let patterns = '';
-  
+
   for (const [queryType, sql] of Object.entries(BUSINESS_RULES.common_queries)) {
     patterns += `\n${queryType.toUpperCase()}:${sql}\n`;
   }
-  
+
   return patterns;
 }
 
@@ -210,9 +210,9 @@ export const QUERY_TEMPLATES = {
       {{CONDITIONS}}
       GROUP BY p.product_code, dc.description
       ORDER BY total_qty DESC
-    `
+    `,
   },
-  
+
   // Await location 查詢
   awaitPallets: {
     keywords: ['await', '等待', 'waiting', '暫存'],
@@ -233,9 +233,9 @@ export const QUERY_TEMPLATES = {
       WHERE i.await > 0
       {{CONDITIONS}}
       ORDER BY h.time DESC
-    `
+    `,
   },
-  
+
   // 今日生產
   dailyProduction: {
     keywords: ['今日', 'today', '生產', 'production', 'produced'],
@@ -247,9 +247,9 @@ export const QUERY_TEMPLATES = {
       WHERE DATE(p.generate_time) = CURRENT_DATE
       AND p.plt_remark LIKE '%finished in production%'
       {{CONDITIONS}}
-    `
+    `,
   },
-  
+
   // 訂單狀態
   orderStatus: {
     keywords: ['訂單', 'order', '未完成', 'pending', 'incomplete'],
@@ -264,9 +264,9 @@ export const QUERY_TEMPLATES = {
       WHERE COALESCE(o.loaded_qty, 0) < o.product_qty
       {{CONDITIONS}}
       ORDER BY o.created_at DESC
-    `
+    `,
   },
-  
+
   // 轉移歷史
   transferHistory: {
     keywords: ['轉移', 'transfer', 'moved', '搬運'],
@@ -282,20 +282,20 @@ export const QUERY_TEMPLATES = {
       {{CONDITIONS}}
       ORDER BY t.tran_date DESC
       LIMIT 100
-    `
-  }
+    `,
+  },
 };
 
 // 根據問題選擇合適的模板
 export function selectQueryTemplate(question: string): string | null {
   const lowerQuestion = question.toLowerCase();
-  
+
   for (const [templateName, config] of Object.entries(QUERY_TEMPLATES)) {
     if (config.keywords.some(keyword => lowerQuestion.includes(keyword))) {
       return config.template;
     }
   }
-  
+
   return null;
 }
 

@@ -6,7 +6,7 @@ interface UploadRefreshContextType {
   // 觸發更新嘅函數
   triggerOrderHistoryRefresh: () => void;
   triggerOtherFilesRefresh: () => void;
-  
+
   // 版本號碼 - 用於 hooks 訂閱
   orderHistoryVersion: number;
   otherFilesVersion: number;
@@ -30,23 +30,17 @@ export const UploadRefreshProvider: React.FC<{ children: React.ReactNode }> = ({
 
   // 將版本號碼暴露出去，畀使用者自己處理 useEffect
 
-  const value = React.useMemo(() => ({
-    triggerOrderHistoryRefresh,
-    triggerOtherFilesRefresh,
-    orderHistoryVersion,
-    otherFilesVersion
-  }), [
-    triggerOrderHistoryRefresh,
-    triggerOtherFilesRefresh,
-    orderHistoryVersion,
-    otherFilesVersion
-  ]);
-
-  return (
-    <UploadRefreshContext.Provider value={value}>
-      {children}
-    </UploadRefreshContext.Provider>
+  const value = React.useMemo(
+    () => ({
+      triggerOrderHistoryRefresh,
+      triggerOtherFilesRefresh,
+      orderHistoryVersion,
+      otherFilesVersion,
+    }),
+    [triggerOrderHistoryRefresh, triggerOtherFilesRefresh, orderHistoryVersion, otherFilesVersion]
   );
+
+  return <UploadRefreshContext.Provider value={value}>{children}</UploadRefreshContext.Provider>;
 };
 
 export const useUploadRefresh = () => {

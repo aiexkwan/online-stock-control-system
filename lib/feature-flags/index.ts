@@ -1,6 +1,6 @@
 /**
  * Feature Flag 系統
- * 
+ *
  * 提供功能開關、A/B 測試和漸進式發布功能
  */
 
@@ -21,7 +21,7 @@ export {
   useFeatureFlags,
   useAllFeatureFlags,
   useFeatureFlagToggle,
-  useFeatureFlagManager
+  useFeatureFlagManager,
 } from './hooks/useFeatureFlag';
 
 // React 組件導出
@@ -30,7 +30,7 @@ export {
   FeatureVariant,
   FeatureFlagsProvider,
   useFeatureFlagsContext,
-  withFeatureFlag
+  withFeatureFlag,
 } from './components/FeatureFlag';
 
 export { FeatureFlagPanel } from './components/FeatureFlagPanel';
@@ -42,10 +42,7 @@ export { FeatureFlagPanel } from './components/FeatureFlagPanel';
 /**
  * 檢查 Feature Flag 是否啟用
  */
-export async function isFeatureEnabled(
-  key: string,
-  context?: any
-): Promise<boolean> {
+export async function isFeatureEnabled(key: string, context?: any): Promise<boolean> {
   const evaluation = await featureFlagManager.evaluate(key, context);
   return evaluation.enabled;
 }
@@ -53,10 +50,7 @@ export async function isFeatureEnabled(
 /**
  * 獲取 Feature Flag 變體
  */
-export async function getFeatureVariant(
-  key: string,
-  context?: any
-): Promise<string | undefined> {
+export async function getFeatureVariant(key: string, context?: any): Promise<string | undefined> {
   const evaluation = await featureFlagManager.evaluate(key, context);
   return evaluation.variant;
 }

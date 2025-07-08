@@ -12,7 +12,7 @@ export const orderLoadingReportConfig: ReportConfig = {
   category: 'operational',
   formats: ['pdf', 'excel'],
   defaultFormat: 'pdf',
-  
+
   // 過濾器配置
   filters: [
     {
@@ -25,21 +25,21 @@ export const orderLoadingReportConfig: ReportConfig = {
         const start = new Date();
         start.setDate(start.getDate() - 7);
         return `${start.toISOString().split('T')[0]}|${end.toISOString().split('T')[0]}`;
-      })()
+      })(),
     },
     {
       id: 'orderNumber',
       label: 'Order Number',
       type: 'text',
       required: false,
-      placeholder: 'Enter order number (optional)'
+      placeholder: 'Enter order number (optional)',
     },
     {
       id: 'productCode',
       label: 'Product Code',
       type: 'text',
       required: false,
-      placeholder: 'Enter product code (optional)'
+      placeholder: 'Enter product code (optional)',
     },
     {
       id: 'userId',
@@ -50,8 +50,8 @@ export const orderLoadingReportConfig: ReportConfig = {
       dataSource: {
         type: 'table',
         name: 'data_id',
-        params: { role: 'operator' }
-      }
+        params: { role: 'operator' },
+      },
     },
     {
       id: 'status',
@@ -62,11 +62,11 @@ export const orderLoadingReportConfig: ReportConfig = {
         { value: '', label: 'All Status' },
         { value: 'completed', label: 'Completed' },
         { value: 'partial', label: 'Partial' },
-        { value: 'pending', label: 'Pending' }
-      ]
-    }
+        { value: 'pending', label: 'Pending' },
+      ],
+    },
   ],
-  
+
   // 報表區段配置
   sections: [
     {
@@ -79,28 +79,28 @@ export const orderLoadingReportConfig: ReportConfig = {
           {
             id: 'totalOrders',
             label: 'Total Orders',
-            type: 'count'
+            type: 'count',
           },
           {
             id: 'completedOrders',
             label: 'Completed Orders',
             type: 'custom',
-            customCalculation: 'countWhere:status=completed'
+            customCalculation: 'countWhere:status=completed',
           },
           {
             id: 'totalItemsLoaded',
             label: 'Total Items Loaded',
             type: 'sum',
-            field: 'loaded_qty'
+            field: 'loaded_qty',
           },
           {
             id: 'avgCompletionRate',
             label: 'Average Completion Rate',
             type: 'custom',
-            customCalculation: 'avgCompletionRate'
-          }
-        ]
-      }
+            customCalculation: 'avgCompletionRate',
+          },
+        ],
+      },
     },
     {
       id: 'orderProgress',
@@ -113,43 +113,43 @@ export const orderLoadingReportConfig: ReportConfig = {
             id: 'order_number',
             label: 'Order #',
             type: 'text',
-            width: 80
+            width: 80,
           },
           {
             id: 'order_date',
             label: 'Order Date',
             type: 'date',
-            width: 80
+            width: 80,
           },
           {
             id: 'total_items',
             label: 'Total Items',
             type: 'number',
             width: 60,
-            align: 'right'
+            align: 'right',
           },
           {
             id: 'loaded_items',
             label: 'Loaded',
             type: 'number',
             width: 60,
-            align: 'right'
+            align: 'right',
           },
           {
             id: 'completion_rate',
             label: 'Completion',
             type: 'percentage',
             width: 70,
-            align: 'right'
+            align: 'right',
           },
           {
             id: 'status',
             label: 'Status',
             type: 'text',
-            width: 70
-          }
-        ]
-      }
+            width: 70,
+          },
+        ],
+      },
     },
     {
       id: 'loadingDetails',
@@ -163,47 +163,47 @@ export const orderLoadingReportConfig: ReportConfig = {
             label: 'Date/Time',
             type: 'date',
             format: 'datetime',
-            width: 100
+            width: 100,
           },
           {
             id: 'order_number',
             label: 'Order #',
             type: 'text',
-            width: 80
+            width: 80,
           },
           {
             id: 'product_code',
             label: 'Product',
             type: 'text',
-            width: 80
+            width: 80,
           },
           {
             id: 'product_description',
             label: 'Description',
             type: 'text',
-            width: 150
+            width: 150,
           },
           {
             id: 'loaded_qty',
             label: 'Loaded Qty',
             type: 'number',
             width: 70,
-            align: 'right'
+            align: 'right',
           },
           {
             id: 'user_name',
             label: 'User',
             type: 'text',
-            width: 100
+            width: 100,
           },
           {
             id: 'action',
             label: 'Action',
             type: 'text',
-            width: 80
-          }
-        ]
-      }
+            width: 80,
+          },
+        ],
+      },
     },
     {
       id: 'userPerformance',
@@ -217,40 +217,40 @@ export const orderLoadingReportConfig: ReportConfig = {
             id: 'user_id',
             label: 'User ID',
             type: 'text',
-            width: 60
+            width: 60,
           },
           {
             id: 'user_name',
             label: 'User Name',
             type: 'text',
-            width: 120
+            width: 120,
           },
           {
             id: 'total_loads',
             label: 'Total Loads',
             type: 'number',
             width: 80,
-            align: 'right'
+            align: 'right',
           },
           {
             id: 'total_quantity',
             label: 'Total Quantity',
             type: 'number',
             width: 90,
-            align: 'right'
+            align: 'right',
           },
           {
             id: 'avg_load_time',
             label: 'Avg Load Time',
             type: 'text',
             width: 90,
-            align: 'right'
-          }
-        ]
-      }
-    }
+            align: 'right',
+          },
+        ],
+      },
+    },
   ],
-  
+
   // 樣式配置 - 保持現有格式
   styleOverrides: {
     pdf: {
@@ -260,21 +260,21 @@ export const orderLoadingReportConfig: ReportConfig = {
       headerHeight: 35,
       footerHeight: 20,
       // 使用舊版樣式以確保格式一致
-      useLegacyStyles: true
+      useLegacyStyles: true,
     },
     excel: {
       headerStyle: {
         font: { bold: true, size: 12 },
-        fill: { fgColor: { rgb: "4A5568" } },
-        font_color: { rgb: "FFFFFF" }
+        fill: { fgColor: { rgb: '4A5568' } },
+        font_color: { rgb: 'FFFFFF' },
       },
       dataStyle: {
-        font: { size: 10 }
+        font: { size: 10 },
       },
       summaryStyle: {
         font: { bold: true, size: 11 },
-        fill: { fgColor: { rgb: "E2E8F0" } }
-      }
-    }
-  }
+        fill: { fgColor: { rgb: 'E2E8F0' } },
+      },
+    },
+  },
 };

@@ -18,7 +18,7 @@ export const usePrintIntegration = (): UsePrintIntegrationReturn => {
   // Initialize printing services
   useEffect(() => {
     console.log('[GRN PrintIntegration] Initializing printing services...');
-    
+
     const initServices = async () => {
       try {
         // Try unified printing service first
@@ -29,7 +29,7 @@ export const usePrintIntegration = (): UsePrintIntegrationReturn => {
         console.log('[GRN PrintIntegration] ✅ Unified printing service initialized');
       } catch (err) {
         console.warn('[GRN PrintIntegration] ⚠️ Unified service failed, trying HAL:', err);
-        
+
         // Fallback to HAL
         try {
           const hal = getHardwareAbstractionLayer();
@@ -43,7 +43,7 @@ export const usePrintIntegration = (): UsePrintIntegrationReturn => {
         }
       }
     };
-    
+
     initServices();
   }, []);
 
@@ -58,7 +58,7 @@ export const usePrintIntegration = (): UsePrintIntegrationReturn => {
       if (printingServiceRef.current) {
         // Use unified printing service
         console.log('[GRN PrintIntegration] Using unified printing service');
-        
+
         if (pdfBlobs.length === 1) {
           // Single label
           const printRequest: PrintRequest = {
@@ -69,21 +69,21 @@ export const usePrintIntegration = (): UsePrintIntegrationReturn => {
               supplierId: metadata?.supplierCode || '',
               materialCode: metadata?.productCode || '',
               operatorClockNum: metadata?.userId || '',
-              ...metadata
+              ...metadata,
             },
             options: {
               copies: 1,
               paperSize: 'A4' as any,
               orientation: 'portrait',
-              priority: 'normal' as any
+              priority: 'normal' as any,
             },
             metadata: {
               userId: metadata?.userId || 'grn-user',
               source: 'grn-label-form',
-              timestamp: new Date().toISOString()
-            }
+              timestamp: new Date().toISOString(),
+            },
           };
-          
+
           const result = await printingServiceRef.current.print(printRequest);
           if (!result.success) {
             throw new Error(result.error || 'Print failed');
@@ -92,10 +92,10 @@ export const usePrintIntegration = (): UsePrintIntegrationReturn => {
         } else {
           // Multiple labels - merge first
           console.log('[GRN PrintIntegration] Merging multiple PDFs...');
-          
+
           const { PDFDocument } = await import('pdf-lib');
           const mergedPdf = await PDFDocument.create();
-          
+
           for (const pdfBlob of pdfBlobs) {
             const pdfBuffer = await pdfBlob.arrayBuffer();
             try {
@@ -106,10 +106,10 @@ export const usePrintIntegration = (): UsePrintIntegrationReturn => {
               console.error('[GRN PrintIntegration] Error merging PDF:', error);
             }
           }
-          
+
           const mergedPdfBytes = await mergedPdf.save();
           const mergedPdfBlob = new Blob([mergedPdfBytes], { type: 'application/pdf' });
-          
+
           const printRequest: PrintRequest = {
             type: PrintType.GRN_LABEL,
             data: {
@@ -120,22 +120,22 @@ export const usePrintIntegration = (): UsePrintIntegrationReturn => {
               supplierId: metadata?.supplierCode || '',
               materialCode: metadata?.productCode || '',
               operatorClockNum: metadata?.userId || '',
-              ...metadata
+              ...metadata,
             },
             options: {
               copies: 1,
               paperSize: 'A4' as any,
               orientation: 'portrait',
-              priority: 'normal' as any
+              priority: 'normal' as any,
             },
             metadata: {
               userId: metadata?.userId || 'grn-user',
               source: 'grn-label-form',
               labelCount: pdfBlobs.length,
-              timestamp: new Date().toISOString()
-            }
+              timestamp: new Date().toISOString(),
+            },
           };
-          
+
           const result = await printingServiceRef.current.print(printRequest);
           if (!result.success) {
             throw new Error(result.error || 'Print failed');
@@ -145,18 +145,18 @@ export const usePrintIntegration = (): UsePrintIntegrationReturn => {
       } else if (halRef.current) {
         // Use HAL directly
         console.log('[GRN PrintIntegration] Using HAL directly');
-        
+
         if (pdfBlobs.length === 1) {
           const printJob = {
             type: 'grn-label' as const,
             data: {
               pdfBlob: pdfBlobs[0],
-              ...metadata
+              ...metadata,
             },
             copies: 1,
-            priority: 'normal' as const
+            priority: 'normal' as const,
           };
-          
+
           const result = await halRef.current.print(printJob);
           if (!result.success) {
             throw new Error(result.error || 'Print failed');
@@ -166,29 +166,29 @@ export const usePrintIntegration = (): UsePrintIntegrationReturn => {
           // Merge PDFs for HAL
           const { PDFDocument } = await import('pdf-lib');
           const mergedPdf = await PDFDocument.create();
-          
+
           for (const pdfBlob of pdfBlobs) {
             const pdfBuffer = await pdfBlob.arrayBuffer();
             const pdfToMerge = await PDFDocument.load(pdfBuffer);
             const pages = await mergedPdf.copyPages(pdfToMerge, pdfToMerge.getPageIndices());
             pages.forEach(page => mergedPdf.addPage(page));
           }
-          
+
           const mergedPdfBytes = await mergedPdf.save();
           const mergedPdfBlob = new Blob([mergedPdfBytes], { type: 'application/pdf' });
-          
+
           const printJob = {
             type: 'grn-label' as const,
             data: {
               pdfBlob: mergedPdfBlob,
               merged: true,
               labelCount: pdfBlobs.length,
-              ...metadata
+              ...metadata,
             },
             copies: 1,
-            priority: 'normal' as const
+            priority: 'normal' as const,
           };
-          
+
           const result = await halRef.current.print(printJob);
           if (!result.success) {
             throw new Error(result.error || 'Print failed');
@@ -212,6 +212,6 @@ export const usePrintIntegration = (): UsePrintIntegrationReturn => {
 
   return {
     printGrnLabels,
-    isServiceAvailable: isServiceAvailable.current
+    isServiceAvailable: isServiceAvailable.current,
   };
 };

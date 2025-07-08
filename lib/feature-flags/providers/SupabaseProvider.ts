@@ -25,7 +25,7 @@ export class SupabaseFeatureFlagProvider extends BaseFeatureFlagProvider {
     this.supabase = createClient(supabaseUrl, supabaseKey);
     this.tableName = options?.tableName || this.tableName;
     this.cacheTTL = options?.cacheTTL || 60000; // 默認 1 分鐘
-    
+
     if (options?.pollingInterval) {
       this.startPolling(options.pollingInterval);
     }
@@ -37,10 +37,10 @@ export class SupabaseFeatureFlagProvider extends BaseFeatureFlagProvider {
   async initialize(): Promise<void> {
     // 創建表（如果不存在）
     await this.ensureTableExists();
-    
+
     // 加載初始數據
     await this.refreshCache();
-    
+
     // 設置實時訂閱
     this.setupRealtimeSubscription();
   }
@@ -68,7 +68,7 @@ export class SupabaseFeatureFlagProvider extends BaseFeatureFlagProvider {
     // 更新緩存
     const flags = this.transformDbRecords(data || []);
     this.updateCache(flags);
-    
+
     return flags;
   }
 
@@ -94,7 +94,7 @@ export class SupabaseFeatureFlagProvider extends BaseFeatureFlagProvider {
 
     const flag = this.transformDbRecord(data);
     this.cache.set(key, flag);
-    
+
     return flag;
   }
 
@@ -103,11 +103,8 @@ export class SupabaseFeatureFlagProvider extends BaseFeatureFlagProvider {
    */
   async updateFlag(key: string, updates: Partial<FeatureFlag>): Promise<void> {
     const dbRecord = this.transformToDbRecord(key, updates);
-    
-    const { error } = await this.supabase
-      .from(this.tableName)
-      .update(dbRecord)
-      .eq('key', key);
+
+    const { error } = await this.supabase.from(this.tableName).update(dbRecord).eq('key', key);
 
     if (error) {
       throw new Error(`Failed to update feature flag: ${error.message}`);
@@ -125,10 +122,8 @@ export class SupabaseFeatureFlagProvider extends BaseFeatureFlagProvider {
    */
   async createFlag(flag: FeatureFlag): Promise<void> {
     const dbRecord = this.transformToDbRecord(flag.key, flag);
-    
-    const { error } = await this.supabase
-      .from(this.tableName)
-      .insert(dbRecord);
+
+    const { error } = await this.supabase.from(this.tableName).insert(dbRecord);
 
     if (error) {
       throw new Error(`Failed to create feature flag: ${error.message}`);
@@ -142,10 +137,7 @@ export class SupabaseFeatureFlagProvider extends BaseFeatureFlagProvider {
    * 刪除 Feature Flag
    */
   async deleteFlag(key: string): Promise<void> {
-    const { error } = await this.supabase
-      .from(this.tableName)
-      .delete()
-      .eq('key', key);
+    const { error } = await this.supabase.from(this.tableName).delete().eq('key', key);
 
     if (error) {
       throw new Error(`Failed to delete feature flag: ${error.message}`);
@@ -162,7 +154,7 @@ export class SupabaseFeatureFlagProvider extends BaseFeatureFlagProvider {
     if (this.pollingInterval) {
       clearInterval(this.pollingInterval);
     }
-    
+
     // 取消實時訂閱
     this.supabase.removeAllChannels();
   }
@@ -199,9 +191,11 @@ export class SupabaseFeatureFlagProvider extends BaseFeatureFlagProvider {
     `;
 
     // 執行 SQL（需要適當權限）
-    const { error } = await this.supabase.rpc('exec_sql', { 
-      sql: createTableSQL 
-    }).catch(() => ({ error: 'Table creation skipped' }));
+    const { error } = await this.supabase
+      .rpc('exec_sql', {
+        sql: createTableSQL,
+      })
+      .catch(() => ({ error: 'Table creation skipped' }));
 
     if (error) {
       console.warn('Could not create feature flags table:', error);
@@ -219,9 +213,9 @@ export class SupabaseFeatureFlagProvider extends BaseFeatureFlagProvider {
         {
           event: '*',
           schema: 'public',
-          table: this.tableName
+          table: this.tableName,
         },
-        (payload) => {
+        payload => {
           this.handleRealtimeUpdate(payload);
         }
       )
@@ -242,7 +236,7 @@ export class SupabaseFeatureFlagProvider extends BaseFeatureFlagProvider {
           this.cache.set(flag.key, flag);
         }
         break;
-        
+
       case 'DELETE':
         if (oldRecord) {
           this.cache.delete(oldRecord.key);
@@ -304,7 +298,7 @@ export class SupabaseFeatureFlagProvider extends BaseFeatureFlagProvider {
       startDate: record.start_date ? new Date(record.start_date) : undefined,
       endDate: record.end_date ? new Date(record.end_date) : undefined,
       tags: record.tags || [],
-      metadata: record.metadata || {}
+      metadata: record.metadata || {},
     };
   }
 
@@ -321,7 +315,7 @@ export class SupabaseFeatureFlagProvider extends BaseFeatureFlagProvider {
   private transformToDbRecord(key: string, flag: Partial<FeatureFlag>): any {
     const record: any = {
       key,
-      updated_at: new Date().toISOString()
+      updated_at: new Date().toISOString(),
     };
 
     if (flag.name !== undefined) record.name = flag.name;

@@ -1,11 +1,11 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { createClient } from '@/app/utils/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Loader2, UserCheck, MapPin, Package } from 'lucide-react';
 import { TransferDestinationSelector } from './TransferDestinationSelector';
+import { validateClockNumber } from '@/app/actions/stockTransferActions';
 
 interface PalletInfo {
   plt_num: string;
@@ -32,7 +32,7 @@ export function TransferControlPanel({
   verifiedName,
   onDestinationChange,
   onClockNumberVerified,
-  isProcessing
+  isProcessing,
 }: TransferControlPanelProps) {
   const [clockNumber, setClockNumber] = useState('');
   const [clockError, setClockError] = useState('');
@@ -66,24 +66,23 @@ export function TransferControlPanel({
     }
   }, [currentLocation, selectedDestination, onDestinationChange]);
 
-  const validateClockNumber = async (clockNum: string): Promise<boolean> => {
+  const validateClockNumberLocal = async (clockNum: string): Promise<boolean> => {
     try {
-      const client = createClient();
-      
-      const { data, error } = await client
-        .from('data_id')
-        .select('id, name')
-        .eq('id', parseInt(clockNum, 10))
-        .single();
+      const result = await validateClockNumber(clockNum);
 
-      if (error || !data) {
-        setClockError('Clock number not found');
-          return false;
+      if (!result.success) {
+        setClockError(result.error || 'Clock number not found');
+        return false;
       }
 
-      setClockError('');
-      onClockNumberVerified(clockNum, data.name);
-      return true;
+      if (result.data) {
+        setClockError('');
+        onClockNumberVerified(clockNum, result.data.name);
+        return true;
+      }
+
+      setClockError('No user data received');
+      return false;
     } catch (error) {
       console.error('[TransferControlPanel] Error validating clock number:', error);
       setClockError('Validation error occurred');
@@ -116,63 +115,61 @@ export function TransferControlPanel({
     }
 
     setIsVerifying(true);
-    await validateClockNumber(clockNum);
+    await validateClockNumberLocal(clockNum);
     setIsVerifying(false);
   };
 
-
-
   return (
-    <div className="h-full flex flex-col space-y-6 bg-gray-800 rounded-lg p-6 border border-gray-700">
+    <div className='flex h-full flex-col space-y-6 rounded-lg border border-gray-700 bg-gray-800 p-6'>
       {/* 標題 */}
-      <div className="border-b border-gray-700 pb-4">
-        <h2 className="text-xl font-semibold text-blue-400 flex items-center gap-2">
-          <MapPin className="h-5 w-5" />
+      <div className='border-b border-gray-700 pb-4'>
+        <h2 className='flex items-center gap-2 text-xl font-semibold text-blue-400'>
+          <MapPin className='h-5 w-5' />
           Select destination
         </h2>
       </div>
 
       {/* Transfer Status Display */}
-      <div className="space-y-4">
+      <div className='space-y-4'>
         {/* Selected Pallet Info */}
         {selectedPallet && (
-          <div className="p-4 bg-blue-900/20 border border-blue-700 rounded-lg">
-            <div className="flex items-center gap-2 mb-2">
-              <Package className="h-4 w-4 text-blue-400" />
-              <h3 className="text-sm font-medium text-blue-400">Selected Pallet</h3>
+          <div className='rounded-lg border border-blue-700 bg-blue-900/20 p-4'>
+            <div className='mb-2 flex items-center gap-2'>
+              <Package className='h-4 w-4 text-blue-400' />
+              <h3 className='text-sm font-medium text-blue-400'>Selected Pallet</h3>
             </div>
-            <div className="grid grid-cols-2 gap-2 text-sm">
+            <div className='grid grid-cols-2 gap-2 text-sm'>
               <div>
-                <span className="text-gray-500">Pallet:</span>
-                <span className="ml-2 text-white font-medium">{selectedPallet.plt_num}</span>
+                <span className='text-gray-500'>Pallet:</span>
+                <span className='ml-2 font-medium text-white'>{selectedPallet.plt_num}</span>
               </div>
               <div>
-                <span className="text-gray-500">Product:</span>
-                <span className="ml-2 text-white font-medium">{selectedPallet.product_code}</span>
+                <span className='text-gray-500'>Product:</span>
+                <span className='ml-2 font-medium text-white'>{selectedPallet.product_code}</span>
               </div>
               <div>
-                <span className="text-gray-500">Quantity:</span>
-                <span className="ml-2 text-white font-medium">{selectedPallet.product_qty}</span>
+                <span className='text-gray-500'>Quantity:</span>
+                <span className='ml-2 font-medium text-white'>{selectedPallet.product_qty}</span>
               </div>
               <div>
-                <span className="text-gray-500">Location:</span>
-                <span className="ml-2 text-white font-medium">{selectedPallet.current_plt_loc || 'Await'}</span>
+                <span className='text-gray-500'>Location:</span>
+                <span className='ml-2 font-medium text-white'>
+                  {selectedPallet.current_plt_loc || 'Await'}
+                </span>
               </div>
             </div>
             {selectedPallet.plt_remark && (
-              <div className="mt-2 pt-2 border-t border-gray-700">
-                <span className="text-gray-500 text-sm">Remark:</span>
-                <p className="text-white text-sm mt-1">{selectedPallet.plt_remark}</p>
+              <div className='mt-2 border-t border-gray-700 pt-2'>
+                <span className='text-sm text-gray-500'>Remark:</span>
+                <p className='mt-1 text-sm text-white'>{selectedPallet.plt_remark}</p>
               </div>
             )}
           </div>
         )}
-
-
       </div>
 
       {/* 位置選擇器和員工驗證 - 始終顯示 */}
-      <div className="flex-1 space-y-6">
+      <div className='flex-1 space-y-6'>
         <TransferDestinationSelector
           currentLocation={currentLocation}
           selectedDestination={selectedDestination}
@@ -181,48 +178,43 @@ export function TransferControlPanel({
         />
 
         {/* 員工驗證區域 */}
-        <div className="space-y-4">
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-300">Clock Number</label>
+        <div className='space-y-4'>
+          <div className='space-y-2'>
+            <label className='text-sm font-medium text-gray-300'>Clock Number</label>
             <Input
               ref={clockNumberRef}
-              type="text"
-              inputMode="numeric"
-              pattern="[0-9]*"
+              type='text'
+              inputMode='numeric'
+              pattern='[0-9]*'
               value={clockNumber}
               onChange={handleClockNumberChange}
-              placeholder="Enter 4-digit clock number"
-              className={`w-full bg-gray-700 border-gray-600 placeholder-gray-500 text-white focus:ring-blue-500 focus:border-blue-500 ${
+              placeholder='Enter 4-digit clock number'
+              className={`w-full border-gray-600 bg-gray-700 text-white placeholder-gray-500 focus:border-blue-500 focus:ring-blue-500 ${
                 clockError ? 'border-red-500 focus:ring-red-500' : ''
-              } ${
-                isVerifying ? 'opacity-50' : ''
-              }`}
+              } ${isVerifying ? 'opacity-50' : ''}`}
               disabled={isProcessing}
-              autoComplete="off"
+              autoComplete='off'
               maxLength={4}
             />
-            
+
             {/* Status indicators */}
             {isVerifying && (
-              <p className="text-blue-400 text-sm flex items-center gap-2">
-                <Loader2 className="h-3 w-3 animate-spin" />
+              <p className='flex items-center gap-2 text-sm text-blue-400'>
+                <Loader2 className='h-3 w-3 animate-spin' />
                 Verifying...
               </p>
             )}
-            
-            {clockError && !isVerifying && (
-              <p className="text-red-400 text-sm">{clockError}</p>
-            )}
-            
+
+            {clockError && !isVerifying && <p className='text-sm text-red-400'>{clockError}</p>}
+
             {verifiedName && !isVerifying && (
-              <p className="text-green-400 text-sm">
-                ✓ Verified: <span className="font-medium">{verifiedName}</span>
+              <p className='text-sm text-green-400'>
+                ✓ Verified: <span className='font-medium'>{verifiedName}</span>
               </p>
             )}
           </div>
         </div>
       </div>
-
     </div>
   );
 }

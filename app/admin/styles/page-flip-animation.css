@@ -24,12 +24,7 @@
   content: '';
   position: absolute;
   inset: 0;
-  background: linear-gradient(
-    to right,
-    transparent 0%,
-    rgba(0, 0, 0, 0.02) 50%,
-    transparent 100%
-  );
+  background: linear-gradient(to right, transparent 0%, rgba(0, 0, 0, 0.02) 50%, transparent 100%);
   opacity: 0;
   transition: opacity 0.6s ease;
   pointer-events: none;
@@ -51,7 +46,7 @@
   backdrop-filter: blur(20px) saturate(180%);
   -webkit-backdrop-filter: blur(20px) saturate(180%);
   border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 
+  box-shadow:
     0 8px 32px rgba(0, 0, 0, 0.08),
     inset 0 1px 1px rgba(255, 255, 255, 0.1),
     inset 0 -1px 1px rgba(0, 0, 0, 0.05);
@@ -59,11 +54,7 @@
 
 /* Page Header Gradient */
 .analysis-paged-widget .page-header {
-  background: linear-gradient(
-    to bottom,
-    rgba(255, 255, 255, 0.02),
-    transparent
-  );
+  background: linear-gradient(to bottom, rgba(255, 255, 255, 0.02), transparent);
   position: relative;
 }
 
@@ -87,7 +78,9 @@
 .analysis-paged-widget .icon-wrapper {
   position: relative;
   overflow: hidden;
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  transition:
+    transform 0.3s ease,
+    box-shadow 0.3s ease;
 }
 
 .analysis-paged-widget .icon-wrapper:hover {
@@ -99,11 +92,7 @@
   content: '';
   position: absolute;
   inset: 0;
-  background: linear-gradient(
-    135deg,
-    rgba(255, 255, 255, 0.3),
-    transparent
-  );
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.3), transparent);
   opacity: 0;
   transition: opacity 0.3s ease;
 }
@@ -144,26 +133,22 @@
 }
 
 /* Navigation Buttons */
-.analysis-paged-widget button[class*="hover:bg-primary"] {
+.analysis-paged-widget button[class*='hover:bg-primary'] {
   position: relative;
   overflow: hidden;
 }
 
-.analysis-paged-widget button[class*="hover:bg-primary"]::before {
+.analysis-paged-widget button[class*='hover:bg-primary']::before {
   content: '';
   position: absolute;
   inset: 0;
-  background: radial-gradient(
-    circle at center,
-    rgba(var(--primary-rgb), 0.1),
-    transparent 70%
-  );
+  background: radial-gradient(circle at center, rgba(var(--primary-rgb), 0.1), transparent 70%);
   opacity: 0;
   transform: scale(0);
   transition: all 0.3s ease;
 }
 
-.analysis-paged-widget button[class*="hover:bg-primary"]:hover::before {
+.analysis-paged-widget button[class*='hover:bg-primary']:hover::before {
   opacity: 1;
   transform: scale(1);
 }
@@ -237,7 +222,7 @@
     );
     border-color: rgba(255, 255, 255, 0.06);
   }
-  
+
   .analysis-paged-widget .page-edge {
     background: linear-gradient(
       to left,
@@ -253,15 +238,15 @@
   .analysis-paged-widget .book-container {
     perspective: 1500px;
   }
-  
+
   .analysis-paged-widget .page-header {
     padding: 1rem;
   }
-  
+
   .analysis-paged-widget .page-content {
     padding: 1rem;
   }
-  
+
   .analysis-paged-widget .navigation-controls {
     padding: 0.75rem;
   }

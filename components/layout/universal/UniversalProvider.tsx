@@ -14,17 +14,17 @@ interface UniversalLayoutContextType {
   currentTheme: string;
   theme: UniversalTheme;
   setTheme: (themeName: string) => void;
-  
+
   // 響應式狀態
   isMobile: boolean;
   isTablet: boolean;
   isDesktop: boolean;
   breakpoint: string;
-  
+
   // 佈局狀態
   isLoading: boolean;
   setIsLoading: (loading: boolean) => void;
-  
+
   // 全域配置
   config: {
     animationsEnabled: boolean;
@@ -52,16 +52,16 @@ export const UniversalProvider: React.FC<UniversalProviderProps> = ({
   // 主題狀態
   const [currentTheme, setCurrentTheme] = useState(defaultTheme);
   const [theme, setThemeConfig] = useState(THEMES[defaultTheme]);
-  
+
   // 響應式狀態
   const [isMobile, setIsMobile] = useState(false);
   const [isTablet, setIsTablet] = useState(false);
   const [isDesktop, setIsDesktop] = useState(true);
   const [breakpoint, setBreakpoint] = useState('xl');
-  
+
   // 佈局狀態
   const [isLoading, setIsLoading] = useState(false);
-  
+
   // 全域配置
   const [config, setConfig] = useState({
     animationsEnabled,
@@ -75,7 +75,7 @@ export const UniversalProvider: React.FC<UniversalProviderProps> = ({
 
     const checkBreakpoint = () => {
       const width = window.innerWidth;
-      
+
       // 檢測斷點
       let currentBreakpoint = 'xs';
       if (width >= BREAKPOINTS['2xl']!) currentBreakpoint = '2xl';
@@ -83,17 +83,17 @@ export const UniversalProvider: React.FC<UniversalProviderProps> = ({
       else if (width >= BREAKPOINTS.lg!) currentBreakpoint = 'lg';
       else if (width >= BREAKPOINTS.md!) currentBreakpoint = 'md';
       else if (width >= BREAKPOINTS.sm!) currentBreakpoint = 'sm';
-      
+
       // 更新狀態
       const newIsMobile = width < BREAKPOINTS.md!;
       const newIsTablet = width >= BREAKPOINTS.md! && width < BREAKPOINTS.lg!;
       const newIsDesktop = width >= BREAKPOINTS.lg!;
-      
+
       setIsMobile(newIsMobile);
       setIsTablet(newIsTablet);
       setIsDesktop(newIsDesktop);
       setBreakpoint(currentBreakpoint);
-      
+
       // 調試模式日誌
       if (debugMode) {
         console.log(`Universal Layout: Breakpoint changed to ${currentBreakpoint} (${width}px)`);
@@ -102,10 +102,10 @@ export const UniversalProvider: React.FC<UniversalProviderProps> = ({
 
     // 初始檢測
     checkBreakpoint();
-    
+
     // 監聽視窗大小變化
     window.addEventListener('resize', checkBreakpoint);
-    
+
     return () => {
       window.removeEventListener('resize', checkBreakpoint);
     };
@@ -133,7 +133,7 @@ export const UniversalProvider: React.FC<UniversalProviderProps> = ({
 
     // 監聽變化
     mediaQuery.addEventListener('change', handleChange);
-    
+
     return () => {
       mediaQuery.removeEventListener('change', handleChange);
     };
@@ -144,7 +144,7 @@ export const UniversalProvider: React.FC<UniversalProviderProps> = ({
     if (THEMES[themeName]) {
       setCurrentTheme(themeName);
       setThemeConfig(THEMES[themeName]);
-      
+
       if (debugMode) {
         console.log(`Universal Layout: Theme changed to ${themeName}`);
       }
@@ -156,7 +156,7 @@ export const UniversalProvider: React.FC<UniversalProviderProps> = ({
   // 配置更新函數
   const updateConfig = (newConfig: Partial<UniversalLayoutContextType['config']>) => {
     setConfig(prev => ({ ...prev, ...newConfig }));
-    
+
     if (debugMode) {
       console.log('Universal Layout: Config updated', newConfig);
     }
@@ -167,17 +167,17 @@ export const UniversalProvider: React.FC<UniversalProviderProps> = ({
     currentTheme,
     theme,
     setTheme,
-    
+
     // 響應式
     isMobile,
     isTablet,
     isDesktop,
     breakpoint,
-    
+
     // 狀態
     isLoading,
     setIsLoading,
-    
+
     // 配置
     config,
     updateConfig,
@@ -193,11 +193,11 @@ export const UniversalProvider: React.FC<UniversalProviderProps> = ({
 // Hook 用於訪問佈局上下文
 export const useUniversalLayout = (): UniversalLayoutContextType => {
   const context = useContext(UniversalLayoutContext);
-  
+
   if (context === undefined) {
     throw new Error('useUniversalLayout must be used within a UniversalProvider');
   }
-  
+
   return context;
 };
 
@@ -228,7 +228,7 @@ export const useMediaQuery = (query: string): boolean => {
     };
 
     mediaQuery.addEventListener('change', handleChange);
-    
+
     return () => {
       mediaQuery.removeEventListener('change', handleChange);
     };

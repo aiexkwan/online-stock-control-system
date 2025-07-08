@@ -1,6 +1,6 @@
 /**
  * Phase 4 Testing Infrastructure 漸進式發布配置
- * 
+ *
  * 這個配置用於控制測試基礎設施的漸進式發布
  */
 
@@ -19,22 +19,22 @@ export const phase4FeatureFlags: FeatureFlag[] = [
       {
         type: 'environment',
         value: 'development',
-        operator: 'equals'
+        operator: 'equals',
       },
       {
         type: 'user',
         value: ['test@pennineindustries.com', 'akwan@pennineindustries.com'],
-        operator: 'contains'
-      }
+        operator: 'contains',
+      },
     ],
     tags: ['infrastructure', 'testing', 'phase4'],
     metadata: {
       phase: 4,
       startDate: new Date('2025-01-06'),
-      targetCompletion: new Date('2025-01-20')
-    }
+      targetCompletion: new Date('2025-01-20'),
+    },
   },
-  
+
   {
     key: 'jest_unit_tests',
     name: 'Jest Unit Tests',
@@ -50,12 +50,12 @@ export const phase4FeatureFlags: FeatureFlag[] = [
         milestones: [
           { percentage: 30, date: '2025-01-10' },
           { percentage: 50, date: '2025-01-13' },
-          { percentage: 80, date: '2025-01-20' }
-        ]
-      }
-    }
+          { percentage: 80, date: '2025-01-20' },
+        ],
+      },
+    },
   },
-  
+
   {
     key: 'github_actions_ci',
     name: 'GitHub Actions CI/CD',
@@ -67,12 +67,12 @@ export const phase4FeatureFlags: FeatureFlag[] = [
     rules: [
       {
         type: 'custom',
-        value: 'has_github_access'
-      }
+        value: 'has_github_access',
+      },
     ],
-    tags: ['ci-cd', 'github', 'automation']
+    tags: ['ci-cd', 'github', 'automation'],
   },
-  
+
   {
     key: 'e2e_testing',
     name: 'E2E Testing with Playwright',
@@ -83,11 +83,11 @@ export const phase4FeatureFlags: FeatureFlag[] = [
     variants: [
       { key: 'disabled', name: 'Disabled', weight: 70 },
       { key: 'smoke_tests', name: 'Smoke Tests Only', weight: 20 },
-      { key: 'full_suite', name: 'Full Test Suite', weight: 10 }
+      { key: 'full_suite', name: 'Full Test Suite', weight: 10 },
     ],
-    tags: ['testing', 'e2e', 'playwright']
+    tags: ['testing', 'e2e', 'playwright'],
   },
-  
+
   {
     key: 'test_coverage_enforcement',
     name: 'Test Coverage Enforcement',
@@ -101,13 +101,13 @@ export const phase4FeatureFlags: FeatureFlag[] = [
         statements: 10,
         branches: 10,
         functions: 10,
-        lines: 10
+        lines: 10,
       },
-      enforcementLevel: 'warning' // 'warning' | 'error'
+      enforcementLevel: 'warning', // 'warning' | 'error'
     },
-    tags: ['testing', 'quality', 'coverage']
+    tags: ['testing', 'quality', 'coverage'],
   },
-  
+
   {
     key: 'performance_monitoring',
     name: 'Performance Monitoring',
@@ -118,11 +118,11 @@ export const phase4FeatureFlags: FeatureFlag[] = [
     variants: [
       { key: 'disabled', name: 'Disabled', weight: 30 },
       { key: 'basic', name: 'Basic Metrics', weight: 50 },
-      { key: 'advanced', name: 'Advanced Analytics', weight: 20 }
+      { key: 'advanced', name: 'Advanced Analytics', weight: 20 },
     ],
-    tags: ['performance', 'monitoring', 'analytics']
+    tags: ['performance', 'monitoring', 'analytics'],
   },
-  
+
   {
     key: 'gradual_migration',
     name: 'Gradual Migration Strategy',
@@ -138,11 +138,11 @@ export const phase4FeatureFlags: FeatureFlag[] = [
         { name: 'Unit Tests', progress: 10 },
         { name: 'Integration Tests', progress: 0 },
         { name: 'E2E Tests', progress: 0 },
-        { name: 'Performance Tests', progress: 0 }
-      ]
+        { name: 'Performance Tests', progress: 0 },
+      ],
     },
-    tags: ['migration', 'strategy', 'phase4']
-  }
+    tags: ['migration', 'strategy', 'phase4'],
+  },
 ];
 
 /**
@@ -150,7 +150,7 @@ export const phase4FeatureFlags: FeatureFlag[] = [
  */
 export function getUserFeatureFlags(userId: string): Record<string, boolean> {
   const flags: Record<string, boolean> = {};
-  
+
   phase4FeatureFlags.forEach(flag => {
     // 檢查用戶特定規則
     const userRule = flag.rules?.find(r => r.type === 'user');
@@ -158,7 +158,7 @@ export function getUserFeatureFlags(userId: string): Record<string, boolean> {
       flags[flag.key] = userRule.value.includes(userId);
       return;
     }
-    
+
     // 檢查百分比發布
     if (flag.type === 'percentage' && flag.rolloutPercentage !== undefined) {
       // 使用更好的哈希函數來決定是否啟用
@@ -166,18 +166,18 @@ export function getUserFeatureFlags(userId: string): Record<string, boolean> {
       const str = `${flag.key}-${userId}`;
       for (let i = 0; i < str.length; i++) {
         const char = str.charCodeAt(i);
-        hash = ((hash << 5) - hash) + char;
+        hash = (hash << 5) - hash + char;
         hash = hash & hash; // Convert to 32bit integer
       }
       const bucketValue = Math.abs(hash) % 100;
       flags[flag.key] = bucketValue < flag.rolloutPercentage;
       return;
     }
-    
+
     // 預設值
     flags[flag.key] = flag.defaultValue as boolean;
   });
-  
+
   return flags;
 }
 
@@ -193,25 +193,28 @@ export function shouldRunTests(context: {
   if (context.environment === 'development') {
     return true;
   }
-  
+
   // 檢查對應的 feature flag
-  const flagKey = context.testType === 'unit' ? 'jest_unit_tests' : 
-                  context.testType === 'e2e' ? 'e2e_testing' : 
-                  'phase4_testing_infrastructure';
-  
+  const flagKey =
+    context.testType === 'unit'
+      ? 'jest_unit_tests'
+      : context.testType === 'e2e'
+        ? 'e2e_testing'
+        : 'phase4_testing_infrastructure';
+
   const flag = phase4FeatureFlags.find(f => f.key === flagKey);
   if (!flag) return false;
-  
+
   // 檢查狀態
   if (flag.status === FeatureFlagStatus.DISABLED) return false;
   if (flag.status === FeatureFlagStatus.ENABLED) return true;
-  
+
   // 部分啟用 - 檢查規則
   if (context.userId) {
     const userFlags = getUserFeatureFlags(context.userId);
     return userFlags[flagKey] || false;
   }
-  
+
   return flag.defaultValue as boolean;
 }
 
@@ -221,18 +224,18 @@ export function shouldRunTests(context: {
 export function getCurrentCoverageTarget(): number {
   const flag = phase4FeatureFlags.find(f => f.key === 'jest_unit_tests');
   const metadata = flag?.metadata as any;
-  
+
   if (!metadata?.coverage) return 10;
-  
+
   const today = new Date();
   const milestones = metadata.coverage.milestones;
-  
+
   for (let i = milestones.length - 1; i >= 0; i--) {
     const milestone = milestones[i];
     if (new Date(milestone.date) <= today) {
       return milestone.percentage;
     }
   }
-  
+
   return metadata.coverage.current;
 }

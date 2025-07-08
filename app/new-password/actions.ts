@@ -13,7 +13,10 @@ const supabaseAdmin = createAdminClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY || '' // Ensure this is set in your .env.local or Vercel env vars
 );
 
-export async function resetPasswordAction(userId: string, newPassword: string): Promise<{ success: boolean; error?: string }> {
+export async function resetPasswordAction(
+  userId: string,
+  newPassword: string
+): Promise<{ success: boolean; error?: string }> {
   // const supabase = createServerSupabaseClient(); // If you need a user-session aware client
   // For this action, we are directly updating data_id using admin client, so user session client might not be needed.
 
@@ -26,15 +29,19 @@ export async function resetPasswordAction(userId: string, newPassword: string): 
   }
 
   try {
-    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`[Server Action] Attempting to reset password for userId: ${userId}`);
+    process.env.NODE_ENV !== 'production' &&
+      process.env.NODE_ENV !== 'production' &&
+      console.log(`[Server Action] Attempting to reset password for userId: ${userId}`);
 
     // 1. Hash the new password
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(newPassword, salt);
-    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`[Server Action] New password hashed for userId: ${userId}`);
+    process.env.NODE_ENV !== 'production' &&
+      process.env.NODE_ENV !== 'production' &&
+      console.log(`[Server Action] New password hashed for userId: ${userId}`);
 
     // 2. Update the user's password in the data_id table
-    // IMPORTANT: Using supabaseAdmin here for elevated privileges. 
+    // IMPORTANT: Using supabaseAdmin here for elevated privileges.
     // Ensure SUPABASE_SERVICE_ROLE_KEY is correctly set in your environment.
     const { data, error: updateError } = await supabaseAdmin
       .from('data_id') // Assuming passwords are in data_id as per auth.ts
@@ -52,35 +59,50 @@ export async function resetPasswordAction(userId: string, newPassword: string): 
 
     // Check if any row was actually updated. If no row matched `userId`, data will be empty.
     if (!data || data.length === 0) {
-        process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.warn(`[Server Action] No user found with id: ${userId} during password reset attempt.`);
-        return { success: false, error: 'User not found. Password not updated.' };
+      process.env.NODE_ENV !== 'production' &&
+        process.env.NODE_ENV !== 'production' &&
+        console.warn(
+          `[Server Action] No user found with id: ${userId} during password reset attempt.`
+        );
+      return { success: false, error: 'User not found. Password not updated.' };
     }
 
-    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`[Server Action] Password for userId: ${userId} updated successfully in data_id table.`);
-    
+    process.env.NODE_ENV !== 'production' &&
+      process.env.NODE_ENV !== 'production' &&
+      console.log(
+        `[Server Action] Password for userId: ${userId} updated successfully in data_id table.`
+      );
+
     // 3. Optionally, log this action to record_history (if appropriate for password resets)
     // This might require passing the initiator if it's not the user themselves (e.g. admin reset)
     // For self-reset, the userId is the one being acted upon.
     try {
-        await supabaseAdmin.from('record_history').insert({
-            time: new Date().toISOString(),
-            id: userId, // The user whose password was reset
-            action: 'Password Reset', // A more specific action type
-            remark: 'User self-service password reset successful.',
-        });
-        process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`[Server Action] Password reset logged to history for userId: ${userId}`);
+      await supabaseAdmin.from('record_history').insert({
+        time: new Date().toISOString(),
+        id: userId, // The user whose password was reset
+        action: 'Password Reset', // A more specific action type
+        remark: 'User self-service password reset successful.',
+      });
+      process.env.NODE_ENV !== 'production' &&
+        process.env.NODE_ENV !== 'production' &&
+        console.log(`[Server Action] Password reset logged to history for userId: ${userId}`);
     } catch (historyError) {
-        console.error(`[Server Action] Failed to log password reset to record_history for userId ${userId}:`, historyError);
-        // Do not fail the whole operation if logging fails, but log the error.
+      console.error(
+        `[Server Action] Failed to log password reset to record_history for userId ${userId}:`,
+        historyError
+      );
+      // Do not fail the whole operation if logging fails, but log the error.
     }
 
     return { success: true };
-
   } catch (error) {
-    console.error(`[Server Action] Unexpected error in resetPasswordAction for userId ${userId}:`, error);
+    console.error(
+      `[Server Action] Unexpected error in resetPasswordAction for userId ${userId}:`,
+      error
+    );
     if (error instanceof Error) {
-        return { success: false, error: error.message };
+      return { success: false, error: error.message };
     }
     return { success: false, error: 'An unexpected server error occurred.' };
   }
-} 
+}

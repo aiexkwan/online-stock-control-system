@@ -4,7 +4,12 @@ import React from 'react';
 import { UniversalGrid } from '@/components/layout/universal';
 import { ProductCodeInput } from '../../components/qc-label-form/ProductCodeInput';
 import { MaterialSupplierInput } from '@/app/components/grn-label-form/MaterialSupplierInput';
-import { LABEL_MODES, type LabelMode, type PalletTypeKey, type PackageTypeKey } from '../../constants/grnConstants';
+import {
+  LABEL_MODES,
+  type LabelMode,
+  type PalletTypeKey,
+  type PackageTypeKey,
+} from '../../constants/grnConstants';
 import { PalletTypeSelector } from './PalletTypeSelector';
 import { PackageTypeSelector } from './PackageTypeSelector';
 
@@ -77,54 +82,62 @@ export const GrnDetailCard: React.FC<GrnDetailCardProps> = ({
   onLabelModeChange,
   onPalletTypeChange,
   onPackageTypeChange,
-  disabled = false
+  disabled = false,
 }) => {
   return (
-    <div className="flex flex-col space-y-3">
-      <UniversalGrid columns={{ sm: 1, md: 2 }} gap="sm">
+    <div className='flex flex-col space-y-3'>
+      <UniversalGrid columns={{ sm: 1, md: 2 }} gap='sm'>
         {/* GRN Number */}
-        <div className="group">
-          <label className="block text-sm font-medium mb-1 text-slate-300 group-focus-within:text-orange-400 transition-colors duration-200">
-            GRN Number <span className="text-red-400">*</span>
+        <div className='group'>
+          <label className='mb-1 block text-sm font-medium text-slate-300 transition-colors duration-200 group-focus-within:text-orange-400'>
+            GRN Number <span className='text-red-400'>*</span>
           </label>
-          <div className="relative">
+          <div className='relative'>
             <input
-              type="text"
+              type='text'
               value={formData.grnNumber}
               onChange={e => onFormChange('grnNumber', e.target.value)}
-              className="w-full px-3 py-2 bg-slate-800/50 border border-slate-600/50 rounded-xl text-white placeholder-slate-400 transition-all duration-300 ease-out focus:outline-none focus:ring-2 focus:ring-orange-400/30 focus:border-orange-400/70 focus:bg-slate-800/70 hover:border-orange-500/50 hover:bg-slate-800/60 backdrop-blur-sm"
-              placeholder="Please Enter..."
+              className='w-full rounded-xl border border-slate-600/50 bg-slate-800/50 px-3 py-2 text-white placeholder-slate-400 backdrop-blur-sm transition-all duration-300 ease-out hover:border-orange-500/50 hover:bg-slate-800/60 focus:border-orange-400/70 focus:bg-slate-800/70 focus:outline-none focus:ring-2 focus:ring-orange-400/30'
+              placeholder='Please Enter...'
               required
               disabled={disabled}
             />
-            <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-orange-500/5 via-transparent to-amber-500/5 opacity-0 group-focus-within:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
+            <div className='pointer-events-none absolute inset-0 rounded-xl bg-gradient-to-r from-orange-500/5 via-transparent to-amber-500/5 opacity-0 transition-opacity duration-300 group-focus-within:opacity-100'></div>
           </div>
         </div>
 
         {/* Material Supplier - 使用新的 MaterialSupplierInput 組件 */}
-        <div className="group">
+        <div className='group'>
           <MaterialSupplierInput
             value={formData.materialSupplier}
-            onChange={(value) => onFormChange('materialSupplier', value)}
+            onChange={value => onFormChange('materialSupplier', value)}
             onSupplierInfoChange={onSupplierInfoChange}
             disabled={disabled}
-            className="mb-0"
+            className='mb-0'
           />
           {supplierError && (
-            <div className="mt-2 p-2 bg-red-500/10 border border-red-500/20 rounded-lg">
-              <p className="text-red-400 text-xs flex items-center">
-                <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+            <div className='mt-2 rounded-lg border border-red-500/20 bg-red-500/10 p-2'>
+              <p className='flex items-center text-xs text-red-400'>
+                <svg className='mr-1 h-4 w-4' fill='currentColor' viewBox='0 0 20 20'>
+                  <path
+                    fillRule='evenodd'
+                    d='M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z'
+                    clipRule='evenodd'
+                  />
                 </svg>
                 {supplierError}
               </p>
             </div>
           )}
           {supplierInfo && (
-            <div className="mt-2 p-2 bg-green-500/10 border border-green-500/20 rounded-lg">
-              <p className="text-green-400 text-xs flex items-center">
-                <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+            <div className='mt-2 rounded-lg border border-green-500/20 bg-green-500/10 p-2'>
+              <p className='flex items-center text-xs text-green-400'>
+                <svg className='mr-1 h-4 w-4' fill='currentColor' viewBox='0 0 20 20'>
+                  <path
+                    fillRule='evenodd'
+                    d='M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z'
+                    clipRule='evenodd'
+                  />
                 </svg>
                 {supplierInfo.name}
               </p>
@@ -133,23 +146,27 @@ export const GrnDetailCard: React.FC<GrnDetailCardProps> = ({
         </div>
 
         {/* Product Code */}
-        <div className="md:col-span-2">
+        <div className='md:col-span-2'>
           <ProductCodeInput
             value={formData.productCode}
-            onChange={(value) => onFormChange('productCode', value)}
+            onChange={value => onFormChange('productCode', value)}
             onProductInfoChange={onProductInfoChange}
             required
             userId={currentUserId}
             disabled={disabled}
           />
           {productInfo && (
-            <div className="mt-2 p-3 bg-green-500/10 border border-green-500/20 rounded-lg">
-              <p className="text-green-400 text-sm flex items-center">
-                <svg className="w-4 h-4 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+            <div className='mt-2 rounded-lg border border-green-500/20 bg-green-500/10 p-3'>
+              <p className='flex items-center text-sm text-green-400'>
+                <svg className='mr-2 h-4 w-4 flex-shrink-0' fill='currentColor' viewBox='0 0 20 20'>
+                  <path
+                    fillRule='evenodd'
+                    d='M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z'
+                    clipRule='evenodd'
+                  />
                 </svg>
-                <span className="font-mono text-green-300">{productInfo.code}</span>
-                <span className="mx-2 text-green-500">-</span>
+                <span className='font-mono text-green-300'>{productInfo.code}</span>
+                <span className='mx-2 text-green-500'>-</span>
                 <span>{productInfo.description}</span>
               </p>
             </div>
@@ -157,73 +174,85 @@ export const GrnDetailCard: React.FC<GrnDetailCardProps> = ({
         </div>
 
         {/* Label Mode Selection */}
-        <div className="md:col-span-2">
-          <label className="block text-sm font-medium mb-3 text-slate-300">
-            Count Method<span className="text-red-400">*</span>
+        <div className='md:col-span-2'>
+          <label className='mb-3 block text-sm font-medium text-slate-300'>
+            Count Method<span className='text-red-400'>*</span>
           </label>
-          <div className="flex space-x-4">
-            <label className="flex items-center space-x-3 cursor-pointer group">
-              <div className="relative">
+          <div className='flex space-x-4'>
+            <label className='group flex cursor-pointer items-center space-x-3'>
+              <div className='relative'>
                 <input
-                  type="radio"
-                  name="labelMode"
+                  type='radio'
+                  name='labelMode'
                   value={LABEL_MODES.QUANTITY}
                   checked={labelMode === LABEL_MODES.QUANTITY}
                   onChange={() => onLabelModeChange(LABEL_MODES.QUANTITY)}
-                  className="sr-only"
+                  className='sr-only'
                   disabled={disabled}
                 />
-                <div className={`w-5 h-5 rounded-full border-2 transition-all duration-300 ${
-                  labelMode === LABEL_MODES.QUANTITY
-                    ? 'border-orange-500 bg-orange-500'
-                    : 'border-slate-500 bg-transparent group-hover:border-orange-400'
-                }`}>
+                <div
+                  className={`h-5 w-5 rounded-full border-2 transition-all duration-300 ${
+                    labelMode === LABEL_MODES.QUANTITY
+                      ? 'border-orange-500 bg-orange-500'
+                      : 'border-slate-500 bg-transparent group-hover:border-orange-400'
+                  }`}
+                >
                   {labelMode === LABEL_MODES.QUANTITY && (
-                    <div className="w-2 h-2 bg-white rounded-full absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2"></div>
+                    <div className='absolute left-1/2 top-1/2 h-2 w-2 -translate-x-1/2 -translate-y-1/2 transform rounded-full bg-white'></div>
                   )}
                 </div>
               </div>
-              <span className={`text-sm font-medium transition-colors duration-300 ${
-                labelMode === LABEL_MODES.QUANTITY ? 'text-orange-400' : 'text-slate-300 group-hover:text-orange-300'
-              }`}>
+              <span
+                className={`text-sm font-medium transition-colors duration-300 ${
+                  labelMode === LABEL_MODES.QUANTITY
+                    ? 'text-orange-400'
+                    : 'text-slate-300 group-hover:text-orange-300'
+                }`}
+              >
                 Quantity
               </span>
             </label>
 
-            <label className="flex items-center space-x-3 cursor-pointer group">
-              <div className="relative">
+            <label className='group flex cursor-pointer items-center space-x-3'>
+              <div className='relative'>
                 <input
-                  type="radio"
-                  name="labelMode"
+                  type='radio'
+                  name='labelMode'
                   value={LABEL_MODES.WEIGHT}
                   checked={labelMode === LABEL_MODES.WEIGHT}
                   onChange={() => onLabelModeChange(LABEL_MODES.WEIGHT)}
-                  className="sr-only"
+                  className='sr-only'
                   disabled={disabled}
                 />
-                <div className={`w-5 h-5 rounded-full border-2 transition-all duration-300 ${
-                  labelMode === LABEL_MODES.WEIGHT
-                    ? 'border-orange-500 bg-orange-500'
-                    : 'border-slate-500 bg-transparent group-hover:border-orange-400'
-                }`}>
+                <div
+                  className={`h-5 w-5 rounded-full border-2 transition-all duration-300 ${
+                    labelMode === LABEL_MODES.WEIGHT
+                      ? 'border-orange-500 bg-orange-500'
+                      : 'border-slate-500 bg-transparent group-hover:border-orange-400'
+                  }`}
+                >
                   {labelMode === LABEL_MODES.WEIGHT && (
-                    <div className="w-2 h-2 bg-white rounded-full absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2"></div>
+                    <div className='absolute left-1/2 top-1/2 h-2 w-2 -translate-x-1/2 -translate-y-1/2 transform rounded-full bg-white'></div>
                   )}
                 </div>
               </div>
-              <span className={`text-sm font-medium transition-colors duration-300 ${
-                labelMode === LABEL_MODES.WEIGHT ? 'text-orange-400' : 'text-slate-300 group-hover:text-orange-300'
-              }`}>
+              <span
+                className={`text-sm font-medium transition-colors duration-300 ${
+                  labelMode === LABEL_MODES.WEIGHT
+                    ? 'text-orange-400'
+                    : 'text-slate-300 group-hover:text-orange-300'
+                }`}
+              >
                 Weight
               </span>
             </label>
           </div>
         </div>
       </UniversalGrid>
-      
+
       {/* Pallet & Package Type Section - Only show in Weight mode */}
       {labelMode === 'weight' && (
-        <div className="grid grid-cols-2 gap-3">
+        <div className='grid grid-cols-2 gap-3'>
           <PalletTypeSelector
             palletType={palletType}
             onChange={onPalletTypeChange}

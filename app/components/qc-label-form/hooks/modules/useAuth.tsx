@@ -28,8 +28,10 @@ export const useAuth = ({ setUserId }: UseAuthProps): UseAuthReturn => {
   const getUserId = useCallback(async () => {
     try {
       const supabase = createClientSupabase();
-      const { data: { user } } = await supabase.auth.getUser();
-      
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
       if (user?.email) {
         // 從電郵提取時鐘編號 (格式: clocknumber@pennine.com)
         const clockNumber = extractClockNumberFromEmail(user.email);
@@ -53,7 +55,9 @@ export const useAuth = ({ setUserId }: UseAuthProps): UseAuthReturn => {
   const checkAuthentication = useCallback(async (): Promise<boolean> => {
     try {
       const supabase = createClientSupabase();
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       return !!user;
     } catch (error) {
       console.error('Error checking authentication:', error);
@@ -69,16 +73,16 @@ export const useAuth = ({ setUserId }: UseAuthProps): UseAuthReturn => {
   // 監聽認證狀態變化
   useEffect(() => {
     const supabase = createClientSupabase();
-    
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-          await getUserId();
-        } else if (event === 'SIGNED_OUT') {
-          setUserId('');
-        }
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+        await getUserId();
+      } else if (event === 'SIGNED_OUT') {
+        setUserId('');
       }
-    );
+    });
 
     return () => {
       subscription.unsubscribe();
@@ -87,6 +91,6 @@ export const useAuth = ({ setUserId }: UseAuthProps): UseAuthReturn => {
 
   return {
     isAuthenticated: true, // 簡化版本，實際應該基於狀態
-    refreshAuth
+    refreshAuth,
   };
 };

@@ -34,7 +34,7 @@ export const QUERY_TEMPLATES: QueryTemplate[] = [
       ORDER BY total_qty DESC
     `,
     variables: ['product_filter'],
-    description: '查詢產品庫存總量'
+    description: '查詢產品庫存總量',
   },
 
   // Await location 查詢
@@ -64,7 +64,7 @@ export const QUERY_TEMPLATES: QueryTemplate[] = [
       ORDER BY h.time DESC
     `,
     variables: ['product_filter'],
-    description: '查詢在 Await location 的棧板'
+    description: '查詢在 Await location 的棧板',
   },
 
   // 今日生產統計
@@ -81,7 +81,7 @@ export const QUERY_TEMPLATES: QueryTemplate[] = [
       WHERE DATE(p.generate_time) = CURRENT_DATE
       AND p.plt_remark LIKE '%finished in production%'
     `,
-    description: '今日生產統計'
+    description: '今日生產統計',
   },
 
   // 未完成訂單
@@ -106,7 +106,7 @@ export const QUERY_TEMPLATES: QueryTemplate[] = [
       ORDER BY o.created_at DESC
     `,
     variables: ['order_filter'],
-    description: '查詢未完成的訂單'
+    description: '查詢未完成的訂單',
   },
 
   // 轉移歷史
@@ -131,7 +131,7 @@ export const QUERY_TEMPLATES: QueryTemplate[] = [
       LIMIT 100
     `,
     variables: ['transfer_filter'],
-    description: '查詢近期轉移記錄'
+    description: '查詢近期轉移記錄',
   },
 
   // 收貨記錄
@@ -154,7 +154,7 @@ export const QUERY_TEMPLATES: QueryTemplate[] = [
       ORDER BY g.created_at DESC
     `,
     variables: ['grn_filter'],
-    description: '查詢收貨記錄'
+    description: '查詢收貨記錄',
   },
 
   // 長期滯留棧板
@@ -181,7 +181,7 @@ export const QUERY_TEMPLATES: QueryTemplate[] = [
       ORDER BY days_since_move DESC
     `,
     variables: ['days_threshold'],
-    description: '查詢長期未移動的棧板'
+    description: '查詢長期未移動的棧板',
   },
 
   // 產品分佈
@@ -209,8 +209,8 @@ export const QUERY_TEMPLATES: QueryTemplate[] = [
       ORDER BY total_pallets DESC
     `,
     variables: ['product_filter'],
-    description: '查詢產品在各位置的分佈'
-  }
+    description: '查詢產品在各位置的分佈',
+  },
 ];
 
 /**
@@ -305,7 +305,10 @@ export function extractVariables(userQuery: string): Record<string, string> {
 /**
  * 應用變量到模板
  */
-export function applyTemplateVariables(template: string, variables: Record<string, string>): string {
+export function applyTemplateVariables(
+  template: string,
+  variables: Record<string, string>
+): string {
   let result = template;
 
   // 替換所有變量
@@ -355,6 +358,6 @@ export function enhanceQueryWithTemplate(userQuery: string): {
   return {
     enhanced: true,
     template: sql,
-    hint: hint
+    hint: hint,
   };
 }

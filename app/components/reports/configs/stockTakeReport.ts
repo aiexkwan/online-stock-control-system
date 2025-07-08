@@ -12,7 +12,7 @@ export const stockTakeReportConfig: ReportConfig = {
   category: 'operational',
   formats: ['csv', 'pdf', 'excel'], // 新增 PDF 和 Excel 支援
   defaultFormat: 'csv', // 保持 CSV 為默認格式
-  
+
   // 過濾器配置
   filters: [
     {
@@ -20,7 +20,7 @@ export const stockTakeReportConfig: ReportConfig = {
       label: 'Stock Take Date',
       type: 'date',
       required: true,
-      defaultValue: new Date().toISOString().split('T')[0]
+      defaultValue: new Date().toISOString().split('T')[0],
     },
     {
       id: 'minVariance',
@@ -31,15 +31,15 @@ export const stockTakeReportConfig: ReportConfig = {
       validation: {
         min: 0,
         max: 100,
-        message: 'Variance must be between 0 and 100'
-      }
+        message: 'Variance must be between 0 and 100',
+      },
     },
     {
       id: 'productCode',
       label: 'Product Code',
       type: 'text',
       required: false,
-      placeholder: 'Filter by product code'
+      placeholder: 'Filter by product code',
     },
     {
       id: 'countStatus',
@@ -50,11 +50,11 @@ export const stockTakeReportConfig: ReportConfig = {
         { value: '', label: 'All Items' },
         { value: 'counted', label: 'Counted Only' },
         { value: 'not_counted', label: 'Not Counted Only' },
-        { value: 'high_variance', label: 'High Variance (>10%)' }
-      ]
-    }
+        { value: 'high_variance', label: 'High Variance (>10%)' },
+      ],
+    },
   ],
-  
+
   // 報表區段配置
   sections: [
     {
@@ -67,35 +67,35 @@ export const stockTakeReportConfig: ReportConfig = {
           {
             id: 'totalProducts',
             label: 'Total Products',
-            type: 'count'
+            type: 'count',
           },
           {
             id: 'countedProducts',
             label: 'Products Counted',
             type: 'custom',
-            customCalculation: 'countedProducts'
+            customCalculation: 'countedProducts',
           },
           {
             id: 'completionRate',
             label: 'Completion Rate',
             type: 'custom',
             customCalculation: 'completionPercentage',
-            format: 'percentage'
+            format: 'percentage',
           },
           {
             id: 'totalVariance',
             label: 'Total Variance',
             type: 'sum',
-            field: 'variance'
+            field: 'variance',
           },
           {
             id: 'highVarianceCount',
             label: 'High Variance Items',
             type: 'custom',
-            customCalculation: 'highVarianceCount'
-          }
-        ]
-      }
+            customCalculation: 'highVarianceCount',
+          },
+        ],
+      },
     },
     {
       id: 'details',
@@ -108,34 +108,34 @@ export const stockTakeReportConfig: ReportConfig = {
             id: 'product_code',
             label: 'Product Code',
             type: 'text',
-            width: 100
+            width: 100,
           },
           {
             id: 'description',
             label: 'Description',
             type: 'text',
-            width: 200
+            width: 200,
           },
           {
             id: 'system_stock',
             label: 'System Stock',
             type: 'number',
             width: 80,
-            align: 'right'
+            align: 'right',
           },
           {
             id: 'counted_qty',
             label: 'Counted Qty',
             type: 'number',
             width: 80,
-            align: 'right'
+            align: 'right',
           },
           {
             id: 'variance',
             label: 'Variance',
             type: 'number',
             width: 70,
-            align: 'right'
+            align: 'right',
           },
           {
             id: 'variance_percentage',
@@ -143,20 +143,20 @@ export const stockTakeReportConfig: ReportConfig = {
             type: 'percentage',
             width: 80,
             align: 'right',
-            format: 'decimal:1'
+            format: 'decimal:1',
           },
           {
             id: 'pallet_count',
             label: 'Pallets',
             type: 'number',
             width: 60,
-            align: 'right'
+            align: 'right',
           },
           {
             id: 'status',
             label: 'Status',
             type: 'text',
-            width: 80
+            width: 80,
           },
           {
             id: 'last_updated',
@@ -164,10 +164,10 @@ export const stockTakeReportConfig: ReportConfig = {
             type: 'date',
             format: 'datetime',
             width: 120,
-            exportOnly: true // 只在導出時顯示
-          }
-        ]
-      }
+            exportOnly: true, // 只在導出時顯示
+          },
+        ],
+      },
     },
     {
       id: 'notCountedItems',
@@ -181,26 +181,26 @@ export const stockTakeReportConfig: ReportConfig = {
             id: 'product_code',
             label: 'Product Code',
             type: 'text',
-            width: 100
+            width: 100,
           },
           {
             id: 'description',
             label: 'Description',
             type: 'text',
-            width: 250
+            width: 250,
           },
           {
             id: 'system_stock',
             label: 'System Stock',
             type: 'number',
             width: 100,
-            align: 'right'
-          }
-        ]
-      }
-    }
+            align: 'right',
+          },
+        ],
+      },
+    },
   ],
-  
+
   // 樣式配置
   styleOverrides: {
     pdf: {
@@ -208,21 +208,21 @@ export const stockTakeReportConfig: ReportConfig = {
       fontFamily: 'helvetica',
       margins: { top: 20, right: 15, bottom: 20, left: 15 },
       headerHeight: 30,
-      footerHeight: 20
+      footerHeight: 20,
     },
     excel: {
       headerStyle: {
         font: { bold: true, size: 12 },
-        fill: { fgColor: { rgb: "1E3A8A" } }, // 深藍色
-        font_color: { rgb: "FFFFFF" }
+        fill: { fgColor: { rgb: '1E3A8A' } }, // 深藍色
+        font_color: { rgb: 'FFFFFF' },
       },
       dataStyle: {
-        font: { size: 10 }
+        font: { size: 10 },
       },
       summaryStyle: {
         font: { bold: true, size: 11 },
-        fill: { fgColor: { rgb: "DBEAFE" } } // 淺藍色
-      }
-    }
-  }
+        fill: { fgColor: { rgb: 'DBEAFE' } }, // 淺藍色
+      },
+    },
+  },
 };

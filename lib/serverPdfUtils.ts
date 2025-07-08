@@ -9,7 +9,6 @@ export async function generateServerPdf(
   input: QcInputData,
   supabaseClient: SupabaseClient
 ): Promise<{ publicUrl: string; blob: Blob }> {
-  
   // 使用 API 路由來生成 PDF
   const response = await fetch('/api/print-label-pdf', {
     method: 'POST',
@@ -25,7 +24,7 @@ export async function generateServerPdf(
       operatorClockNum: input.operatorClockNum,
       qcClockNum: input.qcClockNum,
       workOrderNumber: input.workOrderNumber || '-',
-      qrValue: `${input.productCode}-${input.palletNum}`
+      qrValue: `${input.productCode}-${input.palletNum}`,
     }),
   });
 
@@ -36,10 +35,10 @@ export async function generateServerPdf(
 
   // 獲取 PDF blob
   const blob = await response.blob();
-  
+
   // 生成文件名
   const fileName = `${input.palletNum.replace(/\//g, '_')}.pdf`;
-  
+
   // 上傳到 Supabase
   const { data: uploadData, error: uploadError } = await supabaseClient.storage
     .from('pallet-label-pdf')
@@ -67,4 +66,4 @@ export async function generateServerPdf(
   }
 
   return { publicUrl: urlData.publicUrl, blob };
-} 
+}

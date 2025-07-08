@@ -4,16 +4,16 @@
 import { ReactElement } from 'react';
 
 // Widget 分類
-export type WidgetCategory = 
-  | 'core'       // 核心組件
-  | 'stats'      // 統計卡片類
-  | 'charts'     // 圖表類
-  | 'lists'      // 列表類
+export type WidgetCategory =
+  | 'core' // 核心組件
+  | 'stats' // 統計卡片類
+  | 'charts' // 圖表類
+  | 'lists' // 列表類
   | 'operations' // 操作類
-  | 'uploads'    // 上傳類
-  | 'reports'    // 報表類
-  | 'analysis'   // 分析類
-  | 'special';   // 特殊類
+  | 'uploads' // 上傳類
+  | 'reports' // 報表類
+  | 'analysis' // 分析類
+  | 'special'; // 特殊類
 
 // 導入必要的類型
 import { DashboardWidget, WidgetConfig, WidgetBaseConfig } from '@/app/types/dashboard';
@@ -37,7 +37,7 @@ export interface WidgetDefinition {
   name: string;
   category: WidgetCategory;
   description?: string;
-  
+
   // 布局配置（保持現有設定）
   defaultLayout?: {
     x: number;
@@ -45,24 +45,24 @@ export interface WidgetDefinition {
     w: number;
     h: number;
   };
-  
+
   // GraphQL 支援
   graphqlQuery?: string;
   useGraphQL?: boolean;
   graphqlVersion?: string; // 對應的 GraphQL widget ID
-  
+
   // 性能配置
   lazyLoad?: boolean;
   preloadPriority?: number; // 1-10, 10 最高
   cacheStrategy?: 'aggressive' | 'normal' | 'minimal';
-  
+
   // 權限
   requiredRoles?: string[];
   requiredFeatures?: string[];
-  
+
   // 渲染組件
   component?: React.ComponentType<WidgetComponentProps>;
-  
+
   // 元數據
   metadata?: {
     registryVersion?: string;
@@ -77,7 +77,7 @@ export interface WidgetRegistryItem extends WidgetDefinition {
   // 加載狀態
   loadStatus?: 'pending' | 'loading' | 'loaded' | 'error';
   loadError?: Error;
-  
+
   // 性能數據
   loadTime?: number;
   lastUsed?: number;
@@ -86,7 +86,7 @@ export interface WidgetRegistryItem extends WidgetDefinition {
 
 // Widget 布局項接口（兼容現有系統）
 export interface WidgetLayoutItem {
-  i: string;  // widget ID
+  i: string; // widget ID
   x: number;
   y: number;
   w: number;
@@ -114,17 +114,20 @@ export interface IWidgetRegistry {
   unregister(widgetId: string): void;
   getDefinition(widgetId: string): WidgetDefinition | undefined;
   getComponent(widgetId: string): React.ComponentType<WidgetComponentProps> | undefined;
-  
+
   // GraphQL 版本切換
-  getWidgetComponent(widgetId: string, enableGraphQL: boolean): React.ComponentType<WidgetComponentProps> | undefined;
-  
+  getWidgetComponent(
+    widgetId: string,
+    enableGraphQL: boolean
+  ): React.ComponentType<WidgetComponentProps> | undefined;
+
   // 批量操作
   getAllDefinitions(): Map<string, WidgetDefinition>;
   getByCategory(category: WidgetCategory): WidgetDefinition[];
-  
+
   // 自動發現和註冊
   autoRegisterWidgets(): Promise<void>;
-  
+
   // 性能和統計
   getLoadStatistics(): Map<string, WidgetRegistryItem>;
   preloadWidgets(widgetIds: string[]): Promise<void>;
@@ -136,12 +139,12 @@ export interface WidgetMapping {
   categoryMap: {
     [widgetId: string]: WidgetCategory;
   };
-  
+
   // GraphQL 版本映射
   graphqlVersionMap: {
     [standardWidgetId: string]: string; // standard -> GraphQL version ID
   };
-  
+
   // 預加載優先級映射
   preloadPriorityMap: {
     [widgetId: string]: number;
@@ -150,15 +153,10 @@ export interface WidgetMapping {
 
 // 布局兼容性管理器接口
 export interface ILayoutCompatibilityManager {
-  validateLayoutIntegrity(
-    oldLayout: WidgetLayoutItem[],
-    newLayout: WidgetLayoutItem[]
-  ): boolean;
-  
-  migrateLayout(
-    existingLayout: WidgetLayoutItem[]
-  ): WidgetLayoutItem[];
-  
+  validateLayoutIntegrity(oldLayout: WidgetLayoutItem[], newLayout: WidgetLayoutItem[]): boolean;
+
+  migrateLayout(existingLayout: WidgetLayoutItem[]): WidgetLayoutItem[];
+
   captureCurrentLayout(route: string): Promise<WidgetLayoutItem[]>;
   restoreLayout(route: string, layout: WidgetLayoutItem[]): Promise<void>;
 }

@@ -25,37 +25,40 @@ export const useFormPersistence = ({
   formData,
   setFormData,
   isEnabled = true,
-  autoSaveDelay = 1000
+  autoSaveDelay = 1000,
 }: UseFormPersistenceProps) => {
   const [isLoading, setIsLoading] = useState(true);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
 
   // 保存表單數據到本地存儲
-  const saveFormData = useCallback((data: FormData) => {
-    if (!isEnabled) return;
+  const saveFormData = useCallback(
+    (data: FormData) => {
+      if (!isEnabled) return;
 
-    try {
-      const storedData: StoredFormData = {
-        version: STORAGE_VERSION,
-        timestamp: Date.now(),
-        data: {
-          productCode: data.productCode,
-          quantity: data.quantity,
-          count: data.count,
-          operator: data.operator,
-          acoOrderRef: data.acoOrderRef,
-          slateDetail: data.slateDetail,
-          // 不保存敏感或臨時數據
-          // userId, clockNumber 等不保存
-        }
-      };
+      try {
+        const storedData: StoredFormData = {
+          version: STORAGE_VERSION,
+          timestamp: Date.now(),
+          data: {
+            productCode: data.productCode,
+            quantity: data.quantity,
+            count: data.count,
+            operator: data.operator,
+            acoOrderRef: data.acoOrderRef,
+            slateDetail: data.slateDetail,
+            // 不保存敏感或臨時數據
+            // userId, clockNumber 等不保存
+          },
+        };
 
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(storedData));
-      setLastSaved(new Date());
-    } catch (error) {
-      console.error('Failed to save form data:', error);
-    }
-  }, [isEnabled]);
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(storedData));
+        setLastSaved(new Date());
+      } catch (error) {
+        console.error('Failed to save form data:', error);
+      }
+    },
+    [isEnabled]
+  );
 
   // 使用防抖來自動保存
   const debouncedSave = useMemo(
@@ -78,7 +81,7 @@ export const useFormPersistence = ({
       }
 
       const parsedData: StoredFormData = JSON.parse(stored);
-      
+
       // 檢查版本兼容性
       if (parsedData.version !== STORAGE_VERSION) {
         localStorage.removeItem(STORAGE_KEY);
@@ -100,8 +103,8 @@ export const useFormPersistence = ({
         ...parsedData.data,
         slateDetail: {
           ...prevData.slateDetail,
-          ...(parsedData.data.slateDetail || {})
-        }
+          ...(parsedData.data.slateDetail || {}),
+        },
       }));
 
       setLastSaved(new Date(parsedData.timestamp));
@@ -165,6 +168,6 @@ export const useFormPersistence = ({
     saveFormData,
     loadFormData,
     clearSavedData,
-    hasSavedData
+    hasSavedData,
   };
 };

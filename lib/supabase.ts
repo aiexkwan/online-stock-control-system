@@ -15,4 +15,4 @@ export { createClient } from '@/app/utils/supabase/client';
 // if (typeof window !== 'undefined') {
 //   // @ts-ignore
 //   // window.supabase = supabase; // Avoid attaching to window for better practice
-// } 
+// }

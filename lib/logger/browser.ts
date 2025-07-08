@@ -36,26 +36,28 @@ export const logClientError = (
   componentName?: string,
   additionalInfo?: Record<string, any>
 ) => {
-  uiLogger.error({
-    err: error,
-    component: componentName,
-    ...additionalInfo,
-    userAgent: typeof window !== 'undefined' ? window.navigator.userAgent : undefined,
-    url: typeof window !== 'undefined' ? window.location.href : undefined,
-  }, 'Client error occurred');
+  uiLogger.error(
+    {
+      err: error,
+      component: componentName,
+      ...additionalInfo,
+      userAgent: typeof window !== 'undefined' ? window.navigator.userAgent : undefined,
+      url: typeof window !== 'undefined' ? window.location.href : undefined,
+    },
+    'Client error occurred'
+  );
 };
 
 // 輔助函數：記錄用戶操作
-export const logUserAction = (
-  action: string,
-  component: string,
-  details?: Record<string, any>
-) => {
-  uiLogger.info({
-    action,
-    component,
-    ...details,
-  }, 'User action');
+export const logUserAction = (action: string, component: string, details?: Record<string, any>) => {
+  uiLogger.info(
+    {
+      action,
+      component,
+      ...details,
+    },
+    'User action'
+  );
 };
 
 // 輔助函數：記錄 API 調用
@@ -66,12 +68,15 @@ export const logApiCall = (
   duration?: number
 ) => {
   const level = status && status >= 400 ? 'error' : 'debug';
-  apiClientLogger[level]({
-    method,
-    endpoint,
-    status,
-    duration,
-  }, 'API call from client');
+  apiClientLogger[level](
+    {
+      method,
+      endpoint,
+      status,
+      duration,
+    },
+    'API call from client'
+  );
 };
 
 export default browserLogger;

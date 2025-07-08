@@ -1,6 +1,6 @@
 /**
  * Cache Strategy Optimizer
- * 
+ *
  * Features:
  * - Dynamic TTL adjustment based on usage patterns
  * - Cache hit/miss ratio monitoring
@@ -128,7 +128,7 @@ class CacheStrategyOptimizer {
   constructor() {
     // Initialize with default configurations
     this.initializeDefaultConfigs();
-    
+
     // Start periodic optimization
     setInterval(() => {
       this.optimizeStrategies();
@@ -187,11 +187,16 @@ class CacheStrategyOptimizer {
 
   private calculateMaxSize(priority: string): number {
     switch (priority) {
-      case 'critical': return 5000;
-      case 'high': return 2000;
-      case 'medium': return 1000;
-      case 'low': return 500;
-      default: return 1000;
+      case 'critical':
+        return 5000;
+      case 'high':
+        return 2000;
+      case 'medium':
+        return 1000;
+      case 'low':
+        return 500;
+      default:
+        return 1000;
     }
   }
 
@@ -201,22 +206,22 @@ class CacheStrategyOptimizer {
       switch (fieldName) {
         case 'products':
           return !args.realtime && (!args.first || args.first <= 100);
-          
+
         case 'inventory':
           return !args.realtime && args.first && args.first <= 50;
-          
+
         case 'orders':
           return args.status !== 'ACTIVE' || (args.first && args.first <= 20);
-          
+
         case 'movements':
           return args.first && args.first <= 10;
-          
+
         case 'warehouseSummary':
           return true; // Always cache summaries
-          
+
         case 'analyticsData':
           return !args.realtime;
-          
+
         default:
           return args.first && args.first <= 20;
       }
@@ -254,16 +259,16 @@ class CacheStrategyOptimizer {
     metrics.totalRequests++;
 
     // Update average response time
-    metrics.avgResponseTime = 
-      (metrics.avgResponseTime * (metrics.totalRequests - 1) + responseTime) / metrics.totalRequests;
+    metrics.avgResponseTime =
+      (metrics.avgResponseTime * (metrics.totalRequests - 1) + responseTime) /
+      metrics.totalRequests;
 
     // Update access frequency (requests per hour)
     const timeSinceLastAccess = now - metrics.lastAccessed;
     if (timeSinceLastAccess > 0) {
       const requestsPerMs = 1 / timeSinceLastAccess;
       const requestsPerHour = requestsPerMs * 60 * 60 * 1000;
-      metrics.accessFrequency = 
-        (metrics.accessFrequency * 0.9) + (requestsPerHour * 0.1); // Exponential smoothing
+      metrics.accessFrequency = metrics.accessFrequency * 0.9 + requestsPerHour * 0.1; // Exponential smoothing
     }
 
     metrics.lastAccessed = now;
@@ -292,12 +297,12 @@ class CacheStrategyOptimizer {
   }
 
   private calculateOptimalConfig(
-    metrics: CacheMetrics, 
+    metrics: CacheMetrics,
     currentConfig: OptimizedCacheConfig
   ): OptimizedCacheConfig {
     const hitRatio = metrics.totalRequests > 0 ? metrics.hits / metrics.totalRequests : 0;
     const strategy = this.getBusinessStrategy(currentConfig.fieldName);
-    
+
     if (!strategy) return currentConfig;
 
     let newTTL = currentConfig.ttl;
@@ -414,7 +419,7 @@ class CacheStrategyOptimizer {
           `Consider disabling cache for '${fieldName}' (hit ratio: ${Math.round(hitRatio * 100)}%)`
         );
       }
-      
+
       if (hitRatio > 0.9 && metrics.accessFrequency > 20) {
         report.recommendations.push(
           `Consider increasing cache size for '${fieldName}' (excellent performance)`
@@ -480,7 +485,7 @@ export function optimizedCacheDecorator(fieldName: string) {
         if (config && config.shouldCache(...args)) {
           // Try cache first (implementation depends on your cache store)
           const cachedResult = await getCachedResult(fieldName, args, config.ttl);
-          
+
           if (cachedResult !== null) {
             const responseTime = Date.now() - startTime;
             cacheOptimizer.recordCacheHit(fieldName, responseTime);
@@ -517,6 +522,11 @@ async function getCachedResult(fieldName: string, args: any[], ttl: number): Pro
   return null;
 }
 
-async function setCachedResult(fieldName: string, args: any[], result: any, ttl: number): Promise<void> {
+async function setCachedResult(
+  fieldName: string,
+  args: any[],
+  result: any,
+  ttl: number
+): Promise<void> {
   // Implementation depends on your cache store
-} 
+}

@@ -20,33 +20,33 @@ export enum WidgetType {
   CUSTOM = 'custom',
   TODAY_PRODUCTION = 'today_production',
   MACHINE_EFFICIENCY = 'machine_efficiency',
-  TARGET_HIT_RATE = 'target_hit_rate'
+  TARGET_HIT_RATE = 'target_hit_rate',
 }
 
 // Widget size 相關定義已移除 - admin dashboard 使用固定佈局
 
 // 小部件基礎配置
 export interface WidgetBaseConfig {
-  refreshInterval?: number;     // 自動刷新間隔（毫秒）
-  dataSource?: string;          // 數據源
-  displayOptions?: any;         // 顯示選項
+  refreshInterval?: number; // 自動刷新間隔（毫秒）
+  dataSource?: string; // 數據源
+  displayOptions?: Record<string, unknown>; // 顯示選項
   // size 已移除 - admin dashboard 使用固定佈局
-  timeRange?: string;          // 時間範圍
-  [key: string]: any;          // 擴展配置
+  timeRange?: string; // 時間範圍
+  [key: string]: unknown; // 擴展配置
 }
 
 // 儀表板小部件
 export interface DashboardWidget {
-  id: string;                    // 唯一標識
-  type: WidgetType;             // 小部件類型
-  title: string;                // 顯示標題
-  config: WidgetBaseConfig;     // 小部件配置
-  permissions?: string[];       // 權限要求
+  id: string; // 唯一標識
+  type: WidgetType; // 小部件類型
+  title: string; // 顯示標題
+  config: WidgetBaseConfig; // 小部件配置
+  permissions?: string[]; // 權限要求
 }
 
 // 儀表板佈局項目
 export interface DashboardLayoutItem {
-  i: string;  // widget id
+  i: string; // widget id
   x: number;
   y: number;
   w: number;
@@ -98,7 +98,7 @@ export interface WidgetConfig {
     // size 已移除 - admin dashboard 使用固定佈局
     refreshInterval?: number;
     timeRange?: string;
-    [key: string]: any;
+    [key: string]: unknown;
   };
 }
 

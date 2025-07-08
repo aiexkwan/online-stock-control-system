@@ -2,9 +2,7 @@
   "mcpServers": {
     "supabase": {
       "command": "npx",
-      "args": [
-        "@supabase/mcp-server-supabase"
-      ],
+      "args": ["@supabase/mcp-server-supabase"],
       "env": {
         "SUPABASE_URL": "https://bbmkuiplnzvpudszrend.supabase.co",
         "SUPABASE_SERVICE_ROLE_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJibWt1aXBsbnp2cHVkc3pyZW5kIiwicm9sZSI6InNlcnZpY2Ufcm9sZSIsImlhdCI6MTc0NTcxNTYwNCwiZXhwIjoyMDYxMjkxNjA0fQ.B0pQF2V0kWdrU2_2VEYXR6qxZzt2oMDvwxD7qiR3huM"
@@ -12,9 +10,7 @@
     },
     "mem0": {
       "command": "python",
-      "args": [
-        "-m", "mem0.mcp"
-      ],
+      "args": ["-m", "mem0.mcp"],
       "env": {
         "MEM0_API_KEY": "om-lrj6iziznpqzdxruq78px2tjylo9ks4w"
       }

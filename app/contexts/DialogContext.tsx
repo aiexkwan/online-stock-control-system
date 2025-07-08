@@ -8,11 +8,7 @@
 import React, { createContext, useContext, useState, useCallback } from 'react';
 
 // 定義所有對話框類型
-export type DialogType = 
-  | 'askDatabase'
-  | 'loadStock'
-  | 'stockTransfer'
-  | 'exportData';
+export type DialogType = 'askDatabase' | 'loadStock' | 'stockTransfer' | 'exportData';
 
 // 對話框數據類型
 interface DialogData {
@@ -74,9 +70,12 @@ export function DialogProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   // 檢查對話框是否開啟
-  const isDialogOpen = useCallback((dialog: DialogType) => {
-    return dialogs[dialog] || false;
-  }, [dialogs]);
+  const isDialogOpen = useCallback(
+    (dialog: DialogType) => {
+      return dialogs[dialog] || false;
+    },
+    [dialogs]
+  );
 
   // 清除所有對話框數據
   const clearDialogData = useCallback(() => {
@@ -94,11 +93,7 @@ export function DialogProvider({ children }: { children: React.ReactNode }) {
     clearDialogData,
   };
 
-  return (
-    <DialogContext.Provider value={value}>
-      {children}
-    </DialogContext.Provider>
-  );
+  return <DialogContext.Provider value={value}>{children}</DialogContext.Provider>;
 }
 
 // Custom hook 使用 Dialog Context

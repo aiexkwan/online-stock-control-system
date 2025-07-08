@@ -3,13 +3,13 @@
  * Consolidates print-label and print-grnlabel functionality
  */
 
-import { 
-  PrintJob, 
-  PrintResult, 
-  PrinterStatus, 
-  PrinterStatusCallback, 
+import {
+  PrintJob,
+  PrintResult,
+  PrinterStatus,
+  PrinterStatusCallback,
   Unsubscribe,
-  PrintJobType 
+  PrintJobType,
 } from '../types';
 import { EventEmitter } from 'events';
 
@@ -18,16 +18,16 @@ export interface PrinterService {
   listPrinters(): Promise<PrinterStatus[]>;
   selectPrinter(printerId: string): Promise<void>;
   getDefaultPrinter(): Promise<PrinterStatus | null>;
-  
+
   // Print Operations
   print(job: PrintJob): Promise<PrintResult>;
   batchPrint(jobs: PrintJob[]): Promise<PrintResult[]>;
   cancelJob(jobId: string): Promise<boolean>;
-  
+
   // Status Monitoring
   getStatus(printerId?: string): Promise<PrinterStatus | PrinterStatus[]>;
   onStatusChange(callback: PrinterStatusCallback): Unsubscribe;
-  
+
   // Queue Management
   getQueueStatus(): Promise<{ pending: number; processing: number }>;
   clearQueue(): Promise<void>;
@@ -60,10 +60,10 @@ export class DefaultPrinterService extends EventEmitter implements PrinterServic
         supportedFormats: ['pdf', 'html'],
         maxCopies: 999,
         supportsDuplex: false,
-        supportsColor: true
-      }
+        supportsColor: true,
+      },
     };
-    
+
     this.printers.set(defaultPrinter.id, defaultPrinter);
     this.selectedPrinterId = defaultPrinter.id;
   }
@@ -86,7 +86,7 @@ export class DefaultPrinterService extends EventEmitter implements PrinterServic
   async print(job: PrintJob): Promise<PrintResult> {
     const jobId = this.generateJobId();
     const jobWithId = { ...job, id: jobId };
-    
+
     try {
       // Route to appropriate handler based on job type
       switch (job.type) {
@@ -104,7 +104,7 @@ export class DefaultPrinterService extends EventEmitter implements PrinterServic
       return {
         success: false,
         jobId,
-        error: error instanceof Error ? error.message : 'Unknown error'
+        error: error instanceof Error ? error.message : 'Unknown error',
       };
     }
   }
@@ -142,7 +142,7 @@ export class DefaultPrinterService extends EventEmitter implements PrinterServic
   async getQueueStatus(): Promise<{ pending: number; processing: number }> {
     return {
       pending: this.printQueue.length,
-      processing: this.isProcessing ? 1 : 0
+      processing: this.isProcessing ? 1 : 0,
     };
   }
 
@@ -182,23 +182,23 @@ export class DefaultPrinterService extends EventEmitter implements PrinterServic
       if (job.data.pdfBlob) {
         // Direct print from blob
         const pdfUrl = URL.createObjectURL(job.data.pdfBlob);
-        
+
         // Trigger actual print dialog
         await this.triggerPrint(pdfUrl, job.copies);
-        
+
         return {
           success: true,
           jobId: job.id!,
           pdfUrl,
           printedAt: new Date().toISOString(),
-          message: 'QC label printed successfully'
+          message: 'QC label printed successfully',
         };
       } else {
         // Legacy API call if no blob provided
         const response = await fetch('/api/print-label-pdf', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(job.data)
+          body: JSON.stringify(job.data),
         });
 
         if (!response.ok) {
@@ -215,7 +215,7 @@ export class DefaultPrinterService extends EventEmitter implements PrinterServic
           success: true,
           jobId: job.id!,
           pdfUrl,
-          printedAt: new Date().toISOString()
+          printedAt: new Date().toISOString(),
         };
       }
     } catch (error) {
@@ -229,16 +229,16 @@ export class DefaultPrinterService extends EventEmitter implements PrinterServic
       if (job.data.pdfBlob) {
         // Direct print from blob
         const pdfUrl = URL.createObjectURL(job.data.pdfBlob);
-        
+
         // Trigger actual print dialog
         await this.triggerPrint(pdfUrl, job.copies);
-        
+
         return {
           success: true,
           jobId: job.id!,
           pdfUrl,
           printedAt: new Date().toISOString(),
-          message: 'GRN label printed successfully'
+          message: 'GRN label printed successfully',
         };
       } else {
         // Legacy API call if no blob provided
@@ -246,7 +246,7 @@ export class DefaultPrinterService extends EventEmitter implements PrinterServic
         return {
           success: false,
           jobId: job.id!,
-          error: 'GRN label printing requires PDF blob'
+          error: 'GRN label printing requires PDF blob',
         };
       }
     } catch (error) {
@@ -259,23 +259,23 @@ export class DefaultPrinterService extends EventEmitter implements PrinterServic
       // Check if we have a PDF blob
       if (job.data.pdfBlob) {
         const pdfUrl = URL.createObjectURL(job.data.pdfBlob);
-        
+
         // Trigger actual print dialog
         await this.triggerPrint(pdfUrl, job.copies);
-        
+
         return {
           success: true,
           jobId: job.id!,
           pdfUrl,
           printedAt: new Date().toISOString(),
-          message: 'Document printed successfully'
+          message: 'Document printed successfully',
         };
       } else {
         // No PDF blob provided
         return {
           success: false,
           jobId: job.id!,
-          error: 'Document printing requires PDF blob'
+          error: 'Document printing requires PDF blob',
         };
       }
     } catch (error) {
@@ -288,19 +288,19 @@ export class DefaultPrinterService extends EventEmitter implements PrinterServic
     const iframe = document.createElement('iframe');
     iframe.style.display = 'none';
     iframe.src = pdfUrl;
-    
+
     document.body.appendChild(iframe);
-    
-    return new Promise((resolve) => {
+
+    return new Promise(resolve => {
       iframe.onload = () => {
         // Focus on iframe for better print dialog handling
         iframe.contentWindow?.focus();
-        
+
         // Print based on copies
         for (let i = 0; i < copies; i++) {
           iframe.contentWindow?.print();
         }
-        
+
         // IMPORTANT: Increased delay to allow user to interact with print dialog
         // Most browsers need time for print dialog to fully close
         setTimeout(() => {

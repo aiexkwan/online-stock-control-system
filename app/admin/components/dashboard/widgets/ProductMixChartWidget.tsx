@@ -16,7 +16,10 @@ import { useWidgetData } from '@/app/admin/hooks/useWidgetData';
 
 const COLORS = ['#10B981', '#3B82F6', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899'];
 
-export const ProductMixChartWidget = React.memo(function ProductMixChartWidget({ widget, isEditMode }: WidgetComponentProps) {
+export const ProductMixChartWidget = React.memo(function ProductMixChartWidget({
+  widget,
+  isEditMode,
+}: WidgetComponentProps) {
   const [data, setData] = React.useState<any[]>([]);
   const [loading, setLoading] = React.useState(true);
 
@@ -30,7 +33,7 @@ export const ProductMixChartWidget = React.memo(function ProductMixChartWidget({
         { code: 'CPDE789', count: 200, percentage: 16 },
         { code: 'CPDE012', count: 150, percentage: 12 },
         { code: 'CPDE345', count: 120, percentage: 10 },
-        { code: 'Others', count: 150, percentage: 12 }
+        { code: 'Others', count: 150, percentage: 12 },
       ]);
       setLoading(false);
     }, 500);
@@ -43,50 +46,47 @@ export const ProductMixChartWidget = React.memo(function ProductMixChartWidget({
   // Medium size (3x3) - 只有表格
 
   return (
-    <WidgetCard widgetType="PRODUCT_MIX_CHART" isEditMode={isEditMode}>
-      <CardHeader className="pb-2">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-gradient-to-r from-orange-500 to-amber-500 rounded-lg flex items-center justify-center">
-            <ChartPieIcon className="h-5 w-5 text-white" />
+    <WidgetCard widgetType='PRODUCT_MIX_CHART' isEditMode={isEditMode}>
+      <CardHeader className='pb-2'>
+        <div className='flex items-center gap-2'>
+          <div className='flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-r from-orange-500 to-amber-500'>
+            <ChartPieIcon className='h-5 w-5 text-white' />
           </div>
-          <h3 className="text-lg font-medium text-slate-200">Stock Level Distribution</h3>
+          <h3 className='text-lg font-medium text-slate-200'>Stock Level Distribution</h3>
         </div>
       </CardHeader>
-      <CardContent className="flex-1 min-h-0">
+      <CardContent className='min-h-0 flex-1'>
         <UnifiedWidgetLayout
-
           tableData={data}
           renderTableRow={(product, index) => (
             <TableRow key={product.code}>
-              <div className="flex items-center gap-2">
-                <div 
-                  className="w-2.5 h-2.5 rounded-full" 
+              <div className='flex items-center gap-2'>
+                <div
+                  className='h-2.5 w-2.5 rounded-full'
                   style={{ backgroundColor: COLORS[index % COLORS.length] }}
                 />
-                <span className="text-xs text-slate-300">{product.code}</span>
+                <span className='text-xs text-slate-300'>{product.code}</span>
               </div>
-              <div className="text-right">
-                <span className="text-xs font-semibold text-slate-200">
+              <div className='text-right'>
+                <span className='text-xs font-semibold text-slate-200'>
                   {product.count.toLocaleString()}
                 </span>
-                <span className="text-xs text-slate-400 ml-1">
-                  ({product.percentage}%)
-                </span>
+                <span className='ml-1 text-xs text-slate-400'>({product.percentage}%)</span>
               </div>
             </TableRow>
           )}
           chartContent={
             <ChartContainer>
-              <ResponsiveContainer width="100%" height="100%">
+              <ResponsiveContainer width='100%' height='100%'>
                 <PieChart>
                   <Pie
                     data={data}
-                    cx="50%"
-                    cy="50%"
+                    cx='50%'
+                    cy='50%'
                     outerRadius={80}
-                    fill="#8884d8"
-                    dataKey="count"
-                    nameKey="code"
+                    fill='#8884d8'
+                    dataKey='count'
+                    nameKey='code'
                   >
                     {data.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />

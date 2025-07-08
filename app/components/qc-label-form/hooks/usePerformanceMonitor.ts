@@ -23,82 +23,103 @@ export const usePerformanceMonitor = (config: PerformanceConfig) => {
     componentName,
     slowRenderThreshold = 16, // 16ms = 60fps
     enableLogging = false, // Disabled by default to prevent infinite loops
-    trackUserInteractions = true
+    trackUserInteractions = true,
   } = config;
 
   const renderTimes = useRef<number[]>([]);
   const interactionTimes = useRef<Map<string, number>>(new Map());
-  
+
   const [metrics, setMetrics] = useState<PerformanceMetrics>({
     renderCount: 0,
     lastRenderTime: 0,
     averageRenderTime: 0,
     totalRenderTime: 0,
     slowRenders: 0,
-    componentName
+    componentName,
   });
 
   // Manual render tracking (called explicitly when needed)
-  const trackRender = useCallback((renderTime: number) => {
-    renderTimes.current.push(renderTime);
-    
-    // Keep only last 100 render times for average calculation
-    if (renderTimes.current.length > 100) {
-      renderTimes.current.shift();
-    }
+  const trackRender = useCallback(
+    (renderTime: number) => {
+      renderTimes.current.push(renderTime);
 
-    const totalTime = renderTimes.current.reduce((sum, time) => sum + time, 0);
-    const averageTime = totalTime / renderTimes.current.length;
+      // Keep only last 100 render times for average calculation
+      if (renderTimes.current.length > 100) {
+        renderTimes.current.shift();
+      }
 
-    setMetrics(prev => ({
-      ...prev,
-      renderCount: prev.renderCount + 1,
-      lastRenderTime: renderTime,
-      averageRenderTime: averageTime,
-      totalRenderTime: prev.totalRenderTime + renderTime,
-      slowRenders: prev.slowRenders + (renderTime > slowRenderThreshold ? 1 : 0)
-    }));
+      const totalTime = renderTimes.current.reduce((sum, time) => sum + time, 0);
+      const averageTime = totalTime / renderTimes.current.length;
 
-    if (enableLogging && renderTime > slowRenderThreshold) {
-      process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.warn(`[Performance] Slow render detected in ${componentName}: ${renderTime.toFixed(2)}ms`);
-    }
-  }, [componentName, enableLogging, slowRenderThreshold]);
+      setMetrics(prev => ({
+        ...prev,
+        renderCount: prev.renderCount + 1,
+        lastRenderTime: renderTime,
+        averageRenderTime: averageTime,
+        totalRenderTime: prev.totalRenderTime + renderTime,
+        slowRenders: prev.slowRenders + (renderTime > slowRenderThreshold ? 1 : 0),
+      }));
+
+      if (enableLogging && renderTime > slowRenderThreshold) {
+        process.env.NODE_ENV !== 'production' &&
+          process.env.NODE_ENV !== 'production' &&
+          console.warn(
+            `[Performance] Slow render detected in ${componentName}: ${renderTime.toFixed(2)}ms`
+          );
+      }
+    },
+    [componentName, enableLogging, slowRenderThreshold]
+  );
 
   // Track user interactions
-  const trackInteraction = useCallback((interactionType: string) => {
-    if (!trackUserInteractions) return;
+  const trackInteraction = useCallback(
+    (interactionType: string) => {
+      if (!trackUserInteractions) return;
 
-    const startTime = performance.now();
-    interactionTimes.current.set(interactionType, startTime);
+      const startTime = performance.now();
+      interactionTimes.current.set(interactionType, startTime);
 
-    return () => {
-      const endTime = performance.now();
-      const duration = endTime - startTime;
-      
-      if (enableLogging) {
-        process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`[Performance] ${componentName} - ${interactionType}: ${duration.toFixed(2)}ms`);
-      }
-    };
-  }, [componentName, enableLogging, trackUserInteractions]);
+      return () => {
+        const endTime = performance.now();
+        const duration = endTime - startTime;
+
+        if (enableLogging) {
+          process.env.NODE_ENV !== 'production' &&
+            process.env.NODE_ENV !== 'production' &&
+            console.log(
+              `[Performance] ${componentName} - ${interactionType}: ${duration.toFixed(2)}ms`
+            );
+        }
+      };
+    },
+    [componentName, enableLogging, trackUserInteractions]
+  );
 
   // Get performance summary
   const getPerformanceSummary = useCallback(() => {
     const summary = {
       ...metrics,
-      slowRenderPercentage: metrics.renderCount > 0 ? (metrics.slowRenders / metrics.renderCount) * 100 : 0,
+      slowRenderPercentage:
+        metrics.renderCount > 0 ? (metrics.slowRenders / metrics.renderCount) * 100 : 0,
       isPerformant: metrics.averageRenderTime < slowRenderThreshold,
-      recommendations: [] as string[]
+      recommendations: [] as string[],
     };
 
     // Generate recommendations
     if (summary.slowRenderPercentage > 20) {
-      summary.recommendations.push('Consider using React.memo or useMemo for expensive calculations');
+      summary.recommendations.push(
+        'Consider using React.memo or useMemo for expensive calculations'
+      );
     }
     if (summary.averageRenderTime > slowRenderThreshold * 2) {
-      summary.recommendations.push('Component renders are consistently slow, consider code splitting');
+      summary.recommendations.push(
+        'Component renders are consistently slow, consider code splitting'
+      );
     }
     if (summary.renderCount > 100 && summary.slowRenders > 10) {
-      summary.recommendations.push('High number of slow renders detected, review component dependencies');
+      summary.recommendations.push(
+        'High number of slow renders detected, review component dependencies'
+      );
     }
 
     return summary;
@@ -114,7 +135,7 @@ export const usePerformanceMonitor = (config: PerformanceConfig) => {
       averageRenderTime: 0,
       totalRenderTime: 0,
       slowRenders: 0,
-      componentName
+      componentName,
     });
   }, [componentName]);
 
@@ -123,7 +144,7 @@ export const usePerformanceMonitor = (config: PerformanceConfig) => {
     trackRender,
     trackInteraction,
     getPerformanceSummary,
-    resetMetrics
+    resetMetrics,
   };
 };
 
@@ -139,8 +160,11 @@ export const useGlobalPerformanceMonitor = () => {
     const components = Array.from(globalMetrics.entries());
     const totalComponents = components.length;
     const totalRenders = components.reduce((sum, [, metrics]) => sum + metrics.renderCount, 0);
-    const averageRenderTime = components.reduce((sum, [, metrics]) => sum + metrics.averageRenderTime, 0) / totalComponents;
-    const slowComponents = components.filter(([, metrics]) => metrics.averageRenderTime > 16).length;
+    const averageRenderTime =
+      components.reduce((sum, [, metrics]) => sum + metrics.averageRenderTime, 0) / totalComponents;
+    const slowComponents = components.filter(
+      ([, metrics]) => metrics.averageRenderTime > 16
+    ).length;
 
     return {
       totalComponents,
@@ -152,16 +176,16 @@ export const useGlobalPerformanceMonitor = () => {
         name,
         renderCount: metrics.renderCount,
         averageRenderTime: metrics.averageRenderTime,
-        slowRenders: metrics.slowRenders
-      }))
+        slowRenders: metrics.slowRenders,
+      })),
     };
   }, [globalMetrics]);
 
   return {
     globalMetrics,
     registerComponent,
-    getGlobalSummary
+    getGlobalSummary,
   };
 };
 
-export default usePerformanceMonitor; 
+export default usePerformanceMonitor;

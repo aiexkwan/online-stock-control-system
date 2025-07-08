@@ -2,7 +2,17 @@
  * 測試頁面配置
  */
 
-import { Play, Pause, RotateCcw, Download, Zap, CheckCircle, Users, Layers, Package } from 'lucide-react';
+import {
+  Play,
+  Pause,
+  RotateCcw,
+  Download,
+  Zap,
+  CheckCircle,
+  Users,
+  Layers,
+  Package,
+} from 'lucide-react';
 
 export interface TestConfig {
   id: string;
@@ -21,15 +31,20 @@ export const testConfigs: Record<string, TestConfig> = {
     description: 'Manage and monitor A/B tests for gradual widget migration',
     icon: Users,
     category: 'migration',
-    features: ['Traffic Split Control', 'Performance Monitoring', 'Auto Rollback', 'Simulation Mode'],
+    features: [
+      'Traffic Split Control',
+      'Performance Monitoring',
+      'Auto Rollback',
+      'Simulation Mode',
+    ],
     defaultControls: {
       v2Percentage: 50,
       autoRollback: true,
       performanceThreshold: 20,
-      simulationMode: false
-    }
+      simulationMode: false,
+    },
   },
-  
+
   'dual-run': {
     id: 'dual-run',
     title: 'Dual Run Verification',
@@ -40,75 +55,90 @@ export const testConfigs: Record<string, TestConfig> = {
     defaultControls: {
       parallelRun: true,
       captureMetrics: true,
-      compareVisual: false
-    }
+      compareVisual: false,
+    },
   },
-  
-  'optimizations': {
+
+  optimizations: {
     id: 'optimizations',
     title: 'Widget Optimization Testing',
     description: 'Test and validate performance optimizations',
     icon: Zap,
     category: 'performance',
-    features: ['Code Splitting Test', 'React.memo Verification', 'Bundle Analysis', 'Route Preloading'],
+    features: [
+      'Code Splitting Test',
+      'React.memo Verification',
+      'Bundle Analysis',
+      'Route Preloading',
+    ],
     defaultControls: {
       enableVirtualization: true,
       enablePreloading: true,
-      measureRenderTime: true
-    }
+      measureRenderTime: true,
+    },
   },
-  
+
   'widget-migration': {
     id: 'widget-migration',
     title: 'Widget Migration Testing',
     description: 'Test widget migration status and compatibility',
     icon: Package,
     category: 'migration',
-    features: ['Side-by-side Comparison', 'Migration Checklist', 'Regression Testing', 'Performance Delta'],
+    features: [
+      'Side-by-side Comparison',
+      'Migration Checklist',
+      'Regression Testing',
+      'Performance Delta',
+    ],
     defaultControls: {
       showOldVersion: true,
       showNewVersion: true,
-      highlightDifferences: true
-    }
+      highlightDifferences: true,
+    },
   },
-  
+
   'widget-registry': {
     id: 'widget-registry',
     title: 'Widget Registry Test Suite',
     description: 'Comprehensive testing for widget registry system',
     icon: CheckCircle,
     category: 'system',
-    features: ['Registry Initialization', 'Lazy Loading Test', 'GraphQL Toggle', 'Bundle Size Check'],
+    features: [
+      'Registry Initialization',
+      'Lazy Loading Test',
+      'GraphQL Toggle',
+      'Bundle Size Check',
+    ],
     defaultControls: {
       testLazyLoading: true,
       testPreloading: true,
       useGraphQL: false,
-      measureBundleSize: true
-    }
-  }
+      measureBundleSize: true,
+    },
+  },
 };
 
 export const testCategories = {
   performance: {
     label: 'Performance',
     description: 'Performance optimization and benchmarking tests',
-    color: 'text-green-500'
+    color: 'text-green-500',
   },
   migration: {
     label: 'Migration',
     description: 'Widget migration and compatibility tests',
-    color: 'text-blue-500'
+    color: 'text-blue-500',
   },
   verification: {
     label: 'Verification',
     description: 'System verification and comparison tests',
-    color: 'text-purple-500'
+    color: 'text-purple-500',
   },
   system: {
     label: 'System',
     description: 'Core system functionality tests',
-    color: 'text-orange-500'
-  }
+    color: 'text-orange-500',
+  },
 };
 
 export function getTestConfig(testType: string): TestConfig | null {

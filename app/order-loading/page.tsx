@@ -16,13 +16,13 @@ import {
 } from '@/components/ui/dialog';
 import { MobileButton, MobileInput, MobileCard } from '@/components/ui/mobile';
 import { mobileConfig, cn } from '@/lib/mobile-config';
-import { 
-  UserIcon, 
+import {
+  UserIcon,
   ClipboardDocumentListIcon,
   MagnifyingGlassIcon,
   CheckCircleIcon,
   ExclamationTriangleIcon,
-  XMarkIcon
+  XMarkIcon,
 } from '@heroicons/react/24/outline';
 import { loadPalletToOrder, undoLoadPallet, getOrderInfo } from '@/app/actions/orderLoadingActions';
 import MobileOrderLoading from './components/MobileOrderLoading';
@@ -51,7 +51,7 @@ interface OrderSummary {
 
 export default function OrderLoadingPage() {
   const supabase = createClient();
-  
+
   // State management
   const [idNumber, setIdNumber] = useState('');
   const [isIdValid, setIsIdValid] = useState(false);
@@ -68,18 +68,18 @@ export default function OrderLoadingPage() {
   const [orderSearchQuery, setOrderSearchQuery] = useState('');
   const [showUndoDialog, setShowUndoDialog] = useState(false);
   const [undoItem, setUndoItem] = useState<any>(null);
-  
+
   // Cache hooks
   const orderDataCache = useOrderDataCache();
   const orderSummariesCache = useOrderSummariesCache();
-  
+
   // Sound feedback hooks
   const soundSettings = useSoundSettings();
   const sound = useSoundFeedback({
     enabled: soundSettings.getSoundEnabled(),
-    volume: soundSettings.getSoundVolume()
+    volume: soundSettings.getSoundVolume(),
   });
-  
+
   // Refs
   const idInputRef = useRef<HTMLInputElement>(null);
   const searchInputRef = useRef<any>(null);
@@ -111,7 +111,7 @@ export default function OrderLoadingPage() {
     };
 
     window.addEventListener('beforeunload', handleBeforeUnload);
-    
+
     // Also clear when component unmounts
     return () => {
       window.removeEventListener('beforeunload', handleBeforeUnload);
@@ -131,13 +131,9 @@ export default function OrderLoadingPage() {
     }
 
     setIsCheckingId(true);
-    
+
     try {
-      const { data, error } = await supabase
-        .from('data_id')
-        .select('id')
-        .eq('id', id)
-        .single();
+      const { data, error } = await supabase.from('data_id').select('id').eq('id', id).single();
 
       if (error || !data) {
         setIsIdValid(false);
@@ -166,28 +162,30 @@ export default function OrderLoadingPage() {
       // Check cache first
       const cacheKey = 'order-summaries-all';
       const cachedSummaries = orderSummariesCache.get(cacheKey);
-      
+
       if (cachedSummaries) {
-        process.env.NODE_ENV !== "production" && console.log('[OrderCache] Using cached order summaries');
+        process.env.NODE_ENV !== 'production' &&
+          console.log('[OrderCache] Using cached order summaries');
         setOrderSummaries(cachedSummaries);
         setAvailableOrders(Array.from(cachedSummaries.keys()));
         return;
       }
 
-      process.env.NODE_ENV !== "production" && console.log('[OrderCache] Fetching fresh order summaries');
-      
+      process.env.NODE_ENV !== 'production' &&
+        console.log('[OrderCache] Fetching fresh order summaries');
+
       // 直接從數據庫獲取訂單
       const { data, error } = await supabase
         .from('data_order')
         .select('order_ref, product_code, product_desc, product_qty, loaded_qty')
         .order('order_ref', { ascending: false });
-        
+
       if (error) {
         console.error('Error fetching orders:', error);
         toast.error('Error occurred while fetching order list');
         return;
       }
-        
+
       if (!data || data.length === 0) {
         console.log('No orders found');
         setOrderSummaries(new Map());
@@ -195,7 +193,7 @@ export default function OrderLoadingPage() {
         return;
       }
 
-        // Group by order_ref and calculate completion
+      // Group by order_ref and calculate completion
       const orderMap = new Map<string, OrderSummary>();
       data.forEach(item => {
         const ref = item.order_ref;
@@ -206,13 +204,13 @@ export default function OrderLoadingPage() {
             loadedQty: 0,
             percentage: 0,
             itemCount: 0,
-            completedItems: 0
+            completedItems: 0,
           });
         }
         const order = orderMap.get(ref)!;
         const itemQty = parseInt(item.product_qty || '0');
         const itemLoaded = parseInt(item.loaded_qty || '0');
-        
+
         order.totalQty += itemQty;
         order.loadedQty += itemLoaded;
         order.itemCount++;
@@ -228,7 +226,7 @@ export default function OrderLoadingPage() {
 
       // Cache the summaries
       orderSummariesCache.set(cacheKey, orderMap);
-      
+
       const uniqueOrderRefs = Array.from(orderMap.keys());
       setAvailableOrders(uniqueOrderRefs);
       setOrderSummaries(orderMap);
@@ -241,21 +239,23 @@ export default function OrderLoadingPage() {
   // Fetch order data from data_order table
   const fetchOrderData = async (orderRef: string) => {
     setIsLoadingOrders(true);
-    
+
     try {
       // Check cache first
       const cacheKey = `order-data-${orderRef}`;
       const cachedData = orderDataCache.get(cacheKey);
-      
+
       if (cachedData) {
-        process.env.NODE_ENV !== "production" && console.log(`[OrderCache] Using cached data for order: ${orderRef}`);
+        process.env.NODE_ENV !== 'production' &&
+          console.log(`[OrderCache] Using cached data for order: ${orderRef}`);
         setOrderData(cachedData);
         setIsLoadingOrders(false);
         return;
       }
 
-      process.env.NODE_ENV !== "production" && console.log(`[OrderCache] Fetching fresh data for order: ${orderRef}`);
-      
+      process.env.NODE_ENV !== 'production' &&
+        console.log(`[OrderCache] Fetching fresh data for order: ${orderRef}`);
+
       // 獲取訂單詳情
       const { data, error } = await supabase
         .from('data_order')
@@ -273,10 +273,10 @@ export default function OrderLoadingPage() {
         toast.error('Order not found');
         return;
       }
-      
+
       const orderDataArray = data || [];
       setOrderData(orderDataArray);
-      
+
       // Cache the order data
       orderDataCache.set(cacheKey, orderDataArray);
     } catch (error) {
@@ -291,11 +291,11 @@ export default function OrderLoadingPage() {
   const handleIdChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     // Only allow digits
     const value = e.target.value.replace(/\D/g, '');
-    
+
     // Limit to 4 digits maximum
     const truncatedValue = value.slice(0, 4);
     setIdNumber(truncatedValue);
-    
+
     // Reset states if necessary
     if (isIdValid) {
       setIsIdValid(false);
@@ -303,7 +303,7 @@ export default function OrderLoadingPage() {
       setSelectedOrderRef(null);
       setOrderData([]);
     }
-    
+
     // Automatically check ID if 4 digits are entered
     if (truncatedValue.length === 4) {
       checkIdExists(truncatedValue);
@@ -321,29 +321,16 @@ export default function OrderLoadingPage() {
     }
   };
 
-  // Handle Enter key press in ID input
-  const handleIdKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
-      // Only check if ID is 4 digits
-      if (idNumber.length === 4) {
-        checkIdExists(idNumber);
-      } else if (idNumber.length > 0 && idNumber.length < 4) {
-        // Show warning if digits are less than 4
-        toast.warning('ID must be 4 digits');
-      }
-    }
-  };
-
   // Handle order selection
   const handleOrderSelect = (orderRef: string) => {
     sound.playScan();
     setSelectedOrderRef(orderRef);
     fetchOrderData(orderRef);
     fetchRecentLoads(orderRef);
-    
+
     // Reset search value when switching orders
     setSearchValue('');
-    
+
     // Auto focus on search input after order selection
     setTimeout(() => {
       if (searchInputRef.current) {
@@ -371,7 +358,7 @@ export default function OrderLoadingPage() {
           const productMatch = item.remark.match(/Product: ([^,]+)/);
           const qtyMatch = item.remark.match(/Qty: (\d+)/);
           const byMatch = item.remark.match(/by (.+)$/);
-          
+
           return {
             uuid: item.uuid,
             order_ref: orderMatch ? orderMatch[1] : orderRef,
@@ -380,7 +367,7 @@ export default function OrderLoadingPage() {
             quantity: qtyMatch ? parseInt(qtyMatch[1]) : 0,
             action_type: 'load',
             action_by: byMatch ? byMatch[1] : 'Unknown',
-            action_time: item.time
+            action_time: item.time,
           };
         });
         setRecentLoads(transformedData);
@@ -408,7 +395,7 @@ export default function OrderLoadingPage() {
         undoItem.product_code,
         undoItem.quantity
       );
-      
+
       if (result.success) {
         sound.playSuccess();
         toast.success(`✓ Successfully undone: ${undoItem.pallet_num}`);
@@ -434,11 +421,11 @@ export default function OrderLoadingPage() {
       // Clear caches to ensure fresh data
       orderDataCache.remove(`order-data-${selectedOrderRef}`);
       orderSummariesCache.remove('order-summaries-all');
-      
+
       await Promise.all([
         fetchOrderData(selectedOrderRef),
         fetchRecentLoads(selectedOrderRef),
-        fetchAvailableOrders()
+        fetchAvailableOrders(),
       ]);
     }
   };
@@ -454,11 +441,11 @@ export default function OrderLoadingPage() {
     try {
       // 使用 server action 裝載棧板
       const response = await loadPalletToOrder(selectedOrderRef, result.data.value);
-      
+
       if (response.success) {
         // Play success sound
         sound.playSuccess();
-        
+
         // Show success with better formatting
         if (response.data) {
           toast.success(
@@ -467,7 +454,7 @@ export default function OrderLoadingPage() {
         } else {
           toast.success(response.message);
         }
-        
+
         // Show warning if anomaly detected
         if (response.warning) {
           sound.playWarning();
@@ -475,13 +462,13 @@ export default function OrderLoadingPage() {
             toast.warning(response.warning);
           }, 500);
         }
-        
+
         // Refresh order data and history
         await refreshAllData();
-        
+
         // Clear search value after successful scan
         setSearchValue('');
-        
+
         // Refocus on search input
         if (searchInputRef.current) {
           searchInputRef.current.focus();
@@ -489,7 +476,7 @@ export default function OrderLoadingPage() {
       } else {
         // Show more user-friendly error messages
         let errorMessage = response.message;
-        
+
         if (response.message.includes('Exceeds order quantity')) {
           errorMessage = response.message; // Already formatted well
         } else if (response.error === 'EXCEED_ORDER_QTY') {
@@ -506,7 +493,7 @@ export default function OrderLoadingPage() {
           toast.warning(response.message);
           return;
         }
-        
+
         sound.playError();
         toast.error(`❌ Loading Failed: ${errorMessage}`);
       }
@@ -521,12 +508,12 @@ export default function OrderLoadingPage() {
 
   // Check if mobile view (simplified check - you might want to use a proper hook)
   const [isMobile, setIsMobile] = useState(false);
-  
+
   useEffect(() => {
     const checkMobile = () => {
       setIsMobile(window.innerWidth < 768);
     };
-    
+
     checkMobile();
     window.addEventListener('resize', checkMobile);
     return () => window.removeEventListener('resize', checkMobile);
@@ -534,16 +521,21 @@ export default function OrderLoadingPage() {
 
   return (
     <div>
-      <div className="pt-24 pb-8">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className='pb-8 pt-24'>
+        <div className='mx-auto max-w-7xl px-4 sm:px-6 lg:px-8'>
           {/* Page Header */}
-          <div className="mb-6 md:mb-8">
-            <div className="flex items-center justify-between">
+          <div className='mb-6 md:mb-8'>
+            <div className='flex items-center justify-between'>
               <div>
-                <h1 className={cn(mobileConfig.fontSize.h1, "font-bold bg-gradient-to-r from-blue-300 via-cyan-300 to-blue-200 bg-clip-text text-transparent mb-2")}>
+                <h1
+                  className={cn(
+                    mobileConfig.fontSize.h1,
+                    'mb-2 bg-gradient-to-r from-blue-300 via-cyan-300 to-blue-200 bg-clip-text font-bold text-transparent'
+                  )}
+                >
                   Order Loading
                 </h1>
-                <p className={cn(mobileConfig.fontSize.bodyLarge, "text-slate-400")}>
+                <p className={cn(mobileConfig.fontSize.bodyLarge, 'text-slate-400')}>
                   Manage order loading process
                 </p>
               </div>
@@ -559,7 +551,6 @@ export default function OrderLoadingPage() {
               isCheckingId={isCheckingId}
               onIdChange={handleIdChange}
               onIdBlur={handleIdBlur}
-              onIdKeyDown={handleIdKeyDown}
               availableOrders={availableOrders}
               orderSummaries={orderSummaries}
               selectedOrderRef={selectedOrderRef}
@@ -581,263 +572,269 @@ export default function OrderLoadingPage() {
           ) : (
             // Desktop View (existing code)
             <>
+              <div className='grid grid-cols-1 gap-4 lg:grid-cols-2 lg:gap-8'>
+                {/* Left Column - ID Input and Order Selection */}
+                <div className='space-y-6'>
+                  {/* ID Input Card */}
+                  <div className='operational-card operational-glow'>
+                    <Card className='border-slate-700/50 bg-slate-800/50 backdrop-blur-sm'>
+                      <CardHeader>
+                        <CardTitle className='flex items-center text-slate-200'>
+                          <UserIcon className='mr-2 h-6 w-6 text-blue-400' />
+                          Enter ID Number
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className='space-y-4'>
+                          <div className='relative'>
+                            <input
+                              ref={idInputRef}
+                              type='text'
+                              value={idNumber}
+                              onChange={handleIdChange}
+                              onBlur={handleIdBlur}
+                              placeholder='Enter 4-digit ID...'
+                              maxLength={4}
+                              className='w-full rounded-xl border border-slate-600/50 bg-slate-700/50 px-4 py-3 text-white placeholder-slate-400 transition-all duration-300 focus:border-blue-500/50 focus:outline-none focus:ring-2 focus:ring-blue-500/50'
+                              disabled={isCheckingId}
+                            />
+                            {isCheckingId && (
+                              <div className='absolute right-3 top-1/2 -translate-y-1/2 transform'>
+                                <div className='h-5 w-5 animate-spin rounded-full border-2 border-blue-500 border-t-transparent'></div>
+                              </div>
+                            )}
+                          </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-8">
-            {/* Left Column - ID Input and Order Selection */}
-            <div className="space-y-6">
-              {/* ID Input Card */}
-              <div className="operational-card operational-glow">
-                <Card className="bg-slate-800/50 border-slate-700/50 backdrop-blur-sm">
-                  <CardHeader>
-                    <CardTitle className="flex items-center text-slate-200">
-                      <UserIcon className="h-6 w-6 mr-2 text-blue-400" />
-                      Enter ID Number
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                  <div className="space-y-4">
-                    <div className="relative">
-                      <input
-                        ref={idInputRef}
-                        type="text"
-                        value={idNumber}
-                        onChange={handleIdChange}
-                        onBlur={handleIdBlur}
-                        onKeyDown={handleIdKeyDown}
-                        placeholder="Enter 4-digit ID..."
-                        maxLength={4}
-                        className="w-full px-4 py-3 bg-slate-700/50 border border-slate-600/50 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all duration-300"
-                        disabled={isCheckingId}
-                      />
-                      {isCheckingId && (
-                        <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                          <div className="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                          {/* ID format hint */}
+                          <p className='text-xs text-slate-400'>
+                            Please enter your 4-digit employee ID
+                          </p>
+
+                          {/* ID Status Indicator - Only show error state */}
+                          {idNumber.length === 4 && !isCheckingId && !isIdValid && (
+                            <div className='flex items-center space-x-2 text-sm text-red-400'>
+                              <ExclamationTriangleIcon className='h-5 w-5' />
+                              <span>ID does not exist</span>
+                            </div>
+                          )}
                         </div>
-                      )}
-                    </div>
-                    
-                    {/* ID format hint */}
-                    <p className="text-xs text-slate-400">
-                      Please enter your 4-digit employee ID
-                    </p>
-                    
-                    {/* ID Status Indicator - Only show error state */}
-                    {idNumber.length === 4 && !isCheckingId && !isIdValid && (
-                      <div className="flex items-center space-x-2 text-sm text-red-400">
-                        <ExclamationTriangleIcon className="h-5 w-5" />
-                        <span>ID does not exist</span>
-                      </div>
-                    )}
+                      </CardContent>
+                    </Card>
                   </div>
-                </CardContent>
-              </Card>
-            </div>
 
-              {/* Order Selection Card */}
-              {isIdValid && availableOrders.length > 0 && !selectedOrderRef && (
-                <div className="operational-card">
-                  <Card className="bg-slate-800/50 border-slate-700/50 backdrop-blur-sm">
-                  <CardHeader>
-                    <CardTitle className="flex items-center text-slate-200">
-                      <ClipboardDocumentListIcon className="h-6 w-6 mr-2 text-green-400" />
-                      Choose order
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    {/* Order Search */}
-                    <div className="mb-4">
-                      <input
-                        type="text"
-                        placeholder="Search orders..."
-                        value={orderSearchQuery}
-                        onChange={(e) => setOrderSearchQuery(e.target.value)}
-                        className="w-full px-3 py-2 bg-slate-700/50 border border-slate-600/50 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-green-500/50 text-sm"
-                      />
+                  {/* Order Selection Card */}
+                  {isIdValid && availableOrders.length > 0 && !selectedOrderRef && (
+                    <div className='operational-card'>
+                      <Card className='border-slate-700/50 bg-slate-800/50 backdrop-blur-sm'>
+                        <CardHeader>
+                          <CardTitle className='flex items-center text-slate-200'>
+                            <ClipboardDocumentListIcon className='mr-2 h-6 w-6 text-green-400' />
+                            Choose order
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          {/* Order Search */}
+                          <div className='mb-4'>
+                            <input
+                              type='text'
+                              placeholder='Search orders...'
+                              value={orderSearchQuery}
+                              onChange={e => setOrderSearchQuery(e.target.value)}
+                              className='w-full rounded-lg border border-slate-600/50 bg-slate-700/50 px-3 py-2 text-sm text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-green-500/50'
+                            />
+                          </div>
+
+                          <VirtualizedOrderList
+                            orders={availableOrders}
+                            orderSummaries={orderSummaries}
+                            selectedOrderRef={selectedOrderRef}
+                            searchQuery={orderSearchQuery}
+                            onOrderSelect={handleOrderSelect}
+                            containerHeight={384} // Fixed height for desktop
+                          />
+                        </CardContent>
+                      </Card>
                     </div>
-                    
-                    <VirtualizedOrderList
-                      orders={availableOrders}
-                      orderSummaries={orderSummaries}
-                      selectedOrderRef={selectedOrderRef}
-                      searchQuery={orderSearchQuery}
-                      onOrderSelect={handleOrderSelect}
-                      containerHeight={384} // Fixed height for desktop
-                    />
-                  </CardContent>
-                </Card>
-              </div>
-              )}
-            </div>
+                  )}
+                </div>
 
-            {/* Right Column - Order Information and Search */}
-            <div className="space-y-6">
-              {/* Progress Chart - Show first for better visibility */}
-              {selectedOrderRef && orderData.length > 0 && (
-                <LoadingProgressChart 
-                  orderData={orderData}
-                  recentLoads={recentLoads}
-                />
-              )}
-              
-              {/* Order Information Card */}
-              {selectedOrderRef && (
-                <div className="operational-highlight">
-                  <Card className="bg-slate-800/50 border-slate-700/50 backdrop-blur-sm">
-                  <CardHeader>
-                    <CardTitle className="flex items-center justify-between text-slate-200">
-                      <div className="flex items-center">
-                        <ClipboardDocumentListIcon className="h-6 w-6 mr-2 text-cyan-400" />
-                        Order Details - Order #{selectedOrderRef}
-                      </div>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => {
-                          setSelectedOrderRef(null);
-                          setOrderData([]);
-                          setSearchValue('');
-                        }}
-                        className="text-purple-400 hover:text-purple-300 bg-transparent hover:bg-transparent"
-                      >
-                        Change Order
-                      </Button>
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    {isLoadingOrders ? (
-                      <div className="flex items-center justify-center py-8">
-                        <div className="w-8 h-8 border-2 border-cyan-500 border-t-transparent rounded-full animate-spin"></div>
-                        <span className="ml-3 text-slate-400">Loading order data...</span>
-                      </div>
-                    ) : orderData.length > 0 ? (
-                      <div className="space-y-4">
-                        {orderData.map((order, index) => {
-                          const totalQty = parseInt(order.product_qty || '0');
-                          const loadedQty = parseInt(order.loaded_qty || '0');
-                          const percentage = totalQty > 0 ? (loadedQty / totalQty) * 100 : 0;
-                          const isComplete = loadedQty >= totalQty;
-                          const remainingQty = totalQty - loadedQty;
-                          const isNearComplete = percentage >= 90 && percentage < 100;
-                          
-                          return (
-                            <div key={index} className="bg-slate-700/30 rounded-lg p-4 border border-slate-600/30">
-                              <div className="flex justify-between items-start">
-                                <div className="flex-1">
-                                  <div className="flex items-center gap-2">
-                                    <span className="font-mono text-cyan-300">{order.product_code}</span>
-                                    {isComplete && (
-                                      <span className="text-xs bg-green-500/20 text-green-400 px-2 py-0.5 rounded-full">
-                                        ✓ Complete
-                                      </span>
+                {/* Right Column - Order Information and Search */}
+                <div className='space-y-6'>
+                  {/* Progress Chart - Show first for better visibility */}
+                  {selectedOrderRef && orderData.length > 0 && (
+                    <LoadingProgressChart orderData={orderData} recentLoads={recentLoads} />
+                  )}
+
+                  {/* Order Information Card */}
+                  {selectedOrderRef && (
+                    <div className='operational-highlight'>
+                      <Card className='border-slate-700/50 bg-slate-800/50 backdrop-blur-sm'>
+                        <CardHeader>
+                          <CardTitle className='flex items-center justify-between text-slate-200'>
+                            <div className='flex items-center'>
+                              <ClipboardDocumentListIcon className='mr-2 h-6 w-6 text-cyan-400' />
+                              Order Details - Order #{selectedOrderRef}
+                            </div>
+                            <Button
+                              variant='ghost'
+                              size='sm'
+                              onClick={() => {
+                                setSelectedOrderRef(null);
+                                setOrderData([]);
+                                setSearchValue('');
+                              }}
+                              className='bg-transparent text-purple-400 hover:bg-transparent hover:text-purple-300'
+                            >
+                              Change Order
+                            </Button>
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          {isLoadingOrders ? (
+                            <div className='flex items-center justify-center py-8'>
+                              <div className='h-8 w-8 animate-spin rounded-full border-2 border-cyan-500 border-t-transparent'></div>
+                              <span className='ml-3 text-slate-400'>Loading order data...</span>
+                            </div>
+                          ) : orderData.length > 0 ? (
+                            <div className='space-y-4'>
+                              {orderData.map((order, index) => {
+                                const totalQty = parseInt(order.product_qty || '0');
+                                const loadedQty = parseInt(order.loaded_qty || '0');
+                                const percentage = totalQty > 0 ? (loadedQty / totalQty) * 100 : 0;
+                                const isComplete = loadedQty >= totalQty;
+                                const remainingQty = totalQty - loadedQty;
+                                const isNearComplete = percentage >= 90 && percentage < 100;
+
+                                return (
+                                  <div
+                                    key={index}
+                                    className='rounded-lg border border-slate-600/30 bg-slate-700/30 p-4'
+                                  >
+                                    <div className='flex items-start justify-between'>
+                                      <div className='flex-1'>
+                                        <div className='flex items-center gap-2'>
+                                          <span className='font-mono text-cyan-300'>
+                                            {order.product_code}
+                                          </span>
+                                          {isComplete && (
+                                            <span className='rounded-full bg-green-500/20 px-2 py-0.5 text-xs text-green-400'>
+                                              ✓ Complete
+                                            </span>
+                                          )}
+                                        </div>
+                                        <div className='mt-1 text-sm text-slate-400'>
+                                          {order.product_desc}
+                                        </div>
+                                      </div>
+                                      <div className='text-right'>
+                                        <div className='text-lg font-semibold text-white'>
+                                          {loadedQty}/{totalQty}
+                                        </div>
+                                        <div className='text-sm text-slate-400'>units</div>
+                                      </div>
+                                    </div>
+
+                                    {/* Warning for nearly complete items */}
+                                    {isNearComplete && (
+                                      <div className='mt-3 rounded-lg border border-orange-600/50 bg-orange-900/30 p-2'>
+                                        <span className='text-xs text-orange-400'>
+                                          ⚠️ Only {remainingQty} units remaining
+                                        </span>
+                                      </div>
                                     )}
                                   </div>
-                                  <div className="text-sm text-slate-400 mt-1">{order.product_desc}</div>
-                                </div>
-                                <div className="text-right">
-                                  <div className="text-lg font-semibold text-white">
-                                    {loadedQty}/{totalQty}
-                                  </div>
-                                  <div className="text-sm text-slate-400">units</div>
-                                </div>
-                              </div>
-                              
-                              {/* Warning for nearly complete items */}
-                              {isNearComplete && (
-                                <div className="mt-3 p-2 bg-orange-900/30 border border-orange-600/50 rounded-lg">
-                                  <span className="text-xs text-orange-400">
-                                    ⚠️ Only {remainingQty} units remaining
-                                  </span>
-                                </div>
-                              )}
+                                );
+                              })}
                             </div>
-                          );
-                        })}
-                      </div>
-                    ) : (
-                      <div className="text-center py-8 text-slate-400">
-                        No order data found
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              </div>
-              )}
+                          ) : (
+                            <div className='py-8 text-center text-slate-400'>
+                              No order data found
+                            </div>
+                          )}
+                        </CardContent>
+                      </Card>
+                    </div>
+                  )}
 
-              {/* Search Card */}
-              {selectedOrderRef && (
-                <div className="operational-card operational-glow">
-                  <Card className="bg-slate-800/50 border-slate-700/50 backdrop-blur-sm">
-                  <CardHeader>
-                    <CardTitle className="flex items-center justify-between text-slate-200">
-                      <div className="flex items-center">
-                        <MagnifyingGlassIcon className="h-6 w-6 mr-2 text-purple-400" />
-                        Scan As You Load
-                      </div>
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <UnifiedSearch
-                      ref={searchInputRef}
-                      searchType="pallet"
-                      onSelect={handleSearchSelect}
-                      placeholder="Search Pallet number or Series..."
-                      enableAutoDetection={true}
-                      value={searchValue}
-                      onChange={setSearchValue}
-                      isLoading={isSearching}
-                      disabled={isSearching}
-                    />
-                    
-                    {/* Recent Loads History */}
-                    {recentLoads.length > 0 && (
-                      <div className="mt-4 space-y-2">
-                        <div className="text-sm font-medium text-slate-400 mb-2">Recent Loads:</div>
-                        <div className="max-h-40 overflow-y-auto space-y-2">
-                          {recentLoads.map((load, index) => (
-                            <div 
-                              key={load.uuid} 
-                              className="text-xs bg-slate-700/30 rounded-lg p-2 flex justify-between items-center"
-                            >
-                              <div className="flex-1">
-                                <span className="text-cyan-300 font-mono">{load.pallet_num}</span>
-                                <span className="text-slate-400 mx-2">•</span>
-                                <span className="text-slate-300">{load.product_code}</span>
-                                <span className="text-slate-400 mx-2">•</span>
-                                <span className="text-green-300">Qty: {load.quantity}</span>
+                  {/* Search Card */}
+                  {selectedOrderRef && (
+                    <div className='operational-card operational-glow'>
+                      <Card className='border-slate-700/50 bg-slate-800/50 backdrop-blur-sm'>
+                        <CardHeader>
+                          <CardTitle className='flex items-center justify-between text-slate-200'>
+                            <div className='flex items-center'>
+                              <MagnifyingGlassIcon className='mr-2 h-6 w-6 text-purple-400' />
+                              Scan As You Load
+                            </div>
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <UnifiedSearch
+                            ref={searchInputRef}
+                            searchType='pallet'
+                            onSelect={handleSearchSelect}
+                            placeholder='Search Pallet number or Series...'
+                            enableAutoDetection={true}
+                            value={searchValue}
+                            onChange={setSearchValue}
+                            isLoading={isSearching}
+                            disabled={isSearching}
+                          />
+
+                          {/* Recent Loads History */}
+                          {recentLoads.length > 0 && (
+                            <div className='mt-4 space-y-2'>
+                              <div className='mb-2 text-sm font-medium text-slate-400'>
+                                Recent Loads:
                               </div>
-                              <div className="flex items-center space-x-2">
-                                <span className="text-slate-500">
-                                  {new Date(load.action_time).toLocaleTimeString()}
-                                </span>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => handleUndoClick(load)}
-                                  className="h-6 w-6 p-0 hover:bg-red-500/20 hover:text-red-400"
-                                  title="Undo this load"
-                                >
-                                  <XMarkIcon className="h-4 w-4" />
-                                </Button>
+                              <div className='max-h-40 space-y-2 overflow-y-auto'>
+                                {recentLoads.map((load, index) => (
+                                  <div
+                                    key={load.uuid}
+                                    className='flex items-center justify-between rounded-lg bg-slate-700/30 p-2 text-xs'
+                                  >
+                                    <div className='flex-1'>
+                                      <span className='font-mono text-cyan-300'>
+                                        {load.pallet_num}
+                                      </span>
+                                      <span className='mx-2 text-slate-400'>•</span>
+                                      <span className='text-slate-300'>{load.product_code}</span>
+                                      <span className='mx-2 text-slate-400'>•</span>
+                                      <span className='text-green-300'>Qty: {load.quantity}</span>
+                                    </div>
+                                    <div className='flex items-center space-x-2'>
+                                      <span className='text-slate-500'>
+                                        {new Date(load.action_time).toLocaleTimeString()}
+                                      </span>
+                                      <Button
+                                        variant='ghost'
+                                        size='sm'
+                                        onClick={() => handleUndoClick(load)}
+                                        className='h-6 w-6 p-0 hover:bg-red-500/20 hover:text-red-400'
+                                        title='Undo this load'
+                                      >
+                                        <XMarkIcon className='h-4 w-4' />
+                                      </Button>
+                                    </div>
+                                  </div>
+                                ))}
                               </div>
                             </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
+                          )}
+                        </CardContent>
+                      </Card>
+                    </div>
+                  )}
+                </div>
               </div>
-              )}
-            </div>
-          </div>
             </>
           )}
         </div>
       </div>
-      
+
       {/* Undo Confirmation Dialog */}
       <Dialog open={showUndoDialog} onOpenChange={setShowUndoDialog}>
-        <DialogContent className="sm:max-w-[425px]">
+        <DialogContent className='sm:max-w-[425px]'>
           <DialogHeader>
             <DialogTitle>Confirm Undo Loading</DialogTitle>
             <DialogDescription>
@@ -845,49 +842,44 @@ export default function OrderLoadingPage() {
             </DialogDescription>
           </DialogHeader>
           {undoItem && (
-            <div className="py-4 space-y-2">
-              <div className="flex justify-between">
-                <span className="text-slate-500">Pallet:</span>
-                <span className="font-mono text-cyan-300">{undoItem.pallet_num}</span>
+            <div className='space-y-2 py-4'>
+              <div className='flex justify-between'>
+                <span className='text-slate-500'>Pallet:</span>
+                <span className='font-mono text-cyan-300'>{undoItem.pallet_num}</span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-slate-500">Product:</span>
+              <div className='flex justify-between'>
+                <span className='text-slate-500'>Product:</span>
                 <span>{undoItem.product_code}</span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-slate-500">Quantity:</span>
-                <span className="text-green-300">{undoItem.quantity} units</span>
+              <div className='flex justify-between'>
+                <span className='text-slate-500'>Quantity:</span>
+                <span className='text-green-300'>{undoItem.quantity} units</span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-slate-500">Loaded at:</span>
+              <div className='flex justify-between'>
+                <span className='text-slate-500'>Loaded at:</span>
                 <span>{new Date(undoItem.action_time).toLocaleString()}</span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-slate-500">Loaded by:</span>
+              <div className='flex justify-between'>
+                <span className='text-slate-500'>Loaded by:</span>
                 <span>{undoItem.action_by}</span>
               </div>
             </div>
           )}
           <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setShowUndoDialog(false)}
-            >
+            <Button variant='outline' onClick={() => setShowUndoDialog(false)}>
               Cancel
             </Button>
-            <Button
-              variant="destructive"
-              onClick={handleConfirmedUndo}
-            >
+            <Button variant='destructive' onClick={handleConfirmedUndo}>
               Confirm Undo
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-
       {/* Virtual Scroll Styles */}
-      <style jsx global>{virtualScrollStyles}</style>
+      <style jsx global>
+        {virtualScrollStyles}
+      </style>
     </div>
   );
-} 
+}

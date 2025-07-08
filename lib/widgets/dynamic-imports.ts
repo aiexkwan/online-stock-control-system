@@ -77,17 +77,13 @@ export const analysisWidgetImports = {
   'AnalyticsDashboardWidget': () => import('@/app/admin/components/dashboard/widgets/AnalyticsDashboardWidget')
 };
 
-// GraphQL Widgets
-export const graphqlWidgetImports = {
-  'StillInAwaitWidgetGraphQL': () => import('@/app/admin/components/dashboard/widgets/StillInAwaitWidgetGraphQL'),
-  'WarehouseTransferListWidgetGraphQL': () => import('@/app/admin/components/dashboard/widgets/WarehouseTransferListWidgetGraphQL'),
-  'OrdersListGraphQL': () => import('@/app/admin/components/dashboard/widgets/OrdersListGraphQL'),
-  'OtherFilesListGraphQL': () => import('@/app/admin/components/dashboard/widgets/OtherFilesListGraphQL'),
-  'ProductionDetailsGraphQL': () => import('@/app/admin/components/dashboard/widgets/ProductionDetailsGraphQL'),
-  'ProductionStatsGraphQL': () => import('@/app/admin/components/dashboard/widgets/ProductionStatsGraphQL'),
-  'StaffWorkloadGraphQL': () => import('@/app/admin/components/dashboard/widgets/StaffWorkloadGraphQL'),
-  'TopProductsChartGraphQL': () => import('@/app/admin/components/dashboard/widgets/TopProductsChartGraphQL'),
-  'ProductDistributionChartGraphQL': () => import('@/app/admin/components/dashboard/widgets/ProductDistributionChartGraphQL'),
+// Production Monitoring Widgets - Server Actions versions
+export const productionWidgetImports = {
+  'ProductionDetailsWidget': () => import('@/app/admin/components/dashboard/widgets/ProductionDetailsWidget'),
+  'ProductionStatsWidget': () => import('@/app/admin/components/dashboard/widgets/ProductionStatsWidget'),
+  'StaffWorkloadWidget': () => import('@/app/admin/components/dashboard/widgets/StaffWorkloadWidget'),
+  'TopProductsChartWidget': () => import('@/app/admin/components/dashboard/widgets/TopProductsChartWidget'),
+  'ProductDistributionChartWidget': () => import('@/app/admin/components/dashboard/widgets/ProductDistributionChartWidget'),
 };
 
 // Special Widgets
@@ -106,7 +102,7 @@ export const allWidgetImports: Record<string, () => Promise<any>> = {
   ...uploadsWidgetImports,
   ...reportsWidgetImports,
   ...analysisWidgetImports,
-  ...graphqlWidgetImports,
+  ...productionWidgetImports,
   ...specialWidgetImports,
 };
 

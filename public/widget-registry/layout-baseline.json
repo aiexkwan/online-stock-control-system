@@ -21,9 +21,7 @@
             "title": "Welcome to Admin Dashboard",
             "gridArea": "widget1",
             "dataSource": "overview",
-            "metrics": [
-              "total_products"
-            ]
+            "metrics": ["total_products"]
           },
           "theme": "overview",
           "gridArea": "widget1",
@@ -48,9 +46,7 @@
             "title": "System Status",
             "gridArea": "widget2",
             "dataSource": "system_status",
-            "metrics": [
-              "active_users"
-            ]
+            "metrics": ["active_users"]
           },
           "theme": "overview",
           "gridArea": "widget2",
@@ -150,9 +146,7 @@
             "title": "Today Produced (PLT)",
             "gridArea": "widget2",
             "dataSource": "record_palletinfo",
-            "metrics": [
-              "pallet_count"
-            ]
+            "metrics": ["pallet_count"]
           },
           "theme": "injection",
           "gridArea": "widget2",
@@ -177,9 +171,7 @@
             "title": "Today Produced (QTY)",
             "gridArea": "widget3",
             "dataSource": "record_palletinfo",
-            "metrics": [
-              "quantity_sum"
-            ]
+            "metrics": ["quantity_sum"]
           },
           "theme": "injection",
           "gridArea": "widget3",
@@ -401,9 +393,7 @@
             "title": "Today Produced (PLT)",
             "gridArea": "widget2",
             "dataSource": "record_palletinfo",
-            "metrics": [
-              "pipeline_pallet_count"
-            ]
+            "metrics": ["pipeline_pallet_count"]
           },
           "theme": "pipeline",
           "gridArea": "widget2",
@@ -428,9 +418,7 @@
             "title": "Today Produced (QTY)",
             "gridArea": "widget3",
             "dataSource": "record_palletinfo",
-            "metrics": [
-              "pipeline_quantity_sum"
-            ]
+            "metrics": ["pipeline_quantity_sum"]
           },
           "theme": "pipeline",
           "gridArea": "widget3",
@@ -528,9 +516,7 @@
             "gridArea": "widget7",
             "dataSource": "record_palletinfo",
             "chartType": "bar",
-            "metrics": [
-              "pipeline_products"
-            ]
+            "metrics": ["pipeline_products"]
           },
           "theme": "pipeline",
           "gridArea": "widget7",
@@ -556,9 +542,7 @@
             "gridArea": "widget8",
             "dataSource": "record_palletinfo",
             "chartType": "donut",
-            "metrics": [
-              "pipeline_products_top10"
-            ]
+            "metrics": ["pipeline_products_top10"]
           },
           "theme": "pipeline",
           "gridArea": "widget8",
@@ -658,9 +642,7 @@
             "title": "Await Location Qty",
             "gridArea": "widget2",
             "dataSource": "record_inventory",
-            "metrics": [
-              "await_total"
-            ],
+            "metrics": ["await_total"],
             "component": "AwaitLocationQtyWidget"
           },
           "theme": "warehouse",
@@ -686,9 +668,7 @@
             "title": "Transfer Done",
             "gridArea": "widget3",
             "dataSource": "record_transfer",
-            "metrics": [
-              "yesterday_count"
-            ],
+            "metrics": ["yesterday_count"],
             "component": "YesterdayTransferCountWidget"
           },
           "theme": "warehouse",
@@ -714,9 +694,7 @@
             "title": "Still In Await",
             "gridArea": "widget4",
             "dataSource": "record_palletinfo",
-            "metrics": [
-              "still_in_await_qty"
-            ],
+            "metrics": ["still_in_await_qty"],
             "component": "StillInAwaitWidget"
           },
           "theme": "warehouse",
@@ -742,9 +720,7 @@
             "title": "Still In Await %",
             "gridArea": "widget5",
             "dataSource": "record_palletinfo",
-            "metrics": [
-              "still_in_await_percentage"
-            ],
+            "metrics": ["still_in_await_percentage"],
             "component": "StillInAwaitPercentageWidget"
           },
           "theme": "warehouse",
@@ -770,9 +746,7 @@
             "title": "Order Progress",
             "gridArea": "widget6",
             "dataSource": "data_order",
-            "metrics": [
-              "order_progress"
-            ],
+            "metrics": ["order_progress"],
             "component": "OrderStateListWidget"
           },
           "theme": "warehouse",
@@ -1170,9 +1144,7 @@
             "title": "Pending Updates",
             "gridArea": "widget5",
             "dataSource": "update_stats",
-            "metrics": [
-              "pending_count"
-            ]
+            "metrics": ["pending_count"]
           },
           "theme": "update",
           "gridArea": "widget5",

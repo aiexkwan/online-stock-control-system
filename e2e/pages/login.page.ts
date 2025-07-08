@@ -31,7 +31,7 @@ export class LoginPage {
   }
 
   async getErrorMessage(): Promise<string> {
-    return await this.errorMessage.textContent() || '';
+    return (await this.errorMessage.textContent()) || '';
   }
 
   async isLoggedIn(): Promise<boolean> {

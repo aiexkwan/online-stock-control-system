@@ -15,4 +15,4 @@ export default function PalletRatio() {
 
   // This component will no longer render its own UI elements.
   return null;
-} 
+}

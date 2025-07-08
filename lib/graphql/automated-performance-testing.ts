@@ -111,7 +111,7 @@ class AutomatedPerformanceTester {
    */
   registerTestSuite(suite: TestSuite): void {
     this.testSuites.set(suite.name, suite);
-    
+
     if (suite.schedule) {
       this.scheduleTestSuite(suite);
     }
@@ -138,7 +138,9 @@ class AutomatedPerformanceTester {
       }
 
       const issues = this.analyzePerformance(scenario, metrics);
-      const passed = issues.filter(issue => issue.severity === 'critical' || issue.severity === 'high').length === 0;
+      const passed =
+        issues.filter(issue => issue.severity === 'critical' || issue.severity === 'high')
+          .length === 0;
 
       const result: TestResult = {
         scenarioName: scenario.name,
@@ -157,7 +159,6 @@ class AutomatedPerformanceTester {
 
       this.recordTestResult(result);
       return result;
-
     } finally {
       this.runningTests.delete(scenario.name);
       console.log(`[性能測試] 完成場景: ${scenario.name}`);
@@ -183,7 +184,6 @@ class AutomatedPerformanceTester {
 
         // 檢查是否需要發送通知
         await this.checkNotifications(suite, result);
-
       } catch (error) {
         console.error(`[性能測試] 場景 ${scenario.name} 執行失敗:`, error);
         results.push({
@@ -191,14 +191,16 @@ class AutomatedPerformanceTester {
           timestamp: Date.now(),
           passed: false,
           metrics: this.getEmptyMetrics(),
-          issues: [{
-            severity: 'critical',
-            category: 'reliability',
-            message: `測試執行失敗: ${error.message}`,
-            actualValue: 0,
-            expectedValue: 1,
-            recommendation: '檢查測試配置和環境',
-          }],
+          issues: [
+            {
+              severity: 'critical',
+              category: 'reliability',
+              message: `測試執行失敗: ${error.message}`,
+              actualValue: 0,
+              expectedValue: 1,
+              recommendation: '檢查測試配置和環境',
+            },
+          ],
         });
       }
     }
@@ -218,9 +220,9 @@ class AutomatedPerformanceTester {
     let failedRequests = 0;
 
     const startTime = Date.now();
-    const endTime = startTime + (config.duration * 1000);
-    
-    const rampUpEnd = startTime + (config.rampUpTime * 1000);
+    const endTime = startTime + config.duration * 1000;
+
+    const rampUpEnd = startTime + config.rampUpTime * 1000;
     let currentConcurrency = 1;
 
     console.log(`[負載測試] 開始負載測試: ${scenario.name}`);
@@ -256,7 +258,7 @@ class AutomatedPerformanceTester {
               errors.networkErrors++;
             }
           });
-        
+
         promises.push(promise);
       }
 
@@ -322,7 +324,8 @@ class AutomatedPerformanceTester {
         p99: this.calculatePercentile(executionTimes, 99),
       },
       throughput: {
-        requestsPerSecond: iterations / (executionTimes.reduce((sum, time) => sum + time, 0) / 1000),
+        requestsPerSecond:
+          iterations / (executionTimes.reduce((sum, time) => sum + time, 0) / 1000),
         totalRequests: iterations,
         failedRequests: iterations - executionTimes.length,
       },
@@ -350,7 +353,7 @@ class AutomatedPerformanceTester {
       // 這裡應該調用實際的 GraphQL 執行器
       // 模擬查詢執行
       await this.simulateGraphQLExecution(scenario);
-      
+
       return performance.now() - startTime;
     } catch (error) {
       throw new Error(`GraphQL 查詢執行失敗: ${error.message}`);
@@ -365,11 +368,12 @@ class AutomatedPerformanceTester {
     const baseTime = 50 + Math.random() * 200; // 50-250ms
     const complexityFactor = scenario.expectedMaxComplexity / 100;
     const executionTime = baseTime * complexityFactor;
-    
+
     await this.sleep(executionTime);
-    
+
     // 模擬偶爾的錯誤
-    if (Math.random() < 0.01) { // 1% 錯誤率
+    if (Math.random() < 0.01) {
+      // 1% 錯誤率
       throw new Error('模擬 GraphQL 錯誤');
     }
   }
@@ -383,7 +387,8 @@ class AutomatedPerformanceTester {
     // 檢查執行時間
     if (metrics.executionTime.avg > scenario.expectedMaxExecutionTime) {
       issues.push({
-        severity: metrics.executionTime.avg > scenario.expectedMaxExecutionTime * 2 ? 'critical' : 'high',
+        severity:
+          metrics.executionTime.avg > scenario.expectedMaxExecutionTime * 2 ? 'critical' : 'high',
         category: 'performance',
         message: '平均執行時間超過預期',
         actualValue: metrics.executionTime.avg,
@@ -405,7 +410,10 @@ class AutomatedPerformanceTester {
     }
 
     // 檢查緩存命中率
-    if (scenario.expectedMinCacheHitRate && metrics.caching.hitRate < scenario.expectedMinCacheHitRate) {
+    if (
+      scenario.expectedMinCacheHitRate &&
+      metrics.caching.hitRate < scenario.expectedMinCacheHitRate
+    ) {
       issues.push({
         severity: 'medium',
         category: 'performance',
@@ -418,7 +426,8 @@ class AutomatedPerformanceTester {
 
     // 檢查錯誤率
     const errorRate = metrics.throughput.failedRequests / metrics.throughput.totalRequests;
-    if (errorRate > 0.05) { // 5% 錯誤率閾值
+    if (errorRate > 0.05) {
+      // 5% 錯誤率閾值
       issues.push({
         severity: errorRate > 0.1 ? 'critical' : 'high',
         category: 'reliability',
@@ -430,7 +439,8 @@ class AutomatedPerformanceTester {
     }
 
     // 檢查內存使用
-    if (metrics.resources.memoryUsage > 1024 * 1024 * 1024) { // 1GB
+    if (metrics.resources.memoryUsage > 1024 * 1024 * 1024) {
+      // 1GB
       issues.push({
         severity: 'medium',
         category: 'scalability',
@@ -449,10 +459,23 @@ class AutomatedPerformanceTester {
    */
   private compareResults(previous: TestResult, current: TestResult): ComparisonResult {
     const changes = {
-      executionTime: ((current.metrics.executionTime.avg - previous.metrics.executionTime.avg) / previous.metrics.executionTime.avg) * 100,
-      throughput: ((current.metrics.throughput.requestsPerSecond - previous.metrics.throughput.requestsPerSecond) / previous.metrics.throughput.requestsPerSecond) * 100,
-      memoryUsage: ((current.metrics.resources.memoryUsage - previous.metrics.resources.memoryUsage) / previous.metrics.resources.memoryUsage) * 100,
-      cacheHitRate: ((current.metrics.caching.hitRate - previous.metrics.caching.hitRate) / previous.metrics.caching.hitRate) * 100,
+      executionTime:
+        ((current.metrics.executionTime.avg - previous.metrics.executionTime.avg) /
+          previous.metrics.executionTime.avg) *
+        100,
+      throughput:
+        ((current.metrics.throughput.requestsPerSecond -
+          previous.metrics.throughput.requestsPerSecond) /
+          previous.metrics.throughput.requestsPerSecond) *
+        100,
+      memoryUsage:
+        ((current.metrics.resources.memoryUsage - previous.metrics.resources.memoryUsage) /
+          previous.metrics.resources.memoryUsage) *
+        100,
+      cacheHitRate:
+        ((current.metrics.caching.hitRate - previous.metrics.caching.hitRate) /
+          previous.metrics.caching.hitRate) *
+        100,
     };
 
     const regressions: string[] = [];
@@ -491,7 +514,10 @@ class AutomatedPerformanceTester {
   /**
    * 生成性能報告
    */
-  async generateReport(suiteName: string, timeRange?: { start: Date; end: Date }): Promise<{
+  async generateReport(
+    suiteName: string,
+    timeRange?: { start: Date; end: Date }
+  ): Promise<{
     summary: {
       totalTests: number;
       passedTests: number;
@@ -515,16 +541,19 @@ class AutomatedPerformanceTester {
     for (const scenario of suite.scenarios) {
       const results = this.testHistory.get(scenario.name) || [];
       if (timeRange) {
-        allResults.push(...results.filter(r => 
-          new Date(r.timestamp) >= timeRange.start && new Date(r.timestamp) <= timeRange.end
-        ));
+        allResults.push(
+          ...results.filter(
+            r => new Date(r.timestamp) >= timeRange.start && new Date(r.timestamp) <= timeRange.end
+          )
+        );
       } else {
         allResults.push(...results);
       }
     }
 
     const passedTests = allResults.filter(r => r.passed).length;
-    const avgExecutionTime = allResults.reduce((sum, r) => sum + r.metrics.executionTime.avg, 0) / allResults.length;
+    const avgExecutionTime =
+      allResults.reduce((sum, r) => sum + r.metrics.executionTime.avg, 0) / allResults.length;
 
     const topIssues = this.getTopIssues(allResults.flatMap(r => r.issues));
     const recommendations = this.generateRecommendations(allResults);
@@ -539,7 +568,9 @@ class AutomatedPerformanceTester {
       trends: {
         executionTimeTrend: allResults.map(r => r.metrics.executionTime.avg),
         throughputTrend: allResults.map(r => r.metrics.throughput.requestsPerSecond),
-        errorRateTrend: allResults.map(r => r.metrics.throughput.failedRequests / r.metrics.throughput.totalRequests),
+        errorRateTrend: allResults.map(
+          r => r.metrics.throughput.failedRequests / r.metrics.throughput.totalRequests
+        ),
       },
       topIssues,
       recommendations,
@@ -575,7 +606,7 @@ class AutomatedPerformanceTester {
     // 模擬緩存統計
     const totalRequests = Math.floor(Math.random() * 1000) + 100;
     const hitRate = 0.6 + Math.random() * 0.3; // 60-90%
-    
+
     return {
       hitRate,
       missRate: 1 - hitRate,
@@ -613,7 +644,7 @@ class AutomatedPerformanceTester {
     if (!suite.notifications) return;
 
     const config = suite.notifications;
-    
+
     if (config.onFailure && !result.passed) {
       await this.sendNotification(`測試失敗: ${result.scenarioName}`, result);
     }
@@ -633,7 +664,7 @@ class AutomatedPerformanceTester {
 
   private getTopIssues(issues: TestIssue[]): TestIssue[] {
     const issueMap = new Map<string, TestIssue>();
-    
+
     issues.forEach(issue => {
       const key = issue.message;
       if (!issueMap.has(key) || issueMap.get(key)!.severity < issue.severity) {
@@ -651,8 +682,9 @@ class AutomatedPerformanceTester {
 
   private generateRecommendations(results: TestResult[]): string[] {
     const recommendations: string[] = [];
-    
-    const avgExecutionTime = results.reduce((sum, r) => sum + r.metrics.executionTime.avg, 0) / results.length;
+
+    const avgExecutionTime =
+      results.reduce((sum, r) => sum + r.metrics.executionTime.avg, 0) / results.length;
     if (avgExecutionTime > 500) {
       recommendations.push('總體響應時間偏高，建議實施查詢優化策略');
     }
@@ -662,7 +694,8 @@ class AutomatedPerformanceTester {
       recommendations.push('測試失敗率過高，建議檢查系統穩定性');
     }
 
-    const avgCacheHitRate = results.reduce((sum, r) => sum + r.metrics.caching.hitRate, 0) / results.length;
+    const avgCacheHitRate =
+      results.reduce((sum, r) => sum + r.metrics.caching.hitRate, 0) / results.length;
     if (avgCacheHitRate < 0.6) {
       recommendations.push('緩存命中率偏低，建議優化緩存策略');
     }
@@ -681,4 +714,4 @@ export type {
   ComparisonResult,
   TestSuite,
   NotificationConfig,
-}; 
+};

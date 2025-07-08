@@ -22,24 +22,25 @@ export function registerAdminWidgetRenderer() {
       isSystemComponent: true,
       supportsAllTypes: true,
       configBased: true,
-    }
+    },
   };
-  
+
   // 註冊定義
   widgetRegistry.register(definition);
-  
+
   // 創建一個延遲加載的包裝器
   // 由於 AdminWidgetRenderer 已經在 LazyWidgetRegistry 中，我們不需要重新導入
-  const lazyComponent = () => import('@/app/admin/components/dashboard/AdminWidgetRenderer').then(mod => ({
-    default: mod.AdminWidgetRenderer
-  }));
-  
+  const lazyComponent = () =>
+    import('@/app/admin/components/dashboard/AdminWidgetRenderer').then(mod => ({
+      default: mod.AdminWidgetRenderer,
+    }));
+
   // 更新定義以包含組件
   definition.component = require('next/dynamic').default(lazyComponent, {
     loading: () => null,
-    ssr: false
+    ssr: false,
   });
-  
+
   console.log('[AdminRendererAdapter] AdminWidgetRenderer registered successfully');
 }
 
@@ -49,45 +50,38 @@ export function registerAdminWidgetRenderer() {
  */
 export const widgetConfigMapping = {
   // Stats widgets
-  'stats': {
+  stats: {
     widgetIds: [
       'StatsCardWidget',
       'StillInAwaitWidget',
       'YesterdayTransferCountWidget',
-      'AwaitLocationQtyWidget'
+      'AwaitLocationQtyWidget',
     ],
-    category: 'stats'
+    category: 'stats',
   },
-  
+
   // Chart widgets
-  'chart': {
+  chart: {
     widgetIds: [
       'ProductMixChartWidget',
       'StockDistributionChart',
       'StockLevelHistoryChart',
-      'WarehouseWorkLevelAreaChart'
+      'WarehouseWorkLevelAreaChart',
     ],
-    category: 'charts'
+    category: 'charts',
   },
-  
+
   // List widgets
-  'list': {
-    widgetIds: [
-      'OrdersListWidgetV2',
-      'WarehouseTransferListWidget',
-      'OrderStateListWidget'
-    ],
-    category: 'lists'
+  list: {
+    widgetIds: ['OrdersListWidgetV2', 'WarehouseTransferListWidget', 'OrderStateListWidget'],
+    category: 'lists',
   },
-  
+
   // Table widgets
-  'table': {
-    widgetIds: [
-      'TransactionReportWidget',
-      'GrnReportWidget'
-    ],
-    category: 'reports'
-  }
+  table: {
+    widgetIds: ['TransactionReportWidget', 'GrnReportWidget'],
+    category: 'reports',
+  },
 };
 
 /**
@@ -107,13 +101,13 @@ export function shouldUseNewRegistry(widgetConfig: any): boolean {
   if (process.env.NEXT_PUBLIC_ENABLE_WIDGET_REGISTRY_V2 !== 'true') {
     return false;
   }
-  
+
   // 檢查是否是特殊組件
   if (widgetConfig.component) {
     // 特殊組件需要檢查是否已經在新系統中註冊
     return widgetRegistry.getDefinition(widgetConfig.component) !== undefined;
   }
-  
+
   // 檢查是否是支援的類型
   return widgetConfig.type in widgetConfigMapping;
 }

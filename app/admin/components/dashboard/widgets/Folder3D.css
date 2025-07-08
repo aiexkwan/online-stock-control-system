@@ -47,7 +47,7 @@
   z-index: 0;
   bottom: 98%;
   left: 0;
-  content: "";
+  content: '';
   width: 30px;
   height: 10px;
   background: var(--folder-back-color);

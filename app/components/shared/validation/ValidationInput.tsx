@@ -29,7 +29,7 @@ export interface ValidationInputProps extends React.InputHTMLAttributes<HTMLInpu
 /**
  * Input component with built-in validation
  * 具有內建驗證的輸入組件
- * 
+ *
  * @example
  * ```tsx
  * <ValidationInput
@@ -44,29 +44,32 @@ export interface ValidationInputProps extends React.InputHTMLAttributes<HTMLInpu
  * ```
  */
 export const ValidationInput = forwardRef<HTMLInputElement, ValidationInputProps>(
-  ({ 
-    className, 
-    error, 
-    showValidation = true,
-    label,
-    required,
-    helperText,
-    success,
-    rules,
-    onChange,
-    onBlur,
-    ...props 
-  }, ref) => {
+  (
+    {
+      className,
+      error,
+      showValidation = true,
+      label,
+      required,
+      helperText,
+      success,
+      rules,
+      onChange,
+      onBlur,
+      ...props
+    },
+    ref
+  ) => {
     const [localError, setLocalError] = React.useState<string>('');
     const [touched, setTouched] = React.useState(false);
-    
+
     const displayError = error || (touched && localError);
     const hasError = showValidation && !!displayError;
     const hasSuccess = showValidation && !hasError && success && touched;
-    
+
     const handleValidation = (value: any) => {
       if (!rules || rules.length === 0) return '';
-      
+
       for (const rule of rules) {
         const result = rule.validate(value);
         if (typeof result === 'string') {
@@ -75,17 +78,17 @@ export const ValidationInput = forwardRef<HTMLInputElement, ValidationInputProps
           return rule.message || 'Validation failed';
         }
       }
-      
+
       return '';
     };
-    
+
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
       const value = e.target.value;
       const error = handleValidation(value);
       setLocalError(error);
       onChange?.(e);
     };
-    
+
     const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
       setTouched(true);
       const value = e.target.value;
@@ -93,16 +96,16 @@ export const ValidationInput = forwardRef<HTMLInputElement, ValidationInputProps
       setLocalError(error);
       onBlur?.(e);
     };
-    
+
     return (
-      <div className="space-y-1">
+      <div className='space-y-1'>
         {label && (
-          <label className="text-sm font-medium">
+          <label className='text-sm font-medium'>
             {label}
-            {required && <span className="text-red-500 ml-1">*</span>}
+            {required && <span className='ml-1 text-red-500'>*</span>}
           </label>
         )}
-        
+
         <Input
           ref={ref}
           className={cn(
@@ -113,24 +116,22 @@ export const ValidationInput = forwardRef<HTMLInputElement, ValidationInputProps
           onChange={handleChange}
           onBlur={handleBlur}
           aria-invalid={hasError}
-          aria-describedby={
-            hasError ? 'error-message' : hasSuccess ? 'success-message' : undefined
-          }
+          aria-describedby={hasError ? 'error-message' : hasSuccess ? 'success-message' : undefined}
           {...props}
         />
-        
+
         {helperText && !hasError && !hasSuccess && (
-          <p className="text-sm text-gray-500">{helperText}</p>
+          <p className='text-sm text-gray-500'>{helperText}</p>
         )}
-        
+
         {hasError && (
-          <p id="error-message" className="text-sm text-red-600">
+          <p id='error-message' className='text-sm text-red-600'>
             {displayError}
           </p>
         )}
-        
+
         {hasSuccess && (
-          <p id="success-message" className="text-sm text-green-600">
+          <p id='success-message' className='text-sm text-green-600'>
             {success}
           </p>
         )}

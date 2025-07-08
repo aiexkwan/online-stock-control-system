@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MessageCircle, X, Minimize2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import ChatInterface from './ChatInterface';
+import EnhancedChatInterface from './EnhancedChatInterface';
 import './styles.css';
 
 interface UniversalChatbotProps {
@@ -54,33 +54,33 @@ export default function UniversalChatbot({ className }: UniversalChatbotProps) {
             whileTap={{ scale: 0.95 }}
             onClick={() => setIsOpen(true)}
             className={cn(
-              "fixed bottom-6 right-6 z-50",
-              "w-14 h-14 rounded-full",
-              "bg-purple-500 hover:bg-purple-600",
-              "shadow-lg shadow-purple-500/25",
-              "flex items-center justify-center",
-              "transition-colors duration-200",
-              "group",
+              'fixed bottom-6 right-6 z-50',
+              'h-14 w-14 rounded-full',
+              'bg-purple-500 hover:bg-purple-600',
+              'shadow-lg shadow-purple-500/25',
+              'flex items-center justify-center',
+              'transition-colors duration-200',
+              'group',
               className
             )}
           >
-            <MessageCircle className="w-6 h-6 text-white" />
-            
+            <MessageCircle className='h-6 w-6 text-white' />
+
             {/* 未讀計數 */}
             {unreadCount > 0 && (
               <motion.div
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
-                className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center"
+                className='absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500'
               >
-                <span className="text-xs text-white font-bold">
+                <span className='text-xs font-bold text-white'>
                   {unreadCount > 9 ? '9+' : unreadCount}
                 </span>
               </motion.div>
             )}
-            
+
             {/* 懸停效果 */}
-            <div className="absolute inset-0 rounded-full bg-white opacity-0 group-hover:opacity-10 transition-opacity" />
+            <div className='absolute inset-0 rounded-full bg-white opacity-0 transition-opacity group-hover:opacity-10' />
           </motion.button>
         )}
       </AnimatePresence>
@@ -94,52 +94,50 @@ export default function UniversalChatbot({ className }: UniversalChatbotProps) {
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
             transition={{ duration: 0.2 }}
             className={cn(
-              "fixed bottom-6 right-6 z-50",
-              "w-full max-w-md h-[600px]",
-              "bg-slate-900/95 backdrop-blur-xl",
-              "border border-slate-700/50",
-              "rounded-2xl shadow-2xl",
-              "flex flex-col overflow-hidden",
-              "md:w-[420px]",
-              isMinimized && "h-14",
+              'fixed bottom-6 right-6 z-50',
+              'h-[600px] w-full max-w-md',
+              'bg-slate-900/95 backdrop-blur-xl',
+              'border border-slate-700/50',
+              'rounded-2xl shadow-2xl',
+              'flex flex-col overflow-hidden',
+              'md:w-[420px]',
+              isMinimized && 'h-14',
               className
             )}
           >
             {/* 頂部欄 */}
-            <div className="flex items-center justify-between p-4 border-b border-slate-700/50">
-              <div className="flex items-center gap-3">
-                <div className="relative">
-                  <div className="w-2 h-2 bg-green-500 rounded-full absolute -top-0.5 -right-0.5" />
-                  <MessageCircle className="w-5 h-5 text-purple-400" />
+            <div className='flex items-center justify-between border-b border-slate-700/50 p-4'>
+              <div className='flex items-center gap-3'>
+                <div className='relative'>
+                  <div className='absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-green-500' />
+                  <MessageCircle className='h-5 w-5 text-purple-400' />
                 </div>
                 <div>
-                  <h3 className="text-sm font-semibold text-white">Pennine Assistant</h3>
-                  <p className="text-xs text-slate-400">Always here to help</p>
+                  <h3 className='text-sm font-semibold text-white'>Pennine Assistant</h3>
+                  <p className='text-xs text-slate-400'>Always here to help</p>
                 </div>
               </div>
-              
-              <div className="flex items-center gap-2">
+
+              <div className='flex items-center gap-2'>
                 <button
                   onClick={() => setIsMinimized(!isMinimized)}
-                  className="p-1.5 rounded-lg hover:bg-slate-800/50 transition-colors"
-                  title={isMinimized ? "Expand" : "Minimize"}
+                  className='rounded-lg p-1.5 transition-colors hover:bg-slate-800/50'
+                  title={isMinimized ? 'Expand' : 'Minimize'}
                 >
-                  <Minimize2 className="w-4 h-4 text-slate-400" />
+                  <Minimize2 className='h-4 w-4 text-slate-400' />
                 </button>
                 <button
                   onClick={() => setIsOpen(false)}
-                  className="p-1.5 rounded-lg hover:bg-slate-800/50 transition-colors"
-                  title="Close"
+                  className='rounded-lg border border-red-500/20 bg-red-500/10 p-2 transition-all duration-200 hover:bg-red-500/20'
+                  title='Close'
                 >
-                  <X className="w-4 h-4 text-slate-400" />
+                  <X className='h-5 w-5 text-red-400 hover:text-red-300' />
                 </button>
               </div>
             </div>
 
             {/* 聊天內容 */}
-            {!isMinimized && (
-              <ChatInterface onNewMessage={handleNewMessage} />
-            )}
+            {!isMinimized && <EnhancedChatInterface onNewMessage={handleNewMessage} />}
           </motion.div>
         )}
       </AnimatePresence>

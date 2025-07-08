@@ -24,7 +24,7 @@ CREATE OR REPLACE FUNCTION public.rpc_get_warehouse_work_level(
 )
 RETURNS jsonb
 LANGUAGE plpgsql
-STABLE
+VOLATILE  -- 改為 VOLATILE 因為函數會建立和刪除臨時表
 SECURITY DEFINER
 SET search_path = public
 AS $$
@@ -59,7 +59,7 @@ BEGIN
     CREATE TEMP TABLE temp_warehouse_moves AS
     SELECT 
         DATE(wl.latest_update AT TIME ZONE 'UTC') as work_date,
-        wl.operator,
+        di.name as operator,  -- 修正：使用 data_id.name 作為 operator
         COALESCE(wl.move, 0) as move
     FROM work_level wl
     INNER JOIN data_id di ON wl.id = di.id
@@ -154,7 +154,7 @@ BEGIN
         ),
         'metadata', jsonb_build_object(
             'executed_at', NOW(),
-            'version', '1.0.0'
+            'version', '1.0.1'
         )
     );
     

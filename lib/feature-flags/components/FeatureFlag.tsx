@@ -22,18 +22,18 @@ interface FeatureFlagProps {
 
 /**
  * Feature Flag 條件渲染組件
- * 
+ *
  * @example
  * ```tsx
  * <FeatureFlag flag="new_dashboard">
  *   <NewDashboard />
  * </FeatureFlag>
  * ```
- * 
+ *
  * @example
  * ```tsx
- * <FeatureFlag 
- *   flag="advanced_search" 
+ * <FeatureFlag
+ *   flag="advanced_search"
  *   fallback={<BasicSearch />}
  * >
  *   <AdvancedSearch />
@@ -46,7 +46,7 @@ export const FeatureFlag: React.FC<FeatureFlagProps> = ({
   fallback = null,
   loading: loadingContent = null,
   context,
-  invert = false
+  invert = false,
 }) => {
   const { enabled, loading } = useFeatureFlag(flag, context);
 
@@ -78,10 +78,10 @@ interface FeatureVariantProps {
 /**
  * Feature Flag 變體組件
  * 根據變體值渲染不同內容
- * 
+ *
  * @example
  * ```tsx
- * <FeatureVariant 
+ * <FeatureVariant
  *   flag="theme_variant"
  *   variants={{
  *     default: <DefaultTheme />,
@@ -96,7 +96,7 @@ export const FeatureVariant: React.FC<FeatureVariantProps> = ({
   variants,
   defaultContent = null,
   loading: loadingContent = null,
-  context
+  context,
 }) => {
   const { variant, loading } = useFeatureFlag(flag, context);
 
@@ -135,10 +135,10 @@ const FeatureFlagsContext = React.createContext<Partial<FeatureContext>>({});
 /**
  * Feature Flags 提供者組件
  * 為子組件提供默認的評估上下文
- * 
+ *
  * @example
  * ```tsx
- * <FeatureFlagsProvider 
+ * <FeatureFlagsProvider
  *   userId={user.id}
  *   userGroups={user.groups}
  * >
@@ -151,19 +151,20 @@ export const FeatureFlagsProvider: React.FC<FeatureFlagsProviderProps> = ({
   context = {},
   userId,
   userEmail,
-  userGroups
+  userGroups,
 }) => {
-  const contextValue = React.useMemo(() => ({
-    ...context,
-    userId: userId || context.userId,
-    userEmail: userEmail || context.userEmail,
-    userGroups: userGroups || context.userGroups
-  }), [context, userId, userEmail, userGroups]);
+  const contextValue = React.useMemo(
+    () => ({
+      ...context,
+      userId: userId || context.userId,
+      userEmail: userEmail || context.userEmail,
+      userGroups: userGroups || context.userGroups,
+    }),
+    [context, userId, userEmail, userGroups]
+  );
 
   return (
-    <FeatureFlagsContext.Provider value={contextValue}>
-      {children}
-    </FeatureFlagsContext.Provider>
+    <FeatureFlagsContext.Provider value={contextValue}>{children}</FeatureFlagsContext.Provider>
   );
 };
 
@@ -176,7 +177,7 @@ export const useFeatureFlagsContext = () => {
 
 /**
  * 高階組件：添加 Feature Flag 條件
- * 
+ *
  * @example
  * ```tsx
  * const EnhancedComponent = withFeatureFlag('new_feature')(MyComponent);
@@ -190,7 +191,7 @@ export function withFeatureFlag<P extends object>(
   }
 ): (Component: React.ComponentType<P>) => React.ComponentType<P> {
   return (Component: React.ComponentType<P>) => {
-    const WrappedComponent: React.FC<P> = (props) => {
+    const WrappedComponent: React.FC<P> = props => {
       const context = useFeatureFlagsContext();
       const { enabled, loading } = useFeatureFlag(flag, context);
 

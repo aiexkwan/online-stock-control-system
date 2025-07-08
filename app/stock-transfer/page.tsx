@@ -2,7 +2,12 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { StatusMessage } from '../../components/ui/universal-stock-movement-layout';
-import { searchPallet, transferPallet, getTransferHistory, validateTransferDestination } from '../actions/stockTransferActions';
+import {
+  searchPallet,
+  transferPallet,
+  getTransferHistory,
+  validateTransferDestination,
+} from '../actions/stockTransferActions';
 import { toast } from 'sonner';
 
 // 導入拆分的組件
@@ -11,12 +16,8 @@ import { PalletSearchSection } from './components/PalletSearchSection';
 import { TransferLogSection } from './components/TransferLogSection';
 import { PageFooter } from './components/PageFooter';
 import { SkipNavigation } from './components/SkipNavigation';
-import { KeyboardShortcutsDialog } from './components/KeyboardShortcutsDialog';
 import { TransferControlPanel } from './components/TransferControlPanel';
 import { validateTransfer } from './components/TransferDestinationSelector';
-
-// 導入鍵盤快捷鍵 Hook
-import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 
 interface PalletInfo {
   plt_num: string;
@@ -60,7 +61,6 @@ export default function StockTransferPage() {
     message: string;
   } | null>(null);
   const [selectedPallet, setSelectedPallet] = useState<PalletInfo | null>(null);
-  const [showShortcutsDialog, setShowShortcutsDialog] = useState(false);
   const [selectedDestination, setSelectedDestination] = useState('');
   const [verifiedClockNumber, setVerifiedClockNumber] = useState<string | null>(null);
   const [verifiedName, setVerifiedName] = useState<string | null>(null);
@@ -102,210 +102,199 @@ export default function StockTransferPage() {
   // Cleanup optimistic transfers periodically
   useEffect(() => {
     const interval = setInterval(() => {
-      setOptimisticTransfers(prev => 
-        prev.filter(t => 
-          t.status === 'pending' || 
-          (Date.now() - t.timestamp) < 5000 // Keep success/failed for 5 seconds
+      setOptimisticTransfers(prev =>
+        prev.filter(
+          t => t.status === 'pending' || Date.now() - t.timestamp < 5000 // Keep success/failed for 5 seconds
         )
       );
     }, 1000);
-    
+
     return () => clearInterval(interval);
   }, []);
 
   // Search pallet using Server Action
-  const searchPalletInfo = useCallback(async (searchType: string, value: string) => {
-    setIsSearching(true);
-    try {
-      const result = await searchPallet(value);
-      
-      if (result.success && result.data) {
-        addActivityLog({
-          id: Date.now().toString(),
-          type: 'search',
-          message: `Found pallet ${result.data.plt_num}`,
-          timestamp: new Date().toISOString(),
-          palletNum: result.data.plt_num
-        });
-        
-        return {
-          pallet: result.data,
-          error: null,
-          searchTime: 0
-        };
-      } else {
-        addActivityLog({
-          id: Date.now().toString(),
-          type: 'error',
-          message: result.error || 'Pallet not found',
-          timestamp: new Date().toISOString()
-        });
-        
+  const searchPalletInfo = useCallback(
+    async (searchType: string, value: string) => {
+      setIsSearching(true);
+      try {
+        const result = await searchPallet(value);
+
+        if (result.success && result.data) {
+          addActivityLog({
+            id: Date.now().toString(),
+            type: 'search',
+            message: `Found pallet ${result.data.plt_num}`,
+            timestamp: new Date().toISOString(),
+            palletNum: result.data.plt_num,
+          });
+
+          return {
+            pallet: result.data,
+            error: null,
+            searchTime: 0,
+          };
+        } else {
+          addActivityLog({
+            id: Date.now().toString(),
+            type: 'error',
+            message: result.error || 'Pallet not found',
+            timestamp: new Date().toISOString(),
+          });
+
+          return {
+            pallet: null,
+            error: result.error || 'Pallet not found',
+            searchTime: 0,
+          };
+        }
+      } catch (error) {
+        console.error('Search error:', error);
         return {
           pallet: null,
-          error: result.error || 'Pallet not found',
-          searchTime: 0
+          error: 'Search failed',
+          searchTime: 0,
         };
+      } finally {
+        setIsSearching(false);
       }
-    } catch (error) {
-      console.error('Search error:', error);
-      return {
-        pallet: null,
-        error: 'Search failed',
-        searchTime: 0
-      };
-    } finally {
-      setIsSearching(false);
-    }
-  }, [addActivityLog]);
+    },
+    [addActivityLog]
+  );
 
   // Execute stock transfer using Server Action
-  const executeStockTransfer = useCallback(async (
-    palletInfo: PalletInfo,
-    toLocation: string,
-    operatorId: string
-  ): Promise<boolean> => {
-    const transferId = `${palletInfo.plt_num}-${Date.now()}`;
-    const fromLocation = palletInfo.current_plt_loc || palletInfo.location || 'Unknown';
-    
-    // Check for pending transfers
-    const hasPending = optimisticTransfers.some(
-      t => t.pltNum === palletInfo.plt_num && t.status === 'pending'
-    );
-    
-    if (hasPending) {
-      toast.warning(`Pallet ${palletInfo.plt_num} has a pending transfer. Please wait.`);
-      return false;
-    }
-    
-    // Add optimistic update
-    const optimisticEntry: OptimisticTransfer = {
-      id: transferId,
-      pltNum: palletInfo.plt_num,
-      fromLocation,
-      toLocation,
-      status: 'pending',
-      timestamp: Date.now()
-    };
-    
-    setOptimisticTransfers(prev => [...prev, optimisticEntry]);
-    setIsTransferring(true);
-    
-    try {
-      // Validate transfer first
-      const validation = await validateTransferDestination(palletInfo.plt_num, toLocation);
-      if (!validation.valid) {
-        throw new Error(validation.message || 'Invalid transfer');
-      }
-      
-      // Execute transfer
-      const result = await transferPallet(palletInfo.plt_num, toLocation);
-      
-      if (result.success) {
-        // Update optimistic state
-        setOptimisticTransfers(prev =>
-          prev.map(t => t.id === transferId ? { ...t, status: 'success' } : t)
-        );
-        
-        // Add to activity log
-        addActivityLog({
-          id: Date.now().toString(),
-          type: 'transfer',
-          message: result.message,
-          timestamp: new Date().toISOString(),
-          palletNum: palletInfo.plt_num
-        });
-        
-        // Reload transfer history
-        loadTransferHistory();
-        
-        toast.success(result.message);
-        return true;
-      } else {
-        // Update optimistic state
-        setOptimisticTransfers(prev =>
-          prev.map(t => t.id === transferId ? { ...t, status: 'failed' } : t)
-        );
-        
-        toast.error(result.error || 'Transfer failed');
+  const executeStockTransfer = useCallback(
+    async (palletInfo: PalletInfo, toLocation: string, operatorId: string): Promise<boolean> => {
+      const transferId = `${palletInfo.plt_num}-${Date.now()}`;
+      const fromLocation = palletInfo.current_plt_loc || palletInfo.location || 'Unknown';
+
+      // Check for pending transfers
+      const hasPending = optimisticTransfers.some(
+        t => t.pltNum === palletInfo.plt_num && t.status === 'pending'
+      );
+
+      if (hasPending) {
+        toast.warning(`Pallet ${palletInfo.plt_num} has a pending transfer. Please wait.`);
         return false;
       }
-    } catch (error) {
-      console.error('Transfer error:', error);
-      
-      // Update optimistic state
-      setOptimisticTransfers(prev =>
-        prev.map(t => t.id === transferId ? { ...t, status: 'failed' } : t)
-      );
-      
-      toast.error(error instanceof Error ? error.message : 'Transfer failed');
-      return false;
-    } finally {
-      setIsTransferring(false);
-    }
-  }, [optimisticTransfers, addActivityLog]);
+
+      // Add optimistic update
+      const optimisticEntry: OptimisticTransfer = {
+        id: transferId,
+        pltNum: palletInfo.plt_num,
+        fromLocation,
+        toLocation,
+        status: 'pending',
+        timestamp: Date.now(),
+      };
+
+      setOptimisticTransfers(prev => [...prev, optimisticEntry]);
+      setIsTransferring(true);
+
+      try {
+        // Validate transfer first
+        const validation = await validateTransferDestination(palletInfo.plt_num, toLocation);
+        if (!validation.valid) {
+          throw new Error(validation.message || 'Invalid transfer');
+        }
+
+        // Execute transfer
+        const result = await transferPallet(palletInfo.plt_num, toLocation);
+
+        if (result.success) {
+          // Update optimistic state
+          setOptimisticTransfers(prev =>
+            prev.map(t => (t.id === transferId ? { ...t, status: 'success' } : t))
+          );
+
+          // Add to activity log
+          addActivityLog({
+            id: Date.now().toString(),
+            type: 'transfer',
+            message: result.message,
+            timestamp: new Date().toISOString(),
+            palletNum: palletInfo.plt_num,
+          });
+
+          // Reload transfer history
+          loadTransferHistory();
+
+          toast.success(result.message);
+          return true;
+        } else {
+          // Update optimistic state
+          setOptimisticTransfers(prev =>
+            prev.map(t => (t.id === transferId ? { ...t, status: 'failed' } : t))
+          );
+
+          toast.error(result.error || 'Transfer failed');
+          return false;
+        }
+      } catch (error) {
+        console.error('Transfer error:', error);
+
+        // Update optimistic state
+        setOptimisticTransfers(prev =>
+          prev.map(t => (t.id === transferId ? { ...t, status: 'failed' } : t))
+        );
+
+        toast.error(error instanceof Error ? error.message : 'Transfer failed');
+        return false;
+      } finally {
+        setIsTransferring(false);
+      }
+    },
+    [optimisticTransfers, addActivityLog]
+  );
 
   // Handle transfer execution
-  const handleTransferExecute = useCallback(async (targetLocation: string, clockNumber: string) => {
-    if (!selectedPallet) return;
-    
-    const success = await executeStockTransfer(
-      selectedPallet,
-      targetLocation,
-      clockNumber
-    );
+  const handleTransferExecute = useCallback(
+    async (targetLocation: string, clockNumber: string) => {
+      if (!selectedPallet) return;
 
-    if (success) {
-      setStatusMessage({
-        type: 'success',
-        message: `✓ Pallet ${selectedPallet.plt_num} successfully moved to ${targetLocation}`
-      });
-      // Clear only pallet search, keep destination and operator
-      setSearchValue('');
-      setSelectedPallet(null);
-      focusSearchInput();
-    } else {
-      setStatusMessage({
-        type: 'error',
-        message: `✗ Failed to transfer pallet ${selectedPallet.plt_num}`
-      });
-    }
-  }, [selectedPallet, executeStockTransfer, focusSearchInput]);
+      const success = await executeStockTransfer(selectedPallet, targetLocation, clockNumber);
+
+      if (success) {
+        setStatusMessage({
+          type: 'success',
+          message: `✓ Pallet ${selectedPallet.plt_num} successfully moved to ${targetLocation}`,
+        });
+        // Clear only pallet search, keep destination and operator
+        setSearchValue('');
+        setSelectedPallet(null);
+        focusSearchInput();
+      } else {
+        setStatusMessage({
+          type: 'error',
+          message: `✗ Failed to transfer pallet ${selectedPallet.plt_num}`,
+        });
+      }
+    },
+    [selectedPallet, executeStockTransfer, focusSearchInput]
+  );
 
   // Helper functions for compatibility
-  const hasPendingTransfer = useCallback((pltNum: string): boolean => {
-    return optimisticTransfers.some(
-      t => t.pltNum === pltNum && t.status === 'pending'
-    );
-  }, [optimisticTransfers]);
+  const hasPendingTransfer = useCallback(
+    (pltNum: string): boolean => {
+      return optimisticTransfers.some(t => t.pltNum === pltNum && t.status === 'pending');
+    },
+    [optimisticTransfers]
+  );
 
   const preloadPallets = useCallback(async () => {
     // No-op for now - can implement caching strategy later
   }, []);
 
-  // 使用鍵盤快捷鍵 Hook
-  useKeyboardShortcuts({
-    onSearchFocus: focusSearchInput,
-    onShowShortcuts: () => setShowShortcutsDialog(true),
-    onClearSearch: () => {
-      setSearchValue('');
-      setSelectedPallet(null);
-      focusSearchInput();
-    },
-    isEnabled: true
-  });
-
   return (
-    <div className="flex min-h-screen w-full flex-col bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900">
+    <div className='flex min-h-screen w-full flex-col bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900'>
       <SkipNavigation />
-      
+
       <PageHeader />
-      
-      <main id="main-content" className="flex-1 px-4 pt-20 pb-8 sm:px-6 md:px-8" role="main">
-        <div className="mx-auto max-w-7xl">
+
+      <main id='main-content' className='flex-1 px-4 pb-8 pt-20 sm:px-6 md:px-8' role='main'>
+        <div className='mx-auto max-w-7xl'>
           {/* Status Message */}
           {statusMessage && (
-            <div className="mb-6 animate-fade-in">
+            <div className='animate-fade-in mb-6'>
               <StatusMessage
                 type={statusMessage.type}
                 message={statusMessage.message}
@@ -315,9 +304,9 @@ export default function StockTransferPage() {
           )}
 
           {/* Main Content Grid */}
-          <div className="grid gap-6 lg:grid-cols-2 xl:grid-cols-3">
+          <div className='grid gap-6 lg:grid-cols-2 xl:grid-cols-3'>
             {/* Pallet Search Section */}
-            <div className="lg:col-span-1 xl:col-span-1">
+            <div className='lg:col-span-1 xl:col-span-1'>
               <PalletSearchSection
                 searchValue={searchValue}
                 setSearchValue={setSearchValue}
@@ -332,7 +321,7 @@ export default function StockTransferPage() {
             </div>
 
             {/* Transfer Control Panel */}
-            <div className="lg:col-span-1 xl:col-span-1">
+            <div className='lg:col-span-1 xl:col-span-1'>
               <TransferControlPanel
                 selectedPallet={selectedPallet}
                 selectedDestination={selectedDestination}
@@ -347,10 +336,8 @@ export default function StockTransferPage() {
             </div>
 
             {/* Transfer Log Section */}
-            <div className="lg:col-span-2 xl:col-span-1">
-              <TransferLogSection
-                activityLog={activityLog}
-              />
+            <div className='lg:col-span-2 xl:col-span-1'>
+              <TransferLogSection activityLog={activityLog} />
             </div>
           </div>
         </div>
@@ -360,12 +347,6 @@ export default function StockTransferPage() {
         isLoading={isLoading}
         activityLogCount={activityLog.length}
         optimisticTransfersCount={optimisticTransfers.filter(t => t.status === 'pending').length}
-      />
-
-      {/* Keyboard Shortcuts Dialog */}
-      <KeyboardShortcutsDialog
-        open={showShortcutsDialog}
-        onOpenChange={setShowShortcutsDialog}
       />
     </div>
   );

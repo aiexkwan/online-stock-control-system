@@ -24,7 +24,10 @@ class DashboardSettingsService {
    * 獲取當前用戶資訊
    */
   private async getCurrentUser() {
-    const { data: { user }, error } = await this.supabase.auth.getUser();
+    const {
+      data: { user },
+      error,
+    } = await this.supabase.auth.getUser();
     if (error || !user) {
       throw new Error('User not authenticated');
     }
@@ -37,7 +40,7 @@ class DashboardSettingsService {
   async getDashboardSettings(dashboardName: string = 'custom'): Promise<DashboardSettings | null> {
     try {
       const user = await this.getCurrentUser();
-      
+
       const { data, error } = await this.supabase
         .from('user_dashboard_settings')
         .select('*')
@@ -69,17 +72,17 @@ class DashboardSettingsService {
   ): Promise<DashboardSettings | null> {
     try {
       const user = await this.getCurrentUser();
-      
+
       // 檢查是否已存在設定
       const existing = await this.getDashboardSettings(dashboardName);
-      
+
       if (existing) {
         // 更新現有設定
         const { data, error } = await this.supabase
           .from('user_dashboard_settings')
           .update({
             config,
-            updated_at: new Date().toISOString()
+            updated_at: new Date().toISOString(),
           })
           .eq('id', existing.id)
           .select()
@@ -96,7 +99,7 @@ class DashboardSettingsService {
             email: user.email || '',
             dashboard_name: dashboardName,
             config,
-            is_default: true
+            is_default: true,
           })
           .select()
           .single();
@@ -116,7 +119,7 @@ class DashboardSettingsService {
   async deleteDashboardSettings(dashboardName: string = 'custom'): Promise<boolean> {
     try {
       const user = await this.getCurrentUser();
-      
+
       const { error } = await this.supabase
         .from('user_dashboard_settings')
         .delete()
@@ -148,10 +151,10 @@ class DashboardSettingsService {
 
       const config = JSON.parse(localConfig) as DashboardConfig;
       await this.saveDashboardSettings(config);
-      
+
       // 成功遷移後刪除 localStorage 中的設定
       localStorage.removeItem('dashboard_config');
-      
+
       return true;
     } catch (error) {
       console.error('Error migrating from localStorage:', error);

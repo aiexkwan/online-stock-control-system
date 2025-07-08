@@ -28,9 +28,8 @@ interface UseAcoManagementReturn {
 export const useAcoManagement = ({
   formData,
   setFormData,
-  productInfo
+  productInfo,
 }: UseAcoManagementProps): UseAcoManagementReturn => {
-  
   // 創建 Supabase 客戶端
   const createClientSupabase = useCallback(() => {
     return createClient();
@@ -48,7 +47,7 @@ export const useAcoManagement = ({
       const supabaseClient = createClientSupabase();
       // 使用新的 RPC function - 只獲取可用訂單列表
       const { data, error } = await supabaseClient.rpc('get_aco_order_details', {
-        p_product_code: productInfo.code
+        p_product_code: productInfo.code,
       });
 
       if (error) {
@@ -82,16 +81,16 @@ export const useAcoManagement = ({
     // 安全處理 quantity 和 count
     const quantityStr = String(formData.quantity || '');
     const countStr = String(formData.count || '');
-    
+
     const quantity = parseInt(quantityStr.trim(), 10);
     const count = parseInt(countStr.trim(), 10);
-    
+
     if (isNaN(quantity) || isNaN(count) || quantity <= 0 || count <= 0) {
       return false;
     }
 
     const totalPalletQuantity = quantity * count;
-    
+
     // 從 acoRemain 字符串中提取未完成數量
     if (formData.acoRemain && formData.acoRemain.includes('Order Outstanding Qty for')) {
       const outstandingQtyMatch = formData.acoRemain.match(/Order Outstanding Qty for .+: (\d+)/);
@@ -100,13 +99,23 @@ export const useAcoManagement = ({
         return totalPalletQuantity > outstandingQty;
       }
     }
-    
+
     return false;
-  }, [productInfo?.type, formData.acoOrderRef, formData.acoNewRef, formData.quantity, formData.count, formData.acoRemain]);
+  }, [
+    productInfo?.type,
+    formData.acoOrderRef,
+    formData.acoNewRef,
+    formData.quantity,
+    formData.count,
+    formData.acoRemain,
+  ]);
 
   // ACO 搜索邏輯 - 使用 RPC function
   const handleAcoSearch = useCallback(async () => {
-    if (!formData.acoOrderRef.trim() || formData.acoOrderRef.trim().length < MIN_ACO_ORDER_REF_LENGTH) {
+    if (
+      !formData.acoOrderRef.trim() ||
+      formData.acoOrderRef.trim().length < MIN_ACO_ORDER_REF_LENGTH
+    ) {
       toast.error(`ACO Order Ref must be at least ${MIN_ACO_ORDER_REF_LENGTH} characters.`);
       return;
     }
@@ -116,24 +125,24 @@ export const useAcoManagement = ({
       return;
     }
 
-    setFormData(prev => ({ 
-      ...prev, 
+    setFormData(prev => ({
+      ...prev,
       acoSearchLoading: true,
       acoNewRef: false,
       acoOrderDetails: [],
-      acoOrderDetailErrors: []
+      acoOrderDetailErrors: [],
     }));
 
     try {
       const searchOrderRef = formData.acoOrderRef.trim();
-      
+
       // 使用傳統方法
       const supabaseClient = createClientSupabase();
-      
+
       // 使用新的 RPC function - 獲取訂單詳情
       const { data, error } = await supabaseClient.rpc('get_aco_order_details', {
         p_product_code: productInfo.code,
-        p_order_ref: searchOrderRef
+        p_order_ref: searchOrderRef,
       });
 
       if (error) {
@@ -151,31 +160,31 @@ export const useAcoManagement = ({
 
       // 更新可用訂單列表（如果有）
       if (data.available_orders) {
-        setFormData(prev => ({ 
-          ...prev, 
-          availableAcoOrderRefs: data.available_orders as number[]
+        setFormData(prev => ({
+          ...prev,
+          availableAcoOrderRefs: data.available_orders as number[],
         }));
       }
 
       // 處理訂單詳情
       if (data.order_details) {
         const details = data.order_details;
-        
+
         if (!details.exists) {
           // 訂單不存在
-          setFormData(prev => ({ 
-            ...prev, 
+          setFormData(prev => ({
+            ...prev,
             acoNewRef: false,
-            acoRemain: details.message
+            acoRemain: details.message,
           }));
           toast.warning(details.message);
         } else {
           // 訂單存在 - 顯示狀態
-          setFormData(prev => ({ 
-            ...prev, 
-            acoRemain: details.message
+          setFormData(prev => ({
+            ...prev,
+            acoRemain: details.message,
           }));
-          
+
           if (details.status === 'fulfilled') {
             toast.warning('This order has already been fulfilled.');
           }
@@ -191,96 +200,106 @@ export const useAcoManagement = ({
   }, [formData.acoOrderRef, productInfo, createClientSupabase, setFormData]);
 
   // ACO 訂單詳情更改
-  const handleAcoOrderDetailChange = useCallback((idx: number, key: 'code' | 'qty', value: string) => {
-    setFormData(prev => {
-      const newDetails = [...prev.acoOrderDetails];
-      newDetails[idx] = { ...newDetails[idx], [key]: value };
-      return { ...prev, acoOrderDetails: newDetails };
-    });
-  }, [setFormData]);
+  const handleAcoOrderDetailChange = useCallback(
+    (idx: number, key: 'code' | 'qty', value: string) => {
+      setFormData(prev => {
+        const newDetails = [...prev.acoOrderDetails];
+        newDetails[idx] = { ...newDetails[idx], [key]: value };
+        return { ...prev, acoOrderDetails: newDetails };
+      });
+    },
+    [setFormData]
+  );
 
   // ACO 產品代碼驗證
-  const validateAcoProductCode = useCallback(async (code: string, idx: number) => {
-    if (!code.trim()) {
-      setFormData(prev => {
-        const newErrors = [...prev.acoOrderDetailErrors];
-        newErrors[idx] = '';
-        return { ...prev, acoOrderDetailErrors: newErrors };
-      });
-      return;
-    }
-
-    try {
-      // 使用與 ProductCodeInput 相同的 RPC 函數
-      const { data, error } = await createClientSupabase().rpc('get_product_details_by_code', { 
-        p_code: code.trim() 
-      });
-
-      if (error || !data || data.length === 0) {
+  const validateAcoProductCode = useCallback(
+    async (code: string, idx: number) => {
+      if (!code.trim()) {
         setFormData(prev => {
           const newErrors = [...prev.acoOrderDetailErrors];
-          newErrors[idx] = `Product code ${code} not found.`;
+          newErrors[idx] = '';
           return { ...prev, acoOrderDetailErrors: newErrors };
         });
-      } else {
-        const productData = data[0];
-        
-        // 檢查產品類型是否為 ACO
-        if (productData.type !== 'ACO') {
+        return;
+      }
+
+      try {
+        // 使用與 ProductCodeInput 相同的 RPC 函數
+        const { data, error } = await createClientSupabase().rpc('get_product_details_by_code', {
+          p_code: code.trim(),
+        });
+
+        if (error || !data || data.length === 0) {
           setFormData(prev => {
             const newErrors = [...prev.acoOrderDetailErrors];
-            newErrors[idx] = `Product ${code} is not an ACO product. Only ACO products are allowed in ACO orders.`;
+            newErrors[idx] = `Product code ${code} not found.`;
             return { ...prev, acoOrderDetailErrors: newErrors };
           });
         } else {
-          // 產品是有效的 ACO 類型，標準化代碼並清除錯誤
-          setFormData(prev => {
-            const newErrors = [...prev.acoOrderDetailErrors];
-            newErrors[idx] = '';
-            
-            // 更新產品代碼為數據庫中的標準化版本
-            const newDetails = [...prev.acoOrderDetails];
-            newDetails[idx] = { ...newDetails[idx], code: productData.code };
-            
-            return { 
-              ...prev, 
-              acoOrderDetailErrors: newErrors,
-              acoOrderDetails: newDetails
-            };
-          });
+          const productData = data[0];
+
+          // 檢查產品類型是否為 ACO
+          if (productData.type !== 'ACO') {
+            setFormData(prev => {
+              const newErrors = [...prev.acoOrderDetailErrors];
+              newErrors[idx] =
+                `Product ${code} is not an ACO product. Only ACO products are allowed in ACO orders.`;
+              return { ...prev, acoOrderDetailErrors: newErrors };
+            });
+          } else {
+            // 產品是有效的 ACO 類型，標準化代碼並清除錯誤
+            setFormData(prev => {
+              const newErrors = [...prev.acoOrderDetailErrors];
+              newErrors[idx] = '';
+
+              // 更新產品代碼為數據庫中的標準化版本
+              const newDetails = [...prev.acoOrderDetails];
+              newDetails[idx] = { ...newDetails[idx], code: productData.code };
+
+              return {
+                ...prev,
+                acoOrderDetailErrors: newErrors,
+                acoOrderDetails: newDetails,
+              };
+            });
+          }
         }
+      } catch (error) {
+        console.error('Error validating product code:', error);
+        setFormData(prev => {
+          const newErrors = [...prev.acoOrderDetailErrors];
+          newErrors[idx] = 'Error validating product code. Please try again.';
+          return { ...prev, acoOrderDetailErrors: newErrors };
+        });
+        toast.error('Error validating product code.');
       }
-    } catch (error) {
-      console.error('Error validating product code:', error);
-      setFormData(prev => {
-        const newErrors = [...prev.acoOrderDetailErrors];
-        newErrors[idx] = 'Error validating product code. Please try again.';
-        return { ...prev, acoOrderDetailErrors: newErrors };
-      });
-      toast.error('Error validating product code.');
-    }
-  }, [createClientSupabase, setFormData]);
+    },
+    [createClientSupabase, setFormData]
+  );
 
   // ACO 訂單詳情更新（添加新行）
   const handleAcoOrderDetailUpdate = useCallback(() => {
     setFormData(prev => ({
       ...prev,
       acoOrderDetails: [...prev.acoOrderDetails, { code: '', qty: '' }],
-      acoOrderDetailErrors: [...prev.acoOrderDetailErrors, '']
+      acoOrderDetailErrors: [...prev.acoOrderDetailErrors, ''],
     }));
   }, [setFormData]);
 
   // 獲取 ACO 卡板計數（用於生成序數）
-  const getAcoPalletOrdinal = useCallback(async (acoOrderRef: string): Promise<string> => {
-    try {
-      const supabase = createClientSupabase();
-      const count = await getAcoPalletCount(supabase, acoOrderRef);
-      return count.toString();
-    } catch (error) {
-      console.error('Error getting ACO pallet count:', error);
-      return '1';
-    }
-  }, [createClientSupabase]);
+  const getAcoPalletOrdinal = useCallback(
+    async (acoOrderRef: string): Promise<string> => {
+      try {
+        const supabase = createClientSupabase();
+        const count = await getAcoPalletCount(supabase, acoOrderRef);
+        return count.toString();
+      } catch (error) {
+        console.error('Error getting ACO pallet count:', error);
+        return '1';
+      }
+    },
+    [createClientSupabase]
+  );
 
   return {
     handleAcoSearch,
@@ -288,6 +307,6 @@ export const useAcoManagement = ({
     validateAcoProductCode,
     handleAcoOrderDetailUpdate,
     checkAcoQuantityExcess,
-    fetchAcoOrderRefs
+    fetchAcoOrderRefs,
   };
 };

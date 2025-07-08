@@ -26,8 +26,8 @@ export const acoOrderReportConfig: ReportConfig = {
           { id: 'required_qty', label: 'Required Qty', type: 'number' },
           { id: 'aco_order', label: 'ACO Order', type: 'text' },
         ],
-      }
-    }
+      },
+    },
   ],
   filters: [
     {
@@ -38,7 +38,7 @@ export const acoOrderReportConfig: ReportConfig = {
       dataSource: {
         type: 'rpc',
         name: 'getUniqueAcoOrderRefs',
-      }
-    }
+      },
+    },
   ],
 };

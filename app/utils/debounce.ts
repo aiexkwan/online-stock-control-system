@@ -12,7 +12,7 @@ export function debounce<T extends (...args: any[]) => any>(
 
   return function debounced(this: any, ...args: Parameters<T>) {
     const context = this;
-    
+
     if (timeout) {
       clearTimeout(timeout);
     }
@@ -36,9 +36,9 @@ export function debounceWithCancel<T extends (...args: any[]) => any>(
 } {
   let timeout: NodeJS.Timeout | null = null;
 
-  const debounced = function(this: any, ...args: Parameters<T>) {
+  const debounced = function (this: any, ...args: Parameters<T>) {
     const context = this;
-    
+
     if (timeout) {
       clearTimeout(timeout);
     }

@@ -33,7 +33,12 @@ interface RegisterFormErrors {
   agreeToTerms?: string;
 }
 
-export default function RegisterForm({ onSuccess, onError, isLoading, setIsLoading }: RegisterFormProps) {
+export default function RegisterForm({
+  onSuccess,
+  onError,
+  isLoading,
+  setIsLoading,
+}: RegisterFormProps) {
   const [formData, setFormData] = useState<RegisterFormData>({
     email: '',
     password: '',
@@ -41,7 +46,7 @@ export default function RegisterForm({ onSuccess, onError, isLoading, setIsLoadi
     firstName: '',
     lastName: '',
     department: '',
-    agreeToTerms: false
+    agreeToTerms: false,
   });
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -95,7 +100,7 @@ export default function RegisterForm({ onSuccess, onError, isLoading, setIsLoadi
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!validateForm()) {
       return;
     }
@@ -105,16 +110,12 @@ export default function RegisterForm({ onSuccess, onError, isLoading, setIsLoadi
 
     try {
       // 使用 Supabase Auth 進行註冊
-      await mainLoginAuth.signUp(
-        formData.email, 
-        formData.password,
-        {
-          firstName: formData.firstName,
-          lastName: formData.lastName,
-          department: formData.department
-        }
-      );
-      
+      await mainLoginAuth.signUp(formData.email, formData.password, {
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        department: formData.department,
+      });
+
       // 註冊成功
       onSuccess();
     } catch (error) {
@@ -126,7 +127,7 @@ export default function RegisterForm({ onSuccess, onError, isLoading, setIsLoadi
 
   const handleInputChange = (field: keyof RegisterFormData, value: string | boolean) => {
     setFormData(prev => ({ ...prev, [field]: value }));
-    
+
     // Clear field error when user starts typing
     if (fieldErrors[field]) {
       setFieldErrors(prev => ({ ...prev, [field]: undefined }));
@@ -134,202 +135,196 @@ export default function RegisterForm({ onSuccess, onError, isLoading, setIsLoadi
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={handleSubmit} className='space-y-4'>
       {/* Email Field */}
       <div>
-        <label htmlFor="email" className="block text-sm font-medium text-gray-300 mb-2">
+        <label htmlFor='email' className='mb-2 block text-sm font-medium text-gray-300'>
           Email Address *
         </label>
         <input
-          id="email"
-          type="email"
+          id='email'
+          type='email'
           value={formData.email}
-          onChange={(e) => handleInputChange('email', e.target.value)}
-          className={`w-full px-3 py-2 bg-gray-700 border rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors ${
+          onChange={e => handleInputChange('email', e.target.value)}
+          className={`w-full rounded-md border bg-gray-700 px-3 py-2 text-white placeholder-gray-400 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 ${
             fieldErrors.email ? 'border-red-500' : 'border-gray-600'
           }`}
-          placeholder="your.name@pennineindustries.com"
+          placeholder='your.name@pennineindustries.com'
           disabled={isLoading}
         />
-        {fieldErrors.email && (
-          <p className="mt-1 text-sm text-red-400">{fieldErrors.email}</p>
-        )}
+        {fieldErrors.email && <p className='mt-1 text-sm text-red-400'>{fieldErrors.email}</p>}
       </div>
 
       {/* Name Fields */}
-      <div className="grid grid-cols-2 gap-4">
+      <div className='grid grid-cols-2 gap-4'>
         <div>
-          <label htmlFor="firstName" className="block text-sm font-medium text-gray-300 mb-2">
+          <label htmlFor='firstName' className='mb-2 block text-sm font-medium text-gray-300'>
             First Name *
           </label>
           <input
-            id="firstName"
-            type="text"
+            id='firstName'
+            type='text'
             value={formData.firstName}
-            onChange={(e) => handleInputChange('firstName', e.target.value)}
-            className={`w-full px-3 py-2 bg-gray-700 border rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors ${
+            onChange={e => handleInputChange('firstName', e.target.value)}
+            className={`w-full rounded-md border bg-gray-700 px-3 py-2 text-white placeholder-gray-400 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 ${
               fieldErrors.firstName ? 'border-red-500' : 'border-gray-600'
             }`}
-            placeholder="John"
+            placeholder='John'
             disabled={isLoading}
           />
           {fieldErrors.firstName && (
-            <p className="mt-1 text-sm text-red-400">{fieldErrors.firstName}</p>
+            <p className='mt-1 text-sm text-red-400'>{fieldErrors.firstName}</p>
           )}
         </div>
 
         <div>
-          <label htmlFor="lastName" className="block text-sm font-medium text-gray-300 mb-2">
+          <label htmlFor='lastName' className='mb-2 block text-sm font-medium text-gray-300'>
             Last Name *
           </label>
           <input
-            id="lastName"
-            type="text"
+            id='lastName'
+            type='text'
             value={formData.lastName}
-            onChange={(e) => handleInputChange('lastName', e.target.value)}
-            className={`w-full px-3 py-2 bg-gray-700 border rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors ${
+            onChange={e => handleInputChange('lastName', e.target.value)}
+            className={`w-full rounded-md border bg-gray-700 px-3 py-2 text-white placeholder-gray-400 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 ${
               fieldErrors.lastName ? 'border-red-500' : 'border-gray-600'
             }`}
-            placeholder="Doe"
+            placeholder='Doe'
             disabled={isLoading}
           />
           {fieldErrors.lastName && (
-            <p className="mt-1 text-sm text-red-400">{fieldErrors.lastName}</p>
+            <p className='mt-1 text-sm text-red-400'>{fieldErrors.lastName}</p>
           )}
         </div>
       </div>
 
       {/* Department Field */}
       <div>
-        <label htmlFor="department" className="block text-sm font-medium text-gray-300 mb-2">
+        <label htmlFor='department' className='mb-2 block text-sm font-medium text-gray-300'>
           Department
         </label>
         <select
-          id="department"
+          id='department'
           value={formData.department}
-          onChange={(e) => handleInputChange('department', e.target.value)}
-          className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
+          onChange={e => handleInputChange('department', e.target.value)}
+          className='w-full rounded-md border border-gray-600 bg-gray-700 px-3 py-2 text-white transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500'
           disabled={isLoading}
         >
-          <option value="">Select Department</option>
-          <option value="production">Production</option>
-          <option value="warehouse">Warehouse</option>
-          <option value="quality">Quality Control</option>
-          <option value="logistics">Logistics</option>
-          <option value="management">Management</option>
-          <option value="it">IT</option>
-          <option value="other">Other</option>
+          <option value=''>Select Department</option>
+          <option value='production'>Production</option>
+          <option value='warehouse'>Warehouse</option>
+          <option value='quality'>Quality Control</option>
+          <option value='logistics'>Logistics</option>
+          <option value='management'>Management</option>
+          <option value='it'>IT</option>
+          <option value='other'>Other</option>
         </select>
       </div>
 
       {/* Password Field */}
       <div>
-        <label htmlFor="password" className="block text-sm font-medium text-gray-300 mb-2">
+        <label htmlFor='password' className='mb-2 block text-sm font-medium text-gray-300'>
           Password *
         </label>
-        <div className="relative">
+        <div className='relative'>
           <input
-            id="password"
+            id='password'
             type={showPassword ? 'text' : 'password'}
             value={formData.password}
-            onChange={(e) => handleInputChange('password', e.target.value)}
-            className={`w-full px-3 py-2 pr-10 bg-gray-700 border rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors ${
+            onChange={e => handleInputChange('password', e.target.value)}
+            className={`w-full rounded-md border bg-gray-700 px-3 py-2 pr-10 text-white placeholder-gray-400 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 ${
               fieldErrors.password ? 'border-red-500' : 'border-gray-600'
             }`}
-            placeholder="Enter your password"
+            placeholder='Enter your password'
             disabled={isLoading}
           />
           <button
-            type="button"
+            type='button'
             onClick={() => setShowPassword(!showPassword)}
-            className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-300"
+            className='absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-300'
             disabled={isLoading}
           >
-            {showPassword ? (
-              <EyeSlashIcon className="h-5 w-5" />
-            ) : (
-              <EyeIcon className="h-5 w-5" />
-            )}
+            {showPassword ? <EyeSlashIcon className='h-5 w-5' /> : <EyeIcon className='h-5 w-5' />}
           </button>
         </div>
         {fieldErrors.password && (
-          <p className="mt-1 text-sm text-red-400">{fieldErrors.password}</p>
+          <p className='mt-1 text-sm text-red-400'>{fieldErrors.password}</p>
         )}
-        <p className="mt-1 text-xs text-gray-400">
+        <p className='mt-1 text-xs text-gray-400'>
           Password must be at least 6 characters with letters and numbers only
         </p>
       </div>
 
       {/* Confirm Password Field */}
       <div>
-        <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-300 mb-2">
+        <label htmlFor='confirmPassword' className='mb-2 block text-sm font-medium text-gray-300'>
           Confirm Password *
         </label>
-        <div className="relative">
+        <div className='relative'>
           <input
-            id="confirmPassword"
+            id='confirmPassword'
             type={showConfirmPassword ? 'text' : 'password'}
             value={formData.confirmPassword}
-            onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
-            className={`w-full px-3 py-2 pr-10 bg-gray-700 border rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors ${
+            onChange={e => handleInputChange('confirmPassword', e.target.value)}
+            className={`w-full rounded-md border bg-gray-700 px-3 py-2 pr-10 text-white placeholder-gray-400 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 ${
               fieldErrors.confirmPassword ? 'border-red-500' : 'border-gray-600'
             }`}
-            placeholder="Confirm your password"
+            placeholder='Confirm your password'
             disabled={isLoading}
           />
           <button
-            type="button"
+            type='button'
             onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-            className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-300"
+            className='absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-300'
             disabled={isLoading}
           >
             {showConfirmPassword ? (
-              <EyeSlashIcon className="h-5 w-5" />
+              <EyeSlashIcon className='h-5 w-5' />
             ) : (
-              <EyeIcon className="h-5 w-5" />
+              <EyeIcon className='h-5 w-5' />
             )}
           </button>
         </div>
         {fieldErrors.confirmPassword && (
-          <p className="mt-1 text-sm text-red-400">{fieldErrors.confirmPassword}</p>
+          <p className='mt-1 text-sm text-red-400'>{fieldErrors.confirmPassword}</p>
         )}
       </div>
 
       {/* Terms Agreement */}
       <div>
-        <label className="flex items-start space-x-3">
+        <label className='flex items-start space-x-3'>
           <input
-            type="checkbox"
+            type='checkbox'
             checked={formData.agreeToTerms}
-            onChange={(e) => handleInputChange('agreeToTerms', e.target.checked)}
-            className="mt-1 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-600 rounded bg-gray-700"
+            onChange={e => handleInputChange('agreeToTerms', e.target.checked)}
+            className='mt-1 h-4 w-4 rounded border-gray-600 bg-gray-700 text-blue-600 focus:ring-blue-500'
             disabled={isLoading}
           />
-          <span className="text-sm text-gray-300">
+          <span className='text-sm text-gray-300'>
             I agree to the{' '}
-            <a href="#" className="text-blue-400 hover:text-blue-300">
+            <a href='#' className='text-blue-400 hover:text-blue-300'>
               Terms and Conditions
             </a>{' '}
             and{' '}
-            <a href="#" className="text-blue-400 hover:text-blue-300">
+            <a href='#' className='text-blue-400 hover:text-blue-300'>
               Privacy Policy
             </a>
           </span>
         </label>
         {fieldErrors.agreeToTerms && (
-          <p className="mt-1 text-sm text-red-400">{fieldErrors.agreeToTerms}</p>
+          <p className='mt-1 text-sm text-red-400'>{fieldErrors.agreeToTerms}</p>
         )}
       </div>
 
       {/* Submit Button */}
       <button
-        type="submit"
+        type='submit'
         disabled={isLoading}
-        className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-800 disabled:cursor-not-allowed text-white font-medium py-2 px-4 rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-gray-800"
+        className='w-full rounded-md bg-blue-600 px-4 py-2 font-medium text-white transition-colors hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-gray-800 disabled:cursor-not-allowed disabled:bg-blue-800'
       >
         {isLoading ? (
-          <div className="flex items-center justify-center">
-            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+          <div className='flex items-center justify-center'>
+            <div className='mr-2 h-4 w-4 animate-spin rounded-full border-b-2 border-white'></div>
             Creating Account...
           </div>
         ) : (
@@ -338,4 +333,4 @@ export default function RegisterForm({ onSuccess, onError, isLoading, setIsLoadi
       </button>
     </form>
   );
-} 
+}

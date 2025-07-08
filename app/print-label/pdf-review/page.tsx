@@ -19,29 +19,47 @@ export default function PdfReviewPage() {
   const palletNum = searchParams.get('palletNum') || '';
 
   // 組合 workOrderNumber 欄位
-  const workOrderNumber = workOrderType && workOrderValue && workOrderValue !== '-' ? `${workOrderType} : ${workOrderValue}` : workOrderType;
+  const workOrderNumber =
+    workOrderType && workOrderValue && workOrderValue !== '-'
+      ? `${workOrderType} : ${workOrderValue}`
+      : workOrderType;
 
   // 添加調試信息
   useEffect(() => {
-    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('PDF Review Page Loaded');
-    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('URL Parameters:', {
-      productCode,
-      description,
-      quantity,
-      date,
-      operatorClockNum,
-      qcClockNum,
-      workOrderType,
-      workOrderValue,
-      palletNum,
-      workOrderNumber
-    });
+    process.env.NODE_ENV !== 'production' &&
+      process.env.NODE_ENV !== 'production' &&
+      console.log('PDF Review Page Loaded');
+    process.env.NODE_ENV !== 'production' &&
+      process.env.NODE_ENV !== 'production' &&
+      console.log('URL Parameters:', {
+        productCode,
+        description,
+        quantity,
+        date,
+        operatorClockNum,
+        qcClockNum,
+        workOrderType,
+        workOrderValue,
+        palletNum,
+        workOrderNumber,
+      });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [productCode, description, quantity, date, operatorClockNum, qcClockNum, workOrderType, workOrderValue, palletNum, workOrderNumber]);
+  }, [
+    productCode,
+    description,
+    quantity,
+    date,
+    operatorClockNum,
+    qcClockNum,
+    workOrderType,
+    workOrderValue,
+    palletNum,
+    workOrderNumber,
+  ]);
 
   return (
-    <div className="min-h-screen bg-gray-900 flex flex-col items-center justify-center py-8">
-      <div className="bg-white p-8 rounded shadow-lg">
+    <div className='flex min-h-screen flex-col items-center justify-center bg-gray-900 py-8'>
+      <div className='rounded bg-white p-8 shadow-lg'>
         <ReviewTemplate
           productCode={productCode}
           description={description}
@@ -55,4 +73,4 @@ export default function PdfReviewPage() {
       </div>
     </div>
   );
-} 
+}

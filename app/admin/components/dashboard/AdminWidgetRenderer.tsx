@@ -189,13 +189,13 @@ const ReportGeneratorWithDialogWidget = React.lazy(() => import('./widgets/Repor
 const AvailableSoonWidget = React.lazy(() => import('./widgets/AvailableSoonWidget'));
 const ReportsWidget = React.lazy(() => import('./widgets/ReportsWidget').then(mod => ({ default: mod.ReportsWidget })));
 
-// GraphQL 組件
-const ProductionStatsGraphQL = React.lazy(() => import('./widgets/ProductionStatsGraphQL').then(mod => ({ default: mod.ProductionStatsGraphQL })));
-const TopProductsChartGraphQL = React.lazy(() => import('./widgets/TopProductsChartGraphQL').then(mod => ({ default: mod.TopProductsChartGraphQL })));
-const ProductDistributionChartGraphQL = React.lazy(() => import('./widgets/ProductDistributionChartGraphQL').then(mod => ({ default: mod.ProductDistributionChartGraphQL })));
-const ProductionDetailsGraphQL = React.lazy(() => import('./widgets/ProductionDetailsGraphQL').then(mod => ({ default: mod.ProductionDetailsGraphQL })));
-const StaffWorkloadGraphQL = React.lazy(() => import('./widgets/StaffWorkloadGraphQL').then(mod => ({ default: mod.StaffWorkloadGraphQL })));
-// GraphQL widgets removed - migrated to DashboardAPI
+// Production monitoring widgets - Server Actions versions
+const ProductionStatsWidget = React.lazy(() => import('./widgets/ProductionStatsWidget').then(mod => ({ default: mod.ProductionStatsWidget })));
+const TopProductsChartWidget = React.lazy(() => import('./widgets/TopProductsChartWidget').then(mod => ({ default: mod.TopProductsChartWidget })));
+const ProductDistributionChartWidget = React.lazy(() => import('./widgets/ProductDistributionChartWidget').then(mod => ({ default: mod.ProductDistributionChartWidget })));
+const ProductionDetailsWidget = React.lazy(() => import('./widgets/ProductionDetailsWidget').then(mod => ({ default: mod.ProductionDetailsWidget })));
+const StaffWorkloadWidget = React.lazy(() => import('./widgets/StaffWorkloadWidget').then(mod => ({ default: mod.StaffWorkloadWidget })));
+// Server Actions widgets - optimized for performance
 
 // Warehouse Dashboard 組件
 const AwaitLocationQtyWidget = React.lazy(() => import('./widgets/AwaitLocationQtyWidget').then(mod => ({ default: mod.AwaitLocationQtyWidget })));
@@ -214,8 +214,7 @@ const EmptyPlaceholderWidget = React.lazy(() => import('./widgets/EmptyPlacehold
 const WarehouseTransferListWidget = React.lazy(() => import('./widgets/WarehouseTransferListWidget').then(mod => ({ default: mod.WarehouseTransferListWidget })));
 const WarehouseWorkLevelAreaChart = React.lazy(() => import('./widgets/WarehouseWorkLevelAreaChart').then(mod => ({ default: mod.WarehouseWorkLevelAreaChart })));
 
-// GraphQL 功能開關
-const ENABLE_GRAPHQL = process.env.NEXT_PUBLIC_ENABLE_GRAPHQL === 'true';
+// GraphQL removed - all widgets migrated to Server Actions
 
 // 組件 props 生成器 - 預先定義以減少重複計算
 const getComponentPropsFactory = (config: AdminWidgetConfig, timeFrame: TimeFrame, theme: string) => {
@@ -1006,9 +1005,8 @@ const AdminWidgetRendererComponent: React.FC<AdminWidgetRendererProps> = ({
       );
     }
 
-    // 如果啟用 GraphQL 且是生產統計類型，使用 GraphQL 組件
-    if (ENABLE_GRAPHQL && 
-        config.dataSource === 'record_palletinfo' && 
+    // 如果是生產統計類型，使用 Server Actions 組件
+    if (config.dataSource === 'record_palletinfo' && 
         (config.metrics?.[0] === 'pallet_count' || config.metrics?.[0] === 'quantity_sum')) {
       return (
         <Suspense fallback={
@@ -1018,11 +1016,11 @@ const AdminWidgetRendererComponent: React.FC<AdminWidgetRendererProps> = ({
             <div className="h-4 w-32 bg-slate-700/50 rounded"></div>
           </div>
         }>
-          <ProductionStatsGraphQL
+          <ProductionStatsWidget
             title={config.title}
             metric={config.metrics[0] as 'pallet_count' | 'quantity_sum'}
             timeFrame={timeFrame}
-            className="h-full"
+            isEditMode={false}
           />
         </Suspense>
       );
@@ -1083,55 +1081,53 @@ const AdminWidgetRendererComponent: React.FC<AdminWidgetRendererProps> = ({
 
   // 渲染圖表 - 使用 useCallback 優化
   const renderChart = useCallback(() => {
-    // 如果啟用 GraphQL，檢查是否有對應的 GraphQL 組件
-    if (ENABLE_GRAPHQL) {
-      // Top 10 Products by Quantity
-      if (config.title === 'Top 10 Products by Quantity' && config.chartType === 'bar') {
-        return (
-          <Suspense fallback={
-            <div className="animate-pulse h-full bg-slate-700 rounded"></div>
-          }>
-            <TopProductsChartGraphQL
-              title={config.title}
-              timeFrame={timeFrame}
-              className="h-full"
-              limit={5}
-            />
-          </Suspense>
-        );
-      }
-      
-      // Top 10 Products Distribution
-      if (config.title === 'Top 10 Products Distribution' && config.chartType === 'donut') {
-        return (
-          <Suspense fallback={
-            <div className="animate-pulse h-full bg-slate-700 rounded"></div>
-          }>
-            <ProductDistributionChartGraphQL
-              title={config.title}
-              timeFrame={timeFrame}
-              className="h-full"
-              limit={10}
-            />
-          </Suspense>
-        );
-      }
-      
-      // Staff Workload - 使用 GraphQL 版本
-      if (config.title === 'Staff Workload' && config.chartType === 'line') {
-        return (
-          <Suspense fallback={
-            <div className="animate-pulse h-full bg-slate-700 rounded"></div>
-          }>
-            <StaffWorkloadGraphQL
-              title={config.title}
-              timeFrame={timeFrame}
-              className="h-full"
-              department="Injection"
-            />
-          </Suspense>
-        );
-      }
+    // Production monitoring widgets - Server Actions versions
+    // Top 10 Products by Quantity
+    if (config.title === 'Top 10 Products by Quantity' && config.chartType === 'bar') {
+      return (
+        <Suspense fallback={
+          <div className="animate-pulse h-full bg-slate-700 rounded"></div>
+        }>
+          <TopProductsChartWidget
+            title={config.title}
+            timeFrame={timeFrame}
+            isEditMode={false}
+            limit={5}
+          />
+        </Suspense>
+      );
+    }
+    
+    // Top 10 Products Distribution
+    if (config.title === 'Top 10 Products Distribution' && config.chartType === 'donut') {
+      return (
+        <Suspense fallback={
+          <div className="animate-pulse h-full bg-slate-700 rounded"></div>
+        }>
+          <ProductDistributionChartWidget
+            title={config.title}
+            timeFrame={timeFrame}
+            isEditMode={false}
+            limit={10}
+          />
+        </Suspense>
+      );
+    }
+    
+    // Staff Workload - 使用 Server Actions 版本
+    if (config.title === 'Staff Workload' && config.chartType === 'line') {
+      return (
+        <Suspense fallback={
+          <div className="animate-pulse h-full bg-slate-700 rounded"></div>
+        }>
+          <StaffWorkloadWidget
+            title={config.title}
+            timeFrame={timeFrame}
+            isEditMode={false}
+            department="Injection"
+          />
+        </Suspense>
+      );
     }
     
     if (loading) {
@@ -1386,8 +1382,8 @@ const AdminWidgetRendererComponent: React.FC<AdminWidgetRendererProps> = ({
 
   // 渲染表格 - 使用 useCallback 優化
   const renderTable = useCallback(() => {
-    // 如果啟用 GraphQL 且是 Production Details
-    if (ENABLE_GRAPHQL && config.title === 'Production Details') {
+    // 如果是 Production Details，使用 Server Actions 組件
+    if (config.title === 'Production Details') {
       return (
         <Suspense fallback={
           <div className="animate-pulse">
@@ -1399,10 +1395,10 @@ const AdminWidgetRendererComponent: React.FC<AdminWidgetRendererProps> = ({
             </div>
           </div>
         }>
-          <ProductionDetailsGraphQL
+          <ProductionDetailsWidget
             title={config.title}
             timeFrame={timeFrame}
-            className="h-full"
+            isEditMode={false}
           />
         </Suspense>
       );

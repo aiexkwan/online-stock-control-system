@@ -5,12 +5,12 @@
 
 import { SupabaseClient } from '@supabase/supabase-js';
 import { IPalletService } from '../interfaces/IPalletService';
-import { 
-  PalletInfo, 
-  PalletInfoWithLocation, 
+import {
+  PalletInfo,
+  PalletInfoWithLocation,
   PalletSearchResult,
   VoidPalletDto,
-  HistoryRecord 
+  HistoryRecord,
 } from '../types';
 import { LocationMapper } from '../utils/locationMapper';
 import { validatePalletNumber } from '../utils/validators';
@@ -24,18 +24,18 @@ export class PalletService implements IPalletService {
    */
   async search(searchType: 'series' | 'pallet_num', value: string): Promise<PalletSearchResult> {
     const startTime = Date.now();
-    
+
     try {
       if (!value?.trim()) {
         return {
           pallet: null,
           error: 'Search value is required',
-          searchTime: Date.now() - startTime
+          searchTime: Date.now() - startTime,
         };
       }
 
       const trimmedValue = value.trim();
-      
+
       // Query pallet info
       const { data: palletData, error: palletError } = await this.supabase
         .from('record_palletinfo')
@@ -47,33 +47,33 @@ export class PalletService implements IPalletService {
         return {
           pallet: null,
           error: palletError?.message || 'Pallet not found',
-          searchTime: Date.now() - startTime
+          searchTime: Date.now() - startTime,
         };
       }
 
       // Get current location from history
       const location = await this.getCurrentLocation(palletData.plt_num);
-      
+
       // Check if voided
       const isVoided = await this.checkIfVoided(palletData.plt_num);
-      
+
       const result: PalletInfoWithLocation = {
         ...palletData,
         location: location || undefined,
         locationDisplay: location ? LocationMapper.getDisplayName(location) : undefined,
-        is_voided: isVoided
+        is_voided: isVoided,
       };
 
       return {
         pallet: result,
-        searchTime: Date.now() - startTime
+        searchTime: Date.now() - startTime,
       };
     } catch (error: any) {
       console.error('[PalletService] Search error:', error);
       return {
         pallet: null,
         error: error.message || 'Search failed',
-        searchTime: Date.now() - startTime
+        searchTime: Date.now() - startTime,
       };
     }
   }
@@ -111,10 +111,12 @@ export class PalletService implements IPalletService {
       // Would need to join with inventory records
       const { data, error } = await this.supabase
         .from('record_inventory')
-        .select(`
+        .select(
+          `
           plt_num,
           record_palletinfo!inner(*)
-        `)
+        `
+        )
         .gt(dbColumn, 0)
         .order('latest_update', { ascending: false });
 
@@ -123,7 +125,7 @@ export class PalletService implements IPalletService {
       return (data || []).map(item => ({
         ...item.record_palletinfo,
         location: location,
-        locationDisplay: LocationMapper.getDisplayName(location)
+        locationDisplay: LocationMapper.getDisplayName(location),
       }));
     } catch (error: any) {
       console.error('[PalletService] Search by location error:', error);
@@ -142,10 +144,12 @@ export class PalletService implements IPalletService {
 
       const { data: newPallet, error } = await this.supabase
         .from('record_palletinfo')
-        .insert([{
-          ...data,
-          generate_time: data.generate_time || new Date().toISOString()
-        }])
+        .insert([
+          {
+            ...data,
+            generate_time: data.generate_time || new Date().toISOString(),
+          },
+        ])
         .select()
         .single();
 
@@ -204,14 +208,16 @@ export class PalletService implements IPalletService {
   /**
    * Validate pallet and return its info
    */
-  async validate(palletNum: string): Promise<{ valid: boolean; pallet?: PalletInfo; error?: string }> {
+  async validate(
+    palletNum: string
+  ): Promise<{ valid: boolean; pallet?: PalletInfo; error?: string }> {
     try {
       if (!validatePalletNumber(palletNum)) {
         return { valid: false, error: 'Invalid pallet number format' };
       }
 
       const { pallet, error } = await this.search('pallet_num', palletNum);
-      
+
       if (error || !pallet) {
         return { valid: false, error: error || 'Pallet not found' };
       }
@@ -269,7 +275,7 @@ export class PalletService implements IPalletService {
         .single();
 
       if (error || !data?.loc) return null;
-      
+
       // Convert DB column to standard location if needed
       const standardLocation = LocationMapper.fromDbColumn(data.loc as any);
       return standardLocation;
@@ -332,9 +338,10 @@ export class PalletService implements IPalletService {
   private async checkIfVoided(palletNum: string): boolean {
     try {
       const history = await this.getHistory(palletNum, 1);
-      return history.some(record => 
-        record.action.toLowerCase().includes('void') ||
-        record.action.toLowerCase().includes('damage')
+      return history.some(
+        record =>
+          record.action.toLowerCase().includes('void') ||
+          record.action.toLowerCase().includes('damage')
       );
     } catch (error) {
       return false;

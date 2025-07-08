@@ -1,12 +1,12 @@
 'use client';
 
 import { useMemo, useCallback } from 'react';
-import { 
-  PALLET_WEIGHTS, 
+import {
+  PALLET_WEIGHTS,
   PACKAGE_WEIGHTS,
   calculateNetWeight,
   type PalletTypeKey,
-  type PackageTypeKey 
+  type PackageTypeKey,
 } from '@/app/constants/grnConstants';
 
 interface UseWeightCalculationProps {
@@ -23,7 +23,7 @@ interface UseWeightCalculationReturn {
   validWeightsCount: number;
   selectedPalletType: PalletTypeKey;
   selectedPackageType: PackageTypeKey;
-  
+
   // 輔助函數
   getNetWeightForPallet: (grossWeight: number) => number;
   getTotalPalletWeight: () => number;
@@ -38,30 +38,23 @@ interface UseWeightCalculationReturn {
 export const useWeightCalculation = ({
   grossWeights,
   palletType,
-  packageType
+  packageType,
 }: UseWeightCalculationProps): UseWeightCalculationReturn => {
-  
   // 獲取選中的托盤類型
   const selectedPalletType = useMemo(() => {
-    const entry = Object.entries(palletType).find(([_, value]) => 
-      value && parseInt(value) > 0
-    );
+    const entry = Object.entries(palletType).find(([_, value]) => value && parseInt(value) > 0);
     return (entry?.[0] as PalletTypeKey) || 'notIncluded';
   }, [palletType]);
 
   // 獲取選中的包裝類型
   const selectedPackageType = useMemo(() => {
-    const entry = Object.entries(packageType).find(([_, value]) => 
-      value && parseInt(value) > 0
-    );
+    const entry = Object.entries(packageType).find(([_, value]) => value && parseInt(value) > 0);
     return (entry?.[0] as PackageTypeKey) || 'notIncluded';
   }, [packageType]);
 
   // 有效重量列表
   const validWeights = useMemo(() => {
-    return grossWeights
-      .map(w => parseFloat(w))
-      .filter(w => !isNaN(w) && w > 0);
+    return grossWeights.map(w => parseFloat(w)).filter(w => !isNaN(w) && w > 0);
   }, [grossWeights]);
 
   // 計算總毛重
@@ -84,9 +77,12 @@ export const useWeightCalculation = ({
   }, [totalNetWeight, validWeights.length]);
 
   // 獲取單個托盤的淨重
-  const getNetWeightForPallet = useCallback((grossWeight: number) => {
-    return calculateNetWeight(grossWeight, selectedPalletType, selectedPackageType);
-  }, [selectedPalletType, selectedPackageType]);
+  const getNetWeightForPallet = useCallback(
+    (grossWeight: number) => {
+      return calculateNetWeight(grossWeight, selectedPalletType, selectedPackageType);
+    },
+    [selectedPalletType, selectedPackageType]
+  );
 
   // 獲取總托盤重量
   const getTotalPalletWeight = useCallback(() => {
@@ -116,7 +112,7 @@ export const useWeightCalculation = ({
     getNetWeightForPallet,
     getTotalPalletWeight,
     getTotalPackageWeight,
-    isWeightValid
+    isWeightValid,
   };
 };
 

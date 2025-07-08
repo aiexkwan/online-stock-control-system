@@ -23,12 +23,11 @@ export function ReportsDashboardProvider({ children }: { children: ReactNode }) 
   const closeReportsDashboard = () => setIsOpen(false);
 
   return (
-    <ReportsDashboardContext.Provider value={{ openReportsDashboard, closeReportsDashboard, isOpen }}>
+    <ReportsDashboardContext.Provider
+      value={{ openReportsDashboard, closeReportsDashboard, isOpen }}
+    >
       {children}
-      <ReportsDashboardDialog
-        isOpen={isOpen}
-        onClose={closeReportsDashboard}
-      />
+      <ReportsDashboardDialog isOpen={isOpen} onClose={closeReportsDashboard} />
     </ReportsDashboardContext.Provider>
   );
 }

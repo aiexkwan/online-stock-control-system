@@ -15,21 +15,18 @@ test.describe('Authentication Flow', () => {
     await expect(loginPage.emailInput).toBeVisible();
     await expect(loginPage.passwordInput).toBeVisible();
     await expect(loginPage.submitButton).toBeVisible();
-    
+
     // 驗證頁面標題
     await expect(page).toHaveTitle(/Login|Sign In/i);
   });
 
   test('should login with valid credentials', async ({ page }) => {
     // 執行登入
-    await loginPage.login(
-      testConfig.credentials.user.email,
-      testConfig.credentials.user.password
-    );
+    await loginPage.login(testConfig.credentials.user.email, testConfig.credentials.user.password);
 
     // 驗證成功登入
     await expect(page).toHaveURL(/\/dashboard/);
-    
+
     // 檢查是否有用戶資訊顯示
     const userInfo = page.locator('[data-testid="user-info"]');
     await expect(userInfo).toBeVisible();
@@ -52,8 +49,8 @@ test.describe('Authentication Flow', () => {
     await loginPage.submitButton.click();
 
     // 驗證表單驗證錯誤
-    const emailError = await loginPage.emailInput.evaluate((el: HTMLInputElement) => 
-      el.validationMessage
+    const emailError = await loginPage.emailInput.evaluate(
+      (el: HTMLInputElement) => el.validationMessage
     );
     expect(emailError).toBeTruthy();
   });
@@ -70,36 +67,30 @@ test.describe('Authentication Flow', () => {
   test('should redirect to requested page after login', async ({ page }) => {
     // 先訪問需要認證的頁面
     await page.goto('/inventory?redirect=true');
-    
+
     // 應該被重定向到登入頁
     await expect(page).toHaveURL(/\/login/);
-    
+
     // 登入
-    await loginPage.login(
-      testConfig.credentials.user.email,
-      testConfig.credentials.user.password
-    );
-    
+    await loginPage.login(testConfig.credentials.user.email, testConfig.credentials.user.password);
+
     // 應該返回原本要訪問的頁面
     await expect(page).toHaveURL(/\/inventory/);
   });
 
   test('should maintain session across page reloads', async ({ page, context }) => {
     // 登入
-    await loginPage.login(
-      testConfig.credentials.user.email,
-      testConfig.credentials.user.password
-    );
-    
+    await loginPage.login(testConfig.credentials.user.email, testConfig.credentials.user.password);
+
     // 等待登入完成
     await page.waitForURL(/\/dashboard/);
-    
+
     // 重新載入頁面
     await page.reload();
-    
+
     // 應該仍然保持登入狀態
     await expect(page).toHaveURL(/\/dashboard/);
-    
+
     // 檢查 cookies
     const cookies = await context.cookies();
     const sessionCookie = cookies.find(c => c.name.includes('session'));
@@ -108,21 +99,18 @@ test.describe('Authentication Flow', () => {
 
   test('should logout successfully', async ({ page }) => {
     // 先登入
-    await loginPage.login(
-      testConfig.credentials.user.email,
-      testConfig.credentials.user.password
-    );
+    await loginPage.login(testConfig.credentials.user.email, testConfig.credentials.user.password);
     await page.waitForURL(/\/dashboard/);
-    
+
     // 執行登出
     await loginPage.logout();
-    
+
     // 驗證返回登入頁
     await expect(page).toHaveURL(/\/login/);
-    
+
     // 嘗試訪問需要認證的頁面
     await page.goto('/dashboard');
-    
+
     // 應該被重定向回登入頁
     await expect(page).toHaveURL(/\/login/);
   });

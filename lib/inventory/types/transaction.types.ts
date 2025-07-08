@@ -119,7 +119,7 @@ export const DEFAULT_RETRY_CONFIG: RetryConfig = {
   initialDelay: 1000,
   maxDelay: 10000,
   backoffMultiplier: 2,
-  retryableErrors: ['NETWORK_ERROR', 'TIMEOUT', 'TEMPORARY_FAILURE']
+  retryableErrors: ['NETWORK_ERROR', 'TIMEOUT', 'TEMPORARY_FAILURE'],
 };
 
 /**
@@ -159,7 +159,7 @@ export interface ConcurrentOperationHandler {
 /**
  * Transaction event types for monitoring
  */
-export type TransactionEventType = 
+export type TransactionEventType =
   | 'transaction.started'
   | 'transaction.completed'
   | 'transaction.failed'

@@ -10,7 +10,13 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select-radix';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select-radix';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { CalendarIcon, Download, Loader2 } from 'lucide-react';
@@ -46,7 +52,7 @@ export function ReportBuilder({ config, onGenerate, className }: ReportBuilderPr
   const handleFilterChange = (filterId: string, value: any) => {
     setFilters(prev => ({
       ...prev,
-      [filterId]: value
+      [filterId]: value,
     }));
   };
 
@@ -76,16 +82,16 @@ export function ReportBuilder({ config, onGenerate, className }: ReportBuilderPr
     switch (filter.type) {
       case 'text':
         return (
-          <div key={filter.id} className="space-y-2">
-            <Label htmlFor={filter.id} className="text-slate-200">
+          <div key={filter.id} className='space-y-2'>
+            <Label htmlFor={filter.id} className='text-slate-200'>
               {filter.label}
-              {filter.required && <span className="text-red-500 ml-1">*</span>}
+              {filter.required && <span className='ml-1 text-red-500'>*</span>}
             </Label>
             <Input
               id={filter.id}
-              type="text"
+              type='text'
               value={value}
-              onChange={(e) => handleFilterChange(filter.id, e.target.value)}
+              onChange={e => handleFilterChange(filter.id, e.target.value)}
               placeholder={filter.placeholder}
               className={dialogStyles.input}
             />
@@ -94,16 +100,18 @@ export function ReportBuilder({ config, onGenerate, className }: ReportBuilderPr
 
       case 'number':
         return (
-          <div key={filter.id} className="space-y-2">
-            <Label htmlFor={filter.id} className="text-slate-200">
+          <div key={filter.id} className='space-y-2'>
+            <Label htmlFor={filter.id} className='text-slate-200'>
               {filter.label}
-              {filter.required && <span className="text-red-500 ml-1">*</span>}
+              {filter.required && <span className='ml-1 text-red-500'>*</span>}
             </Label>
             <Input
               id={filter.id}
-              type="number"
+              type='number'
               value={value}
-              onChange={(e) => handleFilterChange(filter.id, e.target.value ? Number(e.target.value) : '')}
+              onChange={e =>
+                handleFilterChange(filter.id, e.target.value ? Number(e.target.value) : '')
+              }
               placeholder={filter.placeholder}
               min={filter.validation?.min}
               max={filter.validation?.max}
@@ -114,30 +122,32 @@ export function ReportBuilder({ config, onGenerate, className }: ReportBuilderPr
 
       case 'date':
         return (
-          <div key={filter.id} className="space-y-2">
+          <div key={filter.id} className='space-y-2'>
             <Label>
               {filter.label}
-              {filter.required && <span className="text-red-500 ml-1">*</span>}
+              {filter.required && <span className='ml-1 text-red-500'>*</span>}
             </Label>
             <Popover>
               <PopoverTrigger asChild>
                 <Button
-                  variant="outline"
+                  variant='outline'
                   className={cn(
                     dialogStyles.secondaryButton,
-                    "w-full justify-start text-left font-normal",
-                    !value && "text-muted-foreground"
+                    'w-full justify-start text-left font-normal',
+                    !value && 'text-muted-foreground'
                   )}
                 >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {value ? format(new Date(value), "PPP") : "Select date"}
+                  <CalendarIcon className='mr-2 h-4 w-4' />
+                  {value ? format(new Date(value), 'PPP') : 'Select date'}
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-auto p-0">
+              <PopoverContent className='w-auto p-0'>
                 <Calendar
-                  mode="single"
+                  mode='single'
                   selected={value ? new Date(value) : undefined}
-                  onSelect={(date) => handleFilterChange(filter.id, date ? format(date, 'yyyy-MM-dd') : '')}
+                  onSelect={date =>
+                    handleFilterChange(filter.id, date ? format(date, 'yyyy-MM-dd') : '')
+                  }
                 />
               </PopoverContent>
             </Popover>
@@ -147,31 +157,31 @@ export function ReportBuilder({ config, onGenerate, className }: ReportBuilderPr
       case 'dateRange':
         const [startDate, endDate] = value ? value.split('|') : ['', ''];
         return (
-          <div key={filter.id} className="space-y-2">
+          <div key={filter.id} className='space-y-2'>
             <Label>
               {filter.label}
-              {filter.required && <span className="text-red-500 ml-1">*</span>}
+              {filter.required && <span className='ml-1 text-red-500'>*</span>}
             </Label>
-            <div className="grid grid-cols-2 gap-2">
+            <div className='grid grid-cols-2 gap-2'>
               <Popover>
                 <PopoverTrigger asChild>
                   <Button
-                    variant="outline"
+                    variant='outline'
                     className={cn(
                       dialogStyles.secondaryButton,
-                      "justify-start text-left font-normal",
-                      !startDate && "text-muted-foreground"
+                      'justify-start text-left font-normal',
+                      !startDate && 'text-muted-foreground'
                     )}
                   >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {startDate ? format(new Date(startDate), "PP") : "Start"}
+                    <CalendarIcon className='mr-2 h-4 w-4' />
+                    {startDate ? format(new Date(startDate), 'PP') : 'Start'}
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-auto p-0">
+                <PopoverContent className='w-auto p-0'>
                   <Calendar
-                    mode="single"
+                    mode='single'
                     selected={startDate ? new Date(startDate) : undefined}
-                    onSelect={(date) => {
+                    onSelect={date => {
                       const newStart = date ? format(date, 'yyyy-MM-dd') : '';
                       handleFilterChange(filter.id, `${newStart}|${endDate}`);
                     }}
@@ -181,22 +191,22 @@ export function ReportBuilder({ config, onGenerate, className }: ReportBuilderPr
               <Popover>
                 <PopoverTrigger asChild>
                   <Button
-                    variant="outline"
+                    variant='outline'
                     className={cn(
                       dialogStyles.secondaryButton,
-                      "justify-start text-left font-normal",
-                      !endDate && "text-muted-foreground"
+                      'justify-start text-left font-normal',
+                      !endDate && 'text-muted-foreground'
                     )}
                   >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {endDate ? format(new Date(endDate), "PP") : "End"}
+                    <CalendarIcon className='mr-2 h-4 w-4' />
+                    {endDate ? format(new Date(endDate), 'PP') : 'End'}
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-auto p-0">
+                <PopoverContent className='w-auto p-0'>
                   <Calendar
-                    mode="single"
+                    mode='single'
                     selected={endDate ? new Date(endDate) : undefined}
-                    onSelect={(date) => {
+                    onSelect={date => {
                       const newEnd = date ? format(date, 'yyyy-MM-dd') : '';
                       handleFilterChange(filter.id, `${startDate}|${newEnd}`);
                     }}
@@ -209,22 +219,15 @@ export function ReportBuilder({ config, onGenerate, className }: ReportBuilderPr
 
       case 'select':
         return (
-          <div key={filter.id} className="space-y-2">
+          <div key={filter.id} className='space-y-2'>
             <Label htmlFor={filter.id}>
               {filter.label}
-              {filter.required && <span className="text-red-500 ml-1">*</span>}
+              {filter.required && <span className='ml-1 text-red-500'>*</span>}
             </Label>
-            <Select
-              value={value}
-              onChange={(e) => handleFilterChange(filter.id, e.target.value)}
-            >
-              <option value="">{filter.placeholder || "Select an option"}</option>
+            <Select value={value} onChange={e => handleFilterChange(filter.id, e.target.value)}>
+              <option value=''>{filter.placeholder || 'Select an option'}</option>
               {filter.options?.map((option: any) => (
-                <option 
-                  key={option.value} 
-                  value={option.value}
-                  disabled={option.disabled}
-                >
+                <option key={option.value} value={option.value} disabled={option.disabled}>
                   {option.label}
                 </option>
               ))}
@@ -238,27 +241,27 @@ export function ReportBuilder({ config, onGenerate, className }: ReportBuilderPr
   };
 
   return (
-    <Card className={cn(dialogStyles.card, "w-full", className)}>
+    <Card className={cn(dialogStyles.card, 'w-full', className)}>
       <CardHeader>
-        <CardTitle className="text-white">{config.name}</CardTitle>
-        <CardDescription className="text-slate-400">{config.description}</CardDescription>
+        <CardTitle className='text-white'>{config.name}</CardTitle>
+        <CardDescription className='text-slate-400'>{config.description}</CardDescription>
       </CardHeader>
-      <CardContent className="space-y-6">
+      <CardContent className='space-y-6'>
         {/* Filters Section */}
-        <div className="space-y-4">
-          <h3 className="text-lg font-semibold text-white">Report Filters</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className='space-y-4'>
+          <h3 className='text-lg font-semibold text-white'>Report Filters</h3>
+          <div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
             {config.filters.map(renderFilter)}
           </div>
         </div>
 
         {/* Format Selection */}
-        <div className="space-y-2">
+        <div className='space-y-2'>
           <Label>Export Format</Label>
           <Select
             value={selectedFormat}
-            onChange={(e) => setSelectedFormat(e.target.value as ReportFormat)}
-            className="w-full md:w-[200px]"
+            onChange={e => setSelectedFormat(e.target.value as ReportFormat)}
+            className='w-full md:w-[200px]'
           >
             {config.formats.map(format => (
               <option key={format} value={format}>
@@ -269,21 +272,21 @@ export function ReportBuilder({ config, onGenerate, className }: ReportBuilderPr
         </div>
 
         {/* Generate Button */}
-        <div className="flex justify-end">
+        <div className='flex justify-end'>
           <Button
             onClick={handleGenerate}
             disabled={isGenerating}
-            size="lg"
+            size='lg'
             className={dialogStyles.primaryButton}
           >
             {isGenerating ? (
               <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                <Loader2 className='mr-2 h-4 w-4 animate-spin' />
                 Generating...
               </>
             ) : (
               <>
-                <Download className="mr-2 h-4 w-4" />
+                <Download className='mr-2 h-4 w-4' />
                 Generate Report
               </>
             )}

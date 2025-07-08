@@ -71,10 +71,7 @@ export const SEARCH_INVENTORY = gql`
   query SearchInventory($searchTerm: String!) {
     record_inventoryCollection(
       filter: {
-        or: [
-          { product_code: { ilike: $searchTerm } }
-          { plt_num: { ilike: $searchTerm } }
-        ]
+        or: [{ product_code: { ilike: $searchTerm } }, { plt_num: { ilike: $searchTerm } }]
       }
     ) {
       edges {
@@ -132,11 +129,7 @@ export const GET_STOCK_SUMMARY = gql`
  */
 export const GET_STAFF_WORKLOAD = gql`
   query GetStaffWorkload($date: Datetime!) {
-    work_levelCollection(
-      filter: { 
-        latest_update: { gte: $date }
-      }
-    ) {
+    work_levelCollection(filter: { latest_update: { gte: $date } }) {
       edges {
         node {
           id
@@ -162,9 +155,7 @@ export const GET_STAFF_WORKLOAD = gql`
  */
 export const GET_ACO_ORDERS = gql`
   query GetACOOrders {
-    record_acoCollection(
-      orderBy: [{ latest_update: DescNullsLast }]
-    ) {
+    record_acoCollection(orderBy: [{ latest_update: DescNullsLast }]) {
       edges {
         node {
           uuid
@@ -185,9 +176,7 @@ export const GET_ACO_ORDERS = gql`
 export const GET_GRN_STATS = gql`
   query GetGRNStats($startDate: Datetime!, $endDate: Datetime!) {
     grn_levelCollection(
-      filter: {
-        latest_update: { gte: $startDate, lte: $endDate }
-      }
+      filter: { latest_update: { gte: $startDate, lte: $endDate } }
       orderBy: [{ grn_ref: DescNullsLast }]
     ) {
       edges {
@@ -212,9 +201,7 @@ export const GET_GRN_STATS = gql`
 export const GET_UPLOAD_HISTORY = gql`
   query GetUploadHistory($docType: String!, $limit: Int = 15) {
     doc_uploadCollection(
-      filter: {
-        doc_type: { eq: $docType }
-      }
+      filter: { doc_type: { eq: $docType } }
       orderBy: [{ created_at: DescNullsLast }]
       first: $limit
     ) {
@@ -239,9 +226,7 @@ export const GET_UPLOAD_HISTORY = gql`
 export const GET_ORDER_UPLOADS = gql`
   query GetOrderUploads($offset: Int = 0, $limit: Int = 15) {
     doc_uploadCollection(
-      filter: {
-        doc_type: { eq: "order" }
-      }
+      filter: { doc_type: { eq: "order" } }
       orderBy: [{ created_at: DescNullsLast }]
       offset: $offset
       first: $limit
@@ -268,9 +253,7 @@ export const GET_ORDER_UPLOADS = gql`
 export const GET_OTHER_UPLOADS = gql`
   query GetOtherUploads($offset: Int = 0, $limit: Int = 15) {
     doc_uploadCollection(
-      filter: {
-        doc_type: { neq: "order" }
-      }
+      filter: { doc_type: { neq: "order" } }
       orderBy: [{ created_at: DescNullsLast }]
       offset: $offset
       first: $limit
@@ -297,11 +280,7 @@ export const GET_OTHER_UPLOADS = gql`
  */
 export const GET_USERS_BY_IDS = gql`
   query GetUsersByIds($userIds: [Int!]!) {
-    data_idCollection(
-      filter: {
-        id: { in: $userIds }
-      }
-    ) {
+    data_idCollection(filter: { id: { in: $userIds } }) {
       edges {
         node {
           id
@@ -338,11 +317,7 @@ export const GET_USERS_BY_IDS = gql`
  */
 export const GET_TRANSFER_STATS = gql`
   query GetTransferStats($startDate: Datetime!, $endDate: Datetime!) {
-    record_transferCollection(
-      filter: {
-        tran_date: { gte: $startDate, lte: $endDate }
-      }
-    ) {
+    record_transferCollection(filter: { tran_date: { gte: $startDate, lte: $endDate } }) {
       edges {
         node {
           nodeId
@@ -359,9 +334,7 @@ export const GET_TRANSFER_STATS = gql`
 export const GET_TRANSFER_TIME_DISTRIBUTION = gql`
   query GetTransferTimeDistribution($startDate: Datetime!, $endDate: Datetime!) {
     record_transferCollection(
-      filter: {
-        tran_date: { gte: $startDate, lte: $endDate }
-      }
+      filter: { tran_date: { gte: $startDate, lte: $endDate } }
       orderBy: [{ tran_date: AscNullsLast }]
     ) {
       edges {
@@ -379,10 +352,7 @@ export const GET_TRANSFER_TIME_DISTRIBUTION = gql`
  */
 export const GET_ORDER_PROGRESS = gql`
   query GetOrderProgress($limit: Int = 5) {
-    data_orderCollection(
-      orderBy: [{ created_at: DescNullsLast }]
-      first: $limit
-    ) {
+    data_orderCollection(orderBy: [{ created_at: DescNullsLast }], first: $limit) {
       edges {
         node {
           uuid
@@ -406,12 +376,7 @@ export const GET_ORDER_PROGRESS = gql`
 export const GET_PENDING_ORDERS = gql`
   query GetPendingOrders {
     data_orderCollection(
-      filter: {
-        or: [
-          { loaded_qty: { is: null } },
-          { loaded_qty: { lt: "product_qty" } }
-        ]
-      }
+      filter: { or: [{ loaded_qty: { is: null } }, { loaded_qty: { lt: "product_qty" } }] }
       orderBy: [{ created_at: DescNullsLast }]
     ) {
       edges {
@@ -438,9 +403,7 @@ export const GET_PENDING_ORDERS = gql`
 export const GET_WAREHOUSE_TRANSFERS = gql`
   query GetWarehouseTransfers($startDate: Datetime!, $endDate: Datetime!, $limit: Int = 50) {
     record_transferCollection(
-      filter: {
-        tran_date: { gte: $startDate, lte: $endDate }
-      }
+      filter: { tran_date: { gte: $startDate, lte: $endDate } }
       orderBy: [{ tran_date: DescNullsLast }]
       first: $limit
     ) {
@@ -467,9 +430,7 @@ export const GET_WAREHOUSE_TRANSFERS = gql`
 export const GET_WAREHOUSE_WORK_LEVEL = gql`
   query GetWarehouseWorkLevel($startDate: Datetime!, $endDate: Datetime!) {
     work_levelCollection(
-      filter: {
-        latest_update: { gte: $startDate, lte: $endDate }
-      }
+      filter: { latest_update: { gte: $startDate, lte: $endDate } }
       orderBy: [{ latest_update: AscNullsLast }]
     ) {
       edges {
@@ -508,13 +469,9 @@ export const GET_STILL_IN_AWAIT_STATS = gql`
         }
       }
     }
-    
+
     # 第二步：獲取所有庫存中 await > 0 的記錄
-    inventoryRecords: record_inventoryCollection(
-      filter: {
-        await: { gt: 0 }
-      }
-    ) {
+    inventoryRecords: record_inventoryCollection(filter: { await: { gt: 0 } }) {
       edges {
         node {
           plt_num
@@ -537,9 +494,7 @@ export const GET_TRANSFER_STATS_DETAILED = gql`
   query GetTransferStatsDetailed($startDate: Datetime!, $endDate: Datetime!) {
     # 總數統計
     transferStats: record_transferCollection(
-      filter: {
-        tran_date: { gte: $startDate, lt: $endDate }
-      }
+      filter: { tran_date: { gte: $startDate, lt: $endDate } }
       first: 1000
     ) {
       edges {
@@ -548,12 +503,10 @@ export const GET_TRANSFER_STATS_DETAILED = gql`
         }
       }
     }
-    
+
     # 詳細記錄（用於操作員統計和圖表）
     transferRecords: record_transferCollection(
-      filter: {
-        tran_date: { gte: $startDate, lt: $endDate }
-      }
+      filter: { tran_date: { gte: $startDate, lt: $endDate } }
       orderBy: [{ tran_date: AscNullsLast }]
     ) {
       edges {
@@ -575,7 +528,7 @@ export const GET_TRANSFER_STATS_DETAILED = gql`
 export const PRODUCTION_UPDATES_SUBSCRIPTION = gql`
   subscription ProductionUpdates($todayStart: Datetime!) {
     record_palletinfoCollection(
-      filter: { 
+      filter: {
         plt_remark: { ilike: "%finished in production%" }
         generate_time: { gte: $todayStart }
       }
@@ -599,9 +552,7 @@ export const PRODUCTION_UPDATES_SUBSCRIPTION = gql`
 export const INVENTORY_UPDATES_SUBSCRIPTION = gql`
   subscription InventoryUpdates {
     record_transferCollection(
-      filter: {
-        tran_date: { gte: "TODAY" }
-      }
+      filter: { tran_date: { gte: "TODAY" } }
       orderBy: [{ tran_date: DescNullsLast }]
     ) {
       edges {

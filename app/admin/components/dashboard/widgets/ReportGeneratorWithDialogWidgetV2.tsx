@@ -40,8 +40,8 @@ interface ReportGeneratorWithDialogWidgetV2Props {
   apiEndpoint?: string;
 }
 
-export const ReportGeneratorWithDialogWidgetV2 = function ReportGeneratorWithDialogWidgetV2({ 
-  title, 
+export const ReportGeneratorWithDialogWidgetV2 = function ReportGeneratorWithDialogWidgetV2({
+  title,
   reportType,
   description,
   dialogTitle,
@@ -49,13 +49,15 @@ export const ReportGeneratorWithDialogWidgetV2 = function ReportGeneratorWithDia
   selectLabel,
   dataTable,
   referenceField,
-  apiEndpoint
+  apiEndpoint,
 }: ReportGeneratorWithDialogWidgetV2Props) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedRef, setSelectedRef] = useState<string>('');
   const [references, setReferences] = useState<string[]>([]);
   const [isLoadingRefs, setIsLoadingRefs] = useState(false);
-  const [downloadStatus, setDownloadStatus] = useState<"idle" | "downloading" | "downloaded" | "complete">("idle");
+  const [downloadStatus, setDownloadStatus] = useState<
+    'idle' | 'downloading' | 'downloaded' | 'complete'
+  >('idle');
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [metadata, setMetadata] = useState<any>({});
@@ -68,7 +70,7 @@ export const ReportGeneratorWithDialogWidgetV2 = function ReportGeneratorWithDia
     setIsLoadingRefs(true);
     setError(null);
     const startTime = performance.now();
-    
+
     try {
       const api = createDashboardAPI();
       const result = await api.fetchData({
@@ -77,21 +79,21 @@ export const ReportGeneratorWithDialogWidgetV2 = function ReportGeneratorWithDia
           tableName: dataTable,
           fieldName: referenceField,
           limit: 1000,
-          offset: 0
-        }
+          offset: 0,
+        },
       });
-      
+
       const endTime = performance.now();
       setPerformanceMetrics({
         apiResponseTime: Math.round(endTime - startTime),
-        optimized: result.metadata?.optimized || false
+        optimized: result.metadata?.optimized || false,
       });
-      
+
       if (result.error) {
         throw new Error(result.error);
       }
-      
-      setReferences(result.value as string[] || []);
+
+      setReferences((result.value as string[]) || []);
       setMetadata(result.metadata || {});
     } catch (err) {
       console.error('Error loading references:', err);
@@ -110,14 +112,14 @@ export const ReportGeneratorWithDialogWidgetV2 = function ReportGeneratorWithDia
   }, [isDialogOpen, loadReferences]);
 
   const handleDownload = async () => {
-    if (!selectedRef || downloadStatus !== "idle") return;
-    
-    setDownloadStatus("downloading");
+    if (!selectedRef || downloadStatus !== 'idle') return;
+
+    setDownloadStatus('downloading');
     setProgress(0);
 
     // Simulate download progress
     const interval = setInterval(() => {
-      setProgress((prev) => {
+      setProgress(prev => {
         if (prev >= 95) {
           clearInterval(interval);
           return prev;
@@ -133,16 +135,16 @@ export const ReportGeneratorWithDialogWidgetV2 = function ReportGeneratorWithDia
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           reportType,
-          reference: selectedRef 
+          reference: selectedRef,
         }),
       });
-      
+
       if (!response.ok) {
         throw new Error('Failed to generate report');
       }
-      
+
       // Download the report
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
@@ -153,22 +155,22 @@ export const ReportGeneratorWithDialogWidgetV2 = function ReportGeneratorWithDia
       a.click();
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
-      
+
       clearInterval(interval);
       setProgress(100);
-      setDownloadStatus("downloaded");
-      
+      setDownloadStatus('downloaded');
+
       // Close dialog and reset
       setTimeout(() => {
         setIsDialogOpen(false);
         setSelectedRef('');
-        setDownloadStatus("idle");
+        setDownloadStatus('idle');
         setProgress(0);
       }, 2000);
     } catch (error) {
       console.error('Download failed:', error);
       clearInterval(interval);
-      setDownloadStatus("idle");
+      setDownloadStatus('idle');
       setProgress(0);
       setError(error instanceof Error ? error.message : 'Download failed');
     }
@@ -192,125 +194,126 @@ export const ReportGeneratorWithDialogWidgetV2 = function ReportGeneratorWithDia
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="h-full flex items-center justify-between px-6"
+        className='flex h-full items-center justify-between px-6'
       >
-        <div className="flex-1">
-          <p className="text-2xl text-muted-foreground">
+        <div className='flex-1'>
+          <p className='text-2xl text-muted-foreground'>
             {description || `Generate ${title.toLowerCase()}`}
           </p>
           {performanceMetrics.apiResponseTime && (
-            <p className="text-xs text-slate-500 mt-1">
+            <p className='mt-1 text-xs text-slate-500'>
               Last loaded in {performanceMetrics.apiResponseTime}ms
               {performanceMetrics.optimized && ' (server-optimized)'}
             </p>
           )}
         </div>
-        
+
         <Button
           onClick={() => setIsDialogOpen(true)}
-          size="lg"
-          className="ml-4 relative overflow-hidden select-none text-lg px-8 py-6"
+          size='lg'
+          className='relative ml-4 select-none overflow-hidden px-8 py-6 text-lg'
         >
-          <Download className="h-6 w-6 mr-3" />
+          <Download className='mr-3 h-6 w-6' />
           Download
         </Button>
       </motion.div>
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="sm:max-w-[425px]">
+        <DialogContent className='sm:max-w-[425px]'>
           <DialogHeader>
-            <DialogTitle>
-              {dialogTitle}
-            </DialogTitle>
-            <DialogDescription>
-              {dialogDescription}
-            </DialogDescription>
+            <DialogTitle>{dialogTitle}</DialogTitle>
+            <DialogDescription>{dialogDescription}</DialogDescription>
           </DialogHeader>
-          
-          <div className="grid gap-4 py-4">
+
+          <div className='grid gap-4 py-4'>
             {error && (
-              <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-md">
-                <p className="text-sm text-red-400">{error}</p>
+              <div className='rounded-md border border-red-500/20 bg-red-500/10 p-3'>
+                <p className='text-sm text-red-400'>{error}</p>
               </div>
             )}
-            
-            <div className="grid gap-2">
-              <label htmlFor="reference" className="text-sm font-medium text-slate-200">
+
+            <div className='grid gap-2'>
+              <label htmlFor='reference' className='text-sm font-medium text-slate-200'>
                 {selectLabel}
               </label>
               <Select value={selectedRef} onValueChange={setSelectedRef}>
-                <SelectTrigger 
-                  id="reference" 
-                  className="bg-slate-700/50 border-slate-600 text-white hover:bg-slate-700/70 focus:ring-blue-500/50 focus:border-blue-500"
+                <SelectTrigger
+                  id='reference'
+                  className='border-slate-600 bg-slate-700/50 text-white hover:bg-slate-700/70 focus:border-blue-500 focus:ring-blue-500/50'
                 >
-                  <SelectValue placeholder={isLoadingRefs ? "Loading..." : `Select from ${references.length} options`} />
+                  <SelectValue
+                    placeholder={
+                      isLoadingRefs ? 'Loading...' : `Select from ${references.length} options`
+                    }
+                  />
                 </SelectTrigger>
-                <SelectContent className="bg-slate-800 border-slate-700 max-h-[300px]">
-                  {sortedReferences.map((ref) => (
-                    <SelectItem 
-                      key={ref} 
+                <SelectContent className='max-h-[300px] border-slate-700 bg-slate-800'>
+                  {sortedReferences.map(ref => (
+                    <SelectItem
+                      key={ref}
                       value={ref}
-                      className="text-white hover:bg-slate-700 focus:bg-slate-700 focus:text-white"
+                      className='text-white hover:bg-slate-700 focus:bg-slate-700 focus:text-white'
                     >
                       {ref}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
-              
+
               {metadata.totalCount && metadata.totalCount > references.length && (
-                <p className="text-xs text-slate-400">
+                <p className='text-xs text-slate-400'>
                   Showing first {references.length} of {metadata.totalCount} total references
                 </p>
               )}
-              
+
               {metadata.queryTime && (
-                <p className="text-[10px] text-green-400">
+                <p className='text-[10px] text-green-400'>
                   ✓ Server-side query completed in {metadata.queryTime}
                 </p>
               )}
             </div>
           </div>
-          
+
           <DialogFooter>
-            <Button 
-              variant="outline" 
+            <Button
+              variant='outline'
               onClick={() => setIsDialogOpen(false)}
-              className="border-slate-600 text-slate-300 hover:bg-slate-700/50 hover:text-white hover:border-slate-500"
+              className='border-slate-600 text-slate-300 hover:border-slate-500 hover:bg-slate-700/50 hover:text-white'
             >
               Cancel
             </Button>
             <Button
               onClick={handleDownload}
-              disabled={!selectedRef || downloadStatus !== "idle"}
+              disabled={!selectedRef || downloadStatus !== 'idle'}
               className={cn(
-                "relative overflow-hidden bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white shadow-lg hover:shadow-blue-500/25",
-                downloadStatus === "downloading" && "from-blue-600/50 to-cyan-600/50",
-                downloadStatus !== "idle" && "pointer-events-none",
-                !selectedRef && "from-slate-600 to-slate-600 hover:from-slate-600 hover:to-slate-600"
+                'relative overflow-hidden bg-gradient-to-r from-blue-600 to-cyan-600 text-white shadow-lg hover:from-blue-500 hover:to-cyan-500 hover:shadow-blue-500/25',
+                downloadStatus === 'downloading' && 'from-blue-600/50 to-cyan-600/50',
+                downloadStatus !== 'idle' && 'pointer-events-none',
+                !selectedRef &&
+                  'from-slate-600 to-slate-600 hover:from-slate-600 hover:to-slate-600'
               )}
             >
-              {downloadStatus === "idle" && (
+              {downloadStatus === 'idle' && (
                 <>
-                  <Download className="h-4 w-4 mr-2" />
+                  <Download className='mr-2 h-4 w-4' />
                   Generate Report
                 </>
               )}
-              {downloadStatus === "downloading" && (
-                <div className="z-[5] flex items-center justify-center">
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              {downloadStatus === 'downloading' && (
+                <div className='z-[5] flex items-center justify-center'>
+                  <Loader2 className='mr-2 h-4 w-4 animate-spin' />
                   {Math.round(progress)}%
                 </div>
               )}
-              {downloadStatus === "downloaded" && (
+              {downloadStatus === 'downloaded' && (
                 <>
-                  <CheckCircle className="h-4 w-4 mr-2" />
+                  <CheckCircle className='mr-2 h-4 w-4' />
                   <span>Downloaded</span>
                 </>
               )}
-              {downloadStatus === "downloading" && (
+              {downloadStatus === 'downloading' && (
                 <div
-                  className="absolute bottom-0 z-[3] h-full left-0 bg-white/20 inset-0 transition-all duration-200 ease-in-out"
+                  className='absolute inset-0 bottom-0 left-0 z-[3] h-full bg-white/20 transition-all duration-200 ease-in-out'
                   style={{ width: `${progress}%` }}
                 />
               )}
@@ -320,6 +323,6 @@ export const ReportGeneratorWithDialogWidgetV2 = function ReportGeneratorWithDia
       </Dialog>
     </>
   );
-}
+};
 
 export default ReportGeneratorWithDialogWidgetV2;

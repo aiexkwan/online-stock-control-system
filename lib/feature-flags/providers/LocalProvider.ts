@@ -17,14 +17,14 @@ export class LocalFeatureFlagProvider extends BaseFeatureFlagProvider {
     }
   ) {
     super();
-    
+
     // 初始化默認 flags
     if (initialFlags) {
       initialFlags.forEach(flag => this.flags.set(flag.key, flag));
     }
-    
+
     this.configPath = options?.configPath;
-    
+
     // 從本地存儲加載（如果在瀏覽器環境）
     if (typeof window !== 'undefined' && !this.configPath) {
       this.loadFromLocalStorage();
@@ -39,10 +39,10 @@ export class LocalFeatureFlagProvider extends BaseFeatureFlagProvider {
     if (this.configPath && typeof window === 'undefined') {
       await this.loadFromFile();
     }
-    
+
     // 設置默認 flags
     this.setupDefaultFlags();
-    
+
     // 更新緩存
     this.updateCache();
   }
@@ -72,10 +72,10 @@ export class LocalFeatureFlagProvider extends BaseFeatureFlagProvider {
 
     const updatedFlag = { ...existingFlag, ...updates };
     this.flags.set(key, updatedFlag);
-    
+
     // 保存到本地存儲
     this.saveToLocalStorage();
-    
+
     // 通知訂閱者
     this.notifySubscribers(Array.from(this.flags.values()));
   }
@@ -123,9 +123,9 @@ export class LocalFeatureFlagProvider extends BaseFeatureFlagProvider {
     const config = {
       version: '1.0',
       flags: Array.from(this.flags.values()),
-      exportedAt: new Date().toISOString()
+      exportedAt: new Date().toISOString(),
     };
-    
+
     return JSON.stringify(config, null, 2);
   }
 
@@ -135,7 +135,7 @@ export class LocalFeatureFlagProvider extends BaseFeatureFlagProvider {
   async importConfig(configJson: string): Promise<void> {
     try {
       const config = JSON.parse(configJson);
-      
+
       if (!config.flags || !Array.isArray(config.flags)) {
         throw new Error('Invalid config format');
       }
@@ -145,7 +145,7 @@ export class LocalFeatureFlagProvider extends BaseFeatureFlagProvider {
         // 轉換日期字符串
         if (flag.startDate) flag.startDate = new Date(flag.startDate);
         if (flag.endDate) flag.endDate = new Date(flag.endDate);
-        
+
         this.flags.set(flag.key, flag);
       });
 
@@ -169,7 +169,7 @@ export class LocalFeatureFlagProvider extends BaseFeatureFlagProvider {
         status: FeatureFlagStatus.ENABLED,
         defaultValue: false,
         rolloutPercentage: 50,
-        tags: ['ui', 'experiment']
+        tags: ['ui', 'experiment'],
       },
       {
         key: 'dark_mode',
@@ -178,7 +178,7 @@ export class LocalFeatureFlagProvider extends BaseFeatureFlagProvider {
         type: 'boolean',
         status: FeatureFlagStatus.ENABLED,
         defaultValue: false,
-        tags: ['ui', 'theme']
+        tags: ['ui', 'theme'],
       },
       {
         key: 'advanced_search',
@@ -188,7 +188,7 @@ export class LocalFeatureFlagProvider extends BaseFeatureFlagProvider {
         status: FeatureFlagStatus.PARTIAL,
         defaultValue: false,
         rolloutPercentage: 30,
-        tags: ['feature', 'search']
+        tags: ['feature', 'search'],
       },
       {
         key: 'batch_operations',
@@ -197,10 +197,8 @@ export class LocalFeatureFlagProvider extends BaseFeatureFlagProvider {
         type: 'boolean',
         status: FeatureFlagStatus.ENABLED,
         defaultValue: true,
-        rules: [
-          { type: 'environment', value: ['production'] }
-        ],
-        tags: ['feature', 'inventory']
+        rules: [{ type: 'environment', value: ['production'] }],
+        tags: ['feature', 'inventory'],
       },
       {
         key: 'ai_predictions',
@@ -209,7 +207,7 @@ export class LocalFeatureFlagProvider extends BaseFeatureFlagProvider {
         type: 'boolean',
         status: FeatureFlagStatus.DISABLED,
         defaultValue: false,
-        tags: ['experimental', 'ai']
+        tags: ['experimental', 'ai'],
       },
       {
         key: 'theme_variant',
@@ -221,10 +219,10 @@ export class LocalFeatureFlagProvider extends BaseFeatureFlagProvider {
         variants: [
           { key: 'default', name: 'Default Theme', weight: 40 },
           { key: 'modern', name: 'Modern Theme', weight: 30 },
-          { key: 'classic', name: 'Classic Theme', weight: 30 }
+          { key: 'classic', name: 'Classic Theme', weight: 30 },
         ],
-        tags: ['ui', 'theme', 'experiment']
-      }
+        tags: ['ui', 'theme', 'experiment'],
+      },
     ];
 
     // 只添加不存在的默認 flags
@@ -253,9 +251,9 @@ export class LocalFeatureFlagProvider extends BaseFeatureFlagProvider {
       const data = {
         version: '1.0',
         flags: Array.from(this.flags.values()),
-        savedAt: new Date().toISOString()
+        savedAt: new Date().toISOString(),
       };
-      
+
       localStorage.setItem('feature-flags', JSON.stringify(data));
     } catch (error) {
       console.error('Failed to save feature flags to localStorage:', error);
@@ -280,7 +278,7 @@ export class LocalFeatureFlagProvider extends BaseFeatureFlagProvider {
         // 轉換日期字符串
         if (flag.startDate) flag.startDate = new Date(flag.startDate);
         if (flag.endDate) flag.endDate = new Date(flag.endDate);
-        
+
         this.flags.set(flag.key, flag);
       });
     } catch (error) {

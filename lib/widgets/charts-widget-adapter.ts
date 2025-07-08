@@ -12,7 +12,7 @@ import { createLazyWidget } from './widget-loader';
  * Charts widgets 的映射配置
  */
 export const chartsWidgetConfigs: Record<string, Partial<WidgetDefinition>> = {
-  'ProductMixChartWidget': {
+  ProductMixChartWidget: {
     name: 'Product Mix Chart',
     category: 'charts',
     description: 'Displays product mix distribution',
@@ -22,10 +22,10 @@ export const chartsWidgetConfigs: Record<string, Partial<WidgetDefinition>> = {
       dataSource: 'record_palletinfo',
       refreshInterval: 300000, // 5分鐘刷新
       chartType: 'pie',
-    }
+    },
   },
-  
-  'StockDistributionChart': {
+
+  StockDistributionChart: {
     name: 'Stock Distribution Chart',
     category: 'charts',
     description: 'Shows stock distribution across warehouses',
@@ -35,10 +35,10 @@ export const chartsWidgetConfigs: Record<string, Partial<WidgetDefinition>> = {
       dataSource: 'record_inventory',
       refreshInterval: 300000,
       chartType: 'bar',
-    }
+    },
   },
-  
-  'StockLevelHistoryChart': {
+
+  StockLevelHistoryChart: {
     name: 'Stock Level History',
     category: 'charts',
     description: 'Historical stock levels over time',
@@ -49,10 +49,10 @@ export const chartsWidgetConfigs: Record<string, Partial<WidgetDefinition>> = {
       refreshInterval: 600000, // 10分鐘刷新
       chartType: 'line',
       supportTimeFrame: true,
-    }
+    },
   },
-  
-  'TransferTimeDistributionWidget': {
+
+  TransferTimeDistributionWidget: {
     name: 'Transfer Time Distribution',
     category: 'charts',
     description: 'Distribution of transfer completion times',
@@ -62,10 +62,10 @@ export const chartsWidgetConfigs: Record<string, Partial<WidgetDefinition>> = {
       dataSource: 'record_transfer',
       refreshInterval: 600000,
       chartType: 'histogram',
-    }
+    },
   },
-  
-  'InventoryOrderedAnalysisWidget': {
+
+  InventoryOrderedAnalysisWidget: {
     name: 'Inventory Ordered Analysis',
     category: 'charts',
     description: 'Analysis of inventory vs orders',
@@ -76,10 +76,10 @@ export const chartsWidgetConfigs: Record<string, Partial<WidgetDefinition>> = {
       refreshInterval: 300000,
       chartType: 'combo',
       requiresComplexQuery: true,
-    }
+    },
   },
-  
-  'TopProductsInventoryChart': {
+
+  TopProductsInventoryChart: {
     name: 'Top Products Inventory',
     category: 'charts',
     description: 'Top products by inventory level',
@@ -90,10 +90,10 @@ export const chartsWidgetConfigs: Record<string, Partial<WidgetDefinition>> = {
       refreshInterval: 300000,
       chartType: 'bar',
       limit: 10,
-    }
+    },
   },
-  
-  'WarehouseWorkLevelAreaChart': {
+
+  WarehouseWorkLevelAreaChart: {
     name: 'Warehouse Work Level',
     category: 'charts',
     description: 'Work level trends across warehouses',
@@ -104,8 +104,8 @@ export const chartsWidgetConfigs: Record<string, Partial<WidgetDefinition>> = {
       refreshInterval: 300000,
       chartType: 'area',
       supportTimeFrame: true,
-    }
-  }
+    },
+  },
 };
 
 /**
@@ -114,19 +114,19 @@ export const chartsWidgetConfigs: Record<string, Partial<WidgetDefinition>> = {
 export async function registerChartsWidgets(): Promise<void> {
   const startTime = performance.now();
   let registeredCount = 0;
-  
+
   console.log('[ChartsWidgetAdapter] Starting Charts widgets registration...');
-  
+
   for (const [widgetId, config] of Object.entries(chartsWidgetConfigs)) {
     try {
       // 獲取動態導入函數
       const importFn = getWidgetImport(widgetId);
-      
+
       if (!importFn) {
         console.warn(`[ChartsWidgetAdapter] No import function found for ${widgetId}`);
         continue;
       }
-      
+
       // 創建完整的 widget 定義，包含懶加載組件
       const definition: WidgetDefinition = {
         id: widgetId,
@@ -135,20 +135,21 @@ export async function registerChartsWidgets(): Promise<void> {
         ...config,
         component: createLazyWidget(widgetId), // 使用統一的 widget loader
       };
-      
+
       // 註冊到 registry
       widgetRegistry.register(definition);
-      
+
       registeredCount++;
       console.log(`[ChartsWidgetAdapter] Registered: ${widgetId}`);
-      
     } catch (error) {
       console.error(`[ChartsWidgetAdapter] Failed to register ${widgetId}:`, error);
     }
   }
-  
+
   const endTime = performance.now();
-  console.log(`[ChartsWidgetAdapter] Completed: ${registeredCount} widgets registered in ${(endTime - startTime).toFixed(2)}ms`);
+  console.log(
+    `[ChartsWidgetAdapter] Completed: ${registeredCount} widgets registered in ${(endTime - startTime).toFixed(2)}ms`
+  );
 }
 
 /**
@@ -158,9 +159,12 @@ export async function preloadHighPriorityChartsWidgets(): Promise<void> {
   const highPriorityWidgets = Object.entries(chartsWidgetConfigs)
     .filter(([_, config]) => (config.preloadPriority || 0) >= 8)
     .map(([id]) => id);
-    
+
   if (highPriorityWidgets.length > 0) {
-    console.log('[ChartsWidgetAdapter] Preloading high priority Charts widgets:', highPriorityWidgets);
+    console.log(
+      '[ChartsWidgetAdapter] Preloading high priority Charts widgets:',
+      highPriorityWidgets
+    );
     await widgetRegistry.preloadWidgets(highPriorityWidgets);
   }
 }

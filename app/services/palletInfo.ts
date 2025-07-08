@@ -35,4 +35,4 @@ export async function getLatestPalletInfo(): Promise<PalletInfo[]> {
     console.error('Error in getLatestPalletInfo:', error);
     throw error;
   }
-} 
+}

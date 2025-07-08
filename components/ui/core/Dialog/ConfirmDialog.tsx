@@ -39,7 +39,7 @@ export interface ConfirmDialogProps extends Omit<DialogProps, 'children'> {
 
 /**
  * 確認對話框
- * 
+ *
  * @example
  * <ConfirmDialog
  *   open={open}
@@ -74,25 +74,25 @@ export const ConfirmDialog = React.forwardRef<HTMLDivElement, ConfirmDialogProps
     ref
   ) => {
     const [isConfirming, setIsConfirming] = React.useState(false);
-    
+
     // 確定按鈕變體
     const effectiveVariant = confirmButtonVariant || (isDestructive ? 'destructive' : 'default');
     const effectiveSeverity = severity || (isDestructive ? 'error' : 'info');
-    
+
     // 默認圖標
     const defaultIcons = {
-      info: <Info className="w-6 h-6" />,
-      success: <AlertCircle className="w-6 h-6" />,
-      warning: <AlertTriangle className="w-6 h-6" />,
-      error: <AlertTriangle className="w-6 h-6" />,
+      info: <Info className='h-6 w-6' />,
+      success: <AlertCircle className='h-6 w-6' />,
+      warning: <AlertTriangle className='h-6 w-6' />,
+      error: <AlertTriangle className='h-6 w-6' />,
     };
-    
+
     const displayIcon = icon || (showIcon && defaultIcons[effectiveSeverity]);
-    
+
     // 處理確認
     const handleConfirm = async () => {
       if (isLoading || isConfirming) return;
-      
+
       try {
         setIsConfirming(true);
         await onConfirm?.();
@@ -103,16 +103,16 @@ export const ConfirmDialog = React.forwardRef<HTMLDivElement, ConfirmDialogProps
         setIsConfirming(false);
       }
     };
-    
+
     // 處理取消
     const handleCancel = () => {
       if (isLoading || isConfirming) return;
       onCancel?.();
       onOpenChange?.(false);
     };
-    
+
     const isProcessing = isLoading || isConfirming;
-    
+
     return (
       <Dialog
         open={open}
@@ -123,39 +123,24 @@ export const ConfirmDialog = React.forwardRef<HTMLDivElement, ConfirmDialogProps
       >
         <DialogContent ref={ref} showCloseButton={!isProcessing}>
           <DialogHeader>
-            <DialogTitle icon={displayIcon}>
-              {title}
-            </DialogTitle>
+            <DialogTitle icon={displayIcon}>{title}</DialogTitle>
           </DialogHeader>
-          
+
           <DialogBody>
-            <DialogDescription className="text-base">
-              {message}
-            </DialogDescription>
-            
-            {details && (
-              <div className="mt-4 p-4 bg-muted/50 rounded-md text-sm">
-                {details}
-              </div>
-            )}
+            <DialogDescription className='text-base'>{message}</DialogDescription>
+
+            {details && <div className='mt-4 rounded-md bg-muted/50 p-4 text-sm'>{details}</div>}
           </DialogBody>
-          
-          <DialogFooter className="gap-2">
-            <Button
-              variant="outline"
-              onClick={handleCancel}
-              disabled={isProcessing}
-            >
+
+          <DialogFooter className='gap-2'>
+            <Button variant='outline' onClick={handleCancel} disabled={isProcessing}>
               {cancelText}
             </Button>
             <Button
               variant={effectiveVariant}
               onClick={handleConfirm}
               disabled={isProcessing}
-              className={cn(
-                'min-w-[100px]',
-                isProcessing && 'opacity-70'
-              )}
+              className={cn('min-w-[100px]', isProcessing && 'opacity-70')}
             >
               {isProcessing ? loadingText : confirmText}
             </Button>
@@ -169,7 +154,8 @@ export const ConfirmDialog = React.forwardRef<HTMLDivElement, ConfirmDialogProps
 ConfirmDialog.displayName = 'ConfirmDialog';
 
 // 快捷組件 - 刪除確認
-export interface DeleteConfirmDialogProps extends Omit<ConfirmDialogProps, 'isDestructive' | 'title' | 'confirmText'> {
+export interface DeleteConfirmDialogProps
+  extends Omit<ConfirmDialogProps, 'isDestructive' | 'title' | 'confirmText'> {
   itemName?: string;
   title?: string;
   confirmText?: string;
@@ -220,7 +206,7 @@ export const SaveConfirmDialog = React.forwardRef<HTMLDivElement, SaveConfirmDia
       title={title}
       message={message}
       confirmText={confirmText}
-      severity="warning"
+      severity='warning'
       {...props}
     />
   )
@@ -229,7 +215,8 @@ export const SaveConfirmDialog = React.forwardRef<HTMLDivElement, SaveConfirmDia
 SaveConfirmDialog.displayName = 'SaveConfirmDialog';
 
 // 快捷組件 - 離開確認
-export interface LeaveConfirmDialogProps extends Omit<ConfirmDialogProps, 'title' | 'confirmText' | 'cancelText'> {
+export interface LeaveConfirmDialogProps
+  extends Omit<ConfirmDialogProps, 'title' | 'confirmText' | 'cancelText'> {
   title?: string;
   confirmText?: string;
   cancelText?: string;
@@ -252,7 +239,7 @@ export const LeaveConfirmDialog = React.forwardRef<HTMLDivElement, LeaveConfirmD
       message={message}
       confirmText={confirmText}
       cancelText={cancelText}
-      severity="warning"
+      severity='warning'
       isDestructive
       {...props}
     />

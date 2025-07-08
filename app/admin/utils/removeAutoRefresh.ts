@@ -9,16 +9,16 @@ import { join } from 'path';
 async function removeAutoRefresh() {
   const widgetsDir = join(process.cwd(), 'app/admin/components/dashboard/widgets');
   const files = await readdir(widgetsDir);
-  
+
   for (const file of files) {
     if (file.endsWith('.tsx') && file !== 'index.ts') {
       const filePath = join(widgetsDir, file);
       let content = await readFile(filePath, 'utf-8');
-      
+
       // Pattern 1: Remove setInterval blocks
       content = content.replace(
         /if \(widget\.config\.refreshInterval[\s\S]*?\n\s*}\n\s*}, \[.*?\]\);/g,
-        (match) => {
+        match => {
           // Check if this is inside a useEffect
           if (match.includes('setInterval')) {
             return '}, []);';
@@ -26,7 +26,7 @@ async function removeAutoRefresh() {
           return match;
         }
       );
-      
+
       // Pattern 2: Remove refreshInterval from useEffect dependencies
       content = content.replace(
         /}, \[([^,\]]*,\s*)?widget\.config\.refreshInterval(,\s*[^,\]]+)?\]\);/g,
@@ -37,7 +37,7 @@ async function removeAutoRefresh() {
           return deps.length > 0 ? `}, [${deps.join(', ')}]);` : '}, []);';
         }
       );
-      
+
       // Pattern 3: Add useWidgetData import if not present
       if (!content.includes('useWidgetData') && content.includes('loadData')) {
         content = content.replace(
@@ -45,9 +45,11 @@ async function removeAutoRefresh() {
           "import {$1} from '@/app/types/dashboard';\nimport { useWidgetData } from '@/app/admin/hooks/useWidgetData'"
         );
       }
-      
+
       await writeFile(filePath, content, 'utf-8');
-      process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`Updated: ${file}`);
+      process.env.NODE_ENV !== 'production' &&
+        process.env.NODE_ENV !== 'production' &&
+        console.log(`Updated: ${file}`);
     }
   }
 }

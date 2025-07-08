@@ -6,11 +6,11 @@ import React from 'react';
  */
 export const PageFooter: React.FC = () => {
   return (
-    <div className="text-center mt-12">
-      <div className="inline-flex items-center space-x-2 text-slate-500 text-sm">
-        <div className="w-1 h-1 bg-slate-500 rounded-full" aria-hidden="true"></div>
+    <div className='mt-12 text-center'>
+      <div className='inline-flex items-center space-x-2 text-sm text-slate-500'>
+        <div className='h-1 w-1 rounded-full bg-slate-500' aria-hidden='true'></div>
         <span>Pennine Manufacturing Stock Transfer System</span>
-        <div className="w-1 h-1 bg-slate-500 rounded-full" aria-hidden="true"></div>
+        <div className='h-1 w-1 rounded-full bg-slate-500' aria-hidden='true'></div>
       </div>
     </div>
   );

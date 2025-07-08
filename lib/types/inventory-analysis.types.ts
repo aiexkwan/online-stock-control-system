@@ -67,7 +67,7 @@ export interface InventoryAnalysisParams {
 /**
  * Sorting options for inventory analysis results
  */
-export type InventoryAnalysisSortBy = 
+export type InventoryAnalysisSortBy =
   | 'product_code'
   | 'current_stock'
   | 'order_demand'

@@ -29,7 +29,7 @@ export function useFeatureFlag(
     try {
       setLoading(true);
       setError(undefined);
-      
+
       const result = await featureFlagManager.evaluate(key, mergedContext);
       setEvaluation(result);
     } catch (err) {
@@ -47,7 +47,7 @@ export function useFeatureFlag(
 
   // 訂閱變更
   useEffect(() => {
-    const unsubscribe = featureFlagManager.subscribe(async (flags) => {
+    const unsubscribe = featureFlagManager.subscribe(async flags => {
       // 檢查是否包含當前 flag
       if (flags.some(f => f.key === key)) {
         await evaluate();
@@ -62,7 +62,7 @@ export function useFeatureFlag(
     variant: evaluation?.variant,
     loading,
     error,
-    refresh: evaluate
+    refresh: evaluate,
   };
 }
 
@@ -92,16 +92,16 @@ export function useFeatureFlags(
     try {
       setLoading(true);
       setError(undefined);
-      
+
       const evaluations: Record<string, FeatureEvaluation> = {};
-      
+
       await Promise.all(
-        keys.map(async (key) => {
+        keys.map(async key => {
           const result = await featureFlagManager.evaluate(key, mergedContext);
           evaluations[key] = result;
         })
       );
-      
+
       setFlags(evaluations);
     } catch (err) {
       setError(err as Error);
@@ -117,7 +117,7 @@ export function useFeatureFlags(
 
   // 訂閱變更
   useEffect(() => {
-    const unsubscribe = featureFlagManager.subscribe(async (changedFlags) => {
+    const unsubscribe = featureFlagManager.subscribe(async changedFlags => {
       // 檢查是否有相關的 flags 變更
       const hasRelevantChanges = changedFlags.some(f => keys.includes(f.key));
       if (hasRelevantChanges) {
@@ -132,16 +132,14 @@ export function useFeatureFlags(
     flags,
     loading,
     error,
-    refresh: evaluateAll
+    refresh: evaluateAll,
   };
 }
 
 /**
  * Hook 用於獲取所有 Feature Flags
  */
-export function useAllFeatureFlags(
-  context?: Partial<FeatureContext>
-): {
+export function useAllFeatureFlags(context?: Partial<FeatureContext>): {
   flags: Record<string, FeatureEvaluation>;
   loading: boolean;
   error?: Error;
@@ -161,7 +159,7 @@ export function useAllFeatureFlags(
     try {
       setLoading(true);
       setError(undefined);
-      
+
       const result = await featureFlagManager.evaluateAll(mergedContext);
       setFlags(result);
     } catch (err) {
@@ -186,7 +184,7 @@ export function useAllFeatureFlags(
     flags,
     loading,
     error,
-    refresh: evaluateAll
+    refresh: evaluateAll,
   };
 }
 
@@ -218,7 +216,7 @@ export function useFeatureFlagToggle(key: string): {
     enabled,
     toggle,
     loading: loading || toggling,
-    error
+    error,
   };
 }
 

@@ -5,15 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { 
-  Printer, 
-  Clock, 
-  CheckCircle, 
-  XCircle, 
-  AlertCircle,
-  RefreshCw,
-  Trash2
-} from 'lucide-react';
+import { Printer, Clock, CheckCircle, XCircle, AlertCircle, RefreshCw, Trash2 } from 'lucide-react';
 import { PrintJobStatus, getPrintStatusMonitor } from '../services/print-status-monitor';
 import { usePrinting } from '../hooks/usePrinting';
 import { cn } from '@/lib/utils';
@@ -23,10 +15,7 @@ export interface PrintQueueMonitorProps {
   compact?: boolean;
 }
 
-export function PrintQueueMonitor({ 
-  className,
-  compact = false 
-}: PrintQueueMonitorProps) {
+export function PrintQueueMonitor({ className, compact = false }: PrintQueueMonitorProps) {
   const { queueStatus, cancelJob } = usePrinting();
   const [activeJobs, setActiveJobs] = useState<PrintJobStatus[]>([]);
   const [completedJobs, setCompletedJobs] = useState<PrintJobStatus[]>([]);
@@ -36,11 +25,11 @@ export function PrintQueueMonitor({
     let monitor: any;
     let interval: NodeJS.Timeout;
     let updateJobsHandler: any;
-    
+
     const initializeMonitor = async () => {
       try {
         monitor = getPrintStatusMonitor();
-        
+
         // Update jobs periodically
         updateJobsHandler = async () => {
           try {
@@ -52,10 +41,10 @@ export function PrintQueueMonitor({
             console.warn('[PrintQueueMonitor] Failed to update jobs:', err);
           }
         };
-        
+
         updateJobsHandler();
         interval = setInterval(updateJobsHandler, 1000);
-        
+
         // Subscribe to status changes
         monitor.on('statusUpdate', updateJobsHandler);
       } catch (err) {
@@ -64,9 +53,9 @@ export function PrintQueueMonitor({
         setTimeout(initializeMonitor, 1000);
       }
     };
-    
+
     initializeMonitor();
-    
+
     return () => {
       if (interval) clearInterval(interval);
       if (monitor && updateJobsHandler) {
@@ -79,15 +68,15 @@ export function PrintQueueMonitor({
   const getStatusIcon = (status: PrintJobStatus['status']) => {
     switch (status) {
       case 'queued':
-        return <Clock className="h-4 w-4" />;
+        return <Clock className='h-4 w-4' />;
       case 'processing':
-        return <RefreshCw className="h-4 w-4 animate-spin" />;
+        return <RefreshCw className='h-4 w-4 animate-spin' />;
       case 'completed':
-        return <CheckCircle className="h-4 w-4 text-green-600" />;
+        return <CheckCircle className='h-4 w-4 text-green-600' />;
       case 'failed':
-        return <XCircle className="h-4 w-4 text-red-600" />;
+        return <XCircle className='h-4 w-4 text-red-600' />;
       case 'cancelled':
-        return <AlertCircle className="h-4 w-4 text-gray-600" />;
+        return <AlertCircle className='h-4 w-4 text-gray-600' />;
     }
   };
 
@@ -97,11 +86,11 @@ export function PrintQueueMonitor({
       processing: 'default',
       completed: 'outline',
       failed: 'destructive',
-      cancelled: 'secondary'
+      cancelled: 'secondary',
     };
-    
+
     return (
-      <Badge variant={variants[status]} className="capitalize">
+      <Badge variant={variants[status]} className='capitalize'>
         {status}
       </Badge>
     );
@@ -119,40 +108,36 @@ export function PrintQueueMonitor({
 
   if (compact) {
     return (
-      <Card className={cn("", className)}>
-        <CardHeader className="pb-3">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-sm font-medium">Print Queue</CardTitle>
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <Printer className="h-3 w-3" />
+      <Card className={cn('', className)}>
+        <CardHeader className='pb-3'>
+          <div className='flex items-center justify-between'>
+            <CardTitle className='text-sm font-medium'>Print Queue</CardTitle>
+            <div className='flex items-center gap-2 text-xs text-muted-foreground'>
+              <Printer className='h-3 w-3' />
               {queueStatus ? `${queueStatus.pending + queueStatus.processing} active` : '0 active'}
             </div>
           </div>
         </CardHeader>
-        <CardContent className="pb-3">
+        <CardContent className='pb-3'>
           {activeJobs.length === 0 ? (
-            <p className="text-xs text-muted-foreground">No active print jobs</p>
+            <p className='text-xs text-muted-foreground'>No active print jobs</p>
           ) : (
-            <div className="space-y-2">
+            <div className='space-y-2'>
               {activeJobs.slice(0, 3).map(job => (
-                <div key={job.jobId} className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
+                <div key={job.jobId} className='flex items-center justify-between'>
+                  <div className='flex items-center gap-2'>
                     {getStatusIcon(job.status)}
-                    <span className="text-xs truncate max-w-[150px]">
+                    <span className='max-w-[150px] truncate text-xs'>
                       {job.jobId.split('-').pop()}
                     </span>
                   </div>
                   {job.progress !== undefined && (
-                    <span className="text-xs text-muted-foreground">
-                      {job.progress}%
-                    </span>
+                    <span className='text-xs text-muted-foreground'>{job.progress}%</span>
                   )}
                 </div>
               ))}
               {activeJobs.length > 3 && (
-                <p className="text-xs text-muted-foreground">
-                  +{activeJobs.length - 3} more
-                </p>
+                <p className='text-xs text-muted-foreground'>+{activeJobs.length - 3} more</p>
               )}
             </div>
           )}
@@ -162,79 +147,74 @@ export function PrintQueueMonitor({
   }
 
   return (
-    <Card className={cn("", className)}>
+    <Card className={cn('', className)}>
       <CardHeader>
-        <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center gap-2">
-            <Printer className="h-5 w-5" />
+        <div className='flex items-center justify-between'>
+          <CardTitle className='flex items-center gap-2'>
+            <Printer className='h-5 w-5' />
             Print Queue Monitor
           </CardTitle>
           {statistics && (
-            <div className="flex items-center gap-4 text-sm text-muted-foreground">
+            <div className='flex items-center gap-4 text-sm text-muted-foreground'>
               <span>Total: {statistics.total}</span>
-              <span className="text-green-600">✓ {statistics.completed}</span>
-              <span className="text-red-600">✗ {statistics.failed}</span>
+              <span className='text-green-600'>✓ {statistics.completed}</span>
+              <span className='text-red-600'>✗ {statistics.failed}</span>
             </div>
           )}
         </div>
       </CardHeader>
       <CardContent>
-        <div className="space-y-4">
+        <div className='space-y-4'>
           {/* Queue Summary */}
-          <div className="grid grid-cols-3 gap-4">
-            <div className="text-center">
-              <p className="text-2xl font-bold">{queueStatus?.pending || 0}</p>
-              <p className="text-sm text-muted-foreground">Pending</p>
+          <div className='grid grid-cols-3 gap-4'>
+            <div className='text-center'>
+              <p className='text-2xl font-bold'>{queueStatus?.pending || 0}</p>
+              <p className='text-sm text-muted-foreground'>Pending</p>
             </div>
-            <div className="text-center">
-              <p className="text-2xl font-bold">{queueStatus?.processing || 0}</p>
-              <p className="text-sm text-muted-foreground">Processing</p>
+            <div className='text-center'>
+              <p className='text-2xl font-bold'>{queueStatus?.processing || 0}</p>
+              <p className='text-sm text-muted-foreground'>Processing</p>
             </div>
-            <div className="text-center">
-              <p className="text-2xl font-bold">{statistics?.completed || 0}</p>
-              <p className="text-sm text-muted-foreground">Completed</p>
+            <div className='text-center'>
+              <p className='text-2xl font-bold'>{statistics?.completed || 0}</p>
+              <p className='text-sm text-muted-foreground'>Completed</p>
             </div>
           </div>
 
           {/* Active Jobs */}
           <div>
-            <h4 className="text-sm font-medium mb-2">Active Jobs</h4>
-            <div className="h-[200px] border rounded-md overflow-y-auto">
+            <h4 className='mb-2 text-sm font-medium'>Active Jobs</h4>
+            <div className='h-[200px] overflow-y-auto rounded-md border'>
               {activeJobs.length === 0 ? (
-                <div className="p-4 text-center text-muted-foreground">
-                  No active print jobs
-                </div>
+                <div className='p-4 text-center text-muted-foreground'>No active print jobs</div>
               ) : (
-                <div className="p-2 space-y-2">
+                <div className='space-y-2 p-2'>
                   {activeJobs.map(job => (
-                    <div key={job.jobId} className="flex items-center justify-between p-2 rounded-md hover:bg-gray-50">
-                      <div className="flex items-center gap-3">
+                    <div
+                      key={job.jobId}
+                      className='flex items-center justify-between rounded-md p-2 hover:bg-gray-50'
+                    >
+                      <div className='flex items-center gap-3'>
                         {getStatusIcon(job.status)}
                         <div>
-                          <p className="text-sm font-medium">
+                          <p className='text-sm font-medium'>
                             {job.jobId.split('-').slice(-2).join('-')}
                           </p>
                           {job.message && (
-                            <p className="text-xs text-muted-foreground">
-                              {job.message}
-                            </p>
+                            <p className='text-xs text-muted-foreground'>{job.message}</p>
                           )}
                         </div>
                       </div>
-                      <div className="flex items-center gap-2">
+                      <div className='flex items-center gap-2'>
                         {job.progress !== undefined && job.status === 'processing' && (
-                          <div className="w-20">
-                            <Progress value={job.progress} className="h-2" />
+                          <div className='w-20'>
+                            <Progress value={job.progress} className='h-2' />
                           </div>
                         )}
                         {getStatusBadge(job.status)}
                         {job.status === 'queued' && (
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => handleCancel(job.jobId)}
-                          >
-                            <XCircle className="h-4 w-4" />
+                          <Button size='sm' variant='ghost' onClick={() => handleCancel(job.jobId)}>
+                            <XCircle className='h-4 w-4' />
                           </Button>
                         )}
                       </div>
@@ -247,17 +227,17 @@ export function PrintQueueMonitor({
 
           {/* Recent Completed */}
           <div>
-            <h4 className="text-sm font-medium mb-2">Recently Completed</h4>
-            <div className="space-y-1">
+            <h4 className='mb-2 text-sm font-medium'>Recently Completed</h4>
+            <div className='space-y-1'>
               {completedJobs.map(job => (
-                <div key={job.jobId} className="flex items-center justify-between text-sm">
-                  <div className="flex items-center gap-2">
+                <div key={job.jobId} className='flex items-center justify-between text-sm'>
+                  <div className='flex items-center gap-2'>
                     {getStatusIcon(job.status)}
-                    <span className="text-muted-foreground">
+                    <span className='text-muted-foreground'>
                       {job.jobId.split('-').slice(-2).join('-')}
                     </span>
                   </div>
-                  <span className="text-xs text-muted-foreground">
+                  <span className='text-xs text-muted-foreground'>
                     {formatTime(job.completedAt)}
                   </span>
                 </div>

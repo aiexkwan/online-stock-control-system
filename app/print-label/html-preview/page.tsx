@@ -23,10 +23,10 @@ export default function HtmlPreviewPage() {
   useEffect(() => {
     const generateQR = async () => {
       try {
-        const dataUrl = await QRCode.toDataURL(qrValue, { 
-          errorCorrectionLevel: 'M', 
-          margin: 1, 
-          width: 140 
+        const dataUrl = await QRCode.toDataURL(qrValue, {
+          errorCorrectionLevel: 'M',
+          margin: 1,
+          width: 140,
         });
         setQrCodeDataUrl(dataUrl);
       } catch (err) {
@@ -40,20 +40,20 @@ export default function HtmlPreviewPage() {
   }, [qrValue]);
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className='min-h-screen bg-white'>
       <style jsx global>{`
         * {
           margin: 0;
           padding: 0;
           box-sizing: border-box;
         }
-        
+
         body {
           font-family: Arial, sans-serif;
           background: white;
           padding: 0;
         }
-        
+
         .label {
           width: 210mm;
           height: 145mm;
@@ -63,7 +63,7 @@ export default function HtmlPreviewPage() {
           margin-bottom: 8px;
           background: white;
         }
-        
+
         .logo {
           position: absolute;
           top: 14px;
@@ -71,7 +71,7 @@ export default function HtmlPreviewPage() {
           width: 180px;
           height: 48px;
         }
-        
+
         .qr-code {
           position: absolute;
           top: 14px;
@@ -79,44 +79,44 @@ export default function HtmlPreviewPage() {
           width: 140px;
           height: 140px;
         }
-        
+
         .center-text {
           text-align: center;
           margin-top: 30px;
           margin-bottom: 10px;
         }
-        
+
         .title {
           font-size: 16px;
           text-decoration: underline;
           margin-bottom: 10px;
         }
-        
+
         .content {
           font-size: 24px;
           font-weight: bold;
           margin-bottom: 18px;
         }
-        
+
         .description-title {
           font-size: 16px;
           text-decoration: underline;
           margin-bottom: 10px;
           margin-top: 20px;
         }
-        
+
         .description-content {
           font-size: 24px;
           font-weight: bold;
           margin-bottom: 40px;
         }
-        
+
         .main-table {
           width: 100%;
           border-collapse: collapse;
           margin-top: 10px;
         }
-        
+
         .main-table th {
           background-color: #f0f0f0;
           padding: 8px 4px;
@@ -126,7 +126,7 @@ export default function HtmlPreviewPage() {
           border: 1px solid #ccc;
           height: 36px;
         }
-        
+
         .main-table td {
           padding: 8px 4px;
           font-size: 22px;
@@ -134,14 +134,14 @@ export default function HtmlPreviewPage() {
           border: 1px solid #ccc;
           height: 48px;
         }
-        
+
         .work-order-table {
           width: 100%;
           border-collapse: collapse;
           margin-top: 6px;
           margin-bottom: 4px;
         }
-        
+
         .work-order-table td {
           padding: 8px 4px;
           font-size: 24px;
@@ -149,7 +149,7 @@ export default function HtmlPreviewPage() {
           border: 1px solid #ccc;
           height: 48px;
         }
-        
+
         .pallet-num {
           position: absolute;
           bottom: 4px;
@@ -157,50 +157,50 @@ export default function HtmlPreviewPage() {
           font-size: 12px;
           text-align: right;
         }
-        
+
         .dashed-line {
           width: 100%;
           height: 1px;
           background-color: #ccc;
           margin: 8px 0;
         }
-        
+
         @media print {
-          body { margin: 0; }
-          .label { border: none; }
+          body {
+            margin: 0;
+          }
+          .label {
+            border: none;
+          }
         }
       `}</style>
 
       {/* 第一個標籤 */}
-      <div className="label">
+      <div className='label'>
         {/* Logo */}
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img 
-          src="https://bbmkuiplnzvpudszrend.supabase.co/storage/v1/object/public/web-ui/P_Logo_DB.PNG" 
-          className="logo"
-          alt="Company Logo"
+        <img
+          src='https://bbmkuiplnzvpudszrend.supabase.co/storage/v1/object/public/web-ui/P_Logo_DB.PNG'
+          className='logo'
+          alt='Company Logo'
         />
-        
+
         {/* QR Code */}
         {qrCodeDataUrl && (
           // eslint-disable-next-line @next/next/no-img-element
-          <img 
-            src={qrCodeDataUrl} 
-            className="qr-code"
-            alt="QR Code"
-          />
+          <img src={qrCodeDataUrl} className='qr-code' alt='QR Code' />
         )}
-        
+
         {/* Product Code */}
-        <div className="center-text title">Product Code</div>
-        <div className="center-text content">{productCode}</div>
-        
+        <div className='center-text title'>Product Code</div>
+        <div className='center-text content'>{productCode}</div>
+
         {/* Description */}
-        <div className="center-text description-title">Description</div>
-        <div className="center-text description-content">{description}</div>
-        
+        <div className='center-text description-title'>Description</div>
+        <div className='center-text description-content'>{description}</div>
+
         {/* Main Table */}
-        <table className="main-table">
+        <table className='main-table'>
           <thead>
             <tr>
               <th>Quantity</th>
@@ -218,9 +218,9 @@ export default function HtmlPreviewPage() {
             </tr>
           </tbody>
         </table>
-        
+
         {/* Work Order Table */}
-        <table className="work-order-table">
+        <table className='work-order-table'>
           <tbody>
             <tr>
               <td>Work Order Number</td>
@@ -228,44 +228,40 @@ export default function HtmlPreviewPage() {
             </tr>
           </tbody>
         </table>
-        
+
         {/* Pallet Number */}
-        <div className="pallet-num">Pallet Num : {palletNum}</div>
+        <div className='pallet-num'>Pallet Num : {palletNum}</div>
       </div>
-      
+
       {/* 虛線分隔 */}
-      <div className="dashed-line"></div>
-      
+      <div className='dashed-line'></div>
+
       {/* 第二個標籤（重複） */}
-      <div className="label">
+      <div className='label'>
         {/* Logo */}
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img 
-          src="https://bbmkuiplnzvpudszrend.supabase.co/storage/v1/object/public/web-ui/P_Logo_DB.PNG" 
-          className="logo"
-          alt="Company Logo"
+        <img
+          src='https://bbmkuiplnzvpudszrend.supabase.co/storage/v1/object/public/web-ui/P_Logo_DB.PNG'
+          className='logo'
+          alt='Company Logo'
         />
-        
+
         {/* QR Code */}
         {qrCodeDataUrl && (
           // eslint-disable-next-line @next/next/no-img-element
-          <img 
-            src={qrCodeDataUrl} 
-            className="qr-code"
-            alt="QR Code"
-          />
+          <img src={qrCodeDataUrl} className='qr-code' alt='QR Code' />
         )}
-        
+
         {/* Product Code */}
-        <div className="center-text title">Product Code</div>
-        <div className="center-text content">{productCode}</div>
-        
+        <div className='center-text title'>Product Code</div>
+        <div className='center-text content'>{productCode}</div>
+
         {/* Description */}
-        <div className="center-text description-title">Description</div>
-        <div className="center-text description-content">{description}</div>
-        
+        <div className='center-text description-title'>Description</div>
+        <div className='center-text description-content'>{description}</div>
+
         {/* Main Table */}
-        <table className="main-table">
+        <table className='main-table'>
           <thead>
             <tr>
               <th>Quantity</th>
@@ -283,9 +279,9 @@ export default function HtmlPreviewPage() {
             </tr>
           </tbody>
         </table>
-        
+
         {/* Work Order Table */}
-        <table className="work-order-table">
+        <table className='work-order-table'>
           <tbody>
             <tr>
               <td>Work Order Number</td>
@@ -293,10 +289,10 @@ export default function HtmlPreviewPage() {
             </tr>
           </tbody>
         </table>
-        
+
         {/* Pallet Number */}
-        <div className="pallet-num">Pallet Num : {palletNum}</div>
+        <div className='pallet-num'>Pallet Num : {palletNum}</div>
       </div>
     </div>
   );
-} 
+}

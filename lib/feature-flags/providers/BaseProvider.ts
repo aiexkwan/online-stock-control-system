@@ -1,10 +1,10 @@
-import { 
-  FeatureFlagProvider, 
-  FeatureFlag, 
-  FeatureContext, 
+import {
+  FeatureFlagProvider,
+  FeatureFlag,
+  FeatureContext,
   FeatureEvaluation,
   FeatureRule,
-  FeatureVariant
+  FeatureVariant,
 } from '../types';
 
 /**
@@ -26,11 +26,11 @@ export abstract class BaseFeatureFlagProvider implements FeatureFlagProvider {
    */
   async evaluate(key: string, context: FeatureContext): Promise<FeatureEvaluation> {
     const flag = await this.getFlag(key);
-    
+
     if (!flag) {
       return {
         enabled: false,
-        reason: 'Flag not found'
+        reason: 'Flag not found',
       };
     }
 
@@ -38,7 +38,7 @@ export abstract class BaseFeatureFlagProvider implements FeatureFlagProvider {
     if (flag.status === 'disabled') {
       return {
         enabled: false,
-        reason: 'Flag is disabled'
+        reason: 'Flag is disabled',
       };
     }
 
@@ -47,13 +47,13 @@ export abstract class BaseFeatureFlagProvider implements FeatureFlagProvider {
     if (flag.startDate && now < flag.startDate) {
       return {
         enabled: false,
-        reason: 'Flag not yet active'
+        reason: 'Flag not yet active',
       };
     }
     if (flag.endDate && now > flag.endDate) {
       return {
         enabled: false,
-        reason: 'Flag has expired'
+        reason: 'Flag has expired',
       };
     }
 
@@ -71,11 +71,11 @@ export abstract class BaseFeatureFlagProvider implements FeatureFlagProvider {
     if (flag.rolloutPercentage !== undefined && flag.rolloutPercentage < 100) {
       const hash = this.hashContext(key, context);
       const bucket = Math.abs(hash) % 100;
-      
+
       if (bucket >= flag.rolloutPercentage) {
         return {
           enabled: false,
-          reason: 'Not in rollout percentage'
+          reason: 'Not in rollout percentage',
         };
       }
     }
@@ -92,7 +92,7 @@ export abstract class BaseFeatureFlagProvider implements FeatureFlagProvider {
     const results: Record<string, FeatureEvaluation> = {};
 
     await Promise.all(
-      flags.map(async (flag) => {
+      flags.map(async flag => {
         results[flag.key] = await this.evaluate(flag.key, context);
       })
     );
@@ -122,22 +122,22 @@ export abstract class BaseFeatureFlagProvider implements FeatureFlagProvider {
     switch (rule.type) {
       case 'user':
         return this.evaluateUserRule(rule, context);
-      
+
       case 'group':
         return this.evaluateGroupRule(rule, context);
-      
+
       case 'percentage':
         return this.evaluatePercentageRule(rule, context);
-      
+
       case 'environment':
         return this.evaluateEnvironmentRule(rule, context);
-      
+
       case 'date':
         return this.evaluateDateRule(rule, context);
-      
+
       case 'custom':
         return this.evaluateCustomRule(rule, context);
-      
+
       default:
         return false;
     }
@@ -172,7 +172,7 @@ export abstract class BaseFeatureFlagProvider implements FeatureFlagProvider {
 
     const hash = this.hashContext('percentage', context);
     const bucket = Math.abs(hash) % 100;
-    
+
     return bucket < percentage;
   }
 
@@ -238,13 +238,13 @@ export abstract class BaseFeatureFlagProvider implements FeatureFlagProvider {
    * 獲取評估結果
    */
   private getEvaluationResult(
-    flag: FeatureFlag, 
-    context: FeatureContext, 
+    flag: FeatureFlag,
+    context: FeatureContext,
     reason: string
   ): FeatureEvaluation {
     const result: FeatureEvaluation = {
       enabled: true,
-      reason
+      reason,
     };
 
     // 處理變體
@@ -261,13 +261,13 @@ export abstract class BaseFeatureFlagProvider implements FeatureFlagProvider {
    * 選擇變體
    */
   private selectVariant(
-    variants: FeatureVariant[], 
-    context: FeatureContext, 
+    variants: FeatureVariant[],
+    context: FeatureContext,
     flagKey: string
   ): FeatureVariant {
     // 計算總權重
     const totalWeight = variants.reduce((sum, v) => sum + (v.weight || 0), 0);
-    
+
     if (totalWeight === 0) {
       // 如果沒有權重，平均分配
       const hash = this.hashContext(flagKey, context);
@@ -278,7 +278,7 @@ export abstract class BaseFeatureFlagProvider implements FeatureFlagProvider {
     // 根據權重選擇
     const hash = this.hashContext(flagKey, context);
     const bucket = (Math.abs(hash) % totalWeight) + 1;
-    
+
     let accumWeight = 0;
     for (const variant of variants) {
       accumWeight += variant.weight || 0;
@@ -297,13 +297,13 @@ export abstract class BaseFeatureFlagProvider implements FeatureFlagProvider {
   private hashContext(seed: string, context: FeatureContext): number {
     const str = seed + (context.userId || '') + (context.userEmail || '');
     let hash = 0;
-    
+
     for (let i = 0; i < str.length; i++) {
       const char = str.charCodeAt(i);
-      hash = ((hash << 5) - hash) + char;
+      hash = (hash << 5) - hash + char;
       hash = hash & hash; // Convert to 32-bit integer
     }
-    
+
     return hash;
   }
 }

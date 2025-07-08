@@ -43814,11 +43814,7 @@
             }
           ],
           "name": "include",
-          "locations": [
-            "FIELD",
-            "FRAGMENT_SPREAD",
-            "INLINE_FRAGMENT"
-          ],
+          "locations": ["FIELD", "FRAGMENT_SPREAD", "INLINE_FRAGMENT"],
           "description": "This field or fragment will be included only when the `if` argument is true."
         },
         {
@@ -43839,11 +43835,7 @@
             }
           ],
           "name": "skip",
-          "locations": [
-            "FIELD",
-            "FRAGMENT_SPREAD",
-            "INLINE_FRAGMENT"
-          ],
+          "locations": ["FIELD", "FRAGMENT_SPREAD", "INLINE_FRAGMENT"],
           "description": "This field or fragment will be skipped when the `if` argument is true."
         }
       ],

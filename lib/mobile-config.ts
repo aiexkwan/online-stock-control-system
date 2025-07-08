@@ -26,12 +26,12 @@ export const mobileConfig = {
     h2: 'text-2xl md:text-3xl lg:text-4xl',
     h3: 'text-xl md:text-2xl lg:text-3xl',
     h4: 'text-lg md:text-xl lg:text-2xl',
-    
+
     // Body text
     body: 'text-base md:text-sm',
     bodyLarge: 'text-lg md:text-base',
     bodySmall: 'text-sm md:text-xs',
-    
+
     // UI elements
     button: 'text-base md:text-sm font-medium',
     input: 'text-base md:text-sm',
@@ -73,7 +73,8 @@ export const mobileConfig = {
     button: {
       base: 'inline-flex items-center justify-center font-medium rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 active:scale-95',
       primary: 'bg-blue-600 text-white hover:bg-blue-700 active:bg-blue-800 focus:ring-blue-500',
-      secondary: 'bg-slate-700 text-white hover:bg-slate-600 active:bg-slate-800 focus:ring-slate-500',
+      secondary:
+        'bg-slate-700 text-white hover:bg-slate-600 active:bg-slate-800 focus:ring-slate-500',
       danger: 'bg-red-600 text-white hover:bg-red-700 active:bg-red-800 focus:ring-red-500',
       ghost: 'bg-transparent hover:bg-slate-700/50 active:bg-slate-700/70',
       // Size variants
@@ -82,7 +83,7 @@ export const mobileConfig = {
       sizeLg: 'min-h-[52px] px-6 py-3 text-lg md:text-base',
       sizeXl: 'min-h-[60px] px-8 py-4 text-xl md:text-lg',
     },
-    
+
     input: {
       base: 'w-full rounded-lg border bg-slate-700/50 text-white placeholder-slate-400 transition-all duration-200',
       normal: 'border-slate-600/50 focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/50',
@@ -95,13 +96,15 @@ export const mobileConfig = {
 
     card: {
       base: 'bg-slate-800/50 border border-slate-700/50 backdrop-blur-sm rounded-xl',
-      interactive: 'transition-all duration-200 hover:bg-slate-800/60 active:bg-slate-800/70 cursor-pointer',
+      interactive:
+        'transition-all duration-200 hover:bg-slate-800/60 active:bg-slate-800/70 cursor-pointer',
       padding: 'p-4 md:p-6',
     },
 
     dialog: {
       overlay: 'fixed inset-0 bg-black/50 backdrop-blur-sm z-50',
-      content: 'fixed inset-x-4 top-[50%] translate-y-[-50%] md:inset-x-auto md:left-[50%] md:translate-x-[-50%] max-w-lg w-full max-h-[90vh] overflow-y-auto',
+      content:
+        'fixed inset-x-4 top-[50%] translate-y-[-50%] md:inset-x-auto md:left-[50%] md:translate-x-[-50%] max-w-lg w-full max-h-[90vh] overflow-y-auto',
       padding: 'p-6 md:p-8',
     },
   },
@@ -121,7 +124,9 @@ export function getMobileButtonClass(
   return cn(
     mobileConfig.components.button.base,
     mobileConfig.components.button[variant],
-    mobileConfig.components.button[`size${size.charAt(0).toUpperCase() + size.slice(1)}` as keyof typeof mobileConfig.components.button],
+    mobileConfig.components.button[
+      `size${size.charAt(0).toUpperCase() + size.slice(1)}` as keyof typeof mobileConfig.components.button
+    ],
     className
   );
 }
@@ -135,7 +140,9 @@ export function getMobileInputClass(
   return cn(
     mobileConfig.components.input.base,
     mobileConfig.components.input[state],
-    mobileConfig.components.input[`size${size.charAt(0).toUpperCase() + size.slice(1)}` as keyof typeof mobileConfig.components.input],
+    mobileConfig.components.input[
+      `size${size.charAt(0).toUpperCase() + size.slice(1)}` as keyof typeof mobileConfig.components.input
+    ],
     className
   );
 }

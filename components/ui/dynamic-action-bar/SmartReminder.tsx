@@ -32,23 +32,23 @@ export function SmartReminder({ userId, className }: SmartReminderProps) {
   const checkTimeBasedReminders = useCallback(async () => {
     const currentHour = new Date().getHours();
     const currentMinute = new Date().getMinutes();
-    
+
     // Get user patterns
     const patterns = await enhancedBehaviorTracker.getTimeBasedPatterns(userId);
-    
+
     // Check if current hour is one of the most active hours
     if (patterns.mostActiveHours.includes(currentHour)) {
       const suggestedPaths = patterns.hourlyPatterns[currentHour] || [];
-      
+
       if (suggestedPaths.length > 0) {
         const topPath = suggestedPaths[0];
-        
+
         // Get navigation info
         const navInfo = getNavigationInfo(topPath);
         const label = navInfo.label;
-        
+
         const reminderId = `time-${currentHour}-${topPath}`;
-        
+
         // Don't show if already dismissed today
         if (!dismissed.has(reminderId)) {
           setReminder({
@@ -57,14 +57,14 @@ export function SmartReminder({ userId, className }: SmartReminderProps) {
             message: `Time to check ${label}?`,
             action: {
               label: `Go to ${label}`,
-              path: topPath
+              path: topPath,
             },
-            icon: Clock
+            icon: Clock,
           });
         }
       }
     }
-    
+
     // Special morning reminder (9:00 AM)
     if (currentHour === 9 && currentMinute < 5) {
       const morningPaths = patterns.hourlyPatterns[9] || [];
@@ -77,14 +77,14 @@ export function SmartReminder({ userId, className }: SmartReminderProps) {
             message: 'Good morning! Ready to check warehouse status?',
             action: {
               label: 'Open Warehouse',
-              path: '/admin/warehouse'
+              path: '/admin/warehouse',
             },
-            icon: TrendingUp
+            icon: TrendingUp,
           });
         }
       }
     }
-    
+
     // End of day summary (5:00 PM)
     if (currentHour === 17 && currentMinute < 5) {
       const reminderId = 'evening-summary';
@@ -92,12 +92,12 @@ export function SmartReminder({ userId, className }: SmartReminderProps) {
         setReminder({
           id: reminderId,
           type: 'time-based',
-          message: 'End of day - Check today\'s analysis?',
+          message: "End of day - Check today's analysis?",
           action: {
             label: 'View Analysis',
-            path: '/admin/analysis'
+            path: '/admin/analysis',
           },
-          icon: TrendingUp
+          icon: TrendingUp,
         });
       }
     }
@@ -105,13 +105,13 @@ export function SmartReminder({ userId, className }: SmartReminderProps) {
 
   useEffect(() => {
     if (!userId) return;
-    
+
     // Check immediately
     checkTimeBasedReminders();
-    
+
     // Check every minute
     const interval = setInterval(checkTimeBasedReminders, 60000);
-    
+
     return () => clearInterval(interval);
   }, [userId, checkTimeBasedReminders]);
 
@@ -140,33 +140,31 @@ export function SmartReminder({ userId, className }: SmartReminderProps) {
         animate={{ opacity: 1, y: 0, scale: 1 }}
         exit={{ opacity: 0, y: -20, scale: 0.9 }}
         className={cn(
-          "fixed bottom-24 right-4 z-50",
-          "bg-black/90 backdrop-blur-xl",
-          "rounded-2xl border border-white/20",
-          "shadow-2xl",
-          "p-4",
-          "max-w-sm",
+          'fixed bottom-24 right-4 z-50',
+          'bg-black/90 backdrop-blur-xl',
+          'rounded-2xl border border-white/20',
+          'shadow-2xl',
+          'p-4',
+          'max-w-sm',
           className
         )}
       >
-        <div className="flex items-start gap-3">
+        <div className='flex items-start gap-3'>
           {/* Icon */}
-          <div className="flex-shrink-0">
-                            <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
-              <Icon className="w-5 h-5 text-white" />
+          <div className='flex-shrink-0'>
+            <div className='flex h-10 w-10 items-center justify-center rounded-full bg-white/20'>
+              <Icon className='h-5 w-5 text-white' />
             </div>
           </div>
 
           {/* Content */}
-          <div className="flex-1">
-            <p className="text-white text-sm font-medium mb-2">
-              {reminder.message}
-            </p>
-            
+          <div className='flex-1'>
+            <p className='mb-2 text-sm font-medium text-white'>{reminder.message}</p>
+
             {reminder.action && (
               <button
                 onClick={handleAction}
-                className="text-xs bg-white/20 hover:bg-white/30 text-white px-3 py-1.5 rounded-lg transition-colors"
+                className='rounded-lg bg-white/20 px-3 py-1.5 text-xs text-white transition-colors hover:bg-white/30'
               >
                 {reminder.action.label}
               </button>
@@ -176,15 +174,15 @@ export function SmartReminder({ userId, className }: SmartReminderProps) {
           {/* Dismiss button */}
           <button
             onClick={handleDismiss}
-                          className="flex-shrink-0 p-1 rounded-lg hover:bg-white/20 transition-colors"
+            className='flex-shrink-0 rounded-lg p-1 transition-colors hover:bg-white/20'
           >
-            <X className="w-4 h-4 text-white/60" />
+            <X className='h-4 w-4 text-white/60' />
           </button>
         </div>
 
         {/* Progress bar for auto-dismiss */}
         <motion.div
-          className="absolute bottom-0 left-0 h-1 bg-white/30 rounded-b-2xl"
+          className='absolute bottom-0 left-0 h-1 rounded-b-2xl bg-white/30'
           initial={{ width: '100%' }}
           animate={{ width: '0%' }}
           transition={{ duration: 10, ease: 'linear' }}

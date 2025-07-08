@@ -30,30 +30,30 @@ export function BatchVoidForm({
   onExecute,
   isProcessing,
   selectedCount,
-  maxQuantity
+  maxQuantity,
 }: BatchVoidFormProps) {
   const showDamageInput = voidReason === 'Damage';
   const canExecute = voidReason && password && (!showDamageInput || damageQuantity > 0);
 
   return (
-    <Card className="bg-slate-800/50 border-slate-700/50 backdrop-blur-xl">
-      <div className="p-6">
-        <h3 className="text-lg font-semibold text-white mb-6">Batch Void Settings</h3>
-        
-        <div className="space-y-4">
+    <Card className='border-slate-700/50 bg-slate-800/50 backdrop-blur-xl'>
+      <div className='p-6'>
+        <h3 className='mb-6 text-lg font-semibold text-white'>Batch Void Settings</h3>
+
+        <div className='space-y-4'>
           {/* Void Reason */}
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-2">
-              Void Reason <span className="text-red-400">*</span>
+            <label className='mb-2 block text-sm font-medium text-slate-300'>
+              Void Reason <span className='text-red-400'>*</span>
             </label>
             <select
               value={voidReason}
-              onChange={(e) => onVoidReasonChange(e.target.value)}
+              onChange={e => onVoidReasonChange(e.target.value)}
               disabled={isProcessing}
-              className="w-full px-4 py-3 bg-slate-700/50 border border-slate-600/50 rounded-xl text-white placeholder-slate-400 focus:ring-2 focus:ring-red-400 focus:border-red-400"
+              className='w-full rounded-xl border border-slate-600/50 bg-slate-700/50 px-4 py-3 text-white placeholder-slate-400 focus:border-red-400 focus:ring-2 focus:ring-red-400'
             >
-              <option value="">Select void reason...</option>
-              {VOID_REASONS.map((reason) => (
+              <option value=''>Select void reason...</option>
+              {VOID_REASONS.map(reason => (
                 <option key={reason.value} value={reason.value}>
                   {reason.label}
                 </option>
@@ -64,20 +64,20 @@ export function BatchVoidForm({
           {/* Damage Quantity */}
           {showDamageInput && (
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">
-                Damage Quantity per Pallet <span className="text-red-400">*</span>
+              <label className='mb-2 block text-sm font-medium text-slate-300'>
+                Damage Quantity per Pallet <span className='text-red-400'>*</span>
               </label>
               <input
-                type="number"
-                min="1"
+                type='number'
+                min='1'
                 max={maxQuantity}
                 value={damageQuantity || ''}
-                onChange={(e) => onDamageQuantityChange(parseInt(e.target.value) || 0)}
+                onChange={e => onDamageQuantityChange(parseInt(e.target.value) || 0)}
                 disabled={isProcessing}
-                placeholder="Enter damage quantity"
-                className="w-full px-4 py-3 bg-slate-700/50 border border-slate-600/50 rounded-xl text-white placeholder-slate-400 focus:ring-2 focus:ring-red-400 focus:border-red-400"
+                placeholder='Enter damage quantity'
+                className='w-full rounded-xl border border-slate-600/50 bg-slate-700/50 px-4 py-3 text-white placeholder-slate-400 focus:border-red-400 focus:ring-2 focus:ring-red-400'
               />
-              <p className="text-xs text-gray-400 mt-1">
+              <p className='mt-1 text-xs text-gray-400'>
                 This quantity will be applied to each selected pallet
               </p>
             </div>
@@ -85,41 +85,42 @@ export function BatchVoidForm({
 
           {/* Password */}
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-2">
-              Password <span className="text-red-400">*</span>
+            <label className='mb-2 block text-sm font-medium text-slate-300'>
+              Password <span className='text-red-400'>*</span>
             </label>
             <input
-              type="password"
+              type='password'
               value={password}
-              onChange={(e) => onPasswordChange(e.target.value)}
+              onChange={e => onPasswordChange(e.target.value)}
               disabled={isProcessing}
-              placeholder="Enter your password to confirm"
-              className="w-full px-4 py-3 bg-slate-700/50 border border-slate-600/50 rounded-xl text-white placeholder-slate-400 focus:ring-2 focus:ring-red-400 focus:border-red-400"
+              placeholder='Enter your password to confirm'
+              className='w-full rounded-xl border border-slate-600/50 bg-slate-700/50 px-4 py-3 text-white placeholder-slate-400 focus:border-red-400 focus:ring-2 focus:ring-red-400'
             />
           </div>
 
           {/* Warning for ACO pallets */}
           {voidReason === 'Damage' && (
-            <div className="bg-yellow-900/20 border border-yellow-700/50 rounded-lg p-3">
-              <div className="flex items-start gap-2">
-                <AlertCircle className="h-4 w-4 text-yellow-400 mt-0.5 flex-shrink-0" />
-                <p className="text-xs text-yellow-400">
-                  ACO Order Pallets do not support partial damage. They will be fully voided if selected.
+            <div className='rounded-lg border border-yellow-700/50 bg-yellow-900/20 p-3'>
+              <div className='flex items-start gap-2'>
+                <AlertCircle className='mt-0.5 h-4 w-4 flex-shrink-0 text-yellow-400' />
+                <p className='text-xs text-yellow-400'>
+                  ACO Order Pallets do not support partial damage. They will be fully voided if
+                  selected.
                 </p>
               </div>
             </div>
           )}
 
           {/* Execute Button */}
-          <div className="pt-4">
+          <div className='pt-4'>
             <Button
               onClick={onExecute}
               disabled={!canExecute || isProcessing || selectedCount === 0}
-              className="w-full bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 disabled:from-gray-600 disabled:to-gray-700 text-white font-medium py-3"
+              className='w-full bg-gradient-to-r from-red-600 to-red-700 py-3 font-medium text-white hover:from-red-700 hover:to-red-800 disabled:from-gray-600 disabled:to-gray-700'
             >
               {isProcessing ? (
-                <div className="flex items-center justify-center gap-2">
-                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                <div className='flex items-center justify-center gap-2'>
+                  <div className='h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white'></div>
                   <span>Processing...</span>
                 </div>
               ) : (

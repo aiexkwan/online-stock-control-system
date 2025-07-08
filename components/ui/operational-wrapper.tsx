@@ -24,18 +24,20 @@ export function OperationalWrapper({
   glow = false,
   title,
   titleIcon,
-  actions
+  actions,
 }: OperationalWrapperProps) {
   // If only applying border style to existing Card components
   if (!title && !actions) {
     // Return children with just border classes applied
     return (
-      <div className={cn(
-        'operational-border',
-        `operational-${variant}`,
-        glow && 'operational-glow',
-        className
-      )}>
+      <div
+        className={cn(
+          'operational-border',
+          `operational-${variant}`,
+          glow && 'operational-glow',
+          className
+        )}
+      >
         {children}
       </div>
     );
@@ -46,14 +48,14 @@ export function OperationalWrapper({
     default: 'border-slate-700/50',
     card: 'border-slate-700/50',
     section: 'border-slate-600/30',
-    highlight: 'border-blue-500/30'
+    highlight: 'border-blue-500/30',
   };
 
   const backgroundStyles = {
     default: 'bg-slate-800/50',
     card: 'bg-slate-800/50',
     section: 'bg-slate-700/30',
-    highlight: 'bg-slate-800/70'
+    highlight: 'bg-slate-800/70',
   };
 
   const glowStyles = glow ? 'shadow-lg shadow-blue-500/10 hover:shadow-blue-500/20' : '';
@@ -69,29 +71,23 @@ export function OperationalWrapper({
       )}
     >
       {(title || actions) && (
-        <div className="flex items-center justify-between border-b border-slate-700/30 px-6 py-4">
+        <div className='flex items-center justify-between border-b border-slate-700/30 px-6 py-4'>
           {title && (
-            <div className="flex items-center gap-2 text-slate-200">
+            <div className='flex items-center gap-2 text-slate-200'>
               {titleIcon}
-              <h3 className="text-lg font-semibold">{title}</h3>
+              <h3 className='text-lg font-semibold'>{title}</h3>
             </div>
           )}
-          {actions && (
-            <div className="flex items-center gap-2">
-              {actions}
-            </div>
-          )}
+          {actions && <div className='flex items-center gap-2'>{actions}</div>}
         </div>
       )}
 
-      <div className="relative">
-        {children}
-      </div>
+      <div className='relative'>{children}</div>
 
       {variant === 'highlight' && (
         <>
-          <div className="absolute top-0 left-0 h-8 w-8 border-l-2 border-t-2 border-blue-500/50 rounded-tl-xl" />
-          <div className="absolute bottom-0 right-0 h-8 w-8 border-r-2 border-b-2 border-blue-500/50 rounded-br-xl" />
+          <div className='absolute left-0 top-0 h-8 w-8 rounded-tl-xl border-l-2 border-t-2 border-blue-500/50' />
+          <div className='absolute bottom-0 right-0 h-8 w-8 rounded-br-xl border-b-2 border-r-2 border-blue-500/50' />
         </>
       )}
     </div>
@@ -103,17 +99,10 @@ export function OperationalWrapper({
  */
 export function OperationalGrid({
   children,
-  className
+  className,
 }: {
   children: React.ReactNode;
   className?: string;
 }) {
-  return (
-    <div className={cn(
-      'grid gap-4 lg:gap-6',
-      className
-    )}>
-      {children}
-    </div>
-  );
+  return <div className={cn('grid gap-4 lg:gap-6', className)}>{children}</div>;
 }

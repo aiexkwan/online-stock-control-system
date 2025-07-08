@@ -27,35 +27,39 @@ async function recordProductHistory(
 ): Promise<void> {
   try {
     const supabase = await createClient();
-    
+
     // 獲取當前用戶信息
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     const currentUserEmail = user?.email || userEmail || 'unknown';
-    
+
     console.log('[recordProductHistory] Current user email:', currentUserEmail);
-    
+
     // 獲取用戶 ID
     const userId = await getUserIdFromEmail(currentUserEmail);
-    
+
     console.log('[recordProductHistory] Retrieved user ID:', userId);
-    
+
     // 插入歷史記錄
-    const { error } = await supabase
-      .from('record_history')
-      .insert({
-        time: new Date().toISOString(),
-        id: userId || 999, // 使用從 data_id 表獲取的 ID，如果沒有則使用 999
-        action: action === 'Add' ? 'Product Added' : 'Product Update',
-        plt_num: null, // 產品操作不涉及棧板
-        loc: null, // 產品操作不涉及位置
-        remark: productCode // 只記錄產品代碼
-      });
-    
+    const { error } = await supabase.from('record_history').insert({
+      time: new Date().toISOString(),
+      id: userId || 999, // 使用從 data_id 表獲取的 ID，如果沒有則使用 999
+      action: action === 'Add' ? 'Product Added' : 'Product Update',
+      plt_num: null, // 產品操作不涉及棧板
+      loc: null, // 產品操作不涉及位置
+      remark: productCode, // 只記錄產品代碼
+    });
+
     if (error) {
       console.error('[recordProductHistory] Error recording history:', error);
       // 不拋出錯誤，避免影響主要操作
     } else {
-      process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`[recordProductHistory] Recorded: ${action} for ${productCode} by user ID ${userId}`);
+      process.env.NODE_ENV !== 'production' &&
+        process.env.NODE_ENV !== 'production' &&
+        console.log(
+          `[recordProductHistory] Recorded: ${action} for ${productCode} by user ID ${userId}`
+        );
     }
   } catch (error) {
     console.error('[recordProductHistory] Unexpected error:', error);
@@ -69,7 +73,7 @@ async function recordProductHistory(
 export async function getProductByCode(code: string): Promise<ProductActionResult> {
   try {
     const supabase = await createClient();
-    
+
     // 第一步：嘗試精確匹配（原本工作的方式）
     const { data: exactData, error: exactError } = await supabase
       .from('data_code')
@@ -85,7 +89,7 @@ export async function getProductByCode(code: string): Promise<ProductActionResul
         description: productData.description,
         colour: productData.colour || '',
         standard_qty: parseInt(productData.standard_qty) || 0,
-        type: productData.type
+        type: productData.type,
       };
       return { success: true, data: result };
     }
@@ -96,7 +100,7 @@ export async function getProductByCode(code: string): Promise<ProductActionResul
       .select('code, description, colour, standard_qty, type')
       .ilike('code', code.trim())
       .limit(1);
-    
+
     if (fuzzyError) {
       console.error('[getProductByCode] Search error:', fuzzyError);
       return { success: false, error: `Search error: ${fuzzyError.message}` };
@@ -112,7 +116,7 @@ export async function getProductByCode(code: string): Promise<ProductActionResul
       description: productData.description,
       colour: productData.colour || '',
       standard_qty: parseInt(productData.standard_qty) || 0,
-      type: productData.type
+      type: productData.type,
     };
 
     return { success: true, data: result };
@@ -125,10 +129,13 @@ export async function getProductByCode(code: string): Promise<ProductActionResul
 /**
  * 更新現有產品信息 (支援大小寫不敏感搜尋)
  */
-export async function updateProduct(code: string, productData: Partial<ProductData>): Promise<ProductActionResult> {
+export async function updateProduct(
+  code: string,
+  productData: Partial<ProductData>
+): Promise<ProductActionResult> {
   try {
     const supabase = await createClient();
-    
+
     // 第一步：檢查是否有匹配的產品代碼（大小寫不敏感）
     const { data: allMatches, error: checkError } = await supabase
       .from('data_code')
@@ -145,15 +152,17 @@ export async function updateProduct(code: string, productData: Partial<ProductDa
     }
 
     if (allMatches.length > 1) {
-      process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.warn(`Multiple products found for code "${code}":`, allMatches);
+      process.env.NODE_ENV !== 'production' &&
+        process.env.NODE_ENV !== 'production' &&
+        console.warn(`Multiple products found for code "${code}":`, allMatches);
     }
 
     // 使用第一個匹配的實際代碼
     const actualCode = allMatches[0].code;
-    
+
     // 移除 code 字段，因為它是主鍵不應該被更新
     const { code: _, ...updateData } = productData;
-    
+
     // 第二步：使用實際代碼進行精確更新
     const { data, error } = await supabase
       .from('data_code')
@@ -186,11 +195,7 @@ export async function updateProduct(code: string, productData: Partial<ProductDa
 export async function createProduct(productData: ProductData): Promise<ProductActionResult> {
   try {
     const supabase = await createClient();
-    const { data, error } = await supabase
-      .from('data_code')
-      .insert(productData)
-      .select()
-      .single();
+    const { data, error } = await supabase.from('data_code').insert(productData).select().single();
 
     if (error) {
       if (error.code === '23505') {
@@ -213,10 +218,12 @@ export async function createProduct(productData: ProductData): Promise<ProductAc
 /**
  * 檢查產品代碼是否存在 (支援大小寫不敏感搜尋)
  */
-export async function checkProductExists(code: string): Promise<{ exists: boolean; error?: string }> {
+export async function checkProductExists(
+  code: string
+): Promise<{ exists: boolean; error?: string }> {
   try {
     const supabase = await createClient();
-    
+
     // 使用 ilike 進行大小寫不敏感的檢查
     const { data, error } = await supabase
       .from('data_code')
@@ -233,7 +240,12 @@ export async function checkProductExists(code: string): Promise<{ exists: boolea
     }
 
     if (data.length > 1) {
-      process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.warn(`Multiple products found for code "${code}":`, data.map(p => p.code));
+      process.env.NODE_ENV !== 'production' &&
+        process.env.NODE_ENV !== 'production' &&
+        console.warn(
+          `Multiple products found for code "${code}":`,
+          data.map(p => p.code)
+        );
     }
 
     return { exists: true };
@@ -246,59 +258,53 @@ export async function checkProductExists(code: string): Promise<{ exists: boolea
 /**
  * 使用原生 SQL 更新產品信息 (推薦方式)
  */
-export async function updateProductSQL(code: string, productData: Partial<ProductData>): Promise<ProductActionResult> {
+export async function updateProductSQL(
+  code: string,
+  productData: Partial<ProductData>
+): Promise<ProductActionResult> {
   try {
     const supabase = await createClient();
-    
+
     // 移除 code 字段，因為它是主鍵不應該被更新
     const { code: _, ...updateData } = productData;
-    
+
     // 使用 Supabase 的 SQL 查詢，利用 UPPER() 函數進行大小寫不敏感比較
     let query = supabase
       .from('data_code')
       .update(updateData)
       .eq('code', code.toUpperCase()) // 先嘗試大寫匹配
       .select();
-    
+
     let { data, error } = await query;
-    
+
     // 如果大寫匹配失敗，嘗試小寫匹配
     if (!data || data.length === 0) {
-      query = supabase
-        .from('data_code')
-        .update(updateData)
-        .eq('code', code.toLowerCase())
-        .select();
-      
+      query = supabase.from('data_code').update(updateData).eq('code', code.toLowerCase()).select();
+
       const result = await query;
       data = result.data;
       error = result.error;
     }
-    
+
     // 如果還是失敗，嘗試原始輸入匹配
     if (!data || data.length === 0) {
-      query = supabase
-        .from('data_code')
-        .update(updateData)
-        .eq('code', code)
-        .select();
-      
+      query = supabase.from('data_code').update(updateData).eq('code', code).select();
+
       const result = await query;
       data = result.data;
       error = result.error;
     }
-    
+
     if (error) {
       console.error('Error executing SQL update:', error);
       return { success: false, error: `SQL update failed: ${error.message}` };
     }
-    
+
     if (!data || data.length === 0) {
       return { success: false, error: 'Product not found for update' };
     }
-    
+
     return { success: true, data: data[0] };
-    
   } catch (error) {
     console.error('Error in updateProductSQL:', error);
     return { success: false, error: 'Failed to execute SQL update' };
@@ -311,7 +317,7 @@ export async function updateProductSQL(code: string, productData: Partial<Produc
 export async function getProductByCodeSQL(code: string): Promise<ProductActionResult> {
   try {
     const supabase = await createClient();
-    
+
     // 使用 ilike 進行大小寫不敏感查詢（PostgreSQL 特有）
     const { data, error } = await supabase
       .from('data_code')
@@ -319,7 +325,7 @@ export async function getProductByCodeSQL(code: string): Promise<ProductActionRe
       .ilike('code', code.trim())
       .limit(1)
       .single();
-    
+
     if (error) {
       if (error.code === 'PGRST116') {
         return { success: false, error: 'Product not found' };
@@ -327,9 +333,8 @@ export async function getProductByCodeSQL(code: string): Promise<ProductActionRe
       console.error('Error executing SQL query:', error);
       return { success: false, error: error.message };
     }
-    
+
     return { success: true, data };
-    
   } catch (error) {
     console.error('Error in getProductByCodeSQL:', error);
     return { success: false, error: 'Unexpected error occurred' };
@@ -339,48 +344,50 @@ export async function getProductByCodeSQL(code: string): Promise<ProductActionRe
 /**
  * 使用優化 SQL 更新產品信息 (最佳方式)
  */
-export async function updateProductOptimized(code: string, productData: Partial<ProductData>): Promise<ProductActionResult> {
+export async function updateProductOptimized(
+  code: string,
+  productData: Partial<ProductData>
+): Promise<ProductActionResult> {
   try {
     const supabase = await createClient();
-    
+
     // 第一步：先確認產品確實存在
     const { data: existingData, error: checkError } = await supabase
       .from('data_code')
       .select('*')
       .eq('code', code);
-    
+
     if (checkError) {
       console.error('Error checking existing product:', checkError);
       return { success: false, error: `Check failed: ${checkError.message}` };
     }
-    
+
     if (!existingData || existingData.length === 0) {
       return { success: false, error: 'Product not found for update' };
     }
-    
+
     // 移除 code 字段，因為它是主鍵不應該被更新
     const { code: _, ...updateData } = productData;
-    
+
     // 第二步：使用精確匹配進行更新
     const { data, error } = await supabase
       .from('data_code')
       .update(updateData)
-      .eq('code', code)  // 使用精確匹配
+      .eq('code', code) // 使用精確匹配
       .select();
-    
+
     if (error) {
       console.error('Error executing optimized update:', error);
       return { success: false, error: `Optimized update failed: ${error.message}` };
     }
-    
+
     if (!data || data.length === 0) {
       return { success: false, error: 'Product not found for update' };
     }
-    
+
     return { success: true, data: data[0] };
-    
   } catch (error) {
     console.error('Error in updateProductOptimized:', error);
     return { success: false, error: 'Failed to execute optimized update' };
   }
-} 
+}

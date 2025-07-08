@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useCallback } from 'react';
-import { createClient } from '@/app/utils/supabase/client';
+import { validateSupplierCode } from '@/app/actions/grnActions';
 import { grnErrorHandler } from '../services/ErrorHandler';
 
 interface SupplierInfo {
@@ -39,54 +39,44 @@ export const useSupplierValidation = (): UseSupplierValidationReturn => {
     setSupplierError(null);
 
     try {
-      const supabase = createClient();
-      
-      // 使用 RPC 函數代替直接查詢
-      const { data, error } = await supabase
-        .rpc('search_supplier_code', { 
-          p_code: supplierCode.toUpperCase() 
-        });
+      // 使用 Server Action
+      const result = await validateSupplierCode(supplierCode);
 
-      if (error || !data) {
+      if (!result.success || !result.data) {
         setSupplierInfo(null);
-        const errorMsg = 'Supplier Code Not Found';
+        const errorMsg = result.error || 'Supplier Code Not Found';
         setSupplierError(errorMsg);
-        process.env.NODE_ENV !== "production" && console.log('[useSupplierValidation] Supplier not found:', supplierCode);
-        
-        grnErrorHandler.handleSupplierError(
-          error || errorMsg,
-          supplierCode,
-          {
-            component: 'useSupplierValidation',
-            action: 'supplier_validation'
-          }
-        );
+        process.env.NODE_ENV !== 'production' &&
+          console.log('[useSupplierValidation] Supplier not found:', supplierCode);
+
+        grnErrorHandler.handleSupplierError(errorMsg, supplierCode, {
+          component: 'useSupplierValidation',
+          action: 'supplier_validation',
+        });
+        return null;
       } else {
-        // RPC 函數返回的數據直接使用
-        const supplierData = data as SupplierInfo;
+        // Server Action 返回的數據
+        const supplierData = result.data;
         setSupplierInfo(supplierData);
         setSupplierError(null);
-        process.env.NODE_ENV !== "production" && console.log('[useSupplierValidation] Supplier found:', supplierData);
-        return supplierData; // Return the found supplier
+        process.env.NODE_ENV !== 'production' &&
+          console.log('[useSupplierValidation] Supplier found:', supplierData);
+        return supplierData;
       }
     } catch (error) {
       console.error('[useSupplierValidation] Error validating supplier:', error);
       setSupplierInfo(null);
       const errorMsg = 'Error validating supplier';
       setSupplierError(errorMsg);
-      
-      grnErrorHandler.handleSupplierError(
-        error as Error,
-        supplierCode,
-        {
-          component: 'useSupplierValidation',
-          action: 'supplier_validation'
-        }
-      );
+
+      grnErrorHandler.handleSupplierError(error as Error, supplierCode, {
+        component: 'useSupplierValidation',
+        action: 'supplier_validation',
+      });
     } finally {
       setIsValidating(false);
     }
-    
+
     return null; // Return null if no supplier found
   }, []);
 
@@ -100,7 +90,7 @@ export const useSupplierValidation = (): UseSupplierValidationReturn => {
     supplierError,
     isValidating,
     validateSupplier,
-    clearSupplierInfo
+    clearSupplierInfo,
   };
 };
 

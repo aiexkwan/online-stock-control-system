@@ -19,5 +19,5 @@ export const validationPatterns = {
   numeric: /^\d+$/,
   decimal: /^\d*\.?\d+$/,
   alphanumeric: /^[a-zA-Z0-9]+$/,
-  phoneNumber: /^[\d\s\-\+\(\)]+$/
+  phoneNumber: /^[\d\s\-\+\(\)]+$/,
 };

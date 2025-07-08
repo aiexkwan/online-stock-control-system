@@ -36,7 +36,7 @@ export const cacheWarmupConfig: WarmupConfig = {
   concurrency: 5,
   timeout: 30000, // 30 seconds
   retryAttempts: 3,
-  
+
   businessHours: {
     start: '08:00',
     end: '18:00',
@@ -82,9 +82,7 @@ export const cacheWarmupConfig: WarmupConfig = {
     // 經常訪問的數據
     userPermissions: {
       priority: 'high',
-      schedules: [
-        { time: '0 6 * * *', enabled: true, description: '每日清晨預熱' },
-      ],
+      schedules: [{ time: '0 6 * * *', enabled: true, description: '每日清晨預熱' }],
       dataPattern: 'users:permissions',
       keyPattern: 'users:*:permissions',
       ttlSeconds: 7200, // 2 hours
@@ -92,9 +90,7 @@ export const cacheWarmupConfig: WarmupConfig = {
 
     productCatalog: {
       priority: 'medium',
-      schedules: [
-        { time: '0 5 * * *', enabled: true, description: '每日預熱產品目錄' },
-      ],
+      schedules: [{ time: '0 5 * * *', enabled: true, description: '每日預熱產品目錄' }],
       dataPattern: 'products:catalog',
       keyPattern: 'products:*:details',
       ttlSeconds: 3600, // 1 hour
@@ -103,9 +99,7 @@ export const cacheWarmupConfig: WarmupConfig = {
     // 報表和分析數據
     analyticsData: {
       priority: 'medium',
-      schedules: [
-        { time: '0 6 * * 1', enabled: true, description: '週一預熱分析數據' },
-      ],
+      schedules: [{ time: '0 6 * * 1', enabled: true, description: '週一預熱分析數據' }],
       dataPattern: 'analytics:dashboard',
       keyPattern: 'analytics:*',
       ttlSeconds: 21600, // 6 hours
@@ -114,9 +108,7 @@ export const cacheWarmupConfig: WarmupConfig = {
     // 系統配置數據
     systemConfigs: {
       priority: 'low',
-      schedules: [
-        { time: '0 4 * * *', enabled: true, description: '每日凌晨4點預熱' },
-      ],
+      schedules: [{ time: '0 4 * * *', enabled: true, description: '每日凌晨4點預熱' }],
       dataPattern: 'system:config',
       keyPattern: 'config:*',
       ttlSeconds: 43200, // 12 hours
@@ -127,7 +119,8 @@ export const cacheWarmupConfig: WarmupConfig = {
 export class CacheWarmupManager {
   private readonly config: WarmupConfig;
   private activeWarmups: Set<string> = new Set();
-  private warmupHistory: Map<string, { lastRun: Date; success: boolean; duration: number }> = new Map();
+  private warmupHistory: Map<string, { lastRun: Date; success: boolean; duration: number }> =
+    new Map();
 
   constructor(config: WarmupConfig) {
     this.config = config;
@@ -142,7 +135,7 @@ export class CacheWarmupManager {
 
     // 這裡應該集成實際的 cron 調度器，例如 node-cron
     logger.info('Cache warmup scheduler initialized');
-    
+
     // 示例：立即執行一次關鍵數據預熱
     this.warmupCriticalData();
   }
@@ -155,9 +148,7 @@ export class CacheWarmupManager {
     logger.info(`Starting critical data warmup for ${criticalStrategies.length} strategies`);
 
     await Promise.allSettled(
-      criticalStrategies.map(({ name, strategy }) => 
-        this.executeWarmupStrategy(name, strategy)
-      )
+      criticalStrategies.map(({ name, strategy }) => this.executeWarmupStrategy(name, strategy))
     );
   }
 
@@ -183,7 +174,7 @@ export class CacheWarmupManager {
 
       // 獲取需要預熱的數據
       const keysToWarmup = await this.getKeysToWarmup(strategy);
-      
+
       if (keysToWarmup.length === 0) {
         logger.info(`No keys to warmup for strategy: ${strategyName}`);
         return;
@@ -199,8 +190,9 @@ export class CacheWarmupManager {
         duration,
       });
 
-      logger.info(`Completed warmup strategy: ${strategyName} (${duration}ms, ${keysToWarmup.length} keys)`);
-
+      logger.info(
+        `Completed warmup strategy: ${strategyName} (${duration}ms, ${keysToWarmup.length} keys)`
+      );
     } catch (error) {
       const duration = Date.now() - startTime;
       this.warmupHistory.set(strategyName, {
@@ -226,7 +218,8 @@ export class CacheWarmupManager {
       // 檢查依賴是否過期（超過1小時）
       const now = Date.now();
       const lastRun = history.lastRun.getTime();
-      if (now - lastRun > 3600000) { // 1 hour
+      if (now - lastRun > 3600000) {
+        // 1 hour
         logger.warn(`Dependency ${dep} is stale (last run: ${history.lastRun})`);
         return false;
       }
@@ -292,11 +285,7 @@ export class CacheWarmupManager {
 
       case 'system:config':
         // 預熱系統配置
-        keys.push(
-          'config:app:settings',
-          'config:features:flags',
-          'config:ui:theme'
-        );
+        keys.push('config:app:settings', 'config:features:flags', 'config:ui:theme');
         break;
 
       default:
@@ -312,14 +301,16 @@ export class CacheWarmupManager {
     strategy: WarmupStrategy
   ): Promise<void> {
     const batches = this.chunkArray(keys, this.config.batchSize);
-    
+
     for (let i = 0; i < batches.length; i++) {
       const batch = batches[i];
-      logger.debug(`Processing batch ${i + 1}/${batches.length} for ${strategyName} (${batch.length} keys)`);
+      logger.debug(
+        `Processing batch ${i + 1}/${batches.length} for ${strategyName} (${batch.length} keys)`
+      );
 
       // 並發處理批次內的鍵
-      const promises = batch.map((key, index) => 
-        this.warmupSingleKey(key, strategy, index * 100) // 錯開執行避免瞬間負載
+      const promises = batch.map(
+        (key, index) => this.warmupSingleKey(key, strategy, index * 100) // 錯開執行避免瞬間負載
       );
 
       await Promise.allSettled(promises);
@@ -344,7 +335,6 @@ export class CacheWarmupManager {
       } else {
         logger.debug(`No data available for warmup key: ${key}`);
       }
-
     } catch (error) {
       logger.error(`Failed to warmup key ${key}:`, error);
     }
@@ -355,20 +345,16 @@ export class CacheWarmupManager {
    * 實施建議方案2的 fallback 機制
    */
   private async getCachedWithFallback(key: string, strategy: WarmupStrategy): Promise<any> {
-    return await getCachedWithFallback(
-      key,
-      () => this.fetchDataForKey(key, strategy),
-      { 
-        ttlSeconds: strategy.ttlSeconds,
-        silent: false // 暖機過程中顯示日誌以便調試
-      }
-    );
+    return await getCachedWithFallback(key, () => this.fetchDataForKey(key, strategy), {
+      ttlSeconds: strategy.ttlSeconds,
+      silent: false, // 暖機過程中顯示日誌以便調試
+    });
   }
 
   private async fetchDataForKey(key: string, strategy: WarmupStrategy): Promise<any> {
     // 這裡應該調用實際的數據獲取邏輯
     // 根據緩存鍵和策略類型，從 GraphQL resolver 或數據層獲取數據
-    
+
     // 模擬數據獲取延遲
     await this.sleep(Math.random() * 500 + 100);
 
@@ -430,7 +416,7 @@ export class CacheWarmupManager {
 
   private async warmupHighFrequencyData(): Promise<void> {
     const highFreqStrategies = ['warehouseSummary', 'activeOrders', 'lowStockProducts'];
-    
+
     for (const strategyName of highFreqStrategies) {
       const strategy = this.config.strategies[strategyName];
       if (strategy) {
@@ -441,7 +427,7 @@ export class CacheWarmupManager {
 
   private async warmupLongTermData(): Promise<void> {
     const longTermStrategies = ['analyticsData', 'systemConfigs'];
-    
+
     for (const strategyName of longTermStrategies) {
       const strategy = this.config.strategies[strategyName];
       if (strategy) {
@@ -451,11 +437,13 @@ export class CacheWarmupManager {
   }
 
   // 基於用戶行為的預測性預熱
-  async predictiveWarmup(userPatterns: Array<{ userId: string; frequentQueries: string[] }>): Promise<void> {
+  async predictiveWarmup(
+    userPatterns: Array<{ userId: string; frequentQueries: string[] }>
+  ): Promise<void> {
     logger.info(`Starting predictive warmup for ${userPatterns.length} user patterns`);
 
     const queryFrequency = new Map<string, number>();
-    
+
     // 分析查詢頻率
     userPatterns.forEach(pattern => {
       pattern.frequentQueries.forEach(query => {
@@ -473,7 +461,7 @@ export class CacheWarmupManager {
       try {
         const cacheKey = `predictive:${query}`;
         const ttl = Math.min(frequency * 300, 3600); // 頻率越高，TTL越長，最大1小時
-        
+
         // 模擬執行查詢並緩存結果
         const result = await this.fetchDataForKey(cacheKey, {
           priority: 'medium',
@@ -485,7 +473,6 @@ export class CacheWarmupManager {
 
         await redisCacheAdapter.set(cacheKey, result, ttl);
         logger.debug(`Predictively warmed up: ${query} (frequency: ${frequency})`);
-
       } catch (error) {
         logger.error(`Failed predictive warmup for query ${query}:`, error);
       }
@@ -519,7 +506,7 @@ export class CacheWarmupManager {
         ...info,
       })),
       totalStrategies: Object.keys(this.config.strategies).length,
-      enabledStrategies: Object.values(this.config.strategies).filter(s => 
+      enabledStrategies: Object.values(this.config.strategies).filter(s =>
         s.schedules.some(schedule => schedule.enabled)
       ).length,
     };
@@ -528,7 +515,7 @@ export class CacheWarmupManager {
   // 手動觸發預熱
   async manualWarmup(strategyNames?: string[]): Promise<void> {
     const strategies = strategyNames || Object.keys(this.config.strategies);
-    
+
     logger.info(`Manual warmup triggered for strategies: ${strategies.join(', ')}`);
 
     for (const strategyName of strategies) {
@@ -546,8 +533,11 @@ export class CacheWarmupManager {
 export const cacheWarmupManager = new CacheWarmupManager(cacheWarmupConfig);
 
 // 定期執行業務時間預熱
-setInterval(() => {
-  if (cacheWarmupConfig.enabled) {
-    cacheWarmupManager.scheduleBusinessHoursWarmup();
-  }
-}, 30 * 60 * 1000); // 每30分鐘檢查一次 
+setInterval(
+  () => {
+    if (cacheWarmupConfig.enabled) {
+      cacheWarmupManager.scheduleBusinessHoursWarmup();
+    }
+  },
+  30 * 60 * 1000
+); // 每30分鐘檢查一次

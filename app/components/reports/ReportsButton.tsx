@@ -19,12 +19,12 @@ interface ReportsButtonProps {
   children?: React.ReactNode;
 }
 
-export function ReportsButton({ 
+export function ReportsButton({
   variant = 'default',
   size = 'default',
   className,
   showIcon = true,
-  children
+  children,
 }: ReportsButtonProps) {
   const [isOpen, setIsOpen] = useState(false);
 
@@ -36,14 +36,11 @@ export function ReportsButton({
         className={cn(className)}
         onClick={() => setIsOpen(true)}
       >
-        {showIcon && <FileText className="h-4 w-4 mr-2" />}
+        {showIcon && <FileText className='mr-2 h-4 w-4' />}
         {children || 'Reports'}
       </Button>
-      
-      <ReportsDashboardDialog
-        isOpen={isOpen}
-        onClose={() => setIsOpen(false)}
-      />
+
+      <ReportsDashboardDialog isOpen={isOpen} onClose={() => setIsOpen(false)} />
     </>
   );
 }
@@ -58,19 +55,16 @@ export function ReportsIconButton({ className }: { className?: string }) {
   return (
     <>
       <Button
-        variant="ghost"
-        size="icon"
-        className={cn("relative", className)}
+        variant='ghost'
+        size='icon'
+        className={cn('relative', className)}
         onClick={() => setIsOpen(true)}
-        title="Report Center"
+        title='Report Center'
       >
-        <FileText className="h-5 w-5" />
+        <FileText className='h-5 w-5' />
       </Button>
-      
-      <ReportsDashboardDialog
-        isOpen={isOpen}
-        onClose={() => setIsOpen(false)}
-      />
+
+      <ReportsDashboardDialog isOpen={isOpen} onClose={() => setIsOpen(false)} />
     </>
   );
 }

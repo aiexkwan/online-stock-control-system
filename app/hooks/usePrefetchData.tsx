@@ -13,13 +13,29 @@ interface PrefetchOptions {
   refreshInterval?: number;
 }
 
+/**
+ * Data prefetching hook
+ * 數據預取 Hook
+ *
+ * @deprecated This hook is deprecated. Please use Server Actions with proper caching strategies instead.
+ * Consider using React Query/SWR for client-side caching with Server Actions.
+ *
+ * @example
+ * ```typescript
+ * // OLD (deprecated)
+ * const { prefetchData, getPrefetchedData } = usePrefetchData(options);
+ *
+ * // NEW (recommended) - Use Server Actions with caching
+ * import { unstable_cache } from 'next/cache';
+ * import { getDataFromTable } from '@/app/actions/dataActions';
+ *
+ * const cachedGetData = unstable_cache(getDataFromTable, ['data-key'], {
+ *   revalidate: 300 // 5 minutes
+ * });
+ * ```
+ */
 export const usePrefetchData = (options: PrefetchOptions = {}) => {
-  const {
-    enabled = true,
-    tables = [],
-    queries = [],
-    refreshInterval = 0
-  } = options;
+  const { enabled = true, tables = [], queries = [], refreshInterval = 0 } = options;
 
   const supabase = createClient();
   const prefetchedData = useRef<Map<string, any>>(new Map());
@@ -29,11 +45,9 @@ export const usePrefetchData = (options: PrefetchOptions = {}) => {
   const prefetchData = useCallback(async () => {
     if (!enabled) return;
 
-    const promises = queries.map(async (query) => {
+    const promises = queries.map(async query => {
       try {
-        const queryBuilder = supabase
-          .from(query.table)
-          .select(query.select);
+        const queryBuilder = supabase.from(query.table).select(query.select);
 
         // 應用過濾條件
         if (query.filter) {
@@ -52,7 +66,9 @@ export const usePrefetchData = (options: PrefetchOptions = {}) => {
         if (!error && data) {
           const cacheKey = `${query.table}-${JSON.stringify(query.filter || {})}`;
           prefetchedData.current.set(cacheKey, data);
-          process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`[Prefetch] 預取 ${query.table} 成功，${data.length} 筆資料`);
+          process.env.NODE_ENV !== 'production' &&
+            process.env.NODE_ENV !== 'production' &&
+            console.log(`[Prefetch] 預取 ${query.table} 成功，${data.length} 筆資料`);
         }
       } catch (error) {
         console.error(`[Prefetch] 預取 ${query.table} 失敗:`, error);
@@ -91,6 +107,6 @@ export const usePrefetchData = (options: PrefetchOptions = {}) => {
   return {
     prefetchData,
     getPrefetchedData,
-    clearPrefetchedData: () => prefetchedData.current.clear()
+    clearPrefetchedData: () => prefetchedData.current.clear(),
   };
 };

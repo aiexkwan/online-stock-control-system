@@ -14,7 +14,7 @@ interface State {
 class ErrorBoundary extends Component<Props, State> {
   public state: State = {
     hasError: false,
-    error: null
+    error: null,
   };
 
   public static getDerivedStateFromError(error: Error): State {
@@ -28,24 +28,24 @@ class ErrorBoundary extends Component<Props, State> {
   public render() {
     if (this.state.hasError) {
       return (
-        <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-          <div className="max-w-md w-full space-y-8">
+        <div className='flex min-h-screen items-center justify-center bg-gray-50 px-4 py-12 sm:px-6 lg:px-8'>
+          <div className='w-full max-w-md space-y-8'>
             <div>
-              <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
+              <h2 className='mt-6 text-center text-3xl font-extrabold text-gray-900'>
                 Something went wrong
               </h2>
-              <p className="mt-2 text-center text-sm text-gray-600">
+              <p className='mt-2 text-center text-sm text-gray-600'>
                 We&apos;re working to fix this issue. Please try again later.
               </p>
               {this.state.error && (
-                <pre className="mt-4 p-4 bg-red-50 rounded-md text-sm text-red-600 overflow-auto">
+                <pre className='mt-4 overflow-auto rounded-md bg-red-50 p-4 text-sm text-red-600'>
                   {this.state.error.toString()}
                 </pre>
               )}
-              <div className="mt-6 text-center">
+              <div className='mt-6 text-center'>
                 <button
                   onClick={() => window.location.reload()}
-                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                  className='inline-flex items-center rounded-md border border-transparent bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2'
                 >
                   Reload page
                 </button>
@@ -60,4 +60,4 @@ class ErrorBoundary extends Component<Props, State> {
   }
 }
 
-export default ErrorBoundary; 
+export default ErrorBoundary;

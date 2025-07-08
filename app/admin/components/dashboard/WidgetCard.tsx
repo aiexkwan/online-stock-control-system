@@ -19,20 +19,20 @@ interface WidgetCardProps {
   // size 已移除 - admin dashboard 使用固定佈局
 }
 
-export function WidgetCard({ 
-  widgetType, 
-  isEditMode = false, 
-  className = '', 
+export function WidgetCard({
+  widgetType,
+  isEditMode = false,
+  className = '',
   children,
   onClick,
   // size parameter removed
 }: WidgetCardProps) {
   const borderStyle = WidgetStyles.borders[widgetType] || '';
-  
+
   // 所有 widget 使用固定佈局
-  
+
   return (
-    <div 
+    <div
       onClick={onClick}
       className={cn(
         // 基礎樣式
@@ -42,7 +42,7 @@ export function WidgetCard({
         // Widget 專屬邊框（已移除）
         borderStyle,
         // 編輯模式樣式（保留編輯模式邊框）
-        isEditMode && 'border-dashed border-2 border-blue-500/50',
+        isEditMode && 'border-2 border-dashed border-blue-500/50',
         // 確保內容不會溢出圓角
         'overflow-hidden',
         // Flex 佈局
@@ -51,12 +51,7 @@ export function WidgetCard({
         className
       )}
     >
-      <div className={cn(
-        "flex-1 min-h-0",
-        "overflow-auto widget-content"
-      )}>
-        {children}
-      </div>
+      <div className={cn('min-h-0 flex-1', 'widget-content overflow-auto')}>{children}</div>
     </div>
   );
 }

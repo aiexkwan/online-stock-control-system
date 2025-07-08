@@ -44,30 +44,27 @@ export class PrintLabelAPI extends DataAccessLayer<PrintJobParams, PrintJobResul
   constructor() {
     super('print-labels');
   }
-  
+
   /**
    * Server-side implementation for print job history and analytics
    */
   async serverFetch(params: PrintJobParams): Promise<PrintJobResult> {
     const supabase = await createClient();
-    
+
     // Get print job history
-    let query = supabase
-      .from('print_jobs')
-      .select('*')
-      .order('created_at', { ascending: false });
-    
+    let query = supabase.from('print_jobs').select('*').order('created_at', { ascending: false });
+
     if (params.type) {
       query = query.eq('label_type', params.type);
     }
     if (params.productCode) {
       query = query.eq('product_code', params.productCode);
     }
-    
+
     const { data, error } = await query.limit(100);
-    
+
     if (error) throw error;
-    
+
     // Transform data
     const jobs: PrintJob[] = (data || []).map(row => ({
       id: row.id,
@@ -78,9 +75,9 @@ export class PrintLabelAPI extends DataAccessLayer<PrintJobParams, PrintJobResul
       createdAt: row.created_at,
       completedAt: row.completed_at,
       errorMessage: row.error_message,
-      retryCount: row.retry_count || 0
+      retryCount: row.retry_count || 0,
     }));
-    
+
     // Calculate summary
     const summary = {
       total: jobs.length,
@@ -88,14 +85,15 @@ export class PrintLabelAPI extends DataAccessLayer<PrintJobParams, PrintJobResul
       printing: jobs.filter(j => j.status === 'printing').length,
       completed: jobs.filter(j => j.status === 'completed').length,
       failed: jobs.filter(j => j.status === 'failed').length,
-      successRate: jobs.length > 0 
-        ? (jobs.filter(j => j.status === 'completed').length / jobs.length) * 100 
-        : 0
+      successRate:
+        jobs.length > 0
+          ? (jobs.filter(j => j.status === 'completed').length / jobs.length) * 100
+          : 0,
     };
-    
+
     return { jobs, summary };
   }
-  
+
   /**
    * Client-side implementation for real-time job monitoring
    */
@@ -106,7 +104,7 @@ export class PrintLabelAPI extends DataAccessLayer<PrintJobParams, PrintJobResul
     }
     return response.json();
   }
-  
+
   /**
    * Print operations are always real-time
    */
@@ -133,10 +131,10 @@ export class PrintOperationsAPI {
       product_code: data.productCode,
       plt_num: data.palletNum,
       product_qty: data.quantity.toString(),
-      id: data.operatorId
+      id: data.operatorId,
     });
   }
-  
+
   /**
    * Generate GRN Label
    */
@@ -150,72 +148,72 @@ export class PrintOperationsAPI {
       supplier_name: data.supplierName,
       material_code: data.materialCode,
       quantity: data.quantity.toString(),
-      operator_id: data.operatorId
+      operator_id: data.operatorId,
     });
   }
-  
+
   /**
    * Batch print multiple labels
    */
-  static async batchPrint(labels: Array<{
-    type: 'qc' | 'grn';
-    data: any;
-  }>) {
+  static async batchPrint(
+    labels: Array<{
+      type: 'qc' | 'grn';
+      data: any;
+    }>
+  ) {
     // Process labels in parallel with concurrency limit
     const BATCH_SIZE = 5;
     const results = [];
-    
+
     for (let i = 0; i < labels.length; i += BATCH_SIZE) {
       const batch = labels.slice(i, i + BATCH_SIZE);
       const batchResults = await Promise.allSettled(
-        batch.map(label => 
-          label.type === 'qc' 
-            ? this.generateQCLabel(label.data)
-            : this.generateGRNLabel(label.data)
+        batch.map(label =>
+          label.type === 'qc' ? this.generateQCLabel(label.data) : this.generateGRNLabel(label.data)
         )
       );
       results.push(...batchResults);
     }
-    
+
     const successful = results.filter(r => r.status === 'fulfilled').length;
     const failed = results.filter(r => r.status === 'rejected').length;
-    
+
     return {
       success: true,
       total: labels.length,
       successful,
       failed,
-      results
+      results,
     };
   }
-  
+
   /**
    * Cancel print job
    */
   static async cancelJob(jobId: string) {
     const response = await fetch(`/api/print/jobs/${jobId}/cancel`, {
-      method: 'POST'
+      method: 'POST',
     });
-    
+
     if (!response.ok) {
       throw new Error('Failed to cancel print job');
     }
-    
+
     return response.json();
   }
-  
+
   /**
    * Retry failed job
    */
   static async retryJob(jobId: string) {
     const response = await fetch(`/api/print/jobs/${jobId}/retry`, {
-      method: 'POST'
+      method: 'POST',
     });
-    
+
     if (!response.ok) {
       throw new Error('Failed to retry print job');
     }
-    
+
     return response.json();
   }
 }
@@ -230,51 +228,53 @@ export function usePrintJobs(params: PrintJobParams) {
   const [jobs, setJobs] = useState<PrintJob[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const wsRef = useRef<WebSocket | null>(null);
-  
+
+  // Extract complex expression to separate variable for static checking
+  const paramsKey = JSON.stringify(params);
+
   useEffect(() => {
     // Initial fetch
     const api = createPrintLabelAPI();
-    api.fetch(params, { strategy: 'client' })
-      .then(result => {
-        setJobs(result.jobs);
-        setIsLoading(false);
-      });
-    
+    api.fetch(params, { strategy: 'client' }).then(result => {
+      setJobs(result.jobs);
+      setIsLoading(false);
+    });
+
     // Setup WebSocket for real-time updates
     const ws = new WebSocket('/api/print/realtime');
     wsRef.current = ws;
-    
-    ws.onmessage = (event) => {
+
+    ws.onmessage = event => {
       const update = JSON.parse(event.data);
       if (update.type === 'job_update') {
-        setJobs(prev => 
-          prev.map(job => 
-            job.id === update.jobId 
-              ? { ...job, ...update.changes }
-              : job
-          )
+        setJobs(prev =>
+          prev.map(job => (job.id === update.jobId ? { ...job, ...update.changes } : job))
         );
       }
     };
-    
+
     return () => {
       if (wsRef.current) {
         wsRef.current.close();
       }
     };
-  }, [JSON.stringify(params)]);
-  
+  }, [paramsKey, params]);
+
   // Optimistic update for local operations
   const updateJobStatus = useCallback((jobId: string, status: PrintJob['status']) => {
-    setJobs(prev => 
-      prev.map(job => 
-        job.id === jobId 
-          ? { ...job, status, completedAt: status === 'completed' ? new Date().toISOString() : job.completedAt }
+    setJobs(prev =>
+      prev.map(job =>
+        job.id === jobId
+          ? {
+              ...job,
+              status,
+              completedAt: status === 'completed' ? new Date().toISOString() : job.completedAt,
+            }
           : job
       )
     );
   }, []);
-  
+
   return {
     jobs,
     isLoading,
@@ -284,6 +284,6 @@ export function usePrintJobs(params: PrintJobParams) {
     generateGRN: PrintOperationsAPI.generateGRNLabel,
     batchPrint: PrintOperationsAPI.batchPrint,
     cancelJob: PrintOperationsAPI.cancelJob,
-    retryJob: PrintOperationsAPI.retryJob
+    retryJob: PrintOperationsAPI.retryJob,
   };
 }

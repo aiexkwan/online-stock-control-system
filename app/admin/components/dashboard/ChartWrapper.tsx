@@ -16,13 +16,9 @@ interface ChartWrapperProps {
 
 export function ChartWrapper({ children, className, title }: ChartWrapperProps) {
   return (
-    <div className={cn("flex flex-col h-full", className)}>
-      {title && (
-        <h3 className="text-emerald-400 font-semibold font-mono text-lg mb-4">
-          {title}
-        </h3>
-      )}
-      <div className="flex-1 min-h-0" style={{ height: 'calc(100% - 2rem)' }}>
+    <div className={cn('flex h-full flex-col', className)}>
+      {title && <h3 className='mb-4 font-mono text-lg font-semibold text-emerald-400'>{title}</h3>}
+      <div className='min-h-0 flex-1' style={{ height: 'calc(100% - 2rem)' }}>
         {children}
       </div>
     </div>

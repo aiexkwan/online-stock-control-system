@@ -54,16 +54,25 @@ export const DEFAULT_TRANSFER_RULES: LocationTransferRule[] = [
   {
     fromLocation: 'DAMAGE',
     allowedDestinations: [], // Damage location typically doesn't allow transfers out
-    restrictedDestinations: ['PRODUCTION', 'PIPELINE', 'PREBOOK', 'AWAITING', 'FOLD', 'BULK', 'BACK_CARPARK', 'AWAIT_GRN'],
+    restrictedDestinations: [
+      'PRODUCTION',
+      'PIPELINE',
+      'PREBOOK',
+      'AWAITING',
+      'FOLD',
+      'BULK',
+      'BACK_CARPARK',
+      'AWAIT_GRN',
+    ],
     requiresApproval: true,
-    approvalRoles: ['admin', 'manager']
+    approvalRoles: ['admin', 'manager'],
   },
   {
     fromLocation: 'AWAIT_GRN',
     allowedDestinations: ['PRODUCTION', 'PIPELINE', 'AWAITING'], // Only to active locations after GRN
     restrictedDestinations: ['DAMAGE'],
-    requiresApproval: false
-  }
+    requiresApproval: false,
+  },
 ];
 
 /**
@@ -89,7 +98,7 @@ export interface LocationMetadata {
  * Complete location metadata definitions
  */
 export const LOCATION_METADATA: Record<StandardLocation, LocationMetadata> = {
-  'PRODUCTION': {
+  PRODUCTION: {
     standard: 'PRODUCTION',
     dbColumn: 'injection',
     displayName: 'Production',
@@ -97,9 +106,9 @@ export const LOCATION_METADATA: Record<StandardLocation, LocationMetadata> = {
     sortOrder: 1,
     icon: 'factory',
     color: '#3B82F6',
-    description: 'Active production area'
+    description: 'Active production area',
   },
-  'PIPELINE': {
+  PIPELINE: {
     standard: 'PIPELINE',
     dbColumn: 'pipeline',
     displayName: 'Pipeline',
@@ -107,9 +116,9 @@ export const LOCATION_METADATA: Record<StandardLocation, LocationMetadata> = {
     sortOrder: 2,
     icon: 'flow',
     color: '#8B5CF6',
-    description: 'In-process pipeline'
+    description: 'In-process pipeline',
   },
-  'PREBOOK': {
+  PREBOOK: {
     standard: 'PREBOOK',
     dbColumn: 'prebook',
     displayName: 'Prebook',
@@ -117,9 +126,9 @@ export const LOCATION_METADATA: Record<StandardLocation, LocationMetadata> = {
     sortOrder: 3,
     icon: 'calendar',
     color: '#10B981',
-    description: 'Pre-booked for orders'
+    description: 'Pre-booked for orders',
   },
-  'AWAITING': {
+  AWAITING: {
     standard: 'AWAITING',
     dbColumn: 'await',
     displayName: 'Awaiting',
@@ -127,9 +136,9 @@ export const LOCATION_METADATA: Record<StandardLocation, LocationMetadata> = {
     sortOrder: 4,
     icon: 'clock',
     color: '#F59E0B',
-    description: 'Awaiting next action'
+    description: 'Awaiting next action',
   },
-  'FOLD': {
+  FOLD: {
     standard: 'FOLD',
     dbColumn: 'fold',
     displayName: 'Fold',
@@ -137,9 +146,9 @@ export const LOCATION_METADATA: Record<StandardLocation, LocationMetadata> = {
     sortOrder: 5,
     icon: 'layers',
     color: '#6366F1',
-    description: 'Folded storage area'
+    description: 'Folded storage area',
   },
-  'BULK': {
+  BULK: {
     standard: 'BULK',
     dbColumn: 'bulk',
     displayName: 'Bulk',
@@ -147,9 +156,9 @@ export const LOCATION_METADATA: Record<StandardLocation, LocationMetadata> = {
     sortOrder: 6,
     icon: 'package',
     color: '#84CC16',
-    description: 'Bulk storage area'
+    description: 'Bulk storage area',
   },
-  'BACK_CARPARK': {
+  BACK_CARPARK: {
     standard: 'BACK_CARPARK',
     dbColumn: 'backcarpark',
     displayName: 'Back Carpark',
@@ -157,9 +166,9 @@ export const LOCATION_METADATA: Record<StandardLocation, LocationMetadata> = {
     sortOrder: 7,
     icon: 'parking',
     color: '#06B6D4',
-    description: 'External storage area'
+    description: 'External storage area',
   },
-  'DAMAGE': {
+  DAMAGE: {
     standard: 'DAMAGE',
     dbColumn: 'damage',
     displayName: 'Damage',
@@ -167,9 +176,9 @@ export const LOCATION_METADATA: Record<StandardLocation, LocationMetadata> = {
     sortOrder: 8,
     icon: 'alert',
     color: '#EF4444',
-    description: 'Damaged goods area'
+    description: 'Damaged goods area',
   },
-  'AWAIT_GRN': {
+  AWAIT_GRN: {
     standard: 'AWAIT_GRN',
     dbColumn: 'await_grn',
     displayName: 'Awaiting GRN',
@@ -177,8 +186,8 @@ export const LOCATION_METADATA: Record<StandardLocation, LocationMetadata> = {
     sortOrder: 9,
     icon: 'inbox',
     color: '#78716C',
-    description: 'Awaiting goods receipt'
-  }
+    description: 'Awaiting goods receipt',
+  },
 };
 
 /**
@@ -199,32 +208,32 @@ export function isTransferAllowed(
   rules: LocationTransferRule[] = DEFAULT_TRANSFER_RULES
 ): { allowed: boolean; requiresApproval: boolean; reason?: string } {
   const rule = rules.find(r => r.fromLocation === fromLocation);
-  
+
   if (!rule) {
     // No specific rules, transfer is allowed
     return { allowed: true, requiresApproval: false };
   }
-  
+
   // Check if destination is explicitly restricted
   if (rule.restrictedDestinations.includes(toLocation)) {
     return {
       allowed: false,
       requiresApproval: false,
-      reason: `Transfer from ${fromLocation} to ${toLocation} is not allowed`
+      reason: `Transfer from ${fromLocation} to ${toLocation} is not allowed`,
     };
   }
-  
+
   // Check if destination is in allowed list (if specified)
   if (rule.allowedDestinations.length > 0 && !rule.allowedDestinations.includes(toLocation)) {
     return {
       allowed: false,
       requiresApproval: false,
-      reason: `${toLocation} is not in the allowed destinations for ${fromLocation}`
+      reason: `${toLocation} is not in the allowed destinations for ${fromLocation}`,
     };
   }
-  
+
   return {
     allowed: true,
-    requiresApproval: rule.requiresApproval
+    requiresApproval: rule.requiresApproval,
   };
 }

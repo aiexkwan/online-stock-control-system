@@ -25,17 +25,13 @@ export function ProcessingSteps({ steps, isVisible }: ProcessingStepsProps) {
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -20 }}
           transition={{ duration: 0.3 }}
-          className="bg-slate-800/40 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-6 shadow-xl"
+          className='rounded-2xl border border-slate-700/50 bg-slate-800/40 p-6 shadow-xl backdrop-blur-xl'
         >
-          <h3 className="text-lg font-semibold text-white mb-4">Processing Void Operation</h3>
-          
-          <div className="space-y-3">
+          <h3 className='mb-4 text-lg font-semibold text-white'>Processing Void Operation</h3>
+
+          <div className='space-y-3'>
             {steps.map((step, index) => (
-              <ProcessingStepItem 
-                key={step.id} 
-                step={step} 
-                index={index}
-              />
+              <ProcessingStepItem key={step.id} step={step} index={index} />
             ))}
           </div>
         </motion.div>
@@ -48,15 +44,15 @@ function ProcessingStepItem({ step, index }: { step: ProcessingStep; index: numb
   const getIcon = () => {
     switch (step.status) {
       case 'pending':
-        return <div className="w-5 h-5 rounded-full border-2 border-gray-500" />;
+        return <div className='h-5 w-5 rounded-full border-2 border-gray-500' />;
       case 'processing':
-        return <Loader2 className="w-5 h-5 text-blue-400 animate-spin" />;
+        return <Loader2 className='h-5 w-5 animate-spin text-blue-400' />;
       case 'completed':
-        return <Check className="w-5 h-5 text-green-400" />;
+        return <Check className='h-5 w-5 text-green-400' />;
       case 'error':
-        return <X className="w-5 h-5 text-red-400" />;
+        return <X className='h-5 w-5 text-red-400' />;
       case 'warning':
-        return <AlertCircle className="w-5 h-5 text-yellow-400" />;
+        return <AlertCircle className='h-5 w-5 text-yellow-400' />;
     }
   };
 
@@ -95,9 +91,9 @@ function ProcessingStepItem({ step, index }: { step: ProcessingStep; index: numb
       initial={{ opacity: 0, x: -20 }}
       animate={{ opacity: 1, x: 0 }}
       transition={{ delay: index * 0.1 }}
-      className="flex items-start gap-3"
+      className='flex items-start gap-3'
     >
-      <div className="flex flex-col items-center">
+      <div className='flex flex-col items-center'>
         <motion.div
           animate={{
             scale: step.status === 'processing' ? [1, 1.2, 1] : 1,
@@ -110,22 +106,18 @@ function ProcessingStepItem({ step, index }: { step: ProcessingStep; index: numb
         >
           {getIcon()}
         </motion.div>
-        
+
         {/* Connecting line */}
         {index < 3 && (
-          <div className={`w-0.5 h-8 mt-2 ${getLineColor()} transition-colors duration-300`} />
+          <div className={`mt-2 h-8 w-0.5 ${getLineColor()} transition-colors duration-300`} />
         )}
       </div>
-      
-      <div className="flex-grow">
+
+      <div className='flex-grow'>
         <p className={`font-medium ${getTextColor()} transition-colors duration-300`}>
           {step.label}
         </p>
-        {step.message && (
-          <p className="text-sm text-gray-400 mt-1">
-            {step.message}
-          </p>
-        )}
+        {step.message && <p className='mt-1 text-sm text-gray-400'>{step.message}</p>}
       </div>
     </motion.div>
   );
@@ -136,23 +128,23 @@ export const defaultVoidSteps: ProcessingStep[] = [
   {
     id: 'validate',
     label: 'Validating pallet information',
-    status: 'pending'
+    status: 'pending',
   },
   {
     id: 'update',
     label: 'Updating pallet status',
-    status: 'pending'
+    status: 'pending',
   },
   {
     id: 'inventory',
     label: 'Adjusting inventory levels',
-    status: 'pending'
+    status: 'pending',
   },
   {
     id: 'complete',
     label: 'Completing void operation',
-    status: 'pending'
-  }
+    status: 'pending',
+  },
 ];
 
 // Hook for managing processing steps
@@ -161,11 +153,7 @@ export function useProcessingSteps() {
   const [isVisible, setIsVisible] = React.useState(false);
 
   const updateStep = React.useCallback((stepId: string, updates: Partial<ProcessingStep>) => {
-    setSteps((prev) => 
-      prev.map((step) => 
-        step.id === stepId ? { ...step, ...updates } : step
-      )
-    );
+    setSteps(prev => prev.map(step => (step.id === stepId ? { ...step, ...updates } : step)));
   }, []);
 
   const resetSteps = React.useCallback(() => {

@@ -13,11 +13,30 @@ const CACHE_EXPIRY = 30 * 60 * 1000; // 30分鐘
 
 // ACO 產品代碼列表（與現有系統一致）
 const ACO_PRODUCT_CODES = [
-  "MHALFWG", "MHALFWG15", "MHALFWG20", "MHALFWG30", "MHALFWG38", 
-  "MHALFWG45", "MHALFWG60", "MHCONKIT", "MHCONR", "MHEASY15", 
-  "MHEASY60", "MHEASYA", "MHEASYB", "MHLACO12Y", "MHLACO18Y", 
-  "MHLACO24Y", "MHLACO6Y", "MHWEDGE", "MHWEDGE15", "MHWEDGE20", 
-  "MHWEDGE30", "MHWEDGE38", "MHWEDGE45", "MHWEDGE60"
+  'MHALFWG',
+  'MHALFWG15',
+  'MHALFWG20',
+  'MHALFWG30',
+  'MHALFWG38',
+  'MHALFWG45',
+  'MHALFWG60',
+  'MHCONKIT',
+  'MHCONR',
+  'MHEASY15',
+  'MHEASY60',
+  'MHEASYA',
+  'MHEASYB',
+  'MHLACO12Y',
+  'MHLACO18Y',
+  'MHLACO24Y',
+  'MHLACO6Y',
+  'MHWEDGE',
+  'MHWEDGE15',
+  'MHWEDGE20',
+  'MHWEDGE30',
+  'MHWEDGE38',
+  'MHWEDGE45',
+  'MHWEDGE60',
 ];
 
 // 增強的訂單數據接口
@@ -57,7 +76,7 @@ function getCachedResult(fileHash: string): any | null {
 function setCachedResult(fileHash: string, data: any): void {
   fileCache.set(fileHash, {
     data,
-    timestamp: Date.now()
+    timestamp: Date.now(),
   });
 }
 
@@ -65,32 +84,32 @@ function setCachedResult(fileHash: string, data: any): void {
 function createSupabaseAdmin() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  
+
   if (!supabaseUrl || !serviceRoleKey) {
     throw new Error('Missing Supabase environment variables');
   }
-  
+
   return createClient(supabaseUrl, serviceRoleKey, {
     auth: { autoRefreshToken: false, persistSession: false },
     db: { schema: 'public' },
     global: {
       headers: {
-        'apikey': serviceRoleKey,
-        'Authorization': `Bearer ${serviceRoleKey}`
-      }
-    }
+        apikey: serviceRoleKey,
+        Authorization: `Bearer ${serviceRoleKey}`,
+      },
+    },
   });
 }
 
 // 存儲增強的訂單數據
 async function storeEnhancedOrderData(
-  orderData: EnhancedOrderData, 
+  orderData: EnhancedOrderData,
   uploadedBy: string,
   tokenUsed: number
 ) {
   const supabase = createSupabaseAdmin();
   let insertResults: any[] = [];
-  
+
   // 計算每條記錄的 token
   const tokenPerRecord = Math.ceil(tokenUsed / orderData.products.length);
 
@@ -107,33 +126,30 @@ async function storeEnhancedOrderData(
       unit_price: product.unit_price || '-',
       uploaded_by: String(uploadedBy),
       token: String(tokenPerRecord), // 確保是字符串，Supabase 會自動轉換為 bigint
-      loaded_qty: '0' // 預設值
+      loaded_qty: '0', // 預設值
     };
-    
+
     // weight 是 bigint，可以為 null
     if (product.weight) {
       record.weight = product.weight;
     }
-    
+
     // customer_ref 是獨立欄位（可以為 null）
     if (orderData.customer_ref && orderData.customer_ref !== '-') {
       record.customer_ref = orderData.customer_ref;
     }
-    
+
     return record;
   });
 
   // 插入所有記錄
   apiLogger.debug('[Assistant API] Inserting records', {
     recordCount: orderRecords.length,
-    sampleRecord: orderRecords[0]
+    sampleRecord: orderRecords[0],
   });
-  
+
   try {
-    const { data, error } = await supabase
-      .from('data_order')
-      .insert(orderRecords)
-      .select();
+    const { data, error } = await supabase.from('data_order').insert(orderRecords).select();
 
     if (error) {
       apiLogger.error('[Assistant API] Database insert failed', {
@@ -142,63 +158,57 @@ async function storeEnhancedOrderData(
         details: error.details,
         hint: error.hint,
         sampleRecord: orderRecords[0],
-        allRecords: orderRecords // 記錄所有數據以便調試
+        allRecords: orderRecords, // 記錄所有數據以便調試
       });
-      
+
       // 嘗試單獨插入第一筆記錄來診斷問題
-      const { error: singleError } = await supabase
-        .from('data_order')
-        .insert(orderRecords[0]);
-      
+      const { error: singleError } = await supabase.from('data_order').insert(orderRecords[0]);
+
       if (singleError) {
         apiLogger.error('[Assistant API] Single record insert also failed', {
           error: singleError.message,
           code: singleError.code,
-          record: orderRecords[0]
+          record: orderRecords[0],
         });
       }
-      
+
       throw new Error(`資料庫插入失敗: ${error.message}`);
     }
 
     insertResults = data || [];
-    
+
     apiLogger.info('[Assistant API] Records inserted successfully', {
       recordCount: insertResults.length,
       tokenPerRecord,
-      totalTokens: tokenUsed
+      totalTokens: tokenUsed,
     });
   } catch (error) {
     throw error;
   }
 
   // 處理 ACO 產品
-  const acoProducts = orderData.products.filter(p => 
-    ACO_PRODUCT_CODES.includes(p.product_code)
-  );
+  const acoProducts = orderData.products.filter(p => ACO_PRODUCT_CODES.includes(p.product_code));
 
   if (acoProducts.length > 0) {
     const acoRecords = acoProducts.map(product => ({
       code: product.product_code, // record_aco 表使用 'code' 而不是 'product_code'
       order_ref: parseInt(orderData.order_ref), // record_aco 需要 integer
       required_qty: product.product_qty,
-      uploaded_by: parseInt(uploadedBy) // 確保是數字
+      uploaded_by: parseInt(uploadedBy), // 確保是數字
     }));
-    
+
     apiLogger.debug('[Assistant API] Inserting ACO records', {
       count: acoRecords.length,
-      records: acoRecords
+      records: acoRecords,
     });
 
-    const { error: acoError } = await supabase
-      .from('record_aco')
-      .insert(acoRecords);
-    
+    const { error: acoError } = await supabase.from('record_aco').insert(acoRecords);
+
     if (acoError) {
-      apiLogger.warn('[Assistant API] ACO records insert failed', { 
+      apiLogger.warn('[Assistant API] ACO records insert failed', {
         error: acoError.message,
         code: acoError.code,
-        details: acoError.details
+        details: acoError.details,
       });
     } else {
       apiLogger.info('[Assistant API] ACO records inserted', { count: acoRecords.length });
@@ -209,32 +219,29 @@ async function storeEnhancedOrderData(
 }
 
 // 記錄訂單上傳歷史
-async function recordOrderUploadHistory(
-  orderRef: string,
-  uploadedBy: string
-): Promise<void> {
+async function recordOrderUploadHistory(orderRef: string, uploadedBy: string): Promise<void> {
   try {
     const supabase = createSupabaseAdmin();
-    
+
     // uploadedBy 參數已經係用戶 ID (integer)，直接使用
     const userId = parseInt(uploadedBy);
-    
+
     // 插入歷史記錄
-    const { error } = await supabase
-      .from('record_history')
-      .insert({
-        time: new Date().toISOString(),
-        id: userId, // 直接使用 uploadedBy 轉換成 integer
-        action: 'Order Upload',
-        plt_num: null, // 訂單上傳不涉及棧板
-        loc: null, // 訂單上傳不涉及位置
-        remark: orderRef // 記錄訂單參考號
-      });
-    
+    const { error } = await supabase.from('record_history').insert({
+      time: new Date().toISOString(),
+      id: userId, // 直接使用 uploadedBy 轉換成 integer
+      action: 'Order Upload',
+      plt_num: null, // 訂單上傳不涉及棧板
+      loc: null, // 訂單上傳不涉及位置
+      remark: orderRef, // 記錄訂單參考號
+    });
+
     if (error) {
       apiLogger.error('[recordOrderUploadHistory] Error recording history:', error);
     } else {
-      apiLogger.info(`[recordOrderUploadHistory] Recorded: Order Upload for ${orderRef} by user ID ${userId}`);
+      apiLogger.info(
+        `[recordOrderUploadHistory] Recorded: Order Upload for ${orderRef} by user ID ${userId}`
+      );
     }
   } catch (error) {
     apiLogger.error('[recordOrderUploadHistory] Unexpected error:', error);
@@ -243,15 +250,15 @@ async function recordOrderUploadHistory(
 
 // 背景存儲函數（與現有系統一致）
 async function uploadToStorageAsync(
-  pdfBuffer: Buffer, 
-  fileName: string, 
-  uploadedBy: string, 
+  pdfBuffer: Buffer,
+  fileName: string,
+  uploadedBy: string,
   extractedText?: string
 ) {
   try {
     systemLogger.info('[Background Storage] Starting upload');
     const supabaseAdmin = createSupabaseAdmin();
-    
+
     const { data: uploadData, error: uploadError } = await supabaseAdmin.storage
       .from('documents')
       .upload(`orderpdf/${fileName}`, pdfBuffer, {
@@ -259,36 +266,33 @@ async function uploadToStorageAsync(
         upsert: true,
         contentType: 'application/pdf',
       });
-    
+
     if (uploadError) {
       throw uploadError;
     }
-    
+
     const { data: urlData } = supabaseAdmin.storage
       .from('documents')
       .getPublicUrl(`orderpdf/${fileName}`);
-    
+
     // 寫入 doc_upload 表（包含 json_txt 欄位）
-    const { error: docError } = await supabaseAdmin
-      .from('doc_upload')
-      .insert({
-        doc_name: fileName,
-        upload_by: uploadedBy,
-        doc_type: 'order',
-        doc_url: urlData.publicUrl,
-        file_size: pdfBuffer.length,
-        folder: 'orderpdf',
-        json_txt: extractedText || null
-      });
-    
+    const { error: docError } = await supabaseAdmin.from('doc_upload').insert({
+      doc_name: fileName,
+      upload_by: uploadedBy,
+      doc_type: 'order',
+      doc_url: urlData.publicUrl,
+      file_size: pdfBuffer.length,
+      folder: 'orderpdf',
+      json_txt: extractedText || null,
+    });
+
     if (docError) {
       systemLogger.warn('[Background Storage] doc_upload insert failed', { error: docError });
     } else {
       systemLogger.info('[Background Storage] doc_upload inserted with json_txt field');
     }
-    
+
     return urlData.publicUrl;
-    
   } catch (error: any) {
     systemLogger.error('[Background Storage] Upload failed', { error: error.message });
     throw error;
@@ -304,34 +308,34 @@ async function sendEmailNotification(
 ) {
   try {
     apiLogger.info('[Assistant API] Preparing order created email');
-    
+
     const { sendOrderCreatedEmail } = await import('../../services/emailService');
-    
+
     const emailRequestBody = {
       orderData: orderData.products.map(product => ({
         order_ref: parseInt(orderData.order_ref), // emailService expects number
         product_code: product.product_code,
         product_desc: product.product_desc,
-        product_qty: product.product_qty
+        product_qty: product.product_qty,
       })),
       pdfAttachment: {
         filename: fileName,
-        content: pdfBuffer.toString('base64')
-      }
+        content: pdfBuffer.toString('base64'),
+      },
     };
-    
+
     const emailResponse = await sendOrderCreatedEmail(emailRequestBody);
-    
+
     if (emailResponse.success) {
       apiLogger.info('[Assistant API] Order created email sent successfully', {
-        recipients: emailResponse.recipients
+        recipients: emailResponse.recipients,
       });
     } else {
       apiLogger.warn('[Assistant API] Failed to send order created email', {
-        error: emailResponse.error
+        error: emailResponse.error,
       });
     }
-    
+
     return emailResponse;
   } catch (error: any) {
     apiLogger.error('[Assistant API] Email notification error', { error: error.message });
@@ -342,37 +346,40 @@ async function sendEmailNotification(
 export async function POST(request: NextRequest) {
   const startTime = Date.now();
   logApiRequest('POST', '/api/analyze-order-pdf-assistant');
-  
+
   let threadId: string | undefined;
   let fileId: string | undefined;
-  
+
   try {
     apiLogger.info('[Assistant API] Starting PDF analysis request');
-    
+
     // 解析表單資料
     const formData = await request.formData();
     const file = formData.get('file') as File;
-    const fileName = formData.get('fileName') as string || file?.name;
+    const fileName = (formData.get('fileName') as string) || file?.name;
     const uploadedBy = formData.get('uploadedBy') as string;
     const saveToStorage = formData.get('saveToStorage') === 'true';
-    
+
     if (!file || !fileName || !uploadedBy) {
       logApiResponse('POST', '/api/analyze-order-pdf-assistant', 400, Date.now() - startTime);
-      return NextResponse.json({ 
-        error: 'Missing required fields: file, fileName, or uploadedBy' 
-      }, { status: 400 });
+      return NextResponse.json(
+        {
+          error: 'Missing required fields: file, fileName, or uploadedBy',
+        },
+        { status: 400 }
+      );
     }
-    
+
     // 轉換文件為 Buffer
     const arrayBuffer = await file.arrayBuffer();
     const pdfBuffer = Buffer.from(arrayBuffer);
     const fileHash = generateFileHash(pdfBuffer);
-    
+
     // 檢查緩存
     const cachedResult = getCachedResult(fileHash);
     if (cachedResult) {
       apiLogger.info('[Assistant API] Using cached result', { fileHash });
-      
+
       // 準備返回數據（與非緩存版本一致）
       const cachedExtractedData = cachedResult.orderData.products.map((product: any) => ({
         order_ref: cachedResult.orderData.order_ref,
@@ -384,9 +391,9 @@ export async function POST(request: NextRequest) {
         product_desc: product.product_desc,
         product_qty: product.product_qty,
         weight: product.weight,
-        unit_price: product.unit_price
+        unit_price: product.unit_price,
       }));
-      
+
       logApiResponse('POST', '/api/analyze-order-pdf-assistant', 200, Date.now() - startTime);
       return NextResponse.json({
         success: true,
@@ -395,34 +402,34 @@ export async function POST(request: NextRequest) {
         recordCount: cachedExtractedData.length,
         cached: true,
         processingTime: Date.now() - startTime,
-        extractedCount: cachedResult.orderData.products.length
+        extractedCount: cachedResult.orderData.products.length,
       });
     }
-    
+
     // 獲取 Assistant 服務
     const assistantService = AssistantService.getInstance();
-    
+
     // 獲取或創建 Assistant
     const assistantId = await assistantService.getAssistant();
-    
+
     // 創建 Thread
     threadId = await assistantService.createThread();
-    
+
     // 上傳文件到 OpenAI
     fileId = await assistantService.uploadFile(pdfBuffer, fileName);
-    
+
     // 發送消息並附加文件
     await assistantService.sendMessage(threadId, SYSTEM_PROMPT, fileId);
-    
+
     // 運行 Assistant 並等待結果
     const result = await assistantService.runAndWait(threadId, assistantId);
-    
+
     apiLogger.info('[Assistant API] Raw assistant response', {
       responseLength: result.length,
       responsePreview: result.substring(0, 1000),
-      fullResponse: result.length < 2000 ? result : 'Response too long to log'
+      fullResponse: result.length < 2000 ? result : 'Response too long to log',
     });
-    
+
     // 解析結果
     let orderData: EnhancedOrderData;
     try {
@@ -430,65 +437,60 @@ export async function POST(request: NextRequest) {
     } catch (parseError: any) {
       apiLogger.error('[Assistant API] Failed to parse assistant response', {
         error: parseError.message,
-        rawResponse: result.substring(0, 1000)
+        rawResponse: result.substring(0, 1000),
       });
       throw new Error(`Failed to parse assistant response: ${parseError.message}`);
     }
-    
+
     apiLogger.info('[Assistant API] Analysis completed', {
       orderRef: orderData.order_ref,
       productCount: orderData.products?.length || 0,
       hasInvoiceTo: !!orderData.invoice_to && orderData.invoice_to !== '-',
       hasCustomerRef: !!orderData.customer_ref && orderData.customer_ref !== '-',
       hasWeights: orderData.products?.some(p => p.weight) || false,
-      hasUnitPrices: orderData.products?.some(p => p.unit_price && p.unit_price !== '-') || false
+      hasUnitPrices: orderData.products?.some(p => p.unit_price && p.unit_price !== '-') || false,
     });
-    
+
     // 估算 token 使用量（基於文件大小）
     const estimatedTokens = Math.ceil(pdfBuffer.length / 4);
-    
+
     // 存儲到資料庫
     await storeEnhancedOrderData(orderData, uploadedBy, estimatedTokens);
-    
+
     // 記錄操作歷史
     await recordOrderUploadHistory(orderData.order_ref, uploadedBy);
-    
+
     // 發送電郵通知
-    const emailResult = await sendEmailNotification(
-      orderData,
-      pdfBuffer,
-      fileName,
-      uploadedBy
-    );
-    
+    const emailResult = await sendEmailNotification(orderData, pdfBuffer, fileName, uploadedBy);
+
     // 背景存儲（不影響響應時間）
     if (saveToStorage) {
       setImmediate(async () => {
         try {
           await uploadToStorageAsync(pdfBuffer, fileName, uploadedBy, result);
         } catch (storageError) {
-          systemLogger.warn('[Assistant API] Background storage failed', { 
-            error: storageError 
+          systemLogger.warn('[Assistant API] Background storage failed', {
+            error: storageError,
           });
         }
       });
     }
-    
+
     // 緩存結果
     setCachedResult(fileHash, {
       orderData,
-      extractedText: result
+      extractedText: result,
     });
-    
+
     // 清理資源
     assistantService.cleanup(threadId, fileId).catch(error => {
       systemLogger.warn('[Assistant API] Cleanup failed', { error });
     });
-    
+
     const processingTime = Date.now() - startTime;
-    
+
     logApiResponse('POST', '/api/analyze-order-pdf-assistant', 200, processingTime);
-    
+
     // 準備返回數據（兼容前端）
     const extractedData = orderData.products.map(product => ({
       order_ref: orderData.order_ref,
@@ -500,9 +502,9 @@ export async function POST(request: NextRequest) {
       product_desc: product.product_desc,
       product_qty: product.product_qty,
       weight: product.weight,
-      unit_price: product.unit_price
+      unit_price: product.unit_price,
     }));
-    
+
     return NextResponse.json({
       success: true,
       data: orderData,
@@ -515,28 +517,27 @@ export async function POST(request: NextRequest) {
         hasInvoiceTo: !!orderData.invoice_to && orderData.invoice_to !== '-',
         hasCustomerRef: !!orderData.customer_ref && orderData.customer_ref !== '-',
         hasWeights: orderData.products.some(p => !!p.weight),
-        hasUnitPrices: orderData.products.some(p => !!p.unit_price && p.unit_price !== '-')
-      }
+        hasUnitPrices: orderData.products.some(p => !!p.unit_price && p.unit_price !== '-'),
+      },
     });
-
   } catch (error: any) {
     apiLogger.error('[Assistant API] Analysis failed', {
       error: error.message,
-      stack: error.stack
+      stack: error.stack,
     });
-    
+
     // 清理資源
     if (threadId || fileId) {
       const assistantService = AssistantService.getInstance();
       assistantService.cleanup(threadId, fileId).catch(cleanupError => {
-        systemLogger.warn('[Assistant API] Cleanup failed after error', { 
-          error: cleanupError 
+        systemLogger.warn('[Assistant API] Cleanup failed after error', {
+          error: cleanupError,
         });
       });
     }
-    
+
     logApiResponse('POST', '/api/analyze-order-pdf-assistant', 500, Date.now() - startTime);
-    
+
     return NextResponse.json(
       { error: 'PDF analysis failed', details: error.message },
       { status: 500 }

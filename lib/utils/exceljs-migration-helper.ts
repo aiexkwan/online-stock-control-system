@@ -28,7 +28,7 @@ export async function jsonToWorksheet(
     worksheet.columns = columns.map(col => ({
       header: col.header,
       key: col.key,
-      width: col.width || 15
+      width: col.width || 15,
     }));
 
     // 應用列樣式
@@ -46,7 +46,7 @@ export async function jsonToWorksheet(
     worksheet.columns = keys.map(key => ({
       header: key,
       key: key,
-      width: 15
+      width: 15,
     }));
   }
 
@@ -72,24 +72,24 @@ export function setHeaderStyle(
   } = {}
 ): void {
   const headerRow = worksheet.getRow(1);
-  
+
   headerRow.font = {
     size: options.fontSize || 12,
     bold: options.bold !== false,
-    color: options.textColor ? { argb: options.textColor } : undefined
+    color: options.textColor ? { argb: options.textColor } : undefined,
   };
 
   headerRow.alignment = {
     vertical: 'middle',
-    horizontal: 'center'
+    horizontal: 'center',
   };
 
   if (options.bgColor) {
-    headerRow.eachCell((cell) => {
+    headerRow.eachCell(cell => {
       cell.fill = {
         type: 'pattern',
         pattern: 'solid',
-        fgColor: { argb: options.bgColor }
+        fgColor: { argb: options.bgColor },
       };
     });
   }
@@ -117,7 +117,7 @@ export function addBorders(
         top: { style },
         left: { style },
         bottom: { style },
-        right: { style }
+        right: { style },
       };
     }
   }
@@ -144,12 +144,12 @@ export function autoFitColumns(
   minWidth: number = 10,
   maxWidth: number = 50
 ): void {
-  worksheet.columns.forEach((column) => {
+  worksheet.columns.forEach(column => {
     if (!column) return;
-    
+
     let maxLength = 0;
-    
-    column.eachCell({ includeEmpty: false }, (cell) => {
+
+    column.eachCell({ includeEmpty: false }, cell => {
       const columnLength = cell.value ? cell.value.toString().length : 0;
       if (columnLength > maxLength) {
         maxLength = columnLength;
@@ -181,7 +181,7 @@ export const NumberFormats = {
   PERCENTAGE: '0%',
   CURRENCY: '$#,##0.00',
   DATE: 'yyyy-mm-dd',
-  DATETIME: 'yyyy-mm-dd hh:mm:ss'
+  DATETIME: 'yyyy-mm-dd hh:mm:ss',
 };
 
 /**
@@ -193,31 +193,31 @@ export async function createStyledReport(
   columns?: ColumnConfig[]
 ): Promise<Buffer> {
   const workbook = new ExcelJS.Workbook();
-  
+
   // 設置工作簿屬性
   workbook.creator = 'NewPennine WMS';
   workbook.created = new Date();
   workbook.modified = new Date();
-  
+
   const worksheet = await jsonToWorksheet(workbook, data, title, columns);
-  
+
   // 應用預設樣式
   setHeaderStyle(worksheet, {
     bold: true,
     bgColor: 'FFE0E0E0',
-    height: 25
+    height: 25,
   });
-  
+
   // 添加邊框
   const rowCount = worksheet.rowCount;
   const colCount = worksheet.columnCount;
   if (rowCount > 0 && colCount > 0) {
     addBorders(worksheet, 1, 1, rowCount, colCount);
   }
-  
+
   // 自動調整列寬
   autoFitColumns(worksheet);
-  
+
   // 返回 buffer
   const buffer = await workbook.xlsx.writeBuffer();
   return Buffer.from(buffer);

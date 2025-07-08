@@ -31,7 +31,7 @@ export function MobileButton({
       className={cn(
         getMobileButtonClass(variant, size),
         fullWidth && 'w-full',
-        loading && 'opacity-70 cursor-not-allowed',
+        loading && 'cursor-not-allowed opacity-70',
         className
       )}
       onClick={handleClick}
@@ -40,12 +40,12 @@ export function MobileButton({
     >
       {loading ? (
         <>
-          <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2" />
+          <div className='mr-2 h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white' />
           <span>Loading...</span>
         </>
       ) : (
         <>
-          {icon && <span className="mr-2">{icon}</span>}
+          {icon && <span className='mr-2'>{icon}</span>}
           {children}
         </>
       )}

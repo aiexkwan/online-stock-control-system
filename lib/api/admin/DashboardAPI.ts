@@ -4,7 +4,6 @@
  */
 
 import { DataAccessLayer } from '../core/DataAccessStrategy';
-import { gql } from '@/lib/graphql-client-stable';
 
 // Dashboard widget types
 export interface DashboardWidgetData {
@@ -45,84 +44,7 @@ export interface DashboardResult {
   };
 }
 
-// GraphQL queries for different widgets
-const WIDGET_QUERIES = {
-  stockSummary: gql`
-    query GetStockSummary($warehouse: String) {
-      stockSummary(warehouse: $warehouse) {
-        totalProducts
-        totalQuantity
-        totalValue
-        topProducts {
-          productCode
-          quantity
-          value
-        }
-        warehouseDistribution {
-          warehouse
-          percentage
-        }
-      }
-    }
-  `,
-  
-  orderProgress: gql`
-    query GetOrderProgress($dateRange: DateRangeInput) {
-      orderProgress(dateRange: $dateRange) {
-        totalOrders
-        completedOrders
-        inProgressOrders
-        completionRate
-        dailyProgress {
-          date
-          completed
-          total
-        }
-      }
-    }
-  `,
-  
-  movementAnalytics: gql`
-    query GetMovementAnalytics($dateRange: DateRangeInput, $warehouse: String) {
-      movementAnalytics(dateRange: $dateRange, warehouse: $warehouse) {
-        totalMovements
-        avgMovementsPerDay
-        peakHours {
-          hour
-          count
-        }
-        topOperators {
-          operatorId
-          name
-          movementCount
-        }
-        movementTypes {
-          type
-          count
-          percentage
-        }
-      }
-    }
-  `,
-  
-  warehouseEfficiency: gql`
-    query GetWarehouseEfficiency($warehouse: String) {
-      warehouseEfficiency(warehouse: $warehouse) {
-        utilizationRate
-        turnoverRate
-        avgProcessingTime
-        bottlenecks {
-          location
-          congestionLevel
-          suggestion
-        }
-      }
-    }
-  `,
-  
-  // Stats card queries using direct Supabase
-  statsCard: null // Will be handled separately for stats cards
-};
+// All widgets now use RPC functions through DashboardAPI for optimal performance
 
 export class DashboardAPI extends DataAccessLayer<DashboardParams, DashboardResult> {
   constructor() {
@@ -213,14 +135,10 @@ export class DashboardAPI extends DataAccessLayer<DashboardParams, DashboardResu
    * Fetch data for specific widget
    */
   private async fetchWidgetData(widgetId: string, params: DashboardParams, supabase?: any): Promise<any> {
-    // Handle stats cards separately (using direct Supabase for simple aggregations)
-    if (widgetId === 'statsCard' || params.params?.dataSource) {
-      return this.fetchStatsCardData(params.params?.dataSource || 'default', params, supabase);
-    }
-    
-    // For this implementation, we primarily use RPC calls instead of GraphQL
-    // Most widgets are handled by fetchStatsCardData above
-    throw new Error(`Widget ${widgetId} should be handled by RPC calls in fetchStatsCardData`);
+    // All widgets go through fetchStatsCardData
+    // Either use provided dataSource or the widgetId itself as dataSource
+    const dataSource = params.params?.dataSource || widgetId;
+    return this.fetchStatsCardData(dataSource, params, supabase);
   }
   
   /**
@@ -1676,10 +1594,225 @@ export class DashboardAPI extends DataAccessLayer<DashboardParams, DashboardResu
             };
           }
           
+        case 'production_stats':
+          // Production statistics using new RPC function
+          const prodStartDate = params.dateRange?.start || params.params?.startDate as string | undefined || new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+          const prodEndDate = params.dateRange?.end || params.params?.endDate as string | undefined || new Date().toISOString();
+          const metric = params.params?.metric as string | undefined || 'pallet_count';
+          
+          try {
+            const { data: productionStats, error: productionError } = await supabase
+              .rpc('rpc_get_production_stats', {
+                p_start_date: prodStartDate,
+                p_end_date: prodEndDate,
+                p_metric: metric
+              });
+            
+            if (productionError) {
+              console.error('Error fetching production stats:', productionError);
+              throw productionError;
+            }
+            
+            return {
+              value: productionStats || 0,
+              label: metric === 'pallet_count' ? 'Today Produced (PLT)' : 'Today Produced (QTY)',
+              metadata: {
+                dateRange: { start: prodStartDate, end: prodEndDate },
+                metric: metric,
+                optimized: true,
+                rpcFunction: 'rpc_get_production_stats'
+              }
+            };
+            
+          } catch (error) {
+            console.error('Error in production stats lookup:', error);
+            return {
+              value: 0,
+              label: 'Production Stats Error',
+              error: error instanceof Error ? error.message : 'Unknown error occurred',
+              metadata: {
+                fallback: false
+              }
+            };
+          }
+          
+        case 'product_distribution':
+          // Product distribution using new RPC function
+          const distProdStartDate = params.dateRange?.start || params.params?.startDate as string | undefined || new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+          const distProdEndDate = params.dateRange?.end || params.params?.endDate as string | undefined || new Date().toISOString();
+          const distLimit = params.params?.limit as number | undefined || 10;
+          
+          try {
+            const { data: distributionData, error: distributionError } = await supabase
+              .rpc('rpc_get_product_distribution', {
+                p_start_date: distProdStartDate,
+                p_end_date: distProdEndDate,
+                p_limit: distLimit
+              });
+            
+            if (distributionError) {
+              console.error('Error fetching product distribution:', distributionError);
+              throw distributionError;
+            }
+            
+            return {
+              value: distributionData || [],
+              label: 'Product Distribution',
+              metadata: {
+                dateRange: { start: distProdStartDate, end: distProdEndDate },
+                limit: distLimit,
+                optimized: true,
+                rpcFunction: 'rpc_get_product_distribution'
+              }
+            };
+            
+          } catch (error) {
+            console.error('Error in product distribution lookup:', error);
+            return {
+              value: [],
+              label: 'Product Distribution Error',
+              error: error instanceof Error ? error.message : 'Unknown error occurred',
+              metadata: {
+                fallback: false
+              }
+            };
+          }
+          
+        case 'top_products':
+          // Top products using new RPC function (alias of product distribution)
+          const topProdStartDate = params.dateRange?.start || params.params?.startDate as string | undefined || new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+          const topProdEndDate = params.dateRange?.end || params.params?.endDate as string | undefined || new Date().toISOString();
+          const topLimit = params.params?.limit as number | undefined || 10;
+          
+          try {
+            const { data: topProductsData, error: topProductsError } = await supabase
+              .rpc('rpc_get_top_products', {
+                p_start_date: topProdStartDate,
+                p_end_date: topProdEndDate,
+                p_limit: topLimit
+              });
+            
+            if (topProductsError) {
+              console.error('Error fetching top products:', topProductsError);
+              throw topProductsError;
+            }
+            
+            return {
+              value: topProductsData || [],
+              label: 'Top Products',
+              metadata: {
+                dateRange: { start: topProdStartDate, end: topProdEndDate },
+                limit: topLimit,
+                optimized: true,
+                rpcFunction: 'rpc_get_top_products'
+              }
+            };
+            
+          } catch (error) {
+            console.error('Error in top products lookup:', error);
+            return {
+              value: [],
+              label: 'Top Products Error',
+              error: error instanceof Error ? error.message : 'Unknown error occurred',
+              metadata: {
+                fallback: false
+              }
+            };
+          }
+          
+        case 'production_details':
+          // Production details using new RPC function
+          const detailsStartDate = params.dateRange?.start || params.params?.startDate as string | undefined || new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+          const detailsEndDate = params.dateRange?.end || params.params?.endDate as string | undefined || new Date().toISOString();
+          const detailsLimit = params.params?.limit as number | undefined || 50;
+          
+          try {
+            const { data: detailsData, error: detailsError } = await supabase
+              .rpc('rpc_get_production_details', {
+                p_start_date: detailsStartDate,
+                p_end_date: detailsEndDate,
+                p_limit: detailsLimit
+              });
+            
+            if (detailsError) {
+              console.error('Error fetching production details:', detailsError);
+              throw detailsError;
+            }
+            
+            return {
+              value: detailsData || [],
+              label: 'Production Details',
+              metadata: {
+                dateRange: { start: detailsStartDate, end: detailsEndDate },
+                limit: detailsLimit,
+                optimized: true,
+                rpcFunction: 'rpc_get_production_details'
+              }
+            };
+            
+          } catch (error) {
+            console.error('Error in production details lookup:', error);
+            return {
+              value: [],
+              label: 'Production Details Error',
+              error: error instanceof Error ? error.message : 'Unknown error occurred',
+              metadata: {
+                fallback: false
+              }
+            };
+          }
+          
+        case 'staff_workload':
+          // Staff workload using new RPC function
+          const workloadStartDate = params.dateRange?.start || params.params?.startDate as string | undefined || new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+          const workloadEndDate = params.dateRange?.end || params.params?.endDate as string | undefined || new Date().toISOString();
+          const department = params.params?.department as string | undefined || 'Injection';
+          
+          try {
+            const { data: workloadData, error: workloadError } = await supabase
+              .rpc('rpc_get_staff_workload', {
+                p_start_date: workloadStartDate,
+                p_end_date: workloadEndDate,
+                p_department: department
+              });
+            
+            if (workloadError) {
+              console.error('Error fetching staff workload:', workloadError);
+              throw workloadError;
+            }
+            
+            return {
+              value: workloadData || [],
+              label: 'Staff Workload',
+              metadata: {
+                dateRange: { start: workloadStartDate, end: workloadEndDate },
+                department: department,
+                optimized: true,
+                rpcFunction: 'rpc_get_staff_workload'
+              }
+            };
+            
+          } catch (error) {
+            console.error('Error in staff workload lookup:', error);
+            return {
+              value: [],
+              label: 'Staff Workload Error',
+              error: error instanceof Error ? error.message : 'Unknown error occurred',
+              metadata: {
+                fallback: false
+              }
+            };
+          }
+          
         default:
+          // Log unknown data source in development
+          if (process.env.NODE_ENV !== 'production') {
+            console.warn(`Unknown data source: ${dataSource}`);
+          }
           return {
             value: params.params?.staticValue || 0,
-            label: params.params?.label || 'Stats'
+            label: params.params?.label || dataSource.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
+            error: `Data source '${dataSource}' not implemented`
           };
       }
     } catch (error) {
@@ -1727,7 +1860,12 @@ export class DashboardAPI extends DataAccessLayer<DashboardParams, DashboardResu
       stock_distribution_chart: 'Stock Distribution Chart',
       grn_references: 'GRN References',
       grn_material_codes: 'GRN Material Codes',
-      grn_report_data: 'GRN Report Data'
+      grn_report_data: 'GRN Report Data',
+      production_stats: 'Production Statistics',
+      product_distribution: 'Product Distribution',
+      top_products: 'Top Products',
+      production_details: 'Production Details',
+      staff_workload: 'Staff Workload'
     };
     
     return titles[widgetId] || widgetId;

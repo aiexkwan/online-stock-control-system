@@ -2,7 +2,7 @@
  * GraphQL Schema Design Principles Implementation
  * Week 1.2: Schema Design Principles Enhancement
  * Date: 2025-07-03
- * 
+ *
  * This file contains the standardized design principles for our unified GraphQL schema.
  */
 
@@ -15,13 +15,13 @@ export const NamingConventions = {
   types: {
     // Business entities - singular, descriptive
     correct: ['Product', 'Inventory', 'Pallet', 'Order', 'Movement'],
-    incorrect: ['product', 'inventoryRecord', 'PALLET', 'order_item']
+    incorrect: ['product', 'inventoryRecord', 'PALLET', 'order_item'],
   },
 
   // Field naming: camelCase
   fields: {
     correct: ['palletCode', 'createdAt', 'productType', 'warehouseLocation'],
-    incorrect: ['pallet_code', 'created_at', 'ProductType', 'warehouse-location']
+    incorrect: ['pallet_code', 'created_at', 'ProductType', 'warehouse-location'],
   },
 
   // Query naming: descriptive verbs + nouns
@@ -31,7 +31,7 @@ export const NamingConventions = {
     // List resources: pluralNoun(filter, pagination, sort)
     list: ['products(filter, pagination, sort)', 'inventories(filter, pagination, sort)'],
     // Business operations: verbNoun
-    business: ['getLowStockProducts', 'getPendingOrders', 'getActiveTransfers']
+    business: ['getLowStockProducts', 'getPendingOrders', 'getActiveTransfers'],
   },
 
   // Mutation naming: verb + target
@@ -39,14 +39,14 @@ export const NamingConventions = {
     create: ['createProduct', 'createPallet', 'createInventoryRecord'],
     update: ['updateProduct', 'updateInventory', 'updatePalletStatus'],
     delete: ['deleteProduct', 'voidPallet', 'cancelOrder'],
-    business: ['transferStock', 'adjustInventory', 'processStocktake']
+    business: ['transferStock', 'adjustInventory', 'processStocktake'],
   },
 
   // Subscription naming: noun + event
   subscriptions: {
     correct: ['inventoryUpdated', 'palletMoved', 'orderStatusChanged'],
-    incorrect: ['inventory_update', 'PalletMove', 'order-status-change']
-  }
+    incorrect: ['inventory_update', 'PalletMove', 'order-status-change'],
+  },
 };
 
 // ================================
@@ -72,36 +72,36 @@ export interface PageInfo {
 }
 
 export interface PaginationInput {
-  first?: number;      // Forward pagination
-  after?: string;      // Cursor for forward pagination
-  last?: number;       // Backward pagination  
-  before?: string;     // Cursor for backward pagination
+  first?: number; // Forward pagination
+  after?: string; // Cursor for forward pagination
+  last?: number; // Backward pagination
+  before?: string; // Cursor for backward pagination
 }
 
 // Pagination validation rules
 export const PaginationRules = {
-  maxLimit: 100,       // Maximum items per page
-  defaultLimit: 20,    // Default items per page
-  
+  maxLimit: 100, // Maximum items per page
+  defaultLimit: 20, // Default items per page
+
   validate: (input: PaginationInput): string[] => {
     const errors: string[] = [];
-    
+
     // Cannot use both forward and backward pagination
     if ((input.first || input.after) && (input.last || input.before)) {
       errors.push('Cannot use both forward and backward pagination simultaneously');
     }
-    
+
     // Validate limits
     if (input.first && input.first > PaginationRules.maxLimit) {
       errors.push(`'first' cannot exceed ${PaginationRules.maxLimit}`);
     }
-    
+
     if (input.last && input.last > PaginationRules.maxLimit) {
       errors.push(`'last' cannot exceed ${PaginationRules.maxLimit}`);
     }
-    
+
     return errors;
-  }
+  },
 };
 
 // ================================
@@ -128,7 +128,7 @@ export enum UserErrorCode {
   NOT_FOUND = 'NOT_FOUND',
   PERMISSION_DENIED = 'PERMISSION_DENIED',
   DUPLICATE_ENTRY = 'DUPLICATE_ENTRY',
-  INVALID_INPUT = 'INVALID_INPUT'
+  INVALID_INPUT = 'INVALID_INPUT',
 }
 
 export enum SystemErrorCode {
@@ -136,7 +136,7 @@ export enum SystemErrorCode {
   DATABASE_ERROR = 'DATABASE_ERROR',
   NETWORK_ERROR = 'NETWORK_ERROR',
   TIMEOUT = 'TIMEOUT',
-  SERVICE_UNAVAILABLE = 'SERVICE_UNAVAILABLE'
+  SERVICE_UNAVAILABLE = 'SERVICE_UNAVAILABLE',
 }
 
 // Result union types for operations
@@ -170,7 +170,7 @@ export const CommonValidationRules = {
         return 'Product code must contain at least one hyphen';
       }
       return null;
-    }
+    },
   },
 
   // Pallet number validation
@@ -183,7 +183,7 @@ export const CommonValidationRules = {
         return 'Pallet number must be exactly 10 characters';
       }
       return null;
-    }
+    },
   },
 
   // Quantity validation
@@ -198,7 +198,7 @@ export const CommonValidationRules = {
         return 'Quantity must be a whole number';
       }
       return null;
-    }
+    },
   },
 
   // Location validation
@@ -211,8 +211,8 @@ export const CommonValidationRules = {
         return 'Location format must be A00-B00 (e.g., A01-B02)';
       }
       return null;
-    }
-  }
+    },
+  },
 };
 
 // ================================
@@ -225,7 +225,7 @@ export const ScalarDefinitions = {
     description: 'A date-time string at UTC, such as 2007-12-03T10:15:30Z',
     serialize: (value: Date) => value.toISOString(),
     parseValue: (value: string) => new Date(value),
-    parseLiteral: (ast: any) => new Date(ast.value)
+    parseLiteral: (ast: any) => new Date(ast.value),
   },
 
   PositiveInt: {
@@ -234,7 +234,7 @@ export const ScalarDefinitions = {
     parseValue: (value: number) => {
       if (value <= 0) throw new Error('Value must be positive');
       return Math.floor(value);
-    }
+    },
   },
 
   ProductCode: {
@@ -245,8 +245,8 @@ export const ScalarDefinitions = {
         throw new Error('Invalid product code format');
       }
       return value;
-    }
-  }
+    },
+  },
 };
 
 // ================================
@@ -257,7 +257,8 @@ export const DocumentationStandards = {
   // Type descriptions should be clear and concise
   typeDescription: {
     template: 'Represents a {entity} in the {domain} with {key_attributes}',
-    example: 'Represents a product in the inventory system with code, description, and specifications'
+    example:
+      'Represents a product in the inventory system with code, description, and specifications',
   },
 
   // Field descriptions should explain purpose and constraints
@@ -266,15 +267,16 @@ export const DocumentationStandards = {
     examples: [
       'The unique identifier for this product',
       'The product code following company naming conventions. Must be 3-20 characters.',
-      'The current stock quantity. Cannot be negative.'
-    ]
+      'The current stock quantity. Cannot be negative.',
+    ],
   },
 
   // Query descriptions should explain use cases
   queryDescription: {
     template: 'Retrieves {what} for {use_case}. {Additional_info}',
-    example: 'Retrieves low stock products for inventory management. Returns products with quantity below threshold.'
-  }
+    example:
+      'Retrieves low stock products for inventory management. Returns products with quantity below threshold.',
+  },
 };
 
 // ================================
@@ -313,11 +315,11 @@ export const CURRENT_SCHEMA_VERSION: SchemaVersion = {
       type: 'ADDED',
       target: 'TYPE',
       path: 'SchemaDesignPrinciples',
-      description: 'Added comprehensive schema design principles and validation'
-    }
+      description: 'Added comprehensive schema design principles and validation',
+    },
   ],
   breakingChanges: false,
-  deprecations: []
+  deprecations: [],
 };
 
 // ================================
@@ -327,20 +329,20 @@ export const CURRENT_SCHEMA_VERSION: SchemaVersion = {
 export class SchemaBestPracticesChecker {
   static validateNaming(name: string, type: 'TYPE' | 'FIELD' | 'QUERY' | 'MUTATION'): string[] {
     const errors: string[] = [];
-    
+
     switch (type) {
       case 'TYPE':
         if (!/^[A-Z][a-zA-Z0-9]*$/.test(name)) {
           errors.push(`Type name '${name}' should be PascalCase`);
         }
         break;
-        
+
       case 'FIELD':
         if (!/^[a-z][a-zA-Z0-9]*$/.test(name)) {
           errors.push(`Field name '${name}' should be camelCase`);
         }
         break;
-        
+
       case 'QUERY':
       case 'MUTATION':
         if (!/^[a-z][a-zA-Z0-9]*$/.test(name)) {
@@ -348,27 +350,29 @@ export class SchemaBestPracticesChecker {
         }
         break;
     }
-    
+
     return errors;
   }
-  
+
   static validatePagination(queryName: string, hasConnectionType: boolean): string[] {
     const errors: string[] = [];
-    
+
     if (queryName.endsWith('s') && !hasConnectionType) {
       errors.push(`List query '${queryName}' should return a Connection type for pagination`);
     }
-    
+
     return errors;
   }
-  
+
   static validateErrorHandling(returnType: string): string[] {
     const errors: string[] = [];
-    
+
     if (!returnType.includes('UserError') && !returnType.includes('SystemError')) {
-      errors.push(`Return type '${returnType}' should include error unions for proper error handling`);
+      errors.push(
+        `Return type '${returnType}' should include error unions for proper error handling`
+      );
     }
-    
+
     return errors;
   }
 }
@@ -380,38 +384,38 @@ export class SchemaBestPracticesChecker {
 export const PerformanceGuidelines = {
   // Query complexity limits
   complexity: {
-    maxDepth: 10,        // Maximum query depth
+    maxDepth: 10, // Maximum query depth
     maxComplexity: 1000, // Maximum query complexity score
-    timeout: 30000       // 30 seconds timeout
+    timeout: 30000, // 30 seconds timeout
   },
-  
+
   // Field resolution guidelines
   fieldResolution: {
     // Expensive fields should be optional and lazily loaded
     expensiveFields: ['movements', 'detailedHistory', 'analytics'],
-    
+
     // Use DataLoader for N+1 problem prevention
     batchLoading: true,
-    
+
     // Cache frequently accessed data
     cacheStrategy: {
-      staticData: '24h',     // Product definitions, locations
-      semiStaticData: '1h',  // Inventory summaries
-      dynamicData: '5m'      // Real-time stock levels
-    }
+      staticData: '24h', // Product definitions, locations
+      semiStaticData: '1h', // Inventory summaries
+      dynamicData: '5m', // Real-time stock levels
+    },
   },
-  
+
   // Subscription guidelines
   subscriptions: {
     // Limit concurrent subscriptions per user
     maxConcurrentSubscriptions: 10,
-    
+
     // Use subscription filtering to reduce bandwidth
     useFiltering: true,
-    
+
     // Implement subscription rate limiting
-    rateLimit: '100/minute'
-  }
+    rateLimit: '100/minute',
+  },
 };
 
 // Export all principles for use in schema validation and generation
@@ -425,7 +429,7 @@ const schemaDesignPrinciples = {
   DocumentationStandards,
   CURRENT_SCHEMA_VERSION,
   SchemaBestPracticesChecker,
-  PerformanceGuidelines
+  PerformanceGuidelines,
 };
 
-export default schemaDesignPrinciples; 
+export default schemaDesignPrinciples;

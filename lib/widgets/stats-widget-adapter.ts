@@ -12,7 +12,7 @@ import { createLazyWidget } from './widget-loader';
  * Stats widgets 的映射配置
  */
 export const statsWidgetConfigs: Record<string, Partial<WidgetDefinition>> = {
-  'AwaitLocationQtyWidget': {
+  AwaitLocationQtyWidget: {
     name: 'Await Location Quantity',
     category: 'stats',
     description: 'Displays total pallets in Await location',
@@ -22,10 +22,10 @@ export const statsWidgetConfigs: Record<string, Partial<WidgetDefinition>> = {
       dataSource: 'record_inventory',
       refreshInterval: 60000, // 1分鐘刷新
       supportTimeFrame: true,
-    }
+    },
   },
-  
-  'YesterdayTransferCountWidget': {
+
+  YesterdayTransferCountWidget: {
     name: 'Yesterday Transfer Count',
     category: 'stats',
     description: 'Shows transfer count from yesterday',
@@ -36,23 +36,23 @@ export const statsWidgetConfigs: Record<string, Partial<WidgetDefinition>> = {
       dataSource: 'record_transfer',
       refreshInterval: 300000, // 5分鐘刷新
       supportTimeFrame: true,
-    }
+    },
   },
-  
-  'StillInAwaitWidget': {
+
+  StillInAwaitWidget: {
     name: 'Still In Await',
     category: 'stats',
     description: 'Displays items still in await status',
     lazyLoad: true,
     preloadPriority: 7,
-    graphqlVersion: 'StillInAwaitWidgetGraphQL',
+    // GraphQL version removed
     metadata: {
       dataSource: 'record_inventory',
       refreshInterval: 60000,
-    }
+    },
   },
-  
-  'StillInAwaitPercentageWidget': {
+
+  StillInAwaitPercentageWidget: {
     name: 'Still In Await Percentage',
     category: 'stats',
     description: 'Shows percentage of items in await status',
@@ -62,10 +62,10 @@ export const statsWidgetConfigs: Record<string, Partial<WidgetDefinition>> = {
       dataSource: 'record_inventory',
       refreshInterval: 60000,
       displayType: 'percentage',
-    }
+    },
   },
-  
-  'StatsCardWidget': {
+
+  StatsCardWidget: {
     name: 'Stats Card',
     category: 'stats',
     description: 'Generic stats card with configurable data source',
@@ -74,8 +74,8 @@ export const statsWidgetConfigs: Record<string, Partial<WidgetDefinition>> = {
     metadata: {
       configurable: true,
       supportedDataSources: ['total_pallets', 'today_transfers', 'active_products'],
-    }
-  }
+    },
+  },
 };
 
 /**
@@ -84,19 +84,19 @@ export const statsWidgetConfigs: Record<string, Partial<WidgetDefinition>> = {
 export async function registerStatsWidgets(): Promise<void> {
   const startTime = performance.now();
   let registeredCount = 0;
-  
+
   console.log('[StatsWidgetAdapter] Starting Stats widgets registration...');
-  
+
   for (const [widgetId, config] of Object.entries(statsWidgetConfigs)) {
     try {
       // 獲取動態導入函數
       const importFn = getWidgetImport(widgetId);
-      
+
       if (!importFn) {
         console.warn(`[StatsWidgetAdapter] No import function found for ${widgetId}`);
         continue;
       }
-      
+
       // 創建完整的 widget 定義，包含懶加載組件
       const definition: WidgetDefinition = {
         id: widgetId,
@@ -105,20 +105,21 @@ export async function registerStatsWidgets(): Promise<void> {
         ...config,
         component: createLazyWidget(widgetId), // 直接使用 widget loader
       };
-      
+
       // 註冊到 registry
       widgetRegistry.register(definition);
-      
+
       registeredCount++;
       console.log(`[StatsWidgetAdapter] Registered: ${widgetId}`);
-      
     } catch (error) {
       console.error(`[StatsWidgetAdapter] Failed to register ${widgetId}:`, error);
     }
   }
-  
+
   const endTime = performance.now();
-  console.log(`[StatsWidgetAdapter] Completed: ${registeredCount} widgets registered in ${(endTime - startTime).toFixed(2)}ms`);
+  console.log(
+    `[StatsWidgetAdapter] Completed: ${registeredCount} widgets registered in ${(endTime - startTime).toFixed(2)}ms`
+  );
 }
 
 /**
@@ -128,9 +129,12 @@ export async function preloadHighPriorityStatsWidgets(): Promise<void> {
   const highPriorityWidgets = Object.entries(statsWidgetConfigs)
     .filter(([_, config]) => (config.preloadPriority || 0) >= 8)
     .map(([id]) => id);
-    
+
   if (highPriorityWidgets.length > 0) {
-    console.log('[StatsWidgetAdapter] Preloading high priority Stats widgets:', highPriorityWidgets);
+    console.log(
+      '[StatsWidgetAdapter] Preloading high priority Stats widgets:',
+      highPriorityWidgets
+    );
     await widgetRegistry.preloadWidgets(highPriorityWidgets);
   }
 }

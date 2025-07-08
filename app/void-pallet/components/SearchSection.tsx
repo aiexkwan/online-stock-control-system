@@ -32,11 +32,15 @@ export function SearchSection({
   onQRScan,
   onShowScanner,
 }: SearchSectionProps) {
-  const isMobile = typeof window !== 'undefined' && /Mobi|Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
-  
+  const isMobile =
+    typeof window !== 'undefined' &&
+    /Mobi|Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
+
   // Enhanced search detection state
-  const [detectionResult, setDetectionResult] = useState<ReturnType<typeof detectSearchType> | null>(null);
-  
+  const [detectionResult, setDetectionResult] = useState<ReturnType<
+    typeof detectSearchType
+  > | null>(null);
+
   // Update detection when input changes
   useEffect(() => {
     if (searchInput.trim()) {
@@ -48,60 +52,56 @@ export function SearchSection({
   }, [searchInput]);
 
   return (
-    <div className="space-y-6">
-      <div className="text-center">
-        <h1 className="text-3xl font-bold text-red-500 mb-2">Void Pallet</h1>
-        <p className="text-gray-400">Search for pallet to void</p>
+    <div className='space-y-6'>
+      <div className='text-center'>
+        <h1 className='mb-2 text-3xl font-bold text-red-500'>Void Pallet</h1>
+        <p className='text-gray-400'>Search for pallet to void</p>
       </div>
 
       {/* Search type selection */}
-      <div className="flex justify-center space-x-4">
+      <div className='flex justify-center space-x-4'>
         <Button
           variant={searchType === 'qr' ? 'default' : 'outline'}
           onClick={() => onSearchTypeChange('qr')}
           disabled={isDisabled}
-          className="flex items-center space-x-2"
+          className='flex items-center space-x-2'
         >
-          <QrCodeIcon className="h-4 w-4" />
+          <QrCodeIcon className='h-4 w-4' />
           <span>QR Code</span>
         </Button>
         <Button
           variant={searchType === 'pallet_num' ? 'default' : 'outline'}
           onClick={() => onSearchTypeChange('pallet_num')}
           disabled={isDisabled}
-          className="flex items-center space-x-2"
+          className='flex items-center space-x-2'
         >
-          <NumberedListIcon className="h-4 w-4" />
+          <NumberedListIcon className='h-4 w-4' />
           <span>Pallet Number</span>
         </Button>
       </div>
 
       {/* Search input area */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="md:col-span-2 relative">
+      <div className='grid grid-cols-1 gap-4 md:grid-cols-3'>
+        <div className='relative md:col-span-2'>
           <Input
-            type="text"
+            type='text'
             value={searchInput}
-            onChange={(e) => onSearchInputChange(e.target.value)}
-            placeholder={
-              searchType === 'qr' 
-                ? "Scan or enter QR Code"
-                : "Enter pallet number"
-            }
-            className="w-full bg-gray-700 border-gray-600 placeholder-gray-400 text-white focus:ring-orange-500 focus:border-orange-500 text-lg p-4 pr-12"
+            onChange={e => onSearchInputChange(e.target.value)}
+            placeholder={searchType === 'qr' ? 'Scan or enter QR Code' : 'Enter pallet number'}
+            className='w-full border-gray-600 bg-gray-700 p-4 pr-12 text-lg text-white placeholder-gray-400 focus:border-orange-500 focus:ring-orange-500'
             disabled={isSearching || isDisabled}
           />
           {/* QR Scanner Button - only show for QR search type */}
           {searchType === 'qr' && (
             <Button
-              type="button"
-              variant="ghost"
-              size="sm"
+              type='button'
+              variant='ghost'
+              size='sm'
               onClick={() => onShowScanner(true)}
-              className="absolute right-2 top-1/2 transform -translate-y-1/2 h-8 w-8 p-0 hover:bg-gray-600 text-orange-400"
+              className='absolute right-2 top-1/2 h-8 w-8 -translate-y-1/2 transform p-0 text-orange-400 hover:bg-gray-600'
               disabled={isSearching || isDisabled}
             >
-              <QrCodeIcon className="h-4 w-4" />
+              <QrCodeIcon className='h-4 w-4' />
             </Button>
           )}
         </div>
@@ -109,11 +109,11 @@ export function SearchSection({
           <Button
             onClick={onSearch}
             disabled={isSearching || isDisabled || !searchInput.trim()}
-            className="w-full bg-orange-600 hover:bg-orange-700 text-white font-semibold py-4 text-lg"
+            className='w-full bg-orange-600 py-4 text-lg font-semibold text-white hover:bg-orange-700'
           >
             {isSearching ? (
-              <div className="flex items-center justify-center">
-                <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-white mr-2"></div>
+              <div className='flex items-center justify-center'>
+                <div className='mr-2 h-4 w-4 animate-spin rounded-full border-b-2 border-t-2 border-white'></div>
                 Searching...
               </div>
             ) : (
@@ -128,41 +128,41 @@ export function SearchSection({
         open={showScanner}
         onClose={() => onShowScanner(false)}
         onScan={onQRScan}
-        title="Scan Pallet QR Code"
+        title='Scan Pallet QR Code'
       />
 
       {/* Enhanced search hints with detection feedback */}
-      <div className="text-center space-y-2">
+      <div className='space-y-2 text-center'>
         {/* Detection result */}
         {detectionResult && searchInput.trim() && (
-          <div className={`text-sm ${
-            detectionResult.confidence >= 70 
-              ? 'text-green-400' 
-              : detectionResult.confidence >= 50 
-              ? 'text-yellow-400' 
-              : 'text-red-400'
-          }`}>
+          <div
+            className={`text-sm ${
+              detectionResult.confidence >= 70
+                ? 'text-green-400'
+                : detectionResult.confidence >= 50
+                  ? 'text-yellow-400'
+                  : 'text-red-400'
+            }`}
+          >
             <p>
-              {detectionResult.confidence >= 70 
+              {detectionResult.confidence >= 70
                 ? `✓ Detected: ${getSearchTypeDisplayName(detectionResult.type)}`
                 : detectionResult.confidence >= 50
-                ? `⚠ Possible ${getSearchTypeDisplayName(detectionResult.type)}`
-                : '✗ Format unclear'}
+                  ? `⚠ Possible ${getSearchTypeDisplayName(detectionResult.type)}`
+                  : '✗ Format unclear'}
               {detectionResult.confidence < 100 && detectionResult.suggestions && (
-                <span className="block text-xs mt-1 text-gray-400">
+                <span className='mt-1 block text-xs text-gray-400'>
                   {detectionResult.suggestions[0]}
                 </span>
               )}
             </p>
           </div>
         )}
-        
+
         {/* Standard hints */}
-        <div className="text-sm text-gray-400">
+        <div className='text-sm text-gray-400'>
           {searchType === 'qr' ? (
-            <p>
-              Format: DDMMYY-XXXXXX (e.g., 241224-ABC123)
-            </p>
+            <p>Format: DDMMYY-XXXXXX (e.g., 241224-ABC123)</p>
           ) : (
             <p>Format: DDMMYY/XX (e.g., 241224/01)</p>
           )}
@@ -170,4 +170,4 @@ export function SearchSection({
       </div>
     </div>
   );
-} 
+}

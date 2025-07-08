@@ -15,23 +15,29 @@ export interface EnhancedRateLimitConfig {
   ipLimits: { maxRequests: number; windowMs: number };
 
   // 新增：細粒度限流規則
-  userRoleLimits: Record<string, {
-    maxRequestsPerMinute: number;
-    maxConcurrentQueries: number;
-    complexityLimit: number;
-  }>;
-  
+  userRoleLimits: Record<
+    string,
+    {
+      maxRequestsPerMinute: number;
+      maxConcurrentQueries: number;
+      complexityLimit: number;
+    }
+  >;
+
   operationTypeLimits: {
     query: { maxRequestsPerMinute: number; maxComplexity: number };
     mutation: { maxRequestsPerMinute: number; maxComplexity: number };
     subscription: { maxPerUser: number; maxComplexity: number };
   };
 
-  fieldLevelLimits: Record<string, {
-    maxRequestsPerMinute: number;
-    cooldownSeconds?: number;
-    requiresAuth?: boolean;
-  }>;
+  fieldLevelLimits: Record<
+    string,
+    {
+      maxRequestsPerMinute: number;
+      cooldownSeconds?: number;
+      requiresAuth?: boolean;
+    }
+  >;
 
   businessLogicLimits: {
     stockOperations: { maxPerMinute: number; burstLimit: number };
@@ -60,13 +66,13 @@ export const enhancedRateLimitConfig: EnhancedRateLimitConfig = {
     processPallet: { maxRequests: 200, windowMs: 60000 },
     bulkUpdateInventory: { maxRequests: 5, windowMs: 60000 },
   },
-  
+
   subscriptionLimits: {
     maxConnectionsPerUser: 10,
     maxConnectionsPerIP: 50,
     maxGlobalConnections: 1000,
   },
-  
+
   ipLimits: { maxRequests: 1000, windowMs: 60000 },
 
   // 用戶角色限流
@@ -142,9 +148,13 @@ export class EnhancedRateLimiter {
     avgResponseTime: 0,
   };
 
-  constructor(private config: EnhancedRateLimitConfig, useRedis = false) {
+  constructor(
+    private config: EnhancedRateLimitConfig,
+    useRedis = false
+  ) {
     // 在開發環境中，如果沒有明確啟用 Redis，則不使用 Redis
-    const shouldUseRedis = useRedis && process.env.NODE_ENV !== 'development' || process.env.ENABLE_REDIS;
+    const shouldUseRedis =
+      (useRedis && process.env.NODE_ENV !== 'development') || process.env.ENABLE_REDIS;
     this.initializeLimiters(shouldUseRedis);
     this.startSystemMonitoring();
   }
@@ -207,21 +217,37 @@ export class EnhancedRateLimiter {
     // 5. 業務邏輯限流器
     this.limiters.set(
       'business:stock',
-      createLimiter('business_stock', this.config.businessLogicLimits.stockOperations.maxPerMinute, 60000)
+      createLimiter(
+        'business_stock',
+        this.config.businessLogicLimits.stockOperations.maxPerMinute,
+        60000
+      )
     );
     this.limiters.set(
       'business:reports',
-      createLimiter('business_reports', this.config.businessLogicLimits.reportGeneration.maxPerHour, 3600000)
+      createLimiter(
+        'business_reports',
+        this.config.businessLogicLimits.reportGeneration.maxPerHour,
+        3600000
+      )
     );
     this.limiters.set(
       'business:bulk',
-      createLimiter('business_bulk', this.config.businessLogicLimits.bulkOperations.maxPerHour, 3600000)
+      createLimiter(
+        'business_bulk',
+        this.config.businessLogicLimits.bulkOperations.maxPerHour,
+        3600000
+      )
     );
 
     // 6. IP 限流器
     this.limiters.set(
       'ip:general',
-      createLimiter('ip_general', this.config.ipLimits.maxRequestsPerMinute, this.config.ipLimits.windowMs)
+      createLimiter(
+        'ip_general',
+        this.config.ipLimits.maxRequestsPerMinute,
+        this.config.ipLimits.windowMs
+      )
     );
   }
 
@@ -238,7 +264,7 @@ export class EnhancedRateLimiter {
       // 模擬系統指標獲取 (實際環境中應該從系統監控 API 獲取)
       const memUsage = process.memoryUsage();
       this.systemMetrics.memory = memUsage.heapUsed / memUsage.heapTotal;
-      
+
       // 這裡可以集成實際的系統負載監控
       // this.systemMetrics.load = await getSystemLoad();
     } catch (error) {
@@ -250,17 +276,17 @@ export class EnhancedRateLimiter {
     if (!this.config.adaptiveLimits.enabled) return 1;
 
     let multiplier = 1;
-    
+
     // 基於系統負載調整
     if (this.systemMetrics.load > this.config.adaptiveLimits.systemLoadThreshold) {
       multiplier *= 0.7; // 降低限流閾值 30%
     }
-    
+
     // 基於內存使用調整
     if (this.systemMetrics.memory > this.config.adaptiveLimits.memoryThreshold) {
       multiplier *= 0.8; // 降低限流閾值 20%
     }
-    
+
     // 基於響應時間調整
     if (this.systemMetrics.avgResponseTime > this.config.adaptiveLimits.responseTimeThreshold) {
       multiplier *= 0.6; // 降低限流閾值 40%
@@ -299,11 +325,11 @@ export class EnhancedRateLimiter {
       if (userRole) {
         const roleLimiter = this.limiters.get(`role:${userRole}`);
         const roleConfig = this.config.userRoleLimits[userRole];
-        
+
         if (roleLimiter && roleConfig) {
           // 調整限流閾值
           const adjustedLimit = Math.floor(roleConfig.maxRequestsPerMinute * adaptiveMultiplier);
-          
+
           if (roleConfig.complexityLimit && complexity && complexity > roleConfig.complexityLimit) {
             return {
               allowed: false,
@@ -354,22 +380,22 @@ export class EnhancedRateLimiter {
       if (fieldName) {
         const fieldLimiter = this.limiters.get(`field:${fieldName}`);
         const fieldConfig = this.config.fieldLevelLimits[fieldName];
-        
+
         if (fieldLimiter && fieldConfig) {
           // 檢查冷卻時間
           if (fieldConfig.cooldownSeconds) {
             const cooldownKey = `${userId || ip}:${fieldName}`;
             const lastAccess = this.fieldCooldowns.get(cooldownKey);
             const now = Date.now();
-            
-            if (lastAccess && (now - lastAccess) < (fieldConfig.cooldownSeconds * 1000)) {
+
+            if (lastAccess && now - lastAccess < fieldConfig.cooldownSeconds * 1000) {
               return {
                 allowed: false,
                 reason: `Field ${fieldName} is in cooldown`,
-                retryAfter: (fieldConfig.cooldownSeconds * 1000) - (now - lastAccess),
+                retryAfter: fieldConfig.cooldownSeconds * 1000 - (now - lastAccess),
               };
             }
-            
+
             this.fieldCooldowns.set(cooldownKey, now);
           }
 
@@ -390,7 +416,7 @@ export class EnhancedRateLimiter {
         if (roleConfig) {
           const currentConcurrent = this.concurrentQueries.get(userId) || 0;
           const maxConcurrent = Math.floor(roleConfig.maxConcurrentQueries * adaptiveMultiplier);
-          
+
           if (currentConcurrent >= maxConcurrent) {
             return {
               allowed: false,
@@ -401,7 +427,6 @@ export class EnhancedRateLimiter {
       }
 
       return { allowed: true };
-
     } catch (error) {
       logger.error('Rate limit check error:', error);
       // 發生錯誤時允許請求通過，但記錄錯誤
@@ -422,7 +447,10 @@ export class EnhancedRateLimiter {
   }
 
   // 業務邏輯特定限流檢查
-  async checkBusinessLogicLimit(operation: 'stock' | 'reports' | 'bulk', userId: string): Promise<boolean> {
+  async checkBusinessLogicLimit(
+    operation: 'stock' | 'reports' | 'bulk',
+    userId: string
+  ): Promise<boolean> {
     const limiter = this.limiters.get(`business:${operation}`);
     if (!limiter) return true;
 
@@ -437,7 +465,7 @@ export class EnhancedRateLimiter {
   // 獲取限流統計
   async getRateLimitStats(): Promise<any> {
     const stats: any = {};
-    
+
     for (const [key, limiter] of this.limiters) {
       try {
         // 這裡需要根據實際的 rate-limiter-flexible 版本調整
@@ -463,7 +491,8 @@ export class EnhancedRateLimiter {
   cleanupCooldowns(): void {
     const now = Date.now();
     for (const [key, timestamp] of this.fieldCooldowns) {
-      if (now - timestamp > 300000) { // 5分鐘後清理
+      if (now - timestamp > 300000) {
+        // 5分鐘後清理
         this.fieldCooldowns.delete(key);
       }
     }
@@ -471,10 +500,14 @@ export class EnhancedRateLimiter {
 }
 
 // 創建增強型限流器實例（開發環境使用內存版本）
-const useRedisForRateLimit = process.env.NODE_ENV === 'production' || process.env.ENABLE_REDIS === 'true';
-export const enhancedRateLimiter = new EnhancedRateLimiter(enhancedRateLimitConfig, useRedisForRateLimit);
+const useRedisForRateLimit =
+  process.env.NODE_ENV === 'production' || process.env.ENABLE_REDIS === 'true';
+export const enhancedRateLimiter = new EnhancedRateLimiter(
+  enhancedRateLimitConfig,
+  useRedisForRateLimit
+);
 
 // 定期清理冷卻記錄
 setInterval(() => {
   enhancedRateLimiter.cleanupCooldowns();
-}, 60000); // 每分鐘清理一次 
+}, 60000); // 每分鐘清理一次

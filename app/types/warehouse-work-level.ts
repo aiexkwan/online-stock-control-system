@@ -83,12 +83,12 @@ export interface ChartDataPoint {
 
 export function transformToChartData(response: WarehouseWorkLevelResponse): ChartDataPoint[] {
   return response.daily_stats.map(stat => ({
-    date: new Date(stat.date).toLocaleDateString('en-GB', { 
-      month: 'short', 
-      day: 'numeric' 
+    date: new Date(stat.date).toLocaleDateString('en-GB', {
+      month: 'short',
+      day: 'numeric',
     }),
     moves: stat.total_moves,
-    operators: stat.operator_count
+    operators: stat.operator_count,
   }));
 }
 
@@ -109,15 +109,17 @@ export function extractSummaryStats(response: WarehouseWorkLevelResponse): Summa
     totalMoves: response.total_moves,
     uniqueOperators: response.unique_operators,
     avgMovesPerDay: response.avg_moves_per_day,
-    peakDay: response.peak_day ? {
-      date: response.peak_day.date,
-      moves: response.peak_day.moves,
-      formattedDate: new Date(response.peak_day.date).toLocaleDateString('en-GB', {
-        weekday: 'short',
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric'
-      })
-    } : null
+    peakDay: response.peak_day
+      ? {
+          date: response.peak_day.date,
+          moves: response.peak_day.moves,
+          formattedDate: new Date(response.peak_day.date).toLocaleDateString('en-GB', {
+            weekday: 'short',
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
+          }),
+        }
+      : null,
   };
 }

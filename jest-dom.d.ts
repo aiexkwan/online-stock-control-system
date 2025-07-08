@@ -18,7 +18,7 @@ declare global {
       toHaveFocus(): R;
       toHaveFormValues(values: Record<string, any>): R;
       toHaveStyle(css: string | Record<string, any>): R;
-      toHaveTextContent(text: string | RegExp, options?: {normalizeWhitespace: boolean}): R;
+      toHaveTextContent(text: string | RegExp, options?: { normalizeWhitespace: boolean }): R;
       toHaveValue(value: string | string[] | number): R;
       toHaveDisplayValue(value: string | string[]): R;
       toBeChecked(): R;

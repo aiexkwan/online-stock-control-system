@@ -30,26 +30,36 @@ BEGIN
     SELECT COUNT(*) INTO v_total_count FROM record_history;
     
     -- Fetch raw events with user names
-    SELECT jsonb_agg(event_data ORDER BY time DESC)
-    INTO v_raw_events
-    FROM (
-        SELECT jsonb_build_object(
-            'id', rh.id,
-            'time', rh.time,
-            'action', rh.action,
-            'plt_num', rh.plt_num,
-            'loc', rh.loc,
-            'remark', rh.remark,
-            'user_id', rh.id,
-            'user_name', COALESCE(di.name, 'Unknown User'),
-            'doc_url', NULL
-        ) as event_data
+    WITH ordered_events AS (
+        SELECT 
+            rh.id,
+            rh.time,
+            rh.action,
+            rh.plt_num,
+            rh.loc,
+            rh.remark,
+            COALESCE(di.name, 'Unknown User') as user_name
         FROM record_history rh
-        LEFT JOIN data_id di ON di.worker_id = rh.id
+        LEFT JOIN data_id di ON di.id = rh.id
         ORDER BY rh.time DESC
         LIMIT p_limit + 100  -- Fetch extra for merging
         OFFSET p_offset
-    ) sub;
+    )
+    SELECT jsonb_agg(
+        jsonb_build_object(
+            'id', id,
+            'time', time,
+            'action', action,
+            'plt_num', plt_num,
+            'loc', loc,
+            'remark', remark,
+            'user_id', id,
+            'user_name', user_name,
+            'doc_url', NULL
+        ) ORDER BY time DESC
+    )
+    INTO v_raw_events
+    FROM ordered_events;
     
     -- If no events found
     IF v_raw_events IS NULL THEN

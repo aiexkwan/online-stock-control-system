@@ -1,14 +1,14 @@
 /**
  * Unified useUserId Hook
  * 統一的用戶 ID 獲取 Hook，整合不同模組的用戶身份邏輯
- * 
+ *
  * Features:
  * - 自動獲取當前登入用戶的 clock number ID
  * - 支援實時監聽認證狀態變化
  * - 提供用戶詳細信息查詢
  * - 內建緩存機制減少重複查詢
  * - 統一錯誤處理
- * 
+ *
  * Email format: username@pennineindustries.com
  * - Username must contain only English letters (a-z, A-Z)
  * - Domain must be @pennineindustries.com
@@ -30,15 +30,15 @@ interface UserDetails {
 
 interface UseUserIdReturn {
   // Core data
-  userId: string | null;           // Clock number ID (e.g., "1234")
-  userNumericId: string | null;    // Same as userId, kept for backward compatibility
-  userDetails: UserDetails | null;  // Full user details
-  
+  userId: string | null; // Clock number ID (e.g., "1234")
+  userNumericId: string | null; // Same as userId, kept for backward compatibility
+  userDetails: UserDetails | null; // Full user details
+
   // State
   isLoading: boolean;
   error: Error | null;
   isAuthenticated: boolean;
-  
+
   // Actions
   refreshUser: () => Promise<void>;
   verifyUserId: (userId: string) => Promise<boolean>;
@@ -59,14 +59,14 @@ function extractUsernameFromEmail(email: string): string | null {
 
 /**
  * Unified User ID Hook
- * 
+ *
  * @example
  * ```tsx
  * function MyComponent() {
  *   const { userId, userDetails, isLoading } = useUserId();
- *   
+ *
  *   if (isLoading) return <div>Loading user...</div>;
- *   
+ *
  *   return <div>Welcome, {userDetails?.name || userId}</div>;
  * }
  * ```
@@ -78,102 +78,108 @@ export function useUserId(): UseUserIdReturn {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  
+
   const supabaseRef = useRef<SupabaseClient>();
-  
+
   // Initialize Supabase client
   useEffect(() => {
     supabaseRef.current = createClient();
   }, []);
-  
+
   /**
    * Get user details from data_id table by clock number ID
    */
-  const fetchUserDetails = useCallback(async (clockNumberId: string): Promise<UserDetails | null> => {
-    if (!supabaseRef.current) return null;
-    
-    // Check cache first
-    const cached = userCache.get(clockNumberId);
-    if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
-      return cached.data;
-    }
-    
-    try {
-      // Query by clock number ID
-      const { data, error } = await supabaseRef.current
-        .from('data_id')
-        .select('id, name, email, department')
-        .eq('id', parseInt(clockNumberId, 10))
-        .single();
-      
-      if (error) throw error;
-      
-      // Extract username from email
-      const username = data.email ? extractUsernameFromEmail(data.email) : null;
-      
-      const details: UserDetails = {
-        id: data.id.toString(),
-        name: data.name,
-        email: data.email,
-        department: data.department,
-        username: username || data.email?.split('@')[0] || clockNumberId
-      };
-      
-      // Update cache
-      userCache.set(clockNumberId, { data: details, timestamp: Date.now() });
-      
-      return details;
-    } catch (err) {
-      console.error('[useUserId] Error fetching user details:', err);
-      return null;
-    }
-  }, []);
-  
+  const fetchUserDetails = useCallback(
+    async (clockNumberId: string): Promise<UserDetails | null> => {
+      if (!supabaseRef.current) return null;
+
+      // Check cache first
+      const cached = userCache.get(clockNumberId);
+      if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+        return cached.data;
+      }
+
+      try {
+        // Query by clock number ID
+        const { data, error } = await supabaseRef.current
+          .from('data_id')
+          .select('id, name, email, department')
+          .eq('id', parseInt(clockNumberId, 10))
+          .single();
+
+        if (error) throw error;
+
+        // Extract username from email
+        const username = data.email ? extractUsernameFromEmail(data.email) : null;
+
+        const details: UserDetails = {
+          id: data.id.toString(),
+          name: data.name,
+          email: data.email,
+          department: data.department,
+          username: username || data.email?.split('@')[0] || clockNumberId,
+        };
+
+        // Update cache
+        userCache.set(clockNumberId, { data: details, timestamp: Date.now() });
+
+        return details;
+      } catch (err) {
+        console.error('[useUserId] Error fetching user details:', err);
+        return null;
+      }
+    },
+    []
+  );
+
   /**
    * Get current authenticated user
    */
   const getCurrentUser = useCallback(async () => {
     if (!supabaseRef.current) return;
-    
+
     setIsLoading(true);
     setError(null);
-    
+
     try {
-      const { data: { user }, error: authError } = await supabaseRef.current.auth.getUser();
-      
+      const {
+        data: { user },
+        error: authError,
+      } = await supabaseRef.current.auth.getUser();
+
       if (authError) throw authError;
-      
+
       if (user?.email) {
         setIsAuthenticated(true);
-        
+
         // Fetch user details using email
         const { data, error } = await supabaseRef.current
           .from('data_id')
           .select('id, name, email, department')
           .eq('email', user.email)
           .single();
-        
+
         if (error) {
           throw new Error(`User not found in data_id table for email: ${user.email}`);
         }
-        
+
         if (data) {
           // Extract username from email for backward compatibility
           const username = extractUsernameFromEmail(user.email);
-          
+
           setUserId(data.id.toString()); // Clock number ID
           setUserNumericId(data.id.toString());
-          
+
           const details: UserDetails = {
             id: data.id.toString(),
             name: data.name,
             email: data.email,
             department: data.department,
-            username: username || user.email.split('@')[0]
+            username: username || user.email.split('@')[0],
           };
-          
+
           setUserDetails(details);
-          
+
           // Update cache
           userCache.set(data.id.toString(), { data: details, timestamp: Date.now() });
         }
@@ -188,7 +194,7 @@ export function useUserId(): UseUserIdReturn {
       setError(error);
       setIsAuthenticated(false);
       console.error('[useUserId] Error getting user:', error);
-      
+
       // Only show toast for non-authentication errors
       if (!error.message.includes('not authenticated')) {
         toast.error(`Failed to get user: ${error.message}`);
@@ -197,62 +203,62 @@ export function useUserId(): UseUserIdReturn {
       setIsLoading(false);
     }
   }, []);
-  
+
   /**
    * Verify if a user ID exists in the system
    */
   const verifyUserId = useCallback(async (userId: string): Promise<boolean> => {
     if (!supabaseRef.current) return false;
-    
+
     try {
       const { data, error } = await supabaseRef.current
         .from('data_id')
         .select('id')
         .eq('id', userId)
         .single();
-      
+
       return !error && !!data;
     } catch (err) {
       console.error('[useUserId] Error verifying user ID:', err);
       return false;
     }
   }, []);
-  
+
   /**
    * Refresh user data
    */
   const refreshUser = useCallback(async () => {
     await getCurrentUser();
   }, [getCurrentUser]);
-  
+
   // Initial load
   useEffect(() => {
     getCurrentUser();
   }, [getCurrentUser]);
-  
+
   // Listen for auth state changes
   useEffect(() => {
     if (!supabaseRef.current) return;
-    
-    const { data: { subscription } } = supabaseRef.current.auth.onAuthStateChange(
-      async (event, session) => {
-        if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-          await getCurrentUser();
-        } else if (event === 'SIGNED_OUT') {
-          setUserId(null);
-          setUserNumericId(null);
-          setUserDetails(null);
-          setIsAuthenticated(false);
-          userCache.clear(); // Clear cache on sign out
-        }
+
+    const {
+      data: { subscription },
+    } = supabaseRef.current.auth.onAuthStateChange(async (event, session) => {
+      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+        await getCurrentUser();
+      } else if (event === 'SIGNED_OUT') {
+        setUserId(null);
+        setUserNumericId(null);
+        setUserDetails(null);
+        setIsAuthenticated(false);
+        userCache.clear(); // Clear cache on sign out
       }
-    );
-    
+    });
+
     return () => {
       subscription.unsubscribe();
     };
   }, [getCurrentUser]);
-  
+
   return {
     userId,
     userNumericId,
@@ -261,7 +267,7 @@ export function useUserId(): UseUserIdReturn {
     error,
     isAuthenticated,
     refreshUser,
-    verifyUserId
+    verifyUserId,
   };
 }
 

@@ -34,7 +34,7 @@ export function BaseWidget({
   contentClassName,
   animationDelay = 0,
   disableGlow = false,
-  noPadding = false
+  noPadding = false,
 }: BaseWidgetProps) {
   return (
     <WidgetWrapper
@@ -47,13 +47,7 @@ export function BaseWidget({
       disableGlow={disableGlow}
       className={className}
     >
-      <div className={cn(
-        'w-full h-full',
-        'flex flex-col',
-        contentClassName
-      )}>
-        {children}
-      </div>
+      <div className={cn('h-full w-full', 'flex flex-col', contentClassName)}>{children}</div>
     </WidgetWrapper>
   );
 }
@@ -63,38 +57,32 @@ export const WidgetLayouts = {
   // Table + Chart layout (40% table, 60% chart)
   TableChart: ({ table, chart }: { table: React.ReactNode; chart: React.ReactNode }) => (
     <>
-      <div className="h-[40%] mb-2 overflow-auto">
-        {table}
-      </div>
-      <div className="h-[60%] overflow-hidden">
-        {chart}
-      </div>
+      <div className='mb-2 h-[40%] overflow-auto'>{table}</div>
+      <div className='h-[60%] overflow-hidden'>{chart}</div>
     </>
   ),
-  
+
   // Full chart layout
   FullChart: ({ children }: { children: React.ReactNode }) => (
-    <div className="w-full h-full overflow-hidden">
-      {children}
-    </div>
+    <div className='h-full w-full overflow-hidden'>{children}</div>
   ),
-  
+
   // Full table layout
   FullTable: ({ children }: { children: React.ReactNode }) => (
-    <div className="w-full h-full overflow-auto">
+    <div className='h-full w-full overflow-auto'>{children}</div>
+  ),
+
+  // Grid layout for multiple items
+  Grid: ({ children, cols = 2 }: { children: React.ReactNode; cols?: number }) => (
+    <div
+      className={cn(
+        'grid h-full gap-3',
+        cols === 2 && 'grid-cols-2',
+        cols === 3 && 'grid-cols-3',
+        cols === 4 && 'grid-cols-4'
+      )}
+    >
       {children}
     </div>
   ),
-  
-  // Grid layout for multiple items
-  Grid: ({ children, cols = 2 }: { children: React.ReactNode; cols?: number }) => (
-    <div className={cn(
-      'grid gap-3 h-full',
-      cols === 2 && 'grid-cols-2',
-      cols === 3 && 'grid-cols-3',
-      cols === 4 && 'grid-cols-4'
-    )}>
-      {children}
-    </div>
-  )
 };

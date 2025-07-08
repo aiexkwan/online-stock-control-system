@@ -30,13 +30,13 @@ export function QuickAccess({ userId, className }: QuickAccessProps) {
     const loadFrequentPaths = async () => {
       try {
         const paths = await enhancedBehaviorTracker.getFrequentPaths(userId, 3);
-        
+
         // Map paths to navigation items
         const items: QuickAccessItem[] = paths.map(path => {
           const info = getNavigationInfo(path);
           return {
             path,
-            ...info
+            ...info,
           };
         });
 
@@ -62,12 +62,12 @@ export function QuickAccess({ userId, className }: QuickAccessProps) {
   }
 
   return (
-    <div className={cn("flex items-center gap-2", className)}>
+    <div className={cn('flex items-center gap-2', className)}>
       {/* Quick Access Items */}
       <AnimatePresence>
         {frequentPaths.map((item, index) => {
           const Icon = item.icon;
-          
+
           return (
             <motion.button
               key={item.path}
@@ -77,34 +77,36 @@ export function QuickAccess({ userId, className }: QuickAccessProps) {
               transition={{ delay: index * 0.05 }}
               onClick={() => handleQuickAccess(item.path)}
               className={cn(
-                "relative group",
-                "px-3 py-2",
-                "rounded-xl",
-                "transition-all duration-200",
-                "hover:scale-105"
+                'group relative',
+                'px-3 py-2',
+                'rounded-xl',
+                'transition-all duration-200',
+                'hover:scale-105'
               )}
               style={{
-                background: item.gradient || "radial-gradient(circle, rgba(156,163,175,0.15) 0%, rgba(107,114,128,0.06) 50%)"
+                background:
+                  item.gradient ||
+                  'radial-gradient(circle, rgba(156,163,175,0.15) 0%, rgba(107,114,128,0.06) 50%)',
               }}
             >
               {/* Hover Background */}
-              <div className="absolute inset-0 rounded-xl bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity" />
-              
+              <div className='absolute inset-0 rounded-xl bg-white/20 opacity-0 transition-opacity group-hover:opacity-100' />
+
               {/* Content */}
-              <div 
-                className="relative flex items-center gap-2"
+              <div
+                className='relative flex items-center gap-2'
                 onMouseEnter={() => setHoveredIndex(index)}
                 onMouseLeave={() => setHoveredIndex(null)}
               >
-                {Icon && <Icon className="w-4 h-4 text-white/80" />}
+                {Icon && <Icon className='h-4 w-4 text-white/80' />}
                 <AnimatePresence>
                   {hoveredIndex === index && (
                     <motion.span
                       initial={{ opacity: 0, width: 0 }}
-                      animate={{ opacity: 1, width: "auto" }}
+                      animate={{ opacity: 1, width: 'auto' }}
                       exit={{ opacity: 0, width: 0 }}
                       transition={{ duration: 0.2 }}
-                      className="text-sm font-medium text-white/90 overflow-hidden whitespace-nowrap"
+                      className='overflow-hidden whitespace-nowrap text-sm font-medium text-white/90'
                     >
                       {item.label}
                     </motion.span>
@@ -113,7 +115,7 @@ export function QuickAccess({ userId, className }: QuickAccessProps) {
               </div>
 
               {/* Tooltip */}
-              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-black/90 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+              <div className='pointer-events-none absolute bottom-full left-1/2 mb-2 -translate-x-1/2 whitespace-nowrap rounded bg-black/90 px-2 py-1 text-xs text-white opacity-0 transition-opacity group-hover:opacity-100'>
                 Quick access to {item.label}
               </div>
             </motion.button>

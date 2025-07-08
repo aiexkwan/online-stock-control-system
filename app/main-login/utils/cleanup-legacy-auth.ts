@@ -2,7 +2,9 @@
 export function cleanupLegacyAuth() {
   if (typeof window === 'undefined') return;
 
-  process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[CleanupLegacyAuth] Starting cleanup of legacy authentication data');
+  process.env.NODE_ENV !== 'production' &&
+    process.env.NODE_ENV !== 'production' &&
+    console.log('[CleanupLegacyAuth] Starting cleanup of legacy authentication data');
 
   // 清理舊的 localStorage 項目
   const legacyKeys = [
@@ -10,29 +12,30 @@ export function cleanupLegacyAuth() {
     'user',
     'isTemporaryLogin',
     'firstLogin',
-    'sb-bbmkuiplnzvpudszrend-auth-token'
+    'sb-bbmkuiplnzvpudszrend-auth-token',
   ];
 
   legacyKeys.forEach(key => {
     const value = localStorage.getItem(key);
     if (value) {
-      process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`[CleanupLegacyAuth] Removing legacy localStorage key: ${key}`);
+      process.env.NODE_ENV !== 'production' &&
+        process.env.NODE_ENV !== 'production' &&
+        console.log(`[CleanupLegacyAuth] Removing legacy localStorage key: ${key}`);
       localStorage.removeItem(key);
     }
   });
 
   // 清理舊的 cookies
-  const legacyCookies = [
-    'loggedInUserClockNumber',
-    'sb-bbmkuiplnzvpudszrend-auth-token'
-  ];
+  const legacyCookies = ['loggedInUserClockNumber', 'sb-bbmkuiplnzvpudszrend-auth-token'];
 
   legacyCookies.forEach(cookieName => {
     // 刪除 cookie（設置過期時間為過去）
     document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
     document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=${window.location.hostname};`;
     document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=.${window.location.hostname};`;
-    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`[CleanupLegacyAuth] Cleared legacy cookie: ${cookieName}`);
+    process.env.NODE_ENV !== 'production' &&
+      process.env.NODE_ENV !== 'production' &&
+      console.log(`[CleanupLegacyAuth] Cleared legacy cookie: ${cookieName}`);
   });
 
   // 清理所有以 sb- 開頭的 Supabase cookies（舊版本）
@@ -41,7 +44,9 @@ export function cleanupLegacyAuth() {
     const trimmedName = name.trim();
     if (trimmedName.startsWith('sb-')) {
       document.cookie = `${trimmedName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
-      process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`[CleanupLegacyAuth] Cleared Supabase cookie: ${trimmedName}`);
+      process.env.NODE_ENV !== 'production' &&
+        process.env.NODE_ENV !== 'production' &&
+        console.log(`[CleanupLegacyAuth] Cleared Supabase cookie: ${trimmedName}`);
     }
   });
 
@@ -49,13 +54,17 @@ export function cleanupLegacyAuth() {
   for (let i = localStorage.length - 1; i >= 0; i--) {
     const key = localStorage.key(i);
     if (key?.startsWith('pennine_secure_')) {
-      process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`[CleanupLegacyAuth] Found secure storage key: ${key}`);
+      process.env.NODE_ENV !== 'production' &&
+        process.env.NODE_ENV !== 'production' &&
+        console.log(`[CleanupLegacyAuth] Found secure storage key: ${key}`);
       // 可選：如果需要完全重置，取消註釋下面這行
       // localStorage.removeItem(key);
     }
   }
 
-  process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[CleanupLegacyAuth] Legacy cleanup completed');
+  process.env.NODE_ENV !== 'production' &&
+    process.env.NODE_ENV !== 'production' &&
+    console.log('[CleanupLegacyAuth] Legacy cleanup completed');
 }
 
 // 檢查是否需要清理
@@ -65,7 +74,7 @@ export function shouldCleanupLegacyAuth(): boolean {
   // 檢查是否存在舊的認證數據
   const hasLegacyLocalStorage = localStorage.getItem('loggedInUserClockNumber') !== null;
   const hasLegacyCookie = document.cookie.includes('loggedInUserClockNumber=');
-  
+
   return hasLegacyLocalStorage || hasLegacyCookie;
 }
 
@@ -73,20 +82,25 @@ export function shouldCleanupLegacyAuth(): boolean {
 export function forceCleanupAllAuth() {
   if (typeof window === 'undefined') return;
 
-  process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[CleanupLegacyAuth] Force cleanup all authentication data');
+  process.env.NODE_ENV !== 'production' &&
+    process.env.NODE_ENV !== 'production' &&
+    console.log('[CleanupLegacyAuth] Force cleanup all authentication data');
 
   // 清理所有 localStorage
   for (let i = localStorage.length - 1; i >= 0; i--) {
     const key = localStorage.key(i);
-    if (key && (
-      key.includes('auth') || 
-      key.includes('user') || 
-      key.includes('login') || 
-      key.includes('pennine') ||
-      key.startsWith('sb-')
-    )) {
+    if (
+      key &&
+      (key.includes('auth') ||
+        key.includes('user') ||
+        key.includes('login') ||
+        key.includes('pennine') ||
+        key.startsWith('sb-'))
+    ) {
       localStorage.removeItem(key);
-      process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`[CleanupLegacyAuth] Removed: ${key}`);
+      process.env.NODE_ENV !== 'production' &&
+        process.env.NODE_ENV !== 'production' &&
+        console.log(`[CleanupLegacyAuth] Removed: ${key}`);
     }
   }
 
@@ -94,15 +108,19 @@ export function forceCleanupAllAuth() {
   document.cookie.split(';').forEach(cookie => {
     const [name] = cookie.split('=');
     const trimmedName = name.trim();
-    if (trimmedName.includes('auth') || 
-        trimmedName.includes('user') || 
-        trimmedName.includes('login') || 
-        trimmedName.includes('pennine') ||
-        trimmedName.startsWith('sb-')) {
+    if (
+      trimmedName.includes('auth') ||
+      trimmedName.includes('user') ||
+      trimmedName.includes('login') ||
+      trimmedName.includes('pennine') ||
+      trimmedName.startsWith('sb-')
+    ) {
       document.cookie = `${trimmedName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
       document.cookie = `${trimmedName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=${window.location.hostname};`;
     }
   });
 
-  process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[CleanupLegacyAuth] Force cleanup completed');
-} 
+  process.env.NODE_ENV !== 'production' &&
+    process.env.NODE_ENV !== 'production' &&
+    console.log('[CleanupLegacyAuth] Force cleanup completed');
+}

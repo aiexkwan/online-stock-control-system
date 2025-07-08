@@ -42,29 +42,29 @@ const defaultLayout: AdminDashboardLayout = {
       title: 'Welcome to Admin Dashboard',
       gridArea: 'widget1',
       dataSource: 'overview',
-      metrics: ['total_products']
+      metrics: ['total_products'],
     },
     {
       type: 'stats',
       title: 'System Status',
       gridArea: 'widget2',
       dataSource: 'system_status',
-      metrics: ['active_users']
+      metrics: ['active_users'],
     },
     {
       type: 'chart',
       title: 'Daily Activity',
       gridArea: 'widget3',
       dataSource: 'daily_activity',
-      chartType: 'line'
+      chartType: 'line',
     },
     {
       type: 'table',
       title: 'Recent Actions',
       gridArea: 'widget4',
-      dataSource: 'recent_actions'
-    }
-  ]
+      dataSource: 'recent_actions',
+    },
+  ],
 };
 
 export const adminDashboardLayouts: Record<string, AdminDashboardLayout> = {
@@ -77,68 +77,68 @@ export const adminDashboardLayouts: Record<string, AdminDashboardLayout> = {
         type: 'history-tree',
         title: '',
         gridArea: 'widget1',
-        component: 'HistoryTree'
+        component: 'HistoryTree',
       },
       {
         type: 'stats',
         title: 'Today Produced (PLT)',
         gridArea: 'widget2',
         dataSource: 'record_palletinfo',
-        metrics: ['pallet_count']
+        metrics: ['pallet_count'],
       },
       {
         type: 'stats',
         title: 'Today Produced (QTY)',
         gridArea: 'widget3',
         dataSource: 'record_palletinfo',
-        metrics: ['quantity_sum']
+        metrics: ['quantity_sum'],
       },
       {
         type: 'available-soon',
         title: 'Coming Soon',
         gridArea: 'widget4',
-        component: 'AvailableSoonWidget'
+        component: 'AvailableSoonWidget',
       },
       {
         type: 'available-soon',
         title: 'Coming Soon',
         gridArea: 'widget5',
-        component: 'AvailableSoonWidget'
+        component: 'AvailableSoonWidget',
       },
       {
         type: 'chart',
         title: 'Top 10 Products by Quantity',
         gridArea: 'widget6',
         dataSource: 'record_palletinfo',
-        chartType: 'bar'
+        chartType: 'bar',
       },
       {
         type: 'chart',
         title: 'Top 10 Products Distribution',
         gridArea: 'widget7',
         dataSource: 'record_palletinfo',
-        chartType: 'donut'
+        chartType: 'donut',
       },
       {
         type: 'available-soon',
         title: 'Coming Soon',
         gridArea: 'widget8',
-        component: 'AvailableSoonWidget'
+        component: 'AvailableSoonWidget',
       },
       {
         type: 'table',
         title: 'Production Details',
         gridArea: 'widget9',
-        dataSource: 'production_details'
+        dataSource: 'production_details',
       },
       {
         type: 'chart',
         title: 'Staff Workload',
         gridArea: 'widget10',
         dataSource: 'work_level',
-        chartType: 'line'
-      }
-    ]
+        chartType: 'line',
+      },
+    ],
   },
 
   pipeline: {
@@ -149,39 +149,39 @@ export const adminDashboardLayouts: Record<string, AdminDashboardLayout> = {
         type: 'history-tree',
         title: '',
         gridArea: 'widget1',
-        component: 'HistoryTree'
+        component: 'HistoryTree',
       },
       {
         type: 'stats',
         title: 'Today Produced (PLT)',
         gridArea: 'widget2',
         dataSource: 'record_palletinfo',
-        metrics: ['pipeline_pallet_count']
+        metrics: ['pipeline_pallet_count'],
       },
       {
         type: 'stats',
         title: 'Today Produced (QTY)',
         gridArea: 'widget3',
         dataSource: 'record_palletinfo',
-        metrics: ['pipeline_quantity_sum']
+        metrics: ['pipeline_quantity_sum'],
       },
       {
         type: 'available-soon',
         title: 'Coming Soon',
         gridArea: 'widget4',
-        component: 'AvailableSoonWidget'
+        component: 'AvailableSoonWidget',
       },
       {
         type: 'available-soon',
         title: 'Coming Soon',
         gridArea: 'widget5',
-        component: 'AvailableSoonWidget'
+        component: 'AvailableSoonWidget',
       },
       {
         type: 'available-soon',
         title: 'Coming Soon',
         gridArea: 'widget6',
-        component: 'AvailableSoonWidget'
+        component: 'AvailableSoonWidget',
       },
       {
         type: 'chart',
@@ -189,7 +189,7 @@ export const adminDashboardLayouts: Record<string, AdminDashboardLayout> = {
         gridArea: 'widget7',
         dataSource: 'record_palletinfo',
         chartType: 'bar',
-        metrics: ['pipeline_products']
+        metrics: ['pipeline_products'],
       },
       {
         type: 'chart',
@@ -197,22 +197,22 @@ export const adminDashboardLayouts: Record<string, AdminDashboardLayout> = {
         gridArea: 'widget8',
         dataSource: 'record_palletinfo',
         chartType: 'donut',
-        metrics: ['pipeline_products_top10']
+        metrics: ['pipeline_products_top10'],
       },
       {
         type: 'table',
         title: 'Production Details',
         gridArea: 'widget9',
-        dataSource: 'pipeline_production_details'
+        dataSource: 'pipeline_production_details',
       },
       {
         type: 'chart',
         title: 'Staff Workload',
         gridArea: 'widget10',
         dataSource: 'pipeline_work_level',
-        chartType: 'line'
-      }
-    ]
+        chartType: 'line',
+      },
+    ],
   },
 
   warehouse: {
@@ -223,7 +223,7 @@ export const adminDashboardLayouts: Record<string, AdminDashboardLayout> = {
         type: 'history-tree',
         title: '',
         gridArea: 'widget1',
-        component: 'HistoryTree'
+        component: 'HistoryTree',
       },
       {
         type: 'stats',
@@ -231,7 +231,7 @@ export const adminDashboardLayouts: Record<string, AdminDashboardLayout> = {
         gridArea: 'widget2',
         dataSource: 'record_inventory',
         metrics: ['await_total'],
-        component: 'AwaitLocationQtyWidget'
+        component: 'AwaitLocationQtyWidget',
       },
       {
         type: 'stats',
@@ -239,7 +239,7 @@ export const adminDashboardLayouts: Record<string, AdminDashboardLayout> = {
         gridArea: 'widget3',
         dataSource: 'record_transfer',
         metrics: ['yesterday_count'],
-        component: 'YesterdayTransferCountWidget'
+        component: 'YesterdayTransferCountWidget',
       },
       {
         type: 'stats',
@@ -247,7 +247,7 @@ export const adminDashboardLayouts: Record<string, AdminDashboardLayout> = {
         gridArea: 'widget4',
         dataSource: 'record_palletinfo',
         metrics: ['still_in_await_qty'],
-        component: 'StillInAwaitWidget'
+        component: 'StillInAwaitWidget',
       },
       {
         type: 'stats',
@@ -255,7 +255,7 @@ export const adminDashboardLayouts: Record<string, AdminDashboardLayout> = {
         gridArea: 'widget5',
         dataSource: 'record_palletinfo',
         metrics: ['still_in_await_percentage'],
-        component: 'StillInAwaitPercentageWidget'
+        component: 'StillInAwaitPercentageWidget',
       },
       {
         type: 'list',
@@ -263,7 +263,7 @@ export const adminDashboardLayouts: Record<string, AdminDashboardLayout> = {
         gridArea: 'widget6',
         dataSource: 'data_order',
         metrics: ['order_progress'],
-        component: 'OrderStateListWidget'
+        component: 'OrderStateListWidgetV2',
       },
       {
         type: 'chart',
@@ -271,20 +271,20 @@ export const adminDashboardLayouts: Record<string, AdminDashboardLayout> = {
         gridArea: 'widget7',
         dataSource: 'record_transfer',
         chartType: 'line',
-        component: 'TransferTimeDistributionWidget'
+        component: 'TransferTimeDistributionWidget',
       },
       {
         type: 'available-soon',
         title: 'Coming Soon',
         gridArea: 'widget8',
-        component: 'AvailableSoonWidget'
+        component: 'AvailableSoonWidget',
       },
       {
         type: 'table',
         title: 'Transfer List',
         gridArea: 'widget9',
         dataSource: 'record_transfer',
-        component: 'WarehouseTransferListWidget'
+        component: 'WarehouseTransferListWidget',
       },
       {
         type: 'chart',
@@ -292,9 +292,9 @@ export const adminDashboardLayouts: Record<string, AdminDashboardLayout> = {
         gridArea: 'widget10',
         dataSource: 'work_level',
         chartType: 'area',
-        component: 'WarehouseWorkLevelAreaChart'
-      }
-    ]
+        component: 'WarehouseWorkLevelAreaChart',
+      },
+    ],
   },
 
   upload: {
@@ -310,45 +310,45 @@ export const adminDashboardLayouts: Record<string, AdminDashboardLayout> = {
         type: 'history-tree',
         title: '',
         gridArea: 'widget7',
-        component: 'HistoryTree'
+        component: 'HistoryTree',
       },
       {
         type: 'orders-list',
         title: 'Order Upload History',
         gridArea: 'widget1',
-        component: 'OrdersListWidgetV2'
+        component: 'OrdersListWidgetV2',
       },
       {
         type: 'other-files-list',
         title: 'Other File Upload History',
         gridArea: 'widget2',
-        component: 'OtherFilesListWidget'
+        component: 'OtherFilesListWidget',
       },
       {
         type: 'upload-files',
         title: 'Upload Files',
         gridArea: 'widget3',
-        component: 'UploadFilesWidget'
+        component: 'UploadFilesWidget',
       },
       {
         type: 'upload-orders',
         title: 'Upload Orders',
         gridArea: 'widget4',
-        component: 'UploadOrdersWidget'
+        component: 'UploadOrdersWidget',
       },
       {
         type: 'upload-product-spec',
         title: 'Upload Product Spec',
         gridArea: 'widget5',
-        component: 'UploadProductSpecWidget'
+        component: 'UploadProductSpecWidget',
       },
       {
         type: 'upload-photo',
         title: 'Upload Photo',
         gridArea: 'widget6',
-        component: 'UploadPhotoWidget'
-      }
-    ]
+        component: 'UploadPhotoWidget',
+      },
+    ],
   },
 
   update: {
@@ -364,37 +364,37 @@ export const adminDashboardLayouts: Record<string, AdminDashboardLayout> = {
         type: 'history-tree',
         title: '',
         gridArea: 'widget1',
-        component: 'HistoryTree'
+        component: 'HistoryTree',
       },
       {
         type: 'product-update',
         title: 'Product Update',
         gridArea: 'widget2',
         dataSource: 'products',
-        component: 'ProductUpdateWidget'
+        component: 'ProductUpdateWidget',
       },
       {
         type: 'supplier-update',
         title: 'Supplier Update',
         gridArea: 'widget3',
         dataSource: 'suppliers',
-        component: 'SupplierUpdateWidget'
+        component: 'SupplierUpdateWidget',
       },
       {
         type: 'void-pallet',
         title: 'Void Pallet',
         gridArea: 'widget4',
         dataSource: 'void_pallets',
-        component: 'VoidPalletWidget'
+        component: 'VoidPalletWidget',
       },
       {
         type: 'stats',
         title: 'Pending Updates',
         gridArea: 'widget5',
         dataSource: 'update_stats',
-        metrics: ['pending_count']
-      }
-    ]
+        metrics: ['pending_count'],
+      },
+    ],
   },
 
   'stock-management': {
@@ -410,14 +410,14 @@ export const adminDashboardLayouts: Record<string, AdminDashboardLayout> = {
         type: 'history-tree',
         title: '',
         gridArea: 'widget1',
-        component: 'HistoryTree'
+        component: 'HistoryTree',
       },
       {
         type: 'table',
         title: 'Stock Type Selector',
         gridArea: 'widget2',
         dataSource: 'stock_level',
-        component: 'StockTypeSelector'
+        component: 'StockTypeSelector',
       },
       {
         type: 'chart',
@@ -425,13 +425,13 @@ export const adminDashboardLayouts: Record<string, AdminDashboardLayout> = {
         gridArea: 'widget3',
         dataSource: 'stock_level',
         chartType: 'line',
-        component: 'StockLevelHistoryChart'
+        component: 'StockLevelHistoryChart',
       },
       {
         type: 'custom',
         title: 'Inventory Ordered Analysis',
         gridArea: 'widget4',
-        component: 'InventoryOrderedAnalysisWidget'
+        component: 'InventoryOrderedAnalysisWidget',
       },
       {
         type: 'chart',
@@ -439,9 +439,9 @@ export const adminDashboardLayouts: Record<string, AdminDashboardLayout> = {
         gridArea: 'widget5',
         dataSource: 'stock_level',
         chartType: 'pie',
-        component: 'StockDistributionChart'
-      }
-    ]
+        component: 'StockDistributionChart',
+      },
+    ],
   },
 
   system: {
@@ -457,7 +457,7 @@ export const adminDashboardLayouts: Record<string, AdminDashboardLayout> = {
         type: 'history-tree',
         title: '',
         gridArea: 'widget1',
-        component: 'HistoryTree'
+        component: 'HistoryTree',
       },
       {
         type: 'report-generator',
@@ -466,7 +466,7 @@ export const adminDashboardLayouts: Record<string, AdminDashboardLayout> = {
         component: 'ReportGeneratorWidget',
         reportType: 'void-pallet',
         description: 'Damage Report',
-        apiEndpoint: '/api/reports/void-pallet'
+        apiEndpoint: '/api/reports/void-pallet',
       },
       {
         type: 'report-generator',
@@ -475,7 +475,7 @@ export const adminDashboardLayouts: Record<string, AdminDashboardLayout> = {
         component: 'ReportGeneratorWidget',
         reportType: 'order-loading',
         description: 'Loading Report',
-        apiEndpoint: '/api/reports/order-loading'
+        apiEndpoint: '/api/reports/order-loading',
       },
       {
         type: 'report-generator',
@@ -484,7 +484,7 @@ export const adminDashboardLayouts: Record<string, AdminDashboardLayout> = {
         component: 'ReportGeneratorWidget',
         reportType: 'stock-take',
         description: 'StockTake Report',
-        apiEndpoint: '/api/reports/stock-take'
+        apiEndpoint: '/api/reports/stock-take',
       },
       {
         type: 'aco-order-report',
@@ -493,7 +493,7 @@ export const adminDashboardLayouts: Record<string, AdminDashboardLayout> = {
         component: 'AcoOrderReportWidget',
         reportType: 'aco-order',
         description: 'ACO Order Report',
-        apiEndpoint: '/api/reports/aco-order'
+        apiEndpoint: '/api/reports/aco-order',
       },
       {
         type: 'transaction-report',
@@ -502,7 +502,7 @@ export const adminDashboardLayouts: Record<string, AdminDashboardLayout> = {
         component: 'TransactionReportWidget',
         reportType: 'transaction',
         description: 'Stock Transfer Report',
-        apiEndpoint: '/api/reports/transaction'
+        apiEndpoint: '/api/reports/transaction',
       },
       {
         type: 'grn-report',
@@ -511,7 +511,7 @@ export const adminDashboardLayouts: Record<string, AdminDashboardLayout> = {
         component: 'GrnReportWidget',
         reportType: 'grn',
         description: 'GRN Report',
-        apiEndpoint: '/api/reports/grn'
+        apiEndpoint: '/api/reports/grn',
       },
       {
         type: 'report-generator',
@@ -520,15 +520,15 @@ export const adminDashboardLayouts: Record<string, AdminDashboardLayout> = {
         component: 'ReportGeneratorWidget',
         reportType: 'export-all',
         description: 'Export System Data',
-        apiEndpoint: '/api/reports/export-all'
+        apiEndpoint: '/api/reports/export-all',
       },
       {
         type: 'reprint-label',
         title: 'Reprint Label',
         gridArea: 'widget9',
-        component: 'ReprintLabelWidget'
-      }
-    ]
+        component: 'ReprintLabelWidget',
+      },
+    ],
   },
 
   analysis: {
@@ -548,15 +548,15 @@ export const adminDashboardLayouts: Record<string, AdminDashboardLayout> = {
         type: 'history-tree',
         title: '',
         gridArea: 'widget1',
-        component: 'HistoryTree'
+        component: 'HistoryTree',
       },
       {
         type: 'custom',
         title: 'Data Analysis Center',
         gridArea: 'widget2',
         component: 'AnalysisExpandableCards',
-        description: 'Comprehensive data analysis dashboard'
-      }
-    ]
-  }
+        description: 'Comprehensive data analysis dashboard',
+      },
+    ],
+  },
 };

@@ -1,6 +1,6 @@
 /**
  * GraphQL Performance Monitor
- * 
+ *
  * Real-time performance monitoring and alerting for GraphQL operations
  * Features:
  * - Query execution time tracking
@@ -61,14 +61,14 @@ export class PerformanceMonitor extends EventEmitter {
 
   constructor(thresholds?: Partial<PerformanceThresholds>) {
     super();
-    
+
     // Default thresholds based on documented performance targets
     this.thresholds = {
       maxExecutionTime: 500, // 500ms for complex queries
       maxComplexity: 1000,
       minCacheHitRate: 0.7, // 70% minimum
       maxErrorRate: 0.01, // 1% maximum
-      ...thresholds
+      ...thresholds,
     };
 
     // Start periodic aggregation and cleanup
@@ -81,14 +81,14 @@ export class PerformanceMonitor extends EventEmitter {
   recordMetric(metric: Omit<PerformanceMetric, 'timestamp'>) {
     const fullMetric: PerformanceMetric = {
       ...metric,
-      timestamp: new Date()
+      timestamp: new Date(),
     };
 
     this.metrics.push(fullMetric);
-    
+
     // Check for immediate threshold violations
     this.checkThresholdViolations(fullMetric);
-    
+
     // Emit metric event for real-time monitoring
     this.emit('metric', fullMetric);
   }
@@ -101,17 +101,16 @@ export class PerformanceMonitor extends EventEmitter {
 
     // Check execution time
     if (metric.executionTime > this.thresholds.maxExecutionTime) {
-      const severity = metric.executionTime > this.thresholds.maxExecutionTime * 2 
-        ? 'critical' 
-        : 'warning';
-      
+      const severity =
+        metric.executionTime > this.thresholds.maxExecutionTime * 2 ? 'critical' : 'warning';
+
       alerts.push({
         id: `alert_${Date.now()}_execution`,
         severity,
         type: 'execution_time',
         message: `Query "${metric.queryName}" exceeded execution time threshold: ${metric.executionTime}ms > ${this.thresholds.maxExecutionTime}ms`,
         metric,
-        timestamp: new Date()
+        timestamp: new Date(),
       });
     }
 
@@ -123,7 +122,7 @@ export class PerformanceMonitor extends EventEmitter {
         type: 'complexity',
         message: `Query "${metric.queryName}" exceeded complexity threshold: ${metric.complexity} > ${this.thresholds.maxComplexity}`,
         metric,
-        timestamp: new Date()
+        timestamp: new Date(),
       });
     }
 
@@ -142,9 +141,7 @@ export class PerformanceMonitor extends EventEmitter {
     const periodMs = periodMinutes * 60 * 1000;
     const startTime = now - periodMs;
 
-    const periodMetrics = this.metrics.filter(
-      m => m.timestamp.getTime() >= startTime
-    );
+    const periodMetrics = this.metrics.filter(m => m.timestamp.getTime() >= startTime);
 
     if (periodMetrics.length === 0) {
       return {
@@ -155,7 +152,7 @@ export class PerformanceMonitor extends EventEmitter {
         p99ExecutionTime: 0,
         cacheHitRate: 0,
         errorRate: 0,
-        topSlowQueries: []
+        topSlowQueries: [],
       };
     }
 
@@ -165,33 +162,34 @@ export class PerformanceMonitor extends EventEmitter {
     const errors = periodMetrics.filter(m => m.errors.length > 0).length;
 
     // Calculate execution time percentiles
-    const executionTimes = periodMetrics
-      .map(m => m.executionTime)
-      .sort((a, b) => a - b);
-    
+    const executionTimes = periodMetrics.map(m => m.executionTime).sort((a, b) => a - b);
+
     const avgExecutionTime = executionTimes.reduce((a, b) => a + b, 0) / executionTimes.length;
     const p95Index = Math.floor(executionTimes.length * 0.95);
     const p99Index = Math.floor(executionTimes.length * 0.99);
-    
+
     // Group by query name for slow query analysis
-    const queryGroups = periodMetrics.reduce((acc, metric) => {
-      if (!acc[metric.queryName]) {
-        acc[metric.queryName] = {
-          times: [],
-          count: 0
-        };
-      }
-      acc[metric.queryName].times.push(metric.executionTime);
-      acc[metric.queryName].count++;
-      return acc;
-    }, {} as Record<string, { times: number[], count: number }>);
+    const queryGroups = periodMetrics.reduce(
+      (acc, metric) => {
+        if (!acc[metric.queryName]) {
+          acc[metric.queryName] = {
+            times: [],
+            count: 0,
+          };
+        }
+        acc[metric.queryName].times.push(metric.executionTime);
+        acc[metric.queryName].count++;
+        return acc;
+      },
+      {} as Record<string, { times: number[]; count: number }>
+    );
 
     // Find top slow queries
     const topSlowQueries = Object.entries(queryGroups)
       .map(([queryName, data]) => ({
         queryName,
         avgTime: data.times.reduce((a, b) => a + b, 0) / data.times.length,
-        count: data.count
+        count: data.count,
       }))
       .sort((a, b) => b.avgTime - a.avgTime)
       .slice(0, 5);
@@ -204,7 +202,7 @@ export class PerformanceMonitor extends EventEmitter {
       p99ExecutionTime: Math.round(executionTimes[p99Index] || 0),
       cacheHitRate: totalQueries > 0 ? cacheHits / totalQueries : 0,
       errorRate: totalQueries > 0 ? errors / totalQueries : 0,
-      topSlowQueries
+      topSlowQueries,
     };
 
     // Check aggregated thresholds
@@ -225,9 +223,9 @@ export class PerformanceMonitor extends EventEmitter {
         id: `alert_${Date.now()}_cache`,
         severity: 'warning',
         type: 'cache_hit_rate',
-        message: `Cache hit rate below threshold: ${(metrics.cacheHitRate * 100).toFixed(1)}% < ${(this.thresholds.minCacheHitRate * 100)}%`,
+        message: `Cache hit rate below threshold: ${(metrics.cacheHitRate * 100).toFixed(1)}% < ${this.thresholds.minCacheHitRate * 100}%`,
         metric: metrics,
-        timestamp: new Date()
+        timestamp: new Date(),
       });
     }
 
@@ -237,9 +235,9 @@ export class PerformanceMonitor extends EventEmitter {
         id: `alert_${Date.now()}_errors`,
         severity: 'critical',
         type: 'error_rate',
-        message: `Error rate above threshold: ${(metrics.errorRate * 100).toFixed(1)}% > ${(this.thresholds.maxErrorRate * 100)}%`,
+        message: `Error rate above threshold: ${(metrics.errorRate * 100).toFixed(1)}% > ${this.thresholds.maxErrorRate * 100}%`,
         metric: metrics,
-        timestamp: new Date()
+        timestamp: new Date(),
       });
     }
 
@@ -280,15 +278,14 @@ export class PerformanceMonitor extends EventEmitter {
     }, this.aggregationInterval);
 
     // Cleanup old metrics
-    setInterval(() => {
-      const cutoff = Date.now() - this.retentionPeriod;
-      this.metrics = this.metrics.filter(
-        m => m.timestamp.getTime() >= cutoff
-      );
-      this.alerts = this.alerts.filter(
-        a => a.timestamp.getTime() >= cutoff
-      );
-    }, 60 * 60 * 1000); // Every hour
+    setInterval(
+      () => {
+        const cutoff = Date.now() - this.retentionPeriod;
+        this.metrics = this.metrics.filter(m => m.timestamp.getTime() >= cutoff);
+        this.alerts = this.alerts.filter(a => a.timestamp.getTime() >= cutoff);
+      },
+      60 * 60 * 1000
+    ); // Every hour
   }
 
   /**
@@ -305,8 +302,8 @@ export class PerformanceMonitor extends EventEmitter {
     const activeAlerts = recentAlerts.filter(
       a => a.timestamp.getTime() > Date.now() - 30 * 60 * 1000
     );
-    
-    const healthy = 
+
+    const healthy =
       activeAlerts.filter(a => a.severity === 'critical').length === 0 &&
       metrics.errorRate <= this.thresholds.maxErrorRate &&
       metrics.cacheHitRate >= this.thresholds.minCacheHitRate;
@@ -315,7 +312,7 @@ export class PerformanceMonitor extends EventEmitter {
       healthy,
       metrics,
       activeAlerts: activeAlerts.length,
-      criticalAlerts: activeAlerts.filter(a => a.severity === 'critical').length
+      criticalAlerts: activeAlerts.filter(a => a.severity === 'critical').length,
     };
   }
 
@@ -324,15 +321,15 @@ export class PerformanceMonitor extends EventEmitter {
    */
   exportMetrics(startTime?: Date, endTime?: Date): PerformanceMetric[] {
     let filtered = this.metrics;
-    
+
     if (startTime) {
       filtered = filtered.filter(m => m.timestamp >= startTime);
     }
-    
+
     if (endTime) {
       filtered = filtered.filter(m => m.timestamp <= endTime);
     }
-    
+
     return filtered;
   }
 
@@ -342,9 +339,9 @@ export class PerformanceMonitor extends EventEmitter {
   updateThresholds(newThresholds: Partial<PerformanceThresholds>) {
     this.thresholds = {
       ...this.thresholds,
-      ...newThresholds
+      ...newThresholds,
     };
-    
+
     // Re-evaluate recent metrics with new thresholds
     const recentMetrics = this.getAggregatedMetrics(60);
     this.checkAggregatedThresholds(recentMetrics);
@@ -378,14 +375,14 @@ export function withPerformanceMonitoring<T>(
     })
     .finally(() => {
       const executionTime = Date.now() - startTime;
-      
+
       monitor.recordMetric({
         queryName,
         operationType,
         executionTime,
         complexity,
         cacheHit,
-        errors
+        errors,
       });
     });
 }

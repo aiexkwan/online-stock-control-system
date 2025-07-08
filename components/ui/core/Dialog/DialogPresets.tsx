@@ -24,7 +24,7 @@ export const dialogPresets = {
     showAnimatedBorder: true,
     showCloseButton: false,
   } as DialogPreset,
-  
+
   // 成功通知
   success: {
     variant: 'notification',
@@ -34,7 +34,7 @@ export const dialogPresets = {
     showCloseButton: false,
     severity: 'success',
   } as DialogPreset,
-  
+
   // 錯誤通知
   error: {
     variant: 'notification',
@@ -44,7 +44,7 @@ export const dialogPresets = {
     showCloseButton: false,
     severity: 'error',
   } as DialogPreset,
-  
+
   // 警告通知
   warning: {
     variant: 'notification',
@@ -54,7 +54,7 @@ export const dialogPresets = {
     showCloseButton: false,
     severity: 'warning',
   } as DialogPreset,
-  
+
   // 確認對話框
   confirmation: {
     variant: 'confirmation',
@@ -62,7 +62,7 @@ export const dialogPresets = {
     animation: 'fade',
     showCloseButton: false,
   } as DialogPreset,
-  
+
   // 表單對話框
   form: {
     variant: 'form',
@@ -70,7 +70,7 @@ export const dialogPresets = {
     animation: 'slide',
     mobileFullscreen: true,
   } as DialogPreset,
-  
+
   // 大型表單
   largeForm: {
     variant: 'form',
@@ -78,7 +78,7 @@ export const dialogPresets = {
     animation: 'slide',
     mobileFullscreen: true,
   } as DialogPreset,
-  
+
   // 報表查看
   report: {
     variant: 'default',
@@ -86,7 +86,7 @@ export const dialogPresets = {
     animation: 'fade',
     mobileFullscreen: true,
   } as DialogPreset,
-  
+
   // 全屏模式
   fullscreen: {
     variant: 'fullscreen',
@@ -94,7 +94,7 @@ export const dialogPresets = {
     animation: 'fade',
     showCloseButton: true,
   } as DialogPreset,
-  
+
   // 移動端優化
   mobile: {
     variant: 'default',
@@ -110,7 +110,7 @@ export const mergeDialogProps = (
   props?: Partial<DialogProps & DialogContentProps>
 ): DialogProps & DialogContentProps => {
   const presetConfig = typeof preset === 'string' ? dialogPresets[preset] : preset;
-  
+
   return {
     ...presetConfig,
     ...props,

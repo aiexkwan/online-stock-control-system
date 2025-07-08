@@ -8,12 +8,12 @@
 import React, { forwardRef } from 'react';
 import { cn } from '@/lib/utils';
 import { UniversalBackground } from '@/app/components/UniversalBackground';
-import { 
-  LayoutVariant, 
-  MaxWidthSize, 
+import {
+  LayoutVariant,
+  MaxWidthSize,
   SpacingSize,
   LegacyResponsiveLayoutProps,
-  LegacyResponsiveContainerProps 
+  LegacyResponsiveContainerProps,
 } from './types';
 import { MAX_WIDTH_CLASSES, SPACING_CLASSES, LAYOUT_VARIANTS } from './constants';
 // 內建 useMediaQuery hook，避免外部依賴
@@ -31,7 +31,7 @@ const useMediaQuery = (query: string): boolean => {
     };
 
     mediaQuery.addEventListener('change', handleChange);
-    
+
     return () => {
       mediaQuery.removeEventListener('change', handleChange);
     };
@@ -58,147 +58,141 @@ interface ResponsiveLayoutCompatProps extends LegacyResponsiveLayoutProps {
   __legacy?: true;
 }
 
-// 完全兼容現有 ResponsiveContainer  
+// 完全兼容現有 ResponsiveContainer
 interface ResponsiveContainerCompatProps extends LegacyResponsiveContainerProps {
   __legacy?: true;
 }
 
-export const UniversalContainer = forwardRef<
-  HTMLDivElement,
-  UniversalContainerProps
->(({
-  children,
-  variant = 'section',
-  background = 'transparent',
-  padding,
-  margin,
-  maxWidth,
-  responsive = true,
-  className = '',
-  legacy = false,
-}, ref) => {
-  const isMobile = useMediaQuery('(max-width: 768px)');
-  const isTablet = useMediaQuery('(max-width: 1024px)');
+export const UniversalContainer = forwardRef<HTMLDivElement, UniversalContainerProps>(
+  (
+    {
+      children,
+      variant = 'section',
+      background = 'transparent',
+      padding,
+      margin,
+      maxWidth,
+      responsive = true,
+      className = '',
+      legacy = false,
+    },
+    ref
+  ) => {
+    const isMobile = useMediaQuery('(max-width: 768px)');
+    const isTablet = useMediaQuery('(max-width: 1024px)');
 
-  // 獲取預設配置
-  const config = LAYOUT_VARIANTS[variant];
-  
-  // 使用 props 覆蓋預設值
-  const finalPadding = padding || config.padding;
-  const finalMargin = margin || config.margin;
-  const finalMaxWidth = maxWidth || config.maxWidth;
+    // 獲取預設配置
+    const config = LAYOUT_VARIANTS[variant];
 
-  // 構建類名
-  const containerClasses = cn(
-    // 基礎佈局
-    'w-full',
-    
-    // 響應式 padding (兼容原有 ResponsiveLayout 邏輯)
-    responsive && isMobile ? `px-${SPACING_CLASSES[finalPadding]} py-${SPACING_CLASSES.lg}` :
-    responsive && isTablet ? `px-${SPACING_CLASSES.lg} py-${SPACING_CLASSES.xl}` :
-    responsive ? `px-${SPACING_CLASSES.xl} py-${SPACING_CLASSES['2xl']}` :
-    `p-${SPACING_CLASSES[finalPadding]}`,
-    
-    // Margin
-    finalMargin !== 'none' && `m-${SPACING_CLASSES[finalMargin]}`,
-    
-    // 最大寬度
-    finalMaxWidth !== 'full' && MAX_WIDTH_CLASSES[finalMaxWidth],
-    finalMaxWidth !== 'full' && 'mx-auto',
-    
-    // 最小高度 (兼容原有邏輯)
-    variant === 'page' && 'min-h-screen',
-    
-    // 自定義類名
-    className
-  );
+    // 使用 props 覆蓋預設值
+    const finalPadding = padding || config.padding;
+    const finalMargin = margin || config.margin;
+    const finalMaxWidth = maxWidth || config.maxWidth;
 
-  // 背景包裝器
-  const renderWithBackground = (content: React.ReactNode) => {
-    switch (background) {
-      case 'starfield':
-        return <UniversalBackground>{content}</UniversalBackground>;
-      
-      case 'gradient':
-        return (
-          <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
-            {content}
-          </div>
-        );
-      
-      case 'glass':
-        return (
-          <div className="bg-white/3 backdrop-blur-md border border-slate-600/30 rounded-xl">
-            {content}
-          </div>
-        );
-      
-      case 'solid':
-        return (
-          <div className="bg-slate-800">
-            {content}
-          </div>
-        );
-      
-      case 'transparent':
-      default:
-        return content;
-    }
-  };
+    // 構建類名
+    const containerClasses = cn(
+      // 基礎佈局
+      'w-full',
 
-  const content = (
-    <div ref={ref} className={containerClasses}>
-      {children}
-    </div>
-  );
+      // 響應式 padding (兼容原有 ResponsiveLayout 邏輯)
+      responsive && isMobile
+        ? `px-${SPACING_CLASSES[finalPadding]} py-${SPACING_CLASSES.lg}`
+        : responsive && isTablet
+          ? `px-${SPACING_CLASSES.lg} py-${SPACING_CLASSES.xl}`
+          : responsive
+            ? `px-${SPACING_CLASSES.xl} py-${SPACING_CLASSES['2xl']}`
+            : `p-${SPACING_CLASSES[finalPadding]}`,
 
-  return renderWithBackground(content);
-});
+      // Margin
+      finalMargin !== 'none' && `m-${SPACING_CLASSES[finalMargin]}`,
+
+      // 最大寬度
+      finalMaxWidth !== 'full' && MAX_WIDTH_CLASSES[finalMaxWidth],
+      finalMaxWidth !== 'full' && 'mx-auto',
+
+      // 最小高度 (兼容原有邏輯)
+      variant === 'page' && 'min-h-screen',
+
+      // 自定義類名
+      className
+    );
+
+    // 背景包裝器
+    const renderWithBackground = (content: React.ReactNode) => {
+      switch (background) {
+        case 'starfield':
+          return <UniversalBackground>{content}</UniversalBackground>;
+
+        case 'gradient':
+          return (
+            <div className='min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900'>
+              {content}
+            </div>
+          );
+
+        case 'glass':
+          return (
+            <div className='bg-white/3 rounded-xl border border-slate-600/30 backdrop-blur-md'>
+              {content}
+            </div>
+          );
+
+        case 'solid':
+          return <div className='bg-slate-800'>{content}</div>;
+
+        case 'transparent':
+        default:
+          return content;
+      }
+    };
+
+    const content = (
+      <div ref={ref} className={containerClasses}>
+        {children}
+      </div>
+    );
+
+    return renderWithBackground(content);
+  }
+);
 
 // 完全兼容現有 ResponsiveLayout 的包裝器
-export const ResponsiveLayout = forwardRef<
-  HTMLDivElement,
-  ResponsiveLayoutCompatProps
->(({ children, className = '' }, ref) => {
-  return (
-    <UniversalContainer
-      ref={ref}
-      variant="page"
-      background="transparent"
-      responsive={true}
-      className={className}
-      legacy={true}
-    >
-      {children}
-    </UniversalContainer>
-  );
-});
+export const ResponsiveLayout = forwardRef<HTMLDivElement, ResponsiveLayoutCompatProps>(
+  ({ children, className = '' }, ref) => {
+    return (
+      <UniversalContainer
+        ref={ref}
+        variant='page'
+        background='transparent'
+        responsive={true}
+        className={className}
+        legacy={true}
+      >
+        {children}
+      </UniversalContainer>
+    );
+  }
+);
 
 // 完全兼容現有 ResponsiveContainer 的包裝器
-export const ResponsiveContainer = forwardRef<
-  HTMLDivElement,
-  ResponsiveContainerCompatProps
->(({
-  children,
-  maxWidth = 'lg',
-  padding = true,
-  className = ''
-}, ref) => {
-  return (
-    <UniversalContainer
-      ref={ref}
-      variant="section"
-      background="transparent"
-      maxWidth={maxWidth}
-      padding={padding ? 'md' : 'none'}
-      responsive={true}
-      className={className}
-      legacy={true}
-    >
-      {children}
-    </UniversalContainer>
-  );
-});
+export const ResponsiveContainer = forwardRef<HTMLDivElement, ResponsiveContainerCompatProps>(
+  ({ children, maxWidth = 'lg', padding = true, className = '' }, ref) => {
+    return (
+      <UniversalContainer
+        ref={ref}
+        variant='section'
+        background='transparent'
+        maxWidth={maxWidth}
+        padding={padding ? 'md' : 'none'}
+        responsive={true}
+        className={className}
+        legacy={true}
+      >
+        {children}
+      </UniversalContainer>
+    );
+  }
+);
 
 // 設置 displayName 以便調試
 UniversalContainer.displayName = 'UniversalContainer';

@@ -12,13 +12,12 @@ interface SimpleQRScannerProps {
   title?: string;
 }
 
-export const SimpleQRScanner: React.FC<SimpleQRScannerProps> = ({ 
-  open, 
-  onClose, 
-  onScan, 
-  title = "QR Code Scanner"
+export const SimpleQRScanner: React.FC<SimpleQRScannerProps> = ({
+  open,
+  onClose,
+  onScan,
+  title = 'QR Code Scanner',
 }) => {
-  
   // Initialize all hooks at the top level (legacy implementation)
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -29,53 +28,54 @@ export const SimpleQRScanner: React.FC<SimpleQRScannerProps> = ({
   const isScanningRef = useRef<boolean>(false);
   const isCleaningRef = useRef<boolean>(false);
   const [isMobile, setIsMobile] = useState(false);
-  
+
   // Detect mobile device
   useEffect(() => {
     const checkMobile = () => {
-      const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
-                           window.innerWidth <= 768;
+      const isMobileDevice =
+        /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+          navigator.userAgent
+        ) || window.innerWidth <= 768;
       setIsMobile(isMobileDevice);
     };
-    
+
     checkMobile();
     window.addEventListener('resize', checkMobile);
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
-  
-  
+
   // Cleanup function (legacy implementation)
   const cleanup = useCallback(() => {
     if (isCleaningRef.current) {
       return; // Silent skip to reduce log spam
     }
-    
+
     isCleaningRef.current = true;
     isScanningRef.current = false;
     setIsScanning(false);
-    
+
     // Cancel animation frame
     if (animationRef.current) {
       cancelAnimationFrame(animationRef.current);
       animationRef.current = null;
     }
-    
+
     // Stop video stream
     if (videoRef.current && videoRef.current.srcObject) {
       const stream = videoRef.current.srcObject as MediaStream;
       videoRef.current.srcObject = null;
-      
+
       if (stream) {
         stream.getTracks().forEach(track => track.stop());
       }
     }
-    
+
     // Stop stream ref
     if (streamRef.current) {
       streamRef.current.getTracks().forEach(track => track.stop());
       streamRef.current = null;
     }
-    
+
     // Reset cleaning flag
     setTimeout(() => {
       isCleaningRef.current = false;
@@ -111,11 +111,11 @@ export const SimpleQRScanner: React.FC<SimpleQRScannerProps> = ({
         // Request camera permission
         setStatus('Requesting camera permission...');
         const stream = await navigator.mediaDevices.getUserMedia({
-          video: { 
+          video: {
             facingMode: isMobile ? 'environment' : 'user',
             width: { ideal: isMobile ? 1280 : 1920 },
-            height: { ideal: isMobile ? 720 : 1080 }
-          }
+            height: { ideal: isMobile ? 720 : 1080 },
+          },
         });
 
         localStream = stream;
@@ -156,30 +156,30 @@ export const SimpleQRScanner: React.FC<SimpleQRScannerProps> = ({
         context.drawImage(video, 0, 0, canvas.width, canvas.height);
 
         const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
-        
+
         try {
           const code = jsQRLib(imageData.data, imageData.width, imageData.height, {
-            inversionAttempts: "dontInvert",
+            inversionAttempts: 'dontInvert',
           });
 
           if (code && code.data) {
             setStatus('QR Code detected!');
             isScanningRef.current = false;
             setIsScanning(false);
-            
+
             // 先 cleanup，然後延遲 call onScan
             cleanup();
-            
+
             // 添加觸覺反饋 (移動裝置)
             if (isMobile && 'vibrate' in navigator) {
               navigator.vibrate([50, 50, 50]); // 成功掃描振動
             }
-            
+
             // 用 setTimeout 確保 cleanup 完成先 call onScan
             setTimeout(() => {
               onScan(code.data);
             }, 50);
-            
+
             return;
           }
         } catch (error) {
@@ -199,12 +199,11 @@ export const SimpleQRScanner: React.FC<SimpleQRScannerProps> = ({
       if (localStream) {
         localStream.getTracks().forEach(track => track.stop());
       }
-      
+
       // 最後清理
       cleanup();
     };
   }, [open, onScan, cleanup, isMobile]);
-
 
   if (!open) return null;
 
@@ -212,79 +211,85 @@ export const SimpleQRScanner: React.FC<SimpleQRScannerProps> = ({
   if (typeof window === 'undefined') return null;
 
   return createPortal(
-    <div 
-      className="fixed inset-0 z-[9999] bg-black bg-opacity-90 flex items-center justify-center p-4"
-      style={{ 
+    <div
+      className='fixed inset-0 z-[9999] flex items-center justify-center bg-black bg-opacity-90 p-4'
+      style={{
         position: 'fixed',
         top: 0,
         left: 0,
         right: 0,
         bottom: 0,
-        zIndex: 9999
+        zIndex: 9999,
       }}
-      onClick={(e) => {
+      onClick={e => {
         if (e.target === e.currentTarget) {
           handleClose();
         }
       }}
     >
-      <div 
-        className={`bg-white rounded-lg relative ${isMobile ? 'h-full w-full max-h-screen p-4' : 'p-6 max-w-lg w-full'}`}
+      <div
+        className={`relative rounded-lg bg-white ${isMobile ? 'h-full max-h-screen w-full p-4' : 'w-full max-w-lg p-6'}`}
         style={{ zIndex: 10000 }}
-        onClick={(e) => e.stopPropagation()}
+        onClick={e => e.stopPropagation()}
       >
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-bold text-black">{title}</h2>
+        <div className='mb-4 flex items-center justify-between'>
+          <h2 className='text-xl font-bold text-black'>{title}</h2>
           <Button
             onClick={handleClose}
-            variant="ghost"
-            size="sm"
-            className="text-gray-500 hover:text-gray-700"
+            variant='ghost'
+            size='sm'
+            className='text-gray-500 hover:text-gray-700'
           >
-            <XMarkIcon className="h-5 w-5" />
+            <XMarkIcon className='h-5 w-5' />
           </Button>
         </div>
-        
-        <div className="space-y-4">
-          <div className="bg-black rounded-lg overflow-hidden relative" style={{ height: isMobile ? 'calc(100vh - 200px)' : '300px' }}>
+
+        <div className='space-y-4'>
+          <div
+            className='relative overflow-hidden rounded-lg bg-black'
+            style={{ height: isMobile ? 'calc(100vh - 200px)' : '300px' }}
+          >
             <video
               ref={videoRef}
               autoPlay
               muted
               playsInline
-              className="w-full h-full object-cover"
+              className='h-full w-full object-cover'
               style={{ transform: 'scaleX(-1)' }}
             />
-            <canvas
-              ref={canvasRef}
-              className="hidden"
-            />
-            
+            <canvas ref={canvasRef} className='hidden' />
+
             {/* Scanning indicator */}
             {isScanning && (
-              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                <div className="border-2 border-green-500 w-48 h-48 rounded-lg animate-pulse"></div>
+              <div className='pointer-events-none absolute inset-0 flex items-center justify-center'>
+                <div className='h-48 w-48 animate-pulse rounded-lg border-2 border-green-500'></div>
               </div>
             )}
-            
+
             {/* Status message */}
-            <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-75 text-white p-2 text-center text-sm">
+            <div className='absolute bottom-0 left-0 right-0 bg-black bg-opacity-75 p-2 text-center text-sm text-white'>
               {status}
             </div>
           </div>
-          
-          <div className="text-sm text-gray-600 space-y-1">
-            <p>• {isMobile ? 'Hold device steady when scanning' : 'Hold the QR code steady within the frame'}</p>
+
+          <div className='space-y-1 text-sm text-gray-600'>
+            <p>
+              •{' '}
+              {isMobile
+                ? 'Hold device steady when scanning'
+                : 'Hold the QR code steady within the frame'}
+            </p>
             <p>• Ensure good lighting conditions</p>
-            <p>• {isMobile ? 'Point camera at barcode/QR code' : 'Keep the code flat and avoid reflections'}</p>
+            <p>
+              •{' '}
+              {isMobile
+                ? 'Point camera at barcode/QR code'
+                : 'Keep the code flat and avoid reflections'}
+            </p>
             {isMobile && <p>• Tap anywhere outside to close scanner</p>}
           </div>
-          
-          <Button 
-            onClick={handleClose} 
-            variant="outline" 
-            className="w-full"
-          >
+
+          <Button onClick={handleClose} variant='outline' className='w-full'>
             Cancel
           </Button>
         </div>

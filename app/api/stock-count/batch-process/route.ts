@@ -10,10 +10,13 @@ export async function POST(req: NextRequest) {
     const { session_id, scans } = body;
 
     if (!session_id || !scans || !Array.isArray(scans)) {
-      return NextResponse.json({
-        success: false,
-        error: 'Missing required fields'
-      }, { status: 400 });
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Missing required fields',
+        },
+        { status: 400 }
+      );
     }
 
     // 創建 Supabase 客戶端和服務
@@ -21,23 +24,31 @@ export async function POST(req: NextRequest) {
     const inventoryService = createInventoryService(supabase);
 
     // 獲取當前用戶信息
-    const { data: { user } } = await supabase.auth.getUser();
-    
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
     if (!user || !user.email) {
-      return NextResponse.json({
-        success: false,
-        error: 'User not authenticated'
-      }, { status: 401 });
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'User not authenticated',
+        },
+        { status: 401 }
+      );
     }
 
     // 使用統一的 getUserIdFromEmail 函數
     const userId = await getUserIdFromEmail(user.email);
-    
+
     if (!userId) {
-      return NextResponse.json({
-        success: false,
-        error: 'User ID not found'
-      }, { status: 401 });
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'User ID not found',
+        },
+        { status: 401 }
+      );
     }
 
     // 獲取用戶名稱
@@ -66,7 +77,7 @@ export async function POST(req: NextRequest) {
           results.push({
             plt_num: scan.plt_num,
             status: 'error',
-            error: 'Already counted today'
+            error: 'Already counted today',
           });
           continue;
         }
@@ -88,7 +99,7 @@ export async function POST(req: NextRequest) {
           .order('created_at', { ascending: false });
 
         let currentRemainQty = 0;
-        
+
         if (!lastRecords || lastRecords.length === 0) {
           // 今日第一次盤點，從 stock_level 獲取
           const { data: stockData } = await supabase
@@ -98,30 +109,28 @@ export async function POST(req: NextRequest) {
             .order('update_time', { ascending: false })
             .limit(1)
             .single();
-            
+
           if (stockData) {
             currentRemainQty = stockData.stock_level;
-            
+
             // 創建初始記錄
-            const { error: initError } = await supabase
-              .from('record_stocktake')
-              .insert({
-                product_code: scan.product_code,
-                plt_num: null, // 使用 NULL 而唔係空字串
-                product_desc: productData?.description || scan.product_desc,
-                remain_qty: currentRemainQty,
-                counted_qty: 0,
-                counted_id: userId,
-                counted_name: userName
-              });
-              
+            const { error: initError } = await supabase.from('record_stocktake').insert({
+              product_code: scan.product_code,
+              plt_num: null, // 使用 NULL 而唔係空字串
+              product_desc: productData?.description || scan.product_desc,
+              remain_qty: currentRemainQty,
+              counted_qty: 0,
+              counted_id: userId,
+              counted_name: userName,
+            });
+
             if (initError) {
               console.error('Failed to create initial record for batch:', initError);
               errorCount++;
               results.push({
                 plt_num: scan.plt_num,
                 status: 'error',
-                error: 'Failed to create initial record'
+                error: 'Failed to create initial record',
               });
               continue;
             }
@@ -130,28 +139,26 @@ export async function POST(req: NextRequest) {
             results.push({
               plt_num: scan.plt_num,
               status: 'error',
-              error: 'No stock level found'
+              error: 'No stock level found',
             });
             continue;
           }
         } else {
           currentRemainQty = lastRecords[0].remain_qty;
         }
-        
+
         const newRemainQty = currentRemainQty - scan.counted_qty;
 
         // 插入新記錄
-        const { error: insertError } = await supabase
-          .from('record_stocktake')
-          .insert({
-            product_code: scan.product_code,
-            plt_num: scan.plt_num,
-            product_desc: productData?.description || scan.product_desc,
-            remain_qty: newRemainQty,
-            counted_qty: scan.counted_qty,
-            counted_id: userId,
-            counted_name: userName
-          });
+        const { error: insertError } = await supabase.from('record_stocktake').insert({
+          product_code: scan.product_code,
+          plt_num: scan.plt_num,
+          product_desc: productData?.description || scan.product_desc,
+          remain_qty: newRemainQty,
+          counted_qty: scan.counted_qty,
+          counted_id: userId,
+          counted_name: userName,
+        });
 
         if (insertError) {
           throw insertError;
@@ -160,16 +167,15 @@ export async function POST(req: NextRequest) {
         successCount++;
         results.push({
           plt_num: scan.plt_num,
-          status: 'success'
+          status: 'success',
         });
-
       } catch (error) {
         console.error('Error processing scan:', error);
         errorCount++;
         results.push({
           plt_num: scan.plt_num,
           status: 'error',
-          error: 'Processing failed'
+          error: 'Processing failed',
         });
       }
     }
@@ -184,15 +190,17 @@ export async function POST(req: NextRequest) {
         total_processed: scans.length,
         success_count: successCount,
         error_count: errorCount,
-        results
-      }
+        results,
+      },
     });
-
   } catch (error) {
     console.error('Batch process error:', error);
-    return NextResponse.json({
-      success: false,
-      error: 'Internal server error'
-    }, { status: 500 });
+    return NextResponse.json(
+      {
+        success: false,
+        error: 'Internal server error',
+      },
+      { status: 500 }
+    );
   }
 }

@@ -1,4 +1,4 @@
-import { createBrowserClient } from '@supabase/ssr'
+import { createBrowserClient } from '@supabase/ssr';
 
 export function createClient() {
   return createBrowserClient(
@@ -33,8 +33,8 @@ export function createClient() {
             if (options?.domain) cookieString += `; domain=${options.domain}`;
             document.cookie = cookieString;
           }
-        }
-      }
+        },
+      },
     }
-  )
-} 
+  );
+}

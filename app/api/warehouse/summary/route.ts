@@ -10,7 +10,9 @@ export async function GET() {
     // 獲取倉庫摘要數據 - 使用 record_inventory 表
     const { data: warehouseSummary, error } = await supabase
       .from('record_inventory')
-      .select('product_code, injection, pipeline, prebook, await, fold, bulk, backcarpark, damage, await_grn')
+      .select(
+        'product_code, injection, pipeline, prebook, await, fold, bulk, backcarpark, damage, await_grn'
+      )
       .order('product_code');
 
     if (error) {
@@ -28,7 +30,7 @@ export async function GET() {
       bulk: 0,
       backcarpark: 0,
       damage: 0,
-      await_grn: 0
+      await_grn: 0,
     };
 
     const itemCounts = {
@@ -40,7 +42,7 @@ export async function GET() {
       bulk: 0,
       backcarpark: 0,
       damage: 0,
-      await_grn: 0
+      await_grn: 0,
     };
 
     warehouseSummary?.forEach((item: any) => {
@@ -54,20 +56,21 @@ export async function GET() {
     });
 
     // 轉換為所需格式
-    const summary = Object.keys(locationTotals).map(location => ({
-      location,
-      totalQty: locationTotals[location as keyof typeof locationTotals],
-      itemCount: itemCounts[location as keyof typeof itemCounts]
-    })).filter(item => item.totalQty > 0);
+    const summary = Object.keys(locationTotals)
+      .map(location => ({
+        location,
+        totalQty: locationTotals[location as keyof typeof locationTotals],
+        itemCount: itemCounts[location as keyof typeof itemCounts],
+      }))
+      .filter(item => item.totalQty > 0);
 
     return NextResponse.json({
       success: true,
       data: summary,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
-
   } catch (error) {
     console.error('Warehouse summary API error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
-} 
+}

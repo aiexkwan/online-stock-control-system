@@ -7,35 +7,41 @@ export const useMemory = () => {
   const [loading, setLoading] = useState(false);
   const [memories, setMemories] = useState<MemorySearchResult[]>([]);
   const { user } = useAuth();
-  
+
   const memoryService = useMemo(() => new MemoryService(user?.id || 'default'), [user?.id]);
 
-  const addMemory = useCallback(async (messages: MemoryMessage[]) => {
-    setLoading(true);
-    try {
-      await memoryService.addMemory(messages);
-      return { success: true };
-    } catch (error) {
-      console.error('添加記憶失敗:', error);
-      return { success: false, error };
-    } finally {
-      setLoading(false);
-    }
-  }, [memoryService]);
+  const addMemory = useCallback(
+    async (messages: MemoryMessage[]) => {
+      setLoading(true);
+      try {
+        await memoryService.addMemory(messages);
+        return { success: true };
+      } catch (error) {
+        console.error('添加記憶失敗:', error);
+        return { success: false, error };
+      } finally {
+        setLoading(false);
+      }
+    },
+    [memoryService]
+  );
 
-  const searchMemory = useCallback(async (query: string) => {
-    setLoading(true);
-    try {
-      const results = await memoryService.searchMemory(query);
-      setMemories(results);
-      return results;
-    } catch (error) {
-      console.error('搜尋記憶失敗:', error);
-      return [];
-    } finally {
-      setLoading(false);
-    }
-  }, [memoryService]);
+  const searchMemory = useCallback(
+    async (query: string) => {
+      setLoading(true);
+      try {
+        const results = await memoryService.searchMemory(query);
+        setMemories(results);
+        return results;
+      } catch (error) {
+        console.error('搜尋記憶失敗:', error);
+        return [];
+      } finally {
+        setLoading(false);
+      }
+    },
+    [memoryService]
+  );
 
   const getAllMemories = useCallback(async () => {
     setLoading(true);
@@ -51,32 +57,38 @@ export const useMemory = () => {
     }
   }, [memoryService]);
 
-  const updateMemory = useCallback(async (memoryId: string, newData: string) => {
-    setLoading(true);
-    try {
-      await memoryService.updateMemory(memoryId, newData);
-      return { success: true };
-    } catch (error) {
-      console.error('更新記憶失敗:', error);
-      return { success: false, error };
-    } finally {
-      setLoading(false);
-    }
-  }, [memoryService]);
+  const updateMemory = useCallback(
+    async (memoryId: string, newData: string) => {
+      setLoading(true);
+      try {
+        await memoryService.updateMemory(memoryId, newData);
+        return { success: true };
+      } catch (error) {
+        console.error('更新記憶失敗:', error);
+        return { success: false, error };
+      } finally {
+        setLoading(false);
+      }
+    },
+    [memoryService]
+  );
 
-  const deleteMemory = useCallback(async (memoryId: string) => {
-    setLoading(true);
-    try {
-      await memoryService.deleteMemory(memoryId);
-      setMemories(prev => prev.filter(m => m.id !== memoryId));
-      return { success: true };
-    } catch (error) {
-      console.error('刪除記憶失敗:', error);
-      return { success: false, error };
-    } finally {
-      setLoading(false);
-    }
-  }, [memoryService]);
+  const deleteMemory = useCallback(
+    async (memoryId: string) => {
+      setLoading(true);
+      try {
+        await memoryService.deleteMemory(memoryId);
+        setMemories(prev => prev.filter(m => m.id !== memoryId));
+        return { success: true };
+      } catch (error) {
+        console.error('刪除記憶失敗:', error);
+        return { success: false, error };
+      } finally {
+        setLoading(false);
+      }
+    },
+    [memoryService]
+  );
 
   const clearAllMemories = useCallback(async () => {
     setLoading(true);
@@ -100,7 +112,7 @@ export const useMemory = () => {
     getAllMemories,
     updateMemory,
     deleteMemory,
-    clearAllMemories
+    clearAllMemories,
   };
 };
 
@@ -124,36 +136,39 @@ export function useWidgetState<T extends Record<string, any>>(
 ): [T, (newState: Partial<T>) => void] {
   // Try to use context first
   const context = useContext(WidgetStateContext);
-  
+
   // Initialize state with saved state or default
   const [state, setState] = useState<T>(() => {
     if (context) {
       const savedState = context.getState(widgetId);
-      return savedState?.settings as T || defaultState;
+      return (savedState?.settings as T) || defaultState;
     } else {
       // Fallback to direct registry access
       const savedState = widgetRegistry.getWidgetState(widgetId);
-      return savedState?.settings as T || defaultState;
+      return (savedState?.settings as T) || defaultState;
     }
   });
-  
+
   // Update state function
-  const updateState = useCallback((newState: Partial<T>) => {
-    setState(prev => {
-      const updated = { ...prev, ...newState };
-      
-      // Save to persistent storage
-      if (context) {
-        context.saveState(widgetId, { settings: updated });
-      } else {
-        // Fallback to direct registry access
-        widgetRegistry.saveWidgetState(widgetId, { settings: updated });
-      }
-      
-      return updated;
-    });
-  }, [widgetId, context]);
-  
+  const updateState = useCallback(
+    (newState: Partial<T>) => {
+      setState(prev => {
+        const updated = { ...prev, ...newState };
+
+        // Save to persistent storage
+        if (context) {
+          context.saveState(widgetId, { settings: updated });
+        } else {
+          // Fallback to direct registry access
+          widgetRegistry.saveWidgetState(widgetId, { settings: updated });
+        }
+
+        return updated;
+      });
+    },
+    [widgetId, context]
+  );
+
   return [state, updateState];
 }
 
@@ -165,11 +180,11 @@ export function WidgetStateProvider({ children }: { children: React.ReactNode })
   const getState = useCallback((widgetId: string) => {
     return widgetRegistry.getWidgetState(widgetId);
   }, []);
-  
+
   const saveState = useCallback((widgetId: string, state: Partial<WidgetState>) => {
     widgetRegistry.saveWidgetState(widgetId, state);
   }, []);
-  
+
   return (
     <WidgetStateContext.Provider value={{ getState, saveState }}>
       {children}

@@ -8,43 +8,43 @@ export const ANIMATIONS = {
   fadeInScale: {
     initial: { opacity: 0, scale: 0.97 },
     animate: { opacity: 1, scale: 1 },
-    transition: { duration: 0.7, ease: [0.46, 0.03, 0.52, 0.96] }
+    transition: { duration: 0.7, ease: [0.46, 0.03, 0.52, 0.96] },
   },
-  
+
   // Fade up for cells with stagger
   fadeUpCell: {
     initial: { opacity: 0, y: 30 },
     animate: { opacity: 1, y: 0 },
-    transition: { duration: 0.7, ease: [0.64, 0.09, 0.08, 1] }
+    transition: { duration: 0.7, ease: [0.64, 0.09, 0.08, 1] },
   },
-  
+
   // Cell delays for staggered appearance
   cellDelays: {
     cell1: 0.2,
     cell2: 0.35,
     cell3: 0.5,
-    cell4: 0.65
+    cell4: 0.65,
   },
-  
+
   // Hover effects
   hover: {
     scale: { scale: 1.02 },
-    glow: { filter: 'brightness(1.1)' }
+    glow: { filter: 'brightness(1.1)' },
   },
-  
+
   // Tab switching
   tabSwitch: {
     initial: { opacity: 0, x: 20 },
     animate: { opacity: 1, x: 0 },
     exit: { opacity: 0, x: -20 },
-    transition: { duration: 0.3, ease: 'easeInOut' }
+    transition: { duration: 0.3, ease: 'easeInOut' },
   },
-  
+
   // Widget drag animation
   widgetDrag: {
     dragging: { scale: 1.05, opacity: 0.8 },
-    normal: { scale: 1, opacity: 1 }
-  }
+    normal: { scale: 1, opacity: 1 },
+  },
 };
 
 // CSS Keyframes for complex animations
@@ -108,5 +108,5 @@ export const ANIMATION_CLASSES = {
   fadeUpCell: 'animate-fade-up-cell',
   pulse: 'animate-pulse',
   spin: 'animate-spin',
-  shimmer: 'animate-shimmer'
+  shimmer: 'animate-shimmer',
 };

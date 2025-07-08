@@ -27,6 +27,6 @@ export async function generateStaticParams() {
     { theme: 'update' },
     { theme: 'stock-management' },
     { theme: 'system' },
-    { theme: 'analysis' }
+    { theme: 'analysis' },
   ];
 }

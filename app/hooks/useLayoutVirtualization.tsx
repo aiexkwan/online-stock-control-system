@@ -15,21 +15,21 @@ interface UseLayoutVirtualizationOptions {
 export function useLayoutVirtualization(options: UseLayoutVirtualizationOptions) {
   const { widgetCount, theme, threshold = 100 } = options;
   const containerRef = useRef<HTMLDivElement>(null);
-  
+
   // 初始化 GridVirtualizer
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    
+
     // 建立 GridVirtualizer
     const gridVirtualizer = widgetRegistry.createGridVirtualizer({
       widgets: Array.from({ length: widgetCount }, (_, index) => ({
         id: `${theme}-widget-${index}`,
-        gridArea: `item-${index + 1}`
+        gridArea: `item-${index + 1}`,
       })),
       viewportHeight: window.innerHeight,
-      threshold
+      threshold,
     });
-    
+
     return () => {
       // 清理 virtualizer
       const currentVirtualizer = widgetRegistry.getGridVirtualizer();
@@ -38,11 +38,11 @@ export function useLayoutVirtualization(options: UseLayoutVirtualizationOptions)
       }
     };
   }, [widgetCount, theme, threshold]);
-  
+
   // 監聽視口變化
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    
+
     const handleResize = () => {
       const currentVirtualizer = widgetRegistry.getGridVirtualizer();
       if (currentVirtualizer && containerRef.current) {
@@ -50,20 +50,20 @@ export function useLayoutVirtualization(options: UseLayoutVirtualizationOptions)
         const newConfig = {
           widgets: Array.from({ length: widgetCount }, (_, index) => ({
             id: `${theme}-widget-${index}`,
-            gridArea: `item-${index + 1}`
+            gridArea: `item-${index + 1}`,
           })),
           viewportHeight: window.innerHeight,
-          threshold
+          threshold,
         };
-        
+
         // 重新創建 virtualizer
         widgetRegistry.createGridVirtualizer(newConfig);
       }
     };
-    
+
     window.addEventListener('resize', handleResize, { passive: true });
     return () => window.removeEventListener('resize', handleResize);
   }, [widgetCount, theme, threshold]);
-  
+
   return containerRef;
 }

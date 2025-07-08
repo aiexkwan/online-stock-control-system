@@ -24,14 +24,13 @@ interface UseFormValidationReturn {
 
 export const useFormValidation = ({
   formData,
-  productInfo
+  productInfo,
 }: UseFormValidationProps): UseFormValidationReturn => {
-  
   // 是否可以搜索 ACO 訂單
   const canSearchAco = useMemo(() => {
     return formData.acoOrderRef?.trim().length >= MIN_ACO_ORDER_REF_LENGTH;
   }, [formData.acoOrderRef]);
-  
+
   // 檢查 ACO 訂單是否已完成
   const isAcoOrderFulfilled = useMemo(() => {
     if (productInfo?.type === 'ACO' && formData.acoRemain) {
@@ -58,20 +57,22 @@ export const useFormValidation = ({
 
     // 如果是新的 ACO 訂單但沒有提供訂單詳情
     if (formData.acoNewRef) {
-      const validOrderDetails = formData.acoOrderDetails.filter((detail, idx) => 
-        detail.code?.trim() && 
-        detail.qty?.trim() && 
-        !formData.acoOrderDetailErrors[idx] && // 沒有驗證錯誤
-        !isNaN(parseInt(detail.qty?.trim() || '0')) && 
-        parseInt(detail.qty?.trim() || '0') > 0
+      const validOrderDetails = formData.acoOrderDetails.filter(
+        (detail, idx) =>
+          detail.code?.trim() &&
+          detail.qty?.trim() &&
+          !formData.acoOrderDetailErrors[idx] && // 沒有驗證錯誤
+          !isNaN(parseInt(detail.qty?.trim() || '0')) &&
+          parseInt(detail.qty?.trim() || '0') > 0
       );
-      
+
       if (validOrderDetails.length === 0) {
         return true;
       }
-      
+
       // 檢查是否有任何驗證錯誤
-      const hasValidationErrors = formData.acoOrderDetailErrors?.some(error => error?.trim() !== '') || false;
+      const hasValidationErrors =
+        formData.acoOrderDetailErrors?.some(error => error?.trim() !== '') || false;
       if (hasValidationErrors) {
         return true;
       }
@@ -84,12 +85,16 @@ export const useFormValidation = ({
     formData.acoRemain,
     formData.acoNewRef,
     formData.acoOrderDetails,
-    formData.acoOrderDetailErrors
+    formData.acoOrderDetailErrors,
   ]);
-  
+
   // 檢查 ACO 訂單是否超量
   const isAcoOrderExcess = useMemo(() => {
-    if (productInfo?.type === 'ACO' && formData.acoRemain && formData.acoRemain.includes('Order Remain Qty for')) {
+    if (
+      productInfo?.type === 'ACO' &&
+      formData.acoRemain &&
+      formData.acoRemain.includes('Order Remain Qty for')
+    ) {
       const match = formData.acoRemain.match(/Order Remain Qty for .+: (\d+)/);
       if (match) {
         const acoRemainQty = parseInt(match[1], 10);
@@ -100,7 +105,7 @@ export const useFormValidation = ({
         const palletCount = parseInt(countStr.trim(), 10);
 
         if (!isNaN(acoRemainQty) && !isNaN(quantityPerPallet) && !isNaN(palletCount)) {
-          return (quantityPerPallet * palletCount) > acoRemainQty;
+          return quantityPerPallet * palletCount > acoRemainQty;
         }
       }
     }
@@ -110,29 +115,29 @@ export const useFormValidation = ({
   // 驗證基本字段
   const validateBasicFields = (): { isValid: boolean; errors: Record<string, string> } => {
     const errors: Record<string, string> = {};
-    
+
     // 驗證產品代碼
     if (!formData.productCode?.trim()) {
       errors.productCode = 'Product code is required';
     }
-    
+
     // 驗證數量 - 安全處理可能的 undefined 或 number 類型
     const quantityStr = String(formData.quantity || '');
     const quantity = parseInt(quantityStr, 10);
     if (!quantityStr.trim() || isNaN(quantity) || quantity <= 0) {
       errors.quantity = 'Valid quantity is required';
     }
-    
+
     // 驗證計數 - 安全處理可能的 undefined 或 number 類型
     const countStr = String(formData.count || '');
     const count = parseInt(countStr, 10);
     if (!countStr.trim() || isNaN(count) || count <= 0) {
       errors.count = 'Valid count is required';
     }
-    
+
     return {
       isValid: Object.keys(errors).length === 0,
-      errors
+      errors,
     };
   };
 
@@ -141,29 +146,31 @@ export const useFormValidation = ({
     if (productInfo?.type !== 'ACO' || !formData.acoNewRef) {
       return true;
     }
-    
-    const hasValidDetails = formData.acoOrderDetails?.some(detail => 
-      detail.code?.trim() && 
-      detail.qty?.trim() && 
-      !isNaN(parseInt(detail.qty?.trim() || '0')) && 
-      parseInt(detail.qty?.trim() || '0') > 0
-    ) || false;
-    
+
+    const hasValidDetails =
+      formData.acoOrderDetails?.some(
+        detail =>
+          detail.code?.trim() &&
+          detail.qty?.trim() &&
+          !isNaN(parseInt(detail.qty?.trim() || '0')) &&
+          parseInt(detail.qty?.trim() || '0') > 0
+      ) || false;
+
     const hasErrors = formData.acoOrderDetailErrors?.some(error => error?.trim() !== '') || false;
-    
+
     return hasValidDetails && !hasErrors;
   };
 
   // 驗證整個表單
   const validateForm = (): { isValid: boolean; errors: Record<string, string> } => {
     const basicValidation = validateBasicFields();
-    
+
     if (!basicValidation.isValid) {
       return basicValidation;
     }
-    
+
     const errors = { ...basicValidation.errors };
-    
+
     // ACO 特定驗證
     if (productInfo?.type === 'ACO') {
       if (isAcoOrderIncomplete) {
@@ -176,19 +183,19 @@ export const useFormValidation = ({
         errors.acoOrder = 'Order has been fulfilled';
       }
     }
-    
+
     // Slate 特定驗證
     if (productInfo?.type === 'Slate') {
       const hasValidSlateDetail = formData.slateDetail?.batchNumber?.trim();
-      
+
       if (!hasValidSlateDetail) {
         errors.slate = 'At least one batch number is required for Slate products';
       }
     }
-    
+
     return {
       isValid: Object.keys(errors).length === 0,
-      errors
+      errors,
     };
   };
 
@@ -199,6 +206,6 @@ export const useFormValidation = ({
     isAcoOrderExcess,
     validateForm,
     validateAcoOrderDetails,
-    validateBasicFields
+    validateBasicFields,
   };
 };

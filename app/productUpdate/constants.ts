@@ -5,7 +5,7 @@ export const PRODUCT_COLOURS = [
   { value: 'Grey', label: 'Grey' },
   { value: 'Old World Red', label: 'Old World Red' },
   { value: 'Green', label: 'Green' },
-  { value: 'Black', label: 'Black' }
+  { value: 'Black', label: 'Black' },
 ] as const;
 
 // 產品類型選項
@@ -23,30 +23,30 @@ export const PRODUCT_TYPES = [
   { value: 'Parts', label: 'Parts' },
   { value: 'Material', label: 'Material' },
   { value: 'Pipes', label: 'Pipes' },
-  { value: 'Tools', label: 'Tools' }
+  { value: 'Tools', label: 'Tools' },
 ] as const;
 
 // 表單驗證規則
 export const VALIDATION_RULES = {
-  code: { 
-    required: true, 
-    message: "Product Code is required",
-    maxLength: 50
+  code: {
+    required: true,
+    message: 'Product Code is required',
+    maxLength: 50,
   },
-  description: { 
-    required: true, 
-    message: "Product Description is required",
-    maxLength: 200
+  description: {
+    required: true,
+    message: 'Product Description is required',
+    maxLength: 200,
   },
-  colour: { 
-    required: false 
+  colour: {
+    required: false,
   },
-  standard_qty: { 
-    required: false, 
-    type: "number",
-    min: 0
+  standard_qty: {
+    required: false,
+    type: 'number',
+    min: 0,
   },
-  type: { 
-    required: false 
-  }
-} as const; 
+  type: {
+    required: false,
+  },
+} as const;

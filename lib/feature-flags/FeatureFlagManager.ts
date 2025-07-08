@@ -6,7 +6,7 @@ import {
   FeatureFlag,
   FeatureFlagMonitor,
   FeatureFlagEvent,
-  KnownFeatureFlags
+  KnownFeatureFlags,
 } from './types';
 import { LocalFeatureFlagProvider } from './providers/LocalProvider';
 import { SupabaseFeatureFlagProvider } from './providers/SupabaseProvider';
@@ -26,7 +26,7 @@ export class FeatureFlagManager {
   constructor(config: FeatureFlagConfig) {
     this.config = config;
     this.defaultContext = config.defaultContext || {};
-    
+
     // 創建提供者
     this.provider = this.createProvider();
   }
@@ -36,17 +36,18 @@ export class FeatureFlagManager {
    */
   async initialize(): Promise<void> {
     if (this.initialized) return;
-    
+
     // 避免重複初始化
     if (this.initPromise) {
       return this.initPromise;
     }
 
-    this.initPromise = this.provider.initialize()
+    this.initPromise = this.provider
+      .initialize()
       .then(() => {
         this.initialized = true;
       })
-      .catch((error) => {
+      .catch(error => {
         this.handleError(error);
         throw error;
       });
@@ -57,10 +58,7 @@ export class FeatureFlagManager {
   /**
    * 評估 Feature Flag
    */
-  async evaluate(
-    key: string,
-    context?: Partial<FeatureContext>
-  ): Promise<FeatureEvaluation> {
+  async evaluate(key: string, context?: Partial<FeatureContext>): Promise<FeatureEvaluation> {
     await this.ensureInitialized();
 
     const mergedContext = this.getMergedContext(context);
@@ -68,33 +66,33 @@ export class FeatureFlagManager {
 
     try {
       const result = await this.provider.evaluate(key, mergedContext);
-      
+
       // 記錄事件
       this.trackEvent({
         type: 'evaluated',
         flagKey: key,
         context: mergedContext,
         result,
-        timestamp: new Date()
+        timestamp: new Date(),
       });
 
       return result;
     } catch (error) {
       this.handleError(error as Error);
-      
+
       // 記錄錯誤事件
       this.trackEvent({
         type: 'error',
         flagKey: key,
         context: mergedContext,
         error: error as Error,
-        timestamp: new Date()
+        timestamp: new Date(),
       });
 
       // 返回默認值
       return {
         enabled: false,
-        reason: 'Evaluation error'
+        reason: 'Evaluation error',
       };
     } finally {
       // 性能監控
@@ -108,13 +106,11 @@ export class FeatureFlagManager {
   /**
    * 批量評估 Feature Flags
    */
-  async evaluateAll(
-    context?: Partial<FeatureContext>
-  ): Promise<Record<string, FeatureEvaluation>> {
+  async evaluateAll(context?: Partial<FeatureContext>): Promise<Record<string, FeatureEvaluation>> {
     await this.ensureInitialized();
 
     const mergedContext = this.getMergedContext(context);
-    
+
     try {
       return await this.provider.evaluateAll(mergedContext);
     } catch (error) {
@@ -144,15 +140,15 @@ export class FeatureFlagManager {
    */
   async updateFlag(key: string, updates: Partial<FeatureFlag>): Promise<void> {
     await this.ensureInitialized();
-    
+
     try {
       await this.provider.updateFlag(key, updates);
-      
+
       // 記錄事件
       this.trackEvent({
         type: 'updated',
         flagKey: key,
-        timestamp: new Date()
+        timestamp: new Date(),
       });
     } catch (error) {
       this.handleError(error as Error);
@@ -174,7 +170,7 @@ export class FeatureFlagManager {
     }
 
     await this.updateFlag(key, {
-      status: flag.status === 'enabled' ? 'disabled' : 'enabled'
+      status: flag.status === 'enabled' ? 'disabled' : 'enabled',
     });
   }
 
@@ -188,10 +184,7 @@ export class FeatureFlagManager {
   /**
    * 檢查已知的 Feature Flag
    */
-  async isEnabled(
-    key: KnownFeatureFlags,
-    context?: Partial<FeatureContext>
-  ): Promise<boolean> {
+  async isEnabled(key: KnownFeatureFlags, context?: Partial<FeatureContext>): Promise<boolean> {
     const evaluation = await this.evaluate(key, context);
     return evaluation.enabled;
   }
@@ -199,10 +192,7 @@ export class FeatureFlagManager {
   /**
    * 獲取變體
    */
-  async getVariant(
-    key: string,
-    context?: Partial<FeatureContext>
-  ): Promise<string | undefined> {
+  async getVariant(key: string, context?: Partial<FeatureContext>): Promise<string | undefined> {
     const evaluation = await this.evaluate(key, context);
     return evaluation.variant;
   }
@@ -222,7 +212,7 @@ export class FeatureFlagManager {
       ...this.defaultContext,
       ...context,
       timestamp: context?.timestamp || new Date(),
-      environment: context?.environment || this.getEnvironment()
+      environment: context?.environment || this.getEnvironment(),
     } as FeatureContext;
   }
 
@@ -243,16 +233,16 @@ export class FeatureFlagManager {
       case 'supabase':
         const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
         const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-        
+
         if (!supabaseUrl || !supabaseKey) {
           throw new Error('Supabase configuration missing');
         }
-        
+
         return new SupabaseFeatureFlagProvider(supabaseUrl, supabaseKey, {
           cacheTTL: this.config.cacheTTL,
-          pollingInterval: this.config.pollingInterval
+          pollingInterval: this.config.pollingInterval,
         });
-      
+
       case 'local':
       default:
         return new LocalFeatureFlagProvider();
@@ -273,7 +263,7 @@ export class FeatureFlagManager {
    */
   private getEnvironment(): 'development' | 'staging' | 'production' {
     const env = process.env.NODE_ENV;
-    
+
     if (env === 'production') return 'production';
     if (env === 'test') return 'staging';
     return 'development';
@@ -284,7 +274,7 @@ export class FeatureFlagManager {
    */
   private handleError(error: Error): void {
     console.error('[FeatureFlagManager] Error:', error);
-    
+
     if (this.config.onError) {
       this.config.onError(error);
     }

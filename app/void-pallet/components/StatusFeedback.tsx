@@ -24,9 +24,9 @@ interface StatusFeedbackProps {
 
 export function StatusFeedback({ messages, onClose }: StatusFeedbackProps) {
   return (
-    <div className="fixed top-4 right-4 z-50 space-y-2 max-w-md">
+    <div className='fixed right-4 top-4 z-50 max-w-md space-y-2'>
       <AnimatePresence>
-        {messages.map((message) => (
+        {messages.map(message => (
           <StatusMessageItem
             key={message.id}
             message={message}
@@ -38,13 +38,7 @@ export function StatusFeedback({ messages, onClose }: StatusFeedbackProps) {
   );
 }
 
-function StatusMessageItem({ 
-  message, 
-  onClose 
-}: { 
-  message: StatusMessage; 
-  onClose: () => void;
-}) {
+function StatusMessageItem({ message, onClose }: { message: StatusMessage; onClose: () => void }) {
   const { type, title, description, actions, autoClose = true, duration = 5000 } = message;
 
   useEffect(() => {
@@ -60,13 +54,13 @@ function StatusMessageItem({
   const getIcon = () => {
     switch (type) {
       case 'success':
-        return <CheckCircle className="h-5 w-5 text-green-400" />;
+        return <CheckCircle className='h-5 w-5 text-green-400' />;
       case 'error':
-        return <XCircle className="h-5 w-5 text-red-400" />;
+        return <XCircle className='h-5 w-5 text-red-400' />;
       case 'warning':
-        return <AlertCircle className="h-5 w-5 text-yellow-400" />;
+        return <AlertCircle className='h-5 w-5 text-yellow-400' />;
       case 'info':
-        return <Info className="h-5 w-5 text-blue-400" />;
+        return <Info className='h-5 w-5 text-blue-400' />;
     }
   };
 
@@ -89,34 +83,23 @@ function StatusMessageItem({
       animate={{ opacity: 1, x: 0, scale: 1 }}
       exit={{ opacity: 0, x: 50, scale: 0.9 }}
       transition={{ duration: 0.3, ease: 'easeOut' }}
-      className={`
-        relative backdrop-blur-xl border rounded-xl p-4 shadow-lg
-        ${getStyles()}
-      `}
+      className={`relative rounded-xl border p-4 shadow-lg backdrop-blur-xl ${getStyles()} `}
     >
-      <div className="flex items-start gap-3">
-        <div className="flex-shrink-0 mt-0.5">
-          {getIcon()}
-        </div>
-        
-        <div className="flex-grow">
-          <h4 className="text-sm font-medium text-white">
-            {title}
-          </h4>
-          
-          {description && (
-            <p className="mt-1 text-xs text-gray-300">
-              {description}
-            </p>
-          )}
-          
+      <div className='flex items-start gap-3'>
+        <div className='mt-0.5 flex-shrink-0'>{getIcon()}</div>
+
+        <div className='flex-grow'>
+          <h4 className='text-sm font-medium text-white'>{title}</h4>
+
+          {description && <p className='mt-1 text-xs text-gray-300'>{description}</p>}
+
           {actions && actions.length > 0 && (
-            <div className="mt-3 flex gap-2">
+            <div className='mt-3 flex gap-2'>
               {actions.map((action, index) => (
                 <button
                   key={index}
                   onClick={action.onClick}
-                  className="text-xs font-medium text-blue-400 hover:text-blue-300 transition-colors"
+                  className='text-xs font-medium text-blue-400 transition-colors hover:text-blue-300'
                 >
                   {action.label}
                 </button>
@@ -124,22 +107,22 @@ function StatusMessageItem({
             </div>
           )}
         </div>
-        
+
         <button
           onClick={onClose}
-          className="flex-shrink-0 text-gray-400 hover:text-gray-300 transition-colors"
+          className='flex-shrink-0 text-gray-400 transition-colors hover:text-gray-300'
         >
-          <X className="h-4 w-4" />
+          <X className='h-4 w-4' />
         </button>
       </div>
-      
+
       {/* Progress bar for auto-close */}
       {autoClose && duration > 0 && (
         <motion.div
           initial={{ scaleX: 1 }}
           animate={{ scaleX: 0 }}
           transition={{ duration: duration / 1000, ease: 'linear' }}
-          className="absolute bottom-0 left-0 right-0 h-0.5 bg-white/20 origin-left rounded-b-xl"
+          className='absolute bottom-0 left-0 right-0 h-0.5 origin-left rounded-b-xl bg-white/20'
         />
       )}
     </motion.div>
@@ -152,12 +135,12 @@ export function useStatusMessages() {
 
   const addMessage = React.useCallback((message: Omit<StatusMessage, 'id'>) => {
     const id = Date.now().toString();
-    setMessages((prev) => [...prev, { ...message, id }]);
+    setMessages(prev => [...prev, { ...message, id }]);
     return id;
   }, []);
 
   const removeMessage = React.useCallback((id: string) => {
-    setMessages((prev) => prev.filter((msg) => msg.id !== id));
+    setMessages(prev => prev.filter(msg => msg.id !== id));
   }, []);
 
   const clearAllMessages = React.useCallback(() => {

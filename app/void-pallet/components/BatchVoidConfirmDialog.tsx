@@ -10,7 +10,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+} from '@/components/ui/alert-dialog';
 import { BatchPalletItem } from '../types/batch';
 import { AlertTriangle, Package, Hash } from 'lucide-react';
 
@@ -35,59 +35,63 @@ export function BatchVoidConfirmDialog({
 }: BatchVoidConfirmDialogProps) {
   const selectedItems = items.filter(item => item.selected);
   const totalQuantity = selectedItems.reduce((sum, item) => sum + item.palletInfo.product_qty, 0);
-  const hasACOPallets = selectedItems.some(item => 
-    item.palletInfo.plt_remark?.includes('ACO')
-  );
-  const hasGRNPallets = selectedItems.some(item => 
+  const hasACOPallets = selectedItems.some(item => item.palletInfo.plt_remark?.includes('ACO'));
+  const hasGRNPallets = selectedItems.some(item =>
     item.palletInfo.plt_remark?.includes('Material GRN')
   );
 
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
-      <AlertDialogContent className="max-w-2xl">
+      <AlertDialogContent className='max-w-2xl'>
         <AlertDialogHeader>
-          <AlertDialogTitle className="flex items-center gap-2 text-red-500">
-            <AlertTriangle className="h-5 w-5" />
+          <AlertDialogTitle className='flex items-center gap-2 text-red-500'>
+            <AlertTriangle className='h-5 w-5' />
             Confirm Batch Void Operation
           </AlertDialogTitle>
           <AlertDialogDescription>
-            <div className="space-y-4 mt-4">
+            <div className='mt-4 space-y-4'>
               {/* Warning message */}
-              <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3">
-                <p className="text-sm font-medium text-red-800 dark:text-red-200">
-                  This will void {selectedItems.length} pallet{selectedItems.length > 1 ? 's' : ''} with a total quantity of {totalQuantity} units.
-                  This action cannot be undone.
+              <div className='rounded-lg border border-red-200 bg-red-50 p-3 dark:border-red-800 dark:bg-red-900/20'>
+                <p className='text-sm font-medium text-red-800 dark:text-red-200'>
+                  This will void {selectedItems.length} pallet{selectedItems.length > 1 ? 's' : ''}{' '}
+                  with a total quantity of {totalQuantity} units. This action cannot be undone.
                 </p>
               </div>
 
               {/* Void reason */}
-              <div className="space-y-2">
-                <h4 className="font-medium text-gray-900 dark:text-gray-100">Void Reason:</h4>
-                <div className="bg-gray-100 dark:bg-gray-800 rounded-md px-3 py-2">
-                  <p className="font-medium text-red-600 dark:text-red-400">
+              <div className='space-y-2'>
+                <h4 className='font-medium text-gray-900 dark:text-gray-100'>Void Reason:</h4>
+                <div className='rounded-md bg-gray-100 px-3 py-2 dark:bg-gray-800'>
+                  <p className='font-medium text-red-600 dark:text-red-400'>
                     {voidReason}
-                    {voidReason === 'Damage' && damageQuantity && ` (${damageQuantity} units per pallet)`}
+                    {voidReason === 'Damage' &&
+                      damageQuantity &&
+                      ` (${damageQuantity} units per pallet)`}
                   </p>
                 </div>
               </div>
 
               {/* Selected pallets list */}
-              <div className="space-y-2">
-                <h4 className="font-medium text-gray-900 dark:text-gray-100">Selected Pallets:</h4>
-                <div className="max-h-48 overflow-y-auto bg-gray-100 dark:bg-gray-800 rounded-lg p-3">
-                  <div className="space-y-2">
-                    {selectedItems.map((item) => (
-                      <div key={item.id} className="flex items-center justify-between text-sm">
-                        <div className="flex items-center gap-3">
-                          <Hash className="h-3 w-3 text-gray-500" />
-                          <span className="font-medium">{item.palletInfo.plt_num}</span>
-                          <span className="text-gray-500">|</span>
-                          <Package className="h-3 w-3 text-gray-500" />
+              <div className='space-y-2'>
+                <h4 className='font-medium text-gray-900 dark:text-gray-100'>Selected Pallets:</h4>
+                <div className='max-h-48 overflow-y-auto rounded-lg bg-gray-100 p-3 dark:bg-gray-800'>
+                  <div className='space-y-2'>
+                    {selectedItems.map(item => (
+                      <div key={item.id} className='flex items-center justify-between text-sm'>
+                        <div className='flex items-center gap-3'>
+                          <Hash className='h-3 w-3 text-gray-500' />
+                          <span className='font-medium'>{item.palletInfo.plt_num}</span>
+                          <span className='text-gray-500'>|</span>
+                          <Package className='h-3 w-3 text-gray-500' />
                           <span>{item.palletInfo.product_code}</span>
-                          <span className="text-gray-500">({item.palletInfo.product_qty} units)</span>
+                          <span className='text-gray-500'>
+                            ({item.palletInfo.product_qty} units)
+                          </span>
                         </div>
                         {item.palletInfo.plt_remark && (
-                          <span className="text-xs text-gray-500">{item.palletInfo.plt_remark}</span>
+                          <span className='text-xs text-gray-500'>
+                            {item.palletInfo.plt_remark}
+                          </span>
                         )}
                       </div>
                     ))}
@@ -97,36 +101,36 @@ export function BatchVoidConfirmDialog({
 
               {/* Special warnings */}
               {hasACOPallets && (
-                <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-3">
-                  <p className="text-sm text-yellow-800 dark:text-yellow-200">
-                    <strong>ACO Order Pallets detected:</strong> ACO order remaining quantities will be updated.
-                    Note: ACO pallets do not support partial damage.
+                <div className='rounded-lg border border-yellow-200 bg-yellow-50 p-3 dark:border-yellow-800 dark:bg-yellow-900/20'>
+                  <p className='text-sm text-yellow-800 dark:text-yellow-200'>
+                    <strong>ACO Order Pallets detected:</strong> ACO order remaining quantities will
+                    be updated. Note: ACO pallets do not support partial damage.
                   </p>
                 </div>
               )}
-              
+
               {hasGRNPallets && (
-                <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
-                  <p className="text-sm text-blue-800 dark:text-blue-200">
+                <div className='rounded-lg border border-blue-200 bg-blue-50 p-3 dark:border-blue-800 dark:bg-blue-900/20'>
+                  <p className='text-sm text-blue-800 dark:text-blue-200'>
                     <strong>Material GRN Pallets detected:</strong> GRN records will be deleted.
                   </p>
                 </div>
               )}
 
               {/* Summary */}
-              <div className="bg-gray-50 dark:bg-gray-900/50 rounded-lg p-4">
-                <h4 className="font-medium text-gray-900 dark:text-gray-100 mb-2">Summary:</h4>
-                <div className="grid grid-cols-2 gap-2 text-sm">
-                  <div className="text-gray-600 dark:text-gray-400">Total Pallets:</div>
-                  <div className="font-medium">{selectedItems.length}</div>
-                  
-                  <div className="text-gray-600 dark:text-gray-400">Total Quantity:</div>
-                  <div className="font-medium">{totalQuantity} units</div>
-                  
+              <div className='rounded-lg bg-gray-50 p-4 dark:bg-gray-900/50'>
+                <h4 className='mb-2 font-medium text-gray-900 dark:text-gray-100'>Summary:</h4>
+                <div className='grid grid-cols-2 gap-2 text-sm'>
+                  <div className='text-gray-600 dark:text-gray-400'>Total Pallets:</div>
+                  <div className='font-medium'>{selectedItems.length}</div>
+
+                  <div className='text-gray-600 dark:text-gray-400'>Total Quantity:</div>
+                  <div className='font-medium'>{totalQuantity} units</div>
+
                   {voidReason === 'Damage' && damageQuantity && (
                     <>
-                      <div className="text-gray-600 dark:text-gray-400">Total Damage:</div>
-                      <div className="font-medium text-red-600">
+                      <div className='text-gray-600 dark:text-gray-400'>Total Damage:</div>
+                      <div className='font-medium text-red-600'>
                         {selectedItems.length * damageQuantity} units
                       </div>
                     </>
@@ -138,9 +142,9 @@ export function BatchVoidConfirmDialog({
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel onClick={onCancel}>Cancel</AlertDialogCancel>
-          <AlertDialogAction 
+          <AlertDialogAction
             onClick={onConfirm}
-            className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+            className='bg-red-600 hover:bg-red-700 focus:ring-red-600'
           >
             Confirm Batch Void
           </AlertDialogAction>

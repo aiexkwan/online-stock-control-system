@@ -21,7 +21,7 @@ export async function getCachedWithFallback<T>(
   options: CacheFallbackOptions = {}
 ): Promise<T | null> {
   const { ttlSeconds = 300, forceRefresh = false, silent = false } = options;
-  
+
   try {
     // 如果不是強制刷新，先嘗試從緩存獲取
     if (!forceRefresh) {
@@ -42,7 +42,7 @@ export async function getCachedWithFallback<T>(
 
     // 🧠 方案2: 執行 fallback 函數獲取新數據
     const freshData = await fallbackFn();
-    
+
     if (freshData !== null && freshData !== undefined) {
       // 自動緩存新數據
       await redisCacheAdapter.set(key, freshData, ttlSeconds);
@@ -56,7 +56,6 @@ export async function getCachedWithFallback<T>(
       logger.warn(`Fallback function returned null/undefined for key: ${key}`);
     }
     return null;
-
   } catch (error) {
     // 只記錄真正的系統錯誤
     logger.error(`Cache fallback error for key ${key}:`, error);
@@ -76,20 +75,20 @@ export async function batchGetCachedWithFallback<T>(
   options: { silent?: boolean; concurrency?: number } = {}
 ): Promise<Array<{ key: string; data: T | null }>> {
   const { silent = false, concurrency = 5 } = options;
-  
+
   const results: Array<{ key: string; data: T | null }> = [];
-  
+
   // 分批處理以避免過載
   for (let i = 0; i < keyFallbackPairs.length; i += concurrency) {
     const batch = keyFallbackPairs.slice(i, i + concurrency);
-    
+
     const batchPromises = batch.map(async ({ key, fallback, ttlSeconds }) => {
       const data = await getCachedWithFallback(key, fallback, { ttlSeconds, silent });
       return { key, data };
     });
-    
+
     const batchResults = await Promise.allSettled(batchPromises);
-    
+
     batchResults.forEach((result, index) => {
       if (result.status === 'fulfilled') {
         results.push(result.value);
@@ -100,7 +99,7 @@ export async function batchGetCachedWithFallback<T>(
       }
     });
   }
-  
+
   return results;
 }
 
@@ -125,11 +124,10 @@ export async function warmupCacheKeys(
 
   for (const spec of sorted) {
     try {
-      await getCachedWithFallback(
-        spec.key,
-        spec.dataSource,
-        { ttlSeconds: spec.ttlSeconds, silent: true }
-      );
+      await getCachedWithFallback(spec.key, spec.dataSource, {
+        ttlSeconds: spec.ttlSeconds,
+        silent: true,
+      });
     } catch (error) {
       logger.error(`Failed to warmup cache key ${spec.key}:`, error);
     }
@@ -150,21 +148,20 @@ export async function conditionalCacheRefresh<T>(
   try {
     // 檢查條件是否滿足
     const shouldRefresh = await condition();
-    
+
     if (shouldRefresh) {
       logger.info(`Condition met, refreshing cache for key: ${key}`);
-      return await getCachedWithFallback(key, fallbackFn, { 
-        ttlSeconds, 
+      return await getCachedWithFallback(key, fallbackFn, {
+        ttlSeconds,
         forceRefresh: true,
-        silent: false 
+        silent: false,
       });
     }
 
     // 條件不滿足，嘗試從緩存獲取
     return await getCachedWithFallback(key, fallbackFn, { ttlSeconds });
-    
   } catch (error) {
     logger.error(`Conditional cache refresh error for key ${key}:`, error);
     return null;
   }
-} 
+}

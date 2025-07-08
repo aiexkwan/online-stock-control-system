@@ -1,6 +1,6 @@
 /**
  * Feature Flag 使用示例
- * 
+ *
  * 這個文件展示了如何在實際應用中使用 Feature Flag 系統
  */
 
@@ -11,7 +11,7 @@ import {
   useFeatureFlag,
   useFeatureFlags,
   withFeatureFlag,
-  KnownFeatureFlags
+  KnownFeatureFlags,
 } from '../index';
 
 /**
@@ -21,19 +21,16 @@ export function Example1_BasicUsage() {
   return (
     <div>
       <h2>Basic Feature Flag Usage</h2>
-      
+
       {/* 只在 feature flag 啟用時顯示 */}
       <FeatureFlag flag={KnownFeatureFlags.NEW_DASHBOARD}>
-        <div className="p-4 bg-blue-100 rounded">
+        <div className='rounded bg-blue-100 p-4'>
           <p>This is the new dashboard! 🎉</p>
         </div>
       </FeatureFlag>
 
       {/* 使用 fallback */}
-      <FeatureFlag 
-        flag={KnownFeatureFlags.ADVANCED_SEARCH}
-        fallback={<BasicSearch />}
-      >
+      <FeatureFlag flag={KnownFeatureFlags.ADVANCED_SEARCH} fallback={<BasicSearch />}>
         <AdvancedSearch />
       </FeatureFlag>
     </div>
@@ -64,7 +61,7 @@ export function Example3_MultipleFlags() {
   const { flags, loading } = useFeatureFlags([
     KnownFeatureFlags.BATCH_OPERATIONS,
     KnownFeatureFlags.VIRTUAL_SCROLLING,
-    KnownFeatureFlags.LAZY_LOADING
+    KnownFeatureFlags.LAZY_LOADING,
   ]);
 
   if (loading) return <div>Loading features...</div>;
@@ -87,11 +84,11 @@ export function Example3_MultipleFlags() {
 export function Example4_Variants() {
   return (
     <FeatureVariant
-      flag="theme_variant"
+      flag='theme_variant'
       variants={{
         default: <DefaultTheme />,
         modern: <ModernTheme />,
-        classic: <ClassicTheme />
+        classic: <ClassicTheme />,
       }}
       defaultContent={<DefaultTheme />}
     />
@@ -107,15 +104,12 @@ export function Example5_WithContext() {
     userGroups: ['beta-testers', 'premium'],
     customAttributes: {
       accountAge: 90, // days
-      subscriptionTier: 'premium'
-    }
+      subscriptionTier: 'premium',
+    },
   };
 
   return (
-    <FeatureFlag 
-      flag="premium_features" 
-      context={userContext}
-    >
+    <FeatureFlag flag='premium_features' context={userContext}>
       <PremiumFeatures />
     </FeatureFlag>
   );
@@ -124,10 +118,9 @@ export function Example5_WithContext() {
 /**
  * 示例 6: 高階組件使用
  */
-const EnhancedComponent = withFeatureFlag(
-  KnownFeatureFlags.AI_PREDICTIONS,
-  { fallback: BasicPredictions }
-)(AIPredictions);
+const EnhancedComponent = withFeatureFlag(KnownFeatureFlags.AI_PREDICTIONS, {
+  fallback: BasicPredictions,
+})(AIPredictions);
 
 export function Example6_HOC() {
   return (
@@ -143,7 +136,7 @@ export function Example6_HOC() {
  */
 export function Example7_ProgrammaticCheck() {
   const { enabled: isBatchEnabled } = useFeatureFlag(KnownFeatureFlags.BATCH_OPERATIONS);
-  
+
   const handleAction = async () => {
     if (isBatchEnabled) {
       // 執行批量操作
@@ -154,11 +147,7 @@ export function Example7_ProgrammaticCheck() {
     }
   };
 
-  return (
-    <button onClick={handleAction}>
-      {isBatchEnabled ? 'Batch Process' : 'Process'}
-    </button>
-  );
+  return <button onClick={handleAction}>{isBatchEnabled ? 'Batch Process' : 'Process'}</button>;
 }
 
 /**
@@ -172,14 +161,9 @@ export function Example8_DevToggle() {
   }
 
   return (
-    <div className="fixed bottom-20 right-4 p-2 bg-gray-800 text-white rounded">
-      <label className="flex items-center gap-2">
-        <input
-          type="checkbox"
-          checked={enabled}
-          onChange={toggle}
-          disabled={loading}
-        />
+    <div className='fixed bottom-20 right-4 rounded bg-gray-800 p-2 text-white'>
+      <label className='flex items-center gap-2'>
+        <input type='checkbox' checked={enabled} onChange={toggle} disabled={loading} />
         Debug Mode
       </label>
     </div>
@@ -192,8 +176,8 @@ export function Example8_DevToggle() {
 export function Example9_GradualRollout() {
   // Feature flag 配置了 30% 的發布比例
   return (
-    <FeatureFlag flag="new_checkout_flow">
-      <div className="p-4 border-2 border-green-500 rounded">
+    <FeatureFlag flag='new_checkout_flow'>
+      <div className='rounded border-2 border-green-500 p-4'>
         <p>🎉 You&apos;re seeing the new checkout flow!</p>
         <p>You&apos;re part of the 30% rollout group.</p>
       </div>
@@ -211,17 +195,17 @@ export function Example10_CompleteApp() {
     <div className={flags.dark_mode?.enabled ? 'dark' : ''}>
       <nav>
         <FeatureFlag flag={KnownFeatureFlags.NEW_DASHBOARD}>
-          <a href="/new-dashboard">New Dashboard</a>
+          <a href='/new-dashboard'>New Dashboard</a>
         </FeatureFlag>
       </nav>
 
       <main>
         <FeatureVariant
-          flag="layout_variant"
+          flag='layout_variant'
           variants={{
             grid: <GridLayout />,
             list: <ListLayout />,
-            card: <CardLayout />
+            card: <CardLayout />,
           }}
         />
       </main>

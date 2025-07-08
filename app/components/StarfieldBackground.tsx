@@ -63,11 +63,13 @@ export const StarfieldBackground: React.FC = () => {
       console.error('WebGL not supported');
       return;
     }
-    
+
     // Type assertion for WebGL context
     const gl = glContext as WebGLRenderingContext;
-    
-    process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('StarfieldBackground: WebGL context created');
+
+    process.env.NODE_ENV !== 'production' &&
+      process.env.NODE_ENV !== 'production' &&
+      console.log('StarfieldBackground: WebGL context created');
 
     // Resize handler
     const resize = () => {
@@ -80,16 +82,16 @@ export const StarfieldBackground: React.FC = () => {
     const compileShader = (source: string, type: number) => {
       const shader = gl.createShader(type);
       if (!shader) throw new Error('Failed to create shader');
-      
+
       gl.shaderSource(shader, source);
       gl.compileShader(shader);
-      
+
       if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
         const error = gl.getShaderInfoLog(shader);
         gl.deleteShader(shader);
         throw new Error(`Shader compilation error: ${error}`);
       }
-      
+
       return shader;
     };
 
@@ -101,25 +103,26 @@ export const StarfieldBackground: React.FC = () => {
       // Create and link program
       const program = gl.createProgram();
       if (!program) throw new Error('Failed to create program');
-      
+
       gl.attachShader(program, vertShader);
       gl.attachShader(program, fragShader);
       gl.linkProgram(program);
-      
+
       if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
         throw new Error(`Program link error: ${gl.getProgramInfoLog(program)}`);
       }
-      
+
       gl.useProgram(program);
 
       // Set up geometry
       const posLoc = gl.getAttribLocation(program, 'position');
       const buffer = gl.createBuffer();
       gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-      gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
-        -1, -1, 1, -1, -1, 1,
-        -1, 1, 1, -1, 1, 1,
-      ]), gl.STATIC_DRAW);
+      gl.bufferData(
+        gl.ARRAY_BUFFER,
+        new Float32Array([-1, -1, 1, -1, -1, 1, -1, 1, 1, -1, 1, 1]),
+        gl.STATIC_DRAW
+      );
       gl.enableVertexAttribArray(posLoc);
       gl.vertexAttribPointer(posLoc, 2, gl.FLOAT, false, 0, 0);
 

@@ -38,20 +38,20 @@ export class GrnErrorHandler {
   /**
    * 處理表單驗證錯誤
    */
-  public handleValidationError(
-    fieldName: string,
-    error: string,
-    context: ErrorContext
-  ): void {
+  public handleValidationError(fieldName: string, error: string, context: ErrorContext): void {
     console.warn(`[${context.component}] Validation error in ${fieldName}: ${error}`);
-    
+
     // 不顯示 toast，因為驗證錯誤由表單 UI 處理
     // 只記錄用於調試
-    this.logError(new Error(`Validation: ${fieldName} - ${error}`), {
-      ...context,
-      action: 'validation',
-      additionalData: { fieldName, validationError: error }
-    }, 'low');
+    this.logError(
+      new Error(`Validation: ${fieldName} - ${error}`),
+      {
+        ...context,
+        action: 'validation',
+        additionalData: { fieldName, validationError: error },
+      },
+      'low'
+    );
   }
 
   /**
@@ -64,9 +64,9 @@ export class GrnErrorHandler {
   ): void {
     const errorMessage = typeof error === 'string' ? error : error.message;
     const severity = this.determineSupplierErrorSeverity(errorMessage);
-    
+
     console.error(`[${context.component}] Supplier Error for ${supplierCode}:`, error);
-    
+
     // 根據錯誤類型顯示不同的用戶消息
     let userMessage = 'Supplier validation failed. Please check the supplier code.';
     if (errorMessage.includes('not found')) {
@@ -76,7 +76,7 @@ export class GrnErrorHandler {
     } else if (errorMessage.includes('network')) {
       userMessage = 'Network error while validating supplier. Please try again.';
     }
-    
+
     toast.error(userMessage, {
       id: `supplier-${supplierCode}`,
       duration: severity === 'high' ? 8000 : 5000,
@@ -86,7 +86,7 @@ export class GrnErrorHandler {
       typeof error === 'string' ? new Error(error) : error,
       {
         ...context,
-        additionalData: { ...context.additionalData, supplierCode }
+        additionalData: { ...context.additionalData, supplierCode },
       },
       severity
     );
@@ -95,25 +95,25 @@ export class GrnErrorHandler {
   /**
    * 處理托盤號生成錯誤
    */
-  public handlePalletGenerationError(
-    error: Error,
-    context: ErrorContext,
-    count?: number
-  ): void {
+  public handlePalletGenerationError(error: Error, context: ErrorContext, count?: number): void {
     const severity = this.determinePalletErrorSeverity(error);
     const userMessage = this.generatePalletErrorMessage(error, count);
-    
+
     console.error(`[${context.component}] Pallet Generation Error:`, error);
-    
+
     toast.error(userMessage, {
       id: 'pallet-generation',
       duration: severity === 'critical' ? 10000 : 6000,
     });
 
-    this.logError(error, {
-      ...context,
-      additionalData: { ...context.additionalData, requestedCount: count }
-    }, severity);
+    this.logError(
+      error,
+      {
+        ...context,
+        additionalData: { ...context.additionalData, requestedCount: count },
+      },
+      severity
+    );
   }
 
   /**
@@ -126,9 +126,9 @@ export class GrnErrorHandler {
   ): void {
     const errorMessage = typeof error === 'string' ? error : error.message;
     const severity = this.determineDatabaseErrorSeverity(errorMessage);
-    
+
     console.error(`[${context.component}] Database Error in ${operation}:`, error);
-    
+
     let userMessage = 'Database operation failed. Please try again.';
     if (errorMessage.includes('already exists')) {
       userMessage = 'This record already exists in the system.';
@@ -137,7 +137,7 @@ export class GrnErrorHandler {
     } else if (errorMessage.includes('timeout')) {
       userMessage = 'Database operation timed out. Please try again.';
     }
-    
+
     toast.error(userMessage, {
       id: `db-${operation || 'unknown'}`,
       duration: severity === 'high' ? 8000 : 5000,
@@ -147,7 +147,7 @@ export class GrnErrorHandler {
       typeof error === 'string' ? new Error(error) : error,
       {
         ...context,
-        additionalData: { ...context.additionalData, operation }
+        additionalData: { ...context.additionalData, operation },
       },
       severity
     );
@@ -162,25 +162,29 @@ export class GrnErrorHandler {
     palletNumber?: string,
     grnNumber?: string
   ): void {
-    const userMessage = palletNumber 
+    const userMessage = palletNumber
       ? `Failed to generate PDF for pallet ${palletNumber}. Please try again.`
       : 'PDF generation failed. Please try again.';
-    
+
     console.error(`[${context.component}] PDF Error:`, error);
-    
+
     toast.error(userMessage, {
       id: `pdf-${palletNumber || 'unknown'}`,
       duration: 6000,
     });
 
-    this.logError(error, {
-      ...context,
-      additionalData: { 
-        ...context.additionalData, 
-        palletNumber,
-        grnNumber 
-      }
-    }, 'medium');
+    this.logError(
+      error,
+      {
+        ...context,
+        additionalData: {
+          ...context.additionalData,
+          palletNumber,
+          grnNumber,
+        },
+      },
+      'medium'
+    );
   }
 
   /**
@@ -193,32 +197,32 @@ export class GrnErrorHandler {
     context: ErrorContext
   ): void {
     console.warn(`[${context.component}] Weight Error for pallet ${palletIndex + 1}: ${error}`);
-    
+
     toast.error(error, {
       id: `weight-${palletIndex}`,
       duration: 4000,
     });
 
-    this.logError(new Error(error), {
-      ...context,
-      additionalData: { 
-        ...context.additionalData, 
-        palletIndex,
-        weight 
-      }
-    }, 'low');
+    this.logError(
+      new Error(error),
+      {
+        ...context,
+        additionalData: {
+          ...context.additionalData,
+          palletIndex,
+          weight,
+        },
+      },
+      'low'
+    );
   }
 
   /**
    * 處理成功消息
    */
-  public handleSuccess(
-    message: string,
-    context: ErrorContext,
-    details?: string
-  ): void {
+  public handleSuccess(message: string, context: ErrorContext, details?: string): void {
     console.log(`[${context.component}] Success in ${context.action}: ${message}`);
-    
+
     toast.success(message, {
       id: `success-${context.component}-${context.action}`,
       duration: 3000,
@@ -230,13 +234,9 @@ export class GrnErrorHandler {
   /**
    * 處理警告消息
    */
-  public handleWarning(
-    message: string,
-    context: ErrorContext,
-    showToast: boolean = true
-  ): void {
+  public handleWarning(message: string, context: ErrorContext, showToast: boolean = true): void {
     console.warn(`[${context.component}] Warning in ${context.action}: ${message}`);
-    
+
     if (showToast) {
       toast.warning(message, {
         id: `warning-${context.component}`,
@@ -248,13 +248,9 @@ export class GrnErrorHandler {
   /**
    * 處理信息消息
    */
-  public handleInfo(
-    message: string,
-    context: ErrorContext,
-    showToast: boolean = true
-  ): void {
+  public handleInfo(message: string, context: ErrorContext, showToast: boolean = true): void {
     console.info(`[${context.component}] Info in ${context.action}: ${message}`);
-    
+
     if (showToast) {
       toast.info(message, {
         id: `info-${context.component}`,
@@ -278,7 +274,7 @@ export class GrnErrorHandler {
       error,
       severity,
       userMessage: this.generateUserMessage(error, context),
-      technicalMessage: error.message
+      technicalMessage: error.message,
     };
 
     // 儲存在內存中用於調試
@@ -293,7 +289,7 @@ export class GrnErrorHandler {
           plt_num: null,
           loc: null,
           action: `GRN Error: ${context.component} - ${context.action}`,
-          remark: `${severity.toUpperCase()}: ${error.message}`
+          remark: `${severity.toUpperCase()}: ${error.message}`,
         });
       }
     } catch (dbError) {
@@ -317,7 +313,7 @@ export class GrnErrorHandler {
           plt_num: null,
           loc: null,
           action: `GRN Success: ${context.component} - ${context.action}`,
-          remark: details || message
+          remark: details || message,
         });
       }
     } catch (dbError) {
@@ -328,21 +324,23 @@ export class GrnErrorHandler {
   /**
    * 確定供應商錯誤嚴重性
    */
-  private determineSupplierErrorSeverity(errorMessage: string): 'low' | 'medium' | 'high' | 'critical' {
+  private determineSupplierErrorSeverity(
+    errorMessage: string
+  ): 'low' | 'medium' | 'high' | 'critical' {
     const message = errorMessage.toLowerCase();
-    
+
     if (message.includes('network') || message.includes('timeout')) {
       return 'medium';
     }
-    
+
     if (message.includes('not found') || message.includes('invalid')) {
       return 'low';
     }
-    
+
     if (message.includes('database') || message.includes('supabase')) {
       return 'high';
     }
-    
+
     return 'low';
   }
 
@@ -351,40 +349,42 @@ export class GrnErrorHandler {
    */
   private determinePalletErrorSeverity(error: Error): 'low' | 'medium' | 'high' | 'critical' {
     const message = error.message.toLowerCase();
-    
+
     if (message.includes('exhausted') || message.includes('no available')) {
       return 'critical';
     }
-    
+
     if (message.includes('timeout') || message.includes('network')) {
       return 'high';
     }
-    
+
     if (message.includes('rollback') || message.includes('cleanup')) {
       return 'medium';
     }
-    
+
     return 'medium';
   }
 
   /**
    * 確定數據庫錯誤嚴重性
    */
-  private determineDatabaseErrorSeverity(errorMessage: string): 'low' | 'medium' | 'high' | 'critical' {
+  private determineDatabaseErrorSeverity(
+    errorMessage: string
+  ): 'low' | 'medium' | 'high' | 'critical' {
     const message = errorMessage.toLowerCase();
-    
+
     if (message.includes('connection') || message.includes('unavailable')) {
       return 'critical';
     }
-    
+
     if (message.includes('timeout') || message.includes('deadlock')) {
       return 'high';
     }
-    
+
     if (message.includes('already exists') || message.includes('duplicate')) {
       return 'low';
     }
-    
+
     return 'medium';
   }
 
@@ -393,23 +393,23 @@ export class GrnErrorHandler {
    */
   private generatePalletErrorMessage(error: Error, count?: number): string {
     const message = error.message.toLowerCase();
-    
+
     if (message.includes('exhausted') || message.includes('no available')) {
       return 'No available pallet numbers. Please wait or contact admin.';
     }
-    
+
     if (message.includes('timeout')) {
       return 'Pallet generation timed out. Please try again.';
     }
-    
+
     if (message.includes('network')) {
       return 'Network error during pallet generation. Please check connection.';
     }
-    
+
     if (count) {
       return `Failed to generate ${count} pallet number${count > 1 ? 's' : ''}. Please try again.`;
     }
-    
+
     return 'Failed to generate pallet numbers. Please try again.';
   }
 
@@ -418,39 +418,39 @@ export class GrnErrorHandler {
    */
   private generateUserMessage(error: Error, context: ErrorContext): string {
     const errorMessage = error.message.toLowerCase();
-    
+
     if (errorMessage.includes('network') || errorMessage.includes('fetch')) {
       return 'Network connection issue. Please check your internet connection and try again.';
     }
-    
+
     if (errorMessage.includes('auth') || errorMessage.includes('permission')) {
       return 'Authentication failed. Please log in again.';
     }
-    
+
     if (errorMessage.includes('not found')) {
       return 'The requested information was not found. Please check your input and try again.';
     }
-    
+
     if (errorMessage.includes('timeout')) {
       return 'The operation timed out. Please try again.';
     }
-    
+
     if (context.action === 'supplier_validation') {
       return 'Failed to validate supplier information. Please try again.';
     }
-    
+
     if (context.action === 'pallet_generation') {
       return 'Failed to generate pallet numbers. Please try again.';
     }
-    
+
     if (context.action === 'pdf_generation') {
       return 'Failed to generate PDF. Please try again.';
     }
-    
+
     if (context.action === 'form_submission') {
       return 'Failed to submit form. Please check your input and try again.';
     }
-    
+
     return 'An unexpected error occurred. Please try again or contact support if the problem persists.';
   }
 
@@ -488,16 +488,17 @@ export class GrnErrorHandler {
       total: this.errorReports.length,
       bySeverity: {} as Record<string, number>,
       byComponent: {} as Record<string, number>,
-      byAction: {} as Record<string, number>
+      byAction: {} as Record<string, number>,
     };
 
     this.errorReports.forEach(report => {
       // 按嚴重性統計
       stats.bySeverity[report.severity] = (stats.bySeverity[report.severity] || 0) + 1;
-      
+
       // 按組件統計
-      stats.byComponent[report.context.component] = (stats.byComponent[report.context.component] || 0) + 1;
-      
+      stats.byComponent[report.context.component] =
+        (stats.byComponent[report.context.component] || 0) + 1;
+
       // 按動作統計
       stats.byAction[report.context.action] = (stats.byAction[report.context.action] || 0) + 1;
     });

@@ -11,35 +11,35 @@ import { createClient } from '@/app/utils/supabase/server';
 export async function getUserIdFromEmail(email: string): Promise<number | null> {
   try {
     const supabase = await createClient();
-    
+
     console.log('[getUserIdFromEmail] Looking up email:', email);
-    
+
     // 查詢 data_id 表 - 使用完整 email
     const { data, error } = await supabase
       .from('data_id')
       .select('id, name, email')
       .eq('email', email)
       .single();
-    
+
     if (error) {
       console.error('[getUserIdFromEmail] Error querying data_id:', error);
       console.error('[getUserIdFromEmail] Email was:', email);
-      
+
       // 嘗試用 ilike 進行不區分大小寫的查詢
       const { data: ilikeData, error: ilikeError } = await supabase
         .from('data_id')
         .select('id, name, email')
         .ilike('email', email)
         .single();
-      
+
       if (!ilikeError && ilikeData) {
         console.log('[getUserIdFromEmail] Found user with ilike:', ilikeData);
         return ilikeData.id;
       }
-      
+
       return null;
     }
-    
+
     console.log('[getUserIdFromEmail] Found user:', data);
     return data?.id || null;
   } catch (error) {

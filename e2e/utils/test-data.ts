@@ -106,14 +106,11 @@ export const waitFor = {
    * 等待動畫完成
    */
   animationComplete: async (page: any, selector: string) => {
-    await page.waitForFunction(
-      (sel: string) => {
-        const element = document.querySelector(sel);
-        if (!element) return false;
-        const animations = element.getAnimations();
-        return animations.length === 0 || animations.every(a => a.playState === 'finished');
-      },
-      selector
-    );
+    await page.waitForFunction((sel: string) => {
+      const element = document.querySelector(sel);
+      if (!element) return false;
+      const animations = element.getAnimations();
+      return animations.length === 0 || animations.every(a => a.playState === 'finished');
+    }, selector);
   },
 };

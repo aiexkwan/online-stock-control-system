@@ -25,12 +25,14 @@ interface ValidationRule {
 }
 
 interface ValidationFormProps {
-  children: React.ReactNode | ((props: {
-    errors: Record<string, string>;
-    touched: Record<string, boolean>;
-    isValid: boolean;
-    handleFieldChange: (name: string, value: any) => void;
-  }) => React.ReactNode);
+  children:
+    | React.ReactNode
+    | ((props: {
+        errors: Record<string, string>;
+        touched: Record<string, boolean>;
+        isValid: boolean;
+        handleFieldChange: (name: string, value: any) => void;
+      }) => React.ReactNode);
   onSubmit: (data: any) => void | Promise<void>;
   validationRules?: Record<string, ValidationRule[]>;
   initialValues?: Record<string, any>;
@@ -52,7 +54,7 @@ export const useValidationForm = () => {
 /**
  * Form component with validation context
  * 具有驗證上下文的表單組件
- * 
+ *
  * @example
  * ```tsx
  * <ValidationForm
@@ -80,27 +82,26 @@ export function ValidationForm({
   initialValues = {},
   validateOnSubmit = true,
   validateOnChange = false,
-  showToastOnError = true
+  showToastOnError = true,
 }: ValidationFormProps) {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [touched, setTouched] = useState<Record<string, boolean>>({});
   const [formData, setFormData] = useState(initialValues);
 
-  const validateField = useCallback(async (
-    field: string, 
-    value: any, 
-    rules: ValidationRule[]
-  ): Promise<string> => {
-    for (const rule of rules) {
-      const result = await rule.validate(value, formData);
-      if (typeof result === 'string') {
-        return result;
-      } else if (!result) {
-        return rule.message || `Validation failed for ${field}`;
+  const validateField = useCallback(
+    async (field: string, value: any, rules: ValidationRule[]): Promise<string> => {
+      for (const rule of rules) {
+        const result = await rule.validate(value, formData);
+        if (typeof result === 'string') {
+          return result;
+        } else if (!result) {
+          return rule.message || `Validation failed for ${field}`;
+        }
       }
-    }
-    return '';
-  }, [formData]);
+      return '';
+    },
+    [formData]
+  );
 
   const setFieldError = useCallback((field: string, error: string) => {
     setErrors(prev => ({ ...prev, [field]: error }));
@@ -125,7 +126,7 @@ export function ValidationForm({
 
   const validateForm = async (): Promise<boolean> => {
     const newErrors: Record<string, string> = {};
-    
+
     for (const [field, rules] of Object.entries(validationRules)) {
       const value = formData[field];
       const error = await validateField(field, value, rules);
@@ -133,22 +134,25 @@ export function ValidationForm({
         newErrors[field] = error;
       }
     }
-    
+
     setErrors(newErrors);
-    
+
     // Mark all fields as touched
-    const allTouched = Object.keys(validationRules).reduce((acc, field) => {
-      acc[field] = true;
-      return acc;
-    }, {} as Record<string, boolean>);
+    const allTouched = Object.keys(validationRules).reduce(
+      (acc, field) => {
+        acc[field] = true;
+        return acc;
+      },
+      {} as Record<string, boolean>
+    );
     setTouched(allTouched);
-    
+
     return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    
+
     if (validateOnSubmit) {
       const isValid = await validateForm();
       if (!isValid) {
@@ -159,16 +163,16 @@ export function ValidationForm({
         return;
       }
     }
-    
+
     // Get form data
     const form = e.currentTarget;
     const formData = new FormData(form);
     const data: Record<string, any> = {};
-    
+
     formData.forEach((value, key) => {
       data[key] = value;
     });
-    
+
     try {
       await onSubmit(data);
     } catch (error) {
@@ -178,19 +182,22 @@ export function ValidationForm({
     }
   };
 
-  const handleFieldChange = useCallback((field: string, value: any) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-    
-    if (validateOnChange && validationRules[field]) {
-      validateField(field, value, validationRules[field]).then(error => {
-        if (error) {
-          setFieldError(field, error);
-        } else {
-          clearFieldError(field);
-        }
-      });
-    }
-  }, [validateOnChange, validationRules, validateField, setFieldError, clearFieldError]);
+  const handleFieldChange = useCallback(
+    (field: string, value: any) => {
+      setFormData(prev => ({ ...prev, [field]: value }));
+
+      if (validateOnChange && validationRules[field]) {
+        validateField(field, value, validationRules[field]).then(error => {
+          if (error) {
+            setFieldError(field, error);
+          } else {
+            clearFieldError(field);
+          }
+        });
+      }
+    },
+    [validateOnChange, validationRules, validateField, setFieldError, clearFieldError]
+  );
 
   const isValid = Object.keys(errors).length === 0;
 
@@ -206,7 +213,9 @@ export function ValidationForm({
       for (const rule of rules) {
         const result = rule.validate(value, formData);
         if (result instanceof Promise) {
-          process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.warn('Async validation rule used in sync context');
+          process.env.NODE_ENV !== 'production' &&
+            process.env.NODE_ENV !== 'production' &&
+            console.warn('Async validation rule used in sync context');
           continue;
         }
         if (typeof result === 'string') {
@@ -217,13 +226,13 @@ export function ValidationForm({
       }
       return '';
     },
-    isValid
+    isValid,
   };
 
   return (
     <ValidationFormContext.Provider value={contextValue}>
       <form onSubmit={handleSubmit} noValidate>
-        {typeof children === 'function' 
+        {typeof children === 'function'
           ? children({ errors, touched, isValid, handleFieldChange })
           : children}
       </form>

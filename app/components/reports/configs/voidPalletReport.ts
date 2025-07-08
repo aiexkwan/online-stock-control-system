@@ -12,7 +12,7 @@ export const voidPalletReportConfig: ReportConfig = {
   category: 'operational',
   formats: ['pdf', 'excel'],
   defaultFormat: 'pdf',
-  
+
   // 過濾器配置
   filters: [
     {
@@ -20,21 +20,23 @@ export const voidPalletReportConfig: ReportConfig = {
       label: 'Start Date',
       type: 'date',
       required: true,
-      defaultValue: new Date(new Date().setDate(new Date().getDate() - 7)).toISOString().split('T')[0]
+      defaultValue: new Date(new Date().setDate(new Date().getDate() - 7))
+        .toISOString()
+        .split('T')[0],
     },
     {
       id: 'endDate',
       label: 'End Date',
       type: 'date',
       required: true,
-      defaultValue: new Date().toISOString().split('T')[0]
+      defaultValue: new Date().toISOString().split('T')[0],
     },
     {
       id: 'productCode',
       label: 'Product Code',
       type: 'text',
       required: false,
-      placeholder: 'Enter product code (optional)'
+      placeholder: 'Enter product code (optional)',
     },
     {
       id: 'voidReason',
@@ -47,8 +49,8 @@ export const voidPalletReportConfig: ReportConfig = {
         { value: 'Wrong Product', label: 'Wrong Product' },
         { value: 'Expired', label: 'Expired' },
         { value: 'Quality Issue', label: 'Quality Issue' },
-        { value: 'Other', label: 'Other' }
-      ]
+        { value: 'Other', label: 'Other' },
+      ],
     },
     {
       id: 'operatorId',
@@ -59,11 +61,11 @@ export const voidPalletReportConfig: ReportConfig = {
       dataSource: {
         type: 'table',
         name: 'data_id',
-        params: { active: true }
-      }
-    }
+        params: { active: true },
+      },
+    },
   ],
-  
+
   // 報表區段配置
   sections: [
     {
@@ -76,28 +78,28 @@ export const voidPalletReportConfig: ReportConfig = {
           {
             id: 'totalVoided',
             label: 'Total Pallets Voided',
-            type: 'count'
+            type: 'count',
           },
           {
             id: 'totalQuantity',
             label: 'Total Quantity Voided',
             type: 'sum',
-            field: 'quantity'
+            field: 'quantity',
           },
           {
             id: 'uniqueProducts',
             label: 'Unique Products',
             type: 'custom',
-            customCalculation: 'countDistinct:product_code'
+            customCalculation: 'countDistinct:product_code',
           },
           {
             id: 'topReason',
             label: 'Most Common Reason',
             type: 'custom',
-            customCalculation: 'mode:void_reason'
-          }
-        ]
-      }
+            customCalculation: 'mode:void_reason',
+          },
+        ],
+      },
     },
     {
       id: 'reasonBreakdown',
@@ -110,31 +112,31 @@ export const voidPalletReportConfig: ReportConfig = {
             id: 'void_reason',
             label: 'Void Reason',
             type: 'text',
-            width: 120
+            width: 120,
           },
           {
             id: 'count',
             label: 'Count',
             type: 'number',
             width: 60,
-            align: 'right'
+            align: 'right',
           },
           {
             id: 'total_quantity',
             label: 'Total Quantity',
             type: 'number',
             width: 80,
-            align: 'right'
+            align: 'right',
           },
           {
             id: 'percentage',
             label: 'Percentage',
             type: 'percentage',
             width: 60,
-            align: 'right'
-          }
-        ]
-      }
+            align: 'right',
+          },
+        ],
+      },
     },
     {
       id: 'details',
@@ -147,54 +149,54 @@ export const voidPalletReportConfig: ReportConfig = {
             id: 'void_date',
             label: 'Date',
             type: 'date',
-            width: 80
+            width: 80,
           },
           {
             id: 'plt_num',
             label: 'Pallet Number',
             type: 'text',
-            width: 100
+            width: 100,
           },
           {
             id: 'product_code',
             label: 'Product Code',
             type: 'text',
-            width: 80
+            width: 80,
           },
           {
             id: 'product_description',
             label: 'Description',
             type: 'text',
-            width: 150
+            width: 150,
           },
           {
             id: 'quantity',
             label: 'Quantity',
             type: 'number',
             width: 60,
-            align: 'right'
+            align: 'right',
           },
           {
             id: 'void_reason',
             label: 'Reason',
             type: 'text',
-            width: 100
+            width: 100,
           },
           {
             id: 'operator_name',
             label: 'Operator',
             type: 'text',
-            width: 100
+            width: 100,
           },
           {
             id: 'remark',
             label: 'Remark',
             type: 'text',
             width: 150,
-            exportOnly: true // 只在導出時顯示
-          }
-        ]
-      }
+            exportOnly: true, // 只在導出時顯示
+          },
+        ],
+      },
     },
     {
       id: 'productAnalysis',
@@ -208,27 +210,27 @@ export const voidPalletReportConfig: ReportConfig = {
             id: 'product_code',
             label: 'Product Code',
             type: 'text',
-            width: 80
+            width: 80,
           },
           {
             id: 'product_description',
             label: 'Description',
             type: 'text',
-            width: 150
+            width: 150,
           },
           {
             id: 'void_count',
             label: 'Times Voided',
             type: 'number',
             width: 80,
-            align: 'right'
+            align: 'right',
           },
           {
             id: 'total_quantity',
             label: 'Total Quantity',
             type: 'number',
             width: 80,
-            align: 'right'
+            align: 'right',
           },
           {
             id: 'avg_quantity',
@@ -236,13 +238,13 @@ export const voidPalletReportConfig: ReportConfig = {
             type: 'number',
             width: 80,
             align: 'right',
-            format: 'decimal:2'
-          }
-        ]
-      }
-    }
+            format: 'decimal:2',
+          },
+        ],
+      },
+    },
   ],
-  
+
   // 樣式配置 - 保持現有 PDF 格式
   styleOverrides: {
     pdf: {
@@ -252,21 +254,21 @@ export const voidPalletReportConfig: ReportConfig = {
       headerHeight: 30,
       footerHeight: 20,
       // 使用舊版樣式以確保格式一致
-      useLegacyStyles: true
+      useLegacyStyles: true,
     },
     excel: {
       headerStyle: {
         font: { bold: true, size: 12 },
-        fill: { fgColor: { rgb: "424242" } },
-        font_color: { rgb: "FFFFFF" }
+        fill: { fgColor: { rgb: '424242' } },
+        font_color: { rgb: 'FFFFFF' },
       },
       dataStyle: {
-        font: { size: 10 }
+        font: { size: 10 },
       },
       summaryStyle: {
         font: { bold: true, size: 11 },
-        fill: { fgColor: { rgb: "E0E0E0" } }
-      }
-    }
-  }
+        fill: { fgColor: { rgb: 'E0E0E0' } },
+      },
+    },
+  },
 };

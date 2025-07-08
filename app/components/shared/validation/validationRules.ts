@@ -13,13 +13,13 @@ export interface ValidationRule {
  * 必填欄位驗證
  */
 export const required = (message = 'This field is required'): ValidationRule => ({
-  validate: (value) => {
+  validate: value => {
     if (typeof value === 'string') {
       return !!value.trim();
     }
     return value !== null && value !== undefined;
   },
-  message
+  message,
 });
 
 /**
@@ -27,11 +27,11 @@ export const required = (message = 'This field is required'): ValidationRule => 
  * 最小長度驗證
  */
 export const minLength = (min: number, message?: string): ValidationRule => ({
-  validate: (value) => {
+  validate: value => {
     if (!value) return true; // Skip if empty (use with required)
     return String(value).length >= min;
   },
-  message: message || `Minimum ${min} characters required`
+  message: message || `Minimum ${min} characters required`,
 });
 
 /**
@@ -39,11 +39,11 @@ export const minLength = (min: number, message?: string): ValidationRule => ({
  * 最大長度驗證
  */
 export const maxLength = (max: number, message?: string): ValidationRule => ({
-  validate: (value) => {
+  validate: value => {
     if (!value) return true;
     return String(value).length <= max;
   },
-  message: message || `Maximum ${max} characters allowed`
+  message: message || `Maximum ${max} characters allowed`,
 });
 
 /**
@@ -51,12 +51,12 @@ export const maxLength = (max: number, message?: string): ValidationRule => ({
  * 電子郵件驗證
  */
 export const email = (message = 'Invalid email address'): ValidationRule => ({
-  validate: (value) => {
+  validate: value => {
     if (!value) return true;
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return emailRegex.test(value);
   },
-  message
+  message,
 });
 
 /**
@@ -64,11 +64,11 @@ export const email = (message = 'Invalid email address'): ValidationRule => ({
  * 模式驗證
  */
 export const pattern = (regex: RegExp, message = 'Invalid format'): ValidationRule => ({
-  validate: (value) => {
+  validate: value => {
     if (!value) return true;
     return regex.test(String(value));
   },
-  message
+  message,
 });
 
 /**
@@ -76,11 +76,11 @@ export const pattern = (regex: RegExp, message = 'Invalid format'): ValidationRu
  * 數字驗證
  */
 export const numeric = (message = 'Must be a number'): ValidationRule => ({
-  validate: (value) => {
+  validate: value => {
     if (!value && value !== 0) return true;
     return !isNaN(Number(value));
   },
-  message
+  message,
 });
 
 /**
@@ -88,11 +88,11 @@ export const numeric = (message = 'Must be a number'): ValidationRule => ({
  * 整數驗證
  */
 export const integer = (message = 'Must be a whole number'): ValidationRule => ({
-  validate: (value) => {
+  validate: value => {
     if (!value && value !== 0) return true;
     return Number.isInteger(Number(value));
   },
-  message
+  message,
 });
 
 /**
@@ -100,11 +100,11 @@ export const integer = (message = 'Must be a whole number'): ValidationRule => (
  * 最小值驗證
  */
 export const min = (minValue: number, message?: string): ValidationRule => ({
-  validate: (value) => {
+  validate: value => {
     if (!value && value !== 0) return true;
     return Number(value) >= minValue;
   },
-  message: message || `Minimum value is ${minValue}`
+  message: message || `Minimum value is ${minValue}`,
 });
 
 /**
@@ -112,11 +112,11 @@ export const min = (minValue: number, message?: string): ValidationRule => ({
  * 最大值驗證
  */
 export const max = (maxValue: number, message?: string): ValidationRule => ({
-  validate: (value) => {
+  validate: value => {
     if (!value && value !== 0) return true;
     return Number(value) <= maxValue;
   },
-  message: message || `Maximum value is ${maxValue}`
+  message: message || `Maximum value is ${maxValue}`,
 });
 
 /**
@@ -124,12 +124,12 @@ export const max = (maxValue: number, message?: string): ValidationRule => ({
  * 範圍驗證
  */
 export const range = (minValue: number, maxValue: number, message?: string): ValidationRule => ({
-  validate: (value) => {
+  validate: value => {
     if (!value && value !== 0) return true;
     const num = Number(value);
     return num >= minValue && num <= maxValue;
   },
-  message: message || `Value must be between ${minValue} and ${maxValue}`
+  message: message || `Value must be between ${minValue} and ${maxValue}`,
 });
 
 /**
@@ -141,7 +141,7 @@ export const custom = (
   message?: string
 ): ValidationRule => ({
   validate: validateFn,
-  message
+  message,
 });
 
 /**
@@ -153,7 +153,7 @@ export const matchField = (fieldName: string, message?: string): ValidationRule 
     if (!formData) return true;
     return value === formData[fieldName];
   },
-  message: message || `Must match ${fieldName}`
+  message: message || `Must match ${fieldName}`,
 });
 
 /**
@@ -161,12 +161,12 @@ export const matchField = (fieldName: string, message?: string): ValidationRule 
  * 產品代碼驗證（Pennine 專用）
  */
 export const productCode = (message = 'Invalid product code'): ValidationRule => ({
-  validate: (value) => {
+  validate: value => {
     if (!value) return true;
     // Product codes are typically alphanumeric
     return /^[A-Z0-9-]+$/i.test(value);
   },
-  message
+  message,
 });
 
 /**
@@ -174,12 +174,12 @@ export const productCode = (message = 'Invalid product code'): ValidationRule =>
  * 時鐘號碼驗證（Pennine 專用）
  */
 export const clockNumber = (message = 'Invalid clock number'): ValidationRule => ({
-  validate: (value) => {
+  validate: value => {
     if (!value) return true;
     // Clock numbers should be positive integers
     return /^\d+$/.test(value) && Number(value) > 0;
   },
-  message
+  message,
 });
 
 /**
@@ -187,12 +187,12 @@ export const clockNumber = (message = 'Invalid clock number'): ValidationRule =>
  * 托盤號碼驗證（Pennine 專用）
  */
 export const palletNumber = (message = 'Invalid pallet number'): ValidationRule => ({
-  validate: (value) => {
+  validate: value => {
     if (!value) return true;
     // Format: DDMMYY/NNN
     return /^\d{6}\/\d{1,3}$/.test(value);
   },
-  message
+  message,
 });
 
 /**
@@ -200,12 +200,12 @@ export const palletNumber = (message = 'Invalid pallet number'): ValidationRule 
  * 供應商代碼驗證（Pennine 專用）
  */
 export const supplierCode = (message = 'Invalid supplier code'): ValidationRule => ({
-  validate: (value) => {
+  validate: value => {
     if (!value) return true;
     // Supplier codes are typically uppercase alphanumeric
     return /^[A-Z0-9]+$/.test(value.toUpperCase());
   },
-  message
+  message,
 });
 
 /**
@@ -224,7 +224,7 @@ export const when = (
 ): ValidationRule => ({
   validate: (value, formData) => {
     if (!condition(formData)) return true;
-    
+
     const rulesToApply = Array.isArray(rules) ? rules : [rules];
     for (const rule of rulesToApply) {
       const result = rule.validate(value, formData);
@@ -233,5 +233,5 @@ export const when = (
       }
     }
     return true;
-  }
+  },
 });

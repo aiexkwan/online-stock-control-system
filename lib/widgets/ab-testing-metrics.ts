@@ -6,11 +6,14 @@
 import { abTestManager } from './ab-testing-framework';
 
 // 用於追蹤每個 session 的請求統計
-const sessionStats = new Map<string, {
-  totalRequests: number;
-  errorCount: number;
-  variant: string;
-}>();
+const sessionStats = new Map<
+  string,
+  {
+    totalRequests: number;
+    errorCount: number;
+    variant: string;
+  }
+>();
 
 /**
  * 記錄 Widget 請求（成功或失敗）
@@ -27,20 +30,20 @@ export function recordWidgetRequest(
     sessionStats.set(sessionId, {
       totalRequests: 0,
       errorCount: 0,
-      variant
+      variant,
     });
   }
-  
+
   const stats = sessionStats.get(sessionId)!;
   stats.totalRequests++;
-  
+
   if (!success) {
     stats.errorCount++;
   }
-  
+
   // 計算錯誤率
   const errorRate = stats.errorCount / stats.totalRequests;
-  
+
   // 記錄錯誤率（作為比例，不是計數）
   abTestManager.recordMetric({
     testId: 'widget-registry-v2-rollout',
@@ -53,11 +56,11 @@ export function recordWidgetRequest(
         widgetId,
         sessionId,
         totalRequests: stats.totalRequests,
-        errorCount: stats.errorCount
-      }
-    }
+        errorCount: stats.errorCount,
+      },
+    },
   });
-  
+
   // 如果成功且有加載時間，記錄性能指標
   if (success && loadTime !== undefined) {
     abTestManager.recordMetric({
@@ -67,8 +70,8 @@ export function recordWidgetRequest(
       value: loadTime,
       timestamp: Date.now(),
       context: {
-        customData: { widgetId, sessionId }
-      }
+        customData: { widgetId, sessionId },
+      },
     });
   }
 }
@@ -95,13 +98,13 @@ export function recordWidgetErrorV2(
   sessionId: string
 ): void {
   recordWidgetRequest(widgetId, sessionId, variant, false);
-  
+
   // 額外記錄錯誤詳情
   console.error(`[ABTestMetrics] Widget error for ${widgetId}:`, {
     variant,
     sessionId,
     error: error.message,
-    stack: error.stack
+    stack: error.stack,
   });
 }
 
@@ -121,7 +124,7 @@ export function cleanupOldSessions(maxAge: number = 24 * 60 * 60 * 1000) {
     sessionStats.clear();
     return;
   }
-  
+
   // 實際應用中應該記錄時間戳並清理舊數據
   // 這裡簡化處理
   if (sessionStats.size > 10000) {
@@ -139,13 +142,13 @@ export function cleanupOldSessions(maxAge: number = 24 * 60 * 60 * 1000) {
 export function calculateAggregateErrorRate(variant: string): number {
   let totalRequests = 0;
   let totalErrors = 0;
-  
-  sessionStats.forEach((stats) => {
+
+  sessionStats.forEach(stats => {
     if (stats.variant === variant) {
       totalRequests += stats.totalRequests;
       totalErrors += stats.errorCount;
     }
   });
-  
+
   return totalRequests > 0 ? totalErrors / totalRequests : 0;
 }

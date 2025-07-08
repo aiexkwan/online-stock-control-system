@@ -6,14 +6,7 @@
 'use client';
 
 import * as React from 'react';
-import { 
-  AlertCircle, 
-  CheckCircle2, 
-  XCircle, 
-  AlertTriangle,
-  Info,
-  Bell
-} from 'lucide-react';
+import { AlertCircle, CheckCircle2, XCircle, AlertTriangle, Info, Bell } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -40,7 +33,7 @@ export interface NotificationDialogProps extends Omit<DialogProps, 'children'> {
 
 /**
  * 通用通知對話框
- * 
+ *
  * @example
  * <NotificationDialog
  *   open={open}
@@ -50,10 +43,7 @@ export interface NotificationDialogProps extends Omit<DialogProps, 'children'> {
  *   message="您的更改已保存"
  * />
  */
-export const NotificationDialog = React.forwardRef<
-  HTMLDivElement,
-  NotificationDialogProps
->(
+export const NotificationDialog = React.forwardRef<HTMLDivElement, NotificationDialogProps>(
   (
     {
       open,
@@ -77,21 +67,21 @@ export const NotificationDialog = React.forwardRef<
         const timer = setTimeout(() => {
           onOpenChange?.(false);
         }, autoCloseDelay);
-        
+
         return () => clearTimeout(timer);
       }
     }, [open, autoClose, autoCloseDelay, onOpenChange]);
-    
+
     // 默認圖標
     const defaultIcons = {
-      info: <Info className="w-6 h-6" />,
-      success: <CheckCircle2 className="w-6 h-6" />,
-      warning: <AlertTriangle className="w-6 h-6" />,
-      error: <XCircle className="w-6 h-6" />,
+      info: <Info className='h-6 w-6' />,
+      success: <CheckCircle2 className='h-6 w-6' />,
+      warning: <AlertTriangle className='h-6 w-6' />,
+      error: <XCircle className='h-6 w-6' />,
     };
-    
+
     const displayIcon = icon || (showIcon && defaultIcons[severity]);
-    
+
     // 按鈕樣式
     const buttonStyles = {
       info: 'bg-blue-500 hover:bg-blue-600 text-white',
@@ -99,7 +89,7 @@ export const NotificationDialog = React.forwardRef<
       warning: 'bg-yellow-500 hover:bg-yellow-600 text-white',
       error: 'bg-red-500 hover:bg-red-600 text-white',
     };
-    
+
     return (
       <Dialog
         open={open}
@@ -110,12 +100,8 @@ export const NotificationDialog = React.forwardRef<
       >
         <DialogContent ref={ref}>
           <DialogHeader>
-            <DialogTitle icon={displayIcon}>
-              {title}
-            </DialogTitle>
-            <DialogDescription className="pt-2">
-              {message}
-            </DialogDescription>
+            <DialogTitle icon={displayIcon}>{title}</DialogTitle>
+            <DialogDescription className='pt-2'>{message}</DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button
@@ -123,10 +109,7 @@ export const NotificationDialog = React.forwardRef<
                 onConfirm?.();
                 onOpenChange?.(false);
               }}
-              className={cn(
-                'min-w-[100px]',
-                buttonStyles[severity]
-              )}
+              className={cn('min-w-[100px]', buttonStyles[severity])}
             >
               {confirmText}
             </Button>
@@ -146,12 +129,7 @@ export interface SuccessDialogProps extends Omit<NotificationDialogProps, 'sever
 
 export const SuccessDialog = React.forwardRef<HTMLDivElement, SuccessDialogProps>(
   ({ title = '操作成功', ...props }, ref) => (
-    <NotificationDialog
-      ref={ref}
-      severity="success"
-      title={title}
-      {...props}
-    />
+    <NotificationDialog ref={ref} severity='success' title={title} {...props} />
   )
 );
 
@@ -164,12 +142,7 @@ export interface ErrorDialogProps extends Omit<NotificationDialogProps, 'severit
 
 export const ErrorDialog = React.forwardRef<HTMLDivElement, ErrorDialogProps>(
   ({ title = '操作失敗', ...props }, ref) => (
-    <NotificationDialog
-      ref={ref}
-      severity="error"
-      title={title}
-      {...props}
-    />
+    <NotificationDialog ref={ref} severity='error' title={title} {...props} />
   )
 );
 
@@ -182,12 +155,7 @@ export interface WarningDialogProps extends Omit<NotificationDialogProps, 'sever
 
 export const WarningDialog = React.forwardRef<HTMLDivElement, WarningDialogProps>(
   ({ title = '警告', ...props }, ref) => (
-    <NotificationDialog
-      ref={ref}
-      severity="warning"
-      title={title}
-      {...props}
-    />
+    <NotificationDialog ref={ref} severity='warning' title={title} {...props} />
   )
 );
 
@@ -200,12 +168,7 @@ export interface InfoDialogProps extends Omit<NotificationDialogProps, 'severity
 
 export const InfoDialog = React.forwardRef<HTMLDivElement, InfoDialogProps>(
   ({ title = '提示', ...props }, ref) => (
-    <NotificationDialog
-      ref={ref}
-      severity="info"
-      title={title}
-      {...props}
-    />
+    <NotificationDialog ref={ref} severity='info' title={title} {...props} />
   )
 );
 

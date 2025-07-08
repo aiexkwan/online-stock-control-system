@@ -5,62 +5,70 @@
 
 export const dialogStyles = {
   // Base dialog content styling
-  content: "bg-slate-900/95 backdrop-blur-xl border border-slate-700/50 text-white rounded-3xl shadow-2xl max-h-[90vh] overflow-y-auto",
-  
+  content:
+    'bg-slate-900/95 backdrop-blur-xl border border-slate-700/50 text-white rounded-3xl shadow-2xl max-h-[90vh] overflow-y-auto',
+
   // Dialog header title with gradient text
-  title: "text-2xl font-bold bg-gradient-to-r from-blue-300 via-cyan-300 to-blue-200 bg-clip-text text-transparent flex items-center gap-3",
-  
+  title:
+    'text-2xl font-bold bg-gradient-to-r from-blue-300 via-cyan-300 to-blue-200 bg-clip-text text-transparent flex items-center gap-3',
+
   // Dialog description
-  description: "text-slate-400 text-lg",
-  
+  description: 'text-slate-400 text-lg',
+
   // Primary button styling
-  primaryButton: "px-6 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 disabled:from-slate-600 disabled:to-slate-600 disabled:cursor-not-allowed text-white rounded-xl transition-all duration-300 font-medium shadow-lg hover:shadow-blue-500/25 hover:scale-105 active:scale-95",
-  
+  primaryButton:
+    'px-6 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 disabled:from-slate-600 disabled:to-slate-600 disabled:cursor-not-allowed text-white rounded-xl transition-all duration-300 font-medium shadow-lg hover:shadow-blue-500/25 hover:scale-105 active:scale-95',
+
   // Secondary button styling
-  secondaryButton: "px-6 py-3 bg-slate-700/50 hover:bg-slate-600/50 border border-slate-600/50 hover:border-slate-500/70 rounded-xl text-slate-300 hover:text-white font-medium transition-all duration-300",
-  
+  secondaryButton:
+    'px-6 py-3 bg-slate-700/50 hover:bg-slate-600/50 border border-slate-600/50 hover:border-slate-500/70 rounded-xl text-slate-300 hover:text-white font-medium transition-all duration-300',
+
   // Card background with hover effects
-  card: "relative bg-slate-800/40 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-6 shadow-xl hover:border-slate-600/50 transition-all duration-300",
-  
+  card: 'relative bg-slate-800/40 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-6 shadow-xl hover:border-slate-600/50 transition-all duration-300',
+
   // Input field styling
-  input: "px-4 py-3 bg-slate-700/50 border border-slate-600/50 rounded-xl text-slate-200 placeholder-slate-400 focus:outline-none focus:border-blue-500/70 focus:bg-slate-700/70 hover:border-blue-500/50 hover:bg-slate-700/60 transition-all duration-300 backdrop-blur-sm",
-  
+  input:
+    'px-4 py-3 bg-slate-700/50 border border-slate-600/50 rounded-xl text-slate-200 placeholder-slate-400 focus:outline-none focus:border-blue-500/70 focus:bg-slate-700/70 hover:border-blue-500/50 hover:bg-slate-700/60 transition-all duration-300 backdrop-blur-sm',
+
   // Select dropdown styling
-  select: "bg-slate-700/50 border-slate-600/50 text-slate-200 hover:border-slate-500/70",
-  
+  select: 'bg-slate-700/50 border-slate-600/50 text-slate-200 hover:border-slate-500/70',
+
   // Tab button styling
-  tabActive: "bg-gradient-to-r from-blue-600 to-cyan-600 text-white shadow-lg",
-  tabInactive: "text-slate-300 hover:text-white hover:bg-slate-600/50",
-  
+  tabActive: 'bg-gradient-to-r from-blue-600 to-cyan-600 text-white shadow-lg',
+  tabInactive: 'text-slate-300 hover:text-white hover:bg-slate-600/50',
+
   // Success state
-  success: "text-green-400 bg-green-500/10 border-green-500/30",
-  
+  success: 'text-green-400 bg-green-500/10 border-green-500/30',
+
   // Error state
-  error: "text-red-400 bg-red-500/10 border-red-500/30",
-  
+  error: 'text-red-400 bg-red-500/10 border-red-500/30',
+
   // Warning state
-  warning: "text-yellow-400 bg-yellow-500/10 border-yellow-500/30",
-  
+  warning: 'text-yellow-400 bg-yellow-500/10 border-yellow-500/30',
+
   // Info state
-  info: "text-blue-400 bg-blue-500/10 border-blue-500/30",
+  info: 'text-blue-400 bg-blue-500/10 border-blue-500/30',
 };
 
 // Gradient background overlays for cards
 export const gradientOverlays = {
-  blue: "absolute inset-0 bg-gradient-to-r from-slate-800/50 to-blue-900/30 rounded-3xl blur-xl",
-  purple: "absolute inset-0 bg-gradient-to-r from-purple-900/30 to-indigo-900/30 rounded-3xl blur-xl",
-  green: "absolute inset-0 bg-gradient-to-r from-green-900/30 to-emerald-900/30 rounded-3xl blur-xl",
-  orange: "absolute inset-0 bg-gradient-to-r from-orange-900/30 to-amber-900/30 rounded-3xl blur-xl",
-  red: "absolute inset-0 bg-gradient-to-r from-red-900/30 to-rose-900/30 rounded-3xl blur-xl",
+  blue: 'absolute inset-0 bg-gradient-to-r from-slate-800/50 to-blue-900/30 rounded-3xl blur-xl',
+  purple:
+    'absolute inset-0 bg-gradient-to-r from-purple-900/30 to-indigo-900/30 rounded-3xl blur-xl',
+  green:
+    'absolute inset-0 bg-gradient-to-r from-green-900/30 to-emerald-900/30 rounded-3xl blur-xl',
+  orange:
+    'absolute inset-0 bg-gradient-to-r from-orange-900/30 to-amber-900/30 rounded-3xl blur-xl',
+  red: 'absolute inset-0 bg-gradient-to-r from-red-900/30 to-rose-900/30 rounded-3xl blur-xl',
 };
 
 // Dialog icon colors matching the theme
 export const iconColors = {
-  blue: "text-blue-400",
-  purple: "text-purple-400",
-  green: "text-green-400",
-  orange: "text-orange-400",
-  red: "text-red-400",
-  cyan: "text-cyan-400",
-  yellow: "text-yellow-400",
+  blue: 'text-blue-400',
+  purple: 'text-purple-400',
+  green: 'text-green-400',
+  orange: 'text-orange-400',
+  red: 'text-red-400',
+  cyan: 'text-cyan-400',
+  yellow: 'text-yellow-400',
 };

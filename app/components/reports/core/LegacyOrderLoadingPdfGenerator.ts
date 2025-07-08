@@ -66,40 +66,40 @@ export class LegacyOrderLoadingPdfGenerator {
     this.doc = new jsPDF({
       orientation: 'portrait',
       unit: 'mm',
-      format: 'a4'
+      format: 'a4',
     });
   }
 
   generate(data: OrderLoadingReportData): Blob {
     // 設置字體
     this.doc.setFont('helvetica');
-    
+
     // 添加標題
     this.addHeader(data);
-    
+
     // 添加摘要
     this.addSummary(data.summary);
-    
+
     // 添加訂單進度
     this.addOrderProgress(data.orderProgress);
-    
+
     // 檢查是否需要新頁
     if (this.currentY > 200) {
       this.doc.addPage();
       this.currentY = 20;
     }
-    
+
     // 添加加載詳情
     this.addLoadingDetails(data.loadingDetails);
-    
+
     // 添加用戶績效
     if (data.userPerformance && data.userPerformance.length > 0) {
       this.addUserPerformance(data.userPerformance);
     }
-    
+
     // 添加頁碼
     this.addPageNumbers();
-    
+
     return this.doc.output('blob');
   }
 
@@ -108,7 +108,7 @@ export class LegacyOrderLoadingPdfGenerator {
     this.doc.setFontSize(16);
     this.doc.setFont('helvetica', 'bold');
     this.doc.text('ORDER LOADING REPORT', this.pageWidth / 2, this.currentY, { align: 'center' });
-    
+
     // 日期範圍
     this.currentY += 8;
     this.doc.setFontSize(12);
@@ -119,7 +119,7 @@ export class LegacyOrderLoadingPdfGenerator {
       this.currentY,
       { align: 'center' }
     );
-    
+
     // 過濾條件
     if (Object.keys(data.filters).some(key => data.filters[key as keyof typeof data.filters])) {
       this.currentY += 6;
@@ -129,25 +129,19 @@ export class LegacyOrderLoadingPdfGenerator {
       if (data.filters.productCode) filterTexts.push(`Product: ${data.filters.productCode}`);
       if (data.filters.userId) filterTexts.push(`User: ${data.filters.userId}`);
       if (data.filters.status) filterTexts.push(`Status: ${data.filters.status}`);
-      
-      this.doc.text(
-        `Filters: ${filterTexts.join(', ')}`,
-        this.pageWidth / 2,
-        this.currentY,
-        { align: 'center' }
-      );
+
+      this.doc.text(`Filters: ${filterTexts.join(', ')}`, this.pageWidth / 2, this.currentY, {
+        align: 'center',
+      });
     }
-    
+
     // 生成時間
     this.currentY += 6;
     this.doc.setFontSize(10);
-    this.doc.text(
-      `Generated: ${new Date().toLocaleString()}`,
-      this.pageWidth / 2,
-      this.currentY,
-      { align: 'center' }
-    );
-    
+    this.doc.text(`Generated: ${new Date().toLocaleString()}`, this.pageWidth / 2, this.currentY, {
+      align: 'center',
+    });
+
     // 分隔線
     this.currentY += 5;
     this.doc.setLineWidth(0.5);
@@ -160,23 +154,23 @@ export class LegacyOrderLoadingPdfGenerator {
     this.doc.setFont('helvetica', 'bold');
     this.doc.text('Loading Summary', this.margin, this.currentY);
     this.currentY += 8;
-    
+
     this.doc.setFontSize(11);
     this.doc.setFont('helvetica', 'normal');
-    
+
     const summaryData = [
       ['Total Orders:', summary.totalOrders.toString()],
       ['Completed Orders:', summary.completedOrders.toString()],
       ['Total Items Loaded:', summary.totalItemsLoaded.toLocaleString()],
-      ['Average Completion Rate:', `${(summary.avgCompletionRate * 100).toFixed(1)}%`]
+      ['Average Completion Rate:', `${(summary.avgCompletionRate * 100).toFixed(1)}%`],
     ];
-    
+
     summaryData.forEach(([label, value]) => {
       this.doc.text(label, this.margin + 5, this.currentY);
       this.doc.text(value, this.margin + 70, this.currentY, { align: 'right' });
       this.currentY += 6;
     });
-    
+
     this.currentY += 5;
   }
 
@@ -185,7 +179,7 @@ export class LegacyOrderLoadingPdfGenerator {
     this.doc.setFont('helvetica', 'bold');
     this.doc.text('Order Progress', this.margin, this.currentY);
     this.currentY += 8;
-    
+
     if (orders.length === 0) {
       this.doc.setFontSize(10);
       this.doc.setFont('helvetica', 'italic');
@@ -193,7 +187,7 @@ export class LegacyOrderLoadingPdfGenerator {
       this.currentY += 10;
       return;
     }
-    
+
     // 表格數據
     const tableData = orders.map(order => [
       order.order_number,
@@ -201,9 +195,9 @@ export class LegacyOrderLoadingPdfGenerator {
       order.total_items.toString(),
       order.loaded_items.toString(),
       `${(order.completion_rate * 100).toFixed(1)}%`,
-      order.status
+      order.status,
     ]);
-    
+
     this.doc.autoTable({
       startY: this.currentY,
       head: [['Order #', 'Order Date', 'Total Items', 'Loaded', 'Completion', 'Status']],
@@ -211,12 +205,12 @@ export class LegacyOrderLoadingPdfGenerator {
       margin: { left: this.margin, right: this.margin },
       styles: {
         fontSize: 10,
-        cellPadding: 3
+        cellPadding: 3,
       },
       headStyles: {
         fillColor: [74, 85, 104],
         textColor: [255, 255, 255],
-        fontStyle: 'bold'
+        fontStyle: 'bold',
       },
       columnStyles: {
         0: { cellWidth: 35 },
@@ -224,13 +218,13 @@ export class LegacyOrderLoadingPdfGenerator {
         2: { cellWidth: 25, halign: 'right' },
         3: { cellWidth: 25, halign: 'right' },
         4: { cellWidth: 30, halign: 'right' },
-        5: { cellWidth: 30 }
+        5: { cellWidth: 30 },
       },
       alternateRowStyles: {
-        fillColor: [245, 245, 245]
-      }
+        fillColor: [245, 245, 245],
+      },
     });
-    
+
     this.currentY = this.doc.lastAutoTable.finalY + 10;
   }
 
@@ -239,7 +233,7 @@ export class LegacyOrderLoadingPdfGenerator {
     this.doc.setFont('helvetica', 'bold');
     this.doc.text('Loading Details', this.margin, this.currentY);
     this.currentY += 8;
-    
+
     if (details.length === 0) {
       this.doc.setFontSize(10);
       this.doc.setFont('helvetica', 'italic');
@@ -247,10 +241,10 @@ export class LegacyOrderLoadingPdfGenerator {
       this.currentY += 10;
       return;
     }
-    
+
     // 限制顯示的記錄數
     const displayDetails = details.slice(0, 50);
-    
+
     const tableData = displayDetails.map(d => [
       this.formatDateTime(d.timestamp),
       d.order_number,
@@ -258,9 +252,9 @@ export class LegacyOrderLoadingPdfGenerator {
       this.truncateText(d.product_description, 25),
       d.loaded_qty.toString(),
       this.truncateText(d.user_name, 15),
-      d.action
+      d.action,
     ]);
-    
+
     this.doc.autoTable({
       startY: this.currentY,
       head: [['Date/Time', 'Order #', 'Product', 'Description', 'Qty', 'User', 'Action']],
@@ -268,12 +262,12 @@ export class LegacyOrderLoadingPdfGenerator {
       margin: { left: this.margin, right: this.margin },
       styles: {
         fontSize: 9,
-        cellPadding: 2
+        cellPadding: 2,
       },
       headStyles: {
         fillColor: [74, 85, 104],
         textColor: [255, 255, 255],
-        fontStyle: 'bold'
+        fontStyle: 'bold',
       },
       columnStyles: {
         0: { cellWidth: 35 },
@@ -282,7 +276,7 @@ export class LegacyOrderLoadingPdfGenerator {
         3: { cellWidth: 40 },
         4: { cellWidth: 15, halign: 'right' },
         5: { cellWidth: 25 },
-        6: { cellWidth: 20 }
+        6: { cellWidth: 20 },
       },
       didDrawPage: (data: any) => {
         if (data.pageNumber > 1) {
@@ -290,9 +284,9 @@ export class LegacyOrderLoadingPdfGenerator {
           this.doc.setFont('helvetica', 'normal');
           this.doc.text('Order Loading Report (Continued)', this.margin, 10);
         }
-      }
+      },
     });
-    
+
     if (details.length > 50) {
       this.currentY = this.doc.lastAutoTable.finalY + 5;
       this.doc.setFontSize(9);
@@ -304,7 +298,7 @@ export class LegacyOrderLoadingPdfGenerator {
       );
       this.currentY += 5;
     }
-    
+
     this.currentY = this.doc.lastAutoTable.finalY + 10;
   }
 
@@ -314,20 +308,20 @@ export class LegacyOrderLoadingPdfGenerator {
       this.doc.addPage();
       this.currentY = 20;
     }
-    
+
     this.doc.setFontSize(14);
     this.doc.setFont('helvetica', 'bold');
     this.doc.text('User Performance', this.margin, this.currentY);
     this.currentY += 8;
-    
+
     const tableData = users.map(u => [
       u.user_id,
       this.truncateText(u.user_name, 25),
       u.total_loads.toString(),
       u.total_quantity.toLocaleString(),
-      u.avg_load_time
+      u.avg_load_time,
     ]);
-    
+
     this.doc.autoTable({
       startY: this.currentY,
       head: [['User ID', 'User Name', 'Total Loads', 'Total Quantity', 'Avg Load Time']],
@@ -335,36 +329,33 @@ export class LegacyOrderLoadingPdfGenerator {
       margin: { left: this.margin, right: this.margin },
       styles: {
         fontSize: 10,
-        cellPadding: 3
+        cellPadding: 3,
       },
       headStyles: {
         fillColor: [74, 85, 104],
         textColor: [255, 255, 255],
-        fontStyle: 'bold'
+        fontStyle: 'bold',
       },
       columnStyles: {
         0: { cellWidth: 25 },
         1: { cellWidth: 60 },
         2: { cellWidth: 30, halign: 'right' },
         3: { cellWidth: 35, halign: 'right' },
-        4: { cellWidth: 30, halign: 'right' }
-      }
+        4: { cellWidth: 30, halign: 'right' },
+      },
     });
   }
 
   private addPageNumbers() {
     const pageCount = this.doc.getNumberOfPages();
-    
+
     for (let i = 1; i <= pageCount; i++) {
       this.doc.setPage(i);
       this.doc.setFontSize(10);
       this.doc.setFont('helvetica', 'normal');
-      this.doc.text(
-        `Page ${i} of ${pageCount}`,
-        this.pageWidth / 2,
-        this.pageHeight - 10,
-        { align: 'center' }
-      );
+      this.doc.text(`Page ${i} of ${pageCount}`, this.pageWidth / 2, this.pageHeight - 10, {
+        align: 'center',
+      });
     }
   }
 
@@ -373,7 +364,7 @@ export class LegacyOrderLoadingPdfGenerator {
     return date.toLocaleDateString('en-GB', {
       day: '2-digit',
       month: '2-digit',
-      year: 'numeric'
+      year: 'numeric',
     });
   }
 
@@ -384,7 +375,7 @@ export class LegacyOrderLoadingPdfGenerator {
       month: '2-digit',
       year: 'numeric',
       hour: '2-digit',
-      minute: '2-digit'
+      minute: '2-digit',
     });
   }
 

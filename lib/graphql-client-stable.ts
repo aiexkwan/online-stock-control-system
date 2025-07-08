@@ -41,7 +41,7 @@ export class GraphQLClient {
     if (!supabaseUrl) {
       throw new Error('NEXT_PUBLIC_SUPABASE_URL is not defined');
     }
-    
+
     this.url = `${supabaseUrl}/graphql/v1`;
     this.supabase = createClient();
   }
@@ -58,7 +58,7 @@ export class GraphQLClient {
    */
   async query<T = any>(request: GraphQLRequest): Promise<GraphQLResponse<T>> {
     const cacheKey = this.getCacheKey(request.query, request.variables);
-    
+
     // 檢查緩存
     const cached = globalCache.get(cacheKey);
     if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
@@ -77,15 +77,15 @@ export class GraphQLClient {
 
     try {
       const result = await requestPromise;
-      
+
       // 如果成功，更新緩存
       if (result.data && !result.errors) {
         globalCache.set(cacheKey, {
           data: result.data,
-          timestamp: Date.now()
+          timestamp: Date.now(),
         });
       }
-      
+
       return result;
     } finally {
       // 清理進行中嘅請求
@@ -96,11 +96,13 @@ export class GraphQLClient {
   private async executeQuery<T>(request: GraphQLRequest): Promise<GraphQLResponse<T>> {
     try {
       // Get the current session for authentication
-      const { data: { session } } = await this.supabase.auth.getSession();
-      
+      const {
+        data: { session },
+      } = await this.supabase.auth.getSession();
+
       const headers: HeadersInit = {
         'Content-Type': 'application/json',
-        'apikey': process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '',
+        apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '',
       };
 
       if (session?.access_token) {
@@ -121,11 +123,11 @@ export class GraphQLClient {
       }
 
       const result = await response.json();
-      
+
       if (result.errors) {
         console.error('[GraphQL] Errors:', result.errors);
       }
-      
+
       return result;
     } catch (error) {
       console.error('[GraphQL] Request error:', error);
@@ -203,11 +205,11 @@ export function useGraphQLQuery<T = any>(
   const [loading, setLoading] = React.useState(!cachedData); // 有緩存就唔 loading
   const [error, setError] = React.useState<Error | null>(null);
   const [isRefetching, setIsRefetching] = React.useState(false);
-  
+
   // 使用 useRef 避免重複執行
   const abortControllerRef = React.useRef<AbortController | null>(null);
   const isMountedRef = React.useRef(true);
-  
+
   // 穩定嘅 variables reference
   const stableVariables = React.useMemo(
     () => variables,
@@ -215,53 +217,56 @@ export function useGraphQLQuery<T = any>(
     [JSON.stringify(variables)]
   );
 
-  const fetchData = React.useCallback(async (isBackground = false) => {
-    // 取消上一個請求
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
-    }
-
-    // 如果組件已卸載，唔執行
-    if (!isMountedRef.current) return;
-
-    abortControllerRef.current = new AbortController();
-
-    try {
-      if (isBackground) {
-        setIsRefetching(true);
-      } else {
-        setLoading(true);
+  const fetchData = React.useCallback(
+    async (isBackground = false) => {
+      // 取消上一個請求
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
       }
-      setError(null);
-      
-      const result = await graphqlClient.query<T>({ 
-        query, 
-        variables: stableVariables 
-      });
-      
-      // 只有組件仍然掛載時才更新狀態
-      if (isMountedRef.current) {
-        if (result.errors) {
-          setError(new Error(result.errors[0].message));
+
+      // 如果組件已卸載，唔執行
+      if (!isMountedRef.current) return;
+
+      abortControllerRef.current = new AbortController();
+
+      try {
+        if (isBackground) {
+          setIsRefetching(true);
         } else {
-          setData(result.data || null);
+          setLoading(true);
+        }
+        setError(null);
+
+        const result = await graphqlClient.query<T>({
+          query,
+          variables: stableVariables,
+        });
+
+        // 只有組件仍然掛載時才更新狀態
+        if (isMountedRef.current) {
+          if (result.errors) {
+            setError(new Error(result.errors[0].message));
+          } else {
+            setData(result.data || null);
+          }
+        }
+      } catch (err) {
+        if (isMountedRef.current && err instanceof Error && err.name !== 'AbortError') {
+          setError(err);
+        }
+      } finally {
+        if (isMountedRef.current) {
+          setLoading(false);
+          setIsRefetching(false);
         }
       }
-    } catch (err) {
-      if (isMountedRef.current && err instanceof Error && err.name !== 'AbortError') {
-        setError(err);
-      }
-    } finally {
-      if (isMountedRef.current) {
-        setLoading(false);
-        setIsRefetching(false);
-      }
-    }
-  }, [query, stableVariables]);
+    },
+    [query, stableVariables]
+  );
 
   React.useEffect(() => {
     isMountedRef.current = true;
-    
+
     if (options?.enabled !== false) {
       // 如果有緩存數據，背景更新
       const hasCache = !!globalCache.get(cacheKey);
@@ -309,16 +314,16 @@ export function useGraphQLMutation<TData = any, TVariables = any>() {
       try {
         setLoading(true);
         setError(null);
-        
-        const result = await graphqlClient.mutate<TData>({ 
-          query, 
-          variables: variables as Record<string, any> 
+
+        const result = await graphqlClient.mutate<TData>({
+          query,
+          variables: variables as Record<string, any>,
         });
-        
+
         if (result.errors) {
           throw new Error(result.errors[0].message);
         }
-        
+
         return result.data || null;
       } catch (err) {
         setError(err as Error);

@@ -12,39 +12,37 @@ import { createLazyWidget } from './widget-loader';
  * Lists widgets 的映射配置
  */
 export const listsWidgetConfigs: Record<string, Partial<WidgetDefinition>> = {
-  'OrdersListWidgetV2': {
+  OrdersListWidgetV2: {
     name: 'Orders List',
     category: 'lists',
     description: 'Displays list of customer orders',
     lazyLoad: true,
     preloadPriority: 9, // 高優先級
-    useGraphQL: true,
-    graphqlVersion: 'OrdersListGraphQL',
+    useGraphQL: false, // GraphQL version removed
     metadata: {
       dataSource: 'record_order',
       refreshInterval: 60000, // 1分鐘刷新
       supportPagination: true,
       supportFilters: true,
-    }
+    },
   },
-  
-  'WarehouseTransferListWidget': {
+
+  WarehouseTransferListWidget: {
     name: 'Warehouse Transfer List',
     category: 'lists',
     description: 'Shows warehouse transfer records',
     lazyLoad: true,
     preloadPriority: 8,
-    useGraphQL: true,
-    graphqlVersion: 'WarehouseTransferListWidgetGraphQL',
+    useGraphQL: false, // GraphQL version removed
     metadata: {
       dataSource: 'record_transfer',
       refreshInterval: 60000,
       supportPagination: true,
       supportTimeFrame: true,
-    }
+    },
   },
-  
-  'TransferListWidget': {
+
+  TransferListWidget: {
     name: 'Transfer List',
     category: 'lists',
     description: 'Generic transfer list display',
@@ -54,10 +52,10 @@ export const listsWidgetConfigs: Record<string, Partial<WidgetDefinition>> = {
       dataSource: 'record_transfer',
       refreshInterval: 120000, // 2分鐘刷新
       supportPagination: true,
-    }
+    },
   },
-  
-  'OrderStateListWidget': {
+
+  OrderStateListWidget: {
     name: 'Order State List',
     category: 'lists',
     description: 'Shows orders grouped by state',
@@ -67,10 +65,10 @@ export const listsWidgetConfigs: Record<string, Partial<WidgetDefinition>> = {
       dataSource: 'record_order',
       refreshInterval: 120000,
       supportStateFilter: true,
-    }
+    },
   },
-  
-  'BookedOutListWidget': {
+
+  BookedOutListWidget: {
     name: 'Booked Out List',
     category: 'lists',
     description: 'Displays booked out items',
@@ -80,10 +78,10 @@ export const listsWidgetConfigs: Record<string, Partial<WidgetDefinition>> = {
       dataSource: 'record_loading',
       refreshInterval: 60000,
       supportDateFilter: true,
-    }
+    },
   },
-  
-  'GrnListWidget': {
+
+  GrnListWidget: {
     name: 'GRN List',
     category: 'lists',
     description: 'Goods Receipt Note list',
@@ -93,10 +91,10 @@ export const listsWidgetConfigs: Record<string, Partial<WidgetDefinition>> = {
       dataSource: 'record_grn',
       refreshInterval: 300000, // 5分鐘刷新
       supportPagination: true,
-    }
+    },
   },
-  
-  'LoadingListWidget': {
+
+  LoadingListWidget: {
     name: 'Loading List',
     category: 'lists',
     description: 'Shows loading bay activities',
@@ -106,23 +104,22 @@ export const listsWidgetConfigs: Record<string, Partial<WidgetDefinition>> = {
       dataSource: 'record_loading',
       refreshInterval: 30000, // 30秒刷新（實時性要求高）
       supportStatusFilter: true,
-    }
+    },
   },
-  
-  'OtherFilesListWidget': {
+
+  OtherFilesListWidget: {
     name: 'Other Files List',
     category: 'lists',
     description: 'Displays miscellaneous files',
     lazyLoad: true,
     preloadPriority: 5,
-    useGraphQL: true,
-    graphqlVersion: 'OtherFilesListGraphQL',
+    useGraphQL: false, // GraphQL version removed
     metadata: {
       dataSource: 'record_files',
       refreshInterval: 300000,
       supportTypeFilter: true,
-    }
-  }
+    },
+  },
 };
 
 /**
@@ -131,19 +128,19 @@ export const listsWidgetConfigs: Record<string, Partial<WidgetDefinition>> = {
 export async function registerListsWidgets(): Promise<void> {
   const startTime = performance.now();
   let registeredCount = 0;
-  
+
   console.log('[ListsWidgetAdapter] Starting Lists widgets registration...');
-  
+
   for (const [widgetId, config] of Object.entries(listsWidgetConfigs)) {
     try {
       // 獲取動態導入函數
       const importFn = getWidgetImport(widgetId);
-      
+
       if (!importFn) {
         console.warn(`[ListsWidgetAdapter] No import function found for ${widgetId}`);
         continue;
       }
-      
+
       // 創建完整的 widget 定義，包含懶加載組件
       const definition: WidgetDefinition = {
         id: widgetId,
@@ -152,20 +149,21 @@ export async function registerListsWidgets(): Promise<void> {
         ...config,
         component: createLazyWidget(widgetId), // 使用統一的 widget loader
       };
-      
+
       // 註冊到 registry
       widgetRegistry.register(definition);
-      
+
       registeredCount++;
       console.log(`[ListsWidgetAdapter] Registered: ${widgetId}`);
-      
     } catch (error) {
       console.error(`[ListsWidgetAdapter] Failed to register ${widgetId}:`, error);
     }
   }
-  
+
   const endTime = performance.now();
-  console.log(`[ListsWidgetAdapter] Completed: ${registeredCount} widgets registered in ${(endTime - startTime).toFixed(2)}ms`);
+  console.log(
+    `[ListsWidgetAdapter] Completed: ${registeredCount} widgets registered in ${(endTime - startTime).toFixed(2)}ms`
+  );
 }
 
 /**
@@ -175,9 +173,12 @@ export async function preloadHighPriorityListsWidgets(): Promise<void> {
   const highPriorityWidgets = Object.entries(listsWidgetConfigs)
     .filter(([_, config]) => (config.preloadPriority || 0) >= 8)
     .map(([id]) => id);
-    
+
   if (highPriorityWidgets.length > 0) {
-    console.log('[ListsWidgetAdapter] Preloading high priority Lists widgets:', highPriorityWidgets);
+    console.log(
+      '[ListsWidgetAdapter] Preloading high priority Lists widgets:',
+      highPriorityWidgets
+    );
     await widgetRegistry.preloadWidgets(highPriorityWidgets);
   }
 }

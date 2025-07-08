@@ -2,6 +2,18 @@
  * 舊版 PDF 生成器
  * 完全複製現有 Void Pallet Report 的 PDF 格式
  * 確保生成的報表與現有格式 100% 一致
+ *
+ * @deprecated This legacy PDF generator is deprecated. Please use the new unified PDF generator in PdfGenerator.ts instead.
+ * The new implementation provides better performance and unified styling across reports.
+ *
+ * @example
+ * ```typescript
+ * // OLD (deprecated)
+ * import { LegacyVoidPalletPdfGenerator } from './LegacyPdfGenerator';
+ *
+ * // NEW (recommended)
+ * import { PdfGenerator } from '../generators/PdfGenerator';
+ * ```
  */
 
 import { jsPDF } from 'jspdf';
@@ -61,40 +73,40 @@ export class LegacyVoidPalletPdfGenerator {
     this.doc = new jsPDF({
       orientation: 'portrait',
       unit: 'mm',
-      format: 'a4'
+      format: 'a4',
     });
   }
 
   generate(data: VoidReportData): Blob {
     // 設置字體
     this.doc.setFont('helvetica');
-    
+
     // 添加標題
     this.addHeader(data);
-    
+
     // 添加摘要統計
     this.addSummarySection(data.summary);
-    
+
     // 添加按原因分類
     this.addReasonBreakdown(data.byReason);
-    
+
     // 檢查是否需要新頁
     if (this.currentY > 200) {
       this.doc.addPage();
       this.currentY = 20;
     }
-    
+
     // 添加詳細記錄
     this.addDetailsTable(data.details);
-    
+
     // 添加按產品分析（如果有數據）
     if (data.byProduct && data.byProduct.length > 0) {
       this.addProductAnalysis(data.byProduct);
     }
-    
+
     // 添加頁碼
     this.addPageNumbers();
-    
+
     return this.doc.output('blob');
   }
 
@@ -103,7 +115,7 @@ export class LegacyVoidPalletPdfGenerator {
     this.doc.setFontSize(16);
     this.doc.setFont('helvetica', 'bold');
     this.doc.text('VOID PALLET REPORT', this.pageWidth / 2, this.currentY, { align: 'center' });
-    
+
     // 日期範圍
     this.currentY += 8;
     this.doc.setFontSize(12);
@@ -114,17 +126,14 @@ export class LegacyVoidPalletPdfGenerator {
       this.currentY,
       { align: 'center' }
     );
-    
+
     // 生成時間
     this.currentY += 6;
     this.doc.setFontSize(10);
-    this.doc.text(
-      `Generated: ${new Date().toLocaleString()}`,
-      this.pageWidth / 2,
-      this.currentY,
-      { align: 'center' }
-    );
-    
+    this.doc.text(`Generated: ${new Date().toLocaleString()}`, this.pageWidth / 2, this.currentY, {
+      align: 'center',
+    });
+
     // 分隔線
     this.currentY += 5;
     this.doc.setLineWidth(0.5);
@@ -137,23 +146,23 @@ export class LegacyVoidPalletPdfGenerator {
     this.doc.setFont('helvetica', 'bold');
     this.doc.text('Summary Statistics', this.margin, this.currentY);
     this.currentY += 8;
-    
+
     this.doc.setFontSize(11);
     this.doc.setFont('helvetica', 'normal');
-    
+
     const summaryData = [
       ['Total Pallets Voided:', summary.totalVoided.toString()],
       ['Total Quantity Voided:', summary.totalQuantity.toLocaleString()],
       ['Unique Products:', summary.uniqueProducts.toString()],
-      ['Average Per Day:', summary.averagePerDay.toFixed(1)]
+      ['Average Per Day:', summary.averagePerDay.toFixed(1)],
     ];
-    
+
     summaryData.forEach(([label, value]) => {
       this.doc.text(label, this.margin + 5, this.currentY);
       this.doc.text(value, this.margin + 60, this.currentY, { align: 'right' });
       this.currentY += 6;
     });
-    
+
     this.currentY += 5;
   }
 
@@ -162,7 +171,7 @@ export class LegacyVoidPalletPdfGenerator {
     this.doc.setFont('helvetica', 'bold');
     this.doc.text('Breakdown by Void Reason', this.margin, this.currentY);
     this.currentY += 8;
-    
+
     if (reasons.length === 0) {
       this.doc.setFontSize(10);
       this.doc.setFont('helvetica', 'italic');
@@ -170,7 +179,7 @@ export class LegacyVoidPalletPdfGenerator {
       this.currentY += 10;
       return;
     }
-    
+
     // 使用 autoTable 生成表格
     this.doc.autoTable({
       startY: this.currentY,
@@ -179,26 +188,26 @@ export class LegacyVoidPalletPdfGenerator {
         r.reason,
         r.count.toString(),
         r.quantity.toLocaleString(),
-        `${(r.percentage * 100).toFixed(1)}%`
+        `${(r.percentage * 100).toFixed(1)}%`,
       ]),
       margin: { left: this.margin, right: this.margin },
       styles: {
         fontSize: 10,
-        cellPadding: 3
+        cellPadding: 3,
       },
       headStyles: {
         fillColor: [66, 66, 66],
         textColor: [255, 255, 255],
-        fontStyle: 'bold'
+        fontStyle: 'bold',
       },
       columnStyles: {
         0: { cellWidth: 80 },
         1: { cellWidth: 30, halign: 'right' },
         2: { cellWidth: 40, halign: 'right' },
-        3: { cellWidth: 30, halign: 'right' }
-      }
+        3: { cellWidth: 30, halign: 'right' },
+      },
     });
-    
+
     this.currentY = this.doc.lastAutoTable.finalY + 10;
   }
 
@@ -207,7 +216,7 @@ export class LegacyVoidPalletPdfGenerator {
     this.doc.setFont('helvetica', 'bold');
     this.doc.text('Void Details', this.margin, this.currentY);
     this.currentY += 8;
-    
+
     if (details.length === 0) {
       this.doc.setFontSize(10);
       this.doc.setFont('helvetica', 'italic');
@@ -215,7 +224,7 @@ export class LegacyVoidPalletPdfGenerator {
       this.currentY += 10;
       return;
     }
-    
+
     // 準備表格數據
     const tableData = details.map(d => [
       this.formatDate(d.date),
@@ -224,9 +233,9 @@ export class LegacyVoidPalletPdfGenerator {
       this.truncateText(d.description, 30),
       d.quantity.toString(),
       d.reason,
-      d.operator
+      d.operator,
     ]);
-    
+
     this.doc.autoTable({
       startY: this.currentY,
       head: [['Date', 'Pallet #', 'Product', 'Description', 'Qty', 'Reason', 'Operator']],
@@ -234,12 +243,12 @@ export class LegacyVoidPalletPdfGenerator {
       margin: { left: this.margin, right: this.margin },
       styles: {
         fontSize: 9,
-        cellPadding: 2
+        cellPadding: 2,
       },
       headStyles: {
         fillColor: [66, 66, 66],
         textColor: [255, 255, 255],
-        fontStyle: 'bold'
+        fontStyle: 'bold',
       },
       columnStyles: {
         0: { cellWidth: 20 },
@@ -248,7 +257,7 @@ export class LegacyVoidPalletPdfGenerator {
         3: { cellWidth: 45 },
         4: { cellWidth: 15, halign: 'right' },
         5: { cellWidth: 25 },
-        6: { cellWidth: 25 }
+        6: { cellWidth: 25 },
       },
       didDrawPage: (data: any) => {
         // 在新頁面添加標題
@@ -257,9 +266,9 @@ export class LegacyVoidPalletPdfGenerator {
           this.doc.setFont('helvetica', 'normal');
           this.doc.text('Void Pallet Report (Continued)', this.margin, 10);
         }
-      }
+      },
     });
-    
+
     this.currentY = this.doc.lastAutoTable.finalY + 10;
   }
 
@@ -269,20 +278,20 @@ export class LegacyVoidPalletPdfGenerator {
       this.doc.addPage();
       this.currentY = 20;
     }
-    
+
     this.doc.setFontSize(14);
     this.doc.setFont('helvetica', 'bold');
     this.doc.text('Product Analysis', this.margin, this.currentY);
     this.currentY += 8;
-    
+
     const tableData = products.map(p => [
       p.productCode,
       this.truncateText(p.description, 40),
       p.voidCount.toString(),
       p.totalQuantity.toLocaleString(),
-      p.avgQuantity.toFixed(1)
+      p.avgQuantity.toFixed(1),
     ]);
-    
+
     this.doc.autoTable({
       startY: this.currentY,
       head: [['Product Code', 'Description', 'Times Voided', 'Total Qty', 'Avg Qty']],
@@ -290,36 +299,33 @@ export class LegacyVoidPalletPdfGenerator {
       margin: { left: this.margin, right: this.margin },
       styles: {
         fontSize: 10,
-        cellPadding: 3
+        cellPadding: 3,
       },
       headStyles: {
         fillColor: [66, 66, 66],
         textColor: [255, 255, 255],
-        fontStyle: 'bold'
+        fontStyle: 'bold',
       },
       columnStyles: {
         0: { cellWidth: 30 },
         1: { cellWidth: 70 },
         2: { cellWidth: 30, halign: 'right' },
         3: { cellWidth: 30, halign: 'right' },
-        4: { cellWidth: 20, halign: 'right' }
-      }
+        4: { cellWidth: 20, halign: 'right' },
+      },
     });
   }
 
   private addPageNumbers() {
     const pageCount = this.doc.getNumberOfPages();
-    
+
     for (let i = 1; i <= pageCount; i++) {
       this.doc.setPage(i);
       this.doc.setFontSize(10);
       this.doc.setFont('helvetica', 'normal');
-      this.doc.text(
-        `Page ${i} of ${pageCount}`,
-        this.pageWidth / 2,
-        this.pageHeight - 10,
-        { align: 'center' }
-      );
+      this.doc.text(`Page ${i} of ${pageCount}`, this.pageWidth / 2, this.pageHeight - 10, {
+        align: 'center',
+      });
     }
   }
 
@@ -328,7 +334,7 @@ export class LegacyVoidPalletPdfGenerator {
     return date.toLocaleDateString('en-GB', {
       day: '2-digit',
       month: '2-digit',
-      year: 'numeric'
+      year: 'numeric',
     });
   }
 

@@ -21,7 +21,7 @@ interface UseReportPrintingReturn {
 export function useReportPrinting({
   reportType,
   onSuccess,
-  onError
+  onError,
 }: UseReportPrintingOptions): UseReportPrintingReturn {
   const [isPrinting, setIsPrinting] = useState(false);
   const printingServiceRef = useRef<ReturnType<typeof getUnifiedPrintingService> | null>(null);
@@ -31,7 +31,7 @@ export function useReportPrinting({
   // Initialize printing services
   useEffect(() => {
     console.log('[ReportPrinting] Initializing printing services...');
-    
+
     const initServices = async () => {
       try {
         // Try unified printing service first
@@ -42,7 +42,7 @@ export function useReportPrinting({
         console.log('[ReportPrinting] ✅ Unified printing service initialized');
       } catch (err) {
         console.warn('[ReportPrinting] ⚠️ Unified service failed, trying HAL:', err);
-        
+
         // Fallback to HAL
         try {
           const hal = getHardwareAbstractionLayer();
@@ -56,7 +56,7 @@ export function useReportPrinting({
         }
       }
     };
-    
+
     initServices();
   }, []);
 
@@ -77,161 +77,173 @@ export function useReportPrinting({
   }, [reportType]);
 
   // Download report function
-  const downloadReport = useCallback((data: ArrayBuffer | Blob, filename: string) => {
-    try {
-      const blob = data instanceof Blob ? data : new Blob([data], {
-        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-      });
-      
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = filename;
-      document.body.appendChild(link);
-      link.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(link);
-      
-      toast.success('Report downloaded successfully');
-      onSuccess?.();
-    } catch (error) {
-      console.error('[ReportPrinting] Download error:', error);
-      const err = error instanceof Error ? error : new Error('Download failed');
-      toast.error(`Download failed: ${err.message}`);
-      onError?.(err);
-    }
-  }, [onSuccess, onError]);
+  const downloadReport = useCallback(
+    (data: ArrayBuffer | Blob, filename: string) => {
+      try {
+        const blob =
+          data instanceof Blob
+            ? data
+            : new Blob([data], {
+                type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+              });
+
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(link);
+
+        toast.success('Report downloaded successfully');
+        onSuccess?.();
+      } catch (error) {
+        console.error('[ReportPrinting] Download error:', error);
+        const err = error instanceof Error ? error : new Error('Download failed');
+        toast.error(`Download failed: ${err.message}`);
+        onError?.(err);
+      }
+    },
+    [onSuccess, onError]
+  );
 
   // Print report function
-  const printReport = useCallback(async (data: ArrayBuffer | Blob, metadata?: any) => {
-    if (isPrinting) return;
-    
-    setIsPrinting(true);
-    
-    try {
-      let pdfBlob: Blob;
-      
-      // Check if data is already a PDF blob
-      if (data instanceof Blob && data.type === 'application/pdf') {
-        // Use the provided PDF directly
-        pdfBlob = data;
-        console.log('[ReportPrinting] Using provided PDF blob');
-      } else {
-        // Convert to PDF if needed (for Excel or other formats)
-        console.log('[ReportPrinting] Converting to PDF...');
-        const { PDFDocument, rgb } = await import('pdf-lib');
-        const pdfDoc = await PDFDocument.create();
-        const page = pdfDoc.addPage();
-        const { width, height } = page.getSize();
-        
-        // Add report title
-        page.drawText(`${reportType.toUpperCase()} REPORT`, {
-          x: 50,
-          y: height - 50,
-          size: 20,
-          color: rgb(0, 0, 0)
-        });
-        
-        // Add metadata if available
-        if (metadata?.dateRange) {
-          page.drawText(`Date Range: ${metadata.dateRange}`, {
+  const printReport = useCallback(
+    async (data: ArrayBuffer | Blob, metadata?: any) => {
+      if (isPrinting) return;
+
+      setIsPrinting(true);
+
+      try {
+        let pdfBlob: Blob;
+
+        // Check if data is already a PDF blob
+        if (data instanceof Blob && data.type === 'application/pdf') {
+          // Use the provided PDF directly
+          pdfBlob = data;
+          console.log('[ReportPrinting] Using provided PDF blob');
+        } else {
+          // Convert to PDF if needed (for Excel or other formats)
+          console.log('[ReportPrinting] Converting to PDF...');
+          const { PDFDocument, rgb } = await import('pdf-lib');
+          const pdfDoc = await PDFDocument.create();
+          const page = pdfDoc.addPage();
+          const { width, height } = page.getSize();
+
+          // Add report title
+          page.drawText(`${reportType.toUpperCase()} REPORT`, {
             x: 50,
-            y: height - 80,
-            size: 12,
-            color: rgb(0.3, 0.3, 0.3)
+            y: height - 50,
+            size: 20,
+            color: rgb(0, 0, 0),
           });
-        }
-        
-        // Add note about full report
-        page.drawText('This is a print preview. Please download the full Excel report for detailed data.', {
-          x: 50,
-          y: height - 120,
-          size: 10,
-          color: rgb(0.5, 0.5, 0.5)
-        });
-        
-        const pdfBytes = await pdfDoc.save();
-        pdfBlob = new Blob([pdfBytes], { type: 'application/pdf' });
-      }
-      
-      // Use printing service
-      if (printingServiceRef.current) {
-        console.log('[ReportPrinting] Using unified printing service');
-        
-        const printRequest: PrintRequest = {
-          type: getPrintType(),
-          data: {
-            pdfBlob,
-            reportType,
-            ...metadata
-          },
-          options: {
-            copies: 1,
-            paperSize: 'A4' as any,
-            orientation: 'portrait',
-            priority: 'normal' as any
-          },
-          metadata: {
-            userId: metadata?.userId || 'report-user',
-            source: 'report-widget',
-            reportType,
-            timestamp: new Date().toISOString()
+
+          // Add metadata if available
+          if (metadata?.dateRange) {
+            page.drawText(`Date Range: ${metadata.dateRange}`, {
+              x: 50,
+              y: height - 80,
+              size: 12,
+              color: rgb(0.3, 0.3, 0.3),
+            });
           }
-        };
-        
-        const result = await printingServiceRef.current.print(printRequest);
-        if (!result.success) {
-          throw new Error(result.error || 'Print failed');
+
+          // Add note about full report
+          page.drawText(
+            'This is a print preview. Please download the full Excel report for detailed data.',
+            {
+              x: 50,
+              y: height - 120,
+              size: 10,
+              color: rgb(0.5, 0.5, 0.5),
+            }
+          );
+
+          const pdfBytes = await pdfDoc.save();
+          pdfBlob = new Blob([pdfBytes], { type: 'application/pdf' });
         }
-        
-        toast.success('Report sent to print queue');
-        onSuccess?.();
-      } else if (halRef.current) {
-        // Use HAL directly
-        console.log('[ReportPrinting] Using HAL directly');
-        
-        const printJob = {
-          type: 'report' as const,  // HAL only supports 'report', not 'grn-report'
-          data: {
-            pdfBlob,
-            reportType,
-            ...metadata
-          },
-          copies: 1,
-          priority: 'normal' as const
-        };
-        
-        const result = await halRef.current.print(printJob);
-        if (!result.success) {
-          throw new Error(result.error || 'Print failed');
+
+        // Use printing service
+        if (printingServiceRef.current) {
+          console.log('[ReportPrinting] Using unified printing service');
+
+          const printRequest: PrintRequest = {
+            type: getPrintType(),
+            data: {
+              pdfBlob,
+              reportType,
+              ...metadata,
+            },
+            options: {
+              copies: 1,
+              paperSize: 'A4' as any,
+              orientation: 'portrait',
+              priority: 'normal' as any,
+            },
+            metadata: {
+              userId: metadata?.userId || 'report-user',
+              source: 'report-widget',
+              reportType,
+              timestamp: new Date().toISOString(),
+            },
+          };
+
+          const result = await printingServiceRef.current.print(printRequest);
+          if (!result.success) {
+            throw new Error(result.error || 'Print failed');
+          }
+
+          toast.success('Report sent to print queue');
+          onSuccess?.();
+        } else if (halRef.current) {
+          // Use HAL directly
+          console.log('[ReportPrinting] Using HAL directly');
+
+          const printJob = {
+            type: 'report' as const, // HAL only supports 'report', not 'grn-report'
+            data: {
+              pdfBlob,
+              reportType,
+              ...metadata,
+            },
+            copies: 1,
+            priority: 'normal' as const,
+          };
+
+          const result = await halRef.current.print(printJob);
+          if (!result.success) {
+            throw new Error(result.error || 'Print failed');
+          }
+
+          toast.success('Report sent to print queue');
+          onSuccess?.();
+        } else {
+          // Fallback - open PDF in new window
+          console.log('[ReportPrinting] Using fallback - opening in new window');
+          const pdfUrl = URL.createObjectURL(pdfBlob);
+          window.open(pdfUrl, '_blank');
+          URL.revokeObjectURL(pdfUrl);
+
+          toast.info('Report opened in new window for printing');
+          onSuccess?.();
         }
-        
-        toast.success('Report sent to print queue');
-        onSuccess?.();
-      } else {
-        // Fallback - open PDF in new window
-        console.log('[ReportPrinting] Using fallback - opening in new window');
-        const pdfUrl = URL.createObjectURL(pdfBlob);
-        window.open(pdfUrl, '_blank');
-        URL.revokeObjectURL(pdfUrl);
-        
-        toast.info('Report opened in new window for printing');
-        onSuccess?.();
+      } catch (error) {
+        console.error('[ReportPrinting] Print error:', error);
+        const err = error instanceof Error ? error : new Error('Print failed');
+        toast.error(`Print failed: ${err.message}`);
+        onError?.(err);
+      } finally {
+        setIsPrinting(false);
       }
-    } catch (error) {
-      console.error('[ReportPrinting] Print error:', error);
-      const err = error instanceof Error ? error : new Error('Print failed');
-      toast.error(`Print failed: ${err.message}`);
-      onError?.(err);
-    } finally {
-      setIsPrinting(false);
-    }
-  }, [isPrinting, reportType, getPrintType, onSuccess, onError]);
+    },
+    [isPrinting, reportType, getPrintType, onSuccess, onError]
+  );
 
   return {
     printReport,
     downloadReport,
     isPrinting,
-    isServiceAvailable: isServiceAvailable.current
+    isServiceAvailable: isServiceAvailable.current,
   };
 }

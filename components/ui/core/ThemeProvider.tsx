@@ -29,7 +29,7 @@ export interface ThemeProviderProps {
 
 /**
  * 主題提供者組件
- * 
+ *
  * @example
  * <ThemeProvider defaultTheme="main">
  *   <App />
@@ -44,31 +44,31 @@ export function ThemeProvider({
   const pathname = usePathname();
   const [themeName, setThemeName] = React.useState<ThemeName>(defaultTheme);
   const [mounted, setMounted] = React.useState(false);
-  
+
   // 根據路徑判斷是否為 Admin
   const isAdmin = pathname.startsWith('/admin');
-  
+
   // 獲取當前 tab 主題（Admin 專用）
   const getTabTheme = React.useCallback((): keyof typeof adminTabThemes | undefined => {
     if (!isAdmin) return undefined;
-    
+
     // 從路徑提取 tab 名稱
     const pathSegments = pathname.split('/');
     const tabName = pathSegments[2]; // /admin/{tab}
-    
+
     if (tabName && tabName in adminTabThemes) {
       return tabName as keyof typeof adminTabThemes;
     }
-    
+
     return undefined;
   }, [pathname, isAdmin]);
-  
+
   const tabTheme = getTabTheme();
-  
+
   // 初始化主題
   React.useEffect(() => {
     setMounted(true);
-    
+
     // 從 localStorage 讀取主題
     const stored = localStorage.getItem(storageKey);
     if (stored && (stored === 'main' || stored === 'admin')) {
@@ -79,30 +79,33 @@ export function ThemeProvider({
       setThemeName(autoTheme);
     }
   }, [pathname, storageKey]);
-  
+
   // 應用主題
   React.useEffect(() => {
     if (!mounted) return;
-    
+
     const theme = themes[themeName];
     applyTheme(theme);
-    
+
     // 如果是 Admin 且有 tab 主題，注入額外的 CSS 變量
     if (isAdmin && tabTheme && adminTabThemes[tabTheme]) {
       const root = document.documentElement;
       const tabColors = adminTabThemes[tabTheme];
-      
+
       root.style.setProperty('--tab-primary', tabColors.primary);
       root.style.setProperty('--tab-gradient', tabColors.gradient);
     }
   }, [themeName, mounted, isAdmin, tabTheme]);
-  
+
   // 設置主題
-  const setTheme = React.useCallback((newTheme: ThemeName) => {
-    setThemeName(newTheme);
-    localStorage.setItem(storageKey, newTheme);
-  }, [storageKey]);
-  
+  const setTheme = React.useCallback(
+    (newTheme: ThemeName) => {
+      setThemeName(newTheme);
+      localStorage.setItem(storageKey, newTheme);
+    },
+    [storageKey]
+  );
+
   // Context value
   const value = React.useMemo<ThemeContextValue>(
     () => ({
@@ -113,27 +116,23 @@ export function ThemeProvider({
     }),
     [themeName, setTheme, isAdmin, tabTheme]
   );
-  
+
   // 避免 SSR 閃爍
   if (!mounted) {
     return <>{children}</>;
   }
-  
-  return (
-    <ThemeContext.Provider value={value}>
-      {children}
-    </ThemeContext.Provider>
-  );
+
+  return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
 }
 
 // Hook: 使用主題
 export function useTheme() {
   const context = React.useContext(ThemeContext);
-  
+
   if (!context) {
     throw new Error('useTheme must be used within a ThemeProvider');
   }
-  
+
   return context;
 }
 
@@ -146,22 +145,22 @@ export function useThemeConfig(): ThemeConfig {
 // Hook: 獲取 Admin tab 顏色
 export function useTabTheme() {
   const { tabTheme } = useTheme();
-  
+
   if (!tabTheme || !(tabTheme in adminTabThemes)) {
     return null;
   }
-  
+
   return adminTabThemes[tabTheme];
 }
 
 // Hook: 主題切換器
 export function useThemeToggle() {
   const { theme, setTheme } = useTheme();
-  
+
   const toggle = React.useCallback(() => {
     setTheme(theme.name === 'main' ? 'admin' : 'main');
   }, [theme.name, setTheme]);
-  
+
   return {
     theme: theme.name,
     toggle,

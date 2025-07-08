@@ -35,9 +35,9 @@ class MemoryService {
         .filter(msg => msg.role !== 'system')
         .map(msg => ({
           role: msg.role as 'user' | 'assistant',
-          content: msg.content
+          content: msg.content,
         }));
-      
+
       if (compatibleMessages.length > 0) {
         await client.add(compatibleMessages, { user_id: this.userId });
       }
@@ -55,7 +55,7 @@ class MemoryService {
         memory: item.memory || item.text || '',
         created_at: item.created_at || '',
         updated_at: item.updated_at || '',
-        id: item.id || ''
+        id: item.id || '',
       }));
     } catch (error) {
       console.error('搜尋記憶時出錯:', error);
@@ -71,7 +71,7 @@ class MemoryService {
         memory: item.memory || item.text || '',
         created_at: item.created_at || '',
         updated_at: item.updated_at || '',
-        id: item.id || ''
+        id: item.id || '',
       }));
     } catch (error) {
       console.error('獲取所有記憶時出錯:', error);

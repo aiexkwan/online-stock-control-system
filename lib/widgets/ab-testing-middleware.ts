@@ -28,11 +28,11 @@ const defaultConfig: ABTestMiddlewareConfig = {
  */
 export class ABTestMiddleware {
   private config: ABTestMiddlewareConfig;
-  
+
   constructor(config: Partial<ABTestMiddlewareConfig> = {}) {
     this.config = { ...defaultConfig, ...config };
   }
-  
+
   /**
    * 處理請求
    */
@@ -40,22 +40,22 @@ export class ABTestMiddleware {
     if (!this.config.enabled) {
       return NextResponse.next();
     }
-    
+
     // 檢查是否應該跳過
     if (this.shouldSkip(request)) {
       return NextResponse.next();
     }
-    
+
     // 構建測試上下文
     const context = this.buildContext(request);
-    
+
     // 獲取 A/B 測試決策
     const decision = abTestManager.getDecision(context);
-    
+
     if (decision) {
       // 創建響應
       const response = NextResponse.next();
-      
+
       // 設置 cookie
       if (this.config.cookieName) {
         response.cookies.set(this.config.cookieName, decision.variantId, {
@@ -64,27 +64,29 @@ export class ABTestMiddleware {
           maxAge: 30 * 24 * 60 * 60, // 30 天
         });
       }
-      
+
       // 設置 header
       if (this.config.headerName) {
         response.headers.set(this.config.headerName, decision.variantId);
       }
-      
+
       // 記錄決策
-      console.log(`[ABTestMiddleware] Assigned variant ${decision.variantId} to session ${context.sessionId}`);
-      
+      console.log(
+        `[ABTestMiddleware] Assigned variant ${decision.variantId} to session ${context.sessionId}`
+      );
+
       return response;
     }
-    
+
     return NextResponse.next();
   }
-  
+
   /**
    * 檢查是否應該跳過
    */
   private shouldSkip(request: NextRequest): boolean {
     const path = request.nextUrl.pathname;
-    
+
     // 檢查排除路徑
     if (this.config.excludedPaths) {
       for (const excludedPath of this.config.excludedPaths) {
@@ -93,23 +95,23 @@ export class ABTestMiddleware {
         }
       }
     }
-    
+
     return false;
   }
-  
+
   /**
    * 構建測試上下文
    */
   private buildContext(request: NextRequest): ABTestContext {
     // 獲取或生成 session ID
     const sessionId = this.getOrCreateSessionId(request);
-    
+
     // 獲取用戶 ID（如果有）
     const userId = this.getUserId(request);
-    
+
     // 獲取功能標記
     const features = this.getFeatures(request);
-    
+
     return {
       sessionId,
       userId,
@@ -123,7 +125,7 @@ export class ABTestMiddleware {
       },
     };
   }
-  
+
   /**
    * 獲取或創建 Session ID
    */
@@ -133,27 +135,25 @@ export class ABTestMiddleware {
     if (cookieSessionId) {
       return cookieSessionId;
     }
-    
+
     // 生成新的 session ID
     return globalThis.crypto?.randomUUID?.() || Math.random().toString(36);
   }
-  
+
   /**
    * 獲取用戶 ID
    */
   private getUserId(request: NextRequest): string | undefined {
     // 從 cookie 或 header 中獲取用戶 ID
-    return request.cookies.get('user_id')?.value || 
-           request.headers.get('x-user-id') || 
-           undefined;
+    return request.cookies.get('user_id')?.value || request.headers.get('x-user-id') || undefined;
   }
-  
+
   /**
    * 獲取功能標記
    */
   private getFeatures(request: NextRequest): string[] {
     const features: string[] = [];
-    
+
     // 從 cookie 中獲取功能標記
     const featureCookie = request.cookies.get('features')?.value;
     if (featureCookie) {
@@ -163,13 +163,13 @@ export class ABTestMiddleware {
         console.error('[ABTestMiddleware] Failed to parse features cookie:', e);
       }
     }
-    
+
     // 從 header 中獲取功能標記
     const featureHeader = request.headers.get('x-features');
     if (featureHeader) {
       features.push(...featureHeader.split(',').map(f => f.trim()));
     }
-    
+
     return features;
   }
 }
@@ -193,7 +193,7 @@ export async function applyABTestToWidgetLoad(
     route: window.location.pathname,
     timestamp: Date.now(),
   });
-  
+
   if (!decision) {
     // 沒有活躍的測試，使用默認配置
     return {
@@ -201,11 +201,11 @@ export async function applyABTestToWidgetLoad(
       enableGraphQL: false,
     };
   }
-  
+
   // 從 decision 中獲取測試 ID（需要擴展 ABTestResult 接口）
   // 暫時硬編碼測試 ID
   const testId = 'widget-registry-v2-rollout';
-  
+
   // 獲取變體配置（避免直接訪問 private 屬性）
   let variant;
   try {
@@ -214,14 +214,14 @@ export async function applyABTestToWidgetLoad(
   } catch (e) {
     console.error('[ABTestMiddleware] Failed to get test report:', e);
   }
-  
+
   if (!variant) {
     return {
       useV2: false,
       enableGraphQL: false,
     };
   }
-  
+
   // 基於變體 ID 決定配置
   // 由於無法直接訪問 variant 的配置，我們根據變體 ID 判斷
   if (decision.variantId === 'v2-system') {
@@ -260,11 +260,7 @@ export function recordWidgetLoadPerformance(
 /**
  * 記錄 Widget 錯誤
  */
-export function recordWidgetError(
-  widgetId: string,
-  error: Error,
-  variant: string
-): void {
+export function recordWidgetError(widgetId: string, error: Error, variant: string): void {
   abTestManager.recordMetric({
     testId: 'widget-registry-v2-rollout',
     variantId: variant,

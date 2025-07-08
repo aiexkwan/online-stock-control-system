@@ -12,45 +12,42 @@ export async function POST(request: NextRequest) {
     // 檢查 authorization（可選）
     const authHeader = request.headers.get('authorization');
     const cronSecret = process.env.CRON_SECRET;
-    
+
     // 如果設置了 CRON_SECRET，驗證請求
     if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-    
-    process.env.NODE_ENV !== "production" && console.log('[Cleanup API] Starting pallet buffer cleanup...');
-    
+
+    process.env.NODE_ENV !== 'production' &&
+      console.log('[Cleanup API] Starting pallet buffer cleanup...');
+
     // 調用清理函數
     const { data, error } = await supabase.rpc('api_cleanup_pallet_buffer');
-    
+
     if (error) {
       console.error('[Cleanup API] Cleanup failed:', error);
       return NextResponse.json(
-        { 
-          success: false, 
-          error: error.message 
+        {
+          success: false,
+          error: error.message,
         },
         { status: 500 }
       );
     }
-    
-    process.env.NODE_ENV !== "production" && console.log('[Cleanup API] Cleanup completed:', data);
-    
+
+    process.env.NODE_ENV !== 'production' && console.log('[Cleanup API] Cleanup completed:', data);
+
     return NextResponse.json({
       success: true,
       result: data,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
-    
   } catch (error: any) {
     console.error('[Cleanup API] Unexpected error:', error);
     return NextResponse.json(
-      { 
-        success: false, 
-        error: error.message || 'Internal server error' 
+      {
+        success: false,
+        error: error.message || 'Internal server error',
       },
       { status: 500 }
     );
@@ -65,29 +62,28 @@ export async function GET() {
       .from('pallet_number_buffer')
       .select('used')
       .eq('date_str', new Date().toISOString().slice(5, 10).replace('-', '').slice(2));
-    
+
     if (error) {
       throw error;
     }
-    
+
     const stats = {
       total: bufferStats?.length || 0,
       used: bufferStats?.filter(item => item.used).length || 0,
       unused: bufferStats?.filter(item => !item.used).length || 0,
-      date: new Date().toISOString()
+      date: new Date().toISOString(),
     };
-    
+
     return NextResponse.json({
       success: true,
       stats,
-      message: 'Use POST method to trigger cleanup'
+      message: 'Use POST method to trigger cleanup',
     });
-    
   } catch (error: any) {
     return NextResponse.json(
-      { 
-        success: false, 
-        error: error.message 
+      {
+        success: false,
+        error: error.message,
       },
       { status: 500 }
     );

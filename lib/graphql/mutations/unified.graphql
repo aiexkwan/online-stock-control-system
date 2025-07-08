@@ -423,4 +423,4 @@ mutation BulkCreatePallets($inputs: [CreatePalletInput!]!) {
       details
     }
   }
-} 
+}

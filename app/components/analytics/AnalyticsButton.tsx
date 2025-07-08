@@ -16,21 +16,16 @@ interface AnalyticsButtonProps {
   className?: string;
 }
 
-export function AnalyticsButton({ 
-  variant = 'default', 
+export function AnalyticsButton({
+  variant = 'default',
   size = 'default',
-  className 
+  className,
 }: AnalyticsButtonProps) {
   const { openDashboard } = useAnalyticsDashboard();
 
   return (
-    <Button
-      variant={variant}
-      size={size}
-      onClick={openDashboard}
-      className={className}
-    >
-      <BarChart3 className="mr-2 h-4 w-4" />
+    <Button variant={variant} size={size} onClick={openDashboard} className={className}>
+      <BarChart3 className='mr-2 h-4 w-4' />
       Analytics
     </Button>
   );

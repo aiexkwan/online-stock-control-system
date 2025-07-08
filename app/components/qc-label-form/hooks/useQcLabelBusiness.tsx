@@ -29,30 +29,30 @@ export const useQcLabelBusiness = ({
   formData,
   setFormData,
   productInfo,
-  onProductInfoReset
+  onProductInfoReset,
 }: UseQcLabelBusinessProps) => {
   // Supabase client for v6 operations
   const supabase = createClient();
 
   // 使用統一的 useUserId hook
   const { userId, refreshUser } = useUserId();
-  
+
   // 當 userId 改變時更新 formData
   useEffect(() => {
     if (userId) {
       setFormData(prev => ({ ...prev, userId }));
     }
   }, [userId, setFormData]);
-  
-  const { 
+
+  const {
     canSearchAco,
     isAcoOrderFulfilled,
     isAcoOrderIncomplete,
     isAcoOrderExcess,
     validateForm,
-    validateAcoOrderDetails
+    validateAcoOrderDetails,
   } = useFormValidation({ formData, productInfo });
-  
+
   const {
     isClockConfirmOpen,
     setIsClockConfirmOpen,
@@ -60,316 +60,318 @@ export const useQcLabelBusiness = ({
     setPrintEventToProceed,
     handleClockNumberCancel,
     checkCooldownPeriod,
-    setCooldownTimer
+    setCooldownTimer,
   } = useClockConfirmation();
-  
+
   const {
     handleAcoSearch,
     handleAcoOrderDetailChange,
     validateAcoProductCode,
     handleAcoOrderDetailUpdate,
-    checkAcoQuantityExcess
+    checkAcoQuantityExcess,
   } = useAcoManagement({ formData, setFormData, productInfo });
-  
+
   const {
     handleSlateDetailChange,
     handleSlateBatchNumberChange,
     validateSlateDetails,
-    clearSlateDetails
+    clearSlateDetails,
   } = useSlateManagement({ formData, setFormData });
-  
+
   const { generatePdfs, printPdfs } = usePdfGeneration();
   const { generatePdfsStream, streamingStatus, cancelStreaming } = useStreamingPdfGeneration();
   // 使用統一 RPC 進行所有 QC 標籤操作
   const { processQcLabelsUnified } = useDatabaseOperationsUnified();
   const { updateStockAndWorkLevels, updateAcoOrderStatus, clearCache } = useStockUpdates();
-  
 
   // State for preventing duplicate submissions
   const [isProcessing, setIsProcessing] = useState(false);
-  
 
   // Main print logic
-  const handlePrintLabel = useCallback(async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    // Store the event and open clock number confirmation
-    setPrintEventToProceed(e);
-    setIsClockConfirmOpen(true);
-  }, [setIsClockConfirmOpen, setPrintEventToProceed]);
+  const handlePrintLabel = useCallback(
+    async (e: React.FormEvent) => {
+      e.preventDefault();
+
+      // Store the event and open clock number confirmation
+      setPrintEventToProceed(e);
+      setIsClockConfirmOpen(true);
+    },
+    [setIsClockConfirmOpen, setPrintEventToProceed]
+  );
 
   // Handle clock number confirmation
-  const handleClockNumberConfirm = useCallback(async (clockNumber: string) => {
-    setIsClockConfirmOpen(false);
-    
-    // Prevent duplicate submissions
-    if (isProcessing) {
-      toast.warning('Processing in progress. Please wait...');
-      setPrintEventToProceed(null);
-      return;
-    }
-    
-    // 檢查冷卻期
-    if (checkCooldownPeriod()) {
-      setPrintEventToProceed(null);
-      return;
-    }
-    
-    // Set processing state
-    setIsProcessing(true);
-    setCooldownTimer();
-    
-    // 清除緩存
-    await clearCache();
-    
-    // 驗證基本表單數據
-    const { isValid, errors } = validateForm();
-    if (!isValid) {
-      const errorMessage = Object.values(errors).join(', ');
-      toast.error(errorMessage);
-      setIsProcessing(false);
-      setPrintEventToProceed(null);
-      return;
-    }
-    
-    // 檢查 productInfo 是否存在
-    if (!productInfo) {
-      toast.error('Please select a valid product code');
-      setIsProcessing(false);
-      setPrintEventToProceed(null);
-      return;
-    }
-    
-    // 安全處理字符串轉換
-    const quantityStr = String(formData.quantity || '');
-    const countStr = String(formData.count || '');
-    const quantity = parseInt(quantityStr.trim(), 10);
-    const count = parseInt(countStr.trim(), 10);
-    
-    // 聲明在 try 外面以便 catch 中可以訪問
-    let sortedPalletNumbers: string[] = [];
+  const handleClockNumberConfirm = useCallback(
+    async (clockNumber: string) => {
+      setIsClockConfirmOpen(false);
 
-    try {
-      // Initialize progress
-      setFormData(prev => ({
-        ...prev,
-        pdfProgress: {
-          current: 0,
-          total: count,
-          status: Array(count).fill('Pending')
-        }
-      }));
+      // Prevent duplicate submissions
+      if (isProcessing) {
+        toast.warning('Processing in progress. Please wait...');
+        setPrintEventToProceed(null);
+        return;
+      }
 
-      // 使用統一 RPC 處理所有 QC 標籤操作
-      const unifiedResult = await processQcLabelsUnified({
-        productInfo,
-        quantity,
-        count,
-        clockNumber,
-        formData,
-        sessionId: `qc-${Date.now()}`
-      });
-      
-      if (!unifiedResult.success) {
-        toast.error(unifiedResult.error || 'Failed to process QC labels');
+      // 檢查冷卻期
+      if (checkCooldownPeriod()) {
+        setPrintEventToProceed(null);
+        return;
+      }
+
+      // Set processing state
+      setIsProcessing(true);
+      setCooldownTimer();
+
+      // 清除緩存
+      await clearCache();
+
+      // 驗證基本表單數據
+      const { isValid, errors } = validateForm();
+      if (!isValid) {
+        const errorMessage = Object.values(errors).join(', ');
+        toast.error(errorMessage);
         setIsProcessing(false);
         setPrintEventToProceed(null);
         return;
       }
-      
-      // 取得生成的托盤編號和系列號
-      if (!unifiedResult.data?.pallet_numbers || !unifiedResult.data?.series) {
-        toast.error('No pallet data returned from unified processing');
+
+      // 檢查 productInfo 是否存在
+      if (!productInfo) {
+        toast.error('Please select a valid product code');
         setIsProcessing(false);
         setPrintEventToProceed(null);
         return;
       }
-      
-      sortedPalletNumbers = unifiedResult.data.pallet_numbers;
-      const sortedSeries = unifiedResult.data.series;
-      
-      console.log('[QC Label Unified] Processing completed:', {
-        pallets: sortedPalletNumbers,
-        series: sortedSeries,
-        statistics: unifiedResult.statistics
-      });
-      
-      // 生成 PDFs - 自動選擇模式：count > 1 使用串流模式
-      let pdfResult;
-      const shouldUseStreaming = count > 1;
-      
-      if (shouldUseStreaming) {
-        // 多個標籤時自動使用串流模式
-        console.log(`[QC Label] Auto-enabled streaming mode for ${count} labels`);
-        pdfResult = await generatePdfsStream({
-          productInfo,
-          quantity,
-          count,
-          palletNumbers: sortedPalletNumbers,
-          series: sortedSeries,
-          formData,
-          clockNumber,
-          onProgress: (current, status) => {
-            setFormData(prev => ({
-              ...prev,
-              pdfProgress: {
-                ...prev.pdfProgress,
-                current,
-                status: prev.pdfProgress.status.map((s, idx) => 
-                  idx === current - 1 ? status : s
-                )
-              }
-            }));
-          },
-          onStreamComplete: (blob, url, index) => {
-            // 可以在這裡處理單個 PDF 完成的邏輯
-            console.log(`[QC Label] Label ${index + 1} completed in streaming mode`);
-          },
-          batchSize: 5 // 每批處理 5 個
-        });
-      } else {
-        // 單個標籤使用傳統模式
-        console.log(`[QC Label] Using normal mode for single label`);
-        pdfResult = await generatePdfs({
-          productInfo,
-          quantity,
-          count,
-          palletNumbers: sortedPalletNumbers,
-          series: sortedSeries,
-          formData,
-          clockNumber,
-          onProgress: (current, status) => {
-            setFormData(prev => ({
-              ...prev,
-              pdfProgress: {
-                ...prev.pdfProgress,
-                current,
-                status: prev.pdfProgress.status.map((s, idx) => 
-                  idx === current - 1 ? status : s
-                )
-              }
-            }));
-          }
-        });
-      }
 
-      // 打印 PDFs
-      if (pdfResult.success && pdfResult.pdfBlobs.length > 0) {
-        await printPdfs(
-          pdfResult.pdfBlobs,
-          productInfo.code,
-          sortedPalletNumbers,
-          sortedSeries,
-          quantity,
-          clockNumber
-        );
-        
-        // 確認托盤編號已使用（v6 系統）
-        const confirmResult = await confirmPalletUsage(sortedPalletNumbers, supabase);
-        if (!confirmResult) {
-          console.warn('[QC Label] Failed to confirm pallet usage for v6 system');
-        }
-        
-        // 注意：統一 RPC 已經處理了所有庫存和工作記錄更新
-        // 包括 stock_level, work_level, record_palletinfo, record_history, record_inventory
-        // 因此不需要再次調用 updateStockAndWorkLevels 避免重複更新
-        
-        // 更新 ACO 訂單狀態
-        if (productInfo.type === 'ACO' && !formData.acoNewRef && formData.acoOrderRef?.trim()) {
-          const totalQuantity = quantity * count; // 計算總數量供 ACO 使用
-          const orderRefNum = parseInt(formData.acoOrderRef.trim(), 10);
-          await updateAcoOrderStatus({
-            orderRef: orderRefNum,
-            productCode: productInfo.code,
-            quantityUsed: totalQuantity
-          });
-        }
-      } else {
-        // 打印失敗，釋放托盤編號（v6 系統）
-        const releaseResult = await releasePalletReservation(sortedPalletNumbers, supabase);
-        if (!releaseResult) {
-          console.warn('[QC Label] Failed to release pallet reservation for v6 system');
-        }
-        
-        if (pdfResult.errors.length > 0) {
-          toast.warning('Processing finished. Some labels failed. No PDFs generated for printing.');
-        } else {
-          toast.error('No valid labels to process. No PDF generated for printing.');
-        }
-      }
+      // 安全處理字符串轉換
+      const quantityStr = String(formData.quantity || '');
+      const countStr = String(formData.count || '');
+      const quantity = parseInt(quantityStr.trim(), 10);
+      const count = parseInt(countStr.trim(), 10);
 
-      // 重置表單
-      if (pdfResult.success && pdfResult.pdfBlobs.length > 0) {
+      // 聲明在 try 外面以便 catch 中可以訪問
+      let sortedPalletNumbers: string[] = [];
+
+      try {
+        // Initialize progress
         setFormData(prev => ({
           ...prev,
-          productCode: '',
-          quantity: '',
-          count: '',
-          operator: '',
-          acoOrderRef: '',
-          acoOrderDetails: [],
-          acoNewRef: false,
-          acoNewProductCode: '',
-          acoNewOrderQty: '',
-          acoRemain: null,
-          acoOrderDetailErrors: [],
-          acoSearchLoading: false,
-          availableAcoOrderRefs: [],
-          productError: null,
-          isLoading: false,
           pdfProgress: {
             current: 0,
-            total: 0,
-            status: []
+            total: count,
+            status: Array(count).fill('Pending'),
           },
-          slateDetail: {
-            batchNumber: ''
-          }
         }));
-        
-        // Reset productInfo in parent component
-        if (onProductInfoReset) {
-          onProductInfoReset();
+
+        // 使用統一 RPC 處理所有 QC 標籤操作
+        const unifiedResult = await processQcLabelsUnified({
+          productInfo,
+          quantity,
+          count,
+          clockNumber,
+          formData,
+          sessionId: `qc-${Date.now()}`,
+        });
+
+        if (!unifiedResult.success) {
+          toast.error(unifiedResult.error || 'Failed to process QC labels');
+          setIsProcessing(false);
+          setPrintEventToProceed(null);
+          return;
         }
-        
-      }
 
-    } catch (error: any) {
-      // console.error('Error during print process:', error); // 保留錯誤日誌供生產環境調試
-      toast.error(`Print process failed: ${error.message}`);
-      
-      // 發生錯誤時釋放已保留的托盤編號（如果有的話）
-      if (sortedPalletNumbers && sortedPalletNumbers.length > 0) {
-        const releaseResult = await releasePalletReservation(sortedPalletNumbers, supabase);
-        if (!releaseResult) {
-          console.warn('[QC Label] Failed to release pallet reservation after error');
+        // 取得生成的托盤編號和系列號
+        if (!unifiedResult.data?.pallet_numbers || !unifiedResult.data?.series) {
+          toast.error('No pallet data returned from unified processing');
+          setIsProcessing(false);
+          setPrintEventToProceed(null);
+          return;
         }
+
+        sortedPalletNumbers = unifiedResult.data.pallet_numbers;
+        const sortedSeries = unifiedResult.data.series;
+
+        console.log('[QC Label Unified] Processing completed:', {
+          pallets: sortedPalletNumbers,
+          series: sortedSeries,
+          statistics: unifiedResult.statistics,
+        });
+
+        // 生成 PDFs - 自動選擇模式：count > 1 使用串流模式
+        let pdfResult;
+        const shouldUseStreaming = count > 1;
+
+        if (shouldUseStreaming) {
+          // 多個標籤時自動使用串流模式
+          console.log(`[QC Label] Auto-enabled streaming mode for ${count} labels`);
+          pdfResult = await generatePdfsStream({
+            productInfo,
+            quantity,
+            count,
+            palletNumbers: sortedPalletNumbers,
+            series: sortedSeries,
+            formData,
+            clockNumber,
+            onProgress: (current, status) => {
+              setFormData(prev => ({
+                ...prev,
+                pdfProgress: {
+                  ...prev.pdfProgress,
+                  current,
+                  status: prev.pdfProgress.status.map((s, idx) =>
+                    idx === current - 1 ? status : s
+                  ),
+                },
+              }));
+            },
+            onStreamComplete: (blob, url, index) => {
+              // 可以在這裡處理單個 PDF 完成的邏輯
+              console.log(`[QC Label] Label ${index + 1} completed in streaming mode`);
+            },
+            batchSize: 5, // 每批處理 5 個
+          });
+        } else {
+          // 單個標籤使用傳統模式
+          console.log(`[QC Label] Using normal mode for single label`);
+          pdfResult = await generatePdfs({
+            productInfo,
+            quantity,
+            count,
+            palletNumbers: sortedPalletNumbers,
+            series: sortedSeries,
+            formData,
+            clockNumber,
+            onProgress: (current, status) => {
+              setFormData(prev => ({
+                ...prev,
+                pdfProgress: {
+                  ...prev.pdfProgress,
+                  current,
+                  status: prev.pdfProgress.status.map((s, idx) =>
+                    idx === current - 1 ? status : s
+                  ),
+                },
+              }));
+            },
+          });
+        }
+
+        // 打印 PDFs
+        if (pdfResult.success && pdfResult.pdfBlobs.length > 0) {
+          await printPdfs(
+            pdfResult.pdfBlobs,
+            productInfo.code,
+            sortedPalletNumbers,
+            sortedSeries,
+            quantity,
+            clockNumber
+          );
+
+          // 確認托盤編號已使用（v6 系統）
+          const confirmResult = await confirmPalletUsage(sortedPalletNumbers, supabase);
+          if (!confirmResult) {
+            console.warn('[QC Label] Failed to confirm pallet usage for v6 system');
+          }
+
+          // 注意：統一 RPC 已經處理了所有庫存和工作記錄更新
+          // 包括 stock_level, work_level, record_palletinfo, record_history, record_inventory
+          // 因此不需要再次調用 updateStockAndWorkLevels 避免重複更新
+
+          // 更新 ACO 訂單狀態
+          if (productInfo.type === 'ACO' && !formData.acoNewRef && formData.acoOrderRef?.trim()) {
+            const totalQuantity = quantity * count; // 計算總數量供 ACO 使用
+            const orderRefNum = parseInt(formData.acoOrderRef.trim(), 10);
+            await updateAcoOrderStatus({
+              orderRef: orderRefNum,
+              productCode: productInfo.code,
+              quantityUsed: totalQuantity,
+            });
+          }
+        } else {
+          // 打印失敗，釋放托盤編號（v6 系統）
+          const releaseResult = await releasePalletReservation(sortedPalletNumbers, supabase);
+          if (!releaseResult) {
+            console.warn('[QC Label] Failed to release pallet reservation for v6 system');
+          }
+
+          if (pdfResult.errors.length > 0) {
+            toast.warning(
+              'Processing finished. Some labels failed. No PDFs generated for printing.'
+            );
+          } else {
+            toast.error('No valid labels to process. No PDF generated for printing.');
+          }
+        }
+
+        // 重置表單
+        if (pdfResult.success && pdfResult.pdfBlobs.length > 0) {
+          setFormData(prev => ({
+            ...prev,
+            productCode: '',
+            quantity: '',
+            count: '',
+            operator: '',
+            acoOrderRef: '',
+            acoOrderDetails: [],
+            acoNewRef: false,
+            acoNewProductCode: '',
+            acoNewOrderQty: '',
+            acoRemain: null,
+            acoOrderDetailErrors: [],
+            acoSearchLoading: false,
+            availableAcoOrderRefs: [],
+            productError: null,
+            isLoading: false,
+            pdfProgress: {
+              current: 0,
+              total: 0,
+              status: [],
+            },
+            slateDetail: {
+              batchNumber: '',
+            },
+          }));
+
+          // Reset productInfo in parent component
+          if (onProductInfoReset) {
+            onProductInfoReset();
+          }
+        }
+      } catch (error: any) {
+        // console.error('Error during print process:', error); // 保留錯誤日誌供生產環境調試
+        toast.error(`Print process failed: ${error.message}`);
+
+        // 發生錯誤時釋放已保留的托盤編號（如果有的話）
+        if (sortedPalletNumbers && sortedPalletNumbers.length > 0) {
+          const releaseResult = await releasePalletReservation(sortedPalletNumbers, supabase);
+          if (!releaseResult) {
+            console.warn('[QC Label] Failed to release pallet reservation after error');
+          }
+        }
+      } finally {
+        setIsProcessing(false);
+        setPrintEventToProceed(null);
       }
-    } finally {
-      setIsProcessing(false);
-      setPrintEventToProceed(null);
-    }
-  }, [
-    isProcessing,
-    setIsClockConfirmOpen,
-    setPrintEventToProceed,
-    productInfo,
-    formData,
-    setFormData,
-    onProductInfoReset,
-    checkCooldownPeriod,
-    setCooldownTimer,
-    clearCache,
-    validateForm,
-    processQcLabelsUnified,
-    generatePdfs,
-    generatePdfsStream,
-    printPdfs,
-    updateAcoOrderStatus,
-    supabase
-  ]);
-
-
+    },
+    [
+      isProcessing,
+      setIsClockConfirmOpen,
+      setPrintEventToProceed,
+      productInfo,
+      formData,
+      setFormData,
+      onProductInfoReset,
+      checkCooldownPeriod,
+      setCooldownTimer,
+      clearCache,
+      validateForm,
+      processQcLabelsUnified,
+      generatePdfs,
+      generatePdfsStream,
+      printPdfs,
+      updateAcoOrderStatus,
+      supabase,
+    ]
+  );
 
   return {
     // ACO handlers
@@ -398,10 +400,9 @@ export const useQcLabelBusiness = ({
     isAcoOrderExcess,
     isAcoOrderFulfilled,
     isAcoOrderIncomplete,
-    
+
     // Streaming PDF generation
     streamingStatus,
-    cancelStreaming
+    cancelStreaming,
   };
 };
-

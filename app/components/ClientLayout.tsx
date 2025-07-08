@@ -10,7 +10,7 @@ import { GlobalReportDialogs } from '@/app/components/reports/GlobalReportDialog
 import { GlobalAnalyticsDialogs } from '@/app/components/analytics/GlobalAnalyticsDialogs';
 import { useAuth } from '@/app/hooks/useAuth';
 import { DynamicActionBar } from '@/components/ui/dynamic-action-bar';
-import { AskDatabaseModal } from '@/components/ui/ask-database-modal';
+import UniversalChatbot from '@/app/components/admin/UniversalChatbot';
 import { UniversalProvider } from '@/components/layout/universal';
 import { NavigationProvider } from '@/components/ui/dynamic-action-bar/NavigationProvider';
 import { SmartReminder } from '@/components/ui/dynamic-action-bar/SmartReminder';
@@ -23,7 +23,7 @@ interface ClientLayoutProps {
 export default function ClientLayout({ children }: ClientLayoutProps) {
   const pathname = usePathname();
   const { isAuthenticated, user } = useAuth();
-  
+
   // Check for special pages where navigation should not be shown
   const isLoginPage = pathname?.startsWith('/main-login') || pathname === '/';
   const isAccessPage = pathname === '/access';
@@ -41,14 +41,14 @@ export default function ClientLayout({ children }: ClientLayoutProps) {
   const currentTheme = getThemeFromPath(pathname || '');
 
   return (
-    <UniversalProvider 
+    <UniversalProvider
       defaultTheme={currentTheme}
       animationsEnabled={true}
       debugMode={process.env.NODE_ENV === 'development'}
     >
       {/* Toast notifications */}
-      <Toaster 
-        position="top-right"
+      <Toaster
+        position='top-right'
         richColors
         closeButton
         duration={4000}
@@ -60,33 +60,31 @@ export default function ClientLayout({ children }: ClientLayoutProps) {
           },
         }}
       />
-      
+
       {/* Authentication checker */}
       <AuthChecker>
         {/* Global header - now empty */}
         <GlobalHeader />
-        
+
         {/* Main layout - simplified without sidebar */}
-        <UniversalBackground className="text-white">
-          {children}
-        </UniversalBackground>
-        
+        <UniversalBackground className='text-white'>{children}</UniversalBackground>
+
         {/* Global report dialogs */}
         <GlobalReportDialogs />
-        
+
         {/* Global analytics dialogs */}
         <GlobalAnalyticsDialogs />
-        
+
         {/* Dynamic Navigation Bar - Show only when authenticated and not on login/access pages */}
         {isAuthenticated && !isLoginPage && !isAccessPage && (
           <NavigationProvider>
             <DynamicActionBar />
           </NavigationProvider>
         )}
-        
-        {/* Ask Database Modal */}
-        <AskDatabaseModal />
-        
+
+        {/* Universal Chatbot - Show for authenticated users */}
+        {isAuthenticated && !isLoginPage && !isAccessPage && <UniversalChatbot />}
+
         {/* Smart Reminder - Show for authenticated users */}
         {isAuthenticated && user?.id && !isLoginPage && !isAccessPage && (
           <SmartReminder userId={user.id} />
@@ -94,4 +92,4 @@ export default function ClientLayout({ children }: ClientLayoutProps) {
       </AuthChecker>
     </UniversalProvider>
   );
-} 
+}

@@ -37,7 +37,7 @@ export class AssistantService {
     if (process.env.ORDER_ANALYZER_ASSISTANT_ID) {
       this.assistantId = process.env.ORDER_ANALYZER_ASSISTANT_ID;
       systemLogger.info('[AssistantService] Using existing assistant from env', {
-        assistantId: this.assistantId
+        assistantId: this.assistantId,
       });
       return this.assistantId;
     }
@@ -52,23 +52,23 @@ export class AssistantService {
       systemLogger.info('[AssistantService] Creating new assistant');
       const assistant = await this.openai.beta.assistants.create(ORDER_ANALYZER_CONFIG);
       this.assistantId = assistant.id;
-      
+
       systemLogger.info('[AssistantService] Assistant created successfully', {
         assistantId: this.assistantId,
         name: assistant.name,
-        model: assistant.model
+        model: assistant.model,
       });
 
       // 建議將 ID 保存到環境變數以供重用
       systemLogger.warn('[AssistantService] Please add this to your .env file:', {
         variable: 'ORDER_ANALYZER_ASSISTANT_ID',
-        value: this.assistantId
+        value: this.assistantId,
       });
 
       return this.assistantId;
     } catch (error: any) {
       systemLogger.error('[AssistantService] Failed to create assistant', {
-        error: error.message
+        error: error.message,
       });
       throw new Error(`Failed to create assistant: ${error.message}`);
     }
@@ -84,7 +84,7 @@ export class AssistantService {
       return thread.id;
     } catch (error: any) {
       systemLogger.error('[AssistantService] Failed to create thread', {
-        error: error.message
+        error: error.message,
       });
       throw new Error(`Failed to create thread: ${error.message}`);
     }
@@ -106,19 +106,19 @@ export class AssistantService {
 
       const openaiFile = await this.openai.files.create({
         file: fileToUpload,
-        purpose: 'assistants'
+        purpose: 'assistants',
       });
 
       systemLogger.info('[AssistantService] File uploaded successfully', {
         fileId: openaiFile.id,
         fileName: openaiFile.filename,
-        bytes: openaiFile.bytes
+        bytes: openaiFile.bytes,
       });
 
       return openaiFile.id;
     } catch (error: any) {
       systemLogger.error('[AssistantService] Failed to upload file', {
-        error: error.message
+        error: error.message,
       });
       throw new Error(`Failed to upload file: ${error.message}`);
     }
@@ -127,33 +127,31 @@ export class AssistantService {
   /**
    * 發送消息並附加文件
    */
-  public async sendMessage(
-    threadId: string, 
-    content: string, 
-    fileId?: string
-  ): Promise<void> {
+  public async sendMessage(threadId: string, content: string, fileId?: string): Promise<void> {
     try {
       const messageData: any = {
         role: 'user' as const,
-        content
+        content,
       };
 
       if (fileId) {
-        messageData.attachments = [{
-          file_id: fileId,
-          tools: [{ type: 'file_search' }]
-        }];
+        messageData.attachments = [
+          {
+            file_id: fileId,
+            tools: [{ type: 'file_search' }],
+          },
+        ];
       }
 
       await this.openai.beta.threads.messages.create(threadId, messageData);
-      
+
       systemLogger.debug('[AssistantService] Message sent', {
         threadId,
-        hasFile: !!fileId
+        hasFile: !!fileId,
       });
     } catch (error: any) {
       systemLogger.error('[AssistantService] Failed to send message', {
-        error: error.message
+        error: error.message,
       });
       throw new Error(`Failed to send message: ${error.message}`);
     }
@@ -166,13 +164,13 @@ export class AssistantService {
     try {
       // 創建運行
       const run = await this.openai.beta.threads.runs.create(threadId, {
-        assistant_id: assistantId
+        assistant_id: assistantId,
       });
 
       systemLogger.info('[AssistantService] Run created', {
         runId: run.id,
         threadId,
-        assistantId
+        assistantId,
       });
 
       // 輪詢等待完成
@@ -180,7 +178,7 @@ export class AssistantService {
       return result;
     } catch (error: any) {
       systemLogger.error('[AssistantService] Failed to run assistant', {
-        error: error.message
+        error: error.message,
       });
       throw error;
     }
@@ -201,10 +199,10 @@ export class AssistantService {
       }
 
       const run = await this.openai.beta.threads.runs.retrieve(threadId, runId);
-      
+
       systemLogger.debug('[AssistantService] Run status', {
         status: run.status,
-        attempt: attempts + 1
+        attempt: attempts + 1,
       });
 
       switch (run.status) {
@@ -212,11 +210,11 @@ export class AssistantService {
           // 獲取最新消息
           const messages = await this.openai.beta.threads.messages.list(threadId);
           const latestMessage = messages.data[0];
-          
+
           if (latestMessage && latestMessage.content[0]?.type === 'text') {
             const result = latestMessage.content[0].text.value;
             systemLogger.info('[AssistantService] Run completed successfully', {
-              resultLength: result.length
+              resultLength: result.length,
             });
             return result;
           }
@@ -260,7 +258,7 @@ export class AssistantService {
         this.openai.beta.threads.del(threadId).catch(error => {
           systemLogger.warn('[AssistantService] Failed to delete thread', {
             threadId,
-            error: error.message
+            error: error.message,
           });
         })
       );
@@ -271,7 +269,7 @@ export class AssistantService {
         this.openai.files.del(fileId).catch(error => {
           systemLogger.warn('[AssistantService] Failed to delete file', {
             fileId,
-            error: error.message
+            error: error.message,
           });
         })
       );
@@ -287,55 +285,55 @@ export class AssistantService {
     try {
       // 清理可能的多餘字符
       const cleanedResponse = response.trim();
-      
+
       // 嘗試直接解析
       const parsed = JSON.parse(cleanedResponse);
-      
+
       // 驗證是否包含必要的欄位
       if (!parsed.order_ref || !parsed.products || !Array.isArray(parsed.products)) {
         systemLogger.error('[AssistantService] Invalid response structure', {
           hasOrderRef: !!parsed.order_ref,
           hasProducts: !!parsed.products,
-          isProductsArray: Array.isArray(parsed.products)
+          isProductsArray: Array.isArray(parsed.products),
         });
         throw new Error('Invalid response structure: missing required fields');
       }
-      
+
       return parsed;
     } catch (error) {
       systemLogger.error('[AssistantService] Initial parse failed', {
         error: error,
         responseLength: response.length,
         responseStart: response.substring(0, 500),
-        fullResponse: response.length < 2000 ? response : 'Response too long'
+        fullResponse: response.length < 2000 ? response : 'Response too long',
       });
-      
+
       // 如果失敗，嘗試提取 JSON 部分
       const jsonMatch = response.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
         try {
           const extracted = JSON.parse(jsonMatch[0]);
-          
+
           // 再次驗證結構
           if (!extracted.order_ref || !extracted.products || !Array.isArray(extracted.products)) {
             throw new Error('Extracted JSON missing required fields');
           }
-          
+
           systemLogger.info('[AssistantService] Successfully extracted JSON from response');
           return extracted;
         } catch (innerError) {
           systemLogger.error('[AssistantService] Failed to parse extracted JSON', {
             extractedJson: jsonMatch[0].substring(0, 200),
-            error: innerError
+            error: innerError,
           });
         }
       }
-      
+
       // 檢查是否返回了錯誤消息
       if (response.toLowerCase().includes('error') || response.toLowerCase().includes('sorry')) {
         throw new Error(`Assistant returned an error message: ${response.substring(0, 200)}`);
       }
-      
+
       throw new Error('Failed to parse assistant response as JSON');
     }
   }

@@ -36,13 +36,13 @@ export function AcoOrderProgress() {
 
   // Check unified service state
   const [isUsingUnifiedService, setIsUsingUnifiedService] = useState(false);
-  
+
   useEffect(() => {
     if (typeof window !== 'undefined') {
       setIsUsingUnifiedService(localStorage.getItem('useUnifiedAcoOrderService') === 'true');
     }
   }, []);
-  
+
   const toggleUnifiedService = (enabled: boolean) => {
     setIsUsingUnifiedService(enabled);
     if (typeof window !== 'undefined') {
@@ -55,33 +55,35 @@ export function AcoOrderProgress() {
 
   return (
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-      <div className="relative group">
-        <div className="absolute inset-0 bg-gradient-to-r from-slate-800/50 to-orange-900/30 rounded-3xl blur-xl"></div>
-        
-        <div className="relative bg-slate-800/40 backdrop-blur-xl border border-slate-700/50 rounded-3xl p-8 shadow-2xl shadow-orange-900/20 hover:border-orange-500/30 transition-all duration-300">
-          <div className="absolute inset-0 bg-gradient-to-r from-orange-500/5 via-transparent to-amber-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-3xl"></div>
-          
-          <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-orange-400/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-t-3xl"></div>
-          
-          <div className="relative z-10">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-semibold bg-gradient-to-r from-orange-300 via-amber-300 to-yellow-300 bg-clip-text text-transparent flex items-center gap-3">
-                <ClipboardDocumentListIcon className="w-6 h-6 text-orange-400" />
+      <div className='group relative'>
+        <div className='absolute inset-0 rounded-3xl bg-gradient-to-r from-slate-800/50 to-orange-900/30 blur-xl'></div>
+
+        <div className='relative rounded-3xl border border-slate-700/50 bg-slate-800/40 p-8 shadow-2xl shadow-orange-900/20 backdrop-blur-xl transition-all duration-300 hover:border-orange-500/30'>
+          <div className='absolute inset-0 rounded-3xl bg-gradient-to-r from-orange-500/5 via-transparent to-amber-500/5 opacity-0 transition-opacity duration-500 group-hover:opacity-100'></div>
+
+          <div className='absolute left-0 right-0 top-0 h-px rounded-t-3xl bg-gradient-to-r from-transparent via-orange-400/50 to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100'></div>
+
+          <div className='relative z-10'>
+            <div className='mb-6 flex items-center justify-between'>
+              <h2 className='flex items-center gap-3 bg-gradient-to-r from-orange-300 via-amber-300 to-yellow-300 bg-clip-text text-xl font-semibold text-transparent'>
+                <ClipboardDocumentListIcon className='h-6 w-6 text-orange-400' />
                 ACO Order Progress
               </h2>
-              
+
               {/* Order Dropdown */}
-              <div className="relative" ref={dropdownRef}>
+              <div className='relative' ref={dropdownRef}>
                 <button
                   onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                  className="flex items-center gap-2 px-4 py-2 bg-slate-700/50 hover:bg-slate-600/50 text-slate-300 hover:text-white rounded-xl transition-all duration-300 text-sm border border-slate-600/30"
+                  className='flex items-center gap-2 rounded-xl border border-slate-600/30 bg-slate-700/50 px-4 py-2 text-sm text-slate-300 transition-all duration-300 hover:bg-slate-600/50 hover:text-white'
                   disabled={ordersLoading}
                 >
-                  <ClipboardDocumentListIcon className="w-4 h-4" />
+                  <ClipboardDocumentListIcon className='h-4 w-4' />
                   {selectedOrderRef ? `Order ${selectedOrderRef}` : 'Select Order'}
-                  <ChevronDownIcon className={`w-4 h-4 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} />
+                  <ChevronDownIcon
+                    className={`h-4 w-4 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`}
+                  />
                 </button>
-                
+
                 <AnimatePresence>
                   {isDropdownOpen && (
                     <motion.div
@@ -89,12 +91,12 @@ export function AcoOrderProgress() {
                       animate={{ opacity: 1, y: 0, scale: 1 }}
                       exit={{ opacity: 0, y: 10, scale: 0.95 }}
                       transition={{ duration: 0.2 }}
-                      className="absolute right-0 top-full mt-2 bg-slate-900/98 backdrop-blur-xl border border-slate-600/50 rounded-xl shadow-2xl z-50 min-w-[200px] max-h-[300px] overflow-y-auto"
+                      className='bg-slate-900/98 absolute right-0 top-full z-50 mt-2 max-h-[300px] min-w-[200px] overflow-y-auto rounded-xl border border-slate-600/50 shadow-2xl backdrop-blur-xl'
                     >
                       {orders.length === 0 ? (
-                        <div className="px-4 py-3 text-sm text-slate-400">No incomplete orders</div>
+                        <div className='px-4 py-3 text-sm text-slate-400'>No incomplete orders</div>
                       ) : (
-                        orders.map((order) => (
+                        orders.map(order => (
                           <button
                             key={order.order_ref}
                             onClick={() => {
@@ -102,15 +104,19 @@ export function AcoOrderProgress() {
                               setIsDropdownOpen(false);
                             }}
                             className={cn(
-                              "w-full px-4 py-3 text-left text-sm hover:bg-slate-700/50 transition-all duration-300",
-                              "first:rounded-t-xl last:rounded-b-xl",
-                              selectedOrderRef === order.order_ref ? 'bg-slate-700/50 text-orange-400' : 'text-slate-300'
+                              'w-full px-4 py-3 text-left text-sm transition-all duration-300 hover:bg-slate-700/50',
+                              'first:rounded-t-xl last:rounded-b-xl',
+                              selectedOrderRef === order.order_ref
+                                ? 'bg-slate-700/50 text-orange-400'
+                                : 'text-slate-300'
                             )}
                           >
-                            <div className="flex justify-between items-center">
+                            <div className='flex items-center justify-between'>
                               <span>Order {order.order_ref}</span>
-                              <span className="text-xs text-slate-500">
-                                {order.remain_qty > 0 ? `${order.remain_qty} remaining` : 'Complete'}
+                              <span className='text-xs text-slate-500'>
+                                {order.remain_qty > 0
+                                  ? `${order.remain_qty} remaining`
+                                  : 'Complete'}
                               </span>
                             </div>
                           </button>
@@ -123,43 +129,47 @@ export function AcoOrderProgress() {
             </div>
 
             {/* Progress List */}
-            <div className="space-y-3 max-h-[400px] overflow-y-auto">
+            <div className='max-h-[400px] space-y-3 overflow-y-auto'>
               {progressLoading ? (
-                <div className="flex items-center justify-center py-8">
-                  <div className="w-6 h-6 border-2 border-orange-500 border-t-transparent rounded-full animate-spin"></div>
-                  <span className="ml-3 text-slate-400">Loading progress...</span>
+                <div className='flex items-center justify-center py-8'>
+                  <div className='h-6 w-6 animate-spin rounded-full border-2 border-orange-500 border-t-transparent'></div>
+                  <span className='ml-3 text-slate-400'>Loading progress...</span>
                 </div>
               ) : progress.length === 0 ? (
-                <div className="text-center py-8 text-slate-400">
-                  {selectedOrderRef ? 'No items found for this order' : 'Select an order to view progress'}
+                <div className='py-8 text-center text-slate-400'>
+                  {selectedOrderRef
+                    ? 'No items found for this order'
+                    : 'Select an order to view progress'}
                 </div>
               ) : (
                 progress.map((item, index) => (
-                  <div 
-                    key={index} 
-                    className="bg-slate-700/30 rounded-lg p-4 hover:bg-slate-700/50 transition-all duration-300"
+                  <div
+                    key={index}
+                    className='rounded-lg bg-slate-700/30 p-4 transition-all duration-300 hover:bg-slate-700/50'
                   >
-                    <div className="flex justify-between items-center mb-2">
-                      <span className="text-sm font-medium text-slate-200">{item.code}</span>
-                      <span className={cn(
-                        "text-xs px-2 py-1 rounded-full",
-                        item.completion_percentage === 100 
-                          ? "bg-green-500/20 text-green-400" 
-                          : "bg-orange-500/20 text-orange-400"
-                      )}>
+                    <div className='mb-2 flex items-center justify-between'>
+                      <span className='text-sm font-medium text-slate-200'>{item.code}</span>
+                      <span
+                        className={cn(
+                          'rounded-full px-2 py-1 text-xs',
+                          item.completion_percentage === 100
+                            ? 'bg-green-500/20 text-green-400'
+                            : 'bg-orange-500/20 text-orange-400'
+                        )}
+                      >
                         {item.completion_percentage}%
                       </span>
                     </div>
-                    <div className="flex justify-between text-xs text-slate-400 mb-2">
+                    <div className='mb-2 flex justify-between text-xs text-slate-400'>
                       <span>Required: {item.required_qty}</span>
                       <span>Completed: {item.completed_qty}</span>
                       <span>Remaining: {item.remain_qty}</span>
                     </div>
-                    <div className="w-full bg-slate-600 rounded-full h-2">
-                      <div 
+                    <div className='h-2 w-full rounded-full bg-slate-600'>
+                      <div
                         className={cn(
-                          "h-2 rounded-full transition-all duration-500",
-                          item.completion_percentage === 100 ? "bg-green-500" : "bg-orange-500"
+                          'h-2 rounded-full transition-all duration-500',
+                          item.completion_percentage === 100 ? 'bg-green-500' : 'bg-orange-500'
                         )}
                         style={{ width: `${item.completion_percentage}%` }}
                       />
@@ -171,17 +181,17 @@ export function AcoOrderProgress() {
           </div>
         </div>
       </div>
-      
+
       {/* Service Toggle - Development Only */}
       {process.env.NODE_ENV !== 'production' && (
-        <div className="mt-4 p-3 bg-gray-800/50 rounded-lg border border-gray-700">
-          <div className="flex items-center justify-between">
-            <label className="text-xs text-gray-400">Use Unified ACO Service:</label>
+        <div className='mt-4 rounded-lg border border-gray-700 bg-gray-800/50 p-3'>
+          <div className='flex items-center justify-between'>
+            <label className='text-xs text-gray-400'>Use Unified ACO Service:</label>
             <input
-              type="checkbox"
+              type='checkbox'
               checked={isUsingUnifiedService}
-              onChange={(e) => toggleUnifiedService(e.target.checked)}
-              className="w-4 h-4"
+              onChange={e => toggleUnifiedService(e.target.checked)}
+              className='h-4 w-4'
             />
           </div>
         </div>

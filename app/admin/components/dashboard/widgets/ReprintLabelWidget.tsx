@@ -7,7 +7,11 @@ import { Button } from '@/components/ui/button';
 import { PrinterIcon, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { createDashboardAPI } from '@/lib/api/admin/DashboardAPI';
-import { TransactionLogService, TransactionSource, TransactionOperation } from '@/app/services/transactionLog.service';
+import {
+  TransactionLogService,
+  TransactionSource,
+  TransactionOperation,
+} from '@/app/services/transactionLog.service';
 import { ErrorHandler } from '@/app/components/qc-label-form/services/ErrorHandler';
 
 interface ReprintLabelWidgetProps {
@@ -30,7 +34,7 @@ export function ReprintLabelWidget({ title = 'Reprint Label', gridArea }: Reprin
 
     // Start transaction logging
     const transactionId = transactionLog.generateTransactionId();
-    
+
     setIsLoading(true);
     try {
       // Record transaction start
@@ -43,23 +47,23 @@ export function ReprintLabelWidget({ title = 'Reprint Label', gridArea }: Reprin
         userId: 'system', // TODO: Get actual user ID
         metadata: {
           palletNumber: palletNumber.toUpperCase(),
-          widget: 'ReprintLabelWidget'
-        }
+          widget: 'ReprintLabelWidget',
+        },
       });
 
       // Step 1: Fetch pallet information
       await transactionLog.recordStep(transactionId, {
         name: 'fetch_pallet_info',
         sequence: 1,
-        data: { palletNumber: palletNumber.toUpperCase() }
+        data: { palletNumber: palletNumber.toUpperCase() },
       });
 
       const result = await dashboardAPI.fetch({
         widgetIds: ['reprint'],
         params: {
           dataSource: 'pallet_reprint',
-          palletNum: palletNumber.toUpperCase()
-        }
+          palletNum: palletNumber.toUpperCase(),
+        },
       });
 
       if (!result.success) {
@@ -67,7 +71,7 @@ export function ReprintLabelWidget({ title = 'Reprint Label', gridArea }: Reprin
       }
 
       const palletData = result.data?.widgets?.[0]?.data?.value;
-      
+
       if (!palletData) {
         const errorMsg = `Pallet number ${palletNumber} not found`;
         await transactionLog.recordError(transactionId, new Error(errorMsg), 'PALLET_NOT_FOUND');
@@ -86,40 +90,40 @@ export function ReprintLabelWidget({ title = 'Reprint Label', gridArea }: Reprin
       await transactionLog.recordStep(transactionId, {
         name: 'execute_print',
         sequence: 2,
-        data: { 
+        data: {
           pdfUrl: palletData.pdf_url,
           palletInfo: {
             plt_num: palletData.plt_num,
             product_code: palletData.product_code,
             product_description: palletData.product_description,
-            quantity: palletData.product_qty
-          }
-        }
+            quantity: palletData.product_qty,
+          },
+        },
       });
 
       await printPDF(palletData.pdf_url);
-      
+
       // Complete transaction
       await transactionLog.completeTransaction(transactionId, {
         printSuccess: true,
-        palletPrinted: palletData.plt_num
+        palletPrinted: palletData.plt_num,
       });
-      
+
       toast.success(
         `Label for ${palletData.plt_num} (${palletData.product_description || palletData.product_code}) sent to printer`
       );
-      
+
       // Clear input
       setPalletNumber('');
     } catch (error) {
       const err = error instanceof Error ? error : new Error('Unknown error');
       await transactionLog.recordError(transactionId, err, 'REPRINT_FAILED');
-      
+
       const handledError = errorHandler.handleError(err, {
         context: 'handleReprint',
-        palletNumber: palletNumber.toUpperCase()
+        palletNumber: palletNumber.toUpperCase(),
       });
-      
+
       toast.error(handledError.userMessage || 'Print failed, please try again');
     } finally {
       setIsLoading(false);
@@ -151,7 +155,7 @@ export function ReprintLabelWidget({ title = 'Reprint Label', gridArea }: Reprin
     } catch (error) {
       errorHandler.handleError(error instanceof Error ? error : new Error('Print error'), {
         context: 'printPDF',
-        pdfUrl
+        pdfUrl,
       });
       // Final fallback: Just open the PDF
       window.open(pdfUrl, '_blank');
@@ -159,35 +163,34 @@ export function ReprintLabelWidget({ title = 'Reprint Label', gridArea }: Reprin
     }
   };
 
-
   return (
-    <div className="h-full w-full bg-gray-900/40 backdrop-blur-sm rounded-lg border border-gray-700/50 overflow-hidden flex flex-col">
-      <div className="px-3 py-2 border-b border-gray-700/50 flex-shrink-0">
-        <h3 className="text-sm font-semibold text-white">{title}</h3>
+    <div className='flex h-full w-full flex-col overflow-hidden rounded-lg border border-gray-700/50 bg-gray-900/40 backdrop-blur-sm'>
+      <div className='flex-shrink-0 border-b border-gray-700/50 px-3 py-2'>
+        <h3 className='text-sm font-semibold text-white'>{title}</h3>
       </div>
-      <div className="flex-1 p-3 min-h-0 overflow-auto">
-        <div className="flex items-center space-x-2 h-full">
-          <div className="flex-1">
+      <div className='min-h-0 flex-1 overflow-auto p-3'>
+        <div className='flex h-full items-center space-x-2'>
+          <div className='flex-1'>
             <Input
-              type="text"
-              placeholder="Enter pallet number"
+              type='text'
+              placeholder='Enter pallet number'
               value={palletNumber}
-              onChange={(e) => setPalletNumber(e.target.value)}
-              className="bg-gray-800/50 border-gray-700 text-white placeholder:text-gray-500 h-9 text-sm"
+              onChange={e => setPalletNumber(e.target.value)}
+              className='h-9 border-gray-700 bg-gray-800/50 text-sm text-white placeholder:text-gray-500'
               disabled={isLoading}
             />
           </div>
-          
+
           <Button
             onClick={handleReprint}
             disabled={isLoading || !palletNumber.trim()}
-            className="bg-blue-600 hover:bg-blue-700 text-white h-9 px-3"
-            size="sm"
+            className='h-9 bg-blue-600 px-3 text-white hover:bg-blue-700'
+            size='sm'
           >
             {isLoading ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
+              <Loader2 className='h-4 w-4 animate-spin' />
             ) : (
-              <PrinterIcon className="h-4 w-4" />
+              <PrinterIcon className='h-4 w-4' />
             )}
           </Button>
         </div>

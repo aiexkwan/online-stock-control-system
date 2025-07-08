@@ -18,7 +18,7 @@ export function useOrderCache<T = any>(options: UseOrderCacheOptions = {}) {
   const {
     defaultTTL = 5 * 60 * 1000, // 5 minutes default
     maxSize = 100,
-    onEvict
+    onEvict,
   } = options;
 
   const cache = useRef<Map<string, OrderCacheItem<T>>>(new Map());
@@ -52,11 +52,12 @@ export function useOrderCache<T = any>(options: UseOrderCacheOptions = {}) {
   const evictOldest = useCallback(() => {
     if (cache.current.size <= maxSize) return;
 
-    const sortedEntries = Array.from(cache.current.entries())
-      .sort((a, b) => a[1].timestamp - b[1].timestamp);
+    const sortedEntries = Array.from(cache.current.entries()).sort(
+      (a, b) => a[1].timestamp - b[1].timestamp
+    );
 
     const entriesToEvict = sortedEntries.slice(0, cache.current.size - maxSize);
-    
+
     entriesToEvict.forEach(([key, value]) => {
       cache.current.delete(key);
       if (onEvict) {
@@ -68,40 +69,49 @@ export function useOrderCache<T = any>(options: UseOrderCacheOptions = {}) {
   }, [maxSize, onEvict]);
 
   // Get item from cache
-  const get = useCallback((key: string): T | null => {
-    cleanupExpired();
-    
-    const item = cache.current.get(key);
-    if (!item) return null;
+  const get = useCallback(
+    (key: string): T | null => {
+      cleanupExpired();
 
-    const now = Date.now();
-    if (now > item.timestamp + item.ttl) {
-      cache.current.delete(key);
-      setCacheSize(cache.current.size);
-      return null;
-    }
+      const item = cache.current.get(key);
+      if (!item) return null;
 
-    return item.data;
-  }, [cleanupExpired]);
+      const now = Date.now();
+      if (now > item.timestamp + item.ttl) {
+        cache.current.delete(key);
+        setCacheSize(cache.current.size);
+        return null;
+      }
+
+      return item.data;
+    },
+    [cleanupExpired]
+  );
 
   // Set item in cache
-  const set = useCallback((key: string, data: T, ttl?: number) => {
-    const item: OrderCacheItem<T> = {
-      data,
-      timestamp: Date.now(),
-      ttl: ttl || defaultTTL
-    };
+  const set = useCallback(
+    (key: string, data: T, ttl?: number) => {
+      const item: OrderCacheItem<T> = {
+        data,
+        timestamp: Date.now(),
+        ttl: ttl || defaultTTL,
+      };
 
-    cache.current.set(key, item);
-    evictOldest();
-    setCacheSize(cache.current.size);
-  }, [defaultTTL, evictOldest]);
+      cache.current.set(key, item);
+      evictOldest();
+      setCacheSize(cache.current.size);
+    },
+    [defaultTTL, evictOldest]
+  );
 
   // Check if key exists and is valid
-  const has = useCallback((key: string): boolean => {
-    const item = get(key);
-    return item !== null;
-  }, [get]);
+  const has = useCallback(
+    (key: string): boolean => {
+      const item = get(key);
+      return item !== null;
+    },
+    [get]
+  );
 
   // Remove item from cache
   const remove = useCallback((key: string) => {
@@ -127,7 +137,7 @@ export function useOrderCache<T = any>(options: UseOrderCacheOptions = {}) {
   // Get cache statistics
   const getStats = useCallback(() => {
     cleanupExpired();
-    
+
     const validEntries = Array.from(cache.current.values());
     const totalSize = validEntries.reduce((acc, item) => {
       return acc + JSON.stringify(item.data).length;
@@ -138,53 +148,58 @@ export function useOrderCache<T = any>(options: UseOrderCacheOptions = {}) {
       maxSize,
       totalBytes: totalSize,
       hitRate: 0, // Can be calculated if we track hits/misses
-      keys: Array.from(cache.current.keys())
+      keys: Array.from(cache.current.keys()),
     };
   }, [cleanupExpired, maxSize]);
 
   // Batch get multiple items
-  const batchGet = useCallback((keys: string[]): Map<string, T> => {
-    const results = new Map<string, T>();
-    
-    keys.forEach(key => {
-      const value = get(key);
-      if (value !== null) {
-        results.set(key, value);
-      }
-    });
+  const batchGet = useCallback(
+    (keys: string[]): Map<string, T> => {
+      const results = new Map<string, T>();
 
-    return results;
-  }, [get]);
+      keys.forEach(key => {
+        const value = get(key);
+        if (value !== null) {
+          results.set(key, value);
+        }
+      });
+
+      return results;
+    },
+    [get]
+  );
 
   // Batch set multiple items
-  const batchSet = useCallback((entries: Array<{ key: string; data: T; ttl?: number }>) => {
-    entries.forEach(({ key, data, ttl }) => {
-      set(key, data, ttl);
-    });
-  }, [set]);
+  const batchSet = useCallback(
+    (entries: Array<{ key: string; data: T; ttl?: number }>) => {
+      entries.forEach(({ key, data, ttl }) => {
+        set(key, data, ttl);
+      });
+    },
+    [set]
+  );
 
   // Preload data with a fetcher function
-  const preload = useCallback(async (
-    key: string,
-    fetcher: () => Promise<T>,
-    ttl?: number
-  ): Promise<T> => {
-    // Check if already cached
-    const cached = get(key);
-    if (cached !== null) {
-      return cached;
-    }
+  const preload = useCallback(
+    async (key: string, fetcher: () => Promise<T>, ttl?: number): Promise<T> => {
+      // Check if already cached
+      const cached = get(key);
+      if (cached !== null) {
+        return cached;
+      }
 
-    // Fetch and cache
-    try {
-      const data = await fetcher();
-      set(key, data, ttl);
-      return data;
-    } catch (error) {
-      console.error(`Failed to preload cache for key: ${key}`, error);
-      throw error;
-    }
-  }, [get, set]);
+      // Fetch and cache
+      try {
+        const data = await fetcher();
+        set(key, data, ttl);
+        return data;
+      } catch (error) {
+        console.error(`Failed to preload cache for key: ${key}`, error);
+        throw error;
+      }
+    },
+    [get, set]
+  );
 
   // Auto cleanup expired entries periodically
   useEffect(() => {
@@ -203,7 +218,7 @@ export function useOrderCache<T = any>(options: UseOrderCacheOptions = {}) {
     batchGet,
     batchSet,
     preload,
-    cacheSize
+    cacheSize,
   };
 }
 
@@ -213,8 +228,10 @@ export function useOrderDataCache() {
     defaultTTL: 10 * 60 * 1000, // 10 minutes for order data
     maxSize: 50,
     onEvict: (key, value) => {
-      process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`[OrderCache] Evicted order: ${key}`);
-    }
+      process.env.NODE_ENV !== 'production' &&
+        process.env.NODE_ENV !== 'production' &&
+        console.log(`[OrderCache] Evicted order: ${key}`);
+    },
   });
 }
 
@@ -224,7 +241,9 @@ export function useOrderSummariesCache() {
     defaultTTL: 5 * 60 * 1000, // 5 minutes for summaries
     maxSize: 200,
     onEvict: (key, value) => {
-      process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`[OrderCache] Evicted summary: ${key}`);
-    }
+      process.env.NODE_ENV !== 'production' &&
+        process.env.NODE_ENV !== 'production' &&
+        console.log(`[OrderCache] Evicted summary: ${key}`);
+    },
   });
 }

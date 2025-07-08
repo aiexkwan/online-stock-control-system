@@ -23,10 +23,10 @@ const errorPatterns: Array<{
       userMessage: 'This pallet has already been voided',
       suggestedActions: [
         'Check if you entered the correct pallet number',
-        'View pallet history for void details'
+        'View pallet history for void details',
       ],
-      severity: 'warning'
-    }
+      severity: 'warning',
+    },
   },
   {
     pattern: /already damaged|is already damaged/i,
@@ -35,10 +35,10 @@ const errorPatterns: Array<{
       userMessage: 'This pallet has already been marked as damaged',
       suggestedActions: [
         'Check if you entered the correct pallet number',
-        'View pallet history for damage details'
+        'View pallet history for damage details',
       ],
-      severity: 'warning'
-    }
+      severity: 'warning',
+    },
   },
   {
     pattern: /pallet not found/i,
@@ -48,10 +48,10 @@ const errorPatterns: Array<{
       suggestedActions: [
         'Verify the pallet number or QR code',
         'Try searching with a different format',
-        'Check if the pallet was recently created'
+        'Check if the pallet was recently created',
       ],
-      severity: 'error'
-    }
+      severity: 'error',
+    },
   },
   {
     pattern: /invalid.*format|format.*invalid/i,
@@ -60,10 +60,10 @@ const errorPatterns: Array<{
       userMessage: 'Invalid search format',
       suggestedActions: [
         'Pallet number format: DDMMYY/XX (e.g., 241224/01)',
-        'Series format: DDMMYY-XXXXXX (e.g., 241224-ABC123)'
+        'Series format: DDMMYY-XXXXXX (e.g., 241224-ABC123)',
       ],
-      severity: 'error'
-    }
+      severity: 'error',
+    },
   },
   {
     pattern: /password.*fail|incorrect password|wrong password/i,
@@ -72,10 +72,10 @@ const errorPatterns: Array<{
       userMessage: 'Password verification failed',
       suggestedActions: [
         'Please enter your correct password',
-        'Contact administrator if you forgot your password'
+        'Contact administrator if you forgot your password',
       ],
-      severity: 'error'
-    }
+      severity: 'error',
+    },
   },
   {
     pattern: /network.*error|connection.*fail/i,
@@ -85,10 +85,10 @@ const errorPatterns: Array<{
       suggestedActions: [
         'Check your internet connection',
         'Try again in a few moments',
-        'Contact IT support if the problem persists'
+        'Contact IT support if the problem persists',
       ],
-      severity: 'error'
-    }
+      severity: 'error',
+    },
   },
   {
     pattern: /aco.*not.*support.*partial/i,
@@ -97,10 +97,10 @@ const errorPatterns: Array<{
       userMessage: 'ACO Order Pallets cannot be partially damaged',
       suggestedActions: [
         'For ACO pallets, the entire pallet must be voided',
-        'Select full quantity for damage'
+        'Select full quantity for damage',
       ],
-      severity: 'warning'
-    }
+      severity: 'warning',
+    },
   },
   {
     pattern: /stock.*level.*update.*fail/i,
@@ -111,11 +111,11 @@ const errorPatterns: Array<{
       suggestedActions: [
         'The pallet has been voided successfully',
         'Stock levels may need manual adjustment',
-        'Contact warehouse manager if needed'
+        'Contact warehouse manager if needed',
       ],
-      severity: 'warning'
-    }
-  }
+      severity: 'warning',
+    },
+  },
 ];
 
 /**
@@ -124,10 +124,12 @@ const errorPatterns: Array<{
 export function transformErrorMessage(technicalError: string): ErrorMessageConfig {
   // Check against known patterns
   for (const { pattern, config } of errorPatterns) {
-    if (typeof pattern === 'string' ? technicalError.includes(pattern) : pattern.test(technicalError)) {
+    if (
+      typeof pattern === 'string' ? technicalError.includes(pattern) : pattern.test(technicalError)
+    ) {
       return {
         ...config,
-        technicalMessage: technicalError
+        technicalMessage: technicalError,
       };
     }
   }
@@ -137,11 +139,8 @@ export function transformErrorMessage(technicalError: string): ErrorMessageConfi
     code: 'UNKNOWN_ERROR',
     userMessage: 'An unexpected error occurred',
     technicalMessage: technicalError,
-    suggestedActions: [
-      'Please try again',
-      'If the problem persists, contact support'
-    ],
-    severity: 'error'
+    suggestedActions: ['Please try again', 'If the problem persists, contact support'],
+    severity: 'error',
   };
 }
 
@@ -156,7 +155,7 @@ export function formatErrorForDisplay(error: ErrorMessageConfig): {
   return {
     title: error.userMessage,
     description: error.suggestedActions ? 'Suggested actions:' : '',
-    actions: error.suggestedActions
+    actions: error.suggestedActions,
   };
 }
 
@@ -180,13 +179,8 @@ export function getToastStyle(severity: ErrorMessageConfig['severity']): 'defaul
  * Check if error is recoverable (user can retry)
  */
 export function isRecoverableError(code: string): boolean {
-  const recoverableErrors = [
-    'NETWORK_ERROR',
-    'AUTH_FAILED',
-    'INVALID_FORMAT',
-    'NOT_FOUND'
-  ];
-  
+  const recoverableErrors = ['NETWORK_ERROR', 'AUTH_FAILED', 'INVALID_FORMAT', 'NOT_FOUND'];
+
   return recoverableErrors.includes(code);
 }
 
@@ -194,11 +188,7 @@ export function isRecoverableError(code: string): boolean {
  * Check if error should clear the search input
  */
 export function shouldClearInput(code: string): boolean {
-  const clearInputErrors = [
-    'ALREADY_VOIDED',
-    'ALREADY_DAMAGED',
-    'NOT_FOUND'
-  ];
-  
+  const clearInputErrors = ['ALREADY_VOIDED', 'ALREADY_DAMAGED', 'NOT_FOUND'];
+
   return clearInputErrors.includes(code);
 }

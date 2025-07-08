@@ -13,9 +13,9 @@ import type { WidgetComponentProps } from '../types';
 const StatsCardWidgetComponent = ({ widget, isEditMode, timeFrame }: WidgetComponentProps) => {
   // 只有這些 props 改變才重新渲染
   const widgetKey = `${widget.id}-${widget.config?.metric}`;
-  
+
   return (
-    <div key={widgetKey} className="stats-card-widget">
+    <div key={widgetKey} className='stats-card-widget'>
       {/* Widget 實現 */}
     </div>
   );
@@ -46,9 +46,9 @@ export function createMemoizedWidget<P extends WidgetComponentProps>(
   compareProps?: (prevProps: P, nextProps: P) => boolean
 ): React.ComponentType<P> {
   const MemoizedComponent = memo(Component, compareProps || defaultPropsComparison);
-  
+
   MemoizedComponent.displayName = `Memoized(${Component.displayName || Component.name})`;
-  
+
   return MemoizedComponent;
 }
 
@@ -62,16 +62,16 @@ function defaultPropsComparison(
   // 基本比較
   if (prevProps.isEditMode !== nextProps.isEditMode) return false;
   if (prevProps.widget.id !== nextProps.widget.id) return false;
-  
+
   // 配置比較（淺比較）
   const prevConfig = prevProps.widget.config || {};
   const nextConfig = nextProps.widget.config || {};
   const configKeys = new Set([...Object.keys(prevConfig), ...Object.keys(nextConfig)]);
-  
+
   for (const key of configKeys) {
     if (prevConfig[key] !== nextConfig[key]) return false;
   }
-  
+
   // 時間範圍比較
   if (prevProps.timeFrame && nextProps.timeFrame) {
     if (
@@ -81,7 +81,7 @@ function defaultPropsComparison(
       return false;
     }
   }
-  
+
   return true;
 }
 
@@ -98,17 +98,17 @@ export function withStatsOptimization<P extends WidgetComponentProps>(
       // 假設有數據處理邏輯
       return props.widget.config.data;
     }, [props.widget.config?.data]);
-    
+
     // 緩存事件處理器
     const handleClick = useCallback(() => {
       console.log('Widget clicked:', props.widget.id);
     }, [props.widget.id]);
-    
+
     return <Component {...props} processedData={processedData} onClick={handleClick} />;
   });
-  
+
   OptimizedComponent.displayName = `withStatsOptimization(${Component.displayName || Component.name || 'Component'})`;
-  
+
   return OptimizedComponent;
 }
 
@@ -119,63 +119,71 @@ export function withStatsOptimization<P extends WidgetComponentProps>(
 export function withListOptimization<P extends WidgetComponentProps>(
   Component: React.ComponentType<P>
 ): React.ComponentType<P> {
-  const OptimizedComponent = memo((props: P) => {
-    // 虛擬滾動配置
-    const virtualScrollConfig = useMemo(() => ({
-      itemHeight: 50,
-      overscan: 5,
-      initialScrollOffset: 0,
-    }), []);
-    
-    // 緩存過濾和排序邏輯
-    const processedItems = useMemo(() => {
-      const items = props.widget.config?.items || [];
-      const filters = props.widget.config?.filters || {};
-      const sortBy = props.widget.config?.sortBy;
-      
-      // 過濾
-      let filtered = items;
-      if (filters.search) {
-        filtered = items.filter(item => 
-          item.name?.toLowerCase().includes(filters.search.toLowerCase())
-        );
-      }
-      
-      // 排序
-      if (sortBy) {
-        filtered.sort((a, b) => {
-          if (sortBy === 'name') return a.name.localeCompare(b.name);
-          if (sortBy === 'date') return new Date(b.date).getTime() - new Date(a.date).getTime();
-          return 0;
-        });
-      }
-      
-      return filtered;
-    }, [props.widget.config?.items, props.widget.config?.filters, props.widget.config?.sortBy]);
-    
-    return (
-      <Component 
-        {...props} 
-        processedItems={processedItems}
-        virtualScrollConfig={virtualScrollConfig}
-      />
-    );
-  }, (prevProps, nextProps) => {
-    // 深度比較 items 數組的長度和 filters
-    const prevItems = prevProps.widget.config?.items || [];
-    const nextItems = nextProps.widget.config?.items || [];
-    
-    if (prevItems.length !== nextItems.length) return false;
-    
-    const prevFilters = JSON.stringify(prevProps.widget.config?.filters || {});
-    const nextFilters = JSON.stringify(nextProps.widget.config?.filters || {});
-    
-    return prevFilters === nextFilters && 
-           prevProps.widget.config?.sortBy === nextProps.widget.config?.sortBy;
-  });
-  
+  const OptimizedComponent = memo(
+    (props: P) => {
+      // 虛擬滾動配置
+      const virtualScrollConfig = useMemo(
+        () => ({
+          itemHeight: 50,
+          overscan: 5,
+          initialScrollOffset: 0,
+        }),
+        []
+      );
+
+      // 緩存過濾和排序邏輯
+      const processedItems = useMemo(() => {
+        const items = props.widget.config?.items || [];
+        const filters = props.widget.config?.filters || {};
+        const sortBy = props.widget.config?.sortBy;
+
+        // 過濾
+        let filtered = items;
+        if (filters.search) {
+          filtered = items.filter(item =>
+            item.name?.toLowerCase().includes(filters.search.toLowerCase())
+          );
+        }
+
+        // 排序
+        if (sortBy) {
+          filtered.sort((a, b) => {
+            if (sortBy === 'name') return a.name.localeCompare(b.name);
+            if (sortBy === 'date') return new Date(b.date).getTime() - new Date(a.date).getTime();
+            return 0;
+          });
+        }
+
+        return filtered;
+      }, [props.widget.config?.items, props.widget.config?.filters, props.widget.config?.sortBy]);
+
+      return (
+        <Component
+          {...props}
+          processedItems={processedItems}
+          virtualScrollConfig={virtualScrollConfig}
+        />
+      );
+    },
+    (prevProps, nextProps) => {
+      // 深度比較 items 數組的長度和 filters
+      const prevItems = prevProps.widget.config?.items || [];
+      const nextItems = nextProps.widget.config?.items || [];
+
+      if (prevItems.length !== nextItems.length) return false;
+
+      const prevFilters = JSON.stringify(prevProps.widget.config?.filters || {});
+      const nextFilters = JSON.stringify(nextProps.widget.config?.filters || {});
+
+      return (
+        prevFilters === nextFilters &&
+        prevProps.widget.config?.sortBy === nextProps.widget.config?.sortBy
+      );
+    }
+  );
+
   OptimizedComponent.displayName = `withListOptimization(${Component.displayName || Component.name || 'Component'})`;
-  
+
   return OptimizedComponent;
 }
 
@@ -185,58 +193,58 @@ export function withListOptimization<P extends WidgetComponentProps>(
 export function withChartOptimization<P extends WidgetComponentProps>(
   Component: React.ComponentType<P>
 ): React.ComponentType<P> {
-  const OptimizedComponent = memo((props: P) => {
-    // 緩存圖表數據轉換
-    const chartData = useMemo(() => {
-      const rawData = props.widget.config?.data || [];
-      
-      // 數據轉換邏輯
-      return rawData.map(item => ({
-        ...item,
-        // 格式化數據
-        value: parseFloat(item.value) || 0,
-        label: item.label || 'Unknown',
-      }));
-    }, [props.widget.config?.data]);
-    
-    // 緩存圖表配置
-    const chartConfig = useMemo(() => ({
-      responsive: true,
-      maintainAspectRatio: false,
-      animation: {
-        duration: 300,
-      },
-      plugins: {
-        legend: {
-          display: props.widget.config?.showLegend !== false,
-        },
-        tooltip: {
-          enabled: true,
-        },
-      },
-    }), [props.widget.config?.showLegend]);
-    
-    return (
-      <Component 
-        {...props} 
-        chartData={chartData}
-        chartConfig={chartConfig}
-      />
-    );
-  }, (prevProps, nextProps) => {
-    // 比較數據長度和關鍵配置
-    const prevData = prevProps.widget.config?.data || [];
-    const nextData = nextProps.widget.config?.data || [];
-    
-    return (
-      prevData.length === nextData.length &&
-      prevProps.widget.config?.chartType === nextProps.widget.config?.chartType &&
-      prevProps.widget.config?.showLegend === nextProps.widget.config?.showLegend
-    );
-  });
-  
+  const OptimizedComponent = memo(
+    (props: P) => {
+      // 緩存圖表數據轉換
+      const chartData = useMemo(() => {
+        const rawData = props.widget.config?.data || [];
+
+        // 數據轉換邏輯
+        return rawData.map(item => ({
+          ...item,
+          // 格式化數據
+          value: parseFloat(item.value) || 0,
+          label: item.label || 'Unknown',
+        }));
+      }, [props.widget.config?.data]);
+
+      // 緩存圖表配置
+      const chartConfig = useMemo(
+        () => ({
+          responsive: true,
+          maintainAspectRatio: false,
+          animation: {
+            duration: 300,
+          },
+          plugins: {
+            legend: {
+              display: props.widget.config?.showLegend !== false,
+            },
+            tooltip: {
+              enabled: true,
+            },
+          },
+        }),
+        [props.widget.config?.showLegend]
+      );
+
+      return <Component {...props} chartData={chartData} chartConfig={chartConfig} />;
+    },
+    (prevProps, nextProps) => {
+      // 比較數據長度和關鍵配置
+      const prevData = prevProps.widget.config?.data || [];
+      const nextData = nextProps.widget.config?.data || [];
+
+      return (
+        prevData.length === nextData.length &&
+        prevProps.widget.config?.chartType === nextProps.widget.config?.chartType &&
+        prevProps.widget.config?.showLegend === nextProps.widget.config?.showLegend
+      );
+    }
+  );
+
   OptimizedComponent.displayName = `withChartOptimization(${Component.displayName || Component.name || 'Component'})`;
-  
+
   return OptimizedComponent;
 }
 
@@ -249,12 +257,12 @@ export const optimizationMap = new Map<string, (component: any) => any>([
   ['AwaitLocationQtyWidget', withStatsOptimization],
   ['YesterdayTransferCountWidget', withStatsOptimization],
   ['StillInAwaitWidget', withStatsOptimization],
-  
+
   // List widgets
   ['OrdersListWidget', withListOptimization],
   ['WarehouseTransferListWidget', withListOptimization],
   ['OrderStateListWidget', withListOptimization],
-  
+
   // Chart widgets
   ['ProductMixChartWidget', withChartOptimization],
   ['StockDistributionChart', withChartOptimization],
@@ -269,11 +277,11 @@ export function getOptimizedComponent<P extends WidgetComponentProps>(
   Component: React.ComponentType<P>
 ): React.ComponentType<P> {
   const optimizer = optimizationMap.get(widgetId);
-  
+
   if (optimizer) {
     return optimizer(Component);
   }
-  
+
   // 默認使用基本的 memo 優化
   return createMemoizedWidget(Component);
 }

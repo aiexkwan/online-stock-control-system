@@ -1,7 +1,7 @@
 /**
  * useRealtimeOrders Hook
  * Part of Phase 3.1: Real-time Component Migration
- * 
+ *
  * Provides real-time order updates with SWR caching,
  * Supabase Realtime subscriptions, and automatic fallback
  */
@@ -46,21 +46,26 @@ export function useRealtimeOrders({
   initialData,
   fallbackToPolling = true,
   pollingInterval = 30000, // 30 seconds
-  autoRefresh = true
+  autoRefresh = true,
 }: UseRealtimeOrdersOptions = {}): UseRealtimeOrdersReturn {
   // State management
   const [page, setPage] = useState(0);
   const [allOrders, setAllOrders] = useState<OrderRecord[]>(initialData?.orders || []);
   const [isRealtimeConnected, setIsRealtimeConnected] = useState(false);
   const [pollingEnabled, setPollingEnabled] = useState(false);
-  
+
   // Refs for stable references
   const channelRef = useRef<RealtimeChannel | null>(null);
   const retryCountRef = useRef(0);
   const maxRetries = 3;
-  
+
   // SWR for data fetching with server action
-  const { data, error, isLoading, mutate: swrMutate } = useSWR(
+  const {
+    data,
+    error,
+    isLoading,
+    mutate: swrMutate,
+  } = useSWR(
     ['orders-list', page, limit],
     async ([_, currentPage, currentLimit]) => {
       const offset = currentPage * currentLimit;
@@ -72,10 +77,10 @@ export function useRealtimeOrders({
       revalidateOnReconnect: autoRefresh,
       dedupingInterval: 5000,
       errorRetryCount: 3,
-      errorRetryInterval: 5000
+      errorRetryInterval: 5000,
     }
   );
-  
+
   // Merge paginated data
   useEffect(() => {
     if (data?.orders) {
@@ -91,19 +96,19 @@ export function useRealtimeOrders({
       }
     }
   }, [data, page]);
-  
+
   // Setup realtime subscription
   useEffect(() => {
     if (!autoRefresh) return;
-    
+
     const supabase = createClient();
-    
+
     const setupRealtime = () => {
       // Clean up existing channel
       if (channelRef.current) {
         supabase.removeChannel(channelRef.current);
       }
-      
+
       const channel = supabase
         .channel('orders-updates')
         .on(
@@ -112,11 +117,11 @@ export function useRealtimeOrders({
             event: 'INSERT',
             schema: 'public',
             table: 'record_history',
-            filter: 'action=eq.Order Upload'
+            filter: 'action=eq.Order Upload',
           },
-          async (payload) => {
+          async payload => {
             console.log('[useRealtimeOrders] New order received:', payload);
-            
+
             // Optimistic update - immediately show new order
             const newOrder: OrderRecord = {
               uuid: payload.new.uuid,
@@ -127,9 +132,9 @@ export function useRealtimeOrders({
               loc: payload.new.loc,
               remark: payload.new.remark,
               uploader_name: 'Loading...', // Will be updated by revalidation
-              doc_url: null
+              doc_url: null,
             };
-            
+
             // Add to beginning of list
             setAllOrders(prev => {
               // Check if order already exists (avoid duplicates)
@@ -138,7 +143,7 @@ export function useRealtimeOrders({
               }
               return [newOrder, ...prev];
             });
-            
+
             // Trigger revalidation to get complete data with user name
             // Only revalidate first page
             if (page === 0) {
@@ -148,7 +153,7 @@ export function useRealtimeOrders({
         )
         .subscribe((status, error) => {
           console.log('[useRealtimeOrders] Subscription status:', status, error);
-          
+
           if (status === 'SUBSCRIBED') {
             setIsRealtimeConnected(true);
             setPollingEnabled(false);
@@ -156,7 +161,7 @@ export function useRealtimeOrders({
           } else if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
             setIsRealtimeConnected(false);
             retryCountRef.current++;
-            
+
             // Fallback to polling after max retries
             if (retryCountRef.current >= maxRetries && fallbackToPolling) {
               console.warn('[useRealtimeOrders] Realtime failed, falling back to polling');
@@ -164,14 +169,14 @@ export function useRealtimeOrders({
             }
           }
         });
-      
+
       channelRef.current = channel;
       return channel;
     };
-    
+
     // Setup realtime connection
     setupRealtime();
-    
+
     // Cleanup on unmount
     return () => {
       if (channelRef.current) {
@@ -181,36 +186,36 @@ export function useRealtimeOrders({
       }
     };
   }, [fallbackToPolling, page, swrMutate, autoRefresh]);
-  
+
   // Polling fallback
   useEffect(() => {
     if (!pollingEnabled || !autoRefresh) return;
-    
+
     console.log('[useRealtimeOrders] Polling enabled, interval:', pollingInterval);
-    
+
     const interval = setInterval(() => {
       // Only refresh first page
       if (page === 0) {
         swrMutate();
       }
     }, pollingInterval);
-    
+
     return () => clearInterval(interval);
   }, [pollingEnabled, pollingInterval, swrMutate, page, autoRefresh]);
-  
+
   // Load more function
   const loadMore = useCallback(() => {
     if (!data?.hasMore || isLoading) return;
     setPage(prev => prev + 1);
   }, [data?.hasMore, isLoading]);
-  
+
   // Refresh function - reset to first page
   const refresh = useCallback(async () => {
     setPage(0);
     setAllOrders([]);
     await swrMutate();
   }, [swrMutate]);
-  
+
   // Return values
   return {
     orders: allOrders,
@@ -222,7 +227,7 @@ export function useRealtimeOrders({
     loadMore,
     refresh,
     isRealtimeConnected,
-    isPolling: pollingEnabled
+    isPolling: pollingEnabled,
   };
 }
 
@@ -242,21 +247,19 @@ export async function prefetchOrders(limit: number = 15): Promise<OrdersListResp
  */
 export function useRealtimeStatus() {
   const [isConnected, setIsConnected] = useState(false);
-  
+
   useEffect(() => {
     const supabase = createClient();
-    
+
     // Test connection with a simple channel
-    const channel = supabase
-      .channel('connection-test')
-      .subscribe((status) => {
-        setIsConnected(status === 'SUBSCRIBED');
-      });
-    
+    const channel = supabase.channel('connection-test').subscribe(status => {
+      setIsConnected(status === 'SUBSCRIBED');
+    });
+
     return () => {
       supabase.removeChannel(channel);
     };
   }, []);
-  
+
   return isConnected;
 }

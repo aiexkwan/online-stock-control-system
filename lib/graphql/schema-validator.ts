@@ -2,17 +2,17 @@
  * GraphQL Schema Validator
  * Week 1.2: Schema Design Principles Enhancement
  * Date: 2025-07-03
- * 
+ *
  * This validator checks if our GraphQL schema follows the established design principles.
  */
 
-import { 
-  NamingConventions, 
-  PaginationRules, 
+import {
+  NamingConventions,
+  PaginationRules,
   SchemaBestPracticesChecker,
   PerformanceGuidelines,
   CommonValidationRules,
-  CURRENT_SCHEMA_VERSION
+  CURRENT_SCHEMA_VERSION,
 } from './schema-design-principles';
 
 export interface ValidationResult {
@@ -47,35 +47,39 @@ export class SchemaValidator {
    */
   validateSchema(schemaString: string): ValidationResult {
     this.reset();
-    
+
     try {
       // Parse and validate schema structure
       this.validateSchemaStructure(schemaString);
-      
+
       // Validate naming conventions
       this.validateNamingConventions(schemaString);
-      
+
       // Validate pagination patterns
       this.validatePaginationPatterns(schemaString);
-      
+
       // Validate error handling
       this.validateErrorHandling(schemaString);
-      
+
       // Validate performance considerations
       this.validatePerformanceGuidelines(schemaString);
-      
+
       // Check for best practices
       this.validateBestPractices(schemaString);
-      
     } catch (error) {
-      this.addError('VALIDATION', 'ERROR', 'schema', `Schema parsing failed: ${error instanceof Error ? error.message : String(error)}`);
+      this.addError(
+        'VALIDATION',
+        'ERROR',
+        'schema',
+        `Schema parsing failed: ${error instanceof Error ? error.message : String(error)}`
+      );
     }
 
     return {
       isValid: this.errors.filter(e => e.severity === 'ERROR').length === 0,
       errors: this.errors,
       warnings: this.warnings,
-      suggestions: this.suggestions
+      suggestions: this.suggestions,
     };
   }
 
@@ -85,7 +89,7 @@ export class SchemaValidator {
   private validateSchemaStructure(schema: string): void {
     // Check for required root types
     const requiredTypes = ['Query', 'Mutation', 'Subscription'];
-    
+
     requiredTypes.forEach(type => {
       if (!schema.includes(`type ${type}`)) {
         this.addWarning('STRUCTURE', `schema.${type}`, `Missing ${type} root type`);
@@ -94,7 +98,12 @@ export class SchemaValidator {
 
     // Check for proper schema definition
     if (!schema.includes('schema {') && !schema.includes('type Query')) {
-      this.addError('VALIDATION', 'ERROR', 'schema', 'Schema must define either a schema directive or Query type');
+      this.addError(
+        'VALIDATION',
+        'ERROR',
+        'schema',
+        'Schema must define either a schema directive or Query type'
+      );
     }
   }
 
@@ -132,20 +141,25 @@ export class SchemaValidator {
   private validateOperationNaming(schema: string, operationType: string): void {
     const operationRegex = new RegExp(`type\\s+${operationType}\\s*{([^}]*)}`, 'g');
     const match = operationRegex.exec(schema);
-    
+
     if (match) {
       const operationBody = match[1];
       const operations = operationBody.match(/\s+(\w+)(?:\([^)]*\))?\s*:/g) || [];
-      
+
       operations.forEach(op => {
         const operationName = op.trim().split(/[\(\:]/)[0];
         if (operationName) {
           const errors = SchemaBestPracticesChecker.validateNaming(
-            operationName, 
+            operationName,
             operationType.toUpperCase() as 'QUERY' | 'MUTATION'
           );
           errors.forEach(error => {
-            this.addError('NAMING', 'ERROR', `${operationType.toLowerCase()}.${operationName}`, error);
+            this.addError(
+              'NAMING',
+              'ERROR',
+              `${operationType.toLowerCase()}.${operationName}`,
+              error
+            );
           });
         }
       });
@@ -161,7 +175,11 @@ export class SchemaValidator {
     const hasConnections = connectionTypes.length > 0;
 
     if (!hasConnections) {
-      this.addWarning('PAGINATION', 'schema', 'No Connection types found. Consider using Relay-style pagination.');
+      this.addWarning(
+        'PAGINATION',
+        'schema',
+        'No Connection types found. Consider using Relay-style pagination.'
+      );
     }
 
     // Validate Connection type structure
@@ -182,23 +200,38 @@ export class SchemaValidator {
     listQueries.forEach(match => {
       const queryName = match.trim().split(/[\(\:]/)[0];
       const returnType = match.match(/:\s*\[([^\]]+)\]/)?.[1];
-      
+
       // Skip input types, sort fields, and other non-business query arrays
-      const skipPatterns = ['sort', 'filter', 'Input', 'edges', 'String', 'Int', 'Float', 'Boolean'];
-      const shouldSkip = skipPatterns.some(pattern => 
-        queryName.toLowerCase().includes(pattern.toLowerCase()) || 
-        (returnType && returnType.includes(pattern))
+      const skipPatterns = [
+        'sort',
+        'filter',
+        'Input',
+        'edges',
+        'String',
+        'Int',
+        'Float',
+        'Boolean',
+      ];
+      const shouldSkip = skipPatterns.some(
+        pattern =>
+          queryName.toLowerCase().includes(pattern.toLowerCase()) ||
+          (returnType && returnType.includes(pattern))
       );
-      
+
       // Skip if return type is not a list of objects or if it's already using Connection
-      if (!queryName || !returnType || shouldSkip ||
-          queryName.includes('edges') || connectionTypeNames.has(returnType + 'Connection')) {
+      if (
+        !queryName ||
+        !returnType ||
+        shouldSkip ||
+        queryName.includes('edges') ||
+        connectionTypeNames.has(returnType + 'Connection')
+      ) {
         return;
       }
-      
+
       this.addWarning(
-        'PAGINATION', 
-        `query.${queryName}`, 
+        'PAGINATION',
+        `query.${queryName}`,
         'List query should use Connection pattern for pagination',
         'Consider changing return type to a Connection'
       );
@@ -209,21 +242,35 @@ export class SchemaValidator {
     arrayFields.forEach(match => {
       const fieldName = match.trim().split(/[\(\:]/)[0];
       const returnType = match.match(/:\s*\[([^\]]+)\]/)?.[1];
-      
+
       // Skip Connection types and built-in scalar arrays
-      if (!fieldName || !returnType || fieldName === 'edges' || 
-          returnType.includes('String') || returnType.includes('Int') || 
-          returnType.includes('Float') || returnType.includes('Boolean') ||
-          returnType.endsWith('Connection') || returnType.endsWith('Edge')) {
+      if (
+        !fieldName ||
+        !returnType ||
+        fieldName === 'edges' ||
+        returnType.includes('String') ||
+        returnType.includes('Int') ||
+        returnType.includes('Float') ||
+        returnType.includes('Boolean') ||
+        returnType.endsWith('Connection') ||
+        returnType.endsWith('Edge')
+      ) {
         return;
       }
-      
+
       // Only warn for potentially expensive list fields
-      const expensiveFields = ['movements', 'grnRecords', 'orderDetails', 'scans', 'pallets', 'inventoryRecords'];
+      const expensiveFields = [
+        'movements',
+        'grnRecords',
+        'orderDetails',
+        'scans',
+        'pallets',
+        'inventoryRecords',
+      ];
       if (expensiveFields.includes(fieldName)) {
         this.addWarning(
-          'PAGINATION', 
-          `field.${fieldName}`, 
+          'PAGINATION',
+          `field.${fieldName}`,
           `Field '${fieldName}' returns array but doesn't use Connection pattern`,
           'Consider using Connection pattern for better pagination'
         );
@@ -234,17 +281,17 @@ export class SchemaValidator {
   private validateConnectionType(schema: string, typeName: string): void {
     const typeRegex = new RegExp(`type\\s+${typeName}\\s*{([^}]*)}`, 'g');
     const match = typeRegex.exec(schema);
-    
+
     if (match) {
       const typeBody = match[1];
       const requiredFields = ['edges', 'pageInfo', 'totalCount'];
-      
+
       requiredFields.forEach(field => {
         if (!typeBody.includes(field)) {
           this.addError(
-            'PAGINATION', 
-            'ERROR', 
-            `type.${typeName}.${field}`, 
+            'PAGINATION',
+            'ERROR',
+            `type.${typeName}.${field}`,
             `Connection type missing required field: ${field}`
           );
         }
@@ -261,13 +308,17 @@ export class SchemaValidator {
     const hasErrorTypes = errorTypes.some(type => schema.includes(`type ${type}`));
 
     if (!hasErrorTypes) {
-      this.addWarning('ERROR_HANDLING', 'schema', 'No error types defined. Consider adding UserError and SystemError types.');
+      this.addWarning(
+        'ERROR_HANDLING',
+        'schema',
+        'No error types defined. Consider adding UserError and SystemError types.'
+      );
     }
 
     // Extract all union types for validation
     const unionTypes = schema.match(/union\s+(\w+)\s*=\s*([^}\n]+)/g) || [];
     const unionTypeNames = new Set<string>();
-    
+
     unionTypes.forEach(match => {
       const name = match.match(/union\s+(\w+)/)?.[1];
       if (name) {
@@ -276,14 +327,18 @@ export class SchemaValidator {
     });
 
     if (unionTypes.length === 0) {
-      this.addWarning('ERROR_HANDLING', 'schema', 'No union types found. Consider using unions for error handling.');
+      this.addWarning(
+        'ERROR_HANDLING',
+        'schema',
+        'No union types found. Consider using unions for error handling.'
+      );
     }
 
     // Validate that mutations return result unions
     const mutationRegex = /(?:type|extend type)\s+Mutation\s*{([^}]*)}/g;
     let mutationMatch;
     const allMutations: string[] = [];
-    
+
     // Collect all mutation definitions (including extend type)
     while ((mutationMatch = mutationRegex.exec(schema)) !== null) {
       const mutationBody = mutationMatch[1];
@@ -291,39 +346,39 @@ export class SchemaValidator {
       const mutations = mutationBody.match(/\s+(\w+)\s*\([^)]*\)\s*:\s*(\w+)!/g) || [];
       allMutations.push(...mutations);
     }
-    
+
     // Deduplicate mutations and validate
     const uniqueMutations = new Set(allMutations);
-    
+
     // Debug: Remove console.log statements for production use
-    
+
     uniqueMutations.forEach(mutation => {
       // Extract mutation name and return type more carefully
       const colonIndex = mutation.lastIndexOf(':');
       if (colonIndex === -1) return;
-      
+
       const beforeColon = mutation.substring(0, colonIndex).trim();
       const afterColon = mutation.substring(colonIndex + 1).trim();
-      
+
       // Extract mutation name (first word after potential whitespace)
       const mutationNameMatch = beforeColon.match(/\s*(\w+)/);
       const mutationName = mutationNameMatch?.[1];
-      
+
       // Extract return type (remove ! and whitespace)
       const returnType = afterColon.replace('!', '').trim();
-      
+
       if (!mutationName || !returnType) return;
-      
+
       // Check if return type is a union type or a Result type
       const isUnionType = unionTypeNames.has(returnType);
       const isResultType = returnType?.endsWith('Result') || false;
-      
+
       // Skip certain mutations that legitimately might not return Result types
       const skipMutations = ['voidPallet', 'completeOrder', 'endStocktakeSession'];
       if (skipMutations.includes(mutationName)) {
         return;
       }
-      
+
       if (returnType && !isUnionType && !isResultType) {
         this.addWarning(
           'ERROR_HANDLING',
@@ -343,11 +398,14 @@ export class SchemaValidator {
     PerformanceGuidelines.fieldResolution.expensiveFields.forEach(expensiveField => {
       // Check if this field still uses array pattern (not Connection)
       const arrayFieldPattern = new RegExp(`\\s+${expensiveField}\\s*:\\s*\\[[^\\]]+\\]!`, 'g');
-      const connectionFieldPattern = new RegExp(`\\s+${expensiveField}\\s*\\([^)]*\\)\\s*:\\s*\\w*Connection`, 'g');
-      
+      const connectionFieldPattern = new RegExp(
+        `\\s+${expensiveField}\\s*\\([^)]*\\)\\s*:\\s*\\w*Connection`,
+        'g'
+      );
+
       const hasArrayField = arrayFieldPattern.test(schema);
       const hasConnectionField = connectionFieldPattern.test(schema);
-      
+
       // Only warn if still using array pattern and not using Connection
       if (hasArrayField && !hasConnectionField) {
         this.addWarning(
@@ -373,10 +431,10 @@ export class SchemaValidator {
     // Check for subscription patterns
     const subscriptionRegex = /type\s+Subscription\s*{([^}]*)}/g;
     const subscriptionMatch = subscriptionRegex.exec(schema);
-    
+
     if (subscriptionMatch) {
       const subscriptionCount = (subscriptionMatch[1].match(/\w+\s*:/g) || []).length;
-      
+
       if (subscriptionCount > PerformanceGuidelines.subscriptions.maxConcurrentSubscriptions) {
         this.addWarning(
           'PERFORMANCE',
@@ -437,13 +495,19 @@ export class SchemaValidator {
   /**
    * Helper methods
    */
-  private addError(type: ValidationError['type'], severity: 'ERROR' | 'WARNING', path: string, message: string, fix?: string): void {
+  private addError(
+    type: ValidationError['type'],
+    severity: 'ERROR' | 'WARNING',
+    path: string,
+    message: string,
+    fix?: string
+  ): void {
     this.errors.push({
       type,
       severity,
       path,
       message,
-      fix
+      fix,
     });
   }
 
@@ -452,7 +516,7 @@ export class SchemaValidator {
       type,
       path,
       message,
-      suggestion
+      suggestion,
     });
   }
 
@@ -467,7 +531,7 @@ export class SchemaValidator {
    */
   generateReport(result: ValidationResult): string {
     const lines: string[] = [];
-    
+
     lines.push('='.repeat(60));
     lines.push('GraphQL Schema Validation Report');
     lines.push(`Generated: ${new Date().toISOString()}`);
@@ -519,10 +583,10 @@ export class SchemaValidator {
     }
 
     lines.push('='.repeat(60));
-    
+
     return lines.join('\n');
   }
 }
 
 // Export for use in validation scripts
-export default SchemaValidator; 
+export default SchemaValidator;

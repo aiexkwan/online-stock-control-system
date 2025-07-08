@@ -17,12 +17,12 @@ export interface DetectionResult {
  */
 export function detectSearchType(input: string): DetectionResult {
   const trimmedInput = input.trim();
-  
+
   if (!trimmedInput) {
     return {
       type: 'unknown',
       confidence: 0,
-      pattern: 'Empty input'
+      pattern: 'Empty input',
     };
   }
 
@@ -33,7 +33,7 @@ export function detectSearchType(input: string): DetectionResult {
     return {
       type: 'series',
       confidence: 100,
-      pattern: 'Standard series format (DDMMYY-XXXXXX)'
+      pattern: 'Standard series format (DDMMYY-XXXXXX)',
     };
   }
 
@@ -44,7 +44,7 @@ export function detectSearchType(input: string): DetectionResult {
     return {
       type: 'pallet_num',
       confidence: 100,
-      pattern: 'Standard pallet format (DDMMYY/XX)'
+      pattern: 'Standard pallet format (DDMMYY/XX)',
     };
   }
 
@@ -57,15 +57,15 @@ export function detectSearchType(input: string): DetectionResult {
         type: 'series',
         confidence: 85,
         pattern: 'Contains hyphen with alphanumeric',
-        suggestions: ['Ensure format is DDMMYY-XXXXXX']
+        suggestions: ['Ensure format is DDMMYY-XXXXXX'],
       };
     }
-    
+
     return {
       type: 'series',
       confidence: 70,
       pattern: 'Contains hyphen',
-      suggestions: ['Expected format: DDMMYY-XXXXXX']
+      suggestions: ['Expected format: DDMMYY-XXXXXX'],
     };
   }
 
@@ -78,15 +78,15 @@ export function detectSearchType(input: string): DetectionResult {
         type: 'pallet_num',
         confidence: 85,
         pattern: 'Contains slash with numbers',
-        suggestions: ['Ensure format is DDMMYY/XX']
+        suggestions: ['Ensure format is DDMMYY/XX'],
       };
     }
-    
+
     return {
       type: 'pallet_num',
       confidence: 70,
       pattern: 'Contains slash',
-      suggestions: ['Expected format: DDMMYY/XX']
+      suggestions: ['Expected format: DDMMYY/XX'],
     };
   }
 
@@ -95,14 +95,14 @@ export function detectSearchType(input: string): DetectionResult {
   const dateMatch = trimmedInput.match(datePrefix);
   if (dateMatch) {
     const [, dateStr, remainder] = dateMatch;
-    
+
     // Validate date format (DDMMYY)
     const day = parseInt(dateStr.substring(0, 2));
     const month = parseInt(dateStr.substring(2, 4));
     const year = parseInt(dateStr.substring(4, 6));
-    
+
     const isValidDate = day >= 1 && day <= 31 && month >= 1 && month <= 12;
-    
+
     if (isValidDate) {
       if (!remainder) {
         // Just date, could be incomplete
@@ -112,20 +112,17 @@ export function detectSearchType(input: string): DetectionResult {
           pattern: 'Date prefix only',
           suggestions: [
             'For pallet: Add /XX (e.g., ' + trimmedInput + '/01)',
-            'For series: Add -XXXXXX (e.g., ' + trimmedInput + '-ABC123)'
-          ]
+            'For series: Add -XXXXXX (e.g., ' + trimmedInput + '-ABC123)',
+          ],
         };
       }
-      
+
       // Has remainder but no clear separator
       return {
         type: 'unknown',
         confidence: 30,
         pattern: 'Date prefix with unclear suffix',
-        suggestions: [
-          'For pallet: Use format DDMMYY/XX',
-          'For series: Use format DDMMYY-XXXXXX'
-        ]
+        suggestions: ['For pallet: Use format DDMMYY/XX', 'For series: Use format DDMMYY-XXXXXX'],
       };
     }
   }
@@ -133,14 +130,14 @@ export function detectSearchType(input: string): DetectionResult {
   // Check for alphanumeric patterns
   const hasLetters = /[A-Za-z]/.test(trimmedInput);
   const hasNumbers = /\d/.test(trimmedInput);
-  
+
   if (hasLetters && hasNumbers && trimmedInput.length > 8) {
     // Long alphanumeric, possibly series
     return {
       type: 'series',
       confidence: 50,
       pattern: 'Long alphanumeric string',
-      suggestions: ['Series format should be DDMMYY-XXXXXX']
+      suggestions: ['Series format should be DDMMYY-XXXXXX'],
     };
   }
 
@@ -152,19 +149,16 @@ export function detectSearchType(input: string): DetectionResult {
         type: 'unknown',
         confidence: 40,
         pattern: '6-digit number (possible date)',
-        suggestions: [
-          'For pallet: Add /XX',
-          'For series: Add -XXXXXX'
-        ]
+        suggestions: ['For pallet: Add /XX', 'For series: Add -XXXXXX'],
       };
     }
-    
+
     if (trimmedInput.length < 6) {
       return {
         type: 'unknown',
         confidence: 20,
         pattern: 'Short numeric string',
-        suggestions: ['Too short to determine type']
+        suggestions: ['Too short to determine type'],
       };
     }
   }
@@ -176,20 +170,23 @@ export function detectSearchType(input: string): DetectionResult {
     pattern: 'Unrecognized format',
     suggestions: [
       'Pallet format: DDMMYY/XX (e.g., 241224/01)',
-      'Series format: DDMMYY-XXXXXX (e.g., 241224-ABC123)'
-    ]
+      'Series format: DDMMYY-XXXXXX (e.g., 241224-ABC123)',
+    ],
   };
 }
 
 /**
  * Format validation
  */
-export function validateSearchFormat(input: string, expectedType: SearchType): {
+export function validateSearchFormat(
+  input: string,
+  expectedType: SearchType
+): {
   isValid: boolean;
   error?: string;
 } {
   const trimmedInput = input.trim();
-  
+
   if (!trimmedInput) {
     return { isValid: false, error: 'Input cannot be empty' };
   }
@@ -199,7 +196,7 @@ export function validateSearchFormat(input: string, expectedType: SearchType): {
     if (!seriesPattern.test(trimmedInput)) {
       return {
         isValid: false,
-        error: 'Invalid series format. Expected: DDMMYY-XXXXXX (e.g., 241224-ABC123)'
+        error: 'Invalid series format. Expected: DDMMYY-XXXXXX (e.g., 241224-ABC123)',
       };
     }
   } else if (expectedType === 'pallet_num') {
@@ -207,7 +204,7 @@ export function validateSearchFormat(input: string, expectedType: SearchType): {
     if (!palletPattern.test(trimmedInput)) {
       return {
         isValid: false,
-        error: 'Invalid pallet format. Expected: DDMMYY/XX (e.g., 241224/01)'
+        error: 'Invalid pallet format. Expected: DDMMYY/XX (e.g., 241224/01)',
       };
     }
   }
@@ -234,7 +231,7 @@ export function getSearchTypeDisplayName(type: SearchType): string {
  */
 export function formatSearchInput(input: string, type: SearchType): string {
   const trimmedInput = input.trim().toUpperCase();
-  
+
   // Add formatting hints
   if (type === 'series' && !trimmedInput.includes('-')) {
     if (trimmedInput.length === 6) {
@@ -245,6 +242,6 @@ export function formatSearchInput(input: string, type: SearchType): string {
       return trimmedInput + '/';
     }
   }
-  
+
   return trimmedInput;
 }

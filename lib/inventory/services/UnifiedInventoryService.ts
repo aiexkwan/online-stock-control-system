@@ -18,7 +18,7 @@ import {
   InventorySnapshot,
   InventoryStats,
   PalletInfo,
-  TransactionResult
+  TransactionResult,
 } from '../types';
 import { getCurrentUserId } from '../utils/authHelpers';
 import { validatePalletNumber, validateStockTransfer } from '../utils/validators';
@@ -38,7 +38,7 @@ export class UnifiedInventoryService implements IInventoryService {
    * Delegates to PalletService for actual search
    */
   async searchPallet(
-    searchType: 'series' | 'pallet_num', 
+    searchType: 'series' | 'pallet_num',
     value: string
   ): Promise<PalletSearchResult> {
     return this.palletService.search(searchType, value);
@@ -50,15 +50,15 @@ export class UnifiedInventoryService implements IInventoryService {
    */
   async searchPalletAuto(value: string): Promise<PalletSearchResult> {
     const searchType = detectSearchType(value);
-    
+
     if (searchType === 'unknown') {
       return {
         pallet: null,
         error: 'Invalid search format. Expected pallet number (DDMMYY/XXX) or series',
-        searchTime: 0
+        searchTime: 0,
       };
     }
-    
+
     return this.palletService.search(searchType, value);
   }
 
@@ -82,7 +82,7 @@ export class UnifiedInventoryService implements IInventoryService {
         return {
           success: false,
           error: validation.error || 'Invalid transfer data',
-          transferTime: Date.now() - startTime
+          transferTime: Date.now() - startTime,
         };
       }
 
@@ -99,15 +99,16 @@ export class UnifiedInventoryService implements IInventoryService {
         error: result.error,
         transferId: result.transactionId,
         transferTime: Date.now() - startTime,
-        updatedPallet: result.success ? 
-          await this.getUpdatedPalletInfo(transfer.palletNum) : undefined
+        updatedPallet: result.success
+          ? await this.getUpdatedPalletInfo(transfer.palletNum)
+          : undefined,
       };
     } catch (error: any) {
       console.error('[UnifiedInventoryService] Transfer stock error:', error);
       return {
         success: false,
         error: error.message || 'Transfer failed',
-        transferTime: Date.now() - startTime
+        transferTime: Date.now() - startTime,
       };
     }
   }
@@ -125,7 +126,7 @@ export class UnifiedInventoryService implements IInventoryService {
       }
 
       const result = await this.transactionService.executeVoidPallet(voidData);
-      
+
       if (!result.success) {
         throw new Error(result.error || 'Void operation failed');
       }
@@ -148,7 +149,7 @@ export class UnifiedInventoryService implements IInventoryService {
 
     try {
       // Add operator info if not provided
-      const operator = batch.operator || await getCurrentUserId(this.supabase) || 'system';
+      const operator = batch.operator || (await getCurrentUserId(this.supabase)) || 'system';
 
       // Validate all transfers first
       const validationErrors: string[] = [];
@@ -167,17 +168,19 @@ export class UnifiedInventoryService implements IInventoryService {
           results,
           totalTime: Date.now() - startTime,
           successCount: 0,
-          failureCount: batch.transfers.length
+          failureCount: batch.transfers.length,
         };
       }
 
       // Execute all transfers in a single transaction
-      const operations = batch.transfers.map(transfer => 
-        () => this.transactionService.executeStockTransfer(transfer)
+      const operations = batch.transfers.map(
+        transfer => () => this.transactionService.executeStockTransfer(transfer)
       );
 
-      const txResult = await this.transactionService.executeBatchOperations<TransactionResult<void>>(
-        operations.map(op => async (client) => {
+      const txResult = await this.transactionService.executeBatchOperations<
+        TransactionResult<void>
+      >(
+        operations.map(op => async client => {
           const result = await op();
           if (!result.success) {
             throw new Error(result.error);
@@ -186,7 +189,7 @@ export class UnifiedInventoryService implements IInventoryService {
         }),
         {
           description: `Batch transfer: ${batch.transfers.length} pallets`,
-          logTransaction: true
+          logTransaction: true,
         }
       );
 
@@ -201,23 +204,21 @@ export class UnifiedInventoryService implements IInventoryService {
           results.set(transfer.palletNum, {
             success: true,
             transferId: result.transactionId,
-            transferTime: result.executionTime || 0
+            transferTime: result.executionTime || 0,
           });
         } else {
           failureCount++;
           results.set(transfer.palletNum, {
             success: false,
             error: result?.error || 'Unknown error',
-            transferTime: 0
+            transferTime: 0,
           });
         }
       });
 
       // Invalidate cache for all transferred pallets
       if (successCount > 0) {
-        await Promise.all(
-          batch.transfers.map(t => this.invalidateCache(t.palletNum))
-        );
+        await Promise.all(batch.transfers.map(t => this.invalidateCache(t.palletNum)));
       }
 
       return {
@@ -226,7 +227,7 @@ export class UnifiedInventoryService implements IInventoryService {
         results,
         totalTime: Date.now() - startTime,
         successCount,
-        failureCount
+        failureCount,
       };
     } catch (error: any) {
       console.error('[UnifiedInventoryService] Batch transfer error:', error);
@@ -236,7 +237,7 @@ export class UnifiedInventoryService implements IInventoryService {
         results,
         totalTime: Date.now() - startTime,
         successCount: 0,
-        failureCount: batch.transfers.length
+        failureCount: batch.transfers.length,
       };
     }
   }
@@ -249,9 +250,7 @@ export class UnifiedInventoryService implements IInventoryService {
     productCodes?: string[];
   }): Promise<InventorySnapshot> {
     try {
-      let query = this.supabase
-        .from('record_inventory')
-        .select('*, record_palletinfo!inner(*)');
+      let query = this.supabase.from('record_inventory').select('*, record_palletinfo!inner(*)');
 
       // Apply filters if provided
       if (options?.productCodes?.length) {
@@ -267,27 +266,26 @@ export class UnifiedInventoryService implements IInventoryService {
         totalPallets: data?.length || 0,
         totalQuantity: 0,
         locationBreakdown: {},
-        productBreakdown: {}
+        productBreakdown: {},
       };
 
       // Calculate totals and breakdowns
       (data || []).forEach(record => {
         const palletInfo = record.record_palletinfo;
         const qty = palletInfo.product_qty || 0;
-        
+
         snapshot.totalQuantity += qty;
 
         // Location breakdown
         const location = this.palletService.getCurrentLocation(record.plt_num);
         if (location) {
-          snapshot.locationBreakdown[location] = 
-            (snapshot.locationBreakdown[location] || 0) + qty;
+          snapshot.locationBreakdown[location] = (snapshot.locationBreakdown[location] || 0) + qty;
         }
 
         // Product breakdown
         const productCode = palletInfo.product_code;
         if (productCode) {
-          snapshot.productBreakdown[productCode] = 
+          snapshot.productBreakdown[productCode] =
             (snapshot.productBreakdown[productCode] || 0) + qty;
         }
       });
@@ -305,16 +303,11 @@ export class UnifiedInventoryService implements IInventoryService {
   async getInventoryStats(): Promise<InventoryStats> {
     try {
       // Get various stats from database
-      const [
-        totalPallets,
-        activeTransfers,
-        voidedToday,
-        lowStockProducts
-      ] = await Promise.all([
+      const [totalPallets, activeTransfers, voidedToday, lowStockProducts] = await Promise.all([
         this.getTotalPalletCount(),
         this.getActiveTransferCount(),
         this.getVoidedTodayCount(),
-        this.getLowStockProducts()
+        this.getLowStockProducts(),
       ]);
 
       return {
@@ -322,7 +315,7 @@ export class UnifiedInventoryService implements IInventoryService {
         activeTransfers,
         voidedToday,
         lowStockProducts,
-        lastUpdated: new Date().toISOString()
+        lastUpdated: new Date().toISOString(),
       };
     } catch (error: any) {
       console.error('[UnifiedInventoryService] Get inventory stats error:', error);
@@ -358,7 +351,7 @@ export class UnifiedInventoryService implements IInventoryService {
     try {
       // Mark materialized view as needing refresh
       await this.supabase.rpc('mark_mv_needs_refresh', {
-        p_mv_name: 'mv_pallet_current_location'
+        p_mv_name: 'mv_pallet_current_location',
       });
     } catch (error) {
       console.error('[UnifiedInventoryService] Invalidate cache error:', error);
@@ -416,8 +409,7 @@ export class UnifiedInventoryService implements IInventoryService {
     try {
       // This would need a proper implementation based on business rules
       // For now, return products with total quantity < 100
-      const { data, error } = await this.supabase
-        .rpc('get_product_stock_levels');
+      const { data, error } = await this.supabase.rpc('get_product_stock_levels');
 
       if (error || !data) return 0;
 

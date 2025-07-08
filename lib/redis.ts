@@ -25,7 +25,7 @@ export function createRedisClient(config?: UpstashRedisConfig): Redis {
 
   // 優先使用 REDIS_URL 環境變數
   const redisUrl = config?.url || process.env.REDIS_URL;
-  
+
   if (redisUrl) {
     // 使用 URL 連接（Upstash 模式）
     redisClient = new Redis(redisUrl, {
@@ -49,19 +49,19 @@ export function createRedisClient(config?: UpstashRedisConfig): Redis {
       port: config?.port || parseInt(process.env.REDIS_PORT || '6379'),
       password: config?.password || process.env.REDIS_PASSWORD,
       db: config?.db || parseInt(process.env.REDIS_DB || '0'),
-      
+
       // 基本配置
       connectTimeout: 10000,
       maxRetriesPerRequest: 3,
       retryDelayOnFailover: 100,
       lazyConnect: true,
       enableOfflineQueue: false,
-      
+
       // TLS 配置（如果需要）
       ...(config?.tls && {
         tls: {
           rejectUnauthorized: false,
-        }
+        },
       }),
     };
 
@@ -86,7 +86,7 @@ function setupRedisEventListeners(client: Redis): void {
     logger.info('Redis 準備就緒');
   });
 
-  client.on('error', (error) => {
+  client.on('error', error => {
     logger.error('Redis 連接錯誤:', error);
   });
 
@@ -94,7 +94,7 @@ function setupRedisEventListeners(client: Redis): void {
     logger.warn('Redis 連接已關閉');
   });
 
-  client.on('reconnecting', (time) => {
+  client.on('reconnecting', time => {
     logger.info(`Redis 重新連接中... (${time}ms)`);
   });
 
@@ -164,4 +164,4 @@ if (process.env.VERCEL) {
 
 // 預設匯出 Redis 客戶端
 export const redis = getRedisClient();
-export default redis; 
+export default redis;

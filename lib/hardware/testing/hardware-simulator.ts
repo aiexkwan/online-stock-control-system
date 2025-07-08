@@ -5,13 +5,13 @@
 
 import { EventEmitter } from 'events';
 import { createLogger } from '../../logger';
-import { 
-  PrintJob, 
-  PrintResult, 
-  ScanResult, 
+import {
+  PrintJob,
+  PrintResult,
+  ScanResult,
   DeviceStatus,
   PrinterStatus,
-  ScannerStatus 
+  ScannerStatus,
 } from '../types';
 
 const logger = createLogger('hardware-simulator');
@@ -35,7 +35,7 @@ export class HardwareSimulator extends EventEmitter {
       deviceId: 'printer-mock',
       deviceType: 'printer',
       status: 'online',
-      lastSeen: new Date().toISOString()
+      lastSeen: new Date().toISOString(),
     });
 
     // Mock scanner
@@ -43,7 +43,7 @@ export class HardwareSimulator extends EventEmitter {
       deviceId: 'scanner-mock',
       deviceType: 'scanner',
       status: 'online',
-      lastSeen: new Date().toISOString()
+      lastSeen: new Date().toISOString(),
     });
   }
 
@@ -75,22 +75,25 @@ export class HardwareSimulator extends EventEmitter {
       return {
         success: false,
         jobId: job.id!,
-        error: 'Simulated print failure: Paper jam'
+        error: 'Simulated print failure: Paper jam',
       };
     }
 
     // Simulate successful print
-    logger.debug({ 
-      jobType: job.type, 
-      fileName: job.data.fileName || 'document' 
-    }, 'Simulating print job');
-    
+    logger.debug(
+      {
+        jobType: job.type,
+        fileName: job.data.fileName || 'document',
+      },
+      'Simulating print job'
+    );
+
     return {
       success: true,
       jobId: job.id!,
       pdfUrl: 'blob:mock-pdf-url',
       printedAt: new Date().toISOString(),
-      message: 'Print simulated successfully'
+      message: 'Print simulated successfully',
     };
   }
 
@@ -107,12 +110,12 @@ export class HardwareSimulator extends EventEmitter {
 
     // Generate mock scan data
     const mockData = this.generateMockScanData();
-    
+
     return {
       data: mockData,
       format: 'qr',
       timestamp: new Date().toISOString(),
-      confidence: 0.95
+      confidence: 0.95,
     };
   }
 
@@ -165,12 +168,16 @@ export class HardwareSimulator extends EventEmitter {
   private generateMockScanData(): string {
     const types = ['pallet', 'product', 'location'];
     const type = types[Math.floor(Math.random() * types.length)];
-    
+
     switch (type) {
       case 'pallet':
-        return `PAL${Math.floor(Math.random() * 100000).toString().padStart(6, '0')}`;
+        return `PAL${Math.floor(Math.random() * 100000)
+          .toString()
+          .padStart(6, '0')}`;
       case 'product':
-        return `PRD${Math.floor(Math.random() * 10000).toString().padStart(5, '0')}`;
+        return `PRD${Math.floor(Math.random() * 10000)
+          .toString()
+          .padStart(5, '0')}`;
       case 'location':
         return `LOC-${String.fromCharCode(65 + Math.floor(Math.random() * 26))}-${Math.floor(Math.random() * 100)}`;
       default:
@@ -181,7 +188,7 @@ export class HardwareSimulator extends EventEmitter {
   // Test scenarios
   async runTestScenario(scenario: 'success' | 'failure' | 'mixed') {
     logger.info({ scenario }, 'Running hardware test scenario');
-    
+
     switch (scenario) {
       case 'success':
         this.setSimulateFailures(false);

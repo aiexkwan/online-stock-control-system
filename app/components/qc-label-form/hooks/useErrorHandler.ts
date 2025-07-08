@@ -11,164 +11,189 @@ interface UseErrorHandlerProps {
 
 export const useErrorHandler = ({ component, userId, defaultContext }: UseErrorHandlerProps) => {
   // Create base context
-  const baseContext = useMemo((): Partial<ErrorContext> => ({
-    component,
-    userId,
-    ...defaultContext
-  }), [component, userId, defaultContext]);
+  const baseContext = useMemo(
+    (): Partial<ErrorContext> => ({
+      component,
+      userId,
+      ...defaultContext,
+    }),
+    [component, userId, defaultContext]
+  );
 
   // API Error handler
-  const handleApiError = useCallback((
-    error: Error,
-    action: string,
-    userMessage?: string,
-    additionalData?: Record<string, any>
-  ) => {
-    errorHandler.handleApiError(error, {
-      ...baseContext,
-      action,
-      additionalData: { ...baseContext.additionalData, ...additionalData }
-    } as ErrorContext, userMessage);
-  }, [baseContext]);
+  const handleApiError = useCallback(
+    (error: Error, action: string, userMessage?: string, additionalData?: Record<string, any>) => {
+      errorHandler.handleApiError(
+        error,
+        {
+          ...baseContext,
+          action,
+          additionalData: { ...baseContext.additionalData, ...additionalData },
+        } as ErrorContext,
+        userMessage
+      );
+    },
+    [baseContext]
+  );
 
   // Network Error handler
-  const handleNetworkError = useCallback((
-    error: Error,
-    action: string,
-    additionalData?: Record<string, any>
-  ) => {
-    errorHandler.handleNetworkError(error, {
-      ...baseContext,
-      action,
-      additionalData: { ...baseContext.additionalData, ...additionalData }
-    } as ErrorContext);
-  }, [baseContext]);
+  const handleNetworkError = useCallback(
+    (error: Error, action: string, additionalData?: Record<string, any>) => {
+      errorHandler.handleNetworkError(error, {
+        ...baseContext,
+        action,
+        additionalData: { ...baseContext.additionalData, ...additionalData },
+      } as ErrorContext);
+    },
+    [baseContext]
+  );
 
   // Auth Error handler
-  const handleAuthError = useCallback((
-    error: Error,
-    action: string,
-    additionalData?: Record<string, any>
-  ) => {
-    errorHandler.handleAuthError(error, {
-      ...baseContext,
-      action,
-      additionalData: { ...baseContext.additionalData, ...additionalData }
-    } as ErrorContext);
-  }, [baseContext]);
+  const handleAuthError = useCallback(
+    (error: Error, action: string, additionalData?: Record<string, any>) => {
+      errorHandler.handleAuthError(error, {
+        ...baseContext,
+        action,
+        additionalData: { ...baseContext.additionalData, ...additionalData },
+      } as ErrorContext);
+    },
+    [baseContext]
+  );
 
   // PDF Error handler
-  const handlePdfError = useCallback((
-    error: Error,
-    action: string,
-    palletNumber?: string,
-    additionalData?: Record<string, any>
-  ) => {
-    errorHandler.handlePdfError(error, {
-      ...baseContext,
-      action,
-      additionalData: { ...baseContext.additionalData, ...additionalData }
-    } as ErrorContext, palletNumber);
-  }, [baseContext]);
+  const handlePdfError = useCallback(
+    (error: Error, action: string, palletNumber?: string, additionalData?: Record<string, any>) => {
+      errorHandler.handlePdfError(
+        error,
+        {
+          ...baseContext,
+          action,
+          additionalData: { ...baseContext.additionalData, ...additionalData },
+        } as ErrorContext,
+        palletNumber
+      );
+    },
+    [baseContext]
+  );
 
   // Success handler
-  const handleSuccess = useCallback((
-    message: string,
-    action: string,
-    details?: string,
-    additionalData?: Record<string, any>
-  ) => {
-    errorHandler.handleSuccess(message, {
-      ...baseContext,
-      action,
-      additionalData: { ...baseContext.additionalData, ...additionalData }
-    } as ErrorContext, details);
-  }, [baseContext]);
+  const handleSuccess = useCallback(
+    (message: string, action: string, details?: string, additionalData?: Record<string, any>) => {
+      errorHandler.handleSuccess(
+        message,
+        {
+          ...baseContext,
+          action,
+          additionalData: { ...baseContext.additionalData, ...additionalData },
+        } as ErrorContext,
+        details
+      );
+    },
+    [baseContext]
+  );
 
   // Warning handler
-  const handleWarning = useCallback((
-    message: string,
-    action: string,
-    showToast: boolean = true,
-    additionalData?: Record<string, any>
-  ) => {
-    errorHandler.handleWarning(message, {
-      ...baseContext,
-      action,
-      additionalData: { ...baseContext.additionalData, ...additionalData }
-    } as ErrorContext, showToast);
-  }, [baseContext]);
+  const handleWarning = useCallback(
+    (
+      message: string,
+      action: string,
+      showToast: boolean = true,
+      additionalData?: Record<string, any>
+    ) => {
+      errorHandler.handleWarning(
+        message,
+        {
+          ...baseContext,
+          action,
+          additionalData: { ...baseContext.additionalData, ...additionalData },
+        } as ErrorContext,
+        showToast
+      );
+    },
+    [baseContext]
+  );
 
   // Info handler
-  const handleInfo = useCallback((
-    message: string,
-    action: string,
-    showToast: boolean = true,
-    additionalData?: Record<string, any>
-  ) => {
-    errorHandler.handleInfo(message, {
-      ...baseContext,
-      action,
-      additionalData: { ...baseContext.additionalData, ...additionalData }
-    } as ErrorContext, showToast);
-  }, [baseContext]);
+  const handleInfo = useCallback(
+    (
+      message: string,
+      action: string,
+      showToast: boolean = true,
+      additionalData?: Record<string, any>
+    ) => {
+      errorHandler.handleInfo(
+        message,
+        {
+          ...baseContext,
+          action,
+          additionalData: { ...baseContext.additionalData, ...additionalData },
+        } as ErrorContext,
+        showToast
+      );
+    },
+    [baseContext]
+  );
 
   // Validation Error handler
-  const handleValidationError = useCallback((
-    fieldName: string,
-    error: string,
-    action: string = 'validation',
-    additionalData?: Record<string, any>
-  ) => {
-    errorHandler.handleValidationError(fieldName, error, {
-      ...baseContext,
-      action,
-      additionalData: { ...baseContext.additionalData, ...additionalData }
-    } as ErrorContext);
-  }, [baseContext]);
+  const handleValidationError = useCallback(
+    (
+      fieldName: string,
+      error: string,
+      action: string = 'validation',
+      additionalData?: Record<string, any>
+    ) => {
+      errorHandler.handleValidationError(fieldName, error, {
+        ...baseContext,
+        action,
+        additionalData: { ...baseContext.additionalData, ...additionalData },
+      } as ErrorContext);
+    },
+    [baseContext]
+  );
 
   // Generic error handler with automatic error type detection
-  const handleError = useCallback((
-    error: Error,
-    action: string,
-    userMessage?: string,
-    additionalData?: Record<string, any>
-  ) => {
-    const errorMessage = error.message.toLowerCase();
-    
-    if (errorMessage.includes('network') || errorMessage.includes('fetch')) {
-      handleNetworkError(error, action, additionalData);
-    } else if (errorMessage.includes('auth') || errorMessage.includes('permission')) {
-      handleAuthError(error, action, additionalData);
-    } else if (errorMessage.includes('pdf') || errorMessage.includes('generation')) {
-      handlePdfError(error, action, undefined, additionalData);
-    } else {
-      handleApiError(error, action, userMessage, additionalData);
-    }
-  }, [handleNetworkError, handleAuthError, handlePdfError, handleApiError]);
+  const handleError = useCallback(
+    (error: Error, action: string, userMessage?: string, additionalData?: Record<string, any>) => {
+      const errorMessage = error.message.toLowerCase();
+
+      if (errorMessage.includes('network') || errorMessage.includes('fetch')) {
+        handleNetworkError(error, action, additionalData);
+      } else if (errorMessage.includes('auth') || errorMessage.includes('permission')) {
+        handleAuthError(error, action, additionalData);
+      } else if (errorMessage.includes('pdf') || errorMessage.includes('generation')) {
+        handlePdfError(error, action, undefined, additionalData);
+      } else {
+        handleApiError(error, action, userMessage, additionalData);
+      }
+    },
+    [handleNetworkError, handleAuthError, handlePdfError, handleApiError]
+  );
 
   // Async operation wrapper with error handling
-  const withErrorHandling = useCallback(<T>(
-    operation: () => Promise<T>,
-    action: string,
-    successMessage?: string,
-    errorMessage?: string
-  ) => {
-    return async (): Promise<T | undefined> => {
-      try {
-        const result = await operation();
-        
-        if (successMessage) {
-          handleSuccess(successMessage, action);
+  const withErrorHandling = useCallback(
+    <T>(
+      operation: () => Promise<T>,
+      action: string,
+      successMessage?: string,
+      errorMessage?: string
+    ) => {
+      return async (): Promise<T | undefined> => {
+        try {
+          const result = await operation();
+
+          if (successMessage) {
+            handleSuccess(successMessage, action);
+          }
+
+          return result;
+        } catch (error) {
+          handleError(error as Error, action, errorMessage);
+          return undefined;
         }
-        
-        return result;
-      } catch (error) {
-        handleError(error as Error, action, errorMessage);
-        return undefined;
-      }
-    };
-  }, [handleError, handleSuccess]);
+      };
+    },
+    [handleError, handleSuccess]
+  );
 
   return {
     // Individual handlers
@@ -180,16 +205,16 @@ export const useErrorHandler = ({ component, userId, defaultContext }: UseErrorH
     handleWarning,
     handleInfo,
     handleValidationError,
-    
+
     // Generic handler
     handleError,
-    
+
     // Utility
     withErrorHandling,
-    
+
     // Access to base context for custom usage
-    baseContext
+    baseContext,
   };
 };
 
-export default useErrorHandler; 
+export default useErrorHandler;

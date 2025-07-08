@@ -8,30 +8,27 @@ import { WidgetLayoutItem, ILayoutCompatibilityManager } from './types';
 export class LayoutCompatibilityManager implements ILayoutCompatibilityManager {
   // 存儲布局快照用於驗證和回滾
   private layoutSnapshots = new Map<string, WidgetLayoutItem[]>();
-  
+
   /**
    * 驗證布局完整性
    * 確保新布局與舊布局完全一致（位置、大小不變）
    */
-  validateLayoutIntegrity(
-    oldLayout: WidgetLayoutItem[],
-    newLayout: WidgetLayoutItem[]
-  ): boolean {
+  validateLayoutIntegrity(oldLayout: WidgetLayoutItem[], newLayout: WidgetLayoutItem[]): boolean {
     // 檢查數量是否一致
     if (oldLayout.length !== newLayout.length) {
       console.warn('[LayoutCompatibility] Layout count mismatch');
       return false;
     }
-    
+
     // 檢查每個 widget 的位置和大小
     for (const oldWidget of oldLayout) {
       const newWidget = newLayout.find(w => w.i === oldWidget.i);
-      
+
       if (!newWidget) {
         console.warn(`[LayoutCompatibility] Widget missing: ${oldWidget.i}`);
         return false;
       }
-      
+
       // 嚴格檢查位置和大小
       if (
         newWidget.x !== oldWidget.x ||
@@ -46,7 +43,7 @@ export class LayoutCompatibilityManager implements ILayoutCompatibilityManager {
         );
         return false;
       }
-      
+
       // 檢查其他重要屬性
       if (
         newWidget.static !== oldWidget.static ||
@@ -55,17 +52,15 @@ export class LayoutCompatibilityManager implements ILayoutCompatibilityManager {
         newWidget.minH !== oldWidget.minH ||
         newWidget.maxH !== oldWidget.maxH
       ) {
-        console.warn(
-          `[LayoutCompatibility] Widget constraints changed for ${oldWidget.i}`
-        );
+        console.warn(`[LayoutCompatibility] Widget constraints changed for ${oldWidget.i}`);
         return false;
       }
     }
-    
+
     console.log('[LayoutCompatibility] Layout integrity validated successfully');
     return true;
   }
-  
+
   /**
    * 遷移現有布局配置
    * 添加新的元數據但保持原有屬性不變
@@ -79,10 +74,10 @@ export class LayoutCompatibilityManager implements ILayoutCompatibilityManager {
         ...widget.metadata,
         registryVersion: '2.0',
         migratedAt: new Date().toISOString(),
-      }
+      },
     }));
   }
-  
+
   /**
    * 捕獲當前路由的布局快照
    */
@@ -91,10 +86,10 @@ export class LayoutCompatibilityManager implements ILayoutCompatibilityManager {
       // 這裡需要從實際的布局系統中獲取當前布局
       // 暫時返回空數組，實際實現將在集成時完成
       const currentLayout: WidgetLayoutItem[] = [];
-      
+
       // 存儲快照
       this.layoutSnapshots.set(route, [...currentLayout]);
-      
+
       console.log(`[LayoutCompatibility] Captured layout snapshot for ${route}`);
       return currentLayout;
     } catch (error) {
@@ -102,7 +97,7 @@ export class LayoutCompatibilityManager implements ILayoutCompatibilityManager {
       throw error;
     }
   }
-  
+
   /**
    * 恢復路由的布局
    */
@@ -113,31 +108,30 @@ export class LayoutCompatibilityManager implements ILayoutCompatibilityManager {
       if (snapshot && !this.validateLayoutIntegrity(snapshot, layout)) {
         throw new Error('Layout integrity check failed during restore');
       }
-      
+
       // 這裡需要實際恢復布局到系統
       // 暫時只記錄日誌，實際實現將在集成時完成
       console.log(`[LayoutCompatibility] Restored layout for ${route}`);
-      
     } catch (error) {
       console.error(`[LayoutCompatibility] Failed to restore layout for ${route}:`, error);
       throw error;
     }
   }
-  
+
   /**
    * 獲取布局快照
    */
   getLayoutSnapshot(route: string): WidgetLayoutItem[] | undefined {
     return this.layoutSnapshots.get(route);
   }
-  
+
   /**
    * 清除布局快照
    */
   clearLayoutSnapshot(route: string): void {
     this.layoutSnapshots.delete(route);
   }
-  
+
   /**
    * 創建布局備份
    */
@@ -147,18 +141,18 @@ export class LayoutCompatibilityManager implements ILayoutCompatibilityManager {
       route,
       layout: [...layout],
       timestamp: new Date().toISOString(),
-      version: '2.0'
+      version: '2.0',
     };
-    
+
     // 存儲到 localStorage（實際實現可能需要更持久的存儲）
     if (typeof window !== 'undefined') {
       localStorage.setItem(backupId, JSON.stringify(backup));
     }
-    
+
     console.log(`[LayoutCompatibility] Created backup: ${backupId}`);
     return backupId;
   }
-  
+
   /**
    * 恢復布局備份
    */
@@ -166,13 +160,13 @@ export class LayoutCompatibilityManager implements ILayoutCompatibilityManager {
     if (typeof window === 'undefined') {
       return null;
     }
-    
+
     const backupStr = localStorage.getItem(backupId);
     if (!backupStr) {
       console.warn(`[LayoutCompatibility] Backup not found: ${backupId}`);
       return null;
     }
-    
+
     try {
       const backup = JSON.parse(backupStr);
       console.log(`[LayoutCompatibility] Restored backup: ${backupId}`);
@@ -182,7 +176,7 @@ export class LayoutCompatibilityManager implements ILayoutCompatibilityManager {
       return null;
     }
   }
-  
+
   /**
    * 列出所有布局備份
    */
@@ -190,20 +184,20 @@ export class LayoutCompatibilityManager implements ILayoutCompatibilityManager {
     if (typeof window === 'undefined') {
       return [];
     }
-    
+
     const backups: string[] = [];
     const prefix = route ? `backup_${route}_` : 'backup_';
-    
+
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
       if (key && key.startsWith(prefix)) {
         backups.push(key);
       }
     }
-    
+
     return backups.sort().reverse(); // 最新的備份在前
   }
-  
+
   /**
    * 比較兩個布局的差異
    */
@@ -218,19 +212,19 @@ export class LayoutCompatibilityManager implements ILayoutCompatibilityManager {
   } {
     const ids1 = new Set(layout1.map(w => w.i));
     const ids2 = new Set(layout2.map(w => w.i));
-    
+
     const added = Array.from(ids2).filter(id => !ids1.has(id));
     const removed = Array.from(ids1).filter(id => !ids2.has(id));
-    
+
     const modified: string[] = [];
     const unchanged: string[] = [];
-    
+
     // 檢查共同的 widgets
     const common = Array.from(ids1).filter(id => ids2.has(id));
     for (const id of common) {
       const widget1 = layout1.find(w => w.i === id)!;
       const widget2 = layout2.find(w => w.i === id)!;
-      
+
       if (
         widget1.x !== widget2.x ||
         widget1.y !== widget2.y ||
@@ -242,7 +236,7 @@ export class LayoutCompatibilityManager implements ILayoutCompatibilityManager {
         unchanged.push(id);
       }
     }
-    
+
     return { added, removed, modified, unchanged };
   }
 }

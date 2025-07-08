@@ -57,13 +57,16 @@ export async function generateUniqueSeries(supabaseClient: SupabaseClient): Prom
  * @returns A promise that resolves to an array of unique series strings.
  * @throws Error if enough unique series cannot be generated.
  */
-export async function generateMultipleUniqueSeries(count: number, supabaseClient: SupabaseClient): Promise<string[]> {
+export async function generateMultipleUniqueSeries(
+  count: number,
+  supabaseClient: SupabaseClient
+): Promise<string[]> {
   if (count <= 0) {
     return [];
   }
   const generatedSeries: string[] = [];
   const datePart = format(new Date(), SERIES_DATE_FORMAT); // Get date part once for the batch
-  
+
   let totalAttempts = 0;
   const maxTotalAttempts = count * 10; // Allow more attempts overall for multiple series
 
@@ -94,7 +97,10 @@ export async function generateMultipleUniqueSeries(count: number, supabaseClient
         generatedSeries.push(candidateSeries); // Unique in DB and locally
       }
     } catch (dbCheckError) {
-      console.error('Unexpected error during DB check for series uniqueness (multiple):', dbCheckError);
+      console.error(
+        'Unexpected error during DB check for series uniqueness (multiple):',
+        dbCheckError
+      );
     }
   }
 
@@ -104,4 +110,4 @@ export async function generateMultipleUniqueSeries(count: number, supabaseClient
     throw new Error(errorMessage);
   }
   return generatedSeries;
-} 
+}

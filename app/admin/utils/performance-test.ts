@@ -16,40 +16,41 @@ export interface PerformanceMetrics {
 export class DynamicLoadingPerformanceTest {
   private startTime: number = 0;
   private metrics: PerformanceMetrics[] = [];
-  
+
   startTest(route: string): void {
     this.startTime = performance.now();
     console.log(`[Performance Test] Starting test for route: ${route}`);
   }
-  
+
   measureChunkLoad(chunkName: string): void {
     const loadTime = performance.now() - this.startTime;
     console.log(`[Performance Test] Chunk '${chunkName}' loaded in ${loadTime.toFixed(2)}ms`);
   }
-  
+
   measureWidgetLoad(widgetId: string, loadTime: number): void {
     console.log(`[Performance Test] Widget '${widgetId}' loaded in ${loadTime.toFixed(2)}ms`);
   }
-  
+
   getNetworkMetrics(): {
     chunks: PerformanceResourceTiming[];
     totalSize: number;
     totalTime: number;
   } {
-    const chunks = performance.getEntriesByType('resource')
+    const chunks = performance
+      .getEntriesByType('resource')
       .filter(entry => entry.name.includes('_next/static/chunks'))
       .map(entry => entry as PerformanceResourceTiming);
-    
+
     const totalSize = chunks.reduce((sum, chunk) => sum + (chunk.encodedBodySize || 0), 0);
     const totalTime = chunks.reduce((max, chunk) => Math.max(max, chunk.responseEnd), 0);
-    
+
     return { chunks, totalSize, totalTime };
   }
-  
+
   generateReport(): string {
     const networkMetrics = this.getNetworkMetrics();
     const totalTime = performance.now() - this.startTime;
-    
+
     const report = `
 === Dynamic Loading Performance Report ===
 
@@ -58,19 +59,21 @@ Chunks Loaded: ${networkMetrics.chunks.length}
 Total Bundle Size: ${(networkMetrics.totalSize / 1024).toFixed(2)}KB
 
 Chunk Details:
-${networkMetrics.chunks.map(chunk => {
-  const name = chunk.name.split('/').pop() || '';
-  const size = (chunk.encodedBodySize || 0) / 1024;
-  const time = chunk.responseEnd - chunk.startTime;
-  return `  - ${name}: ${size.toFixed(2)}KB (${time.toFixed(2)}ms)`;
-}).join('\n')}
+${networkMetrics.chunks
+  .map(chunk => {
+    const name = chunk.name.split('/').pop() || '';
+    const size = (chunk.encodedBodySize || 0) / 1024;
+    const time = chunk.responseEnd - chunk.startTime;
+    return `  - ${name}: ${size.toFixed(2)}KB (${time.toFixed(2)}ms)`;
+  })
+  .join('\n')}
 
 Expected Improvements:
   - Bundle Size: 485KB → <350KB (Target)
   - Load Time: 3-5s → <1s (Target)
   - Chunks: 1 → 8+ (Achieved: ${networkMetrics.chunks.length})
     `;
-    
+
     return report;
   }
 }
@@ -83,18 +86,20 @@ export function runPerformanceTest(): void {
   // 監聽路由變化
   if (typeof window !== 'undefined') {
     const originalPushState = history.pushState;
-    
-    history.pushState = function(...args) {
+
+    history.pushState = function (...args) {
       performanceTest.startTest(args[2] as string);
       originalPushState.apply(history, args);
-      
+
       // 等待載入完成後生成報告
       setTimeout(() => {
         console.log(performanceTest.generateReport());
       }, 2000);
     };
-    
-    console.log('[Performance Test] Monitoring enabled. Navigate between admin themes to see performance metrics.');
+
+    console.log(
+      '[Performance Test] Monitoring enabled. Navigate between admin themes to see performance metrics.'
+    );
   }
 }
 
@@ -111,40 +116,40 @@ export function comparePerformance(): ComparisonResult[] {
     bundleSize: 485,
     loadTime: 3500,
     chunks: 1,
-    memoryUsage: 150
+    memoryUsage: 150,
   };
-  
+
   const afterMetrics = {
     bundleSize: 350, // 預期值
-    loadTime: 1000,   // 預期值
-    chunks: 8,        // 實際實現
-    memoryUsage: 80   // 預期值
+    loadTime: 1000, // 預期值
+    chunks: 8, // 實際實現
+    memoryUsage: 80, // 預期值
   };
-  
+
   return [
     {
       metric: 'Bundle Size (KB)',
       before: beforeMetrics.bundleSize,
       after: afterMetrics.bundleSize,
-      improvement: `${((1 - afterMetrics.bundleSize / beforeMetrics.bundleSize) * 100).toFixed(1)}%`
+      improvement: `${((1 - afterMetrics.bundleSize / beforeMetrics.bundleSize) * 100).toFixed(1)}%`,
     },
     {
       metric: 'Load Time (ms)',
       before: beforeMetrics.loadTime,
       after: afterMetrics.loadTime,
-      improvement: `${((1 - afterMetrics.loadTime / beforeMetrics.loadTime) * 100).toFixed(1)}%`
+      improvement: `${((1 - afterMetrics.loadTime / beforeMetrics.loadTime) * 100).toFixed(1)}%`,
     },
     {
       metric: 'Code Chunks',
       before: beforeMetrics.chunks,
       after: afterMetrics.chunks,
-      improvement: `${((afterMetrics.chunks / beforeMetrics.chunks - 1) * 100).toFixed(0)}%`
+      improvement: `${((afterMetrics.chunks / beforeMetrics.chunks - 1) * 100).toFixed(0)}%`,
     },
     {
       metric: 'Memory Usage (MB)',
       before: beforeMetrics.memoryUsage,
       after: afterMetrics.memoryUsage,
-      improvement: `${((1 - afterMetrics.memoryUsage / beforeMetrics.memoryUsage) * 100).toFixed(1)}%`
-    }
+      improvement: `${((1 - afterMetrics.memoryUsage / beforeMetrics.memoryUsage) * 100).toFixed(1)}%`,
+    },
   ];
 }

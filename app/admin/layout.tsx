@@ -9,16 +9,10 @@ import { DialogProvider } from '@/app/contexts/DialogContext';
 import { UploadRefreshProvider } from './contexts/UploadRefreshContext';
 import './styles/page-flip-animation.css';
 
-export default function AdminLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function AdminLayout({ children }: { children: React.ReactNode }) {
   return (
     <DialogProvider>
-      <UploadRefreshProvider>
-        {children}
-      </UploadRefreshProvider>
+      <UploadRefreshProvider>{children}</UploadRefreshProvider>
     </DialogProvider>
   );
 }

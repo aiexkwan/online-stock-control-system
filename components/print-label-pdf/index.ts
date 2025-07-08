@@ -1,1 +1,1 @@
-export * from './PrintLabelPdf'; 
+export * from './PrintLabelPdf';

@@ -4,10 +4,10 @@ import React, { Suspense, lazy } from 'react';
 
 // Loading component
 const LoadingSpinner: React.FC<{ message?: string }> = ({ message = 'Loading...' }) => (
-  <div className="flex items-center justify-center p-8">
-    <div className="flex items-center space-x-3">
-      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
-      <span className="text-gray-400">{message}</span>
+  <div className='flex items-center justify-center p-8'>
+    <div className='flex items-center space-x-3'>
+      <div className='h-6 w-6 animate-spin rounded-full border-b-2 border-blue-500'></div>
+      <span className='text-gray-400'>{message}</span>
     </div>
   </div>
 );
@@ -32,10 +32,12 @@ class LazyComponentErrorBoundary extends React.Component<
 
   render() {
     if (this.state.hasError) {
-      return this.props.fallback || (
-        <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
-          <p className="text-red-800">Failed to load component. Please refresh the page.</p>
-        </div>
+      return (
+        this.props.fallback || (
+          <div className='rounded-lg border border-red-200 bg-red-50 p-4'>
+            <p className='text-red-800'>Failed to load component. Please refresh the page.</p>
+          </div>
+        )
       );
     }
 
@@ -44,19 +46,19 @@ class LazyComponentErrorBoundary extends React.Component<
 }
 
 // Lazy loaded components
-const LazyAcoOrderForm = lazy(() => 
+const LazyAcoOrderForm = lazy(() =>
   import('./AcoOrderForm').then(module => ({ default: module.AcoOrderForm }))
 );
 
-const LazySlateDetailsForm = lazy(() => 
+const LazySlateDetailsForm = lazy(() =>
   import('./SlateDetailsForm').then(module => ({ default: module.SlateDetailsForm }))
 );
 
-const LazyEnhancedProgressBar = lazy(() => 
+const LazyEnhancedProgressBar = lazy(() =>
   import('./EnhancedProgressBar').then(module => ({ default: module.EnhancedProgressBar }))
 );
 
-const LazyErrorStats = lazy(() => 
+const LazyErrorStats = lazy(() =>
   import('./ErrorStats').then(module => ({ default: module.ErrorStats }))
 );
 
@@ -67,33 +69,47 @@ export const MonitoredLazyEnhancedProgressBar = LazyEnhancedProgressBar;
 export const MonitoredLazyErrorStats = LazyErrorStats;
 
 // Wrapper components with Suspense and Error Boundary
-export const LazyAcoSection: React.FC<React.ComponentProps<typeof LazyAcoOrderForm>> = (props) => (
-  <LazyComponentErrorBoundary fallback={<div className="p-4 text-red-500">Failed to load ACO form</div>}>
-    <Suspense fallback={<LoadingSpinner message="Loading ACO form..." />}>
+export const LazyAcoSection: React.FC<React.ComponentProps<typeof LazyAcoOrderForm>> = props => (
+  <LazyComponentErrorBoundary
+    fallback={<div className='p-4 text-red-500'>Failed to load ACO form</div>}
+  >
+    <Suspense fallback={<LoadingSpinner message='Loading ACO form...' />}>
       <MonitoredLazyAcoOrderForm {...props} />
     </Suspense>
   </LazyComponentErrorBoundary>
 );
 
-export const LazySlateSection: React.FC<React.ComponentProps<typeof LazySlateDetailsForm>> = (props) => (
-  <LazyComponentErrorBoundary fallback={<div className="p-4 text-red-500">Failed to load Slate form</div>}>
-    <Suspense fallback={<LoadingSpinner message="Loading Slate form..." />}>
+export const LazySlateSection: React.FC<
+  React.ComponentProps<typeof LazySlateDetailsForm>
+> = props => (
+  <LazyComponentErrorBoundary
+    fallback={<div className='p-4 text-red-500'>Failed to load Slate form</div>}
+  >
+    <Suspense fallback={<LoadingSpinner message='Loading Slate form...' />}>
       <MonitoredLazySlateDetailsForm {...props} />
     </Suspense>
   </LazyComponentErrorBoundary>
 );
 
-export const LazyProgressSection: React.FC<React.ComponentProps<typeof LazyEnhancedProgressBar>> = (props) => (
-  <LazyComponentErrorBoundary fallback={<div className="p-4 text-red-500">Failed to load progress bar</div>}>
-    <Suspense fallback={<LoadingSpinner message="Loading progress..." />}>
+export const LazyProgressSection: React.FC<
+  React.ComponentProps<typeof LazyEnhancedProgressBar>
+> = props => (
+  <LazyComponentErrorBoundary
+    fallback={<div className='p-4 text-red-500'>Failed to load progress bar</div>}
+  >
+    <Suspense fallback={<LoadingSpinner message='Loading progress...' />}>
       <MonitoredLazyEnhancedProgressBar {...props} />
     </Suspense>
   </LazyComponentErrorBoundary>
 );
 
-export const LazyErrorStatsSection: React.FC<React.ComponentProps<typeof LazyErrorStats>> = (props) => (
-  <LazyComponentErrorBoundary fallback={<div className="p-4 text-red-500">Failed to load error stats</div>}>
-    <Suspense fallback={<LoadingSpinner message="Loading error statistics..." />}>
+export const LazyErrorStatsSection: React.FC<
+  React.ComponentProps<typeof LazyErrorStats>
+> = props => (
+  <LazyComponentErrorBoundary
+    fallback={<div className='p-4 text-red-500'>Failed to load error stats</div>}
+  >
+    <Suspense fallback={<LoadingSpinner message='Loading error statistics...' />}>
       <MonitoredLazyErrorStats {...props} />
     </Suspense>
   </LazyComponentErrorBoundary>
@@ -141,7 +157,7 @@ const LazyComponents = {
   LazyProgressSection,
   LazyErrorStatsSection,
   preloadAllComponents,
-  useConditionalPreload
+  useConditionalPreload,
 };
 
-export default LazyComponents; 
+export default LazyComponents;

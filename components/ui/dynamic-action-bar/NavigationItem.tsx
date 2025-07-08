@@ -46,61 +46,61 @@ export function NavigationItem({ item, isActive, onActiveChange }: NavigationIte
 
   const itemVariants = {
     hidden: { y: 20, opacity: 0 },
-    visible: { 
-      y: 0, 
+    visible: {
+      y: 0,
       opacity: 1,
       transition: {
-        type: "spring",
+        type: 'spring',
         stiffness: 500,
-        damping: 30
-      }
-    }
+        damping: 30,
+      },
+    },
   };
 
   return (
-    <motion.div 
-      className="relative"
+    <motion.div
+      className='relative'
       variants={itemVariants}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
       {/* Glow Background */}
       <motion.div
-        className="absolute inset-0 rounded-lg"
+        className='absolute inset-0 rounded-lg'
         style={{
           background: item.gradient,
-          filter: "blur(20px)",
+          filter: 'blur(20px)',
         }}
         animate={{
-          opacity: isHovered ? 0.6 : 0.3
+          opacity: isHovered ? 0.6 : 0.3,
         }}
         transition={{ duration: 0.3 }}
       />
-      
+
       {/* Main Button */}
       <motion.button
         onClick={handleClick}
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
         className={cn(
-          "relative px-3 py-3 rounded-lg",
-          "bg-white/5 backdrop-blur-md",
-          "border border-white/10",
-          "transition-all duration-200",
-          "group",
-          isHovered && "bg-white/20 border-white/20"
+          'relative rounded-lg px-3 py-3',
+          'bg-white/5 backdrop-blur-md',
+          'border border-white/10',
+          'transition-all duration-200',
+          'group',
+          isHovered && 'border-white/20 bg-white/20'
         )}
       >
-        <div className="flex items-center gap-2">
-          <item.icon className={cn("w-5 h-5 transition-colors", item.iconColor)} />
+        <div className='flex items-center gap-2'>
+          <item.icon className={cn('h-5 w-5 transition-colors', item.iconColor)} />
           <AnimatePresence>
             {isHovered && (
-              <motion.span 
+              <motion.span
                 initial={{ opacity: 0, width: 0 }}
-                animate={{ opacity: 1, width: "auto" }}
+                animate={{ opacity: 1, width: 'auto' }}
                 exit={{ opacity: 0, width: 0 }}
                 transition={{ duration: 0.2 }}
-                className="text-sm font-medium text-white overflow-hidden whitespace-nowrap"
+                className='overflow-hidden whitespace-nowrap text-sm font-medium text-white'
               >
                 {item.label}
               </motion.span>
@@ -108,7 +108,7 @@ export function NavigationItem({ item, isActive, onActiveChange }: NavigationIte
           </AnimatePresence>
         </div>
       </motion.button>
-      
+
       {/* Submenu - Only for Print Label and Admin */}
       <AnimatePresence>
         {isActive && item.children && (item.id === 'print-label' || item.id === 'admin') && (

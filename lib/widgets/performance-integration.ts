@@ -18,61 +18,61 @@ export function withPerformanceMonitoring<P extends WidgetComponentProps>(
   const MonitoredComponent = (props: P) => {
     const timerRef = React.useRef<PerformanceTimer | null>(null);
     const [isClient, setIsClient] = React.useState(false);
-    
+
     React.useEffect(() => {
       setIsClient(true);
     }, []);
-    
+
     React.useEffect(() => {
       if (!isClient) return;
-      
+
       // 獲取當前配置
       const config = dualLoadingAdapter.getDualLoadingConfig();
       const variant = config.enableV2 ? 'v2' : 'legacy';
-      
+
       // 開始監控
       timerRef.current = performanceMonitor.startMonitoring(widgetId, variant);
       timerRef.current.startRender();
-      
+
       // 完成監控
       return () => {
         if (timerRef.current) {
           timerRef.current.complete({
             route: window.location.pathname,
             sessionId: getSessionId(),
-            userId: getUserId()
+            userId: getUserId(),
           });
         }
       };
     }, [isClient]);
-    
+
     // 監控數據獲取
     const originalUseEffect = React.useEffect;
-    React.useEffect = function(...args: Parameters<typeof originalUseEffect>) {
+    React.useEffect = function (...args: Parameters<typeof originalUseEffect>) {
       const [effect, deps] = args;
-      
+
       return originalUseEffect(() => {
         // 如果這是數據獲取的 effect，開始計時
         if (timerRef.current && deps && deps.length > 0) {
           timerRef.current.startDataFetch();
         }
-        
+
         const cleanup = effect();
-        
+
         // 結束數據獲取計時
         if (timerRef.current) {
           timerRef.current.endDataFetch();
         }
-        
+
         return cleanup;
       }, deps);
     };
-    
+
     return React.createElement(WrappedComponent, props);
   };
-  
+
   MonitoredComponent.displayName = `withPerformanceMonitoring(${WrappedComponent.displayName || widgetId})`;
-  
+
   return MonitoredComponent;
 }
 
@@ -86,51 +86,54 @@ export function usePerformanceMonitoring(widgetId: string) {
     renderTime?: number;
     dataFetchTime?: number;
   }>({});
-  
+
   React.useEffect(() => {
     // 獲取當前配置
     const config = dualLoadingAdapter.getDualLoadingConfig();
     const variant = config.enableV2 ? 'v2' : 'legacy';
-    
+
     // 創建計時器
     const performanceTimer = performanceMonitor.startMonitoring(widgetId, variant);
     setTimer(performanceTimer);
-    
+
     // 清理
     return () => {
       performanceTimer.complete({
         route: window.location.pathname,
         sessionId: getSessionId(),
-        userId: getUserId()
+        userId: getUserId(),
       });
     };
   }, [widgetId]);
-  
+
   const startRender = React.useCallback(() => {
     timer?.startRender();
   }, [timer]);
-  
+
   const startDataFetch = React.useCallback(() => {
     timer?.startDataFetch();
   }, [timer]);
-  
+
   const endDataFetch = React.useCallback(() => {
     if (timer) {
       const time = timer.endDataFetch();
       setMetrics(prev => ({ ...prev, dataFetchTime: time }));
     }
   }, [timer]);
-  
-  const mark = React.useCallback((name: string) => {
-    timer?.mark(name);
-  }, [timer]);
-  
+
+  const mark = React.useCallback(
+    (name: string) => {
+      timer?.mark(name);
+    },
+    [timer]
+  );
+
   return {
     startRender,
     startDataFetch,
     endDataFetch,
     mark,
-    metrics
+    metrics,
   };
 }
 
@@ -143,14 +146,14 @@ export async function loadWidgetWithMonitoring(
 ): Promise<React.ComponentType<any>> {
   const config = dualLoadingAdapter.getDualLoadingConfig();
   const variant = config.enableV2 ? 'v2' : 'legacy';
-  
+
   // 開始監控
   const timer = performanceMonitor.startMonitoring(widgetId, variant);
-  
+
   try {
     // 加載組件
     const component = await loader();
-    
+
     // 返回包裝的組件
     return withPerformanceMonitoring(component, widgetId);
   } finally {
@@ -158,7 +161,7 @@ export async function loadWidgetWithMonitoring(
     timer.complete({
       route: window.location.pathname,
       sessionId: getSessionId(),
-      userId: getUserId()
+      userId: getUserId(),
     });
   }
 }
@@ -169,28 +172,28 @@ export async function loadWidgetWithMonitoring(
 export function useBatchPerformanceReport(widgetIds: string[]) {
   const [reports, setReports] = React.useState<Map<string, any>>(new Map());
   const [loading, setLoading] = React.useState(true);
-  
+
   React.useEffect(() => {
     const fetchReports = async () => {
       setLoading(true);
       const newReports = new Map();
-      
+
       for (const widgetId of widgetIds) {
         const report = performanceMonitor.getWidgetReport(widgetId);
         newReports.set(widgetId, report);
       }
-      
+
       setReports(newReports);
       setLoading(false);
     };
-    
+
     fetchReports();
-    
+
     // 每 30 秒更新一次
     const interval = setInterval(fetchReports, 30000);
     return () => clearInterval(interval);
   }, [widgetIds]);
-  
+
   return { reports, loading };
 }
 
@@ -199,17 +202,17 @@ export function useBatchPerformanceReport(widgetIds: string[]) {
  */
 export function useRealtimePerformance() {
   const [data, setData] = React.useState(performanceMonitor.getRealtimeMetrics());
-  
+
   React.useEffect(() => {
     const updateData = () => {
       setData(performanceMonitor.getRealtimeMetrics());
     };
-    
+
     // 每 5 秒更新一次
     const interval = setInterval(updateData, 5000);
     return () => clearInterval(interval);
   }, []);
-  
+
   return data;
 }
 
@@ -221,12 +224,12 @@ function getSessionId(): string {
       .split('; ')
       .find(row => row.startsWith('session_id='))
       ?.split('=')[1];
-    
+
     if (!sessionId) {
       sessionId = Math.random().toString(36).substring(2);
       document.cookie = `session_id=${sessionId}; path=/; max-age=86400`; // 24 hours
     }
-    
+
     return sessionId;
   }
   return 'unknown';
@@ -246,12 +249,12 @@ function getUserId(): string | undefined {
 export function autoIntegratePerformanceMonitoring() {
   // 在 widget registry 初始化時調用
   console.log('[PerformanceIntegration] Auto-integration started');
-  
+
   // Hook into widget registry
   import('./enhanced-registry').then(({ widgetRegistry }) => {
     const originalGetComponent = widgetRegistry.getComponent.bind(widgetRegistry);
-    
-    widgetRegistry.getComponent = function(widgetId: string) {
+
+    widgetRegistry.getComponent = function (widgetId: string) {
       const component = originalGetComponent(widgetId);
       if (component) {
         // 返回包裝的組件
@@ -259,7 +262,7 @@ export function autoIntegratePerformanceMonitoring() {
       }
       return component;
     };
-    
+
     console.log('[PerformanceIntegration] Widget registry patched for performance monitoring');
   });
 }

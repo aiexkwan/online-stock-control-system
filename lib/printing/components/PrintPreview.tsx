@@ -14,12 +14,7 @@ export interface PrintPreviewProps {
   className?: string;
 }
 
-export function PrintPreview({
-  type,
-  data,
-  options,
-  className
-}: PrintPreviewProps) {
+export function PrintPreview({ type, data, options, className }: PrintPreviewProps) {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [zoom, setZoom] = useState(100);
@@ -30,7 +25,7 @@ export function PrintPreview({
     // This would normally generate actual preview content
     // For now, we'll create a simple representation
     let content = '';
-    
+
     switch (type) {
       case PrintType.QC_LABEL:
         content = generateQcLabelPreview(data);
@@ -44,9 +39,9 @@ export function PrintPreview({
       default:
         content = '<div class="p-4">Preview not available for this document type</div>';
     }
-    
+
     setPreviewContent(content);
-    
+
     // Calculate pages (simplified)
     const estimatedPages = Math.ceil((data.items?.length || 1) / 10);
     setTotalPages(Math.max(1, estimatedPages));
@@ -79,19 +74,26 @@ export function PrintPreview({
             <p class="font-medium">${new Date().toLocaleDateString()}</p>
           </div>
         </div>
-        ${data.palletIds?.length > 0 ? `
+        ${
+          data.palletIds?.length > 0
+            ? `
           <div>
             <p class="text-sm text-gray-600">Pallet IDs</p>
             <div class="mt-1 space-y-1">
-              ${data.palletIds.slice(0, 3).map((id: string) => 
-                `<p class="font-mono text-sm">${id}</p>`
-              ).join('')}
-              ${data.palletIds.length > 3 ? 
-                `<p class="text-sm text-gray-500">... and ${data.palletIds.length - 3} more</p>` : ''
+              ${data.palletIds
+                .slice(0, 3)
+                .map((id: string) => `<p class="font-mono text-sm">${id}</p>`)
+                .join('')}
+              ${
+                data.palletIds.length > 3
+                  ? `<p class="text-sm text-gray-500">... and ${data.palletIds.length - 3} more</p>`
+                  : ''
               }
             </div>
           </div>
-        ` : ''}
+        `
+            : ''
+        }
       </div>
     `;
   };
@@ -156,76 +158,59 @@ export function PrintPreview({
   };
 
   return (
-    <div className={cn("flex flex-col h-full", className)}>
+    <div className={cn('flex h-full flex-col', className)}>
       {/* Preview Controls */}
-      <div className="flex items-center justify-between p-2 border-b bg-gray-50">
-        <div className="flex items-center gap-2">
+      <div className='flex items-center justify-between border-b bg-gray-50 p-2'>
+        <div className='flex items-center gap-2'>
           <Button
-            size="sm"
-            variant="outline"
+            size='sm'
+            variant='outline'
             onClick={() => navigatePages('prev')}
             disabled={currentPage === 1}
           >
-            <ChevronLeft className="h-4 w-4" />
+            <ChevronLeft className='h-4 w-4' />
           </Button>
-          <span className="text-sm">
+          <span className='text-sm'>
             Page {currentPage} of {totalPages}
           </span>
           <Button
-            size="sm"
-            variant="outline"
+            size='sm'
+            variant='outline'
             onClick={() => navigatePages('next')}
             disabled={currentPage === totalPages}
           >
-            <ChevronRight className="h-4 w-4" />
+            <ChevronRight className='h-4 w-4' />
           </Button>
         </div>
-        
-        <div className="flex items-center gap-2">
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={handleZoomOut}
-            disabled={zoom <= 50}
-          >
-            <ZoomOut className="h-4 w-4" />
+
+        <div className='flex items-center gap-2'>
+          <Button size='sm' variant='outline' onClick={handleZoomOut} disabled={zoom <= 50}>
+            <ZoomOut className='h-4 w-4' />
           </Button>
-          <span className="text-sm w-12 text-center">{zoom}%</span>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={handleZoomIn}
-            disabled={zoom >= 200}
-          >
-            <ZoomIn className="h-4 w-4" />
+          <span className='w-12 text-center text-sm'>{zoom}%</span>
+          <Button size='sm' variant='outline' onClick={handleZoomIn} disabled={zoom >= 200}>
+            <ZoomIn className='h-4 w-4' />
           </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={handleRotate}
-          >
-            <RotateCw className="h-4 w-4" />
+          <Button size='sm' variant='outline' onClick={handleRotate}>
+            <RotateCw className='h-4 w-4' />
           </Button>
         </div>
       </div>
 
       {/* Preview Content */}
-      <div className="flex-1 overflow-auto p-4 bg-gray-100">
-        <div 
-          className="mx-auto bg-white shadow-lg"
+      <div className='flex-1 overflow-auto bg-gray-100 p-4'>
+        <div
+          className='mx-auto bg-white shadow-lg'
           style={{
             transform: `scale(${zoom / 100}) rotate(${rotation}deg)`,
             transformOrigin: 'center top',
             transition: 'transform 0.2s',
             width: options.orientation === 'portrait' ? '210mm' : '297mm',
             minHeight: options.orientation === 'portrait' ? '297mm' : '210mm',
-            maxWidth: '100%'
+            maxWidth: '100%',
           }}
         >
-          <div 
-            className="h-full"
-            dangerouslySetInnerHTML={{ __html: previewContent }}
-          />
+          <div className='h-full' dangerouslySetInnerHTML={{ __html: previewContent }} />
         </div>
       </div>
     </div>

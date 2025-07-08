@@ -9,19 +9,19 @@ export type SearchType = 'series' | 'pallet_num' | 'unknown';
 export const SEARCH_PATTERNS = {
   // Series patterns
   series: [
-    /^[A-Z]{2,3}-\d{6}$/,        // PM-240615, PT-240615
-    /^[A-Z]{2,3}-\d{4}-\d{6}$/,  // PM-2024-060615
-    /^[A-Z]+-[A-Z0-9]+$/,        // ACO-FEB24
-    /^[\w]+-[\w]+$/,             // General series pattern
-    /^[A-Z0-9]{12}$/             // Legacy 12-digit alphanumeric series (舊系統 Excel VBA)
+    /^[A-Z]{2,3}-\d{6}$/, // PM-240615, PT-240615
+    /^[A-Z]{2,3}-\d{4}-\d{6}$/, // PM-2024-060615
+    /^[A-Z]+-[A-Z0-9]+$/, // ACO-FEB24
+    /^[\w]+-[\w]+$/, // General series pattern
+    /^[A-Z0-9]{12}$/, // Legacy 12-digit alphanumeric series (舊系統 Excel VBA)
   ],
-  
+
   // Pallet number patterns
   pallet: [
-    /^\d{6}\/\d{1,3}$/,          // 240615/1, 240615/12, 240615/123
-    /^\d{6}-\d{1,3}$/,           // 240615-1 (alternative format)
-    /^PLT-\d{6}\/\d{1,3}$/      // PLT-240615/1 (with prefix)
-  ]
+    /^\d{6}\/\d{1,3}$/, // 240615/1, 240615/12, 240615/123
+    /^\d{6}-\d{1,3}$/, // 240615-1 (alternative format)
+    /^PLT-\d{6}\/\d{1,3}$/, // PLT-240615/1 (with prefix)
+  ],
 } as const;
 
 /**
@@ -47,7 +47,10 @@ export function detectSearchType(input: string): SearchType {
   for (const pattern of SEARCH_PATTERNS.series) {
     if (pattern.test(trimmedInput)) {
       // 特殊處理：如果是 12 位純數字或純字母，不應該是 series
-      if (trimmedInput.length === 12 && (/^\d+$/.test(trimmedInput) || /^[A-Z]+$/.test(trimmedInput))) {
+      if (
+        trimmedInput.length === 12 &&
+        (/^\d+$/.test(trimmedInput) || /^[A-Z]+$/.test(trimmedInput))
+      ) {
         continue;
       }
       return 'series';
@@ -72,10 +75,12 @@ export function detectSearchType(input: string): SearchType {
 
   // 檢查是否為 12 位英數混合（舊系統格式）
   // 必須至少包含一個字母和一個數字
-  if (trimmedInput.length === 12 && 
-      /^[A-Z0-9]+$/.test(trimmedInput) &&
-      /[A-Z]/.test(trimmedInput) && 
-      /[0-9]/.test(trimmedInput)) {
+  if (
+    trimmedInput.length === 12 &&
+    /^[A-Z0-9]+$/.test(trimmedInput) &&
+    /[A-Z]/.test(trimmedInput) &&
+    /[0-9]/.test(trimmedInput)
+  ) {
     return 'series';
   }
 
@@ -90,7 +95,7 @@ export function detectSearchType(input: string): SearchType {
 export function formatPalletNumber(palletNum: string): string {
   // 移除前綴 'PLT-' 如果存在
   const cleaned = palletNum.replace(/^PLT-/i, '');
-  
+
   // 確保使用 '/' 而不是 '-'
   return cleaned.replace('-', '/');
 }
@@ -111,26 +116,31 @@ export function isValidPalletNumber(palletNum: string): boolean {
  */
 export function isValidSeriesNumber(series: string): boolean {
   const upperSeries = series.toUpperCase();
-  
+
   // 先檢查標準模式
   for (const pattern of SEARCH_PATTERNS.series) {
     if (pattern.test(upperSeries)) {
       // 特殊處理：如果是 12 位純數字或純字母，不是有效的 series
-      if (upperSeries.length === 12 && (/^\d+$/.test(upperSeries) || /^[A-Z]+$/.test(upperSeries))) {
+      if (
+        upperSeries.length === 12 &&
+        (/^\d+$/.test(upperSeries) || /^[A-Z]+$/.test(upperSeries))
+      ) {
         continue;
       }
       return true;
     }
   }
-  
+
   // 特別檢查 12 位英數混合（確保至少有字母和數字）
-  if (upperSeries.length === 12 && 
-      /^[A-Z0-9]+$/.test(upperSeries) &&
-      /[A-Z]/.test(upperSeries) && 
-      /[0-9]/.test(upperSeries)) {
+  if (
+    upperSeries.length === 12 &&
+    /^[A-Z0-9]+$/.test(upperSeries) &&
+    /[A-Z]/.test(upperSeries) &&
+    /[0-9]/.test(upperSeries)
+  ) {
     return true;
   }
-  
+
   return false;
 }
 
@@ -143,7 +153,7 @@ export function isValidSeriesNumber(series: string): boolean {
 export function extractFromQRCode(qrCode: string): { value: string; type: SearchType } {
   // 移除可能的前後空格
   const cleaned = qrCode.trim();
-  
+
   // 嘗試解析 JSON 格式的 QR code
   try {
     const parsed = JSON.parse(cleaned);
@@ -156,7 +166,7 @@ export function extractFromQRCode(qrCode: string): { value: string; type: Search
   } catch {
     // 不是 JSON 格式，繼續處理
   }
-  
+
   // 直接檢測類型
   const type = detectSearchType(cleaned);
   return { value: cleaned, type };
@@ -168,18 +178,15 @@ export function extractFromQRCode(qrCode: string): { value: string; type: Search
  * @param recentSearches 最近的搜尋歷史
  * @returns 搜尋建議列表
  */
-export function generateSearchSuggestions(
-  input: string, 
-  recentSearches: string[] = []
-): string[] {
+export function generateSearchSuggestions(input: string, recentSearches: string[] = []): string[] {
   if (!input) return recentSearches.slice(0, 5);
-  
+
   const lowercaseInput = input.toLowerCase();
-  
+
   // 從歷史記錄中過濾匹配的項目
-  const matchingSearches = recentSearches.filter(search => 
+  const matchingSearches = recentSearches.filter(search =>
     search.toLowerCase().includes(lowercaseInput)
   );
-  
+
   return matchingSearches.slice(0, 5);
 }

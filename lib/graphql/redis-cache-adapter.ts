@@ -93,7 +93,7 @@ export class RedisCacheAdapter extends EventEmitter implements CacheAdapter {
       this.emit('connected');
     });
 
-    this.redis.on('error', (error) => {
+    this.redis.on('error', error => {
       logger.error('Redis connection error:', error);
       this.metrics.errors++;
       this.metrics.lastError = error.message;
@@ -111,7 +111,7 @@ export class RedisCacheAdapter extends EventEmitter implements CacheAdapter {
       this.emit('reconnecting');
     });
   }
-  
+
   private startHealthCheck(): void {
     this.healthCheckTimer = setInterval(async () => {
       try {
@@ -124,16 +124,16 @@ export class RedisCacheAdapter extends EventEmitter implements CacheAdapter {
       }
     }, 30000); // 每30秒檢查一次
   }
-  
+
   private updateMetrics(responseTime: number, hit?: boolean): void {
     this.responseTimes.push(responseTime);
     if (this.responseTimes.length > 1000) {
       this.responseTimes.shift();
     }
-    
-    this.metrics.avgResponseTime = 
+
+    this.metrics.avgResponseTime =
       this.responseTimes.reduce((a, b) => a + b, 0) / this.responseTimes.length;
-    
+
     if (hit !== undefined) {
       if (hit) {
         this.metrics.hits++;
@@ -152,16 +152,16 @@ export class RedisCacheAdapter extends EventEmitter implements CacheAdapter {
     try {
       const value = await this.redis.get(this.getKey(key));
       const responseTime = Date.now() - startTime;
-      
+
       const hit = value !== null;
       this.updateMetrics(responseTime, hit);
-      
+
       if (value === null) {
         // 🌟 方案1: Cache miss 不記錄為錯誤，這是正常行為
         logger.debug(`Cache miss for key: ${key} (normal during warmup or first access)`);
         return null;
       }
-      
+
       return JSON.parse(value) as T;
     } catch (error) {
       this.metrics.errors++;
@@ -216,9 +216,7 @@ export class RedisCacheAdapter extends EventEmitter implements CacheAdapter {
       if (this.isCluster) {
         // Cluster 模式需要遍歷所有節點
         const nodes = (this.redis as Redis.Cluster).nodes('master');
-        await Promise.all(
-          nodes.map(node => node.flushdb())
-        );
+        await Promise.all(nodes.map(node => node.flushdb()));
       } else {
         await (this.redis as Redis.Redis).flushdb();
       }
@@ -232,7 +230,7 @@ export class RedisCacheAdapter extends EventEmitter implements CacheAdapter {
     try {
       const searchPattern = this.getKey(pattern);
       const keys = await this.redis.keys(searchPattern);
-      
+
       if (keys.length === 0) return 0;
 
       if (this.isCluster) {
@@ -255,9 +253,7 @@ export class RedisCacheAdapter extends EventEmitter implements CacheAdapter {
     try {
       if (this.isCluster) {
         const nodes = (this.redis as Redis.Cluster).nodes('master');
-        const sizes = await Promise.all(
-          nodes.map(node => node.dbsize())
-        );
+        const sizes = await Promise.all(nodes.map(node => node.dbsize()));
         return sizes.reduce((total, size) => total + size, 0);
       } else {
         return await (this.redis as Redis.Redis).dbsize();
@@ -277,7 +273,7 @@ export class RedisCacheAdapter extends EventEmitter implements CacheAdapter {
     try {
       const info = await this.redis.info('memory', 'stats', 'clients');
       const lines = info.split('\r\n');
-      
+
       const stats: any = {};
       lines.forEach(line => {
         const [key, value] = line.split(':');
@@ -290,17 +286,19 @@ export class RedisCacheAdapter extends EventEmitter implements CacheAdapter {
         memory: stats.used_memory_human || '0B',
         connections: parseInt(stats.connected_clients || '0'),
         operations: parseInt(stats.total_commands_processed || '0'),
-        hitRate: stats.keyspace_hits && stats.keyspace_misses ? 
-          (parseInt(stats.keyspace_hits) / 
-           (parseInt(stats.keyspace_hits) + parseInt(stats.keyspace_misses))) * 100 : 
-          undefined
+        hitRate:
+          stats.keyspace_hits && stats.keyspace_misses
+            ? (parseInt(stats.keyspace_hits) /
+                (parseInt(stats.keyspace_hits) + parseInt(stats.keyspace_misses))) *
+              100
+            : undefined,
       };
     } catch (error) {
       logger.error('Redis stats error:', error);
       return {
         memory: 'Error',
         connections: 0,
-        operations: 0
+        operations: 0,
       };
     }
   }
@@ -326,20 +324,21 @@ export class RedisCacheAdapter extends EventEmitter implements CacheAdapter {
       this.redis.disconnect();
     }
   }
-  
+
   // 監控功能：獲取詳細指標
   getMetrics() {
-    const hitRate = this.metrics.hits + this.metrics.misses > 0
-      ? (this.metrics.hits / (this.metrics.hits + this.metrics.misses)) * 100
-      : 0;
-      
+    const hitRate =
+      this.metrics.hits + this.metrics.misses > 0
+        ? (this.metrics.hits / (this.metrics.hits + this.metrics.misses)) * 100
+        : 0;
+
     return {
       ...this.metrics,
       hitRate,
       totalRequests: this.metrics.hits + this.metrics.misses,
     };
   }
-  
+
   // 監控功能：重置指標
   resetMetrics() {
     this.metrics = {
@@ -369,7 +368,7 @@ export class RedisCacheAdapter extends EventEmitter implements CacheAdapter {
 
   async releaseLock(lockKey: string, lockValue: string): Promise<boolean> {
     const key = this.getKey(`lock:${lockKey}`);
-    
+
     // Lua 腳本確保原子性
     const luaScript = `
       if redis.call("get", KEYS[1]) == ARGV[1] then
@@ -393,7 +392,7 @@ export class RedisCacheAdapter extends EventEmitter implements CacheAdapter {
     try {
       const redisKeys = keys.map(key => this.getKey(key));
       const values = await this.redis.mget(...redisKeys);
-      
+
       return values.map(value => {
         if (value === null) return null;
         try {
@@ -413,11 +412,11 @@ export class RedisCacheAdapter extends EventEmitter implements CacheAdapter {
       if (keyValuePairs.length === 0) return;
 
       const pipeline = this.redis.pipeline();
-      
+
       keyValuePairs.forEach(({ key, value, ttl }) => {
         const redisKey = this.getKey(key);
         const serializedValue = JSON.stringify(value);
-        
+
         if (ttl) {
           pipeline.setex(redisKey, ttl, serializedValue);
         } else {
@@ -441,7 +440,7 @@ class UpstashRedisCacheAdapter extends EventEmitter implements CacheAdapter {
   constructor(config: RedisConfig) {
     super();
     this.keyPrefix = config.keyPrefix || 'oscs:cache:';
-    
+
     // 使用統一的 Redis 客戶端（支援 Upstash）
     this.redis = createRedisClient({
       url: process.env.REDIS_URL,
@@ -451,11 +450,11 @@ class UpstashRedisCacheAdapter extends EventEmitter implements CacheAdapter {
       db: config.db,
       tls: true, // Upstash 需要 TLS
     });
-    
+
     // 設置監控
     this.setupMonitoring();
   }
-  
+
   private metrics = {
     hits: 0,
     misses: 0,
@@ -463,20 +462,20 @@ class UpstashRedisCacheAdapter extends EventEmitter implements CacheAdapter {
     avgResponseTime: 0,
   };
   private responseTimes: number[] = [];
-  
+
   private setupMonitoring(): void {
     // Upstash 不支持事件，但我們可以追蹤指標
   }
-  
+
   private updateMetrics(responseTime: number, hit?: boolean): void {
     this.responseTimes.push(responseTime);
     if (this.responseTimes.length > 100) {
       this.responseTimes.shift();
     }
-    
-    this.metrics.avgResponseTime = 
+
+    this.metrics.avgResponseTime =
       this.responseTimes.reduce((a, b) => a + b, 0) / this.responseTimes.length;
-    
+
     if (hit !== undefined) {
       if (hit) {
         this.metrics.hits++;
@@ -495,12 +494,12 @@ class UpstashRedisCacheAdapter extends EventEmitter implements CacheAdapter {
     try {
       const value = await this.redis.get(this.getKey(key));
       const responseTime = Date.now() - startTime;
-      
+
       const hit = value !== null;
       this.updateMetrics(responseTime, hit);
-      
+
       if (value === null) return null;
-      
+
       return JSON.parse(value) as T;
     } catch (error) {
       this.metrics.errors++;
@@ -558,9 +557,9 @@ class UpstashRedisCacheAdapter extends EventEmitter implements CacheAdapter {
     try {
       const searchPattern = this.getKey(pattern);
       const keys = await this.redis.keys(searchPattern);
-      
+
       if (keys.length === 0) return 0;
-      
+
       await this.redis.del(...keys);
       return keys.length;
     } catch (error) {
@@ -637,7 +636,7 @@ class UpstashRedisCacheAdapter extends EventEmitter implements CacheAdapter {
 
   async releaseLock(lockKey: string, lockValue: string): Promise<boolean> {
     const key = this.getKey(`lock:${lockKey}`);
-    
+
     const luaScript = `
       if redis.call("GET", KEYS[1]) == ARGV[1] then
         return redis.call("DEL", KEYS[1])
@@ -659,7 +658,7 @@ class UpstashRedisCacheAdapter extends EventEmitter implements CacheAdapter {
     try {
       const redisKeys = keys.map(key => this.getKey(key));
       const values = await this.redis.mget(...redisKeys);
-      
+
       return values.map(value => {
         if (value === null) return null;
         try {
@@ -679,11 +678,11 @@ class UpstashRedisCacheAdapter extends EventEmitter implements CacheAdapter {
       if (keyValuePairs.length === 0) return;
 
       const pipeline = this.redis.pipeline();
-      
+
       keyValuePairs.forEach(({ key, value, ttl }) => {
         const redisKey = this.getKey(key);
         const serializedValue = JSON.stringify(value);
-        
+
         if (ttl) {
           pipeline.setex(redisKey, ttl, serializedValue);
         } else {
@@ -706,17 +705,17 @@ class MemoryCacheAdapter implements CacheAdapter {
   async get<T>(key: string): Promise<T | null> {
     const item = this.cache.get(key);
     if (!item) return null;
-    
+
     if (item.expiry && Date.now() > item.expiry) {
       this.cache.delete(key);
       return null;
     }
-    
+
     return item.value;
   }
 
   async set<T>(key: string, value: T, ttlSeconds?: number): Promise<void> {
-    const expiry = ttlSeconds ? Date.now() + (ttlSeconds * 1000) : undefined;
+    const expiry = ttlSeconds ? Date.now() + ttlSeconds * 1000 : undefined;
     this.cache.set(key, { value, expiry });
   }
 
@@ -755,7 +754,7 @@ class MemoryCacheAdapter implements CacheAdapter {
     hitRate?: number;
   }> {
     return {
-      memory: `${(this.cache.size * 100 / 1024).toFixed(1)}KB`,
+      memory: `${((this.cache.size * 100) / 1024).toFixed(1)}KB`,
       connections: 1,
       operations: this.cache.size,
     };
@@ -772,11 +771,11 @@ class MemoryCacheAdapter implements CacheAdapter {
   async acquireLock(lockKey: string, ttlSeconds: number = 30): Promise<string | null> {
     const lockValue = `${Date.now()}-${Math.random()}`;
     const existing = this.cache.get(`lock:${lockKey}`);
-    
+
     if (existing && (!existing.expiry || Date.now() < existing.expiry)) {
       return null; // Lock already exists
     }
-    
+
     await this.set(`lock:${lockKey}`, lockValue, ttlSeconds);
     return lockValue;
   }
@@ -807,12 +806,12 @@ class FailoverCacheAdapter extends EventEmitter implements CacheAdapter {
   private isPrimaryHealthy: boolean = true;
   private retryCount: number = 0;
   private maxRetries: number = 3;
-  
+
   constructor(primary: CacheAdapter, fallback: CacheAdapter) {
     super();
     this.primary = primary;
     this.fallback = fallback;
-    
+
     // 監聽主緩存的健康狀態
     if (primary instanceof EventEmitter) {
       primary.on('error', () => this.handlePrimaryError());
@@ -820,7 +819,7 @@ class FailoverCacheAdapter extends EventEmitter implements CacheAdapter {
       primary.on('connected', () => this.handlePrimaryRecovery());
     }
   }
-  
+
   private handlePrimaryError() {
     this.retryCount++;
     if (this.retryCount >= this.maxRetries && this.isPrimaryHealthy) {
@@ -829,7 +828,7 @@ class FailoverCacheAdapter extends EventEmitter implements CacheAdapter {
       this.emit('failover', { from: 'primary', to: 'fallback' });
     }
   }
-  
+
   private handlePrimaryRecovery() {
     if (!this.isPrimaryHealthy) {
       this.isPrimaryHealthy = true;
@@ -838,40 +837,40 @@ class FailoverCacheAdapter extends EventEmitter implements CacheAdapter {
       this.emit('recovery', { from: 'fallback', to: 'primary' });
     }
   }
-  
+
   private get activeAdapter(): CacheAdapter {
     return this.isPrimaryHealthy ? this.primary : this.fallback;
   }
-  
+
   // 實現所有 CacheAdapter 方法，使用 activeAdapter
   async get<T>(key: string): Promise<T | null> {
     return this.activeAdapter.get<T>(key);
   }
-  
+
   async set<T>(key: string, value: T, ttlSeconds?: number): Promise<void> {
     return this.activeAdapter.set(key, value, ttlSeconds);
   }
-  
+
   async delete(key: string): Promise<boolean> {
     return this.activeAdapter.delete(key);
   }
-  
+
   async has(key: string): Promise<boolean> {
     return this.activeAdapter.has(key);
   }
-  
+
   async clear(): Promise<void> {
     return this.activeAdapter.clear();
   }
-  
+
   async invalidatePattern(pattern: string): Promise<number> {
     return this.activeAdapter.invalidatePattern(pattern);
   }
-  
+
   async getSize(): Promise<number> {
     return this.activeAdapter.getSize();
   }
-  
+
   async getStats(): Promise<any> {
     const stats = await this.activeAdapter.getStats();
     return {
@@ -880,55 +879,52 @@ class FailoverCacheAdapter extends EventEmitter implements CacheAdapter {
       failoverActive: !this.isPrimaryHealthy,
     };
   }
-  
+
   async ping(): Promise<boolean> {
     return this.activeAdapter.ping();
   }
-  
+
   async disconnect(): Promise<void> {
-    await Promise.all([
-      this.primary.disconnect(),
-      this.fallback.disconnect(),
-    ]);
+    await Promise.all([this.primary.disconnect(), this.fallback.disconnect()]);
   }
-  
+
   async acquireLock(lockKey: string, ttlSeconds?: number): Promise<string | null> {
     if (this.activeAdapter.acquireLock) {
       return this.activeAdapter.acquireLock(lockKey, ttlSeconds);
     }
     return null;
   }
-  
+
   async releaseLock(lockKey: string, lockValue: string): Promise<boolean> {
     if (this.activeAdapter.releaseLock) {
       return this.activeAdapter.releaseLock(lockKey, lockValue);
     }
     return false;
   }
-  
+
   async mget<T>(keys: string[]): Promise<(T | null)[]> {
     if (this.activeAdapter.mget) {
       return this.activeAdapter.mget<T>(keys);
     }
     return Promise.all(keys.map(key => this.get<T>(key)));
   }
-  
+
   async mset<T>(keyValuePairs: Array<{ key: string; value: T; ttl?: number }>): Promise<void> {
     if (this.activeAdapter.mset) {
       return this.activeAdapter.mset(keyValuePairs);
     }
-    await Promise.all(
-      keyValuePairs.map(({ key, value, ttl }) => 
-        this.set(key, value, ttl)
-      )
-    );
+    await Promise.all(keyValuePairs.map(({ key, value, ttl }) => this.set(key, value, ttl)));
   }
 }
 
 // 工廠函數：創建緩存適配器（優雅降級，支援 Upstash）
 export function createRedisCacheAdapter(config?: Partial<RedisConfig>): CacheAdapter {
   // 在開發環境中，如果沒有明確啟用 Redis，則使用內存緩存
-  if (process.env.NODE_ENV === 'development' && !process.env.ENABLE_REDIS && !process.env.REDIS_URL) {
+  if (
+    process.env.NODE_ENV === 'development' &&
+    !process.env.ENABLE_REDIS &&
+    !process.env.REDIS_URL
+  ) {
     logger.info('Using memory cache adapter for development (Redis disabled)');
     return new MemoryCacheAdapter();
   }
@@ -971,25 +967,25 @@ export function createRedisCacheAdapter(config?: Partial<RedisConfig>): CacheAda
       const [host, port] = node.split(':');
       return { host, port: parseInt(port) };
     });
-    
+
     defaultConfig.cluster = {
       nodes,
       options: {
         password: process.env.REDIS_PASSWORD,
-      }
+      },
     };
   }
 
   try {
     const redisAdapter = new RedisCacheAdapter({ ...defaultConfig, ...config });
-    
+
     // 如果啟用故障轉移，創建 FailoverCacheAdapter
     if (process.env.ENABLE_CACHE_FAILOVER === 'true') {
       const memoryAdapter = new MemoryCacheAdapter();
       logger.info('啟用緩存故障轉移功能');
       return new FailoverCacheAdapter(redisAdapter, memoryAdapter);
     }
-    
+
     return redisAdapter;
   } catch (error) {
     logger.warn('Failed to create Redis adapter, falling back to memory cache:', error);
@@ -998,4 +994,4 @@ export function createRedisCacheAdapter(config?: Partial<RedisConfig>): CacheAda
 }
 
 // 全局緩存實例（支持優雅降級）
-export const redisCacheAdapter = createRedisCacheAdapter(); 
+export const redisCacheAdapter = createRedisCacheAdapter();

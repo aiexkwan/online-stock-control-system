@@ -82,19 +82,19 @@ class QueryOptimizer {
 
     // 計算查詢複雜度
     const complexity = this.calculateComplexity(document, variables);
-    
+
     // 計算查詢深度
     const depth = this.calculateDepth(document);
-    
+
     // 分析欄位統計
     const fieldStats = this.analyzeFieldStats(document, executionResult);
-    
+
     // 檢測問題
     const issues = this.detectIssues(document, fieldStats, complexity, depth);
-    
+
     // 生成優化建議
     const suggestions = this.generateSuggestions(document, fieldStats, issues);
-    
+
     // 計算性能評分
     const score = this.calculatePerformanceScore(complexity, depth, fieldStats, issues);
 
@@ -127,13 +127,13 @@ class QueryOptimizer {
       const complexityEstimator: FieldComplexityEstimator = (args, childComplexity) => {
         // 基礎複雜度
         let complexity = 1 + childComplexity;
-        
+
         // 分頁參數增加複雜度
         if (args.first || args.last) {
           const limit = args.first || args.last;
           complexity += Math.min(limit, 100); // 限制最大複雜度
         }
-        
+
         return complexity;
       };
 
@@ -187,7 +187,7 @@ class QueryOptimizer {
         const fieldName = selection.name.value;
         const fieldPath = [...path, fieldName];
         const fieldKey = fieldPath.join('.');
-        
+
         const resolverData = resolverInfo[fieldKey] || {};
 
         stats.push({
@@ -262,10 +262,11 @@ class QueryOptimizer {
     }
 
     // 檢查 N+1 問題
-    const nPlusOneFields = fieldStats.filter(field => 
-      field.resolverCalls > 10 && field.cacheHits / (field.cacheHits + field.cacheMisses) < 0.5
+    const nPlusOneFields = fieldStats.filter(
+      field =>
+        field.resolverCalls > 10 && field.cacheHits / (field.cacheHits + field.cacheMisses) < 0.5
     );
-    
+
     nPlusOneFields.forEach(field => {
       issues.push({
         type: 'nplus1',
@@ -286,7 +287,7 @@ class QueryOptimizer {
       issues.push({
         type: 'caching',
         severity: 'medium',
-        message: `欄位 ${field.fieldName} 緩存命中率過低 (${Math.round(field.cacheHits / (field.cacheHits + field.cacheMisses) * 100)}%)`,
+        message: `欄位 ${field.fieldName} 緩存命中率過低 (${Math.round((field.cacheHits / (field.cacheHits + field.cacheMisses)) * 100)}%)`,
         fieldPath: field.path,
         impact: '增加數據庫負載，響應時間變長',
       });
@@ -294,7 +295,7 @@ class QueryOptimizer {
 
     // 檢查過度提取
     const largeDataFields = fieldStats.filter(field => field.dataSize > 1024 * 1024); // 1MB
-    
+
     largeDataFields.forEach(field => {
       issues.push({
         type: 'overfetching',
@@ -454,10 +455,18 @@ class QueryOptimizer {
     // 問題嚴重程度懲罰
     issues.forEach(issue => {
       switch (issue.severity) {
-        case 'critical': score -= 25; break;
-        case 'high': score -= 15; break;
-        case 'medium': score -= 8; break;
-        case 'low': score -= 3; break;
+        case 'critical':
+          score -= 25;
+          break;
+        case 'high':
+          score -= 15;
+          break;
+        case 'medium':
+          score -= 8;
+          break;
+        case 'low':
+          score -= 3;
+          break;
       }
     });
 
@@ -484,11 +493,13 @@ class QueryOptimizer {
       return queryTime >= timeRange.start && queryTime <= timeRange.end;
     });
 
-    const avgScore = timeFilteredResults.reduce((sum, result) => sum + result.score, 0) / timeFilteredResults.length;
-    
+    const avgScore =
+      timeFilteredResults.reduce((sum, result) => sum + result.score, 0) /
+      timeFilteredResults.length;
+
     const allIssues = timeFilteredResults.flatMap(result => result.issues);
     const topIssues = this.getTopIssues(allIssues);
-    
+
     const allSuggestions = timeFilteredResults.flatMap(result => result.suggestions);
     const topSuggestions = this.getTopSuggestions(allSuggestions);
 
@@ -526,7 +537,7 @@ class QueryOptimizer {
     let hash = 0;
     for (let i = 0; i < str.length; i++) {
       const char = str.charCodeAt(i);
-      hash = ((hash << 5) - hash) + char;
+      hash = (hash << 5) - hash + char;
       hash = hash & hash; // Convert to 32bit integer
     }
     return Math.abs(hash).toString(36);
@@ -588,7 +599,7 @@ class QueryOptimizer {
 
   private getTopIssues(issues: QueryIssue[]): QueryIssue[] {
     const issueCount = new Map<string, { issue: QueryIssue; count: number }>();
-    
+
     issues.forEach(issue => {
       const key = `${issue.type}_${issue.message}`;
       const existing = issueCount.get(key);
@@ -606,8 +617,11 @@ class QueryOptimizer {
   }
 
   private getTopSuggestions(suggestions: OptimizationSuggestion[]): OptimizationSuggestion[] {
-    const suggestionCount = new Map<string, { suggestion: OptimizationSuggestion; count: number }>();
-    
+    const suggestionCount = new Map<
+      string,
+      { suggestion: OptimizationSuggestion; count: number }
+    >();
+
     suggestions.forEach(suggestion => {
       const key = suggestion.title;
       const existing = suggestionCount.get(key);
@@ -626,7 +640,7 @@ class QueryOptimizer {
 
   private generateGeneralRecommendations(results: QueryAnalysisResult[]): string[] {
     const recommendations: string[] = [];
-    
+
     const avgComplexity = results.reduce((sum, r) => sum + r.complexity, 0) / results.length;
     if (avgComplexity > 200) {
       recommendations.push('總體查詢複雜度偏高，建議實施查詢拆分和 Fragment 復用策略');
@@ -647,10 +661,4 @@ class QueryOptimizer {
 }
 
 export { QueryOptimizer };
-export type {
-  QueryAnalysisResult,
-  FieldStats,
-  QueryIssue,
-  OptimizationSuggestion,
-  QueryPattern,
-}; 
+export type { QueryAnalysisResult, FieldStats, QueryIssue, OptimizationSuggestion, QueryPattern };

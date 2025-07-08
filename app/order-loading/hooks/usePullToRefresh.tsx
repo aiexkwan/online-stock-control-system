@@ -11,12 +11,12 @@ interface UsePullToRefreshOptions {
 export function usePullToRefresh({
   onRefresh,
   threshold = 80,
-  refreshTimeout = 3000
+  refreshTimeout = 3000,
 }: UsePullToRefreshOptions) {
   const [isPulling, setIsPulling] = useState(false);
   const [pullDistance, setPullDistance] = useState(0);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  
+
   const containerRef = useRef<HTMLDivElement>(null);
   const startY = useRef(0);
   const currentY = useRef(0);
@@ -27,27 +27,30 @@ export function usePullToRefresh({
     }
   }, []);
 
-  const handleTouchMove = useCallback((e: TouchEvent) => {
-    if (!containerRef.current) return;
-    
-    currentY.current = e.touches[0].clientY;
-    const distance = currentY.current - startY.current;
-    
-    if (distance > 0 && containerRef.current.scrollTop === 0) {
-      e.preventDefault();
-      setIsPulling(true);
-      setPullDistance(Math.min(distance, threshold * 1.5));
-    }
-  }, [threshold]);
+  const handleTouchMove = useCallback(
+    (e: TouchEvent) => {
+      if (!containerRef.current) return;
+
+      currentY.current = e.touches[0].clientY;
+      const distance = currentY.current - startY.current;
+
+      if (distance > 0 && containerRef.current.scrollTop === 0) {
+        e.preventDefault();
+        setIsPulling(true);
+        setPullDistance(Math.min(distance, threshold * 1.5));
+      }
+    },
+    [threshold]
+  );
 
   const handleTouchEnd = useCallback(async () => {
     if (!isPulling) return;
-    
+
     setIsPulling(false);
-    
+
     if (pullDistance >= threshold) {
       setIsRefreshing(true);
-      
+
       try {
         await onRefresh();
       } catch (error) {
@@ -83,6 +86,6 @@ export function usePullToRefresh({
     isPulling,
     pullDistance,
     isRefreshing,
-    pullProgress: Math.min((pullDistance / threshold) * 100, 100)
+    pullProgress: Math.min((pullDistance / threshold) * 100, 100),
   };
 }

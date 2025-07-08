@@ -3,12 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { createClient } from '../../lib/supabase';
 import { Progress } from '@/components/ui/progress';
-import { 
-    Tooltip, 
-    TooltipContent, 
-    TooltipProvider, 
-    TooltipTrigger 
-} from '@/components/ui/tooltip';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface AcoRecord {
   order_ref: string;
@@ -49,27 +44,39 @@ export default function AcoOrderStatus() {
         if (fetchError) throw fetchError;
 
         if (data) {
-          const groupedByOrderRef = data.reduce((acc, record: AcoRecord) => {
-            acc[record.order_ref] = acc[record.order_ref] || { items: [] };
-            acc[record.order_ref].items.push(record);
-            return acc;
-          }, {} as Record<string, { items: AcoRecord[] }>);
+          const groupedByOrderRef = data.reduce(
+            (acc, record: AcoRecord) => {
+              acc[record.order_ref] = acc[record.order_ref] || { items: [] };
+              acc[record.order_ref].items.push(record);
+              return acc;
+            },
+            {} as Record<string, { items: AcoRecord[] }>
+          );
 
           const progressData: OrderProgress[] = Object.entries(groupedByOrderRef)
             .map(([orderRef, { items }]) => {
-              const totalRequiredQty = items.reduce((sum, item) => sum + (item.required_qty || 0), 0);
-              const totalCompletedQty = items.reduce((sum, item) => sum + (item.finished_qty || 0), 0);
+              const totalRequiredQty = items.reduce(
+                (sum, item) => sum + (item.required_qty || 0),
+                0
+              );
+              const totalCompletedQty = items.reduce(
+                (sum, item) => sum + (item.finished_qty || 0),
+                0
+              );
               const totalRemainQty = totalRequiredQty - totalCompletedQty;
-              
-              if (totalRequiredQty === 0) { 
-                return null; 
+
+              if (totalRequiredQty === 0) {
+                return null;
               }
 
               let progressPercentage = 0;
               if (totalRequiredQty > 0) {
-                progressPercentage = Math.max(0, Math.min(100, Math.round((totalCompletedQty / totalRequiredQty) * 100)));
+                progressPercentage = Math.max(
+                  0,
+                  Math.min(100, Math.round((totalCompletedQty / totalRequiredQty) * 100))
+                );
               }
-              
+
               const productsDetails: ProductDetail[] = items.map(item => ({
                 code: item.code,
                 requiredQty: item.required_qty || 0,
@@ -77,17 +84,17 @@ export default function AcoOrderStatus() {
               }));
 
               if (totalRemainQty > 0) {
-                 return {
-                    orderRef,
-                    totalRequiredQty,
-                    totalCompletedQty,
-                    progressPercentage,
-                    products: productsDetails, // Added product details
-                 };
+                return {
+                  orderRef,
+                  totalRequiredQty,
+                  totalCompletedQty,
+                  progressPercentage,
+                  products: productsDetails, // Added product details
+                };
               }
-              return null; 
+              return null;
             })
-            .filter(Boolean) as OrderProgress[]; 
+            .filter(Boolean) as OrderProgress[];
 
           setOrdersProgress(progressData.sort((a, b) => a.orderRef.localeCompare(b.orderRef)));
         }
@@ -95,15 +102,15 @@ export default function AcoOrderStatus() {
         console.error('Error fetching ACO data for status component:', err);
         let errorMessage = 'An unknown error occurred while fetching ACO status';
         if (err instanceof Error) {
-            errorMessage = err.message;
+          errorMessage = err.message;
         } else if (typeof err === 'string') {
-            errorMessage = err;
+          errorMessage = err;
         } else {
-            try {
-                errorMessage = JSON.stringify(err);
-            } catch (e) {
-                // If stringify fails, keep the generic message
-            }
+          try {
+            errorMessage = JSON.stringify(err);
+          } catch (e) {
+            // If stringify fails, keep the generic message
+          }
         }
         setError(errorMessage);
       } finally {
@@ -116,41 +123,60 @@ export default function AcoOrderStatus() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-4">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
-        <p className="ml-3 text-gray-400">Loading ACO Status...</p>
+      <div className='flex items-center justify-center py-4'>
+        <div className='h-8 w-8 animate-spin rounded-full border-b-2 border-blue-500'></div>
+        <p className='ml-3 text-gray-400'>Loading ACO Status...</p>
       </div>
     );
   }
-  if (error) return <div className="text-red-500 bg-red-900 bg-opacity-30 p-3 rounded-md">Error loading ACO Status: {error}</div>;
-  if (ordersProgress.length === 0) return <div className="text-gray-400 py-4 text-center">No active ACO orders to display.</div>;
+  if (error)
+    return (
+      <div className='rounded-md bg-red-900 bg-opacity-30 p-3 text-red-500'>
+        Error loading ACO Status: {error}
+      </div>
+    );
+  if (ordersProgress.length === 0)
+    return <div className='py-4 text-center text-gray-400'>No active ACO orders to display.</div>;
 
   return (
     <TooltipProvider>
-      <div className="space-y-4">
-        {ordersProgress.map((order) => (
+      <div className='space-y-4'>
+        {ordersProgress.map(order => (
           <Tooltip key={order.orderRef}>
             <TooltipTrigger asChild>
-              <div className="bg-gray-700 p-4 rounded-lg shadow-md hover:bg-gray-600 transition-colors duration-150 cursor-default">
-                <div className="flex justify-between items-center mb-2">
+              <div className='cursor-default rounded-lg bg-gray-700 p-4 shadow-md transition-colors duration-150 hover:bg-gray-600'>
+                <div className='mb-2 flex items-center justify-between'>
                   <div>
-                      <h3 className="text-md font-semibold text-blue-300">Order Reference : {order.orderRef}</h3>
+                    <h3 className='text-md font-semibold text-blue-300'>
+                      Order Reference : {order.orderRef}
+                    </h3>
                   </div>
-                  <span className="text-sm font-medium text-white">{order.progressPercentage}%</span>
+                  <span className='text-sm font-medium text-white'>
+                    {order.progressPercentage}%
+                  </span>
                 </div>
-                <Progress value={order.progressPercentage} className="w-full h-2 [&>div]:bg-green-500" />
-                <div className="text-xs text-gray-400 mt-1.5 text-right">
+                <Progress
+                  value={order.progressPercentage}
+                  className='h-2 w-full [&>div]:bg-green-500'
+                />
+                <div className='mt-1.5 text-right text-xs text-gray-400'>
                   {order.totalCompletedQty} / {order.totalRequiredQty} Units Completed
                 </div>
               </div>
             </TooltipTrigger>
-            <TooltipContent className="bg-gray-800 text-white border-gray-700 p-3 rounded-md shadow-lg w-64"> {/* Added w-64 for better layout */}
-              <p className="font-bold mb-2 text-sm">Details for Order: {order.orderRef}</p>
-              <div className="space-y-1">
+            <TooltipContent className='w-64 rounded-md border-gray-700 bg-gray-800 p-3 text-white shadow-lg'>
+              {' '}
+              {/* Added w-64 for better layout */}
+              <p className='mb-2 text-sm font-bold'>Details for Order: {order.orderRef}</p>
+              <div className='space-y-1'>
                 {order.products.map(product => (
-                  <div key={product.code} className="text-xs flex justify-between">
-                    <span className="font-medium text-gray-300 truncate pr-2" title={product.code}>{product.code}:</span> 
-                    <span className="text-gray-200 whitespace-nowrap">{product.completedQty} / {product.requiredQty}</span>
+                  <div key={product.code} className='flex justify-between text-xs'>
+                    <span className='truncate pr-2 font-medium text-gray-300' title={product.code}>
+                      {product.code}:
+                    </span>
+                    <span className='whitespace-nowrap text-gray-200'>
+                      {product.completedQty} / {product.requiredQty}
+                    </span>
                   </div>
                 ))}
               </div>
@@ -160,4 +186,4 @@ export default function AcoOrderStatus() {
       </div>
     </TooltipProvider>
   );
-} 
+}

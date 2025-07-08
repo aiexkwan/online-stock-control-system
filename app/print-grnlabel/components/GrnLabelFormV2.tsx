@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import React, { useCallback, useEffect, useRef } from 'react';
 import { createClient } from '@/app/utils/supabase/client';
@@ -13,11 +13,11 @@ import { GrnDetailCard } from './GrnDetailCard';
 import { WeightInputList } from './WeightInputList';
 
 // Import constants
-import { 
+import {
   LABEL_MODES,
   type PalletTypeKey,
   type PackageTypeKey,
-  type LabelMode 
+  type LabelMode,
 } from '../../constants/grnConstants';
 
 // Add custom CSS for scrollbar styling
@@ -77,16 +77,16 @@ import { useGrnLabelBusinessV3 } from '../hooks/useGrnLabelBusinessV3';
 interface GrnProductInfo {
   code: string;
   description: string;
-  standard_qty?: string;  // GRN Label 不需要此欄位
-  type?: string;          // GRN Label 不需要此欄位
+  standard_qty?: string; // GRN Label 不需要此欄位
+  type?: string; // GRN Label 不需要此欄位
 }
 
 export const GrnLabelFormV2: React.FC = () => {
   const supabase = createClient();
-  
+
   // 使用統一的 state 管理
   const { state, actions } = useGrnFormReducer();
-  
+
   // 當前用戶 ID
   const [currentUserId, setCurrentUserId] = React.useState<string>('');
 
@@ -95,7 +95,7 @@ export const GrnLabelFormV2: React.FC = () => {
     if (!qcProductInfo) {
       return null;
     }
-    
+
     // For GRN Label, we only need code and description
     return {
       code: qcProductInfo.code,
@@ -104,10 +104,7 @@ export const GrnLabelFormV2: React.FC = () => {
   }, []);
 
   // Use the business logic hook (V2 版本使用 reducer state)
-  const {
-    weightCalculation,
-    processPrintRequest
-  } = useGrnLabelBusinessV3({
+  const { weightCalculation, processPrintRequest } = useGrnLabelBusinessV3({
     state,
     actions,
     currentUserId,
@@ -117,8 +114,10 @@ export const GrnLabelFormV2: React.FC = () => {
   useEffect(() => {
     const initializeUser = async () => {
       try {
-        const { data: { user } } = await supabase.auth.getUser();
-        
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+
         if (user?.email) {
           // Extract clock number from email (format: clocknumber@pennine.com)
           const clockNumber = user.email.split('@')[0];
@@ -128,7 +127,7 @@ export const GrnLabelFormV2: React.FC = () => {
             new Error('User session not found. Please log in again.'),
             {
               component: 'GrnLabelFormV2',
-              action: 'auth_initialization'
+              action: 'auth_initialization',
             },
             'authentication'
           );
@@ -139,7 +138,7 @@ export const GrnLabelFormV2: React.FC = () => {
           error as Error,
           {
             component: 'GrnLabelFormV2',
-            action: 'auth_initialization'
+            action: 'auth_initialization',
           },
           'authentication'
         );
@@ -151,7 +150,10 @@ export const GrnLabelFormV2: React.FC = () => {
   }, [supabase]);
 
   // Calculate pallet count for display purposes
-  const palletCount = Math.min(22, Object.values(state.palletType).reduce((sum, v) => sum + (parseInt(v) || 0), 0) || 1);
+  const palletCount = Math.min(
+    22,
+    Object.values(state.palletType).reduce((sum, v) => sum + (parseInt(v) || 0), 0) || 1
+  );
 
   // 確保初始狀態有至少一個輸入框
   useEffect(() => {
@@ -162,88 +164,109 @@ export const GrnLabelFormV2: React.FC = () => {
   }, []); // 只在組件掛載時執行一次
 
   // Form handlers
-  const handleFormChange = useCallback((field: keyof typeof state.formData, value: string) => {
-    actions.setFormField(field, value);
-  }, [actions, state]);
+  const handleFormChange = useCallback(
+    (field: keyof typeof state.formData, value: string) => {
+      actions.setFormField(field, value);
+    },
+    [actions, state]
+  );
 
   // 移除 handleSupplierBlur 函數，改為直接在 GrnDetailCard 中處理
-  const handleSupplierInfoChange = useCallback((supplierInfo: any) => {
-    if (supplierInfo) {
-      actions.setSupplierInfo({
-        code: supplierInfo.supplier_code,
-        name: supplierInfo.supplier_name
-      });
-      actions.setSupplierError(null);
-    }
-  }, [actions]);
+  const handleSupplierInfoChange = useCallback(
+    (supplierInfo: any) => {
+      if (supplierInfo) {
+        actions.setSupplierInfo({
+          code: supplierInfo.supplier_code,
+          name: supplierInfo.supplier_name,
+        });
+        actions.setSupplierError(null);
+      }
+    },
+    [actions]
+  );
 
   // Handle label mode change
-  const handleLabelModeChange = useCallback((mode: LabelMode) => {
-    actions.setLabelMode(mode);
-    
-    if (mode === 'qty') {
-      // Set Not Included = 1 for both pallet and package types
-      Object.keys(state.palletType).forEach(key => {
-        actions.setPalletType(key as PalletTypeKey, key === 'notIncluded' ? '1' : '');
-      });
-      Object.keys(state.packageType).forEach(key => {
-        actions.setPackageType(key as PackageTypeKey, key === 'notIncluded' ? '1' : '');
-      });
-    } else {
-      // Reset both pallet and package types when switching to weight mode
-      Object.keys(state.palletType).forEach(key => {
-        actions.setPalletType(key as PalletTypeKey, '');
-      });
-      Object.keys(state.packageType).forEach(key => {
-        actions.setPackageType(key as PackageTypeKey, '');
-      });
-    }
-  }, [actions, state.palletType, state.packageType]);
+  const handleLabelModeChange = useCallback(
+    (mode: LabelMode) => {
+      actions.setLabelMode(mode);
 
-  const handlePalletTypeChange = useCallback((key: PalletTypeKey, value: string) => {
-    // 先清空所有托盤類型
-    Object.keys(state.palletType).forEach(k => {
-      actions.setPalletType(k as PalletTypeKey, '');
-    });
-    // 設置選中的托盤類型
-    actions.setPalletType(key, value);
-  }, [actions, state.palletType]);
+      if (mode === 'qty') {
+        // Set Not Included = 1 for both pallet and package types
+        Object.keys(state.palletType).forEach(key => {
+          actions.setPalletType(key as PalletTypeKey, key === 'notIncluded' ? '1' : '');
+        });
+        Object.keys(state.packageType).forEach(key => {
+          actions.setPackageType(key as PackageTypeKey, key === 'notIncluded' ? '1' : '');
+        });
+      } else {
+        // Reset both pallet and package types when switching to weight mode
+        Object.keys(state.palletType).forEach(key => {
+          actions.setPalletType(key as PalletTypeKey, '');
+        });
+        Object.keys(state.packageType).forEach(key => {
+          actions.setPackageType(key as PackageTypeKey, '');
+        });
+      }
+    },
+    [actions, state.palletType, state.packageType]
+  );
 
-  const handlePackageTypeChange = useCallback((key: PackageTypeKey, value: string) => {
-    // 先清空所有包裝類型
-    Object.keys(state.packageType).forEach(k => {
-      actions.setPackageType(k as PackageTypeKey, '');
-    });
-    // 設置選中的包裝類型
-    actions.setPackageType(key, value);
-  }, [actions, state.packageType]);
+  const handlePalletTypeChange = useCallback(
+    (key: PalletTypeKey, value: string) => {
+      // 先清空所有托盤類型
+      Object.keys(state.palletType).forEach(k => {
+        actions.setPalletType(k as PalletTypeKey, '');
+      });
+      // 設置選中的托盤類型
+      actions.setPalletType(key, value);
+    },
+    [actions, state.palletType]
+  );
+
+  const handlePackageTypeChange = useCallback(
+    (key: PackageTypeKey, value: string) => {
+      // 先清空所有包裝類型
+      Object.keys(state.packageType).forEach(k => {
+        actions.setPackageType(k as PackageTypeKey, '');
+      });
+      // 設置選中的包裝類型
+      actions.setPackageType(key, value);
+    },
+    [actions, state.packageType]
+  );
 
   // 使用 ref 來避免閉包問題
   const stateRef = useRef(state);
   stateRef.current = state;
 
-  const handleGrossWeightChange = useCallback((idx: number, value: string) => {
-    const currentState = stateRef.current;
-    
-    actions.setGrossWeight(idx, value);
-    
-    // 自動添加新行
-    if (idx === currentState.grossWeights.length - 1 && value.trim() !== '' && currentState.grossWeights.length < 22) {
-      setTimeout(() => {
-        actions.addGrossWeight();
-      }, 0);
-    }
-  }, [actions]);
+  const handleGrossWeightChange = useCallback(
+    (idx: number, value: string) => {
+      const currentState = stateRef.current;
+
+      actions.setGrossWeight(idx, value);
+
+      // 自動添加新行
+      if (
+        idx === currentState.grossWeights.length - 1 &&
+        value.trim() !== '' &&
+        currentState.grossWeights.length < 22
+      ) {
+        setTimeout(() => {
+          actions.addGrossWeight();
+        }, 0);
+      }
+    },
+    [actions]
+  );
 
   // Validation
-  const isFormValid = 
+  const isFormValid =
     state.formData.grnNumber.trim() !== '' &&
     state.formData.materialSupplier.trim() !== '' &&
     state.formData.productCode.trim() !== '' &&
-    (state.labelMode === 'qty' || (
-      Object.values(state.palletType).some(v => v.trim() !== '') &&
-      Object.values(state.packageType).some(v => v.trim() !== '')
-    )) &&
+    (state.labelMode === 'qty' ||
+      (Object.values(state.palletType).some(v => v.trim() !== '') &&
+        Object.values(state.packageType).some(v => v.trim() !== ''))) &&
     state.grossWeights.some(v => v.trim() !== '') &&
     state.productInfo &&
     state.supplierInfo;
@@ -257,7 +280,7 @@ export const GrnLabelFormV2: React.FC = () => {
         {
           component: 'GrnLabelFormV2',
           action: 'form_validation',
-          clockNumber: currentUserId
+          clockNumber: currentUserId,
         }
       );
       return;
@@ -266,28 +289,33 @@ export const GrnLabelFormV2: React.FC = () => {
   }, [isFormValid, actions, currentUserId]);
 
   // Clock number confirmation
-  const handleClockNumberConfirm = useCallback(async (clockNumber: string) => {
-    actions.toggleClockNumberDialog();
-    await processPrintRequest(clockNumber);
-  }, [processPrintRequest, actions]);
+  const handleClockNumberConfirm = useCallback(
+    async (clockNumber: string) => {
+      actions.toggleClockNumberDialog();
+      await processPrintRequest(clockNumber);
+    },
+    [processPrintRequest, actions]
+  );
 
   return (
     <>
       {/* Inject custom styles */}
-      <style jsx global>{customStyles}</style>
-      
-      <UniversalContainer variant="page" maxWidth="full" padding="none" className="h-screen">
-        <div className="grid grid-cols-12 gap-4 h-auto max-w-6xl mx-auto pt-4">
+      <style jsx global>
+        {customStyles}
+      </style>
+
+      <UniversalContainer variant='page' maxWidth='full' padding='none' className='h-screen'>
+        <div className='mx-auto grid h-auto max-w-6xl grid-cols-12 gap-4 pt-4'>
           {/* Widget 1 - GRN Details (左邊) */}
-          <div className="col-start-2 col-end-6">
+          <div className='col-start-2 col-end-6'>
             <UniversalCard
-              variant="widget"
-              theme="neutral"
+              variant='widget'
+              theme='neutral'
               glass={false}
               glow={false}
-              title=""
-              padding="md"
-              className="w-full bg-transparent border-0 shadow-none"
+              title=''
+              padding='md'
+              className='w-full border-0 bg-transparent shadow-none'
             >
               <GrnDetailCard
                 formData={state.formData}
@@ -300,11 +328,11 @@ export const GrnLabelFormV2: React.FC = () => {
                 packageType={state.packageType}
                 onFormChange={handleFormChange}
                 onSupplierInfoChange={handleSupplierInfoChange}
-                onProductInfoChange={(qcProductInfo) => {
+                onProductInfoChange={qcProductInfo => {
                   const adaptedInfo = adaptProductInfo(qcProductInfo);
                   actions.setProductInfo(adaptedInfo);
                 }}
-                onLabelModeChange={(mode) => handleLabelModeChange(mode)}
+                onLabelModeChange={mode => handleLabelModeChange(mode)}
                 onPalletTypeChange={handlePalletTypeChange}
                 onPackageTypeChange={handlePackageTypeChange}
                 disabled={state.ui.isProcessing}
@@ -312,71 +340,93 @@ export const GrnLabelFormV2: React.FC = () => {
             </UniversalCard>
           </div>
 
-
           {/* Widget 3 - Weight/Qty Input (右邊) */}
-          <div className="col-start-6 col-end-11">
+          <div className='col-start-6 col-end-11'>
             <UniversalCard
-              variant="widget"
-              theme="neutral"
+              variant='widget'
+              theme='neutral'
               glass={false}
               glow={false}
-              title=""
-              padding="md"
-              className="w-full flex flex-col bg-transparent border-0 shadow-none"
+              title=''
+              padding='md'
+              className='flex w-full flex-col border-0 bg-transparent shadow-none'
             >
-
               {/* Weight/Quantity Input Section */}
-              <div className="flex-1 overflow-hidden">
+              <div className='flex-1 overflow-hidden'>
                 <WeightInputList
                   grossWeights={state.grossWeights}
                   onChange={handleGrossWeightChange}
-                  onRemove={useCallback((idx: number) => {
-                    actions.removeGrossWeight(idx);
-                    // 確保至少有一個輸入框
-                    if (state.grossWeights.length === 1 || 
-                        (state.grossWeights.length === 2 && state.grossWeights[state.grossWeights.length - 1].trim() !== '')) {
-                      actions.addGrossWeight();
-                    }
-                  }, [actions, state.grossWeights])}
+                  onRemove={useCallback(
+                    (idx: number) => {
+                      actions.removeGrossWeight(idx);
+                      // 確保至少有一個輸入框
+                      if (
+                        state.grossWeights.length === 1 ||
+                        (state.grossWeights.length === 2 &&
+                          state.grossWeights[state.grossWeights.length - 1].trim() !== '')
+                      ) {
+                        actions.addGrossWeight();
+                      }
+                    },
+                    [actions, state.grossWeights]
+                  )}
                   labelMode={state.labelMode}
-                  selectedPalletType={(Object.entries(state.palletType).find(([, value]) => (parseInt(value) || 0) > 0)?.[0] || 'notIncluded') as PalletTypeKey}
-                  selectedPackageType={(Object.entries(state.packageType).find(([, value]) => (parseInt(value) || 0) > 0)?.[0] || 'notIncluded') as PackageTypeKey}
+                  selectedPalletType={
+                    (Object.entries(state.palletType).find(
+                      ([, value]) => (parseInt(value) || 0) > 0
+                    )?.[0] || 'notIncluded') as PalletTypeKey
+                  }
+                  selectedPackageType={
+                    (Object.entries(state.packageType).find(
+                      ([, value]) => (parseInt(value) || 0) > 0
+                    )?.[0] || 'notIncluded') as PackageTypeKey
+                  }
                   maxItems={22}
                   disabled={state.ui.isProcessing}
                 />
               </div>
 
               {/* Action Button */}
-              <div className="mt-4">
-                <div className="relative group">
+              <div className='mt-4'>
+                <div className='group relative'>
                   <button
                     onClick={handlePrintClick}
                     disabled={!isFormValid || state.ui.isProcessing}
-                    className={`w-full py-4 px-6 rounded-2xl font-semibold text-lg transition-all duration-300 ease-out flex items-center justify-center space-x-3 relative overflow-hidden ${
+                    className={`relative flex w-full items-center justify-center space-x-3 overflow-hidden rounded-2xl px-6 py-4 text-lg font-semibold transition-all duration-300 ease-out ${
                       !isFormValid || state.ui.isProcessing
-                        ? 'bg-gradient-to-r from-slate-700 to-slate-600 text-slate-300 cursor-not-allowed shadow-lg shadow-slate-900/20'
-                        : 'bg-gradient-to-r from-orange-600 via-orange-500 to-amber-500 hover:from-orange-500 hover:via-orange-400 hover:to-amber-400 text-white shadow-2xl shadow-orange-500/25 hover:shadow-orange-400/40 hover:scale-[1.02] active:scale-[0.98]'
+                        ? 'cursor-not-allowed bg-gradient-to-r from-slate-700 to-slate-600 text-slate-300 shadow-lg shadow-slate-900/20'
+                        : 'bg-gradient-to-r from-orange-600 via-orange-500 to-amber-500 text-white shadow-2xl shadow-orange-500/25 hover:scale-[1.02] hover:from-orange-500 hover:via-orange-400 hover:to-amber-400 hover:shadow-orange-400/40 active:scale-[0.98]'
                     }`}
                   >
                     {/* 按鈕內部光效 */}
                     {!state.ui.isProcessing && isFormValid && (
-                      <div className="absolute inset-0 bg-gradient-to-r from-white/10 via-white/5 to-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                      <div className='absolute inset-0 bg-gradient-to-r from-white/10 via-white/5 to-white/10 opacity-0 transition-opacity duration-300 group-hover:opacity-100'></div>
                     )}
-                    
-                    <div className="relative z-10 flex items-center space-x-3">
+
+                    <div className='relative z-10 flex items-center space-x-3'>
                       {state.ui.isProcessing ? (
                         <>
-                          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white"></div>
+                          <div className='h-6 w-6 animate-spin rounded-full border-b-2 border-white'></div>
                           <span>Processing Labels...</span>
                         </>
                       ) : (
                         <>
-                          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                          <svg
+                            className='h-6 w-6'
+                            fill='none'
+                            stroke='currentColor'
+                            viewBox='0 0 24 24'
+                          >
+                            <path
+                              strokeLinecap='round'
+                              strokeLinejoin='round'
+                              strokeWidth={2}
+                              d='M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z'
+                            />
                           </svg>
                           <span>Print GRN Label(s)</span>
                           {state.grossWeights.filter(w => w.trim() !== '').length > 0 && (
-                            <span className="bg-orange-600/80 px-2 py-1 rounded-full text-sm font-bold">
+                            <span className='rounded-full bg-orange-600/80 px-2 py-1 text-sm font-bold'>
                               {state.grossWeights.filter(w => w.trim() !== '').length}
                             </span>
                           )}
@@ -388,13 +438,13 @@ export const GrnLabelFormV2: React.FC = () => {
 
                 {/* Progress Bar */}
                 {state.progress.total > 0 && (
-                  <div className="mt-4">
+                  <div className='mt-4'>
                     <EnhancedProgressBar
                       current={state.progress.current}
                       total={state.progress.total}
                       status={state.progress.status}
-                      title="GRN Label Generation"
-                      variant="compact"
+                      title='GRN Label Generation'
+                      variant='compact'
                       showPercentage={true}
                       showItemDetails={true}
                     />
@@ -411,8 +461,8 @@ export const GrnLabelFormV2: React.FC = () => {
         onOpenChange={() => actions.toggleClockNumberDialog()}
         onConfirm={handleClockNumberConfirm}
         onCancel={() => actions.toggleClockNumberDialog()}
-        title="Confirm Printing"
-        description="Please enter your clock number to proceed with printing GRN labels."
+        title='Confirm Printing'
+        description='Please enter your clock number to proceed with printing GRN labels.'
         isLoading={state.ui.isProcessing}
       />
     </>

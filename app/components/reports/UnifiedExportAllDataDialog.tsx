@@ -41,14 +41,16 @@ export function UnifiedExportAllDataDialog({ isOpen, onClose }: UnifiedExportAll
   const [loading, setLoading] = useState(false);
 
   const handleTableToggle = (tableName: string) => {
-    setSelectedTables(prev => 
-      prev.includes(tableName) 
-        ? prev.filter(t => t !== tableName)
-        : [...prev, tableName]
+    setSelectedTables(prev =>
+      prev.includes(tableName) ? prev.filter(t => t !== tableName) : [...prev, tableName]
     );
   };
 
-  const exportTableAsCsv = async (tableName: string, displayName: string, requiresDateRange: boolean) => {
+  const exportTableAsCsv = async (
+    tableName: string,
+    displayName: string,
+    requiresDateRange: boolean
+  ) => {
     const supabase = createClient();
     let query = supabase.from(tableName).select('*');
 
@@ -67,7 +69,9 @@ export function UnifiedExportAllDataDialog({ isOpen, onClose }: UnifiedExportAll
     }
 
     if (!data || data.length === 0) {
-      process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(`No data found for ${tableName}`);
+      process.env.NODE_ENV !== 'production' &&
+        process.env.NODE_ENV !== 'production' &&
+        console.log(`No data found for ${tableName}`);
       return;
     }
 
@@ -75,18 +79,24 @@ export function UnifiedExportAllDataDialog({ isOpen, onClose }: UnifiedExportAll
     const headers = Object.keys(data[0]);
     const csvContent = [
       headers.join(','),
-      ...data.map(row => 
-        headers.map(header => {
-          const value = row[header];
-          // Handle special characters and quotes in CSV
-          if (value === null || value === undefined) return '';
-          const stringValue = String(value);
-          if (stringValue.includes(',') || stringValue.includes('"') || stringValue.includes('\n')) {
-            return `"${stringValue.replace(/"/g, '""')}"`;
-          }
-          return stringValue;
-        }).join(',')
-      )
+      ...data.map(row =>
+        headers
+          .map(header => {
+            const value = row[header];
+            // Handle special characters and quotes in CSV
+            if (value === null || value === undefined) return '';
+            const stringValue = String(value);
+            if (
+              stringValue.includes(',') ||
+              stringValue.includes('"') ||
+              stringValue.includes('\n')
+            ) {
+              return `"${stringValue.replace(/"/g, '""')}"`;
+            }
+            return stringValue;
+          })
+          .join(',')
+      ),
     ].join('\n');
 
     // Download file
@@ -94,7 +104,10 @@ export function UnifiedExportAllDataDialog({ isOpen, onClose }: UnifiedExportAll
     const link = document.createElement('a');
     const url = URL.createObjectURL(blob);
     link.setAttribute('href', url);
-    link.setAttribute('download', `${displayName.replace(/\s+/g, '_')}_${format(new Date(), 'yyyyMMdd_HHmmss')}.csv`);
+    link.setAttribute(
+      'download',
+      `${displayName.replace(/\s+/g, '_')}_${format(new Date(), 'yyyyMMdd_HHmmss')}.csv`
+    );
     link.style.visibility = 'hidden';
     document.body.appendChild(link);
     link.click();
@@ -104,9 +117,9 @@ export function UnifiedExportAllDataDialog({ isOpen, onClose }: UnifiedExportAll
   const handleGenerateReport = async (format: 'pdf' | 'excel') => {
     if (selectedTables.length === 0) {
       toast({
-        title: "No Tables Selected",
-        description: "Please select at least one table to export",
-        variant: "destructive",
+        title: 'No Tables Selected',
+        description: 'Please select at least one table to export',
+        variant: 'destructive',
       });
       return;
     }
@@ -116,9 +129,9 @@ export function UnifiedExportAllDataDialog({ isOpen, onClose }: UnifiedExportAll
       // Export All Data only supports CSV format
       if (format !== 'excel') {
         toast({
-          title: "Format Not Supported",
-          description: "Data export is only available in CSV format",
-          variant: "destructive",
+          title: 'Format Not Supported',
+          description: 'Data export is only available in CSV format',
+          variant: 'destructive',
         });
         return;
       }
@@ -130,55 +143,55 @@ export function UnifiedExportAllDataDialog({ isOpen, onClose }: UnifiedExportAll
           await exportTableAsCsv(tableName, tableOption.name, tableOption.requiresDateRange);
         }
       }
-      
+
       toast({
-        title: "Success",
+        title: 'Success',
         description: `Successfully exported ${selectedTables.length} table(s)`,
       });
     } catch (error) {
       console.error('Error generating report:', error);
       toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to export data",
-        variant: "destructive",
+        title: 'Error',
+        description: error instanceof Error ? error.message : 'Failed to export data',
+        variant: 'destructive',
       });
     } finally {
       setLoading(false);
     }
   };
 
-  const requiresDateRange = selectedTables.some(tableName => 
-    tableOptions.find(t => t.tableName === tableName)?.requiresDateRange
+  const requiresDateRange = selectedTables.some(
+    tableName => tableOptions.find(t => t.tableName === tableName)?.requiresDateRange
   );
 
   return (
     <UnifiedReportDialog
       isOpen={isOpen}
       onClose={onClose}
-      title="Export All Data"
-      description="Export selected database tables as CSV files"
+      title='Export All Data'
+      description='Export selected database tables as CSV files'
       formats={['excel']} // Using 'excel' to represent CSV export
       onGenerate={handleGenerateReport}
       loading={loading}
     >
-      <div className="space-y-4">
-        <div className="space-y-3">
+      <div className='space-y-4'>
+        <div className='space-y-3'>
           <Label>Select Tables to Export</Label>
-          {tableOptions.map((table) => (
-            <div key={table.tableName} className="flex items-center space-x-2">
+          {tableOptions.map(table => (
+            <div key={table.tableName} className='flex items-center space-x-2'>
               <Checkbox
                 id={table.tableName}
                 checked={selectedTables.includes(table.tableName)}
                 onCheckedChange={() => handleTableToggle(table.tableName)}
-                className="border-slate-600 data-[state=checked]:bg-blue-600"
+                className='border-slate-600 data-[state=checked]:bg-blue-600'
               />
               <Label
                 htmlFor={table.tableName}
-                className="text-sm font-normal text-white cursor-pointer"
+                className='cursor-pointer text-sm font-normal text-white'
               >
                 {table.name}
                 {table.requiresDateRange && (
-                  <span className="text-slate-500 ml-2">(requires date range)</span>
+                  <span className='ml-2 text-slate-500'>(requires date range)</span>
                 )}
               </Label>
             </div>
@@ -186,31 +199,31 @@ export function UnifiedExportAllDataDialog({ isOpen, onClose }: UnifiedExportAll
         </div>
 
         {requiresDateRange && (
-          <div className="grid grid-cols-2 gap-4 pt-4 border-t border-slate-700">
-            <div className="space-y-2">
-              <Label htmlFor="start-date">Start Date</Label>
+          <div className='grid grid-cols-2 gap-4 border-t border-slate-700 pt-4'>
+            <div className='space-y-2'>
+              <Label htmlFor='start-date'>Start Date</Label>
               <Input
-                id="start-date"
-                type="date"
+                id='start-date'
+                type='date'
                 value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-                className="bg-slate-800 border-slate-600 text-white"
+                onChange={e => setStartDate(e.target.value)}
+                className='border-slate-600 bg-slate-800 text-white'
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="end-date">End Date</Label>
+            <div className='space-y-2'>
+              <Label htmlFor='end-date'>End Date</Label>
               <Input
-                id="end-date"
-                type="date"
+                id='end-date'
+                type='date'
                 value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-                className="bg-slate-800 border-slate-600 text-white"
+                onChange={e => setEndDate(e.target.value)}
+                className='border-slate-600 bg-slate-800 text-white'
               />
             </div>
           </div>
         )}
-        
-        <p className="text-sm text-slate-500">
+
+        <p className='text-sm text-slate-500'>
           Each selected table will be exported as a separate CSV file
         </p>
       </div>

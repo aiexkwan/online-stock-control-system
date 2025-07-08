@@ -9,7 +9,7 @@ const baseOptions: pino.LoggerOptions = {
       app: 'warehouse-system',
       hostname: process.env.HOSTNAME || 'localhost',
     }),
-    level: (label) => {
+    level: label => {
       return { level: label.toUpperCase() };
     },
   },
@@ -68,35 +68,39 @@ export const logApiRequest = (
   params?: Record<string, any>,
   body?: any
 ) => {
-  apiLogger.info({
-    method,
-    path,
-    params,
-    body: body ? Object.keys(body) : undefined, // 只記錄 key，避免敏感資料
-  }, 'API Request');
+  apiLogger.info(
+    {
+      method,
+      path,
+      params,
+      body: body ? Object.keys(body) : undefined, // 只記錄 key，避免敏感資料
+    },
+    'API Request'
+  );
 };
 
 // 輔助函數：記錄 API 回應
-export const logApiResponse = (
-  method: string,
-  path: string,
-  status: number,
-  duration?: number
-) => {
+export const logApiResponse = (method: string, path: string, status: number, duration?: number) => {
   if (status >= 400) {
-    apiLogger.error({
-      method,
-      path,
-      status,
-      duration,
-    }, 'API Response Error');
+    apiLogger.error(
+      {
+        method,
+        path,
+        status,
+        duration,
+      },
+      'API Response Error'
+    );
   } else {
-    apiLogger.info({
-      method,
-      path,
-      status,
-      duration,
-    }, 'API Response');
+    apiLogger.info(
+      {
+        method,
+        path,
+        status,
+        duration,
+      },
+      'API Response'
+    );
   }
 };
 
@@ -108,18 +112,24 @@ export const logDbOperation = (
   error?: Error
 ) => {
   if (error) {
-    dbLogger.error({
-      operation,
-      table,
-      details,
-      err: error,
-    }, 'Database operation failed');
+    dbLogger.error(
+      {
+        operation,
+        table,
+        details,
+        err: error,
+      },
+      'Database operation failed'
+    );
   } else {
-    dbLogger.debug({
-      operation,
-      table,
-      details,
-    }, 'Database operation');
+    dbLogger.debug(
+      {
+        operation,
+        table,
+        details,
+      },
+      'Database operation'
+    );
   }
 };
 
@@ -129,11 +139,14 @@ export const logPerformance = (
   duration: number,
   metadata?: Record<string, any>
 ) => {
-  systemLogger.info({
-    operation,
-    duration,
-    ...metadata,
-  }, 'Performance metric');
+  systemLogger.info(
+    {
+      operation,
+      duration,
+      ...metadata,
+    },
+    'Performance metric'
+  );
 };
 
 // 測試 logger 是否正常運作

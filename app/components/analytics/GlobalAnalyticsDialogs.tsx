@@ -60,12 +60,12 @@ export function GlobalAnalyticsDialogs() {
         isOpen={dialogStates.finishedTransfer}
         onClose={() => closeDialog('finishedTransfer')}
       />
-      
+
       <OrderTrendDialog
         isOpen={dialogStates.orderTrend}
         onClose={() => closeDialog('orderTrend')}
       />
-      
+
       <StaffWorkloadDialog
         isOpen={dialogStates.staffWorkload}
         onClose={() => closeDialog('staffWorkload')}

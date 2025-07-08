@@ -4,20 +4,14 @@ import { createClient } from '@/app/utils/supabase/server';
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { 
-      productCode, 
-      quantity, 
-      userId, 
-      palletCount = 1, 
-      description 
-    } = body;
+    const { productCode, quantity, userId, palletCount = 1, description } = body;
 
     // Validate required fields
     if (!productCode || !quantity || !userId) {
       return NextResponse.json(
-        { 
-          success: false, 
-          error: 'Missing required fields: productCode, quantity, or userId' 
+        {
+          success: false,
+          error: 'Missing required fields: productCode, quantity, or userId',
         },
         { status: 400 }
       );
@@ -30,9 +24,9 @@ export async function POST(request: NextRequest) {
 
     if (isNaN(quantityNum) || isNaN(userIdNum) || isNaN(palletCountNum)) {
       return NextResponse.json(
-        { 
-          success: false, 
-          error: 'Invalid data types for quantity, userId, or palletCount' 
+        {
+          success: false,
+          error: 'Invalid data types for quantity, userId, or palletCount',
         },
         { status: 400 }
       );
@@ -46,15 +40,15 @@ export async function POST(request: NextRequest) {
       p_quantity: quantityNum,
       p_user_id: userIdNum,
       p_pallet_count: palletCountNum,
-      p_description: description || null
+      p_description: description || null,
     });
 
     if (error) {
       console.error('Error calling handle_print_label_updates RPC:', error);
       return NextResponse.json(
-        { 
-          success: false, 
-          error: `Database error: ${error.message}` 
+        {
+          success: false,
+          error: `Database error: ${error.message}`,
         },
         { status: 500 }
       );
@@ -65,9 +59,9 @@ export async function POST(request: NextRequest) {
 
     if (!result.success) {
       return NextResponse.json(
-        { 
-          success: false, 
-          error: result.message || 'Unknown error occurred' 
+        {
+          success: false,
+          error: result.message || 'Unknown error occurred',
         },
         { status: 500 }
       );
@@ -77,17 +71,16 @@ export async function POST(request: NextRequest) {
       success: true,
       message: result.message,
       stockUpdated: result.stock_updated,
-      workUpdated: result.work_updated
+      workUpdated: result.work_updated,
     });
-
   } catch (error: any) {
     console.error('Error in print-label-updates API:', error);
     return NextResponse.json(
-      { 
-        success: false, 
-        error: `Server error: ${error.message}` 
+      {
+        success: false,
+        error: `Server error: ${error.message}`,
       },
       { status: 500 }
     );
   }
-} 
+}

@@ -26,7 +26,7 @@ export class ErrorBoundary extends Component<Props, State> {
     return {
       hasError: true,
       error,
-      errorId: `boundary_${Date.now()}`
+      errorId: `boundary_${Date.now()}`,
     };
   }
 
@@ -38,12 +38,16 @@ export class ErrorBoundary extends Component<Props, State> {
       additionalData: {
         ...this.props.context?.additionalData,
         componentStack: errorInfo.componentStack,
-        errorBoundary: true
-      }
+        errorBoundary: true,
+      },
     };
 
     // Log the error using our error handler
-    errorHandler.handleApiError(error, context, 'A component error occurred. Please refresh the page.');
+    errorHandler.handleApiError(
+      error,
+      context,
+      'A component error occurred. Please refresh the page.'
+    );
 
     console.error('[ErrorBoundary] Component error caught:', error, errorInfo);
   }
@@ -65,49 +69,45 @@ export class ErrorBoundary extends Component<Props, State> {
 
       // Default error UI
       return (
-        <div className="min-h-[200px] flex items-center justify-center p-6">
-          <div className="max-w-md w-full bg-red-50 border border-red-200 rounded-lg p-6 text-center">
-            <ExclamationTriangleIcon className="h-12 w-12 text-red-500 mx-auto mb-4" />
-            
-            <h3 className="text-lg font-semibold text-red-800 mb-2">
-              Something went wrong
-            </h3>
-            
-            <p className="text-sm text-red-600 mb-4">
+        <div className='flex min-h-[200px] items-center justify-center p-6'>
+          <div className='w-full max-w-md rounded-lg border border-red-200 bg-red-50 p-6 text-center'>
+            <ExclamationTriangleIcon className='mx-auto mb-4 h-12 w-12 text-red-500' />
+
+            <h3 className='mb-2 text-lg font-semibold text-red-800'>Something went wrong</h3>
+
+            <p className='mb-4 text-sm text-red-600'>
               A component error occurred. This has been logged and will be investigated.
             </p>
-            
+
             {this.state.errorId && (
-              <p className="text-xs text-red-500 mb-4 font-mono">
-                Error ID: {this.state.errorId}
-              </p>
+              <p className='mb-4 font-mono text-xs text-red-500'>Error ID: {this.state.errorId}</p>
             )}
-            
-            <div className="flex gap-3 justify-center">
+
+            <div className='flex justify-center gap-3'>
               <button
-                type="button"
+                type='button'
                 onClick={this.handleRetry}
-                className="flex items-center px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors text-sm"
+                className='flex items-center rounded-md bg-red-600 px-4 py-2 text-sm text-white transition-colors hover:bg-red-700'
               >
-                <ArrowPathIcon className="h-4 w-4 mr-2" />
+                <ArrowPathIcon className='mr-2 h-4 w-4' />
                 Try Again
               </button>
-              
+
               <button
-                type="button"
+                type='button'
                 onClick={this.handleRefresh}
-                className="flex items-center px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-colors text-sm"
+                className='flex items-center rounded-md bg-gray-600 px-4 py-2 text-sm text-white transition-colors hover:bg-gray-700'
               >
                 Refresh Page
               </button>
             </div>
-            
+
             {process.env.NODE_ENV === 'development' && this.state.error && (
-              <details className="mt-4 text-left">
-                <summary className="text-xs text-red-600 cursor-pointer">
+              <details className='mt-4 text-left'>
+                <summary className='cursor-pointer text-xs text-red-600'>
                   Technical Details (Development)
                 </summary>
-                <pre className="mt-2 text-xs text-red-700 bg-red-100 p-2 rounded overflow-auto">
+                <pre className='mt-2 overflow-auto rounded bg-red-100 p-2 text-xs text-red-700'>
                   {this.state.error.stack}
                 </pre>
               </details>
@@ -121,4 +121,4 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 }
 
-export default ErrorBoundary; 
+export default ErrorBoundary;

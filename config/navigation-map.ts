@@ -5,11 +5,14 @@
 import { MAIN_NAVIGATION } from './navigation';
 
 // Build a map of all paths to their labels and icons
-export const navigationPathMap = new Map<string, {
-  label: string;
-  icon?: React.ElementType;
-  gradient?: string;
-}>();
+export const navigationPathMap = new Map<
+  string,
+  {
+    label: string;
+    icon?: React.ElementType;
+    gradient?: string;
+  }
+>();
 
 // Populate the map
 MAIN_NAVIGATION.forEach(item => {
@@ -17,16 +20,16 @@ MAIN_NAVIGATION.forEach(item => {
     navigationPathMap.set(item.href, {
       label: item.label,
       icon: item.icon,
-      gradient: item.gradient
+      gradient: item.gradient,
     });
   }
-  
+
   if (item.children) {
     item.children.forEach(child => {
       navigationPathMap.set(child.href, {
         label: child.label,
         icon: item.icon, // Use parent's icon
-        gradient: item.gradient // Use parent's gradient
+        gradient: item.gradient, // Use parent's gradient
       });
     });
   }
@@ -36,8 +39,10 @@ MAIN_NAVIGATION.forEach(item => {
  * Get navigation info for a given path
  */
 export function getNavigationInfo(path: string) {
-  return navigationPathMap.get(path) || {
-    label: path.split('/').pop()?.replace(/-/g, ' ') || path,
-    gradient: "radial-gradient(circle, rgba(156,163,175,0.15) 0%, rgba(107,114,128,0.06) 50%)"
-  };
+  return (
+    navigationPathMap.get(path) || {
+      label: path.split('/').pop()?.replace(/-/g, ' ') || path,
+      gradient: 'radial-gradient(circle, rgba(156,163,175,0.15) 0%, rgba(107,114,128,0.06) 50%)',
+    }
+  );
 }

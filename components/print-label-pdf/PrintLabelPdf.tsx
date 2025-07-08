@@ -180,20 +180,20 @@ function LabelBlock(props: PrintLabelPdfProps) {
   } = props;
 
   const isGrnLabel = labelType === 'GRN';
-  
+
   // Update quantity header text based on label mode for GRN labels
   let quantityHeaderText = 'Quantity'; // Default for QC labels
   if (isGrnLabel) {
     quantityHeaderText = labelMode === 'qty' ? 'Quantity' : 'Weight';
   }
-  
+
   const qcClockNumHeaderText = isGrnLabel ? 'Received By' : 'Q.C. Done By';
 
-  let displayWorkOrderHeader = "Work Order Number"; // Default header
-  let displayWorkOrderValue = "-"; // Default value
+  let displayWorkOrderHeader = 'Work Order Number'; // Default header
+  let displayWorkOrderValue = '-'; // Default value
 
   if (isGrnLabel) {
-    displayWorkOrderHeader = "GRN Reference";
+    displayWorkOrderHeader = 'GRN Reference';
     let combinedGrnRef = '';
     const trimmedGrnNum = grnNumber?.trim();
     const trimmedSupplier = grnMaterialSupplier?.trim();
@@ -201,18 +201,21 @@ function LabelBlock(props: PrintLabelPdfProps) {
       combinedGrnRef += trimmedGrnNum;
     }
     if (trimmedSupplier) {
-      combinedGrnRef += trimmedGrnNum ? ` (${trimmedSupplier.toUpperCase()})` : trimmedSupplier.toUpperCase();
+      combinedGrnRef += trimmedGrnNum
+        ? ` (${trimmedSupplier.toUpperCase()})`
+        : trimmedSupplier.toUpperCase();
     }
     if (combinedGrnRef) {
       displayWorkOrderValue = combinedGrnRef;
     }
   } else if (productType === 'ACO') {
-    displayWorkOrderHeader = "ACO Order Ref";
+    displayWorkOrderHeader = 'ACO Order Ref';
     const trimmedQcWoNum = qcWorkOrderNumber?.trim();
     if (trimmedQcWoNum) {
       displayWorkOrderValue = trimmedQcWoNum;
     }
-  } else { // Normal QC Label (not GRN, not ACO)
+  } else {
+    // Normal QC Label (not GRN, not ACO)
     const trimmedQcWoNum = qcWorkOrderNumber?.trim();
     if (trimmedQcWoNum) {
       displayWorkOrderValue = trimmedQcWoNum;
@@ -223,33 +226,76 @@ function LabelBlock(props: PrintLabelPdfProps) {
     <View style={styles.label}>
       {/* Logo */}
       {/* eslint-disable-next-line @next/next/no-img-element, jsx-a11y/alt-text */}
-      <Image src={LOGO_URL} style={{ position: 'absolute', top: 14, left: 14, width: 180, height: 48 }} />
+      <Image
+        src={LOGO_URL}
+        style={{ position: 'absolute', top: 14, left: 14, width: 180, height: 48 }}
+      />
       {/* QR Code */}
-      {/* eslint-disable-next-line @next/next/no-img-element, jsx-a11y/alt-text */}
-      {qrCodeDataUrl && <Image src={qrCodeDataUrl} style={{ position: 'absolute', top: 14, right: 14, width: 140, height: 140 }} />}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      {qrCodeDataUrl && (
+        <Image
+          src={qrCodeDataUrl}
+          alt="QR Code"
+          style={{ position: 'absolute', top: 14, right: 14, width: 140, height: 140 }}
+        />
+      )}
       {/* Product Code 標題 */}
-      <Text style={{ textAlign: 'center', fontSize: 16, marginTop: 30, marginBottom: 10, textDecoration: 'underline' }}>Product Code</Text>
+      <Text
+        style={{
+          textAlign: 'center',
+          fontSize: 16,
+          marginTop: 30,
+          marginBottom: 10,
+          textDecoration: 'underline',
+        }}
+      >
+        Product Code
+      </Text>
       {/* Product Code 內容 */}
-      <Text style={{ textAlign: 'center', fontSize: 24, fontWeight: 'bold', marginBottom: 18 }}>{productCode}</Text>
+      <Text style={{ textAlign: 'center', fontSize: 24, fontWeight: 'bold', marginBottom: 18 }}>
+        {productCode}
+      </Text>
       {/* Description 標題 */}
-      <Text style={{ textAlign: 'center', fontSize: 16, marginBottom: 10, textDecoration: 'underline' }}>Description</Text>
+      <Text
+        style={{ textAlign: 'center', fontSize: 16, marginBottom: 10, textDecoration: 'underline' }}
+      >
+        Description
+      </Text>
       {/* Description 內容 */}
-      <Text style={{ textAlign: 'center', fontSize: 24, fontWeight: 'bold', marginTop: 20, marginBottom: 40 }}>{description}</Text>
+      <Text
+        style={{
+          textAlign: 'center',
+          fontSize: 24,
+          fontWeight: 'bold',
+          marginTop: 20,
+          marginBottom: 40,
+        }}
+      >
+        {description}
+      </Text>
       {/* Main Table */}
       <View style={styles.mainTable}>
         {/* Header Row */}
         <View style={{ flexDirection: 'row', backgroundColor: '#f0f0f0' }}>
           <View style={{ flex: 1, height: 36, alignItems: 'center', justifyContent: 'center' }}>
-            <Text style={{ fontSize: 14, fontWeight: 'bold', textAlign: 'center', width: '100%' }}>{quantityHeaderText}</Text>
+            <Text style={{ fontSize: 14, fontWeight: 'bold', textAlign: 'center', width: '100%' }}>
+              {quantityHeaderText}
+            </Text>
           </View>
           <View style={{ flex: 1, height: 36, alignItems: 'center', justifyContent: 'center' }}>
-            <Text style={{ fontSize: 14, fontWeight: 'bold', textAlign: 'center', width: '100%' }}>Date</Text>
+            <Text style={{ fontSize: 14, fontWeight: 'bold', textAlign: 'center', width: '100%' }}>
+              Date
+            </Text>
           </View>
           <View style={{ flex: 1, height: 36, alignItems: 'center', justifyContent: 'center' }}>
-            <Text style={{ fontSize: 14, fontWeight: 'bold', textAlign: 'center', width: '100%' }}>Operator Clock Num</Text>
+            <Text style={{ fontSize: 14, fontWeight: 'bold', textAlign: 'center', width: '100%' }}>
+              Operator Clock Num
+            </Text>
           </View>
           <View style={{ flex: 1, height: 36, alignItems: 'center', justifyContent: 'center' }}>
-            <Text style={{ fontSize: 14, fontWeight: 'bold', textAlign: 'center', width: '100%' }}>{qcClockNumHeaderText}</Text>
+            <Text style={{ fontSize: 14, fontWeight: 'bold', textAlign: 'center', width: '100%' }}>
+              {qcClockNumHeaderText}
+            </Text>
           </View>
         </View>
         {/* Data Row */}
@@ -261,7 +307,9 @@ function LabelBlock(props: PrintLabelPdfProps) {
             <Text style={{ fontSize: 20, textAlign: 'center', width: '100%' }}>{date}</Text>
           </View>
           <View style={{ flex: 1, height: 48, alignItems: 'center', justifyContent: 'center' }}>
-            <Text style={{ fontSize: 22, textAlign: 'center', width: '100%' }}>{operatorClockNum}</Text>
+            <Text style={{ fontSize: 22, textAlign: 'center', width: '100%' }}>
+              {operatorClockNum}
+            </Text>
           </View>
           <View style={{ flex: 1, height: 48, alignItems: 'center', justifyContent: 'center' }}>
             <Text style={{ fontSize: 22, textAlign: 'center', width: '100%' }}>{qcClockNum}</Text>
@@ -282,14 +330,25 @@ function LabelBlock(props: PrintLabelPdfProps) {
         </View>
       </View>
       {/* Pallet Number */}
-      <Text style={{ position: 'absolute', bottom: 4, right: 14, fontWeight: 'normal', fontSize: 12, textAlign: 'right' }}>Pallet Num : {palletNum}</Text>
+      <Text
+        style={{
+          position: 'absolute',
+          bottom: 4,
+          right: 14,
+          fontWeight: 'normal',
+          fontSize: 12,
+          textAlign: 'right',
+        }}
+      >
+        Pallet Num : {palletNum}
+      </Text>
     </View>
   );
 }
 
-export const PrintLabelPdf: React.FC<PrintLabelPdfProps> = (props) => (
+export const PrintLabelPdf: React.FC<PrintLabelPdfProps> = props => (
   <Document>
-    <Page size="A4" style={styles.page}>
+    <Page size='A4' style={styles.page}>
       <LabelBlock {...props} />
       <View style={styles.dashedLine} />
       <LabelBlock {...props} />
@@ -297,4 +356,4 @@ export const PrintLabelPdf: React.FC<PrintLabelPdfProps> = (props) => (
   </Document>
 );
 
-export default PrintLabelPdf; 
+export default PrintLabelPdf;

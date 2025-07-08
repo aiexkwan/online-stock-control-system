@@ -8,7 +8,4 @@ export * from './location.types';
 export * from './transaction.types';
 
 // Re-export location mapper types
-export { 
-  DatabaseLocationColumn, 
-  StandardLocation 
-} from '../utils/locationMapper';
+export { DatabaseLocationColumn, StandardLocation } from '../utils/locationMapper';

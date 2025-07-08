@@ -16,11 +16,11 @@ export function VirtualizedNavigation({
   items,
   activeItem,
   onActiveChange,
-  className
+  className,
 }: VirtualizedNavigationProps) {
   const parentRef = useRef<HTMLDivElement>(null);
   const [containerWidth, setContainerWidth] = useState(0);
-  
+
   // 監測容器寬度變化
   useEffect(() => {
     const updateWidth = () => {
@@ -28,23 +28,23 @@ export function VirtualizedNavigation({
         setContainerWidth(parentRef.current.offsetWidth);
       }
     };
-    
+
     updateWidth();
-    
+
     const resizeObserver = new ResizeObserver(updateWidth);
     if (parentRef.current) {
       resizeObserver.observe(parentRef.current);
     }
-    
+
     return () => {
       resizeObserver.disconnect();
     };
   }, []);
-  
+
   // 計算每個項目的寬度（假設固定寬度）
   const itemWidth = 120; // 可以根據實際需要調整
   const gap = 8; // 項目之間的間隙
-  
+
   // 使用虛擬化來優化大量導航項的渲染
   const virtualizer = useVirtualizer({
     horizontal: true,
@@ -53,14 +53,14 @@ export function VirtualizedNavigation({
     estimateSize: useCallback(() => itemWidth + gap, []),
     overscan: 3, // 預渲染前後 3 個項目
   });
-  
+
   // 優化的渲染函數
   const virtualItems = virtualizer.getVirtualItems();
-  
+
   return (
-    <div 
+    <div
       ref={parentRef}
-      className={`flex items-center gap-2 overflow-x-auto scrollbar-hide ${className}`}
+      className={`scrollbar-hide flex items-center gap-2 overflow-x-auto ${className}`}
       style={{
         contain: 'layout style paint', // CSS containment 優化
       }}
@@ -72,7 +72,7 @@ export function VirtualizedNavigation({
           position: 'relative',
         }}
       >
-        {virtualItems.map((virtualItem) => {
+        {virtualItems.map(virtualItem => {
           const item = items[virtualItem.index];
           return (
             <div
@@ -106,23 +106,19 @@ interface VirtualizedSubMenuProps {
   className?: string;
 }
 
-export function VirtualizedSubMenu({
-  items,
-  onItemClick,
-  className
-}: VirtualizedSubMenuProps) {
+export function VirtualizedSubMenu({ items, onItemClick, className }: VirtualizedSubMenuProps) {
   const parentRef = useRef<HTMLDivElement>(null);
   const itemHeight = 48; // 每個子菜單項的高度
-  
+
   const virtualizer = useVirtualizer({
     count: items.length,
     getScrollElement: () => parentRef.current,
     estimateSize: useCallback(() => itemHeight, []),
     overscan: 5,
   });
-  
+
   const virtualItems = virtualizer.getVirtualItems();
-  
+
   return (
     <div
       ref={parentRef}
@@ -138,7 +134,7 @@ export function VirtualizedSubMenu({
           position: 'relative',
         }}
       >
-        {virtualItems.map((virtualItem) => {
+        {virtualItems.map(virtualItem => {
           const item = items[virtualItem.index];
           return (
             <div
@@ -154,11 +150,11 @@ export function VirtualizedSubMenu({
             >
               <button
                 onClick={() => onItemClick(item)}
-                className="w-full px-4 py-3 text-left hover:bg-white/5 transition-colors flex items-center gap-3"
+                className='flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-white/5'
               >
-                <span className="text-sm font-medium">{item.label}</span>
+                <span className='text-sm font-medium'>{item.label}</span>
                 {item.description && (
-                  <span className="text-xs text-white/60">{item.description}</span>
+                  <span className='text-xs text-white/60'>{item.description}</span>
                 )}
               </button>
             </div>

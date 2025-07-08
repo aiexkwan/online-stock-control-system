@@ -56,16 +56,19 @@ const nextConfig = {
   webpack: (config, { isServer, dev }) => {
     config.resolve.alias = {
       ...config.resolve.alias,
-      '@': '.'
+      '@': '.',
     };
-    config.externals = [...(config.externals || []), { 'utf-8-validate': 'commonjs utf-8-validate', 'bufferutil': 'commonjs bufferutil' }];
-    
+    config.externals = [
+      ...(config.externals || []),
+      { 'utf-8-validate': 'commonjs utf-8-validate', bufferutil: 'commonjs bufferutil' },
+    ];
+
     // 優化開發環境的 hot reload
     if (dev && !isServer) {
       config.watchOptions = {
         poll: 1000,
         aggregateTimeout: 300,
-        ignored: ['**/node_modules', '**/.git', '**/.next']
+        ignored: ['**/node_modules', '**/.git', '**/.next'],
       };
     }
 
@@ -88,19 +91,19 @@ const nextConfig = {
       config.resolve.fallback = {
         ...config.resolve.fallback,
         'iconv-lite': false, // 嘗試將 iconv-lite 設為 false
-        'canvas': false,
-        'fs': false,
-        'path': false,
+        canvas: false,
+        fs: false,
+        path: false,
       };
     }
 
     if (isServer) {
       // 在服務器端構建時，將 canvas 模塊設置為外部依賴
       config.externals = [...(config.externals || []), { canvas: 'canvas' }];
-      
+
       // 添加 Supabase realtime-js 到外部依賴以消除警告
       //config.externals = [...(config.externals || []), '@supabase/realtime-js'];
-      
+
       // 為 pdfjs-dist 添加 fallback
       config.resolve.fallback = {
         ...config.resolve.fallback,
@@ -124,7 +127,7 @@ const nextConfig = {
             // 默認緩存組
             default: false,
             vendors: false,
-            
+
             // 框架核心
             framework: {
               chunks: 'all',
@@ -133,12 +136,11 @@ const nextConfig = {
               priority: 40,
               enforce: true,
             },
-            
+
             // UI 組件庫
             lib: {
               test(module) {
-                return module.size() > 160000 &&
-                  /node_modules[\\/]/.test(module.identifier());
+                return module.size() > 160000 && /node_modules[\\/]/.test(module.identifier());
               },
               name(module) {
                 const hash = require('crypto')
@@ -152,7 +154,7 @@ const nextConfig = {
               minChunks: 1,
               reuseExistingChunk: true,
             },
-            
+
             // 共用組件
             commons: {
               name: 'commons',
@@ -160,7 +162,7 @@ const nextConfig = {
               priority: 10, // 降低優先級
               maxSize: 200000, // 限制 commons chunk 大小為 200KB
             },
-            
+
             // 主題特定 chunks
             adminThemes: {
               test: /[\\/]app[\\/]admin[\\/]components[\\/]dashboard[\\/](CustomThemeLayout|UploadUpdateLayout|StockManagementLayout|SystemLayout|AnalysisLayout)/,
@@ -175,7 +177,7 @@ const nextConfig = {
               priority: 25,
               reuseExistingChunk: true,
             },
-            
+
             // Widget chunks
             widgets: {
               test: /[\\/]app[\\/]admin[\\/]components[\\/]dashboard[\\/]widgets[\\/]/,
@@ -197,7 +199,7 @@ const nextConfig = {
               minChunks: 1,
               reuseExistingChunk: true,
             },
-            
+
             // Recharts 單獨打包
             recharts: {
               test: /[\\/]node_modules[\\/](recharts|d3-[^\/]+|victory[^\/]*)[\\/]/,
@@ -205,7 +207,7 @@ const nextConfig = {
               priority: 35,
               reuseExistingChunk: true,
             },
-            
+
             // Supabase SDK
             supabase: {
               test: /[\\/]node_modules[\\/]@supabase[\\/]/,
@@ -213,7 +215,7 @@ const nextConfig = {
               priority: 35,
               reuseExistingChunk: true,
             },
-            
+
             // Apollo GraphQL
             apollo: {
               test: /[\\/]node_modules[\\/](@apollo|graphql|apollo-[^\/]+)[\\/]/,
@@ -221,7 +223,7 @@ const nextConfig = {
               priority: 34,
               reuseExistingChunk: true,
             },
-            
+
             // PDF 相關庫
             pdfLibs: {
               test: /[\\/]node_modules[\\/](pdf-lib|pdf-parse|pdf2pic|@react-pdf|jspdf|puppeteer)[\\/]/,
@@ -229,15 +231,15 @@ const nextConfig = {
               priority: 33,
               reuseExistingChunk: true,
             },
-            
+
             // Excel 處理庫
             excelLibs: {
-              test: /[\\/]node_modules[\\/](exceljs|xlsx|file-saver|papaparse)[\\/]/,
+              test: /[\\/]node_modules[\\/](exceljs|file-saver|papaparse)[\\/]/,
               name: 'excel-libs',
               priority: 33,
               reuseExistingChunk: true,
             },
-            
+
             // Radix UI
             radixUI: {
               test: /[\\/]node_modules[\\/]@radix-ui[\\/]/,
@@ -246,7 +248,7 @@ const nextConfig = {
               minChunks: 2,
               reuseExistingChunk: true,
             },
-            
+
             // Tanstack 庫
             tanstack: {
               test: /[\\/]node_modules[\\/]@tanstack[\\/]/,
@@ -254,7 +256,7 @@ const nextConfig = {
               priority: 32,
               reuseExistingChunk: true,
             },
-            
+
             // AI/LLM 相關庫
             aiLibs: {
               test: /[\\/]node_modules[\\/](langchain|@anthropic-ai|openai)[\\/]/,
@@ -262,7 +264,7 @@ const nextConfig = {
               priority: 31,
               reuseExistingChunk: true,
             },
-            
+
             // 其他大型庫
             largeVendors: {
               test: /[\\/]node_modules[\\/](axios|lodash|date-fns|zod|framer-motion|formik)[\\/]/,
@@ -273,15 +275,17 @@ const nextConfig = {
           },
         },
       };
-      
+
       // Next.js 已經內建支援 dynamic imports 和 webpack magic comments
       // 不需要額外的 babel 配置
-      
+
       // 配置 prefetch/preload 插件
       const { DefinePlugin } = require('webpack');
       config.plugins.push(
         new DefinePlugin({
-          'process.env.ENABLE_ROUTE_PREFETCH': JSON.stringify(process.env.ENABLE_ROUTE_PREFETCH || 'true'),
+          'process.env.ENABLE_ROUTE_PREFETCH': JSON.stringify(
+            process.env.ENABLE_ROUTE_PREFETCH || 'true'
+          ),
         })
       );
     }
@@ -296,7 +300,11 @@ const nextConfig = {
         headers: [
           { key: 'Access-Control-Allow-Origin', value: '*' },
           { key: 'Access-Control-Allow-Methods', value: 'GET,OPTIONS,PATCH,DELETE,POST,PUT' },
-          { key: 'Access-Control-Allow-Headers', value: 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version' },
+          {
+            key: 'Access-Control-Allow-Headers',
+            value:
+              'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version',
+          },
           // 添加 Safari 特定的安全頭
           { key: 'X-Content-Type-Options', value: 'nosniff' },
           { key: 'X-Frame-Options', value: 'SAMEORIGIN' },
@@ -307,4 +315,4 @@ const nextConfig = {
   },
 };
 
-module.exports = nextConfig; 
+module.exports = nextConfig;

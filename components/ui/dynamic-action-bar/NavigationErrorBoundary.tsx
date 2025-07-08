@@ -26,7 +26,7 @@ export class NavigationErrorBoundary extends Component<Props, State> {
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
     console.error('Navigation Error:', error, errorInfo);
-    
+
     // 發送錯誤報告（如果有錯誤追蹤服務）
     if (typeof window !== 'undefined' && (window as any).gtag) {
       (window as any).gtag('event', 'exception', {
@@ -49,20 +49,20 @@ export class NavigationErrorBoundary extends Component<Props, State> {
       }
 
       return (
-        <div className="fixed inset-x-0 mx-auto w-fit bottom-[1%] bg-black/80 backdrop-blur-xl rounded-2xl border border-red-500/20 shadow-2xl p-4 z-50">
-          <div className="flex items-center gap-4">
-            <AlertCircle className="w-5 h-5 text-red-500" />
-            <div className="flex-1">
-              <p className="text-sm font-medium text-white">Navigation Error</p>
-              <p className="text-xs text-white/60">Something went wrong with the navigation</p>
+        <div className='fixed inset-x-0 bottom-[1%] z-50 mx-auto w-fit rounded-2xl border border-red-500/20 bg-black/80 p-4 shadow-2xl backdrop-blur-xl'>
+          <div className='flex items-center gap-4'>
+            <AlertCircle className='h-5 w-5 text-red-500' />
+            <div className='flex-1'>
+              <p className='text-sm font-medium text-white'>Navigation Error</p>
+              <p className='text-xs text-white/60'>Something went wrong with the navigation</p>
             </div>
             <Button
-              size="sm"
-              variant="ghost"
+              size='sm'
+              variant='ghost'
               onClick={this.handleReset}
-              className="text-white hover:text-white hover:bg-white/20"
+              className='text-white hover:bg-white/20 hover:text-white'
             >
-              <RefreshCw className="w-4 h-4 mr-1" />
+              <RefreshCw className='mr-1 h-4 w-4' />
               Reload
             </Button>
           </div>

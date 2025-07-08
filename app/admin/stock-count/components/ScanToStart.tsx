@@ -30,7 +30,7 @@ export default function ScanToStart({ onScanSuccess, isLoading = false }: ScanTo
   // Handle manual input submit
   const handleManualSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!inputValue.trim()) {
       setError('Please enter pallet number');
       return;
@@ -52,45 +52,45 @@ export default function ScanToStart({ onScanSuccess, isLoading = false }: ScanTo
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
-        className="bg-slate-800/50 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-8 shadow-xl"
+        className='rounded-2xl border border-slate-700/50 bg-slate-800/50 p-8 shadow-xl backdrop-blur-xl'
       >
         {!showManualInput ? (
-          <div className="flex flex-col items-center">
+          <div className='flex flex-col items-center'>
             {/* Icon and Title */}
-            <div className="mb-6">
-              <h2 className="text-2xl font-bold bg-gradient-to-r from-blue-300 via-purple-300 to-cyan-300 bg-clip-text text-transparent text-center">
+            <div className='mb-6'>
+              <h2 className='bg-gradient-to-r from-blue-300 via-purple-300 to-cyan-300 bg-clip-text text-center text-2xl font-bold text-transparent'>
                 Scan To Start
               </h2>
             </div>
 
             {/* Description */}
-            <div className="text-center mb-8 max-w-md">
-              <p className="text-slate-300 text-lg mb-2">
+            <div className='mb-8 max-w-md text-center'>
+              <p className='mb-2 text-lg text-slate-300'>
                 Scan the QR code on the pallet label to begin counting
               </p>
-              <p className="text-slate-400 text-sm">
+              <p className='text-sm text-slate-400'>
                 Position the QR code within the camera viewfinder
               </p>
             </div>
 
             {/* Buttons */}
-            <div className="flex flex-col sm:flex-row gap-4 w-full max-w-md">
+            <div className='flex w-full max-w-md flex-col gap-4 sm:flex-row'>
               {/* Scan Button */}
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => setShowScanner(true)}
                 disabled={isLoading}
-                className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 disabled:from-gray-600 disabled:to-gray-700 text-white font-semibold py-4 px-6 rounded-xl transition-all duration-200 flex items-center justify-center gap-3 shadow-lg disabled:cursor-not-allowed"
+                className='flex flex-1 items-center justify-center gap-3 rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 px-6 py-4 font-semibold text-white shadow-lg transition-all duration-200 hover:from-blue-700 hover:to-purple-700 disabled:cursor-not-allowed disabled:from-gray-600 disabled:to-gray-700'
               >
                 {isLoading ? (
                   <>
-                    <div className="h-6 w-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    <div className='h-6 w-6 animate-spin rounded-full border-2 border-white border-t-transparent' />
                     Processing...
                   </>
                 ) : (
                   <>
-                    <CameraIcon className="h-6 w-6" />
+                    <CameraIcon className='h-6 w-6' />
                     Start Scanning
                   </>
                 )}
@@ -102,9 +102,9 @@ export default function ScanToStart({ onScanSuccess, isLoading = false }: ScanTo
                 whileTap={{ scale: 0.95 }}
                 onClick={() => setShowManualInput(true)}
                 disabled={isLoading}
-                className="flex-1 bg-green-600 hover:bg-green-700 disabled:bg-gray-600 text-white font-semibold py-4 px-6 rounded-xl transition-all duration-200 flex items-center justify-center gap-3 shadow-lg disabled:cursor-not-allowed"
+                className='flex flex-1 items-center justify-center gap-3 rounded-xl bg-green-600 px-6 py-4 font-semibold text-white shadow-lg transition-all duration-200 hover:bg-green-700 disabled:cursor-not-allowed disabled:bg-gray-600'
               >
-                <PencilSquareIcon className="h-6 w-6" />
+                <PencilSquareIcon className='h-6 w-6' />
                 Manual Input
               </motion.button>
             </div>
@@ -112,10 +112,10 @@ export default function ScanToStart({ onScanSuccess, isLoading = false }: ScanTo
         ) : (
           /* Manual Input Form */
           <div>
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center">
-                <PencilSquareIcon className="h-8 w-8 text-green-400 mr-3" />
-                <h2 className="text-xl font-bold text-white">Manual Pallet Number Input</h2>
+            <div className='mb-6 flex items-center justify-between'>
+              <div className='flex items-center'>
+                <PencilSquareIcon className='mr-3 h-8 w-8 text-green-400' />
+                <h2 className='text-xl font-bold text-white'>Manual Pallet Number Input</h2>
               </div>
               <button
                 onClick={() => {
@@ -123,60 +123,63 @@ export default function ScanToStart({ onScanSuccess, isLoading = false }: ScanTo
                   setInputValue('');
                   setError('');
                 }}
-                className="text-slate-400 hover:text-white transition-colors"
+                className='text-slate-400 transition-colors hover:text-white'
               >
-                <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                <svg className='h-6 w-6' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+                  <path
+                    strokeLinecap='round'
+                    strokeLinejoin='round'
+                    strokeWidth={2}
+                    d='M6 18L18 6M6 6l12 12'
+                  />
                 </svg>
               </button>
             </div>
 
-            <form onSubmit={handleManualSubmit} className="space-y-4">
+            <form onSubmit={handleManualSubmit} className='space-y-4'>
               <div>
-                <label htmlFor="qr-input" className="block text-sm font-medium text-gray-300 mb-2">
+                <label htmlFor='qr-input' className='mb-2 block text-sm font-medium text-gray-300'>
                   Enter Pallet Number:
                 </label>
                 <input
-                  id="qr-input"
-                  type="text"
+                  id='qr-input'
+                  type='text'
                   value={inputValue}
                   onChange={handleInputChange}
-                  placeholder="e.g.: 241224/01"
-                  className="w-full px-4 py-3 bg-slate-700/50 border border-slate-600/50 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder='e.g.: 241224/01'
+                  className='w-full rounded-lg border border-slate-600/50 bg-slate-700/50 px-4 py-3 text-white placeholder-gray-400 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-500'
                   disabled={isLoading}
                   autoFocus
                 />
-                {error && (
-                  <p className="mt-2 text-sm text-red-400">{error}</p>
-                )}
+                {error && <p className='mt-2 text-sm text-red-400'>{error}</p>}
               </div>
 
-              <div className="flex gap-4">
+              <div className='flex gap-4'>
                 <button
-                  type="submit"
+                  type='submit'
                   disabled={isLoading || !inputValue.trim()}
-                  className="flex-1 bg-green-600 hover:bg-green-700 disabled:bg-gray-600 text-white font-semibold py-3 px-6 rounded-lg transition-colors flex items-center justify-center"
+                  className='flex flex-1 items-center justify-center rounded-lg bg-green-600 px-6 py-3 font-semibold text-white transition-colors hover:bg-green-700 disabled:bg-gray-600'
                 >
                   {isLoading ? (
                     <>
-                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                      <div className='mr-2 h-5 w-5 animate-spin rounded-full border-b-2 border-white'></div>
                       Processing...
                     </>
                   ) : (
                     <>
-                      <QrCodeIcon className="h-5 w-5 mr-2" />
+                      <QrCodeIcon className='mr-2 h-5 w-5' />
                       Submit Pallet Number
                     </>
                   )}
                 </button>
                 <button
-                  type="button"
+                  type='button'
                   onClick={() => {
                     setShowManualInput(false);
                     setInputValue('');
                     setError('');
                   }}
-                  className="px-6 py-3 bg-slate-700 hover:bg-slate-600 text-white font-semibold rounded-lg transition-colors"
+                  className='rounded-lg bg-slate-700 px-6 py-3 font-semibold text-white transition-colors hover:bg-slate-600'
                 >
                   Cancel
                 </button>
@@ -184,9 +187,10 @@ export default function ScanToStart({ onScanSuccess, isLoading = false }: ScanTo
             </form>
 
             {/* 說明 */}
-            <div className="mt-4 p-3 bg-blue-900/20 border border-blue-700/30 rounded-lg">
-              <p className="text-blue-200 text-sm">
-                💡 Manual input only accepts pallet numbers. Series can only be read by scanning QR codes.
+            <div className='mt-4 rounded-lg border border-blue-700/30 bg-blue-900/20 p-3'>
+              <p className='text-sm text-blue-200'>
+                💡 Manual input only accepts pallet numbers. Series can only be read by scanning QR
+                codes.
               </p>
             </div>
           </div>
@@ -199,9 +203,9 @@ export default function ScanToStart({ onScanSuccess, isLoading = false }: ScanTo
           open={showScanner}
           onClose={handleCloseScanner}
           onScan={handleScan}
-          title="Scan Pallet QR Code"
+          title='Scan Pallet QR Code'
         />
       )}
     </>
   );
-} 
+}

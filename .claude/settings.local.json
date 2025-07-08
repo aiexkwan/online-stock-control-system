@@ -124,7 +124,9 @@
       "Bash(for widget in \"OtherFilesListGraphQL\" \"OrdersListGraphQL\" \"ProductDistributionChartGraphQL\" \"ProductionDetailsGraphQL\" \"ProductionStatsGraphQL\" \"StaffWorkloadGraphQL\" \"StillInAwaitWidgetGraphQL\" \"TopProductsChartGraphQL\" \"WarehouseTransferListWidgetGraphQL\")",
       "Bash(do echo \"=== $widget ===\")",
       "Bash(for widget in \"OtherFilesListWidget\" \"OrdersListWidgetV2\" \"ProductDistributionChart\" \"StillInAwaitWidget\" \"TopProductsChart\" \"WarehouseTransferListWidget\")",
-      "Bash(do echo \"--- $widget ---\")"
+      "Bash(do echo \"--- $widget ---\")",
+      "Bash(npx graphql-schema-linter:*)",
+      "Bash(git checkout:*)"
     ],
     "deny": []
   }

@@ -48,7 +48,7 @@ export const useThrottledCallback = <T extends (...args: any[]) => any>(
         if (timeoutRef.current) {
           clearTimeout(timeoutRef.current);
         }
-        
+
         timeoutRef.current = setTimeout(() => {
           lastCallTime.current = Date.now();
           callback(...args);
@@ -63,21 +63,16 @@ export const useThrottledCallback = <T extends (...args: any[]) => any>(
 };
 
 // Stable callback hook - prevents unnecessary re-renders
-export const useStableCallback = <T extends (...args: any[]) => any>(
-  callback: T
-): T => {
+export const useStableCallback = <T extends (...args: any[]) => any>(callback: T): T => {
   const callbackRef = useRef<T>(callback);
-  
+
   // Update the ref when callback changes
   callbackRef.current = callback;
 
   // Return a stable function that calls the current callback
-  const stableCallback = useCallback(
-    (...args: Parameters<T>) => {
-      return callbackRef.current(...args);
-    },
-    []
-  ) as T;
+  const stableCallback = useCallback((...args: Parameters<T>) => {
+    return callbackRef.current(...args);
+  }, []) as T;
 
   return stableCallback;
 };
@@ -103,11 +98,7 @@ export const useOptimizedFormHandler = <T extends Record<string, any>>(
     [setState]
   );
 
-  const debouncedHandleChange = useDebouncedCallback(
-    handleChange,
-    debounceDelay,
-    [setState]
-  );
+  const debouncedHandleChange = useDebouncedCallback(handleChange, debounceDelay, [setState]);
 
   return debounceDelay > 0 ? debouncedHandleChange : handleChange;
 };
@@ -171,11 +162,11 @@ export const useAsyncCallback = <T extends (...args: any[]) => Promise<any>>(
         setIsLoading(true);
         setError(null);
         const result = await asyncCallback(...args);
-        
+
         if (mountedRef.current) {
           setIsLoading(false);
         }
-        
+
         return result;
       } catch (err) {
         if (mountedRef.current) {
@@ -205,7 +196,7 @@ const OptimizedCallbacks = {
   useMemoizedEventHandler,
   useOptimizedFormHandler,
   useBatchedUpdates,
-  useAsyncCallback
+  useAsyncCallback,
 };
 
-export default OptimizedCallbacks; 
+export default OptimizedCallbacks;

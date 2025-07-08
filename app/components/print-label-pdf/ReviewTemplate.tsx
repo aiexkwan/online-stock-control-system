@@ -21,10 +21,10 @@ export default function ReviewTemplate({
   operatorClockNum = '5500/5579',
   qcClockNum = '5997',
   workOrderNumber = 'ACO Ref : 123456  (Plt : 1)',
-  palletNum = '060525/34'
+  palletNum = '060525/34',
 }: ReviewTemplateProps) {
   return (
-    <div className="w-[210mm] h-[297mm] bg-white flex flex-col items-center justify-between relative">
+    <div className='relative flex h-[297mm] w-[210mm] flex-col items-center justify-between bg-white'>
       <LabelBlock
         productCode={productCode}
         description={description}
@@ -35,7 +35,10 @@ export default function ReviewTemplate({
         workOrderNumber={workOrderNumber}
         palletNum={palletNum}
       />
-      <hr className="w-full border-t border-dashed border-black my-2" style={{ borderTopWidth: 2 }} />
+      <hr
+        className='my-2 w-full border-t border-dashed border-black'
+        style={{ borderTopWidth: 2 }}
+      />
       <LabelBlock
         productCode={productCode}
         description={description}
@@ -63,64 +66,79 @@ function LabelBlock(props: ReviewTemplateProps) {
   } = props;
 
   return (
-    <div className="w-[210mm] h-[145mm] p-[5mm] relative bg-white">
+    <div className='relative h-[145mm] w-[210mm] bg-white p-[5mm]'>
       {/* Logo */}
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img 
-        className="absolute top-[5mm] left-[5mm] w-[210px] h-[55px]"
-        src="https://wonderful-icecream-2e5.notion.site/image/attachment%3Acc29babe-4a18-4f90-82ac-80ab639d2fdb%3AP_Logo_DB.jpg?table=block&id=1ecea6a0-a03e-80ec-ad56-cf3d49ff147b&spaceId=8b44b340-b032-4818-8d92-a05586933829&width=310&userId=&cache=v2"
-        alt="Logo"
+      <img
+        className='absolute left-[5mm] top-[5mm] h-[55px] w-[210px]'
+        src='https://wonderful-icecream-2e5.notion.site/image/attachment%3Acc29babe-4a18-4f90-82ac-80ab639d2fdb%3AP_Logo_DB.jpg?table=block&id=1ecea6a0-a03e-80ec-ad56-cf3d49ff147b&spaceId=8b44b340-b032-4818-8d92-a05586933829&width=310&userId=&cache=v2'
+        alt='Logo'
       />
 
       {/* QR Code */}
-      <div className="absolute top-[5mm] right-[5mm] w-[200px] h-[200px]">
-      <QRCodeSVG value={productCode || ''} size={170} />
+      <div className='absolute right-[5mm] top-[5mm] h-[200px] w-[200px]'>
+        <QRCodeSVG value={productCode || ''} size={170} />
       </div>
 
       {/* Center Text */}
-      <div className="text-center py-1 text-[20px] mt-[10px] mb-[5px] underline">Product Code</div>
-      <div className="text-center py-1 text-[30px] font-bold mb-[12px]">{productCode}</div>
-      <div className="text-center py-1 text-[20px] mb-[55px] underline">Description</div>
-      <div className="text-center py-1 text-[30px] mb-[60px] font-bold">{description}</div>
+      <div className='mb-[5px] mt-[10px] py-1 text-center text-[20px] underline'>Product Code</div>
+      <div className='mb-[12px] py-1 text-center text-[30px] font-bold'>{productCode}</div>
+      <div className='mb-[55px] py-1 text-center text-[20px] underline'>Description</div>
+      <div className='mb-[60px] py-1 text-center text-[30px] font-bold'>{description}</div>
 
       {/* Main Table */}
-      <table className="w-full border-collapse mt-[25px]">
+      <table className='mt-[25px] w-full border-collapse'>
         <thead>
           <tr>
-            <th className="border border-black p-2 h-[10px] text-[16px] bg-[#f0f0f0] font-bold">Quantity</th>
-            <th className="border border-black p-2 h-[10px] text-[16px] bg-[#f0f0f0] font-bold">Date</th>
-            <th className="border border-black p-2 h-[10px] text-[16px] bg-[#f0f0f0] font-bold">Operator Clock Num</th>
-            <th className="border border-black p-2 h-[10px] text-[16px] bg-[#f0f0f0] font-bold">Q.C. Clock Num</th>
+            <th className='h-[10px] border border-black bg-[#f0f0f0] p-2 text-[16px] font-bold'>
+              Quantity
+            </th>
+            <th className='h-[10px] border border-black bg-[#f0f0f0] p-2 text-[16px] font-bold'>
+              Date
+            </th>
+            <th className='h-[10px] border border-black bg-[#f0f0f0] p-2 text-[16px] font-bold'>
+              Operator Clock Num
+            </th>
+            <th className='h-[10px] border border-black bg-[#f0f0f0] p-2 text-[16px] font-bold'>
+              Q.C. Clock Num
+            </th>
           </tr>
         </thead>
         <tbody>
           <tr>
-            <td className="border border-black p-2 h-[36px] text-[25px] text-center">{quantity}</td>
-            <td className="border border-black p-2 h-[36px] text-[25px] text-center">{date}</td>
-            <td className="border border-black p-2 h-[36px] text-[25px] text-center">{operatorClockNum}</td>
-            <td className="border border-black p-2 h-[36px] text-[25px] text-center">{qcClockNum}</td>
+            <td className='h-[36px] border border-black p-2 text-center text-[25px]'>{quantity}</td>
+            <td className='h-[36px] border border-black p-2 text-center text-[25px]'>{date}</td>
+            <td className='h-[36px] border border-black p-2 text-center text-[25px]'>
+              {operatorClockNum}
+            </td>
+            <td className='h-[36px] border border-black p-2 text-center text-[25px]'>
+              {qcClockNum}
+            </td>
           </tr>
         </tbody>
       </table>
 
       {/* Work Order Table */}
-      <table className="w-full border-collapse mt-[14px] mb-[10px]">
+      <table className='mb-[10px] mt-[14px] w-full border-collapse'>
         <tbody>
           <tr>
-            <td className="border border-black p-[6px_10px] h-[40px] text-[24px] text-center align-middle">Work Order Number</td>
-            <td className="border border-black p-[6px_10px] h-[40px] text-[26px] text-center align-middle">{workOrderNumber}</td>
+            <td className='h-[40px] border border-black p-[6px_10px] text-center align-middle text-[24px]'>
+              Work Order Number
+            </td>
+            <td className='h-[40px] border border-black p-[6px_10px] text-center align-middle text-[26px]'>
+              {workOrderNumber}
+            </td>
           </tr>
         </tbody>
       </table>
 
       {/* Pallet Number */}
       <div
-        className="absolute bottom-[5mm] right-[5mm] font-bold text-[16px] leading-none text-right"
+        className='absolute bottom-[5mm] right-[5mm] text-right text-[16px] font-bold leading-none'
         style={{ margin: 0, padding: 0 }}
       >
         Pallet Num : {palletNum}
       </div>
     </div>
   );
-} 
-
+}

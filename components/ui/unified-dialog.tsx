@@ -3,28 +3,28 @@
  * 提供一致的淡入淡出動畫和 admin 風格
  */
 
-"use client"
+'use client';
 
-import * as React from "react"
-import * as DialogPrimitive from "@radix-ui/react-dialog"
-import { X } from "lucide-react"
-import { cn } from "@/lib/utils"
-import { 
-  dialogAnimationClasses, 
-  dialogVariants, 
+import * as React from 'react';
+import * as DialogPrimitive from '@radix-ui/react-dialog';
+import { X } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import {
+  dialogAnimationClasses,
+  dialogVariants,
   dialogIconColors,
   dialogTitleStyles,
   dialogButtonStyles,
-  type DialogType 
-} from "@/lib/dialog-animation"
+  type DialogType,
+} from '@/lib/dialog-animation';
 
-const Dialog = DialogPrimitive.Root
+const Dialog = DialogPrimitive.Root;
 
-const DialogTrigger = DialogPrimitive.Trigger
+const DialogTrigger = DialogPrimitive.Trigger;
 
-const DialogPortal = DialogPrimitive.Portal
+const DialogPortal = DialogPrimitive.Portal;
 
-const DialogClose = DialogPrimitive.Close
+const DialogClose = DialogPrimitive.Close;
 
 // 統一的背景遮罩
 const DialogOverlay = React.forwardRef<
@@ -40,20 +40,20 @@ const DialogOverlay = React.forwardRef<
     )}
     {...props}
   />
-))
-DialogOverlay.displayName = DialogPrimitive.Overlay.displayName
+));
+DialogOverlay.displayName = DialogPrimitive.Overlay.displayName;
 
 // 統一的內容容器
 interface DialogContentProps
   extends React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content> {
-  type?: DialogType
-  size?: "sm" | "md" | "lg" | "xl" | "full"
+  type?: DialogType;
+  size?: 'sm' | 'md' | 'lg' | 'xl' | 'full';
 }
 
 const DialogContent = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Content>,
   DialogContentProps
->(({ className, children, type = "form", size = "md", ...props }, ref) => (
+>(({ className, children, type = 'form', size = 'md', ...props }, ref) => (
   <DialogPortal>
     <DialogOverlay />
     <DialogPrimitive.Content
@@ -62,52 +62,45 @@ const DialogContent = React.forwardRef<
         dialogAnimationClasses.content.base,
         dialogAnimationClasses.content.animation,
         dialogVariants({ type, size }),
-        "max-h-[90vh] overflow-y-auto p-8",
+        'max-h-[90vh] overflow-y-auto p-8',
         className
       )}
       {...props}
     >
       {children}
-      <DialogPrimitive.Close className="absolute right-6 top-6 rounded-full opacity-70 ring-offset-background transition-all hover:opacity-100 hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none p-1.5">
-        <X className="h-5 w-5" />
-        <span className="sr-only">Close</span>
+      <DialogPrimitive.Close className='absolute right-6 top-6 rounded-full p-1.5 opacity-70 ring-offset-background transition-all hover:bg-slate-800 hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none'>
+        <X className='h-5 w-5' />
+        <span className='sr-only'>Close</span>
       </DialogPrimitive.Close>
     </DialogPrimitive.Content>
   </DialogPortal>
-))
-DialogContent.displayName = DialogPrimitive.Content.displayName
+));
+DialogContent.displayName = DialogPrimitive.Content.displayName;
 
 // 統一的標題
 interface DialogHeaderProps extends React.HTMLAttributes<HTMLDivElement> {
-  type?: DialogType
+  type?: DialogType;
 }
 
-const DialogHeader = ({ className, type = "form", ...props }: DialogHeaderProps) => (
-  <div
-    className={cn(
-      "flex flex-col space-y-1.5 text-center sm:text-left",
-      className
-    )}
-    {...props}
-  />
-)
-DialogHeader.displayName = "DialogHeader"
+const DialogHeader = ({ className, type = 'form', ...props }: DialogHeaderProps) => (
+  <div className={cn('flex flex-col space-y-1.5 text-center sm:text-left', className)} {...props} />
+);
+DialogHeader.displayName = 'DialogHeader';
 
 // 統一的標題文字
-interface DialogTitleProps
-  extends React.ComponentPropsWithoutRef<typeof DialogPrimitive.Title> {
-  type?: DialogType
-  icon?: React.ReactNode
+interface DialogTitleProps extends React.ComponentPropsWithoutRef<typeof DialogPrimitive.Title> {
+  type?: DialogType;
+  icon?: React.ReactNode;
 }
 
 const DialogTitle = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Title>,
   DialogTitleProps
->(({ className, children, type = "form", icon, ...props }, ref) => (
+>(({ className, children, type = 'form', icon, ...props }, ref) => (
   <DialogPrimitive.Title
     ref={ref}
     className={cn(
-      "text-2xl font-bold bg-clip-text text-transparent flex items-center gap-4",
+      'flex items-center gap-4 bg-clip-text text-2xl font-bold text-transparent',
       dialogTitleStyles[type],
       className
     )}
@@ -116,8 +109,8 @@ const DialogTitle = React.forwardRef<
     {icon && <span className={dialogIconColors[type]}>{icon}</span>}
     {children}
   </DialogPrimitive.Title>
-))
-DialogTitle.displayName = DialogPrimitive.Title.displayName
+));
+DialogTitle.displayName = DialogPrimitive.Title.displayName;
 
 // 統一的描述
 const DialogDescription = React.forwardRef<
@@ -126,26 +119,20 @@ const DialogDescription = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <DialogPrimitive.Description
     ref={ref}
-    className={cn("text-slate-400 text-lg leading-relaxed", className)}
+    className={cn('text-lg leading-relaxed text-slate-400', className)}
     {...props}
   />
-))
-DialogDescription.displayName = DialogPrimitive.Description.displayName
+));
+DialogDescription.displayName = DialogPrimitive.Description.displayName;
 
 // 統一的底部
-const DialogFooter = ({
-  className,
-  ...props
-}: React.HTMLAttributes<HTMLDivElement>) => (
+const DialogFooter = ({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
   <div
-    className={cn(
-      "flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2 pt-6",
-      className
-    )}
+    className={cn('flex flex-col-reverse pt-6 sm:flex-row sm:justify-end sm:space-x-2', className)}
     {...props}
   />
-)
-DialogFooter.displayName = "DialogFooter"
+);
+DialogFooter.displayName = 'DialogFooter';
 
 // 導出所有組件
 export {
@@ -161,5 +148,5 @@ export {
   DialogDescription,
   dialogButtonStyles,
   dialogIconColors,
-  type DialogType
-}
+  type DialogType,
+};

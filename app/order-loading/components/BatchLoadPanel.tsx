@@ -4,12 +4,12 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
-import { 
-  DocumentDuplicateIcon, 
-  TrashIcon, 
+import {
+  DocumentDuplicateIcon,
+  TrashIcon,
   CheckCircleIcon,
   ExclamationTriangleIcon,
-  ArrowPathIcon
+  ArrowPathIcon,
 } from '@heroicons/react/24/outline';
 import { UnifiedSearch } from '@/components/ui/unified-search';
 
@@ -37,7 +37,7 @@ export default function BatchLoadPanel({ orderRef, onBatchComplete }: BatchLoadP
   // Add item to batch
   const handleAddToBatch = (result: any) => {
     const input = result.data.value;
-    
+
     // Check if already in batch
     if (batchItems.some(item => item.input === input)) {
       toast.warning('This item is already in the batch');
@@ -47,7 +47,7 @@ export default function BatchLoadPanel({ orderRef, onBatchComplete }: BatchLoadP
     const newItem: BatchItem = {
       id: Date.now().toString(),
       input,
-      status: 'pending'
+      status: 'pending',
     };
 
     setBatchItems(prev => [...prev, newItem]);
@@ -75,44 +75,41 @@ export default function BatchLoadPanel({ orderRef, onBatchComplete }: BatchLoadP
     }
 
     setIsProcessing(true);
-    
+
     // Process items sequentially to avoid conflicts
     for (const item of batchItems) {
-      setBatchItems(prev => 
-        prev.map(i => i.id === item.id ? { ...i, status: 'loading' } : i)
-      );
+      setBatchItems(prev => prev.map(i => (i.id === item.id ? { ...i, status: 'loading' } : i)));
 
       try {
         const { loadPalletToOrder } = await import('@/app/actions/orderLoadingActions');
         const result = await loadPalletToOrder(orderRef, item.input);
-        
+
         if (result.success) {
-          setBatchItems(prev => 
-            prev.map(i => i.id === item.id 
-              ? { 
-                  ...i, 
-                  status: 'success', 
-                  message: result.message,
-                  palletNumber: result.data?.palletNumber,
-                  productCode: result.data?.productCode,
-                  quantity: result.data?.productQty
-                } 
-              : i
+          setBatchItems(prev =>
+            prev.map(i =>
+              i.id === item.id
+                ? {
+                    ...i,
+                    status: 'success',
+                    message: result.message,
+                    palletNumber: result.data?.palletNumber,
+                    productCode: result.data?.productCode,
+                    quantity: result.data?.productQty,
+                  }
+                : i
             )
           );
         } else {
-          setBatchItems(prev => 
-            prev.map(i => i.id === item.id 
-              ? { ...i, status: 'error', message: result.message } 
-              : i
+          setBatchItems(prev =>
+            prev.map(i =>
+              i.id === item.id ? { ...i, status: 'error', message: result.message } : i
             )
           );
         }
       } catch (error) {
-        setBatchItems(prev => 
-          prev.map(i => i.id === item.id 
-            ? { ...i, status: 'error', message: 'System error occurred' } 
-            : i
+        setBatchItems(prev =>
+          prev.map(i =>
+            i.id === item.id ? { ...i, status: 'error', message: 'System error occurred' } : i
           )
         );
       }
@@ -139,43 +136,43 @@ export default function BatchLoadPanel({ orderRef, onBatchComplete }: BatchLoadP
   const getStatusIcon = (status: BatchItem['status']) => {
     switch (status) {
       case 'pending':
-        return <div className="w-5 h-5 rounded-full bg-slate-600" />;
+        return <div className='h-5 w-5 rounded-full bg-slate-600' />;
       case 'loading':
-        return <ArrowPathIcon className="w-5 h-5 text-blue-400 animate-spin" />;
+        return <ArrowPathIcon className='h-5 w-5 animate-spin text-blue-400' />;
       case 'success':
-        return <CheckCircleIcon className="w-5 h-5 text-green-400" />;
+        return <CheckCircleIcon className='h-5 w-5 text-green-400' />;
       case 'error':
-        return <ExclamationTriangleIcon className="w-5 h-5 text-red-400" />;
+        return <ExclamationTriangleIcon className='h-5 w-5 text-red-400' />;
     }
   };
 
   return (
-    <Card className="bg-slate-800/50 border-slate-700/50 backdrop-blur-sm">
+    <Card className='border-slate-700/50 bg-slate-800/50 backdrop-blur-sm'>
       <CardHeader>
-        <CardTitle className="flex items-center justify-between text-slate-200">
-          <div className="flex items-center">
-            <DocumentDuplicateIcon className="h-6 w-6 mr-2 text-indigo-400" />
+        <CardTitle className='flex items-center justify-between text-slate-200'>
+          <div className='flex items-center'>
+            <DocumentDuplicateIcon className='mr-2 h-6 w-6 text-indigo-400' />
             Batch Loading Mode
           </div>
           <Button
-            variant="ghost"
-            size="sm"
+            variant='ghost'
+            size='sm'
             onClick={() => setShowBatchMode(!showBatchMode)}
-            className="text-slate-400 hover:text-white"
+            className='text-slate-400 hover:text-white'
           >
             {showBatchMode ? 'Hide' : 'Show'} Batch
           </Button>
         </CardTitle>
       </CardHeader>
-      
+
       {showBatchMode && (
-        <CardContent className="space-y-4">
+        <CardContent className='space-y-4'>
           {/* Search input */}
           <div>
             <UnifiedSearch
-              searchType="pallet"
+              searchType='pallet'
               onSelect={handleAddToBatch}
-              placeholder="Scan to add to batch..."
+              placeholder='Scan to add to batch...'
               enableAutoDetection={true}
               value={searchValue}
               onChange={setSearchValue}
@@ -185,31 +182,29 @@ export default function BatchLoadPanel({ orderRef, onBatchComplete }: BatchLoadP
 
           {/* Batch items list */}
           {batchItems.length > 0 && (
-            <div className="space-y-2">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm text-slate-400">
-                  {batchItems.length} items in batch
-                </span>
-                <div className="space-x-2">
+            <div className='space-y-2'>
+              <div className='mb-2 flex items-center justify-between'>
+                <span className='text-sm text-slate-400'>{batchItems.length} items in batch</span>
+                <div className='space-x-2'>
                   <Button
-                    variant="outline"
-                    size="sm"
+                    variant='outline'
+                    size='sm'
                     onClick={handleClearBatch}
                     disabled={isProcessing}
-                    className="text-red-400 border-red-400/50 hover:bg-red-400/10"
+                    className='border-red-400/50 text-red-400 hover:bg-red-400/10'
                   >
-                    <TrashIcon className="w-4 h-4 mr-1" />
+                    <TrashIcon className='mr-1 h-4 w-4' />
                     Clear All
                   </Button>
                   <Button
-                    size="sm"
+                    size='sm'
                     onClick={handleProcessBatch}
                     disabled={isProcessing || batchItems.length === 0}
-                    className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700"
+                    className='bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700'
                   >
                     {isProcessing ? (
                       <>
-                        <ArrowPathIcon className="w-4 h-4 mr-1 animate-spin" />
+                        <ArrowPathIcon className='mr-1 h-4 w-4 animate-spin' />
                         Processing...
                       </>
                     ) : (
@@ -219,45 +214,45 @@ export default function BatchLoadPanel({ orderRef, onBatchComplete }: BatchLoadP
                 </div>
               </div>
 
-              <div className="max-h-60 overflow-y-auto space-y-2 bg-slate-900/30 rounded-lg p-2">
-                {batchItems.map((item) => (
-                  <div 
-                    key={item.id} 
-                    className={`flex items-center justify-between p-3 rounded-lg border ${
-                      item.status === 'success' 
-                        ? 'bg-green-900/20 border-green-700/50' 
+              <div className='max-h-60 space-y-2 overflow-y-auto rounded-lg bg-slate-900/30 p-2'>
+                {batchItems.map(item => (
+                  <div
+                    key={item.id}
+                    className={`flex items-center justify-between rounded-lg border p-3 ${
+                      item.status === 'success'
+                        ? 'border-green-700/50 bg-green-900/20'
                         : item.status === 'error'
-                        ? 'bg-red-900/20 border-red-700/50'
-                        : 'bg-slate-800/50 border-slate-700/50'
+                          ? 'border-red-700/50 bg-red-900/20'
+                          : 'border-slate-700/50 bg-slate-800/50'
                     }`}
                   >
-                    <div className="flex items-center space-x-3">
+                    <div className='flex items-center space-x-3'>
                       {getStatusIcon(item.status)}
                       <div>
-                        <div className="font-mono text-sm text-white">{item.input}</div>
+                        <div className='font-mono text-sm text-white'>{item.input}</div>
                         {item.message && (
-                          <div className="text-xs text-slate-400 mt-1">
+                          <div className='mt-1 text-xs text-slate-400'>
                             {item.status === 'success' && item.productCode && (
-                              <span className="text-green-400">
+                              <span className='text-green-400'>
                                 {item.productCode} - {item.quantity} units
                               </span>
                             )}
                             {item.status === 'error' && (
-                              <span className="text-red-400">{item.message}</span>
+                              <span className='text-red-400'>{item.message}</span>
                             )}
                           </div>
                         )}
                       </div>
                     </div>
-                    
+
                     {item.status === 'pending' && !isProcessing && (
                       <Button
-                        variant="ghost"
-                        size="sm"
+                        variant='ghost'
+                        size='sm'
                         onClick={() => handleRemoveItem(item.id)}
-                        className="text-slate-400 hover:text-red-400"
+                        className='text-slate-400 hover:text-red-400'
                       >
-                        <TrashIcon className="w-4 h-4" />
+                        <TrashIcon className='h-4 w-4' />
                       </Button>
                     )}
                   </div>
@@ -268,10 +263,10 @@ export default function BatchLoadPanel({ orderRef, onBatchComplete }: BatchLoadP
 
           {/* Empty state */}
           {batchItems.length === 0 && (
-            <div className="text-center py-8 text-slate-400">
-              <DocumentDuplicateIcon className="w-12 h-12 mx-auto mb-3 opacity-50" />
-              <p className="text-sm">Scan items to add to batch</p>
-              <p className="text-xs mt-1">Process multiple pallets at once</p>
+            <div className='py-8 text-center text-slate-400'>
+              <DocumentDuplicateIcon className='mx-auto mb-3 h-12 w-12 opacity-50' />
+              <p className='text-sm'>Scan items to add to batch</p>
+              <p className='mt-1 text-xs'>Process multiple pallets at once</p>
             </div>
           )}
         </CardContent>

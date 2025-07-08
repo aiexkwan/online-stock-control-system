@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/app/utils/supabase/server';
+import { createDashboardAPI } from '@/lib/api/admin/DashboardAPI';
 
 export async function GET(request: NextRequest) {
   try {
@@ -8,311 +8,32 @@ export async function GET(request: NextRequest) {
     const warehouse = searchParams.get('warehouse');
     const startDate = searchParams.get('startDate');
     const endDate = searchParams.get('endDate');
+    const limit = parseInt(searchParams.get('limit') || '50');
+    const offset = parseInt(searchParams.get('offset') || '0');
+
+    // Use existing DashboardAPI instead of duplicating logic
+    const dashboardAPI = createDashboardAPI();
     
-    const supabase = await createClient();
-    const results = [];
-    
-    // Process each widget request
-    for (const widgetId of widgets) {
-      try {
-        let widgetData;
-        
-        switch (widgetId) {
-          case 'total_pallets':
-            const { count: palletCount } = await supabase
-              .from('record_palletinfo')
-              .select('*', { count: 'exact', head: true });
-            
-            widgetData = {
-              value: palletCount || 0,
-              label: 'Total Pallets'
-            };
-            break;
-            
-          case 'today_transfers':
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
-            
-            const { count: transferCount } = await supabase
-              .from('record_transfer')
-              .select('*', { count: 'exact', head: true })
-              .gte('tran_date', today.toISOString());
-            
-            widgetData = {
-              value: transferCount || 0,
-              label: "Today's Transfers"
-            };
-            break;
-            
-          case 'active_products':
-            const { count: productCount } = await supabase
-              .from('data_code')
-              .select('*', { count: 'exact', head: true })
-              .eq('status', 'active');
-            
-            widgetData = {
-              value: productCount || 0,
-              label: 'Active Products'
-            };
-            break;
-            
-          case 'pending_orders':
-            const { count: orderCount } = await supabase
-              .from('data_order')
-              .select('*', { count: 'exact', head: true })
-              .is('loaded_qty', null);
-            
-            widgetData = {
-              value: orderCount || 0,
-              label: 'Pending Orders'
-            };
-            break;
-            
-          case 'await_percentage_stats':
-            // Use optimized RPC for complex calculation
-            const rpcStartDate = startDate || new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-            const rpcEndDate = endDate || new Date().toISOString();
-            
-            const { data: awaitStatsApi, error: awaitApiError } = await supabase
-              .rpc('rpc_get_await_percentage_stats', {
-                p_start_date: rpcStartDate,
-                p_end_date: rpcEndDate
-              });
-            
-            if (awaitApiError) {
-              console.error('API: Error fetching await percentage stats:', awaitApiError);
-              widgetData = {
-                value: 0,
-                label: 'Error loading await stats',
-                error: awaitApiError.message
-              };
-            } else {
-              widgetData = {
-                value: awaitStatsApi?.percentage || 0,
-                label: 'Still In Await %',
-                metadata: {
-                  totalPallets: awaitStatsApi?.total_pallets || 0,
-                  stillAwait: awaitStatsApi?.still_await || 0,
-                  calculationTime: awaitStatsApi?.calculation_time,
-                  dateRange: awaitStatsApi?.date_range,
-                  optimized: true
-                }
-              };
-            }
-            break;
-            
-          case 'await_location_count':
-            // Use optimized RPC for await location count
-            const { data: awaitCountApi, error: awaitCountApiError } = await supabase
-              .rpc('rpc_get_await_location_count');
-            
-            if (awaitCountApiError) {
-              console.error('API: Error fetching await location count:', awaitCountApiError);
-              widgetData = {
-                value: 0,
-                label: 'Error loading await count',
-                error: awaitCountApiError.message
-              };
-            } else {
-              widgetData = {
-                value: awaitCountApi?.await_count || 0,
-                label: 'Await Location Qty',
-                metadata: {
-                  calculationTime: awaitCountApi?.calculation_time,
-                  method: awaitCountApi?.method,
-                  optimized: awaitCountApi?.performance?.optimized || true
-                }
-              };
-            }
-            break;
-            
-          case 'transfer_count':
-            // Transfer count with trend analysis
-            const transferApiStartDate = startDate || new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-            const transferApiEndDate = endDate || new Date().toISOString();
-            
-            // Get transfer count for specified range
-            const { count: transferApiCount } = await supabase
-              .from('record_transfer')
-              .select('*', { count: 'exact', head: true })
-              .gte('tran_date', transferApiStartDate)
-              .lte('tran_date', transferApiEndDate);
-            
-            // Get today's count for trend comparison
-            let apiTrendPercentage = 0;
-            const apiToday = new Date();
-            const apiTodayStart = new Date(apiToday.getFullYear(), apiToday.getMonth(), apiToday.getDate()).toISOString();
-            const apiTodayEnd = new Date(apiToday.getFullYear(), apiToday.getMonth(), apiToday.getDate() + 1).toISOString();
-            
-            if (transferApiStartDate !== apiTodayStart) {
-              const { count: apiTodayCount } = await supabase
-                .from('record_transfer')
-                .select('*', { count: 'exact', head: true })
-                .gte('tran_date', apiTodayStart)
-                .lt('tran_date', apiTodayEnd);
-              
-              if (apiTodayCount && apiTodayCount > 0) {
-                apiTrendPercentage = ((transferApiCount || 0) - apiTodayCount) / apiTodayCount * 100;
-              }
-            }
-            
-            widgetData = {
-              value: transferApiCount || 0,
-              label: 'Transfer Done',
-              metadata: {
-                dateRange: {
-                  start: transferApiStartDate,
-                  end: transferApiEndDate
-                },
-                trend: apiTrendPercentage,
-                optimized: true
-              }
-            };
-            break;
-            
-          case 'history_tree':
-            // History tree with server-side event merging
-            const historyLimit = parseInt(searchParams.get('limit') || '50');
-            const historyOffset = parseInt(searchParams.get('offset') || '0');
-            
-            const { data: historyData, error: historyError } = await supabase
-              .rpc('rpc_get_history_tree', {
-                p_limit: historyLimit,
-                p_offset: historyOffset
-              });
-            
-            if (historyError) {
-              console.error('API: Error fetching history tree:', historyError);
-              widgetData = {
-                value: [],
-                label: 'Error loading history',
-                error: historyError.message
-              };
-            } else if (historyData?.error) {
-              widgetData = {
-                value: [],
-                label: 'History Tree Error',
-                error: historyData.message || 'RPC function failed'
-              };
-            } else {
-              widgetData = {
-                value: historyData?.events || [],
-                label: 'History Tree',
-                metadata: {
-                  totalCount: historyData?.total_count || 0,
-                  mergedCount: historyData?.merged_count || 0,
-                  hasMore: historyData?.has_more || false,
-                  limit: historyLimit,
-                  offset: historyOffset,
-                  performanceMs: historyData?.performance_ms,
-                  queryTime: historyData?.query_time,
-                  optimized: true,
-                  rpcFunction: 'rpc_get_history_tree'
-                }
-              };
-            }
-            break;
-            
-          case 'order_state_list':
-            // Order state list with server-side progress calculation
-            const orderStateLimit = parseInt(searchParams.get('limit') || '50');
-            const orderStateOffset = parseInt(searchParams.get('offset') || '0');
-            
-            const { data: orderStateData, error: orderStateError } = await supabase
-              .rpc('rpc_get_order_state_list', {
-                p_limit: orderStateLimit,
-                p_offset: orderStateOffset
-              });
-            
-            if (orderStateError) {
-              console.error('API: Error fetching order state list:', orderStateError);
-              widgetData = {
-                value: [],
-                label: 'Error loading order states',
-                error: orderStateError.message
-              };
-            } else if (orderStateData?.error) {
-              widgetData = {
-                value: [],
-                label: 'Order State List Error',
-                error: orderStateData.message || 'RPC function failed'
-              };
-            } else {
-              widgetData = {
-                value: orderStateData?.orders || [],
-                label: 'Order State List',
-                metadata: {
-                  totalCount: orderStateData?.total_count || 0,
-                  pendingCount: orderStateData?.pending_count || 0,
-                  hasMore: orderStateData?.has_more || false,
-                  limit: orderStateLimit,
-                  offset: orderStateOffset,
-                  performanceMs: orderStateData?.performance_ms,
-                  queryTime: orderStateData?.query_time,
-                  optimized: true,
-                  rpcFunction: 'rpc_get_order_state_list'
-                }
-              };
-            }
-            break;
-            
-          default:
-            widgetData = {
-              value: 0,
-              label: 'Unknown Widget'
-            };
-        }
-        
-        results.push({
-          widgetId,
-          title: getWidgetTitle(widgetId),
-          data: widgetData,
-          lastUpdated: new Date().toISOString()
-        });
-        
-      } catch (error) {
-        console.error(`Error fetching widget ${widgetId}:`, error);
-        results.push({
-          widgetId,
-          title: getWidgetTitle(widgetId),
-          data: { error: 'Failed to load widget data' },
-          lastUpdated: new Date().toISOString()
-        });
-      }
-    }
-    
-    const response = {
-      widgets: results,
-      metadata: {
-        generatedAt: new Date().toISOString(),
-        cacheHit: false,
-        processingTime: Date.now() % 1000 // Simple mock timing
-      }
-    };
-    
-    return NextResponse.json(response, {
+    const result = await dashboardAPI.serverFetch({
+      widgetIds: widgets,
+      warehouse,
+      dateRange: startDate && endDate ? { start: startDate, end: endDate } : undefined,
+      params: {
+        limit,
+        offset,
+        startDate,
+        endDate,
+      },
+    });
+
+    return NextResponse.json(result, {
       headers: {
         'Cache-Control': 'public, max-age=60, stale-while-revalidate=300',
-        'Content-Type': 'application/json'
-      }
+        'Content-Type': 'application/json',
+      },
     });
-    
   } catch (error) {
     console.error('Dashboard API error:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
-}
-
-function getWidgetTitle(widgetId: string): string {
-  const titles: Record<string, string> = {
-    total_pallets: 'Total Pallets',
-    today_transfers: "Today's Transfers",
-    active_products: 'Active Products',
-    pending_orders: 'Pending Orders'
-  };
-  
-  return titles[widgetId] || widgetId;
 }

@@ -1,9 +1,9 @@
 import './globals.css';
-import type { Metadata } from 'next'
-import { Inter } from 'next/font/google'
-import ClientLayout from './components/ClientLayout'
+import type { Metadata } from 'next';
+import { Inter } from 'next/font/google';
+import ClientLayout from './components/ClientLayout';
 
-const inter = Inter({ subsets: ['latin'] })
+const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
   title: 'Pennine Stock Control System',
@@ -11,18 +11,14 @@ export const metadata: Metadata = {
   icons: {
     icon: '/images/logo.png', // 使用現有的圖片作為 favicon
   },
-}
+};
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
-      <body className="font-lato">
+    <html lang='en'>
+      <body className='font-lato'>
         <ClientLayout>{children}</ClientLayout>
       </body>
     </html>
-  )
+  );
 }
