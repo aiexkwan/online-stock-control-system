@@ -2,14 +2,26 @@ import type { CodegenConfig } from '@graphql-codegen/cli';
 
 const config: CodegenConfig = {
   overwrite: true,
-  schema: 'lib/graphql/schema.graphql',
-  // 暫時唔處理任何 documents，只生成 schema types
-  documents: [],
+  schema: 'lib/graphql/schema.json',
+  // 涵蓋所有 GraphQL 查詢同 mutations
+  documents: [
+    'lib/graphql/queries.ts',
+    'lib/graphql/mutations.ts',
+    'lib/graphql/subscriptions.ts',
+    'app/**/*.{ts,tsx}',
+    '!app/**/*.d.ts',
+    '!lib/graphql/generated/**/*',
+    '!lib/graphql/**/unified.graphql',
+    '!lib/graphql/queries/unified.graphql',
+    '!lib/graphql/mutations/unified.graphql',
+    '!node_modules/**/*'
+  ],
   generates: {
     // 生成標準化類型
     'lib/graphql/generated/types.ts': {
       plugins: ['typescript', 'typescript-operations'],
       config: {
+        skipDocumentValidation: true,
         scalars: {
           UUID: 'string',
           DateTime: 'string',
@@ -37,6 +49,7 @@ const config: CodegenConfig = {
     'lib/graphql/generated/hooks.ts': {
       plugins: ['typescript', 'typescript-operations', 'typescript-react-apollo'],
       config: {
+        skipDocumentValidation: true,
         withHooks: true,
         withComponent: false,
         withHOC: false,

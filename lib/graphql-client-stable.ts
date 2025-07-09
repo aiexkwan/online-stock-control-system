@@ -125,12 +125,33 @@ export class GraphQLClient {
       const result = await response.json();
 
       if (result.errors) {
-        console.error('[GraphQL] Errors:', result.errors);
+        // 開發環境先至輸出詳細錯誤
+        if (process.env.NODE_ENV === 'development') {
+          console.warn('[GraphQL] Query returned errors:', {
+            errorCount: result.errors.length,
+            firstError: result.errors[0]?.message || 'Unknown error',
+            operationName: request.operationName
+          });
+          
+          // 只喺需要 debug 時先輸出完整錯誤
+          if (process.env.NEXT_PUBLIC_DEBUG_GRAPHQL === 'true') {
+            console.debug('[GraphQL] Error Details:', {
+              query: request.query?.substring(0, 200) + '...', // 只顯示前200字符
+              variables: request.variables,
+              errors: result.errors.map(e => ({
+                message: e.message,
+                path: e.path
+              }))
+            });
+          }
+        }
       }
 
       return result;
     } catch (error) {
-      console.error('[GraphQL] Request error:', error);
+      if (process.env.NODE_ENV === 'development') {
+        console.warn('[GraphQL] Request failed:', error instanceof Error ? error.message : 'Unknown error');
+      }
       throw error;
     }
   }
@@ -245,7 +266,12 @@ export function useGraphQLQuery<T = any>(
         // 只有組件仍然掛載時才更新狀態
         if (isMountedRef.current) {
           if (result.errors) {
-            setError(new Error(result.errors[0].message));
+            // 更詳細嘅錯誤信息
+            const errorMessage = result.errors[0]?.message || 'GraphQL query failed';
+            const error = new Error(errorMessage);
+            // 附加所有錯誤信息到 error 對象
+            (error as any).graphQLErrors = result.errors;
+            setError(error);
           } else {
             setData(result.data || null);
           }

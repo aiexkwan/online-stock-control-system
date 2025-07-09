@@ -51,7 +51,7 @@ export interface MovementPattern {
 export class StockMovementService {
   constructor(
     private supabase: SupabaseClient,
-    private locationMapper: LocationMapper = new LocationMapper()
+    private locationMapper: typeof LocationMapper = LocationMapper
   ) {}
 
   /**
@@ -64,10 +64,13 @@ export class StockMovementService {
     if ('palletCode' in movement) {
       // Validate locations
       const validLocations = this.locationMapper.getValidDatabaseLocations();
-      if (!validLocations.includes(movement.fromLocation)) {
+      const fromDbColumn = this.locationMapper.toDbColumn(movement.fromLocation);
+      const toDbColumn = this.locationMapper.toDbColumn(movement.toLocation);
+      
+      if (!fromDbColumn || !validLocations.includes(fromDbColumn)) {
         return { success: false, error: 'Invalid from location' };
       }
-      if (!validLocations.includes(movement.toLocation)) {
+      if (!toDbColumn || !validLocations.includes(toDbColumn)) {
         return { success: false, error: 'Invalid to location' };
       }
 
@@ -119,7 +122,7 @@ export class StockMovementService {
   async getMovementHistory(
     palletNumber: string,
     options?: { includeUser?: boolean; limit?: number }
-  ): Promise<MovementResult | StockMovement[]> {
+  ): Promise<MovementResult> {
     const limit = options?.limit || 100;
     let query = this.supabase
       .from('stock_movements')
@@ -142,21 +145,13 @@ export class StockMovementService {
       const { data: altData, error: altError } = await altQuery;
 
       if (altError) {
-        throw new Error(`Failed to fetch movement history: ${altError.message}`);
+        return { success: false, error: altError.message };
       }
 
-      // Return in test format if from test
-      if (options?.includeUser !== undefined) {
-        return { success: true, movements: altData || [] };
-      }
-      return altData || [];
+      return { success: true, movements: altData || [] };
     }
 
-    // Return in test format if from test
-    if (options?.includeUser !== undefined) {
-      return { success: true, movements: data || [] };
-    }
-    return data || [];
+    return { success: true, movements: data || [] };
   }
 
   /**
@@ -386,7 +381,9 @@ export class StockMovementService {
 
     // 檢查目標位置是否有效
     const validLocations = this.locationMapper.getValidDatabaseLocations();
-    if (!validLocations.includes(toLocation)) {
+    const toDbColumn = this.locationMapper.toDbColumn(toLocation);
+    
+    if (!toDbColumn || !validLocations.includes(toDbColumn)) {
       return {
         valid: false,
         reason: 'Invalid destination location',
@@ -496,9 +493,12 @@ export class StockMovementService {
 
         // Validate location
         const validLocations = this.locationMapper.getValidDatabaseLocations();
+        const fromDbColumn = this.locationMapper.toDbColumn(movement.fromLocation);
+        
         if (
           movement.fromLocation === 'INVALID' ||
-          !validLocations.includes(movement.fromLocation)
+          !fromDbColumn ||
+          !validLocations.includes(fromDbColumn)
         ) {
           errors.push(`Invalid location for ${movement.palletCode}`);
           continue;
@@ -529,5 +529,15 @@ export class StockMovementService {
     }
 
     return { success: false, error: 'Invalid response from RPC' };
+  }
+
+  /**
+   * 獲取移動驗證
+   */
+  private async validateLocationTransfer(fromLocation: string, toLocation: string): Promise<boolean> {
+    const fromDbColumn = this.locationMapper.toDbColumn(fromLocation);
+    const toDbColumn = this.locationMapper.toDbColumn(toLocation);
+    
+    return !!(fromDbColumn && toDbColumn);
   }
 }

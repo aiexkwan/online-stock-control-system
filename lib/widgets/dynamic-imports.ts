@@ -23,6 +23,7 @@ export const statsWidgetImports = {
 export const chartsWidgetImports = {
   'ProductMixChartWidget': () => import('@/app/admin/components/dashboard/widgets/ProductMixChartWidget'),
   'StockDistributionChart': () => import('@/app/admin/components/dashboard/widgets/StockDistributionChartV2'),
+  'StockDistributionChartV2': () => import('@/app/admin/components/dashboard/widgets/StockDistributionChartV2'),
   'StockLevelHistoryChart': () => import('@/app/admin/components/dashboard/widgets/StockLevelHistoryChart'),
   'TransferTimeDistributionWidget': () => import('@/app/admin/components/dashboard/widgets/TransferTimeDistributionWidget'),
   'InventoryOrderedAnalysisWidget': () => import('@/app/admin/components/dashboard/widgets/InventoryOrderedAnalysisWidget'),
@@ -34,8 +35,10 @@ export const listsWidgetImports = {
   'OrdersListWidget': () => import('@/app/admin/components/dashboard/widgets/OrdersListWidgetV2'),
   'OrdersListWidgetV2': () => import('@/app/admin/components/dashboard/widgets/OrdersListWidgetV2'),
   'OtherFilesListWidget': () => import('@/app/admin/components/dashboard/widgets/OtherFilesListWidgetV2'),
+  'OtherFilesListWidgetV2': () => import('@/app/admin/components/dashboard/widgets/OtherFilesListWidgetV2'),
   'WarehouseTransferListWidget': () => import('@/app/admin/components/dashboard/widgets/WarehouseTransferListWidget'),
   'OrderStateListWidget': () => import('@/app/admin/components/dashboard/widgets/OrderStateListWidgetV2'),
+  'OrderStateListWidgetV2': () => import('@/app/admin/components/dashboard/widgets/OrderStateListWidgetV2'),
 };
 
 // Operations Widgets
@@ -43,6 +46,7 @@ export const operationsWidgetImports = {
   'VoidPalletWidget': () => import('@/app/admin/components/dashboard/widgets/VoidPalletWidget'),
   'ProductUpdateWidget': () => import('@/app/admin/components/dashboard/widgets/ProductUpdateWidget'),
   'SupplierUpdateWidget': () => import('@/app/admin/components/dashboard/widgets/SupplierUpdateWidgetV2'),
+  'SupplierUpdateWidgetV2': () => import('@/app/admin/components/dashboard/widgets/SupplierUpdateWidgetV2'),
   'StockTypeSelector': () => import('@/app/admin/components/dashboard/widgets/StockTypeSelector'),
   'EmptyPlaceholderWidget': () => import('@/app/admin/components/dashboard/widgets/EmptyPlaceholderWidget'),
 };
@@ -61,10 +65,13 @@ export const uploadsWidgetImports = {
 export const reportsWidgetImports = {
   'TransactionReportWidget': () => import('@/app/admin/components/dashboard/widgets/TransactionReportWidget'),
   'GrnReportWidget': () => import('@/app/admin/components/dashboard/widgets/GrnReportWidgetV2'),
+  'GrnReportWidgetV2': () => import('@/app/admin/components/dashboard/widgets/GrnReportWidgetV2'),
   'AcoOrderReportWidget': () => import('@/app/admin/components/dashboard/widgets/AcoOrderReportWidgetV2'),
+  'AcoOrderReportWidgetV2': () => import('@/app/admin/components/dashboard/widgets/AcoOrderReportWidgetV2'),
   'ReprintLabelWidget': () => import('@/app/admin/components/dashboard/widgets/ReprintLabelWidget'),
   'ReportGeneratorWidget': () => import('@/app/admin/components/dashboard/widgets/ReportGeneratorWithDialogWidgetV2'),
   'ReportGeneratorWithDialogWidget': () => import('@/app/admin/components/dashboard/widgets/ReportGeneratorWithDialogWidgetV2'),
+  'ReportGeneratorWithDialogWidgetV2': () => import('@/app/admin/components/dashboard/widgets/ReportGeneratorWithDialogWidgetV2'),
   'ReportsWidget': () => import('@/app/admin/components/dashboard/widgets/ReportsWidget'),
 };
 

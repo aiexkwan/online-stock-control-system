@@ -3,6 +3,7 @@
 import React, { Component, ErrorInfo, ReactNode } from 'react';
 import { errorHandler, ErrorContext } from './services/ErrorHandler';
 import { ExclamationTriangleIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
+import { isDevelopment } from '@/lib/utils/env';
 
 interface Props {
   children: ReactNode;

@@ -37,7 +37,7 @@ import { UnifiedVoidReportDialog } from '@/app/void-pallet/components/UnifiedVoi
 import { UnifiedLoadingReportDialog } from '@/app/order-loading/components/UnifiedLoadingReportDialog';
 // import { UnifiedStockTakeReportDialog } from '@/app/stock-take/components/UnifiedStockTakeReportDialog'; // Component not found
 // ACO Report now integrated directly into system page widget
-import { UnifiedGrnReportDialog } from '@/app/components/reports/UnifiedGrnReportDialog';
+// import { UnifiedGrnReportDialog } from '@/app/components/reports/UnifiedGrnReportDialog'; // Component not found
 // Transaction Report now integrated directly into system page widget
 import { UnifiedExportAllDataDialog } from '@/app/components/reports/UnifiedExportAllDataDialog';
 
@@ -281,11 +281,6 @@ export function ReportsDashboardDialog({ isOpen, onClose }: ReportsDashboardDial
         onClose={() => closeReportDialog('stock-take-report')}
       /> */}
       {/* ACO Order Report now integrated directly into system page widget */}
-
-      <UnifiedGrnReportDialog
-        isOpen={dialogStates['grn-report'] || false}
-        onClose={() => closeReportDialog('grn-report')}
-      />
 
       {/* Transaction Report now integrated directly into system page widget */}
 

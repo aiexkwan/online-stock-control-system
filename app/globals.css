@@ -22,6 +22,99 @@
   .widget-text-sm {
     @apply text-xs text-slate-500;
   }
+
+  /* 增強文字內容樣式 - 透明背景 + 文字模糊背景 */
+  .text-content-enhanced {
+    @apply font-bold;
+  }
+
+  /* 文字元素的背景模糊效果 */
+  .text-content-enhanced h1,
+  .text-content-enhanced h2,
+  .text-content-enhanced h3,
+  .text-content-enhanced h4,
+  .text-content-enhanced h5,
+  .text-content-enhanced h6 {
+    @apply font-bold !important;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    border-radius: 6px;
+    padding: 4px 8px;
+    margin: 2px 0;
+    display: inline-block;
+    text-shadow: 0 0 12px rgba(0, 0, 0, 0.8);
+  }
+
+  .text-content-enhanced p,
+  .text-content-enhanced span:not([class*='chart']):not([class*='graph']),
+  .text-content-enhanced .widget-title,
+  .text-content-enhanced .widget-subtitle,
+  .text-content-enhanced label,
+  .text-content-enhanced button:not([class*='chart']):not([class*='graph']) {
+    @apply font-bold !important;
+    background: rgba(0, 0, 0, 0.45);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    border-radius: 4px;
+    padding: 2px 6px;
+    margin: 1px;
+    display: inline-block;
+    text-shadow: 0 0 8px rgba(0, 0, 0, 0.7);
+  }
+
+  /* 數字和數據顯示 */
+  .text-content-enhanced .text-2xl,
+  .text-content-enhanced .text-3xl,
+  .text-content-enhanced .text-4xl,
+  .text-content-enhanced .text-5xl,
+  .text-content-enhanced [class*='text-'][class*='xl'] {
+    @apply font-bold !important;
+    background: rgba(0, 0, 0, 0.55);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border-radius: 8px;
+    padding: 6px 12px;
+    margin: 2px;
+    text-shadow: 0 0 16px rgba(0, 0, 0, 0.9);
+  }
+
+  /* 保持視覺元素正常顯示 */
+  .text-content-enhanced [class*='chart'],
+  .text-content-enhanced [class*='graph'],
+  .text-content-enhanced [class*='canvas'],
+  .text-content-enhanced svg,
+  .text-content-enhanced canvas,
+  .text-content-enhanced .recharts-wrapper,
+  .text-content-enhanced .recharts-surface,
+  .text-content-enhanced .recharts-layer,
+  .text-content-enhanced [data-testid*='chart'],
+  .text-content-enhanced [role='img'] {
+    background: transparent !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    text-shadow: none !important;
+    font-weight: normal !important;
+  }
+
+  /* 保持容器div正常 */
+  .text-content-enhanced div[class*='chart'],
+  .text-content-enhanced div[class*='graph'],
+  .text-content-enhanced div[class*='canvas'],
+  .text-content-enhanced div[class*='w-'],
+  .text-content-enhanced div[class*='h-'],
+  .text-content-enhanced div[class*='flex'],
+  .text-content-enhanced div[class*='grid'] {
+    background: transparent !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    text-shadow: none !important;
+    display: block !important;
+  }
 }
 
 /* Override calendar selected date styles for admin */

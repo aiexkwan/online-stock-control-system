@@ -882,15 +882,17 @@ async function executeSQLQuery(
     console.error('[SQL Execution] Error:', error);
     
     // 分類錯誤
-    const errorType = classifyError(error, sql);
+    const classificationResult = classifyError(error, sql);
+    const errorType = classificationResult.errorType;
     
     // 記錄錯誤模式
     await logErrorPattern(
-      { errorType, originalError: error, sql },
-      { success: false }
+      errorType,
+      error,
+      { sql, success: false }
     );
     
-    // 增強錯誤訊息
+    // 增強錯誤訊息  
     const enhancedMessage = enhanceErrorMessage(errorType, error.message);
     
     // 為了向上層傳遞錯誤類型，創建新錯誤
@@ -1560,7 +1562,7 @@ function generateCacheKey(
 // 會話歷史現在已經由 DatabaseConversationContextManager 處理，直接從數據庫讀取
 
 // 緩存預熱功能（整合在現有檔案中）
-export async function warmFrequentQueries(): Promise<void> {
+async function warmFrequentQueries(): Promise<void> {
   try {
     const supabase = await createClient();
     
@@ -1613,7 +1615,7 @@ export async function warmFrequentQueries(): Promise<void> {
 }
 
 // 緩存失效策略（整合在現有檔案中）
-export async function invalidateCacheByTable(tableName: string): Promise<void> {
+async function invalidateCacheByTable(tableName: string): Promise<void> {
   try {
     const supabase = await createClient();
     

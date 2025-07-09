@@ -24,6 +24,11 @@ export async function POST(request: NextRequest) {
 
     // 獲取報表數據
     const rawData = await dataSource.fetch(filters);
+    
+    if (!rawData) {
+      return NextResponse.json({ error: 'No data found for the specified criteria' }, { status: 404 });
+    }
+    
     const records = dataSource.transform(rawData);
 
     // 生成報表

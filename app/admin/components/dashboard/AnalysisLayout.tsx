@@ -21,29 +21,9 @@ export const AnalysisLayout: React.FC<AnalysisLayoutProps> = ({ theme, timeFrame
     threshold: 100,
   });
 
-  // Container styles for new layout with paged widget
-  const containerStyle: React.CSSProperties = {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(10, 1fr)',
-    gridTemplateRows: 'repeat(8, 100px)',
-    gridTemplateAreas: `
-      "widget2 widget2 widget2 widget2 widget2 widget2 widget2 widget2 widget1 widget1"
-      "widget2 widget2 widget2 widget2 widget2 widget2 widget2 widget2 widget1 widget1"
-      "widget2 widget2 widget2 widget2 widget2 widget2 widget2 widget2 widget1 widget1"
-      "widget2 widget2 widget2 widget2 widget2 widget2 widget2 widget2 widget1 widget1"
-      "widget2 widget2 widget2 widget2 widget2 widget2 widget2 widget2 widget1 widget1"
-      "widget2 widget2 widget2 widget2 widget2 widget2 widget2 widget2 widget1 widget1"
-      "widget2 widget2 widget2 widget2 widget2 widget2 widget2 widget2 widget1 widget1"
-      "widget2 widget2 widget2 widget2 widget2 widget2 widget2 widget2 widget1 widget1"
-    `,
-    gap: '10px 10px',
-    width: '100%',
-    minHeight: '800px',
-    padding: '20px',
-  };
-
+  // 讓 CSS 類別處理所有佈局，不需要 inline styles
   return (
-    <div ref={containerRef} className='analysis-container' style={containerStyle}>
+    <div ref={containerRef} className='analysis-container'>
       {childrenArray}
     </div>
   );

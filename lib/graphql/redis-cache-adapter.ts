@@ -1,5 +1,5 @@
 import Redis from 'ioredis';
-import { logger } from '../logger';
+import { cacheLogger } from '../logger';
 import { createRedisClient, getRedisClient } from '../redis';
 import EventEmitter from 'events';
 import { isDevelopment } from '@/lib/utils/env';
@@ -68,12 +68,22 @@ abstract class BaseRedisCacheAdapter extends EventEmitter implements CacheAdapte
 
   protected setupEventListeners(): void {
     this.redis.on('connect', () => {
-      logger.info(`${this.getErrorPrefix()} connected successfully`);
+      cacheLogger.info({
+        adapter: this.getErrorPrefix(),
+        event: 'connected',
+        keyPrefix: this.keyPrefix,
+      }, 'Cache adapter connected successfully');
       this.emit('connected');
     });
 
     this.redis.on('error', error => {
-      logger.error(`${this.getErrorPrefix()} connection error:`, error);
+      cacheLogger.error({
+        adapter: this.getErrorPrefix(),
+        event: 'error',
+        error: error.message,
+        stack: error.stack,
+        metrics: this.metrics,
+      }, 'Cache connection error');
       this.metrics.errors++;
       this.metrics.lastError = error.message;
       this.metrics.lastErrorTime = new Date();
@@ -81,12 +91,20 @@ abstract class BaseRedisCacheAdapter extends EventEmitter implements CacheAdapte
     });
 
     this.redis.on('close', () => {
-      logger.warn(`${this.getErrorPrefix()} connection closed`);
+      cacheLogger.warn({
+        adapter: this.getErrorPrefix(),
+        event: 'disconnected',
+        keyPrefix: this.keyPrefix,
+      }, 'Cache connection closed');
       this.emit('disconnected');
     });
 
     this.redis.on('reconnecting', () => {
-      logger.info(`${this.getErrorPrefix()} reconnecting...`);
+      cacheLogger.info({
+        adapter: this.getErrorPrefix(),
+        event: 'reconnecting',
+        retryCount: this.metrics.errors,
+      }, 'Cache adapter reconnecting');
       this.emit('reconnecting');
     });
   }
@@ -99,7 +117,11 @@ abstract class BaseRedisCacheAdapter extends EventEmitter implements CacheAdapte
           this.emit('unhealthy', { timestamp: new Date() });
         }
       } catch (error) {
-        logger.error('Health check failed:', error);
+        cacheLogger.error({
+          adapter: this.getErrorPrefix(),
+          operation: 'healthCheck',
+          error: error instanceof Error ? error.message : 'Unknown error',
+        }, 'Health check failed');
       }
     }, 30000); // 每30秒檢查一次
   }
@@ -136,23 +158,47 @@ abstract class BaseRedisCacheAdapter extends EventEmitter implements CacheAdapte
       this.updateMetrics(responseTime, hit);
 
       if (value === null) {
-        logger.debug(`Cache miss for key: ${key} (normal during warmup or first access)`);
+        cacheLogger.debug({
+          adapter: this.getErrorPrefix(),
+          operation: 'get',
+          key,
+          result: 'miss',
+          responseTime,
+        }, 'Cache miss (normal during warmup or first access)');
         return null;
       }
+      
+      cacheLogger.debug({
+        adapter: this.getErrorPrefix(),
+        operation: 'get',
+        key,
+        result: 'hit',
+        responseTime,
+        size: value.length,
+      }, 'Cache hit');
 
       return JSON.parse(value) as T;
     } catch (error) {
       this.metrics.errors++;
-      if (error.message?.includes('Connection')) {
-        logger.error(`${this.getErrorPrefix()} connection error for key ${key}:`, error);
-      } else {
-        logger.warn(`${this.getErrorPrefix()} get error for key ${key}:`, error.message);
-      }
+      const isConnectionError = error.message?.includes('Connection');
+      
+      const logLevel = isConnectionError ? 'error' : 'warn';
+      cacheLogger[logLevel]({
+        adapter: this.getErrorPrefix(),
+        operation: 'get',
+        key,
+        error: error instanceof Error ? error.message : 'Unknown error',
+        isConnectionError,
+        metrics: this.metrics,
+      }, isConnectionError ? 'Cache connection error' : 'Cache get error');
+      
       return null;
     }
   }
 
   async set<T>(key: string, value: T, ttlSeconds?: number): Promise<void> {
+    const startTime = Date.now();
+    
     try {
       const serializedValue = JSON.stringify(value);
       const redisKey = this.getKey(key);
@@ -162,67 +208,177 @@ abstract class BaseRedisCacheAdapter extends EventEmitter implements CacheAdapte
       } else {
         await this.redis.set(redisKey, serializedValue);
       }
+      
+      const responseTime = Date.now() - startTime;
+      cacheLogger.debug({
+        adapter: this.getErrorPrefix(),
+        operation: 'set',
+        key,
+        ttl: ttlSeconds,
+        size: serializedValue.length,
+        responseTime,
+      }, 'Cache set successful');
+      
     } catch (error) {
-      logger.error(`${this.getErrorPrefix()} set error for key ${key}:`, error);
+      cacheLogger.error({
+        adapter: this.getErrorPrefix(),
+        operation: 'set',
+        key,
+        ttl: ttlSeconds,
+        error: error instanceof Error ? error.message : 'Unknown error',
+        duration: Date.now() - startTime,
+      }, 'Cache set error');
       throw error;
     }
   }
 
   async delete(key: string): Promise<boolean> {
+    const startTime = Date.now();
+    
     try {
       const result = await this.redis.del(this.getKey(key));
-      return result > 0;
+      const success = result > 0;
+      
+      cacheLogger.debug({
+        adapter: this.getErrorPrefix(),
+        operation: 'delete',
+        key,
+        success,
+        responseTime: Date.now() - startTime,
+      }, success ? 'Cache key deleted' : 'Cache key not found');
+      
+      return success;
     } catch (error) {
-      logger.error(`${this.getErrorPrefix()} delete error for key ${key}:`, error);
+      cacheLogger.error({
+        adapter: this.getErrorPrefix(),
+        operation: 'delete',
+        key,
+        error: error instanceof Error ? error.message : 'Unknown error',
+        duration: Date.now() - startTime,
+      }, 'Cache delete error');
       return false;
     }
   }
 
   async has(key: string): Promise<boolean> {
+    const startTime = Date.now();
+    
     try {
       const result = await this.redis.exists(this.getKey(key));
-      return result === 1;
+      const exists = result === 1;
+      
+      cacheLogger.debug({
+        adapter: this.getErrorPrefix(),
+        operation: 'has',
+        key,
+        exists,
+        responseTime: Date.now() - startTime,
+      }, 'Cache key existence check');
+      
+      return exists;
     } catch (error) {
-      logger.error(`${this.getErrorPrefix()} has error for key ${key}:`, error);
+      cacheLogger.error({
+        adapter: this.getErrorPrefix(),
+        operation: 'has',
+        key,
+        error: error instanceof Error ? error.message : 'Unknown error',
+        duration: Date.now() - startTime,
+      }, 'Cache has error');
       return false;
     }
   }
 
   async clear(): Promise<void> {
+    const startTime = Date.now();
+    
     try {
       const keys = await this.redis.keys(`${this.keyPrefix}*`);
+      
       if (keys.length > 0) {
         const pipeline = this.redis.pipeline();
         keys.forEach(key => pipeline.del(key));
         await pipeline.exec();
       }
+      
+      cacheLogger.info({
+        adapter: this.getErrorPrefix(),
+        operation: 'clear',
+        keysCleared: keys.length,
+        responseTime: Date.now() - startTime,
+      }, 'Cache cleared');
+      
     } catch (error) {
-      logger.error(`${this.getErrorPrefix()} clear error:`, error);
+      cacheLogger.error({
+        adapter: this.getErrorPrefix(),
+        operation: 'clear',
+        error: error instanceof Error ? error.message : 'Unknown error',
+        duration: Date.now() - startTime,
+      }, 'Cache clear error');
       throw error;
     }
   }
 
   async invalidatePattern(pattern: string): Promise<number> {
+    const startTime = Date.now();
+    
     try {
       const keys = await this.redis.keys(`${this.keyPrefix}${pattern}`);
-      if (keys.length === 0) return 0;
+      if (keys.length === 0) {
+        cacheLogger.debug({
+          adapter: this.getErrorPrefix(),
+          operation: 'invalidatePattern',
+          pattern,
+          keysFound: 0,
+        }, 'No keys matched pattern');
+        return 0;
+      }
 
       const pipeline = this.redis.pipeline();
       keys.forEach(key => pipeline.del(key));
       await pipeline.exec();
+      
+      cacheLogger.info({
+        adapter: this.getErrorPrefix(),
+        operation: 'invalidatePattern',
+        pattern,
+        keysInvalidated: keys.length,
+        responseTime: Date.now() - startTime,
+      }, 'Pattern invalidation successful');
+      
       return keys.length;
     } catch (error) {
-      logger.error(`${this.getErrorPrefix()} invalidatePattern error:`, error);
+      cacheLogger.error({
+        adapter: this.getErrorPrefix(),
+        operation: 'invalidatePattern',
+        pattern,
+        error: error instanceof Error ? error.message : 'Unknown error',
+        duration: Date.now() - startTime,
+      }, 'Pattern invalidation error');
       return 0;
     }
   }
 
   async getSize(): Promise<number> {
+    const startTime = Date.now();
+    
     try {
       const keys = await this.redis.keys(`${this.keyPrefix}*`);
+      
+      cacheLogger.debug({
+        adapter: this.getErrorPrefix(),
+        operation: 'getSize',
+        size: keys.length,
+        responseTime: Date.now() - startTime,
+      }, 'Cache size retrieved');
+      
       return keys.length;
     } catch (error) {
-      logger.error(`${this.getErrorPrefix()} getSize error:`, error);
+      cacheLogger.error({
+        adapter: this.getErrorPrefix(),
+        operation: 'getSize',
+        error: error instanceof Error ? error.message : 'Unknown error',
+        duration: Date.now() - startTime,
+      }, 'Get cache size error');
       return 0;
     }
   }
@@ -250,7 +406,11 @@ abstract class BaseRedisCacheAdapter extends EventEmitter implements CacheAdapte
         hitRate,
       };
     } catch (error) {
-      logger.error(`${this.getErrorPrefix()} getStats error:`, error);
+      cacheLogger.error({
+        adapter: this.getErrorPrefix(),
+        operation: 'getStats',
+        error: error instanceof Error ? error.message : 'Unknown error',
+      }, 'Get cache stats error');
       return {
         memory: 'Error',
         connections: 0,
@@ -260,11 +420,27 @@ abstract class BaseRedisCacheAdapter extends EventEmitter implements CacheAdapte
   }
 
   async ping(): Promise<boolean> {
+    const startTime = Date.now();
+    
     try {
       const result = await this.redis.ping();
-      return result === 'PONG';
+      const success = result === 'PONG';
+      
+      cacheLogger.debug({
+        adapter: this.getErrorPrefix(),
+        operation: 'ping',
+        success,
+        responseTime: Date.now() - startTime,
+      }, 'Cache ping');
+      
+      return success;
     } catch (error) {
-      logger.error(`${this.getErrorPrefix()} ping error:`, error);
+      cacheLogger.error({
+        adapter: this.getErrorPrefix(),
+        operation: 'ping',
+        error: error instanceof Error ? error.message : 'Unknown error',
+        duration: Date.now() - startTime,
+      }, 'Cache ping error');
       return false;
     }
   }
@@ -275,8 +451,18 @@ abstract class BaseRedisCacheAdapter extends EventEmitter implements CacheAdapte
         clearInterval(this.healthCheckTimer);
       }
       await this.redis.quit();
+      
+      cacheLogger.info({
+        adapter: this.getErrorPrefix(),
+        operation: 'disconnect',
+      }, 'Cache adapter disconnected gracefully');
+      
     } catch (error) {
-      logger.error(`${this.getErrorPrefix()} disconnect error:`, error);
+      cacheLogger.error({
+        adapter: this.getErrorPrefix(),
+        operation: 'disconnect',
+        error: error instanceof Error ? error.message : 'Unknown error',
+      }, 'Cache disconnect error, forcing disconnect');
       this.redis.disconnect();
     }
   }
@@ -290,7 +476,13 @@ abstract class BaseRedisCacheAdapter extends EventEmitter implements CacheAdapte
       const result = await this.redis.set(key, lockValue, 'EX', ttlSeconds, 'NX');
       return result === 'OK' ? lockValue : null;
     } catch (error) {
-      logger.error(`Lock acquisition error for ${lockKey}:`, error);
+      cacheLogger.error({
+        adapter: this.getErrorPrefix(),
+        operation: 'acquireLock',
+        lockKey,
+        ttl: ttlSeconds,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      }, 'Lock acquisition error');
       return null;
     }
   }
@@ -310,16 +502,35 @@ abstract class BaseRedisCacheAdapter extends EventEmitter implements CacheAdapte
       const result = await this.redis.eval(luaScript, 1, key, lockValue);
       return result === 1;
     } catch (error) {
-      logger.error(`Lock release error for ${lockKey}:`, error);
+      cacheLogger.error({
+        adapter: this.getErrorPrefix(),
+        operation: 'releaseLock',
+        lockKey,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      }, 'Lock release error');
       return false;
     }
   }
 
   // 批量操作
   async mget<T>(keys: string[]): Promise<(T | null)[]> {
+    const startTime = Date.now();
+    
     try {
       const redisKeys = keys.map(key => this.getKey(key));
       const values = await this.redis.mget(...redisKeys);
+      
+      const hits = values.filter(v => v !== null).length;
+      const responseTime = Date.now() - startTime;
+      
+      cacheLogger.debug({
+        adapter: this.getErrorPrefix(),
+        operation: 'mget',
+        keyCount: keys.length,
+        hits,
+        misses: keys.length - hits,
+        responseTime,
+      }, 'Batch get completed');
 
       return values.map(value => {
         if (value === null) return null;
@@ -330,12 +541,19 @@ abstract class BaseRedisCacheAdapter extends EventEmitter implements CacheAdapte
         }
       });
     } catch (error) {
-      logger.error(`${this.getErrorPrefix()} mget error:`, error);
+      cacheLogger.error({
+        adapter: this.getErrorPrefix(),
+        operation: 'mget',
+        keyCount: keys.length,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      }, 'Batch get error');
       return keys.map(() => null);
     }
   }
 
   async mset<T>(keyValuePairs: Array<{ key: string; value: T; ttl?: number }>): Promise<void> {
+    const startTime = Date.now();
+    
     try {
       if (keyValuePairs.length === 0) return;
 
@@ -353,8 +571,20 @@ abstract class BaseRedisCacheAdapter extends EventEmitter implements CacheAdapte
       });
 
       await pipeline.exec();
+      
+      cacheLogger.debug({
+        adapter: this.getErrorPrefix(),
+        operation: 'mset',
+        keyCount: keyValuePairs.length,
+        responseTime: Date.now() - startTime,
+      }, 'Batch set completed');
     } catch (error) {
-      logger.error(`${this.getErrorPrefix()} mset error:`, error);
+      cacheLogger.error({
+        adapter: this.getErrorPrefix(),
+        operation: 'mset',
+        keyCount: keyValuePairs.length,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      }, 'Batch set error');
       throw error;
     }
   }
@@ -593,7 +823,13 @@ export class FailoverCacheAdapter extends EventEmitter implements CacheAdapter {
     this.retryCount++;
     if (this.retryCount >= this.maxRetries && this.isPrimaryHealthy) {
       this.isPrimaryHealthy = false;
-      logger.warn('Primary cache failed, switching to fallback cache');
+      cacheLogger.warn({
+        adapter: 'FailoverCache',
+        event: 'failover',
+        from: 'primary',
+        to: 'fallback',
+        retryCount: this.retryCount,
+      }, 'Primary cache failed, switching to fallback cache');
       this.emit('failover', { from: 'primary', to: 'fallback' });
     }
   }
@@ -602,7 +838,12 @@ export class FailoverCacheAdapter extends EventEmitter implements CacheAdapter {
     if (!this.isPrimaryHealthy) {
       this.isPrimaryHealthy = true;
       this.retryCount = 0;
-      logger.info('Primary cache recovered, switching back');
+      cacheLogger.info({
+        adapter: 'FailoverCache',
+        event: 'recovery',
+        from: 'fallback',
+        to: 'primary',
+      }, 'Primary cache recovered, switching back');
       this.emit('recovery', { from: 'fallback', to: 'primary' });
     }
   }
@@ -692,13 +933,21 @@ export class FailoverCacheAdapter extends EventEmitter implements CacheAdapter {
 export function createCacheAdapter(config?: RedisConfig): CacheAdapter {
   // 開發環境使用內存緩存
   if (isDevelopment() && !config) {
-    logger.info('Using memory cache adapter for development');
+    cacheLogger.info({
+      adapter: 'Factory',
+      environment: 'development',
+      type: 'MemoryCache',
+    }, 'Using memory cache adapter for development');
     return new MemoryCacheAdapter();
   }
 
   // 生產環境使用 Redis 或 Upstash
   if (process.env.UPSTASH_REDIS_REST_URL || process.env.REDIS_URL?.includes('upstash')) {
-    logger.info('Using Upstash Redis cache adapter');
+    cacheLogger.info({
+      adapter: 'Factory',
+      environment: process.env.NODE_ENV,
+      type: 'UpstashRedis',
+    }, 'Using Upstash Redis cache adapter');
     return new UpstashRedisCacheAdapter(config || {
       host: process.env.REDIS_HOST || 'localhost',
       port: parseInt(process.env.REDIS_PORT || '6379'),
@@ -708,7 +957,13 @@ export function createCacheAdapter(config?: RedisConfig): CacheAdapter {
 
   // 標準 Redis
   if (config || process.env.REDIS_HOST) {
-    logger.info('Using standard Redis cache adapter');
+    cacheLogger.info({
+      adapter: 'Factory',
+      environment: process.env.NODE_ENV,
+      type: 'StandardRedis',
+      host: config?.host || process.env.REDIS_HOST || 'localhost',
+      port: config?.port || parseInt(process.env.REDIS_PORT || '6379'),
+    }, 'Using standard Redis cache adapter');
     return new RedisCacheAdapter(config || {
       host: process.env.REDIS_HOST || 'localhost',
       port: parseInt(process.env.REDIS_PORT || '6379'),
@@ -717,7 +972,12 @@ export function createCacheAdapter(config?: RedisConfig): CacheAdapter {
   }
 
   // 默認使用內存緩存
-  logger.warn('No Redis configuration found, using memory cache adapter');
+  cacheLogger.warn({
+    adapter: 'Factory',
+    environment: process.env.NODE_ENV,
+    type: 'MemoryCache',
+    reason: 'no_redis_config',
+  }, 'No Redis configuration found, using memory cache adapter');
   return new MemoryCacheAdapter();
 }
 

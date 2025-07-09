@@ -182,7 +182,7 @@ export const UnifiedSearch = React.forwardRef<HTMLInputElement, UnifiedSearchPro
         }
 
         // Call parent callbacks
-        onSelect(result);
+        onSelect?.(result);
         onChange?.(actualValue);
       },
       [onSelect, onChange, searchQuery]
@@ -233,7 +233,7 @@ export const UnifiedSearch = React.forwardRef<HTMLInputElement, UnifiedSearchPro
             searchType: finalSearchType, // Pass detected search type
           },
         };
-        onSelect(palletResult);
+        onSelect?.(palletResult);
       }
       // Hide results when losing focus
       setShowResults(false);
@@ -280,7 +280,7 @@ export const UnifiedSearch = React.forwardRef<HTMLInputElement, UnifiedSearchPro
                 searchType: finalSearchType, // Pass detected search type
               },
             };
-            onSelect(palletResult);
+            onSelect?.(palletResult);
           }
           return;
         }
@@ -357,7 +357,7 @@ export const UnifiedSearch = React.forwardRef<HTMLInputElement, UnifiedSearchPro
               searchType: finalSearchType, // Pass detected search type
             },
           };
-          onSelect(palletResult);
+          onSelect?.(palletResult);
         }
       },
       [searchType, onChange, onSearch, onSelect, enableAutoDetection]

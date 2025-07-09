@@ -62,6 +62,34 @@ export const orderLogger = createLogger('order');
 export const reportLogger = createLogger('report');
 export const systemLogger = createLogger('system');
 
+// 新增專用 logger (Re-Structure-8)
+export const middlewareLogger = createLogger('middleware');
+export const cacheLogger = createLogger('cache');
+export const featureFlagLogger = createLogger('feature-flags');
+export const queryLogger = createLogger('query-optimizer');
+export const graphqlLogger = createLogger('graphql');
+
+// 生成請求追蹤 ID (Edge Runtime 兼容)
+export const generateCorrelationId = (): string => {
+  // 使用 Web Crypto API (Edge Runtime 兼容)
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+    return crypto.randomUUID();
+  }
+  
+  // Fallback: 生成簡單的 UUID
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    const r = Math.random() * 16 | 0;
+    const v = c === 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
+};
+
+// 從請求中獲取或生成 correlation ID
+export const getCorrelationId = (headers: Headers): string => {
+  const existingId = headers.get('x-correlation-id');
+  return existingId || generateCorrelationId();
+};
+
 // 輔助函數：記錄 API 請求
 export const logApiRequest = (
   method: string,
@@ -148,6 +176,80 @@ export const logPerformance = (
     },
     'Performance metric'
   );
+};
+
+// 輔助函數：記錄 middleware 請求
+export const logMiddlewareRequest = (
+  path: string,
+  method: string,
+  correlationId: string,
+  metadata?: Record<string, any>
+) => {
+  middlewareLogger.info(
+    {
+      correlationId,
+      path,
+      method,
+      ...metadata,
+    },
+    'Middleware processing request'
+  );
+};
+
+// 輔助函數：記錄 middleware 認證結果
+export const logMiddlewareAuth = (
+  correlationId: string,
+  authenticated: boolean,
+  userId?: string,
+  error?: string
+) => {
+  const level = authenticated ? 'info' : 'warn';
+  middlewareLogger[level](
+    {
+      correlationId,
+      authenticated,
+      userId,
+      error,
+    },
+    authenticated ? 'User authenticated' : 'Authentication failed'
+  );
+};
+
+// 輔助函數：記錄 middleware 路由決策
+export const logMiddlewareRouting = (
+  correlationId: string,
+  path: string,
+  isPublicRoute: boolean,
+  redirectTo?: string
+) => {
+  middlewareLogger.debug(
+    {
+      correlationId,
+      path,
+      isPublicRoute,
+      redirectTo,
+    },
+    redirectTo ? 'Redirecting request' : 'Route access decision'
+  );
+};
+
+// 敏感資料過濾器
+export const sanitizeLogData = (data: any): any => {
+  if (!data || typeof data !== 'object') return data;
+  
+  const sensitive = ['password', 'token', 'apiKey', 'secret', 'authorization'];
+  const sanitized = { ...data };
+  
+  for (const key in sanitized) {
+    const lowerKey = key.toLowerCase();
+    if (sensitive.some(s => lowerKey.includes(s))) {
+      sanitized[key] = '[REDACTED]';
+    } else if (typeof sanitized[key] === 'object') {
+      sanitized[key] = sanitizeLogData(sanitized[key]);
+    }
+  }
+  
+  return sanitized;
 };
 
 // 測試 logger 是否正常運作

@@ -360,7 +360,7 @@ export class UnifiedPreloadService {
         taskId: task.id,
         success: false,
         duration: Date.now() - startTime,
-        error: error.message,
+        error: (error as Error).message,
       });
 
       logger.error(`預加載任務失敗 ${task.id}:`, error);

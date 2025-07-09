@@ -38,6 +38,20 @@ export const chartsWidgetConfigs: Record<string, Partial<WidgetDefinition>> = {
     },
   },
 
+  StockDistributionChartV2: {
+    name: 'Stock Distribution Chart V2',
+    category: 'charts',
+    description: 'Enhanced stock distribution visualization',
+    lazyLoad: true,
+    preloadPriority: 8,
+    useGraphQL: false,
+    metadata: {
+      dataSource: 'record_inventory',
+      refreshInterval: 300000,
+      chartType: 'treemap',
+    },
+  },
+
   StockLevelHistoryChart: {
     name: 'Stock Level History',
     category: 'charts',

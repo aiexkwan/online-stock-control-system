@@ -537,6 +537,38 @@ export type Database = {
         };
         Relationships: [];
       };
+      stock_level: {
+        Row: {
+          description: string;
+          stock: string;
+          stock_level: number;
+          update_time: string;
+          uuid: string;
+        };
+        Insert: {
+          description: string;
+          stock?: string;
+          stock_level: number;
+          update_time?: string;
+          uuid?: string;
+        };
+        Update: {
+          description?: string;
+          stock?: string;
+          stock_level?: number;
+          update_time?: string;
+          uuid?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'stock_level_stock_fkey';
+            columns: ['stock'];
+            isOneToOne: false;
+            referencedRelation: 'data_code';
+            referencedColumns: ['code'];
+          },
+        ];
+      };
     };
     Views: {
       [_ in never]: never;

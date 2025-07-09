@@ -67,7 +67,6 @@ const GET_ORDERS_LIST = gql`
         hasNextPage
         hasPreviousPage
       }
-      totalCount
     }
   }
 `;

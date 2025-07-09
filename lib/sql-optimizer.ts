@@ -2,6 +2,7 @@
 // 整合了查詢計劃分析和性能優化功能
 
 import { createClient } from '@/app/utils/supabase/server';
+import { queryLogger } from '@/lib/logger';
 
 // Query plan analysis types (從 query-plan-analyzer.ts 整合)
 export interface QueryPlan {
@@ -50,7 +51,14 @@ export interface QueryAnalysisResult {
 }
 
 export function optimizeSQL(sql: string, question: string): string {
+  const startTime = Date.now();
   let optimizedSQL = sql.trim();
+  
+  queryLogger.debug({
+    operation: 'optimizeSQL',
+    question,
+    originalLength: sql.length,
+  }, 'Starting SQL optimization');
 
   // 1. 優化 JOIN 順序
   if (optimizedSQL.toLowerCase().includes('join')) {
@@ -85,15 +93,34 @@ export function optimizeSQL(sql: string, question: string): string {
     !sql.includes('stock_level')
   ) {
     // 建議使用 stock_level 表
-    console.log('[SQL Optimizer] Consider using stock_level table for better performance');
+    queryLogger.info({
+      optimization: 'stockLevelHint',
+      question,
+      suggestion: 'Consider using stock_level table',
+    }, 'Stock level optimization suggestion');
   }
 
   // 7. 預估查詢成本
   const estimatedCost = estimateQueryCost(optimizedSQL);
   if (estimatedCost > 5000) {
-    console.warn('[SQL Optimizer] High cost query detected:', estimatedCost);
+    queryLogger.warn({
+      event: 'highCostQuery',
+      estimatedCost,
+      threshold: 5000,
+      sql: optimizedSQL.substring(0, 200) + '...', // 限制日誌大小
+    }, 'High cost query detected');
   }
 
+  const duration = Date.now() - startTime;
+  queryLogger.info({
+    operation: 'optimizeSQL',
+    duration,
+    originalLength: sql.length,
+    optimizedLength: optimizedSQL.length,
+    reduction: sql.length - optimizedSQL.length,
+    estimatedCost,
+  }, 'SQL optimization completed');
+  
   return optimizedSQL;
 }
 
@@ -149,7 +176,11 @@ function addGroupByIfNeeded(sql: string): string {
         const groupByClause = ` GROUP BY ${nonAggregateColumns.join(', ')} `;
         sql = sql.slice(0, insertPosition) + groupByClause + sql.slice(insertPosition);
 
-        console.log('[SQL Optimizer] Added GROUP BY clause to prevent duplicates');
+        queryLogger.info({
+          optimization: 'addGroupBy',
+          columns: nonAggregateColumns,
+          position: insertPosition,
+        }, 'Added GROUP BY clause to prevent duplicates');
       }
     }
   }
@@ -293,7 +324,11 @@ function optimizeJoinOrder(sql: string): string {
 
     return newSql;
   } catch (error) {
-    console.error('[SQL Optimizer] Error optimizing JOIN order:', error);
+    queryLogger.error({
+      operation: 'optimizeJoinOrder',
+      error: error instanceof Error ? error.message : 'Unknown error',
+      originalSql: sql.substring(0, 200) + '...',
+    }, 'Error optimizing JOIN order');
     return sql; // 返回原始 SQL
   }
 }
@@ -350,7 +385,11 @@ function optimizeSubqueries(sql: string): string {
   // 將相關子查詢移到 JOIN
   const correlatedPattern = /SELECT\s+.*?\s*,\s*\((SELECT[^)]+WHERE[^)]+\w+\.\w+[^)]+)\)\s*(?:AS\s+\w+)?/gi;
   optimized = optimized.replace(correlatedPattern, (match, subquery) => {
-    console.log('[SQL Optimizer] Consider converting correlated subquery to JOIN for better performance');
+    queryLogger.info({
+      optimization: 'correlatedSubquery',
+      suggestion: 'Convert to JOIN for better performance',
+      pattern: subquery.substring(0, 100) + '...',
+    }, 'Correlated subquery detected');
     return match; // 暫時保持原樣，避免破壞查詢
   });
 
@@ -431,7 +470,12 @@ export async function analyzeQueryWithPlan(sql: string, question?: string): Prom
       .rpc('analyze_query_performance', { p_sql: optimizedQuery });
     
     if (error) {
-      console.error('[SQL Optimizer] Failed to get query plan:', error);
+      queryLogger.error({
+        operation: 'analyzeQueryPlan',
+        error: error.message,
+        code: error.code,
+        sql: optimizedQuery.substring(0, 200) + '...',
+      }, 'Failed to get query plan');
       return {
         originalQuery: sql,
         optimizedQuery,
@@ -465,7 +509,11 @@ export async function analyzeQueryWithPlan(sql: string, question?: string): Prom
       estimatedImprovement
     };
   } catch (error) {
-    console.error('[SQL Optimizer] Analysis failed:', error);
+    queryLogger.error({
+      operation: 'analyzeQueryWithPlan',
+      error: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+    }, 'Query analysis failed');
     return {
       originalQuery: sql,
       optimizedQuery: sql,

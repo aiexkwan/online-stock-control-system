@@ -22,6 +22,7 @@ import { validateTransfer } from './components/TransferDestinationSelector';
 interface PalletInfo {
   plt_num: string;
   product_code: string;
+  product_desc?: string;
   product_qty: number;
   plt_remark?: string | null;
   current_plt_loc?: string | null;
@@ -68,6 +69,42 @@ export default function StockTransferPage() {
 
   // Refs
   const searchInputRef = useRef<HTMLInputElement>(null);
+  
+  // Auto-execute transfer when all conditions are met
+  // Need ALL three conditions:
+  // 1. selectedPallet (from scan)
+  // 2. selectedDestination 
+  // 3. verifiedClockNumber
+  useEffect(() => {
+    // Check if all conditions are met
+    if (selectedPallet && selectedDestination && verifiedClockNumber && !isTransferring) {
+      console.log('[Stock Transfer] All conditions met, auto-executing transfer:', {
+        pallet: selectedPallet.plt_num,
+        destination: selectedDestination,
+        operator: verifiedClockNumber
+      });
+      
+      // Execute transfer using the callback
+      executeStockTransfer(selectedPallet, selectedDestination, verifiedClockNumber).then(success => {
+        if (success) {
+          setStatusMessage({
+            type: 'success',
+            message: `✓ Pallet ${selectedPallet.plt_num} successfully moved to ${selectedDestination}`,
+          });
+          // Clear only pallet search, keep destination and operator
+          setSearchValue('');
+          setSelectedPallet(null);
+          focusSearchInput();
+        } else {
+          setStatusMessage({
+            type: 'error',
+            message: `✗ Failed to transfer pallet ${selectedPallet.plt_num}`,
+          });
+        }
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedPallet?.plt_num, selectedDestination, verifiedClockNumber, isTransferring]); // Monitor these conditions
 
   // Add activity log helper
   const addActivityLog = useCallback((log: ActivityLogItem) => {
@@ -112,54 +149,6 @@ export default function StockTransferPage() {
     return () => clearInterval(interval);
   }, []);
 
-  // Search pallet using Server Action
-  const searchPalletInfo = useCallback(
-    async (searchType: string, value: string) => {
-      setIsSearching(true);
-      try {
-        const result = await searchPallet(value);
-
-        if (result.success && result.data) {
-          addActivityLog({
-            id: Date.now().toString(),
-            type: 'search',
-            message: `Found pallet ${result.data.plt_num}`,
-            timestamp: new Date().toISOString(),
-            palletNum: result.data.plt_num,
-          });
-
-          return {
-            pallet: result.data,
-            error: null,
-            searchTime: 0,
-          };
-        } else {
-          addActivityLog({
-            id: Date.now().toString(),
-            type: 'error',
-            message: result.error || 'Pallet not found',
-            timestamp: new Date().toISOString(),
-          });
-
-          return {
-            pallet: null,
-            error: result.error || 'Pallet not found',
-            searchTime: 0,
-          };
-        }
-      } catch (error) {
-        console.error('Search error:', error);
-        return {
-          pallet: null,
-          error: 'Search failed',
-          searchTime: 0,
-        };
-      } finally {
-        setIsSearching(false);
-      }
-    },
-    [addActivityLog]
-  );
 
   // Execute stock transfer using Server Action
   const executeStockTransfer = useCallback(
@@ -309,14 +298,44 @@ export default function StockTransferPage() {
             <div className='lg:col-span-1 xl:col-span-1'>
               <PalletSearchSection
                 searchValue={searchValue}
-                setSearchValue={setSearchValue}
-                selectedPallet={selectedPallet}
-                setSelectedPallet={setSelectedPallet}
+                onSearchValueChange={setSearchValue}
+                onSearchSelect={async (result) => {
+                  // Handle search result from UnifiedSearch (including QR scan)
+                  if (result?.data?.value) {
+                    setIsSearching(true);
+                    try {
+                      const searchResult = await searchPallet(result.data.value);
+                      if (searchResult.success && searchResult.data) {
+                        setSelectedPallet(searchResult.data);
+                        
+                        // Add to activity log
+                        addActivityLog({
+                          id: Date.now().toString(),
+                          type: 'search',
+                          message: `Found pallet ${searchResult.data.plt_num}`,
+                          timestamp: new Date().toISOString(),
+                          palletNum: searchResult.data.plt_num,
+                        });
+                        
+                        // useEffect will handle auto-execution when all conditions are met
+                      } else {
+                        addActivityLog({
+                          id: Date.now().toString(),
+                          type: 'error',
+                          message: searchResult.error || 'Pallet not found',
+                          timestamp: new Date().toISOString(),
+                        });
+                        toast.error(searchResult.error || 'Pallet not found');
+                      }
+                    } finally {
+                      setIsSearching(false);
+                    }
+                  }
+                }}
                 isLoading={isLoading || isSearching}
-                searchPalletInfo={searchPalletInfo}
-                optimisticTransfers={optimisticTransfers}
-                hasPendingTransfer={hasPendingTransfer}
                 searchInputRef={searchInputRef}
+                disabled={!selectedDestination || !verifiedClockNumber}
+                disabledMessage='Please select destination and verify operator first'
               />
             </div>
 
@@ -338,7 +357,7 @@ export default function StockTransferPage() {
 
             {/* Transfer Log Section */}
             <div className='lg:col-span-2 xl:col-span-1'>
-              <TransferLogSection activityLog={activityLog} />
+              <TransferLogSection activityLog={activityLog} optimisticTransfers={optimisticTransfers} />
             </div>
           </div>
         </div>

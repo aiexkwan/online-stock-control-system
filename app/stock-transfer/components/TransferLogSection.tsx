@@ -5,7 +5,7 @@ import type { OptimisticTransfer } from '@/app/actions/stockTransferActions';
 
 interface TransferLogSectionProps {
   activityLog: ActivityLogEntry[];
-  optimisticTransfers: OptimisticTransfer[];
+  optimisticTransfers?: OptimisticTransfer[];
 }
 
 /**
@@ -17,7 +17,7 @@ export const TransferLogSection: React.FC<TransferLogSectionProps> = React.memo(
     // 優化：只在需要時計算相關的樂觀轉移
     const findRelatedOptimistic = useMemo(() => {
       return (activity: ActivityLogEntry) => {
-        return optimisticTransfers.find(
+        return optimisticTransfers?.find(
           t => activity.message.includes(t.pltNum) && t.status === 'pending'
         );
       };

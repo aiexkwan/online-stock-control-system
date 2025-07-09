@@ -1,5 +1,5 @@
 import Redis from 'ioredis';
-import { logger } from './logger';
+import { cacheLogger } from './logger';
 
 // Upstash Redis 配置類型
 export interface UpstashRedisConfig {
@@ -79,27 +79,48 @@ export function createRedisClient(config?: UpstashRedisConfig): Redis {
  */
 function setupRedisEventListeners(client: Redis): void {
   client.on('connect', () => {
-    logger.info('Redis 連接成功');
+    cacheLogger.info({
+      service: 'Redis',
+      event: 'connect',
+    }, 'Redis 連接成功');
   });
 
   client.on('ready', () => {
-    logger.info('Redis 準備就緒');
+    cacheLogger.info({
+      service: 'Redis',
+      event: 'ready',
+    }, 'Redis 準備就緒');
   });
 
   client.on('error', error => {
-    logger.error('Redis 連接錯誤:', error);
+    cacheLogger.error({
+      service: 'Redis',
+      event: 'error',
+      error: error.message,
+      stack: error.stack,
+    }, 'Redis 連接錯誤');
   });
 
   client.on('close', () => {
-    logger.warn('Redis 連接已關閉');
+    cacheLogger.warn({
+      service: 'Redis',
+      event: 'close',
+    }, 'Redis 連接已關閉');
   });
 
-  client.on('reconnecting', time => {
-    logger.info(`Redis 重新連接中... (${time}ms)`);
+  client.on('reconnecting', (time: number) => {
+    cacheLogger.info({
+      service: 'Redis',
+      event: 'reconnecting',
+      timeMs: time,
+    }, `Redis 重新連接中... (${time}ms)`);
   });
 
   client.on('end', () => {
-    logger.info('Redis 連接結束');
+    cacheLogger.info({
+      service: 'Redis',
+      event: 'end',
+    }, 'Redis 連接結束');
   });
 }
 
@@ -117,13 +138,27 @@ export function getRedisClient(): Redis {
  * 測試 Redis 連接
  */
 export async function testRedisConnection(): Promise<boolean> {
+  const startTime = Date.now();
+  
   try {
     const client = getRedisClient();
     const result = await client.ping();
-    logger.info('Redis ping 測試成功:', result);
+    
+    cacheLogger.info({
+      service: 'Redis',
+      operation: 'testConnection',
+      result,
+      responseTime: Date.now() - startTime,
+    }, 'Redis ping 測試成功');
+    
     return true;
   } catch (error) {
-    logger.error('Redis ping 測試失敗:', error);
+    cacheLogger.error({
+      service: 'Redis',
+      operation: 'testConnection',
+      error: error instanceof Error ? error.message : 'Unknown error',
+      duration: Date.now() - startTime,
+    }, 'Redis ping 測試失敗');
     return false;
   }
 }
@@ -135,9 +170,19 @@ export async function closeRedisConnection(): Promise<void> {
   if (redisClient) {
     try {
       await redisClient.quit();
-      logger.info('Redis 連接已優雅關閉');
+      
+      cacheLogger.info({
+        service: 'Redis',
+        operation: 'close',
+        graceful: true,
+      }, 'Redis 連接已優雅關閉');
+      
     } catch (error) {
-      logger.error('關閉 Redis 連接時發生錯誤:', error);
+      cacheLogger.error({
+        service: 'Redis',
+        operation: 'close',
+        error: error instanceof Error ? error.message : 'Unknown error',
+      }, '關閉 Redis 連接時發生錯誤');
     } finally {
       redisClient = null;
     }

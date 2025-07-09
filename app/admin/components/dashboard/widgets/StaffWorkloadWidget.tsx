@@ -22,21 +22,23 @@ import { WidgetComponentProps } from '@/app/types/dashboard';
 
 // GraphQL query for staff workload
 const GET_STAFF_WORKLOAD_QUERY = gql`
-  query GetStaffWorkload($startDate: Datetime!, $endDate: Datetime!, $department: String) {
+  query GetStaffWorkloadWidget($startDate: Datetime!, $endDate: Datetime!, $department: String) {
     record_historyCollection(
       filter: {
-        timestamp: { gte: $startDate, lte: $endDate }
+        time: { gte: $startDate, lte: $endDate }
         action: { ilike: "%QC passed%" }
-        user_department: { eq: $department }
       }
-      orderBy: [{ timestamp: AscNullsLast }]
+      orderBy: [{ time: AscNullsLast }]
     ) {
       edges {
         node {
-          user_name
-          timestamp
+          id
+          time
           action
-          user_department
+          data_id {
+            name
+            department
+          }
         }
       }
     }

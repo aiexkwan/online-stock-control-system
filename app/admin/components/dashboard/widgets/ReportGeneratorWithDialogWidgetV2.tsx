@@ -200,7 +200,7 @@ export const ReportGeneratorWithDialogWidgetV2 = function ReportGeneratorWithDia
       >
         <div className='flex-1'>
           <p className='text-2xl text-muted-foreground'>
-            {description || `Generate ${title.toLowerCase()}`}
+            {description || `Generate ${title?.toLowerCase() || 'Report'}`}
           </p>
           {performanceMetrics.apiResponseTime && (
             <p className='mt-1 text-xs text-slate-500'>

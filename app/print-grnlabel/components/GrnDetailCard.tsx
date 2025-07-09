@@ -3,7 +3,7 @@
 import React from 'react';
 import { UniversalGrid } from '@/components/layout/universal';
 import { ProductCodeInput } from '../../components/qc-label-form/ProductCodeInput';
-import { MaterialSupplierInput } from '@/app/components/grn-label-form/MaterialSupplierInput';
+import { MaterialSupplierInput } from './MaterialSupplierInput';
 import {
   LABEL_MODES,
   type LabelMode,

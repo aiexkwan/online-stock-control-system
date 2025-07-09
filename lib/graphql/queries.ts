@@ -374,7 +374,7 @@ export const GET_ORDER_PROGRESS = gql`
  * 用於 Warehouse Dashboard - Order State List Widget (未完成訂單)
  */
 export const GET_PENDING_ORDERS = gql`
-  query GetPendingOrders {
+  query GetPendingOrdersCollection {
     data_orderCollection(
       filter: { or: [{ loaded_qty: { is: null } }, { loaded_qty: { lt: "product_qty" } }] }
       orderBy: [{ created_at: DescNullsLast }]

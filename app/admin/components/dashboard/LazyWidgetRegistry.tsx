@@ -84,6 +84,9 @@ export const LazyComponents: Record<string, React.ComponentType<any>> = {
   'StockDistributionChart': createLazyWidget(
     () => import('./widgets/StockDistributionChartV2')
   ),
+  'StockDistributionChartV2': createLazyWidget(
+    () => import('./widgets/StockDistributionChartV2')
+  ),
   'StockLevelHistoryChart': createLazyWidget(
     () => import('./widgets/StockLevelHistoryChart')
   ),
@@ -147,7 +150,13 @@ export const LazyComponents: Record<string, React.ComponentType<any>> = {
   'OrdersListWidget': createLazyWidget(
     () => import('./widgets/OrdersListWidgetV2')
   ),
+  'OrdersListWidgetV2': createLazyWidget(
+    () => import('./widgets/OrdersListWidgetV2')
+  ),
   'OtherFilesListWidget': createLazyWidget(
+    () => import('./widgets/OtherFilesListWidgetV2')
+  ),
+  'OtherFilesListWidgetV2': createLazyWidget(
     () => import('./widgets/OtherFilesListWidgetV2')
   ),
   'UploadFilesWidget': createLazyWidget(
@@ -172,6 +181,9 @@ export const LazyComponents: Record<string, React.ComponentType<any>> = {
   'SupplierUpdateWidget': createLazyWidget(
     () => import('./widgets/SupplierUpdateWidgetV2')
   ),
+  'SupplierUpdateWidgetV2': createLazyWidget(
+    () => import('./widgets/SupplierUpdateWidgetV2')
+  ),
   
   // Void Pallet widget (named export)
   'VoidPalletWidget': createLazyWidget(
@@ -192,10 +204,26 @@ export const LazyComponents: Record<string, React.ComponentType<any>> = {
   'GrnReportWidget': createLazyWidget(
     () => import('./widgets/GrnReportWidgetV2')
   ),
+  'GrnReportWidgetV2': createLazyWidget(
+    () => import('./widgets/GrnReportWidgetV2')
+  ),
   
   // ACO Order Report widget (named export)
   'AcoOrderReportWidget': createLazyWidget(
     () => import('./widgets/AcoOrderReportWidgetV2')
+  ),
+  'AcoOrderReportWidgetV2': createLazyWidget(
+    () => import('./widgets/AcoOrderReportWidgetV2')
+  ),
+  
+  // Report Generator widgets
+  'ReportGeneratorWithDialogWidgetV2': createLazyWidget(
+    () => import('./widgets/ReportGeneratorWithDialogWidgetV2')
+  ),
+  
+  // Order State List widget
+  'OrderStateListWidgetV2': createLazyWidget(
+    () => import('./widgets/OrderStateListWidgetV2')
   ),
 };
 

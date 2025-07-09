@@ -41,6 +41,7 @@ export interface TransactionResult<T = any> {
     failed: number;
   };
   duration: number;
+  executionTime?: number;
 }
 
 /**
@@ -131,6 +132,8 @@ export interface TransactionOptions {
   isolationLevel?: 'read_committed' | 'repeatable_read' | 'serializable';
   savepoint?: boolean;
   trackHistory?: boolean;
+  logTransaction?: boolean;
+  description?: string;
 }
 
 /**

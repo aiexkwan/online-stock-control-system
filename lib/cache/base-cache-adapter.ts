@@ -1,6 +1,6 @@
 // Base cache adapter with shared functionality
 import { EventEmitter } from 'events';
-import { logger } from '../logger';
+import { cacheLogger } from '../logger';
 
 export interface CacheAdapter {
   get<T>(key: string): Promise<T | null>;
@@ -78,7 +78,14 @@ export abstract class BaseCacheAdapter extends EventEmitter implements CacheAdap
     this.metrics.errors++;
     this.metrics.lastError = error.message;
     this.metrics.lastErrorTime = new Date();
-    logger.error(`Cache ${operation} error:`, error);
+    
+    cacheLogger.error({
+      adapter: 'BaseCache',
+      operation,
+      error: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+      metrics: this.metrics,
+    }, `Cache ${operation} error`);
   }
 
   getMetrics(): CacheMetrics & { hitRate: number; totalRequests: number } {

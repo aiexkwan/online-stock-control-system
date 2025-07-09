@@ -21,21 +21,9 @@ export const SystemLayout: React.FC<SystemLayoutProps> = ({ theme, timeFrame, ch
     threshold: 100,
   });
 
-  // Container styles matching exact CSS for system page
-  const containerStyle: React.CSSProperties = {
-    display: 'grid',
-    gridTemplateColumns: '1fr 1fr 1fr 1fr 1fr 1fr 1fr 1fr 1fr 1fr',
-    gridTemplateRows: '150px 150px 150px 150px',
-    gap: '10px 10px',
-    gridAutoColumns: 'auto',
-    justifyItems: 'stretch',
-    width: '100%',
-    minHeight: '620px',
-    padding: '20px',
-  };
-
+  // 讓 CSS 類別處理所有佈局，不需要 inline styles
   return (
-    <div ref={containerRef} className='system-container' style={containerStyle}>
+    <div ref={containerRef} className='system-container'>
       {childrenArray}
     </div>
   );

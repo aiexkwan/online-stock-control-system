@@ -28,8 +28,6 @@ const GET_STOCK_TYPES = gql`
   query GetStockTypes {
     data_codeCollection(
       filter: {
-        type: { not: { is: null } }
-        type: { neq: "" }
         type: { neq: "-" }
       }
       orderBy: [{ type: AscNullsLast }]

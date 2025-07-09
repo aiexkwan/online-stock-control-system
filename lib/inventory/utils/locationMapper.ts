@@ -151,6 +151,22 @@ export class LocationMapper {
   }
 
   /**
+   * Get all valid database column names (alias for getAllDbColumns)
+   * @returns Array of database column names
+   */
+  static getValidDatabaseLocations(): DatabaseLocationColumn[] {
+    return this.getAllDbColumns();
+  }
+
+  /**
+   * Get valid database locations for instance method access
+   * @returns Array of database column names
+   */
+  getValidDatabaseLocations(): DatabaseLocationColumn[] {
+    return LocationMapper.getValidDatabaseLocations();
+  }
+
+  /**
    * Check if a location string is valid
    * @param location - Location to validate
    * @returns True if valid, false otherwise

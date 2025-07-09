@@ -1,4 +1,5 @@
 import { isNotProduction } from '@/lib/utils/env';
+import { authLogger } from '@/lib/logger';
 
 /**
  * 將用戶 ID (時鐘編號) 轉換為 Supabase Auth 可用的電子郵件格式
@@ -10,7 +11,17 @@ import { isNotProduction } from '@/lib/utils/env';
  * @returns 格式化為電子郵件的時鐘編號
  */
 export function clockNumberToEmail(clockNumber: string): string {
-  return `${clockNumber}@pennineindustries.com`;
+  const email = `${clockNumber}@pennineindustries.com`;
+  
+  if (isNotProduction()) {
+    authLogger.debug({
+      function: 'clockNumberToEmail',
+      clockNumber,
+      email,
+    }, 'Converted clock number to email');
+  }
+  
+  return email;
 }
 
 /**
@@ -25,16 +36,35 @@ export function clockNumberToEmail(clockNumber: string): string {
 export function emailToClockNumber(email: string | null | undefined): string | null {
   if (!email) {
     if (isNotProduction()) {
-      console.warn('[authUtils] emailToClockNumber called with null or undefined email');
+      authLogger.warn({
+        function: 'emailToClockNumber',
+        input: email,
+      }, 'Called with null or undefined email');
     }
     return null;
   }
 
   // Handle special case of "@pennineindustries.com" (empty clock number)
   if (email === '@pennineindustries.com') {
+    authLogger.debug({
+      function: 'emailToClockNumber',
+      email,
+      result: '(empty)',
+    }, 'Handled special case of empty clock number');
     return '';
   }
 
   const match = email.match(/^(.+)@pennineindustries\.com$/);
-  return match ? match[1] : null;
+  const clockNumber = match ? match[1] : null;
+  
+  if (isNotProduction()) {
+    authLogger.debug({
+      function: 'emailToClockNumber',
+      email,
+      clockNumber,
+      success: !!clockNumber,
+    }, clockNumber ? 'Successfully extracted clock number' : 'Failed to extract clock number - invalid format');
+  }
+  
+  return clockNumber;
 }

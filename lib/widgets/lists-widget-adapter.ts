@@ -68,6 +68,21 @@ export const listsWidgetConfigs: Record<string, Partial<WidgetDefinition>> = {
     },
   },
 
+  OrderStateListWidgetV2: {
+    name: 'Order State List V2',
+    category: 'lists',
+    description: 'Enhanced order state visualization',
+    lazyLoad: true,
+    preloadPriority: 6,
+    useGraphQL: false,
+    metadata: {
+      dataSource: 'record_order',
+      refreshInterval: 120000,
+      supportStateFilter: true,
+      supportPagination: true,
+    },
+  },
+
   BookedOutListWidget: {
     name: 'Booked Out List',
     category: 'lists',
@@ -117,6 +132,21 @@ export const listsWidgetConfigs: Record<string, Partial<WidgetDefinition>> = {
     metadata: {
       dataSource: 'record_files',
       refreshInterval: 300000,
+      supportTypeFilter: true,
+    },
+  },
+
+  OtherFilesListWidgetV2: {
+    name: 'Other Files List V2',
+    category: 'lists',
+    description: 'Displays miscellaneous files with enhanced features',
+    lazyLoad: true,
+    preloadPriority: 5,
+    useGraphQL: false, // GraphQL version removed
+    metadata: {
+      dataSource: 'doc_upload',
+      refreshInterval: 30000,
+      supportPagination: true,
       supportTypeFilter: true,
     },
   },

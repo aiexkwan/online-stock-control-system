@@ -38,9 +38,9 @@ const GET_STOCK_LEVEL_HISTORY = gql`
           await
           fold
           bulk
-          warehouse
-          stock_total
-          update_time
+          backcarpark
+          damage
+          latest_update
         }
       }
     }
@@ -56,7 +56,7 @@ interface ChartDataPoint {
 interface StockData {
   stock: string;
   stock_level: number;
-  update_time: string;
+  latest_update: string;
 }
 
 interface StockLevelHistoryChartProps extends WidgetComponentProps {

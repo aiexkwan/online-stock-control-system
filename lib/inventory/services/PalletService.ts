@@ -11,6 +11,7 @@ import {
   PalletSearchResult,
   VoidPalletDto,
   HistoryRecord,
+  InventoryFilter,
 } from '../types';
 import { LocationMapper } from '../utils/locationMapper';
 import { validatePalletNumber } from '../utils/validators';
@@ -222,7 +223,9 @@ export class PalletService implements IPalletService {
         return { valid: false, error: error || 'Pallet not found' };
       }
 
-      if (pallet.is_voided) {
+      // Check if pallet is voided by looking at history
+      const isVoided = await this.checkIfVoided(palletNum);
+      if (isVoided) {
         return { valid: false, error: 'Pallet has been voided', pallet };
       }
 
@@ -319,10 +322,17 @@ export class PalletService implements IPalletService {
       const pallets = await this.searchMultiple(palletNums);
       const resultMap = new Map<string, boolean>();
 
-      palletNums.forEach(palletNum => {
+      for (const palletNum of palletNums) {
         const pallet = pallets.get(palletNum);
-        resultMap.set(palletNum, !!pallet && !pallet.is_voided);
-      });
+        if (!pallet) {
+          resultMap.set(palletNum, false);
+          continue;
+        }
+
+        // Check if voided using history
+        const isVoided = await this.checkIfVoided(palletNum);
+        resultMap.set(palletNum, !isVoided);
+      }
 
       return resultMap;
     } catch (error: any) {
@@ -335,7 +345,7 @@ export class PalletService implements IPalletService {
    * Check if pallet is voided
    * Private helper method
    */
-  private async checkIfVoided(palletNum: string): boolean {
+  private async checkIfVoided(palletNum: string): Promise<boolean> {
     try {
       const history = await this.getHistory(palletNum, 1);
       return history.some(
@@ -345,6 +355,55 @@ export class PalletService implements IPalletService {
       );
     } catch (error) {
       return false;
+    }
+  }
+
+  /**
+   * Create pallet alias for create method
+   */
+  async createPallet(data: Partial<PalletInfo>): Promise<PalletInfo> {
+    return this.create(data);
+  }
+
+  /**
+   * Get pallet history alias for getHistory method
+   */
+  async getPalletHistory(palletNum: string, limit?: number): Promise<HistoryRecord[]> {
+    return this.getHistory(palletNum, limit || 50);
+  }
+
+  /**
+   * Get pallets by filter
+   */
+  async getByFilter(filter: InventoryFilter): Promise<PalletInfoWithLocation[]> {
+    try {
+      let query = this.supabase
+        .from('record_palletinfo')
+        .select('*');
+
+      if (filter.productCodes?.length) {
+        query = query.in('product_code', filter.productCodes);
+      }
+
+      if (filter.dateFrom) {
+        query = query.gte('generate_time', filter.dateFrom);
+      }
+
+      if (filter.dateTo) {
+        query = query.lte('generate_time', filter.dateTo);
+      }
+
+      const { data, error } = await query;
+
+      if (error) throw error;
+
+      return (data || []).map(pallet => ({
+        ...pallet,
+        locationDisplay: 'Unknown Location', // Would need to join with inventory to get actual location
+      }));
+    } catch (error: any) {
+      console.error('[PalletService] Get by filter error:', error);
+      return [];
     }
   }
 }

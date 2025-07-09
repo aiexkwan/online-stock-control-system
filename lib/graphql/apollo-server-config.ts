@@ -29,7 +29,7 @@ import { createDataLoaders } from './data-loaders';
 import { cacheOptimizer } from './cache-strategy-optimizer';
 import { unifiedDataLayer } from './unified-data-layer';
 import { unifiedPreloadService } from '@/lib/preload/unified-preload-service';
-import { logger } from '@/lib/logger';
+import { graphqlLogger } from '@/lib/logger';
 import { isProduction, isNotProduction } from '@/lib/utils/env';
 
 // Load GraphQL schema
@@ -60,6 +60,15 @@ const createOptimizedResolvers = () => {
           if (config) {
             cacheOptimizer.recordCacheHit('products', responseTime);
           }
+          
+          graphqlLogger.debug({
+            operation: 'query.products',
+            userId: context.user?.id,
+            args,
+            responseTime,
+            resultCount: Array.isArray(result) ? result.length : 1,
+            cacheHit: !!config,
+          }, 'Products query executed');
 
           // 分析結果進行預加載
           if (result && context.user?.id) {
@@ -70,6 +79,15 @@ const createOptimizedResolvers = () => {
         } catch (error) {
           const responseTime = Date.now() - startTime;
           cacheOptimizer.recordCacheMiss('products', responseTime);
+          
+          graphqlLogger.error({
+            operation: 'query.products',
+            userId: context.user?.id,
+            args,
+            responseTime,
+            error: error instanceof Error ? error.message : 'Unknown error',
+          }, 'Products query failed');
+          
           throw error;
         }
       },
@@ -347,7 +365,12 @@ export function createOptimizedApolloServer() {
                 await unifiedPreloadService
                   .preloadForUser(context.user.id, `graphql:${tracking.query}`)
                   .catch(err => {
-                    logger.debug('預加載失敗:', err);
+                    graphqlLogger.debug({
+                      operation: 'asyncPreload',
+                      userId: context.user.id,
+                      query: tracking.query,
+                      error: err instanceof Error ? err.message : 'Unknown error',
+                    }, '預加載失敗');
                   });
               }
             },
@@ -371,7 +394,11 @@ export function createOptimizedApolloServer() {
         introspectionCost: 100,
         createError: (max: number, actual: number) => {
           const message = `Query cost ${actual} exceeds maximum cost ${max}`;
-          console.warn(message);
+          graphqlLogger.warn({
+            event: 'queryCostExceeded',
+            actual,
+            max,
+          }, message);
           return new Error(message);
         },
       }),
@@ -380,7 +407,11 @@ export function createOptimizedApolloServer() {
     // Subscription configuration
     subscriptions: {
       onConnect: async (connectionParams: any, webSocket: any, context: any) => {
-        console.log('GraphQL subscription connected');
+        graphqlLogger.info({
+          event: 'subscriptionConnected',
+          connectionParams: connectionParams ? Object.keys(connectionParams) : [],
+          timestamp: new Date(),
+        }, 'GraphQL subscription connected');
         return {
           ...connectionParams,
           connectedAt: new Date(),
@@ -388,7 +419,11 @@ export function createOptimizedApolloServer() {
       },
 
       onDisconnect: async (webSocket: any, context: any) => {
-        console.log('GraphQL subscription disconnected');
+        graphqlLogger.info({
+          event: 'subscriptionDisconnected',
+          userId: context.connectionParams?.userId,
+          ipAddress: context.connectionParams?.ipAddress,
+        }, 'GraphQL subscription disconnected');
 
         // Clean up rate limiting connection
         if (context.connectionParams) {
@@ -400,7 +435,12 @@ export function createOptimizedApolloServer() {
 
     // Error formatting with monitoring
     formatError: error => {
-      console.error('GraphQL Error:', error);
+      graphqlLogger.error({
+        event: 'graphqlError',
+        message: error.message,
+        path: error.path,
+        extensions: error.extensions,
+      }, 'GraphQL Error');
 
       // Don't expose internal errors in production
       if (isProduction()) {
@@ -455,7 +495,12 @@ function analyzeForPreload(result: any, userId: string, queryType: string) {
         await unifiedPreloadService.preloadForUser(userId, `related:${queryType}:${relatedQuery}`);
       }
     } catch (error) {
-      logger.debug('預加載分析失敗:', error);
+      graphqlLogger.debug({
+        operation: 'preloadAnalysis',
+        userId,
+        queryType,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      }, '預加載分析失敗');
     }
   });
 }

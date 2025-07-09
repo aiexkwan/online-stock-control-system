@@ -25,24 +25,12 @@ export const UploadUpdateLayout: React.FC<UploadUpdateLayoutProps> = ({
     threshold: 100,
   });
 
-  // Container styles matching exact CSS for upload/update pages
-  const containerStyle: React.CSSProperties = {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(10, 1fr)',
-    gridTemplateRows: theme === 'update' ? 'repeat(8, 100px)' : 'repeat(8, 100px)',
-    gap: '10px 10px',
-    gridAutoColumns: 'auto',
-    justifyItems: 'stretch',
-    width: '100%',
-    minHeight: '800px',
-    padding: '20px',
-  };
-
-  // Use different container class based on theme
+  // 不需要 inline styles，因為 CSS 已經定義了完整的 grid-template-areas
+  // 讓 CSS 類別處理所有佈局
   const containerClass = theme === 'upload' ? 'upload-container' : 'update-container';
 
   return (
-    <div ref={containerRef} className={containerClass} style={containerStyle}>
+    <div ref={containerRef} className={containerClass}>
       {childrenArray}
     </div>
   );

@@ -60,34 +60,27 @@ interface AdminWidgetRendererProps {
 
 // 主題顏色映射 - 配合 GlowCard 效果
 const THEME_GLOW_COLORS = {
-  injection: 'blue',
-  pipeline: 'purple', 
-  warehouse: 'green',
-  analysis: 'blue', // cyan 映射到 blue
-  upload: 'purple', // indigo 映射到 purple
-  update: 'orange',
-  'stock-management': 'orange', // yellow 映射到 orange
-  system: 'red'
+  injection: 'production',
+  pipeline: 'search', 
+  warehouse: 'warehouse',
+  analysis: 'inventory',
+  upload: 'search',
+  update: 'update',
+  'stock-management': 'production',
+  system: 'update'
 } as const;
 
-type GlowColor = 'blue' | 'purple' | 'green' | 'red' | 'orange';
+type ThemeKey = 'production' | 'warehouse' | 'inventory' | 'update' | 'search';
 
-const getThemeGlowColor = (theme?: string): GlowColor => {
+const getThemeGlowColor = (theme?: string): ThemeKey => {
   return theme && theme in THEME_GLOW_COLORS 
-    ? THEME_GLOW_COLORS[theme as keyof typeof THEME_GLOW_COLORS] as GlowColor
-    : 'blue'; // 默認藍色
+    ? THEME_GLOW_COLORS[theme as keyof typeof THEME_GLOW_COLORS] as ThemeKey
+    : 'warehouse'; // 默認 warehouse（藍色）
 };
 
-// GlowCard 顏色配置
-const glowColorMap = {
-  blue: { base: 220, spread: 200 },
-  purple: { base: 280, spread: 300 },
-  green: { base: 120, spread: 200 },
-  red: { base: 0, spread: 200 },
-  orange: { base: 30, spread: 200 }
-};
+// GlowCard 顏色配置已移至 GlowCard 組件內部
 
-// 統一的 Widget Wrapper Component - 優化版本，移除高消耗的 spotlight 效果
+// 統一的 Widget Wrapper Component - 使用 SpotlightCard 提供真正的 spotlight effect
 const UnifiedWidgetWrapper = React.memo<{
   children: React.ReactNode;
   isCustomTheme?: boolean;
@@ -96,48 +89,48 @@ const UnifiedWidgetWrapper = React.memo<{
   style?: React.CSSProperties;
   theme?: string;
 }>(({ children, isCustomTheme, hasError, className, style, theme }) => {
-  const glowColor = getThemeGlowColor(theme);
-  const { base } = glowColorMap[glowColor];
-
-  // 簡化樣式 - 移除 spotlight 效果以改善性能
-  const inlineStyles = {
-    backgroundColor: 'hsl(0 0% 20% / 0.5)',
-    border: '1px solid hsl(0 0% 60% / 0.12)',
-    borderRadius: '14px',
-    position: 'relative' as const,
-    // 保留輕量級的光暈效果
-    boxShadow: `0 0 20px hsl(${base} 100% 70% / 0.15)`,
-    transition: 'all 0.3s ease',
-    ...style
-  } as React.CSSProperties;
+  const spotlightTheme = getThemeGlowColor(theme);
 
   if (hasError) {
     return (
-      <div
-        style={inlineStyles}
-        className={cn(
-          "h-full w-full rounded-2xl relative shadow-lg",
-          className
-        )}
+      <SpotlightCard 
+        className={cn("h-full w-full", className)}
+        theme={spotlightTheme}
+        disableSpotlight={true}
       >
-        <div className="p-4 text-red-400 text-sm">
-          {children}
+        <div 
+          className="h-full w-full bg-red-900/10 backdrop-blur-sm"
+          style={{ ...style, borderRadius: "1rem" }}
+        >
+          <div className="p-4 text-red-400 text-sm font-bold">
+            <div className="bg-red-900/50 backdrop-blur-sm rounded-lg p-3 border border-red-500/30">
+              {children}
+            </div>
+          </div>
         </div>
-      </div>
+      </SpotlightCard>
     );
   }
 
-  // 簡化的 widget wrapper - 移除所有 spotlight 相關的元素
+  // 使用 SpotlightCard 提供完整的 spotlight 動畫效果
   return (
-    <div
-      style={inlineStyles}
-      className={cn(
-        "h-full w-full rounded-2xl relative shadow-lg",
-        className
-      )}
+    <SpotlightCard 
+      className={cn("h-full w-full", className)}
+      theme={spotlightTheme}
+      spotlightSize={400}
+      spotlightIntensity={0.15}
+      disableSpotlight={false}
+      borderRadius="1rem"
     >
-      {children}
-    </div>
+      <div 
+        className="h-full w-full bg-slate-900/10 backdrop-blur-sm transition-all duration-300"
+        style={{ ...style, borderRadius: "1rem" }}
+      >
+        <div className="h-full w-full text-content-enhanced">
+          {children}
+        </div>
+      </div>
+    </SpotlightCard>
   );
 }, (prevProps, nextProps) => {
   // 自定義比較函數 - 只比較真正會影響渲染的 props
@@ -168,6 +161,7 @@ const CHART_COLORS = [
 // 導入特殊組件 - 已移除舊 Dashboard 依賴
 import { HistoryTreeV2 as HistoryTree } from './widgets/HistoryTreeV2';
 import { getEnhancedWidgetComponent } from './LazyWidgetRegistry';
+import { SpotlightCard } from '../ui/SpotlightCard';
 
 // 新的上傳頁面組件 - 使用 lazy loading
 const OrdersListWidget = React.lazy(() => import('./widgets/OrdersListWidgetV2').then(mod => ({ default: mod.OrdersListWidgetV2 })));
@@ -248,6 +242,17 @@ const getComponentPropsFactory = (config: AdminWidgetConfig, timeFrame: TimeFram
       dialogTitle: config.dialogTitle || '',
       dialogDescription: config.dialogDescription || '',
       selectLabel: config.selectLabel || '',
+      dataTable: config.dataTable || '',
+      referenceField: config.referenceField || ''
+    },
+    ReportGeneratorWithDialogWidgetV2: {
+      title: config.title,
+      reportType: config.reportType || '',
+      description: config.description,
+      apiEndpoint: config.apiEndpoint,
+      dialogTitle: config.dialogTitle || config.title || '',
+      dialogDescription: config.dialogDescription || config.description || `Generate ${config.title || 'Report'}`,
+      selectLabel: config.selectLabel || 'Select Reference',
       dataTable: config.dataTable || '',
       referenceField: config.referenceField || ''
     },

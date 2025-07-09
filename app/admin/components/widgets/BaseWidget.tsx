@@ -44,7 +44,7 @@ export function BaseWidget({
       theme={theme}
       padding={!noPadding}
       animationDelay={animationDelay}
-      disableGlow={disableGlow}
+      disableSpotlight={disableGlow}
       className={className}
     >
       <div className={cn('h-full w-full', 'flex flex-col', contentClassName)}>{children}</div>

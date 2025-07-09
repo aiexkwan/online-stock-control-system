@@ -20,24 +20,18 @@ import { print } from 'graphql';
 // GraphQL query for stock distribution
 const GET_STOCK_DISTRIBUTION = gql`
   query GetStockDistribution {
-    record_inventoryCollection(
-      filter: {
-        stock_total: { gt: 0 }
-      }
-      orderBy: [{ stock_total: DescNullsLast }]
-    ) {
+    record_inventoryCollection {
       edges {
         node {
           product_code
-          stock_total
           injection
           pipeline
           prebook
           await
           fold
           bulk
-          warehouse
-          type
+          await_grn
+          backcarpark
           data_code {
             description
             colour
@@ -103,12 +97,25 @@ export const StockDistributionChartV2: React.FC<StockDistributionChartProps> = (
     if (!data?.record_inventoryCollection?.edges) return [];
     
     const edges = data.record_inventoryCollection.edges;
-    const items = edges.map((edge: any) => ({
-      stock: edge.node.product_code,
-      stock_level: edge.node.stock_total,
-      description: edge.node.data_code?.description,
-      type: edge.node.type || edge.node.data_code?.type,
-    }));
+    const items = edges.map((edge: any) => {
+      const node = edge.node;
+      // 計算總庫存 - 所有庫存欄位嘅總和
+      const stockTotal = (node.injection || 0) + 
+                        (node.pipeline || 0) + 
+                        (node.prebook || 0) + 
+                        (node.await || 0) + 
+                        (node.fold || 0) + 
+                        (node.bulk || 0) + 
+                        (node.await_grn || 0) + 
+                        (node.backcarpark || 0);
+      
+      return {
+        stock: node.product_code,
+        stock_level: stockTotal,
+        description: node.data_code?.description,
+        type: node.data_code?.type,
+      };
+    });
     
     // 過濾選定類型
     let filteredItems = items;

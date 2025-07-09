@@ -506,14 +506,12 @@ export class DashboardAPI extends DataAccessLayer<DashboardParams, DashboardResu
           
         case 'inventory_ordered_analysis':
           // Inventory ordered analysis with server-side joins and calculations
-          const productCodes = params.params?.productCodes as string[] | undefined;
           const productType = params.params?.productType as string | undefined;
           
           try {
             // Use RPC function for optimized inventory ordered analysis
             const { data: analysisData, error: analysisError } = await supabase
               .rpc('rpc_get_inventory_ordered_analysis', {
-                p_product_codes: productCodes || null,
                 p_product_type: productType || null
               });
             
@@ -530,7 +528,6 @@ export class DashboardAPI extends DataAccessLayer<DashboardParams, DashboardResu
                 calculationTime: analysisData?.metadata?.calculation_time,
                 optimized: true,
                 queryParams: {
-                  productCodes: productCodes,
                   productType: productType
                 }
               }

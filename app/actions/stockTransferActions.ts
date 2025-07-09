@@ -88,50 +88,89 @@ export async function searchPallet(searchValue: string): Promise<SearchPalletRes
       };
     }
 
-    let query;
+    // Get pallet info from record_palletinfo
+    let palletQuery;
     if (searchType === 'pallet_num') {
-      query = supabase
-        .from('data_product')
-        .select('plt_num, product_code, product_desc, product_qty, current_plt_loc')
+      palletQuery = supabase
+        .from('record_palletinfo')
+        .select('plt_num, product_code, product_qty, plt_remark, series')
         .eq('plt_num', searchValue)
         .single();
     } else {
-      query = supabase
-        .from('data_product')
-        .select('plt_num, product_code, product_desc, product_qty, current_plt_loc')
+      palletQuery = supabase
+        .from('record_palletinfo')
+        .select('plt_num, product_code, product_qty, plt_remark, series')
         .eq('series', searchValue)
         .order('plt_num', { ascending: true })
         .limit(1);
     }
 
-    const { data, error } = await query;
+    const { data: palletData, error: palletError } = await palletQuery;
 
-    if (error) {
-      if (error.code === 'PGRST116') {
+    if (palletError) {
+      if (palletError.code === 'PGRST116') {
         return {
           success: false,
           error: `No pallet found for ${searchValue}`,
         };
       }
-      throw error;
+      throw palletError;
     }
 
-    if (!data) {
+    if (!palletData) {
       return {
         success: false,
         error: `No pallet found for ${searchValue}`,
       };
     }
 
+    // For series search, we get an array, need to extract first item
+    const palletInfo = searchType === 'series' && Array.isArray(palletData) ? palletData[0] : palletData;
+    
+    if (!palletInfo) {
+      return {
+        success: false,
+        error: `No pallet found for ${searchValue}`,
+      };
+    }
+
+    // Get product description from data_code
+    const { data: productData } = await supabase
+      .from('data_code')
+      .select('desc')
+      .eq('code', palletInfo.product_code)
+      .single();
+
+    // Get current location from record_history
+    const { data: historyData } = await supabase
+      .from('record_history')
+      .select('loc')
+      .eq('plt_num', palletInfo.plt_num)
+      .eq('action', 'Transfer')
+      .order('time', { ascending: false })
+      .limit(1)
+      .single();
+
+    const currentLocation = historyData?.loc || 'Await';
+
+    // Log for debugging
+    systemLogger.info('Pallet search successful', {
+      searchValue,
+      searchType,
+      plt_num: palletInfo.plt_num,
+      product_code: palletInfo.product_code,
+      currentLocation
+    });
+
     return {
       success: true,
       data: {
-        plt_num: (data as any).plt_num,
-        product_code: (data as any).product_code,
-        product_desc: (data as any).product_desc,
-        product_qty: (data as any).product_qty,
-        current_plt_loc: (data as any).current_plt_loc,
-        location: (data as any).current_plt_loc || 'Unknown',
+        plt_num: palletInfo.plt_num,
+        product_code: palletInfo.product_code,
+        product_desc: productData?.desc || '',
+        product_qty: palletInfo.product_qty,
+        current_plt_loc: currentLocation,
+        location: currentLocation,
       },
       searchType,
     };
@@ -534,8 +573,8 @@ export async function validateTransferDestination(
 
     // Check if pallet exists
     const { data: palletData, error: palletError } = await supabase
-      .from('data_product')
-      .select('current_plt_loc')
+      .from('record_palletinfo')
+      .select('plt_num')
       .eq('plt_num', palletNumber)
       .single();
 
@@ -546,8 +585,20 @@ export async function validateTransferDestination(
       };
     }
 
+    // Get current location from record_history
+    const { data: historyData } = await supabase
+      .from('record_history')
+      .select('loc')
+      .eq('plt_num', palletNumber)
+      .eq('action', 'Transfer')
+      .order('time', { ascending: false })
+      .limit(1)
+      .single();
+
+    const currentLocation = historyData?.loc || 'Await';
+
     // Check if already at destination
-    if (palletData.current_plt_loc === destination) {
+    if (currentLocation === destination) {
       return {
         valid: false,
         message: `Pallet is already at location ${destination}`,

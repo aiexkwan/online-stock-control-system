@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { createClient } from '@/app/utils/supabase/client';
+import { validateSupplierCode } from '@/app/actions/grnActions';
 
 interface SupplierInfo {
   supplier_code: string;
@@ -70,33 +70,13 @@ export const MaterialSupplierInput: React.FC<MaterialSupplierInputProps> = ({
 
     try {
       process.env.NODE_ENV !== 'production' &&
-        console.log('[MaterialSupplierInput] Creating Supabase client...');
-      const client = createClient();
+        console.log('[MaterialSupplierInput] Calling validateSupplierCode for:', trimmedValue);
+
+      // 使用 Server Action 進行供應商驗證
+      const result = await validateSupplierCode(trimmedValue);
 
       process.env.NODE_ENV !== 'production' &&
-        console.log('[MaterialSupplierInput] Executing query for:', trimmedValue);
-
-      // 設置超時機制 - 10秒後自動取消
-      const timeoutId = setTimeout(() => {
-        if (abortController === abortControllerRef.current) {
-          abortController.abort();
-          process.env.NODE_ENV !== 'production' &&
-            console.log('[MaterialSupplierInput] Search timeout after 10 seconds');
-        }
-      }, 10000);
-
-      // 使用 RPC 函數進行供應商搜尋
-      const { data, error } = await client
-        .rpc('search_supplier_code', {
-          p_code: trimmedValue,
-        })
-        .abortSignal(abortController.signal);
-
-      // 清除超時
-      clearTimeout(timeoutId);
-
-      process.env.NODE_ENV !== 'production' &&
-        console.log('[MaterialSupplierInput] Search result:', { data, error });
+        console.log('[MaterialSupplierInput] Search result:', result);
 
       // 檢查是否被取消
       if (abortController.signal.aborted) {
@@ -105,15 +85,15 @@ export const MaterialSupplierInput: React.FC<MaterialSupplierInputProps> = ({
         return;
       }
 
-      if (error || !data) {
+      if (!result.success || !result.data) {
         // 找不到供應商
         onSupplierInfoChange(null);
-        setSupplierError(`Supplier Code ${trimmedValue} Not Found`);
+        setSupplierError(result.error || `Supplier Code ${trimmedValue} Not Found`);
         process.env.NODE_ENV !== 'production' &&
           console.log('[MaterialSupplierInput] Supplier not found:', trimmedValue);
       } else {
-        // 找到供應商 - RPC 函數返回 JSON
-        const supplierData = data as SupplierInfo;
+        // 找到供應商
+        const supplierData = result.data;
         onSupplierInfoChange(supplierData);
         onChange(supplierData.supplier_code); // 使用資料庫中的標準化代碼
         setSupplierError(null);

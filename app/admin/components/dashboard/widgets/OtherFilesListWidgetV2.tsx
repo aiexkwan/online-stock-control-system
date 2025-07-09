@@ -1,16 +1,17 @@
 /**
  * Other Files List Widget V2
- * 使用 DashboardAPI + 服務器端 JOIN 和篩選
+ * 使用 DashboardAPI + 服務器端 JOIN 和篩選 (rpc_get_other_files_list)
  * 遷移自原 OtherFilesListWidget
  * 
- * Re-Structure-6 Update: Added GraphQL support for data-intensive queries
- * - 200+ records benefit from GraphQL field selection
- * - Hybrid architecture: Server Actions + GraphQL
+ * 優化更新: 移除 GraphQL 支持，專注使用 Server Actions + RPC 函數
+ * - 使用現有的 rpc_get_other_files_list 函數
+ * - 包含真實用戶名稱 (uploader_name)
+ * - 優化性能監控和分頁
  */
 
 'use client';
 
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { DocumentIcon, CloudIcon, PhotoIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
 import { WidgetComponentProps } from '@/app/types/dashboard';
@@ -19,39 +20,6 @@ import { format } from 'date-fns';
 import { fromDbTime } from '@/app/utils/timezone';
 import { useUploadRefresh } from '@/app/admin/contexts/UploadRefreshContext';
 import { createDashboardAPI } from '@/lib/api/admin/DashboardAPI';
-import { useGraphQLQuery } from '@/lib/graphql-client-stable';
-import { gql } from 'graphql-tag';
-import { print } from 'graphql';
-
-// GraphQL query for other files list
-const GET_OTHER_FILES_LIST = gql`
-  query GetOtherFilesList($limit: Int!, $offset: Int!) {
-    doc_uploadCollection(
-      filter: { doc_type: { neq: "order" } }
-      orderBy: [{ created_at: DescNullsLast }]
-      first: $limit
-      offset: $offset
-    ) {
-      edges {
-        node {
-          uuid
-          doc_name
-          upload_by
-          created_at
-          doc_type
-          data_id {
-            name
-          }
-        }
-      }
-      pageInfo {
-        hasNextPage
-        hasPreviousPage
-      }
-      totalCount
-    }
-  }
-`;
 
 interface FileRecord {
   uuid: string;
@@ -63,17 +31,10 @@ interface FileRecord {
   uploader_id?: number;
 }
 
-interface OtherFilesListWidgetV2Props extends WidgetComponentProps {
-  useGraphQL?: boolean;
-}
-
 export const OtherFilesListWidgetV2 = React.memo(function OtherFilesListWidgetV2({
   widget,
   isEditMode,
-  useGraphQL,
-}: OtherFilesListWidgetV2Props) {
-  // 決定是否使用 GraphQL - 可以通過 widget config 或 props 控制
-  const shouldUseGraphQL = useGraphQL ?? (widget as any)?.useGraphQL ?? false;
+}: WidgetComponentProps) {
   const [files, setFiles] = useState<FileRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -85,82 +46,12 @@ export const OtherFilesListWidgetV2 = React.memo(function OtherFilesListWidgetV2
     optimized?: boolean;
   }>({});
   const { otherFilesVersion } = useUploadRefresh();
-  const [graphqlPage, setGraphqlPage] = useState(0);
-  const [graphqlFiles, setGraphqlFiles] = useState<FileRecord[]>([]);
 
   const itemsPerPage = 10; // 固定佈局系統，使用預設值
 
-  // GraphQL query
-  const {
-    data: graphqlData,
-    loading: graphqlLoading,
-    error: graphqlError,
-    refetch: refetchGraphQL,
-  } = useGraphQLQuery(
-    print(GET_OTHER_FILES_LIST),
-    {
-      limit: itemsPerPage,
-      offset: graphqlPage * itemsPerPage,
-    },
-    {
-      enabled: shouldUseGraphQL && !isEditMode,
-      refetchInterval: 30000, // 30秒刷新一次
-      cacheTime: 300000, // 5分鐘快取
-    }
-  );
-
-  // Process GraphQL data
-  useEffect(() => {
-    if (shouldUseGraphQL && graphqlData?.doc_uploadCollection) {
-      const edges = graphqlData.doc_uploadCollection.edges || [];
-      const newFiles: FileRecord[] = edges.map((edge: any) => ({
-        uuid: edge.node.uuid,
-        doc_name: edge.node.doc_name,
-        upload_by: edge.node.upload_by,
-        created_at: edge.node.created_at,
-        doc_type: edge.node.doc_type,
-        uploader_name: edge.node.data_id?.name || 
-          (edge.node.upload_by ? `User ${edge.node.upload_by}` : 'Unknown'),
-        uploader_id: edge.node.upload_by,
-      }));
-
-      if (graphqlPage === 0) {
-        setGraphqlFiles(newFiles);
-      } else {
-        // Append for pagination
-        setGraphqlFiles(prev => [...prev, ...newFiles]);
-      }
-
-      setMetadata({
-        totalCount: graphqlData.doc_uploadCollection.totalCount,
-        hasMore: graphqlData.doc_uploadCollection.pageInfo.hasNextPage,
-        optimized: true,
-      });
-    }
-  }, [shouldUseGraphQL, graphqlData, graphqlPage]);
-
-  // GraphQL load more function
-  const loadMoreGraphQL = useCallback(() => {
-    if (shouldUseGraphQL && !graphqlLoading && 
-        graphqlData?.doc_uploadCollection?.pageInfo?.hasNextPage) {
-      setGraphqlPage(prev => prev + 1);
-    }
-  }, [shouldUseGraphQL, graphqlLoading, graphqlData]);
-
-  // GraphQL refresh function
-  const refreshGraphQL = useCallback(async () => {
-    if (shouldUseGraphQL) {
-      setGraphqlPage(0);
-      setGraphqlFiles([]);
-      await refetchGraphQL();
-    }
-  }, [shouldUseGraphQL, refetchGraphQL]);
-
-  // 載入文件列表
+  // 載入文件列表 - 使用 Server Actions + RPC 函數
   const loadFiles = useCallback(
     async (loadMore = false) => {
-      if (shouldUseGraphQL) return; // Skip when using GraphQL
-      
       try {
         if (!loadMore) {
           setLoading(true);
@@ -214,7 +105,7 @@ export const OtherFilesListWidgetV2 = React.memo(function OtherFilesListWidgetV2
         setLoading(false);
       }
     },
-    [page, itemsPerPage, shouldUseGraphQL]
+    [page, itemsPerPage]
   );
 
   useEffect(() => {
@@ -231,26 +122,6 @@ export const OtherFilesListWidgetV2 = React.memo(function OtherFilesListWidgetV2
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [otherFilesVersion]);
-
-  // Unified data source
-  const displayFiles = shouldUseGraphQL ? graphqlFiles : files;
-  const isLoading = shouldUseGraphQL 
-    ? (graphqlLoading && graphqlPage === 0) 
-    : loading;
-  const isLoadingMore = shouldUseGraphQL 
-    ? (graphqlLoading && graphqlPage > 0) 
-    : (loading && page > 0);
-  const displayError = shouldUseGraphQL 
-    ? (graphqlError ? graphqlError.message : null) 
-    : error;
-  const displayHasMore = shouldUseGraphQL 
-    ? (graphqlData?.doc_uploadCollection?.pageInfo?.hasNextPage || false)
-    : hasMore;
-  const displayTotalCount = shouldUseGraphQL 
-    ? (graphqlData?.doc_uploadCollection?.totalCount || 0)
-    : (metadata.totalCount || 0);
-  const handleLoadMore = shouldUseGraphQL ? loadMoreGraphQL : () => loadFiles(true);
-  const handleRefresh = shouldUseGraphQL ? refreshGraphQL : () => loadFiles(false);
 
   const formatTime = useCallback((timestamp: string) => {
     try {
@@ -286,30 +157,27 @@ export const OtherFilesListWidgetV2 = React.memo(function OtherFilesListWidgetV2
             <span className='text-base font-medium text-slate-200'>Other File Upload History</span>
           </div>
           <div className='flex items-center gap-2'>
-            {shouldUseGraphQL && !isEditMode && (
-              <span className='text-xs text-blue-400'>⚡ GraphQL</span>
-            )}
-            {!shouldUseGraphQL && !isEditMode && performanceMetrics.apiResponseTime && (
+            {!isEditMode && performanceMetrics.apiResponseTime && (
               <span className='text-xs text-slate-400'>
                 {performanceMetrics.apiResponseTime}ms
                 {performanceMetrics.optimized && ' (optimized)'}
               </span>
             )}
             <button
-              onClick={() => !isEditMode && handleRefresh()}
-              disabled={isEditMode || isLoading}
+              onClick={() => !isEditMode && loadFiles(false)}
+              disabled={isEditMode || loading}
               className='rounded-lg p-1.5 transition-colors hover:bg-slate-700/50 disabled:cursor-not-allowed disabled:opacity-50'
               title='Refresh'
             >
               <ArrowPathIcon
-                className={`h-4 w-4 text-slate-400 ${isLoading ? 'animate-spin' : ''}`}
+                className={`h-4 w-4 text-slate-400 ${loading ? 'animate-spin' : ''}`}
               />
             </button>
           </div>
         </CardTitle>
-        {displayTotalCount > 0 && (
+        {metadata.totalCount > 0 && (
           <p className='text-xs text-slate-400'>
-            Total {displayTotalCount} files (non-order documents)
+            Total {metadata.totalCount} files (non-order documents)
           </p>
         )}
       </CardHeader>
@@ -325,21 +193,21 @@ export const OtherFilesListWidgetV2 = React.memo(function OtherFilesListWidgetV2
         </div>
 
         {/* Content */}
-        {isLoading && displayFiles.length === 0 ? (
+        {loading && files.length === 0 ? (
           <div className='animate-pulse space-y-2'>
             {[...Array(5)].map((_, i) => (
               <div key={i} className='h-10 rounded-lg bg-white/10'></div>
             ))}
           </div>
-        ) : displayError ? (
+        ) : error ? (
           <div className='flex flex-1 items-center justify-center'>
             <div className='text-center'>
               <CloudIcon className='mx-auto mb-2 h-12 w-12 text-red-400' />
               <p className='text-sm text-red-400'>Error loading files</p>
-              <p className='mt-1 text-xs text-slate-500'>{displayError}</p>
+              <p className='mt-1 text-xs text-slate-500'>{error}</p>
             </div>
           </div>
-        ) : displayFiles.length === 0 ? (
+        ) : files.length === 0 ? (
           <div className='flex flex-1 items-center justify-center'>
             <div className='text-center'>
               <CloudIcon className='mx-auto mb-2 h-12 w-12 text-slate-600' />
@@ -348,7 +216,7 @@ export const OtherFilesListWidgetV2 = React.memo(function OtherFilesListWidgetV2
           </div>
         ) : (
           <div className='flex-1 space-y-1 overflow-y-auto'>
-            {displayFiles.map(file => (
+            {files.map(file => (
               <div
                 key={file.uuid}
                 className='cursor-pointer rounded-lg bg-black/20 p-2 transition-colors hover:bg-white/10'
@@ -369,9 +237,9 @@ export const OtherFilesListWidgetV2 = React.memo(function OtherFilesListWidgetV2
             ))}
 
             {/* Load More Button */}
-            {displayHasMore && !isLoading && (
+            {hasMore && !loading && (
               <button
-                onClick={handleLoadMore}
+                onClick={() => !isEditMode && loadFiles(true)}
                 className='w-full py-2 text-sm text-purple-400 transition-colors hover:text-purple-300'
                 disabled={isEditMode}
               >
@@ -382,7 +250,7 @@ export const OtherFilesListWidgetV2 = React.memo(function OtherFilesListWidgetV2
         )}
 
         {/* Performance indicator */}
-        {!shouldUseGraphQL && metadata.performanceMs && (
+        {metadata.performanceMs && (
           <div className='mt-2 text-center text-[10px] text-green-400'>
             ✓ Server-side optimized ({metadata.performanceMs}ms query)
           </div>

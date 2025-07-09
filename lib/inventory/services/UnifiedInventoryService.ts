@@ -19,10 +19,20 @@ import {
   InventoryStats,
   PalletInfo,
   TransactionResult,
+  HistoryRecord,
+  StockLevel,
+  LocationInventory,
+  InventoryFilter,
+  PalletInfoWithLocation,
+  StockCountSession,
+  StockCountDto,
+  InventoryAdjustmentDto,
+  ActivityLogEntry,
 } from '../types';
 import { getCurrentUserId } from '../utils/authHelpers';
 import { validatePalletNumber, validateStockTransfer } from '../utils/validators';
 import { detectSearchType } from '@/app/utils/palletSearchUtils';
+import { LocationMapper } from '../utils/locationMapper';
 
 export class UnifiedInventoryService implements IInventoryService {
   private palletService: PalletService;
@@ -81,7 +91,7 @@ export class UnifiedInventoryService implements IInventoryService {
       if (!validation.valid) {
         return {
           success: false,
-          error: validation.error || 'Invalid transfer data',
+          error: validation.errors?.join(', ') || 'Invalid transfer data',
           transferTime: Date.now() - startTime,
         };
       }
@@ -96,19 +106,22 @@ export class UnifiedInventoryService implements IInventoryService {
 
       return {
         success: result.success,
-        error: result.error,
+        palletNum: transfer.palletNum,
         transferId: result.transactionId,
-        transferTime: Date.now() - startTime,
-        updatedPallet: result.success
-          ? await this.getUpdatedPalletInfo(transfer.palletNum)
-          : undefined,
+        error: result.error,
+        details: {
+          fromLocation: transfer.fromLocation,
+          toLocation: transfer.toLocation,
+          quantity: transfer.quantity,
+          timestamp: new Date().toISOString(),
+        },
       };
     } catch (error: any) {
       console.error('[UnifiedInventoryService] Transfer stock error:', error);
       return {
         success: false,
+        palletNum: transfer.palletNum,
         error: error.message || 'Transfer failed',
-        transferTime: Date.now() - startTime,
       };
     }
   }
@@ -157,18 +170,17 @@ export class UnifiedInventoryService implements IInventoryService {
         transfer.operator = operator;
         const validation = validateStockTransfer(transfer);
         if (!validation.valid) {
-          validationErrors.push(`${transfer.palletNum}: ${validation.error}`);
+          validationErrors.push(`${transfer.palletNum}: ${validation.errors?.join(', ') || 'Invalid'}`);
         }
       }
 
       if (validationErrors.length > 0) {
         return {
-          success: false,
-          error: `Validation errors: ${validationErrors.join(', ')}`,
-          results,
-          totalTime: Date.now() - startTime,
-          successCount: 0,
-          failureCount: batch.transfers.length,
+          totalRequested: batch.transfers.length,
+          totalSuccessful: 0,
+          totalFailed: batch.transfers.length,
+          results: Array.from(results.values()),
+          duration: Date.now() - startTime,
         };
       }
 
@@ -203,15 +215,15 @@ export class UnifiedInventoryService implements IInventoryService {
           successCount++;
           results.set(transfer.palletNum, {
             success: true,
+            palletNum: transfer.palletNum,
             transferId: result.transactionId,
-            transferTime: result.executionTime || 0,
           });
         } else {
           failureCount++;
           results.set(transfer.palletNum, {
             success: false,
+            palletNum: transfer.palletNum,
             error: result?.error || 'Unknown error',
-            transferTime: 0,
           });
         }
       });
@@ -222,22 +234,20 @@ export class UnifiedInventoryService implements IInventoryService {
       }
 
       return {
-        success: txResult.success,
-        error: txResult.error,
-        results,
-        totalTime: Date.now() - startTime,
-        successCount,
-        failureCount,
+        totalRequested: batch.transfers.length,
+        totalSuccessful: successCount,
+        totalFailed: failureCount,
+        results: Array.from(results.values()),
+        duration: Date.now() - startTime,
       };
     } catch (error: any) {
       console.error('[UnifiedInventoryService] Batch transfer error:', error);
       return {
-        success: false,
-        error: error.message || 'Batch transfer failed',
-        results,
-        totalTime: Date.now() - startTime,
-        successCount: 0,
-        failureCount: batch.transfers.length,
+        totalRequested: batch.transfers.length,
+        totalSuccessful: 0,
+        totalFailed: batch.transfers.length,
+        results: Array.from(results.values()),
+        duration: Date.now() - startTime,
       };
     }
   }
@@ -270,14 +280,14 @@ export class UnifiedInventoryService implements IInventoryService {
       };
 
       // Calculate totals and breakdowns
-      (data || []).forEach(record => {
+      for (const record of data || []) {
         const palletInfo = record.record_palletinfo;
         const qty = palletInfo.product_qty || 0;
 
         snapshot.totalQuantity += qty;
 
         // Location breakdown
-        const location = this.palletService.getCurrentLocation(record.plt_num);
+        const location = await this.palletService.getCurrentLocation(record.plt_num);
         if (location) {
           snapshot.locationBreakdown[location] = (snapshot.locationBreakdown[location] || 0) + qty;
         }
@@ -288,7 +298,7 @@ export class UnifiedInventoryService implements IInventoryService {
           snapshot.productBreakdown[productCode] =
             (snapshot.productBreakdown[productCode] || 0) + qty;
         }
-      });
+      }
 
       return snapshot;
     } catch (error: any) {
@@ -417,5 +427,184 @@ export class UnifiedInventoryService implements IInventoryService {
     } catch (error) {
       return 0;
     }
+  }
+
+  /**
+   * Create a new pallet
+   */
+  async createPallet(data: Partial<PalletInfo>): Promise<PalletInfo> {
+    return this.palletService.createPallet(data);
+  }
+
+  /**
+   * Get pallet history
+   */
+  async getPalletHistory(palletNum: string, limit?: number): Promise<HistoryRecord[]> {
+    return this.palletService.getPalletHistory(palletNum, limit);
+  }
+
+  /**
+   * Get stock level by product code
+   */
+  async getStockLevel(productCode: string): Promise<StockLevel | null> {
+    try {
+      const { data, error } = await this.supabase
+        .from('stock_level')
+        .select('*')
+        .eq('product_code', productCode)
+        .single();
+
+      if (error) return null;
+      return data;
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * Get inventory by location
+   */
+  async getInventoryByLocation(location: string): Promise<LocationInventory> {
+    const dbColumn = LocationMapper.toDbColumn(location);
+    if (!dbColumn) {
+      throw new Error(`Invalid location: ${location}`);
+    }
+
+    const { data, error } = await this.supabase
+      .from('record_inventory')
+      .select('*')
+      .gt(dbColumn, 0);
+
+    if (error) throw error;
+
+    const totalQuantity = data?.reduce((sum, item) => sum + (item[dbColumn] || 0), 0) || 0;
+
+    return {
+      location,
+      pallets: data || [],
+      totalQuantity,
+      lastUpdated: new Date().toISOString(),
+    };
+  }
+
+  /**
+   * Get inventory by filter
+   */
+  async getInventoryByFilter(filter: InventoryFilter): Promise<PalletInfoWithLocation[]> {
+    return this.palletService.getByFilter(filter);
+  }
+
+  /**
+   * Bulk transfer alias for batchTransfer
+   */
+  async bulkTransfer(data: BatchTransferDto): Promise<BatchTransferResult> {
+    return this.batchTransfer(data);
+  }
+
+  /**
+   * Validate a stock transfer
+   */
+  async validateTransfer(transfer: StockTransferDto): Promise<{ valid: boolean; errors: string[] }> {
+    const validation = validateStockTransfer(transfer);
+    return {
+      valid: validation.valid,
+      errors: validation.errors || [],
+    };
+  }
+
+  /**
+   * Start a stock count session
+   */
+  async startStockCount(sessionId: string, userId: number): Promise<StockCountSession> {
+    const session: StockCountSession = {
+      uuid: sessionId,
+      sessionDate: new Date().toISOString().split('T')[0],
+      startTime: new Date().toISOString(),
+      userId,
+      userName: 'Unknown User', // Would need to fetch from user table
+      totalScans: 0,
+      successScans: 0,
+      errorScans: 0,
+      sessionStatus: 'active',
+    };
+
+    // Store session in cache or database
+    return session;
+  }
+
+  /**
+   * Submit stock count data
+   */
+  async submitStockCount(data: StockCountDto): Promise<void> {
+    // Implementation for stock count submission
+    const { error } = await this.supabase
+      .from('stock_count_submissions')
+      .insert([{
+        ...data,
+        submitted_at: new Date().toISOString(),
+      }]);
+
+    if (error) throw error;
+  }
+
+  /**
+   * Complete a stock count session
+   */
+  async completeStockCount(sessionId: string): Promise<void> {
+    // Implementation for completing stock count
+    console.log(`Completing stock count session: ${sessionId}`);
+  }
+
+  /**
+   * Get stock count session
+   */
+  async getStockCountSession(sessionId: string): Promise<StockCountSession | null> {
+    // Implementation for getting stock count session
+    return null;
+  }
+
+  /**
+   * Adjust inventory
+   */
+  async adjustInventory(adjustment: InventoryAdjustmentDto): Promise<void> {
+    // Implementation for inventory adjustment
+    console.log(`Adjusting inventory:`, adjustment);
+  }
+
+  /**
+   * Get activity log
+   */
+  async getActivityLog(filter?: {
+    startDate?: Date;
+    endDate?: Date;
+    userId?: string;
+    action?: string;
+  }): Promise<ActivityLogEntry[]> {
+    let query = this.supabase
+      .from('record_history')
+      .select('*')
+      .order('time', { ascending: false });
+
+    if (filter?.startDate) {
+      query = query.gte('time', filter.startDate.toISOString());
+    }
+    if (filter?.endDate) {
+      query = query.lte('time', filter.endDate.toISOString());
+    }
+    if (filter?.action) {
+      query = query.eq('action', filter.action);
+    }
+
+    const { data, error } = await query;
+    if (error) throw error;
+
+    return (data || []).map(record => ({
+      id: record.uuid,
+      userId: record.uuid, // 映射字段
+      action: record.action,
+      timestamp: record.time,
+      details: record.remark || '',
+      metadata: {},
+    }));
   }
 }

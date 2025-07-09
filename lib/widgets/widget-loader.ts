@@ -70,7 +70,6 @@ const widgetPaths: Record<string, string> = {
   AcoOrderReportWidget: '@/app/admin/components/dashboard/widgets/AcoOrderReportWidget',
   ReprintLabelWidget: '@/app/admin/components/dashboard/widgets/ReprintLabelWidget',
   ReportGeneratorWidget: '@/app/admin/components/dashboard/widgets/ReportGeneratorWidget',
-  StaffWorkloadWidget: '@/app/admin/components/dashboard/widgets/StaffWorkloadWidget',
   BookedOutStatsWidget: '@/app/admin/components/dashboard/widgets/BookedOutStatsWidget',
   OutputStatsWidget: '@/app/admin/components/dashboard/widgets/OutputStatsWidget',
 

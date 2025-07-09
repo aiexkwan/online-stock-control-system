@@ -19,7 +19,7 @@ import { WidgetComponentProps } from '@/app/types/dashboard';
 
 // GraphQL query for production details
 const GET_PRODUCTION_DETAILS_QUERY = gql`
-  query GetProductionDetails($startDate: Datetime!, $endDate: Datetime!, $limit: Int) {
+  query GetProductionDetailsWidget($startDate: Datetime!, $endDate: Datetime!, $limit: Int) {
     record_palletinfoCollection(
       filter: {
         plt_remark: { ilike: "%finished in production%" }
@@ -34,7 +34,6 @@ const GET_PRODUCTION_DETAILS_QUERY = gql`
           product_code
           product_qty
           generate_time
-          qc_by
           plt_remark
           data_code {
             description
@@ -43,7 +42,6 @@ const GET_PRODUCTION_DETAILS_QUERY = gql`
           }
         }
       }
-      totalCount
     }
   }
 `;

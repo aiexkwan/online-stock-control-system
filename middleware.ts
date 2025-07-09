@@ -1,15 +1,28 @@
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 import { isDevelopment, isProduction } from '@/lib/utils/env';
+import { 
+  middlewareLogger, 
+  logMiddlewareRequest, 
+  logMiddlewareAuth, 
+  logMiddlewareRouting,
+  getCorrelationId 
+} from '@/lib/logger';
 // import { emailToClockNumber } from './app/utils/authUtils'; // 可能不再需要在中間件中直接使用
 
 // 認證中間件 - 處理用戶會話和路由保護
 // 更新：修復 API 路由匹配問題 - 2025-01-09
 export async function middleware(request: NextRequest) {
-  // 強制記錄所有路徑，用於調試 API 路由問題
-  console.log(
-    `[Supabase SSR Middleware] Processing path: ${request.nextUrl.pathname} (Method: ${request.method}, ENV: ${process.env.NODE_ENV || 'development'})`
-  );
+  // 生成或獲取 correlation ID
+  const correlationId = getCorrelationId(request.headers);
+  
+  // 記錄請求開始
+  const startTime = Date.now();
+  logMiddlewareRequest(request.nextUrl.pathname, request.method, correlationId, {
+    env: process.env.NODE_ENV || 'development',
+    url: request.url,
+    userAgent: request.headers.get('user-agent'),
+  });
 
   // 公開路由 - 只有主登入頁面、密碼重設頁面和特定的 API 路由不需要認證
   // 注意：/_next/static, /_next/image, /favicon.ico 通常由 matcher 排除
@@ -26,32 +39,48 @@ export async function middleware(request: NextRequest) {
     '/api/send-order-email', // 訂單郵件發送 API（用於內部調用）
   ];
 
-  // 檢查是否為公開路由，並添加詳細日誌
+  // 檢查是否為公開路由
   const isPublicRoute = publicRoutes.some(route => {
     const matches = request.nextUrl.pathname.startsWith(route);
     if (matches) {
-      console.log(
-        `[Supabase SSR Middleware] Route "${request.nextUrl.pathname}" matches public route "${route}"`
-      );
+      middlewareLogger.debug({
+        correlationId,
+        path: request.nextUrl.pathname,
+        matchedRoute: route,
+      }, 'Route matched public route pattern');
     }
     return matches;
   });
 
-  // 強制記錄路由匹配結果
-  console.log(
-    `[Supabase SSR Middleware] Path: ${request.nextUrl.pathname}, Is Public: ${isPublicRoute}`
-  );
+  // 記錄路由決策
+  logMiddlewareRouting(correlationId, request.nextUrl.pathname, isPublicRoute);
 
   if (isPublicRoute) {
-    console.log(
-      `[Supabase SSR Middleware] Public route confirmed: ${request.nextUrl.pathname}, skipping auth check.`
-    );
+    middlewareLogger.info({
+      correlationId,
+      path: request.nextUrl.pathname,
+      action: 'allow',
+      reason: 'public_route',
+    }, 'Public route access allowed');
+    
     // 創建基礎回應
     let response = NextResponse.next({
       request: {
         headers: request.headers,
       },
     });
+    
+    // 添加 correlation ID 到回應
+    response.headers.set('x-correlation-id', correlationId);
+    
+    // 記錄請求完成時間
+    const duration = Date.now() - startTime;
+    middlewareLogger.info({
+      correlationId,
+      duration,
+      status: 'allowed',
+    }, 'Middleware request completed');
+    
     return response; // 直接放行公開路由
   }
 
@@ -66,8 +95,15 @@ export async function middleware(request: NextRequest) {
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
   if (!supabaseUrl || !supabaseAnonKey) {
-    console.error('[Supabase SSR Middleware] Supabase URL or Anon Key is missing in env.');
+    middlewareLogger.error({
+      correlationId,
+      error: 'Supabase configuration missing',
+      hasUrl: !!supabaseUrl,
+      hasKey: !!supabaseAnonKey,
+    }, 'Critical configuration error: Supabase URL or Anon Key is missing');
+    
     // 如果Supabase配置缺失，可能直接返回錯誤或重定向到一個錯誤頁面
+    response.headers.set('x-correlation-id', correlationId);
     return response;
   }
 
@@ -86,9 +122,11 @@ export async function middleware(request: NextRequest) {
           !name.match(/\.\d+$/) &&
           !cookieLoggedForThisRequest
         ) {
-          console.log(
-            `[Supabase SSR Middleware] Checking auth cookie for: ${request.nextUrl.pathname}`
-          );
+          middlewareLogger.debug({
+            correlationId,
+            cookieName: name,
+            path: request.nextUrl.pathname,
+          }, 'Checking auth cookie');
           cookieLoggedForThisRequest = true;
         }
         return cookie?.value;
@@ -96,7 +134,11 @@ export async function middleware(request: NextRequest) {
       set(name: string, value: string, options: CookieOptions) {
         // 只記錄重要的 cookie 設置操作
         if (name.includes('auth-token') && !name.match(/\.\d+$/)) {
-          console.log(`[Supabase SSR Middleware] Setting auth cookie: ${name}`);
+          middlewareLogger.debug({
+            correlationId,
+            cookieName: name,
+            hasValue: !!value,
+          }, 'Setting auth cookie');
         }
 
         // 設置 request cookie
@@ -128,7 +170,10 @@ export async function middleware(request: NextRequest) {
         });
       },
       remove(name: string, options: CookieOptions) {
-        console.log(`[Supabase SSR Middleware] Removing cookie: ${name}`);
+        middlewareLogger.debug({
+          correlationId,
+          cookieName: name,
+        }, 'Removing cookie');
 
         // 從 request 中移除
         request.cookies.delete(name);
@@ -166,14 +211,20 @@ export async function middleware(request: NextRequest) {
     } = await supabase.auth.getUser();
 
     if (userError) {
-      console.error('[Supabase SSR Middleware] User fetch error:', userError.message);
+      logMiddlewareAuth(correlationId, false, undefined, userError.message);
+      
       // 處理獲取用戶時的錯誤，但不要重定向公開路由
       // 只有在非公開路由且不在登入頁面時才重定向
       if (!isPublicRoute && request.nextUrl.pathname !== '/main-login') {
         const redirectUrl = new URL('/main-login', request.url);
         redirectUrl.searchParams.set('from', request.nextUrl.pathname);
         redirectUrl.searchParams.set('error', 'user_fetch_failed');
-        return NextResponse.redirect(redirectUrl);
+        
+        logMiddlewareRouting(correlationId, request.nextUrl.pathname, false, '/main-login');
+        
+        const redirectResponse = NextResponse.redirect(redirectUrl);
+        redirectResponse.headers.set('x-correlation-id', correlationId);
+        return redirectResponse;
       }
     }
 
@@ -181,14 +232,22 @@ export async function middleware(request: NextRequest) {
       // 除了公開路由外，所有其他路由都需要認證
       // 如果不在 /main-login 頁面且不是公開路由，則重定向到登入頁面
       if (request.nextUrl.pathname !== '/main-login' && !isPublicRoute) {
-        console.log(
-          '[Supabase SSR Middleware] Protected route requires authentication, redirecting to main-login from:',
-          request.nextUrl.pathname
-        );
+        middlewareLogger.warn({
+          correlationId,
+          path: request.nextUrl.pathname,
+          action: 'redirect',
+          reason: 'authentication_required',
+        }, 'Protected route requires authentication, redirecting to login');
+        
         const redirectUrl = new URL('/main-login', request.url);
         redirectUrl.searchParams.set('from', request.nextUrl.pathname);
         redirectUrl.searchParams.set('error', 'authentication_required');
-        return NextResponse.redirect(redirectUrl);
+        
+        logMiddlewareRouting(correlationId, request.nextUrl.pathname, false, '/main-login');
+        
+        const redirectResponse = NextResponse.redirect(redirectUrl);
+        redirectResponse.headers.set('x-correlation-id', correlationId);
+        return redirectResponse;
       }
     } else {
       // 用戶已認證 - 只在首次訪問或重要頁面時記錄
@@ -199,18 +258,37 @@ export async function middleware(request: NextRequest) {
           !request.headers.get('referer')); // 首次訪問（沒有 referer）
 
       if (shouldLogAuth) {
-        console.log(
-          `[Supabase SSR Middleware] User authenticated: ${user.id} for ${request.nextUrl.pathname}`
-        );
+        logMiddlewareAuth(correlationId, true, user.id);
       }
       // 將用戶 ID 添加到回應 header，方便客戶端同步
       response.headers.set('X-User-ID', user.id);
       response.headers.set('X-User-Logged', 'true');
     }
 
+    // 添加 correlation ID 到所有回應
+    response.headers.set('x-correlation-id', correlationId);
+    
+    // 記錄請求完成
+    const duration = Date.now() - startTime;
+    middlewareLogger.info({
+      correlationId,
+      duration,
+      status: 'completed',
+      authenticated: true,
+    }, 'Middleware request completed');
+    
     return response;
   } catch (error) {
-    console.error('[Supabase SSR Middleware] Unexpected error:', error);
+    middlewareLogger.error({
+      correlationId,
+      error: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+      path: request.nextUrl.pathname,
+    }, 'Unexpected error in middleware');
+    
+    // 確保即使出錯也返回 correlation ID
+    response.headers.set('x-correlation-id', correlationId);
+    
     return response;
   }
 }

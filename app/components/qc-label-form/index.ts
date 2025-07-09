@@ -24,7 +24,6 @@ export {
 export { EnhancedFormField, EnhancedInput, EnhancedSelect } from './EnhancedFormField';
 export { Accordion, AccordionItem, AccordionGroup } from './Accordion';
 export { EnhancedProgressBar } from './EnhancedProgressBar';
-export { ImprovedQcLabelForm } from './ImprovedQcLabelForm';
 
 // Performance Optimized Components
 export { PerformanceOptimizedForm } from './PerformanceOptimizedForm';

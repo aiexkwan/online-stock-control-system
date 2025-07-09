@@ -8,7 +8,7 @@
 import React from 'react';
 import { cn } from '@/lib/utils';
 import { THEME } from '../../config/theme';
-import { GlowCard } from './GlowCard';
+import { SpotlightCard } from './SpotlightCard';
 
 interface WidgetWrapperProps {
   children: React.ReactNode;
@@ -19,7 +19,7 @@ interface WidgetWrapperProps {
   theme?: keyof typeof THEME.colors.tabs;
   padding?: boolean;
   animationDelay?: number;
-  disableGlow?: boolean;
+  disableSpotlight?: boolean;
 }
 
 export function WidgetWrapper({
@@ -31,13 +31,13 @@ export function WidgetWrapper({
   theme,
   padding = true,
   animationDelay = 0,
-  disableGlow = false,
+  disableSpotlight = false,
 }: WidgetWrapperProps) {
   return (
-    <GlowCard
+    <SpotlightCard
       theme={theme}
       animationDelay={animationDelay}
-      disableGlow={disableGlow}
+      disableSpotlight={disableSpotlight}
       className='h-full w-full'
     >
       <div
@@ -89,6 +89,6 @@ export function WidgetWrapper({
           backdrop-filter: blur(10px);
         }
       `}</style>
-    </GlowCard>
+    </SpotlightCard>
   );
 }
