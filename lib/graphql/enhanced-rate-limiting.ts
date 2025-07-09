@@ -1,8 +1,11 @@
 import { RateLimiterMemory, RateLimiterRedis } from 'rate-limiter-flexible';
 import { GraphQLError } from 'graphql';
 import { logger } from '../logger';
-import { redisCacheAdapter } from './redis-cache-adapter';
+import { createCacheAdapter } from './redis-cache-adapter';
 import { isDevelopment, isProduction } from '@/lib/utils/env';
+
+// 創建緩存適配器實例
+const redisCacheAdapter = createCacheAdapter();
 
 // 擴展原有的限流配置，添加更細粒度規則
 export interface EnhancedRateLimitConfig {

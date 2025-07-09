@@ -1,7 +1,10 @@
 import { logger } from '../logger';
 import { cacheStrategyOptimizer } from './cache-strategy-optimizer';
-import { redisCacheAdapter } from './redis-cache-adapter';
+import { createCacheAdapter } from './redis-cache-adapter';
 import { getCachedWithFallback } from './cache-fallback-helper';
+
+// 創建緩存適配器實例
+const redisCacheAdapter = createCacheAdapter();
 
 export interface WarmupStrategy {
   priority: 'critical' | 'high' | 'medium' | 'low';

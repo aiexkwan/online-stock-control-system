@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { testRedisConnection, getRedisClient } from '@/lib/redis';
-import { redisCacheAdapter } from '@/lib/graphql/redis-cache-adapter';
+import { createCacheAdapter } from '@/lib/graphql/redis-cache-adapter';
+
+// 創建緩存適配器實例
+const redisCacheAdapter = createCacheAdapter();
 
 export async function GET(request: NextRequest) {
   try {

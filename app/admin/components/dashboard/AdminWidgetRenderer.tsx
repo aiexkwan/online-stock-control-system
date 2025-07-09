@@ -1950,7 +1950,7 @@ const AdminWidgetRendererComponent: React.FC<AdminWidgetRendererProps> = ({
           </div>
         );
     }
-  }, [config, renderStatsCard, renderChart, renderList, renderTable, renderSpecialComponent, theme]);
+  }, [config, renderStatsCard, renderChart, renderList, renderTable, renderSpecialComponent]);
 
   // Check if this is a custom theme
   const isCustomTheme = theme === 'injection' || theme === 'pipeline' || theme === 'warehouse' || theme === 'upload' || theme === 'update' || theme === 'stock-management' || theme === 'system';

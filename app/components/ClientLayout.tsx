@@ -15,6 +15,7 @@ import { UniversalProvider } from '@/components/layout/universal';
 import { NavigationProvider } from '@/components/ui/dynamic-action-bar/NavigationProvider';
 import { SmartReminder } from '@/components/ui/dynamic-action-bar/SmartReminder';
 import { useAuth as useAuthForReminder } from '@/app/hooks/useAuth';
+import { isDevelopment } from '@/lib/utils/env';
 
 interface ClientLayoutProps {
   children: React.ReactNode;

@@ -1,5 +1,8 @@
 import { logger } from '../logger';
-import { redisCacheAdapter } from './redis-cache-adapter';
+import { createCacheAdapter } from './redis-cache-adapter';
+
+// 創建緩存適配器實例
+const redisCacheAdapter = createCacheAdapter();
 
 /**
  * 🧠 通用緩存 Fallback 工具函數
