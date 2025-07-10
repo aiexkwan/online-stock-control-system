@@ -1,22 +1,27 @@
 /**
- * Injection Production Stats Widget - GraphQL Version
+ * Injection Production Stats Widget - Apollo GraphQL Version
  * 用於 Injection Route 的生產統計組件
- * 根據 Re-Structure-6.md 建議，使用 GraphQL 優化頻繁時間切換場景
+ * 已遷移至 Apollo Client (2025-07-09)
  * 
  * Widget2: Today Produced (PLT)
  * Widget3: Today Produced (QTY)
+ * 
+ * GraphQL Migration:
+ * - 使用 Apollo Client 查詢
+ * - 支援 cache-and-network 策略
+ * - 保留 Server Actions fallback
  */
 
 'use client';
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { CubeIcon } from '@heroicons/react/24/outline';
 import { format, startOfDay, endOfDay } from 'date-fns';
-import { useGraphQLQuery } from '@/lib/graphql-client-stable';
-import { GET_PRODUCTION_STATS } from '@/lib/graphql/queries';
+import { createDashboardAPI } from '@/lib/api/admin/DashboardAPI';
 import { WidgetComponentProps } from '@/app/types/dashboard';
+import { useGetInjectionProductionStatsWidgetQuery } from '@/lib/graphql/generated/apollo-hooks';
 
 interface InjectionProductionStatsWidgetProps extends WidgetComponentProps {
   title?: string;
@@ -51,17 +56,65 @@ export const InjectionProductionStatsWidget: React.FC<InjectionProductionStatsWi
     };
   }, [timeFrame]);
 
-  // 使用 GraphQL 查詢，利用全局快取機制
-  // 根據 Re-Structure-6.md 建議，優化頻繁時間切換場景
-  const { data, loading, error } = useGraphQLQuery(
-    GET_PRODUCTION_STATS,
-    { startDate, endDate },
-    {
-      enabled: !isEditMode,
-      refetchInterval: 300000, // 5分鐘刷新一次
-      cacheTime: 300000, // 5分鐘快取
-    }
-  );
+  // 使用環境變量控制是否使用 GraphQL
+  const useGraphQL = process.env.NEXT_PUBLIC_ENABLE_GRAPHQL_INJECTION === 'true' || 
+                     widget?.config?.useGraphQL === true;
+
+  // Apollo GraphQL 查詢 - 使用生成嘅 hook
+  const { 
+    data: graphqlData, 
+    loading: graphqlLoading, 
+    error: graphqlError 
+  } = useGetInjectionProductionStatsWidgetQuery({
+    skip: !useGraphQL || isEditMode,
+    variables: { startDate, endDate },
+    pollInterval: 300000, // 5分鐘輪詢
+    fetchPolicy: 'cache-and-network',
+  });
+
+  // Server Actions fallback
+  const [serverActionsData, setServerActionsData] = useState<any>(null);
+  const [serverActionsLoading, setServerActionsLoading] = useState(!useGraphQL);
+  const [serverActionsError, setServerActionsError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (useGraphQL || isEditMode) return;
+
+    const fetchData = async () => {
+      setServerActionsLoading(true);
+      setServerActionsError(null);
+
+      try {
+        const dashboardAPI = createDashboardAPI();
+        const result = await dashboardAPI.fetch(
+          {
+            widgetIds: ['injection_production_stats'],
+            dateRange: { start: startDate, end: endDate },
+          },
+          {
+            strategy: 'server',
+            cache: { ttl: 300 },
+          }
+        );
+
+        if (result.widgets && result.widgets.length > 0) {
+          setServerActionsData(result.widgets[0].data);
+        }
+      } catch (err) {
+        console.error('Error fetching production stats:', err);
+        setServerActionsError(err instanceof Error ? err.message : 'Unknown error');
+      } finally {
+        setServerActionsLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [startDate, endDate, widgetMetric, useGraphQL, isEditMode]);
+
+  // 合併 loading 和 error 狀態
+  const data = useGraphQL ? graphqlData : serverActionsData;
+  const loading = useGraphQL ? graphqlLoading : serverActionsLoading;
+  const error = useGraphQL ? graphqlError : (serverActionsError ? new Error(serverActionsError) : null);
 
   // 計算統計值
   const statValue = useMemo(() => {
@@ -134,9 +187,11 @@ export const InjectionProductionStatsWidget: React.FC<InjectionProductionStatsWi
             <p className="text-xs text-slate-400">
               {widgetMetric === 'pallet_count' ? 'Pallets produced' : 'Total quantity'}
             </p>
-            <p className="text-xs text-blue-400/70 mt-1">
-              ⚡ GraphQL optimized
-            </p>
+            {useGraphQL && (
+              <p className="text-xs text-blue-400/70 mt-1">
+                ⚡ GraphQL
+              </p>
+            )}
           </div>
         )}
       </CardContent>
@@ -146,3 +201,19 @@ export const InjectionProductionStatsWidget: React.FC<InjectionProductionStatsWi
 
 // Export as default for lazy loading compatibility
 export default InjectionProductionStatsWidget;
+
+/**
+ * GraphQL Migration completed on 2025-07-09
+ * 
+ * Features:
+ * - Apollo Client with cache-and-network policy
+ * - 5-minute polling for real-time updates
+ * - Fallback to Server Actions when GraphQL disabled
+ * - Feature flag control: NEXT_PUBLIC_ENABLE_GRAPHQL_INJECTION
+ * - Supports both pallet_count and quantity_sum metrics
+ * 
+ * Performance improvements:
+ * - Query reliability: Direct GraphQL queries with Apollo cache
+ * - Data processing: Client-side aggregation for counts
+ * - Caching: Apollo InMemoryCache with automatic updates
+ */

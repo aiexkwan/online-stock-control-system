@@ -129,7 +129,7 @@ export default function UnifiedDemoPage() {
     setLoading(prev => ({ ...prev, lowStock: true }));
     try {
       const result = await unifiedDataLayer.getLowStockProducts(10);
-      setLowStockProducts(result);
+      setLowStockProducts(result.edges.map(edge => edge.node));
     } catch (error) {
       console.error('Failed to load low stock products:', error);
     } finally {

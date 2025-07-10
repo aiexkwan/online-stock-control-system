@@ -8,7 +8,8 @@ import {
   getOrderLoadingSummary, 
   getOrderProgress, 
   getLoadingDetails, 
-  getUserPerformance 
+  getUserPerformance,
+  type OrderLoadingFilters
 } from '@/app/actions/reportActions';
 
 // Order Loading Summary data source
@@ -16,7 +17,13 @@ const orderLoadingSummaryDataSource: ReportDataSource = {
   id: 'order-loading-summary',
 
   async fetch(filters: Record<string, any>) {
-    const result = await getOrderLoadingSummary(filters);
+    const orderLoadingFilters: OrderLoadingFilters = {
+      dateRange: filters.dateRange || '',
+      orderNumber: filters.orderNumber,
+      productCode: filters.productCode,
+      userId: filters.userId,
+    };
+    const result = await getOrderLoadingSummary(orderLoadingFilters);
     if (!result.success) {
       throw new Error(result.error || 'Failed to fetch order loading summary');
     }
@@ -33,7 +40,13 @@ const orderProgressDataSource: ReportDataSource = {
   id: 'order-progress',
 
   async fetch(filters: Record<string, any>) {
-    const result = await getOrderProgress(filters);
+    const orderLoadingFilters: OrderLoadingFilters = {
+      dateRange: filters.dateRange || '',
+      orderNumber: filters.orderNumber,
+      productCode: filters.productCode,
+      userId: filters.userId,
+    };
+    const result = await getOrderProgress(orderLoadingFilters);
     if (!result.success) {
       throw new Error(result.error || 'Failed to fetch order progress');
     }
@@ -50,7 +63,13 @@ const loadingDetailsDataSource: ReportDataSource = {
   id: 'loading-details',
 
   async fetch(filters: Record<string, any>) {
-    const result = await getLoadingDetails(filters);
+    const orderLoadingFilters: OrderLoadingFilters = {
+      dateRange: filters.dateRange || '',
+      orderNumber: filters.orderNumber,
+      productCode: filters.productCode,
+      userId: filters.userId,
+    };
+    const result = await getLoadingDetails(orderLoadingFilters);
     if (!result.success) {
       throw new Error(result.error || 'Failed to fetch loading details');
     }
@@ -67,7 +86,13 @@ const userPerformanceDataSource: ReportDataSource = {
   id: 'user-performance',
 
   async fetch(filters: Record<string, any>) {
-    const result = await getUserPerformance(filters);
+    const orderLoadingFilters: OrderLoadingFilters = {
+      dateRange: filters.dateRange || '',
+      orderNumber: filters.orderNumber,
+      productCode: filters.productCode,
+      userId: filters.userId,
+    };
+    const result = await getUserPerformance(orderLoadingFilters);
     if (!result.success) {
       throw new Error(result.error || 'Failed to fetch user performance');
     }

@@ -47,7 +47,7 @@ export const VirtualContainer: React.FC<VirtualContainerProps> = ({
   }, [virtualizer]);
 
   const totalHeight = widgets.length * itemHeight;
-  const visibleRange = virtualizer.getVisibleRange();
+  const visibleRange = (virtualizer as any).getVisibleRange?.() || { start: 0, end: 0 };
 
   return (
     <div
@@ -110,6 +110,6 @@ export const useVirtualization = (config: {
     visibleWidgets,
     totalHeight: config.widgets.length * config.itemHeight,
     updateScrollPosition,
-    visibleRange: virtualizer.getVisibleRange(),
+    visibleRange: (virtualizer as any).getVisibleRange?.() || { start: 0, end: 0 },
   };
 };

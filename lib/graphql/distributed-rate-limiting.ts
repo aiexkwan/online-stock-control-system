@@ -162,7 +162,7 @@ class DistributedRateLimiter {
   ): Promise<DistributedLimitResult> {
     try {
       const current = await this.cacheAdapter.get(instanceKey);
-      const count = current ? parseInt(current) : 0;
+      const count = current ? parseInt(String(current)) : 0;
 
       if (count >= rule.maxRequests) {
         return {
@@ -252,7 +252,6 @@ class DistributedRateLimiter {
         const leaderKey = `leader:${this.config.coordinationKey}`;
         const acquired = await this.cacheAdapter.acquireLock(
           leaderKey,
-          this.config.instanceId,
           this.config.leaderElectionTTL
         );
 
@@ -292,7 +291,7 @@ class DistributedRateLimiter {
           const statusJson = await this.cacheAdapter.get(key);
           if (statusJson) {
             try {
-              const status: InstanceStatus = JSON.parse(statusJson);
+              const status: InstanceStatus = JSON.parse(String(statusJson));
               // 檢查心跳是否新鮮
               if (Date.now() - status.lastHeartbeat < this.config.syncInterval * 2) {
                 this.activeInstances.set(status.instanceId, status);
@@ -400,7 +399,7 @@ class DistributedRateLimiter {
       for (const key of keys) {
         const count = await this.cacheAdapter.get(key);
         if (count) {
-          totalCount += parseInt(count);
+          totalCount += parseInt(String(count));
         }
       }
 

@@ -2,8 +2,8 @@
 export function cleanupLegacyAuth() {
   if (typeof window === 'undefined') return;
 
-  process.env.NODE_ENV !== 'production' &&
-    process.env.NODE_ENV !== 'production' &&
+  (process.env.NODE_ENV as string) !== 'production' &&
+    (process.env.NODE_ENV as string) !== 'production' &&
     console.log('[CleanupLegacyAuth] Starting cleanup of legacy authentication data');
 
   // 清理舊的 localStorage 項目
@@ -18,8 +18,8 @@ export function cleanupLegacyAuth() {
   legacyKeys.forEach(key => {
     const value = localStorage.getItem(key);
     if (value) {
-      process.env.NODE_ENV !== 'production' &&
-        process.env.NODE_ENV !== 'production' &&
+      (process.env.NODE_ENV as string) !== 'production' &&
+        (process.env.NODE_ENV as string) !== 'production' &&
         console.log(`[CleanupLegacyAuth] Removing legacy localStorage key: ${key}`);
       localStorage.removeItem(key);
     }
@@ -33,8 +33,8 @@ export function cleanupLegacyAuth() {
     document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
     document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=${window.location.hostname};`;
     document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=.${window.location.hostname};`;
-    process.env.NODE_ENV !== 'production' &&
-      process.env.NODE_ENV !== 'production' &&
+    (process.env.NODE_ENV as string) !== 'production' &&
+      (process.env.NODE_ENV as string) !== 'production' &&
       console.log(`[CleanupLegacyAuth] Cleared legacy cookie: ${cookieName}`);
   });
 
@@ -44,8 +44,8 @@ export function cleanupLegacyAuth() {
     const trimmedName = name.trim();
     if (trimmedName.startsWith('sb-')) {
       document.cookie = `${trimmedName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
-      process.env.NODE_ENV !== 'production' &&
-        process.env.NODE_ENV !== 'production' &&
+      (process.env.NODE_ENV as string) !== 'production' &&
+        (process.env.NODE_ENV as string) !== 'production' &&
         console.log(`[CleanupLegacyAuth] Cleared Supabase cookie: ${trimmedName}`);
     }
   });
@@ -54,16 +54,16 @@ export function cleanupLegacyAuth() {
   for (let i = localStorage.length - 1; i >= 0; i--) {
     const key = localStorage.key(i);
     if (key?.startsWith('pennine_secure_')) {
-      process.env.NODE_ENV !== 'production' &&
-        process.env.NODE_ENV !== 'production' &&
+      (process.env.NODE_ENV as string) !== 'production' &&
+        (process.env.NODE_ENV as string) !== 'production' &&
         console.log(`[CleanupLegacyAuth] Found secure storage key: ${key}`);
       // 可選：如果需要完全重置，取消註釋下面這行
       // localStorage.removeItem(key);
     }
   }
 
-  process.env.NODE_ENV !== 'production' &&
-    process.env.NODE_ENV !== 'production' &&
+  (process.env.NODE_ENV as string) !== 'production' &&
+    (process.env.NODE_ENV as string) !== 'production' &&
     console.log('[CleanupLegacyAuth] Legacy cleanup completed');
 }
 
@@ -82,8 +82,8 @@ export function shouldCleanupLegacyAuth(): boolean {
 export function forceCleanupAllAuth() {
   if (typeof window === 'undefined') return;
 
-  process.env.NODE_ENV !== 'production' &&
-    process.env.NODE_ENV !== 'production' &&
+  (process.env.NODE_ENV as string) !== 'production' &&
+    (process.env.NODE_ENV as string) !== 'production' &&
     console.log('[CleanupLegacyAuth] Force cleanup all authentication data');
 
   // 清理所有 localStorage
@@ -98,8 +98,8 @@ export function forceCleanupAllAuth() {
         key.startsWith('sb-'))
     ) {
       localStorage.removeItem(key);
-      process.env.NODE_ENV !== 'production' &&
-        process.env.NODE_ENV !== 'production' &&
+      (process.env.NODE_ENV as string) !== 'production' &&
+        (process.env.NODE_ENV as string) !== 'production' &&
         console.log(`[CleanupLegacyAuth] Removed: ${key}`);
     }
   }
@@ -120,7 +120,7 @@ export function forceCleanupAllAuth() {
     }
   });
 
-  process.env.NODE_ENV !== 'production' &&
-    process.env.NODE_ENV !== 'production' &&
+  (process.env.NODE_ENV as string) !== 'production' &&
+    (process.env.NODE_ENV as string) !== 'production' &&
     console.log('[CleanupLegacyAuth] Force cleanup completed');
 }

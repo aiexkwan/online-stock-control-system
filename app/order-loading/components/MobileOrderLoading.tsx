@@ -255,15 +255,14 @@ export default function MobileOrderLoading({
               </div>
 
               <UnifiedSearch
+                searchType='pallet'
                 value={searchValue}
                 onChange={onSearchChange}
                 onSelect={onSearchSelect}
                 isLoading={isSearching}
                 placeholder='Scan or enter pallet number...'
-                autoFocus
                 ref={searchInputRef}
-                productCodes={[]}
-                enableProductSearch={false}
+                products={[]}
               />
 
               {/* Recent Loads List */}

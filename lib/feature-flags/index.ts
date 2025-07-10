@@ -8,7 +8,8 @@
 export * from './types';
 
 // 管理器導出
-export { featureFlagManager, FeatureFlagManager } from './FeatureFlagManager';
+export { FeatureFlagManager } from './FeatureFlagManager';
+import { featureFlagManager } from './FeatureFlagManager';
 
 // 提供者導出
 export { BaseFeatureFlagProvider } from './providers/BaseProvider';

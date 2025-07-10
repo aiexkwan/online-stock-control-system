@@ -138,7 +138,7 @@ export class QueryAnalyzer {
     return [...expensiveFields, ...businessFields].filter(field => query.includes(field));
   }
 
-  private static estimateComplexity(query: string, variables?: any): number {
+  static estimateComplexity(query: string, variables?: any): number {
     // 簡單的複雜度估算
     let complexity = 10; // 基礎成本
 
@@ -276,8 +276,8 @@ export const performancePlugins = [
 export const apolloServerConfig = {
   validationRules,
   plugins: performancePlugins,
-  introspection: process.env.NODE_ENV !== 'production',
-  playground: process.env.NODE_ENV !== 'production',
+  introspection: (process.env.NODE_ENV as string) !== 'production',
+  playground: (process.env.NODE_ENV as string) !== 'production',
 };
 
 const queryComplexity = {

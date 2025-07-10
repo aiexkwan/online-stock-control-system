@@ -164,14 +164,14 @@ export default function OrderLoadingPage() {
       const cachedSummaries = orderSummariesCache.get(cacheKey);
 
       if (cachedSummaries) {
-        process.env.NODE_ENV !== 'production' &&
+        (process.env.NODE_ENV as string) !== 'production' &&
           console.log('[OrderCache] Using cached order summaries');
         setOrderSummaries(cachedSummaries);
         setAvailableOrders(Array.from(cachedSummaries.keys()));
         return;
       }
 
-      process.env.NODE_ENV !== 'production' &&
+      (process.env.NODE_ENV as string) !== 'production' &&
         console.log('[OrderCache] Fetching fresh order summaries');
 
       // 直接從數據庫獲取訂單
@@ -246,14 +246,14 @@ export default function OrderLoadingPage() {
       const cachedData = orderDataCache.get(cacheKey);
 
       if (cachedData) {
-        process.env.NODE_ENV !== 'production' &&
+        (process.env.NODE_ENV as string) !== 'production' &&
           console.log(`[OrderCache] Using cached data for order: ${orderRef}`);
         setOrderData(cachedData);
         setIsLoadingOrders(false);
         return;
       }
 
-      process.env.NODE_ENV !== 'production' &&
+      (process.env.NODE_ENV as string) !== 'production' &&
         console.log(`[OrderCache] Fetching fresh data for order: ${orderRef}`);
 
       // 獲取訂單詳情

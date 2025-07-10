@@ -1,7 +1,7 @@
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { WeightInputList } from '@/app/print-grnlabel/components/WeightInputList';
-import { getPalletLabel } from '@/app/constants/grnConstants';
+import { getPalletLabel, type PalletTypeKey, type PackageTypeKey } from '@/app/constants/grnConstants';
 
 // Mock GrnErrorHandler
 jest.mock('@/app/print-grnlabel/services/ErrorHandler', () => ({

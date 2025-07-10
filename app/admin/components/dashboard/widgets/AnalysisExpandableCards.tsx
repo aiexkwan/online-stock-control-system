@@ -1,3 +1,13 @@
+/**
+ * Analysis Expandable Cards - Container for Analysis Charts
+ * 數據分析中心容器組件
+ * 
+ * GraphQL Support:
+ * - 本組件為容器，不直接查詢數據
+ * - 子組件 (AcoOrderProgressCards 等) 已支援 GraphQL
+ * - 建議將子組件遷移至 Apollo Client
+ */
+
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -250,3 +260,20 @@ export const AnalysisExpandableCards = function AnalysisExpandableCards({
 };
 
 export default AnalysisExpandableCards;
+
+/**
+ * GraphQL Migration Notes (2025-07-09):
+ * 
+ * This is a container component that doesn't query data directly.
+ * The actual data queries are performed by child components:
+ * - AcoOrderProgressCards (uses graphql-client-stable)
+ * - TopProductsInventoryChart 
+ * - UserActivityHeatmap
+ * - InventoryTurnoverAnalysis
+ * - StocktakeAccuracyTrend
+ * - VoidRecordsAnalysis
+ * - RealTimeInventoryMap
+ * 
+ * Recommendation: Migrate child components to Apollo Client individually
+ * to complete the GraphQL migration for the Analysis page.
+ */

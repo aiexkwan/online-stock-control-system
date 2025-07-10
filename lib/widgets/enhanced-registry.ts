@@ -986,14 +986,14 @@ export class SmartPreloader {
   private async performPreload(task: PreloadTask): Promise<void> {
     const definition = widgetRegistry.getDefinition(task.widgetId);
 
-    if (definition?.lazyLoad && definition.loadComponent) {
+    if (definition?.lazyLoad && (definition as any).loadComponent) {
       // 使用 webpack prefetch/preload hints
       const link = document.createElement('link');
       link.rel = task.priority > 0.8 ? 'preload' : 'prefetch';
       link.as = 'script';
 
       // 觸發組件加載
-      await definition.loadComponent();
+      await (definition as any).loadComponent();
     }
 
     // 使用 widget registry 的預加載功能

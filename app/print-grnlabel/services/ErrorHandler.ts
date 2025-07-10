@@ -8,6 +8,7 @@ export interface ErrorContext {
   action: string;
   userId?: string;
   clockNumber?: string;
+  transactionId?: string;
   additionalData?: Record<string, any>;
 }
 

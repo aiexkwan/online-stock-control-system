@@ -176,6 +176,40 @@ export class LocationMapper {
   }
 
   /**
+   * Convert a location string to StandardLocation enum value
+   * @param location - Location string
+   * @returns StandardLocation or null if invalid
+   */
+  static toStandardLocation(location: string): StandardLocation | null {
+    if (!location) return null;
+
+    // Normalize input: lowercase and trim
+    const normalized = location.toLowerCase().trim();
+
+    // Check aliases first
+    const standardLocation = this.ALIASES[normalized];
+    if (standardLocation) {
+      return standardLocation;
+    }
+
+    // Check if it's already a standard location name (case-insensitive)
+    const upperLocation = location.toUpperCase().replace(/\s+/g, '_');
+    if (Object.keys(this.LOCATION_MAP).includes(upperLocation)) {
+      return upperLocation as StandardLocation;
+    }
+
+    // Check if it's a database column, then reverse map
+    const dbColumn = normalized as DatabaseLocationColumn;
+    for (const [std, db] of Object.entries(this.LOCATION_MAP)) {
+      if (db === dbColumn) {
+        return std as StandardLocation;
+      }
+    }
+
+    return null;
+  }
+
+  /**
    * Get display name for a location (for UI)
    * @param location - Location in any format
    * @returns Human-readable display name

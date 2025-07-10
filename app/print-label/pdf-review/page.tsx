@@ -26,11 +26,11 @@ export default function PdfReviewPage() {
 
   // 添加調試信息
   useEffect(() => {
-    process.env.NODE_ENV !== 'production' &&
-      process.env.NODE_ENV !== 'production' &&
+    (process.env.NODE_ENV as string) !== 'production' &&
+      (process.env.NODE_ENV as string) !== 'production' &&
       console.log('PDF Review Page Loaded');
-    process.env.NODE_ENV !== 'production' &&
-      process.env.NODE_ENV !== 'production' &&
+    (process.env.NODE_ENV as string) !== 'production' &&
+      (process.env.NODE_ENV as string) !== 'production' &&
       console.log('URL Parameters:', {
         productCode,
         description,

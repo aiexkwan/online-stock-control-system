@@ -62,8 +62,7 @@ describe('useStockTransfer', () => {
     product_code: 'PROD001',
     product_qty: 100,
     current_plt_loc: 'Await',
-    series: 'SERIES001',
-    created_date: '2024-01-01'
+    series: 'SERIES001'
   };
 
   describe('Initialization', () => {

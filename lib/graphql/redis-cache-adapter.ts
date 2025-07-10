@@ -1,4 +1,5 @@
-import Redis from 'ioredis';
+import IORedis, { Cluster } from 'ioredis';
+type Redis = IORedis;
 import { cacheLogger } from '../logger';
 import { createRedisClient, getRedisClient } from '../redis';
 import EventEmitter from 'events';
@@ -43,7 +44,7 @@ export interface RedisConfig {
 
 // 基礎 Redis 緩存適配器 - 包含所有共用邏輯
 abstract class BaseRedisCacheAdapter extends EventEmitter implements CacheAdapter {
-  protected redis: Redis.Redis | Redis.Cluster;
+  protected redis: Redis | Cluster;
   protected keyPrefix: string;
   protected healthCheckTimer?: NodeJS.Timeout;
   protected metrics = {
@@ -56,7 +57,7 @@ abstract class BaseRedisCacheAdapter extends EventEmitter implements CacheAdapte
   };
   protected responseTimes: number[] = [];
 
-  constructor(redis: Redis.Redis | Redis.Cluster, keyPrefix: string = 'oscs:cache:') {
+  constructor(redis: Redis | Cluster, keyPrefix: string = 'oscs:cache:') {
     super();
     this.redis = redis;
     this.keyPrefix = keyPrefix;
@@ -76,7 +77,7 @@ abstract class BaseRedisCacheAdapter extends EventEmitter implements CacheAdapte
       this.emit('connected');
     });
 
-    this.redis.on('error', error => {
+    this.redis.on('error', (error: Error) => {
       cacheLogger.error({
         adapter: this.getErrorPrefix(),
         event: 'error',
@@ -296,7 +297,7 @@ abstract class BaseRedisCacheAdapter extends EventEmitter implements CacheAdapte
       
       if (keys.length > 0) {
         const pipeline = this.redis.pipeline();
-        keys.forEach(key => pipeline.del(key));
+        keys.forEach((key: string) => pipeline.del(key));
         await pipeline.exec();
       }
       
@@ -334,7 +335,7 @@ abstract class BaseRedisCacheAdapter extends EventEmitter implements CacheAdapte
       }
 
       const pipeline = this.redis.pipeline();
-      keys.forEach(key => pipeline.del(key));
+      keys.forEach((key: string) => pipeline.del(key));
       await pipeline.exec();
       
       cacheLogger.info({
@@ -520,7 +521,7 @@ abstract class BaseRedisCacheAdapter extends EventEmitter implements CacheAdapte
       const redisKeys = keys.map(key => this.getKey(key));
       const values = await this.redis.mget(...redisKeys);
       
-      const hits = values.filter(v => v !== null).length;
+      const hits = values.filter((v: any) => v !== null).length;
       const responseTime = Date.now() - startTime;
       
       cacheLogger.debug({
@@ -532,7 +533,7 @@ abstract class BaseRedisCacheAdapter extends EventEmitter implements CacheAdapte
         responseTime,
       }, 'Batch get completed');
 
-      return values.map(value => {
+      return values.map((value: any) => {
         if (value === null) return null;
         try {
           return JSON.parse(value) as T;
@@ -615,6 +616,66 @@ abstract class BaseRedisCacheAdapter extends EventEmitter implements CacheAdapte
     };
     this.responseTimes = [];
   }
+
+  // Redis-specific methods for distributed operations
+  async eval(script: string, keys: string[]): Promise<any> {
+    const startTime = Date.now();
+    
+    try {
+      // Convert keys array to proper format for eval
+      const numKeys = keys.length;
+      const allArgs = [script, numKeys, ...keys];
+      
+      const result = await (this.redis as any).eval(...allArgs);
+      
+      cacheLogger.debug({
+        adapter: this.getErrorPrefix(),
+        operation: 'eval',
+        duration: Date.now() - startTime,
+      }, 'Redis eval executed');
+      
+      return result;
+    } catch (error) {
+      cacheLogger.error({
+        adapter: this.getErrorPrefix(),
+        operation: 'eval',
+        error: error instanceof Error ? error.message : 'Unknown error',
+        duration: Date.now() - startTime,
+      }, 'Redis eval error');
+      throw error;
+    }
+  }
+
+  async keys(pattern: string): Promise<string[]> {
+    const startTime = Date.now();
+    
+    try {
+      const fullPattern = `${this.keyPrefix}${pattern}`;
+      const result = await this.redis.keys(fullPattern);
+      
+      // Remove prefix from results
+      const keys = result.map((key: string) => key.replace(this.keyPrefix, ''));
+      
+      cacheLogger.debug({
+        adapter: this.getErrorPrefix(),
+        operation: 'keys',
+        pattern,
+        count: keys.length,
+        duration: Date.now() - startTime,
+      }, 'Redis keys query');
+      
+      return keys;
+    } catch (error) {
+      cacheLogger.error({
+        adapter: this.getErrorPrefix(),
+        operation: 'keys',
+        pattern,
+        error: error instanceof Error ? error.message : 'Unknown error',
+        duration: Date.now() - startTime,
+      }, 'Redis keys error');
+      return [];
+    }
+  }
 }
 
 // 標準 Redis 緩存適配器
@@ -622,12 +683,12 @@ export class RedisCacheAdapter extends BaseRedisCacheAdapter {
   private isCluster: boolean;
 
   constructor(config: RedisConfig) {
-    let redis: Redis.Redis | Redis.Cluster;
+    let redis: Redis | Cluster;
     const isCluster = !!config.cluster;
 
     if (config.cluster) {
       // Redis Cluster 配置
-      redis = new Redis.Cluster(config.cluster.nodes, {
+      redis = new Cluster(config.cluster.nodes, {
         enableOfflineQueue: false,
         retryDelayOnFailover: 1000,
         maxRetriesPerRequest: 3,
@@ -635,7 +696,7 @@ export class RedisCacheAdapter extends BaseRedisCacheAdapter {
       });
     } else {
       // 單機 Redis 配置
-      redis = new Redis({
+      redis = new IORedis({
         host: config.host,
         port: config.port,
         password: config.password,

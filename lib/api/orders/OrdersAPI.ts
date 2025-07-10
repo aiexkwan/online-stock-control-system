@@ -246,24 +246,7 @@ export function createOrdersAPI(): OrdersAPI {
   return new OrdersAPI();
 }
 
-// React Hook for client-side usage
-export function useOrders(params: OrderSearchParams) {
-  const [data, setData] = useState<OrdersResult | null>(null);
-  const [error, setError] = useState<Error | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-
-  // Extract complex expression to separate variable for static checking
-  const paramsKey = JSON.stringify(params);
-
-  useEffect(() => {
-    const api = createOrdersAPI();
-
-    api
-      .fetch(params, { strategy: 'auto' })
-      .then(setData)
-      .catch(setError)
-      .finally(() => setIsLoading(false));
-  }, [paramsKey, params]);
-
-  return { data, error, isLoading };
-}
+// Note: React hooks should be defined in separate files or in React components
+// The useOrders hook has been removed from this API file.
+// To use this API in React components, import createOrdersAPI and use it directly
+// or create a custom hook in your component file.

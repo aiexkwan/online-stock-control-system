@@ -47,7 +47,7 @@ async function removeAutoRefresh() {
       }
 
       await writeFile(filePath, content, 'utf-8');
-      if (process.env.NODE_ENV !== 'production') {
+      if ((process.env.NODE_ENV as string) !== 'production') {
         console.log(`Updated: ${file}`);
       }
     }

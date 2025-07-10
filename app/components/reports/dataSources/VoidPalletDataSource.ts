@@ -8,7 +8,8 @@ import {
   getVoidPalletSummary, 
   getVoidPalletDetails, 
   getVoidReasonStats, 
-  getVoidProductStats 
+  getVoidProductStats,
+  type VoidPalletFilters
 } from '@/app/actions/reportActions';
 
 // Void Pallet Summary data source
@@ -16,7 +17,14 @@ const voidPalletSummaryDataSource: ReportDataSource = {
   id: 'void-pallet-summary',
 
   async fetch(filters: Record<string, any>) {
-    const result = await getVoidPalletSummary(filters);
+    const voidPalletFilters: VoidPalletFilters = {
+      startDate: filters.startDate || '',
+      endDate: filters.endDate || '',
+      productCode: filters.productCode,
+      operatorId: filters.operatorId,
+      voidReason: filters.voidReason,
+    };
+    const result = await getVoidPalletSummary(voidPalletFilters);
     if (!result.success) {
       throw new Error(result.error || 'Failed to fetch void pallet summary');
     }
@@ -33,7 +41,14 @@ const voidPalletDetailsDataSource: ReportDataSource = {
   id: 'void-pallet-details',
 
   async fetch(filters: Record<string, any>) {
-    const result = await getVoidPalletDetails(filters);
+    const voidPalletFilters: VoidPalletFilters = {
+      startDate: filters.startDate || '',
+      endDate: filters.endDate || '',
+      productCode: filters.productCode,
+      operatorId: filters.operatorId,
+      voidReason: filters.voidReason,
+    };
+    const result = await getVoidPalletDetails(voidPalletFilters);
     if (!result.success) {
       throw new Error(result.error || 'Failed to fetch void pallet details');
     }
@@ -50,7 +65,14 @@ const voidReasonStatsDataSource: ReportDataSource = {
   id: 'void-reasons',
 
   async fetch(filters: Record<string, any>) {
-    const result = await getVoidReasonStats(filters);
+    const voidPalletFilters: VoidPalletFilters = {
+      startDate: filters.startDate || '',
+      endDate: filters.endDate || '',
+      productCode: filters.productCode,
+      operatorId: filters.operatorId,
+      voidReason: filters.voidReason,
+    };
+    const result = await getVoidReasonStats(voidPalletFilters);
     if (!result.success) {
       throw new Error(result.error || 'Failed to fetch void reason stats');
     }
@@ -67,7 +89,14 @@ const voidProductStatsDataSource: ReportDataSource = {
   id: 'void-product-stats',
 
   async fetch(filters: Record<string, any>) {
-    const result = await getVoidProductStats(filters);
+    const voidPalletFilters: VoidPalletFilters = {
+      startDate: filters.startDate || '',
+      endDate: filters.endDate || '',
+      productCode: filters.productCode,
+      operatorId: filters.operatorId,
+      voidReason: filters.voidReason,
+    };
+    const result = await getVoidProductStats(voidPalletFilters);
     if (!result.success) {
       throw new Error(result.error || 'Failed to fetch void product stats');
     }

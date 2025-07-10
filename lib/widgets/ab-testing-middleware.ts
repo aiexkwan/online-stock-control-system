@@ -121,7 +121,7 @@ export class ABTestMiddleware {
       userAgent: request.headers.get('user-agent') || undefined,
       customData: {
         referrer: request.headers.get('referer'),
-        ip: request.ip,
+        ip: (request as any).ip,
       },
     };
   }

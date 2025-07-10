@@ -79,7 +79,7 @@ export function useRealtimeStock(
   const isLoading = false;
 
   // Wrap mutate in useCallback to prevent recreation on every render
-  const mutate = useCallback(() => Promise.resolve(), []);
+  const mutate = useCallback((updater?: any) => Promise.resolve(), []);
 
   // WebSocket subscription for real-time updates
   useEffect(() => {
@@ -100,18 +100,21 @@ export function useRealtimeStock(
           console.log('[Realtime] Stock movement:', payload);
 
           // Optimistically update the data
-          mutate(currentData => {
+          mutate((currentData: RealtimeStockData | undefined) => {
             if (!currentData) return currentData;
 
+            const newPayload = payload.new as any;
+            const oldPayload = payload.old as any;
+            
             const movement: StockMovement = {
-              id: payload.new?.uuid || crypto.randomUUID(),
-              palletNum: payload.new?.plt_num || '',
-              productCode: payload.new?.product_code || '',
-              fromLocation: payload.old?.loc || '',
-              toLocation: payload.new?.loc || '',
-              quantity: payload.new?.quantity || 0,
-              timestamp: payload.new?.time || new Date().toISOString(),
-              operator: payload.new?.user_name || 'System',
+              id: newPayload?.uuid || crypto.randomUUID(),
+              palletNum: newPayload?.plt_num || '',
+              productCode: newPayload?.product_code || '',
+              fromLocation: oldPayload?.loc || '',
+              toLocation: newPayload?.loc || '',
+              quantity: newPayload?.quantity || 0,
+              timestamp: newPayload?.time || new Date().toISOString(),
+              operator: newPayload?.user_name || 'System',
             };
 
             return {
@@ -120,7 +123,7 @@ export function useRealtimeStock(
               activeTransfers: currentData.activeTransfers + 1,
               lastUpdate: new Date().toISOString(),
             };
-          }, false); // Don't revalidate immediately
+          }); // Don't revalidate immediately
         }
       )
       .subscribe(status => {
@@ -157,7 +160,7 @@ export function useRealtimeStock(
     mutate,
     // Helper methods
     refresh: () => mutate(),
-    clear: () => mutate(undefined, false),
+    clear: () => mutate(undefined),
   };
 }
 
@@ -189,7 +192,7 @@ export function useRealtimePallet(palletNum: string) {
   const error = null;
 
   // Wrap mutate in useCallback
-  const mutate = useCallback(() => Promise.resolve(), []);
+  const mutate = useCallback((updater?: any) => Promise.resolve(), []);
 
   // Subscribe to specific pallet changes
   useEffect(() => {
@@ -205,13 +208,13 @@ export function useRealtimePallet(palletNum: string) {
         },
         payload => {
           // Immediate optimistic update
+          const newPayload = payload.new as any;
           mutate(
             {
-              location: payload.new.current_plt_loc || 'Unknown',
+              location: newPayload.current_plt_loc || 'Unknown',
               status: 'transferred',
               lastUpdate: new Date().toISOString(),
-            },
-            false
+            }
           );
         }
       )

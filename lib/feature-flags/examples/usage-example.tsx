@@ -10,6 +10,7 @@ import {
   FeatureVariant,
   useFeatureFlag,
   useFeatureFlags,
+  useFeatureFlagToggle,
   withFeatureFlag,
   KnownFeatureFlags,
 } from '../index';
@@ -155,7 +156,7 @@ export function Example7_ProgrammaticCheck() {
  * 示例 8: 開發環境切換
  */
 export function Example8_DevToggle() {
-  const { enabled, toggle, loading } = useFeatureFlag(KnownFeatureFlags.DEBUG_MODE);
+  const { enabled, toggle, loading } = useFeatureFlagToggle(KnownFeatureFlags.DEBUG_MODE);
 
   if (!isDevelopment()) {
     return null;

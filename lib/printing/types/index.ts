@@ -58,6 +58,9 @@ export interface PrintMetadata {
   costCenter?: string;
   tags?: string[];
   reference?: string;
+  source?: string;
+  timestamp?: string;
+  labelCount?: number;
 }
 
 export interface PrintResult {
@@ -119,6 +122,13 @@ export interface BatchPrintRequest {
 export interface BatchPrintOptions {
   parallel?: boolean;
   stopOnError?: boolean;
+}
+
+export interface PrintJobStatus {
+  jobId: string;
+  status: 'pending' | 'processing' | 'completed' | 'failed';
+  progress?: number;
+  message?: string;
   groupByType?: boolean;
 }
 

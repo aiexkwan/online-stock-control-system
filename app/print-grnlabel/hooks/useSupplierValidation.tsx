@@ -46,7 +46,7 @@ export const useSupplierValidation = (): UseSupplierValidationReturn => {
         setSupplierInfo(null);
         const errorMsg = result.error || 'Supplier Code Not Found';
         setSupplierError(errorMsg);
-        process.env.NODE_ENV !== 'production' &&
+        (process.env.NODE_ENV as string) !== 'production' &&
           console.log('[useSupplierValidation] Supplier not found:', supplierCode);
 
         grnErrorHandler.handleSupplierError(errorMsg, supplierCode, {
@@ -59,7 +59,7 @@ export const useSupplierValidation = (): UseSupplierValidationReturn => {
         const supplierData = result.data;
         setSupplierInfo(supplierData);
         setSupplierError(null);
-        process.env.NODE_ENV !== 'production' &&
+        (process.env.NODE_ENV as string) !== 'production' &&
           console.log('[useSupplierValidation] Supplier found:', supplierData);
         return supplierData;
       }

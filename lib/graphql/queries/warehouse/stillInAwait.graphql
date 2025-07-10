@@ -1,0 +1,24 @@
+query GetStillInAwait($startDate: Datetime!, $endDate: Datetime!) {
+  # 查詢指定時間範圍內生成的棧板及其庫存狀態
+  record_palletinfoCollection(
+    filter: {
+      generate_time: { gte: $startDate, lte: $endDate }
+    }
+  ) {
+    edges {
+      node {
+        plt_num
+        generate_time
+        # 通過反向關係獲取 inventory 記錄
+        record_inventoryCollection {
+          edges {
+            node {
+              await
+              plt_num
+            }
+          }
+        }
+      }
+    }
+  }
+}

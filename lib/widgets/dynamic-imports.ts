@@ -92,6 +92,8 @@ export const productionWidgetImports = {
   'StaffWorkloadWidget': () => import('@/app/admin/components/dashboard/widgets/StaffWorkloadWidget'),
   'TopProductsChartWidget': () => import('@/app/admin/components/dashboard/widgets/TopProductsChartWidget'),
   'ProductDistributionChartWidget': () => import('@/app/admin/components/dashboard/widgets/ProductDistributionChartWidget'),
+  'TopProductsByQuantityWidget': () => import('@/app/admin/components/dashboard/widgets/TopProductsByQuantityWidget'),
+  'TopProductsDistributionWidget': () => import('@/app/admin/components/dashboard/widgets/TopProductsDistributionWidget'),
 };
 
 // Special Widgets

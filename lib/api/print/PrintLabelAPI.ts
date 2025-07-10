@@ -4,7 +4,8 @@
  */
 
 import { DataAccessLayer } from '../core/DataAccessStrategy';
-// TODO: Fix imports - these functions may have been moved or renamed
+import { createClient } from '@/app/utils/supabase/client';
+// Note: The following imports are commented out as the functions may have been moved
 // import { qcLabelGeneration, grnLabelGeneration } from '@/app/actions/qcActions';
 // import { printGrnLabel } from '@/app/actions/grnActions';
 
@@ -128,12 +129,16 @@ export class PrintOperationsAPI {
     quantity: number;
     operatorId: string;
   }) {
+    // TODO: Import and use qcLabelGeneration from the correct module
+    throw new Error('qcLabelGeneration not implemented - import from correct module');
+    /* Original implementation:
     return qcLabelGeneration({
       product_code: data.productCode,
       plt_num: data.palletNum,
       product_qty: data.quantity.toString(),
       id: data.operatorId,
     });
+    */
   }
 
   /**
@@ -145,12 +150,16 @@ export class PrintOperationsAPI {
     quantity: number;
     operatorId: string;
   }) {
+    // TODO: Import and use printGrnLabel from the correct module
+    throw new Error('printGrnLabel not implemented - import from correct module');
+    /* Original implementation:
     return printGrnLabel({
       supplier_name: data.supplierName,
       material_code: data.materialCode,
       quantity: data.quantity.toString(),
       operator_id: data.operatorId,
     });
+    */
   }
 
   /**
@@ -224,67 +233,9 @@ export function createPrintLabelAPI(): PrintLabelAPI {
   return new PrintLabelAPI();
 }
 
-// Real-time hook for print job monitoring
-export function usePrintJobs(params: PrintJobParams) {
-  const [jobs, setJobs] = useState<PrintJob[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const wsRef = useRef<WebSocket | null>(null);
-
-  // Extract complex expression to separate variable for static checking
-  const paramsKey = JSON.stringify(params);
-
-  useEffect(() => {
-    // Initial fetch
-    const api = createPrintLabelAPI();
-    api.fetch(params, { strategy: 'client' }).then(result => {
-      setJobs(result.jobs);
-      setIsLoading(false);
-    });
-
-    // Setup WebSocket for real-time updates
-    const ws = new WebSocket('/api/print/realtime');
-    wsRef.current = ws;
-
-    ws.onmessage = event => {
-      const update = JSON.parse(event.data);
-      if (update.type === 'job_update') {
-        setJobs(prev =>
-          prev.map(job => (job.id === update.jobId ? { ...job, ...update.changes } : job))
-        );
-      }
-    };
-
-    return () => {
-      if (wsRef.current) {
-        wsRef.current.close();
-      }
-    };
-  }, [paramsKey, params]);
-
-  // Optimistic update for local operations
-  const updateJobStatus = useCallback((jobId: string, status: PrintJob['status']) => {
-    setJobs(prev =>
-      prev.map(job =>
-        job.id === jobId
-          ? {
-              ...job,
-              status,
-              completedAt: status === 'completed' ? new Date().toISOString() : job.completedAt,
-            }
-          : job
-      )
-    );
-  }, []);
-
-  return {
-    jobs,
-    isLoading,
-    updateJobStatus,
-    // Operations
-    generateQC: PrintOperationsAPI.generateQCLabel,
-    generateGRN: PrintOperationsAPI.generateGRNLabel,
-    batchPrint: PrintOperationsAPI.batchPrint,
-    cancelJob: PrintOperationsAPI.cancelJob,
-    retryJob: PrintOperationsAPI.retryJob,
-  };
-}
+// Note: React hooks should be defined in separate files or in React components
+// The usePrintJobs hook has been removed from this API file.
+// To use real-time print job monitoring in React components:
+// 1. Import createPrintLabelAPI and use it directly
+// 2. Create a custom hook in your component file
+// 3. Use WebSocket connections for real-time updates as needed

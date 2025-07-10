@@ -955,7 +955,7 @@ export async function getThisMonthWarehouseWorkLevel(): Promise<{
 
 // --- Void Pallet Report Functions ---
 
-interface VoidPalletFilters {
+export interface VoidPalletFilters {
   startDate: string;
   endDate: string;
   productCode?: string;
@@ -1380,7 +1380,7 @@ export async function getVoidProductStats(filters: VoidPalletFilters): Promise<{
 
 // --- Stock Take Report Functions ---
 
-interface StockTakeFilters {
+export interface StockTakeFilters {
   stockTakeDate: string;
   productCode?: string;
   minVariance?: number;
@@ -1757,7 +1757,7 @@ function shouldIncludeStockTakeItem(
 
 // --- Order Loading Report Functions ---
 
-interface OrderLoadingFilters {
+export interface OrderLoadingFilters {
   dateRange: string; // "startDate|endDate" format
   orderNumber?: string;
   productCode?: string;

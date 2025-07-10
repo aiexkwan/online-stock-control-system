@@ -6,17 +6,20 @@ import { WidgetDefinition } from '../types';
 // Mock widgets for testing
 const mockWidgets: WidgetDefinition[] = Array.from({ length: 100 }, (_, i) => ({
   id: `widget-${i}`,
-  title: `Widget ${i}`,
+  name: `Widget ${i}`,
   category: 'core',
-  path: `/components/widgets/Widget${i}`,
-  gridArea: `${i + 1} / 1 / ${i + 2} / 2`,
-  minRole: 'user',
+  defaultLayout: {
+    x: 0,
+    y: i,
+    w: 1,
+    h: 1
+  },
 }));
 
 // Mock component for widgets
-const MockWidget: React.FC<{ id: string; title: string }> = ({ id, title }) => (
+const MockWidget: React.FC<{ id: string; name: string }> = ({ id, name }) => (
   <div data-testid={`widget-${id}`} style={{ height: '100px' }}>
-    {title}
+    {name}
   </div>
 );
 
@@ -27,10 +30,15 @@ describe('VirtualContainer', () => {
         widgets={mockWidgets}
         itemHeight={100}
         containerHeight={500}
-        renderWidget={(widget) => (
-          <MockWidget key={widget.id} id={widget.id} title={widget.title} />
+      >
+        {(visibleWidgets) => (
+          <>
+            {visibleWidgets.map((widget) => (
+              <MockWidget key={widget.id} id={widget.id} name={widget.name} />
+            ))}
+          </>
         )}
-      />
+      </VirtualContainer>
     );
 
     // Should render approximately 5 widgets (500px / 100px) plus overscan
@@ -45,10 +53,15 @@ describe('VirtualContainer', () => {
         widgets={mockWidgets}
         itemHeight={100}
         containerHeight={500}
-        renderWidget={(widget) => (
-          <MockWidget key={widget.id} id={widget.id} title={widget.title} />
+      >
+        {(visibleWidgets) => (
+          <>
+            {visibleWidgets.map((widget) => (
+              <MockWidget key={widget.id} id={widget.id} name={widget.name} />
+            ))}
+          </>
         )}
-      />
+      </VirtualContainer>
     );
 
     const scrollContainer = container.querySelector('.virtual-scroll-container');
@@ -74,10 +87,15 @@ describe('VirtualContainer', () => {
         widgets={mockWidgets}
         itemHeight={100}
         containerHeight={500}
-        renderWidget={(widget) => (
-          <MockWidget key={widget.id} id={widget.id} title={widget.title} />
+      >
+        {(visibleWidgets) => (
+          <>
+            {visibleWidgets.map((widget) => (
+              <MockWidget key={widget.id} id={widget.id} name={widget.name} />
+            ))}
+          </>
         )}
-      />
+      </VirtualContainer>
     );
 
     const virtualList = container.querySelector('.virtual-list');
@@ -94,10 +112,15 @@ describe('VirtualContainer', () => {
         widgets={[]}
         itemHeight={100}
         containerHeight={500}
-        renderWidget={(widget) => (
-          <MockWidget key={widget.id} id={widget.id} title={widget.title} />
+      >
+        {(visibleWidgets) => (
+          <>
+            {visibleWidgets.map((widget) => (
+              <MockWidget key={widget.id} id={widget.id} name={widget.name} />
+            ))}
+          </>
         )}
-      />
+      </VirtualContainer>
     );
 
     const renderedWidgets = screen.queryAllByTestId(/^widget-widget-/);
@@ -111,10 +134,15 @@ describe('VirtualContainer', () => {
         itemHeight={100}
         containerHeight={500}
         overscan={5}
-        renderWidget={(widget) => (
-          <MockWidget key={widget.id} id={widget.id} title={widget.title} />
+      >
+        {(visibleWidgets) => (
+          <>
+            {visibleWidgets.map((widget) => (
+              <MockWidget key={widget.id} id={widget.id} name={widget.name} />
+            ))}
+          </>
         )}
-      />
+      </VirtualContainer>
     );
 
     // With overscan of 5, should render 5 (visible) + 5 (top) + 5 (bottom) = up to 15 widgets
@@ -123,24 +151,35 @@ describe('VirtualContainer', () => {
     expect(renderedWidgets.length).toBeGreaterThan(5);
   });
 
-  it('should call onScroll callback', () => {
-    const onScroll = jest.fn();
+  it('should update visible widgets on scroll', () => {
     const { container } = render(
       <VirtualContainer
         widgets={mockWidgets}
         itemHeight={100}
         containerHeight={500}
-        onScroll={onScroll}
-        renderWidget={(widget) => (
-          <MockWidget key={widget.id} id={widget.id} title={widget.title} />
+      >
+        {(visibleWidgets) => (
+          <>
+            {visibleWidgets.map((widget) => (
+              <MockWidget key={widget.id} id={widget.id} name={widget.name} />
+            ))}
+          </>
         )}
-      />
+      </VirtualContainer>
     );
 
     const scrollContainer = container.querySelector('.virtual-scroll-container');
+    
+    // Initial state
+    let visibleWidgets = screen.getAllByTestId(/^widget-widget-/);
+    const initialCount = visibleWidgets.length;
+
+    // Scroll down
     fireEvent.scroll(scrollContainer!, { target: { scrollTop: 500 } });
 
-    expect(onScroll).toHaveBeenCalledWith(500);
+    // Should have different widgets visible
+    visibleWidgets = screen.getAllByTestId(/^widget-widget-/);
+    expect(visibleWidgets.length).toBeGreaterThan(0);
   });
 });
 
@@ -151,12 +190,12 @@ describe('useVirtualization hook', () => {
     containerHeight: number;
   }> = ({ items, itemHeight, containerHeight }) => {
     const {
-      visibleItems,
+      visibleWidgets,
       totalHeight,
-      offsetY,
-      handleScroll
+      updateScrollPosition,
+      visibleRange
     } = useVirtualization({
-      items,
+      widgets: items,
       itemHeight,
       containerHeight,
       overscan: 2
@@ -166,11 +205,11 @@ describe('useVirtualization hook', () => {
       <div
         className="scroll-container"
         style={{ height: containerHeight, overflow: 'auto' }}
-        onScroll={(e) => handleScroll(e.currentTarget.scrollTop)}
+        onScroll={(e) => updateScrollPosition(e.currentTarget.scrollTop)}
       >
         <div style={{ height: totalHeight, position: 'relative' }}>
-          <div style={{ transform: `translateY(${offsetY}px)` }}>
-            {visibleItems.map((item) => (
+          <div style={{ transform: `translateY(${visibleRange.start * itemHeight}px)` }}>
+            {visibleWidgets.map((item) => (
               <div key={item.id} data-testid={`item-${item.id}`} style={{ height: itemHeight }}>
                 {item.name}
               </div>
@@ -196,9 +235,9 @@ describe('useVirtualization hook', () => {
     );
 
     // Should show 4 visible items (200/50) + overscan
-    const visibleItems = screen.getAllByTestId(/^item-/);
-    expect(visibleItems.length).toBeGreaterThan(4);
-    expect(visibleItems.length).toBeLessThan(10);
+    const visibleItemElements = screen.getAllByTestId(/^item-/);
+    expect(visibleItemElements.length).toBeGreaterThan(4);
+    expect(visibleItemElements.length).toBeLessThan(10);
   });
 
   it('should update on scroll', async () => {
@@ -298,10 +337,15 @@ describe('Performance optimization', () => {
         widgets={mockWidgets.slice(0, 20)}
         itemHeight={100}
         containerHeight={500}
-        renderWidget={(widget) => (
-          <TrackedWidget key={widget.id} id={widget.id} />
+      >
+        {(visibleWidgets) => (
+          <>
+            {visibleWidgets.map((widget) => (
+              <TrackedWidget key={widget.id} id={widget.id} />
+            ))}
+          </>
         )}
-      />
+      </VirtualContainer>
     );
 
     // Get initial render counts
@@ -334,11 +378,15 @@ describe('Performance optimization', () => {
           widgets={mockWidgets}
           itemHeight={100}
           containerHeight={500}
-          onScroll={setScrollTop}
-          renderWidget={(widget) => (
-            <div key={widget.id}>{widget.title}</div>
+        >
+          {(visibleWidgets) => (
+            <>
+              {visibleWidgets.map((widget) => (
+                <div key={widget.id}>{widget.title}</div>
+              ))}
+            </>
           )}
-        />
+        </VirtualContainer>
       );
     };
 

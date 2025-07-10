@@ -1,14 +1,17 @@
 /**
  * Stable GraphQL Client Configuration for Supabase
  * 解決畫面閃爍問題
+ * 支援 TypeScript type safety via GraphQL Code Generator
  */
 
 import React from 'react';
 import { createClient } from '@/app/utils/supabase/client';
+import { TypedDocumentNode } from '@graphql-typed-document-node/core';
 
-interface GraphQLRequest {
-  query: string;
-  variables?: Record<string, any>;
+interface GraphQLRequest<TVariables = Record<string, any>> {
+  query: string | TypedDocumentNode<any, TVariables>;
+  variables?: TVariables;
+  operationName?: string;
 }
 
 interface GraphQLResponse<T = any> {
@@ -16,6 +19,7 @@ interface GraphQLResponse<T = any> {
   errors?: Array<{
     message: string;
     extensions?: any;
+    path?: Array<string | number>;
   }>;
 }
 
@@ -49,14 +53,20 @@ export class GraphQLClient {
   /**
    * Generate cache key from query and variables
    */
-  private getCacheKey(query: string, variables?: Record<string, any>): string {
-    return `${query}:${JSON.stringify(variables || {})}`;
+  private getCacheKey<TVariables>(
+    query: string | TypedDocumentNode<any, TVariables>, 
+    variables?: TVariables
+  ): string {
+    const queryStr = typeof query === 'string' ? query : query.loc?.source.body || '';
+    return `${queryStr}:${JSON.stringify(variables || {})}`;
   }
 
   /**
    * Execute a GraphQL query with deduplication and caching
    */
-  async query<T = any>(request: GraphQLRequest): Promise<GraphQLResponse<T>> {
+  async query<TData = any, TVariables = Record<string, any>>(
+    request: GraphQLRequest<TVariables>
+  ): Promise<GraphQLResponse<TData>> {
     const cacheKey = this.getCacheKey(request.query, request.variables);
 
     // 檢查緩存
@@ -68,12 +78,12 @@ export class GraphQLClient {
     // 檢查是否有相同請求正在進行
     const inProgress = this.requestInProgress.get(cacheKey);
     if (inProgress) {
-      return inProgress as Promise<GraphQLResponse<T>>;
+      return inProgress as Promise<GraphQLResponse<TData>>;
     }
 
     // 執行新請求
-    const requestPromise = this.executeQuery<T>(request);
-    this.requestInProgress.set(cacheKey, requestPromise);
+    const requestPromise = this.executeQuery<TData, TVariables>(request);
+    this.requestInProgress.set(cacheKey, requestPromise as Promise<GraphQLResponse>);
 
     try {
       const result = await requestPromise;
@@ -93,7 +103,9 @@ export class GraphQLClient {
     }
   }
 
-  private async executeQuery<T>(request: GraphQLRequest): Promise<GraphQLResponse<T>> {
+  private async executeQuery<TData, TVariables>(
+    request: GraphQLRequest<TVariables>
+  ): Promise<GraphQLResponse<TData>> {
     try {
       // Get the current session for authentication
       const {
@@ -113,8 +125,9 @@ export class GraphQLClient {
         method: 'POST',
         headers,
         body: JSON.stringify({
-          query: request.query,
+          query: typeof request.query === 'string' ? request.query : request.query.loc?.source.body,
           variables: request.variables,
+          operationName: request.operationName,
         }),
       });
 
@@ -136,9 +149,9 @@ export class GraphQLClient {
           // 只喺需要 debug 時先輸出完整錯誤
           if (process.env.NEXT_PUBLIC_DEBUG_GRAPHQL === 'true') {
             console.debug('[GraphQL] Error Details:', {
-              query: request.query?.substring(0, 200) + '...', // 只顯示前200字符
+              query: typeof request.query === 'string' ? request.query.substring(0, 200) + '...' : '[TypedDocumentNode]', // 只顯示前200字符
               variables: request.variables,
-              errors: result.errors.map(e => ({
+              errors: result.errors.map((e: any) => ({
                 message: e.message,
                 path: e.path
               }))
@@ -159,15 +172,20 @@ export class GraphQLClient {
   /**
    * Execute a GraphQL mutation
    */
-  async mutate<T = any>(request: GraphQLRequest): Promise<GraphQLResponse<T>> {
+  async mutate<TData = any, TVariables = Record<string, any>>(
+    request: GraphQLRequest<TVariables>
+  ): Promise<GraphQLResponse<TData>> {
     // Mutations 唔使用緩存
-    return this.executeQuery<T>(request);
+    return this.executeQuery<TData, TVariables>(request);
   }
 
   /**
    * Clear cache for specific query or all cache
    */
-  clearCache(query?: string, variables?: Record<string, any>) {
+  clearCache<TVariables = Record<string, any>>(
+    query?: string | TypedDocumentNode<any, TVariables>, 
+    variables?: TVariables
+  ) {
     if (query) {
       const cacheKey = this.getCacheKey(query, variables);
       globalCache.delete(cacheKey);
@@ -195,15 +213,20 @@ export function gql(strings: TemplateStringsArray, ...values: any[]): string {
 }
 
 /**
- * Stable React Hook for GraphQL queries
+ * Stable React Hook for GraphQL queries with TypeScript support
  * 解決閃爍問題：
  * 1. 使用全局緩存保留數據
  * 2. 初始狀態從緩存讀取
  * 3. 背景更新而非立即 loading
+ * 
+ * @example
+ * // 使用 generated types
+ * import { GetProductionStatsDocument } from '@/lib/graphql/generated/types';
+ * const { data, loading } = useGraphQLQuery(GetProductionStatsDocument, { startDate, endDate });
  */
-export function useGraphQLQuery<T = any>(
-  query: string,
-  variables?: Record<string, any>,
+export function useGraphQLQuery<TData = any, TVariables = Record<string, any>>(
+  query: string | TypedDocumentNode<TData, TVariables>,
+  variables?: TVariables,
   options?: {
     enabled?: boolean;
     refetchInterval?: number;
@@ -222,7 +245,7 @@ export function useGraphQLQuery<T = any>(
     return cached?.data || null;
   }, [cacheKey]);
 
-  const [data, setData] = React.useState<T | null>(cachedData);
+  const [data, setData] = React.useState<TData | null>(cachedData);
   const [loading, setLoading] = React.useState(!cachedData); // 有緩存就唔 loading
   const [error, setError] = React.useState<Error | null>(null);
   const [isRefetching, setIsRefetching] = React.useState(false);
@@ -258,9 +281,9 @@ export function useGraphQLQuery<T = any>(
         }
         setError(null);
 
-        const result = await graphqlClient.query<T>({
+        const result = await graphqlClient.query<TData, TVariables>({
           query,
-          variables: stableVariables,
+          variables: stableVariables as TVariables,
         });
 
         // 只有組件仍然掛載時才更新狀態
@@ -329,21 +352,30 @@ export function useGraphQLQuery<T = any>(
 }
 
 /**
- * Hook for GraphQL mutations
+ * Hook for GraphQL mutations with TypeScript support
+ * 
+ * @example
+ * // 使用 generated types
+ * import { UpdateInventoryDocument } from '@/lib/graphql/generated/types';
+ * const { mutate } = useGraphQLMutation<UpdateInventoryMutation, UpdateInventoryMutationVariables>();
+ * await mutate(UpdateInventoryDocument, { id, quantity });
  */
-export function useGraphQLMutation<TData = any, TVariables = any>() {
+export function useGraphQLMutation<TData = any, TVariables = Record<string, any>>() {
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<Error | null>(null);
 
   const mutate = React.useCallback(
-    async (query: string, variables?: TVariables): Promise<TData | null> => {
+    async (
+      query: string | TypedDocumentNode<TData, TVariables>, 
+      variables?: TVariables
+    ): Promise<TData | null> => {
       try {
         setLoading(true);
         setError(null);
 
-        const result = await graphqlClient.mutate<TData>({
+        const result = await graphqlClient.mutate<TData, TVariables>({
           query,
-          variables: variables as Record<string, any>,
+          variables,
         });
 
         if (result.errors) {

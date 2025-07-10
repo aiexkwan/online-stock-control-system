@@ -8,7 +8,7 @@ import ChatInput from './ChatInput';
 
 export interface ChatMessage {
   id: string;
-  type: 'user' | 'ai';
+  type: 'user' | 'ai' | 'error';
   content: string;
   timestamp: string;
   metadata?: {
@@ -16,6 +16,11 @@ export interface ChatMessage {
     executionTime?: number;
     tokensUsed?: number;
     cached?: boolean;
+    resolvedQuestion?: string;
+    references?: any[];
+    sql?: string;
+    data?: any[];
+    error?: any;
   };
 }
 

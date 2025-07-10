@@ -722,6 +722,354 @@ export class UnifiedDataLayer {
   private transformStockLevels(edges: any[]): InventoryRecord[] {
     return edges.map(edge => this.transformInventoryRecord(edge.node));
   }
+
+  /**
+   * Order management methods
+   */
+  async getOrders(args: any): Promise<any> {
+    // TODO: Implement order fetching logic
+    return {
+      totalCount: 0,
+      pageInfo: {
+        hasNextPage: false,
+        hasPreviousPage: false,
+        startCursor: null,
+        endCursor: null,
+      },
+      edges: [],
+    };
+  }
+
+  async getOrderDetails(orderId: string, args: any): Promise<any> {
+    // TODO: Implement order details fetching logic
+    return null;
+  }
+
+  /**
+   * Warehouse summary method
+   */
+  async getWarehouseSummary(args: any): Promise<any> {
+    // TODO: Implement warehouse summary logic
+    return {
+      totalProducts: 0,
+      totalPallets: 0,
+      totalQuantity: 0,
+      lowStockCount: 0,
+    };
+  }
+
+  /**
+   * Product mutations
+   */
+  async createProduct(input: any): Promise<Product> {
+    // TODO: Implement product creation
+    throw new Error('createProduct not implemented');
+  }
+
+  async updateProduct(id: string, input: any): Promise<Product> {
+    // TODO: Implement product update
+    throw new Error('updateProduct not implemented');
+  }
+
+  async deleteProduct(id: string): Promise<boolean> {
+    // TODO: Implement product deletion
+    throw new Error('deleteProduct not implemented');
+  }
+
+  /**
+   * Pallet mutations
+   */
+  async createPallet(input: any): Promise<Pallet> {
+    // TODO: Implement pallet creation
+    throw new Error('createPallet not implemented');
+  }
+
+  async movePallet(input: any): Promise<Movement> {
+    // TODO: Implement pallet movement
+    throw new Error('movePallet not implemented');
+  }
+
+  /**
+   * Stock mutations
+   */
+  async adjustStock(input: any): Promise<InventoryRecord> {
+    // TODO: Implement stock adjustment
+    throw new Error('adjustStock not implemented');
+  }
+
+  async transferStock(input: any): Promise<Movement> {
+    // TODO: Implement stock transfer
+    throw new Error('transferStock not implemented');
+  }
+
+  async bulkUpdateInventory(inputs: any[]): Promise<InventoryRecord[]> {
+    // TODO: Implement bulk inventory update
+    throw new Error('bulkUpdateInventory not implemented');
+  }
+
+  /**
+   * Batch query methods for DataLoader
+   */
+  async getProductsByCodes(codes: string[]): Promise<Product[]> {
+    const query = `
+      query GetProductsByCodes($codes: [String!]!) {
+        data_codeCollection(
+          filter: { code: { in: $codes } }
+        ) {
+          edges {
+            node {
+              code
+              description
+              colour
+              standard_qty
+              type
+              remark
+            }
+          }
+        }
+      }
+    `;
+
+    const result = await graphqlClient.query({
+      query,
+      variables: { codes },
+    });
+
+    return (result.data?.data_codeCollection?.edges || []).map((edge: any) =>
+      this.transformProduct(edge.node)
+    );
+  }
+
+  async getPalletsByNumbers(palletNumbers: string[]): Promise<Pallet[]> {
+    const query = `
+      query GetPalletsByNumbers($palletNumbers: [String!]!) {
+        record_palletinfoCollection(
+          filter: { plt_num: { in: $palletNumbers } }
+        ) {
+          edges {
+            node {
+              plt_num
+              product_code
+              series
+              generate_time
+              product_qty
+              remark
+              pdf_url
+            }
+          }
+        }
+      }
+    `;
+
+    const result = await graphqlClient.query({
+      query,
+      variables: { palletNumbers },
+    });
+
+    return (result.data?.record_palletinfoCollection?.edges || []).map((edge: any) =>
+      this.transformPallet(edge.node)
+    );
+  }
+
+  async getInventoryByProductCodes(productCodes: string[]): Promise<InventoryRecord[]> {
+    const query = `
+      query GetInventoryByProductCodes($productCodes: [String!]!) {
+        record_inventoryCollection(
+          filter: { product_code: { in: $productCodes } }
+        ) {
+          edges {
+            node {
+              uuid
+              product_code
+              plt_num
+              injection
+              pipeline
+              prebook
+              await
+              fold
+              bulk
+              backcarpark
+              damage
+              await_grn
+              latest_update
+            }
+          }
+        }
+      }
+    `;
+
+    const result = await graphqlClient.query({
+      query,
+      variables: { productCodes },
+    });
+
+    return (result.data?.record_inventoryCollection?.edges || []).map((edge: any) =>
+      this.transformInventoryRecord(edge.node)
+    );
+  }
+
+  async getMovementsByPalletNumbers(palletNumbers: string[]): Promise<Movement[]> {
+    const query = `
+      query GetMovementsByPalletNumbers($palletNumbers: [String!]!) {
+        record_transferCollection(
+          filter: { plt_num: { in: $palletNumbers } }
+          orderBy: [{ transfer_date: DescNullsLast }]
+        ) {
+          edges {
+            node {
+              uuid
+              plt_num
+              from_location
+              to_location
+              operator_id
+              transfer_date
+            }
+          }
+        }
+      }
+    `;
+
+    const result = await graphqlClient.query({
+      query,
+      variables: { palletNumbers },
+    });
+
+    return (result.data?.record_transferCollection?.edges || []).map((edge: any) =>
+      this.transformMovement(edge.node)
+    );
+  }
+
+  async getGRNRecordsByPalletNumbers(palletNumbers: string[]): Promise<any[]> {
+    const query = `
+      query GetGRNRecordsByPalletNumbers($palletNumbers: [String!]!) {
+        record_grnCollection(
+          filter: { plt_num: { in: $palletNumbers } }
+          orderBy: [{ grn_date: DescNullsLast }]
+        ) {
+          edges {
+            node {
+              uuid
+              plt_num
+              grn_no
+              product_code
+              grn_date
+              supplier_code
+              qty_received
+              operator_id
+            }
+          }
+        }
+      }
+    `;
+
+    const result = await graphqlClient.query({
+      query,
+      variables: { palletNumbers },
+    });
+
+    return result.data?.record_grnCollection?.edges?.map((edge: any) => ({
+      id: edge.node.uuid,
+      palletNumber: edge.node.plt_num,
+      grnNumber: edge.node.grn_no,
+      productCode: edge.node.product_code,
+      grnDate: edge.node.grn_date,
+      supplierCode: edge.node.supplier_code,
+      quantityReceived: edge.node.qty_received,
+      operatorId: edge.node.operator_id,
+    })) || [];
+  }
+
+  async getOrdersByRefs(orderRefs: number[]): Promise<any[]> {
+    const query = `
+      query GetOrdersByRefs($orderRefs: [Int!]!) {
+        record_acoCollection(
+          filter: { order_ref: { in: $orderRefs } }
+        ) {
+          edges {
+            node {
+              order_ref
+              buyer_ref
+              order_date
+              order_status
+              product_code
+              quantity
+              loaded_quantity
+              remark
+            }
+          }
+        }
+      }
+    `;
+
+    const result = await graphqlClient.query({
+      query,
+      variables: { orderRefs },
+    });
+
+    return result.data?.record_acoCollection?.edges?.map((edge: any) => ({
+      orderRef: edge.node.order_ref,
+      buyerRef: edge.node.buyer_ref,
+      orderDate: edge.node.order_date,
+      orderStatus: edge.node.order_status,
+      productCode: edge.node.product_code,
+      quantity: edge.node.quantity,
+      loadedQuantity: edge.node.loaded_quantity,
+      remark: edge.node.remark,
+    })) || [];
+  }
+
+  async getUsersByIds(userIds: number[]): Promise<any[]> {
+    const query = `
+      query GetUsersByIds($userIds: [Int!]!) {
+        data_idCollection(
+          filter: { id: { in: $userIds } }
+        ) {
+          edges {
+            node {
+              id
+              name
+              clock_no
+              department
+              active
+              access_level
+            }
+          }
+        }
+      }
+    `;
+
+    const result = await graphqlClient.query({
+      query,
+      variables: { userIds },
+    });
+
+    return result.data?.data_idCollection?.edges?.map((edge: any) => ({
+      id: edge.node.id,
+      name: edge.node.name,
+      clockNumber: edge.node.clock_no,
+      department: edge.node.department,
+      active: edge.node.active,
+      accessLevel: edge.node.access_level,
+    })) || [];
+  }
+
+  /**
+   * Subscription methods
+   */
+  async subscribeToInventoryUpdates(args: any): Promise<AsyncIterator<any>> {
+    // TODO: Implement inventory updates subscription
+    throw new Error('subscribeToInventoryUpdates not implemented');
+  }
+
+  async subscribeToOrderStatusChanges(args: any): Promise<AsyncIterator<any>> {
+    // TODO: Implement order status changes subscription
+    throw new Error('subscribeToOrderStatusChanges not implemented');
+  }
+
+  async subscribeToPalletMovements(args: any): Promise<AsyncIterator<any>> {
+    // TODO: Implement pallet movements subscription
+    throw new Error('subscribeToPalletMovements not implemented');
+  }
 }
 
 // 導出單例
@@ -766,3 +1114,4 @@ export const createUnifiedDataHooks = () => {
 };
 
 export default unifiedDataLayer;
+

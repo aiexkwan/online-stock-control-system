@@ -52,14 +52,14 @@ export function OutputRatioChart({ timeRange }: OutputRatioChartProps) {
       const startDate = getStartDate(timeRange);
       const endDate = getEndDate();
 
-      process.env.NODE_ENV !== 'production' &&
-        process.env.NODE_ENV !== 'production' &&
+      (process.env.NODE_ENV as string) !== 'production' &&
+        (process.env.NODE_ENV as string) !== 'production' &&
         console.log('Loading data for time range:', timeRange);
-      process.env.NODE_ENV !== 'production' &&
-        process.env.NODE_ENV !== 'production' &&
+      (process.env.NODE_ENV as string) !== 'production' &&
+        (process.env.NODE_ENV as string) !== 'production' &&
         console.log('Start date:', startDate.toISOString());
-      process.env.NODE_ENV !== 'production' &&
-        process.env.NODE_ENV !== 'production' &&
+      (process.env.NODE_ENV as string) !== 'production' &&
+        (process.env.NODE_ENV as string) !== 'production' &&
         console.log('End date:', endDate.toISOString());
 
       // Fetch output data (pallets generated)
@@ -75,8 +75,8 @@ export function OutputRatioChart({ timeRange }: OutputRatioChartProps) {
         throw outputError;
       }
 
-      process.env.NODE_ENV !== 'production' &&
-        process.env.NODE_ENV !== 'production' &&
+      (process.env.NODE_ENV as string) !== 'production' &&
+        (process.env.NODE_ENV as string) !== 'production' &&
         console.log('Output data count:', outputData?.length || 0);
 
       // Fetch transfer data (pallets booked out)
@@ -91,15 +91,15 @@ export function OutputRatioChart({ timeRange }: OutputRatioChartProps) {
         throw transferError;
       }
 
-      process.env.NODE_ENV !== 'production' &&
-        process.env.NODE_ENV !== 'production' &&
+      (process.env.NODE_ENV as string) !== 'production' &&
+        (process.env.NODE_ENV as string) !== 'production' &&
         console.log('Transfer data count:', transferData?.length || 0);
 
       // Process data
       const processedData = processOutputRatioData(outputData || [], transferData || [], timeRange);
 
-      process.env.NODE_ENV !== 'production' &&
-        process.env.NODE_ENV !== 'production' &&
+      (process.env.NODE_ENV as string) !== 'production' &&
+        (process.env.NODE_ENV as string) !== 'production' &&
         console.log('Processed data:', processedData);
 
       setData(processedData);

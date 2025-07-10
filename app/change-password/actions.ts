@@ -18,14 +18,14 @@ export async function updateUserPasswordInDbAction(
   prevState: ChangePasswordActionResult,
   formData: FormData
 ): Promise<ChangePasswordActionResult> {
-  process.env.NODE_ENV !== 'production' &&
-    process.env.NODE_ENV !== 'production' &&
+  (process.env.NODE_ENV as string) !== 'production' &&
+    (process.env.NODE_ENV as string) !== 'production' &&
     console.log('[updateUserPasswordInDbAction] Action started. PrevState:', prevState);
   // const cookieStore = cookies(); // 不再直接需要
 
   const supabase = await createClient(); // 使用新的輔助函數創建客戶端
-  process.env.NODE_ENV !== 'production' &&
-    process.env.NODE_ENV !== 'production' &&
+  (process.env.NODE_ENV as string) !== 'production' &&
+    (process.env.NODE_ENV as string) !== 'production' &&
     console.log(
       '[updateUserPasswordInDbAction] Supabase client (from @/app/utils/supabase/server) obtained.'
     );
@@ -51,8 +51,8 @@ export async function updateUserPasswordInDbAction(
     return { error: 'Passwords do not match.' };
   }
 
-  process.env.NODE_ENV !== 'production' &&
-    process.env.NODE_ENV !== 'production' &&
+  (process.env.NODE_ENV as string) !== 'production' &&
+    (process.env.NODE_ENV as string) !== 'production' &&
     console.log('[updateUserPasswordInDbAction] Attempting to get user from session...');
   const {
     data: { user },
@@ -70,8 +70,8 @@ export async function updateUserPasswordInDbAction(
     console.error('[updateUserPasswordInDbAction] No user session found.');
     return { error: 'No active session found. Please log in again.' };
   }
-  process.env.NODE_ENV !== 'production' &&
-    process.env.NODE_ENV !== 'production' &&
+  (process.env.NODE_ENV as string) !== 'production' &&
+    (process.env.NODE_ENV as string) !== 'production' &&
     console.log('[updateUserPasswordInDbAction] User session found. User ID:', user.id);
 
   const clockNumber = user.user_metadata?.clock_number as string | undefined;
@@ -86,8 +86,8 @@ export async function updateUserPasswordInDbAction(
     // return { error: 'User identification failed (clock number missing). Cannot change password.' };
   }
   if (clockNumber) {
-    process.env.NODE_ENV !== 'production' &&
-      process.env.NODE_ENV !== 'production' &&
+    (process.env.NODE_ENV as string) !== 'production' &&
+      (process.env.NODE_ENV as string) !== 'production' &&
       console.log(`[updateUserPasswordInDbAction] Clock number from metadata: ${clockNumber}`);
   }
 
@@ -97,8 +97,8 @@ export async function updateUserPasswordInDbAction(
   //   return { error: 'User identification mismatch.' };
   // }
 
-  process.env.NODE_ENV !== 'production' &&
-    process.env.NODE_ENV !== 'production' &&
+  (process.env.NODE_ENV as string) !== 'production' &&
+    (process.env.NODE_ENV as string) !== 'production' &&
     console.log(
       `[updateUserPasswordInDbAction] Attempting to call updatePasswordWithSupabaseAuth.`
     );
@@ -116,8 +116,8 @@ export async function updateUserPasswordInDbAction(
     return { error: result.error };
   }
 
-  process.env.NODE_ENV !== 'production' &&
-    process.env.NODE_ENV !== 'production' &&
+  (process.env.NODE_ENV as string) !== 'production' &&
+    (process.env.NODE_ENV as string) !== 'production' &&
     console.log(
       `[updateUserPasswordInDbAction] Password changed successfully for user ${user.id}.`
     );

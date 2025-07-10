@@ -12,6 +12,13 @@ interface PredictedAction {
   priority: 'high' | 'medium' | 'low';
 }
 
+interface UserBehavior {
+  currentPath: string;
+  visitHistory: string[];
+  lastVisitTime: number;
+  frequency: Map<string, number>;
+}
+
 // 保留舊的 UserBehaviorTracker 作為備份
 class LegacyUserBehaviorTracker {
   private behaviors = new Map<string, UserBehavior>();

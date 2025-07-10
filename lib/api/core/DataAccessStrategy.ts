@@ -54,8 +54,8 @@ export abstract class DataAccessLayer<TParams, TResult> {
    */
   async fetch(params: TParams, config: DataAccessConfig = { strategy: 'auto' }): Promise<TResult> {
     const startTime = performance.now();
-    let strategy: 'server' | 'client';
-    let result: TResult;
+    let strategy: 'server' | 'client' | undefined;
+    let result: TResult | undefined;
     let success = true;
 
     try {
@@ -81,14 +81,16 @@ export abstract class DataAccessLayer<TParams, TResult> {
       // Record metrics (with error handling to prevent metrics from breaking the main flow)
       try {
         const duration = performance.now() - startTime;
-        await this.recordMetrics({
-          operation: this.operationName,
-          strategy: strategy!,
-          duration,
-          timestamp: Date.now(),
-          success,
-          dataSize: result ? JSON.stringify(result).length : 0,
-        });
+        if (strategy) {
+          await this.recordMetrics({
+            operation: this.operationName,
+            strategy,
+            duration,
+            timestamp: Date.now(),
+            success,
+            dataSize: result ? JSON.stringify(result).length : 0,
+          });
+        }
       } catch (metricsError) {
         // Silently ignore metrics errors to prevent them from affecting the main operation
         console.warn('[DataAccess] Metrics recording failed:', metricsError);
@@ -188,9 +190,12 @@ export abstract class DataAccessLayer<TParams, TResult> {
 
   /**
    * Create a cached version of server fetch
+   * Note: This method is deprecated. Use React's cache() directly in your implementation if needed.
    */
   protected createCachedServerFetch(ttl: number = 60): (params: TParams) => Promise<TResult> {
-    return cache(async (params: TParams) => this.serverFetch(params), { revalidate: ttl });
+    // Return a simple wrapper function instead of using React cache
+    // Consumers should implement their own caching strategy
+    return async (params: TParams) => this.serverFetch(params);
   }
 }
 

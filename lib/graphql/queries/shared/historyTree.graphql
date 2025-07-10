@@ -1,0 +1,28 @@
+query GetHistoryTree($limit: Int = 50, $offset: Int = 0) {
+  record_historyCollection(
+    orderBy: [{ time: DescNullsLast }]
+    first: $limit
+    offset: $offset
+  ) {
+    edges {
+      node {
+        id
+        time
+        action
+        plt_num
+        loc
+        remark
+        who
+        doc_url
+        data_id {
+          id
+          name
+        }
+      }
+    }
+    pageInfo {
+      hasNextPage
+      hasPreviousPage
+    }
+  }
+}

@@ -3,6 +3,8 @@
 import React from 'react';
 import { Toaster } from 'sonner';
 import { usePathname } from 'next/navigation';
+import { ApolloProvider } from '@apollo/client';
+import { apolloClient } from '@/lib/apollo-client';
 import AuthChecker from './AuthChecker';
 import GlobalHeader from '@/components/GlobalHeader';
 import { UniversalBackground } from './UniversalBackground';
@@ -42,55 +44,57 @@ export default function ClientLayout({ children }: ClientLayoutProps) {
   const currentTheme = getThemeFromPath(pathname || '');
 
   return (
-    <UniversalProvider
-      defaultTheme={currentTheme}
-      animationsEnabled={true}
-      debugMode={isDevelopment()}
-    >
-      {/* Toast notifications */}
-      <Toaster
-        position='top-right'
-        richColors
-        closeButton
-        duration={4000}
-        toastOptions={{
-          style: {
-            background: 'rgb(30, 41, 59)',
-            border: '1px solid rgb(51, 65, 85)',
-            color: 'rgb(248, 250, 252)',
-          },
-        }}
-      />
+    <ApolloProvider client={apolloClient}>
+      <UniversalProvider
+        defaultTheme={currentTheme}
+        animationsEnabled={true}
+        debugMode={isDevelopment()}
+      >
+        {/* Toast notifications */}
+        <Toaster
+          position='top-right'
+          richColors
+          closeButton
+          duration={4000}
+          toastOptions={{
+            style: {
+              background: 'rgb(30, 41, 59)',
+              border: '1px solid rgb(51, 65, 85)',
+              color: 'rgb(248, 250, 252)',
+            },
+          }}
+        />
 
-      {/* Authentication checker */}
-      <AuthChecker>
-        {/* Global header - now empty */}
-        <GlobalHeader />
+        {/* Authentication checker */}
+        <AuthChecker>
+          {/* Global header - now empty */}
+          <GlobalHeader />
 
-        {/* Main layout - simplified without sidebar */}
-        <UniversalBackground className='text-white'>{children}</UniversalBackground>
+          {/* Main layout - simplified without sidebar */}
+          <UniversalBackground className='text-white'>{children}</UniversalBackground>
 
-        {/* Global report dialogs */}
-        <GlobalReportDialogs />
+          {/* Global report dialogs */}
+          <GlobalReportDialogs />
 
-        {/* Global analytics dialogs */}
-        <GlobalAnalyticsDialogs />
+          {/* Global analytics dialogs */}
+          <GlobalAnalyticsDialogs />
 
-        {/* Dynamic Navigation Bar - Show only when authenticated and not on login/access pages */}
-        {isAuthenticated && !isLoginPage && !isAccessPage && (
-          <NavigationProvider>
-            <DynamicActionBar />
-          </NavigationProvider>
-        )}
+          {/* Dynamic Navigation Bar - Show only when authenticated and not on login/access pages */}
+          {isAuthenticated && !isLoginPage && !isAccessPage && (
+            <NavigationProvider>
+              <DynamicActionBar />
+            </NavigationProvider>
+          )}
 
-        {/* Universal Chatbot - Show for authenticated users */}
-        {isAuthenticated && !isLoginPage && !isAccessPage && <UniversalChatbot />}
+          {/* Universal Chatbot - Show for authenticated users */}
+          {isAuthenticated && !isLoginPage && !isAccessPage && <UniversalChatbot />}
 
-        {/* Smart Reminder - Show for authenticated users */}
-        {isAuthenticated && user?.id && !isLoginPage && !isAccessPage && (
-          <SmartReminder userId={user.id} />
-        )}
-      </AuthChecker>
-    </UniversalProvider>
+          {/* Smart Reminder - Show for authenticated users */}
+          {isAuthenticated && user?.id && !isLoginPage && !isAccessPage && (
+            <SmartReminder userId={user.id} />
+          )}
+        </AuthChecker>
+      </UniversalProvider>
+    </ApolloProvider>
   );
 }

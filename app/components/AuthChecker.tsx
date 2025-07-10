@@ -35,15 +35,15 @@ export default function AuthChecker({ children }: AuthCheckerProps) {
 
   useEffect(() => {
     const checkAuthentication = async () => {
-      process.env.NODE_ENV !== 'production' &&
-        process.env.NODE_ENV !== 'production' &&
+      (process.env.NODE_ENV as string) !== 'production' &&
+        (process.env.NODE_ENV as string) !== 'production' &&
         console.log('[AuthChecker] Checking authentication for path:', pathname);
 
       // 如果是公開路由，直接通過
       const isPublicRoute = publicPaths.some(path => pathname.startsWith(path));
       if (isPublicRoute) {
-        process.env.NODE_ENV !== 'production' &&
-          process.env.NODE_ENV !== 'production' &&
+        (process.env.NODE_ENV as string) !== 'production' &&
+          (process.env.NODE_ENV as string) !== 'production' &&
           console.log('[AuthChecker] Public route, skipping auth check');
         setIsAuthChecked(true);
         setIsAuthenticated(true);
@@ -52,19 +52,19 @@ export default function AuthChecker({ children }: AuthCheckerProps) {
 
       // 除了公開路由外，所有其他路由都需要認證
       try {
-        process.env.NODE_ENV !== 'production' &&
-          process.env.NODE_ENV !== 'production' &&
+        (process.env.NODE_ENV as string) !== 'production' &&
+          (process.env.NODE_ENV as string) !== 'production' &&
           console.log('[AuthChecker] Checking user authentication...');
         const user = await unifiedAuth.getCurrentUser();
 
         if (user) {
-          process.env.NODE_ENV !== 'production' &&
-            process.env.NODE_ENV !== 'production' &&
+          (process.env.NODE_ENV as string) !== 'production' &&
+            (process.env.NODE_ENV as string) !== 'production' &&
             console.log('[AuthChecker] User authenticated:', user.email);
           setIsAuthenticated(true);
         } else {
-          process.env.NODE_ENV !== 'production' &&
-            process.env.NODE_ENV !== 'production' &&
+          (process.env.NODE_ENV as string) !== 'production' &&
+            (process.env.NODE_ENV as string) !== 'production' &&
             console.log('[AuthChecker] No authenticated user found');
           setIsAuthenticated(false);
 

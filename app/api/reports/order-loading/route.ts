@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'No data found for the specified criteria' }, { status: 404 });
     }
     
-    const records = dataSource.transform(rawData);
+    const records = dataSource.transform ? dataSource.transform(rawData) : rawData;
 
     // 生成報表
     const format = body.format || 'excel';

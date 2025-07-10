@@ -318,8 +318,8 @@ export async function getCurrentUserClockNumberAsync(): Promise<string | null> {
     } = await supabase.auth.getUser();
 
     if (userError || !user?.email) {
-      process.env.NODE_ENV !== 'production' &&
-        process.env.NODE_ENV !== 'production' &&
+      (process.env.NODE_ENV as string) !== 'production' &&
+        (process.env.NODE_ENV as string) !== 'production' &&
         console.warn('[getCurrentUserClockNumberAsync] No authenticated user or email found');
       return null;
     }
@@ -333,8 +333,8 @@ export async function getCurrentUserClockNumberAsync(): Promise<string | null> {
 
     if (error) {
       if (error.code === 'PGRST116') {
-        process.env.NODE_ENV !== 'production' &&
-          process.env.NODE_ENV !== 'production' &&
+        (process.env.NODE_ENV as string) !== 'production' &&
+          (process.env.NODE_ENV as string) !== 'production' &&
           console.warn(`[getCurrentUserClockNumberAsync] No user found for email: ${user.email}`);
         return null;
       }
@@ -343,8 +343,8 @@ export async function getCurrentUserClockNumberAsync(): Promise<string | null> {
 
     if (data?.id) {
       const clockNumber = data.id.toString();
-      process.env.NODE_ENV !== 'production' &&
-        process.env.NODE_ENV !== 'production' &&
+      (process.env.NODE_ENV as string) !== 'production' &&
+        (process.env.NODE_ENV as string) !== 'production' &&
         console.log(
           `[getCurrentUserClockNumberAsync] Found clock number: ${clockNumber} for email: ${user.email}`
         );

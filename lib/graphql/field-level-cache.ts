@@ -161,7 +161,7 @@ export class FieldCacheManager {
     if (!cache) return;
 
     try {
-      await cache.flush();
+      await (cache as any).flush();
     } catch (error) {
       console.warn(`Field cache clear error for ${fieldName}:`, error);
     }
@@ -169,7 +169,7 @@ export class FieldCacheManager {
 
   // 清空所有緩存
   async clearAll(): Promise<void> {
-    const promises = Array.from(this.caches.values()).map(cache => cache.flush());
+    const promises = Array.from(this.caches.values()).map(cache => (cache as any).flush());
     await Promise.all(promises);
   }
 

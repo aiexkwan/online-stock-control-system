@@ -91,8 +91,8 @@ export class UnifiedInventoryService implements IInventoryService {
       if (!validation.valid) {
         return {
           success: false,
+          palletNum: transfer.palletNum,
           error: validation.errors?.join(', ') || 'Invalid transfer data',
-          transferTime: Date.now() - startTime,
         };
       }
 
@@ -162,7 +162,7 @@ export class UnifiedInventoryService implements IInventoryService {
 
     try {
       // Add operator info if not provided
-      const operator = batch.operator || (await getCurrentUserId(this.supabase)) || 'system';
+      const operator = (await getCurrentUserId(this.supabase)) || 'system';
 
       // Validate all transfers first
       const validationErrors: string[] = [];
@@ -479,10 +479,17 @@ export class UnifiedInventoryService implements IInventoryService {
 
     const totalQuantity = data?.reduce((sum, item) => sum + (item[dbColumn] || 0), 0) || 0;
 
+    const standardLocation = LocationMapper.toStandardLocation(location);
+    if (!standardLocation) {
+      throw new Error(`Invalid location: ${location}`);
+    }
+
     return {
-      location,
-      pallets: data || [],
+      location: standardLocation,
+      dbColumn,
+      totalPallets: data?.length || 0,
       totalQuantity,
+      products: [], // This would need to be populated based on requirements
       lastUpdated: new Date().toISOString(),
     };
   }
@@ -600,11 +607,14 @@ export class UnifiedInventoryService implements IInventoryService {
 
     return (data || []).map(record => ({
       id: record.uuid,
-      userId: record.uuid, // 映射字段
-      action: record.action,
       timestamp: record.time,
-      details: record.remark || '',
-      metadata: {},
+      message: `${record.action}: ${record.remark || 'No details'}`,
+      type: 'info' as const,
+      details: {
+        action: record.action,
+        remark: record.remark,
+        userId: record.id,
+      },
     }));
   }
 }

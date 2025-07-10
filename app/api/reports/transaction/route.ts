@@ -2,23 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase';
 import { buildTransactionReport } from '@/lib/exportReport';
 import { format } from 'date-fns';
-
-export interface TransactionReportData {
-  date_range: {
-    start_date: string;
-    end_date: string;
-  };
-  transfers: Array<{
-    from_location: string;
-    to_location: string;
-    product_code: string;
-    quantity: number;
-    operator_id: string;
-    operator_name: string;
-    transfer_date: string;
-    pallet_number: string;
-  }>;
-}
+import type { TransactionReportData } from '@/app/actions/reportActions';
 
 export async function POST(request: NextRequest) {
   try {
@@ -95,6 +79,9 @@ export async function POST(request: NextRequest) {
         end_date: endDate || maxDate,
       },
       transfers,
+      summary: {}, // Add empty summary for now
+      total_transfers: transfers.length,
+      total_pallets: transfers.length,
     };
 
     // 使用標準的 buildTransactionReport 函數生成報表

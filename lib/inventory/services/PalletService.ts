@@ -123,11 +123,17 @@ export class PalletService implements IPalletService {
 
       if (error) throw error;
 
-      return (data || []).map(item => ({
-        ...item.record_palletinfo,
-        location: location,
-        locationDisplay: LocationMapper.getDisplayName(location),
-      }));
+      return (data || []).map(item => {
+        const palletInfo = Array.isArray(item.record_palletinfo) 
+          ? item.record_palletinfo[0] 
+          : item.record_palletinfo;
+        
+        return {
+          ...palletInfo,
+          location: location,
+          locationDisplay: LocationMapper.getDisplayName(location),
+        };
+      });
     } catch (error: any) {
       console.error('[PalletService] Search by location error:', error);
       return [];

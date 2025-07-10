@@ -27,7 +27,7 @@ export const usePalletGenerationGrn = () => {
           clockNumber,
           additionalData: {
             requestedCount: count,
-            method: result.method,
+            method: (result as any).method || 'unknown',
           },
         },
         count

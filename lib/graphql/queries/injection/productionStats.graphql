@@ -1,0 +1,47 @@
+# Injection Production Stats 查詢
+# 用於 InjectionProductionStatsWidget
+
+query GetInjectionProductionStats($startDate: Datetime!, $endDate: Datetime!) {
+  # 查詢生產統計數據 - 不需要 plt_remark filter for injection
+  record_palletinfoCollection(
+    filter: {
+      generate_time: { gte: $startDate, lte: $endDate }
+    }
+  ) {
+    edges {
+      node {
+        plt_num
+        product_qty
+        product_code
+        generate_time
+      }
+    }
+  }
+}
+
+# 更優化版本 - 使用 aggregates (待確認 Supabase GraphQL 支援)
+# query GetInjectionProductionStatsOptimized($startDate: Datetime!, $endDate: Datetime!) {
+#   # 棧板數量
+#   palletCount: record_palletinfoAggregate(
+#     filter: {
+#       generate_time: { gte: $startDate, lte: $endDate }
+#     }
+#   ) {
+#     aggregate {
+#       count(distinct: plt_num)
+#     }
+#   }
+#   
+#   # 總數量
+#   quantitySum: record_palletinfoAggregate(
+#     filter: {
+#       generate_time: { gte: $startDate, lte: $endDate }
+#     }
+#   ) {
+#     aggregate {
+#       sum {
+#         product_qty
+#       }
+#     }
+#   }
+# }

@@ -33,10 +33,11 @@ interface PalletInfo {
 
 interface ActivityLogItem {
   id: string;
-  type: 'search' | 'transfer' | 'error' | 'info';
+  type: 'success' | 'error' | 'info' | 'warning';
   message: string;
   timestamp: string;
   palletNum?: string;
+  metadata?: Record<string, any>;
 }
 
 // Optimistic transfer interface for UI updates
@@ -198,7 +199,7 @@ export default function StockTransferPage() {
           // Add to activity log
           addActivityLog({
             id: Date.now().toString(),
-            type: 'transfer',
+            type: 'success',
             message: result.message,
             timestamp: new Date().toISOString(),
             palletNum: palletInfo.plt_num,
@@ -311,7 +312,7 @@ export default function StockTransferPage() {
                         // Add to activity log
                         addActivityLog({
                           id: Date.now().toString(),
-                          type: 'search',
+                          type: 'info',
                           message: `Found pallet ${searchResult.data.plt_num}`,
                           timestamp: new Date().toISOString(),
                           palletNum: searchResult.data.plt_num,
@@ -363,11 +364,7 @@ export default function StockTransferPage() {
         </div>
       </main>
 
-      <PageFooter
-        isLoading={isLoading}
-        activityLogCount={activityLog.length}
-        optimisticTransfersCount={optimisticTransfers.filter(t => t.status === 'pending').length}
-      />
+      <PageFooter />
     </div>
   );
 }

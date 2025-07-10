@@ -1,0 +1,36 @@
+{
+  "timestamp": "2025-07-10T01:19:25.012Z",
+  "isValid": false,
+  "summary": {
+    "errors": 3,
+    "warnings": 0,
+    "suggestions": 4
+  },
+  "errors": [
+    {
+      "type": "NAMING",
+      "severity": "ERROR",
+      "path": "type.definitions",
+      "message": "Type name 'definitions' should be PascalCase"
+    },
+    {
+      "type": "NAMING",
+      "severity": "ERROR",
+      "path": "type.definitions",
+      "message": "Type name 'definitions' should be PascalCase"
+    },
+    {
+      "type": "NAMING",
+      "severity": "ERROR",
+      "path": "type.type\ntype",
+      "message": "Type name 'type\ntype' should be PascalCase"
+    }
+  ],
+  "warnings": [],
+  "suggestions": [
+    "Consider implementing query complexity analysis",
+    "Add rate limiting for mutations and subscriptions",
+    "Implement field-level caching for frequently accessed data",
+    "Use DataLoader pattern to prevent N+1 queries"
+  ]
+}

@@ -1,0 +1,35 @@
+query GetWarehouseTransferList($startDate: Datetime!, $endDate: Datetime!, $limit: Int = 50, $offset: Int = 0) {
+  record_transferCollection(
+    filter: {
+      tran_date: { gte: $startDate, lte: $endDate }
+      # Filter by operator department through operator_id foreign key
+      operator_id_data_id: {
+        department: { eq: "Warehouse" }
+      }
+    }
+    orderBy: [{ tran_date: DescNullsLast }]
+    first: $limit
+    offset: $offset
+  ) {
+    edges {
+      node {
+        uuid
+        tran_date
+        f_loc
+        t_loc
+        plt_num
+        operator_id
+        # Get operator details through foreign key
+        operator_id_data_id {
+          id
+          name
+          department
+        }
+      }
+    }
+    pageInfo {
+      hasNextPage
+      hasPreviousPage
+    }
+  }
+}

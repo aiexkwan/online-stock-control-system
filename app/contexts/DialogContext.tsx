@@ -8,7 +8,7 @@
 import React, { createContext, useContext, useState, useCallback } from 'react';
 
 // 定義所有對話框類型
-export type DialogType = 'askDatabase' | 'loadStock' | 'stockTransfer' | 'exportData';
+export type DialogType = 'askDatabase' | 'loadStock' | 'stockTransfer' | 'exportData' | 'uploadFiles';
 
 // 對話框數據類型
 interface DialogData {
@@ -47,6 +47,7 @@ export function DialogProvider({ children }: { children: React.ReactNode }) {
     loadStock: false,
     stockTransfer: false,
     exportData: false,
+    uploadFiles: false,
   });
 
   const [dialogData, setDialogData] = useState<DialogData>({});

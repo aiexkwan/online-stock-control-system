@@ -159,7 +159,7 @@ export class EnhancedRateLimiter {
     // 在開發環境中，如果沒有明確啟用 Redis，則不使用 Redis
     const shouldUseRedis =
       (useRedis && !isDevelopment()) || process.env.ENABLE_REDIS;
-    this.initializeLimiters(shouldUseRedis);
+    this.initializeLimiters(!!shouldUseRedis);
     this.startSystemMonitoring();
   }
 
@@ -205,7 +205,7 @@ export class EnhancedRateLimiter {
       if (type !== 'subscription') {
         this.limiters.set(
           `operation:${type}`,
-          createLimiter(`operation_${type}`, limit.maxRequestsPerMinute, 60000)
+          createLimiter(`operation_${type}`, (limit as any).maxRequestsPerMinute, 60000)
         );
       }
     });
@@ -249,7 +249,7 @@ export class EnhancedRateLimiter {
       'ip:general',
       createLimiter(
         'ip_general',
-        this.config.ipLimits.maxRequestsPerMinute,
+        (this.config.ipLimits as any).maxRequestsPerMinute,
         this.config.ipLimits.windowMs
       )
     );

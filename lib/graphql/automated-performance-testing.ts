@@ -195,7 +195,7 @@ class AutomatedPerformanceTester {
             {
               severity: 'critical',
               category: 'reliability',
-              message: `測試執行失敗: ${error.message}`,
+              message: `測試執行失敗: ${error instanceof Error ? error.message : 'Unknown error'}`,
               actualValue: 0,
               expectedValue: 1,
               recommendation: '檢查測試配置和環境',
@@ -356,7 +356,7 @@ class AutomatedPerformanceTester {
 
       return performance.now() - startTime;
     } catch (error) {
-      throw new Error(`GraphQL 查詢執行失敗: ${error.message}`);
+      throw new Error(`GraphQL 查詢執行失敗: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 

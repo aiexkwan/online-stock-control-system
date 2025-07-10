@@ -183,7 +183,7 @@ export function AcoOrderProgress() {
       </div>
 
       {/* Service Toggle - Development Only */}
-      {process.env.NODE_ENV !== 'production' && (
+      {(process.env.NODE_ENV as string) !== 'production' && (
         <div className='mt-4 rounded-lg border border-gray-700 bg-gray-800/50 p-3'>
           <div className='flex items-center justify-between'>
             <label className='text-xs text-gray-400'>Use Unified ACO Service:</label>

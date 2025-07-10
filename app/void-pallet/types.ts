@@ -48,6 +48,14 @@ export interface ReprintInfo {
   reason: string;
 }
 
+export interface ReprintInfoInput {
+  type: 'damage' | 'wrong_qty' | 'wrong_code' | 'wrong_label';
+  originalPalletInfo: PalletInfo;
+  remainingQuantity?: number;
+  correctedQuantity?: number;
+  correctedProductCode?: string;
+}
+
 export interface VoidReason {
   value: string;
   label: string;
@@ -89,6 +97,10 @@ export interface VoidPalletState {
 
   // UI state flags
   isAutoReprinting: boolean;
+  
+  // Reprint flow
+  reprintInfo?: ReprintInfoInput | null;
+  showReprintInfoDialog: boolean;
 }
 
 export interface HistoryRecord {

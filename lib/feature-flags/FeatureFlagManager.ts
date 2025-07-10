@@ -4,6 +4,7 @@ import {
   FeatureContext,
   FeatureEvaluation,
   FeatureFlag,
+  FeatureFlagStatus,
   FeatureFlagMonitor,
   FeatureFlagEvent,
   KnownFeatureFlags,
@@ -219,7 +220,7 @@ export class FeatureFlagManager {
       throw new Error(`Feature flag ${key} not found`);
     }
 
-    const newStatus = flag.status === 'enabled' ? 'disabled' : 'enabled';
+    const newStatus = flag.status === FeatureFlagStatus.ENABLED ? FeatureFlagStatus.DISABLED : FeatureFlagStatus.ENABLED;
     
     featureFlagLogger.info({
       flagKey: key,

@@ -1,0 +1,34 @@
+query GetOrderStateList($limit: Int = 50, $offset: Int = 0) {
+  data_orderCollection(
+    # Filter for pending orders (loaded_qty < product_qty or loaded_qty is null)
+    filter: {
+      or: [
+        { loaded_qty: { is: null } }
+        # Note: GraphQL doesn't support direct column comparisons, need to handle in client
+      ]
+    }
+    orderBy: [{ created_at: DescNullsLast }]
+    first: $limit
+    offset: $offset
+  ) {
+    edges {
+      node {
+        uuid
+        order_ref
+        account_num
+        product_code
+        product_desc
+        product_qty
+        loaded_qty
+        created_at
+        customer_ref
+        invoice_to
+        delivery_add
+      }
+    }
+    pageInfo {
+      hasNextPage
+      hasPreviousPage
+    }
+  }
+}

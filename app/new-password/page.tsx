@@ -24,12 +24,12 @@ function NewPasswordContent() {
   const [userId, setUserId] = useState<string | null>(null);
 
   useEffect(() => {
-    process.env.NODE_ENV !== 'production' &&
-      process.env.NODE_ENV !== 'production' &&
+    (process.env.NODE_ENV as string) !== 'production' &&
+      (process.env.NODE_ENV as string) !== 'production' &&
       console.log('NewPasswordPage: mounted');
     if (userIdFromUrl) {
-      process.env.NODE_ENV !== 'production' &&
-        process.env.NODE_ENV !== 'production' &&
+      (process.env.NODE_ENV as string) !== 'production' &&
+        (process.env.NODE_ENV as string) !== 'production' &&
         console.log('NewPasswordPage: userId found in URL:', userIdFromUrl);
       setUserId(userIdFromUrl);
     } else {
@@ -71,15 +71,15 @@ function NewPasswordContent() {
     setLoading(true);
 
     try {
-      process.env.NODE_ENV !== 'production' &&
-        process.env.NODE_ENV !== 'production' &&
+      (process.env.NODE_ENV as string) !== 'production' &&
+        (process.env.NODE_ENV as string) !== 'production' &&
         console.log(`Attempting to reset password for user: ${userId} via Server Action.`);
       // Call the imported Server Action directly
       const result = await resetPasswordAction(userId, newPassword);
 
       if (result.success) {
-        process.env.NODE_ENV !== 'production' &&
-          process.env.NODE_ENV !== 'production' &&
+        (process.env.NODE_ENV as string) !== 'production' &&
+          (process.env.NODE_ENV as string) !== 'production' &&
           console.log(`Password reset successful for user: ${userId}`);
         setSuccess(true);
         toast.success('Password reset successfully! Redirecting to login...'); // Success toast

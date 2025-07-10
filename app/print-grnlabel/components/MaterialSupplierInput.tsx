@@ -59,7 +59,7 @@ export const MaterialSupplierInput: React.FC<MaterialSupplierInputProps> = ({
     }
 
     // 開始搜尋
-    process.env.NODE_ENV !== 'production' &&
+    (process.env.NODE_ENV as string) !== 'production' &&
       console.log('[MaterialSupplierInput] Starting search for:', trimmedValue);
     setIsLoading(true);
     setSupplierError(null);
@@ -69,18 +69,18 @@ export const MaterialSupplierInput: React.FC<MaterialSupplierInputProps> = ({
     abortControllerRef.current = abortController;
 
     try {
-      process.env.NODE_ENV !== 'production' &&
+      (process.env.NODE_ENV as string) !== 'production' &&
         console.log('[MaterialSupplierInput] Calling validateSupplierCode for:', trimmedValue);
 
       // 使用 Server Action 進行供應商驗證
       const result = await validateSupplierCode(trimmedValue);
 
-      process.env.NODE_ENV !== 'production' &&
+      (process.env.NODE_ENV as string) !== 'production' &&
         console.log('[MaterialSupplierInput] Search result:', result);
 
       // 檢查是否被取消
       if (abortController.signal.aborted) {
-        process.env.NODE_ENV !== 'production' &&
+        (process.env.NODE_ENV as string) !== 'production' &&
           console.log('[MaterialSupplierInput] Search was aborted');
         return;
       }
@@ -89,7 +89,7 @@ export const MaterialSupplierInput: React.FC<MaterialSupplierInputProps> = ({
         // 找不到供應商
         onSupplierInfoChange(null);
         setSupplierError(result.error || `Supplier Code ${trimmedValue} Not Found`);
-        process.env.NODE_ENV !== 'production' &&
+        (process.env.NODE_ENV as string) !== 'production' &&
           console.log('[MaterialSupplierInput] Supplier not found:', trimmedValue);
       } else {
         // 找到供應商
@@ -97,13 +97,13 @@ export const MaterialSupplierInput: React.FC<MaterialSupplierInputProps> = ({
         onSupplierInfoChange(supplierData);
         onChange(supplierData.supplier_code); // 使用資料庫中的標準化代碼
         setSupplierError(null);
-        process.env.NODE_ENV !== 'production' &&
+        (process.env.NODE_ENV as string) !== 'production' &&
           console.log('[MaterialSupplierInput] Supplier found:', supplierData);
       }
     } catch (error: any) {
       // 如果是取消請求，不處理
       if (error.name === 'AbortError' || abortController.signal.aborted) {
-        process.env.NODE_ENV !== 'production' &&
+        (process.env.NODE_ENV as string) !== 'production' &&
           console.log('[MaterialSupplierInput] Search cancelled or aborted');
         return;
       }
@@ -120,7 +120,7 @@ export const MaterialSupplierInput: React.FC<MaterialSupplierInputProps> = ({
       // 只有在沒有被取消的情況下才清除 loading 狀態
       if (abortControllerRef.current === abortController && !abortController.signal.aborted) {
         setIsLoading(false);
-        process.env.NODE_ENV !== 'production' &&
+        (process.env.NODE_ENV as string) !== 'production' &&
           console.log('[MaterialSupplierInput] Search completed, loading state cleared');
       }
     }
@@ -156,7 +156,7 @@ export const MaterialSupplierInput: React.FC<MaterialSupplierInputProps> = ({
     // 當輸入框被清空時，重置 supplierInfo
     if (!newValue.trim()) {
       onSupplierInfoChange(null);
-      process.env.NODE_ENV !== 'production' &&
+      (process.env.NODE_ENV as string) !== 'production' &&
         console.log('[MaterialSupplierInput] Input cleared, resetting supplier info');
     }
   };

@@ -1,7 +1,12 @@
 /**
- * Still In Await Percentage Widget
+ * Still In Await Percentage Widget - Apollo GraphQL Version
  * 顯示指定時間生成的棧板中仍在 await location 的百分比
  * 支援頁面的 time frame selector
+ * 
+ * GraphQL Migration:
+ * - 使用 Apollo Client 共享查詢
+ * - 複用 StillInAwaitWidget 的 GraphQL 查詢
+ * - Client-side 計算百分比
  */
 
 'use client';
@@ -15,6 +20,9 @@ import { motion } from 'framer-motion';
 import { getYesterdayRange } from '@/app/utils/timezone';
 import { format } from 'date-fns';
 import { createDashboardAPI } from '@/lib/api/admin/DashboardAPI';
+import { useGetStillInAwaitPercentageWidgetQuery } from '@/lib/graphql/generated/apollo-hooks';
+
+// GraphQL 查詢已經移動到 lib/graphql/generated/apollo-hooks.ts
 
 interface AwaitStatsData {
   percentage: number;
@@ -29,13 +37,6 @@ const StillInAwaitPercentageWidget = React.memo(function StillInAwaitPercentageW
   isEditMode,
   timeFrame,
 }: WidgetComponentProps) {
-  const [data, setData] = useState<AwaitStatsData>({
-    percentage: 0,
-    stillInAwait: 0,
-    totalMoved: 0,
-  });
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [performanceMetrics, setPerformanceMetrics] = useState<{
     fetchTime: number;
     cacheHit: boolean;
@@ -56,10 +57,40 @@ const StillInAwaitPercentageWidget = React.memo(function StillInAwaitPercentageW
     };
   }, [timeFrame]);
 
+  // 使用環境變量控制是否使用 GraphQL
+  const useGraphQL = process.env.NEXT_PUBLIC_ENABLE_GRAPHQL_AWAIT === 'true' || 
+                     widget?.config?.useGraphQL === true;
+
+  // 使用 GraphQL Codegen 生成嘅 hook
+  const { 
+    data: graphqlData, 
+    loading: graphqlLoading, 
+    error: graphqlError 
+  } = useGetStillInAwaitPercentageWidgetQuery({
+    skip: !useGraphQL || isEditMode,
+    variables: {
+      startDate: dateRange.start.toISOString(),
+      endDate: dateRange.end.toISOString(),
+    },
+    pollInterval: 120000, // 2分鐘輪詢
+    fetchPolicy: 'cache-and-network',
+  });
+
+  // Server Actions fallback
+  const [serverActionsData, setServerActionsData] = useState<AwaitStatsData>({
+    percentage: 0,
+    stillInAwait: 0,
+    totalMoved: 0,
+  });
+  const [serverActionsLoading, setServerActionsLoading] = useState(!useGraphQL);
+  const [serverActionsError, setServerActionsError] = useState<string | null>(null);
+
   useEffect(() => {
+    if (useGraphQL || isEditMode) return;
+
     const fetchData = async () => {
-      setLoading(true);
-      setError(null);
+      setServerActionsLoading(true);
+      setServerActionsError(null);
       const fetchStartTime = performance.now();
 
       try {
@@ -87,7 +118,7 @@ const StillInAwaitPercentageWidget = React.memo(function StillInAwaitPercentageW
         );
 
         if (widgetData && !widgetData.data.error) {
-          setData({
+          setServerActionsData({
             percentage: widgetData.data.value || 0,
             stillInAwait: widgetData.data.metadata?.stillAwait || 0,
             totalMoved: widgetData.data.metadata?.totalPallets || 0,
@@ -103,17 +134,52 @@ const StillInAwaitPercentageWidget = React.memo(function StillInAwaitPercentageW
           throw new Error(widgetData?.data.error || 'No data received');
         }
 
-        setError(null);
+        setServerActionsError(null);
       } catch (err) {
         console.error('Error fetching await percentage stats:', err);
-        setError(err instanceof Error ? err.message : 'Unknown error');
+        setServerActionsError(err instanceof Error ? err.message : 'Unknown error');
       } finally {
-        setLoading(false);
+        setServerActionsLoading(false);
       }
     };
 
     fetchData();
-  }, [dateRange]);
+  }, [dateRange, useGraphQL, isEditMode]);
+
+  // 計算 GraphQL 數據
+  const graphqlStats = useMemo<AwaitStatsData>(() => {
+    if (!graphqlData?.record_palletinfoCollection?.edges) {
+      return { percentage: 0, stillInAwait: 0, totalMoved: 0 };
+    }
+
+    const edges = graphqlData.record_palletinfoCollection.edges;
+    const totalPallets = edges.length;
+    let stillInAwaitCount = 0;
+
+    // 計算仍在 await location 的棧板數量
+    edges.forEach((edge: any) => {
+      const inventoryEdges = edge.node.record_inventoryCollection?.edges || [];
+      // await 是數字，不是 boolean，检查是否 > 0
+      const hasAwaitRecord = inventoryEdges.some((invEdge: any) => invEdge.node.await > 0);
+      if (hasAwaitRecord) {
+        stillInAwaitCount++;
+      }
+    });
+
+    const percentage = totalPallets > 0 ? (stillInAwaitCount / totalPallets) * 100 : 0;
+
+    return {
+      percentage,
+      stillInAwait: stillInAwaitCount,
+      totalMoved: totalPallets,
+      optimized: true,
+    };
+  }, [graphqlData]);
+
+  // 合併數據源
+  const data = useGraphQL ? graphqlStats : serverActionsData;
+  const loading = useGraphQL ? graphqlLoading : serverActionsLoading;
+  const error = useGraphQL ? graphqlError : (serverActionsError ? new Error(serverActionsError) : null);
 
   if (isEditMode) {
     return (
@@ -143,7 +209,7 @@ const StillInAwaitPercentageWidget = React.memo(function StillInAwaitPercentageW
         ) : error ? (
           <div className='text-center text-sm text-red-400'>
             <p>Error loading data</p>
-            <p className='mt-1 text-xs'>{error}</p>
+            <p className='mt-1 text-xs'>{error.message}</p>
           </div>
         ) : (
           <div className='text-center'>
@@ -164,8 +230,8 @@ const StillInAwaitPercentageWidget = React.memo(function StillInAwaitPercentageW
               {data.optimized && (
                 <div className='mt-1 flex items-center gap-1 text-xs text-blue-400'>
                   <span>⚡</span>
-                  <span>Optimized</span>
-                  {performanceMetrics && (
+                  <span>{useGraphQL ? 'GraphQL' : 'Optimized'}</span>
+                  {performanceMetrics && !useGraphQL && (
                     <span className='ml-1'>({performanceMetrics.fetchTime.toFixed(0)}ms)</span>
                   )}
                 </div>
@@ -191,13 +257,19 @@ const StillInAwaitPercentageWidget = React.memo(function StillInAwaitPercentageW
 export default StillInAwaitPercentageWidget;
 
 /**
- * @deprecated Legacy implementation with multiple client-side queries
- * Migrated to hybrid architecture on 2025-07-07
- *
- * Performance improvements achieved:
- * - Query time: ~2000ms → ~100ms (20x faster)
- * - Network requests: 2 → 1 (50% reduction)
- * - Data transfer: ~50KB → ~1KB (98% reduction)
- * - Client processing: Complex Map operations → None
- * - Caching: None → 2-minute TTL with automatic revalidation
+ * GraphQL Migration completed on 2025-07-09
+ * 
+ * Features:
+ * - Apollo Client with cache-and-network policy
+ * - Reuses GET_STILL_IN_AWAIT query from StillInAwaitWidget
+ * - Client-side percentage calculation
+ * - 2-minute polling for real-time updates
+ * - Fallback to Server Actions when GraphQL disabled
+ * - Feature flag control: NEXT_PUBLIC_ENABLE_GRAPHQL_AWAIT
+ * 
+ * Performance improvements:
+ * - Query efficiency: Single GraphQL query shared with StillInAwaitWidget
+ * - Data processing: Lightweight client-side calculation
+ * - Caching: Apollo InMemoryCache with automatic updates
+ * - Network optimization: Shared query reduces redundant requests
  */

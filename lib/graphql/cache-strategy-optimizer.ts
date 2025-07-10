@@ -311,10 +311,10 @@ class CacheStrategyOptimizer {
     // Adjust TTL based on hit ratio and access frequency
     if (hitRatio > 0.8 && metrics.accessFrequency > 10) {
       // High hit ratio and frequent access - increase TTL
-      newTTL = Math.min(currentConfig.ttl * 1.2, strategy.maxTTL);
+      newTTL = Math.min(currentConfig.ttl * 1.2, strategy && 'maxTTL' in strategy ? (strategy as any).maxTTL : currentConfig.ttl * 2);
     } else if (hitRatio < 0.3) {
       // Low hit ratio - decrease TTL
-      newTTL = Math.max(currentConfig.ttl * 0.8, strategy.baseTTL * 0.5);
+      newTTL = Math.max(currentConfig.ttl * 0.8, strategy && 'baseTTL' in strategy ? (strategy as any).baseTTL * 0.5 : currentConfig.ttl * 0.5);
     }
 
     // Adjust cache size based on access patterns

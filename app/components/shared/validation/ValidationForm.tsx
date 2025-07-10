@@ -213,8 +213,8 @@ export function ValidationForm({
       for (const rule of rules) {
         const result = rule.validate(value, formData);
         if (result instanceof Promise) {
-          process.env.NODE_ENV !== 'production' &&
-            process.env.NODE_ENV !== 'production' &&
+          (process.env.NODE_ENV as string) !== 'production' &&
+            (process.env.NODE_ENV as string) !== 'production' &&
             console.warn('Async validation rule used in sync context');
           continue;
         }

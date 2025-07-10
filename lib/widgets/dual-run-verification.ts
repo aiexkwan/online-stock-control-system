@@ -203,7 +203,7 @@ export class DualRunVerifier {
       // 恢復 console.warn
       console.warn = originalWarn;
     } catch (error) {
-      result.error = error;
+      result.error = error instanceof Error ? error : new Error(String(error));
     }
 
     return result;

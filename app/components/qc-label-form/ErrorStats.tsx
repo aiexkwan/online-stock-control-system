@@ -120,8 +120,8 @@ export const ErrorStats: React.FC<ErrorStatsProps> = React.memo(
               <button
                 type='button'
                 onClick={() =>
-                  process.env.NODE_ENV !== 'production' &&
-                  process.env.NODE_ENV !== 'production' &&
+                  (process.env.NODE_ENV as string) !== 'production' &&
+                  (process.env.NODE_ENV as string) !== 'production' &&
                   console.log('Error Reports:', errorHandler.getErrorReports())
                 }
                 className='flex-1 rounded bg-gray-600 px-3 py-1 text-xs text-white transition-colors hover:bg-gray-700'

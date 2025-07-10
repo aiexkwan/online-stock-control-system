@@ -77,7 +77,7 @@ export const usePalletGeneration = (): UsePalletGenerationReturn => {
       setGenerationError(null);
 
       try {
-        process.env.NODE_ENV !== 'production' &&
+        (process.env.NODE_ENV as string) !== 'production' &&
           console.log('[usePalletGeneration] Generating pallet numbers:', count);
 
         // 使用 Server Action
@@ -96,7 +96,7 @@ export const usePalletGeneration = (): UsePalletGenerationReturn => {
           };
         }
 
-        process.env.NODE_ENV !== 'production' &&
+        (process.env.NODE_ENV as string) !== 'production' &&
           console.log('[usePalletGeneration] Generated successfully:', {
             count: result.palletNumbers.length,
           });

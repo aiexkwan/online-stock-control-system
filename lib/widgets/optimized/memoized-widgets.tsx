@@ -45,7 +45,7 @@ export function createMemoizedWidget<P extends WidgetComponentProps>(
   Component: React.ComponentType<P>,
   compareProps?: (prevProps: P, nextProps: P) => boolean
 ): React.ComponentType<P> {
-  const MemoizedComponent = memo(Component, compareProps || defaultPropsComparison);
+  const MemoizedComponent = memo(Component, compareProps || defaultPropsComparison) as unknown as React.ComponentType<P>;
 
   MemoizedComponent.displayName = `Memoized(${Component.displayName || Component.name})`;
 

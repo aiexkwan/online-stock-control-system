@@ -1,0 +1,27 @@
+query GetWarehouseWorkLevel($startDate: Datetime!, $endDate: Datetime!) {
+  work_levelCollection(
+    filter: {
+      latest_update: { gte: $startDate, lte: $endDate }
+      # Filter by worker department through id foreign key
+      id_data_id: {
+        department: { eq: "Warehouse" }
+      }
+    }
+    orderBy: [{ latest_update: AscNullsLast }]
+  ) {
+    edges {
+      node {
+        uuid
+        id
+        move
+        latest_update
+        # Get worker details through foreign key
+        id_data_id {
+          id
+          name
+          department
+        }
+      }
+    }
+  }
+}

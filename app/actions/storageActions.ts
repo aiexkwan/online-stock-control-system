@@ -21,7 +21,7 @@ export async function uploadPalletLabelPdfAction(
   // For simplicity, using the provided fileName, but consider potential overwrites or structure.
   const filePath = `${fileName}`;
 
-  process.env.NODE_ENV !== 'production' &&
+  (process.env.NODE_ENV as string) !== 'production' &&
     console.log(
       `[uploadPalletLabelPdfAction] Attempting to upload ${filePath} to bucket ${bucketName}, size: ${fileContent.byteLength}`
     );
@@ -40,7 +40,7 @@ export async function uploadPalletLabelPdfAction(
       return { success: false, error: `Storage upload failed: ${error.message}` };
     }
 
-    process.env.NODE_ENV !== 'production' &&
+    (process.env.NODE_ENV as string) !== 'production' &&
       console.log(
         `[uploadPalletLabelPdfAction] File ${filePath} uploaded successfully to ${bucketName}. Path: ${data?.path}`
       );

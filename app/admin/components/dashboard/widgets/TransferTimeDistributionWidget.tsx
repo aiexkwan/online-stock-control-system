@@ -1,13 +1,14 @@
 /**
- * Transfer Time Distribution Widget
+ * Transfer Time Distribution Widget - Apollo GraphQL Version
  * 以 no dot 線形圖顯示 transfer done 的時間分布
  * 支援頁面的 time frame selector
  * 自動將 time frame 分成 12 節顯示
  *
- * OPTIMIZED VERSION (Phase 2.1)
- * - 遷移到 DashboardAPI 進行服務器端聚合
- * - 移除客戶端時間分組邏輯
- * - 減少數據傳輸量和處理時間
+ * GraphQL Migration:
+ * - 使用 Apollo Client 查詢 record_transfer
+ * - Client-side 時間分組計算
+ * - 支援 cache-and-network 策略
+ * - 保留 Server Actions fallback
  */
 
 'use client';
@@ -27,10 +28,13 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from 'recharts';
-import { format } from 'date-fns';
+import { format, startOfHour, addHours } from 'date-fns';
 import { getYesterdayRange } from '@/app/utils/timezone';
 import { createDashboardAPI } from '@/lib/api/admin/DashboardAPI';
 import { WidgetStyles } from '@/app/utils/widgetStyles';
+import { useGetTransferTimeDistributionWidgetQuery } from '@/lib/graphql/generated/apollo-hooks';
+
+// GraphQL 查詢已經移動到 lib/graphql/generated/apollo-hooks.ts
 
 interface TimeDistributionData {
   timeSlots: Array<{
@@ -49,12 +53,6 @@ export const TransferTimeDistributionWidget = React.memo(function TransferTimeDi
   isEditMode,
   timeFrame,
 }: WidgetComponentProps) {
-  const [data, setData] = useState<TimeDistributionData>({
-    timeSlots: [],
-    totalTransfers: 0,
-  });
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [performanceMetrics, setPerformanceMetrics] = useState<{
     fetchTime: number;
     cacheHit: boolean;
@@ -75,10 +73,39 @@ export const TransferTimeDistributionWidget = React.memo(function TransferTimeDi
     };
   }, [timeFrame]);
 
+  // 使用環境變量控制是否使用 GraphQL
+  const useGraphQL = process.env.NEXT_PUBLIC_ENABLE_GRAPHQL_AWAIT === 'true' || 
+                     widget?.config?.useGraphQL === true;
+
+  // 使用 GraphQL Codegen 生成嘅 hook
+  const { 
+    data: graphqlData, 
+    loading: graphqlLoading, 
+    error: graphqlError 
+  } = useGetTransferTimeDistributionWidgetQuery({
+    skip: !useGraphQL || isEditMode,
+    variables: {
+      startDate: dateRange.start.toISOString(),
+      endDate: dateRange.end.toISOString(),
+    },
+    pollInterval: 300000, // 5分鐘輪詢
+    fetchPolicy: 'cache-and-network',
+  });
+
+  // Server Actions fallback
+  const [serverActionsData, setServerActionsData] = useState<TimeDistributionData>({
+    timeSlots: [],
+    totalTransfers: 0,
+  });
+  const [serverActionsLoading, setServerActionsLoading] = useState(!useGraphQL);
+  const [serverActionsError, setServerActionsError] = useState<string | null>(null);
+
   useEffect(() => {
+    if (useGraphQL || isEditMode) return;
+
     const fetchData = async () => {
-      setLoading(true);
-      setError(null);
+      setServerActionsLoading(true);
+      setServerActionsError(null);
       const fetchStartTime = performance.now();
 
       try {
@@ -108,7 +135,7 @@ export const TransferTimeDistributionWidget = React.memo(function TransferTimeDi
         if (widgetData && !widgetData.data.error) {
           const timeSlots = widgetData.data.value || [];
 
-          setData({
+          setServerActionsData({
             timeSlots,
             totalTransfers: widgetData.data.metadata?.totalTransfers || 0,
             optimized: widgetData.data.metadata?.optimized,
@@ -124,17 +151,79 @@ export const TransferTimeDistributionWidget = React.memo(function TransferTimeDi
           throw new Error(widgetData?.data.error || 'No data received');
         }
 
-        setError(null);
+        setServerActionsError(null);
       } catch (err) {
         console.error('Error fetching transfer time distribution:', err);
-        setError(err instanceof Error ? err.message : 'Unknown error');
+        setServerActionsError(err instanceof Error ? err.message : 'Unknown error');
       } finally {
-        setLoading(false);
+        setServerActionsLoading(false);
       }
     };
 
     fetchData();
-  }, [dateRange]);
+  }, [dateRange, useGraphQL, isEditMode]);
+
+  // 處理 GraphQL 數據 - 將時間分組為 12 個時間段
+  const graphqlTimeDistribution = useMemo<TimeDistributionData>(() => {
+    if (!graphqlData?.record_transferCollection?.edges) {
+      return { timeSlots: [], totalTransfers: 0 };
+    }
+
+    const edges = graphqlData.record_transferCollection.edges;
+    const totalTransfers = edges.length;
+
+    // 計算時間範圍並分成 12 個時間段
+    const timeSlotCount = 12;
+    const totalMillis = dateRange.end.getTime() - dateRange.start.getTime();
+    const slotMillis = totalMillis / timeSlotCount;
+
+    // 初始化時間段
+    const slots: Map<number, { time: string; value: number; fullTime: string }> = new Map();
+    for (let i = 0; i < timeSlotCount; i++) {
+      const slotStart = new Date(dateRange.start.getTime() + i * slotMillis);
+      slots.set(i, {
+        time: format(slotStart, 'HH:mm'),
+        fullTime: format(slotStart, 'yyyy-MM-dd HH:mm'),
+        value: 0,
+      });
+    }
+
+    // 統計每個時間段的傳輸數量
+    edges.forEach((edge: any) => {
+      const tranDate = new Date(edge.node.tran_date);
+      const timeDiff = tranDate.getTime() - dateRange.start.getTime();
+      const slotIndex = Math.min(Math.floor(timeDiff / slotMillis), timeSlotCount - 1);
+      
+      if (slotIndex >= 0 && slotIndex < timeSlotCount) {
+        const slot = slots.get(slotIndex)!;
+        slot.value++;
+      }
+    });
+
+    const timeSlots = Array.from(slots.values());
+    
+    // 找出高峰時段
+    let peakHour = '';
+    let maxValue = 0;
+    timeSlots.forEach(slot => {
+      if (slot.value > maxValue) {
+        maxValue = slot.value;
+        peakHour = slot.time;
+      }
+    });
+
+    return {
+      timeSlots,
+      totalTransfers,
+      peakHour,
+      optimized: true,
+    };
+  }, [graphqlData, dateRange]);
+
+  // 合併數據源
+  const data = useGraphQL ? graphqlTimeDistribution : serverActionsData;
+  const loading = useGraphQL ? graphqlLoading : serverActionsLoading;
+  const error = useGraphQL ? graphqlError : (serverActionsError ? new Error(serverActionsError) : null);
 
   if (isEditMode) {
     return (
@@ -165,7 +254,7 @@ export const TransferTimeDistributionWidget = React.memo(function TransferTimeDi
         ) : error ? (
           <div className='text-center text-sm text-red-400'>
             <p>Error loading data</p>
-            <p className='mt-1 text-xs'>{error}</p>
+            <p className='mt-1 text-xs'>{error.message}</p>
           </div>
         ) : (
           <motion.div
@@ -212,8 +301,8 @@ export const TransferTimeDistributionWidget = React.memo(function TransferTimeDi
               {data.optimized && (
                 <div className='absolute right-2 top-2 flex items-center gap-1 text-xs text-blue-400'>
                   <span>⚡</span>
-                  <span>Optimized</span>
-                  {performanceMetrics && (
+                  <span>{useGraphQL ? 'GraphQL' : 'Optimized'}</span>
+                  {performanceMetrics && !useGraphQL && (
                     <span className='ml-1'>({performanceMetrics.fetchTime.toFixed(0)}ms)</span>
                   )}
                 </div>
@@ -239,19 +328,19 @@ export const TransferTimeDistributionWidget = React.memo(function TransferTimeDi
 export default TransferTimeDistributionWidget;
 
 /**
- * @deprecated Legacy GraphQL implementation with client-side time aggregation
- * Migrated to DashboardAPI hybrid architecture on 2025-07-07 (Phase 2.1)
- *
- * Performance improvements achieved:
- * - Time aggregation: Client-side → Server-side RPC with fallback
- * - Data transfer: ~50KB raw timestamps → ~1KB aggregated results (98% reduction)
- * - Processing time: Complex date-fns calculations → Pre-calculated time slots
- * - Bundle size: Removed GraphQL client dependencies for this widget
- * - Caching: None → 5-minute TTL with automatic revalidation
- * - Intelligence: Added peak hour detection and metadata
- *
- * Architecture evolution:
- * 1. Original: GraphQL + client-side date-fns processing
- * 2. Optimized: DashboardAPI + RPC aggregation + fallback strategy
- * 3. Benefits: Reduced client processing, faster loading, better UX
+ * GraphQL Migration completed on 2025-07-09
+ * 
+ * Features:
+ * - Apollo Client with cache-and-network policy
+ * - Client-side time slot aggregation (12 slots)
+ * - Peak hour detection
+ * - 5-minute polling for real-time updates
+ * - Fallback to Server Actions when GraphQL disabled
+ * - Feature flag control: NEXT_PUBLIC_ENABLE_GRAPHQL_AWAIT
+ * 
+ * Performance considerations:
+ * - Query optimization: Fetches only required fields
+ * - Time aggregation: Efficient client-side grouping algorithm
+ * - Caching: Apollo InMemoryCache reduces redundant queries
+ * - Visualization: No-dot line chart as per requirements
  */

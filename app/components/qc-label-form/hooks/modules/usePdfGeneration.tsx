@@ -45,7 +45,9 @@ interface UsePdfGenerationReturn {
     pdfBlobs: Blob[],
     productCode: string,
     palletNumbers: string[],
-    series: string[]
+    series: string[],
+    quantity?: number,
+    operator?: string
   ) => Promise<void>;
   // Enhanced with hardware service features
   getPrintQueueStatus?: () => { pending: number; processing: number };
@@ -459,7 +461,7 @@ export const usePdfGeneration = (): UsePdfGenerationReturn => {
     if (useHardwareServices.current && halRef.current) {
       return halRef.current.queue.getQueueStatus();
     }
-    return undefined;
+    return { pending: 0, processing: 0 };
   }, []);
 
   // Cancel print job (if hardware services available)

@@ -4,6 +4,7 @@
  */
 
 import { DataAccessLayer } from '../core/DataAccessStrategy';
+import { isNotProduction } from '@/lib/utils/env';
 
 // Dashboard widget types
 export interface DashboardWidgetData {
@@ -32,6 +33,14 @@ export interface DashboardParams {
     offset?: number;
     startDate?: string;
     endDate?: string;
+    orderRef?: number;
+    tableName?: string;
+    fieldName?: string;
+    stockType?: string;
+    grnRef?: string;
+    materialCode?: string;
+    metric?: 'pallet_count' | 'quantity_sum';
+    department?: string;
   };
 }
 
@@ -380,12 +389,12 @@ export class DashboardAPI extends DataAccessLayer<DashboardParams, DashboardResu
             
             const warehouseWork = workData.filter((work: any) => {
               const operator = operatorMap.get(work.id);
-              return operator?.department === 'Warehouse';
+              return (operator as any)?.department === 'Warehouse';
             });
             
             // Group by date (simplified version)
             const dateGroups = new Map<string, number>();
-            warehouseWork.forEach(work => {
+            warehouseWork.forEach((work: any) => {
               const date = new Date(work.latest_update).toISOString().split('T')[0];
               dateGroups.set(date, (dateGroups.get(date) || 0) + (work.move || 0));
             });
@@ -638,11 +647,11 @@ export class DashboardAPI extends DataAccessLayer<DashboardParams, DashboardResu
             }
             
             // 分離元數據和實際數據
-            const metadataEntry = historyData.find(item => item.time_segment === 'metadata');
-            const chartData = historyData.filter(item => item.time_segment !== 'metadata');
+            const metadataEntry = historyData.find((item: any) => item.time_segment === 'metadata');
+            const chartData = historyData.filter((item: any) => item.time_segment !== 'metadata');
             
             // 處理圖表數據格式
-            const processedData = chartData.map(segment => {
+            const processedData = chartData.map((segment: any) => {
               const dataPoint: any = {
                 time: segment.time_segment,
                 timestamp: segment.segment_start
@@ -917,7 +926,7 @@ export class DashboardAPI extends DataAccessLayer<DashboardParams, DashboardResu
           
         case 'aco_order_progress':
           // ACO order progress using existing check_aco_order_completion RPC
-          const orderRef = params.params?.orderRef as number | undefined;
+          const orderRef = params.params?.orderRef;
           
           if (!orderRef) {
             return {
@@ -1162,8 +1171,8 @@ export class DashboardAPI extends DataAccessLayer<DashboardParams, DashboardResu
           
         case 'report_references':
           // Report generator references loader
-          const tableName = params.params?.tableName as string | undefined;
-          const fieldName = params.params?.fieldName as string | undefined;
+          const tableName = params.params?.tableName;
+          const fieldName = params.params?.fieldName;
           const refLimit = params.params?.limit as number | undefined || 1000;
           const refOffset = params.params?.offset as number | undefined || 0;
           
@@ -1353,7 +1362,7 @@ export class DashboardAPI extends DataAccessLayer<DashboardParams, DashboardResu
           
         case 'aco_order_report':
           // Get ACO order report data
-          const acoOrderRef = params.params?.orderRef as number | undefined;
+          const acoOrderRef = params.params?.orderRef;
           
           if (!acoOrderRef) {
             return {
@@ -1399,7 +1408,7 @@ export class DashboardAPI extends DataAccessLayer<DashboardParams, DashboardResu
           
         case 'stock_distribution_chart':
           // Stock distribution chart with server-side treemap data processing
-          const stockType = params.params?.stockType as string | undefined;
+          const stockType = params.params?.stockType;
           
           try {
             // Use RPC function for optimized stock distribution data
@@ -1491,7 +1500,7 @@ export class DashboardAPI extends DataAccessLayer<DashboardParams, DashboardResu
           
         case 'grn_material_codes':
           // Get material codes for a GRN reference
-          const grnRef = params.params?.grnRef as string | undefined;
+          const grnRef = params.params?.grnRef;
           
           if (!grnRef) {
             return {
@@ -1542,8 +1551,8 @@ export class DashboardAPI extends DataAccessLayer<DashboardParams, DashboardResu
           
         case 'grn_report_data':
           // Get GRN report data
-          const reportGrnRef = params.params?.grnRef as string | undefined;
-          const materialCode = params.params?.materialCode as string | undefined;
+          const reportGrnRef = params.params?.grnRef;
+          const materialCode = params.params?.materialCode;
           
           if (!reportGrnRef || !materialCode) {
             return {
@@ -1595,7 +1604,7 @@ export class DashboardAPI extends DataAccessLayer<DashboardParams, DashboardResu
           // Production statistics using new RPC function
           const prodStartDate = params.dateRange?.start || params.params?.startDate as string | undefined || new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
           const prodEndDate = params.dateRange?.end || params.params?.endDate as string | undefined || new Date().toISOString();
-          const metric = params.params?.metric as string | undefined || 'pallet_count';
+          const metric = params.params?.metric || 'pallet_count';
           
           try {
             const { data: productionStats, error: productionError } = await supabase
@@ -1763,7 +1772,7 @@ export class DashboardAPI extends DataAccessLayer<DashboardParams, DashboardResu
           // Staff workload using new RPC function
           const workloadStartDate = params.dateRange?.start || params.params?.startDate as string | undefined || new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
           const workloadEndDate = params.dateRange?.end || params.params?.endDate as string | undefined || new Date().toISOString();
-          const department = params.params?.department as string | undefined || 'Injection';
+          const department = params.params?.department || 'Injection';
           
           try {
             const { data: workloadData, error: workloadError } = await supabase
@@ -1868,7 +1877,7 @@ export class DashboardAPI extends DataAccessLayer<DashboardParams, DashboardResu
       return {
         value: 0,
         label: 'Error loading data',
-        error: error.message
+        error: error instanceof Error ? error.message : 'Unknown error occurred'
       };
     }
   }

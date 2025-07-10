@@ -127,7 +127,7 @@ export async function searchPallet(searchValue: string): Promise<SearchPalletRes
     // For series search, we get an array, need to extract first item
     const palletInfo = searchType === 'series' && Array.isArray(palletData) ? palletData[0] : palletData;
     
-    if (!palletInfo) {
+    if (!palletInfo || Array.isArray(palletInfo)) {
       return {
         success: false,
         error: `No pallet found for ${searchValue}`,

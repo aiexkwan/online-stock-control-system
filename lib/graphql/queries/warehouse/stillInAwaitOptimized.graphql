@@ -1,0 +1,39 @@
+# Still In Await Widget Query - 使用正確嘅 Supabase GraphQL 結構
+# 查詢指定時間範圍內生成嘅棧板中仍然喺 await location 嘅數量
+
+query GetStillInAwaitOptimized($startDate: Datetime!, $endDate: Datetime!) {
+  # 查詢指定時間範圍內生成嘅棧板
+  record_palletinfoCollection(
+    filter: {
+      generate_time: { gte: $startDate, lte: $endDate }
+    }
+  ) {
+    edges {
+      node {
+        nodeId
+        plt_num
+        generate_time
+        product_code
+        # 查詢每個棧板嘅庫存記錄
+        record_inventoryCollection(
+          filter: {
+            await: { gt: 0 }
+          }
+        ) {
+          edges {
+            node {
+              nodeId
+              plt_num
+              await
+              latest_update
+            }
+          }
+        }
+      }
+    }
+    pageInfo {
+      hasNextPage
+      endCursor
+    }
+  }
+}

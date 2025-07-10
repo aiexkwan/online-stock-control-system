@@ -109,8 +109,8 @@ export async function authenticateUser(
         };
       } else {
         // --- Password INCORRECT - Check for Pending Reset Request ---
-        process.env.NODE_ENV !== 'production' &&
-          process.env.NODE_ENV !== 'production' &&
+        (process.env.NODE_ENV as string) !== 'production' &&
+          (process.env.NODE_ENV as string) !== 'production' &&
           console.log(`Password mismatch for ${userId}. Checking for pending reset request...`);
 
         // --- Explicitly parse userId to integer for query ---
@@ -137,8 +137,8 @@ export async function authenticateUser(
 
         if (pendingRequest) {
           // Pending request FOUND - Grant temporary access
-          process.env.NODE_ENV !== 'production' &&
-            process.env.NODE_ENV !== 'production' &&
+          (process.env.NODE_ENV as string) !== 'production' &&
+            (process.env.NODE_ENV as string) !== 'production' &&
             console.log(`Pending reset request found for ${userId}. Granting temporary access.`);
           return {
             success: true,
@@ -148,8 +148,8 @@ export async function authenticateUser(
           };
         } else {
           // No pending request - Just an incorrect password
-          process.env.NODE_ENV !== 'production' &&
-            process.env.NODE_ENV !== 'production' &&
+          (process.env.NODE_ENV as string) !== 'production' &&
+            (process.env.NODE_ENV as string) !== 'production' &&
             console.log(`No pending reset request found for ${userId}.`);
           return { success: false, error: 'Incorrect password.' };
         }

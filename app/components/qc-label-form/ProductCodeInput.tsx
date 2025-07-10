@@ -70,7 +70,7 @@ export const ProductCodeInput: React.FC<ProductCodeInputProps> = ({
     }
 
     // 開始搜尋
-    process.env.NODE_ENV !== 'production' &&
+    (process.env.NODE_ENV as string) !== 'production' &&
       console.log('[ProductCodeInput] Starting search for:', trimmedValue);
     setIsLoading(true);
     setProductError(null);
@@ -80,11 +80,11 @@ export const ProductCodeInput: React.FC<ProductCodeInputProps> = ({
     abortControllerRef.current = abortController;
 
     try {
-      process.env.NODE_ENV !== 'production' &&
+      (process.env.NODE_ENV as string) !== 'production' &&
         console.log('[ProductCodeInput] Creating Supabase client...');
       const client = createClient();
 
-      process.env.NODE_ENV !== 'production' &&
+      (process.env.NODE_ENV as string) !== 'production' &&
         console.log('[ProductCodeInput] Executing RPC query for:', trimmedValue);
 
       // 使用 RPC 函數進行產品搜尋 - 在資料庫端執行，更穩定更快速
@@ -95,12 +95,12 @@ export const ProductCodeInput: React.FC<ProductCodeInputProps> = ({
         })
         .abortSignal(abortController.signal); // 使用 abort signal
 
-      process.env.NODE_ENV !== 'production' &&
+      (process.env.NODE_ENV as string) !== 'production' &&
         console.log('[ProductCodeInput] Search result:', { data, error });
 
       // 檢查是否被取消
       if (abortController.signal.aborted) {
-        process.env.NODE_ENV !== 'production' &&
+        (process.env.NODE_ENV as string) !== 'production' &&
           console.log('[ProductCodeInput] Search was aborted');
         return;
       }
@@ -109,7 +109,7 @@ export const ProductCodeInput: React.FC<ProductCodeInputProps> = ({
         // 找不到產品
         onProductInfoChange(null);
         setProductError(`Product Code ${trimmedValue} Not Found`);
-        process.env.NODE_ENV !== 'production' &&
+        (process.env.NODE_ENV as string) !== 'production' &&
           console.log('[ProductCodeInput] Product not found:', trimmedValue);
       } else {
         // 找到產品 - get_product_details_by_code 返回數組，取第一個結果
@@ -117,7 +117,7 @@ export const ProductCodeInput: React.FC<ProductCodeInputProps> = ({
         onProductInfoChange(productData);
         onChange(productData.code); // 使用資料庫中的標準化代碼
         setProductError(null);
-        process.env.NODE_ENV !== 'production' &&
+        (process.env.NODE_ENV as string) !== 'production' &&
           console.log('[ProductCodeInput] Product found:', productData);
 
         // 自動填充數量（如果有）
@@ -128,7 +128,7 @@ export const ProductCodeInput: React.FC<ProductCodeInputProps> = ({
     } catch (error: any) {
       // 如果是取消請求，不處理
       if (error.name === 'AbortError' || abortController.signal.aborted) {
-        process.env.NODE_ENV !== 'production' &&
+        (process.env.NODE_ENV as string) !== 'production' &&
           console.log('[ProductCodeInput] Search cancelled or aborted');
         return;
       }
@@ -146,7 +146,7 @@ export const ProductCodeInput: React.FC<ProductCodeInputProps> = ({
       // 只有在沒有被取消的情況下才清除 loading 狀態
       if (abortControllerRef.current === abortController && !abortController.signal.aborted) {
         setIsLoading(false);
-        process.env.NODE_ENV !== 'production' &&
+        (process.env.NODE_ENV as string) !== 'production' &&
           console.log('[ProductCodeInput] Search completed, loading state cleared');
       }
     }
@@ -182,7 +182,7 @@ export const ProductCodeInput: React.FC<ProductCodeInputProps> = ({
     // 當輸入框被清空時，重置 productInfo
     if (!newValue.trim()) {
       onProductInfoChange(null);
-      process.env.NODE_ENV !== 'production' &&
+      (process.env.NODE_ENV as string) !== 'production' &&
         console.log('[ProductCodeInput] Input cleared, resetting product info');
     }
   };

@@ -74,7 +74,7 @@ class OrdersAPI {
         const hasMore = offset + limit < totalCount;
 
         // Transform data to match interface
-        const orders: OrderRecord[] = (data || []).map(record => ({
+        const orders: OrderRecord[] = (data || []).map((record: any) => ({
           uuid: record.uuid,
           time: record.time,
           id: record.id,
@@ -151,10 +151,23 @@ export const ordersAPI = new OrdersAPI();
 // Utility Functions
 // ================================
 
+// Raw database record interface
+interface RawOrderRecord {
+  uuid: string;
+  time: string;
+  id: number | null;
+  action: string;
+  plt_num: string | null;
+  loc: string | null;
+  remark: string;
+  uploader_name?: string;
+  doc_url: string | null;
+}
+
 /**
  * Transform raw database record to OrderRecord type
  */
-export function transformOrderRecord(raw: any): OrderRecord {
+export function transformOrderRecord(raw: RawOrderRecord): OrderRecord {
   return {
     uuid: raw.uuid,
     time: raw.time,

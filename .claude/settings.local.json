@@ -128,7 +128,11 @@
       "Bash(npx graphql-schema-linter:*)",
       "Bash(git checkout:*)",
       "Bash(perl:*)",
-      "Bash(bash:*)"
+      "Bash(bash:*)",
+      "mcp__sequential-thinking__sequentialthinking",
+      "Bash(dotenv -e .env.codegen -- graphql-codegen:*)",
+      "Bash(npx dotenv-cli -e .env.codegen -- graphql-codegen:*)",
+      "Bash(npx dotenv -e .env.codegen -- graphql-codegen:*)"
     ],
     "deny": []
   }

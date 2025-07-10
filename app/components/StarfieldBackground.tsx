@@ -67,8 +67,8 @@ export const StarfieldBackground: React.FC = () => {
     // Type assertion for WebGL context
     const gl = glContext as WebGLRenderingContext;
 
-    process.env.NODE_ENV !== 'production' &&
-      process.env.NODE_ENV !== 'production' &&
+    (process.env.NODE_ENV as string) !== 'production' &&
+      (process.env.NODE_ENV as string) !== 'production' &&
       console.log('StarfieldBackground: WebGL context created');
 
     // Resize handler

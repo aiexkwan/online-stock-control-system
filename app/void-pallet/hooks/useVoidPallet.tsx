@@ -4,6 +4,7 @@ import React, { useState, useCallback, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { useUserId } from '@/app/hooks/useUserId';
+import { getCurrentUserClockNumberAsync } from '@/app/hooks/useAuth';
 import {
   VoidPalletState,
   PalletInfo,
@@ -12,6 +13,7 @@ import {
   SearchParams,
   VoidParams,
   AutoReprintParams,
+  ReprintInfoInput,
 } from '../types';
 import {
   searchPalletAction,
@@ -46,6 +48,8 @@ const initialState: VoidPalletState = {
   isInputDisabled: false,
   // Enhanced reprint flow
   isAutoReprinting: false,
+  reprintInfo: null,
+  showReprintInfoDialog: false,
 };
 
 export function useVoidPallet() {
@@ -77,8 +81,8 @@ export function useVoidPallet() {
             logErrorAction(clockNumber || 'unknown', `${error.type}: ${error.message}`);
           })
           .catch((err: any) => {
-            process.env.NODE_ENV !== 'production' &&
-              process.env.NODE_ENV !== 'production' &&
+            (process.env.NODE_ENV as string) !== 'production' &&
+              (process.env.NODE_ENV as string) !== 'production' &&
               console.warn('[VoidPallet] Failed to get clock number for error logging:', err);
             logErrorAction('unknown', `${error.type}: ${error.message}`);
           });
@@ -105,8 +109,8 @@ export function useVoidPallet() {
       const detection = detectSearchType(searchValue.trim());
 
       // Show detection confidence in console for debugging
-      process.env.NODE_ENV !== 'production' &&
-        process.env.NODE_ENV !== 'production' &&
+      (process.env.NODE_ENV as string) !== 'production' &&
+        (process.env.NODE_ENV as string) !== 'production' &&
         console.log('[Search Detection]', {
           input: searchValue,
           detected: detection.type,
@@ -415,8 +419,8 @@ export function useVoidPallet() {
 
   const handleReprintInfoConfirm = useCallback(
     async (reprintInfo: ReprintInfoInput) => {
-      process.env.NODE_ENV !== 'production' &&
-        process.env.NODE_ENV !== 'production' &&
+      (process.env.NODE_ENV as string) !== 'production' &&
+        (process.env.NODE_ENV as string) !== 'production' &&
         console.log('[Auto Reprint] Starting reprint process...');
       updateState({ isAutoReprinting: true, showReprintInfoDialog: false });
 
@@ -435,22 +439,22 @@ export function useVoidPallet() {
           throw new Error('No internet connection available');
         }
 
-        process.env.NODE_ENV !== 'production' &&
-          process.env.NODE_ENV !== 'production' &&
+        (process.env.NODE_ENV as string) !== 'production' &&
+          (process.env.NODE_ENV as string) !== 'production' &&
           console.log('[Auto Reprint] Browser compatibility check passed');
 
         // 獲取 operator clock number - 只使用 Supabase Auth
         let operatorClockNum: string | null = null;
 
         // 使用異步函數獲取 clock number
-        process.env.NODE_ENV !== 'production' &&
-          process.env.NODE_ENV !== 'production' &&
+        (process.env.NODE_ENV as string) !== 'production' &&
+          (process.env.NODE_ENV as string) !== 'production' &&
           console.log('[Auto Reprint] Getting clock number via async method...');
         operatorClockNum = await getCurrentUserClockNumberAsync();
 
         if (operatorClockNum) {
-          process.env.NODE_ENV !== 'production' &&
-            process.env.NODE_ENV !== 'production' &&
+          (process.env.NODE_ENV as string) !== 'production' &&
+            (process.env.NODE_ENV as string) !== 'production' &&
             console.log('[Auto Reprint] Got clock number from async method:', operatorClockNum);
         } else {
           console.error('[Auto Reprint] Failed to get clock number from async method');
@@ -465,8 +469,8 @@ export function useVoidPallet() {
 
         // 確保 operatorClockNum 不為 null（已經通過上面的檢查）
         const finalOperatorClockNum: string = operatorClockNum!;
-        process.env.NODE_ENV !== 'production' &&
-          process.env.NODE_ENV !== 'production' &&
+        (process.env.NODE_ENV as string) !== 'production' &&
+          (process.env.NODE_ENV as string) !== 'production' &&
           console.log(`[Auto Reprint] Final operator clock number: ${finalOperatorClockNum}`);
 
         // Prepare auto reprint parameters
@@ -485,8 +489,8 @@ export function useVoidPallet() {
           operatorClockNum: finalOperatorClockNum,
         };
 
-        process.env.NODE_ENV !== 'production' &&
-          process.env.NODE_ENV !== 'production' &&
+        (process.env.NODE_ENV as string) !== 'production' &&
+          (process.env.NODE_ENV as string) !== 'production' &&
           console.log(`[Auto Reprint] Calling API with params:`, autoReprintParams);
 
         // Call auto reprint API (same as QC Label approach)
@@ -494,8 +498,8 @@ export function useVoidPallet() {
         const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
 
         try {
-          process.env.NODE_ENV !== 'production' &&
-            process.env.NODE_ENV !== 'production' &&
+          (process.env.NODE_ENV as string) !== 'production' &&
+            (process.env.NODE_ENV as string) !== 'production' &&
             console.log('[Auto Reprint] Calling API...');
           const response = await fetch('/api/auto-reprint-label-v2', {
             method: 'POST',
@@ -508,11 +512,11 @@ export function useVoidPallet() {
 
           clearTimeout(timeoutId);
 
-          process.env.NODE_ENV !== 'production' &&
-            process.env.NODE_ENV !== 'production' &&
+          (process.env.NODE_ENV as string) !== 'production' &&
+            (process.env.NODE_ENV as string) !== 'production' &&
             console.log(`[Auto Reprint] API response status: ${response.status}`);
-          process.env.NODE_ENV !== 'production' &&
-            process.env.NODE_ENV !== 'production' &&
+          (process.env.NODE_ENV as string) !== 'production' &&
+            (process.env.NODE_ENV as string) !== 'production' &&
             console.log(
               `[Auto Reprint] API response headers:`,
               Object.fromEntries(response.headers.entries())
@@ -540,28 +544,28 @@ export function useVoidPallet() {
 
           const { newPalletNumber, fileName, qcInputData } = result.data;
 
-          process.env.NODE_ENV !== 'production' &&
-            process.env.NODE_ENV !== 'production' &&
+          (process.env.NODE_ENV as string) !== 'production' &&
+            (process.env.NODE_ENV as string) !== 'production' &&
             console.log(`[Auto Reprint] Success! New pallet: ${newPalletNumber}`);
-          process.env.NODE_ENV !== 'production' &&
-            process.env.NODE_ENV !== 'production' &&
+          (process.env.NODE_ENV as string) !== 'production' &&
+            (process.env.NODE_ENV as string) !== 'production' &&
             console.log(`[Auto Reprint] QC input data:`, qcInputData);
 
           // Generate PDF using exactly the same logic as QC Label
-          process.env.NODE_ENV !== 'production' &&
-            process.env.NODE_ENV !== 'production' &&
+          (process.env.NODE_ENV as string) !== 'production' &&
+            (process.env.NODE_ENV as string) !== 'production' &&
             console.log('[Auto Reprint] Generating PDF using QC Label logic...');
           const { prepareQcLabelData, mergeAndPrintPdfs } = await import('@/lib/pdfUtils');
           const { pdf } = await import('@react-pdf/renderer');
           const { PrintLabelPdf } = await import('@/components/print-label-pdf/PrintLabelPdf');
 
-          process.env.NODE_ENV !== 'production' &&
-            process.env.NODE_ENV !== 'production' &&
+          (process.env.NODE_ENV as string) !== 'production' &&
+            (process.env.NODE_ENV as string) !== 'production' &&
             console.log('[Auto Reprint] Preparing QC label data...');
           const pdfLabelProps = await prepareQcLabelData(qcInputData);
 
-          process.env.NODE_ENV !== 'production' &&
-            process.env.NODE_ENV !== 'production' &&
+          (process.env.NODE_ENV as string) !== 'production' &&
+            (process.env.NODE_ENV as string) !== 'production' &&
             console.log('[Auto Reprint] Generating PDF blob...');
           // Use JSX syntax now that this is a .tsx file
           const pdfBlob = await pdf(<PrintLabelPdf {...pdfLabelProps} />).toBlob();
@@ -570,14 +574,14 @@ export function useVoidPallet() {
             throw new Error('PDF generation failed to return a blob.');
           }
 
-          process.env.NODE_ENV !== 'production' &&
-            process.env.NODE_ENV !== 'production' &&
+          (process.env.NODE_ENV as string) !== 'production' &&
+            (process.env.NODE_ENV as string) !== 'production' &&
             console.log(`[Auto Reprint] PDF blob generated, size: ${pdfBlob.size} bytes`);
 
           // Upload PDF to storage and update database
           try {
-            process.env.NODE_ENV !== 'production' &&
-              process.env.NODE_ENV !== 'production' &&
+            (process.env.NODE_ENV as string) !== 'production' &&
+              (process.env.NODE_ENV as string) !== 'production' &&
               console.log('[Auto Reprint] Uploading PDF to storage...');
 
             // Convert blob to ArrayBuffer then to number array for server action
@@ -597,8 +601,8 @@ export function useVoidPallet() {
               console.error('[Auto Reprint] PDF upload failed:', uploadResult.error);
               toast.warning(`PDF generated but upload failed: ${uploadResult.error}`);
             } else if (uploadResult.publicUrl) {
-              process.env.NODE_ENV !== 'production' &&
-                process.env.NODE_ENV !== 'production' &&
+              (process.env.NODE_ENV as string) !== 'production' &&
+                (process.env.NODE_ENV as string) !== 'production' &&
                 console.log('[Auto Reprint] PDF uploaded successfully:', uploadResult.publicUrl);
 
               // Update database with PDF URL
@@ -612,8 +616,8 @@ export function useVoidPallet() {
                   updateResult.error
                 );
               } else {
-                process.env.NODE_ENV !== 'production' &&
-                  process.env.NODE_ENV !== 'production' &&
+                (process.env.NODE_ENV as string) !== 'production' &&
+                  (process.env.NODE_ENV as string) !== 'production' &&
                   console.log('[Auto Reprint] PDF URL updated in database successfully');
               }
             }
@@ -628,8 +632,8 @@ export function useVoidPallet() {
           // Auto-print the PDF (exact same as QC Label)
           await mergeAndPrintPdfs([pdfArrayBuffer], fileName);
 
-          process.env.NODE_ENV !== 'production' &&
-            process.env.NODE_ENV !== 'production' &&
+          (process.env.NODE_ENV as string) !== 'production' &&
+            (process.env.NODE_ENV as string) !== 'production' &&
             console.log('[Auto Reprint] Auto-print triggered successfully');
           toast.success(`New pallet ${newPalletNumber} created and sent to printer successfully`);
 
@@ -652,8 +656,8 @@ export function useVoidPallet() {
           timestamp: new Date(),
         });
       } finally {
-        process.env.NODE_ENV !== 'production' &&
-          process.env.NODE_ENV !== 'production' &&
+        (process.env.NODE_ENV as string) !== 'production' &&
+          (process.env.NODE_ENV as string) !== 'production' &&
           console.log('[Auto Reprint] Process completed, resetting state...');
         updateState({ isAutoReprinting: false });
       }
@@ -681,6 +685,8 @@ export function useVoidPallet() {
     executeVoid,
     handleDamageQuantityChange,
     handleVoidReasonChange,
+    handleReprintInfoConfirm,
+    handleReprintInfoCancel,
 
     // Helper function
     validateVoidParams,

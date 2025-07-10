@@ -450,14 +450,15 @@ export const PerformanceOptimizedForm: React.FC<PerformanceOptimizedFormProps> =
     // 清理 effect - 當用戶離開頁面時清理資源
     useEffect(() => {
       return () => {
-        process.env.NODE_ENV !== 'production' &&
-          process.env.NODE_ENV !== 'production' &&
+        (process.env.NODE_ENV as string) !== 'production' &&
+          (process.env.NODE_ENV as string) !== 'production' &&
           console.log('[PerformanceOptimizedForm] Cleaning up on unmount');
         // 只清除保存的數據，不要在 cleanup 中調用 setState
         // 因為組件已經 unmount，setState 會導致內存洩漏和警告
-        if (businessLogic.clearSavedData) {
-          businessLogic.clearSavedData();
-        }
+        // clearSavedData is not available in current businessLogic implementation
+        // if (businessLogic.clearSavedData) {
+        //   businessLogic.clearSavedData();
+        // }
       };
     }, [businessLogic]);
 
@@ -515,8 +516,8 @@ export const PerformanceOptimizedForm: React.FC<PerformanceOptimizedFormProps> =
             <ResponsiveStack direction='responsive' spacing={8} align='start'>
               {/* Main Form Section */}
               <div className='min-w-0 flex-1'>
-                {/* Form Persistence Indicator */}
-                {businessLogic.lastSaved && (
+                {/* Form Persistence Indicator - Currently disabled */}
+                {/* {businessLogic.lastSaved && (
                   <div className='mb-4'>
                     <FormPersistenceIndicator
                       lastSaved={businessLogic.lastSaved}
@@ -524,7 +525,7 @@ export const PerformanceOptimizedForm: React.FC<PerformanceOptimizedFormProps> =
                       className='text-sm'
                     />
                   </div>
-                )}
+                )} */}
 
                 <ProductSection
                   productCode={formData.productCode}

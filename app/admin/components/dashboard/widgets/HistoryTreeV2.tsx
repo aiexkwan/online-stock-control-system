@@ -1,7 +1,12 @@
 /**
- * 統一歷史記錄組件 V2
- * 使用 DashboardAPI + 服務器端事件合併
- * 遷移自原 HistoryTree 組件
+ * 統一歷史記錄組件 V2 - Apollo GraphQL Version
+ * 顯示系統全局歷史記錄
+ * 
+ * GraphQL Migration:
+ * - 遷移至 Apollo Client
+ * - 查詢 record_history 表
+ * - Client-side 事件合併處理
+ * - 保留 Server Actions + RPC fallback
  */
 
 'use client';
@@ -34,6 +39,7 @@ import {
 import { cn } from '@/lib/utils';
 import { createDashboardAPI } from '@/lib/api/admin/DashboardAPI';
 import { errorHandler } from '@/app/components/qc-label-form/services/ErrorHandler';
+import { useQuery, gql } from '@apollo/client';
 
 interface MergedEvent {
   id: number;
@@ -47,6 +53,42 @@ interface MergedEvent {
   doc_url: string | null;
   merged_plt_nums: string[];
   merged_count: number;
+}
+
+// Apollo GraphQL query
+const GET_HISTORY_TREE = gql`
+  query GetHistoryTree($limit: Int = 50, $offset: Int = 0) {
+    record_historyCollection(
+      orderBy: [{ time: DescNullsLast }]
+      first: $limit
+      offset: $offset
+    ) {
+      edges {
+        node {
+          id
+          time
+          action
+          plt_num
+          loc
+          remark
+          who
+          doc_url
+          data_id {
+            id
+            name
+          }
+        }
+      }
+      pageInfo {
+        hasNextPage
+        hasPreviousPage
+      }
+    }
+  }
+`;
+
+interface HistoryTreeV2Props extends WidgetComponentProps {
+  useGraphQL?: boolean;
 }
 
 // 根據 action 類型返回對應的圖標
@@ -171,7 +213,8 @@ const formatEventDescription = (event: MergedEvent): string => {
 export const HistoryTreeV2 = React.memo(function HistoryTreeV2({
   widget,
   isEditMode,
-}: WidgetComponentProps) {
+  useGraphQL,
+}: HistoryTreeV2Props) {
   const [events, setEvents] = useState<MergedEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -180,6 +223,81 @@ export const HistoryTreeV2 = React.memo(function HistoryTreeV2({
     apiResponseTime?: number;
     cacheHit?: boolean;
   }>({});
+  
+  // 使用環境變量控制是否使用 GraphQL
+  const shouldUseGraphQL = process.env.NEXT_PUBLIC_ENABLE_GRAPHQL_SHARED === 'true' || 
+                          (useGraphQL ?? (widget as any)?.useGraphQL ?? false);
+
+  // Apollo GraphQL 查詢
+  const { 
+    data: graphqlData, 
+    loading: graphqlLoading, 
+    error: graphqlError,
+    refetch: graphqlRefetch
+  } = useQuery(GET_HISTORY_TREE, {
+    skip: !shouldUseGraphQL || isEditMode,
+    variables: {
+      limit: 50,
+      offset: 0,
+    },
+    fetchPolicy: 'cache-and-network',
+    pollInterval: 60000, // 1分鐘輪詢
+  });
+
+  // 處理 GraphQL 數據 - 合併相似事件
+  const processGraphQLData = useMemo(() => {
+    if (!graphqlData?.record_historyCollection?.edges) return [];
+
+    const rawEvents = graphqlData.record_historyCollection.edges.map((edge: any) => {
+      const node = edge.node;
+      return {
+        id: node.id,
+        time: node.time,
+        action: node.action,
+        plt_num: node.plt_num,
+        loc: node.loc,
+        remark: node.remark || '',
+        user_id: parseInt(node.who) || null,
+        user_name: node.data_id?.name || node.who || 'Unknown',
+        doc_url: node.doc_url,
+      };
+    });
+
+    // 合併相同時間範圍內的相似事件 (5分鐘內)
+    const mergedEvents: MergedEvent[] = [];
+    const TIME_WINDOW = 5 * 60 * 1000; // 5 minutes
+
+    rawEvents.forEach((event: any) => {
+      const eventTime = new Date(event.time).getTime();
+      
+      // 查找可以合併的事件
+      const existingEvent = mergedEvents.find(e => {
+        const existingTime = new Date(e.time).getTime();
+        return (
+          e.action === event.action &&
+          e.user_id === event.user_id &&
+          Math.abs(eventTime - existingTime) < TIME_WINDOW
+        );
+      });
+
+      if (existingEvent) {
+        // 合併到現有事件
+        if (event.plt_num) {
+          existingEvent.merged_plt_nums.push(event.plt_num);
+        }
+        existingEvent.merged_count++;
+      } else {
+        // 創建新事件
+        mergedEvents.push({
+          ...event,
+          merged_plt_nums: event.plt_num ? [event.plt_num] : [],
+          merged_count: 1,
+        });
+      }
+    });
+
+    return mergedEvents;
+  }, [graphqlData]);
 
   const loadHistory = useCallback(async () => {
     try {
@@ -227,24 +345,29 @@ export const HistoryTreeV2 = React.memo(function HistoryTreeV2({
   }, []);
 
   useEffect(() => {
-    if (!isEditMode) {
+    if (!isEditMode && !shouldUseGraphQL) {
       loadHistory();
 
       // Set up refresh interval (optional)
       const interval = setInterval(loadHistory, 60000); // Refresh every minute
       return () => clearInterval(interval);
     }
-  }, [loadHistory, isEditMode]);
+  }, [loadHistory, isEditMode, shouldUseGraphQL]);
+
+  // 合併數據源
+  const displayEvents = shouldUseGraphQL ? processGraphQLData : events;
+  const displayLoading = shouldUseGraphQL ? graphqlLoading : loading;
+  const displayError = shouldUseGraphQL ? graphqlError?.message : error;
 
   // 將事件轉換為 Timeline 組件需要的格式
   const timelineItems = useMemo(() => {
-    return events.map(event => ({
+    return displayEvents.map(event => ({
       date: event.time,
       title: formatEventTitle(event),
       description: formatEventDescription(event),
       icon: getActionIcon(event.action),
     }));
-  }, [events]);
+  }, [displayEvents]);
 
   return (
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className='h-full'>
@@ -252,7 +375,12 @@ export const HistoryTreeV2 = React.memo(function HistoryTreeV2({
         <CardHeader className='pb-3'>
           <CardTitle className='flex items-center justify-between'>
             <span>History Tree</span>
-            {!isEditMode && performanceMetrics.apiResponseTime && (
+            {shouldUseGraphQL && (
+              <span className='text-xs text-blue-400'>
+                ⚡ GraphQL
+              </span>
+            )}
+            {!isEditMode && !shouldUseGraphQL && performanceMetrics.apiResponseTime && (
               <span className='text-xs text-slate-400'>
                 {performanceMetrics.apiResponseTime}ms
                 {performanceMetrics.cacheHit && ' (cached)'}
@@ -261,7 +389,7 @@ export const HistoryTreeV2 = React.memo(function HistoryTreeV2({
           </CardTitle>
         </CardHeader>
         <CardContent>
-          {loading ? (
+          {displayLoading ? (
             <div className='space-y-4'>
               {[...Array(3)].map((_, i) => (
                 <div key={i} className='animate-pulse'>
@@ -275,11 +403,11 @@ export const HistoryTreeV2 = React.memo(function HistoryTreeV2({
                 </div>
               ))}
             </div>
-          ) : error ? (
+          ) : displayError ? (
             <WidgetText size='xs' glow='red' className='py-4 text-center'>
-              {error}
+              {displayError}
             </WidgetText>
-          ) : events.length === 0 ? (
+          ) : displayEvents.length === 0 ? (
             <WidgetText size='xs' glow='gray' className='py-8 text-center'>
               No history records found
             </WidgetText>
@@ -309,3 +437,20 @@ export const HistoryTreeV2 = React.memo(function HistoryTreeV2({
 });
 
 export default HistoryTreeV2;
+
+/**
+ * GraphQL Migration completed on 2025-07-09
+ * 
+ * Features:
+ * - Apollo Client query for record_history table
+ * - Client-side event merging (5-minute window)
+ * - Supports pagination
+ * - 1-minute polling for updates
+ * - Fallback to Server Actions + RPC when GraphQL disabled
+ * - Feature flag control: NEXT_PUBLIC_ENABLE_GRAPHQL_SHARED
+ * 
+ * Performance considerations:
+ * - RPC function (rpc_get_history_tree) performs server-side merging
+ * - GraphQL version does client-side merging which may be less efficient
+ * - Consider keeping RPC as primary method for better performance
+ */

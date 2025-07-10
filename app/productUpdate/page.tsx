@@ -110,17 +110,17 @@ export default function ProductUpdatePage() {
 
         if (isEditing && productData) {
           // 更新現有產品 - 使用優化的 SQL 方法
-          process.env.NODE_ENV !== 'production' &&
-            process.env.NODE_ENV !== 'production' &&
+          (process.env.NODE_ENV as string) !== 'production' &&
+            (process.env.NODE_ENV as string) !== 'production' &&
             console.log('[ProductUpdate] Using optimized SQL update method');
-          process.env.NODE_ENV !== 'production' &&
-            process.env.NODE_ENV !== 'production' &&
+          (process.env.NODE_ENV as string) !== 'production' &&
+            (process.env.NODE_ENV as string) !== 'production' &&
             console.log('[ProductUpdate] productData.code:', productData.code);
-          process.env.NODE_ENV !== 'production' &&
-            process.env.NODE_ENV !== 'production' &&
+          (process.env.NODE_ENV as string) !== 'production' &&
+            (process.env.NODE_ENV as string) !== 'production' &&
             console.log('[ProductUpdate] formData:', formData);
-          process.env.NODE_ENV !== 'production' &&
-            process.env.NODE_ENV !== 'production' &&
+          (process.env.NODE_ENV as string) !== 'production' &&
+            (process.env.NODE_ENV as string) !== 'production' &&
             console.log('[ProductUpdate] isEditing:', isEditing);
 
           // 移除 formData 中的 code 字段，因為它不應該被更新
@@ -132,14 +132,14 @@ export default function ProductUpdatePage() {
             updateData.standard_qty = parseInt(updateData.standard_qty) || 0;
           }
 
-          process.env.NODE_ENV !== 'production' &&
-            process.env.NODE_ENV !== 'production' &&
+          (process.env.NODE_ENV as string) !== 'production' &&
+            (process.env.NODE_ENV as string) !== 'production' &&
             console.log('[ProductUpdate] updateData (without code):', updateData);
 
           result = await updateProduct(productData.code, updateData);
 
-          process.env.NODE_ENV !== 'production' &&
-            process.env.NODE_ENV !== 'production' &&
+          (process.env.NODE_ENV as string) !== 'production' &&
+            (process.env.NODE_ENV as string) !== 'production' &&
             console.log('[ProductUpdate] updateProduct result:', result);
 
           if (result.success) {
@@ -151,11 +151,11 @@ export default function ProductUpdatePage() {
           }
         } else {
           // 新增產品
-          process.env.NODE_ENV !== 'production' &&
-            process.env.NODE_ENV !== 'production' &&
+          (process.env.NODE_ENV as string) !== 'production' &&
+            (process.env.NODE_ENV as string) !== 'production' &&
             console.log('[ProductUpdate] Creating new product');
-          process.env.NODE_ENV !== 'production' &&
-            process.env.NODE_ENV !== 'production' &&
+          (process.env.NODE_ENV as string) !== 'production' &&
+            (process.env.NODE_ENV as string) !== 'production' &&
             console.log('[ProductUpdate] formData:', formData);
 
           result = await createProduct(formData);
@@ -169,8 +169,8 @@ export default function ProductUpdatePage() {
         }
 
         if (!result.success) {
-          process.env.NODE_ENV !== 'production' &&
-            process.env.NODE_ENV !== 'production' &&
+          (process.env.NODE_ENV as string) !== 'production' &&
+            (process.env.NODE_ENV as string) !== 'production' &&
             console.log('[ProductUpdate] Operation failed:', result.error);
           setStatusMessage({
             type: 'error',

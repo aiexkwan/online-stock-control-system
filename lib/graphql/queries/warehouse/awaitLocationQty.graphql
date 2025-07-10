@@ -1,0 +1,11 @@
+query GetAwaitLocationQty {
+  record_inventoryCollection(filter: { await: { gt: 0 } }) {
+    edges {
+      node {
+        nodeId
+        await
+        product_code
+      }
+    }
+  }
+}

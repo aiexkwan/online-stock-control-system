@@ -25,10 +25,10 @@ export const OrderAnalysisResultDialog: React.FC<OrderAnalysisResultDialogProps>
   const orders = Array.isArray(data.extractedData) ? data.extractedData : [data.extractedData];
 
   // Debug log
-  process.env.NODE_ENV !== 'production' &&
+  (process.env.NODE_ENV as string) !== 'production' &&
     console.log('[OrderAnalysisResultDialog] Orders:', orders);
   if (orders.length > 0) {
-    process.env.NODE_ENV !== 'production' &&
+    (process.env.NODE_ENV as string) !== 'production' &&
       console.log('[OrderAnalysisResultDialog] First order:', orders[0]);
   }
 

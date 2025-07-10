@@ -1,0 +1,23 @@
+query GetStaffWorkload($startDate: Datetime!, $endDate: Datetime!, $department: String) {
+  record_historyCollection(
+    filter: {
+      time: { gte: $startDate, lte: $endDate }
+      action: { ilike: "%QC passed%" }
+    }
+    orderBy: [{ time: AscNullsLast }]
+  ) {
+    edges {
+      node {
+        uuid
+        time
+        action
+        who
+        data_id {
+          id
+          name
+          department
+        }
+      }
+    }
+  }
+}

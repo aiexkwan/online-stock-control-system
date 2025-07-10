@@ -1,0 +1,26 @@
+query GetProductionDetails($startDate: Datetime!, $endDate: Datetime!, $limit: Int = 50) {
+  record_palletinfoCollection(
+    filter: {
+      plt_remark: { ilike: "%finished in production%" }
+      generate_time: { gte: $startDate, lte: $endDate }
+    }
+    orderBy: [{ generate_time: DescNullsLast }]
+    first: $limit
+  ) {
+    edges {
+      node {
+        plt_num
+        product_code
+        product_qty
+        qc_by
+        generate_time
+        plt_remark
+        data_code {
+          description
+          colour
+          type
+        }
+      }
+    }
+  }
+}

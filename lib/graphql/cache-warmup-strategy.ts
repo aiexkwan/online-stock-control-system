@@ -1,5 +1,5 @@
 import { logger } from '../logger';
-import { cacheStrategyOptimizer } from './cache-strategy-optimizer';
+import { cacheOptimizer } from './cache-strategy-optimizer';
 import { createCacheAdapter } from './redis-cache-adapter';
 import { getCachedWithFallback } from './cache-fallback-helper';
 

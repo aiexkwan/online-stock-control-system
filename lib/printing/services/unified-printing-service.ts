@@ -259,7 +259,8 @@ export class UnifiedPrintingService extends EventEmitter {
       options: history.options,
       metadata: {
         ...history.metadata,
-        reprintOf: historyId,
+        source: 'reprint',
+        reference: historyId,
       },
     };
 

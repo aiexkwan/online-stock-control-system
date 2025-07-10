@@ -2,7 +2,7 @@
 
 import { createClient } from '@/app/utils/supabase/server';
 import { LocationMapper } from '@/lib/inventory/utils/locationMapper';
-import { isNotProduction } from '@/lib/utils/environment';
+import { isNotProduction } from '@/lib/utils/env';
 
 /**
  * Get inventory column name based on location

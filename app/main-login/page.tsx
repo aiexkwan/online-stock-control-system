@@ -22,8 +22,8 @@ export default function MainLoginPage() {
     }
 
     if (urlParams.get('cleanup') === 'force') {
-      process.env.NODE_ENV !== 'production' &&
-        process.env.NODE_ENV !== 'production' &&
+      (process.env.NODE_ENV as string) !== 'production' &&
+        (process.env.NODE_ENV as string) !== 'production' &&
         console.log('[MainLoginPage] Force cleanup requested via URL parameter');
       forceCleanupAllAuth();
       // 移除 URL 參數

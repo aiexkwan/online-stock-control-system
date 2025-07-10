@@ -66,8 +66,8 @@ export class ReportCache {
       return null;
     }
 
-    process.env.NODE_ENV !== 'production' &&
-      process.env.NODE_ENV !== 'production' &&
+    (process.env.NODE_ENV as string) !== 'production' &&
+      (process.env.NODE_ENV as string) !== 'production' &&
       console.log(`[ReportCache] Cache hit for ${reportId}`);
     return entry.data;
   }
@@ -84,8 +84,8 @@ export class ReportCache {
       ttl: ttl || this.defaultTTL,
     });
 
-    process.env.NODE_ENV !== 'production' &&
-      process.env.NODE_ENV !== 'production' &&
+    (process.env.NODE_ENV as string) !== 'production' &&
+      (process.env.NODE_ENV as string) !== 'production' &&
       console.log(`[ReportCache] Cached data for ${reportId}`);
   }
 
@@ -102,8 +102,8 @@ export class ReportCache {
     });
 
     keysToDelete.forEach(key => this.cache.delete(key));
-    process.env.NODE_ENV !== 'production' &&
-      process.env.NODE_ENV !== 'production' &&
+    (process.env.NODE_ENV as string) !== 'production' &&
+      (process.env.NODE_ENV as string) !== 'production' &&
       console.log(`[ReportCache] Cleared ${keysToDelete.length} entries for ${reportId}`);
   }
 
@@ -113,8 +113,8 @@ export class ReportCache {
   clearAll(): void {
     const size = this.cache.size;
     this.cache.clear();
-    process.env.NODE_ENV !== 'production' &&
-      process.env.NODE_ENV !== 'production' &&
+    (process.env.NODE_ENV as string) !== 'production' &&
+      (process.env.NODE_ENV as string) !== 'production' &&
       console.log(`[ReportCache] Cleared all ${size} entries`);
   }
 
@@ -134,8 +134,8 @@ export class ReportCache {
     keysToDelete.forEach(key => this.cache.delete(key));
 
     if (keysToDelete.length > 0) {
-      process.env.NODE_ENV !== 'production' &&
-        process.env.NODE_ENV !== 'production' &&
+      (process.env.NODE_ENV as string) !== 'production' &&
+        (process.env.NODE_ENV as string) !== 'production' &&
         console.log(`[ReportCache] Cleaned up ${keysToDelete.length} expired entries`);
     }
   }

@@ -1,6 +1,16 @@
+/**
+ * Inventory Ordered Analysis Widget - Apollo GraphQL Version
+ * 顯示庫存與訂單匹配分析
+ * 
+ * GraphQL Migration Notes:
+ * - 由於分析複雜度高，保留 RPC fallback 作為主要數據源
+ * - GraphQL 版本需要 client-side 處理多個表格 JOIN
+ * - 建議優先使用 RPC 維持性能
+ */
+
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { WidgetComponentProps } from '@/app/types/dashboard';
 import { useAdminRefresh } from '@/app/admin/contexts/AdminRefreshContext';
@@ -27,6 +37,7 @@ import {
 } from 'recharts';
 import { motion } from 'framer-motion';
 import { Progress } from '@/components/ui/progress';
+import { useGetInventoryOrderedAnalysisWidgetQuery } from '@/lib/graphql/generated/apollo-hooks';
 
 interface ProductAnalysis {
   productCode: string;
@@ -56,7 +67,9 @@ interface InventoryAnalysisResponse {
   };
 }
 
-interface InventoryOrderedAnalysisWidgetProps extends WidgetComponentProps {}
+interface InventoryOrderedAnalysisWidgetProps extends WidgetComponentProps {
+  useGraphQL?: boolean;
+}
 
 // 顏色配置
 const STATUS_COLORS = {
@@ -68,6 +81,7 @@ const STATUS_COLORS = {
 export const InventoryOrderedAnalysisWidget: React.FC<InventoryOrderedAnalysisWidgetProps> = ({
   widget,
   isEditMode,
+  useGraphQL,
 }) => {
   const [analysisData, setAnalysisData] = useState<InventoryAnalysisResponse | null>(null);
   const [selectedType, setSelectedType] = useState<string>('all');
@@ -75,8 +89,138 @@ export const InventoryOrderedAnalysisWidget: React.FC<InventoryOrderedAnalysisWi
   const [loading, setLoading] = useState(true);
   const [queryTime, setQueryTime] = useState<string>('');
   const { refreshTrigger } = useAdminRefresh();
+  
+  // 使用環境變量控制是否使用 GraphQL
+  // 由於此 widget 複雜度高，默認使用 RPC
+  const shouldUseGraphQL = process.env.NEXT_PUBLIC_ENABLE_GRAPHQL_STOCK === 'true' || 
+                          (useGraphQL ?? widget?.config?.useGraphQL ?? false);
 
-  // 獲取庫存滿足分析數據 using DashboardAPI
+  // Apollo GraphQL 查詢 - 使用生成嘅 hook
+  const { 
+    data: graphqlData, 
+    loading: graphqlLoading, 
+    error: graphqlError,
+    refetch: graphqlRefetch
+  } = useGetInventoryOrderedAnalysisWidgetQuery({
+    skip: !shouldUseGraphQL || isEditMode,
+    variables: {
+      productType: selectedType === 'all' || selectedType === 'ALL TYPES' ? null : selectedType,
+    },
+    fetchPolicy: 'cache-and-network',
+  });
+
+  // 處理 GraphQL 數據 - Client-side JOIN 和計算
+  const processGraphQLData = useMemo(() => {
+    if (!graphqlData || !shouldUseGraphQL) return null;
+
+    const { record_inventoryCollection, data_orderCollection, data_codeCollection } = graphqlData;
+
+    // 處理庫存數據
+    const inventoryMap = new Map<string, any>();
+    record_inventoryCollection?.edges?.forEach((edge: any) => {
+      const node = edge.node;
+      const totalInventory = 
+        (node.injection || 0) + (node.pipeline || 0) + (node.prebook || 0) +
+        (node.await || 0) + (node.fold || 0) + (node.bulk || 0) +
+        (node.backcarpark || 0) + (node.damage || 0) + (node.await_grn || 0);
+      
+      inventoryMap.set(node.product_code, {
+        total: totalInventory,
+        ...node
+      });
+    });
+
+    // 處理訂單數據
+    const orderMap = new Map<string, any>();
+    data_orderCollection?.edges?.forEach((edge: any) => {
+      const node = edge.node;
+      const loadedQty = parseInt(node.loaded_qty || '0', 10);
+      const outstandingQty = node.product_qty - loadedQty;
+      
+      if (!orderMap.has(node.product_code)) {
+        orderMap.set(node.product_code, {
+          totalOrders: 0,
+          totalOutstanding: 0,
+          totalOrdered: 0,
+          totalLoaded: 0
+        });
+      }
+      
+      const existing = orderMap.get(node.product_code);
+      existing.totalOrders += 1;
+      existing.totalOutstanding += Math.max(0, outstandingQty);
+      existing.totalOrdered += node.product_qty;
+      existing.totalLoaded += loadedQty;
+    });
+
+    // 處理產品資料
+    const productMap = new Map<string, any>();
+    data_codeCollection?.edges?.forEach((edge: any) => {
+      productMap.set(edge.node.code, edge.node);
+    });
+
+    // 結合所有數據
+    const products: ProductAnalysis[] = [];
+    const allProductCodes = new Set([...inventoryMap.keys(), ...orderMap.keys()]);
+    
+    let totalStock = 0;
+    let totalDemand = 0;
+    let sufficientCount = 0;
+    let insufficientCount = 0;
+
+    allProductCodes.forEach(productCode => {
+      const inventory = inventoryMap.get(productCode);
+      const order = orderMap.get(productCode);
+      const product = productMap.get(productCode);
+      
+      const currentStock = inventory?.total || 0;
+      const orderDemand = order?.totalOutstanding || 0;
+      const remainingStock = currentStock - orderDemand;
+      const fulfillmentRate = orderDemand > 0 ? (currentStock / orderDemand) * 100 : 100;
+      const isSufficient = currentStock >= orderDemand;
+      
+      if (currentStock > 0 || orderDemand > 0) {
+        products.push({
+          productCode,
+          description: product?.description || '',
+          currentStock,
+          orderDemand,
+          remainingStock,
+          fulfillmentRate: Math.min(fulfillmentRate, 100),
+          isSufficient
+        });
+        
+        totalStock += currentStock;
+        totalDemand += orderDemand;
+        if (isSufficient) {
+          sufficientCount++;
+        } else {
+          insufficientCount++;
+        }
+      }
+    });
+
+    // 按狀態排序
+    products.sort((a, b) => {
+      if (!a.isSufficient && b.isSufficient) return -1;
+      if (a.isSufficient && !b.isSufficient) return 1;
+      return a.remainingStock - b.remainingStock;
+    });
+
+    return {
+      products,
+      summary: {
+        totalStock,
+        totalDemand,
+        totalRemaining: totalStock - totalDemand,
+        overallSufficient: totalStock >= totalDemand,
+        insufficientCount,
+        sufficientCount
+      }
+    } as InventoryAnalysisResponse;
+  }, [graphqlData, shouldUseGraphQL]);
+
+  // 獲取庫存滿足分析數據 using DashboardAPI (RPC)
   const fetchInventoryAnalysis = useCallback(
     async (productCodes?: string[], productType?: string) => {
       setLoading(true);
@@ -160,9 +304,13 @@ export const InventoryOrderedAnalysisWidget: React.FC<InventoryOrderedAnalysisWi
     } else if (selectedProductCodes.length > 0) {
       fetchInventoryAnalysis(selectedProductCodes, selectedType);
     }
-  }, [refreshTrigger, fetchInventoryAnalysis, selectedType, selectedProductCodes]);
+  }, [refreshTrigger, fetchInventoryAnalysis, selectedType, selectedProductCodes, graphqlRefetch, shouldUseGraphQL]);
 
-  if (loading) {
+  // 合併數據源
+  const finalAnalysisData = shouldUseGraphQL ? processGraphQLData : analysisData;
+  const finalLoading = shouldUseGraphQL ? graphqlLoading : loading;
+
+  if (finalLoading) {
     return (
       <div className='flex h-full items-center justify-center'>
         <Loader2 className='h-8 w-8 animate-spin text-gray-400' />
@@ -170,7 +318,7 @@ export const InventoryOrderedAnalysisWidget: React.FC<InventoryOrderedAnalysisWi
     );
   }
 
-  if (!analysisData || !analysisData.products) {
+  if (!finalAnalysisData || !finalAnalysisData.products) {
     return (
       <div className='flex h-full flex-col p-4'>
         <div className='mb-4 flex items-center justify-between'>
@@ -178,6 +326,11 @@ export const InventoryOrderedAnalysisWidget: React.FC<InventoryOrderedAnalysisWi
             <Package className='h-5 w-5' />
             Inventory Ordered Analysis
           </h3>
+          {shouldUseGraphQL && (
+            <span className='text-xs text-blue-400'>
+              ⚡ GraphQL
+            </span>
+          )}
         </div>
         <div className='flex flex-1 items-center justify-center'>
           <p className='text-gray-400'>No inventory data available</p>
@@ -186,7 +339,7 @@ export const InventoryOrderedAnalysisWidget: React.FC<InventoryOrderedAnalysisWi
     );
   }
 
-  const { products, summary } = analysisData;
+  const { products, summary } = finalAnalysisData;
 
   return (
     <div className='flex h-full flex-col p-4'>
@@ -350,3 +503,18 @@ export const InventoryOrderedAnalysisWidget: React.FC<InventoryOrderedAnalysisWi
 };
 
 export default InventoryOrderedAnalysisWidget;
+
+/**
+ * GraphQL Migration Notes (2025-07-09):
+ * 
+ * This widget performs complex multi-table analysis that is better suited for RPC.
+ * The GraphQL version requires client-side JOIN operations which may impact performance.
+ * 
+ * Recommendation: Continue using RPC for this widget due to:
+ * - Complex aggregations across multiple tables
+ * - Performance considerations for large datasets
+ * - Existing RPC function is well-optimized
+ * 
+ * GraphQL support added for compatibility but not recommended for production use.
+ * Feature flag: NEXT_PUBLIC_ENABLE_GRAPHQL_STOCK
+ */

@@ -1,13 +1,14 @@
 /**
- * Warehouse Work Level Area Chart Widget
+ * Warehouse Work Level Area Chart Widget - Apollo GraphQL Version
  * Area Chart 形式顯示 work_level 內容
  * 只顯示 operator department = "Warehouse"
  * 顯示 move 數據
  *
- * OPTIMIZED VERSION (Phase 2.2)
- * - 解決 N+1 查詢問題
- * - 服務器端 JOIN 和過濾
- * - 移除客戶端數據處理邏輯
+ * GraphQL Migration:
+ * - 使用 Apollo Client 查詢 work_level + data_id JOIN
+ * - GraphQL 層級過濾 department = "Warehouse"
+ * - Client-side 日期分組聚合
+ * - 保留 Server Actions fallback
  */
 
 'use client';
@@ -27,10 +28,13 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from 'recharts';
-import { format } from 'date-fns';
+import { format, startOfDay } from 'date-fns';
 import { getYesterdayRange } from '@/app/utils/timezone';
 import { WidgetStyles } from '@/app/utils/widgetStyles';
 import { createDashboardAPI } from '@/lib/api/admin/DashboardAPI';
+import { useGetWarehouseWorkLevelWidgetQuery } from '@/lib/graphql/generated/apollo-hooks';
+
+// GraphQL 查詢已經移動到 lib/graphql/generated/apollo-hooks.ts
 
 interface WorkLevelData {
   date: string;
@@ -53,14 +57,6 @@ export const WarehouseWorkLevelAreaChart = React.memo(function WarehouseWorkLeve
   isEditMode,
   timeFrame,
 }: WidgetComponentProps) {
-  const [data, setData] = useState<WorkLevelStats>({
-    dailyStats: [],
-    totalMoves: 0,
-    uniqueOperators: 0,
-    avgMovesPerDay: 0,
-  });
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [performanceMetrics, setPerformanceMetrics] = useState<{
     fetchTime: number;
     cacheHit: boolean;
@@ -81,10 +77,41 @@ export const WarehouseWorkLevelAreaChart = React.memo(function WarehouseWorkLeve
     };
   }, [timeFrame]);
 
+  // 使用環境變量控制是否使用 GraphQL
+  const useGraphQL = process.env.NEXT_PUBLIC_ENABLE_GRAPHQL_AWAIT === 'true' || 
+                     widget?.config?.useGraphQL === true;
+
+  // 使用 GraphQL Codegen 生成嘅 hook
+  const { 
+    data: graphqlData, 
+    loading: graphqlLoading, 
+    error: graphqlError 
+  } = useGetWarehouseWorkLevelWidgetQuery({
+    skip: !useGraphQL || isEditMode,
+    variables: {
+      startDate: dateRange.start.toISOString(),
+      endDate: dateRange.end.toISOString(),
+    },
+    pollInterval: 180000, // 3分鐘輪詢
+    fetchPolicy: 'cache-and-network',
+  });
+
+  // Server Actions fallback
+  const [serverActionsData, setServerActionsData] = useState<WorkLevelStats>({
+    dailyStats: [],
+    totalMoves: 0,
+    uniqueOperators: 0,
+    avgMovesPerDay: 0,
+  });
+  const [serverActionsLoading, setServerActionsLoading] = useState(!useGraphQL);
+  const [serverActionsError, setServerActionsError] = useState<string | null>(null);
+
   useEffect(() => {
+    if (useGraphQL || isEditMode) return;
+
     const fetchData = async () => {
-      setLoading(true);
-      setError(null);
+      setServerActionsLoading(true);
+      setServerActionsError(null);
       const fetchStartTime = performance.now();
 
       try {
@@ -114,7 +141,7 @@ export const WarehouseWorkLevelAreaChart = React.memo(function WarehouseWorkLeve
         if (widgetData && !widgetData.data.error) {
           const dailyStats = widgetData.data.value || [];
 
-          setData({
+          setServerActionsData({
             dailyStats,
             totalMoves: widgetData.data.metadata?.totalMoves || 0,
             uniqueOperators: widgetData.data.metadata?.uniqueOperators || 0,
@@ -132,17 +159,76 @@ export const WarehouseWorkLevelAreaChart = React.memo(function WarehouseWorkLeve
           throw new Error(widgetData?.data.error || 'No data received');
         }
 
-        setError(null);
+        setServerActionsError(null);
       } catch (err) {
         console.error('Error fetching warehouse work level:', err);
-        setError(err instanceof Error ? err.message : 'Unknown error');
+        setServerActionsError(err instanceof Error ? err.message : 'Unknown error');
       } finally {
-        setLoading(false);
+        setServerActionsLoading(false);
       }
     };
 
     fetchData();
-  }, [dateRange]);
+  }, [dateRange, useGraphQL, isEditMode]);
+
+  // 處理 GraphQL 數據 - 按日期分組聚合
+  const graphqlWorkLevelStats = useMemo<WorkLevelStats>(() => {
+    if (!graphqlData?.work_levelCollection?.edges) {
+      return { dailyStats: [], totalMoves: 0, uniqueOperators: 0, avgMovesPerDay: 0 };
+    }
+
+    const edges = graphqlData.work_levelCollection.edges;
+    
+    // 按日期分組聚合 move 數據
+    const dailyMap = new Map<string, number>();
+    const operatorSet = new Set<number>();
+    let totalMoves = 0;
+
+    edges.forEach((edge: any) => {
+      const date = format(startOfDay(new Date(edge.node.latest_update)), 'MMM d');
+      const moves = edge.node.move || 0;
+      
+      dailyMap.set(date, (dailyMap.get(date) || 0) + moves);
+      operatorSet.add(edge.node.id);
+      totalMoves += moves;
+    });
+
+    // 轉換為數組格式
+    const dailyStats: WorkLevelData[] = Array.from(dailyMap.entries())
+      .map(([date, value]) => ({
+        date,
+        value,
+        fullDate: date,
+      }))
+      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+    // 計算統計數據
+    const avgMovesPerDay = dailyStats.length > 0 ? totalMoves / dailyStats.length : 0;
+    
+    // 找出高峰日
+    let peakDay = '';
+    let maxMoves = 0;
+    dailyStats.forEach(stat => {
+      if (stat.value > maxMoves) {
+        maxMoves = stat.value;
+        peakDay = stat.date;
+      }
+    });
+
+    return {
+      dailyStats,
+      totalMoves,
+      uniqueOperators: operatorSet.size,
+      avgMovesPerDay,
+      peakDay,
+      optimized: true,
+    };
+  }, [graphqlData]);
+
+  // 合併數據源
+  const data = useGraphQL ? graphqlWorkLevelStats : serverActionsData;
+  const loading = useGraphQL ? graphqlLoading : serverActionsLoading;
+  const error = useGraphQL ? graphqlError : (serverActionsError ? new Error(serverActionsError) : null);
 
   if (isEditMode) {
     return (
@@ -173,7 +259,7 @@ export const WarehouseWorkLevelAreaChart = React.memo(function WarehouseWorkLeve
         ) : error ? (
           <div className='text-center text-sm text-red-400'>
             <p>Error loading data</p>
-            <p className='mt-1 text-xs'>{error}</p>
+            <p className='mt-1 text-xs'>{error.message}</p>
           </div>
         ) : data.dailyStats.length === 0 ? (
           <div className='py-8 text-center font-medium text-slate-400'>
@@ -221,8 +307,8 @@ export const WarehouseWorkLevelAreaChart = React.memo(function WarehouseWorkLeve
               {data.optimized && (
                 <div className='absolute right-2 top-2 flex items-center gap-1 text-xs text-blue-400'>
                   <span>⚡</span>
-                  <span>Optimized</span>
-                  {performanceMetrics && (
+                  <span>{useGraphQL ? 'GraphQL' : 'Optimized'}</span>
+                  {performanceMetrics && !useGraphQL && (
                     <span className='ml-1'>({performanceMetrics.fetchTime.toFixed(0)}ms)</span>
                   )}
                 </div>
@@ -251,25 +337,20 @@ export const WarehouseWorkLevelAreaChart = React.memo(function WarehouseWorkLeve
 export default WarehouseWorkLevelAreaChart;
 
 /**
- * @deprecated Legacy implementation with N+1 query problem
- * Migrated to DashboardAPI hybrid architecture on 2025-07-07 (Phase 2.2)
- *
- * Performance improvements achieved:
- * - Query optimization: 2 separate queries → 1 optimized JOIN query
- * - Server-side filtering: Department filter moved to SQL WHERE clause
- * - Data transfer: All work_level records → Only Warehouse department records
- * - Client processing: Complex Map operations + filtering → None
- * - Network requests: 2 → 1 (50% reduction)
- * - Caching: None → 3-minute TTL with automatic revalidation
- *
- * N+1 Query Problem Solved:
- * 1. Before: Query work_level → Extract IDs → Query data_id → Client-side JOIN
- * 2. After: Single RPC with SQL JOIN and WHERE department = 'Warehouse'
- * 3. Result: Eliminated unnecessary data transfer and client-side processing
- *
- * New Features Added:
- * - Peak day detection
- * - Average moves per day calculation
- * - Unique operators count
- * - Performance metrics display
+ * GraphQL Migration completed on 2025-07-09
+ * 
+ * Features:
+ * - Apollo Client with GraphQL relationship filtering
+ * - Built-in JOIN with data_id table for department filtering
+ * - Client-side daily aggregation of move data
+ * - Peak day detection and statistics
+ * - 3-minute polling for real-time updates
+ * - Fallback to Server Actions when GraphQL disabled
+ * - Feature flag control: NEXT_PUBLIC_ENABLE_GRAPHQL_AWAIT
+ * 
+ * Performance improvements:
+ * - Query efficiency: GraphQL handles JOIN automatically
+ * - Department filtering: Done at GraphQL layer, not client-side
+ * - Data aggregation: Efficient Map-based daily grouping
+ * - Caching: Apollo InMemoryCache with automatic updates
  */

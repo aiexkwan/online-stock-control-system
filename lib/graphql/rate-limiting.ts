@@ -272,10 +272,6 @@ export function createRateLimitingPlugin(config: RateLimitConfig = defaultRateLi
   return {
     requestDidStart() {
       return {
-        willSendResponse(requestContext: any) {
-          rateLimitStore.decrementActiveQueries();
-        },
-
         didResolveOperation(requestContext: any) {
           const { request, context } = requestContext;
           const operation = request.operationName;

@@ -15,7 +15,7 @@ export function isTest(): boolean {
 }
 
 export function isNotProduction(): boolean {
-  return process.env.NODE_ENV !== 'production';
+  return (process.env.NODE_ENV as string) !== 'production';
 }
 
 export function getNodeEnv(): string {

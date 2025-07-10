@@ -1,0 +1,70 @@
+# Stats Card queries for various data sources
+
+# Total Pallets Count
+query GetTotalPalletsCount {
+  record_palletinfoCollection {
+    totalCount
+  }
+}
+
+# Today's Transfers Count
+query GetTodayTransfersCount($todayStart: Datetime!) {
+  record_transferCollection(
+    filter: { tran_date: { gte: $todayStart } }
+  ) {
+    totalCount
+  }
+}
+
+# Active Products Count
+query GetActiveProductsCount {
+  data_codeCollection(
+    filter: { status: { eq: "active" } }
+  ) {
+    totalCount
+  }
+}
+
+# Pending Orders Count
+query GetPendingOrdersCount {
+  data_orderCollection(
+    filter: { loaded_qty: { is: null } }
+  ) {
+    totalCount
+  }
+}
+
+# Transfer Count with Date Range
+query GetTransferCount($startDate: Datetime!, $endDate: Datetime!) {
+  current: record_transferCollection(
+    filter: {
+      tran_date: { gte: $startDate, lte: $endDate }
+    }
+  ) {
+    totalCount
+  }
+}
+
+# Get specific pallets for Stock page
+query GetStockPalletsCount($location: String) {
+  record_palletinfoCollection(
+    filter: { 
+      currentloc: { eq: $location }
+    }
+  ) {
+    totalCount
+  }
+}
+
+# Inventory stats
+query GetInventoryStats {
+  activeInventory: record_inventoryCollection(
+    filter: { qty: { gt: 0 } }
+  ) {
+    totalCount
+  }
+  
+  uniqueProducts: record_inventoryCollection {
+    totalCount
+  }
+}

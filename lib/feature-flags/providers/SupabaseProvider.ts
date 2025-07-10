@@ -191,14 +191,17 @@ export class SupabaseFeatureFlagProvider extends BaseFeatureFlagProvider {
     `;
 
     // 執行 SQL（需要適當權限）
-    const { error } = await this.supabase
-      .rpc('exec_sql', {
-        sql: createTableSQL,
-      })
-      .catch(() => ({ error: 'Table creation skipped' }));
-
-    if (error) {
-      console.warn('Could not create feature flags table:', error);
+    try {
+      const { error } = await this.supabase
+        .rpc('exec_sql', {
+          sql: createTableSQL,
+        });
+      
+      if (error) {
+        console.warn('Could not create feature flags table:', error);
+      }
+    } catch (err) {
+      console.warn('Table creation skipped:', err);
     }
   }
 

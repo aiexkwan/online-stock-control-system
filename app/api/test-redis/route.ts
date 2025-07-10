@@ -54,7 +54,7 @@ export async function GET(request: NextRequest) {
         basicConnection: isConnected,
         ping: pingResult === 'PONG',
         writeRead: parsedValue?.message === testValue.message,
-        cacheAdapter: cachedValue?.test === cacheValue.test,
+        cacheAdapter: (cachedValue as any)?.test === cacheValue.test,
       },
       redis: {
         url: process.env.REDIS_URL ? 'configured' : 'not configured',
@@ -103,7 +103,7 @@ export async function POST(request: NextRequest) {
         results.push({
           iteration: i,
           duration,
-          success: retrieved?.iteration === i,
+          success: (retrieved as any)?.iteration === i,
         });
       }
 

@@ -1,0 +1,50 @@
+# Top Products 查詢
+# 用於 Injection Dashboard 的 Top 10 Products charts
+
+query GetTopProductsByQuantity($startDate: Datetime!, $endDate: Datetime!, $limit: Int = 10) {
+  # 查詢生產記錄
+  record_palletinfoCollection(
+    filter: {
+      generate_time: { gte: $startDate, lte: $endDate }
+    }
+  ) {
+    edges {
+      node {
+        product_code
+        product_qty
+        # 獲取產品描述
+        data_code {
+          description
+          colour
+          type
+        }
+      }
+    }
+  }
+}
+
+# 針對圖表優化的查詢 - 包含更多產品信息
+query GetTopProductsDetailed($startDate: Datetime!, $endDate: Datetime!) {
+  record_palletinfoCollection(
+    filter: {
+      generate_time: { gte: $startDate, lte: $endDate }
+    }
+    orderBy: [{ generate_time: DescNullsLast }]
+  ) {
+    edges {
+      node {
+        plt_num
+        product_code
+        product_qty
+        generate_time
+        series
+        data_code {
+          description
+          colour
+          type
+          standard_qty
+        }
+      }
+    }
+  }
+}

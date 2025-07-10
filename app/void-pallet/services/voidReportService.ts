@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase';
 import { jsPDF } from 'jspdf';
 import ExcelJS from 'exceljs';
 import { format } from 'date-fns';
+import { isNotProduction } from '@/lib/utils/env';
 
 // Based on database structure
 export interface VoidRecord {

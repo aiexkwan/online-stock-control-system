@@ -88,7 +88,7 @@ export function UnifiedPrintInterface({ config, className }: UnifiedPrintInterfa
         options,
         metadata: {
           userId: 'current-user', // TODO: Get from auth context
-          printedAt: new Date().toISOString(),
+          timestamp: new Date().toISOString(),
         },
       };
 

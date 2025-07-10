@@ -170,11 +170,11 @@ export default function PrintLabelPage() {
       }
 
       // Create a synthetic form event if not provided
-      const formEvent = e || {
+      const formEvent = e || ({
         preventDefault: () => {},
         type: 'submit',
-        target: null,
-        currentTarget: null,
+        target: null as any,
+        currentTarget: null as any,
         nativeEvent: new Event('submit'),
         bubbles: true,
         cancelable: true,
@@ -186,7 +186,7 @@ export default function PrintLabelPage() {
         isDefaultPrevented: () => false,
         isPropagationStopped: () => false,
         persist: () => {},
-      } as React.FormEvent;
+      } as unknown as React.FormEvent);
       
       businessLogic.handlePrintLabel(formEvent);
     },

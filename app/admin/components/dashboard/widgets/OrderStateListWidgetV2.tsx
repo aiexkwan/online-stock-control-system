@@ -1,7 +1,13 @@
 /**
- * Order State List Widget V2
- * 使用 DashboardAPI + 服務器端進度計算
+ * Order State List Widget V2 - Apollo GraphQL Version
+ * 顯示訂單進度列表
  * 遷移自原 OrderStateListWidget
+ *
+ * GraphQL Migration:
+ * - 使用 Apollo Client 查詢 data_order
+ * - Client-side 進度計算
+ * - 支援實時更新
+ * - 保留 Server Actions fallback
  */
 
 'use client';
@@ -16,6 +22,9 @@ import { cn } from '@/lib/utils';
 import { Progress } from '@/components/ui/progress';
 import { format } from 'date-fns';
 import { createDashboardAPI } from '@/lib/api/admin/DashboardAPI';
+import { useGetOrderStateListWidgetQuery } from '@/lib/graphql/generated/apollo-hooks';
+
+// GraphQL 查詢已經移動到 lib/graphql/generated/apollo-hooks.ts
 
 interface OrderProgress {
   uuid: string;
@@ -37,19 +46,42 @@ export const OrderStateListWidgetV2 = React.memo(function OrderStateListWidgetV2
   isEditMode,
   timeFrame,
 }: WidgetComponentProps) {
-  const [orders, setOrders] = useState<OrderProgress[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [metadata, setMetadata] = useState<any>({});
   const [performanceMetrics, setPerformanceMetrics] = useState<{
     apiResponseTime?: number;
     cacheHit?: boolean;
   }>({});
 
+  // 使用環境變量控制是否使用 GraphQL
+  const useGraphQL = process.env.NEXT_PUBLIC_ENABLE_GRAPHQL_AWAIT === 'true' || 
+                     widget?.config?.useGraphQL === true;
+
+  // 使用 GraphQL Codegen 生成嘅 hook
+  const { 
+    data: graphqlData, 
+    loading: graphqlLoading, 
+    error: graphqlError 
+  } = useGetOrderStateListWidgetQuery({
+    skip: !useGraphQL || isEditMode,
+    variables: {
+      limit: 50,
+      offset: 0,
+    },
+    pollInterval: 30000, // 30秒輪詢
+    fetchPolicy: 'cache-and-network',
+  });
+
+  // Server Actions fallback
+  const [serverActionsData, setServerActionsData] = useState<OrderProgress[]>([]);
+  const [serverActionsLoading, setServerActionsLoading] = useState(!useGraphQL);
+  const [serverActionsError, setServerActionsError] = useState<string | null>(null);
+  const [serverActionsMetadata, setServerActionsMetadata] = useState<any>({});
+
   const fetchOrders = useCallback(async () => {
+    if (useGraphQL || isEditMode) return;
+
     try {
-      setLoading(true);
-      setError(null);
+      setServerActionsLoading(true);
+      setServerActionsError(null);
       const startTime = performance.now();
 
       const api = createDashboardAPI();
@@ -75,25 +107,88 @@ export const OrderStateListWidgetV2 = React.memo(function OrderStateListWidgetV2
         throw new Error(widgetData?.data.error || 'Failed to load orders data');
       }
 
-      setOrders(widgetData.data.value || []);
-      setMetadata(widgetData.data.metadata || {});
+      setServerActionsData(widgetData.data.value || []);
+      setServerActionsMetadata(widgetData.data.metadata || {});
     } catch (err) {
       console.error('Error fetching orders:', err);
-      setError(err instanceof Error ? err.message : 'Unknown error');
+      setServerActionsError(err instanceof Error ? err.message : 'Unknown error');
     } finally {
-      setLoading(false);
+      setServerActionsLoading(false);
     }
-  }, []);
+  }, [useGraphQL, isEditMode]);
 
   useEffect(() => {
-    if (!isEditMode) {
+    if (!isEditMode && !useGraphQL) {
       fetchOrders();
 
       // Set up refresh interval for real-time updates
       const interval = setInterval(fetchOrders, 30000); // Refresh every 30 seconds
       return () => clearInterval(interval);
     }
-  }, [fetchOrders, isEditMode]);
+  }, [fetchOrders, isEditMode, useGraphQL]);
+
+  // 處理 GraphQL 數據 - 計算進度
+  const graphqlOrders = useMemo<OrderProgress[]>(() => {
+    if (!graphqlData?.data_orderCollection?.edges) {
+      return [];
+    }
+
+    return graphqlData.data_orderCollection.edges
+      .map((edge: any) => {
+        const node = edge.node;
+        const productQty = node.product_qty || 0;
+        const loadedQty = parseInt(node.loaded_qty || '0', 10);
+        
+        // 計算進度
+        const progress = productQty > 0 ? (loadedQty / productQty) * 100 : 0;
+        
+        // 判斷狀態
+        let status: 'pending' | 'in_progress' | 'completed' = 'pending';
+        let statusColor: 'red' | 'yellow' | 'orange' | 'green' = 'red';
+        
+        if (progress >= 100) {
+          status = 'completed';
+          statusColor = 'green';
+        } else if (progress > 0) {
+          status = 'in_progress';
+          statusColor = progress >= 75 ? 'orange' : 'yellow';
+        }
+
+        return {
+          uuid: node.uuid,
+          order_ref: node.order_ref,
+          account_num: node.account_num,
+          product_code: node.product_code,
+          product_desc: node.product_desc,
+          product_qty: productQty,
+          loaded_qty: loadedQty,
+          created_at: node.created_at,
+          progress,
+          progress_text: `${loadedQty}/${productQty}`,
+          status,
+          status_color: statusColor,
+        };
+      })
+      .filter((order: OrderProgress) => order.status !== 'completed'); // 只顯示未完成訂單
+  }, [graphqlData]);
+
+  // 計算 GraphQL metadata
+  const graphqlMetadata = useMemo(() => {
+    const pendingCount = graphqlOrders.length;
+    const totalCount = graphqlData?.data_orderCollection?.edges?.length || 0;
+    return {
+      pendingCount,
+      totalCount,
+      hasMore: graphqlData?.data_orderCollection?.pageInfo?.hasNextPage || false,
+      optimized: true,
+    };
+  }, [graphqlOrders, graphqlData]);
+
+  // 合併數據源
+  const orders = useGraphQL ? graphqlOrders : serverActionsData;
+  const loading = useGraphQL ? graphqlLoading : serverActionsLoading;
+  const error = useGraphQL ? graphqlError : (serverActionsError ? new Error(serverActionsError) : null);
+  const metadata = useGraphQL ? graphqlMetadata : serverActionsMetadata;
 
   if (isEditMode) {
     return (
@@ -113,7 +208,12 @@ export const OrderStateListWidgetV2 = React.memo(function OrderStateListWidgetV2
             <ClipboardDocumentListIcon className='h-5 w-5' />
             <span>Order Progress</span>
           </div>
-          {!isEditMode && performanceMetrics.apiResponseTime && (
+          {!isEditMode && useGraphQL && (
+            <span className='text-xs text-blue-400'>
+              ⚡ GraphQL
+            </span>
+          )}
+          {!isEditMode && !useGraphQL && performanceMetrics.apiResponseTime && (
             <span className='text-xs text-slate-400'>
               {performanceMetrics.apiResponseTime}ms
               {performanceMetrics.cacheHit && ' (cached)'}
@@ -138,7 +238,7 @@ export const OrderStateListWidgetV2 = React.memo(function OrderStateListWidgetV2
         ) : error ? (
           <div className='text-center text-sm text-red-400'>
             <p>Error loading orders</p>
-            <p className='mt-1 text-xs'>{error}</p>
+            <p className='mt-1 text-xs'>{error.message}</p>
           </div>
         ) : orders.length === 0 ? (
           <div className='py-8 text-center font-medium text-slate-400'>
@@ -221,3 +321,25 @@ export const OrderStateListWidgetV2 = React.memo(function OrderStateListWidgetV2
 });
 
 export default OrderStateListWidgetV2;
+
+/**
+ * GraphQL Migration completed on 2025-07-09
+ * 
+ * Features:
+ * - Apollo Client query for data_order table
+ * - Client-side progress calculation (loaded_qty / product_qty)
+ * - Status color coding based on progress
+ * - Filters out completed orders client-side
+ * - 30-second polling for real-time updates
+ * - Fallback to Server Actions when GraphQL disabled
+ * - Feature flag control: NEXT_PUBLIC_ENABLE_GRAPHQL_AWAIT
+ * 
+ * Performance improvements:
+ * - Direct GraphQL queries reduce latency
+ * - Client-side filtering for pending orders
+ * - Progress calculation done efficiently in-memory
+ * - Caching: Apollo InMemoryCache with automatic updates
+ * 
+ * Note: GraphQL doesn't support column comparisons directly,
+ * so filtering loaded_qty < product_qty is done client-side
+ */

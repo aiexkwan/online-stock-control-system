@@ -446,7 +446,7 @@ export class ABTestManager {
 
     const errorMetrics = this.metrics.get(`${testId}-error_rate`) || [];
     const recentErrors = errorMetrics.filter(
-      dp => dp.timestamp > Date.now() - test.rollback.window
+      dp => dp.timestamp > Date.now() - test.rollback!.window
     );
 
     if (recentErrors.length > 0) {

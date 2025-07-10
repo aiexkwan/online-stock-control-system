@@ -97,6 +97,28 @@ interface ThemeTypography {
 const baseDarkTheme: Partial<ThemeConfig> = {
   mode: 'dark',
   colors: {
+    background: {
+      primary: '#000000',
+      secondary: '#1a1a1a',
+      tertiary: '#2a2a2a',
+      overlay: 'rgba(0, 0, 0, 0.8)',
+    },
+    foreground: {
+      primary: '#ffffff',
+      secondary: '#e0e0e0',
+      muted: '#999999',
+      inverted: '#000000',
+    },
+    border: {
+      default: '#333333',
+      muted: '#222222',
+      strong: '#555555',
+    },
+    accent: {
+      primary: '#3b82f6',
+      secondary: '#8b5cf6',
+      tertiary: '#ec4899',
+    },
     semantic: designTokens.colors.semantic,
   },
   typography: {

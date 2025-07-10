@@ -1,12 +1,13 @@
 /**
- * Still In Await Widget
+ * Still In Await Widget - GraphQL 版本
  * 顯示指定時間生成的棧板中仍在 await location 的數量
  * 支援頁面的 time frame selector
+ * 使用 Apollo Client 進行數據查詢
  *
- * 已遷移至統一架構：
- * - 使用 DashboardAPI 統一數據訪問
- * - 服務器端 JOIN 和計算
- * - 優化性能和代碼結構
+ * GraphQL Migration:
+ * - 使用 Apollo Client 查詢
+ * - 支援 cache-and-network 策略
+ * - 保留 Server Actions fallback
  */
 
 'use client';
@@ -19,7 +20,10 @@ import { WidgetComponentProps } from '@/app/types/dashboard';
 import { createDashboardAPI } from '@/lib/api/admin/DashboardAPI';
 import { motion } from 'framer-motion';
 import { getYesterdayRange } from '@/app/utils/timezone';
-import { format } from 'date-fns';
+import { format, startOfDay, endOfDay } from 'date-fns';
+import { useGetStillInAwaitOptimizedQuery } from '@/lib/graphql/generated/apollo-hooks';
+
+// GraphQL 查詢已經移動到 lib/graphql/generated/apollo-hooks.ts
 
 export const StillInAwaitWidget = React.memo(function StillInAwaitWidget({
   widget,
@@ -27,8 +31,6 @@ export const StillInAwaitWidget = React.memo(function StillInAwaitWidget({
   timeFrame,
 }: WidgetComponentProps) {
   const [stillInAwaitCount, setStillInAwaitCount] = useState(0);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [metadata, setMetadata] = useState<any>({});
   const dashboardAPI = useMemo(() => createDashboardAPI(), []);
 
@@ -47,10 +49,60 @@ export const StillInAwaitWidget = React.memo(function StillInAwaitWidget({
     };
   }, [timeFrame]);
 
+  // 使用環境變量控制是否使用 GraphQL
+  const useGraphQL = process.env.NEXT_PUBLIC_ENABLE_GRAPHQL_AWAIT === 'true' || 
+                     widget?.config?.useGraphQL === true;
+
+  // 使用 GraphQL Codegen 生成嘅 hook
+  const { 
+    data: graphqlData, 
+    loading: graphqlLoading, 
+    error: graphqlError 
+  } = useGetStillInAwaitOptimizedQuery({
+    skip: !useGraphQL || isEditMode,
+    variables: {
+      startDate: startOfDay(dateRange.start).toISOString(),
+      endDate: endOfDay(dateRange.end).toISOString(),
+    },
+    pollInterval: 120000, // 2分鐘輪詢
+    fetchPolicy: 'cache-and-network',
+    onCompleted: (data) => {
+      // 處理查詢結果：計算指定時間生成且仍在 await 的棧板數量
+      const palletInfo = data?.record_palletinfoCollection?.edges || [];
+      
+      let count = 0;
+      let totalPallets = palletInfo.length;
+      
+      // 每個棧板都有嵌套嘅 inventory collection
+      palletInfo.forEach((edge: any) => {
+        const inventoryEdges = edge.node.record_inventoryCollection?.edges || [];
+        // 如果該棧板有 await > 0 嘅庫存記錄，加入計算
+        inventoryEdges.forEach((invEdge: any) => {
+          if (invEdge.node.await > 0) {
+            count += invEdge.node.await;
+          }
+        });
+      });
+      
+      setStillInAwaitCount(count);
+      setMetadata({
+        totalPallets,
+        useGraphQL: true,
+        calculationTime: new Date().toISOString(),
+      });
+    }
+  });
+
+  // Server Actions fallback
+  const [serverActionsLoading, setServerActionsLoading] = useState(!useGraphQL);
+  const [serverActionsError, setServerActionsError] = useState<string | null>(null);
+
   useEffect(() => {
+    if (useGraphQL || isEditMode) return;
+
     const fetchData = async () => {
-      setLoading(true);
-      setError(null);
+      setServerActionsLoading(true);
+      setServerActionsError(null);
 
       try {
         // 使用統一的 DashboardAPI 獲取數據
@@ -67,7 +119,7 @@ export const StillInAwaitWidget = React.memo(function StillInAwaitWidget({
           },
           {
             strategy: 'server',
-            cache: { ttl: 120 }, // 2分鐘緩存
+            cache: { ttl: 120 },
           }
         );
 
@@ -76,7 +128,7 @@ export const StillInAwaitWidget = React.memo(function StillInAwaitWidget({
 
           if (widgetData.data.error) {
             console.error('[StillInAwaitWidget] API error:', widgetData.data.error);
-            setError(widgetData.data.error);
+            setServerActionsError(widgetData.data.error);
             setStillInAwaitCount(0);
             return;
           }
@@ -84,29 +136,30 @@ export const StillInAwaitWidget = React.memo(function StillInAwaitWidget({
           const awaitCount = widgetData.data.value || 0;
           const widgetMetadata = widgetData.data.metadata || {};
 
-          console.log('[StillInAwaitWidget] API returned count:', awaitCount);
-          console.log('[StillInAwaitWidget] Metadata:', widgetMetadata);
-
-          // 使用 API 返回的數據，已經經過優化處理
           setStillInAwaitCount(awaitCount);
-          setMetadata(widgetMetadata);
-
-          console.log('[StillInAwaitWidget] Data processed successfully using optimized API');
+          setMetadata({
+            ...widgetMetadata,
+            useGraphQL: false,
+          });
         } else {
           console.warn('[StillInAwaitWidget] No widget data returned from API');
           setStillInAwaitCount(0);
         }
       } catch (err) {
         console.error('[StillInAwaitWidget] Error fetching data from API:', err);
-        setError(err instanceof Error ? err.message : 'Unknown error');
+        setServerActionsError(err instanceof Error ? err.message : 'Unknown error');
         setStillInAwaitCount(0);
       } finally {
-        setLoading(false);
+        setServerActionsLoading(false);
       }
     };
 
     fetchData();
-  }, [dateRange, dashboardAPI]);
+  }, [dateRange, dashboardAPI, useGraphQL, isEditMode]);
+
+  // 合併 loading 和 error 狀態
+  const loading = useGraphQL ? graphqlLoading : serverActionsLoading;
+  const error = useGraphQL ? graphqlError?.message : serverActionsError;
 
   if (isEditMode) {
     return (
@@ -127,8 +180,8 @@ export const StillInAwaitWidget = React.memo(function StillInAwaitWidget({
         </CardTitle>
         <p className='mt-1 text-xs text-slate-400'>
           From {format(dateRange.start, 'MMM d')} to {format(dateRange.end, 'MMM d')}
-          {metadata.calculationTime && (
-            <span className='ml-2 text-xs text-emerald-400'>({metadata.calculationTime})</span>
+          {metadata.useGraphQL && (
+            <span className='ml-2 text-xs text-blue-400'>⚡ GraphQL</span>
           )}
         </p>
       </CardHeader>

@@ -23,9 +23,10 @@ import {
   checkSubscriptionRateLimit,
   removeSubscriptionConnection,
   defaultRateLimitConfig,
+  getRateLimitingStats,
 } from './rate-limiting';
-import { QueryComplexityAnalyzer } from './query-complexity';
-import { createDataLoaders } from './data-loaders';
+import { QueryAnalyzer } from './query-complexity';
+import { createDataLoaderContext } from './data-loaders';
 import { cacheOptimizer } from './cache-strategy-optimizer';
 import { unifiedDataLayer } from './unified-data-layer';
 import { unifiedPreloadService } from '@/lib/preload/unified-preload-service';
@@ -297,34 +298,34 @@ export function createOptimizedApolloServer() {
     resolvers: createOptimizedResolvers(),
   });
 
-  const complexityAnalyzer = new QueryComplexityAnalyzer();
+  // Use QueryAnalyzer for complexity calculation
 
   const server = new ApolloServer({
     schema,
 
     // Context with DataLoaders and user info
-    context: async ({ req, connection }) => {
+    context: async ({ req, connection }: any) => {
       // Handle subscription context
       if (connection) {
         return {
           ...connection.context,
-          dataLoaders: createDataLoaders(),
+          dataLoaders: createDataLoaderContext(),
         };
       }
 
       // Handle query/mutation context
       const context = {
         req,
-        user: req.user, // Assuming user is attached to request by auth middleware
-        dataLoaders: createDataLoaders(),
+        user: (req as any).user, // Assuming user is attached to request by auth middleware
+        dataLoaders: createDataLoaderContext(),
         preloadTracking: null, // 用於追蹤預加載
       };
 
       // 觸發用戶行為預加載
-      if (req.user?.id && req.headers.referer) {
+      if ((req as any).user?.id && req.headers.referer) {
         const currentPath = new URL(req.headers.referer).pathname;
-        unifiedPreloadService.preloadForUser(req.user.id, currentPath).catch(err => {
-          logger.debug('預加載失敗:', err);
+        unifiedPreloadService.preloadForUser((req as any).user.id, currentPath).catch(err => {
+          graphqlLogger.debug('預加載失敗:', err);
         });
       }
 
@@ -338,11 +339,11 @@ export function createOptimizedApolloServer() {
 
       // Performance monitoring plugin
       {
-        requestDidStart() {
+        async requestDidStart(): Promise<any> {
           return {
-            async willSendResponse(requestContext) {
+            async willSendResponse(requestContext: any): Promise<void> {
               const { operationName, request, context } = requestContext;
-              const complexity = complexityAnalyzer.calculateComplexity(request.query);
+              const complexity = QueryAnalyzer.estimateComplexity(request.query);
 
               // Log slow queries
               if (requestContext.metrics?.executionTime > 2000) {
@@ -354,7 +355,7 @@ export function createOptimizedApolloServer() {
               // 記錄預加載追蹤
               if (context.preloadTracking && context.user?.id) {
                 const tracking = context.preloadTracking;
-                logger.debug('預加載追蹤:', {
+                graphqlLogger.debug('預加載追蹤:', {
                   userId: context.user.id,
                   query: tracking.query,
                   executionTime: requestContext.metrics?.executionTime,
@@ -387,11 +388,6 @@ export function createOptimizedApolloServer() {
       // Cost analysis
       costAnalysis({
         maximumCost: 1000,
-        defaultCost: 1,
-        scalarCost: 1,
-        objectCost: 5,
-        listFactor: 10,
-        introspectionCost: 100,
         createError: (max: number, actual: number) => {
           const message = `Query cost ${actual} exceeds maximum cost ${max}`;
           graphqlLogger.warn({

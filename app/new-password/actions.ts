@@ -29,15 +29,15 @@ export async function resetPasswordAction(
   }
 
   try {
-    process.env.NODE_ENV !== 'production' &&
-      process.env.NODE_ENV !== 'production' &&
+    (process.env.NODE_ENV as string) !== 'production' &&
+      (process.env.NODE_ENV as string) !== 'production' &&
       console.log(`[Server Action] Attempting to reset password for userId: ${userId}`);
 
     // 1. Hash the new password
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(newPassword, salt);
-    process.env.NODE_ENV !== 'production' &&
-      process.env.NODE_ENV !== 'production' &&
+    (process.env.NODE_ENV as string) !== 'production' &&
+      (process.env.NODE_ENV as string) !== 'production' &&
       console.log(`[Server Action] New password hashed for userId: ${userId}`);
 
     // 2. Update the user's password in the data_id table
@@ -59,16 +59,16 @@ export async function resetPasswordAction(
 
     // Check if any row was actually updated. If no row matched `userId`, data will be empty.
     if (!data || data.length === 0) {
-      process.env.NODE_ENV !== 'production' &&
-        process.env.NODE_ENV !== 'production' &&
+      (process.env.NODE_ENV as string) !== 'production' &&
+        (process.env.NODE_ENV as string) !== 'production' &&
         console.warn(
           `[Server Action] No user found with id: ${userId} during password reset attempt.`
         );
       return { success: false, error: 'User not found. Password not updated.' };
     }
 
-    process.env.NODE_ENV !== 'production' &&
-      process.env.NODE_ENV !== 'production' &&
+    (process.env.NODE_ENV as string) !== 'production' &&
+      (process.env.NODE_ENV as string) !== 'production' &&
       console.log(
         `[Server Action] Password for userId: ${userId} updated successfully in data_id table.`
       );
@@ -83,8 +83,8 @@ export async function resetPasswordAction(
         action: 'Password Reset', // A more specific action type
         remark: 'User self-service password reset successful.',
       });
-      process.env.NODE_ENV !== 'production' &&
-        process.env.NODE_ENV !== 'production' &&
+      (process.env.NODE_ENV as string) !== 'production' &&
+        (process.env.NODE_ENV as string) !== 'production' &&
         console.log(`[Server Action] Password reset logged to history for userId: ${userId}`);
     } catch (historyError) {
       console.error(

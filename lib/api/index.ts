@@ -4,11 +4,9 @@
  */
 
 // Core exports
-export {
-  DataAccessLayer,
-  DataAccessMetricsManager,
-  type DataAccessConfig,
-} from './core/DataAccessStrategy';
+import { DataAccessLayer as DataAccessLayerBase } from './core/DataAccessStrategy';
+export { DataAccessLayerBase as DataAccessLayer };
+export { DataAccessMetricsManager, type DataAccessConfig } from './core/DataAccessStrategy';
 
 // Inventory APIs
 export { StockLevelsAPI, createStockLevelsAPI, useStockLevels } from './inventory/StockLevelsAPI';
@@ -33,7 +31,7 @@ export type { DashboardParams, DashboardResult, DashboardWidgetData } from './ad
  */
 export class APIFactory {
   private static instance: APIFactory;
-  private apis: Map<string, DataAccessLayer<any, any>> = new Map();
+  private apis: Map<string, DataAccessLayerBase<any, any>> = new Map();
 
   static getInstance(): APIFactory {
     if (!this.instance) {
@@ -45,7 +43,7 @@ export class APIFactory {
   /**
    * Get or create an API instance
    */
-  getAPI<T extends DataAccessLayer<any, any>>(
+  getAPI<T extends DataAccessLayerBase<any, any>>(
     type: 'stockLevels' | 'dashboard' | string,
     factory: () => T
   ): T {

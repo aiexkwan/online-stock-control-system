@@ -7,7 +7,8 @@ import { ReportDataSource } from '../core/ReportConfig';
 import { 
   getStockTakeSummary, 
   getStockTakeDetails, 
-  getNotCountedItems 
+  getNotCountedItems,
+  type StockTakeFilters
 } from '@/app/actions/reportActions';
 
 // Stock Take Summary data source
@@ -15,7 +16,13 @@ const stockTakeSummaryDataSource: ReportDataSource = {
   id: 'stock-take-summary',
 
   async fetch(filters: Record<string, any>) {
-    const result = await getStockTakeSummary(filters);
+    const stockTakeFilters: StockTakeFilters = {
+      stockTakeDate: filters.stockTakeDate || '',
+      productCode: filters.productCode,
+      minVariance: filters.minVariance,
+      countStatus: filters.countStatus,
+    };
+    const result = await getStockTakeSummary(stockTakeFilters);
     if (!result.success) {
       throw new Error(result.error || 'Failed to fetch stock take summary');
     }
@@ -32,7 +39,13 @@ const stockTakeDetailsDataSource: ReportDataSource = {
   id: 'stock-take-details',
 
   async fetch(filters: Record<string, any>) {
-    const result = await getStockTakeDetails(filters);
+    const stockTakeFilters: StockTakeFilters = {
+      stockTakeDate: filters.stockTakeDate || '',
+      productCode: filters.productCode,
+      minVariance: filters.minVariance,
+      countStatus: filters.countStatus,
+    };
+    const result = await getStockTakeDetails(stockTakeFilters);
     if (!result.success) {
       throw new Error(result.error || 'Failed to fetch stock take details');
     }
@@ -49,7 +62,13 @@ const notCountedItemsDataSource: ReportDataSource = {
   id: 'not-counted-items',
 
   async fetch(filters: Record<string, any>) {
-    const result = await getNotCountedItems(filters);
+    const stockTakeFilters: StockTakeFilters = {
+      stockTakeDate: filters.stockTakeDate || '',
+      productCode: filters.productCode,
+      minVariance: filters.minVariance,
+      countStatus: filters.countStatus,
+    };
+    const result = await getNotCountedItems(stockTakeFilters);
     if (!result.success) {
       throw new Error(result.error || 'Failed to fetch not counted items');
     }

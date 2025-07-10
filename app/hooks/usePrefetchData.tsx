@@ -66,8 +66,8 @@ export const usePrefetchData = (options: PrefetchOptions = {}) => {
         if (!error && data) {
           const cacheKey = `${query.table}-${JSON.stringify(query.filter || {})}`;
           prefetchedData.current.set(cacheKey, data);
-          process.env.NODE_ENV !== 'production' &&
-            process.env.NODE_ENV !== 'production' &&
+          (process.env.NODE_ENV as string) !== 'production' &&
+            (process.env.NODE_ENV as string) !== 'production' &&
             console.log(`[Prefetch] 預取 ${query.table} 成功，${data.length} 筆資料`);
         }
       } catch (error) {

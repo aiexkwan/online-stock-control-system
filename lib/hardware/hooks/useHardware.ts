@@ -72,8 +72,8 @@ export function useHardware(options: UseHardwareOptions = {}): UseHardwareReturn
     if (!hal) return;
 
     const updateDeviceList = () => {
-      const printerDevices = hal.monitoring.getDevices('printer');
-      const scannerDevices = hal.monitoring.getDevices('scanner');
+      const printerDevices = (hal.monitoring as any).getDevices('printer');
+      const scannerDevices = (hal.monitoring as any).getDevices('scanner');
 
       setPrinters(printerDevices);
       setScanners(scannerDevices);
@@ -81,7 +81,7 @@ export function useHardware(options: UseHardwareOptions = {}): UseHardwareReturn
 
     const setupListeners = () => {
       // Alert listener
-      const unsubscribeAlerts = hal.alerts.on('alert', (alert: HardwareAlert) => {
+      const unsubscribeAlerts = (hal as any).alerts.on('alert', (alert: HardwareAlert) => {
         if (onAlert) {
           onAlert(alert);
         }

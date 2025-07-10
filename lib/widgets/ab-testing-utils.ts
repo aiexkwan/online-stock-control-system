@@ -104,7 +104,7 @@ function clearMetrics(testId: string): void {
 
   // 清除指標數據
   if (manager.metrics) {
-    const keysToDelete = Array.from(manager.metrics.keys()).filter(key => key.startsWith(testId));
+    const keysToDelete = Array.from(manager.metrics.keys()).filter(key => (key as string).startsWith(testId));
     keysToDelete.forEach(key => manager.metrics.delete(key));
   }
 

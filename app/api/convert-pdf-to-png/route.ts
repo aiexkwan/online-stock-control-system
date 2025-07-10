@@ -26,7 +26,7 @@ function createSupabaseAdmin() {
 
 export async function POST(request: NextRequest) {
   try {
-    if (process.env.NODE_ENV !== 'production') {
+    if ((process.env.NODE_ENV as string) !== 'production') {
       console.log('[PDF to PNG] Starting conversion');
     }
 
@@ -60,7 +60,7 @@ export async function POST(request: NextRequest) {
 
       // 為了簡化，我們假設 PDF 只有一頁
       // 在實際應用中，你可能需要使用專門的 PDF 處理服務
-      if (process.env.NODE_ENV !== 'production') {
+      if ((process.env.NODE_ENV as string) !== 'production') {
         console.log('[PDF to PNG] Using Google Docs Viewer as fallback');
       }
 
@@ -111,7 +111,7 @@ export async function POST(request: NextRequest) {
         // 對於測試，我們直接返回原始 PDF URL
         // GPT-4o 可能能夠處理某些 PDF 格式
         imageUrls.push(pdfUrl);
-        if (process.env.NODE_ENV !== 'production') {
+        if ((process.env.NODE_ENV as string) !== 'production') {
           console.log('[PDF to PNG] Using original PDF URL for GPT-4o');
         }
       }

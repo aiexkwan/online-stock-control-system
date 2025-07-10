@@ -7,20 +7,20 @@
  */
 
 import DataLoader from 'dataloader';
-import { unifiedDataLayer } from './unified-data-layer';
+import { unifiedDataLayer, Product, Pallet, InventoryRecord, Movement } from './unified-data-layer';
 
 // ================================
 // 1. 產品 DataLoader (Product DataLoader)
 // ================================
 
-export const productLoader = new DataLoader<string, any>(
+export const productLoader = new DataLoader<string, Product | null>(
   async (productCodes: readonly string[]) => {
     try {
       // 批量查詢產品
       const products = await unifiedDataLayer.getProductsByCodes(Array.from(productCodes));
 
       // 建立 code -> product 映射
-      const productMap = new Map(products.map(p => [p.code, p]));
+      const productMap = new Map(products.map((p: Product) => [p.code, p]));
 
       // 確保返回順序與輸入順序一致
       return productCodes.map(code => productMap.get(code) || null);
@@ -42,11 +42,11 @@ export const productLoader = new DataLoader<string, any>(
 // 2. 托盤 DataLoader (Pallet DataLoader)
 // ================================
 
-export const palletLoader = new DataLoader<string, any>(
+export const palletLoader = new DataLoader<string, Pallet | null>(
   async (palletNumbers: readonly string[]) => {
     try {
       const pallets = await unifiedDataLayer.getPalletsByNumbers(Array.from(palletNumbers));
-      const palletMap = new Map(pallets.map(p => [p.palletNumber, p]));
+      const palletMap = new Map(pallets.map((p: Pallet) => [p.palletNumber, p]));
 
       return palletNumbers.map(number => palletMap.get(number) || null);
     } catch (error) {
@@ -65,7 +65,7 @@ export const palletLoader = new DataLoader<string, any>(
 // 3. 庫存記錄 DataLoader (Inventory DataLoader)
 // ================================
 
-export const inventoryLoader = new DataLoader<string, any[]>(
+export const inventoryLoader = new DataLoader<string, InventoryRecord[]>(
   async (productCodes: readonly string[]) => {
     try {
       // 批量查詢庫存記錄
@@ -75,7 +75,7 @@ export const inventoryLoader = new DataLoader<string, any[]>(
 
       // 按產品代碼分組
       const inventoryMap = new Map<string, any[]>();
-      inventoryRecords.forEach(record => {
+      inventoryRecords.forEach((record: InventoryRecord) => {
         const productCode = record.productCode;
         if (!inventoryMap.has(productCode)) {
           inventoryMap.set(productCode, []);
@@ -100,7 +100,7 @@ export const inventoryLoader = new DataLoader<string, any[]>(
 // 4. 移動記錄 DataLoader (Movement DataLoader)
 // ================================
 
-export const movementLoader = new DataLoader<string, any[]>(
+export const movementLoader = new DataLoader<string, Movement[]>(
   async (palletNumbers: readonly string[]) => {
     try {
       const movements = await unifiedDataLayer.getMovementsByPalletNumbers(
@@ -109,7 +109,7 @@ export const movementLoader = new DataLoader<string, any[]>(
 
       // 按托盤號分組
       const movementMap = new Map<string, any[]>();
-      movements.forEach(movement => {
+      movements.forEach((movement: Movement) => {
         const palletNumber = movement.palletNumber;
         if (!movementMap.has(palletNumber)) {
           movementMap.set(palletNumber, []);
@@ -142,7 +142,7 @@ export const grnRecordLoader = new DataLoader<string, any[]>(
       );
 
       const grnMap = new Map<string, any[]>();
-      grnRecords.forEach(grn => {
+      grnRecords.forEach((grn: any) => {
         const palletNumber = grn.palletNumber;
         if (!grnMap.has(palletNumber)) {
           grnMap.set(palletNumber, []);
@@ -171,7 +171,7 @@ export const orderLoader = new DataLoader<number, any>(
   async (orderRefs: readonly number[]) => {
     try {
       const orders = await unifiedDataLayer.getOrdersByRefs(Array.from(orderRefs));
-      const orderMap = new Map(orders.map(o => [o.orderRef, o]));
+      const orderMap = new Map(orders.map((o: any) => [o.orderRef, o]));
 
       return orderRefs.map(ref => orderMap.get(ref) || null);
     } catch (error) {
@@ -194,7 +194,7 @@ export const userLoader = new DataLoader<number, any>(
   async (userIds: readonly number[]) => {
     try {
       const users = await unifiedDataLayer.getUsersByIds(Array.from(userIds));
-      const userMap = new Map(users.map(u => [u.id, u]));
+      const userMap = new Map(users.map((u: any) => [u.id, u]));
 
       return userIds.map(id => userMap.get(id) || null);
     } catch (error) {
@@ -215,10 +215,10 @@ export const userLoader = new DataLoader<number, any>(
 // ================================
 
 export interface DataLoaderContext {
-  productLoader: DataLoader<string, any>;
-  palletLoader: DataLoader<string, any>;
-  inventoryLoader: DataLoader<string, any[]>;
-  movementLoader: DataLoader<string, any[]>;
+  productLoader: DataLoader<string, Product | null>;
+  palletLoader: DataLoader<string, Pallet | null>;
+  inventoryLoader: DataLoader<string, InventoryRecord[]>;
+  movementLoader: DataLoader<string, Movement[]>;
   grnRecordLoader: DataLoader<string, any[]>;
   orderLoader: DataLoader<number, any>;
   userLoader: DataLoader<number, any>;
@@ -226,14 +226,156 @@ export interface DataLoaderContext {
 
 // 創建 DataLoader 上下文
 export function createDataLoaderContext(): DataLoaderContext {
+  // Create new instances for each context to avoid sharing cache
   return {
-    productLoader: new DataLoader(productLoader._batchLoadFn, productLoader._options),
-    palletLoader: new DataLoader(palletLoader._batchLoadFn, palletLoader._options),
-    inventoryLoader: new DataLoader(inventoryLoader._batchLoadFn, inventoryLoader._options),
-    movementLoader: new DataLoader(movementLoader._batchLoadFn, movementLoader._options),
-    grnRecordLoader: new DataLoader(grnRecordLoader._batchLoadFn, grnRecordLoader._options),
-    orderLoader: new DataLoader(orderLoader._batchLoadFn, orderLoader._options),
-    userLoader: new DataLoader(userLoader._batchLoadFn, userLoader._options),
+    productLoader: new DataLoader<string, Product | null>(
+      async (productCodes: readonly string[]) => {
+        try {
+          const products = await unifiedDataLayer.getProductsByCodes(Array.from(productCodes));
+          const productMap = new Map(products.map((p: Product) => [p.code, p]));
+          return productCodes.map(code => productMap.get(code) || null);
+        } catch (error) {
+          console.error('Product batch loading failed:', error);
+          return productCodes.map(() => null);
+        }
+      },
+      {
+        batchScheduleFn: callback => setTimeout(callback, 10),
+        maxBatchSize: 100,
+        cacheKeyFn: key => key,
+        cache: true,
+      }
+    ),
+    palletLoader: new DataLoader<string, Pallet | null>(
+      async (palletNumbers: readonly string[]) => {
+        try {
+          const pallets = await unifiedDataLayer.getPalletsByNumbers(Array.from(palletNumbers));
+          const palletMap = new Map(pallets.map((p: Pallet) => [p.palletNumber, p]));
+          return palletNumbers.map(number => palletMap.get(number) || null);
+        } catch (error) {
+          console.error('Pallet batch loading failed:', error);
+          return palletNumbers.map(() => null);
+        }
+      },
+      {
+        batchScheduleFn: callback => setTimeout(callback, 10),
+        maxBatchSize: 100,
+        cache: true,
+      }
+    ),
+    inventoryLoader: new DataLoader<string, InventoryRecord[]>(
+      async (productCodes: readonly string[]) => {
+        try {
+          const inventoryRecords = await unifiedDataLayer.getInventoryByProductCodes(
+            Array.from(productCodes)
+          );
+          const inventoryMap = new Map<string, InventoryRecord[]>();
+          inventoryRecords.forEach((record: InventoryRecord) => {
+            const productCode = record.productCode;
+            if (!inventoryMap.has(productCode)) {
+              inventoryMap.set(productCode, []);
+            }
+            inventoryMap.get(productCode)!.push(record);
+          });
+          return productCodes.map(code => inventoryMap.get(code) || []);
+        } catch (error) {
+          console.error('Inventory batch loading failed:', error);
+          return productCodes.map(() => []);
+        }
+      },
+      {
+        batchScheduleFn: callback => setTimeout(callback, 15),
+        maxBatchSize: 50,
+        cache: true,
+      }
+    ),
+    movementLoader: new DataLoader<string, Movement[]>(
+      async (palletNumbers: readonly string[]) => {
+        try {
+          const movements = await unifiedDataLayer.getMovementsByPalletNumbers(
+            Array.from(palletNumbers)
+          );
+          const movementMap = new Map<string, Movement[]>();
+          movements.forEach((movement: Movement) => {
+            const palletNumber = movement.palletNumber;
+            if (!movementMap.has(palletNumber)) {
+              movementMap.set(palletNumber, []);
+            }
+            movementMap.get(palletNumber)!.push(movement);
+          });
+          return palletNumbers.map(number => movementMap.get(number) || []);
+        } catch (error) {
+          console.error('Movement batch loading failed:', error);
+          return palletNumbers.map(() => []);
+        }
+      },
+      {
+        batchScheduleFn: callback => setTimeout(callback, 20),
+        maxBatchSize: 30,
+        cache: true,
+      }
+    ),
+    grnRecordLoader: new DataLoader<string, any[]>(
+      async (palletNumbers: readonly string[]) => {
+        try {
+          const grnRecords = await unifiedDataLayer.getGRNRecordsByPalletNumbers(
+            Array.from(palletNumbers)
+          );
+          const grnMap = new Map<string, any[]>();
+          grnRecords.forEach((grn: any) => {
+            const palletNumber = grn.palletNumber;
+            if (!grnMap.has(palletNumber)) {
+              grnMap.set(palletNumber, []);
+            }
+            grnMap.get(palletNumber)!.push(grn);
+          });
+          return palletNumbers.map(number => grnMap.get(number) || []);
+        } catch (error) {
+          console.error('GRN batch loading failed:', error);
+          return palletNumbers.map(() => []);
+        }
+      },
+      {
+        batchScheduleFn: callback => setTimeout(callback, 10),
+        maxBatchSize: 80,
+        cache: true,
+      }
+    ),
+    orderLoader: new DataLoader<number, any>(
+      async (orderRefs: readonly number[]) => {
+        try {
+          const orders = await unifiedDataLayer.getOrdersByRefs(Array.from(orderRefs));
+          const orderMap = new Map(orders.map((o: any) => [o.orderRef, o]));
+          return orderRefs.map(ref => orderMap.get(ref) || null);
+        } catch (error) {
+          console.error('Order batch loading failed:', error);
+          return orderRefs.map(() => null);
+        }
+      },
+      {
+        batchScheduleFn: callback => setTimeout(callback, 10),
+        maxBatchSize: 100,
+        cache: true,
+      }
+    ),
+    userLoader: new DataLoader<number, any>(
+      async (userIds: readonly number[]) => {
+        try {
+          const users = await unifiedDataLayer.getUsersByIds(Array.from(userIds));
+          const userMap = new Map(users.map((u: any) => [u.id, u]));
+          return userIds.map(id => userMap.get(id) || null);
+        } catch (error) {
+          console.error('User batch loading failed:', error);
+          return userIds.map(() => null);
+        }
+      },
+      {
+        batchScheduleFn: callback => setTimeout(callback, 5),
+        maxBatchSize: 200,
+        cache: true,
+        cacheMap: new Map(),
+      }
+    ),
   };
 }
 

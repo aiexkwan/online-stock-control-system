@@ -190,7 +190,9 @@ export function usePrinting(options: UsePrintingOptions = {}): UsePrintingReturn
 
         const result = await serviceRef.current.batchPrint(batch);
 
-        unsubscribe();
+        if (typeof unsubscribe === 'function') {
+          unsubscribe();
+        }
 
         if (result.failed > 0) {
           setStatus(`Completed with ${result.failed} failures`);

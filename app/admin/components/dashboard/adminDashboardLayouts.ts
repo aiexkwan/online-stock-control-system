@@ -114,6 +114,8 @@ export const adminDashboardLayouts: Record<string, AdminDashboardLayout> = {
         gridArea: 'widget6',
         dataSource: 'record_palletinfo',
         chartType: 'bar',
+        component: 'TopProductsByQuantityWidget', // GraphQL optimized version
+        useGraphQL: true,
       },
       {
         type: 'chart',
@@ -121,6 +123,8 @@ export const adminDashboardLayouts: Record<string, AdminDashboardLayout> = {
         gridArea: 'widget7',
         dataSource: 'record_palletinfo',
         chartType: 'donut',
+        component: 'TopProductsDistributionWidget', // GraphQL optimized version
+        useGraphQL: true,
       },
       {
         type: 'available-soon',

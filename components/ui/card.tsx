@@ -135,9 +135,17 @@ const Card = React.forwardRef<HTMLDivElement, CardProps>(
           <style dangerouslySetInnerHTML={{ __html: beforeAfterStyles }} />
           <div
             ref={node => {
-              cardRef.current = node;
-              if (typeof ref === 'function') ref(node);
-              else if (ref) ref.current = node;
+              if (cardRef && 'current' in cardRef) {
+                (cardRef as React.MutableRefObject<HTMLDivElement | null>).current = node;
+              }
+              if (typeof ref === 'function') {
+                ref(node);
+              } else if (ref && 'current' in ref) {
+                // Only assign if it's mutable
+                if (Object.getOwnPropertyDescriptor(ref, 'current')?.set) {
+                  (ref as React.MutableRefObject<HTMLDivElement | null>).current = node;
+                }
+              }
             }}
             data-spotlight
             style={inlineStyles}

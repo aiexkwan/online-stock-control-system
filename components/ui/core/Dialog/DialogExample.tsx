@@ -201,6 +201,7 @@ export function DialogExamples() {
           open={deleteConfirm}
           onOpenChange={setDeleteConfirm}
           itemName='訂單 #12345'
+          message='此操作無法復原。'
           onConfirm={async () => {
             await new Promise(resolve => setTimeout(resolve, 1000));
             setSuccess(true);

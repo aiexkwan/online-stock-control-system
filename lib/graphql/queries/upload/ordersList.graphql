@@ -1,0 +1,28 @@
+query GetOrdersList($limit: Int!, $offset: Int!) {
+  record_historyCollection(
+    filter: { action: { eq: "Order Upload" } }
+    orderBy: [{ time: DescNullsLast }]
+    first: $limit
+    offset: $offset
+  ) {
+    edges {
+      node {
+        uuid
+        time
+        id
+        action
+        plt_num
+        loc
+        remark
+        data_id {
+          id
+          name
+        }
+      }
+    }
+    pageInfo {
+      hasNextPage
+      hasPreviousPage
+    }
+  }
+}
