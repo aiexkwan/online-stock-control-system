@@ -13,36 +13,22 @@ import {
   Area,
   AreaChart,
 } from 'recharts';
-import { gql, useGraphQLQuery } from '@/lib/graphql-client-stable';
+import { useGetStocktakeAccuracyQuery, GetStocktakeAccuracyQuery } from '@/lib/graphql/generated/apollo-hooks';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
-
-const GET_STOCKTAKE_ACCURACY = gql`
-  query GetStocktakeAccuracy {
-    stocktake_daily_summaryCollection(first: 30) {
-      edges {
-        node {
-          count_date
-          product_code
-          product_desc
-          pallet_count
-          total_counted
-          final_remain_qty
-          last_count_time
-        }
-      }
-    }
-  }
-`;
 
 interface StocktakeAccuracyTrendProps {
   timeFrame?: any;
 }
 
 export default function StocktakeAccuracyTrend({ timeFrame }: StocktakeAccuracyTrendProps) {
-  const { data, loading, error } = useGraphQLQuery(GET_STOCKTAKE_ACCURACY);
+  const { data, loading, error } = useGetStocktakeAccuracyQuery({
+    pollInterval: 60000, // Poll every 60 seconds
+    fetchPolicy: 'cache-and-network',
+    skip: !process.env.NEXT_PUBLIC_ENABLE_GRAPHQL_ANALYSIS,
+  });
 
   const chartData = useMemo(() => {
     if (!data?.stocktake_daily_summaryCollection?.edges) return [];
@@ -50,7 +36,9 @@ export default function StocktakeAccuracyTrend({ timeFrame }: StocktakeAccuracyT
     // Group by date and calculate accuracy
     const dateMap = new Map<string, { counted: number; expected: number; products: number }>();
 
-    data.stocktake_daily_summaryCollection.edges.forEach(({ node }: any) => {
+    data.stocktake_daily_summaryCollection.edges.forEach(({ node }) => {
+      if (!node?.count_date) return;
+      
       const date = node.count_date;
       const existing = dateMap.get(date) || { counted: 0, expected: 0, products: 0 };
 
@@ -114,6 +102,16 @@ export default function StocktakeAccuracyTrend({ timeFrame }: StocktakeAccuracyT
       ? oldData.reduce((sum, d) => sum + d.accuracy, 0) / oldData.length
       : recentAvg;
   const trend = recentAvg - oldAvg;
+
+  // Check if GraphQL analysis is disabled
+  if (!process.env.NEXT_PUBLIC_ENABLE_GRAPHQL_ANALYSIS) {
+    return (
+      <Alert>
+        <AlertCircle className='h-4 w-4' />
+        <AlertDescription>GraphQL analysis is disabled</AlertDescription>
+      </Alert>
+    );
+  }
 
   return (
     <div className='flex h-full w-full flex-col'>

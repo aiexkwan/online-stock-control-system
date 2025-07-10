@@ -25,7 +25,6 @@ const widgetPaths: Record<string, string> = {
     '@/app/admin/components/dashboard/widgets/WarehouseWorkLevelAreaChart',
 
   // Charts Widgets
-  ProductMixChartWidget: '@/app/admin/components/dashboard/widgets/ProductMixChartWidget',
   StockDistributionChart: '@/app/admin/components/dashboard/widgets/StockDistributionChart',
   StockLevelHistoryChart: '@/app/admin/components/dashboard/widgets/StockLevelHistoryChart',
   TransferTimeDistributionWidget:
@@ -54,7 +53,6 @@ const widgetPaths: Record<string, string> = {
   SupplierUpdateWidget: '@/app/admin/components/dashboard/widgets/SupplierUpdateWidget',
   BookedOutQueueWidget: '@/app/admin/components/dashboard/widgets/BookedOutQueueWidget',
   StockTypeSelector: '@/app/admin/components/dashboard/widgets/StockTypeSelector',
-  EmptyPlaceholderWidget: '@/app/admin/components/dashboard/widgets/EmptyPlaceholderWidget',
 
   // Uploads Widgets
   UploadOrdersWidget: '@/app/admin/components/dashboard/widgets/UploadOrdersWidget',
@@ -87,33 +85,107 @@ const widgetPaths: Record<string, string> = {
     '@/app/admin/components/dashboard/widgets/ProductDistributionChartGraphQL',
 };
 
+// 創建錯誤處理組件
+const ErrorWidget: React.FC<{ widgetId: string; error?: string }> = ({ widgetId, error }) => (
+  React.createElement('div', {
+    className: 'h-32 bg-red-100 border border-red-300 rounded p-4 flex flex-col justify-center items-center text-red-700'
+  }, [
+    React.createElement('h3', { key: 'title', className: 'font-semibold' }, `錯誤：無法載入 ${widgetId}`),
+    error && React.createElement('p', { key: 'error', className: 'text-sm mt-2' }, error)
+  ])
+);
+
 // 創建動態加載的 widget 組件
-export function createLazyWidget(
+export function createDynamicWidget(
   widgetId: string
 ): React.ComponentType<WidgetComponentProps> | undefined {
-  const importFn = getWidgetImport(widgetId);
+  try {
+    const importFn = getWidgetImport(widgetId);
 
-  if (!importFn) {
-    console.warn(`[WidgetLoader] No import function for widget: ${widgetId}`);
-    return undefined;
-  }
-
-  // 使用 Next.js dynamic import，處理 named exports
-  return dynamic(
-    () =>
-      importFn().then(mod => ({
-        // 大部分 widgets 使用 named export，名稱與 widgetId 相同
-        default:
-          mod[widgetId] || mod.default || Object.values(mod).find(exp => typeof exp === 'function'),
-      })),
-    {
-      loading: () =>
-        React.createElement('div', {
-          className: 'h-32 bg-gray-200 animate-pulse rounded',
-        }),
-      ssr: false,
+    if (!importFn) {
+      console.warn(`[WidgetLoader] No import function for widget: ${widgetId}`);
+      // 返回錯誤組件而不是 undefined
+      const ErrorComponent = (props: WidgetComponentProps) => 
+        React.createElement(ErrorWidget, { widgetId, error: '找不到導入函數' });
+      ErrorComponent.displayName = `ErrorWidget(${widgetId})`;
+      return ErrorComponent;
     }
-  );
+
+    // 使用 Next.js dynamic import，處理 named exports
+    return dynamic(
+      () => {
+        try {
+          return importFn().then(mod => {
+            // 檢查 module 是否存在
+            if (!mod) {
+              throw new Error(`Module for ${widgetId} is null or undefined`);
+            }
+
+            // 如果 module 已經有 default export，直接返回
+            if (mod.default) {
+              return mod;
+            }
+
+            // 嘗試找到正確的 export
+            let component = mod[widgetId] || mod.default;
+            
+            // 特殊處理 HistoryTree -> HistoryTreeV2
+            if (widgetId === 'HistoryTree' && mod.HistoryTreeV2) {
+              component = mod.HistoryTreeV2;
+            }
+            
+            if (!component && typeof mod === 'object') {
+              // 如果沒有找到，嘗試找第一個函數類型的 export
+              component = Object.values(mod).find(exp => typeof exp === 'function');
+            }
+
+            if (!component) {
+              throw new Error(`No valid component found in module for ${widgetId}`);
+            }
+
+            return { default: component };
+          }).catch(importError => {
+            console.error(`[WidgetLoader] Import error for ${widgetId}:`, importError);
+            // 返回錯誤組件
+            return { 
+              default: (props: WidgetComponentProps) => 
+                React.createElement(ErrorWidget, { 
+                  widgetId, 
+                  error: `導入錯誤: ${importError.message}` 
+                })
+            };
+          });
+        } catch (syncError) {
+          console.error(`[WidgetLoader] Sync error for ${widgetId}:`, syncError);
+          // 處理同步錯誤
+          return Promise.resolve({ 
+            default: (props: WidgetComponentProps) => 
+              React.createElement(ErrorWidget, { 
+                widgetId, 
+                error: `同步錯誤: ${syncError.message}` 
+              })
+          });
+        }
+      },
+      {
+        loading: () =>
+          React.createElement('div', {
+            className: 'h-32 bg-gray-200 animate-pulse rounded flex items-center justify-center',
+          }, React.createElement('span', { className: 'text-gray-500' }, `載入 ${widgetId}...`)),
+        ssr: false,
+      }
+    );
+  } catch (error) {
+    console.error(`[WidgetLoader] Outer error for ${widgetId}:`, error);
+    // 如果整個過程失敗，返回錯誤組件
+    const OuterErrorComponent = (props: WidgetComponentProps) => 
+      React.createElement(ErrorWidget, { 
+        widgetId, 
+        error: `外部錯誤: ${error instanceof Error ? error.message : '未知錯誤'}` 
+      });
+    OuterErrorComponent.displayName = `OuterErrorWidget(${widgetId})`;
+    return OuterErrorComponent;
+  }
 }
 
 // 追蹤已預加載的 widgets
@@ -126,7 +198,7 @@ export function createLazyWidgets(
   const lazyWidgets = new Map<string, React.ComponentType<WidgetComponentProps>>();
 
   widgetIds.forEach(widgetId => {
-    const component = createLazyWidget(widgetId);
+    const component = createDynamicWidget(widgetId);
     if (component) {
       lazyWidgets.set(widgetId, component);
     }

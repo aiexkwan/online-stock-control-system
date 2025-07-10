@@ -21,7 +21,7 @@ import { CubeIcon } from '@heroicons/react/24/outline';
 import { format, startOfDay, endOfDay } from 'date-fns';
 import { createDashboardAPI } from '@/lib/api/admin/DashboardAPI';
 import { WidgetComponentProps } from '@/app/types/dashboard';
-import { useGetInjectionProductionStatsWidgetQuery } from '@/lib/graphql/generated/apollo-hooks';
+import { useGetInjectionProductionStatsQuery } from '@/lib/graphql/generated/apollo-hooks';
 
 interface InjectionProductionStatsWidgetProps extends WidgetComponentProps {
   title?: string;
@@ -65,7 +65,7 @@ export const InjectionProductionStatsWidget: React.FC<InjectionProductionStatsWi
     data: graphqlData, 
     loading: graphqlLoading, 
     error: graphqlError 
-  } = useGetInjectionProductionStatsWidgetQuery({
+  } = useGetInjectionProductionStatsQuery({
     skip: !useGraphQL || isEditMode,
     variables: { startDate, endDate },
     pollInterval: 300000, // 5分鐘輪詢

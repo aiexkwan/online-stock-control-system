@@ -265,7 +265,6 @@ export const optimizationMap = new Map<string, (component: any) => any>([
   ['OrderStateListWidget', withListOptimization],
 
   // Chart widgets
-  ['ProductMixChartWidget', withChartOptimization],
   ['StockDistributionChart', withChartOptimization],
   ['StockLevelHistoryChart', withChartOptimization],
 ]);

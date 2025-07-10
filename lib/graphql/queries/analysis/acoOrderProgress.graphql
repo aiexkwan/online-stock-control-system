@@ -1,0 +1,34 @@
+# ACO Order Progress Queries for Analysis Charts
+# Used by AcoOrderProgressCards and AcoOrderProgressChart components
+
+# Query for AcoOrderProgressCards component
+query GetAcoOrdersForCards {
+  record_acoCollection(orderBy: [{ order_ref: DescNullsLast }]) {
+    edges {
+      node {
+        uuid
+        order_ref
+        code
+        required_qty
+        finished_qty
+        latest_update
+      }
+    }
+  }
+}
+
+# Query for AcoOrderProgressChart component
+query GetAcoOrdersForChart {
+  record_acoCollection(orderBy: [{ order_ref: AscNullsLast }], first: 20) {
+    edges {
+      node {
+        uuid
+        order_ref
+        code
+        required_qty
+        finished_qty
+        latest_update
+      }
+    }
+  }
+}

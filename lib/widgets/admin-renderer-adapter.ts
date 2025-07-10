@@ -63,7 +63,6 @@ export const widgetConfigMapping = {
   // Chart widgets
   chart: {
     widgetIds: [
-      'ProductMixChartWidget',
       'StockDistributionChart',
       'StockLevelHistoryChart',
       'WarehouseWorkLevelAreaChart',

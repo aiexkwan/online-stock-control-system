@@ -1,9 +1,13 @@
 # Stats Card queries for various data sources
 
-# Total Pallets Count
+# Total Pallets Count - fetch actual data for client-side counting
 query GetTotalPalletsCount {
   record_palletinfoCollection {
-    totalCount
+    edges {
+      node {
+        plt_num
+      }
+    }
   }
 }
 
@@ -12,59 +16,71 @@ query GetTodayTransfersCount($todayStart: Datetime!) {
   record_transferCollection(
     filter: { tran_date: { gte: $todayStart } }
   ) {
-    totalCount
+    edges {
+      node {
+        uuid
+      }
+    }
   }
 }
 
-# Active Products Count
+# Active Products Count - using actual data_code structure
 query GetActiveProductsCount {
-  data_codeCollection(
-    filter: { status: { eq: "active" } }
-  ) {
-    totalCount
+  data_codeCollection {
+    edges {
+      node {
+        code
+        description
+        type
+      }
+    }
   }
 }
 
-# Pending Orders Count
+# Pending Orders Count - using order_ref from data_order table
 query GetPendingOrdersCount {
-  data_orderCollection(
-    filter: { loaded_qty: { is: null } }
-  ) {
-    totalCount
+  data_orderCollection {
+    edges {
+      node {
+        order_ref
+        loaded_qty
+      }
+    }
   }
 }
 
 # Transfer Count with Date Range
 query GetTransferCount($startDate: Datetime!, $endDate: Datetime!) {
-  current: record_transferCollection(
+  record_transferCollection(
     filter: {
       tran_date: { gte: $startDate, lte: $endDate }
     }
   ) {
-    totalCount
-  }
-}
-
-# Get specific pallets for Stock page
-query GetStockPalletsCount($location: String) {
-  record_palletinfoCollection(
-    filter: { 
-      currentloc: { eq: $location }
+    edges {
+      node {
+        uuid
+        tran_date
+      }
     }
-  ) {
-    totalCount
   }
 }
 
-# Inventory stats
+# Inventory stats - using actual record_inventory columns
 query GetInventoryStats {
-  activeInventory: record_inventoryCollection(
-    filter: { qty: { gt: 0 } }
-  ) {
-    totalCount
-  }
-  
-  uniqueProducts: record_inventoryCollection {
-    totalCount
+  record_inventoryCollection {
+    edges {
+      node {
+        product_code
+        injection
+        pipeline
+        prebook
+        await
+        fold
+        bulk
+        backcarpark
+        damage
+        await_grn
+      }
+    }
   }
 }

@@ -17,7 +17,7 @@ import {
   getPreloadPriority,
   getRoutePreloadWidgets,
 } from './widget-mappings';
-import { createLazyWidget, preloadWidget } from './widget-loader';
+import { createDynamicWidget, preloadWidget } from './widget-loader';
 import { registerStatsWidgets, preloadHighPriorityStatsWidgets } from './stats-widget-adapter';
 import { registerChartsWidgets, preloadHighPriorityChartsWidgets } from './charts-widget-adapter';
 import { registerListsWidgets, preloadHighPriorityListsWidgets } from './lists-widget-adapter';
@@ -33,6 +33,10 @@ import {
   registerAnalysisWidgets,
   preloadHighPriorityAnalysisWidgets,
 } from './analysis-widget-adapter';
+import {
+  registerSpecialWidgets,
+  preloadHighPrioritySpecialWidgets,
+} from './special-widget-adapter';
 import { performanceMonitor, PerformanceTimer } from './performance-monitor';
 
 /**
@@ -405,6 +409,7 @@ export class EnhancedWidgetRegistry implements IWidgetRegistry {
     await registerReportsWidgets();
     await registerOperationsWidgets();
     await registerAnalysisWidgets();
+    await registerSpecialWidgets();
 
     // 從映射配置中註冊其他 widgets（排除已經由 adapter 註冊的）
     Object.entries(widgetMapping.categoryMap).forEach(([widgetId, category]) => {
@@ -420,7 +425,7 @@ export class EnhancedWidgetRegistry implements IWidgetRegistry {
         lazyLoad: true,
         preloadPriority: getPreloadPriority(widgetId),
         graphqlVersion: getGraphQLVersion(widgetId),
-        component: createLazyWidget(widgetId), // 創建懶加載組件
+        component: createDynamicWidget(widgetId), // 創建懶加載組件
         metadata: {
           autoRegistered: true,
         },
@@ -442,6 +447,7 @@ export class EnhancedWidgetRegistry implements IWidgetRegistry {
       preloadHighPriorityReportsWidgets(),
       preloadHighPriorityOperationsWidgets(),
       preloadHighPriorityAnalysisWidgets(),
+      preloadHighPrioritySpecialWidgets(),
     ]);
   }
 

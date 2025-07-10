@@ -17,7 +17,7 @@ import { CardHeader, CardTitle } from '@/components/ui/card';
 import { TableCellsIcon } from '@heroicons/react/24/outline';
 import { createDashboardAPI } from '@/lib/api/admin/DashboardAPI';
 import { WidgetComponentProps } from '@/app/types/dashboard';
-import { useGetProductionDetailsWidgetQuery } from '@/lib/graphql/generated/apollo-hooks';
+import { useGetProductionDetailsQuery } from '@/lib/graphql/generated/apollo-hooks';
 
 interface ProductionDetailsWidgetProps extends WidgetComponentProps {
   title: string;
@@ -64,7 +64,7 @@ export const ProductionDetailsWidget: React.FC<ProductionDetailsWidgetProps> = (
     data: graphqlData, 
     loading: graphqlLoading, 
     error: graphqlError 
-  } = useGetProductionDetailsWidgetQuery({
+  } = useGetProductionDetailsQuery({
     skip: !shouldUseGraphQL || isEditMode,
     variables: {
       startDate: startOfDay(dateRange.start).toISOString(),

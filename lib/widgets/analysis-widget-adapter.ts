@@ -6,7 +6,7 @@
 import { widgetRegistry } from './enhanced-registry';
 import { WidgetDefinition } from './types';
 import { getWidgetImport } from './dynamic-imports';
-import { createLazyWidget } from './widget-loader';
+import { createDynamicWidget } from './widget-loader';
 
 /**
  * Analysis widgets 的映射配置
@@ -81,7 +81,7 @@ export async function registerAnalysisWidgets(): Promise<void> {
         name: config.name || widgetId,
         category: 'analysis',
         ...config,
-        component: createLazyWidget(widgetId), // 使用統一的 widget loader
+        component: createDynamicWidget(widgetId), // 使用統一的 widget loader
       };
 
       // 註冊到 registry

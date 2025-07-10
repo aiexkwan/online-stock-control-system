@@ -59,28 +59,14 @@ export function createLazyWidget(
 export const LazyWidgets: Partial<Record<WidgetType, React.ComponentType<WidgetComponentProps>>> = {
   // Heavy widgets that benefit from lazy loading
   
-  [WidgetType.ANALYTICS_DASHBOARD]: createLazyWidget(
-    () => import('./widgets/AnalyticsDashboardWidget')
-  ),
-  
-  [WidgetType.REPORTS]: createLazyWidget(
-    () => import('./widgets/ReportsWidget')
-  ),
   
   
-  // Chart widgets
-  [WidgetType.PRODUCT_MIX_CHART]: createLazyWidget(
-    () => import('./widgets/ProductMixChartWidget')
-  ),
+  
   
 };
 
 // Component-based lazy widgets (for AdminWidgetRenderer)
 export const LazyComponents: Record<string, React.ComponentType<any>> = {
-  // Chart widgets
-  'ProductMixChartWidget': createLazyWidget(
-    () => import('./widgets/ProductMixChartWidget')
-  ),
   'StockDistributionChart': createLazyWidget(
     () => import('./widgets/StockDistributionChartV2')
   ),
@@ -95,6 +81,9 @@ export const LazyComponents: Record<string, React.ComponentType<any>> = {
   ),
   'InventoryOrderedAnalysisWidget': createLazyWidget(
     () => import('./widgets/InventoryOrderedAnalysisWidget')
+  ),
+  'AcoOrderProgressChart': createLazyWidget(
+    () => import('./charts/AcoOrderProgressChart')
   ),
   
   // Stats widgets
@@ -120,6 +109,12 @@ export const LazyComponents: Record<string, React.ComponentType<any>> = {
   ),
   'InjectionProductionStatsWidget': createLazyWidget(
     () => import('./widgets/InjectionProductionStatsWidget')
+  ),
+  'TopProductsByQuantityWidget': createLazyWidget(
+    () => import('./widgets/TopProductsByQuantityWidget')
+  ),
+  'TopProductsDistributionWidget': createLazyWidget(
+    () => import('./widgets/TopProductsDistributionWidget')
   ),
   
   // 分析類重型 widget (named exports)
@@ -431,7 +426,7 @@ export class OptimizedWidgetLoader {
   // 保守加載策略
   private conservativeLoad(): void {
     // 只預加載核心 widgets
-    const coreWidgets = ['AnalyticsDashboardWidget', 'ReportsWidget'];
+    const coreWidgets = ['StatsCardWidget', 'HistoryTree'];
     coreWidgets.forEach(widgetId => {
       this.loadWidget(widgetId, 'high');
     });
@@ -465,8 +460,8 @@ export class OptimizedWidgetLoader {
   ): { high: string[], low: string[] } {
     // 定義核心 widgets
     const coreWidgets = new Set([
-      'AnalyticsDashboardWidget',
-      'ReportsWidget'
+      'StatsCardWidget',
+      'HistoryTree'
     ]);
     
     const high: string[] = [];

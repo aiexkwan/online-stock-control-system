@@ -10,12 +10,12 @@ import { useAcoManagement } from './modules/useAcoManagement';
 import { useSlateManagement } from './modules/useSlateManagement';
 import { usePdfGeneration } from './modules/usePdfGeneration';
 import { useStreamingPdfGeneration } from './modules/useStreamingPdfGeneration';
-// Using unified RPC for better performance and atomicity
-import { useDatabaseOperationsUnified } from './modules/useDatabaseOperationsUnified';
+// Using Server Actions for database operations
+import { createQcDatabaseEntriesWithTransaction } from '@/app/actions/qcActions';
 import { useStockUpdates } from './modules/useStockUpdates';
 import { toast } from 'sonner';
 import type { ProductInfo, FormData, SlateDetail } from '../types';
-import { confirmPalletUsage, releasePalletReservation } from '@/app/utils/palletGeneration';
+import { generatePalletNumbers, confirmPalletUsage, releasePalletReservation } from '@/app/utils/palletGeneration';
 import { createClient } from '@/app/utils/supabase/client';
 
 interface UseQcLabelBusinessProps {
@@ -65,6 +65,7 @@ export const useQcLabelBusiness = ({
 
   const {
     handleAcoSearch,
+    handleAutoAcoConfirm,
     handleAcoOrderDetailChange,
     validateAcoProductCode,
     handleAcoOrderDetailUpdate,
@@ -80,8 +81,6 @@ export const useQcLabelBusiness = ({
 
   const { generatePdfs, printPdfs } = usePdfGeneration();
   const { generatePdfsStream, streamingStatus, cancelStreaming } = useStreamingPdfGeneration();
-  // 使用統一 RPC 進行所有 QC 標籤操作
-  const { processQcLabelsUnified } = useDatabaseOperationsUnified();
   const { updateStockAndWorkLevels, updateAcoOrderStatus, clearCache } = useStockUpdates();
 
   // State for preventing duplicate submissions
@@ -162,39 +161,118 @@ export const useQcLabelBusiness = ({
           },
         }));
 
-        // 使用統一 RPC 處理所有 QC 標籤操作
-        const unifiedResult = await processQcLabelsUnified({
-          productInfo,
-          quantity,
+        // Step 1: Generate pallet numbers and series
+        const palletResult = await generatePalletNumbers({
           count,
-          clockNumber,
-          formData,
-          sessionId: `qc-${Date.now()}`,
+          sessionId: `qc-${Date.now()}`
         });
-
-        if (!unifiedResult.success) {
-          toast.error(unifiedResult.error || 'Failed to process QC labels');
+        
+        if (!palletResult.success) {
+          toast.error(palletResult.error || 'Failed to generate pallet numbers');
           setIsProcessing(false);
           setPrintEventToProceed(null);
           return;
         }
 
-        // 取得生成的托盤編號和系列號
-        if (!unifiedResult.data?.pallet_numbers || !unifiedResult.data?.series) {
-          toast.error('No pallet data returned from unified processing');
-          setIsProcessing(false);
-          setPrintEventToProceed(null);
-          return;
-        }
+        sortedPalletNumbers = palletResult.palletNumbers;
+        const sortedSeries = palletResult.series;
 
-        sortedPalletNumbers = unifiedResult.data.pallet_numbers;
-        const sortedSeries = unifiedResult.data.series;
-
-        console.log('[QC Label Unified] Processing completed:', {
+        console.log('[QC Label] Generated pallet numbers:', {
           pallets: sortedPalletNumbers,
           series: sortedSeries,
-          statistics: unifiedResult.statistics,
         });
+
+        // Step 2: Create database entries
+        const totalQuantity = quantity * count;
+        const currentTime = new Date().toISOString();
+        
+        // Prepare database payloads
+        for (let i = 0; i < count; i++) {
+          const pltRemark =
+            productInfo.type === 'ACO' && formData.acoOrderRef?.trim()
+              ? `ACO Ref: ${formData.acoOrderRef.trim()}`
+              : productInfo.type === 'Slate' && formData.slateDetail?.batchNumber?.trim()
+                ? `Batch: ${formData.slateDetail.batchNumber.trim()}`
+                : 'QC Finished';
+
+          const dbPayload = {
+            palletInfo: {
+              plt_num: sortedPalletNumbers[i],
+              series: sortedSeries[i],
+              product_code: productInfo.code,
+              product_qty: quantity,
+              plt_remark: pltRemark,
+            },
+            historyRecord: {
+              time: currentTime,
+              id: clockNumber,
+              action: 'Create new pallet',
+              plt_num: sortedPalletNumbers[i],
+              loc: 'AWAITING AREA',
+              remark: `Created via QC Label - ${productInfo.code}`,
+            },
+            inventoryRecord: {
+              product_code: productInfo.code,
+              plt_num: sortedPalletNumbers[i],
+              await: quantity,
+            },
+            // Handle Slate records if applicable
+            slateRecords: productInfo.type === 'Slate' && formData.slateDetail?.batchNumber?.trim()
+              ? [{
+                  first_off: currentTime,
+                  batch_num: formData.slateDetail.batchNumber.trim(),
+                  setter: formData.operator || '',
+                  material: '',
+                  weight: 0,
+                  t_thick: 0,
+                  b_thick: 0,
+                  length: 0,
+                  width: 0,
+                  centre_hole: 0,
+                  colour: '',
+                  shape: '',
+                  flame_test: 0,
+                  remark: '',
+                  code: productInfo.code,
+                  plt_num: sortedPalletNumbers[i],
+                  mach_num: '',
+                  uuid: '',
+                }]
+              : undefined,
+          };
+
+          // Don't update ACO in the loop - do it after successful printing
+          const dbResult = await createQcDatabaseEntriesWithTransaction(
+            dbPayload,
+            clockNumber
+            // Remove ACO update from here
+          );
+
+          if (dbResult.error) {
+            toast.error(`Failed to create database entries: ${dbResult.error}`);
+            // Release reserved pallet numbers on failure
+            await releasePalletReservation(sortedPalletNumbers, supabase);
+            setIsProcessing(false);
+            setPrintEventToProceed(null);
+            return;
+          }
+        }
+
+        // Step 3: Update stock and work levels
+        const stockUpdateResult = await updateStockAndWorkLevels({
+          productInfo,
+          totalQuantity,
+          palletCount: count,
+          clockNumber,
+          acoOrderRef: formData.acoOrderRef,
+          isNewAcoOrder: formData.acoNewRef,
+        });
+
+        if (!stockUpdateResult.success) {
+          console.error('Failed to update stock levels:', stockUpdateResult.error);
+          // Continue anyway as database entries are already created
+          toast.warning('Database entries created but stock update failed');
+        }
 
         // 生成 PDFs - 自動選擇模式：count > 1 使用串流模式
         let pdfResult;
@@ -364,10 +442,10 @@ export const useQcLabelBusiness = ({
       setCooldownTimer,
       clearCache,
       validateForm,
-      processQcLabelsUnified,
       generatePdfs,
       generatePdfsStream,
       printPdfs,
+      updateStockAndWorkLevels,
       updateAcoOrderStatus,
       supabase,
     ]
@@ -376,6 +454,7 @@ export const useQcLabelBusiness = ({
   return {
     // ACO handlers
     handleAcoSearch,
+    handleAutoAcoConfirm,
     handleAcoOrderDetailChange,
     validateAcoProductCode,
     handleAcoOrderDetailUpdate,

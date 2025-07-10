@@ -9,30 +9,33 @@
 // Re-export everything from types
 export * from './types';
 
+// Widget state components
+export * from './WidgetStates';
+export { default as WidgetStates } from './WidgetStates';
+
 // Error handling
 export { ErrorHandler } from '@/app/components/qc-label-form/services/ErrorHandler';
 
 // Dashboard API
 export { createDashboardAPI } from '@/lib/api/admin/DashboardAPI';
 
-// Chart components (for widgets that need charts)
-export {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  ResponsiveContainer,
-  LineChart,
-  Line,
-  PieChart,
-  Pie,
-  Cell,
-  Area,
-  AreaChart,
-} from 'recharts';
+// Chart components - REMOVED: Barrel export causes bundle bloat
+// Import recharts components directly in your widgets for better tree shaking:
+// import { BarChart, Bar, XAxis, YAxis } from 'recharts';
+// 
+// This improves tree shaking and reduces bundle size by ~300-400KB
+// 
+// Example usage in widgets:
+// import { 
+//   BarChart, 
+//   Bar, 
+//   XAxis, 
+//   YAxis, 
+//   CartesianGrid, 
+//   Tooltip, 
+//   Legend,
+//   ResponsiveContainer 
+// } from 'recharts';
 
 // Form components (for widgets with forms)
 // Form components - temporarily commented out until form UI is available

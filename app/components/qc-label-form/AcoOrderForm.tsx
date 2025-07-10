@@ -9,8 +9,7 @@ interface AcoOrderFormProps {
   availableAcoOrderRefs: number[];
   acoRemain: string | null;
   acoSearchLoading: boolean;
-  canSearchAco: boolean;
-  onAcoSearch: () => void;
+  onAutoAcoConfirm: (orderRef: string) => Promise<void>;
   acoNewRef: boolean;
   acoOrderDetails: AcoOrderDetail[];
   acoOrderDetailErrors: string[];
@@ -28,8 +27,7 @@ export const AcoOrderForm: React.FC<AcoOrderFormProps> = React.memo(
     availableAcoOrderRefs,
     acoRemain,
     acoSearchLoading,
-    canSearchAco,
-    onAcoSearch,
+    onAutoAcoConfirm,
     acoNewRef,
     acoOrderDetails,
     acoOrderDetailErrors,
@@ -39,6 +37,13 @@ export const AcoOrderForm: React.FC<AcoOrderFormProps> = React.memo(
     isAcoOrderExcess = false,
     disabled = false,
   }) => {
+    // Handle auto-confirm when order reference is selected
+    const handleOrderRefSelect = async (value: string) => {
+      onAcoOrderRefChange(value);
+      if (value && value.trim()) {
+        await onAutoAcoConfirm(value);
+      }
+    };
     return (
       <div className='space-y-4'>
         <div className='bg-transparent p-4'>
@@ -46,15 +51,15 @@ export const AcoOrderForm: React.FC<AcoOrderFormProps> = React.memo(
 
           {/* ACO Order Ref Selection */}
           <div className='space-y-3'>
-            {/* Dropdown for existing orders */}
+            {/* Dropdown for existing orders - auto-confirms on selection */}
             <select
               className='w-full rounded-md border border-purple-600/30 bg-slate-800/50 px-3 py-2 text-purple-300 focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500 [&>option:first-child]:text-slate-400'
               value={acoOrderRef}
-              onChange={e => onAcoOrderRefChange(e.target.value)}
+              onChange={e => handleOrderRefSelect(e.target.value)}
               disabled={disabled || acoSearchLoading}
             >
               <option value='' className='text-slate-400'>
-                Select Existing Order Ref
+                {acoSearchLoading ? 'Loading...' : 'Select Existing Order Ref'}
               </option>
               {availableAcoOrderRefs.map(ref => (
                 <option key={ref} value={String(ref)} className='text-white'>
@@ -63,32 +68,24 @@ export const AcoOrderForm: React.FC<AcoOrderFormProps> = React.memo(
               ))}
             </select>
 
-            {/* Confirm Button */}
-            <button
-              type='button'
-              className={`w-full rounded-md px-4 py-2 font-medium transition-colors ${
-                canSearchAco && !acoSearchLoading
-                  ? 'bg-purple-600 text-white hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500'
-                  : 'cursor-not-allowed bg-slate-700 text-slate-400'
-              }`}
-              disabled={!canSearchAco || acoSearchLoading || disabled}
-              onClick={onAcoSearch}
-            >
-              {acoSearchLoading ? (
-                <span className='flex items-center justify-center'>
-                  <div className='mr-2 h-4 w-4 animate-spin rounded-full border-b-2 border-white'></div>
-                  Confirming...
-                </span>
-              ) : (
-                'Confirm'
-              )}
-            </button>
+            {/* Auto-search status indicator (replace manual confirm button) */}
+            {acoSearchLoading && (
+              <div className='flex items-center justify-center rounded-md bg-purple-900/20 px-4 py-2 text-purple-300'>
+                <div className='mr-2 h-4 w-4 animate-spin rounded-full border-b-2 border-purple-400'></div>
+                Auto-confirming order details...
+              </div>
+            )}
           </div>
 
-          {/* Search Results */}
+          {/* Auto-search Results */}
           {acoRemain && (
             <div className='mt-3 rounded-md border border-green-500/30 bg-green-900/20 p-3'>
-              <div className='text-sm font-medium text-green-400'>{acoRemain}</div>
+              <div className='flex items-center text-sm font-medium text-green-400'>
+                <svg className='mr-2 h-4 w-4' fill='currentColor' viewBox='0 0 20 20'>
+                  <path fillRule='evenodd' d='M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z' clipRule='evenodd' />
+                </svg>
+                {acoRemain}
+              </div>
             </div>
           )}
 

@@ -3,22 +3,10 @@
 import { createClient } from '@supabase/supabase-js';
 import { z } from 'zod';
 
-import { generateMultipleUniqueSeries } from '@/lib/seriesUtils';
 import {
   CACHE_CONTROL_TIMEOUT,
   MAX_DUPLICATE_CHECK_ATTEMPTS,
   DUPLICATE_CHECK_DELAY_BASE,
-  MAX_ATTEMPTS_PRODUCTION,
-  MAX_PALLET_GENERATION_RETRIES_DEV,
-  RETRY_DELAY_BASE_VERCEL,
-  RETRY_DELAY_BASE_DEV,
-  INITIAL_RETRY_DELAY_VERCEL,
-  MAX_SERIES_GENERATION_RETRIES,
-  SERIES_RETRY_DELAY_BASE,
-  MAX_ATTEMPTS_GENERAL,
-  RPC_RETRY_DELAY_BASE,
-  DATE_PAD_LENGTH,
-  YEAR_SLICE_LENGTH,
   ONE_HOUR_CACHE,
 } from '@/app/components/qc-label-form/constants';
 
@@ -103,21 +91,23 @@ export interface QcInventoryPayload {
 
 export interface QcSlateRecordPayload {
   first_off: string;
-  batch_number: string;
-  setter_name: string;
+  batch_num: string;
+  setter: string;
   material: string;
   weight: number;
-  top_thickness: number;
-  bottom_thickness: number;
+  t_thick: number;
+  b_thick: number;
   length: number;
   width: number;
-  centre_hole: string;
+  centre_hole: number;
   colour: string;
-  shapes: string;
-  flame_test: string;
+  shape: string;
+  flame_test: number;
   remark: string;
-  product_code: string;
+  code: string;
   plt_num: string;
+  mach_num: string;
+  uuid: string;
 }
 
 export interface QcDatabaseEntryPayload {
@@ -500,228 +490,3 @@ export async function createQcDatabaseEntriesWithTransaction(
   }
 }
 
-/**
- * @deprecated Use generatePalletNumbers from '@/app/utils/palletGeneration' instead
- * This uses the old V3 RPC function. V6 is now the standard.
- *
- * Generate pallet numbers using individual atomic RPC calls
- * No caching - each call generates one pallet number atomically
- *
- * This function is kept for backward compatibility only.
- * All new code should use the unified pallet generation utility.
- */
-export async function generatePalletNumbersDirectQuery(count: number): Promise<{
-  palletNumbers: string[];
-  series: string[];
-  error?: string;
-}> {
-  try {
-    const supabaseAdmin = createSupabaseAdmin();
-    const palletNumbers: string[] = [];
-  let generatedSeries: string[] = [];
-
-    // 使用單次 RPC 調用生成所有托盤編號，避免循環中的併發問題
-
-    let attempts = 0;
-    const maxAttempts = process.env.VERCEL_ENV
-      ? MAX_ATTEMPTS_PRODUCTION
-      : MAX_PALLET_GENERATION_RETRIES_DEV;
-
-    while (attempts < maxAttempts) {
-      try {
-        // 在 Vercel 環境中添加預延遲
-        if (process.env.VERCEL_ENV && attempts > 0) {
-          const delay = INITIAL_RETRY_DELAY_VERCEL * attempts; // 遞增延遲
-          await new Promise(resolve => setTimeout(resolve, delay));
-        }
-
-        // 檢查當前序列號狀態（調試用）
-        const today = new Date();
-        const day = today.getDate().toString().padStart(DATE_PAD_LENGTH, '0');
-        const month = (today.getMonth() + 1).toString().padStart(DATE_PAD_LENGTH, '0');
-        const year = today.getFullYear().toString().slice(YEAR_SLICE_LENGTH);
-        const dateStr = `${day}${month}${year}`;
-
-        const { data: currentSequence, error: seqError } = await supabaseAdmin
-          .from('daily_pallet_sequence')
-          .select('current_max')
-          .eq('date_str', dateStr)
-          .single();
-
-        // 使用 V6 函數生成托盤編號和系列號
-        const { data: v6Data, error: rpcError } = await supabaseAdmin.rpc(
-          'generate_atomic_pallet_numbers_v6',
-          {
-            p_count: count,
-            p_session_id: `qc-${Date.now()}`,
-          }
-        );
-
-        if (rpcError) {
-          throw new Error(`V6 RPC generation failed: ${rpcError.message}`);
-        }
-
-        if (!v6Data || !Array.isArray(v6Data) || v6Data.length !== count) {
-          throw new Error(
-            `Invalid result from V6 function: expected ${count} pallet numbers, got ${v6Data?.length || 0}`
-          );
-        }
-
-        // Transform V6 format to arrays
-        const rpcResult = v6Data.map((item: any) => item.pallet_number);
-        generatedSeries = v6Data.map((item: any) => item.series);
-
-        // 🔥 強化唯一性驗證 - 檢查生成的托盤編號是否已存在
-        const uniquenessChecks = [];
-
-        for (const palletNum of rpcResult) {
-          const { data: existing, error: checkError } = await supabaseAdmin
-            .from('record_palletinfo')
-            .select('plt_num')
-            .eq('plt_num', palletNum)
-            .single();
-
-          uniquenessChecks.push({
-            palletNumber: palletNum,
-            exists: !!existing,
-            checkError: checkError?.code !== 'PGRST116' ? checkError : null,
-          });
-        }
-
-        const duplicates = uniquenessChecks.filter(check => check.exists);
-        if (duplicates.length > 0) {
-          // console.error(`[qcActions] 檢測到重複托盤編號:`, duplicates); // 保留錯誤日誌供生產環境調試
-          throw new Error(
-            `Generated pallet numbers contain duplicates: ${duplicates.map(d => d.palletNumber).join(', ')}`
-          );
-        }
-
-        palletNumbers.push(...rpcResult);
-        break;
-      } catch (error: any) {
-        // console.error(`[qcActions] 生成托盤編號失敗 (嘗試 ${attempts + 1}/${maxAttempts}):`, error); // 保留錯誤日誌供生產環境調試
-
-        if (attempts === maxAttempts - 1) {
-          throw new Error(
-            `Failed to generate pallet numbers after ${maxAttempts} attempts: ${error.message}`
-          );
-        }
-
-        attempts++;
-        const baseDelay = process.env.VERCEL_ENV ? RETRY_DELAY_BASE_VERCEL : RETRY_DELAY_BASE_DEV;
-        await new Promise(resolve => setTimeout(resolve, baseDelay * attempts));
-      }
-    }
-
-    if (palletNumbers.length !== count) {
-      throw new Error(
-        `Failed to generate required number of pallet numbers: expected ${count}, got ${palletNumbers.length}`
-      );
-    }
-
-    // V6 已經包含 series，不需要額外生成
-    // 直接使用 V6 返回的 series
-    const series = generatedSeries;
-
-    // V3 to V6 Migration: 保留原始 series 生成代碼作為備份
-    // let series: string[] = [];
-    // let seriesAttempts = 0;
-    // const seriesMaxAttempts = MAX_SERIES_GENERATION_RETRIES;
-    // while (seriesAttempts < seriesMaxAttempts) {
-    //   try {
-    //     series = await generateMultipleUniqueSeries(count, supabaseAdmin);
-    //     break;
-    //   } catch (seriesError: any) {
-    //     if (seriesAttempts === seriesMaxAttempts - 1) {
-    //       throw seriesError;
-    //     }
-    //     seriesAttempts++;
-    //     await new Promise(resolve => setTimeout(resolve, SERIES_RETRY_DELAY_BASE * seriesAttempts));
-    //   }
-    // }
-
-    return {
-      palletNumbers,
-      series,
-    };
-  } catch (error: any) {
-    // console.error('[qcActions] 個別原子性 RPC 調用生成棧板號碼失敗:', error); // 保留錯誤日誌供生產環境調試
-    return {
-      palletNumbers: [],
-      series: [],
-      error: error.message,
-    };
-  }
-}
-
-/**
- * @deprecated Use generatePalletNumbers from '@/app/utils/palletGeneration' instead
- * This function is kept for backward compatibility only.
- *
- * Generate pallet numbers and series on server side
- */
-export async function generatePalletNumbersAndSeries(count: number): Promise<{
-  palletNumbers: string[];
-  series: string[];
-  error?: string;
-}> {
-  try {
-    const supabaseAdmin = createSupabaseAdmin();
-
-    // 🔥 使用 V6 函數生成棧板號碼和系列號，帶重試機制
-    let palletNumbers: string[] = [];
-    let generatedSeries: string[] = [];
-    let attempts = 0;
-    const maxAttempts = MAX_ATTEMPTS_GENERAL;
-
-    while (attempts < maxAttempts) {
-      try {
-        // 直接使用 V6 函數
-        const { data: v6Data, error: v6Error } = await supabaseAdmin.rpc(
-          'generate_atomic_pallet_numbers_v6',
-          {
-            p_count: count,
-            p_session_id: `qc-${Date.now()}`,
-          }
-        );
-
-        if (v6Error) {
-          throw new Error(`V6 RPC error: ${v6Error.message}`);
-        }
-
-        if (!v6Data || !Array.isArray(v6Data)) {
-          throw new Error('Invalid data returned from V6 function');
-        }
-
-        // Transform V6 format to arrays
-        palletNumbers = v6Data.map((item: any) => item.pallet_number);
-        generatedSeries = v6Data.map((item: any) => item.series);
-        break;
-      } catch (rpcError: any) {
-        // console.error(`[qcActions] V6 調用錯誤 (嘗試 ${attempts + 1}/${maxAttempts}):`, rpcError); // 保留錯誤日誌供生產環境調試
-
-        if (attempts === maxAttempts - 1) {
-          throw rpcError;
-        }
-
-        attempts++;
-        await new Promise(resolve => setTimeout(resolve, RPC_RETRY_DELAY_BASE * attempts)); // 遞增延遲
-      }
-    }
-
-    // V6 已經包含 series，不需要額外生成
-    const series = generatedSeries;
-
-    return {
-      palletNumbers,
-      series,
-    };
-  } catch (error: any) {
-    // console.error('[qcActions] 生成棧板號碼和系列號失敗:', error); // 保留錯誤日誌供生產環境調試
-    return {
-      palletNumbers: [],
-      series: [],
-      error: error.message,
-    };
-  }
-}

@@ -115,6 +115,49 @@ export interface Connection<T> {
   }>;
 }
 
+// 優化 GraphQL 查詢字符串 - 減少序列化大小
+const PRODUCT_FIELDS = `
+  code
+  description
+  colour
+  standard_qty
+  type
+  remark
+`;
+
+const PALLET_FIELDS = `
+  plt_num
+  product_code
+  series
+  generate_time
+  product_qty
+  remark
+  pdf_url
+`;
+
+const INVENTORY_FIELDS = `
+  uuid
+  product_code
+  plt_num
+  injection
+  pipeline
+  prebook
+  await
+  fold
+  bulk
+  backcarpark
+  damage
+  await_grn
+  latest_update
+`;
+
+const PAGE_INFO_FIELDS = `
+  hasNextPage
+  hasPreviousPage
+  startCursor
+  endCursor
+`;
+
 /**
  * 統一數據層適配器
  * 將 Supabase 原始數據結構轉換為統一的 GraphQL Schema
@@ -140,21 +183,9 @@ export class UnifiedDataLayer {
         ) {
           edges {
             cursor
-            node {
-              code
-              description
-              colour
-              standard_qty
-              type
-              remark
-            }
+            node { ${PRODUCT_FIELDS} }
           }
-          pageInfo {
-            hasNextPage
-            hasPreviousPage
-            startCursor
-            endCursor
-          }
+          pageInfo { ${PAGE_INFO_FIELDS} }
           totalCount
         }
       }

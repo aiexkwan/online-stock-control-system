@@ -80,6 +80,10 @@ const config: CodegenConfig = {
         withMutationOptionsType: true,
         apolloReactHooksImportFrom: '@apollo/client',
         apolloReactCommonImportFrom: '@apollo/client',
+        // Tree shaking 優化
+        importOperationTypesFrom: 'Types',
+        addDocBlocks: false,
+        skipDocumentsValidation: true,
         // 使用 Supabase GraphQL 的標量類型
         scalars: {
           UUID: 'string',

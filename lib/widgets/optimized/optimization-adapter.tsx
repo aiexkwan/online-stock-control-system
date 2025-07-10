@@ -161,7 +161,7 @@ export class OptimizationAdapter {
         'WarehouseTransferListWidget',
         'StockDistributionChart',
       ],
-      '/admin/injection': ['HistoryTree', 'ProductMixChartWidget', 'StatsCardWidget'],
+      '/admin/injection': ['HistoryTree', 'StatsCardWidget'],
       '/admin/pipeline': ['ProductionDetailsWidget', 'StaffWorkloadWidget', 'OrdersListWidget'],
     };
 

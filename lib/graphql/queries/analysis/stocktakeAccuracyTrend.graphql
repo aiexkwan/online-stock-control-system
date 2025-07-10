@@ -1,0 +1,24 @@
+# Stocktake Accuracy Trend Query
+# Used by StocktakeAccuracyTrend component
+
+query GetStocktakeAccuracy {
+  stocktake_daily_summaryCollection(
+    orderBy: [{ count_date: DescNullsLast }]
+    first: 30
+  ) {
+    edges {
+      node {
+        uuid
+        count_date
+        product_code
+        product_desc
+        pallet_count
+        total_counted
+        final_remain_qty
+        last_count_time
+        created_at
+        updated_at
+      }
+    }
+  }
+}

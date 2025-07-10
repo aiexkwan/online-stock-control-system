@@ -1,4 +1,4 @@
-query GetStaffWorkload($startDate: Datetime!, $endDate: Datetime!, $department: String) {
+query GetStaffWorkload($startDate: Datetime!, $endDate: Datetime!) {
   record_historyCollection(
     filter: {
       time: { gte: $startDate, lte: $endDate }
@@ -8,15 +8,13 @@ query GetStaffWorkload($startDate: Datetime!, $endDate: Datetime!, $department: 
   ) {
     edges {
       node {
-        uuid
+        id
         time
         action
-        who
-        data_id {
-          id
-          name
-          department
-        }
+        plt_num
+        loc
+        remark
+        uuid
       }
     }
   }

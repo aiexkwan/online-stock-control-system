@@ -11,68 +11,48 @@ import {
   Legend,
   ResponsiveContainer,
 } from 'recharts';
-import { gql, useGraphQLQuery } from '@/lib/graphql-client-stable';
+import {
+  useGetInventoryTurnoverQuery,
+  type GetInventoryTurnoverQuery,
+} from '@/lib/graphql/generated/apollo-hooks';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
-
-const GET_INVENTORY_TURNOVER = gql`
-  query GetInventoryTurnover {
-    record_inventoryCollection {
-      edges {
-        node {
-          product_code
-          await
-          await_grn
-          backcarpark
-          bulk
-          fold
-          injection
-          pipeline
-          prebook
-          latest_update
-        }
-      }
-    }
-    data_orderCollection(orderBy: [{ created_at: DescNullsLast }], first: 200) {
-      edges {
-        node {
-          product_code
-          product_qty
-          loaded_qty
-          created_at
-        }
-      }
-    }
-  }
-`;
 
 interface InventoryTurnoverAnalysisProps {
   timeFrame?: any;
 }
 
 export default function InventoryTurnoverAnalysis({ timeFrame }: InventoryTurnoverAnalysisProps) {
-  const { data, loading, error } = useGraphQLQuery(GET_INVENTORY_TURNOVER);
+  // Check feature flag
+  const isGraphQLAnalysisEnabled = process.env.NEXT_PUBLIC_ENABLE_GRAPHQL_ANALYSIS === 'true';
+
+  const { data, loading, error } = useGetInventoryTurnoverQuery({
+    skip: !isGraphQLAnalysisEnabled,
+    pollInterval: 60000, // Poll every 60 seconds
+    fetchPolicy: 'cache-and-network',
+  });
 
   const chartData = useMemo(() => {
     if (!data?.record_inventoryCollection?.edges || !data?.data_orderCollection?.edges) return [];
 
     // Calculate inventory totals by product (aggregate multiple records per product)
     const inventoryMap = new Map<string, number>();
-    data.record_inventoryCollection.edges.forEach(({ node }: any) => {
+    data.record_inventoryCollection.edges.forEach((edge: any) => {
+      const node = edge.node;
       const productCode = node.product_code;
       if (!productCode) return;
 
-      // Parse each field as integer to avoid string concatenation
+      // Calculate total inventory (all fields are already numbers in generated types)
       const recordTotal =
-        (parseInt(node.await || '0') || 0) +
-        (parseInt(node.await_grn || '0') || 0) +
-        (parseInt(node.backcarpark || '0') || 0) +
-        (parseInt(node.bulk || '0') || 0) +
-        (parseInt(node.fold || '0') || 0) +
-        (parseInt(node.injection || '0') || 0) +
-        (parseInt(node.pipeline || '0') || 0) +
-        (parseInt(node.prebook || '0') || 0);
+        (node.await || 0) +
+        (node.await_grn || 0) +
+        (node.backcarpark || 0) +
+        (node.bulk || 0) +
+        (node.fold || 0) +
+        (node.injection || 0) +
+        (node.pipeline || 0) +
+        (node.prebook || 0);
 
       // Aggregate totals for each product
       const currentTotal = inventoryMap.get(productCode) || 0;
@@ -81,12 +61,13 @@ export default function InventoryTurnoverAnalysis({ timeFrame }: InventoryTurnov
 
     // Calculate order demand by product
     const demandMap = new Map<string, number>();
-    data.data_orderCollection.edges.forEach(({ node }: any) => {
+    data.data_orderCollection.edges.forEach((edge: any) => {
+      const node = edge.node;
       if (!node.product_code) return;
 
       const currentDemand = demandMap.get(node.product_code) || 0;
-      const productQty = parseInt(node.product_qty || '0') || 0;
-      const loadedQty = parseInt(node.loaded_qty || '0') || 0;
+      const productQty = node.product_qty || 0;
+      const loadedQty = parseInt(node.loaded_qty || '0') || 0; // loaded_qty is still string type
       const unloadedQty = Math.max(0, productQty - loadedQty);
       demandMap.set(node.product_code, currentDemand + unloadedQty);
     });
@@ -121,6 +102,18 @@ export default function InventoryTurnoverAnalysis({ timeFrame }: InventoryTurnov
       })
       .slice(0, 12); // Show top 12 for better visibility
   }, [data]);
+
+  // Early return if feature flag is disabled
+  if (!isGraphQLAnalysisEnabled) {
+    return (
+      <Alert>
+        <AlertCircle className='h-4 w-4' />
+        <AlertDescription>
+          Inventory turnover analysis is currently disabled. Enable NEXT_PUBLIC_ENABLE_GRAPHQL_ANALYSIS to use this feature.
+        </AlertDescription>
+      </Alert>
+    );
+  }
 
   if (loading) {
     return (

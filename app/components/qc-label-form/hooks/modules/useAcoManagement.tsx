@@ -3,7 +3,7 @@
  * 處理 ACO (購買訂單) 相關的所有邏輯
  */
 
-import { useEffect, useCallback } from 'react';
+import { useEffect, useCallback, useRef } from 'react';
 import { toast } from 'sonner';
 import { createClient } from '@/app/utils/supabase/client';
 import { getAcoPalletCount } from '@/app/utils/qcLabelHelpers';
@@ -17,7 +17,8 @@ interface UseAcoManagementProps {
 }
 
 interface UseAcoManagementReturn {
-  handleAcoSearch: () => Promise<void>;
+  handleAcoSearch: (orderRef?: string) => Promise<void>;
+  handleAutoAcoConfirm: (selectedOrderRef: string) => Promise<void>;
   handleAcoOrderDetailChange: (idx: number, key: 'code' | 'qty', value: string) => void;
   validateAcoProductCode: (code: string, idx: number) => Promise<void>;
   handleAcoOrderDetailUpdate: () => void;
@@ -34,6 +35,9 @@ export const useAcoManagement = ({
   const createClientSupabase = useCallback(() => {
     return createClient();
   }, []);
+  
+  // Debounce timer for auto search
+  const autoSearchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // 獲取可用的 ACO 訂單參考號
   const fetchAcoOrderRefs = useCallback(async () => {
@@ -110,13 +114,18 @@ export const useAcoManagement = ({
     formData.acoRemain,
   ]);
 
-  // ACO 搜索邏輯 - 使用 RPC function
-  const handleAcoSearch = useCallback(async () => {
+  // ACO 搜索邏輯 - 使用 RPC function (支援手動和自動調用)
+  const handleAcoSearch = useCallback(async (orderRef?: string) => {
+    const searchOrderRef = orderRef || formData.acoOrderRef.trim();
+    
     if (
-      !formData.acoOrderRef.trim() ||
-      formData.acoOrderRef.trim().length < MIN_ACO_ORDER_REF_LENGTH
+      !searchOrderRef ||
+      searchOrderRef.length < MIN_ACO_ORDER_REF_LENGTH
     ) {
-      toast.error(`ACO Order Ref must be at least ${MIN_ACO_ORDER_REF_LENGTH} characters.`);
+      // 對於自動調用，不顯示錯誤toast，只對手動調用顯示
+      if (!orderRef) {
+        toast.error(`ACO Order Ref must be at least ${MIN_ACO_ORDER_REF_LENGTH} characters.`);
+      }
       return;
     }
 
@@ -134,7 +143,6 @@ export const useAcoManagement = ({
     }));
 
     try {
-      const searchOrderRef = formData.acoOrderRef.trim();
 
       // 使用傳統方法
       const supabaseClient = createClientSupabase();
@@ -192,12 +200,47 @@ export const useAcoManagement = ({
       }
     } catch (error) {
       console.error('Error searching ACO order:', error);
-      toast.error('Error searching ACO order.');
+      // 對於自動調用，減少錯誤toast的干擾
+      if (!orderRef) {
+        toast.error('Error searching ACO order.');
+      }
       setFormData(prev => ({ ...prev, acoRemain: null }));
     } finally {
       setFormData(prev => ({ ...prev, acoSearchLoading: false }));
     }
   }, [formData.acoOrderRef, productInfo, createClientSupabase, setFormData]);
+  
+  // 新增：自動 ACO 確認函數 (選擇訂單後自動觸發搜索)
+  const handleAutoAcoConfirm = useCallback(async (selectedOrderRef: string) => {
+    // Clear any existing timeout
+    if (autoSearchTimeoutRef.current) {
+      clearTimeout(autoSearchTimeoutRef.current);
+    }
+    
+    // Update the form data first
+    setFormData(prev => ({ 
+      ...prev, 
+      acoOrderRef: selectedOrderRef,
+      acoNewRef: false,
+      acoRemain: null 
+    }));
+    
+    // Auto-trigger search with debounce to avoid excessive calls
+    if (selectedOrderRef && selectedOrderRef.length >= MIN_ACO_ORDER_REF_LENGTH) {
+      autoSearchTimeoutRef.current = setTimeout(async () => {
+        await handleAcoSearch(selectedOrderRef);
+      }, 300); // 300ms debounce
+    }
+  }, [handleAcoSearch, setFormData]);
+  
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (autoSearchTimeoutRef.current) {
+        clearTimeout(autoSearchTimeoutRef.current);
+      }
+    };
+  }, []);
 
   // ACO 訂單詳情更改
   const handleAcoOrderDetailChange = useCallback(
@@ -303,6 +346,7 @@ export const useAcoManagement = ({
 
   return {
     handleAcoSearch,
+    handleAutoAcoConfirm,
     handleAcoOrderDetailChange,
     validateAcoProductCode,
     handleAcoOrderDetailUpdate,

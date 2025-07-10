@@ -121,8 +121,7 @@ const AcoSection = React.memo<{
   availableAcoOrderRefs: number[];
   acoRemain: string | null;
   acoSearchLoading: boolean;
-  canSearchAco: boolean;
-  onAcoSearch: () => void;
+  onAutoAcoConfirm: (orderRef: string) => Promise<void>;
   acoNewRef: boolean;
   acoOrderDetails: any[];
   acoOrderDetailErrors: string[];
@@ -138,8 +137,7 @@ const AcoSection = React.memo<{
     availableAcoOrderRefs,
     acoRemain,
     acoSearchLoading,
-    canSearchAco,
-    onAcoSearch,
+    onAutoAcoConfirm,
     acoNewRef,
     acoOrderDetails,
     acoOrderDetailErrors,
@@ -170,8 +168,7 @@ const AcoSection = React.memo<{
           availableAcoOrderRefs={availableAcoOrderRefs}
           acoRemain={acoRemain}
           acoSearchLoading={acoSearchLoading}
-          canSearchAco={canSearchAco}
-          onAcoSearch={onAcoSearch}
+          onAutoAcoConfirm={onAutoAcoConfirm}
           acoNewRef={acoNewRef}
           acoOrderDetails={acoOrderDetails}
           acoOrderDetailErrors={acoOrderDetailErrors}
@@ -405,6 +402,7 @@ export const PerformanceOptimizedForm: React.FC<PerformanceOptimizedFormProps> =
       () => ({
         onAcoOrderRefChange: (value: string) => handleInputChange('acoOrderRef', value),
         onAcoSearch: businessLogic.handleAcoSearch,
+        onAutoAcoConfirm: businessLogic.handleAutoAcoConfirm,
       }),
       [handleInputChange, businessLogic]
     );
@@ -552,8 +550,7 @@ export const PerformanceOptimizedForm: React.FC<PerformanceOptimizedFormProps> =
                         availableAcoOrderRefs={formData.availableAcoOrderRefs}
                         acoRemain={formData.acoRemain}
                         acoSearchLoading={formData.acoSearchLoading}
-                        canSearchAco={businessLogic.canSearchAco}
-                        onAcoSearch={acoHandlers.onAcoSearch}
+                        onAutoAcoConfirm={acoHandlers.onAutoAcoConfirm}
                         acoNewRef={false}
                         acoOrderDetails={[]}
                         acoOrderDetailErrors={[]}

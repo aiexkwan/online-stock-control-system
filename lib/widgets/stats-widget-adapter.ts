@@ -6,7 +6,7 @@
 import { widgetRegistry } from './enhanced-registry';
 import { WidgetDefinition } from './types';
 import { getWidgetImport } from './dynamic-imports';
-import { createLazyWidget } from './widget-loader';
+import { createDynamicWidget } from './widget-loader';
 
 /**
  * Stats widgets 的映射配置
@@ -120,7 +120,7 @@ export async function registerStatsWidgets(): Promise<void> {
         name: config.name || widgetId,
         category: 'stats',
         ...config,
-        component: createLazyWidget(widgetId), // 直接使用 widget loader
+        component: createDynamicWidget(widgetId), // 直接使用 widget loader
       };
 
       // 註冊到 registry

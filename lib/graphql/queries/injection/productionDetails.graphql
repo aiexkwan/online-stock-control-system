@@ -12,14 +12,10 @@ query GetProductionDetails($startDate: Datetime!, $endDate: Datetime!, $limit: I
         plt_num
         product_code
         product_qty
-        qc_by
         generate_time
         plt_remark
-        data_code {
-          description
-          colour
-          type
-        }
+        series
+        pdf_url
       }
     }
   }

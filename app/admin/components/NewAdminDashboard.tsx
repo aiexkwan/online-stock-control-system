@@ -23,6 +23,7 @@ import {
 import { AdminDashboardContent } from './dashboard/AdminDashboardContent';
 import { LoadingScreen, FadeInContainer } from '@/components/ui/loading';
 import { cn } from '@/lib/utils';
+import { DashboardDataProvider } from '@/app/admin/contexts/DashboardDataContext';
 // import { MenuBar } from '@/components/ui/glow-menu'; // Removed - using dynamic action bar
 // import UniversalChatbot from '@/app/components/admin/UniversalChatbot'; // Removed - integrated into navigation
 import {
@@ -113,7 +114,15 @@ const DASHBOARD_THEMES = [
   },
 ];
 
-export function NewAdminDashboard() {
+interface NewAdminDashboardProps {
+  prefetchedData?: any; // SSR 預取數據
+  ssrMode?: boolean; // 是否為 SSR 模式
+}
+
+export function NewAdminDashboard({ 
+  prefetchedData, 
+  ssrMode = false 
+}: NewAdminDashboardProps = {}) {
   const router = useRouter();
   const pathname = usePathname();
   const { isAuthenticated, loading } = useAuth();
@@ -206,7 +215,22 @@ export function NewAdminDashboard() {
                     : { minHeight: 'calc(100vh - 260px)' }
                 }
               >
-                <AdminDashboardContent theme={currentTheme} timeFrame={timeFrame} />
+                <DashboardDataProvider 
+                  initialDateRange={{
+                    startDate: timeFrame.start,
+                    endDate: timeFrame.end
+                  }}
+                  autoRefreshInterval={300000}
+                  prefetchedData={prefetchedData}
+                  ssrMode={ssrMode}
+                >
+                  <AdminDashboardContent 
+                    theme={currentTheme} 
+                    timeFrame={timeFrame}
+                    prefetchedData={prefetchedData}
+                    ssrMode={ssrMode}
+                  />
+                </DashboardDataProvider>
               </div>
             </div>
           </div>

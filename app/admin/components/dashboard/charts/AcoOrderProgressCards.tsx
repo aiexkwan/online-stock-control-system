@@ -2,63 +2,47 @@
 
 import React, { useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { gql, useGraphQLQuery } from '@/lib/graphql-client-stable';
+import { useGetAcoOrdersForCardsQuery } from '@/lib/graphql/generated/apollo-hooks';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertCircle, CheckCircle, ClipboardList } from 'lucide-react';
 
-const GET_ACO_ORDERS = gql`
-  query GetAcoOrdersForCards {
-    record_acoCollection(orderBy: [{ order_ref: DescNullsLast }]) {
-      edges {
-        node {
-          order_ref
-          code
-          required_qty
-          finished_qty
-          latest_update
-        }
-      }
-    }
-  }
-`;
-
-interface AcoOrder {
-  order_ref: number;
-  code: string;
-  required_qty: number;
-  finished_qty: number;
-  latest_update: string;
-}
-
 interface AcoOrderProgressCardsProps {
   timeFrame?: any;
+  useGraphQL?: boolean;
 }
 
-export default function AcoOrderProgressCards({ timeFrame }: AcoOrderProgressCardsProps) {
-  const { data, loading, error } = useGraphQLQuery(GET_ACO_ORDERS);
+export default function AcoOrderProgressCards({ timeFrame, useGraphQL = true }: AcoOrderProgressCardsProps) {
+  const shouldUseGraphQL = process.env.NEXT_PUBLIC_ENABLE_GRAPHQL_ANALYSIS === 'true' || useGraphQL;
+  
+  const { data, loading, error } = useGetAcoOrdersForCardsQuery({
+    skip: !shouldUseGraphQL,
+    pollInterval: 300000, // 5 minutes
+    fetchPolicy: 'cache-and-network',
+  });
 
   // Group orders by order_ref
   const groupedOrders = useMemo(() => {
     if (!data?.record_acoCollection?.edges) return {};
 
     const orders = data.record_acoCollection.edges
-      .map(({ node }: any) => node as AcoOrder)
+      .map(({ node }) => node)
       // Filter out completed orders
-      .filter((order: AcoOrder) => {
+      .filter((order) => {
         const remainingQty = order.required_qty - (order.finished_qty || 0);
         return remainingQty > 0;
       });
 
     return orders.reduce(
-      (groups: Record<string, AcoOrder[]>, order: AcoOrder) => {
-        if (!groups[order.order_ref]) {
-          groups[order.order_ref] = [];
+      (groups, order) => {
+        const orderRefStr = String(order.order_ref);
+        if (!groups[orderRefStr]) {
+          groups[orderRefStr] = [];
         }
-        groups[order.order_ref].push(order);
+        groups[orderRefStr].push(order);
         return groups;
       },
-      {} as Record<number, AcoOrder[]>
+      {} as Record<string, typeof orders>
     );
   }, [data]);
 
@@ -97,8 +81,8 @@ export default function AcoOrderProgressCards({ timeFrame }: AcoOrderProgressCar
   return (
     <div className='custom-scrollbar max-h-[600px] space-y-4 overflow-y-auto pr-2'>
       {orderEntries.map(([orderRef, orders], index) => {
-        const totalRequired = (orders as AcoOrder[]).reduce((sum: number, order: AcoOrder) => sum + order.required_qty, 0);
-        const totalCompleted = (orders as AcoOrder[]).reduce((sum: number, order: AcoOrder) => sum + (order.finished_qty || 0), 0);
+        const totalRequired = orders.reduce((sum, order) => sum + order.required_qty, 0);
+        const totalCompleted = orders.reduce((sum, order) => sum + (order.finished_qty || 0), 0);
         const totalRemaining = totalRequired - totalCompleted;
         const completionPercentage = Math.round((totalCompleted / totalRequired) * 100);
 
@@ -137,7 +121,7 @@ export default function AcoOrderProgressCards({ timeFrame }: AcoOrderProgressCar
 
             {/* Product details */}
             <div className='grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3'>
-              {(orders as AcoOrder[]).map((order: AcoOrder, index: number) => {
+              {orders.map((order, index) => {
                 const remainingQty = order.required_qty - (order.finished_qty || 0);
                 const productCompletionPercentage = Math.round(
                   ((order.finished_qty || 0) / order.required_qty) * 100

@@ -12,12 +12,7 @@ query GetHistoryTree($limit: Int = 50, $offset: Int = 0) {
         plt_num
         loc
         remark
-        who
-        doc_url
-        data_id {
-          id
-          name
-        }
+        uuid
       }
     }
     pageInfo {

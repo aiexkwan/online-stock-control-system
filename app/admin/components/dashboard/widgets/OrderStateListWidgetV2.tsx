@@ -22,7 +22,7 @@ import { cn } from '@/lib/utils';
 import { Progress } from '@/components/ui/progress';
 import { format } from 'date-fns';
 import { createDashboardAPI } from '@/lib/api/admin/DashboardAPI';
-import { useGetOrderStateListWidgetQuery } from '@/lib/graphql/generated/apollo-hooks';
+import { useGetOrderStateListQuery } from '@/lib/graphql/generated/apollo-hooks';
 
 // GraphQL 查詢已經移動到 lib/graphql/generated/apollo-hooks.ts
 
@@ -60,7 +60,7 @@ export const OrderStateListWidgetV2 = React.memo(function OrderStateListWidgetV2
     data: graphqlData, 
     loading: graphqlLoading, 
     error: graphqlError 
-  } = useGetOrderStateListWidgetQuery({
+  } = useGetOrderStateListQuery({
     skip: !useGraphQL || isEditMode,
     variables: {
       limit: 50,

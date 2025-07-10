@@ -14,33 +14,24 @@ import {
   YAxis,
   CartesianGrid,
 } from 'recharts';
-import { gql, useGraphQLQuery } from '@/lib/graphql-client-stable';
+import { useGetVoidRecordsQuery } from '@/lib/graphql/generated/apollo-hooks';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
-
-const GET_VOID_RECORDS = gql`
-  query GetVoidRecords {
-    report_voidCollection(first: 100) {
-      edges {
-        node {
-          uuid
-          plt_num
-          reason
-          time
-          damage_qty
-        }
-      }
-    }
-  }
-`;
 
 interface VoidRecordsAnalysisProps {
   timeFrame?: any;
 }
 
 export default function VoidRecordsAnalysis({ timeFrame }: VoidRecordsAnalysisProps) {
-  const { data, loading, error } = useGraphQLQuery(GET_VOID_RECORDS);
+  // Check feature flag
+  const isGraphQLAnalysisEnabled = process.env.NEXT_PUBLIC_ENABLE_GRAPHQL_ANALYSIS === 'true';
+
+  const { data, loading, error } = useGetVoidRecordsQuery({
+    skip: !isGraphQLAnalysisEnabled,
+    pollInterval: 30000, // Poll every 30 seconds
+    fetchPolicy: 'cache-and-network',
+  });
 
   const { reasonData, productData } = useMemo(() => {
     if (!data?.report_voidCollection?.edges) return { reasonData: [], productData: [] };
@@ -49,7 +40,7 @@ export default function VoidRecordsAnalysis({ timeFrame }: VoidRecordsAnalysisPr
     const reasonMap = new Map<string, number>();
     const palletMap = new Map<string, { count: number; qty: number }>();
 
-    data.report_voidCollection.edges.forEach(({ node }: any) => {
+    data.report_voidCollection.edges.forEach(({ node }: { node: any }) => {
       // Count by reason
       const reason = node.reason || 'Unspecified Reason';
       reasonMap.set(reason, (reasonMap.get(reason) || 0) + 1);
@@ -80,6 +71,16 @@ export default function VoidRecordsAnalysis({ timeFrame }: VoidRecordsAnalysisPr
 
     return { reasonData, productData };
   }, [data]);
+
+  // Show feature flag disabled state
+  if (!isGraphQLAnalysisEnabled) {
+    return (
+      <Alert>
+        <AlertCircle className='h-4 w-4' />
+        <AlertDescription>GraphQL analysis is disabled. Enable NEXT_PUBLIC_ENABLE_GRAPHQL_ANALYSIS to view void records analysis.</AlertDescription>
+      </Alert>
+    );
+  }
 
   if (loading) {
     return (

@@ -11,7 +11,6 @@ const categoryMap: WidgetMapping['categoryMap'] = {
   HistoryTree: 'core',
   HistoryTreeV2: 'core',
   AvailableSoonWidget: 'core',
-  EmptyPlaceholderWidget: 'core',
 
   // Stats widgets
   AwaitLocationQtyWidget: 'stats',
@@ -21,13 +20,14 @@ const categoryMap: WidgetMapping['categoryMap'] = {
   StatsCardWidget: 'stats',
 
   // Charts widgets
-  ProductMixChartWidget: 'charts',
   StockDistributionChartV2: 'charts',
   StockLevelHistoryChart: 'charts',
   WarehouseWorkLevelAreaChart: 'charts',
   TransferTimeDistributionWidget: 'charts',
   ProductDistributionChartWidget: 'charts',
   TopProductsChartGraphQL: 'charts',
+  TopProductsByQuantityWidget: 'charts',
+  TopProductsDistributionWidget: 'charts',
 
   // Lists widgets
   OrdersListWidgetV2: 'lists',
@@ -54,14 +54,12 @@ const categoryMap: WidgetMapping['categoryMap'] = {
   AcoOrderReportWidgetV2: 'reports',
   ReportGeneratorWidget: 'reports',
   ReportGeneratorWithDialogWidgetV2: 'reports',
-  ReportsWidget: 'reports',
 
   // Analysis widgets
   AnalysisExpandableCards: 'analysis',
   AcoOrderProgressWidget: 'analysis',
   AnalysisPagedWidget: 'analysis',
   AnalysisPagedWidgetV2: 'analysis',
-  AnalyticsDashboardWidget: 'analysis',
   InventoryOrderedAnalysisWidget: 'analysis',
 
   // Production widgets (Server Actions versions)
@@ -103,10 +101,11 @@ const preloadPriorityMap: WidgetMapping['preloadPriorityMap'] = {
   WarehouseTransferListWidget: 8,
 
   // 重要圖表 - 中高優先級
-  ProductMixChartWidget: 7,
   StockDistributionChartV2: 7,
   WarehouseWorkLevelAreaChart: 7,
   ProductDistributionChartWidget: 7,
+  TopProductsByQuantityWidget: 7,
+  TopProductsDistributionWidget: 7,
 
   // 操作類組件 - 中優先級
   ProductUpdateWidget: 6,
@@ -137,13 +136,13 @@ export const routePreloadMap: Record<string, string[]> = {
     'InjectionProductionStatsWidget', // GraphQL 優化版本
     'StatsCardWidget',
     'ProductionDetailsWidget',
-    'ProductMixChartWidget',
+    'TopProductsByQuantityWidget',
+    'TopProductsDistributionWidget',
   ],
   '/admin/pipeline': [
     'HistoryTree',
     'StatsCardWidget',
     'ProductionDetailsWidget',
-    'ProductMixChartWidget',
   ],
   '/admin/warehouse': [
     'AwaitLocationQtyWidget',

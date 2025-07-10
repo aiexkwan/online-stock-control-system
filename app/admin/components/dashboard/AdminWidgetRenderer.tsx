@@ -181,7 +181,6 @@ const GrnReportWidget = React.lazy(() => import('./widgets/GrnReportWidgetV2').t
 const AcoOrderReportWidget = React.lazy(() => import('./widgets/AcoOrderReportWidgetV2').then(mod => ({ default: mod.AcoOrderReportWidgetV2 })));
 const ReportGeneratorWithDialogWidget = React.lazy(() => import('./widgets/ReportGeneratorWithDialogWidgetV2').then(mod => ({ default: mod.ReportGeneratorWithDialogWidgetV2 })));
 const AvailableSoonWidget = React.lazy(() => import('./widgets/AvailableSoonWidget'));
-const ReportsWidget = React.lazy(() => import('./widgets/ReportsWidget').then(mod => ({ default: mod.ReportsWidget })));
 
 // Production monitoring widgets - Server Actions versions
 const ProductionStatsWidget = React.lazy(() => import('./widgets/ProductionStatsWidget').then(mod => ({ default: mod.ProductionStatsWidget })));
@@ -204,7 +203,6 @@ const InventoryOrderedAnalysisWidget = React.lazy(() => import('./widgets/Invent
 const StillInAwaitPercentageWidget = React.lazy(() => import('./widgets/StillInAwaitPercentageWidget'));
 const OrderStateListWidget = React.lazy(() => import('./widgets/OrderStateListWidgetV2').then(mod => ({ default: mod.OrderStateListWidgetV2 })));
 const TransferTimeDistributionWidget = React.lazy(() => import('./widgets/TransferTimeDistributionWidget').then(mod => ({ default: mod.TransferTimeDistributionWidget })));
-const EmptyPlaceholderWidget = React.lazy(() => import('./widgets/EmptyPlaceholderWidget').then(mod => ({ default: mod.EmptyPlaceholderWidget })));
 const WarehouseTransferListWidget = React.lazy(() => import('./widgets/WarehouseTransferListWidget').then(mod => ({ default: mod.WarehouseTransferListWidget })));
 const WarehouseWorkLevelAreaChart = React.lazy(() => import('./widgets/WarehouseWorkLevelAreaChart').then(mod => ({ default: mod.WarehouseWorkLevelAreaChart })));
 
@@ -1751,17 +1749,6 @@ const AdminWidgetRendererComponent: React.FC<AdminWidgetRendererProps> = ({
             }} isEditMode={false} timeFrame={timeFrame} />
           </Suspense>
         );
-      case 'EmptyPlaceholderWidget':
-        return (
-          <Suspense fallback={<div className="h-full w-full animate-pulse bg-slate-800/50" />}>
-            <EmptyPlaceholderWidget widget={{ 
-              id: 'empty-placeholder',
-              type: 'CUSTOM' as any,
-              title: 'Empty Placeholder',
-              config: { size: 'MEDIUM' as any }
-            }} isEditMode={false} timeFrame={timeFrame} />
-          </Suspense>
-        );
       case 'WarehouseTransferListWidget':
         return (
           <Suspense fallback={<div className="h-full w-full animate-pulse bg-slate-800/50" />}>
@@ -1938,12 +1925,6 @@ const AdminWidgetRendererComponent: React.FC<AdminWidgetRendererProps> = ({
             }} isEditMode={false} />
           </Suspense>
         );
-      case 'reports':
-        return (
-          <Suspense fallback={<div className="h-full w-full animate-pulse bg-slate-800/50" />}>
-            <ReportsWidget widget={config as any} isEditMode={false} />
-          </Suspense>
-        );
       case 'orders-list':
         return renderSpecialComponent();
       case 'other-files-list':
@@ -1975,7 +1956,7 @@ const AdminWidgetRendererComponent: React.FC<AdminWidgetRendererProps> = ({
   }
   
   // Special handling for components that need transparent background
-  const transparentComponents = ['HistoryTree', 'EmptyPlaceholderWidget'];
+  const transparentComponents = ['HistoryTree'];
   const isTransparent = config.component && transparentComponents.includes(config.component);
   
   // Generate unique widget ID

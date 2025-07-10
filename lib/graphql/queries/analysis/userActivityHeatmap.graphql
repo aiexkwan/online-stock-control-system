@@ -1,0 +1,26 @@
+# User Activity Heatmap Query
+# Used by UserActivityHeatmap component
+
+query GetUserActivity($startDate: Datetime!, $endDate: Datetime!) {
+  record_historyCollection(
+    filter: { time: { gte: $startDate, lte: $endDate } }
+    orderBy: [{ time: DescNullsLast }]
+  ) {
+    edges {
+      node {
+        uuid
+        action
+        time
+        remark
+        plt_num
+        loc
+        # Get user details through foreign key
+        data_id {
+          id
+          name
+          department
+        }
+      }
+    }
+  }
+}

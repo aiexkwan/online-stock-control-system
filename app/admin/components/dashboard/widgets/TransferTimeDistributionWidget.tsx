@@ -32,7 +32,7 @@ import { format, startOfHour, addHours } from 'date-fns';
 import { getYesterdayRange } from '@/app/utils/timezone';
 import { createDashboardAPI } from '@/lib/api/admin/DashboardAPI';
 import { WidgetStyles } from '@/app/utils/widgetStyles';
-import { useGetTransferTimeDistributionWidgetQuery } from '@/lib/graphql/generated/apollo-hooks';
+import { useGetTransferTimeDistributionQuery } from '@/lib/graphql/generated/apollo-hooks';
 
 // GraphQL 查詢已經移動到 lib/graphql/generated/apollo-hooks.ts
 
@@ -82,7 +82,7 @@ export const TransferTimeDistributionWidget = React.memo(function TransferTimeDi
     data: graphqlData, 
     loading: graphqlLoading, 
     error: graphqlError 
-  } = useGetTransferTimeDistributionWidgetQuery({
+  } = useGetTransferTimeDistributionQuery({
     skip: !useGraphQL || isEditMode,
     variables: {
       startDate: dateRange.start.toISOString(),

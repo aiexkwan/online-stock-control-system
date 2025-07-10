@@ -70,6 +70,22 @@ const nextConfig = {
         aggregateTimeout: 300,
         ignored: ['**/node_modules', '**/.git', '**/.next'],
       };
+      
+      // 緩存優化 - 減少大字符串序列化問題
+      config.cache = {
+        type: 'filesystem',
+        compression: 'gzip',
+        maxAge: 1000 * 60 * 60 * 24 * 7, // 7 天
+        maxMemoryGenerations: 5,
+        memoryCacheUnaffected: true,
+        buildDependencies: {
+          config: [__filename],
+        },
+        store: 'pack',
+        // 優化序列化性能
+        hashAlgorithm: 'xxhash64',
+        version: process.env.NODE_ENV || 'development',
+      };
     }
 
     // Bundle Analyzer 配置
@@ -113,22 +129,34 @@ const nextConfig = {
       };
     }
 
-    // Phase 3.1.2: 路由級代碼分割優化
+    // Tree shaking 優化
     if (!isServer) {
+      // 啟用 tree shaking 優化
+      config.optimization.usedExports = true;
+      config.optimization.sideEffects = false;
+      
+      // 模組解析優化 (優先使用 ES modules)
+      config.resolve.mainFields = ['browser', 'module', 'main'];
+      
       // 配置 chunk splitting 策略
       config.optimization = {
         ...config.optimization,
+        usedExports: true,
+        sideEffects: false,
         runtimeChunk: 'single',
         splitChunks: {
           chunks: 'all',
-          maxInitialRequests: 25,
-          minSize: 20000,
+          maxInitialRequests: 20, // 增加並行請求數
+          maxAsyncRequests: 30,
+          minSize: 20000, // 更精細的最小大小
+          maxSize: 200000, // 減少最大大小到 200KB
+          minChunks: 1,
           cacheGroups: {
-            // 默認緩存組
+            // 禁用默認分組
             default: false,
             vendors: false,
 
-            // 框架核心
+            // React 核心框架 (最高優先級)
             framework: {
               chunks: 'all',
               name: 'framework',
@@ -137,139 +165,100 @@ const nextConfig = {
               enforce: true,
             },
 
-            // UI 組件庫
-            lib: {
-              test(module) {
-                return module.size() > 160000 && /node_modules[\\/]/.test(module.identifier());
-              },
-              name(module) {
-                const hash = require('crypto')
-                  .createHash('sha1')
-                  .update(module.identifier())
-                  .digest('hex')
-                  .substring(0, 8);
-                return `lib-${hash}`;
-              },
-              priority: 30,
-              minChunks: 1,
-              reuseExistingChunk: true,
-            },
-
-            // 共用組件
-            commons: {
-              name: 'commons',
-              minChunks: 3, // 提高到 3 次引用才打包到 commons
-              priority: 10, // 降低優先級
-              maxSize: 200000, // 限制 commons chunk 大小為 200KB
-            },
-
-            // 主題特定 chunks
-            adminThemes: {
-              test: /[\\/]app[\\/]admin[\\/]components[\\/]dashboard[\\/](CustomThemeLayout|UploadUpdateLayout|StockManagementLayout|SystemLayout|AnalysisLayout)/,
-              name: (module, chunks, key) => {
-                const path = module.identifier();
-                const layoutMatch = path.match(/([A-Z][a-z]+)+Layout/);
-                if (layoutMatch) {
-                  return `theme-${layoutMatch[0].toLowerCase().replace('layout', '')}`;
-                }
-                return 'theme-common';
-              },
-              priority: 25,
-              reuseExistingChunk: true,
-            },
-
-            // Widget chunks
-            widgets: {
-              test: /[\\/]app[\\/]admin[\\/]components[\\/]dashboard[\\/]widgets[\\/]/,
-              name: (module, chunks, key) => {
-                const path = module.identifier();
-                const widgetMatch = path.match(/widgets[\\/]([^\/]+)/);
-                if (widgetMatch) {
-                  const widgetName = widgetMatch[1].replace(/\.tsx?$/, '');
-                  // 將相關 widgets 分組
-                  if (widgetName.includes('Analysis')) return 'widgets-analysis';
-                  if (widgetName.includes('Report')) return 'widgets-reports';
-                  if (widgetName.includes('Chart')) return 'widgets-charts';
-                  if (widgetName.includes('Upload')) return 'widgets-uploads';
-                  return 'widgets-common';
-                }
-                return 'widgets-misc';
-              },
-              priority: 15,
-              minChunks: 1,
-              reuseExistingChunk: true,
-            },
-
-            // Recharts 單獨打包
-            recharts: {
-              test: /[\\/]node_modules[\\/](recharts|d3-[^\/]+|victory[^\/]*)[\\/]/,
-              name: 'charts-vendor',
+            // 圖表庫專門分組 (解決 Bundle Analyzer 發現的大型模組問題)
+            charting: {
+              test: /[\\/]node_modules[\\/](recharts|chart\.js|react-chartjs-2|html2canvas)[\\/]/,
+              name: 'charting',
+              chunks: 'all',
               priority: 35,
-              reuseExistingChunk: true,
+              enforce: true,
+              maxSize: 200000, // 200KB 限制
             },
 
-            // Supabase SDK
-            supabase: {
-              test: /[\\/]node_modules[\\/]@supabase[\\/]/,
-              name: 'supabase-sdk',
-              priority: 35,
-              reuseExistingChunk: true,
-            },
-
-            // Apollo GraphQL
+            // Apollo GraphQL 數據層
             apollo: {
-              test: /[\\/]node_modules[\\/](@apollo|graphql|apollo-[^\/]+)[\\/]/,
-              name: 'apollo-graphql',
-              priority: 34,
-              reuseExistingChunk: true,
+              test: /[\\/]node_modules[\\/](@apollo\/client|@apollo\/utils|graphql|dataloader)[\\/]/,
+              name: 'apollo',
+              chunks: 'all',
+              priority: 30,
+              enforce: true,
+              maxSize: 150000,
             },
 
-            // PDF 相關庫
-            pdfLibs: {
-              test: /[\\/]node_modules[\\/](pdf-lib|pdf-parse|pdf2pic|@react-pdf|jspdf|puppeteer)[\\/]/,
-              name: 'pdf-libs',
-              priority: 33,
-              reuseExistingChunk: true,
+            // Supabase 數據層
+            supabase: {
+              test: /[\\/]node_modules[\\/](@supabase\/supabase-js|@supabase\/ssr|@supabase\/auth-ui-react)[\\/]/,
+              name: 'supabase',
+              chunks: 'all',
+              priority: 30,
+              enforce: true,
             },
 
-            // Excel 處理庫
-            excelLibs: {
-              test: /[\\/]node_modules[\\/](exceljs|file-saver|papaparse)[\\/]/,
-              name: 'excel-libs',
-              priority: 33,
-              reuseExistingChunk: true,
-            },
-
-            // Radix UI
+            // UI 庫分組 (Radix UI)
             radixUI: {
               test: /[\\/]node_modules[\\/]@radix-ui[\\/]/,
               name: 'radix-ui',
-              priority: 32,
-              minChunks: 2,
-              reuseExistingChunk: true,
+              chunks: 'all',
+              priority: 25,
+              enforce: true,
+              maxSize: 180000,
             },
 
-            // Tanstack 庫
+            // 動畫和動作庫
+            motion: {
+              test: /[\\/]node_modules[\\/](framer-motion|@tanstack\/react-virtual)[\\/]/,
+              name: 'motion',
+              chunks: 'all',
+              priority: 25,
+              enforce: true,
+            },
+
+            // TanStack 生態系統
             tanstack: {
-              test: /[\\/]node_modules[\\/]@tanstack[\\/]/,
-              name: 'tanstack-libs',
-              priority: 32,
-              reuseExistingChunk: true,
+              test: /[\\/]node_modules[\\/]@tanstack[\\/](react-query|react-table)[\\/]/,
+              name: 'tanstack',
+              chunks: 'all',
+              priority: 25,
+              enforce: true,
             },
 
-            // AI/LLM 相關庫
-            aiLibs: {
-              test: /[\\/]node_modules[\\/](langchain|@anthropic-ai|openai)[\\/]/,
-              name: 'ai-libs',
-              priority: 31,
-              reuseExistingChunk: true,
+            // PDF 和文檔處理 (解決 Bundle Analyzer 發現的 ExcelJS/PDF 問題)
+            documents: {
+              test: /[\\/]node_modules[\\/](jspdf|pdf-lib|@react-pdf\/renderer|pdf-parse|exceljs)[\\/]/,
+              name: 'documents',
+              chunks: 'all',
+              priority: 25,
+              enforce: true,
+              maxSize: 200000, // 限制 PDF/Excel 庫大小
             },
 
-            // 其他大型庫
-            largeVendors: {
-              test: /[\\/]node_modules[\\/](axios|lodash|date-fns|zod|framer-motion|formik)[\\/]/,
-              name: 'vendor-utils',
-              priority: 30,
+            // 工具庫
+            utilities: {
+              test: /[\\/]node_modules[\\/](date-fns|lodash|uuid|zod|axios)[\\/]/,
+              name: 'utilities',
+              chunks: 'all',
+              priority: 20,
+              enforce: true,
+              maxSize: 120000,
+            },
+
+            // 其他第三方庫 (縮小範圍，排除已分組的庫)
+            vendor: {
+              test: /[\\/]node_modules[\\/](?!(@apollo|@supabase|@radix-ui|@tanstack|recharts|chart\.js|framer-motion|jspdf|pdf-lib|exceljs|date-fns|react|react-dom)).*[\\/]/,
+              name: 'vendor',
+              chunks: 'initial',
+              priority: 10,
+              enforce: true,
+              maxSize: 180000, // 減少到 180KB
+            },
+
+            // 應用程式共用代碼
+            commons: {
+              name: 'commons',
+              minChunks: 2,
+              priority: 5,
+              chunks: 'all',
+              maxSize: 100000, // 減少到 100KB
               reuseExistingChunk: true,
             },
           },

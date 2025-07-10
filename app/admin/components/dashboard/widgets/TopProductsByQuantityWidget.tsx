@@ -19,7 +19,7 @@ import { WidgetComponentProps } from '@/app/types/dashboard';
 import { motion } from 'framer-motion';
 import { format, startOfDay, endOfDay } from 'date-fns';
 import { createDashboardAPI } from '@/lib/api/admin/DashboardAPI';
-import { useGetTopProductsByQuantityWidgetQuery } from '@/lib/graphql/generated/apollo-hooks';
+import { useGetTopProductsByQuantityQuery } from '@/lib/graphql/generated/apollo-hooks';
 
 interface ProductData {
   product_code: string;
@@ -60,7 +60,7 @@ export const TopProductsByQuantityWidget = React.memo(function TopProductsByQuan
     data: graphqlData, 
     loading: graphqlLoading, 
     error: graphqlError 
-  } = useGetTopProductsByQuantityWidgetQuery({
+  } = useGetTopProductsByQuantityQuery({
     skip: !useGraphQL || isEditMode,
     variables: { startDate, endDate },
     pollInterval: 300000, // 5分鐘輪詢

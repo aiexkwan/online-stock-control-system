@@ -20,7 +20,7 @@ import { CardHeader, CardTitle } from '@/components/ui/card';
 import { ChartBarIcon } from '@heroicons/react/24/outline';
 import { createDashboardAPI } from '@/lib/api/admin/DashboardAPI';
 import { WidgetComponentProps } from '@/app/types/dashboard';
-import { useGetStaffWorkloadWidgetQuery } from '@/lib/graphql/generated/apollo-hooks';
+import { useGetStaffWorkloadQuery } from '@/lib/graphql/generated/apollo-hooks';
 
 interface StaffWorkloadWidgetProps extends WidgetComponentProps {
   title: string;
@@ -80,7 +80,7 @@ export const StaffWorkloadWidget: React.FC<StaffWorkloadWidgetProps> = ({
     data: graphqlData, 
     loading: graphqlLoading, 
     error: graphqlError 
-  } = useGetStaffWorkloadWidgetQuery({
+  } = useGetStaffWorkloadQuery({
     skip: !shouldUseGraphQL || isEditMode,
     variables: {
       startDate: startOfDay(dateRange.start).toISOString(),

@@ -466,6 +466,7 @@ export const adminDashboardLayouts: Record<string, AdminDashboardLayout> = {
       "widget3 widget3 widget3 widget6 widget6 widget6 widget1 widget1"
       "widget4 widget4 widget4 widget7 widget7 widget7 widget1 widget1"
       "widget8 widget8 widget8 widget9 widget9 widget9 widget1 widget1"
+      "widget10 widget10 widget10 widget10 widget10 widget10 widget10 widget10"
     `,
     widgets: [
       {
@@ -542,6 +543,13 @@ export const adminDashboardLayouts: Record<string, AdminDashboardLayout> = {
         title: 'Reprint Label',
         gridArea: 'widget9',
         component: 'ReprintLabelWidget',
+      },
+      {
+        type: 'performance-test',
+        title: 'Performance Test Tool',
+        gridArea: 'widget10',
+        component: 'PerformanceTestWidget',
+        description: 'Widget performance testing and analysis tool',
       },
     ],
   },

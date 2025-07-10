@@ -12,39 +12,30 @@ import {
   ResponsiveContainer,
   Cell,
 } from 'recharts';
-import { gql, useGraphQLQuery } from '@/lib/graphql-client-stable';
+import { useGetAcoOrdersForChartQuery } from '@/lib/graphql/generated/apollo-hooks';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
-
-const GET_ACO_ORDERS = gql`
-  query GetAcoOrdersForChart {
-    record_acoCollection(orderBy: [{ order_ref: AscNullsLast }], first: 20) {
-      edges {
-        node {
-          order_ref
-          code
-          required_qty
-          finished_qty
-          latest_update
-        }
-      }
-    }
-  }
-`;
 
 interface AcoOrderProgressChartProps {
   timeFrame?: any;
 }
 
 export default function AcoOrderProgressChart({ timeFrame }: AcoOrderProgressChartProps) {
-  const { data, loading, error } = useGraphQLQuery(GET_ACO_ORDERS);
+  // Check feature flag
+  const isGraphQLAnalysisEnabled = process.env.NEXT_PUBLIC_ENABLE_GRAPHQL_ANALYSIS === 'true';
+
+  const { data, loading, error } = useGetAcoOrdersForChartQuery({
+    skip: !isGraphQLAnalysisEnabled,
+    pollInterval: 300000, // 5 minutes
+    fetchPolicy: 'cache-and-network',
+  });
 
   const chartData = useMemo(() => {
     if (!data?.record_acoCollection?.edges) return [];
 
     return data.record_acoCollection.edges
-      .map(({ node }: any) => {
+      .map(({ node }) => {
         const completedQty = node.finished_qty || 0;
         const remainingQty = Math.max(0, node.required_qty - completedQty);
         const completionRate = node.required_qty > 0 ? (completedQty / node.required_qty) * 100 : 0;
@@ -60,6 +51,15 @@ export default function AcoOrderProgressChart({ timeFrame }: AcoOrderProgressCha
       })
       .slice(0, 10); // Show top 10 orders
   }, [data]);
+
+  if (!isGraphQLAnalysisEnabled) {
+    return (
+      <Alert>
+        <AlertCircle className='h-4 w-4' />
+        <AlertDescription>GraphQL analysis is disabled. Enable NEXT_PUBLIC_ENABLE_GRAPHQL_ANALYSIS to view this chart.</AlertDescription>
+      </Alert>
+    );
+  }
 
   if (loading) {
     return (
@@ -152,7 +152,7 @@ export default function AcoOrderProgressChart({ timeFrame }: AcoOrderProgressCha
               )}
             />
             <Bar dataKey='completionRate' radius={[8, 8, 0, 0]}>
-              {chartData.map((entry: any, index: number) => (
+              {chartData.map((entry, index) => (
                 <Cell key={`cell-${index}`} fill={getBarColor(entry.completionRate)} />
               ))}
             </Bar>

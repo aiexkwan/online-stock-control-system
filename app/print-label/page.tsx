@@ -299,8 +299,7 @@ export default function PrintLabelPage() {
                   availableAcoOrderRefs={formData.availableAcoOrderRefs}
                   acoRemain={formData.acoRemain}
                   acoSearchLoading={formData.acoSearchLoading}
-                  canSearchAco={businessLogic.canSearchAco}
-                  onAcoSearch={businessLogic.handleAcoSearch}
+                  onAutoAcoConfirm={businessLogic.handleAutoAcoConfirm}
                   acoNewRef={false}
                   acoOrderDetails={[]}
                   acoOrderDetailErrors={[]}

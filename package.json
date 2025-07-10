@@ -2,6 +2,18 @@
   "name": "pennine-stock",
   "version": "0.1.0",
   "private": true,
+  "sideEffects": [
+    "**/*.css",
+    "**/*.scss",
+    "**/polyfills.ts",
+    "**/globals.ts",
+    "lib/apollo-client.ts",
+    "middleware.ts",
+    "app/globals.css"
+  ],
+  "overrides": {
+    "graphql": "^16.11.0"
+  },
   "scripts": {
     "dev": "npm run kill-localhost && npm run clean && next dev",
     "build": "next build",
@@ -29,11 +41,13 @@
     "validate-schema": "tsx scripts/validate-schema.ts",
     "validate-schema:ci": "tsx scripts/validate-schema.ts --format=json",
     "analyze": "ANALYZE=true npm run build",
-    "analyze:view": "open bundle-analyzer/client.html"
+    "analyze:view": "open bundle-analyzer/client.html",
+    "tree-shaking:check": "node scripts/check-tree-shaking.js",
+    "tree-shaking:analyze": "npm run tree-shaking:check && npm run analyze"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.40.1",
-    "@apollo/client": "^3.8.8",
+    "@apollo/client": "^3.11.2",
     "@apollo/utils.keyvaluecache": "^4.0.0",
     "@fontsource/lato": "^5.2.6",
     "@formatjs/intl-localematcher": "^0.5.9",
@@ -71,6 +85,7 @@
     "@react-pdf/renderer": "^4.3.0",
     "@supabase/auth-ui-react": "^0.4.7",
     "@supabase/auth-ui-shared": "^0.1.8",
+    "@supabase/mcp-server-supabase": "^0.4.5",
     "@supabase/ssr": "^0.6.1",
     "@supabase/supabase-js": "^2.50.2",
     "@tanstack/react-query": "^5.62.11",

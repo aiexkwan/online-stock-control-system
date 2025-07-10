@@ -1,31 +1,11 @@
 'use client';
 
 import React, { useMemo } from 'react';
-import { gql, useGraphQLQuery } from '@/lib/graphql-client-stable';
+import { useGetInventoryLocationsQuery } from '@/lib/graphql/generated/apollo-hooks';
+import type { GetInventoryLocationsQuery } from '@/lib/graphql/generated/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertCircle, Package } from 'lucide-react';
-
-const GET_INVENTORY_LOCATIONS = gql`
-  query GetInventoryLocations {
-    record_inventoryCollection {
-      edges {
-        node {
-          product_code
-          plt_num
-          await
-          await_grn
-          backcarpark
-          bulk
-          fold
-          injection
-          pipeline
-          prebook
-        }
-      }
-    }
-  }
-`;
 
 interface LocationData {
   name: string;
@@ -51,7 +31,14 @@ interface RealTimeInventoryMapProps {
 }
 
 export default function RealTimeInventoryMap({ timeFrame }: RealTimeInventoryMapProps) {
-  const { data, loading, error } = useGraphQLQuery(GET_INVENTORY_LOCATIONS);
+  // Check if GraphQL analysis is enabled
+  const isGraphQLEnabled = process.env.NEXT_PUBLIC_ENABLE_GRAPHQL_ANALYSIS === 'true';
+
+  const { data, loading, error } = useGetInventoryLocationsQuery({
+    skip: !isGraphQLEnabled,
+    pollInterval: 30000, // Poll every 30 seconds
+    fetchPolicy: 'cache-and-network',
+  });
 
   const locationStats = useMemo(() => {
     if (!data?.record_inventoryCollection?.edges) return new Map();
@@ -64,13 +51,19 @@ export default function RealTimeInventoryMap({ timeFrame }: RealTimeInventoryMap
     });
 
     // Calculate totals for each location
-    data.record_inventoryCollection.edges.forEach(({ node }: any) => {
+    data.record_inventoryCollection.edges.forEach((edge: NonNullable<GetInventoryLocationsQuery['record_inventoryCollection']>['edges'][0]) => {
+      if (!edge?.node) return;
+      const node = edge.node;
+      
       WAREHOUSE_LOCATIONS.forEach(loc => {
-        const qty = Number(node[loc.key]) || 0;
+        // Type assertion for dynamic property access
+        const qty = Number(node[loc.key as keyof typeof node]) || 0;
         if (qty > 0) {
           const current = stats.get(loc.key)!;
           current.total += qty;
-          current.products.add(node.product_code); // Track unique products
+          if (node.product_code) {
+            current.products.add(node.product_code); // Track unique products
+          }
         }
       });
     });
@@ -86,6 +79,18 @@ export default function RealTimeInventoryMap({ timeFrame }: RealTimeInventoryMap
 
     return displayStats;
   }, [data]);
+
+  // Show disabled state if GraphQL is not enabled
+  if (!isGraphQLEnabled) {
+    return (
+      <Alert>
+        <AlertCircle className='h-4 w-4' />
+        <AlertDescription>
+          GraphQL analysis is disabled. Enable NEXT_PUBLIC_ENABLE_GRAPHQL_ANALYSIS to use this feature.
+        </AlertDescription>
+      </Alert>
+    );
+  }
 
   if (loading) {
     return (

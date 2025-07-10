@@ -77,7 +77,7 @@ export interface BaseWidgetState {
  * Common widget error types
  * 通用 widget 錯誤類型
  */
-export type WidgetError = 'NETWORK_ERROR' | 'DATA_ERROR' | 'PERMISSION_ERROR' | 'UNKNOWN_ERROR';
+export type WidgetErrorType = 'NETWORK_ERROR' | 'DATA_ERROR' | 'PERMISSION_ERROR' | 'UNKNOWN_ERROR';
 
 /**
  * Widget size mappings for consistent layouts

@@ -6,25 +6,12 @@
 import { widgetRegistry } from './enhanced-registry';
 import { WidgetDefinition } from './types';
 import { getWidgetImport } from './dynamic-imports';
-import { createLazyWidget } from './widget-loader';
+import { createDynamicWidget } from './widget-loader';
 
 /**
  * Charts widgets 的映射配置
  */
 export const chartsWidgetConfigs: Record<string, Partial<WidgetDefinition>> = {
-  ProductMixChartWidget: {
-    name: 'Product Mix Chart',
-    category: 'charts',
-    description: 'Displays product mix distribution',
-    lazyLoad: true,
-    preloadPriority: 7,
-    metadata: {
-      dataSource: 'record_palletinfo',
-      refreshInterval: 300000, // 5分鐘刷新
-      chartType: 'pie',
-    },
-  },
-
   StockDistributionChart: {
     name: 'Stock Distribution Chart',
     category: 'charts',
@@ -107,6 +94,38 @@ export const chartsWidgetConfigs: Record<string, Partial<WidgetDefinition>> = {
     },
   },
 
+  TopProductsByQuantityWidget: {
+    name: 'Top Products by Quantity',
+    category: 'charts',
+    description: 'Top products ranked by quantity (GraphQL optimized)',
+    lazyLoad: true,
+    preloadPriority: 7,
+    useGraphQL: true,
+    metadata: {
+      dataSource: 'record_inventory',
+      refreshInterval: 300000,
+      chartType: 'bar',
+      limit: 10,
+      optimized: true,
+    },
+  },
+
+  TopProductsDistributionWidget: {
+    name: 'Top Products Distribution',
+    category: 'charts',
+    description: 'Distribution of top products (GraphQL optimized)',
+    lazyLoad: true,
+    preloadPriority: 7,
+    useGraphQL: true,
+    metadata: {
+      dataSource: 'record_inventory',
+      refreshInterval: 300000,
+      chartType: 'pie',
+      limit: 10,
+      optimized: true,
+    },
+  },
+
   WarehouseWorkLevelAreaChart: {
     name: 'Warehouse Work Level',
     category: 'charts',
@@ -147,7 +166,7 @@ export async function registerChartsWidgets(): Promise<void> {
         name: config.name || widgetId,
         category: 'charts',
         ...config,
-        component: createLazyWidget(widgetId), // 使用統一的 widget loader
+        component: createDynamicWidget(widgetId), // 使用統一的 widget loader
       };
 
       // 註冊到 registry

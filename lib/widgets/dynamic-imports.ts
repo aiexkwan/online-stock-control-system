@@ -5,7 +5,8 @@
 
 // Core Widgets
 export const coreWidgetImports = {
-  'HistoryTree': () => import('@/app/admin/components/dashboard/widgets/HistoryTreeV2'),
+  'HistoryTree': () => import('@/app/admin/components/dashboard/widgets/HistoryTreeV2').then(m => ({ default: m.HistoryTreeV2 || m.default })),
+  'HistoryTreeV2': () => import('@/app/admin/components/dashboard/widgets/HistoryTreeV2'),
   'AdminWidgetRenderer': () => import('@/app/admin/components/dashboard/AdminWidgetRenderer'),
 };
 
@@ -21,13 +22,13 @@ export const statsWidgetImports = {
 
 // Charts Widgets
 export const chartsWidgetImports = {
-  'ProductMixChartWidget': () => import('@/app/admin/components/dashboard/widgets/ProductMixChartWidget'),
   'StockDistributionChart': () => import('@/app/admin/components/dashboard/widgets/StockDistributionChartV2'),
   'StockDistributionChartV2': () => import('@/app/admin/components/dashboard/widgets/StockDistributionChartV2'),
   'StockLevelHistoryChart': () => import('@/app/admin/components/dashboard/widgets/StockLevelHistoryChart'),
   'TransferTimeDistributionWidget': () => import('@/app/admin/components/dashboard/widgets/TransferTimeDistributionWidget'),
   'InventoryOrderedAnalysisWidget': () => import('@/app/admin/components/dashboard/widgets/InventoryOrderedAnalysisWidget'),
   'TopProductsInventoryChart': () => import('@/app/admin/components/dashboard/charts/TopProductsInventoryChart'),
+  'AcoOrderProgressChart': () => import('@/app/admin/components/dashboard/charts/AcoOrderProgressChart'),
 };
 
 // Lists Widgets
@@ -48,7 +49,6 @@ export const operationsWidgetImports = {
   'SupplierUpdateWidget': () => import('@/app/admin/components/dashboard/widgets/SupplierUpdateWidgetV2'),
   'SupplierUpdateWidgetV2': () => import('@/app/admin/components/dashboard/widgets/SupplierUpdateWidgetV2'),
   'StockTypeSelector': () => import('@/app/admin/components/dashboard/widgets/StockTypeSelector'),
-  'EmptyPlaceholderWidget': () => import('@/app/admin/components/dashboard/widgets/EmptyPlaceholderWidget'),
 };
 
 // Uploads Widgets
@@ -72,16 +72,15 @@ export const reportsWidgetImports = {
   'ReportGeneratorWidget': () => import('@/app/admin/components/dashboard/widgets/ReportGeneratorWithDialogWidgetV2'),
   'ReportGeneratorWithDialogWidget': () => import('@/app/admin/components/dashboard/widgets/ReportGeneratorWithDialogWidgetV2'),
   'ReportGeneratorWithDialogWidgetV2': () => import('@/app/admin/components/dashboard/widgets/ReportGeneratorWithDialogWidgetV2'),
-  'ReportsWidget': () => import('@/app/admin/components/dashboard/widgets/ReportsWidget'),
 };
 
 // Analysis Widgets
 export const analysisWidgetImports = {
   'AnalysisExpandableCards': () => import('@/app/admin/components/dashboard/widgets/AnalysisExpandableCards'),
   'AcoOrderProgressWidget': () => import('@/app/admin/components/dashboard/widgets/AcoOrderProgressWidget'),
+  'AcoOrderProgressCards': () => import('@/app/admin/components/dashboard/charts/AcoOrderProgressCards'),
   'AnalysisPagedWidget': () => import('@/app/admin/components/dashboard/widgets/AnalysisPagedWidgetV2'),
   'AnalysisPagedWidgetV2': () => import('@/app/admin/components/dashboard/widgets/AnalysisPagedWidgetV2'),
-  'AnalyticsDashboardWidget': () => import('@/app/admin/components/dashboard/widgets/AnalyticsDashboardWidget')
 };
 
 // Production Monitoring Widgets - Server Actions versions
@@ -100,6 +99,7 @@ export const productionWidgetImports = {
 export const specialWidgetImports = {
   'OrderAnalysisResultDialog': () => import('@/app/admin/components/dashboard/widgets/OrderAnalysisResultDialog'),
   'Folder3D': () => import('@/app/admin/components/dashboard/widgets/Folder3D'),
+  'PerformanceTestWidget': () => import('@/app/admin/components/dashboard/widgets/PerformanceTestWidget'),
 };
 
 // 合併所有導入映射

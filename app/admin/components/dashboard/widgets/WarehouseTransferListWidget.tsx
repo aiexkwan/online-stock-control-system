@@ -23,7 +23,7 @@ import { motion } from 'framer-motion';
 import { format, parseISO } from 'date-fns';
 import { getYesterdayRange } from '@/app/utils/timezone';
 import { WidgetStyles } from '@/app/utils/widgetStyles';
-import { useGetWarehouseTransferListWidgetQuery } from '@/lib/graphql/generated/apollo-hooks';
+import { useGetWarehouseTransferListQuery } from '@/lib/graphql/generated/apollo-hooks';
 
 // GraphQL 查詢已經移動到 lib/graphql/generated/apollo-hooks.ts
 
@@ -64,7 +64,7 @@ export const WarehouseTransferListWidget = React.memo(function WarehouseTransfer
     data: graphqlData, 
     loading: graphqlLoading, 
     error: graphqlError 
-  } = useGetWarehouseTransferListWidgetQuery({
+  } = useGetWarehouseTransferListQuery({
     skip: !useGraphQL || isEditMode,
     variables: {
       startDate: dateRange.start.toISOString(),

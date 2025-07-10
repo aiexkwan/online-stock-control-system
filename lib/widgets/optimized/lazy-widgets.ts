@@ -22,14 +22,6 @@ function createLazyWidget(importPath: string, chunkName?: string) {
 }
 
 // === Charts Widgets (需要優先優化) ===
-export const LazyProductMixChartWidget = lazy(
-  () =>
-    import(
-      /* webpackChunkName: "chart-product-mix" */
-      /* webpackPrefetch: true */
-      '@/app/admin/components/dashboard/widgets/ProductMixChartWidget'
-    )
-);
 
 export const LazyStockDistributionChart = lazy(
   () =>
@@ -126,7 +118,6 @@ export const LazyAcoOrderProgressWidget = lazy(
  */
 export const lazyWidgetMap = new Map<string, React.LazyExoticComponent<any>>([
   // Charts
-  ['ProductMixChartWidget', LazyProductMixChartWidget],
   ['StockDistributionChart', LazyStockDistributionChart],
   ['StockLevelHistoryChart', LazyStockLevelHistoryChart],
   ['WarehouseWorkLevelAreaChart', LazyWarehouseWorkLevelAreaChart],
@@ -148,7 +139,6 @@ export const lazyWidgetMap = new Map<string, React.LazyExoticComponent<any>>([
 export function shouldUseLazyLoading(widgetId: string): boolean {
   // 基於 widget 類型和大小決定
   const heavyWidgets = [
-    'ProductMixChartWidget',
     'StockDistributionChart',
     'StockLevelHistoryChart',
     'InventoryOrderedAnalysisWidget',

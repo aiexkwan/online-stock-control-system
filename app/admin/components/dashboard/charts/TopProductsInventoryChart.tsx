@@ -11,41 +11,25 @@ import {
   ResponsiveContainer,
   Cell,
 } from 'recharts';
-import { gql, useGraphQLQuery } from '@/lib/graphql-client-stable';
+import { useGetTopProductsInventoryQuery } from '@/lib/graphql/generated/apollo-hooks';
+import { GetTopProductsInventoryQuery } from '@/lib/graphql/generated/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
-
-const GET_TOP_PRODUCTS_INVENTORY = gql`
-  query GetTopProductsInventory {
-    record_inventoryCollection {
-      edges {
-        node {
-          product_code
-          await
-          await_grn
-          backcarpark
-          bulk
-          fold
-          injection
-          pipeline
-          prebook
-          data_code {
-            description
-            colour
-          }
-        }
-      }
-    }
-  }
-`;
 
 interface TopProductsInventoryChartProps {
   timeFrame?: any;
 }
 
 export default function TopProductsInventoryChart({ timeFrame }: TopProductsInventoryChartProps) {
-  const { data, loading, error } = useGraphQLQuery(GET_TOP_PRODUCTS_INVENTORY);
+  // Check feature flag
+  const isGraphQLAnalysisEnabled = process.env.NEXT_PUBLIC_ENABLE_GRAPHQL_ANALYSIS === 'true';
+
+  const { data, loading, error } = useGetTopProductsInventoryQuery({
+    skip: !isGraphQLAnalysisEnabled,
+    pollInterval: 60000, // Poll every minute
+    fetchPolicy: 'cache-and-network',
+  });
 
   const chartData = useMemo(() => {
     if (!data?.record_inventoryCollection?.edges) return [];
@@ -53,7 +37,7 @@ export default function TopProductsInventoryChart({ timeFrame }: TopProductsInve
     // Group by product code and sum up inventories
     const productMap = new Map();
 
-    data.record_inventoryCollection.edges.forEach(({ node }: any) => {
+    data.record_inventoryCollection.edges.forEach(({ node }: { node: NonNullable<GetTopProductsInventoryQuery['record_inventoryCollection']>['edges'][0]['node'] }) => {
       const code = node.product_code;
 
       if (productMap.has(code)) {
@@ -67,6 +51,7 @@ export default function TopProductsInventoryChart({ timeFrame }: TopProductsInve
         existing.injection += node.injection || 0;
         existing.pipeline += node.pipeline || 0;
         existing.prebook += node.prebook || 0;
+        existing.damage += node.damage || 0;
       } else {
         // Create new entry
         productMap.set(code, {
@@ -81,6 +66,7 @@ export default function TopProductsInventoryChart({ timeFrame }: TopProductsInve
           injection: node.injection || 0,
           pipeline: node.pipeline || 0,
           prebook: node.prebook || 0,
+          damage: node.damage || 0,
         });
       }
     });
@@ -95,7 +81,8 @@ export default function TopProductsInventoryChart({ timeFrame }: TopProductsInve
         item.fold +
         item.injection +
         item.pipeline +
-        item.prebook;
+        item.prebook +
+        item.damage;
 
       return {
         code: item.code,
@@ -105,6 +92,7 @@ export default function TopProductsInventoryChart({ timeFrame }: TopProductsInve
         await: item.await,
         bulk: item.bulk,
         fold: item.fold,
+        damage: item.damage,
         other: item.await_grn + item.backcarpark + item.injection + item.pipeline + item.prebook,
       };
     });
@@ -112,6 +100,16 @@ export default function TopProductsInventoryChart({ timeFrame }: TopProductsInve
     // Sort by total and take top 10
     return productTotals.sort((a, b) => b.total - a.total).slice(0, 10);
   }, [data]);
+
+  // If feature flag is disabled, show disabled state
+  if (!isGraphQLAnalysisEnabled) {
+    return (
+      <Alert>
+        <AlertCircle className='h-4 w-4' />
+        <AlertDescription>GraphQL analysis is currently disabled.</AlertDescription>
+      </Alert>
+    );
+  }
 
   if (loading) {
     return (
@@ -183,6 +181,7 @@ export default function TopProductsInventoryChart({ timeFrame }: TopProductsInve
                         <p className='text-xs'>Await: {data.await}</p>
                         <p className='text-xs'>Bulk: {data.bulk}</p>
                         <p className='text-xs'>Fold: {data.fold}</p>
+                        <p className='text-xs'>Damage: {data.damage}</p>
                         <p className='text-xs'>Other: {data.other}</p>
                       </div>
                     </div>

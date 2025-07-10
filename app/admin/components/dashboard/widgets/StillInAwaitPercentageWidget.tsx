@@ -20,7 +20,7 @@ import { motion } from 'framer-motion';
 import { getYesterdayRange } from '@/app/utils/timezone';
 import { format } from 'date-fns';
 import { createDashboardAPI } from '@/lib/api/admin/DashboardAPI';
-import { useGetStillInAwaitPercentageWidgetQuery } from '@/lib/graphql/generated/apollo-hooks';
+import { useGetStillInAwaitOptimizedQuery } from '@/lib/graphql/generated/apollo-hooks';
 
 // GraphQL 查詢已經移動到 lib/graphql/generated/apollo-hooks.ts
 
@@ -66,7 +66,7 @@ const StillInAwaitPercentageWidget = React.memo(function StillInAwaitPercentageW
     data: graphqlData, 
     loading: graphqlLoading, 
     error: graphqlError 
-  } = useGetStillInAwaitPercentageWidgetQuery({
+  } = useGetStillInAwaitOptimizedQuery({
     skip: !useGraphQL || isEditMode,
     variables: {
       startDate: dateRange.start.toISOString(),

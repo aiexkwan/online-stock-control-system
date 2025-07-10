@@ -132,7 +132,9 @@
       "mcp__sequential-thinking__sequentialthinking",
       "Bash(dotenv -e .env.codegen -- graphql-codegen:*)",
       "Bash(npx dotenv-cli -e .env.codegen -- graphql-codegen:*)",
-      "Bash(npx dotenv -e .env.codegen -- graphql-codegen:*)"
+      "Bash(npx dotenv -e .env.codegen -- graphql-codegen:*)",
+      "Bash(npx:*)",
+      "Bash(SUPABASE_URL=https://bbmkuiplnzvpudszrend.supabase.co SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJibWt1aXBsbnp2cHVkc3pyZW5kIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0NTcxNTYwNCwiZXhwIjoyMDYxMjkxNjA0fQ.B0pQF2V0kWdrU2_2VEYXR6qxZzt2oMDvwxD7qiR3huM npx @supabase/mcp-server-supabase)"
     ],
     "deny": []
   }

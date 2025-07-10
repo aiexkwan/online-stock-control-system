@@ -77,11 +77,15 @@ const ThemeLoadingSkeleton = () => (
 interface AdminDashboardContentProps {
   theme: string;
   timeFrame: TimeFrame;
+  prefetchedData?: any; // SSR 預取數據
+  ssrMode?: boolean; // 是否為 SSR 模式
 }
 
 export const AdminDashboardContent: React.FC<AdminDashboardContentProps> = ({
   theme,
   timeFrame,
+  prefetchedData,
+  ssrMode = false,
 }) => {
   // 確保 widget registry 已初始化
   const { isInitialized, error } = useWidgetRegistry();
@@ -160,7 +164,6 @@ export const AdminDashboardContent: React.FC<AdminDashboardContentProps> = ({
       OtherFilesListWidget: 2,
 
       // 圖表 - 低優先級
-      ProductMixChartWidget: 3,
       StockDistributionChart: 3,
       WarehouseWorkLevelAreaChart: 3,
       TransferTimeDistributionWidget: 3,

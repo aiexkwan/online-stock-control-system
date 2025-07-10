@@ -1,31 +1,10 @@
 'use client';
 
 import React, { useMemo } from 'react';
-import { gql, useGraphQLQuery } from '@/lib/graphql-client-stable';
+import { useGetUserActivityQuery } from '@/lib/graphql/generated/apollo-hooks';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
-
-const GET_USER_ACTIVITY = gql`
-  query GetUserActivity($startDate: Datetime!, $endDate: Datetime!) {
-    record_historyCollection(
-      filter: { time: { gte: $startDate, lte: $endDate } }
-      orderBy: [{ time: DescNullsLast }]
-    ) {
-      edges {
-        node {
-          id
-          action
-          time
-          data_id {
-            name
-            department
-          }
-        }
-      }
-    }
-  }
-`;
 
 interface UserActivityHeatmapProps {
   timeFrame?: any;
@@ -34,6 +13,9 @@ interface UserActivityHeatmapProps {
 const UserActivityHeatmap = React.memo(function UserActivityHeatmap({
   timeFrame,
 }: UserActivityHeatmapProps) {
+  // Check feature flag
+  const isGraphQLAnalysisEnabled = process.env.NEXT_PUBLIC_ENABLE_GRAPHQL_ANALYSIS === 'true';
+
   // Use useMemo to prevent date objects from changing on every render
   const variables = useMemo(() => {
     const end = new Date();
@@ -45,16 +27,21 @@ const UserActivityHeatmap = React.memo(function UserActivityHeatmap({
     };
   }, []); // Empty dependency array means dates are calculated only once
 
-  const { data, loading, error } = useGraphQLQuery(GET_USER_ACTIVITY, variables);
+  const { data, loading, error } = useGetUserActivityQuery({
+    variables,
+    skip: !isGraphQLAnalysisEnabled,
+    pollInterval: 60000, // Poll every 60 seconds
+    fetchPolicy: 'cache-and-network',
+  });
 
   const heatmapData = useMemo(() => {
-    if (!data?.record_historyCollection?.edges) return [];
+    if (!isGraphQLAnalysisEnabled || !data?.record_historyCollection?.edges) return [];
 
     // Process data into hourly buckets for each user
     const activityMap = new Map<string, Map<number, number>>();
 
     data.record_historyCollection.edges.forEach(({ node }: any) => {
-      const userName = node.data_id?.name || `User ${node.id}`;
+      const userName = node.data_id?.name || `User ${node.uuid}`;
       const hour = new Date(node.time).getHours();
 
       if (!activityMap.has(userName)) {
@@ -75,7 +62,18 @@ const UserActivityHeatmap = React.memo(function UserActivityHeatmap({
       .slice(0, 10);
 
     return userActivities;
-  }, [data]);
+  }, [data, isGraphQLAnalysisEnabled]);
+
+  if (!isGraphQLAnalysisEnabled) {
+    return (
+      <Alert>
+        <AlertCircle className='h-4 w-4' />
+        <AlertDescription>
+          GraphQL analysis is currently disabled. Enable NEXT_PUBLIC_ENABLE_GRAPHQL_ANALYSIS to view user activity data.
+        </AlertDescription>
+      </Alert>
+    );
+  }
 
   if (loading) {
     return (

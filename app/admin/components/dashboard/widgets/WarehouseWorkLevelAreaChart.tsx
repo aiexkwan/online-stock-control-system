@@ -32,7 +32,7 @@ import { format, startOfDay } from 'date-fns';
 import { getYesterdayRange } from '@/app/utils/timezone';
 import { WidgetStyles } from '@/app/utils/widgetStyles';
 import { createDashboardAPI } from '@/lib/api/admin/DashboardAPI';
-import { useGetWarehouseWorkLevelWidgetQuery } from '@/lib/graphql/generated/apollo-hooks';
+import { useGetWarehouseWorkLevelQuery } from '@/lib/graphql/generated/apollo-hooks';
 
 // GraphQL 查詢已經移動到 lib/graphql/generated/apollo-hooks.ts
 
@@ -86,7 +86,7 @@ export const WarehouseWorkLevelAreaChart = React.memo(function WarehouseWorkLeve
     data: graphqlData, 
     loading: graphqlLoading, 
     error: graphqlError 
-  } = useGetWarehouseWorkLevelWidgetQuery({
+  } = useGetWarehouseWorkLevelQuery({
     skip: !useGraphQL || isEditMode,
     variables: {
       startDate: dateRange.start.toISOString(),

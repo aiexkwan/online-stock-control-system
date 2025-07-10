@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, lazy, Suspense, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   ChevronLeft,
@@ -14,15 +14,18 @@ import {
   Map,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useChartInViewport } from '@/app/admin/hooks/useInViewport';
+import { ChartSkeleton } from '../widgets/common/charts/ChartSkeleton';
 
-// Import chart components
-import AcoOrderProgressChart from '../charts/AcoOrderProgressChart';
-import TopProductsInventoryChart from '../charts/TopProductsInventoryChart';
-import UserActivityHeatmap from '../charts/UserActivityHeatmap';
-import InventoryTurnoverAnalysis from '../charts/InventoryTurnoverAnalysis';
-import StocktakeAccuracyTrend from '../charts/StocktakeAccuracyTrend';
-import VoidRecordsAnalysis from '../charts/VoidRecordsAnalysis';
-import RealTimeInventoryMap from '../charts/RealTimeInventoryMap';
+// Lazy load chart components for better performance
+// Week 2 Day 3: Progressive Loading for Charts
+const AcoOrderProgressChart = lazy(() => import('../charts/AcoOrderProgressChart'));
+const TopProductsInventoryChart = lazy(() => import('../charts/TopProductsInventoryChart'));
+const UserActivityHeatmap = lazy(() => import('../charts/UserActivityHeatmap'));
+const InventoryTurnoverAnalysis = lazy(() => import('../charts/InventoryTurnoverAnalysis'));
+const StocktakeAccuracyTrend = lazy(() => import('../charts/StocktakeAccuracyTrend'));
+const VoidRecordsAnalysis = lazy(() => import('../charts/VoidRecordsAnalysis'));
+const RealTimeInventoryMap = lazy(() => import('../charts/RealTimeInventoryMap'));
 
 interface PageContent {
   id: number;
@@ -305,9 +308,22 @@ export const AnalysisPagedWidgetV2 = function AnalysisPagedWidgetV2({
                 </div>
               </div>
 
-              {/* Chart content */}
+              {/* Chart content with Progressive Loading */}
               <div className='h-[calc(100%-6rem)]'>
-                <CurrentComponent timeFrame={timeFrame} />
+                <Suspense
+                  fallback={
+                    <ChartSkeleton
+                      type="bar"
+                      height="100%"
+                      showHeader={false}
+                      showLegend={true}
+                      showAxisLabels={true}
+                      className="h-full"
+                    />
+                  }
+                >
+                  <CurrentComponent timeFrame={timeFrame} />
+                </Suspense>
               </div>
             </div>
           </motion.div>

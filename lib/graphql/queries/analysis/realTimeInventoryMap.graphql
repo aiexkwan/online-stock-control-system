@@ -1,0 +1,23 @@
+# Real-Time Inventory Map Query
+# Used by RealTimeInventoryMap component
+
+query GetInventoryLocations {
+  record_inventoryCollection {
+    edges {
+      node {
+        uuid
+        product_code
+        injection
+        pipeline
+        prebook
+        await
+        fold
+        bulk
+        backcarpark
+        await_grn
+        damage
+        latest_update
+      }
+    }
+  }
+}
