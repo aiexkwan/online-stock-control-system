@@ -50,6 +50,7 @@ const widgetPaths: Record<string, string> = {
   // Operations Widgets
   VoidPalletWidget: '@/app/admin/components/dashboard/widgets/VoidPalletWidget',
   ProductUpdateWidget: '@/app/admin/components/dashboard/widgets/ProductUpdateWidget',
+  ProductUpdateWidgetV2: '@/app/admin/components/dashboard/widgets/ProductUpdateWidgetV2',
   SupplierUpdateWidget: '@/app/admin/components/dashboard/widgets/SupplierUpdateWidget',
   BookedOutQueueWidget: '@/app/admin/components/dashboard/widgets/BookedOutQueueWidget',
   StockTypeSelector: '@/app/admin/components/dashboard/widgets/StockTypeSelector',

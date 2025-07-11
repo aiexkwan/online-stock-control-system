@@ -315,28 +315,7 @@ const VirtualizedWidget = React.memo<{
     const element = containerRef.current;
     if (!element) return;
     
-    // 使用 GridVirtualizer 如果可用
-    const gridVirtualizer = widgetRegistry.getGridVirtualizer();
-    if (gridVirtualizer) {
-      gridVirtualizer.observeWidget(
-        element,
-        widgetId,
-        (visible) => {
-          setIsVisible(visible);
-          if (visible && !hasBeenVisible) {
-            setHasBeenVisible(true);
-            // 記錄 widget 使用
-            widgetRegistry.recordUsage(widgetId);
-          }
-        }
-      );
-      
-      return () => {
-        gridVirtualizer.unobserveWidget(element, widgetId);
-      };
-    }
-    
-    // Fallback to standard Intersection Observer
+    // 使用標準 Intersection Observer
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach(entry => {
@@ -344,7 +323,7 @@ const VirtualizedWidget = React.memo<{
           setIsVisible(visible);
           if (visible && !hasBeenVisible) {
             setHasBeenVisible(true);
-            widgetRegistry.recordUsage(widgetId);
+            // Widget 使用記錄已簡化
           }
         });
       },

@@ -116,6 +116,12 @@ export const LazyComponents: Record<string, React.ComponentType<any>> = {
   'TopProductsDistributionWidget': createLazyWidget(
     () => import('./widgets/TopProductsDistributionWidget')
   ),
+  'TopProductsChartWidget': createLazyWidget(
+    () => import('./widgets/TopProductsChartWidget')
+  ),
+  'ProductDistributionChartWidget': createLazyWidget(
+    () => import('./widgets/ProductDistributionChartWidget')
+  ),
   
   // 分析類重型 widget (named exports)
   'AnalysisPagedWidget': createLazyWidget(
@@ -290,10 +296,7 @@ export function withPerformanceTracking<P extends WidgetComponentProps>(
   widgetId: string
 ): React.ComponentType<P> {
   return React.memo(function TrackedWidget(props: P) {
-    React.useEffect(() => {
-      // 記錄使用情況
-      widgetRegistry.recordUsage(widgetId);
-    }, []);
+    // Widget 使用記錄已簡化
     
     return <WidgetComponent {...props} />;
   });

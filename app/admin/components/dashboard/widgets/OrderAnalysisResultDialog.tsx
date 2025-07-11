@@ -9,27 +9,59 @@ import React from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { CheckCircleIcon } from '@heroicons/react/24/outline';
 
+// Define proper types for the order data
+interface OrderItem {
+  productCode?: string;
+  product_code?: string;
+  quantity?: number;
+  product_qty?: number;
+  unitPrice?: number;
+  unit_price?: string;
+}
+
+interface ExtractedOrder {
+  order_ref?: string;
+  account_num?: string;
+  delivery_add?: string;
+  invoice_to?: string;
+  customer_ref?: string;
+  product_code?: string;
+  product_desc?: string;
+  product_qty?: number;
+  weight?: number;
+  unit_price?: string;
+  items?: OrderItem[];
+  totalAmount?: number;
+}
+
+interface AnalysisResult {
+  extractedData: ExtractedOrder | ExtractedOrder[];
+  success?: boolean;
+  recordCount?: number;
+  processingTime?: number;
+  extractedCount?: number;
+}
+
 interface OrderAnalysisResultDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  data: any;
+  data: AnalysisResult | null;
 }
 
-export const OrderAnalysisResultDialog: React.FC<OrderAnalysisResultDialogProps> = ({
-  isOpen,
-  onClose,
-  data,
-}) => {
+export const OrderAnalysisResultDialog = React.memo<OrderAnalysisResultDialogProps>(
+  ({ isOpen, onClose, data }) => {
   if (!data || !data.extractedData) return null;
 
-  const orders = Array.isArray(data.extractedData) ? data.extractedData : [data.extractedData];
+  const orders: ExtractedOrder[] = Array.isArray(data.extractedData) 
+    ? data.extractedData 
+    : [data.extractedData];
 
-  // Debug log
-  (process.env.NODE_ENV as string) !== 'production' &&
+  // Debug log in development
+  if (process.env.NODE_ENV !== 'production') {
     console.log('[OrderAnalysisResultDialog] Orders:', orders);
-  if (orders.length > 0) {
-    (process.env.NODE_ENV as string) !== 'production' &&
+    if (orders.length > 0) {
       console.log('[OrderAnalysisResultDialog] First order:', orders[0]);
+    }
   }
 
   // Extract common info from first order (since only one order upload is allowed)
@@ -106,7 +138,7 @@ export const OrderAnalysisResultDialog: React.FC<OrderAnalysisResultDialogProps>
                 Order Items
               </h4>
 
-              {orders.map((order: any, index: number) => (
+              {orders.map((order, index) => (
                 <div key={index} className='space-y-3'>
                   {/* Single item display for simplified orders */}
                   {order.product_code && (
@@ -155,7 +187,7 @@ export const OrderAnalysisResultDialog: React.FC<OrderAnalysisResultDialogProps>
                   {/* Multiple items display */}
                   {order.items && order.items.length > 0 && (
                     <div className='space-y-2'>
-                      {order.items.map((item: any, itemIndex: number) => (
+                      {order.items.map((item, itemIndex) => (
                         <div
                           key={itemIndex}
                           className='grid grid-cols-3 gap-2 rounded-lg bg-black/20 p-3 text-sm backdrop-blur-sm'
@@ -209,6 +241,8 @@ export const OrderAnalysisResultDialog: React.FC<OrderAnalysisResultDialogProps>
       </DialogContent>
     </Dialog>
   );
-};
+});
+
+OrderAnalysisResultDialog.displayName = 'OrderAnalysisResultDialog';
 
 export default OrderAnalysisResultDialog;

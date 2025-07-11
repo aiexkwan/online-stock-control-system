@@ -24,6 +24,51 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { createClient } from '@/app/utils/supabase/client';
 import { errorHandler } from '@/app/components/qc-label-form/services/ErrorHandler';
+import { useGraphQLFallback, GraphQLFallbackPresets } from '@/app/admin/hooks/useGraphQLFallback';
+import { gql } from '@apollo/client';
+import { useMutation } from '@apollo/client';
+import { useWidgetErrorHandler } from '@/app/admin/hooks/useWidgetErrorHandler';
+
+// GraphQL Queries and Mutations
+const GET_SUPPLIER_BY_CODE = gql`
+  query GetSupplierByCode($code: String!) {
+    data_supplierCollection(filter: { supplier_code: { eq: $code } }) {
+      edges {
+        node {
+          supplier_code
+          supplier_name
+        }
+      }
+    }
+  }
+`;
+
+const CREATE_SUPPLIER_MUTATION = gql`
+  mutation CreateSupplier($code: String!, $name: String!) {
+    insertIntodata_supplierCollection(
+      objects: [{ supplier_code: $code, supplier_name: $name }]
+    ) {
+      records {
+        supplier_code
+        supplier_name
+      }
+    }
+  }
+`;
+
+const UPDATE_SUPPLIER_MUTATION = gql`
+  mutation UpdateSupplier($code: String!, $name: String!) {
+    updatedata_supplierCollection(
+      filter: { supplier_code: { eq: $code } }
+      set: { supplier_name: $name }
+    ) {
+      records {
+        supplier_code
+        supplier_name
+      }
+    }
+  }
+`;
 
 interface SupplierData {
   supplier_code: string;
@@ -39,6 +84,7 @@ export const SupplierUpdateWidgetV2 = React.memo(function SupplierUpdateWidgetV2
   widget,
   isEditMode,
 }: WidgetComponentProps) {
+  const { handleSuccess, handleError, handleWarning, handleSubmitError } = useWidgetErrorHandler(widget.title);
   // State management
   const [supplierData, setSupplierData] = useState<SupplierData | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -60,6 +106,63 @@ export const SupplierUpdateWidgetV2 = React.memo(function SupplierUpdateWidgetV2
   });
 
   const supabase = createClient();
+
+  // GraphQL Mutations
+  const [createSupplierMutation] = useMutation(CREATE_SUPPLIER_MUTATION, {
+    onCompleted: (data) => {
+      if (data?.insertIntodata_supplierCollection?.records?.[0]) {
+        const newSupplier = data.insertIntodata_supplierCollection.records[0];
+        setSupplierData(newSupplier);
+        setShowForm(false);
+        setShowCreateDialog(false);
+        setStatusMessage({
+          type: 'success',
+          message: `Supplier "${newSupplier.supplier_code}" created successfully`,
+        });
+        handleSuccess(`Supplier ${newSupplier.supplier_code} created`, 'create_supplier', {
+          supplierCode: newSupplier.supplier_code,
+        });
+      }
+    },
+    onError: (error) => {
+      handleSubmitError(error, {
+        action: 'create_supplier',
+        supplierCode: formData.supplier_code,
+      });
+      setStatusMessage({
+        type: 'error',
+        message: 'Failed to create supplier',
+      });
+    },
+  });
+
+  const [updateSupplierMutation] = useMutation(UPDATE_SUPPLIER_MUTATION, {
+    onCompleted: (data) => {
+      if (data?.updatedata_supplierCollection?.records?.[0]) {
+        const updatedSupplier = data.updatedata_supplierCollection.records[0];
+        setSupplierData(updatedSupplier);
+        setIsEditing(false);
+        setShowForm(false);
+        setStatusMessage({
+          type: 'success',
+          message: `Supplier "${updatedSupplier.supplier_code}" updated successfully`,
+        });
+        handleSuccess(`Supplier ${updatedSupplier.supplier_code} updated`, 'update_supplier', {
+          supplierCode: updatedSupplier.supplier_code,
+        });
+      }
+    },
+    onError: (error) => {
+      handleSubmitError(error, {
+        action: 'update_supplier',
+        supplierCode: supplierData?.supplier_code,
+      });
+      setStatusMessage({
+        type: 'error',
+        message: 'Failed to update supplier',
+      });
+    },
+  });
 
   // Get current user ID
   const getCurrentUserId = useCallback(async (): Promise<number> => {
@@ -115,10 +218,50 @@ export const SupplierUpdateWidgetV2 = React.memo(function SupplierUpdateWidgetV2
     });
   }, []);
 
-  // Search supplier using RPC
+  // Search supplier using GraphQL with fallback
+  const { data: searchData, loading: searchLoading, error: searchError, refetch: searchRefetch } = useGraphQLFallback<
+    { data_supplierCollection: { edges: Array<{ node: SupplierData }> } },
+    { code: string }
+  >({
+    graphqlQuery: GET_SUPPLIER_BY_CODE,
+    serverAction: async (variables) => {
+      // Fallback to RPC function
+      const code = variables?.code || '';
+      const startTime = performance.now();
+      
+      const { data, error } = await supabase.rpc('rpc_search_supplier', {
+        p_supplier_code: code.trim(),
+      });
+
+      const endTime = performance.now();
+      console.log(`[SupplierUpdateWidgetV2] RPC fallback search: ${Math.round(endTime - startTime)}ms`);
+
+      if (error) {
+        throw error;
+      }
+
+      if (data && data.exists && data.supplier) {
+        return {
+          data_supplierCollection: {
+            edges: [{ node: data.supplier }],
+          },
+        };
+      }
+      
+      return { data_supplierCollection: { edges: [] } };
+    },
+    variables: { code: searchedCode },
+    skip: !searchedCode,
+    fallbackEnabled: true,
+    widgetId: 'SupplierUpdateWidgetV2',
+    ...GraphQLFallbackPresets.cached,
+  });
+
+  // Handle search
   const handleSearch = useCallback(
     async (code: string) => {
       if (!code || !code.trim()) {
+        handleWarning('Please enter a supplier code', 'search_validation');
         setStatusMessage({
           type: 'error',
           message: 'Please enter a supplier code',
@@ -126,70 +269,47 @@ export const SupplierUpdateWidgetV2 = React.memo(function SupplierUpdateWidgetV2
         return;
       }
 
-      setIsLoading(true);
       setStatusMessage(null);
       setSearchedCode(code.trim().toUpperCase());
-
-      try {
-        const startTime = performance.now();
-
-        // Use RPC function for search
-        const { data, error } = await supabase.rpc('rpc_search_supplier', {
-          p_supplier_code: code.trim(),
-        });
-
-        const endTime = performance.now();
-        setPerformanceMetrics({
-          lastOperationTime: Math.round(endTime - startTime),
-          optimized: true,
-        });
-
-        if (error) {
-          throw error;
-        }
-
-        if (data.exists) {
-          // Search success - show supplier info
-          setSupplierData(data.supplier);
-          setIsEditing(false);
-          setShowForm(false);
-          setShowCreateDialog(false);
-          setStatusMessage({
-            type: 'success',
-            message: `Found: ${data.supplier.supplier_code}`,
-          });
-        } else {
-          // Search failed - ask if create new
-          setSupplierData(null);
-          setShowCreateDialog(true);
-          setShowForm(false);
-          setIsEditing(false);
-          setSearchedCode(data.normalized_code);
-          setStatusMessage({
-            type: 'warning',
-            message: `"${data.normalized_code}" not found`,
-          });
-        }
-      } catch (error: any) {
-        errorHandler.handleApiError(
-          error,
-          {
-            component: 'SupplierUpdateWidgetV2',
-            action: 'search_supplier',
-            additionalData: { searchCode: code.trim() },
-          },
-          'Search error occurred'
-        );
-        setStatusMessage({
-          type: 'error',
-          message: 'Search error occurred',
-        });
-      } finally {
-        setIsLoading(false);
-      }
     },
-    [supabase]
+    [handleWarning]
   );
+
+  // React to search data changes
+  React.useEffect(() => {
+    if (searchData && searchedCode) {
+      const edges = searchData.data_supplierCollection?.edges || [];
+      
+      if (edges.length > 0) {
+        const supplier = edges[0].node;
+        setSupplierData(supplier);
+        setIsEditing(false);
+        setShowForm(false);
+        setShowCreateDialog(false);
+        setStatusMessage({
+          type: 'success',
+          message: `Found: ${supplier.supplier_code}`,
+        });
+        handleSuccess(`Supplier ${supplier.supplier_code} found`, 'search_supplier', {
+          supplierCode: supplier.supplier_code,
+        });
+      } else {
+        // Supplier not found
+        setSupplierData(null);
+        setShowCreateDialog(true);
+        setShowForm(false);
+        setIsEditing(false);
+        setFormData({
+          supplier_code: searchedCode,
+          supplier_name: '',
+        });
+        setStatusMessage({
+          type: 'warning',
+          message: `"${searchedCode}" not found`,
+        });
+      }
+    }
+  }, [searchData, searchedCode, handleSuccess]);
 
   // Start editing
   const handleEdit = useCallback(() => {
@@ -224,54 +344,77 @@ export const SupplierUpdateWidgetV2 = React.memo(function SupplierUpdateWidgetV2
     setStatusMessage(null);
   }, []);
 
-  // Submit form using RPC
+  // Submit form using GraphQL with RPC fallback
   const handleSubmit = useCallback(
     async (e: React.FormEvent) => {
       e.preventDefault();
+      
+      // Validate form
+      if (!formData.supplier_code.trim() || !formData.supplier_name.trim()) {
+        handleWarning('Please fill in all required fields', 'form_validation');
+        setStatusMessage({
+          type: 'error',
+          message: 'Please fill in all required fields',
+        });
+        return;
+      }
+
+      const startTime = performance.now();
       setIsLoading(true);
 
       try {
-        const startTime = performance.now();
-        const userId = await getCurrentUserId();
-
-        if (isEditing && supplierData) {
-          // Update existing supplier using RPC
-          const { data, error } = await supabase.rpc('rpc_update_supplier', {
-            p_supplier_code: supplierData.supplier_code,
-            p_supplier_name: formData.supplier_name,
-            p_user_id: userId,
-          });
-
-          if (error) throw error;
-
-          if (!data.success) {
-            throw new Error(data.error || 'Update failed');
+        if (isEditing) {
+          // Try GraphQL mutation first
+          try {
+            await updateSupplierMutation({
+              variables: {
+                code: formData.supplier_code,
+                name: formData.supplier_name,
+              },
+            });
+          } catch (graphqlError) {
+            // Fallback to RPC if GraphQL fails
+            console.log('[SupplierUpdateWidgetV2] GraphQL failed, falling back to RPC');
+            const userId = await getCurrentUserId();
+            const { data, error } = await supabase.rpc('rpc_update_supplier', {
+              p_supplier_code: supplierData!.supplier_code,
+              p_supplier_name: formData.supplier_name,
+              p_user_id: userId,
+            });
+            if (error) throw error;
+            if (!data.success) throw new Error(data.error || 'Update failed');
+            setSupplierData(data.supplier);
+            setStatusMessage({ type: 'success', message: 'Updated successfully!' });
+            handleSuccess(`Supplier ${data.supplier.supplier_code} updated`, 'update_supplier', {
+              supplierCode: data.supplier.supplier_code,
+            });
           }
-
-          setSupplierData(data.supplier);
-          setStatusMessage({
-            type: 'success',
-            message: 'Updated successfully!',
-          });
         } else {
-          // Create new supplier using RPC
-          const { data, error } = await supabase.rpc('rpc_create_supplier', {
-            p_supplier_code: formData.supplier_code,
-            p_supplier_name: formData.supplier_name,
-            p_user_id: userId,
-          });
-
-          if (error) throw error;
-
-          if (!data.success) {
-            throw new Error(data.error || 'Creation failed');
+          // Try GraphQL mutation first
+          try {
+            await createSupplierMutation({
+              variables: {
+                code: formData.supplier_code,
+                name: formData.supplier_name,
+              },
+            });
+          } catch (graphqlError) {
+            // Fallback to RPC if GraphQL fails
+            console.log('[SupplierUpdateWidgetV2] GraphQL failed, falling back to RPC');
+            const userId = await getCurrentUserId();
+            const { data, error } = await supabase.rpc('rpc_create_supplier', {
+              p_supplier_code: formData.supplier_code,
+              p_supplier_name: formData.supplier_name,
+              p_user_id: userId,
+            });
+            if (error) throw error;
+            if (!data.success) throw new Error(data.error || 'Creation failed');
+            setSupplierData(data.supplier);
+            setStatusMessage({ type: 'success', message: 'Created successfully!' });
+            handleSuccess(`Supplier ${data.supplier.supplier_code} created`, 'create_supplier', {
+              supplierCode: data.supplier.supplier_code,
+            });
           }
-
-          setSupplierData(data.supplier);
-          setStatusMessage({
-            type: 'success',
-            message: 'Created successfully!',
-          });
         }
 
         const endTime = performance.now();
@@ -305,7 +448,7 @@ export const SupplierUpdateWidgetV2 = React.memo(function SupplierUpdateWidgetV2
         setIsLoading(false);
       }
     },
-    [isEditing, supplierData, formData, supabase, getCurrentUserId]
+    [isEditing, supplierData, formData, supabase, getCurrentUserId, createSupplierMutation, updateSupplierMutation, handleWarning, handleSuccess]
   );
 
   // Handle form input change
@@ -348,11 +491,11 @@ export const SupplierUpdateWidgetV2 = React.memo(function SupplierUpdateWidgetV2
                   onChange={e => setSearchInput(e.target.value)}
                   placeholder='Enter supplier code...'
                   className='h-9 flex-1 border-slate-600/50 bg-slate-700/50 text-sm'
-                  disabled={isLoading || isEditMode}
+                  disabled={searchLoading || isEditMode}
                 />
                 <Button
                   onClick={() => handleSearch(searchInput)}
-                  disabled={isLoading || isEditMode}
+                  disabled={searchLoading || isEditMode}
                   size='sm'
                   className='h-9 bg-gradient-to-r from-blue-600 to-cyan-600 px-4 hover:from-blue-500 hover:to-cyan-500'
                 >
@@ -456,7 +599,7 @@ export const SupplierUpdateWidgetV2 = React.memo(function SupplierUpdateWidgetV2
                   size='sm'
                   variant='ghost'
                   className='h-7 px-3 text-xs'
-                  disabled={isLoading || isEditMode}
+                  disabled={searchLoading || isEditMode}
                 >
                   <ArrowPathIcon className='h-4 w-4' />
                 </Button>
@@ -501,14 +644,14 @@ export const SupplierUpdateWidgetV2 = React.memo(function SupplierUpdateWidgetV2
                   size='sm'
                   variant='outline'
                   className='h-8 flex-1 border-slate-600 text-sm'
-                  disabled={isLoading || isEditMode}
+                  disabled={searchLoading || isEditMode}
                 >
                   Cancel
                 </Button>
                 <Button
                   type='submit'
                   size='sm'
-                  disabled={isLoading || isEditMode}
+                  disabled={searchLoading || isEditMode}
                   className='h-8 flex-1 bg-blue-600 text-sm hover:bg-blue-700'
                 >
                   {isLoading ? (

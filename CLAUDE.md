@@ -167,11 +167,64 @@ npm run mcpIOS       # 啟動 Supabase MCP 服務器 (用於 Claude Code 數據�
 - 單元測試覆蓋關鍵業務邏輯
 - E2E 測試覆蓋主要用戶流程
 - PDF 生成功能需要專門測試
+- 性能測試監控優化效果 (`npm run test:perf`)
+
+## 高階開發模式 (2025 更新)
+
+### 統一數據獲取模式 - useGraphQLFallback
+使用 `useGraphQLFallback` hook 統一處理數據獲取，支援 GraphQL → Server Action fallback：
+```typescript
+const { data, loading, error } = useGraphQLFallback({
+  graphqlQuery: GET_DATA_QUERY,
+  serverAction: getDataAction,
+  extractFromContext: (ctx) => ctx.getWidgetData('widgetId'),
+  fallbackEnabled: true,
+});
+```
+
+### Server-Side Rendering (SSR) 優化
+為 critical widgets 啟用 SSR 以提升首屏性能：
+- 使用 `prefetchCriticalWidgetsData` 預取數據
+- 只為 injection/pipeline/warehouse 主題啟用
+- 確保優雅降級到 CSR
+
+### 批量查詢策略
+使用 `useDashboardBatchQuery` 減少網絡請求：
+- 將 15+ 獨立查詢合併為 1 個批量查詢
+- 使用 `DashboardDataContext` 共享數據
+- 減少 80% 網絡延遲
+
+### Progressive Loading 模式
+圖表組件實施延遲加載：
+- 使用 `useInViewport` hook 檢測可見性
+- 先顯示 skeleton，再加載實際圖表
+- 使用 `ChartSkeleton` 統一加載狀態
+
+### 通用組件使用
+優先使用通用組件減少代碼重複：
+- `MetricCard`: 統計卡片顯示
+- `DataTable`: 列表數據展示
+- `ChartContainer`: 圖表容器
+- `DateRangeFilter`: 日期範圍選擇
+
+### Bundle Size 優化
+已實現 93% bundle size 減少：
+- 精確分離大型庫 (ExcelJS, recharts, Apollo)
+- 智能優先級策略 (框架 > 圖表 > 數據層)
+- maxSize 限制 200KB per chunk
+
+### 性能監控
+使用內建性能監控工具：
+- `PerformanceMonitor` 實時監控組件
+- `npm run test:perf` 運行性能測試
+- 追蹤 Web Vitals (FCP, LCP, TTI, CLS)
 
 ## 文檔資源
 - **項目文檔**: `/docs` 目錄
 - **GraphQL Schema**: `lib/graphql/schema.graphql`
 - **數據庫結構**: `docs/databaseStructure.md`
-- **Widget 開發**: `lib/widgets/` 目錄
+- **Widget 開發指南**: `docs/widget-development-guide.md`
+- **性能最佳實踐**: `docs/performance-best-practices.md`
+- **CSR to SSR 遷移**: `docs/migration-guide-csr-to-ssr.md`
 - **內部知識庫**: 使用 Ask Database 功能查詢
 - **測試報告**: E2E 測試結果同覆蓋率報告

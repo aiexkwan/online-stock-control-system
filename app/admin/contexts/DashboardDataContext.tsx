@@ -155,8 +155,12 @@ export function DashboardDataProvider({
 
   // 當日期範圍改變時自動重新獲取數據
   useEffect(() => {
+    // 在 SSR 模式下且有預取數據時，不自動 refetch
+    if (ssrMode && prefetchedData && !queryData) {
+      return;
+    }
     refetch();
-  }, [dateRange, refetch]);
+  }, [dateRange, refetch, ssrMode, prefetchedData, queryData]);
 
   const contextValue = useMemo<DashboardDataContextValue>(() => ({
     data,

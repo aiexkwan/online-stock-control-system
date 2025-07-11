@@ -1,21 +1,20 @@
 /**
- * Top Products Chart Widget - Server Actions Version
+ * Top Products Chart Widget - ChartContainer Version
  * 顯示產品數量排名條形圖
- * 使用 Server Actions 替代 GraphQL
+ * 使用 ChartContainer 和 Progressive Loading
  */
 
 'use client';
 
 import React, { useMemo, useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer 
 } from 'recharts';
-import { format } from 'date-fns';
-import { CardHeader, CardTitle } from '@/components/ui/card';
 import { ChartBarIcon } from '@heroicons/react/24/outline';
 import { createDashboardAPI } from '@/lib/api/admin/DashboardAPI';
 import { WidgetComponentProps } from '@/app/types/dashboard';
+import { ChartContainer } from './common/charts/ChartContainer';
+import { useInViewport } from '@/app/admin/hooks/useInViewport';
 
 interface TopProductsChartWidgetProps extends WidgetComponentProps {
   title: string;
@@ -26,13 +25,22 @@ export const TopProductsChartWidget: React.FC<TopProductsChartWidgetProps> = ({
   title, 
   timeFrame,
   isEditMode,
-  limit = 10
+  limit = 10,
+  widget
 }) => {
   const [chartData, setChartData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [metadata, setMetadata] = useState<any>({});
   const dashboardAPI = useMemo(() => createDashboardAPI(), []);
+
+  // Lazy loading with viewport detection
+  const targetRef = React.useRef<HTMLDivElement>(null);
+  const { isInViewport, hasBeenInViewport } = useInViewport(targetRef, {
+    threshold: 0.1,
+    rootMargin: '50px',
+    triggerOnce: true
+  });
 
   // 根據 timeFrame 設定查詢時間範圍
   const dateRange = useMemo(() => {
@@ -54,67 +62,66 @@ export const TopProductsChartWidget: React.FC<TopProductsChartWidgetProps> = ({
     };
   }, [timeFrame]);
 
-  useEffect(() => {
-    if (isEditMode) return;
+  const fetchData = async () => {
+    setLoading(true);
+    setError(null);
 
-    const fetchData = async () => {
-      setLoading(true);
-      setError(null);
-
-      try {
-        // 使用統一的 DashboardAPI 獲取數據
-        const result = await dashboardAPI.fetch(
-          {
-            widgetIds: ['statsCard'],
-            dateRange: {
-              start: dateRange.start.toISOString(),
-              end: dateRange.end.toISOString(),
-            },
-            params: {
-              dataSource: 'top_products',
-              limit: limit,
-            },
+    try {
+      // 使用統一的 DashboardAPI 獲取數據
+      const result = await dashboardAPI.fetch(
+        {
+          widgetIds: ['statsCard'],
+          dateRange: {
+            start: dateRange.start.toISOString(),
+            end: dateRange.end.toISOString(),
           },
-          {
-            strategy: 'server',
-            cache: { ttl: 300 }, // 5分鐘緩存
-          }
-        );
-
-        if (result.widgets && result.widgets.length > 0) {
-          const widgetData = result.widgets[0];
-
-          if (widgetData.data.error) {
-            console.error('[TopProductsChartWidget] API error:', widgetData.data.error);
-            setError(widgetData.data.error);
-            setChartData([]);
-            return;
-          }
-
-          const topProductsData = widgetData.data.value || [];
-          const widgetMetadata = widgetData.data.metadata || {};
-
-          console.log('[TopProductsChartWidget] API returned data:', topProductsData);
-          console.log('[TopProductsChartWidget] Metadata:', widgetMetadata);
-
-          setChartData(topProductsData);
-          setMetadata(widgetMetadata);
-
-        } else {
-          console.warn('[TopProductsChartWidget] No widget data returned from API');
-          setChartData([]);
+          params: {
+            dataSource: 'top_products',
+            limit: limit,
+          },
+        },
+        {
+          strategy: 'server',
+          cache: { ttl: 300 }, // 5分鐘緩存
         }
-      } catch (err) {
-        console.error('[TopProductsChartWidget] Error fetching data from API:', err);
-        setError(err instanceof Error ? err.message : 'Unknown error');
-        setChartData([]);
-      } finally {
-        setLoading(false);
-      }
-    };
+      );
 
+      if (result.widgets && result.widgets.length > 0) {
+        const widgetData = result.widgets[0];
+
+        if (widgetData.data.error) {
+          console.error('[TopProductsChartWidget] API error:', widgetData.data.error);
+          setError(widgetData.data.error);
+          setChartData([]);
+          return;
+        }
+
+        const topProductsData = widgetData.data.value || [];
+        const widgetMetadata = widgetData.data.metadata || {};
+
+        console.log('[TopProductsChartWidget] API returned data:', topProductsData);
+        console.log('[TopProductsChartWidget] Metadata:', widgetMetadata);
+
+        setChartData(topProductsData);
+        setMetadata(widgetMetadata);
+
+      } else {
+        console.warn('[TopProductsChartWidget] No widget data returned from API');
+        setChartData([]);
+      }
+    } catch (err) {
+      console.error('[TopProductsChartWidget] Error fetching data from API:', err);
+      setError(err instanceof Error ? err.message : 'Unknown error');
+      setChartData([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (isEditMode || !hasBeenInViewport) return;
     fetchData();
-  }, [dashboardAPI, dateRange, limit, isEditMode]);
+  }, [dashboardAPI, dateRange, limit, isEditMode, hasBeenInViewport]);
 
   // 自定義 Tooltip
   const CustomTooltip = ({ active, payload, label }: any) => {
@@ -132,82 +139,86 @@ export const TopProductsChartWidget: React.FC<TopProductsChartWidgetProps> = ({
     return null;
   };
 
+  // Calculate total quantity
+  const totalQuantity = useMemo(() => {
+    return chartData.reduce((sum, item) => sum + (item.value || 0), 0);
+  }, [chartData]);
+
+  // Calculate top product
+  const topProduct = useMemo(() => {
+    if (chartData.length === 0) return null;
+    return chartData[0];
+  }, [chartData]);
+
+  const stats = [
+    {
+      label: 'Total Quantity',
+      value: totalQuantity.toLocaleString(),
+    },
+    topProduct && {
+      label: 'Top Product',
+      value: topProduct.name,
+    }
+  ].filter(Boolean);
+
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.1 }}
-      className="h-full flex flex-col relative"
-    >
-      
-      <CardHeader className="pb-2">
-        <CardTitle className="widget-title flex items-center gap-2">
-          <ChartBarIcon className="w-5 h-5" />
-          {title}
-        </CardTitle>
-        <p className="text-xs text-slate-400 mt-1">
-          From {format(new Date(dateRange.start), 'MMM d')} to {format(new Date(dateRange.end), 'MMM d')}
-        </p>
-      </CardHeader>
-      
-      <div className="flex-1 p-4">
-        {loading ? (
-          <div className="space-y-2 h-full">
-            <div className="h-6 bg-slate-700/50 rounded animate-pulse" />
-            <div className="h-4 bg-slate-700/30 rounded animate-pulse" />
-            <div className="h-8 bg-slate-700/40 rounded animate-pulse" />
-            <div className="h-6 bg-slate-700/30 rounded animate-pulse" />
-            <div className="h-4 bg-slate-700/20 rounded animate-pulse" />
-          </div>
-        ) : error ? (
-          <div className="text-red-400 text-sm text-center h-full flex items-center justify-center">
-            Error loading data: {error}
-          </div>
-        ) : chartData.length === 0 ? (
+    <div ref={targetRef} className="h-full">
+      <ChartContainer
+        title={title}
+        icon={ChartBarIcon}
+        iconColor="from-blue-500 to-cyan-500"
+        dateRange={dateRange}
+        loading={loading && hasBeenInViewport}
+        error={error ? new Error(error) : null}
+        onRetry={fetchData}
+        onRefresh={fetchData}
+        height="100%"
+        chartType="bar"
+        performanceMetrics={metadata.rpcFunction ? {
+          source: 'Server',
+          optimized: true
+        } : undefined}
+        stats={stats as any}
+        showFooter={true}
+        widgetType={widget?.type?.toUpperCase()}
+      >
+        {chartData.length === 0 ? (
           <div className="text-slate-400 text-sm text-center h-full flex items-center justify-center">
             No data available for the selected period
           </div>
         ) : (
-          <div className="h-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart
-                data={chartData}
-                margin={{
-                  top: 20,
-                  right: 30,
-                  left: 20,
-                  bottom: 5,
-                }}
-              >
-                <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                <XAxis 
-                  dataKey="name" 
-                  stroke="#9CA3AF"
-                  fontSize={12}
-                  tick={{ fill: '#9CA3AF' }}
-                />
-                <YAxis 
-                  stroke="#9CA3AF"
-                  fontSize={12}
-                  tick={{ fill: '#9CA3AF' }}
-                />
-                <Tooltip content={<CustomTooltip />} />
-                <Bar 
-                  dataKey="value" 
-                  fill="#3B82F6"
-                  radius={[4, 4, 0, 0]}
-                />
-              </BarChart>
-            </ResponsiveContainer>
-            
-            {metadata.rpcFunction && (
-              <p className="text-xs text-green-400/70 mt-2 text-center">
-                ✓ Server optimized ({metadata.rpcFunction})
-              </p>
-            )}
-          </div>
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart
+              data={chartData}
+              margin={{
+                top: 20,
+                right: 30,
+                left: 20,
+                bottom: 5,
+              }}
+            >
+              <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+              <XAxis 
+                dataKey="name" 
+                stroke="#9CA3AF"
+                fontSize={12}
+                tick={{ fill: '#9CA3AF' }}
+              />
+              <YAxis 
+                stroke="#9CA3AF"
+                fontSize={12}
+                tick={{ fill: '#9CA3AF' }}
+              />
+              <Tooltip content={<CustomTooltip />} />
+              <Bar 
+                dataKey="value" 
+                fill="#3B82F6"
+                radius={[4, 4, 0, 0]}
+              />
+            </BarChart>
+          </ResponsiveContainer>
         )}
-      </div>
-    </motion.div>
+      </ChartContainer>
+    </div>
   );
 };

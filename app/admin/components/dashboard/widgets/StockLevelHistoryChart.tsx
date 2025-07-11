@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   LineChart,
   Line,
@@ -13,21 +13,26 @@ import {
 } from 'recharts';
 import { WidgetComponentProps } from '@/app/types/dashboard';
 import { useAdminRefresh } from '@/app/admin/contexts/AdminRefreshContext';
-import { Loader2 } from 'lucide-react';
+import { TrendingUp } from 'lucide-react';
 import { createDashboardAPI } from '@/lib/api/admin/DashboardAPI';
 import { format } from 'date-fns';
-import { useGraphQLQuery } from '@/lib/graphql-client-stable';
+import { useGraphQLFallback } from '@/app/admin/hooks/useGraphQLFallback';
+import { useInViewport } from '@/app/admin/hooks/useInViewport';
+import { ChartContainer } from './common/charts/ChartContainer';
+import { LineChartSkeleton } from './common/charts/ChartSkeleton';
 import gql from 'graphql-tag';
 
 // GraphQL query for stock level snapshots from inventory table
 // 注意：這個查詢假設我們有一個方式追蹤庫存歷史快照
 // 實際上可能需要使用 RPC function 或專門的歷史表
 const GET_STOCK_LEVEL_HISTORY = gql`
-  query GetStockLevelHistory($productCodes: [String!]!) {
+  query GetStockLevelHistory($productCodes: [String!]!, $startDate: String!, $endDate: String!) {
     record_inventoryCollection(
       filter: {
         product_code: { in: $productCodes }
+        latest_update: { gte: $startDate, lte: $endDate }
       }
+      orderBy: [{ latest_update: AscNullsLast }]
     ) {
       edges {
         node {
@@ -89,13 +94,20 @@ export const StockLevelHistoryChart: React.FC<StockLevelHistoryChartProps> = ({
   const shouldUseGraphQL = useGraphQL ?? (widget as any)?.useGraphQL ?? false;
   const [chartData, setChartData] = useState<ChartDataPoint[]>([]);
   const [productCodes, setProductCodes] = useState<string[]>([]);
-  const [loading, setLoading] = useState(false);
   const [selectedType, setSelectedType] = useState<string>('all');
   const [adjustedTimeFrame, setAdjustedTimeFrame] = useState<{ start: Date; end: Date } | null>(
     null
   );
   const { refreshTrigger } = useAdminRefresh();
   const dashboardAPI = useMemo(() => createDashboardAPI(), []);
+  
+  // Progressive loading setup
+  const chartRef = useRef<HTMLDivElement>(null);
+  const { isInViewport, hasBeenInViewport } = useInViewport(chartRef, {
+    threshold: 0.1,
+    rootMargin: '50px',
+    triggerOnce: true,
+  });
 
   // 計算調整後的時間範圍
   const calculateAdjustedTimeFrame = useCallback(
@@ -161,30 +173,22 @@ export const StockLevelHistoryChart: React.FC<StockLevelHistoryChartProps> = ({
     setAdjustedTimeFrame(adjusted);
   }, [timeFrame, calculateAdjustedTimeFrame]);
 
-  // 優化版庫存歷史數據處理 - 使用統一架構
-  const processHistoryData = useCallback(
-    async (products: string[]) => {
-      console.log('[StockLevelHistoryChart] processHistoryData called with:', products);
-      console.log('[StockLevelHistoryChart] adjustedTimeFrame:', adjustedTimeFrame);
-
-      if (!adjustedTimeFrame || products.length === 0) {
-        console.log('[StockLevelHistoryChart] No adjustedTimeFrame or products, clearing data');
-        setChartData([]);
-        return;
+  // Server action fallback for stock history data
+  const fetchStockHistoryServerAction = useCallback(
+    async (variables?: { productCodes: string[]; startDate: string; endDate: string }) => {
+      if (!variables || !adjustedTimeFrame || variables.productCodes.length === 0) {
+        return { chartData: [], productCodes: [] };
       }
 
-      // 限制顯示最多10款產品
-      const limitedProducts = products.slice(0, 10);
-      console.log('[StockLevelHistoryChart] Limited products:', limitedProducts);
+      const limitedProducts = variables.productCodes.slice(0, 10);
 
       try {
-        // 使用統一的 DashboardAPI 獲取數據
         const result = await dashboardAPI.fetch(
           {
             widgetIds: ['statsCard'],
             dateRange: {
-              start: adjustedTimeFrame.start.toISOString(),
-              end: adjustedTimeFrame.end.toISOString(),
+              start: variables.startDate,
+              end: variables.endDate,
             },
             params: {
               dataSource: 'stock_level_history',
@@ -200,33 +204,61 @@ export const StockLevelHistoryChart: React.FC<StockLevelHistoryChartProps> = ({
 
         if (result.widgets && result.widgets.length > 0) {
           const widgetData = result.widgets[0];
-
-          if (widgetData.data.error) {
-            console.error('[StockLevelHistoryChart] API error:', widgetData.data.error);
-            setChartData([]);
-            return;
+          if (!widgetData.data.error) {
+            const historyData = widgetData.data.value || [];
+            return { chartData: historyData, productCodes: limitedProducts };
           }
-
-          const historyData = widgetData.data.value || [];
-          console.log('[StockLevelHistoryChart] API returned', historyData.length, 'data points');
-          console.log('[StockLevelHistoryChart] Metadata:', widgetData.data.metadata);
-
-          // 直接使用 API 返回的數據，已經經過優化處理
-          setChartData(historyData);
-          setProductCodes(limitedProducts);
-
-          console.log('[StockLevelHistoryChart] Data processed successfully using optimized API');
-        } else {
-          console.warn('[StockLevelHistoryChart] No widget data returned from API');
-          setChartData([]);
         }
+        
+        return { chartData: [], productCodes: [] };
       } catch (error) {
-        console.error('[StockLevelHistoryChart] Error fetching stock history from API:', error);
-        setChartData([]);
+        console.error('[StockLevelHistoryChart] Server action error:', error);
+        return { chartData: [], productCodes: [] };
       }
     },
     [dashboardAPI, adjustedTimeFrame]
   );
+
+  // GraphQL variables setup
+  const graphqlVariables = useMemo(
+    () => {
+      if (!adjustedTimeFrame || productCodes.length === 0) {
+        return null;
+      }
+      return {
+        productCodes: productCodes.slice(0, 10),
+        startDate: adjustedTimeFrame.start.toISOString(),
+        endDate: adjustedTimeFrame.end.toISOString(),
+      };
+    },
+    [adjustedTimeFrame, productCodes]
+  );
+
+  // Use the unified GraphQL fallback hook
+  const { data, loading, error, refetch } = useGraphQLFallback({
+    graphqlQuery: shouldUseGraphQL ? GET_STOCK_LEVEL_HISTORY : undefined,
+    serverAction: fetchStockHistoryServerAction,
+    variables: graphqlVariables,
+    skip: !graphqlVariables || !hasBeenInViewport,
+    fallbackEnabled: true,
+    widgetId: 'stock-level-history',
+    onCompleted: (data) => {
+      if (data.chartData) {
+        setChartData(data.chartData);
+        setProductCodes(data.productCodes || productCodes);
+      }
+    },
+  });
+
+  // Update chart data when data changes
+  useEffect(() => {
+    if (data?.chartData) {
+      setChartData(data.chartData);
+      if (data.productCodes) {
+        setProductCodes(data.productCodes);
+      }
+    }
+  }, [data]);
 
   // 監聽 StockTypeSelector 的類型變更事件
   useEffect(() => {
@@ -241,12 +273,10 @@ export const StockLevelHistoryChart: React.FC<StockLevelHistoryChartProps> = ({
 
       if (codes.length > 0) {
         setProductCodes(codes);
-        setLoading(true);
       } else {
         console.log('[StockLevelHistoryChart] No product codes, clearing data');
         setChartData([]);
         setProductCodes([]);
-        setLoading(false);
       }
     };
 
@@ -266,29 +296,6 @@ export const StockLevelHistoryChart: React.FC<StockLevelHistoryChartProps> = ({
     }
   }, [timeFrame]);
 
-  // 當時間範圍或產品代碼改變時，重新加載數據
-  // 使用 useMemo 創建穩定的依賴值
-  const timeFrameKey = useMemo(
-    () =>
-      adjustedTimeFrame
-        ? `${adjustedTimeFrame.start.getTime()}-${adjustedTimeFrame.end.getTime()}`
-        : '',
-    [adjustedTimeFrame]
-  );
-  const productCodesKey = useMemo(() => productCodes.join(','), [productCodes]);
-
-  useEffect(() => {
-    if (productCodes.length > 0 && adjustedTimeFrame) {
-      console.log('[StockLevelHistoryChart] Dependencies changed, reloading data');
-      setLoading(true);
-      processHistoryData(productCodes)
-        .catch(error => {
-          console.error('[StockLevelHistoryChart] Reload error:', error);
-        })
-        .finally(() => setLoading(false));
-    }
-  }, [timeFrameKey, productCodesKey, adjustedTimeFrame, processHistoryData, productCodes]);
-
   // 當刷新觸發器改變時，重新加載數據
   const prevRefreshTriggerRef = React.useRef(refreshTrigger);
   useEffect(() => {
@@ -296,14 +303,9 @@ export const StockLevelHistoryChart: React.FC<StockLevelHistoryChartProps> = ({
     if (productCodes.length > 0 && refreshTrigger !== prevRefreshTriggerRef.current) {
       console.log('[StockLevelHistoryChart] Refresh triggered, reloading data');
       prevRefreshTriggerRef.current = refreshTrigger;
-      setLoading(true);
-      processHistoryData(productCodes)
-        .catch(error => {
-          console.error('[StockLevelHistoryChart] Refresh error:', error);
-        })
-        .finally(() => setLoading(false));
+      refetch();
     }
-  }, [refreshTrigger, productCodesKey, processHistoryData, productCodes]);
+  }, [refreshTrigger, productCodes.length, refetch]);
 
   // 自定義 Tooltip
   const CustomTooltip = ({ active, payload, label }: any) => {
@@ -340,16 +342,35 @@ export const StockLevelHistoryChart: React.FC<StockLevelHistoryChartProps> = ({
     );
   };
 
-  if (loading) {
+  // Return progressive loading skeleton if not in viewport yet
+  if (!hasBeenInViewport) {
     return (
-      <div className='flex h-full items-center justify-center'>
-        <Loader2 className='h-8 w-8 animate-spin text-gray-400' />
+      <div ref={chartRef} className="h-full w-full">
+        <LineChartSkeleton height="100%" showHeader={false} />
       </div>
     );
   }
 
   return (
-    <div className='h-full w-full p-2'>
+    <div ref={chartRef} className="h-full w-full">
+      <ChartContainer
+        title="Stock Level History"
+        icon={TrendingUp}
+        iconColor="from-emerald-500 to-teal-500"
+        loading={loading}
+        error={error}
+        onRetry={refetch}
+        onRefresh={refetch}
+        refreshing={loading}
+        height="100%"
+        showHeader={false}
+        chartType="line"
+        dateRange={adjustedTimeFrame || undefined}
+        performanceMetrics={{
+          optimized: true,
+          source: 'GraphQL Fallback',
+        }}
+      >
       {chartData.length === 0 || productCodes.length === 0 ? (
         <div className='flex h-full items-center justify-center'>
           <p className='text-center text-sm text-gray-400'>
@@ -410,6 +431,7 @@ export const StockLevelHistoryChart: React.FC<StockLevelHistoryChartProps> = ({
           </LineChart>
         </ResponsiveContainer>
       )}
+    </ChartContainer>
     </div>
   );
 };

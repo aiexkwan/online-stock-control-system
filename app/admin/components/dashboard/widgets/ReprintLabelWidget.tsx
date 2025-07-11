@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { PrinterIcon, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
-import { createDashboardAPI } from '@/lib/api/admin/DashboardAPI';
+import { fetchPalletForReprint } from '@/app/actions/palletActions';
 import {
   TransactionLogService,
   TransactionSource,
@@ -22,7 +22,6 @@ interface ReprintLabelWidgetProps {
 export function ReprintLabelWidget({ title = 'Reprint Label', gridArea }: ReprintLabelWidgetProps) {
   const [palletNumber, setPalletNumber] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const dashboardAPI = createDashboardAPI();
   const transactionLog = new TransactionLogService();
   const errorHandler = ErrorHandler.getInstance();
 
@@ -51,35 +50,25 @@ export function ReprintLabelWidget({ title = 'Reprint Label', gridArea }: Reprin
         },
       });
 
-      // Step 1: Fetch pallet information
+      // Step 1: Fetch pallet information using Server Action
       await transactionLog.recordStep(transactionId, {
         name: 'fetch_pallet_info',
         sequence: 1,
         data: { palletNumber: palletNumber.toUpperCase() },
       });
 
-      const result = await dashboardAPI.fetch({
-        widgetIds: ['reprint'],
-        params: {
-          dataSource: 'pallet_reprint',
-          palletNum: palletNumber.toUpperCase(),
-        },
-      });
+      const result = await fetchPalletForReprint(palletNumber);
 
-      if (!result.widgets || result.widgets.length === 0) {
-        throw new Error('Failed to fetch pallet information');
-      }
-
-      const palletData = result.widgets[0]?.data;
-
-      if (!palletData) {
-        const errorMsg = `Pallet number ${palletNumber} not found`;
-        await transactionLog.recordError(transactionId, new Error(errorMsg), 'PALLET_NOT_FOUND');
+      if (!result.success) {
+        const errorMsg = result.error || `Failed to fetch pallet ${palletNumber}`;
+        await transactionLog.recordError(transactionId, new Error(errorMsg), 'FETCH_ERROR');
         toast.error(errorMsg);
         return;
       }
 
-      if (!palletData.pdf_url) {
+      const palletData = result.data;
+
+      if (!palletData || !palletData.pdf_url) {
         const errorMsg = `No PDF label found for pallet ${palletNumber}`;
         await transactionLog.recordError(transactionId, new Error(errorMsg), 'PDF_NOT_FOUND');
         toast.error(errorMsg);

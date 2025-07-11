@@ -43,7 +43,10 @@
     "analyze": "ANALYZE=true npm run build",
     "analyze:view": "open bundle-analyzer/client.html",
     "tree-shaking:check": "node scripts/check-tree-shaking.js",
-    "tree-shaking:analyze": "npm run tree-shaking:check && npm run analyze"
+    "tree-shaking:analyze": "npm run tree-shaking:check && npm run analyze",
+    "test:perf": "playwright test tests/performance/widget-optimization.perf.ts",
+    "test:perf:report": "ts-node tests/performance/run-performance-tests.ts",
+    "test:perf:full": "npm run test:perf:report && open test-results/comprehensive-performance-report.html"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.40.1",

@@ -1,6 +1,7 @@
 /**
- * Production Details Widget - Apollo GraphQL Version
+ * Production Details Widget - DataTable Version
  * 顯示生產詳情表格
+ * 使用 DataTable 統一顯示邏輯
  * 
  * GraphQL Migration:
  * - 遷移至 Apollo Client
@@ -18,6 +19,8 @@ import { TableCellsIcon } from '@heroicons/react/24/outline';
 import { createDashboardAPI } from '@/lib/api/admin/DashboardAPI';
 import { WidgetComponentProps } from '@/app/types/dashboard';
 import { useGetProductionDetailsQuery } from '@/lib/graphql/generated/apollo-hooks';
+import { DataTable } from './common/data-display/DataTable';
+import type { Column, TableData } from './common/data-display/DataTable';
 
 interface ProductionDetailsWidgetProps extends WidgetComponentProps {
   title: string;
@@ -174,91 +177,70 @@ export const ProductionDetailsWidget: React.FC<ProductionDetailsWidgetProps> = (
   const error = shouldUseGraphQL ? graphqlError?.message : serverActionsError;
   const metadata = shouldUseGraphQL ? graphqlMetadata : serverActionsMetadata;
 
-  // 表格頭部
-  const headers = ['Pallet Number', 'Product Code', 'Quantity', 'QC By', 'Generate Time'];
+  // 定義 DataTable columns
+  const columns: Column[] = [
+    { 
+      key: 'plt_num', 
+      header: 'Pallet Number',
+      sortable: true
+    },
+    { 
+      key: 'product_code', 
+      header: 'Product Code',
+      sortable: true
+    },
+    { 
+      key: 'product_qty', 
+      header: 'Quantity',
+      align: 'right',
+      sortable: true,
+      render: (value) => typeof value === 'number' ? value.toLocaleString() : value || 'N/A'
+    },
+    { 
+      key: 'qc_by', 
+      header: 'QC By',
+      sortable: true
+    },
+    { 
+      key: 'generate_time', 
+      header: 'Generate Time',
+      sortable: true,
+      render: (value) => value ? format(new Date(value), 'MMM d, HH:mm') : 'N/A'
+    }
+  ];
 
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.1 }}
-      className="h-full flex flex-col relative"
+      className="h-full"
     >
-      
-      <CardHeader className="pb-2">
-        <CardTitle className="widget-title flex items-center gap-2">
-          <TableCellsIcon className="w-5 h-5" />
-          {title}
-        </CardTitle>
-        <p className="text-xs text-slate-400 mt-1">
-          From {format(new Date(dateRange.start), 'MMM d')} to {format(new Date(dateRange.end), 'MMM d')}
-          {metadata?.useGraphQL ? (
-            <span className="text-blue-400/70 ml-2">
-              ⚡ GraphQL optimized
-            </span>
-          ) : metadata?.rpcFunction ? (
-            <span className="text-green-400/70 ml-2">
-              ✓ Server optimized
-            </span>
-          ) : null}
-        </p>
-      </CardHeader>
-      
-      <div className="flex-1 overflow-hidden">
-        {loading ? (
-          <div className="animate-pulse p-4">
-            <div className="h-10 bg-slate-700 rounded mb-2"></div>
-            <div className="space-y-1">
-              {[1, 2, 3, 4, 5].map(i => (
-                <div key={i} className="h-8 bg-slate-700/50 rounded"></div>
-              ))}
-            </div>
-          </div>
-        ) : error ? (
-          <div className="text-red-400 text-sm text-center h-full flex items-center justify-center">
-            Error loading data: {error}
-          </div>
-        ) : tableData.length === 0 ? (
-          <div className="text-slate-400 text-sm text-center h-full flex items-center justify-center">
-            No production data available for the selected period
-          </div>
-        ) : (
-          <div className="overflow-x-auto h-full">
-            <table className="w-full">
-              <thead className="sticky top-0 bg-slate-800/90 z-10">
-                <tr className="border-b border-slate-700">
-                  {headers.map((header, index) => (
-                    <th key={index} className="text-left py-2 px-3 text-xs font-medium text-gray-400 uppercase whitespace-nowrap">
-                      {header}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {tableData.map((row: any, rowIndex: number) => (
-                  <tr key={rowIndex} className="border-b border-slate-700/50 hover:bg-slate-800/30">
-                    <td className="py-2 px-3 text-sm text-white whitespace-nowrap">
-                      {row.plt_num || 'N/A'}
-                    </td>
-                    <td className="py-2 px-3 text-sm text-slate-300 whitespace-nowrap">
-                      {row.product_code || 'N/A'}
-                    </td>
-                    <td className="py-2 px-3 text-sm text-slate-300 text-right">
-                      {typeof row.product_qty === 'number' ? row.product_qty.toLocaleString() : row.product_qty || 'N/A'}
-                    </td>
-                    <td className="py-2 px-3 text-sm text-slate-300 whitespace-nowrap">
-                      {row.qc_by || 'N/A'}
-                    </td>
-                    <td className="py-2 px-3 text-sm text-slate-400 whitespace-nowrap">
-                      {row.generate_time ? format(new Date(row.generate_time), 'MMM d, HH:mm') : 'N/A'}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
+      <DataTable
+        title={title}
+        icon={TableCellsIcon}
+        dateRange={{
+          start: dateRange.start,
+          end: dateRange.end
+        }}
+        performanceMetrics={metadata?.useGraphQL ? {
+          source: 'GraphQL',
+          optimized: true
+        } : metadata?.rpcFunction ? {
+          source: 'Server',
+          optimized: true
+        } : undefined}
+        columns={columns}
+        data={tableData as TableData[]}
+        loading={loading}
+        error={error ? new Error(error) : undefined}
+        emptyMessage="No production data available for the selected period"
+        pagination={false}
+        pageSize={limit}
+        onLoadMore={undefined}
+        hasMore={false}
+        height="100%"
+      />
     </motion.div>
   );
 };

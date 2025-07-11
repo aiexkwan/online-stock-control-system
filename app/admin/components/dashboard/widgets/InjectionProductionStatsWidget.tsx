@@ -1,7 +1,7 @@
 /**
- * Injection Production Stats Widget - Apollo GraphQL Version
+ * Injection Production Stats Widget - MetricCard Version
  * 用於 Injection Route 的生產統計組件
- * 已遷移至 Apollo Client (2025-07-09)
+ * 使用 MetricCard 通用組件統一顯示邏輯
  * 
  * Widget2: Today Produced (PLT)
  * Widget3: Today Produced (QTY)
@@ -15,13 +15,12 @@
 'use client';
 
 import React, { useMemo, useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
-import { CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { CubeIcon } from '@heroicons/react/24/outline';
 import { format, startOfDay, endOfDay } from 'date-fns';
 import { createDashboardAPI } from '@/lib/api/admin/DashboardAPI';
 import { WidgetComponentProps } from '@/app/types/dashboard';
 import { useGetInjectionProductionStatsQuery } from '@/lib/graphql/generated/apollo-hooks';
+import { MetricCard } from './common/data-display/MetricCard';
 
 interface InjectionProductionStatsWidgetProps extends WidgetComponentProps {
   title?: string;
@@ -64,7 +63,8 @@ export const InjectionProductionStatsWidget: React.FC<InjectionProductionStatsWi
   const { 
     data: graphqlData, 
     loading: graphqlLoading, 
-    error: graphqlError 
+    error: graphqlError,
+    refetch: graphqlRefetch
   } = useGetInjectionProductionStatsQuery({
     skip: !useGraphQL || isEditMode,
     variables: { startDate, endDate },
@@ -77,38 +77,37 @@ export const InjectionProductionStatsWidget: React.FC<InjectionProductionStatsWi
   const [serverActionsLoading, setServerActionsLoading] = useState(!useGraphQL);
   const [serverActionsError, setServerActionsError] = useState<string | null>(null);
 
+  const fetchServerActionsData = async () => {
+    setServerActionsLoading(true);
+    setServerActionsError(null);
+
+    try {
+      const dashboardAPI = createDashboardAPI();
+      const result = await dashboardAPI.fetch(
+        {
+          widgetIds: ['injection_production_stats'],
+          dateRange: { start: startDate, end: endDate },
+        },
+        {
+          strategy: 'server',
+          cache: { ttl: 300 },
+        }
+      );
+
+      if (result.widgets && result.widgets.length > 0) {
+        setServerActionsData(result.widgets[0].data);
+      }
+    } catch (err) {
+      console.error('Error fetching production stats:', err);
+      setServerActionsError(err instanceof Error ? err.message : 'Unknown error');
+    } finally {
+      setServerActionsLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (useGraphQL || isEditMode) return;
-
-    const fetchData = async () => {
-      setServerActionsLoading(true);
-      setServerActionsError(null);
-
-      try {
-        const dashboardAPI = createDashboardAPI();
-        const result = await dashboardAPI.fetch(
-          {
-            widgetIds: ['injection_production_stats'],
-            dateRange: { start: startDate, end: endDate },
-          },
-          {
-            strategy: 'server',
-            cache: { ttl: 300 },
-          }
-        );
-
-        if (result.widgets && result.widgets.length > 0) {
-          setServerActionsData(result.widgets[0].data);
-        }
-      } catch (err) {
-        console.error('Error fetching production stats:', err);
-        setServerActionsError(err instanceof Error ? err.message : 'Unknown error');
-      } finally {
-        setServerActionsLoading(false);
-      }
-    };
-
-    fetchData();
+    fetchServerActionsData();
   }, [startDate, endDate, widgetMetric, useGraphQL, isEditMode]);
 
   // 合併 loading 和 error 狀態
@@ -147,55 +146,47 @@ export const InjectionProductionStatsWidget: React.FC<InjectionProductionStatsWi
     return `${format(start, 'MMM d')} - ${format(end, 'MMM d, yyyy')}`;
   }, [timeFrame]);
 
+  // 決定標籤文字
+  const label = widgetMetric === 'pallet_count' ? 'Pallets produced' : 'Total quantity';
+
+  // 處理重試
+  const handleRetry = () => {
+    if (useGraphQL) {
+      graphqlRefetch();
+    } else {
+      fetchServerActionsData();
+    }
+  };
+
+  if (isEditMode) {
+    return (
+      <MetricCard
+        title={widgetTitle}
+        value={0}
+        label={label}
+        icon={CubeIcon}
+        isEditMode={true}
+      />
+    );
+  }
+
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.1 }}
-      className="h-full flex flex-col relative"
-    >
-      <CardHeader className="pb-2">
-        <CardTitle className="widget-title flex items-center gap-2">
-          <CubeIcon className="w-5 h-5" />
-          {widgetTitle}
-        </CardTitle>
-        <p className="text-xs text-slate-400 mt-1">
-          {displayDateRange}
-        </p>
-      </CardHeader>
-      
-      <CardContent className="flex-1 flex items-center justify-center">
-        {loading ? (
-          <div className="space-y-2 w-full">
-            <div className="h-8 bg-slate-700/50 rounded animate-pulse" />
-            <div className="h-4 bg-slate-700/30 rounded animate-pulse w-2/3" />
-          </div>
-        ) : error ? (
-          <div className="text-red-400 text-sm text-center">
-            Error loading data: {error.message}
-          </div>
-        ) : (
-          <div className="text-center">
-            <motion.div
-              initial={{ scale: 0.8, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              transition={{ duration: 0.3 }}
-              className="text-4xl font-bold text-white mb-2"
-            >
-              {statValue.toLocaleString()}
-            </motion.div>
-            <p className="text-xs text-slate-400">
-              {widgetMetric === 'pallet_count' ? 'Pallets produced' : 'Total quantity'}
-            </p>
-            {useGraphQL && (
-              <p className="text-xs text-blue-400/70 mt-1">
-                ⚡ GraphQL
-              </p>
-            )}
-          </div>
-        )}
-      </CardContent>
-    </motion.div>
+    <MetricCard
+      title={widgetTitle}
+      value={statValue}
+      label={label}
+      icon={CubeIcon}
+      dateRange={displayDateRange}
+      performanceMetrics={useGraphQL ? {
+        source: 'GraphQL',
+        optimized: true
+      } : undefined}
+      loading={loading}
+      error={error ? error.message : undefined}
+      onRetry={handleRetry}
+      animateOnMount={true}
+      widgetType={widget?.type?.toUpperCase() as any}
+    />
   );
 };
 

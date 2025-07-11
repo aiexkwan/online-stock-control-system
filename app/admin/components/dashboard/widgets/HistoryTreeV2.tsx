@@ -1,17 +1,18 @@
 /**
- * 統一歷史記錄組件 V2 - Apollo GraphQL Version
+ * 統一歷史記錄組件 V2 - Enhanced Version with Progressive Loading
  * 顯示系統全局歷史記錄
  * 
- * GraphQL Migration:
- * - 遷移至 Apollo Client
- * - 查詢 record_history 表
+ * Features:
+ * - 使用 useGraphQLFallback hook 統一數據獲取
+ * - Progressive Loading with useInViewport
+ * - Timeline 組件顯示歷史記錄
  * - Client-side 事件合併處理
  * - 保留 Server Actions + RPC fallback
  */
 
 'use client';
 
-import React, { useEffect, useState, useCallback, useMemo } from 'react';
+import React, { useMemo, useCallback, useRef } from 'react';
 import { motion } from 'framer-motion';
 import {
   ClockIcon,
@@ -38,8 +39,9 @@ import {
 } from '../WidgetTypography';
 import { cn } from '@/lib/utils';
 import { createDashboardAPI } from '@/lib/api/admin/DashboardAPI';
-import { errorHandler } from '@/app/components/qc-label-form/services/ErrorHandler';
-import { useQuery, gql } from '@apollo/client';
+import { gql } from '@apollo/client';
+import { useGraphQLFallback, GraphQLFallbackPresets } from '@/app/admin/hooks/useGraphQLFallback';
+import { useInViewport, InViewportPresets } from '@/app/admin/hooks/useInViewport';
 
 interface MergedEvent {
   id: number;
@@ -215,153 +217,132 @@ export const HistoryTreeV2 = React.memo(function HistoryTreeV2({
   isEditMode,
   useGraphQL,
 }: HistoryTreeV2Props) {
-  const [events, setEvents] = useState<MergedEvent[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [metadata, setMetadata] = useState<any>({});
-  const [performanceMetrics, setPerformanceMetrics] = useState<{
-    apiResponseTime?: number;
-    cacheHit?: boolean;
-  }>({});
+  const widgetRef = useRef<HTMLDivElement>(null);
+  
+  // Progressive Loading - 檢測 widget 是否在視窗內
+  const { isInViewport, hasBeenInViewport } = useInViewport(widgetRef, InViewportPresets.chart);
   
   // 使用環境變量控制是否使用 GraphQL
   const shouldUseGraphQL = process.env.NEXT_PUBLIC_ENABLE_GRAPHQL_SHARED === 'true' || 
                           (useGraphQL ?? (widget as any)?.useGraphQL ?? false);
 
-  // Apollo GraphQL 查詢
-  const { 
-    data: graphqlData, 
-    loading: graphqlLoading, 
-    error: graphqlError,
-    refetch: graphqlRefetch
-  } = useQuery(GET_HISTORY_TREE, {
-    skip: !shouldUseGraphQL || isEditMode,
-    variables: {
-      limit: 50,
-      offset: 0,
-    },
-    fetchPolicy: 'cache-and-network',
+  // Server Action function to fetch history data
+  const fetchHistoryData = useCallback(async (variables?: { limit: number; offset: number }) => {
+    const api = createDashboardAPI();
+    const result = await api.fetch({
+      widgetIds: ['statsCard'],
+      params: {
+        dataSource: 'history_tree',
+        limit: variables?.limit || 50,
+        offset: variables?.offset || 0,
+      },
+    });
+
+    // Extract widget data from dashboard result
+    const widgetData = result.widgets?.find(w => w.widgetId === 'statsCard');
+
+    if (!widgetData || widgetData.data.error) {
+      throw new Error(widgetData?.data.error || 'Failed to load history data');
+    }
+
+    // Return transformed data with metadata
+    return {
+      events: widgetData.data.value || [],
+      metadata: widgetData.data.metadata || {},
+    };
+  }, []);
+
+  // Use GraphQL fallback hook with real-time preset
+  const {
+    data,
+    loading,
+    error,
+    refetch,
+    mode,
+    performanceMetrics,
+  } = useGraphQLFallback<{ events?: MergedEvent[]; metadata?: any; record_historyCollection?: any }, { limit: number; offset: number }>({
+    graphqlQuery: shouldUseGraphQL ? GET_HISTORY_TREE : undefined,
+    serverAction: fetchHistoryData,
+    variables: { limit: 50, offset: 0 },
+    skip: isEditMode || !hasBeenInViewport, // Progressive Loading
+    ...GraphQLFallbackPresets.realtime,
     pollInterval: 60000, // 1分鐘輪詢
+    widgetId: 'history-tree-v2',
+    onError: (err) => {
+      console.error('History tree error:', err);
+    },
   });
 
   // 處理 GraphQL 數據 - 合併相似事件
   const processGraphQLData = useMemo(() => {
-    if (!graphqlData?.record_historyCollection?.edges) return [];
-
-    const rawEvents = graphqlData.record_historyCollection.edges.map((edge: any) => {
-      const node = edge.node;
-      return {
-        id: node.id,
-        time: node.time,
-        action: node.action,
-        plt_num: node.plt_num,
-        loc: node.loc,
-        remark: node.remark || '',
-        user_id: parseInt(node.who) || null,
-        user_name: node.data_id?.name || node.who || 'Unknown',
-        doc_url: node.doc_url,
-      };
-    });
-
-    // 合併相同時間範圍內的相似事件 (5分鐘內)
-    const mergedEvents: MergedEvent[] = [];
-    const TIME_WINDOW = 5 * 60 * 1000; // 5 minutes
-
-    rawEvents.forEach((event: any) => {
-      const eventTime = new Date(event.time).getTime();
-      
-      // 查找可以合併的事件
-      const existingEvent = mergedEvents.find(e => {
-        const existingTime = new Date(e.time).getTime();
-        return (
-          e.action === event.action &&
-          e.user_id === event.user_id &&
-          Math.abs(eventTime - existingTime) < TIME_WINDOW
-        );
+    // 如果是 GraphQL mode，數據來自 Apollo query
+    if (mode === 'graphql' && data?.record_historyCollection?.edges) {
+      const rawEvents = data.record_historyCollection.edges.map((edge: any) => {
+        const node = edge.node;
+        return {
+          id: node.id,
+          time: node.time,
+          action: node.action,
+          plt_num: node.plt_num,
+          loc: node.loc,
+          remark: node.remark || '',
+          user_id: parseInt(node.who) || null,
+          user_name: node.data_id?.name || node.who || 'Unknown',
+          doc_url: node.doc_url,
+        };
       });
 
-      if (existingEvent) {
-        // 合併到現有事件
-        if (event.plt_num) {
-          existingEvent.merged_plt_nums.push(event.plt_num);
-        }
-        existingEvent.merged_count++;
-      } else {
-        // 創建新事件
-        mergedEvents.push({
-          ...event,
-          merged_plt_nums: event.plt_num ? [event.plt_num] : [],
-          merged_count: 1,
+      // 合併相同時間範圍內的相似事件 (5分鐘內)
+      const mergedEvents: MergedEvent[] = [];
+      const TIME_WINDOW = 5 * 60 * 1000; // 5 minutes
+
+      rawEvents.forEach((event: any) => {
+        const eventTime = new Date(event.time).getTime();
+        
+        // 查找可以合併的事件
+        const existingEvent = mergedEvents.find(e => {
+          const existingTime = new Date(e.time).getTime();
+          return (
+            e.action === event.action &&
+            e.user_id === event.user_id &&
+            Math.abs(eventTime - existingTime) < TIME_WINDOW
+          );
         });
-      }
-    });
 
-    return mergedEvents;
-  }, [graphqlData]);
-
-  const loadHistory = useCallback(async () => {
-    try {
-      setLoading(true);
-      const startTime = performance.now();
-
-      const api = createDashboardAPI();
-      const result = await api.fetch({
-        widgetIds: ['statsCard'],
-        params: {
-          dataSource: 'history_tree',
-          limit: 50,
-          offset: 0,
-        },
+        if (existingEvent) {
+          // 合併到現有事件
+          if (event.plt_num) {
+            existingEvent.merged_plt_nums.push(event.plt_num);
+          }
+          existingEvent.merged_count++;
+        } else {
+          // 創建新事件
+          mergedEvents.push({
+            ...event,
+            merged_plt_nums: event.plt_num ? [event.plt_num] : [],
+            merged_count: 1,
+          });
+        }
       });
 
-      const endTime = performance.now();
-
-      // Extract widget data from dashboard result
-      const widgetData = result.widgets?.find(w => w.widgetId === 'statsCard');
-
-      if (!widgetData || widgetData.data.error) {
-        throw new Error(widgetData?.data.error || 'Failed to load history data');
-      }
-
-      setPerformanceMetrics({
-        apiResponseTime: Math.round(endTime - startTime),
-        cacheHit: result.metadata?.cacheHit || false,
-      });
-
-      // Extract events from the value property
-      setEvents(widgetData.data.value || []);
-      setMetadata(widgetData.data.metadata || {});
-      setError(null);
-    } catch (err: any) {
-      errorHandler.handleApiError(
-        err,
-        { component: 'HistoryTreeV2', action: 'load_history' },
-        'Failed to load history data. Please try again.'
-      );
-      setError(err.message);
-    } finally {
-      setLoading(false);
+      return mergedEvents;
     }
-  }, []);
-
-  useEffect(() => {
-    if (!isEditMode && !shouldUseGraphQL) {
-      loadHistory();
-
-      // Set up refresh interval (optional)
-      const interval = setInterval(loadHistory, 60000); // Refresh every minute
-      return () => clearInterval(interval);
+    
+    // 如果是 Server Action mode，數據已經被 RPC 處理過
+    if ((mode === 'server-action' || mode === 'fallback') && data?.events) {
+      return data.events;
     }
-  }, [loadHistory, isEditMode, shouldUseGraphQL]);
+    
+    return [];
+  }, [data, mode]);
 
-  // 合併數據源
-  const displayEvents = shouldUseGraphQL ? processGraphQLData : events;
-  const displayLoading = shouldUseGraphQL ? graphqlLoading : loading;
-  const displayError = shouldUseGraphQL ? graphqlError?.message : error;
+  // 使用統一嘅數據源
+  const displayEvents = processGraphQLData;
+  const metadata = data?.metadata || {};
 
   // 將事件轉換為 Timeline 組件需要的格式
   const timelineItems = useMemo(() => {
-    return displayEvents.map(event => ({
+    return displayEvents.map((event: MergedEvent) => ({
       date: event.time,
       title: formatEventTitle(event),
       description: formatEventDescription(event),
@@ -369,27 +350,67 @@ export const HistoryTreeV2 = React.memo(function HistoryTreeV2({
     }));
   }, [displayEvents]);
 
+  // Progressive Loading - 如果還未進入視窗，顯示 skeleton
+  if (!hasBeenInViewport && !isEditMode) {
+    return (
+      <motion.div ref={widgetRef} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className='h-full'>
+        <WidgetCard widgetType='custom'>
+          <CardHeader className='pb-3'>
+            <CardTitle>History Tree</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className='space-y-4'>
+              {[...Array(5)].map((_, i) => (
+                <div key={i} className='animate-pulse'>
+                  <div className='flex items-center gap-3'>
+                    <div className='h-8 w-8 rounded-full bg-white/10'></div>
+                    <div className='flex-1'>
+                      <div className='mb-2 h-4 w-3/4 rounded bg-white/10'></div>
+                      <div className='h-3 w-1/2 rounded bg-white/10'></div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </WidgetCard>
+      </motion.div>
+    );
+  }
+
   return (
-    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className='h-full'>
+    <motion.div ref={widgetRef} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className='h-full'>
       <WidgetCard widgetType='custom' isEditMode={isEditMode}>
         <CardHeader className='pb-3'>
           <CardTitle className='flex items-center justify-between'>
             <span>History Tree</span>
-            {shouldUseGraphQL && (
-              <span className='text-xs text-blue-400'>
-                ⚡ GraphQL
-              </span>
-            )}
-            {!isEditMode && !shouldUseGraphQL && performanceMetrics.apiResponseTime && (
-              <span className='text-xs text-slate-400'>
-                {performanceMetrics.apiResponseTime}ms
-                {performanceMetrics.cacheHit && ' (cached)'}
-              </span>
-            )}
+            <div className='flex items-center gap-2'>
+              {mode === 'graphql' && (
+                <span className='text-xs text-blue-400'>
+                  ⚡ GraphQL
+                </span>
+              )}
+              {mode === 'server-action' && (
+                <span className='text-xs text-orange-400'>
+                  🔄 Server Action
+                </span>
+              )}
+              {mode === 'context' && (
+                <span className='text-xs text-green-400'>
+                  💾 Cached
+                </span>
+              )}
+              {!isEditMode && performanceMetrics?.queryTime && (
+                <span className='text-xs text-slate-400'>
+                  {performanceMetrics.queryTime}ms
+                  {performanceMetrics.dataSource === 'cache' && ' (cached)'}
+                </span>
+              )}
+            </div>
           </CardTitle>
         </CardHeader>
         <CardContent>
-          {displayLoading ? (
+          {loading ? (
             <div className='space-y-4'>
               {[...Array(3)].map((_, i) => (
                 <div key={i} className='animate-pulse'>
@@ -403,10 +424,17 @@ export const HistoryTreeV2 = React.memo(function HistoryTreeV2({
                 </div>
               ))}
             </div>
-          ) : displayError ? (
-            <WidgetText size='xs' glow='red' className='py-4 text-center'>
-              {displayError}
-            </WidgetText>
+          ) : error ? (
+            <div className='space-y-2'>
+              <WidgetText size='xs' glow='red' className='py-4 text-center'>
+                {error.message || 'Failed to load history data'}
+              </WidgetText>
+              {mode === 'graphql' && (
+                <WidgetText size='xs' className='text-center text-slate-500'>
+                  Attempting fallback to server action...
+                </WidgetText>
+              )}
+            </div>
           ) : displayEvents.length === 0 ? (
             <WidgetText size='xs' glow='gray' className='py-8 text-center'>
               No history records found
@@ -428,6 +456,16 @@ export const HistoryTreeV2 = React.memo(function HistoryTreeV2({
                 buttonSize='sm'
                 showAnimation={!isEditMode}
               />
+              {metadata?.hasMore && (
+                <div className='mt-4 text-center'>
+                  <button
+                    onClick={() => refetch()}
+                    className='text-xs text-blue-400 hover:text-blue-300 transition-colors'
+                  >
+                    Load more events
+                  </button>
+                </div>
+              )}
             </>
           )}
         </CardContent>
@@ -439,18 +477,22 @@ export const HistoryTreeV2 = React.memo(function HistoryTreeV2({
 export default HistoryTreeV2;
 
 /**
- * GraphQL Migration completed on 2025-07-09
+ * History Tree V2 - Enhanced Version
  * 
  * Features:
- * - Apollo Client query for record_history table
- * - Client-side event merging (5-minute window)
- * - Supports pagination
- * - 1-minute polling for updates
- * - Fallback to Server Actions + RPC when GraphQL disabled
- * - Feature flag control: NEXT_PUBLIC_ENABLE_GRAPHQL_SHARED
+ * - ✅ useGraphQLFallback hook 統一數據獲取
+ * - ✅ Progressive Loading with useInViewport
+ * - ✅ Timeline 組件顯示歷史記錄（適合此用例）
+ * - ✅ Client-side 事件合併（5分鐘窗口）
+ * - ✅ Server-side 事件合併（RPC 更佳性能）
+ * - ✅ 1分鐘輪詢實時更新
+ * - ✅ 視覺指示當前數據源模式
+ * - ✅ 功能標誌控制：NEXT_PUBLIC_ENABLE_GRAPHQL_SHARED
  * 
- * Performance considerations:
- * - RPC function (rpc_get_history_tree) performs server-side merging
- * - GraphQL version does client-side merging which may be less efficient
- * - Consider keeping RPC as primary method for better performance
+ * Updates (2025-01-10):
+ * - 添加 Progressive Loading 優化首屏加載
+ * - 保留 Timeline 組件（比 DataTable 更適合歷史記錄顯示）
+ * - 增強 skeleton 加載狀態
+ * 
+ * Note: 此 widget 使用 Timeline 而非 DataTable，因為時間軸格式更適合顯示歷史記錄
  */

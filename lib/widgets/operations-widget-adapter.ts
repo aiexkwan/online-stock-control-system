@@ -39,6 +39,21 @@ export const operationsWidgetConfigs: Record<string, Partial<WidgetDefinition>> 
     },
   },
 
+  ProductUpdateWidgetV2: {
+    name: 'Product Update V2',
+    category: 'operations',
+    description: 'Update product information with GraphQL + fallback',
+    lazyLoad: true,
+    preloadPriority: 8,
+    metadata: {
+      dataSource: 'data_code',
+      supportsGraphQL: true,
+      supportsFallback: true,
+      supportBulkUpdate: true,
+      validationRequired: true,
+    },
+  },
+
   SupplierUpdateWidget: {
     name: 'Supplier Update',
     category: 'operations',

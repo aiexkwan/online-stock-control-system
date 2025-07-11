@@ -1,28 +1,28 @@
 /**
- * Order State List Widget V2 - Apollo GraphQL Version
+ * Order State List Widget V2 - Enhanced Version with useGraphQLFallback
  * 顯示訂單進度列表
  * 遷移自原 OrderStateListWidget
  *
- * GraphQL Migration:
- * - 使用 Apollo Client 查詢 data_order
+ * Features:
+ * - 使用 useGraphQLFallback hook 統一數據獲取
+ * - Progressive Loading with useInViewport
+ * - 使用 DataTable 組件統一列表顯示
  * - Client-side 進度計算
- * - 支援實時更新
- * - 保留 Server Actions fallback
+ * - 保留實時更新功能
  */
 
 'use client';
 
-import React, { useMemo, useEffect, useState, useCallback } from 'react';
-import { CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { UniversalWidgetCard as WidgetCard } from '../UniversalWidgetCard';
+import React, { useMemo, useRef } from 'react';
 import { ClipboardDocumentListIcon, TruckIcon } from '@heroicons/react/24/outline';
 import { WidgetComponentProps } from '@/app/types/dashboard';
-import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { Progress } from '@/components/ui/progress';
-import { format } from 'date-fns';
 import { createDashboardAPI } from '@/lib/api/admin/DashboardAPI';
-import { useGetOrderStateListQuery } from '@/lib/graphql/generated/apollo-hooks';
+import { GetOrderStateListDocument } from '@/lib/graphql/generated/apollo-hooks';
+import { useGraphQLFallback, GraphQLFallbackPresets } from '@/app/admin/hooks/useGraphQLFallback';
+import { useInViewport, InViewportPresets } from '@/app/admin/hooks/useInViewport';
+import { DataTable, DataTableColumn } from './common/data-display/DataTable';
 
 // GraphQL 查詢已經移動到 lib/graphql/generated/apollo-hooks.ts
 
@@ -46,300 +46,288 @@ export const OrderStateListWidgetV2 = React.memo(function OrderStateListWidgetV2
   isEditMode,
   timeFrame,
 }: WidgetComponentProps) {
-  const [performanceMetrics, setPerformanceMetrics] = useState<{
-    apiResponseTime?: number;
-    cacheHit?: boolean;
-  }>({});
+  const widgetRef = useRef<HTMLDivElement>(null);
+  
+  // Progressive Loading - 檢測 widget 是否在視窗內
+  const { isInViewport, hasBeenInViewport } = useInViewport(widgetRef, InViewportPresets.chart);
 
-  // 使用環境變量控制是否使用 GraphQL
-  const useGraphQL = process.env.NEXT_PUBLIC_ENABLE_GRAPHQL_AWAIT === 'true' || 
-                     widget?.config?.useGraphQL === true;
+  // Server Action fallback
+  async function fetchOrdersServerAction() {
+    const api = createDashboardAPI();
+    const result = await api.fetch({
+      widgetIds: ['statsCard'],
+      params: {
+        dataSource: 'order_state_list',
+        limit: 50,
+        offset: 0,
+      },
+    });
 
-  // 使用 GraphQL Codegen 生成嘅 hook
+    // Extract widget data from dashboard result
+    const widgetData = result.widgets?.find(w => w.widgetId === 'statsCard');
+
+    if (!widgetData || widgetData.data.error) {
+      throw new Error(widgetData?.data.error || 'Failed to load orders data');
+    }
+
+    return widgetData.data.value || [];
+  }
+
+  // 使用 useGraphQLFallback hook 統一數據獲取
   const { 
-    data: graphqlData, 
-    loading: graphqlLoading, 
-    error: graphqlError 
-  } = useGetOrderStateListQuery({
-    skip: !useGraphQL || isEditMode,
+    data: rawData, 
+    loading, 
+    error,
+    refetch,
+    mode,
+    performanceMetrics
+  } = useGraphQLFallback({
+    graphqlQuery: GetOrderStateListDocument,
+    serverAction: fetchOrdersServerAction,
     variables: {
       limit: 50,
       offset: 0,
     },
+    skip: isEditMode || !hasBeenInViewport, // Progressive Loading
+    widgetId: 'order-state-list',
+    ...GraphQLFallbackPresets.cached,
     pollInterval: 30000, // 30秒輪詢
-    fetchPolicy: 'cache-and-network',
   });
 
-  // Server Actions fallback
-  const [serverActionsData, setServerActionsData] = useState<OrderProgress[]>([]);
-  const [serverActionsLoading, setServerActionsLoading] = useState(!useGraphQL);
-  const [serverActionsError, setServerActionsError] = useState<string | null>(null);
-  const [serverActionsMetadata, setServerActionsMetadata] = useState<any>({});
+  // 處理數據
+  const data = useMemo<OrderProgress[]>(() => {
+    if (!rawData) return [];
+    
+    // 處理 GraphQL 數據 - 計算進度
+    if (rawData?.data_orderCollection?.edges) {
+      return rawData.data_orderCollection.edges
+        .map((edge: any) => {
+          const node = edge.node;
+          const productQty = node.product_qty || 0;
+          const loadedQty = parseInt(node.loaded_qty || '0', 10);
+          
+          // 計算進度
+          const progress = productQty > 0 ? (loadedQty / productQty) * 100 : 0;
+          
+          // 判斷狀態
+          let status: 'pending' | 'in_progress' | 'completed' = 'pending';
+          let statusColor: 'red' | 'yellow' | 'orange' | 'green' = 'red';
+          
+          if (progress >= 100) {
+            status = 'completed';
+            statusColor = 'green';
+          } else if (progress > 0) {
+            status = 'in_progress';
+            statusColor = progress >= 75 ? 'orange' : 'yellow';
+          }
 
-  const fetchOrders = useCallback(async () => {
-    if (useGraphQL || isEditMode) return;
-
-    try {
-      setServerActionsLoading(true);
-      setServerActionsError(null);
-      const startTime = performance.now();
-
-      const api = createDashboardAPI();
-      const result = await api.fetch({
-        widgetIds: ['statsCard'],
-        params: {
-          dataSource: 'order_state_list',
-          limit: 50,
-          offset: 0,
-        },
-      });
-
-      const endTime = performance.now();
-      setPerformanceMetrics({
-        apiResponseTime: Math.round(endTime - startTime),
-        cacheHit: result.metadata?.cacheHit || false,
-      });
-
-      // Extract widget data from dashboard result
-      const widgetData = result.widgets?.find(w => w.widgetId === 'statsCard');
-
-      if (!widgetData || widgetData.data.error) {
-        throw new Error(widgetData?.data.error || 'Failed to load orders data');
-      }
-
-      setServerActionsData(widgetData.data.value || []);
-      setServerActionsMetadata(widgetData.data.metadata || {});
-    } catch (err) {
-      console.error('Error fetching orders:', err);
-      setServerActionsError(err instanceof Error ? err.message : 'Unknown error');
-    } finally {
-      setServerActionsLoading(false);
+          return {
+            uuid: node.uuid,
+            order_ref: node.order_ref,
+            account_num: node.account_num,
+            product_code: node.product_code,
+            product_desc: node.product_desc,
+            product_qty: productQty,
+            loaded_qty: loadedQty,
+            created_at: node.created_at,
+            progress,
+            progress_text: `${loadedQty}/${productQty}`,
+            status,
+            status_color: statusColor,
+          };
+        })
+        .filter((order: OrderProgress) => order.status !== 'completed'); // 只顯示未完成訂單
     }
-  }, [useGraphQL, isEditMode]);
+    
+    // Server Action data is already processed
+    return rawData || [];
+  }, [rawData]);
 
-  useEffect(() => {
-    if (!isEditMode && !useGraphQL) {
-      fetchOrders();
+  // 定義 DataTable columns
+  const columns = useMemo<DataTableColumn<OrderProgress>[]>(() => [
+    {
+      key: 'order_ref',
+      header: 'Order',
+      icon: ClipboardDocumentListIcon,
+      width: '25%',
+      render: (value, item) => (
+        <div className="flex items-center gap-2">
+          <div
+            className={cn(
+              'h-2 w-2 flex-shrink-0 rounded-full',
+              item.status_color === 'green'
+                ? 'bg-green-400'
+                : item.status_color === 'orange'
+                  ? 'bg-orange-400'
+                  : item.status_color === 'yellow'
+                    ? 'bg-yellow-400'
+                    : item.status_color === 'red'
+                      ? 'bg-red-400'
+                      : 'bg-slate-400'
+            )}
+          />
+          <span className="font-medium text-white">{value}</span>
+        </div>
+      ),
+      className: 'font-medium',
+    },
+    {
+      key: 'product_code',
+      header: 'Product',
+      width: '35%',
+      render: (value, item) => (
+        <div>
+          <div className="font-medium text-white">{value}</div>
+          <div className="mt-0.5 text-xs text-slate-400 truncate">{item.product_desc}</div>
+        </div>
+      ),
+    },
+    {
+      key: 'progress',
+      header: 'Progress',
+      width: '25%',
+      render: (value, item) => (
+        <div className="space-y-1">
+          <div className="flex justify-between text-xs">
+            <span className="text-slate-400">{item.progress_text}</span>
+            <span className="font-medium text-white">{Math.round(value)}%</span>
+          </div>
+          <Progress value={value} className="h-2" />
+        </div>
+      ),
+    },
+    {
+      key: 'status',
+      header: 'Status',
+      icon: TruckIcon,
+      width: '15%',
+      align: 'center',
+      render: (value, item) => (
+        <div className="flex justify-center">
+          {item.status === 'completed' && (
+            <TruckIcon className="h-4 w-4 text-green-400" />
+          )}
+          {item.status === 'in_progress' && (
+            <span className={cn(
+              'text-xs font-medium',
+              item.status_color === 'orange' ? 'text-orange-400' : 'text-yellow-400'
+            )}>
+              {item.progress >= 75 ? 'Almost' : 'Loading'}
+            </span>
+          )}
+          {item.status === 'pending' && (
+            <span className="text-xs font-medium text-red-400">Pending</span>
+          )}
+        </div>
+      ),
+    },
+  ], []);
 
-      // Set up refresh interval for real-time updates
-      const interval = setInterval(fetchOrders, 30000); // Refresh every 30 seconds
-      return () => clearInterval(interval);
-    }
-  }, [fetchOrders, isEditMode, useGraphQL]);
-
-  // 處理 GraphQL 數據 - 計算進度
-  const graphqlOrders = useMemo<OrderProgress[]>(() => {
-    if (!graphqlData?.data_orderCollection?.edges) {
-      return [];
-    }
-
-    return graphqlData.data_orderCollection.edges
-      .map((edge: any) => {
-        const node = edge.node;
-        const productQty = node.product_qty || 0;
-        const loadedQty = parseInt(node.loaded_qty || '0', 10);
-        
-        // 計算進度
-        const progress = productQty > 0 ? (loadedQty / productQty) * 100 : 0;
-        
-        // 判斷狀態
-        let status: 'pending' | 'in_progress' | 'completed' = 'pending';
-        let statusColor: 'red' | 'yellow' | 'orange' | 'green' = 'red';
-        
-        if (progress >= 100) {
-          status = 'completed';
-          statusColor = 'green';
-        } else if (progress > 0) {
-          status = 'in_progress';
-          statusColor = progress >= 75 ? 'orange' : 'yellow';
-        }
-
-        return {
-          uuid: node.uuid,
-          order_ref: node.order_ref,
-          account_num: node.account_num,
-          product_code: node.product_code,
-          product_desc: node.product_desc,
-          product_qty: productQty,
-          loaded_qty: loadedQty,
-          created_at: node.created_at,
-          progress,
-          progress_text: `${loadedQty}/${productQty}`,
-          status,
-          status_color: statusColor,
-        };
-      })
-      .filter((order: OrderProgress) => order.status !== 'completed'); // 只顯示未完成訂單
-  }, [graphqlData]);
-
-  // 計算 GraphQL metadata
-  const graphqlMetadata = useMemo(() => {
-    const pendingCount = graphqlOrders.length;
-    const totalCount = graphqlData?.data_orderCollection?.edges?.length || 0;
+  // 計算 metadata
+  const metadata = useMemo(() => {
+    const orders = data || [];
+    const pendingCount = orders.length;
     return {
       pendingCount,
-      totalCount,
-      hasMore: graphqlData?.data_orderCollection?.pageInfo?.hasNextPage || false,
-      optimized: true,
+      totalCount: pendingCount, // 因為已經過濾了完成的訂單
     };
-  }, [graphqlOrders, graphqlData]);
+  }, [data]);
 
-  // 合併數據源
-  const orders = useGraphQL ? graphqlOrders : serverActionsData;
-  const loading = useGraphQL ? graphqlLoading : serverActionsLoading;
-  const error = useGraphQL ? graphqlError : (serverActionsError ? new Error(serverActionsError) : null);
-  const metadata = useGraphQL ? graphqlMetadata : serverActionsMetadata;
-
+  // Edit mode - 顯示空白狀態
   if (isEditMode) {
     return (
-      <WidgetCard widgetType='custom' isEditMode={true}>
-        <div className='flex h-full items-center justify-center'>
-          <p className='font-medium text-slate-400'>Order State List Widget V2</p>
-        </div>
-      </WidgetCard>
+      <div ref={widgetRef}>
+        <DataTable
+          title="Order Progress"
+          icon={ClipboardDocumentListIcon}
+          iconColor="from-blue-500 to-cyan-500"
+          data={[]}
+          columns={columns}
+          empty={true}
+          emptyMessage="Order State List Widget V2"
+          emptyIcon={ClipboardDocumentListIcon}
+        />
+      </div>
+    );
+  }
+
+  // Progressive Loading - 如果還未進入視窗，顯示 skeleton
+  if (!hasBeenInViewport) {
+    return (
+      <div ref={widgetRef}>
+        <DataTable
+          title="Order Progress"
+          icon={ClipboardDocumentListIcon}
+          iconColor="from-blue-500 to-cyan-500"
+          data={[]}
+          columns={columns}
+          loading={true}
+        />
+      </div>
     );
   }
 
   return (
-    <WidgetCard widgetType='custom'>
-      <CardHeader className='pb-2'>
-        <CardTitle className='flex items-center justify-between text-lg font-medium'>
-          <div className='flex items-center gap-2'>
-            <ClipboardDocumentListIcon className='h-5 w-5' />
-            <span>Order Progress</span>
-          </div>
-          {!isEditMode && useGraphQL && (
-            <span className='text-xs text-blue-400'>
-              ⚡ GraphQL
-            </span>
-          )}
-          {!isEditMode && !useGraphQL && performanceMetrics.apiResponseTime && (
-            <span className='text-xs text-slate-400'>
-              {performanceMetrics.apiResponseTime}ms
-              {performanceMetrics.cacheHit && ' (cached)'}
-            </span>
-          )}
-        </CardTitle>
-        <p className='mt-1 text-xs font-medium text-slate-400'>
-          {metadata.pendingCount || 0} pending orders
-          {metadata.totalCount && ` of ${metadata.totalCount} total`}
-        </p>
-      </CardHeader>
-      <CardContent className='flex-1 overflow-hidden'>
-        {loading ? (
-          <div className='space-y-3'>
-            {[1, 2, 3, 4, 5].map(i => (
-              <div key={i} className='space-y-2'>
-                <div className='h-4 animate-pulse rounded bg-slate-700/50' />
-                <div className='h-2 animate-pulse rounded bg-slate-700/50' />
-              </div>
-            ))}
-          </div>
-        ) : error ? (
-          <div className='text-center text-sm text-red-400'>
-            <p>Error loading orders</p>
-            <p className='mt-1 text-xs'>{error.message}</p>
-          </div>
-        ) : orders.length === 0 ? (
-          <div className='py-8 text-center font-medium text-slate-400'>
-            <ClipboardDocumentListIcon className='mx-auto mb-2 h-12 w-12 opacity-50' />
-            <p>All orders completed</p>
-          </div>
-        ) : (
-          <>
-            <div className='h-full space-y-3 overflow-y-auto pr-2'>
-              {orders.map((order, index) => (
-                <motion.div
-                  key={order.uuid}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.3, delay: index * 0.05 }}
-                  className='rounded-lg border border-slate-600/50 bg-slate-700/30 p-2 transition-colors hover:border-slate-500/50'
-                >
-                  {/* 訂單標題和進度 */}
-                  <div className='flex items-center justify-between'>
-                    <div className='flex min-w-0 flex-1 items-center gap-2'>
-                      <div
-                        className={cn(
-                          'h-2 w-2 flex-shrink-0 rounded-full',
-                          order.status_color === 'green'
-                            ? 'bg-green-400'
-                            : order.status_color === 'orange'
-                              ? 'bg-orange-400'
-                              : order.status_color === 'yellow'
-                                ? 'bg-yellow-400'
-                                : order.status_color === 'red'
-                                  ? 'bg-red-400'
-                                  : 'bg-slate-400'
-                        )}
-                      />
-                      <span className='truncate text-sm font-medium text-white'>
-                        {order.order_ref}
-                      </span>
-                    </div>
-                    <div className='flex flex-shrink-0 items-center gap-2'>
-                      <span className='text-xs text-slate-400'>{order.progress_text}</span>
-                      <span className='text-lg font-bold text-white'>
-                        {Math.round(order.progress)}%
-                      </span>
-                      {order.status === 'completed' && (
-                        <TruckIcon className='h-4 w-4 text-green-400' />
-                      )}
-                    </div>
-                  </div>
-
-                  {/* 產品信息 */}
-                  <div className='mt-1 truncate text-xs text-slate-400'>
-                    {order.product_code} - {order.product_desc}
-                  </div>
-
-                  {/* 進度條 */}
-                  <div className='mt-2'>
-                    <Progress value={order.progress} className='h-2' />
-                  </div>
-                </motion.div>
-              ))}
-            </div>
-
-            {/* Metadata display */}
-            {metadata.hasMore && (
-              <div className='mt-2 text-center text-xs text-slate-400'>
-                Showing {orders.length} of {metadata.pendingCount} pending orders
-              </div>
-            )}
-
-            {metadata.optimized && (
-              <div className='mt-1 text-center text-[10px] text-green-400'>
-                ✓ Server-side optimized
-              </div>
-            )}
-          </>
-        )}
-      </CardContent>
-    </WidgetCard>
+    <div ref={widgetRef}>
+      <DataTable
+        title="Order Progress"
+        subtitle={`${metadata.pendingCount} pending orders`}
+        icon={ClipboardDocumentListIcon}
+        iconColor="from-blue-500 to-cyan-500"
+        data={data || []}
+        columns={columns}
+        keyField="uuid"
+        loading={loading}
+        error={error}
+        empty={(data || []).length === 0}
+        emptyMessage="All orders completed"
+        emptyIcon={ClipboardDocumentListIcon}
+        pagination={{
+          enabled: false, // 固定顯示 50 筆記錄，無分頁
+        }}
+        performanceMetrics={{
+          source: mode,
+          fetchTime: performanceMetrics?.queryTime,
+          optimized: true,
+        }}
+        connectionStatus={
+          mode === 'graphql' 
+            ? { type: 'graphql', label: '⚡ GraphQL' }
+            : mode === 'context'
+            ? { type: 'polling', label: '🚀 Batch Query' }
+            : undefined
+        }
+        onRefresh={refetch}
+        showRefreshButton={true}
+        animate={true}
+        rowClassName={(item) => 
+          cn(
+            'transition-colors hover:bg-slate-700/50',
+            item.status === 'completed' && 'opacity-50'
+          )
+        }
+      />
+    </div>
   );
 });
 
 export default OrderStateListWidgetV2;
 
 /**
- * GraphQL Migration completed on 2025-07-09
+ * Order State List Widget V2 - Enhanced Version
  * 
  * Features:
- * - Apollo Client query for data_order table
- * - Client-side progress calculation (loaded_qty / product_qty)
- * - Status color coding based on progress
- * - Filters out completed orders client-side
- * - 30-second polling for real-time updates
- * - Fallback to Server Actions when GraphQL disabled
- * - Feature flag control: NEXT_PUBLIC_ENABLE_GRAPHQL_AWAIT
+ * - ✅ useGraphQLFallback hook 統一數據獲取
+ * - ✅ Progressive Loading with useInViewport
+ * - ✅ DataTable 統一列表顯示
+ * - ✅ 保留實時更新功能 (30秒輪詢)
+ * - ✅ Client-side 進度計算和狀態判斷
+ * - ✅ 支持 DashboardDataContext 批量查詢
+ * - ✅ 自動 GraphQL → Server Action fallback
  * 
- * Performance improvements:
- * - Direct GraphQL queries reduce latency
- * - Client-side filtering for pending orders
- * - Progress calculation done efficiently in-memory
- * - Caching: Apollo InMemoryCache with automatic updates
- * 
- * Note: GraphQL doesn't support column comparisons directly,
- * so filtering loaded_qty < product_qty is done client-side
+ * Updates (2025-01-10):
+ * - 使用 useGraphQLFallback 替換自定義 GraphQL/Server Actions 切換邏輯
+ * - 使用 DataTable 組件替換自定義列表渲染
+ * - 實施 Progressive Loading 優化首屏加載
+ * - 增強性能監控和錯誤處理
  */

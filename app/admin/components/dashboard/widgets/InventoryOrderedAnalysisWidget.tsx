@@ -1,16 +1,18 @@
 /**
- * Inventory Ordered Analysis Widget - Apollo GraphQL Version
+ * Inventory Ordered Analysis Widget - Enhanced Version
  * 顯示庫存與訂單匹配分析
  * 
- * GraphQL Migration Notes:
- * - 由於分析複雜度高，保留 RPC fallback 作為主要數據源
- * - GraphQL 版本需要 client-side 處理多個表格 JOIN
- * - 建議優先使用 RPC 維持性能
+ * Enhanced Features:
+ * - 使用 useGraphQLFallback hook 統一數據獲取
+ * - Progressive Loading with useInViewport
+ * - 統一使用 common 組件
+ * - 保留現有的事件監聽和產品篩選功能
+ * - 保留複雜的庫存與訂單匹配分析邏輯
  */
 
 'use client';
 
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { WidgetComponentProps } from '@/app/types/dashboard';
 import { useAdminRefresh } from '@/app/admin/contexts/AdminRefreshContext';
@@ -23,21 +25,13 @@ import {
   AlertCircle,
 } from 'lucide-react';
 import { createDashboardAPI } from '@/lib/api/admin/DashboardAPI';
-import {
-  PieChart,
-  Pie,
-  Cell,
-  ResponsiveContainer,
-  Tooltip,
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-} from 'recharts';
 import { motion } from 'framer-motion';
 import { Progress } from '@/components/ui/progress';
 import { useGetInventoryOrderedAnalysisWidgetQuery } from '@/lib/graphql/generated/apollo-hooks';
+import { useGraphQLFallback, GraphQLFallbackPresets } from '@/app/admin/hooks/useGraphQLFallback';
+import { useInViewport, InViewportPresets } from '@/app/admin/hooks/useInViewport';
+import { GET_INVENTORY_ORDERED_ANALYSIS_WIDGET } from '@/lib/graphql/queries/stock/inventoryOrderedAnalysis';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface ProductAnalysis {
   productCode: string;
@@ -86,32 +80,85 @@ export const InventoryOrderedAnalysisWidget: React.FC<InventoryOrderedAnalysisWi
   const [analysisData, setAnalysisData] = useState<InventoryAnalysisResponse | null>(null);
   const [selectedType, setSelectedType] = useState<string>('all');
   const [selectedProductCodes, setSelectedProductCodes] = useState<string[]>([]);
-  const [loading, setLoading] = useState(true);
   const [queryTime, setQueryTime] = useState<string>('');
   const { refreshTrigger } = useAdminRefresh();
+  const containerRef = useRef<HTMLDivElement>(null);
+  
+  // Progressive loading with viewport detection
+  const { isInViewport, hasBeenInViewport } = useInViewport(containerRef, {
+    ...InViewportPresets.chart,
+    rootMargin: '100px', // Preload slightly before visible
+  });
   
   // 使用環境變量控制是否使用 GraphQL
   // 由於此 widget 複雜度高，默認使用 RPC
   const shouldUseGraphQL = process.env.NEXT_PUBLIC_ENABLE_GRAPHQL_STOCK === 'true' || 
                           (useGraphQL ?? widget?.config?.useGraphQL ?? false);
 
-  // Apollo GraphQL 查詢 - 使用生成嘅 hook
-  const { 
-    data: graphqlData, 
-    loading: graphqlLoading, 
-    error: graphqlError,
-    refetch: graphqlRefetch
-  } = useGetInventoryOrderedAnalysisWidgetQuery({
-    skip: !shouldUseGraphQL || isEditMode,
+  // Server action for fallback
+  const fetchInventoryAnalysisAction = useCallback(
+    async (variables?: { productType?: string | null; productCodes?: string[] }) => {
+      const dashboardAPI = createDashboardAPI();
+      
+      const dashboardResult = await dashboardAPI.fetch(
+        {
+          widgetIds: ['inventory_ordered_analysis'],
+          params: {
+            dataSource: 'inventory_ordered_analysis',
+            productCodes: variables?.productCodes,
+            productType: variables?.productType === null ? undefined : variables?.productType,
+          },
+        },
+        {
+          strategy: 'client',
+          cache: { ttl: 180 }, // 3 minutes cache
+        }
+      );
+
+      const widgetData = dashboardResult.widgets.find(
+        w => w.widgetId === 'inventory_ordered_analysis'
+      );
+
+      if (widgetData?.data?.value) {
+        const analysisResponse = widgetData.data.value as InventoryAnalysisResponse;
+        if (widgetData.data.metadata?.calculationTime) {
+          setQueryTime(widgetData.data.metadata.calculationTime);
+        }
+        return analysisResponse;
+      }
+      return null;
+    },
+    []
+  );
+
+  // 使用 useGraphQLFallback hook 統一數據獲取
+  const { data: fetchedData, loading: dataLoading, error, refetch, mode, performanceMetrics } = useGraphQLFallback<
+    InventoryAnalysisResponse | null,
+    { productType?: string | null; productCodes?: string[] }
+  >({
+    graphqlQuery: shouldUseGraphQL ? GET_INVENTORY_ORDERED_ANALYSIS_WIDGET : undefined,
+    serverAction: fetchInventoryAnalysisAction,
     variables: {
       productType: selectedType === 'all' || selectedType === 'ALL TYPES' ? null : selectedType,
+      productCodes: selectedProductCodes.length > 0 ? selectedProductCodes : undefined,
     },
-    fetchPolicy: 'cache-and-network',
+    skip: isEditMode || !hasBeenInViewport, // Progressive loading
+    fallbackEnabled: true,
+    widgetId: widget?.id || 'inventory-ordered-analysis',
+    ...GraphQLFallbackPresets.cached,
+    extractFromContext: (context) => {
+      // Try to extract from dashboard context if available
+      const inventoryData = context?.inventoryOrderedAnalysis;
+      if (inventoryData) {
+        return inventoryData as InventoryAnalysisResponse;
+      }
+      return null;
+    },
   });
 
-  // 處理 GraphQL 數據 - Client-side JOIN 和計算
-  const processGraphQLData = useMemo(() => {
-    if (!graphqlData || !shouldUseGraphQL) return null;
+  // 處理 GraphQL 數據 - Client-side JOIN 和計算 
+  const processGraphQLData = useCallback((graphqlData: any) => {
+    if (!graphqlData) return null;
 
     const { record_inventoryCollection, data_orderCollection, data_codeCollection } = graphqlData;
 
@@ -218,54 +265,20 @@ export const InventoryOrderedAnalysisWidget: React.FC<InventoryOrderedAnalysisWi
         sufficientCount
       }
     } as InventoryAnalysisResponse;
-  }, [graphqlData, shouldUseGraphQL]);
+  }, []);
 
-  // 獲取庫存滿足分析數據 using DashboardAPI (RPC)
-  const fetchInventoryAnalysis = useCallback(
-    async (productCodes?: string[], productType?: string) => {
-      setLoading(true);
-      try {
-        const dashboardAPI = createDashboardAPI();
-
-        // Use DashboardAPI with appropriate parameters
-        const dashboardResult = await dashboardAPI.fetch(
-          {
-            widgetIds: ['inventory_ordered_analysis'],
-            params: {
-              dataSource: 'inventory_ordered_analysis',
-              productCodes: productCodes,
-              productType:
-                productType === 'all' || productType === 'ALL TYPES' ? undefined : productType,
-            },
-          },
-          {
-            strategy: 'client', // Use client strategy as per Re-Structure-5.md
-            cache: { ttl: 180 }, // 3 minutes cache
-          }
-        );
-
-        const widgetData = dashboardResult.widgets.find(
-          w => w.widgetId === 'inventory_ordered_analysis'
-        );
-
-        if (widgetData?.data?.value) {
-          const analysisResponse = widgetData.data.value as InventoryAnalysisResponse;
-          setAnalysisData(analysisResponse);
-
-          // Extract calculation time from metadata
-          if (widgetData.data.metadata?.calculationTime) {
-            setQueryTime(widgetData.data.metadata.calculationTime);
-          }
-        }
-      } catch (error) {
-        console.error('Error fetching inventory analysis:', error);
-        setAnalysisData(null);
-      } finally {
-        setLoading(false);
-      }
-    },
-    []
-  );
+  // Process fetched data based on mode
+  const processedData = useMemo(() => {
+    if (!fetchedData) return null;
+    
+    // If data comes from GraphQL, it needs processing
+    if (mode === 'graphql' && 'record_inventoryCollection' in (fetchedData as any)) {
+      return processGraphQLData(fetchedData);
+    }
+    
+    // Otherwise it's already processed (from server action or context)
+    return fetchedData as InventoryAnalysisResponse;
+  }, [fetchedData, mode, processGraphQLData]);
 
   // 監聽 StockTypeSelector 的類型變更事件
   useEffect(() => {
@@ -277,81 +290,118 @@ export const InventoryOrderedAnalysisWidget: React.FC<InventoryOrderedAnalysisWi
       // 獲取該類型所有產品的代碼
       const codes = data.map((item: any) => item.stock);
       setSelectedProductCodes(codes);
-
-      if (type === 'all' || type === 'ALL TYPES') {
-        // 如果選擇全部，不傳入產品代碼過濾
-        fetchInventoryAnalysis();
-      } else {
-        // 否則只分析選定類型的產品
-        fetchInventoryAnalysis(codes, type);
-      }
     };
 
     window.addEventListener('stockTypeChanged', handleTypeChange as EventListener);
 
-    // 初始加載所有數據
-    fetchInventoryAnalysis();
-
     return () => {
       window.removeEventListener('stockTypeChanged', handleTypeChange as EventListener);
     };
-  }, [fetchInventoryAnalysis]);
+  }, []);
 
   // 當刷新觸發時重新加載數據
   useEffect(() => {
-    if (selectedType === 'all' || selectedType === 'ALL TYPES') {
-      fetchInventoryAnalysis();
-    } else if (selectedProductCodes.length > 0) {
-      fetchInventoryAnalysis(selectedProductCodes, selectedType);
+    if (refreshTrigger && hasBeenInViewport) {
+      refetch();
     }
-  }, [refreshTrigger, fetchInventoryAnalysis, selectedType, selectedProductCodes, graphqlRefetch, shouldUseGraphQL]);
+  }, [refreshTrigger, refetch, hasBeenInViewport]);
 
   // 合併數據源
-  const finalAnalysisData = shouldUseGraphQL ? processGraphQLData : analysisData;
-  const finalLoading = shouldUseGraphQL ? graphqlLoading : loading;
+  const finalAnalysisData = processedData;
+  const finalLoading = dataLoading || !hasBeenInViewport;
 
-  if (finalLoading) {
+  // Render skeleton while loading or not in viewport
+  if (finalLoading || !hasBeenInViewport) {
     return (
-      <div className='flex h-full items-center justify-center'>
-        <Loader2 className='h-8 w-8 animate-spin text-gray-400' />
-      </div>
+      <Card ref={containerRef} className='h-full bg-slate-800/50 border-slate-700'>
+        <CardHeader className='pb-3'>
+          <div className='flex items-center justify-between'>
+            <div className='flex items-center gap-2'>
+              <Package className='h-5 w-5 text-gray-400' />
+              <Skeleton className='h-6 w-48' />
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className='pt-0'>
+          <div className='space-y-4'>
+            {/* Summary skeleton */}
+            <Skeleton className='h-32 w-full rounded-lg' />
+            
+            {/* Product list skeleton */}
+            <div className='space-y-2'>
+              {[1, 2, 3].map((i) => (
+                <Skeleton key={i} className='h-20 w-full rounded-lg' />
+              ))}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
     );
   }
 
   if (!finalAnalysisData || !finalAnalysisData.products) {
     return (
-      <div className='flex h-full flex-col p-4'>
-        <div className='mb-4 flex items-center justify-between'>
-          <h3 className='flex items-center gap-2 text-lg font-semibold text-white'>
-            <Package className='h-5 w-5' />
-            Inventory Ordered Analysis
-          </h3>
-          {shouldUseGraphQL && (
-            <span className='text-xs text-blue-400'>
-              ⚡ GraphQL
-            </span>
-          )}
-        </div>
-        <div className='flex flex-1 items-center justify-center'>
-          <p className='text-gray-400'>No inventory data available</p>
-        </div>
-      </div>
+      <Card ref={containerRef} className='h-full bg-slate-800/50 border-slate-700'>
+        <CardHeader className='pb-3'>
+          <div className='flex items-center justify-between'>
+            <CardTitle className='flex items-center gap-2 text-lg'>
+              <Package className='h-5 w-5' />
+              Inventory Ordered Analysis
+            </CardTitle>
+            {mode === 'graphql' && (
+              <span className='text-xs text-blue-400'>
+                ⚡ GraphQL
+              </span>
+            )}
+            {mode === 'server-action' && (
+              <span className='text-xs text-amber-400'>
+                🔄 Fallback
+              </span>
+            )}
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className='flex h-32 items-center justify-center'>
+            <p className='text-gray-400'>No inventory data available</p>
+          </div>
+        </CardContent>
+      </Card>
     );
   }
 
   const { products, summary } = finalAnalysisData;
 
   return (
-    <div className='flex h-full flex-col p-4'>
-      <div className='mb-4 flex items-center justify-between'>
-        <h3 className='flex items-center gap-2 text-lg font-semibold text-white'>
-          <Package className='h-5 w-5' />
-          Inventory Ordered Analysis
-        </h3>
-      </div>
+    <Card ref={containerRef} className='h-full bg-slate-800/50 border-slate-700'>
+      <CardHeader className='pb-3'>
+        <div className='flex items-center justify-between'>
+          <CardTitle className='flex items-center gap-2 text-lg'>
+            <Package className='h-5 w-5' />
+            Inventory Ordered Analysis
+          </CardTitle>
+          <div className='flex items-center gap-2'>
+            {mode === 'graphql' && (
+              <span className='text-xs text-blue-400'>
+                ⚡ GraphQL
+              </span>
+            )}
+            {mode === 'server-action' && (
+              <span className='text-xs text-amber-400'>
+                🔄 Fallback
+              </span>
+            )}
+            {performanceMetrics && (
+              <span className='text-xs text-gray-400'>
+                {performanceMetrics.queryTime}ms
+              </span>
+            )}
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent className='pt-0 flex flex-col h-[calc(100%-4rem)]'>
 
-      {/* 總體狀態卡片 */}
-      <div className='mb-4'>
+        {/* 總體狀態卡片 */}
+        <div className='mb-4'>
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -425,10 +475,10 @@ export const InventoryOrderedAnalysisWidget: React.FC<InventoryOrderedAnalysisWi
             </div>
           </div>
         </motion.div>
-      </div>
+        </div>
 
-      {/* 產品詳細分析列表 */}
-      <div className='flex-1 overflow-auto'>
+        {/* 產品詳細分析列表 */}
+        <div className='flex-1 overflow-auto'>
         <div className='space-y-2'>
           {products.length > 0 ? (
             products.map((product, index) => (
@@ -497,24 +547,38 @@ export const InventoryOrderedAnalysisWidget: React.FC<InventoryOrderedAnalysisWi
             )}
           </div>
         )}
-      </div>
-    </div>
+        </div>
+      </CardContent>
+    </Card>
   );
 };
 
 export default InventoryOrderedAnalysisWidget;
 
 /**
- * GraphQL Migration Notes (2025-07-09):
+ * Enhanced Features (2025-07-10):
  * 
- * This widget performs complex multi-table analysis that is better suited for RPC.
- * The GraphQL version requires client-side JOIN operations which may impact performance.
+ * 1. Unified Data Fetching:
+ *    - Uses useGraphQLFallback hook for consistent data loading
+ *    - Supports GraphQL → Server Action fallback pattern
+ *    - Integrates with DashboardDataContext for optimal caching
  * 
- * Recommendation: Continue using RPC for this widget due to:
- * - Complex aggregations across multiple tables
- * - Performance considerations for large datasets
- * - Existing RPC function is well-optimized
+ * 2. Progressive Loading:
+ *    - Implements useInViewport for lazy loading
+ *    - Shows skeleton UI until widget is visible
+ *    - Improves initial page load performance
  * 
- * GraphQL support added for compatibility but not recommended for production use.
- * Feature flag: NEXT_PUBLIC_ENABLE_GRAPHQL_STOCK
+ * 3. Performance Optimizations:
+ *    - Client-side GraphQL data processing only when needed
+ *    - Caches results based on product type and codes
+ *    - Performance metrics tracking
+ * 
+ * 4. Preserved Features:
+ *    - StockTypeSelector event listening
+ *    - Complex inventory vs order analysis logic
+ *    - Real-time fulfillment rate calculations
+ *    - Product filtering by type
+ * 
+ * Note: Due to complex multi-table JOINs, server action (RPC) is recommended
+ * for production use. GraphQL mode available via NEXT_PUBLIC_ENABLE_GRAPHQL_STOCK flag.
  */

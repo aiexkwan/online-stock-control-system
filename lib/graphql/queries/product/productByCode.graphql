@@ -1,0 +1,40 @@
+# Query to get product by code
+query GetProductByCode($code: String!) {
+  data_codeCollection(filter: { code: { eq: $code } }) {
+    edges {
+      node {
+        code
+        description
+        colour
+        standard_qty
+        type
+        remark
+      }
+    }
+  }
+}
+
+# Query to get all products with optional filter
+query GetProducts($codeFilter: String, $descriptionFilter: String, $typeFilter: String, $first: Int = 50, $offset: Int = 0) {
+  data_codeCollection(
+    first: $first
+    offset: $offset
+    filter: {
+      code: { ilike: $codeFilter }
+      description: { ilike: $descriptionFilter }
+      type: { eq: $typeFilter }
+    }
+    orderBy: [{ code: AscNullsLast }]
+  ) {
+    edges {
+      node {
+        code
+        description
+        colour
+        standard_qty
+        type
+        remark
+      }
+    }
+  }
+}

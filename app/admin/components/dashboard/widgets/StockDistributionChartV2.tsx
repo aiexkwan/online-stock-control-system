@@ -1,8 +1,8 @@
 /**
  * Stock Distribution Chart V2
- * 使用 RPC 函數和 DashboardAPI 優化圖表數據處理
- * 遷移自原 StockDistributionChart
- * 根據 Re-Structure-6.md 建議，支持 GraphQL 優化頻繁時間切換場景
+ * 使用標準化 useGraphQLFallback hook 進行數據獲取
+ * 展示從自定義 useGraphQLQuery 遷移到統一架構
+ * 支持 GraphQL 優先，Server Action fallback
  */
 
 'use client';
@@ -12,10 +12,8 @@ import { Treemap, ResponsiveContainer, Tooltip } from 'recharts';
 import { WidgetComponentProps } from '@/app/types/dashboard';
 import { useAdminRefresh } from '@/app/admin/contexts/AdminRefreshContext';
 import { Loader2 } from 'lucide-react';
-import { createDashboardAPI } from '@/lib/api/admin/DashboardAPI';
-import { useGraphQLQuery } from '@/lib/graphql-client-stable';
-import { gql } from 'graphql-tag';
-import { print } from 'graphql';
+import { useGraphQLFallback } from '@/app/admin/hooks/useGraphQLFallback';
+import { gql } from '@apollo/client';
 
 // GraphQL query for stock distribution
 const GET_STOCK_DISTRIBUTION = gql`
@@ -43,16 +41,7 @@ const GET_STOCK_DISTRIBUTION = gql`
   }
 `;
 
-interface TreemapData {
-  name: string;
-  size: number;
-  value: number;
-  percentage: number;
-  color: string;
-  fill: string;
-  description?: string;
-  type?: string;
-}
+import { getStockDistributionRPCAction, type StockDistributionData } from '@/app/actions/dashboardActions';
 
 interface StockDistributionChartProps extends WidgetComponentProps {
   useGraphQL?: boolean;
@@ -64,9 +53,8 @@ export const StockDistributionChartV2: React.FC<StockDistributionChartProps> = (
   useGraphQL,
 }) => {
   // 決定是否使用 GraphQL - 可以通過 widget config 或 props 控制
-  const shouldUseGraphQL = useGraphQL ?? (widget as any)?.useGraphQL ?? false;
-  const [chartData, setChartData] = useState<TreemapData[]>([]);
-  const [loading, setLoading] = useState(true);
+  const shouldUseGraphQL = useGraphQL ?? (widget as any)?.useGraphQL ?? true; // 默認使用 GraphQL
+  const [chartData, setChartData] = useState<StockDistributionData[]>([]);
   const [selectedType, setSelectedType] = useState<string>('all');
   const [performanceMetrics, setPerformanceMetrics] = useState<{
     lastFetchTime?: number;
@@ -74,26 +62,45 @@ export const StockDistributionChartV2: React.FC<StockDistributionChartProps> = (
     totalStock?: number;
   }>({});
   const { refreshTrigger } = useAdminRefresh();
-  const api = createDashboardAPI();
 
-  // GraphQL 查詢
-  const { 
-    data: graphqlData, 
-    loading: graphqlLoading, 
-    error: graphqlError,
-    refetch: refetchGraphQL
-  } = useGraphQLQuery(
-    print(GET_STOCK_DISTRIBUTION),
-    {},
-    {
-      enabled: shouldUseGraphQL && !isEditMode,
-      refetchInterval: 300000, // 5分鐘刷新一次
-      cacheTime: 300000, // 5分鐘快取
-    }
-  );
+  // 使用標準化的 useGraphQLFallback hook
+  const {
+    data: rawData,
+    loading,
+    error,
+    refetch,
+    mode,
+    performanceMetrics: hookMetrics,
+  } = useGraphQLFallback<any>({
+    graphqlQuery: shouldUseGraphQL ? GET_STOCK_DISTRIBUTION : undefined,
+    serverAction: useCallback(async () => {
+      // 使用 RPC 版本的 Server Action 作為 fallback
+      return getStockDistributionRPCAction(selectedType);
+    }, [selectedType]),
+    variables: {},
+    skip: isEditMode,
+    pollInterval: 300000, // 5分鐘自動刷新
+    cacheTime: 300000, // 5分鐘緩存
+    widgetId: 'stock-distribution-chart-v2',
+    extractFromContext: (contextData) => {
+      // 從 DashboardDataContext 提取數據（如果有）
+      if (contextData?.stockDistribution) {
+        return contextData.stockDistribution;
+      }
+      return null;
+    },
+    onCompleted: (data) => {
+      // 處理成功回調
+      console.log('[StockDistributionChartV2] Data fetched via', mode);
+    },
+    onError: (error) => {
+      // 處理錯誤回調
+      console.error('[StockDistributionChartV2] Error:', error);
+    },
+  });
 
-  // 處理 GraphQL 數據
-  const processGraphQLData = useCallback((data: any) => {
+  // 處理 GraphQL 數據的轉換函數
+  const processGraphQLData = useCallback((data: any): StockDistributionData[] => {
     if (!data?.record_inventoryCollection?.edges) return [];
     
     const edges = data.record_inventoryCollection.edges;
@@ -149,77 +156,33 @@ export const StockDistributionChartV2: React.FC<StockDistributionChartProps> = (
     }));
   }, [selectedType]);
 
-  // 獲取初始數據使用 DashboardAPI
-  const fetchInitialData = useCallback(async () => {
-    if (shouldUseGraphQL) return; // 如果使用 GraphQL，跳過
-    
-    setLoading(true);
-    try {
-      const startTime = performance.now();
-
-      const result = await api.fetch({
-        widgetIds: ['stock_distribution_chart'],
-        params: {
-          dataSource: 'stock_distribution_chart',
-          staticValue: selectedType === 'all' || selectedType === 'ALL TYPES' ? undefined : selectedType,
-        },
-      });
-
-      const endTime = performance.now();
-
-      if (result.widgets && result.widgets.length > 0) {
-        const widgetData = result.widgets[0];
-
-        if (widgetData.data.error) {
-          console.error('[StockDistributionChartV2] Error:', widgetData.data.error);
-          setChartData([]);
-        } else {
-          // Data already processed by RPC with colors and percentages
-          setChartData(widgetData.data.value || []);
-          setPerformanceMetrics({
-            lastFetchTime: Math.round(endTime - startTime),
-            optimized: widgetData.data.metadata?.optimized || true,
-            totalStock: widgetData.data.metadata?.totalStock || 0,
-          });
-        }
+  // 處理數據更新
+  useEffect(() => {
+    if (!loading && rawData) {
+      let processedData: StockDistributionData[];
+      
+      // 判斷數據來源並處理
+      if (mode === 'graphql' && rawData.record_inventoryCollection) {
+        // GraphQL 數據需要轉換
+        processedData = processGraphQLData(rawData);
+      } else if (Array.isArray(rawData)) {
+        // Server Action 或 Context 數據已經是正確格式
+        processedData = rawData;
+      } else {
+        processedData = [];
       }
-    } catch (error) {
-      console.error('[StockDistributionChartV2] Error fetching stock data:', error);
-      setChartData([]);
-    } finally {
-      setLoading(false);
-    }
-  }, [api, selectedType, shouldUseGraphQL]);
-
-  // 處理 GraphQL 數據更新
-  useEffect(() => {
-    if (shouldUseGraphQL && graphqlData && !graphqlLoading) {
-      const processedData = processGraphQLData(graphqlData);
+      
       setChartData(processedData);
+      
+      // 更新性能指標
+      const totalStock = processedData.reduce((sum, item) => sum + item.value, 0);
       setPerformanceMetrics({
-        lastFetchTime: 0,
-        optimized: true,
-        totalStock: processedData.reduce((sum: number, item: any) => sum + item.value, 0),
+        lastFetchTime: hookMetrics?.queryTime || 0,
+        optimized: mode !== 'fallback',
+        totalStock,
       });
-      setLoading(false);
     }
-  }, [shouldUseGraphQL, graphqlData, graphqlLoading, processGraphQLData]);
-
-  // 處理 GraphQL 錯誤
-  useEffect(() => {
-    if (shouldUseGraphQL && graphqlError) {
-      console.error('[StockDistributionChartV2] GraphQL error:', graphqlError);
-      setChartData([]);
-      setLoading(false);
-    }
-  }, [shouldUseGraphQL, graphqlError]);
-
-  // 處理 GraphQL 載入狀態
-  useEffect(() => {
-    if (shouldUseGraphQL) {
-      setLoading(graphqlLoading);
-    }
-  }, [shouldUseGraphQL, graphqlLoading]);
+  }, [rawData, loading, mode, processGraphQLData, hookMetrics]);
 
   // 監聽類型變更事件
   useEffect(() => {
@@ -230,7 +193,7 @@ export const StockDistributionChartV2: React.FC<StockDistributionChartProps> = (
 
       // 如果選擇 all 或 ALL TYPES，重新獲取所有數據
       if (type === 'all' || type === 'ALL TYPES') {
-        await fetchInitialData();
+        await refetch();
       } else {
         // 否則使用傳入的過濾數據（需要計算百分比和顏色）
         if (data && Array.isArray(data)) {
@@ -243,30 +206,14 @@ export const StockDistributionChartV2: React.FC<StockDistributionChartProps> = (
 
           // 使用 RPC 返回的顏色方案
           const CHART_COLORS = [
-            '#10b981',
-            '#3b82f6',
-            '#8b5cf6',
-            '#ec4899',
-            '#f59e0b',
-            '#06b6d4',
-            '#f97316',
-            '#6366f1',
-            '#84cc16',
-            '#14b8a6',
-            '#a855f7',
-            '#eab308',
-            '#059669',
-            '#2563eb',
-            '#7c3aed',
-            '#db2777',
-            '#d97706',
-            '#0891b2',
-            '#ea580c',
-            '#4f46e5',
+            '#10b981', '#3b82f6', '#8b5cf6', '#ec4899', '#f59e0b',
+            '#06b6d4', '#f97316', '#6366f1', '#84cc16', '#14b8a6',
+            '#a855f7', '#eab308', '#059669', '#2563eb', '#7c3aed',
+            '#db2777', '#d97706', '#0891b2', '#ea580c', '#4f46e5',
           ];
 
           // 生成 Treemap 數據
-          const processedData: TreemapData[] = sortedData.map((item, index) => ({
+          const processedData: StockDistributionData[] = sortedData.map((item, index) => ({
             name: item.stock,
             size: item.stock_level,
             value: item.stock_level,
@@ -291,14 +238,21 @@ export const StockDistributionChartV2: React.FC<StockDistributionChartProps> = (
     return () => {
       window.removeEventListener('stockTypeChanged', handleTypeChange);
     };
-  }, [fetchInitialData]);
+  }, [refetch]);
 
-  // 初始化
+  // 監聽刷新觸發器
   useEffect(() => {
-    if (!shouldUseGraphQL) {
-      fetchInitialData();
+    if (refreshTrigger) {
+      refetch();
     }
-  }, [fetchInitialData, refreshTrigger, shouldUseGraphQL]);
+  }, [refreshTrigger, refetch]);
+
+  // 當 selectedType 變更時重新獲取數據（只在使用 server action 時）
+  useEffect(() => {
+    if (mode === 'server-action' && !loading) {
+      refetch();
+    }
+  }, [selectedType]); // 故意不包含 refetch 和 mode 以避免無限循環
 
   // 自定義 Tooltip
   const CustomTooltip = ({ active, payload }: any) => {
@@ -427,6 +381,23 @@ export const StockDistributionChartV2: React.FC<StockDistributionChartProps> = (
     );
   }
 
+  if (error) {
+    return (
+      <div className='flex h-full items-center justify-center'>
+        <div className='text-center'>
+          <p className='text-red-400'>Error loading stock data</p>
+          <p className='mt-1 text-xs text-gray-500'>{error.message}</p>
+          <button
+            onClick={() => refetch()}
+            className='mt-3 rounded-md bg-blue-600 px-3 py-1 text-xs text-white hover:bg-blue-700'
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className='relative h-full w-full p-2'>
       {chartData.length === 0 ? (
@@ -450,12 +421,19 @@ export const StockDistributionChartV2: React.FC<StockDistributionChartProps> = (
           {/* Performance indicator */}
           {performanceMetrics.optimized && (
             <div className='absolute bottom-2 right-2 rounded bg-slate-900/80 px-2 py-1 text-[10px]'>
-              {shouldUseGraphQL ? (
+              {mode === 'context' && (
+                <span className='text-purple-400'>⚡ Context optimized</span>
+              )}
+              {mode === 'graphql' && (
                 <span className='text-blue-400'>⚡ GraphQL optimized</span>
-              ) : (
+              )}
+              {mode === 'server-action' && (
                 <span className='text-green-400'>
                   ✓ Server-optimized ({performanceMetrics.lastFetchTime}ms)
                 </span>
+              )}
+              {mode === 'fallback' && (
+                <span className='text-yellow-400'>⚠ Fallback mode</span>
               )}
               {performanceMetrics.totalStock && (
                 <span className='ml-2 text-gray-400'>

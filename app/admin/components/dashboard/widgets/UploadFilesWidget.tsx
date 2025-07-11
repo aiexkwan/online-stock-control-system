@@ -1,6 +1,7 @@
 /**
  * Upload Files Widget - 文件上傳功能
  * 支援拖放和多文件上傳
+ * 使用 Server Actions 優化
  */
 
 'use client';
@@ -13,6 +14,7 @@ import { WidgetComponentProps } from '@/app/types/dashboard';
 import { toast } from 'sonner';
 import { GoogleDriveUploadToast } from './GoogleDriveUploadToast';
 import { useUploadRefresh } from '@/app/admin/contexts/UploadRefreshContext';
+import { uploadFile } from '@/app/actions/fileActions';
 
 interface UploadingFile {
   id: string;
@@ -92,7 +94,7 @@ export const UploadFilesWidget = React.memo(function UploadFilesWidget({
   );
 
   // 上傳單個文件
-  const uploadFile = useCallback(
+  const uploadFileAction = useCallback(
     async (uploadingFile: UploadingFile) => {
       try {
         // 更新進度
@@ -102,41 +104,22 @@ export const UploadFilesWidget = React.memo(function UploadFilesWidget({
           );
         };
 
-        // 模擬進度更新
+        // Server Actions 不支援實時進度，使用模擬進度
         updateProgress(20);
 
         const formData = new FormData();
         formData.append('file', uploadingFile.file);
         formData.append('folder', uploadingFile.folder);
         formData.append('fileName', uploadingFile.file.name);
-        formData.append('uploadBy', currentUserId?.toString() || '');
+        formData.append('uploadBy', currentUserId?.toString() || '1');
 
-        const response = await fetch('/api/upload-file', {
-          method: 'POST',
-          body: formData,
-        });
-
-        updateProgress(60);
-
-        if (!response.ok) {
-          const error = await response.json();
-          throw new Error(error.error || 'Upload failed');
-        }
-
-        const result = await response.json();
+        // 使用 Server Action 上傳
+        updateProgress(40);
+        const result = await uploadFile(formData);
         updateProgress(80);
 
-        // 記錄到 doc_upload 表
-        if (currentUserId && result.url) {
-          const supabase = createClient();
-          await supabase.from('doc_upload').insert({
-            doc_name: uploadingFile.file.name,
-            upload_by: currentUserId,
-            doc_type: uploadingFile.folder === 'stockPic' ? 'image' : 'spec',
-            doc_url: result.url,
-            file_size: uploadingFile.file.size,
-            folder: uploadingFile.folder,
-          });
+        if (!result.success) {
+          throw new Error(result.error || 'Upload failed');
         }
 
         updateProgress(100);
@@ -147,6 +130,9 @@ export const UploadFilesWidget = React.memo(function UploadFilesWidget({
             f.id === uploadingFile.id ? { ...f, status: 'completed', progress: 100 } : f
           )
         );
+
+        // 顯示成功提示
+        toast.success(`Successfully uploaded ${uploadingFile.file.name}`);
 
         // 觸發歷史記錄更新
         triggerOtherFilesRefresh();
@@ -162,6 +148,11 @@ export const UploadFilesWidget = React.memo(function UploadFilesWidget({
                 }
               : f
           )
+        );
+        
+        // 顯示錯誤提示
+        toast.error(
+          error instanceof Error ? error.message : `Failed to upload ${uploadingFile.file.name}`
         );
       }
     },
@@ -201,11 +192,11 @@ export const UploadFilesWidget = React.memo(function UploadFilesWidget({
 
         // 開始上傳
         newFiles.forEach(file => {
-          uploadFile(file);
+          uploadFileAction(file);
         });
       }
     },
-    [selectedFolder, isEditMode, uploadFile, validateFile]
+    [selectedFolder, isEditMode, uploadFileAction, validateFile]
   );
 
   // 拖放處理

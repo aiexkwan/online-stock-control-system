@@ -46,6 +46,7 @@ export const listsWidgetImports = {
 export const operationsWidgetImports = {
   'VoidPalletWidget': () => import('@/app/admin/components/dashboard/widgets/VoidPalletWidget'),
   'ProductUpdateWidget': () => import('@/app/admin/components/dashboard/widgets/ProductUpdateWidget'),
+  'ProductUpdateWidgetV2': () => import('@/app/admin/components/dashboard/widgets/ProductUpdateWidgetV2'),
   'SupplierUpdateWidget': () => import('@/app/admin/components/dashboard/widgets/SupplierUpdateWidgetV2'),
   'SupplierUpdateWidgetV2': () => import('@/app/admin/components/dashboard/widgets/SupplierUpdateWidgetV2'),
   'StockTypeSelector': () => import('@/app/admin/components/dashboard/widgets/StockTypeSelector'),

@@ -3,25 +3,20 @@
  * 顯示昨天 transfer done 的總數
  * 支援頁面的 time frame selector
  * 
- * 已優化為使用批量查詢系統
+ * 已優化為使用批量查詢系統和 MetricCard 通用組件
  * - 從 DashboardDataContext 獲取數據
- * - 減少獨立 API 調用
- * - 統一錯誤處理和加載狀態
+ * - 使用 MetricCard 統一顯示邏輯
+ * - 減少代碼重複，提高維護性
  */
 
 'use client';
 
 import React, { useMemo } from 'react';
-import { CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { UniversalWidgetCard as WidgetCard } from '../UniversalWidgetCard';
-import { TruckIcon, ArrowTrendingUpIcon, ArrowTrendingDownIcon } from '@heroicons/react/24/outline';
+import { TruckIcon } from '@heroicons/react/24/outline';
 import { WidgetComponentProps } from '@/app/types/dashboard';
-import { motion } from 'framer-motion';
-import { cn } from '@/lib/utils';
-import { WidgetStyles } from '@/app/utils/widgetStyles';
 import { format } from 'date-fns';
 import { useWidgetData } from '@/app/admin/contexts/DashboardDataContext';
-import { WidgetSkeleton, WidgetError } from './common/WidgetStates';
+import { MetricCard } from './common/data-display/MetricCard';
 
 interface TransferCountData {
   count: number;
@@ -66,84 +61,44 @@ const YesterdayTransferCountWidget = React.memo(function YesterdayTransferCountW
     };
   }, [widgetData, timeFrame]);
 
+  // 計算 trend 方向
+  const trendDirection = displayData.trend > 0 ? 'up' : displayData.trend < 0 ? 'down' : 'neutral';
+
+  // 格式化日期範圍
+  const dateRangeText = `${format(new Date(displayData.dateRange.start), 'MMM d')} to ${format(new Date(displayData.dateRange.end), 'MMM d')}`;
+
   if (isEditMode) {
     return (
-      <WidgetCard widgetType={widget.type.toUpperCase() as keyof typeof WidgetStyles.borders} isEditMode={true}>
-        <div className='flex h-full items-center justify-center'>
-          <p className='text-gray-400'>Transfer Count Widget</p>
-        </div>
-      </WidgetCard>
+      <MetricCard
+        title="Transfer Done"
+        value={0}
+        label="Total Transfers"
+        icon={TruckIcon}
+        isEditMode={true}
+      />
     );
   }
 
   return (
-    <WidgetCard widgetType={widget.type.toUpperCase() as keyof typeof WidgetStyles.borders}>
-      <CardHeader className='pb-2'>
-        <CardTitle className='widget-title flex items-center gap-2'>
-          <TruckIcon className='h-5 w-5' />
-          Transfer Done
-        </CardTitle>
-        <p className='mt-1 text-xs text-slate-400'>
-          From {format(new Date(displayData.dateRange.start), 'MMM d')} to{' '}
-          {format(new Date(displayData.dateRange.end), 'MMM d')}
-        </p>
-      </CardHeader>
-      <CardContent className='flex flex-1 items-center justify-center'>
-        {loading ? (
-          <WidgetSkeleton 
-            rows={0}
-            className='w-full'
-          >
-            <div className='space-y-2'>
-              <div className='h-10 w-24 animate-pulse rounded bg-slate-700/50 mx-auto' />
-              <div className='h-4 w-20 animate-pulse rounded bg-slate-700/50 mx-auto' />
-            </div>
-          </WidgetSkeleton>
-        ) : error ? (
-          <WidgetError 
-            error={error}
-            onRetry={refetch}
-            message='Failed to load transfer count'
-          />
-        ) : (
-          <div className='text-center'>
-            <motion.div
-              initial={{ scale: 0.8, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              transition={{ duration: 0.3 }}
-              className='mb-2 text-4xl font-bold text-white'
-            >
-              {displayData.count.toLocaleString()}
-            </motion.div>
-            <p className='text-xs text-slate-400'>Total Transfers</p>
-
-            {/* Performance indicator - 來自批量查詢 */}
-            {displayData.optimized && (
-              <div className='mt-1 flex items-center justify-center gap-1 text-xs text-blue-400'>
-                <span>⚡</span>
-                <span>Batch Optimized</span>
-              </div>
-            )}
-
-            {displayData.trend !== 0 && (
-              <div
-                className={cn(
-                  'mt-2 flex items-center justify-center gap-1 text-sm',
-                  displayData.trend > 0 ? 'text-green-400' : 'text-red-400'
-                )}
-              >
-                {displayData.trend > 0 ? (
-                  <ArrowTrendingUpIcon className='h-4 w-4' />
-                ) : (
-                  <ArrowTrendingDownIcon className='h-4 w-4' />
-                )}
-                <span>{Math.abs(displayData.trend).toFixed(1)}% vs Today</span>
-              </div>
-            )}
-          </div>
-        )}
-      </CardContent>
-    </WidgetCard>
+    <MetricCard
+      title="Transfer Done"
+      value={displayData.count}
+      label="Total Transfers"
+      icon={TruckIcon}
+      trend={trendDirection}
+      trendValue={`${Math.abs(displayData.trend).toFixed(1)}%`}
+      trendLabel="vs Today"
+      dateRange={dateRangeText}
+      performanceMetrics={displayData.optimized ? {
+        source: 'Batch',
+        optimized: true
+      } : undefined}
+      loading={loading}
+      error={error}
+      onRetry={refetch}
+      animateOnMount={true}
+      widgetType={widget.type.toUpperCase() as any}
+    />
   );
 });
 

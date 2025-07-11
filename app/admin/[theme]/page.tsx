@@ -7,7 +7,7 @@
 import { AdminRefreshProvider } from '../contexts/AdminRefreshContext';
 import { AdminErrorBoundary } from '../components/AdminErrorBoundary';
 import { NewAdminDashboard } from '../components/NewAdminDashboard';
-import { prefetchCriticalWidgetsData } from '../hooks/useDashboardBatchQuery';
+import { prefetchCriticalWidgetsData } from '../hooks/server/prefetch.server';
 
 interface AdminThemePageProps {
   params: {

@@ -1,10 +1,9 @@
 /**
  * Layout Virtualization Hook
- * 統一處理各個 Layout 組件的虛擬化初始化
+ * 簡化版 - 移除虛擬化功能，保持接口兼容
  */
 
-import { useEffect, useRef } from 'react';
-import { widgetRegistry } from '@/lib/widgets/enhanced-registry';
+import { useRef } from 'react';
 
 interface UseLayoutVirtualizationOptions {
   widgetCount: number;
@@ -13,57 +12,10 @@ interface UseLayoutVirtualizationOptions {
 }
 
 export function useLayoutVirtualization(options: UseLayoutVirtualizationOptions) {
-  const { widgetCount, theme, threshold = 100 } = options;
   const containerRef = useRef<HTMLDivElement>(null);
-
-  // 初始化 GridVirtualizer
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-
-    // 建立 GridVirtualizer
-    const gridVirtualizer = widgetRegistry.createGridVirtualizer({
-      widgets: Array.from({ length: widgetCount }, (_, index) => ({
-        id: `${theme}-widget-${index}`,
-        gridArea: `item-${index + 1}`,
-      })),
-      viewportHeight: window.innerHeight,
-      threshold,
-    });
-
-    return () => {
-      // 清理 virtualizer
-      const currentVirtualizer = widgetRegistry.getGridVirtualizer();
-      if (currentVirtualizer) {
-        currentVirtualizer.destroy();
-      }
-    };
-  }, [widgetCount, theme, threshold]);
-
-  // 監聽視口變化
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-
-    const handleResize = () => {
-      const currentVirtualizer = widgetRegistry.getGridVirtualizer();
-      if (currentVirtualizer && containerRef.current) {
-        // 更新視口高度
-        const newConfig = {
-          widgets: Array.from({ length: widgetCount }, (_, index) => ({
-            id: `${theme}-widget-${index}`,
-            gridArea: `item-${index + 1}`,
-          })),
-          viewportHeight: window.innerHeight,
-          threshold,
-        };
-
-        // 重新創建 virtualizer
-        widgetRegistry.createGridVirtualizer(newConfig);
-      }
-    };
-
-    window.addEventListener('resize', handleResize, { passive: true });
-    return () => window.removeEventListener('resize', handleResize);
-  }, [widgetCount, theme, threshold]);
-
+  
+  // 簡化版：只返回 ref，不再實施虛擬化
+  // 虛擬化功能已移除，因為現代瀏覽器性能足夠處理合理數量的 widgets
+  
   return containerRef;
 }

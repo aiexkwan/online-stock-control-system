@@ -38,6 +38,7 @@ const categoryMap: WidgetMapping['categoryMap'] = {
   // Operations widgets
   VoidPalletWidget: 'operations',
   ProductUpdateWidget: 'operations',
+  ProductUpdateWidgetV2: 'operations',
   SupplierUpdateWidgetV2: 'operations',
   ReprintLabelWidget: 'operations',
 
@@ -109,6 +110,7 @@ const preloadPriorityMap: WidgetMapping['preloadPriorityMap'] = {
 
   // 操作類組件 - 中優先級
   ProductUpdateWidget: 6,
+  ProductUpdateWidgetV2: 6,
   SupplierUpdateWidgetV2: 6,
   VoidPalletWidget: 6,
 

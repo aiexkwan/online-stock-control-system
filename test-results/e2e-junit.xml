@@ -1,0 +1,235 @@
+<testsuites id="" name="" tests="7" failures="7" skipped="0" errors="0" time="53.501088">
+<testsuite name="run-performance-test.spec.ts" timestamp="2025-07-11T01:01:31.090Z" hostname="chromium" tests="7" failures="7" skipped="0" time="156.563" errors="0">
+<testcase name="Widget Performance Optimization › Baseline: Multiple Independent GraphQL Queries" classname="run-performance-test.spec.ts" time="1.046">
+<failure message="widget-optimization.perf.ts:373:7 Baseline: Multiple Independent GraphQL Queries" type="FAILURE">
+<![CDATA[  [chromium] › ../tests/performance/widget-optimization.perf.ts:373:7 › Widget Performance Optimization › Baseline: Multiple Independent GraphQL Queries 
+
+    Error: page.evaluate: SecurityError: Failed to read the 'localStorage' property from 'Window': Access is denied for this document.
+        at UtilityScript.evaluate (<anonymous>:293:16)
+        at UtilityScript.<anonymous> (<anonymous>:1:44)
+        at UtilityScript.evaluate (<anonymous>:293:16)
+        at UtilityScript.<anonymous> (<anonymous>:1:44)
+        at setupFn (/Users/kwanchuncheong/NewPennine/tests/performance/widget-optimization.perf.ts:379:20)
+        at PerformanceTester.measurePerformance (/Users/kwanchuncheong/NewPennine/tests/performance/widget-optimization.perf.ts:124:15)
+        at /Users/kwanchuncheong/NewPennine/tests/performance/widget-optimization.perf.ts:374:20
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/run-performance-test-Widge-ca674-Independent-GraphQL-Queries-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|run-performance-test-Widge-ca674-Independent-GraphQL-Queries-chromium/test-failed-1.png]]
+]]>
+</system-out>
+</testcase>
+<testcase name="Widget Performance Optimization › Optimized: Batch Query + SSR + Lazy Loading" classname="run-performance-test.spec.ts" time="1.109">
+<failure message="widget-optimization.perf.ts:391:7 Optimized: Batch Query + SSR + Lazy Loading" type="FAILURE">
+<![CDATA[  [chromium] › ../tests/performance/widget-optimization.perf.ts:391:7 › Widget Performance Optimization › Optimized: Batch Query + SSR + Lazy Loading 
+
+    Error: page.evaluate: SecurityError: Failed to read the 'localStorage' property from 'Window': Access is denied for this document.
+        at UtilityScript.evaluate (<anonymous>:293:16)
+        at UtilityScript.<anonymous> (<anonymous>:1:44)
+        at UtilityScript.evaluate (<anonymous>:293:16)
+        at UtilityScript.<anonymous> (<anonymous>:1:44)
+        at setupFn (/Users/kwanchuncheong/NewPennine/tests/performance/widget-optimization.perf.ts:399:20)
+        at PerformanceTester.measurePerformance (/Users/kwanchuncheong/NewPennine/tests/performance/widget-optimization.perf.ts:124:15)
+        at /Users/kwanchuncheong/NewPennine/tests/performance/widget-optimization.perf.ts:394:20
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/run-performance-test-Widge-210d5-atch-Query-SSR-Lazy-Loading-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|run-performance-test-Widge-210d5-atch-Query-SSR-Lazy-Loading-chromium/test-failed-1.png]]
+]]>
+</system-out>
+</testcase>
+<testcase name="Widget Performance Optimization › Bundle Size Analysis" classname="run-performance-test.spec.ts" time="26.314">
+<failure message="widget-optimization.perf.ts:419:7 Bundle Size Analysis" type="FAILURE">
+<![CDATA[  [chromium] › ../tests/performance/widget-optimization.perf.ts:419:7 › Widget Performance Optimization › Bundle Size Analysis 
+
+    Error: Command failed: npm run analyze
+    <w> [webpack.cache.PackFileCacheStrategy] Serializing big strings (100kiB) impacts deserialization performance (consider using Buffer instead and decode when needed)
+    Failed to compile.
+    
+    ./app/admin/components/dashboard/widgets/AwaitLocationQtyWidget.tsx
+    Module not found: Can't resolve '../common'
+
+    https://nextjs.org/docs/messages/module-not-found
+
+    Import trace for requested module:
+    ./app/admin/components/dashboard/LazyWidgetRegistry.tsx
+    ./app/admin/components/dashboard/AdminDashboardContent.tsx
+    ./app/admin/components/NewAdminDashboard.tsx
+
+    ./app/admin/components/dashboard/widgets/StillInAwaitPercentageWidget.tsx
+    Module not found: Can't resolve '../common'
+
+    https://nextjs.org/docs/messages/module-not-found
+
+    Import trace for requested module:
+    ./app/admin/components/dashboard/AdminWidgetRenderer.tsx
+    ./app/admin/components/dashboard/AdminDashboardContent.tsx
+    ./app/admin/components/NewAdminDashboard.tsx
+
+    ./app/admin/components/dashboard/widgets/StillInAwaitWidget.tsx
+    Module not found: Can't resolve '../common'
+
+    https://nextjs.org/docs/messages/module-not-found
+
+    Import trace for requested module:
+    ./app/admin/components/dashboard/AdminWidgetRenderer.tsx
+    ./app/admin/components/dashboard/AdminDashboardContent.tsx
+    ./app/admin/components/NewAdminDashboard.tsx
+
+    ./app/admin/components/dashboard/widgets/TransferTimeDistributionWidget.tsx
+    Module not found: Can't resolve '../common'
+
+    https://nextjs.org/docs/messages/module-not-found
+
+    Import trace for requested module:
+    ./app/admin/components/dashboard/AdminWidgetRenderer.tsx
+    ./app/admin/components/dashboard/AdminDashboardContent.tsx
+    ./app/admin/components/NewAdminDashboard.tsx
+
+    ./app/admin/product-update-demo/page.tsx
+    Module not found: Can't resolve '@/components/layout/universal/UniversalLayout'
+
+    https://nextjs.org/docs/messages/module-not-found
+
+
+    > Build failed because of webpack errors
+
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/run-performance-test-Widge-988fd-zation-Bundle-Size-Analysis-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/run-performance-test-Widge-988fd-zation-Bundle-Size-Analysis-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|run-performance-test-Widge-988fd-zation-Bundle-Size-Analysis-chromium/test-failed-1.png]]
+
+[[ATTACHMENT|run-performance-test-Widge-988fd-zation-Bundle-Size-Analysis-chromium/video.webm]]
+]]>
+</system-out>
+</testcase>
+<testcase name="Widget Performance Optimization › Memory Leak Detection" classname="run-performance-test.spec.ts" time="35.012">
+<failure message="widget-optimization.perf.ts:444:7 Memory Leak Detection" type="FAILURE">
+<![CDATA[  [chromium] › ../tests/performance/widget-optimization.perf.ts:444:7 › Widget Performance Optimization › Memory Leak Detection 
+
+    Test timeout of 30000ms exceeded.
+
+    TimeoutError: page.goto: Timeout 30000ms exceeded.
+    Call log:
+      - navigating to "http://localhost:3000/admin/dashboard", waiting until "load"
+
+
+      446 |     
+      447 |     // 導航到 dashboard
+    > 448 |     await page.goto('http://localhost:3000/admin/dashboard');
+          |                ^
+      449 |     
+      450 |     // 初始內存快照
+      451 |     const initialHeap = await page.evaluate(() => (performance as any).memory?.usedJSHeapSize || 0);
+        at /Users/kwanchuncheong/NewPennine/tests/performance/widget-optimization.perf.ts:448:16
+]]>
+</failure>
+</testcase>
+<testcase name="Widget Performance Optimization › Critical Path CSS Coverage" classname="run-performance-test.spec.ts" time="41.415">
+<failure message="widget-optimization.perf.ts:478:7 Critical Path CSS Coverage" type="FAILURE">
+<![CDATA[  [chromium] › ../tests/performance/widget-optimization.perf.ts:478:7 › Widget Performance Optimization › Critical Path CSS Coverage 
+
+    Test timeout of 30000ms exceeded.
+
+    TimeoutError: page.goto: Timeout 30000ms exceeded.
+    Call log:
+      - navigating to "http://localhost:3000/admin/dashboard", waiting until "load"
+
+
+      480 |     await page.coverage.startCSSCoverage();
+      481 |     
+    > 482 |     await page.goto('http://localhost:3000/admin/dashboard');
+          |                ^
+      483 |     await page.waitForLoadState('networkidle');
+      484 |     
+      485 |     const coverage = await page.coverage.stopCSSCoverage();
+        at /Users/kwanchuncheong/NewPennine/tests/performance/widget-optimization.perf.ts:482:16
+
+    attachment #1: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/run-performance-test-Widge-d2a01--Critical-Path-CSS-Coverage-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|run-performance-test-Widge-d2a01--Critical-Path-CSS-Coverage-chromium/video.webm]]
+]]>
+</system-out>
+</testcase>
+<testcase name="GraphQL Query Performance › Independent Queries vs Batch Query" classname="run-performance-test.spec.ts" time="10.196">
+<failure message="widget-optimization.perf.ts:508:7 Independent Queries vs Batch Query" type="FAILURE">
+<![CDATA[  [chromium] › ../tests/performance/widget-optimization.perf.ts:508:7 › GraphQL Query Performance › Independent Queries vs Batch Query 
+
+    Error: apiRequestContext.post: Request timed out after 10000ms
+    Call log:
+      - → POST http://localhost:3000/api/graphql
+        - user-agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.7204.23 Safari/537.36
+        - accept: */*
+        - accept-encoding: gzip,deflate,br
+        - content-type: application/json
+        - content-length: 43
+
+
+      511 |     
+      512 |     const queries = [
+    > 513 |       request.post('/api/graphql', {
+          |               ^
+      514 |         data: { query: '{ todayOrders { totalOrders } }' }
+      515 |       }),
+      516 |       request.post('/api/graphql', {
+        at /Users/kwanchuncheong/NewPennine/tests/performance/widget-optimization.perf.ts:513:15
+]]>
+</failure>
+</testcase>
+<testcase name="Server Actions Performance › Data Fetching Performance" classname="run-performance-test.spec.ts" time="41.471">
+<failure message="widget-optimization.perf.ts:556:7 Data Fetching Performance" type="FAILURE">
+<![CDATA[  [chromium] › ../tests/performance/widget-optimization.perf.ts:556:7 › Server Actions Performance › Data Fetching Performance 
+
+    Test timeout of 30000ms exceeded.
+
+    TimeoutError: page.goto: Timeout 30000ms exceeded.
+    Call log:
+      - navigating to "http://localhost:3000/admin/dashboard", waiting until "load"
+
+
+      555 | test.describe('Server Actions Performance', () => {
+      556 |   test('Data Fetching Performance', async ({ page }) => {
+    > 557 |     await page.goto('http://localhost:3000/admin/dashboard');
+          |                ^
+      558 |     
+      559 |     // 測量 Server Action 執行時間
+      560 |     const actionTime = await page.evaluate(async () => {
+        at /Users/kwanchuncheong/NewPennine/tests/performance/widget-optimization.perf.ts:557:16
+
+    attachment #1: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/run-performance-test-Serve-dac5b-e-Data-Fetching-Performance-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|run-performance-test-Serve-dac5b-e-Data-Fetching-Performance-chromium/video.webm]]
+]]>
+</system-out>
+</testcase>
+</testsuite>
+</testsuites>

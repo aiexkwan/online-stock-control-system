@@ -1,21 +1,20 @@
 /**
- * Product Distribution Chart Widget - Server Actions Version
+ * Product Distribution Chart Widget - ChartContainer Version
  * 顯示產品分佈圓餅圖
- * 使用 Server Actions 替代 GraphQL
+ * 使用 ChartContainer 和 Progressive Loading
  */
 
 'use client';
 
 import React, { useMemo, useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
 import { 
   PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend 
 } from 'recharts';
-import { format } from 'date-fns';
-import { CardHeader, CardTitle } from '@/components/ui/card';
 import { ChartPieIcon } from '@heroicons/react/24/outline';
 import { createDashboardAPI } from '@/lib/api/admin/DashboardAPI';
 import { WidgetComponentProps } from '@/app/types/dashboard';
+import { ChartContainer } from './common/charts/ChartContainer';
+import { useInViewport } from '@/app/admin/hooks/useInViewport';
 
 interface ProductDistributionChartWidgetProps extends WidgetComponentProps {
   title: string;
@@ -40,13 +39,22 @@ export const ProductDistributionChartWidget: React.FC<ProductDistributionChartWi
   title, 
   timeFrame,
   isEditMode,
-  limit = 10
+  limit = 10,
+  widget
 }) => {
   const [chartData, setChartData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [metadata, setMetadata] = useState<any>({});
   const dashboardAPI = useMemo(() => createDashboardAPI(), []);
+
+  // Lazy loading with viewport detection
+  const targetRef = React.useRef<HTMLDivElement>(null);
+  const { isInViewport, hasBeenInViewport } = useInViewport(targetRef, {
+    threshold: 0.1,
+    rootMargin: '50px',
+    triggerOnce: true
+  });
 
   // 根據 timeFrame 設定查詢時間範圍
   const dateRange = useMemo(() => {
@@ -68,67 +76,66 @@ export const ProductDistributionChartWidget: React.FC<ProductDistributionChartWi
     };
   }, [timeFrame]);
 
-  useEffect(() => {
-    if (isEditMode) return;
+  const fetchData = async () => {
+    setLoading(true);
+    setError(null);
 
-    const fetchData = async () => {
-      setLoading(true);
-      setError(null);
-
-      try {
-        // 使用統一的 DashboardAPI 獲取數據
-        const result = await dashboardAPI.fetch(
-          {
-            widgetIds: ['statsCard'],
-            dateRange: {
-              start: dateRange.start.toISOString(),
-              end: dateRange.end.toISOString(),
-            },
-            params: {
-              dataSource: 'product_distribution',
-              limit: limit,
-            },
+    try {
+      // 使用統一的 DashboardAPI 獲取數據
+      const result = await dashboardAPI.fetch(
+        {
+          widgetIds: ['statsCard'],
+          dateRange: {
+            start: dateRange.start.toISOString(),
+            end: dateRange.end.toISOString(),
           },
-          {
-            strategy: 'server',
-            cache: { ttl: 300 }, // 5分鐘緩存
-          }
-        );
-
-        if (result.widgets && result.widgets.length > 0) {
-          const widgetData = result.widgets[0];
-
-          if (widgetData.data.error) {
-            console.error('[ProductDistributionChartWidget] API error:', widgetData.data.error);
-            setError(widgetData.data.error);
-            setChartData([]);
-            return;
-          }
-
-          const distributionData = widgetData.data.value || [];
-          const widgetMetadata = widgetData.data.metadata || {};
-
-          console.log('[ProductDistributionChartWidget] API returned data:', distributionData);
-          console.log('[ProductDistributionChartWidget] Metadata:', widgetMetadata);
-
-          setChartData(distributionData);
-          setMetadata(widgetMetadata);
-
-        } else {
-          console.warn('[ProductDistributionChartWidget] No widget data returned from API');
-          setChartData([]);
+          params: {
+            dataSource: 'product_distribution',
+            limit: limit,
+          },
+        },
+        {
+          strategy: 'server',
+          cache: { ttl: 300 }, // 5分鐘緩存
         }
-      } catch (err) {
-        console.error('[ProductDistributionChartWidget] Error fetching data from API:', err);
-        setError(err instanceof Error ? err.message : 'Unknown error');
-        setChartData([]);
-      } finally {
-        setLoading(false);
-      }
-    };
+      );
 
+      if (result.widgets && result.widgets.length > 0) {
+        const widgetData = result.widgets[0];
+
+        if (widgetData.data.error) {
+          console.error('[ProductDistributionChartWidget] API error:', widgetData.data.error);
+          setError(widgetData.data.error);
+          setChartData([]);
+          return;
+        }
+
+        const distributionData = widgetData.data.value || [];
+        const widgetMetadata = widgetData.data.metadata || {};
+
+        console.log('[ProductDistributionChartWidget] API returned data:', distributionData);
+        console.log('[ProductDistributionChartWidget] Metadata:', widgetMetadata);
+
+        setChartData(distributionData);
+        setMetadata(widgetMetadata);
+
+      } else {
+        console.warn('[ProductDistributionChartWidget] No widget data returned from API');
+        setChartData([]);
+      }
+    } catch (err) {
+      console.error('[ProductDistributionChartWidget] Error fetching data from API:', err);
+      setError(err instanceof Error ? err.message : 'Unknown error');
+      setChartData([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (isEditMode || !hasBeenInViewport) return;
     fetchData();
-  }, [dashboardAPI, dateRange, limit, isEditMode]);
+  }, [dashboardAPI, dateRange, limit, isEditMode, hasBeenInViewport]);
 
   // 計算總數
   const total = useMemo(() => {
@@ -155,78 +162,83 @@ export const ProductDistributionChartWidget: React.FC<ProductDistributionChartWi
     return null;
   };
 
+  // Calculate stats
+  const productCount = chartData.length;
+  const topProduct = chartData.length > 0 ? chartData[0] : null;
+
+  const stats = [
+    {
+      label: 'Total Products',
+      value: productCount,
+    },
+    {
+      label: 'Total Quantity',
+      value: total.toLocaleString(),
+    },
+    topProduct && {
+      label: 'Top Product',
+      value: topProduct.name,
+    }
+  ].filter(Boolean);
+
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.1 }}
-      className="h-full flex flex-col relative"
-    >
-      
-      <CardHeader className="pb-2">
-        <CardTitle className="widget-title flex items-center gap-2">
-          <ChartPieIcon className="w-5 h-5" />
-          {title}
-        </CardTitle>
-        <p className="text-xs text-slate-400 mt-1">
-          From {format(new Date(dateRange.start), 'MMM d')} to {format(new Date(dateRange.end), 'MMM d')}
-        </p>
-      </CardHeader>
-      
-      <div className="flex-1 p-4">
-        {loading ? (
-          <div className="space-y-2 h-full flex items-center justify-center">
-            <div className="w-32 h-32 bg-slate-700/50 rounded-full animate-pulse" />
-          </div>
-        ) : error ? (
-          <div className="text-red-400 text-sm text-center h-full flex items-center justify-center">
-            Error loading data: {error}
-          </div>
-        ) : chartData.length === 0 ? (
+    <div ref={targetRef} className="h-full">
+      <ChartContainer
+        title={title}
+        icon={ChartPieIcon}
+        iconColor="from-purple-500 to-pink-500"
+        dateRange={dateRange}
+        loading={loading && hasBeenInViewport}
+        error={error ? new Error(error) : null}
+        onRetry={fetchData}
+        onRefresh={fetchData}
+        height="100%"
+        chartType="pie"
+        performanceMetrics={metadata.rpcFunction ? {
+          source: 'Server',
+          optimized: true
+        } : undefined}
+        stats={stats as any}
+        showFooter={true}
+        widgetType={widget?.type?.toUpperCase()}
+      >
+        {chartData.length === 0 ? (
           <div className="text-slate-400 text-sm text-center h-full flex items-center justify-center">
             No data available for the selected period
           </div>
         ) : (
-          <div className="h-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={chartData}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={40}
-                  outerRadius={80}
-                  paddingAngle={2}
-                  dataKey="value"
-                >
-                  {chartData.map((entry, index) => (
-                    <Cell 
-                      key={`cell-${index}`} 
-                      fill={COLORS[index % COLORS.length]} 
-                    />
-                  ))}
-                </Pie>
-                <Tooltip content={<CustomTooltip />} />
-                <Legend 
-                  verticalAlign="bottom" 
-                  height={36}
-                  formatter={(value, entry) => (
-                    <span className="text-xs text-slate-300">
-                      {value} ({entry?.payload ? ((entry.payload.value / total) * 100).toFixed(1) : '0'}%)
-                    </span>
-                  )}
-                />
-              </PieChart>
-            </ResponsiveContainer>
-            
-            {metadata.rpcFunction && (
-              <p className="text-xs text-green-400/70 mt-2 text-center">
-                ✓ Server optimized ({metadata.rpcFunction})
-              </p>
-            )}
-          </div>
+          <ResponsiveContainer width="100%" height="100%">
+            <PieChart>
+              <Pie
+                data={chartData}
+                cx="50%"
+                cy="50%"
+                innerRadius={40}
+                outerRadius={80}
+                paddingAngle={2}
+                dataKey="value"
+              >
+                {chartData.map((entry, index) => (
+                  <Cell 
+                    key={`cell-${index}`} 
+                    fill={COLORS[index % COLORS.length]} 
+                  />
+                ))}
+              </Pie>
+              <Tooltip content={<CustomTooltip />} />
+              <Legend 
+                verticalAlign="bottom" 
+                height={36}
+                formatter={(value, entry) => (
+                  <span className="text-xs text-slate-300">
+                    {value} ({entry?.payload ? ((entry.payload.value / total) * 100).toFixed(1) : '0'}%)
+                  </span>
+                )}
+              />
+            </PieChart>
+          </ResponsiveContainer>
         )}
-      </div>
-    </motion.div>
+      </ChartContainer>
+    </div>
   );
 };

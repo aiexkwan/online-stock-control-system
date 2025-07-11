@@ -1,26 +1,29 @@
 /**
- * Other Files List Widget V2 - Apollo GraphQL Version
+ * Other Files List Widget V2 - Enhanced Version with useGraphQLFallback
  * 顯示非訂單文件上傳列表
  * 
- * GraphQL Migration:
- * - 遷移至 Apollo Client
- * - 查詢 doc_upload 表
- * - 保留 Server Actions + RPC 作為 fallback
+ * Features:
+ * - 使用 useGraphQLFallback hook 統一數據獲取
+ * - Progressive Loading with useInViewport
+ * - 使用 DataTable 組件統一列表顯示
  * - 支援分頁查詢
+ * - 保留 Upload Refresh Context 整合
  */
 
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
-import { motion } from 'framer-motion';
-import { DocumentIcon, CloudIcon, PhotoIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
+import React, { useMemo, useRef, useState, useCallback, useEffect } from 'react';
+import { DocumentIcon, CloudIcon, PhotoIcon, UserIcon, CalendarIcon } from '@heroicons/react/24/outline';
 import { WidgetComponentProps } from '@/app/types/dashboard';
-import { CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { format } from 'date-fns';
 import { fromDbTime } from '@/app/utils/timezone';
 import { useUploadRefresh } from '@/app/admin/contexts/UploadRefreshContext';
 import { createDashboardAPI } from '@/lib/api/admin/DashboardAPI';
-import { useGetOtherFilesListQuery } from '@/lib/graphql/generated/apollo-hooks';
+import { GetOtherFilesListDocument } from '@/lib/graphql/generated/apollo-hooks';
+import { useGraphQLFallback, GraphQLFallbackPresets } from '@/app/admin/hooks/useGraphQLFallback';
+import { useInViewport, InViewportPresets } from '@/app/admin/hooks/useInViewport';
+import { DataTable, DataTableColumn } from './common/data-display/DataTable';
+import { cn } from '@/lib/utils';
 
 interface FileRecord {
   uuid: string;
@@ -32,326 +35,246 @@ interface FileRecord {
   uploader_id?: number;
 }
 
-interface OtherFilesListWidgetV2Props extends WidgetComponentProps {
-  useGraphQL?: boolean;
-}
-
 export const OtherFilesListWidgetV2 = React.memo(function OtherFilesListWidgetV2({
   widget,
   isEditMode,
-  useGraphQL,
-}: OtherFilesListWidgetV2Props) {
-  const [files, setFiles] = useState<FileRecord[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+}: WidgetComponentProps) {
+  const widgetRef = useRef<HTMLDivElement>(null);
   const [page, setPage] = useState(0);
-  const [hasMore, setHasMore] = useState(true);
-  const [metadata, setMetadata] = useState<any>({});
-  const [performanceMetrics, setPerformanceMetrics] = useState<{
-    apiResponseTime?: number;
-    optimized?: boolean;
-  }>({});
   const { otherFilesVersion } = useUploadRefresh();
-
-  const itemsPerPage = 10; // 固定佈局系統，使用預設值
+  const itemsPerPage = 10;
   
-  // 使用環境變量控制是否使用 GraphQL
-  const shouldUseGraphQL = process.env.NEXT_PUBLIC_ENABLE_GRAPHQL_UPLOAD === 'true' || 
-                          (useGraphQL ?? (widget as any)?.useGraphQL ?? false);
+  // Progressive Loading - 檢測 widget 是否在視窗內
+  const { isInViewport, hasBeenInViewport } = useInViewport(widgetRef, InViewportPresets.chart);
 
-  // Apollo GraphQL query - 使用生成嘅 hook
-  const {
-    data: graphqlData,
-    loading: graphqlLoading,
-    error: graphqlError,
-    refetch: refetchGraphQL,
-    fetchMore,
-  } = useGetOtherFilesListQuery({
-    skip: !shouldUseGraphQL || isEditMode,
+  // Server Action fallback - 使用 RPC 查詢
+  async function fetchFilesServerAction(variables?: { limit: number; offset: number }) {
+    const api = createDashboardAPI();
+    const result = await api.fetch({
+      widgetIds: ['otherFilesList'],
+      params: {
+        dataSource: 'rpc_get_other_files',
+        limit: variables?.limit || 10,
+        offset: variables?.offset || 0,
+      },
+    });
+
+    const widgetData = result.widgets?.find(w => w.widgetId === 'otherFilesList');
+    
+    if (!widgetData || widgetData.data.error) {
+      throw new Error(widgetData?.data.error || 'Failed to load files');
+    }
+
+    return widgetData.data.value || [];
+  }
+
+  // 使用 useGraphQLFallback hook 統一數據獲取
+  const { 
+    data: rawData, 
+    loading, 
+    error,
+    refetch,
+    mode,
+    performanceMetrics,
+  } = useGraphQLFallback({
+    graphqlQuery: GetOtherFilesListDocument,
+    serverAction: fetchFilesServerAction,
     variables: {
       limit: itemsPerPage,
       offset: page * itemsPerPage,
     },
-    fetchPolicy: 'cache-and-network',
-    notifyOnNetworkStatusChange: true,
+    skip: isEditMode || !hasBeenInViewport, // Progressive Loading
+    widgetId: 'other-files-list',
+    ...GraphQLFallbackPresets.cached,
   });
 
-  // 處理 GraphQL 數據
-  const processGraphQLData = useCallback(() => {
-    if (!graphqlData?.doc_uploadCollection) return [];
+  // 處理數據
+  const data = useMemo<FileRecord[]>(() => {
+    if (!rawData) return [];
     
-    return graphqlData.doc_uploadCollection.edges.map((edge: any) => ({
-      uuid: edge.node.uuid,
-      doc_name: edge.node.doc_name,
-      doc_type: edge.node.doc_type,
-      upload_by: edge.node.upload_by,
-      created_at: edge.node.created_at,
-      uploader_name: edge.node.data_id?.name || `User ${edge.node.upload_by}`,
-      uploader_id: edge.node.data_id?.id || edge.node.upload_by,
-    }));
-  }, [graphqlData]);
+    if (rawData?.doc_uploadCollection?.edges) {
+      // 注意：GraphQL 無法 JOIN data_id table，需要依賴 server action
+      return rawData.doc_uploadCollection.edges.map((edge: any) => ({
+        uuid: edge.node.uuid,
+        doc_name: edge.node.doc_name,
+        doc_type: edge.node.doc_type,
+        upload_by: edge.node.upload_by,
+        created_at: edge.node.created_at,
+        uploader_name: `User ${edge.node.upload_by}`, // Placeholder
+      }));
+    }
+    
+    // Server Action data is already processed
+    return rawData || [];
+  }, [rawData]);
 
-  // 載入文件列表 - Server Actions + RPC 函數 (fallback)
-  const loadServerActionsFiles = useCallback(
-    async (loadMore = false) => {
-      try {
-        if (!loadMore) {
-          setLoading(true);
-          setPage(0);
-          setError(null);
-        }
+  // 監聽 upload refresh
+  useEffect(() => {
+    if (otherFilesVersion > 0 && hasBeenInViewport) {
+      refetch();
+    }
+  }, [otherFilesVersion, refetch, hasBeenInViewport]);
 
-        const startTime = performance.now();
-        const offset = loadMore ? page * itemsPerPage : 0;
+  // 處理分頁
+  const handleLoadMore = useCallback(async () => {
+    setPage(prev => prev + 1);
+    // When using pagination, the refetch will be triggered by the page state change
+  }, []);
 
-        const api = createDashboardAPI();
-        const result = await api.fetch({
-          widgetIds: ['statsCard'],
-          params: {
-            dataSource: 'other_files_list',
-            limit: itemsPerPage,
-            offset: offset,
-          },
-        });
+  // 根據檔案類型選擇圖標
+  const getFileIcon = (docType?: string, docName?: string) => {
+    if (docType === 'image' || /\.(jpg|jpeg|png|gif|webp)$/i.test(docName || '')) {
+      return PhotoIcon;
+    }
+    if (docType === 'cloud' || /\.(zip|rar|7z)$/i.test(docName || '')) {
+      return CloudIcon;
+    }
+    return DocumentIcon;
+  };
 
-        const endTime = performance.now();
-
-        // Extract widget data from dashboard result
-        const widgetData = result.widgets?.find(w => w.widgetId === 'statsCard');
-
-        if (!widgetData || widgetData.data.error) {
-          throw new Error(widgetData?.data.error || 'Failed to load files data');
-        }
-
-        setPerformanceMetrics({
-          apiResponseTime: Math.round(endTime - startTime),
-          optimized: widgetData.data.metadata?.optimized || false,
-        });
-
-        const newFiles = widgetData.data.value || [];
-
-        if (loadMore) {
-          setFiles(prev => [...prev, ...newFiles]);
-          setPage(prev => prev + 1);
-        } else {
-          setFiles(newFiles);
-          setPage(1);
-        }
-
-        setHasMore(widgetData.data.metadata?.hasMore || false);
-        setMetadata(widgetData.data.metadata || {});
-      } catch (err) {
-        console.error('[OtherFilesListWidgetV2] Error loading files:', err);
-        setError(err instanceof Error ? err.message : 'Unknown error');
-      } finally {
-        setLoading(false);
-      }
+  // 定義 DataTable columns
+  const columns = useMemo<DataTableColumn<FileRecord>[]>(() => [
+    {
+      key: 'created_at',
+      header: 'Date',
+      icon: CalendarIcon,
+      width: '20%',
+      render: (value) => format(fromDbTime(value), 'MMM d, HH:mm'),
+      className: 'text-slate-300',
     },
-    [page, itemsPerPage]
-  );
-
-  // 合併數據源
-  const displayFiles = shouldUseGraphQL ? processGraphQLData() : files;
-  const displayLoading = shouldUseGraphQL ? graphqlLoading : loading;
-  const displayError = shouldUseGraphQL ? graphqlError?.message : error;
-  const displayHasMore = shouldUseGraphQL 
-    ? (graphqlData?.doc_uploadCollection?.pageInfo?.hasNextPage || false)
-    : hasMore;
-  const displayTotalCount = shouldUseGraphQL
-    ? (graphqlData?.doc_uploadCollection?.totalCount || 0)
-    : metadata.totalCount;
-
-  // 處理加載更多
-  const handleLoadMore = useCallback(() => {
-    if (shouldUseGraphQL) {
-      setPage(prev => prev + 1);
-    } else {
-      loadServerActionsFiles(true);
-    }
-  }, [shouldUseGraphQL, loadServerActionsFiles]);
-
-  // 處理刷新
-  const handleRefresh = useCallback(() => {
-    if (shouldUseGraphQL) {
-      setPage(0);
-      refetchGraphQL();
-    } else {
-      loadServerActionsFiles(false);
-    }
-  }, [shouldUseGraphQL, refetchGraphQL, loadServerActionsFiles]);
-
-  useEffect(() => {
-    if (!isEditMode && !shouldUseGraphQL) {
-      loadServerActionsFiles();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isEditMode, shouldUseGraphQL]);
-
-  // 訂閱上傳更新事件
-  useEffect(() => {
-    if (otherFilesVersion > 0 && !isEditMode) {
-      handleRefresh(); // 重新載入第一頁
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [otherFilesVersion]);
-
-  const formatTime = useCallback((timestamp: string) => {
-    try {
-      const date = fromDbTime(timestamp);
-      return format(date, 'dd MMM yyyy HH:mm');
-    } catch {
-      return 'Unknown';
-    }
-  }, []);
-
-  const getDocIcon = useCallback((docType?: string) => {
-    if (docType === 'image' || docType === 'photo') {
-      return <PhotoIcon className='h-4 w-4 text-green-400' />;
-    } else if (docType === 'spec') {
-      return <DocumentIcon className='h-4 w-4 text-purple-400' />;
-    }
-    return <CloudIcon className='h-4 w-4 text-slate-400' />;
-  }, []);
-
-  // Medium & Large sizes
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      className='flex h-full flex-col'
-    >
-      <CardHeader className='pb-3'>
-        <CardTitle className='flex items-center justify-between'>
-          <div className='flex items-center gap-2'>
-            <div className='flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-r from-purple-500 to-pink-500'>
-              <CloudIcon className='h-5 w-5 text-white' />
-            </div>
-            <span className='text-base font-medium text-slate-200'>Other File Upload History</span>
+    {
+      key: 'doc_name',
+      header: 'File Name',
+      icon: DocumentIcon,
+      width: '50%',
+      render: (value, item) => {
+        const FileIcon = getFileIcon(item.doc_type, value);
+        return (
+          <div className="flex items-center gap-2">
+            <FileIcon className="h-4 w-4 text-slate-400 flex-shrink-0" />
+            <span className="font-medium text-white truncate">{value}</span>
           </div>
-          <div className='flex items-center gap-2'>
-            {shouldUseGraphQL && (
-              <span className='text-xs text-blue-400'>
-                ⚡ GraphQL
-              </span>
-            )}
-            {!isEditMode && !shouldUseGraphQL && performanceMetrics.apiResponseTime && (
-              <span className='text-xs text-slate-400'>
-                {performanceMetrics.apiResponseTime}ms
-                {performanceMetrics.optimized && ' (optimized)'}
-              </span>
-            )}
-            <button
-              onClick={() => !isEditMode && handleRefresh()}
-              disabled={isEditMode || displayLoading}
-              className='rounded-lg p-1.5 transition-colors hover:bg-slate-700/50 disabled:cursor-not-allowed disabled:opacity-50'
-              title='Refresh'
-            >
-              <ArrowPathIcon
-                className={`h-4 w-4 text-slate-400 ${displayLoading ? 'animate-spin' : ''}`}
-              />
-            </button>
-          </div>
-        </CardTitle>
-        {displayTotalCount > 0 && (
-          <p className='text-xs text-slate-400'>
-            Total {displayTotalCount} files (non-order documents)
-          </p>
-        )}
-      </CardHeader>
-
-      <CardContent className='flex flex-1 flex-col'>
-        {/* Column Headers */}
-        <div className='mb-2 border-b border-slate-700 pb-2'>
-          <div className='grid grid-cols-3 gap-2 px-2 text-xs font-medium text-slate-400'>
-            <span>Date</span>
-            <span>File Name</span>
-            <span>Upload By</span>
-          </div>
+        );
+      },
+    },
+    {
+      key: 'uploader_name',
+      header: 'Uploaded By',
+      icon: UserIcon,
+      width: '30%',
+      render: (value, item) => (
+        <div className="flex items-center gap-2">
+          <UserIcon className="h-4 w-4 text-slate-400 flex-shrink-0" />
+          <span className="text-slate-300">{value || `User ${item.upload_by}`}</span>
         </div>
+      ),
+    },
+  ], []);
 
-        {/* Content */}
-        {displayLoading && displayFiles.length === 0 ? (
-          <div className='animate-pulse space-y-2'>
-            {[...Array(5)].map((_, i) => (
-              <div key={i} className='h-10 rounded-lg bg-white/10'></div>
-            ))}
-          </div>
-        ) : displayError ? (
-          <div className='flex flex-1 items-center justify-center'>
-            <div className='text-center'>
-              <CloudIcon className='mx-auto mb-2 h-12 w-12 text-red-400' />
-              <p className='text-sm text-red-400'>Error loading files</p>
-              <p className='mt-1 text-xs text-slate-500'>{displayError}</p>
-            </div>
-          </div>
-        ) : displayFiles.length === 0 ? (
-          <div className='flex flex-1 items-center justify-center'>
-            <div className='text-center'>
-              <CloudIcon className='mx-auto mb-2 h-12 w-12 text-slate-600' />
-              <p className='text-sm text-slate-500'>No files uploaded</p>
-            </div>
-          </div>
-        ) : (
-          <div className='flex-1 space-y-1 overflow-y-auto'>
-            {displayFiles.map((file: FileRecord) => (
-              <div
-                key={file.uuid}
-                className='cursor-pointer rounded-lg bg-black/20 p-2 transition-colors hover:bg-white/10'
-              >
-                <div className='grid grid-cols-3 items-center gap-2'>
-                  <div className='flex items-center gap-2'>
-                    {getDocIcon(file.doc_type)}
-                    <span className='text-xs text-purple-300'>{formatTime(file.created_at)}</span>
-                  </div>
-                  <span className='truncate text-xs text-purple-400' title={file.doc_name}>
-                    {file.doc_name}
-                  </span>
-                  <span className='truncate text-right text-xs text-purple-300'>
-                    {file.uploader_name || `User ${file.upload_by}`}
-                  </span>
-                </div>
-              </div>
-            ))}
+  // 計算 metadata
+  const metadata = useMemo(() => {
+    const files = data || [];
+    return {
+      fileCount: files.length,
+      hasMore: rawData?.doc_uploadCollection?.pageInfo?.hasNextPage || false,
+    };
+  }, [data, rawData]);
 
-            {/* Load More Button */}
-            {displayHasMore && !displayLoading && (
-              <button
-                onClick={() => !isEditMode && handleLoadMore()}
-                className='w-full py-2 text-sm text-purple-400 transition-colors hover:text-purple-300'
-                disabled={isEditMode}
-              >
-                Load more...
-              </button>
-            )}
-          </div>
-        )}
+  // Edit mode - 顯示空白狀態
+  if (isEditMode) {
+    return (
+      <div ref={widgetRef}>
+        <DataTable
+          title="Other Files"
+          icon={DocumentIcon}
+          iconColor="from-purple-500 to-pink-500"
+          data={[]}
+          columns={columns}
+          empty={true}
+          emptyMessage="Other Files List Widget V2"
+          emptyIcon={DocumentIcon}
+        />
+      </div>
+    );
+  }
 
-        {/* Performance indicator */}
-        {metadata.performanceMs && (
-          <div className='mt-2 text-center text-[10px] text-green-400'>
-            ✓ Server-side optimized ({metadata.performanceMs}ms query)
-          </div>
-        )}
-      </CardContent>
-    </motion.div>
+  // Progressive Loading - 如果還未進入視窗，顯示 skeleton
+  if (!hasBeenInViewport) {
+    return (
+      <div ref={widgetRef}>
+        <DataTable
+          title="Other Files"
+          icon={DocumentIcon}
+          iconColor="from-purple-500 to-pink-500"
+          data={[]}
+          columns={columns}
+          loading={true}
+        />
+      </div>
+    );
+  }
+
+  return (
+    <div ref={widgetRef}>
+      <DataTable
+        title="Other Files"
+        subtitle={`${metadata.fileCount} files uploaded`}
+        icon={DocumentIcon}
+        iconColor="from-purple-500 to-pink-500"
+        data={data || []}
+        columns={columns}
+        keyField="uuid"
+        loading={loading}
+        error={error}
+        empty={(data || []).length === 0}
+        emptyMessage="No files uploaded yet"
+        emptyIcon={DocumentIcon}
+        pagination={{
+          enabled: true,
+          pageSize: itemsPerPage,
+          loadMore: true,
+          hasMore: metadata.hasMore,
+          onLoadMore: handleLoadMore,
+          loadingMore: loading && page > 0,
+        }}
+        performanceMetrics={{
+          source: mode,
+          fetchTime: performanceMetrics?.queryTime,
+          optimized: true,
+        }}
+        connectionStatus={
+          mode === 'graphql' 
+            ? { type: 'graphql', label: '⚡ GraphQL' }
+            : mode === 'context'
+            ? { type: 'polling', label: '🚀 Batch Query' }
+            : undefined
+        }
+        onRefresh={refetch}
+        showRefreshButton={true}
+        animate={true}
+        rowClassName="transition-colors hover:bg-slate-700/50"
+      />
+    </div>
   );
 });
 
 export default OtherFilesListWidgetV2;
 
 /**
- * GraphQL Migration completed on 2025-07-09
+ * Other Files List Widget V2 - Enhanced Version
  * 
  * Features:
- * - Apollo Client query for doc_upload table
- * - Filters out order documents
- * - Pagination support
- * - User name from data_id relationship
- * - Fallback to Server Actions + RPC when GraphQL disabled
- * - Feature flag control: NEXT_PUBLIC_ENABLE_GRAPHQL_UPLOAD
+ * - ✅ useGraphQLFallback hook 統一數據獲取
+ * - ✅ Progressive Loading with useInViewport
+ * - ✅ DataTable 統一列表顯示
+ * - ✅ 支援分頁查詢和 Load More
+ * - ✅ Upload Refresh Context 整合
+ * - ✅ 根據檔案類型顯示不同圖標
+ * - ✅ 自動 GraphQL → Server Action fallback
  * 
- * Performance considerations:
- * - RPC function (rpc_get_other_files_list) may be more efficient
- * - GraphQL provides field selection benefits for large datasets
- * - Consider keeping RPC as primary method for complex filtering
+ * Updates (2025-01-10):
+ * - 使用 useGraphQLFallback 替換自定義 GraphQL/Server Actions 切換邏輯
+ * - 使用 DataTable 組件替換自定義列表渲染
+ * - 實施 Progressive Loading 優化首屏加載
+ * - 保留分頁功能和 Upload Refresh 整合
  */

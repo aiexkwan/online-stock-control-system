@@ -1,5 +1,6 @@
 /**
  * Upload Product Spec Widget - 產品規格文件上傳功能
+ * 使用 Server Actions 優化
  */
 
 'use client';
@@ -11,6 +12,7 @@ import { WidgetComponentProps } from '@/app/types/dashboard';
 import { toast } from 'sonner';
 import { GoogleDriveUploadToast } from './GoogleDriveUploadToast';
 import { useUploadRefresh } from '@/app/admin/contexts/UploadRefreshContext';
+import { uploadFile } from '@/app/actions/fileActions';
 
 interface UploadingFile {
   id: string;
@@ -79,7 +81,7 @@ export const UploadProductSpecWidget = React.memo(function UploadProductSpecWidg
   };
 
   // 上傳單個文件
-  const uploadFile = useCallback(
+  const uploadFileAction = useCallback(
     async (uploadingFile: UploadingFile) => {
       try {
         // 更新進度
@@ -89,40 +91,22 @@ export const UploadProductSpecWidget = React.memo(function UploadProductSpecWidg
           );
         };
 
+        // Server Actions 不支援實時進度，使用模擬進度
         updateProgress(20);
 
         const formData = new FormData();
         formData.append('file', uploadingFile.file);
         formData.append('folder', 'productSpec');
         formData.append('fileName', uploadingFile.file.name);
-        formData.append('uploadBy', currentUserId?.toString() || '');
+        formData.append('uploadBy', currentUserId?.toString() || '1');
 
-        const response = await fetch('/api/upload-file', {
-          method: 'POST',
-          body: formData,
-        });
-
-        updateProgress(60);
-
-        if (!response.ok) {
-          const error = await response.json();
-          throw new Error(error.error || 'Upload failed');
-        }
-
-        const result = await response.json();
+        // 使用 Server Action 上傳
+        updateProgress(40);
+        const result = await uploadFile(formData);
         updateProgress(80);
 
-        // 記錄到 doc_upload 表
-        if (currentUserId && result.url) {
-          const supabase = createClient();
-          await supabase.from('doc_upload').insert({
-            doc_name: uploadingFile.file.name,
-            upload_by: currentUserId,
-            doc_type: 'spec',
-            doc_url: result.url,
-            file_size: uploadingFile.file.size,
-            folder: 'productSpec',
-          });
+        if (!result.success) {
+          throw new Error(result.error || 'Upload failed');
         }
 
         updateProgress(100);
@@ -150,6 +134,11 @@ export const UploadProductSpecWidget = React.memo(function UploadProductSpecWidg
                 }
               : f
           )
+        );
+        
+        // 顯示錯誤提示
+        toast.error(
+          error instanceof Error ? error.message : `Failed to upload ${uploadingFile.file.name}`
         );
       }
     },
@@ -188,11 +177,11 @@ export const UploadProductSpecWidget = React.memo(function UploadProductSpecWidg
 
         // 開始上傳
         newFiles.forEach(file => {
-          uploadFile(file);
+          uploadFileAction(file);
         });
       }
     },
-    [isEditMode, uploadFile]
+    [isEditMode, uploadFileAction]
   );
 
   // 拖放處理

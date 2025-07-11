@@ -1,18 +1,17 @@
 /**
- * Production Stats Widget - Server Actions Version
+ * Production Stats Widget - MetricCard Version
  * 用於 Admin Dashboard 的生產統計組件
- * 使用 Server Actions 替代 GraphQL
+ * 使用 MetricCard 通用組件統一顯示邏輯
  */
 
 'use client';
 
 import React, { useMemo, useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
-import { CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { CubeIcon } from '@heroicons/react/24/outline';
 import { format } from 'date-fns';
 import { createDashboardAPI } from '@/lib/api/admin/DashboardAPI';
 import { WidgetComponentProps } from '@/app/types/dashboard';
+import { MetricCard } from './common/data-display/MetricCard';
 
 interface ProductionStatsWidgetProps extends WidgetComponentProps {
   title: string;
@@ -23,7 +22,8 @@ export const ProductionStatsWidget: React.FC<ProductionStatsWidgetProps> = ({
   title, 
   metric,
   timeFrame,
-  isEditMode
+  isEditMode,
+  widget
 }) => {
   const [statValue, setStatValue] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -113,55 +113,43 @@ export const ProductionStatsWidget: React.FC<ProductionStatsWidgetProps> = ({
     fetchData();
   }, [dashboardAPI, dateRange, metric, isEditMode]);
 
+  // 格式化日期範圍
+  const dateRangeText = `${format(new Date(dateRange.start), 'MMM d')} to ${format(new Date(dateRange.end), 'MMM d')}`;
+
+  // 決定標籤文字
+  const label = metric === 'pallet_count' ? 'Pallets produced' : 'Total quantity';
+
+  if (isEditMode) {
+    return (
+      <MetricCard
+        title={title}
+        value={0}
+        label={label}
+        icon={CubeIcon}
+        isEditMode={true}
+      />
+    );
+  }
+
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.1 }}
-      className="h-full flex flex-col relative"
-    >
-      
-      <CardHeader className="pb-2">
-        <CardTitle className="widget-title flex items-center gap-2">
-          <CubeIcon className="w-5 h-5" />
-          {title}
-        </CardTitle>
-        <p className="text-xs text-slate-400 mt-1">
-          From {format(new Date(dateRange.start), 'MMM d')} to {format(new Date(dateRange.end), 'MMM d')}
-        </p>
-      </CardHeader>
-      
-      <CardContent className="flex-1 flex items-center justify-center">
-        {loading ? (
-          <div className="space-y-2 w-full">
-            <div className="h-8 bg-slate-700/50 rounded animate-pulse" />
-            <div className="h-4 bg-slate-700/30 rounded animate-pulse w-2/3" />
-          </div>
-        ) : error ? (
-          <div className="text-red-400 text-sm text-center">
-            Error loading data: {error}
-          </div>
-        ) : (
-          <div className="text-center">
-            <motion.div
-              initial={{ scale: 0.8, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              transition={{ duration: 0.3 }}
-              className="text-4xl font-bold text-white mb-2"
-            >
-              {statValue.toLocaleString()}
-            </motion.div>
-            <p className="text-xs text-slate-400">
-              {metric === 'pallet_count' ? 'Pallets produced' : 'Total quantity'}
-            </p>
-            {metadata.rpcFunction && (
-              <p className="text-xs text-green-400/70 mt-1">
-                ✓ Server optimized
-              </p>
-            )}
-          </div>
-        )}
-      </CardContent>
-    </motion.div>
+    <MetricCard
+      title={title}
+      value={statValue}
+      label={label}
+      icon={CubeIcon}
+      dateRange={dateRangeText}
+      performanceMetrics={metadata.rpcFunction ? {
+        source: 'Server',
+        optimized: true
+      } : undefined}
+      loading={loading}
+      error={error ? error : undefined}
+      onRetry={() => {
+        // Trigger re-fetch by updating state
+        window.location.reload();
+      }}
+      animateOnMount={true}
+      widgetType={widget?.type?.toUpperCase() as any}
+    />
   );
 };
