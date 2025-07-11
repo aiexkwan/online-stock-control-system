@@ -25,7 +25,6 @@ const categoryMap: WidgetMapping['categoryMap'] = {
   WarehouseWorkLevelAreaChart: 'charts',
   TransferTimeDistributionWidget: 'charts',
   ProductDistributionChartWidget: 'charts',
-  TopProductsChartGraphQL: 'charts',
   TopProductsByQuantityWidget: 'charts',
   TopProductsDistributionWidget: 'charts',
 
@@ -43,7 +42,7 @@ const categoryMap: WidgetMapping['categoryMap'] = {
   ReprintLabelWidget: 'operations',
 
   // Uploads widgets
-  UploadOrdersWidget: 'uploads',
+  UploadOrdersWidgetV2: 'uploads',
   UploadFilesWidget: 'uploads',
   UploadPhotoWidget: 'uploads',
   UploadProductSpecWidget: 'uploads',
@@ -53,13 +52,11 @@ const categoryMap: WidgetMapping['categoryMap'] = {
   TransactionReportWidget: 'reports',
   GrnReportWidgetV2: 'reports',
   AcoOrderReportWidgetV2: 'reports',
-  ReportGeneratorWidget: 'reports',
   ReportGeneratorWithDialogWidgetV2: 'reports',
 
   // Analysis widgets
   AnalysisExpandableCards: 'analysis',
   AcoOrderProgressWidget: 'analysis',
-  AnalysisPagedWidget: 'analysis',
   AnalysisPagedWidgetV2: 'analysis',
   InventoryOrderedAnalysisWidget: 'analysis',
 
@@ -115,7 +112,7 @@ const preloadPriorityMap: WidgetMapping['preloadPriorityMap'] = {
   VoidPalletWidget: 6,
 
   // 上傳類組件 - 中低優先級
-  UploadOrdersWidget: 5,
+  UploadOrdersWidgetV2: 5,
   UploadFilesWidget: 5,
   UploadPhotoWidget: 4,
 
@@ -127,7 +124,7 @@ const preloadPriorityMap: WidgetMapping['preloadPriorityMap'] = {
 
   // 分析類組件 - 低優先級（通常在特定頁面才需要）
   AnalysisExpandableCards: 2,
-  AnalysisPagedWidget: 2,
+  AnalysisPagedWidgetV2: 2,
   InventoryOrderedAnalysisWidget: 2,
 };
 
@@ -153,7 +150,7 @@ export const routePreloadMap: Record<string, string[]> = {
     'WarehouseWorkLevelAreaChart',
   ],
   '/admin/upload': [
-    'UploadOrdersWidget',
+    'UploadOrdersWidgetV2',
     'UploadFilesWidget',
     'OrdersListWidgetV2',
     'OtherFilesListWidgetV2',

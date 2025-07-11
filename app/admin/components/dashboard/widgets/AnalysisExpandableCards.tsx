@@ -15,14 +15,44 @@ import { motion } from 'framer-motion';
 import { BarChart, Activity, TrendingUp, CheckCircle, AlertTriangle, Map } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-// Import chart components
-import AcoOrderProgressCards from '../charts/AcoOrderProgressCards';
-import TopProductsInventoryChart from '../charts/TopProductsInventoryChart';
-import UserActivityHeatmap from '../charts/UserActivityHeatmap';
-import InventoryTurnoverAnalysis from '../charts/InventoryTurnoverAnalysis';
-import StocktakeAccuracyTrend from '../charts/StocktakeAccuracyTrend';
-import VoidRecordsAnalysis from '../charts/VoidRecordsAnalysis';
-import RealTimeInventoryMap from '../charts/RealTimeInventoryMap';
+// Import chart components with SSR safety
+import dynamic from 'next/dynamic';
+
+// Lazy load chart components to avoid SSR issues with GraphQL
+const AcoOrderProgressCards = dynamic(() => import('../charts/AcoOrderProgressCards'), {
+  ssr: false,
+  loading: () => <div className="animate-pulse bg-slate-700/50 h-32 rounded" />
+});
+
+const TopProductsInventoryChart = dynamic(() => import('../charts/TopProductsInventoryChart'), {
+  ssr: false,
+  loading: () => <div className="animate-pulse bg-slate-700/50 h-32 rounded" />
+});
+
+const UserActivityHeatmap = dynamic(() => import('../charts/UserActivityHeatmap'), {
+  ssr: false,
+  loading: () => <div className="animate-pulse bg-slate-700/50 h-32 rounded" />
+});
+
+const InventoryTurnoverAnalysis = dynamic(() => import('../charts/InventoryTurnoverAnalysis'), {
+  ssr: false,
+  loading: () => <div className="animate-pulse bg-slate-700/50 h-32 rounded" />
+});
+
+const StocktakeAccuracyTrend = dynamic(() => import('../charts/StocktakeAccuracyTrend'), {
+  ssr: false,
+  loading: () => <div className="animate-pulse bg-slate-700/50 h-32 rounded" />
+});
+
+const VoidRecordsAnalysis = dynamic(() => import('../charts/VoidRecordsAnalysis'), {
+  ssr: false,
+  loading: () => <div className="animate-pulse bg-slate-700/50 h-32 rounded" />
+});
+
+const RealTimeInventoryMap = dynamic(() => import('../charts/RealTimeInventoryMap'), {
+  ssr: false,
+  loading: () => <div className="animate-pulse bg-slate-700/50 h-32 rounded" />
+});
 
 interface TimeFrame {
   label: string;

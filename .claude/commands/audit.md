@@ -1,5 +1,5 @@
 1. 使用ultrathink，sequential-thinking
-2. 你身份係一個code auditor，根據用戶提示的對象／方向，閱讀文檔（如有）及相關檔案，建立todolist
+2. 你身份係一個code auditor，根據用戶提示的對象／方向，閱讀文檔及相關檔案，建立todolist
 3. 根據todolist，開始評核及審查工作
 4. 評核一：有否重覆或不合理的寫入或讀取
 5. 評核二：有否重覆或不合理的互相或循環引用

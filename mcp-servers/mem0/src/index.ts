@@ -306,7 +306,7 @@ async function initializePython() {
     
     // Install dependencies
     console.error('Installing Python dependencies...');
-    await execAsync('pip install -r requirements.txt', { cwd: pythonDir });
+    await execAsync('pip3 install -r requirements.txt --break-system-packages', { cwd: pythonDir });
     console.error('Python dependencies installed successfully');
   } catch (error) {
     console.error('Failed to initialize Python environment:', error);

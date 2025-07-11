@@ -156,7 +156,7 @@ export function PerformanceMonitor() {
         {!performanceData ? (
           <Alert>
             <AlertDescription>
-              Click "Start Monitoring" to begin collecting performance metrics
+              Click &quot;Start Monitoring&quot; to begin collecting performance metrics
             </AlertDescription>
           </Alert>
         ) : (

@@ -25,20 +25,30 @@ global.Response = class Response {
   }
 };
 
-// Mock window.matchMedia
+// Mock window.matchMedia - Enhanced for framer-motion
+const mockMediaQueryList = {
+  matches: false,
+  media: '',
+  onchange: null,
+  addListener: jest.fn(),
+  removeListener: jest.fn(),
+  addEventListener: jest.fn(),
+  removeEventListener: jest.fn(),
+  dispatchEvent: jest.fn(),
+};
+
 Object.defineProperty(window, 'matchMedia', {
   writable: true,
   value: jest.fn().mockImplementation(query => ({
-    matches: false,
+    ...mockMediaQueryList,
     media: query,
-    onchange: null,
-    addListener: jest.fn(), // deprecated
-    removeListener: jest.fn(), // deprecated
-    addEventListener: jest.fn(),
-    removeEventListener: jest.fn(),
-    dispatchEvent: jest.fn(),
   })),
 });
+
+// Mock MediaQueryList constructor
+global.MediaQueryList = function MediaQueryList() {
+  return mockMediaQueryList;
+};
 
 // Mock IntersectionObserver
 global.IntersectionObserver = class IntersectionObserver {
@@ -80,7 +90,68 @@ global.Blob = class Blob {
   }
 };
 
-global.URL = {
-  createObjectURL: jest.fn(() => 'blob:mock-url'),
-  revokeObjectURL: jest.fn(),
+// Mock URL constructor and methods
+global.URL = class URL {
+  constructor(url, base) {
+    this.href = url;
+    this.origin = 'https://example.com';
+    this.protocol = 'https:';
+    this.host = 'example.com';
+    this.hostname = 'example.com';
+    this.port = '';
+    this.pathname = '/';
+    this.search = '';
+    this.hash = '';
+  }
+  
+  toString() {
+    return this.href;
+  }
+  
+  static createObjectURL = jest.fn(() => 'blob:mock-url');
+  static revokeObjectURL = jest.fn();
 };
+
+// Mock WebSocket for Supabase Realtime
+global.WebSocket = class WebSocket {
+  constructor(url) {
+    this.url = url;
+    this.readyState = 1; // OPEN
+    this.send = jest.fn();
+    this.close = jest.fn();
+    this.addEventListener = jest.fn();
+    this.removeEventListener = jest.fn();
+    this.dispatchEvent = jest.fn();
+  }
+};
+
+// Mock isows module
+jest.mock('isows', () => ({
+  WebSocket: global.WebSocket,
+  default: global.WebSocket,
+}));
+
+// Mock @supabase/realtime-js
+jest.mock('@supabase/realtime-js', () => ({
+  RealtimeClient: jest.fn(() => ({
+    connect: jest.fn(),
+    disconnect: jest.fn(),
+    channel: jest.fn(() => ({
+      on: jest.fn(),
+      off: jest.fn(),
+      subscribe: jest.fn(),
+      unsubscribe: jest.fn(),
+    })),
+  })),
+}));
+
+// Mock Next.js cookies
+jest.mock('next/headers', () => ({
+  cookies: jest.fn(() => ({
+    get: jest.fn((name) => ({ value: 'mock-cookie-value' })),
+    set: jest.fn(),
+    delete: jest.fn(),
+    getAll: jest.fn(() => []),
+    has: jest.fn(() => false),
+  })),
+}));

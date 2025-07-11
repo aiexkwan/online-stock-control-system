@@ -25,7 +25,7 @@ const customJestConfig = {
   ],
   testMatch: ['**/__tests__/**/*.test.[jt]s?(x)', '**/?(*.)+(spec|test).[jt]s?(x)'],
   transformIgnorePatterns: [
-    'node_modules/(?!(.*\\.mjs$|exceljs|uuid))'
+    'node_modules/(?!(.*\\.mjs$|exceljs|uuid|isows|@supabase/realtime-js|@supabase/ssr|@supabase/supabase-js))'
   ],
   collectCoverageFrom: [
     'app/**/*.{js,jsx,ts,tsx}',

@@ -98,8 +98,8 @@ test.describe('Widget Optimization E2E Tests', () => {
       };
     });
 
-    // 導航到 dashboard
-    await page.goto('/admin/dashboard');
+    // 導航到 dashboard (使用 injection 主題作為預設)
+    await page.goto('/admin/injection');
     await page.waitForLoadState('networkidle');
   });
 

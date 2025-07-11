@@ -1,0 +1,23 @@
+{
+  "timestamp": "2025-07-11T11:44:09.096Z",
+  "bundle": {
+    "exists": true,
+    "sizeInBytes": 3950974,
+    "sizeInMB": 3.77,
+    "sizeInKB": 3858.37
+  },
+  "package": {
+    "exists": true,
+    "sizeInKB": 8.06
+  },
+  "nodeModules": {
+    "exists": true,
+    "sizeInMB": 43.13
+  },
+  "summary": {
+    "projectBuilt": true,
+    "dependenciesInstalled": true,
+    "configExists": true,
+    "totalSizeMB": 46.900000000000006
+  }
+}

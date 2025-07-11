@@ -261,7 +261,7 @@ export const HistoryTreeV2 = React.memo(function HistoryTreeV2({
     mode,
     performanceMetrics,
   } = useGraphQLFallback<{ events?: MergedEvent[]; metadata?: any; record_historyCollection?: any }, { limit: number; offset: number }>({
-    graphqlQuery: shouldUseGraphQL ? GET_HISTORY_TREE : undefined,
+    graphqlQuery: shouldUseGraphQL ? GET_HISTORY_TREE : null, // Use null instead of undefined
     serverAction: fetchHistoryData,
     variables: { limit: 50, offset: 0 },
     skip: isEditMode || !hasBeenInViewport, // Progressive Loading

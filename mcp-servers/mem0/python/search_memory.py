@@ -27,7 +27,6 @@ def main():
             query=args['query'],
             user_id=args.get('user_id'),
             agent_id=args.get('agent_id'),
-            session_id=args.get('session_id'),
             limit=args.get('limit', 10)
         )
         

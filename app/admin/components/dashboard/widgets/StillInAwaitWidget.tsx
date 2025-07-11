@@ -13,7 +13,7 @@ import { createDashboardAPI } from '@/lib/api/admin/DashboardAPI';
 import { getYesterdayRange } from '@/app/utils/timezone';
 import { format, startOfDay, endOfDay } from 'date-fns';
 import { useGraphQLFallback, GraphQLFallbackPresets } from '@/app/admin/hooks/useGraphQLFallback';
-import { MetricCard } from '../common';
+import { MetricCard } from './common';
 import { gql } from '@apollo/client';
 
 // GraphQL Query

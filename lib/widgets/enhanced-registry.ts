@@ -6,21 +6,14 @@
 import React, { Suspense, ComponentType } from 'react';
 import type { 
   WidgetDefinition, 
-  WidgetRegistry as IWidgetRegistry, 
+  IWidgetRegistry,
   WidgetCategory,
-  WidgetComponent,
-  WidgetState,
 } from './types';
 import type { WidgetComponentProps } from '@/app/types/dashboard';
-import { widgetMappings, widgetCategories } from './widget-mappings';
-import { loadWidget } from './widget-loader';
-import { statsWidgetAdapter } from './stats-widget-adapter';
-import { chartsWidgetAdapter } from './charts-widget-adapter';
-import { listsWidgetAdapter } from './lists-widget-adapter';
-import { reportsWidgetAdapter } from './reports-widget-adapter';
-import { operationsWidgetAdapter } from './operations-widget-adapter';
-import { analysisWidgetAdapter } from './analysis-widget-adapter';
-import { specialWidgetAdapter } from './special-widget-adapter';
+
+// Define WidgetComponent type
+type WidgetComponent = React.ComponentType<WidgetComponentProps>;
+import { widgetMapping, getWidgetCategory } from './widget-mappings';
 
 // Default loading component
 const DefaultLoadingComponent = () => 
@@ -88,9 +81,11 @@ class SimplifiedWidgetRegistry implements IWidgetRegistry {
   private widgets = new Map<string, WidgetDefinition>();
   private stateManager = new WidgetStateManager();
   private loadedComponents = new Map<string, ComponentType<WidgetComponentProps>>();
+  private adaptersInitialized = false;
   
   private constructor() {
-    this.autoRegisterWidgets();
+    // Don't call autoRegisterWidgets in constructor to avoid circular dependency
+    // Will be called lazily when needed
   }
   
   static getInstance(): SimplifiedWidgetRegistry {
@@ -98,6 +93,18 @@ class SimplifiedWidgetRegistry implements IWidgetRegistry {
       SimplifiedWidgetRegistry.instance = new SimplifiedWidgetRegistry();
     }
     return SimplifiedWidgetRegistry.instance;
+  }
+  
+  // Lazy initialization of adapters
+  private ensureAdaptersInitialized(): void {
+    if (this.adaptersInitialized) return;
+    
+    try {
+      this.autoRegisterWidgets();
+      this.adaptersInitialized = true;
+    } catch (error) {
+      console.error('Failed to initialize widget adapters:', error);
+    }
   }
   
   // Core registration functions
@@ -111,26 +118,31 @@ class SimplifiedWidgetRegistry implements IWidgetRegistry {
   }
   
   getDefinition(widgetId: string): WidgetDefinition | undefined {
+    this.ensureAdaptersInitialized();
     return this.widgets.get(widgetId);
   }
   
   getAllDefinitions(): WidgetDefinition[] {
+    this.ensureAdaptersInitialized();
     return Array.from(this.widgets.values());
   }
   
   // Component retrieval
-  async getComponent(widgetId: string): Promise<ComponentType<WidgetComponentProps> | null> {
+  getComponent(widgetId: string): ComponentType<WidgetComponentProps> | null {
+    this.ensureAdaptersInitialized();
+    
     try {
       // Check if already loaded
       if (this.loadedComponents.has(widgetId)) {
         return this.loadedComponents.get(widgetId)!;
       }
       
-      // Load widget dynamically
-      const module = await loadWidget(widgetId);
-      if (module?.default) {
-        this.loadedComponents.set(widgetId, module.default);
-        return module.default;
+      // 延遲載入 createDynamicWidget 避免循環依賴
+      const { createDynamicWidget } = require('./widget-loader');
+      const component = createDynamicWidget(widgetId);
+      if (component) {
+        this.loadedComponents.set(widgetId, component);
+        return component;
       }
       
       return null;
@@ -141,26 +153,34 @@ class SimplifiedWidgetRegistry implements IWidgetRegistry {
   }
   
   getWidgetComponent(widgetId: string): WidgetComponent {
-    const LazyComponent = React.lazy(async () => {
-      const component = await this.getComponent(widgetId);
-      return { default: component || DefaultLoadingComponent };
-    });
+    // getComponent 已經返回懶加載組件，不需要再次包裝
+    const component = this.getComponent(widgetId);
     
-    return (props: WidgetComponentProps) => 
-      React.createElement(Suspense, { fallback: React.createElement(DefaultLoadingComponent) },
-        React.createElement(LazyComponent, props)
-      );
+    if (!component) {
+      // 如果找不到組件，返回錯誤組件
+      const ErrorComponent = (props: WidgetComponentProps) => 
+        React.createElement('div', { className: 'text-red-500 p-4' }, 
+          `Widget not found: ${widgetId}`
+        );
+      ErrorComponent.displayName = `ErrorWidget_${widgetId}`;
+      return ErrorComponent;
+    }
+    
+    return component;
   }
   
   // Category management
   getByCategory(category: WidgetCategory): WidgetDefinition[] {
+    this.ensureAdaptersInitialized();
     return this.getAllDefinitions().filter(widget => widget.category === category);
   }
   
   getWidgetsByCategory(): Record<WidgetCategory, WidgetDefinition[]> {
+    this.ensureAdaptersInitialized();
     const grouped: Record<WidgetCategory, WidgetDefinition[]> = {} as any;
     
-    for (const category of widgetCategories) {
+    const categories = ['stats', 'charts', 'lists', 'reports', 'operations', 'analysis', 'special'] as WidgetCategory[];
+    for (const category of categories) {
       grouped[category] = this.getByCategory(category);
     }
     
@@ -169,16 +189,19 @@ class SimplifiedWidgetRegistry implements IWidgetRegistry {
   
   // Auto-registration from widget mappings
   private autoRegisterWidgets(): void {
-    // Register all widgets from mappings
-    Object.entries(widgetMappings).forEach(([id, config]) => {
-      this.register({
-        id,
-        title: config.title || id,
-        category: config.category || 'stats',
-        description: config.description,
-        config: config.defaultConfig || {},
-        ...config
-      });
+    // Register all widgets from mappings (basic registration for widgets not in adapters)
+    Object.entries(widgetMapping.categoryMap || {}).forEach(([id, category]) => {
+      // Only register if not already registered by adapters
+      if (!this.widgets.has(id)) {
+        this.register({
+          id,
+          name: id,
+          category: category || 'stats',
+          description: `${id} widget`,
+          lazyLoad: true,
+          component: undefined // 延遲創建組件
+        });
+      }
     });
     
     // Register from adapters
@@ -186,22 +209,109 @@ class SimplifiedWidgetRegistry implements IWidgetRegistry {
   }
   
   private registerFromAdapters(): void {
-    // Each adapter can register its widgets
-    const adapters = [
-      statsWidgetAdapter,
-      chartsWidgetAdapter,
-      listsWidgetAdapter,
-      reportsWidgetAdapter,
-      operationsWidgetAdapter,
-      analysisWidgetAdapter,
-      specialWidgetAdapter,
-    ];
-    
-    adapters.forEach(adapter => {
-      if (adapter.registerWidgets) {
-        adapter.registerWidgets(this);
-      }
-    });
+    // Dynamically import and register from adapters to avoid circular dependency
+    try {
+      // Import adapters dynamically
+      import('./stats-widget-adapter').then(({ statsWidgetConfigs, registerStatsWidgets }) => {
+        registerStatsWidgets();
+        if (statsWidgetConfigs) {
+          Object.entries(statsWidgetConfigs).forEach(([id, config]) => {
+            this.register({
+              id,
+              name: config.title || id,
+              category: config.category || 'stats',
+              ...config
+            });
+          });
+        }
+      }).catch(err => console.error('Failed to load stats adapter:', err));
+      
+      import('./charts-widget-adapter').then(({ chartsWidgetConfigs, registerChartsWidgets }) => {
+        registerChartsWidgets();
+        if (chartsWidgetConfigs) {
+          Object.entries(chartsWidgetConfigs).forEach(([id, config]) => {
+            this.register({
+              id,
+              name: config.title || id,
+              category: config.category || 'charts',
+              ...config
+            });
+          });
+        }
+      }).catch(err => console.error('Failed to load charts adapter:', err));
+      
+      import('./lists-widget-adapter').then(({ listsWidgetConfigs, registerListsWidgets }) => {
+        registerListsWidgets();
+        if (listsWidgetConfigs) {
+          Object.entries(listsWidgetConfigs).forEach(([id, config]) => {
+            this.register({
+              id,
+              name: config.title || id,
+              category: config.category || 'lists',
+              ...config
+            });
+          });
+        }
+      }).catch(err => console.error('Failed to load lists adapter:', err));
+      
+      import('./reports-widget-adapter').then(({ reportsWidgetConfigs, registerReportsWidgets }) => {
+        registerReportsWidgets();
+        if (reportsWidgetConfigs) {
+          Object.entries(reportsWidgetConfigs).forEach(([id, config]) => {
+            this.register({
+              id,
+              name: config.title || id,
+              category: config.category || 'reports',
+              ...config
+            });
+          });
+        }
+      }).catch(err => console.error('Failed to load reports adapter:', err));
+      
+      import('./operations-widget-adapter').then(({ operationsWidgetConfigs, registerOperationsWidgets }) => {
+        registerOperationsWidgets();
+        if (operationsWidgetConfigs) {
+          Object.entries(operationsWidgetConfigs).forEach(([id, config]) => {
+            this.register({
+              id,
+              name: config.title || id,
+              category: config.category || 'operations',
+              ...config
+            });
+          });
+        }
+      }).catch(err => console.error('Failed to load operations adapter:', err));
+      
+      import('./analysis-widget-adapter').then(({ analysisWidgetConfigs, registerAnalysisWidgets }) => {
+        registerAnalysisWidgets();
+        if (analysisWidgetConfigs) {
+          Object.entries(analysisWidgetConfigs).forEach(([id, config]) => {
+            this.register({
+              id,
+              name: config.title || id,
+              category: config.category || 'analysis',
+              ...config
+            });
+          });
+        }
+      }).catch(err => console.error('Failed to load analysis adapter:', err));
+      
+      import('./special-widget-adapter').then(({ specialWidgetConfigs, registerSpecialWidgets }) => {
+        registerSpecialWidgets();
+        if (specialWidgetConfigs) {
+          Object.entries(specialWidgetConfigs).forEach(([id, config]) => {
+            this.register({
+              id,
+              name: config.title || id,
+              category: config.category || 'special',
+              ...config
+            });
+          });
+        }
+      }).catch(err => console.error('Failed to load special adapter:', err));
+    } catch (error) {
+      console.error('Error in registerFromAdapters:', error);
+    }
   }
   
   // Widget state management
@@ -215,13 +325,45 @@ class SimplifiedWidgetRegistry implements IWidgetRegistry {
   
   // Utility functions
   isRegistered(widgetId: string): boolean {
+    this.ensureAdaptersInitialized();
     return this.widgets.has(widgetId);
   }
   
   getCategories(): WidgetCategory[] {
-    return widgetCategories;
+    return ['stats', 'charts', 'lists', 'reports', 'operations', 'analysis', 'special'] as WidgetCategory[];
+  }
+  
+  // Add preloadWidgets method that was missing
+  preloadWidgets(route: string): void {
+    this.ensureAdaptersInitialized();
+    
+    // Simple implementation - preload widgets based on route
+    const widgets = this.getAllDefinitions();
+    
+    // Preload first 5 widgets for the route (can be optimized later)
+    const widgetsToPreload = widgets.slice(0, 5);
+    Promise.all(
+      widgetsToPreload.map(widget => this.getComponent(widget.id))
+    ).catch(error => {
+      console.error('Failed to preload widgets:', error);
+    });
   }
 }
+
+// Smart preloader for route-based widget preloading
+export const smartPreloader = {
+  preloadForRoute: async (route: string) => {
+    // Simple implementation - preload widgets based on route
+    const registry = SimplifiedWidgetRegistry.getInstance();
+    const widgets = registry.getAllDefinitions();
+    
+    // Preload first 5 widgets for the route (can be optimized later)
+    const widgetsToPreload = widgets.slice(0, 5);
+    await Promise.all(
+      widgetsToPreload.map(widget => registry.getComponent(widget.id))
+    );
+  }
+};
 
 // Export singleton instance
 export const widgetRegistry = SimplifiedWidgetRegistry.getInstance();

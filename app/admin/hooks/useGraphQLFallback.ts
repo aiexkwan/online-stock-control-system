@@ -1,4 +1,4 @@
-import { useQuery, DocumentNode, ApolloError, WatchQueryFetchPolicy } from '@apollo/client';
+import { useQuery, DocumentNode, ApolloError, WatchQueryFetchPolicy, gql } from '@apollo/client';
 import useSWR, { SWRConfiguration } from 'swr';
 import { useState, useCallback, useContext, useMemo, useRef, useEffect } from 'react';
 import { DashboardDataContext } from '../contexts/DashboardDataContext';
@@ -120,13 +120,13 @@ export function useGraphQLFallback<TData = any, TVariables = any>({
     }
   }, [widgetId, variables]);
 
-  // GraphQL Query
+  // GraphQL Query - only use when we have a valid query
   const {
     data: graphqlData,
     loading: graphqlLoading,
     error: graphqlError,
     refetch: graphqlRefetch,
-  } = useQuery(graphqlQuery!, {
+  } = useQuery(graphqlQuery || gql`query EmptyQuery { __typename }`, {
     variables,
     skip: skip || !graphqlQuery || contextData !== null || mode !== 'graphql',
     pollInterval,

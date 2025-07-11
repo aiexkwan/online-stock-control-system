@@ -16,21 +16,13 @@ export function useWidgetRegistry() {
 
     const initRegistry = async () => {
       try {
-        // Check if already initialized
-        const definitions = widgetRegistry.getAllDefinitions();
-        if (definitions.size > 0) {
-          if (mounted) {
-            setIsInitialized(true);
-          }
-          return;
-        }
-
         // Initialize the registry
         console.log('[useWidgetRegistry] Initializing widget registry...');
         await initializeEnhancedRegistry();
 
-        // Auto register widgets
-        await widgetRegistry.autoRegisterWidgets();
+        // Check if registry has widgets registered
+        const definitions = widgetRegistry.getAllDefinitions();
+        console.log(`[useWidgetRegistry] Registry has ${definitions.size} widgets registered`);
 
         if (mounted) {
           setIsInitialized(true);

@@ -1,6 +1,6 @@
 'use server';
 
-import { createServerClient } from '@/app/utils/supabase/server';
+import { createClient } from '@/app/utils/supabase/server';
 import { cookies } from 'next/headers';
 
 // Chart colors 配置
@@ -29,8 +29,7 @@ export interface StockDistributionData {
 export async function getStockDistributionAction(
   selectedType?: string
 ): Promise<StockDistributionData[]> {
-  const cookieStore = cookies();
-  const supabase = createServerClient(cookieStore);
+  const supabase = await createClient();
 
   try {
     // 構建查詢
@@ -127,8 +126,7 @@ export async function getStockDistributionAction(
 export async function getStockDistributionRPCAction(
   selectedType?: string
 ): Promise<StockDistributionData[]> {
-  const cookieStore = cookies();
-  const supabase = createServerClient(cookieStore);
+  const supabase = await createClient();
 
   try {
     const { data, error } = await supabase.rpc('rpc_get_stock_distribution', {

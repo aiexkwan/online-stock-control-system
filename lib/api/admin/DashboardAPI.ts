@@ -239,26 +239,34 @@ export class DashboardAPI extends DataAccessLayer<DashboardParams, DashboardResu
           };
           
         case 'await_location_count':
-          // Simple await location count using optimized RPC
-          const { data: awaitCount, error: awaitCountError } = await supabase
-            .rpc('rpc_get_await_location_count');
+          // Get await location inventory details for quantity calculation
+          const { data: awaitInventory, error: awaitCountError } = await supabase
+            .from('record_inventory')
+            .select('location, quantity:await')
+            .gt('await', 0);
           
           if (awaitCountError) {
             console.error('Error fetching await location count:', awaitCountError);
             return {
-              value: 0,
-              label: 'Error loading await count',
+              records: [],
               error: awaitCountError.message
             };
           }
           
+          // Transform data to match widget expectations
+          const records = awaitInventory?.map(item => ({
+            location: 'AWAIT',
+            quantity: item.quantity || 0
+          })) || [];
+          
+          const totalQuantity = records.reduce((sum, record) => sum + record.quantity, 0);
+          
           return {
-            value: awaitCount?.await_count || 0,
-            label: 'Await Location Qty',
-            metadata: {
-              calculationTime: awaitCount?.calculation_time,
-              method: awaitCount?.method,
-              optimized: awaitCount?.performance?.optimized || true
+            records,
+            value: totalQuantity,
+            trend: {
+              value: 0, // Can be calculated based on historical data
+              isPositive: true
             }
           };
           

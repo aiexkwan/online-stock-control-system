@@ -4,11 +4,12 @@
  * 擴展版本 - 支援新的 Widget 註冊系統但保持向後兼容
  */
 
-import React, { lazy, Suspense } from 'react';
+import React, { Suspense } from 'react';
 import { WidgetType, WidgetComponentProps } from '@/app/types/dashboard';
 import { Skeleton } from '@/components/ui/skeleton';
 import { widgetRegistry } from '@/lib/widgets/enhanced-registry';
 import { getRoutePreloadWidgets } from '@/lib/widgets/widget-mappings';
+import dynamic from 'next/dynamic';
 
 // Default loading skeleton
 const DefaultWidgetSkeleton = () => (
@@ -19,40 +20,19 @@ const DefaultWidgetSkeleton = () => (
   </div>
 );
 
-// Create lazy wrapper for a widget
+// Create lazy wrapper for a widget using next/dynamic
 export function createLazyWidget(
   importFn: () => Promise<{ default: React.ComponentType<WidgetComponentProps> } | any>,
   LoadingComponent: React.ComponentType = DefaultWidgetSkeleton
 ): React.ComponentType<WidgetComponentProps> {
-  // Wrap import function to ensure it returns the correct format for React.lazy
-  const wrappedImportFn = async (): Promise<{ default: React.ComponentType<WidgetComponentProps> }> => {
-    const importedModule = await importFn();
-    // Handle both default exports and named exports
-    if (importedModule.default) {
-      return { default: importedModule.default };
-    } else if (typeof importedModule === 'function') {
-      return { default: importedModule };
-    } else {
-      // Try to get the first exported component
-      const componentName = Object.keys(importedModule).find(key => 
-        typeof importedModule[key] === 'function' && key !== 'default'
-      );
-      if (componentName) {
-        return { default: importedModule[componentName] };
-      }
-      throw new Error('No valid component found in module');
+  // Simplified implementation to avoid import errors
+  return dynamic(
+    importFn,
+    {
+      loading: () => <LoadingComponent />,
+      ssr: false
     }
-  };
-  
-  const LazyComponent = lazy<React.ComponentType<WidgetComponentProps>>(wrappedImportFn);
-  
-  return React.memo(function LazyWidget(props: WidgetComponentProps) {
-    return (
-      <Suspense fallback={<LoadingComponent />}>
-        <LazyComponent {...props} />
-      </Suspense>
-    );
-  });
+  );
 }
 
 // Lazy loaded widgets map
@@ -115,9 +95,6 @@ export const LazyComponents: Record<string, React.ComponentType<any>> = {
   ),
   'TopProductsDistributionWidget': createLazyWidget(
     () => import('./widgets/TopProductsDistributionWidget')
-  ),
-  'TopProductsChartWidget': createLazyWidget(
-    () => import('./widgets/TopProductsChartWidget')
   ),
   'ProductDistributionChartWidget': createLazyWidget(
     () => import('./widgets/ProductDistributionChartWidget')

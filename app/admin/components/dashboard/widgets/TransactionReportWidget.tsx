@@ -11,7 +11,7 @@ import { Download, Loader2, CheckCircle, CalendarIcon, Printer } from 'lucide-re
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { format, startOfDay, endOfDay } from 'date-fns';
-import { useToast } from '@/components/ui/use-toast';
+import { useWidgetToast, WidgetToastPresets } from '@/app/admin/hooks/useWidgetToast';
 import { buildTransactionReport } from '@/lib/exportReport';
 import { getTransactionReportData } from '@/app/actions/reportActions';
 import { type DateRange } from 'react-day-picker';
@@ -31,7 +31,7 @@ export const TransactionReportWidget = function TransactionReportWidget({
   description,
   apiEndpoint,
 }: TransactionReportWidgetProps) {
-  const { toast } = useToast();
+  const { showSuccess, showError, showPromise } = useWidgetToast();
   const buttonRef = useRef<HTMLButtonElement>(null);
   const [dateRange, setDateRange] = useState<DateRange | undefined>({
     from: new Date(),

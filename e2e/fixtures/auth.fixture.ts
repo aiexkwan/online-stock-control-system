@@ -21,7 +21,7 @@ export const test = base.extend<AuthFixtures>({
     );
 
     // 等待登入成功後的重定向
-    await page.waitForURL('**/dashboard', { timeout: 10000 });
+    await page.waitForURL('**/admin/**', { timeout: 10000 });
 
     // 提供已認證的頁面給測試使用
     await use(loginPage);

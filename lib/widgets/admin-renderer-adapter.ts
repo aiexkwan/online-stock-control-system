@@ -29,17 +29,15 @@ export function registerAdminWidgetRenderer() {
   widgetRegistry.register(definition);
 
   // 創建一個延遲加載的包裝器
-  // 由於 AdminWidgetRenderer 已經在 LazyWidgetRegistry 中，我們不需要重新導入
-  const lazyComponent = () =>
-    import('@/app/admin/components/dashboard/AdminWidgetRenderer').then(mod => ({
+  // 使用 next/dynamic 直接導入，避免雙重包裝
+  definition.component = require('next/dynamic').default(
+    () => import('@/app/admin/components/dashboard/AdminWidgetRenderer').then(mod => ({
       default: mod.AdminWidgetRenderer,
-    }));
-
-  // 更新定義以包含組件
-  definition.component = require('next/dynamic').default(lazyComponent, {
-    loading: () => null,
-    ssr: false,
-  });
+    })), {
+      loading: () => null,
+      ssr: false,
+    }
+  );
 
   console.log('[AdminRendererAdapter] AdminWidgetRenderer registered successfully');
 }

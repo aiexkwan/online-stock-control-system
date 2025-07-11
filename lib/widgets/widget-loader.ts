@@ -4,9 +4,20 @@
  */
 
 import React from 'react';
-import dynamic from 'next/dynamic';
 import { WidgetComponentProps } from '@/app/types/dashboard';
 import { getWidgetImport } from './dynamic-imports';
+
+// 條件導入 dynamic 避免 SSR 問題
+let dynamic: any;
+try {
+  dynamic = require('next/dynamic').default;
+} catch (error) {
+  console.warn('[WidgetLoader] Failed to import next/dynamic:', error);
+  // 提供 fallback
+  dynamic = (importFn: any, options: any = {}) => {
+    return React.lazy(importFn);
+  };
+}
 
 // Widget 路徑映射
 const widgetPaths: Record<string, string> = {
@@ -29,7 +40,7 @@ const widgetPaths: Record<string, string> = {
   StockLevelHistoryChart: '@/app/admin/components/dashboard/widgets/StockLevelHistoryChart',
   TransferTimeDistributionWidget:
     '@/app/admin/components/dashboard/widgets/TransferTimeDistributionWidget',
-  TopProductsChartWidget: '@/app/admin/components/dashboard/widgets/TopProductsChartWidget',
+  TopProductsByQuantityWidget: '@/app/admin/components/dashboard/widgets/TopProductsByQuantityWidget',
   ProductDistributionChartWidget:
     '@/app/admin/components/dashboard/widgets/ProductDistributionChartWidget',
   TopProductsInventoryChart: '@/app/admin/components/dashboard/widgets/TopProductsInventoryChart',

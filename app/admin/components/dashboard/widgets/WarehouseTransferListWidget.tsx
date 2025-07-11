@@ -18,7 +18,7 @@ import React, { useMemo, useRef } from 'react';
 import { DocumentTextIcon } from '@heroicons/react/24/outline';
 import { WidgetComponentProps } from '@/app/types/dashboard';
 import { format, parseISO } from 'date-fns';
-import { Clock, Cube, User } from 'lucide-react';
+import { Clock, Box, User } from 'lucide-react';
 import { DataTable, DataTableColumn } from './common/data-display/DataTable';
 import { useWidgetDateRange } from './common/filters/DateRangeFilter';
 import { useGraphQLFallback } from '@/app/admin/hooks/useGraphQLFallback';
@@ -155,7 +155,7 @@ export const WarehouseTransferListWidget = React.memo(function WarehouseTransfer
     {
       key: 'plt_num',
       header: 'Pallet Number',
-      icon: Cube,
+      icon: Box,
       width: '33%',
       className: 'font-medium text-white',
     },

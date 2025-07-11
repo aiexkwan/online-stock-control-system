@@ -335,10 +335,12 @@ export const WidgetStateWrapper = React.memo(function WidgetStateWrapper({
 // Export all components
 // ================================
 
-export default {
+const WidgetStates = {
   Skeleton: WidgetSkeleton,
   Error: WidgetError,
   Empty: WidgetEmpty,
   LoadingOverlay: WidgetLoadingOverlay,
   StateWrapper: WidgetStateWrapper,
 };
+
+export default WidgetStates;

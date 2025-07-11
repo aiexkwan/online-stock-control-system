@@ -24,7 +24,7 @@ import { createDashboardAPI } from '@/lib/api/admin/DashboardAPI';
 import { WidgetStyles } from '@/app/utils/widgetStyles';
 import { useGraphQLFallback, GraphQLFallbackPresets } from '@/app/admin/hooks/useGraphQLFallback';
 import { useInViewport } from '@/app/admin/hooks/useInViewport';
-import { ChartContainer, LineChartSkeleton } from '../common';
+import { ChartContainer, LineChartSkeleton } from './common';
 import { gql } from '@apollo/client';
 
 // GraphQL Query

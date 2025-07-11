@@ -9,6 +9,11 @@ class SecureStorage {
   private readonly maxAge = 2 * 60 * 60 * 1000; // 2小時過期
 
   getItem(key: string): string | null {
+    // 檢查是否在瀏覽器環境
+    if (typeof window === 'undefined' || typeof localStorage === 'undefined') {
+      return null;
+    }
+
     try {
       const item = localStorage.getItem(this.keyPrefix + key);
       if (!item) return null;
@@ -36,6 +41,11 @@ class SecureStorage {
   }
 
   setItem(key: string, value: string): void {
+    // 檢查是否在瀏覽器環境
+    if (typeof window === 'undefined' || typeof localStorage === 'undefined') {
+      return;
+    }
+
     try {
       const item = {
         value,
@@ -50,10 +60,19 @@ class SecureStorage {
   }
 
   removeItem(key: string): void {
+    // 檢查是否在瀏覽器環境
+    if (typeof window === 'undefined' || typeof localStorage === 'undefined') {
+      return;
+    }
     localStorage.removeItem(this.keyPrefix + key);
   }
 
   cleanup(): void {
+    // 檢查是否在瀏覽器環境
+    if (typeof window === 'undefined' || typeof localStorage === 'undefined') {
+      return;
+    }
+
     const now = Date.now();
     for (let i = localStorage.length - 1; i >= 0; i--) {
       const key = localStorage.key(i);
@@ -86,8 +105,8 @@ class UnifiedAuth {
       return this.supabaseClient;
     }
 
-    // 檢查並清理舊版認證數據
-    if (shouldCleanupLegacyAuth()) {
+    // 只在瀏覽器環境中檢查並清理舊版認證數據
+    if (typeof window !== 'undefined' && shouldCleanupLegacyAuth()) {
       (process.env.NODE_ENV as string) !== 'production' &&
         (process.env.NODE_ENV as string) !== 'production' &&
         console.log('[UnifiedAuth] Detected legacy auth data, cleaning up...');
@@ -97,8 +116,8 @@ class UnifiedAuth {
     // 使用 SSR 兼容的客戶端
     this.supabaseClient = createMainLoginSupabaseClient();
 
-    // 如果使用安全存儲，設置定期清理
-    if (this.config.useLocalStorage) {
+    // 如果使用安全存儲，設置定期清理（僅在瀏覽器環境）
+    if (typeof window !== 'undefined' && this.config.useLocalStorage) {
       setInterval(
         () => {
           this.secureStorage.cleanup();
@@ -128,8 +147,8 @@ class UnifiedAuth {
 
     if (error) throw error;
 
-    // 記錄登入時間（僅在安全模式下）
-    if (this.config.useLocalStorage && data.session) {
+    // 記錄登入時間（僅在安全模式下且在瀏覽器環境）
+    if (typeof window !== 'undefined' && this.config.useLocalStorage && data.session) {
       this.secureStorage.setItem('last_login', Date.now().toString());
       this.secureStorage.setItem('login_domain_verified', 'true');
     }
@@ -148,7 +167,9 @@ class UnifiedAuth {
       console.log(`[UnifiedAuth] Using ${this.config.mode} mode for sign up`);
 
     // 設置正確的重定向 URL
-    const redirectTo = `${window.location.origin}/main-login?confirmed=true`;
+    const redirectTo = typeof window !== 'undefined' 
+      ? `${window.location.origin}/main-login?confirmed=true`
+      : '/main-login?confirmed=true';
 
     const { data, error } = await supabase.auth.signUp({
       email,
@@ -168,8 +189,8 @@ class UnifiedAuth {
       (process.env.NODE_ENV as string) !== 'production' &&
       console.log(`[UnifiedAuth] Using ${this.config.mode} mode for sign out`);
 
-    // 清理本地存儲（如果使用的話）
-    if (this.config.useLocalStorage) {
+    // 清理本地存儲（如果使用的話且在瀏覽器環境）
+    if (typeof window !== 'undefined' && this.config.useLocalStorage) {
       this.secureStorage.cleanup();
     }
 
@@ -180,8 +201,8 @@ class UnifiedAuth {
   async getCurrentUser() {
     const supabase = this.getSupabaseClient();
 
-    // 檢查域名驗證標記（僅在安全模式下）
-    if (this.config.useLocalStorage) {
+    // 檢查域名驗證標記（僅在安全模式下且在瀏覽器環境）
+    if (typeof window !== 'undefined' && this.config.useLocalStorage) {
       const domainVerified = this.secureStorage.getItem('login_domain_verified');
       if (!domainVerified) {
         await supabase.auth.signOut();
@@ -206,9 +227,9 @@ class UnifiedAuth {
     return user;
   }
 
-  // 檢查 session 是否即將過期（僅在安全模式下）
+  // 檢查 session 是否即將過期（僅在安全模式下且在瀏覽器環境）
   isSessionExpiringSoon(): boolean {
-    if (!this.config.useLocalStorage) {
+    if (typeof window === 'undefined' || !this.config.useLocalStorage) {
       return false;
     }
 

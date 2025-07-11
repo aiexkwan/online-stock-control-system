@@ -142,12 +142,22 @@ export interface DashboardBatchQueryData {
   };
   
   awaitLocationQty?: {
-    locations: Array<{
+    records: Array<{
+      location: string;
+      quantity: number;
+    }>;
+    value: number;
+    trend?: {
+      value: number;
+      isPositive: boolean;
+    };
+    // Legacy fields for compatibility
+    locations?: Array<{
       location: string;
       quantity: number;
       lastUpdated: string;
     }>;
-    totalAwaitingQty: number;
+    totalAwaitingQty?: number;
   };
   
   historyTree?: {

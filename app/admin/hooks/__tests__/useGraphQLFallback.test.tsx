@@ -97,11 +97,14 @@ describe('useGraphQLFallback', () => {
 
   // Helper to create wrapper with context
   const createWrapper = (contextValue: any) => {
-    return ({ children }: { children: React.ReactNode }) => (
+    const TestWrapper = ({ children }: { children: React.ReactNode }) => (
       <DashboardDataContext.Provider value={contextValue}>
         {children}
       </DashboardDataContext.Provider>
     );
+    
+    TestWrapper.displayName = 'TestWrapper';
+    return TestWrapper;
   };
 
   beforeEach(() => {

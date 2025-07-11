@@ -12,56 +12,99 @@ const httpLink = createHttpLink({
   uri: `${process.env.NEXT_PUBLIC_SUPABASE_URL}/graphql/v1`,
 });
 
-// Authentication link
+// Authentication link with SSR safety
 const authLink = setContext(async (_, { headers }) => {
-  const supabase = createClient();
-  const { data: { session } } = await supabase.auth.getSession();
-  
-  return {
-    headers: {
-      ...headers,
-      authorization: session?.access_token ? `Bearer ${session.access_token}` : "",
-      apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "",
-    },
-  };
+  // Only run in browser environment
+  if (typeof window === 'undefined') {
+    return {
+      headers: {
+        ...headers,
+        apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "",
+      },
+    };
+  }
+
+  try {
+    const supabase = createClient();
+    const { data: { session } } = await supabase.auth.getSession();
+    
+    return {
+      headers: {
+        ...headers,
+        authorization: session?.access_token ? `Bearer ${session.access_token}` : "",
+        apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "",
+      },
+    };
+  } catch (error) {
+    console.warn('Apollo auth link error:', error);
+    return {
+      headers: {
+        ...headers,
+        apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "",
+      },
+    };
+  }
 });
 
-// Apollo Client instance
-export const apolloClient = new ApolloClient({
-  link: authLink.concat(httpLink),
-  cache: new InMemoryCache({
-    typePolicies: {
-      Query: {
-        fields: {
-          // 配置 cache 策略
-          record_inventoryCollection: {
-            keyArgs: ["filter", "orderBy"],
-            merge(existing, incoming, { args }) {
-              // 合併策略
-              return incoming;
+// Create Apollo Client instance with SSR safety
+function createApolloClient() {
+  return new ApolloClient({
+    link: authLink.concat(httpLink),
+    cache: new InMemoryCache({
+      typePolicies: {
+        Query: {
+          fields: {
+            // 配置 cache 策略
+            record_inventoryCollection: {
+              keyArgs: ["filter", "orderBy"],
+              merge(existing, incoming, { args }) {
+                // 合併策略
+                return incoming;
+              },
             },
-          },
-          record_transferCollection: {
-            keyArgs: ["filter", "orderBy"],
-          },
-          record_historyCollection: {
-            keyArgs: ["filter", "orderBy"],
+            record_transferCollection: {
+              keyArgs: ["filter", "orderBy"],
+            },
+            record_historyCollection: {
+              keyArgs: ["filter", "orderBy"],
+            },
           },
         },
       },
+    }),
+    defaultOptions: {
+      watchQuery: {
+        fetchPolicy: 'cache-and-network',
+        errorPolicy: 'all',
+      },
+      query: {
+        fetchPolicy: 'cache-first',
+        errorPolicy: 'all',
+      },
     },
-  }),
-  defaultOptions: {
-    watchQuery: {
-      fetchPolicy: 'cache-and-network',
-      errorPolicy: 'all',
-    },
-    query: {
-      fetchPolicy: 'cache-first',
-      errorPolicy: 'all',
-    },
-  },
-});
+  });
+}
+
+// Singleton Apollo client instance
+let apolloClientInstance: ApolloClient<any> | null = null;
+
+// Safe getter function for Apollo client
+export function getApolloClient(): ApolloClient<any> | null {
+  // Never create client on server side
+  if (typeof window === 'undefined') {
+    return null;
+  }
+  
+  // Use singleton pattern in browser
+  if (!apolloClientInstance) {
+    apolloClientInstance = createApolloClient();
+  }
+  
+  return apolloClientInstance;
+}
+
+// Export the client getter - this will be null on server
+export const apolloClient = getApolloClient();
 
 // Export type for use in components
-export type ApolloClientType = typeof apolloClient;
+export type ApolloClientType = ApolloClient<any> | null;

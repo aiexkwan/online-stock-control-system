@@ -131,17 +131,15 @@ const nextConfig = {
 
     // Tree shaking 優化
     if (!isServer) {
-      // 啟用 tree shaking 優化
-      config.optimization.usedExports = true;
-      config.optimization.sideEffects = false;
-      
       // 模組解析優化 (優先使用 ES modules)
       config.resolve.mainFields = ['browser', 'module', 'main'];
       
       // 配置 chunk splitting 策略
       config.optimization = {
         ...config.optimization,
-        usedExports: true,
+        // 暫時註釋 usedExports 以解決 webpack cache 衝突
+        // Next.js 14 默認已啟用 tree shaking，無需手動設定
+        // usedExports: true,
         sideEffects: false,
         runtimeChunk: 'single',
         splitChunks: {
@@ -298,6 +296,22 @@ const nextConfig = {
           { key: 'X-Content-Type-Options', value: 'nosniff' },
           { key: 'X-Frame-Options', value: 'SAMEORIGIN' },
           { key: 'X-XSS-Protection', value: '1; mode=block' },
+        ],
+      },
+      // 確保 CSS 文件有正確的 MIME type
+      {
+        source: '/_next/static/css/:path*',
+        headers: [
+          { key: 'Content-Type', value: 'text/css' },
+          { key: 'Cache-Control', value: 'public, max-age=31536000, immutable' },
+        ],
+      },
+      // 確保 JS 文件有正確的 MIME type
+      {
+        source: '/_next/static/chunks/:path*',
+        headers: [
+          { key: 'Content-Type', value: 'application/javascript' },
+          { key: 'Cache-Control', value: 'public, max-age=31536000, immutable' },
         ],
       },
     ];

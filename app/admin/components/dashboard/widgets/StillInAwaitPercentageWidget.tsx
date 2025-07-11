@@ -12,7 +12,7 @@ import { WidgetComponentProps } from '@/app/types/dashboard';
 import { getYesterdayRange } from '@/app/utils/timezone';
 import { format } from 'date-fns';
 import { useGraphQLFallback, GraphQLFallbackPresets } from '@/app/admin/hooks/useGraphQLFallback';
-import { MetricCardProgress } from '../common';
+import { MetricCardProgress } from './common';
 import { gql } from '@apollo/client';
 import { createDashboardAPI } from '@/lib/api/admin/DashboardAPI';
 

@@ -27,7 +27,6 @@ def main():
             messages=args['messages'],
             user_id=args.get('user_id'),
             agent_id=args.get('agent_id'), 
-            session_id=args.get('session_id'),
             metadata=args.get('metadata', {})
         )
         

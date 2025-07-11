@@ -8,7 +8,7 @@
 import React from 'react';
 import dynamic from 'next/dynamic';
 import { motion } from 'framer-motion';
-import UniversalLayout from '@/components/layout/universal/UniversalLayout';
+import { UniversalContainer } from '@/components/layout/universal';
 
 // Dynamic imports for widgets
 const ProductUpdateWidget = dynamic(
@@ -35,7 +35,7 @@ const ProductUpdateWidgetV2 = dynamic(
 
 export default function ProductUpdateDemoPage() {
   return (
-    <UniversalLayout>
+    <UniversalContainer>
       <div className='container mx-auto px-4 py-8'>
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -177,6 +177,6 @@ export default function ProductUpdateDemoPage() {
           </div>
         </motion.div>
       </div>
-    </UniversalLayout>
+    </UniversalContainer>
   );
 }

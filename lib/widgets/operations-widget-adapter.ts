@@ -3,10 +3,8 @@
  * 遷移 Operations 類別 widgets 到新的註冊系統
  */
 
-import { widgetRegistry } from './enhanced-registry';
 import { WidgetDefinition } from './types';
 import { getWidgetImport } from './dynamic-imports';
-import { createDynamicWidget } from './widget-loader';
 
 /**
  * Operations widgets 的映射配置
@@ -98,6 +96,9 @@ export const operationsWidgetConfigs: Record<string, Partial<WidgetDefinition>> 
  * 註冊所有 Operations widgets
  */
 export async function registerOperationsWidgets(): Promise<void> {
+  // Lazy import to avoid circular dependency
+  const { widgetRegistry } = await import('./enhanced-registry');
+  
   const startTime = performance.now();
   let registeredCount = 0;
 
@@ -119,7 +120,7 @@ export async function registerOperationsWidgets(): Promise<void> {
         name: config.name || widgetId,
         category: 'operations',
         ...config,
-        component: createDynamicWidget(widgetId), // 使用統一的 widget loader
+        component: undefined, // 延遲創建組件
       };
 
       // 註冊到 registry

@@ -261,7 +261,7 @@ async function initializePython() {
         await fs.writeFile(path.join(pythonDir, 'requirements.txt'), 'mem0ai>=0.1.17\nopenai>=1.0.0\n');
         // Install dependencies
         console.error('Installing Python dependencies...');
-        await execAsync('pip install -r requirements.txt', { cwd: pythonDir });
+        await execAsync('pip3 install -r requirements.txt --break-system-packages', { cwd: pythonDir });
         console.error('Python dependencies installed successfully');
     }
     catch (error) {

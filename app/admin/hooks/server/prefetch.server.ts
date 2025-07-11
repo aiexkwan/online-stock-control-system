@@ -1,12 +1,15 @@
 import 'server-only';
-import { createClient } from '@/lib/utils/supabase/server';
+import { createClient } from '@/app/utils/supabase/server';
 import { DashboardBatchQueryData } from '../useDashboardBatchQuery';
 
 /**
  * Server-side critical widgets data prefetching
  * 服務器端關鍵 widgets 數據預取
  */
-export async function prefetchCriticalWidgetsData(): Promise<Partial<DashboardBatchQueryData>> {
+export async function prefetchCriticalWidgetsData(options?: {
+  dateRange?: { startDate: Date | null; endDate: Date | null };
+  criticalOnly?: boolean;
+}): Promise<Partial<DashboardBatchQueryData>> {
   try {
     const supabase = await createClient();
     const results: Partial<DashboardBatchQueryData> = {};
@@ -18,8 +21,11 @@ export async function prefetchCriticalWidgetsData(): Promise<Partial<DashboardBa
         .from('record_palletinfo')
         .select('*', { count: 'exact', head: true }),
       
-      // 2. Await location quantity (使用 RPC 函數)
-      supabase.rpc('rpc_get_await_location_count'),
+      // 2. Await location quantity (查詢 record_inventory 表)
+      supabase
+        .from('record_inventory')
+        .select('location, quantity:await')
+        .gt('await', 0),
       
       // 3. Yesterday transfer count
       supabase
@@ -41,8 +47,18 @@ export async function prefetchCriticalWidgetsData(): Promise<Partial<DashboardBa
     if (awaitLocationResult.status === 'fulfilled') {
       const { data, error } = awaitLocationResult.value;
       if (!error && data) {
-        // RPC 返回 JSON 格式 {await_count, calculation_time, method, performance}
-        results.awaitLocationQty = data.await_count || 0;
+        // 轉換數據格式以匹配 widget 期望
+        const records = data.map((item: any) => ({
+          location: 'AWAIT',
+          quantity: item.quantity || 0
+        }));
+        const totalQuantity = records.reduce((sum: number, record: any) => sum + record.quantity, 0);
+        
+        results.awaitLocationQty = {
+          records,
+          value: totalQuantity,
+          trend: { value: 0, isPositive: true }
+        };
       }
     }
     
@@ -83,7 +99,10 @@ export async function prefetchDashboardData(
     const queries = await Promise.allSettled([
       // 基礎統計
       supabase.from('record_palletinfo').select('*', { count: 'exact', head: true }),
-      supabase.rpc('rpc_get_await_location_count'),
+      supabase
+        .from('record_inventory')
+        .select('location, quantity:await')
+        .gt('await', 0),
       supabase.from('record_transfer')
         .select('*', { count: 'exact', head: true })
         .gte('createtime', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString())
@@ -109,7 +128,19 @@ export async function prefetchDashboardData(
               if (count !== null) results.total_pallets = count;
               break;
             case 1:
-              if (data) results.awaitLocationQty = data.await_count || 0;
+              if (data) {
+                const records = data.map((item: any) => ({
+                  location: 'AWAIT',
+                  quantity: item.quantity || 0
+                }));
+                const totalQuantity = records.reduce((sum: number, record: any) => sum + record.quantity, 0);
+                
+                results.awaitLocationQty = {
+                  records,
+                  value: totalQuantity,
+                  trend: { value: 0, isPositive: true }
+                };
+              }
               break;
             case 2:
               if (count !== null) results.yesterdayTransferCount = count;

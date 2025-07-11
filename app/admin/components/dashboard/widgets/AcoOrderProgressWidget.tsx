@@ -15,7 +15,15 @@ import { CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { UniversalWidgetCard as WidgetCard } from '../UniversalWidgetCard';
 import { ClipboardDocumentListIcon, ChevronDownIcon } from '@heroicons/react/24/outline';
 import { WidgetComponentProps } from '@/app/types/dashboard';
-import { createDashboardAPI } from '@/lib/api/admin/DashboardAPI';
+import { useGraphQLFallback } from '@/app/admin/hooks/useGraphQLFallback';
+import { useWidgetToast } from '@/app/admin/hooks/useWidgetToast';
+import { 
+  GET_ACO_INCOMPLETE_ORDERS,
+  type GetAcoIncompleteOrdersData,
+  type GetAcoIncompleteOrdersVariables,
+  type AcoOrderNode 
+} from './queries/acoOrderProgressQueries';
+import { getAcoIncompleteOrdersAction } from '@/app/actions/acoOrderProgressActions';
 import { WidgetStyles } from '@/app/utils/widgetStyles';
 import { motion, AnimatePresence } from 'framer-motion';
 import { format } from 'date-fns';
@@ -43,16 +51,82 @@ export const AcoOrderProgressWidget = React.memo(function AcoOrderProgressWidget
   widget,
   isEditMode,
 }: WidgetComponentProps) {
-  const [incompleteOrders, setIncompleteOrders] = useState<AcoOrder[]>([]);
   const [selectedOrderRef, setSelectedOrderRef] = useState<number | null>(null);
   const [orderProgress, setOrderProgress] = useState<AcoOrderProgress[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const [ordersMetadata, setOrdersMetadata] = useState<any>({});
   const [progressMetadata, setProgressMetadata] = useState<any>({});
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const dashboardAPI = useMemo(() => createDashboardAPI(), []);
+  const { showError } = useWidgetToast();
+
+  // Use GraphQL with Server Action fallback for incomplete orders
+  const {
+    data: ordersData,
+    loading,
+    error,
+    refetch
+  } = useGraphQLFallback<GetAcoIncompleteOrdersData, GetAcoIncompleteOrdersVariables>({
+    graphqlQuery: GET_ACO_INCOMPLETE_ORDERS,
+    serverAction: getAcoIncompleteOrdersAction,
+    variables: { limit: 50, offset: 0 },
+    widgetId: 'aco-order-progress',
+    extractFromContext: (ctx) => ctx?.acoOrders,
+    fallbackEnabled: true,
+    onError: (error) => {
+      showError('Failed to load ACO orders', error);
+    },
+  });
+
+  // Transform GraphQL data to component format
+  const incompleteOrders = useMemo(() => {
+    if (!ordersData?.incompleteOrders?.edges) return [];
+    
+    // Group by order_ref and calculate aggregates
+    const orderMap = new Map<number, {
+      order_ref: number;
+      latest_update: string;
+      total_required: number;
+      total_finished: number;
+      total_remaining: number;
+      product_count: number;
+      completion_percentage: number;
+    }>();
+    
+    ordersData.incompleteOrders.edges.forEach(({ node }) => {
+      const orderRef = node.order_ref;
+      const existing = orderMap.get(orderRef);
+      
+      if (existing) {
+        existing.total_required += node.required_qty;
+        existing.total_finished += node.finished_qty;
+        existing.product_count += 1;
+        if (node.latest_update > existing.latest_update) {
+          existing.latest_update = node.latest_update;
+        }
+      } else {
+        orderMap.set(orderRef, {
+          order_ref: orderRef,
+          latest_update: node.latest_update,
+          total_required: node.required_qty,
+          total_finished: node.finished_qty,
+          total_remaining: node.required_qty - node.finished_qty,
+          product_count: 1,
+          completion_percentage: node.required_qty > 0 
+            ? Math.round((node.finished_qty / node.required_qty) * 100) 
+            : 0,
+        });
+      }
+    });
+    
+    // Update completion percentages
+    orderMap.forEach((order) => {
+      order.total_remaining = order.total_required - order.total_finished;
+      order.completion_percentage = order.total_required > 0 
+        ? Math.round((order.total_finished / order.total_required) * 100) 
+        : 0;
+    });
+    
+    return Array.from(orderMap.values());
+  }, [ordersData]);
 
   // Load incomplete orders using DashboardAPI
   const loadIncompleteOrders = useCallback(async () => {

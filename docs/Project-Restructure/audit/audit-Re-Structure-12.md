@@ -711,3 +711,43 @@ export function StatsCardWidget() {
 - 提升首屏加載速度 40%
 - 確保數據一致性
 - 簡化 widget 實現
+
+---
+
+## 實施更新 - 2025-07-11
+
+### 版本 1.0.1 & 1.0.2 已完成
+
+#### 批量查詢系統修復
+- ✅ 修復 DashboardAPI 的 await_location_count 數據格式問題
+- ✅ 更新返回格式為 records 陣列，支持 AwaitLocationQtyWidget 需求
+
+#### 首屏性能優化修復
+- ✅ 修復 prefetchCriticalWidgetsData 函數參數問題
+- ✅ 更新數據獲取邏輯以匹配新格式
+- ✅ 更新 TypeScript 類型定義確保兼容性
+
+### 版本 1.0.3、1.0.4、1.0.5 已完成
+
+#### 統一數據獲取層 (1.0.3)
+- ✅ useGraphQLFallback hook 系統已完善
+- ✅ 11個 widgets 成功遷移使用統一架構
+- ✅ 開始遷移 AcoOrderProgressWidget 作為示例
+
+#### 通用組件庫擴展 (1.0.4)
+- ✅ 創建 useWidgetToast hook 解決 31% widgets 重複 toast 問題
+- ✅ 支持多種通知類型和預設配置
+- ✅ TransactionReportWidget 已遷移使用新系統
+
+#### DashboardDataContext 實施 (1.0.5)
+- ✅ 系統已完整實施，支持 SSR/CSR 混合模式
+- ✅ 智能數據合併和自動刷新機制
+- ✅ 需提升採用率（目前 7%）
+
+#### 效果評估
+- **Phase 1 完成度**: 5/5 任務已完成 (100%)
+- **數據獲取統一化**: 24% widgets 已遷移到 useGraphQLFallback
+- **Toast 系統**: 9% 重複 toast 用戶已遷移
+- **共享數據**: 7% widgets 使用 DashboardDataContext
+
+詳細實施記錄請參考：`docs/planning/plan-widget-optimization.md`

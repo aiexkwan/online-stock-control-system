@@ -10,13 +10,13 @@ import { NewAdminDashboard } from '../components/NewAdminDashboard';
 import { prefetchCriticalWidgetsData } from '../hooks/server/prefetch.server';
 
 interface AdminThemePageProps {
-  params: {
+  params: Promise<{
     theme: string;
-  };
+  }>;
 }
 
 export default async function AdminThemePage({ params }: AdminThemePageProps) {
-  const { theme } = params;
+  const { theme } = await params;
   
   // Server-side data prefetching for Critical Path Widgets
   // 服務器端預取 Critical Path Widgets 數據

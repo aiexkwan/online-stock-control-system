@@ -40,15 +40,26 @@ import {
   updateProduct,
   ProductData 
 } from '@/app/actions/productActions';
-import { 
-  LineChart, Line, 
-  BarChart, Bar, 
-  PieChart, Pie, Cell,
-  AreaChart, Area,
-  XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer 
-} from 'recharts';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
+
+// Recharts components - dynamically imported to avoid SSR issues
+import dynamic from 'next/dynamic';
+
+const LineChart = dynamic(() => import('recharts').then(mod => ({ default: mod.LineChart })), { ssr: false });
+const Line = dynamic(() => import('recharts').then(mod => ({ default: mod.Line })), { ssr: false });
+const BarChart = dynamic(() => import('recharts').then(mod => ({ default: mod.BarChart })), { ssr: false });
+const Bar = dynamic(() => import('recharts').then(mod => ({ default: mod.Bar })), { ssr: false });
+const PieChart = dynamic(() => import('recharts').then(mod => ({ default: mod.PieChart })), { ssr: false });
+const Pie = dynamic(() => import('recharts').then(mod => ({ default: mod.Pie })), { ssr: false });
+const Cell = dynamic(() => import('recharts').then(mod => ({ default: mod.Cell })), { ssr: false });
+const AreaChart = dynamic(() => import('recharts').then(mod => ({ default: mod.AreaChart })), { ssr: false });
+const Area = dynamic(() => import('recharts').then(mod => ({ default: mod.Area })), { ssr: false });
+const XAxis = dynamic(() => import('recharts').then(mod => ({ default: mod.XAxis })), { ssr: false });
+const YAxis = dynamic(() => import('recharts').then(mod => ({ default: mod.YAxis })), { ssr: false });
+const CartesianGrid = dynamic(() => import('recharts').then(mod => ({ default: mod.CartesianGrid })), { ssr: false });
+const Tooltip = dynamic(() => import('recharts').then(mod => ({ default: mod.Tooltip })), { ssr: false });
+const ResponsiveContainer = dynamic(() => import('recharts').then(mod => ({ default: mod.ResponsiveContainer })), { ssr: false });
 
 interface AdminWidgetRendererProps {
   config: AdminWidgetConfig;
@@ -159,52 +170,14 @@ const CHART_COLORS = [
 ];
 
 // 導入特殊組件 - 已移除舊 Dashboard 依賴
-import { HistoryTreeV2 as HistoryTree } from './widgets/HistoryTreeV2';
+// HistoryTree 已移至 LazyComponents 以統一管理懶加載
 import { getEnhancedWidgetComponent } from './LazyWidgetRegistry';
 import { SpotlightCard } from '../ui/SpotlightCard';
 
-// 新的上傳頁面組件 - 使用 lazy loading
-const OrdersListWidget = React.lazy(() => import('./widgets/OrdersListWidgetV2').then(mod => ({ default: mod.OrdersListWidgetV2 })));
-const OtherFilesListWidget = React.lazy(() => import('./widgets/OtherFilesListWidgetV2').then(mod => ({ default: mod.OtherFilesListWidgetV2 })));
-const UploadFilesWidget = React.lazy(() => import('./widgets/UploadFilesWidget').then(mod => ({ default: mod.UploadFilesWidget })));
-
-// Analysis page components
-const AnalysisPagedWidget = React.lazy(() => import('./widgets/AnalysisPagedWidgetV2').then(mod => ({ default: mod.AnalysisPagedWidgetV2 })));
-const AnalysisPagedWidgetV2 = React.lazy(() => import('./widgets/AnalysisPagedWidgetV2').then(mod => ({ default: mod.AnalysisPagedWidgetV2 })));
-const AnalysisExpandableCards = React.lazy(() => import('./widgets/AnalysisExpandableCards').then(mod => ({ default: mod.AnalysisExpandableCards })));
-const UploadOrdersWidget = React.lazy(() => import('./widgets/UploadOrdersWidgetV2').then(mod => ({ default: mod.UploadOrdersWidgetV2 })));
-const UploadProductSpecWidget = React.lazy(() => import('./widgets/UploadProductSpecWidget').then(mod => ({ default: mod.UploadProductSpecWidget })));
-const UploadPhotoWidget = React.lazy(() => import('./widgets/UploadPhotoWidget').then(mod => ({ default: mod.UploadPhotoWidget })));
-const ReportGeneratorWidget = React.lazy(() => import('./widgets/ReportGeneratorWithDialogWidgetV2').then(mod => ({ default: mod.ReportGeneratorWithDialogWidgetV2 })));
-const TransactionReportWidget = React.lazy(() => import('./widgets/TransactionReportWidget').then(mod => ({ default: mod.TransactionReportWidget })));
-const GrnReportWidget = React.lazy(() => import('./widgets/GrnReportWidgetV2').then(mod => ({ default: mod.GrnReportWidgetV2 })));
-const AcoOrderReportWidget = React.lazy(() => import('./widgets/AcoOrderReportWidgetV2').then(mod => ({ default: mod.AcoOrderReportWidgetV2 })));
-const ReportGeneratorWithDialogWidget = React.lazy(() => import('./widgets/ReportGeneratorWithDialogWidgetV2').then(mod => ({ default: mod.ReportGeneratorWithDialogWidgetV2 })));
-const AvailableSoonWidget = React.lazy(() => import('./widgets/AvailableSoonWidget'));
-
-// Production monitoring widgets - Server Actions versions
-const ProductionStatsWidget = React.lazy(() => import('./widgets/ProductionStatsWidget').then(mod => ({ default: mod.ProductionStatsWidget })));
-const TopProductsChartWidget = React.lazy(() => import('./widgets/TopProductsChartWidget').then(mod => ({ default: mod.TopProductsChartWidget })));
-const ProductDistributionChartWidget = React.lazy(() => import('./widgets/ProductDistributionChartWidget').then(mod => ({ default: mod.ProductDistributionChartWidget })));
-const ProductionDetailsWidget = React.lazy(() => import('./widgets/ProductionDetailsWidget').then(mod => ({ default: mod.ProductionDetailsWidget })));
-const StaffWorkloadWidget = React.lazy(() => import('./widgets/StaffWorkloadWidget').then(mod => ({ default: mod.StaffWorkloadWidget })));
-// Server Actions widgets - optimized for performance
-
-// Warehouse Dashboard 組件
-const AwaitLocationQtyWidget = React.lazy(() => import('./widgets/AwaitLocationQtyWidget'));
-const YesterdayTransferCountWidget = React.lazy(() => import('./widgets/YesterdayTransferCountWidget'));
-const StillInAwaitWidget = React.lazy(() => import('./widgets/StillInAwaitWidget').then(mod => ({ default: mod.StillInAwaitWidget })));
-
-// Stock Management 組件
-const StockTypeSelector = React.lazy(() => import('./widgets/StockTypeSelector').then(mod => ({ default: mod.StockTypeSelector })));
-const StockDistributionChart = React.lazy(() => import('./widgets/StockDistributionChartV2').then(mod => ({ default: mod.StockDistributionChartV2 })));
-const StockLevelHistoryChart = React.lazy(() => import('./widgets/StockLevelHistoryChart').then(mod => ({ default: mod.StockLevelHistoryChart })));
-const InventoryOrderedAnalysisWidget = React.lazy(() => import('./widgets/InventoryOrderedAnalysisWidget').then(mod => ({ default: mod.InventoryOrderedAnalysisWidget })));
-const StillInAwaitPercentageWidget = React.lazy(() => import('./widgets/StillInAwaitPercentageWidget'));
-const OrderStateListWidget = React.lazy(() => import('./widgets/OrderStateListWidgetV2').then(mod => ({ default: mod.OrderStateListWidgetV2 })));
-const TransferTimeDistributionWidget = React.lazy(() => import('./widgets/TransferTimeDistributionWidget').then(mod => ({ default: mod.TransferTimeDistributionWidget })));
-const WarehouseTransferListWidget = React.lazy(() => import('./widgets/WarehouseTransferListWidget').then(mod => ({ default: mod.WarehouseTransferListWidget })));
-const WarehouseWorkLevelAreaChart = React.lazy(() => import('./widgets/WarehouseWorkLevelAreaChart').then(mod => ({ default: mod.WarehouseWorkLevelAreaChart })));
+// 所有 widgets 已移至 LazyComponents 以統一管理懶加載
+// 避免雙重包裝問題和減少冗餘代碼
+// GrnReportWidget 和 AcoOrderReportWidget 已在 LazyComponents 註冊
+// 使用 renderLazyComponent('GrnReportWidget', props) 調用
 
 // GraphQL removed - all widgets migrated to Server Actions
 
@@ -412,6 +385,16 @@ const AdminWidgetRendererComponent: React.FC<AdminWidgetRendererProps> = ({
   const [isDelayed, setIsDelayed] = useState(delay > 0);
   const { refreshTrigger } = useAdminRefresh();
   
+  // Helper function to render lazy component from LazyComponents - 定義在最前面以避免初始化順序問題
+  const renderLazyComponent = useCallback((componentName: string, props: any) => {
+    const Component = LazyComponents[componentName];
+    if (!Component) {
+      console.error(`Component ${componentName} not found in LazyComponents`);
+      return <div>Component {componentName} not found</div>;
+    }
+    return <Component {...props} />;
+  }, []);
+
   // 處理延遲加載
   useEffect(() => {
     if (delay > 0) {
@@ -1006,8 +989,8 @@ const AdminWidgetRendererComponent: React.FC<AdminWidgetRendererProps> = ({
             <div className="h-4 w-32 bg-slate-700/50 rounded"></div>
           </div>
         }>
-          <ProductionStatsWidget
-            widget={{
+          {renderLazyComponent('ProductionStatsWidget', {
+            widget: {
               id: `production-stats-${config.gridArea}`,
               type: config.type as any,
               title: config.title,
@@ -1015,12 +998,12 @@ const AdminWidgetRendererComponent: React.FC<AdminWidgetRendererProps> = ({
                 dataSource: config.dataSource,
                 metrics: config.metrics
               }
-            }}
-            title={config.title}
-            metric={config.metrics[0] as 'pallet_count' | 'quantity_sum'}
-            timeFrame={timeFrame}
-            isEditMode={false}
-          />
+            },
+            title: config.title,
+            metric: config.metrics[0] as 'pallet_count' | 'quantity_sum',
+            timeFrame: timeFrame,
+            isEditMode: false
+          })}
         </Suspense>
       );
     }
@@ -1087,8 +1070,8 @@ const AdminWidgetRendererComponent: React.FC<AdminWidgetRendererProps> = ({
         <Suspense fallback={
           <div className="animate-pulse h-full bg-slate-700 rounded"></div>
         }>
-          <TopProductsChartWidget
-            widget={{
+          {renderLazyComponent('TopProductsByQuantityWidget', {
+            widget: {
               id: `top-products-${config.gridArea}`,
               type: config.type as any,
               title: config.title,
@@ -1096,12 +1079,12 @@ const AdminWidgetRendererComponent: React.FC<AdminWidgetRendererProps> = ({
                 dataSource: config.dataSource,
                 chartType: config.chartType
               }
-            }}
-            title={config.title}
-            timeFrame={timeFrame}
-            isEditMode={false}
-            limit={5}
-          />
+            },
+            title: config.title,
+            timeFrame: timeFrame,
+            isEditMode: false,
+            limit: 5
+          })}
         </Suspense>
       );
     }
@@ -1112,8 +1095,8 @@ const AdminWidgetRendererComponent: React.FC<AdminWidgetRendererProps> = ({
         <Suspense fallback={
           <div className="animate-pulse h-full bg-slate-700 rounded"></div>
         }>
-          <ProductDistributionChartWidget
-            widget={{
+          {renderLazyComponent('ProductDistributionChartWidget', {
+            widget: {
               id: `product-distribution-${config.gridArea}`,
               type: config.type as any,
               title: config.title,
@@ -1121,12 +1104,12 @@ const AdminWidgetRendererComponent: React.FC<AdminWidgetRendererProps> = ({
                 dataSource: config.dataSource,
                 chartType: config.chartType
               }
-            }}
-            title={config.title}
-            timeFrame={timeFrame}
-            isEditMode={false}
-            limit={10}
-          />
+            },
+            title: config.title,
+            timeFrame: timeFrame,
+            isEditMode: false,
+            limit: 10
+          })}
         </Suspense>
       );
     }
@@ -1137,13 +1120,13 @@ const AdminWidgetRendererComponent: React.FC<AdminWidgetRendererProps> = ({
         <Suspense fallback={
           <div className="animate-pulse h-full bg-slate-700 rounded"></div>
         }>
-          <StaffWorkloadWidget
-            title={config.title}
-            timeFrame={timeFrame}
-            isEditMode={false}
-            department="Injection"
-            useGraphQL={config.useGraphQL}
-            widget={{
+          {renderLazyComponent('StaffWorkloadWidget', {
+            title: config.title,
+            timeFrame: timeFrame,
+            isEditMode: false,
+            department: "Injection",
+            useGraphQL: config.useGraphQL,
+            widget: {
               id: `staff-workload-${config.gridArea}`,
               type: config.type as any,
               title: config.title,
@@ -1151,8 +1134,8 @@ const AdminWidgetRendererComponent: React.FC<AdminWidgetRendererProps> = ({
                 dataSource: config.dataSource,
                 chartType: config.chartType
               }
-            }}
-          />
+            }
+          })}
         </Suspense>
       );
     }
@@ -1422,20 +1405,20 @@ const AdminWidgetRendererComponent: React.FC<AdminWidgetRendererProps> = ({
             </div>
           </div>
         }>
-          <ProductionDetailsWidget
-            title={config.title}
-            timeFrame={timeFrame}
-            isEditMode={false}
-            useGraphQL={config.useGraphQL}
-            widget={{
+          {renderLazyComponent('ProductionDetailsWidget', {
+            title: config.title,
+            timeFrame: timeFrame,
+            isEditMode: false,
+            useGraphQL: config.useGraphQL,
+            widget: {
               id: `production-details-${config.gridArea}`,
               type: config.type as any,
               title: config.title,
               config: {
                 dataSource: config.dataSource
               }
-            }}
-          />
+            }
+          })}
         </Suspense>
       );
     }
@@ -1481,7 +1464,7 @@ const AdminWidgetRendererComponent: React.FC<AdminWidgetRendererProps> = ({
           </table>
         </div>
     );
-  }, [config, data, loading, timeFrame]);
+  }, [config, data, loading, timeFrame, renderLazyComponent]);
 
   // 渲染特殊組件 - 使用 useCallback 優化
   const renderSpecialComponent = useCallback(() => {
@@ -1494,11 +1477,8 @@ const AdminWidgetRendererComponent: React.FC<AdminWidgetRendererProps> = ({
       const propsMap = getComponentPropsFactory(config, timeFrame, theme);
       const componentProps = propsMap[componentName] || { widget: config, isEditMode: false };
       
-      return (
-        <Suspense fallback={<div className="h-full w-full animate-pulse bg-slate-800/50" />}>
-          <EnhancedComponent {...componentProps} />
-        </Suspense>
-      );
+      // EnhancedComponent 已經內建懶加載和 Suspense，不需要再包裝
+      return <EnhancedComponent {...componentProps} />;
     }
     
     // 回退到 LazyComponents
@@ -1592,14 +1572,17 @@ const AdminWidgetRendererComponent: React.FC<AdminWidgetRendererProps> = ({
       case 'AvailableSoonWidget':
         return (
           <Suspense fallback={<div className="h-full w-full animate-pulse bg-slate-800/50" />}>
-            <AvailableSoonWidget widget={{
-              id: `available-soon-${config.gridArea}`,
-              type: config.type as any,
-              title: config.title,
-              config: {
-                dataSource: config.dataSource
-              }
-            }} isEditMode={false} />
+            {renderLazyComponent('AvailableSoonWidget', {
+              widget: {
+                id: `available-soon-${config.gridArea}`,
+                type: config.type as any,
+                title: config.title,
+                config: {
+                  dataSource: config.dataSource
+                }
+              },
+              isEditMode: false
+            })}
           </Suspense>
         );
       case 'StockInventoryTable':
@@ -1665,138 +1648,179 @@ const AdminWidgetRendererComponent: React.FC<AdminWidgetRendererProps> = ({
       case 'AwaitLocationQtyWidget':
         return (
           <Suspense fallback={<div className="h-full w-full animate-pulse bg-slate-800/50" />}>
-            <AwaitLocationQtyWidget widget={{ 
-              id: 'await-location-qty',
-              type: 'CUSTOM' as any,
-              title: 'Await Location Qty',
-              config: { size: 'MEDIUM' as any }
-            }} isEditMode={false} timeFrame={timeFrame} />
+            {renderLazyComponent('AwaitLocationQtyWidget', {
+              widget: {
+                id: 'await-location-qty',
+                type: 'CUSTOM' as any,
+                title: 'Await Location Qty',
+                config: { size: 'MEDIUM' as any }
+              },
+              isEditMode: false,
+              timeFrame: timeFrame
+            })}
           </Suspense>
         );
       case 'YesterdayTransferCountWidget':
         return (
           <Suspense fallback={<div className="h-full w-full animate-pulse bg-slate-800/50" />}>
-            <YesterdayTransferCountWidget widget={{ 
-              id: 'yesterday-transfer-count',
-              type: 'CUSTOM' as any,
-              title: 'Transfer Done',
-              config: { size: 'MEDIUM' as any }
-            }} isEditMode={false} timeFrame={timeFrame} />
+            {renderLazyComponent('YesterdayTransferCountWidget', {
+              widget: {
+                id: 'yesterday-transfer-count',
+                type: 'CUSTOM' as any,
+                title: 'Transfer Done',
+                config: { size: 'MEDIUM' as any }
+              },
+              isEditMode: false,
+              timeFrame: timeFrame
+            })}
           </Suspense>
         );
       case 'StillInAwaitWidget':
         return (
           <Suspense fallback={<div className="h-full w-full animate-pulse bg-slate-800/50" />}>
-            <StillInAwaitWidget widget={{ 
-              id: 'still-in-await',
-              type: 'CUSTOM' as any,
-              title: 'Still In Await',
-              config: { size: 'MEDIUM' as any }
-            }} isEditMode={false} timeFrame={timeFrame} />
+            {renderLazyComponent('StillInAwaitWidget', {
+              widget: {
+                id: 'still-in-await',
+                type: 'CUSTOM' as any,
+                title: 'Still In Await',
+                config: { size: 'MEDIUM' as any }
+              },
+              isEditMode: false,
+              timeFrame: timeFrame
+            })}
           </Suspense>
         );
       case 'StillInAwaitPercentageWidget':
         return (
           <Suspense fallback={<div className="h-full w-full animate-pulse bg-slate-800/50" />}>
-            <StillInAwaitPercentageWidget widget={{ 
-              id: 'still-in-await-percentage',
-              type: 'CUSTOM' as any,
-              title: 'Still In Await %',
-              config: { size: 'MEDIUM' as any }
-            }} isEditMode={false} timeFrame={timeFrame} />
+            {renderLazyComponent('StillInAwaitPercentageWidget', {
+              widget: {
+                id: 'still-in-await-percentage',
+                type: 'CUSTOM' as any,
+                title: 'Still In Await %',
+                config: { size: 'MEDIUM' as any }
+              },
+              isEditMode: false,
+              timeFrame: timeFrame
+            })}
           </Suspense>
         );
       case 'OrderStateListWidget':
         return (
           <Suspense fallback={<div className="h-full w-full animate-pulse bg-slate-800/50" />}>
-            <OrderStateListWidget widget={{ 
-              id: 'order-state-list',
-              type: 'CUSTOM' as any,
-              title: 'Order Progress',
-              config: { size: 'MEDIUM' as any }
-            }} isEditMode={false} timeFrame={timeFrame} />
+            {renderLazyComponent('OrderStateListWidgetV2', {
+              widget: {
+                id: 'order-state-list',
+                type: 'CUSTOM' as any,
+                title: 'Order Progress',
+                config: { size: 'MEDIUM' as any }
+              },
+              isEditMode: false,
+              timeFrame: timeFrame
+            })}
           </Suspense>
         );
       case 'TransferTimeDistributionWidget':
         return (
           <Suspense fallback={<div className="h-full w-full animate-pulse bg-slate-800/50" />}>
-            <TransferTimeDistributionWidget widget={{ 
-              id: 'transfer-time-distribution',
-              type: 'CUSTOM' as any,
-              title: 'Transfer Time Distribution',
-              config: { size: 'MEDIUM' as any }
-            }} isEditMode={false} timeFrame={timeFrame} />
+            {renderLazyComponent('TransferTimeDistributionWidget', {
+              widget: {
+                id: 'transfer-time-distribution',
+                type: 'CUSTOM' as any,
+                title: 'Transfer Time Distribution',
+                config: { size: 'MEDIUM' as any }
+              },
+              isEditMode: false,
+              timeFrame: timeFrame
+            })}
           </Suspense>
         );
       case 'WarehouseTransferListWidget':
         return (
           <Suspense fallback={<div className="h-full w-full animate-pulse bg-slate-800/50" />}>
-            <WarehouseTransferListWidget widget={{ 
-              id: 'warehouse-transfer-list',
-              type: 'CUSTOM' as any,
-              title: 'Transfer List',
-              config: { size: 'LARGE' as any }
-            }} isEditMode={false} timeFrame={timeFrame} />
+            {renderLazyComponent('WarehouseTransferListWidget', {
+              widget: {
+                id: 'warehouse-transfer-list',
+                type: 'CUSTOM' as any,
+                title: 'Transfer List',
+                config: { size: 'LARGE' as any }
+              },
+              isEditMode: false,
+              timeFrame: timeFrame
+            })}
           </Suspense>
         );
       case 'WarehouseWorkLevelAreaChart':
         return (
           <Suspense fallback={<div className="h-full w-full animate-pulse bg-slate-800/50" />}>
-            <WarehouseWorkLevelAreaChart widget={{ 
-              id: 'warehouse-work-level',
-              type: 'CUSTOM' as any,
-              title: 'Work Level',
-              config: { size: 'LARGE' as any }
-            }} isEditMode={false} timeFrame={timeFrame} />
+            {renderLazyComponent('WarehouseWorkLevelAreaChart', {
+              widget: {
+                id: 'warehouse-work-level',
+                type: 'CUSTOM' as any,
+                title: 'Work Level',
+                config: { size: 'LARGE' as any }
+              },
+              isEditMode: false,
+              timeFrame: timeFrame
+            })}
           </Suspense>
         );
       case 'StockTypeSelector':
         return (
           <Suspense fallback={<div className="h-full w-full animate-pulse bg-slate-800/50" />}>
-            <StockTypeSelector 
-              widget={{
+            {renderLazyComponent('StockTypeSelector', {
+              widget: {
                 id: 'stock-type-selector',
                 type: config.type as any,
                 title: config.title || 'Stock Type Selector',
                 config: {
                   dataSource: 'stock_level'
                 }
-              }}
-              isEditMode={false}
-              useGraphQL={config.useGraphQL}
-            />
+              },
+              isEditMode: false,
+              useGraphQL: config.useGraphQL
+            })}
           </Suspense>
         );
       case 'StockDistributionChart':
       case 'StockDistributionChartV2':
         return (
           <Suspense fallback={<div className="h-full w-full animate-pulse bg-slate-800/50" />}>
-            <StockDistributionChart widget={config as any} useGraphQL={config.useGraphQL} />
+            {renderLazyComponent('StockDistributionChartV2', {
+              widget: config as any,
+              useGraphQL: config.useGraphQL
+            })}
           </Suspense>
         );
       case 'StockLevelHistoryChart':
         return (
           <Suspense fallback={<div className="h-full w-full animate-pulse bg-slate-800/50" />}>
-            <StockLevelHistoryChart widget={{
-              id: `stock-level-history-${config.gridArea}`,
-              type: config.type as any,
-              title: config.title,
-              config: {
-                dataSource: config.dataSource
-              }
-            }} timeFrame={timeFrame} />
+            {renderLazyComponent('StockLevelHistoryChart', {
+              widget: {
+                id: `stock-level-history-${config.gridArea}`,
+                type: config.type as any,
+                title: config.title,
+                config: {
+                  dataSource: config.dataSource
+                }
+              },
+              timeFrame: timeFrame
+            })}
           </Suspense>
         );
       case 'InventoryOrderedAnalysisWidget':
         return (
           <Suspense fallback={<div className="h-full w-full animate-pulse bg-slate-800/50" />}>
-            <InventoryOrderedAnalysisWidget widget={config as any} isEditMode={false} />
+            {renderLazyComponent('InventoryOrderedAnalysisWidget', {
+              widget: config as any,
+              isEditMode: false
+            })}
           </Suspense>
         );
       default:
         return <div>Component {config.component} not found</div>;
     }
-  }, [config, timeFrame, theme, loading]);
+  }, [config, timeFrame, theme, loading, renderLazyComponent]);
 
   // 根據 widget 類型渲染內容 - 使用 useCallback 優化
   const renderContent = useCallback(() => {
@@ -1827,81 +1851,87 @@ const AdminWidgetRendererComponent: React.FC<AdminWidgetRendererProps> = ({
       case 'report-generator':
         return (
           <Suspense fallback={<div className="h-full w-full animate-pulse bg-slate-800/50" />}>
-            <ReportGeneratorWidget 
-              title={config.title}
-              reportType={config.reportType || ''}
-              description={config.description}
-              apiEndpoint={config.apiEndpoint}
-              dialogTitle={config.dialogTitle || config.title}
-              dialogDescription={config.dialogDescription || config.description || 'Generate report'}
-              selectLabel={config.selectLabel || 'Select option'}
-              dataTable={config.dataTable || ''}
-              referenceField={config.referenceField || ''}
-            />
+            {renderLazyComponent('ReportGeneratorWidget', {
+              title: config.title,
+              reportType: config.reportType || '',
+              description: config.description,
+              apiEndpoint: config.apiEndpoint,
+              dialogTitle: config.dialogTitle || config.title,
+              dialogDescription: config.dialogDescription || config.description || 'Generate report',
+              selectLabel: config.selectLabel || 'Select option',
+              dataTable: config.dataTable || '',
+              referenceField: config.referenceField || ''
+            })}
           </Suspense>
         );
       case 'transaction-report':
         return (
           <Suspense fallback={<div className="h-full w-full animate-pulse bg-slate-800/50" />}>
-            <TransactionReportWidget 
-              title={config.title}
-              reportType={config.reportType || ''}
-              description={config.description}
-              apiEndpoint={config.apiEndpoint}
-            />
+            {renderLazyComponent('TransactionReportWidget', {
+              title: config.title,
+              reportType: config.reportType || '',
+              description: config.description,
+              apiEndpoint: config.apiEndpoint
+            })}
           </Suspense>
         );
       case 'grn-report':
         return (
           <Suspense fallback={<div className="h-full w-full animate-pulse bg-slate-800/50" />}>
-            <GrnReportWidget 
-              title={config.title}
-              reportType={config.reportType || ''}
-              description={config.description}
-              apiEndpoint={config.apiEndpoint}
-            />
+            {renderLazyComponent('GrnReportWidgetV2', {
+              title: config.title,
+              reportType: config.reportType || '',
+              description: config.description,
+              apiEndpoint: config.apiEndpoint
+            })}
           </Suspense>
         );
       case 'aco-order-report':
         return (
           <Suspense fallback={<div className="h-full w-full animate-pulse bg-slate-800/50" />}>
-            <AcoOrderReportWidget widget={{
-              id: `aco-order-report-${config.gridArea}`,
-              type: config.type as any,
-              title: config.title,
-              config: {
-                dataSource: config.dataSource
-              }
-            }} isEditMode={false} />
+            {renderLazyComponent('AcoOrderReportWidgetV2', {
+              widget: {
+                id: `aco-order-report-${config.gridArea}`,
+                type: config.type as any,
+                title: config.title,
+                config: {
+                  dataSource: config.dataSource
+                }
+              },
+              isEditMode: false
+            })}
           </Suspense>
         );
       case 'report-generator-dialog':
         return (
           <Suspense fallback={<div className="h-full w-full animate-pulse bg-slate-800/50" />}>
-            <ReportGeneratorWithDialogWidget 
-              title={config.title}
-              reportType={config.reportType || ''}
-              description={config.description}
-              apiEndpoint={config.apiEndpoint}
-              dialogTitle={config.dialogTitle || ''}
-              dialogDescription={config.dialogDescription || ''}
-              selectLabel={config.selectLabel || ''}
-              dataTable={config.dataTable || ''}
-              referenceField={config.referenceField || ''}
-            />
+            {renderLazyComponent('ReportGeneratorWithDialogWidgetV2', {
+              title: config.title,
+              reportType: config.reportType || '',
+              description: config.description,
+              apiEndpoint: config.apiEndpoint,
+              dialogTitle: config.dialogTitle || '',
+              dialogDescription: config.dialogDescription || '',
+              selectLabel: config.selectLabel || '',
+              dataTable: config.dataTable || '',
+              referenceField: config.referenceField || ''
+            })}
           </Suspense>
         );
       case 'available-soon':
         return (
           <Suspense fallback={<div className="h-full w-full animate-pulse bg-slate-800/50" />}>
-            <AvailableSoonWidget widget={{
-              id: `available-soon-${config.gridArea}`,
-              type: config.type as any,
-              title: config.title,
-              config: {
-                dataSource: config.dataSource
-              }
-            }} isEditMode={false} />
+            {renderLazyComponent('AvailableSoonWidget', {
+              widget: {
+                id: `available-soon-${config.gridArea}`,
+                type: config.type as any,
+                title: config.title,
+                config: {
+                  dataSource: config.dataSource
+                }
+              },
+              isEditMode: false
+            })}
           </Suspense>
         );
       case 'orders-list':
@@ -1915,7 +1945,7 @@ const AdminWidgetRendererComponent: React.FC<AdminWidgetRendererProps> = ({
           </div>
         );
     }
-  }, [config, renderStatsCard, renderChart, renderList, renderTable, renderSpecialComponent]);
+  }, [config, renderStatsCard, renderChart, renderList, renderTable, renderSpecialComponent, renderLazyComponent]);
 
   // Check if this is a custom theme
   const isCustomTheme = theme === 'injection' || theme === 'pipeline' || theme === 'warehouse' || theme === 'upload' || theme === 'update' || theme === 'stock-management' || theme === 'system';
