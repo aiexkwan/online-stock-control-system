@@ -16,12 +16,12 @@ export const test = base.extend<AuthFixtures>({
     // 執行登入流程
     await loginPage.goto();
     await loginPage.login(
-      process.env.E2E_TEST_EMAIL || 'test@example.com',
-      process.env.E2E_TEST_PASSWORD || 'testpassword'
+      process.env.SYS_LOGIN || process.env.E2E_TEST_EMAIL || process.env.PUPPETEER_LOGIN || 'test@pennineindustries.com',
+      process.env.SYS_PASSWORD || process.env.E2E_TEST_PASSWORD || process.env.PUPPETEER_PASSWORD || 'testpassword'
     );
 
-    // 等待登入成功後的重定向
-    await page.waitForURL('**/admin/**', { timeout: 10000 });
+    // 等待登入成功後的重定向到 /access
+    await page.waitForURL('**/access', { timeout: 10000 });
 
     // 提供已認證的頁面給測試使用
     await use(loginPage);

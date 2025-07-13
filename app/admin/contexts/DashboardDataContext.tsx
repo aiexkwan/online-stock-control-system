@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useMemo, useCallback, useState, useEffect } from 'react';
+import React, { createContext, useContext, useMemo, useCallback, useState, useEffect, useRef } from 'react';
 import { useDashboardBatchQuery } from '@/app/admin/hooks/useDashboardBatchQuery';
 import type { 
   DashboardBatchQueryData, 
@@ -47,21 +47,30 @@ export function DashboardDataProvider({
   prefetchedData = null,
   ssrMode = false
 }: DashboardDataProviderProps) {
+  console.log('[DEBUG] DashboardDataProvider initializing with:', { initialDateRange, ssrMode });
+  
+  // 添加渲染計數器以監控重新渲染頻率
+  const renderCountRef = useRef(0);
+  renderCountRef.current += 1;
+  console.log('[DEBUG] DashboardDataProvider render count:', renderCountRef.current);
   const [dateRange, setDateRange] = useState<DashboardDateRange>(initialDateRange);
   const [isRefetching, setIsRefetching] = useState(false);
   const [hybridData, setHybridData] = useState<DashboardBatchQueryData | null>(prefetchedData);
   
+  // 穩定化 options 對象以避免不必要嘅重新渲染
+  const stableOptions = useMemo(() => ({
+    dateRange,
+    // 在 SSR 模式下，如果有預取數據，則禁用初始查詢
+    enabled: ssrMode ? !prefetchedData : true
+  }), [dateRange, ssrMode, prefetchedData]);
+
   const {
     data: queryData,
     loading: queryLoading,
     error,
     refetch: queryRefetch,
     refetchWidget: queryRefetchWidget
-  } = useDashboardBatchQuery({ 
-    dateRange,
-    // 在 SSR 模式下，如果有預取數據，則禁用初始查詢
-    enabled: ssrMode ? !prefetchedData : true
-  });
+  } = useDashboardBatchQuery(stableOptions);
 
   // 合併數據：優先使用客戶端數據，fallback 到預取數據
   const data = useMemo(() => {
@@ -112,8 +121,27 @@ export function DashboardDataProvider({
     }
   }, [queryRefetchWidget]);
 
-  // 自動刷新
+  // 檢查是否為測試環境
+  const isTestMode = useMemo(() => {
+    return (
+      (typeof process !== 'undefined' && process.env.NODE_ENV === 'test') ||
+      (typeof window !== 'undefined' && window.location.search.includes('testMode=true')) ||
+      (typeof window !== 'undefined' && window.localStorage?.getItem('testMode') === 'true') ||
+      (typeof navigator !== 'undefined' && navigator.userAgent.includes('HeadlessChrome'))
+    );
+  }, []);
+
+  // 自動刷新 - DISABLED for API call optimization
   useEffect(() => {
+    if (isTestMode) {
+      console.log('[DEBUG] Auto-refresh disabled in test mode');
+      return;
+    }
+    
+    // DISABLED: Preventing excessive API calls
+    console.log('[DEBUG] Auto-refresh disabled to prevent excessive API calls');
+    return;
+    
     if (!autoRefreshInterval || autoRefreshInterval <= 0) return;
 
     const interval = setInterval(() => {
@@ -121,7 +149,7 @@ export function DashboardDataProvider({
     }, autoRefreshInterval);
 
     return () => clearInterval(interval);
-  }, [autoRefreshInterval, refetch]);
+  }, [autoRefreshInterval, refetch, isTestMode]);
 
   // 工具方法：獲取特定 widget 數據
   const getWidgetData = useCallback(<T = any>(widgetId: string): T | null => {
@@ -153,14 +181,39 @@ export function DashboardDataProvider({
     return null;
   }, [error]);
 
-  // 當日期範圍改變時自動重新獲取數據
+  // 當日期範圍改變時自動重新獲取數據 - 修復循環依賴問題
+  const hasValidDateRange = useMemo(() => 
+    Boolean(dateRange.startDate || dateRange.endDate), 
+    [dateRange.startDate?.getTime(), dateRange.endDate?.getTime()]
+  );
+
+  const shouldSkipAutoRefetch = useMemo(() => 
+    ssrMode && prefetchedData && !queryData, 
+    [ssrMode, !!prefetchedData, !!queryData]
+  );
+
   useEffect(() => {
-    // 在 SSR 模式下且有預取數據時，不自動 refetch
-    if (ssrMode && prefetchedData && !queryData) {
+    // 添加初始加載狀態檢查，防止無限循環
+    if (shouldSkipAutoRefetch || !hasValidDateRange) {
       return;
     }
-    refetch();
-  }, [dateRange, refetch, ssrMode, prefetchedData, queryData]);
+    
+    // 添加防抖機制，避免快速連續的 refetch
+    const timeoutId = setTimeout(() => {
+      console.log('[DEBUG] Date range changed, triggering refetch:', {
+        startDate: dateRange.startDate?.toISOString(),
+        endDate: dateRange.endDate?.toISOString()
+      });
+      refetch();
+    }, 100); // 100ms 防抖
+    
+    return () => clearTimeout(timeoutId);
+  }, [
+    dateRange.startDate?.getTime(), 
+    dateRange.endDate?.getTime(), 
+    shouldSkipAutoRefetch,
+    hasValidDateRange
+  ]); // 移除直接的 queryData 依賴，使用派生狀態
 
   const contextValue = useMemo<DashboardDataContextValue>(() => ({
     data,

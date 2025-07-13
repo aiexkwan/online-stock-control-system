@@ -7,6 +7,42 @@ const nextConfig = {
     ignoreBuildErrors: true,
   },
   serverExternalPackages: ['pdf-parse', 'pdfjs-dist', 'sharp'],
+  // CSS 優化配置 (優化 CSS 使用率)
+  experimental: {
+    optimizeCss: true, // 啟用 CSS 優化
+    nextScriptWorkers: false, // 禁用可能影響 CSS 的 web workers
+  },
+  compiler: {
+    removeConsole: process.env.NODE_ENV === 'production', // 生產環境移除 console
+  },
+  // 開發環境配置
+  ...(process.env.NODE_ENV === 'development' && {
+    onDemandEntries: {
+      // 開發環境頁面緩存時間
+      maxInactiveAge: 60 * 1000, // 1 minute
+      pagesBufferLength: 5,
+    },
+    // 減少開發環境的錯誤輸出
+    devIndicators: {
+      buildActivity: false, // 禁用構建指示器
+      buildActivityPosition: 'bottom-right',
+    },
+    // 開發環境性能優化
+    webpack: (config, { dev, isServer }) => {
+      if (dev && !isServer) {
+        // 減少開發環境的 source map 生成
+        config.devtool = 'eval-cheap-module-source-map';
+        
+        // 減少不必要的錯誤輸出
+        config.stats = {
+          ...config.stats,
+          errorDetails: false,
+          warnings: false,
+        };
+      }
+      return config;
+    },
+  }),
   images: {
     remotePatterns: [
       {
@@ -40,18 +76,26 @@ const nextConfig = {
   //   },
   // },
   async redirects() {
-    return [
-      {
+    // 測試模式下不重定向首頁，允許直接訪問進行性能測試
+    const redirects = [];
+    
+    // 只在非測試模式下添加首頁重定向
+    if (process.env.NEXT_PUBLIC_TEST_MODE !== 'true') {
+      redirects.push({
         source: '/',
         destination: '/main-login',
         permanent: true,
-      },
-      {
-        source: '/login',
-        destination: '/main-login',
-        permanent: true,
-      },
-    ];
+      });
+    }
+    
+    // 舊登入頁面始終重定向到新登入頁面
+    redirects.push({
+      source: '/login',
+      destination: '/main-login',
+      permanent: true,
+    });
+    
+    return redirects;
   },
   webpack: (config, { isServer, dev }) => {
     config.resolve.alias = {
@@ -62,6 +106,49 @@ const nextConfig = {
       ...(config.externals || []),
       { 'utf-8-validate': 'commonjs utf-8-validate', bufferutil: 'commonjs bufferutil' },
     ];
+
+    // 改善動態導入錯誤處理
+    config.resolve.fallback = {
+      ...config.resolve.fallback,
+      fs: false,
+      net: false,
+      tls: false,
+    };
+
+    // 優化 chunk 分割以減少 originalFactory.call 錯誤
+    if (!isServer) {
+      config.optimization = {
+        ...config.optimization,
+        splitChunks: {
+          ...config.optimization.splitChunks,
+          chunks: 'all',
+          cacheGroups: {
+            ...config.optimization.splitChunks?.cacheGroups,
+            // 分離 UI 組件
+            ui: {
+              test: /[\\/]components[\\/]ui[\\/]/,
+              name: 'ui-components',
+              chunks: 'all',
+              priority: 20,
+            },
+            // 分離 admin 組件
+            admin: {
+              test: /[\\/]app[\\/]admin[\\/]/,
+              name: 'admin-components',
+              chunks: 'all',
+              priority: 15,
+            },
+            // 分離 recharts
+            recharts: {
+              test: /[\\/]node_modules[\\/]recharts[\\/]/,
+              name: 'recharts',
+              chunks: 'all',
+              priority: 10,
+            },
+          },
+        },
+      };
+    }
 
     // 優化開發環境的 hot reload
     if (dev && !isServer) {

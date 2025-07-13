@@ -1,8 +1,17 @@
 import { clockNumberToEmail, emailToClockNumber } from '../authUtils';
 import { isNotProduction } from '@/lib/utils/env';
 
-// Mock console methods
-const mockConsoleWarn = jest.spyOn(console, 'warn').mockImplementation();
+// Mock authLogger
+jest.mock('@/lib/logger', () => ({
+  authLogger: {
+    debug: jest.fn(),
+    info: jest.fn(),
+    warn: jest.fn(),
+    error: jest.fn(),
+  },
+}));
+
+const { authLogger } = require('@/lib/logger');
 
 describe('authUtils', () => {
   beforeEach(() => {
@@ -63,13 +72,19 @@ describe('authUtils', () => {
       
       // Should log warning in non-production
       if (isNotProduction()) {
-        expect(mockConsoleWarn).toHaveBeenCalledWith('[authUtils] emailToClockNumber called with null or undefined email');
+        expect(authLogger.warn).toHaveBeenCalledWith(
+          expect.objectContaining({
+            function: 'emailToClockNumber',
+            input: null,
+          }),
+          'Called with null or undefined email'
+        );
       }
     });
 
     it('should handle empty string', () => {
       expect(emailToClockNumber('')).toBeNull();
-      expect(mockConsoleWarn).toHaveBeenCalled();
+      expect(authLogger.warn).toHaveBeenCalled();
     });
 
     it('should handle invalid email formats', () => {
@@ -135,7 +150,7 @@ describe('authUtils', () => {
         configurable: true
       });
       emailToClockNumber(null);
-      expect(mockConsoleWarn).not.toHaveBeenCalled();
+      expect(authLogger.warn).not.toHaveBeenCalled();
     });
 
     it('should warn in development', () => {
@@ -145,7 +160,13 @@ describe('authUtils', () => {
         configurable: true
       });
       emailToClockNumber(null);
-      expect(mockConsoleWarn).toHaveBeenCalledWith('[authUtils] emailToClockNumber called with null or undefined email');
+      expect(authLogger.warn).toHaveBeenCalledWith(
+        expect.objectContaining({
+          function: 'emailToClockNumber',
+          input: null,
+        }),
+        'Called with null or undefined email'
+      );
     });
 
     it('should warn in test environment', () => {
@@ -155,7 +176,13 @@ describe('authUtils', () => {
         configurable: true
       });
       emailToClockNumber(undefined);
-      expect(mockConsoleWarn).toHaveBeenCalledWith('[authUtils] emailToClockNumber called with null or undefined email');
+      expect(authLogger.warn).toHaveBeenCalledWith(
+        expect.objectContaining({
+          function: 'emailToClockNumber',
+          input: undefined,
+        }),
+        'Called with null or undefined email'
+      );
     });
   });
 });

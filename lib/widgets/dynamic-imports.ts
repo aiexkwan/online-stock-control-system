@@ -5,8 +5,8 @@
 
 // Core Widgets
 export const coreWidgetImports = {
-  'HistoryTree': () => import('@/app/admin/components/dashboard/widgets/HistoryTreeV2').then(m => ({ default: m.HistoryTreeV2 || m.default })),
-  'HistoryTreeV2': () => import('@/app/admin/components/dashboard/widgets/HistoryTreeV2'),
+  'HistoryTree': () => import('@/app/admin/components/dashboard/widgets/HistoryTreeV2').then(module => module.HistoryTreeV2),
+  'HistoryTreeV2': () => import('@/app/admin/components/dashboard/widgets/HistoryTreeV2').then(module => module.HistoryTreeV2),
   'AdminWidgetRenderer': () => import('@/app/admin/components/dashboard/AdminWidgetRenderer'),
 };
 

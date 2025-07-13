@@ -142,10 +142,7 @@ export const chartsWidgetConfigs: Record<string, Partial<WidgetDefinition>> = {
 /**
  * 註冊所有 Charts widgets
  */
-export async function registerChartsWidgets(): Promise<void> {
-  // Lazy import to avoid circular dependency
-  const { widgetRegistry } = await import('./enhanced-registry');
-  
+export async function registerChartsWidgets(widgetRegistry: any): Promise<void> {
   const startTime = performance.now();
   let registeredCount = 0;
 
@@ -189,7 +186,7 @@ export async function registerChartsWidgets(): Promise<void> {
 /**
  * 預加載高優先級 Charts widgets
  */
-export async function preloadHighPriorityChartsWidgets(): Promise<void> {
+export async function preloadHighPriorityChartsWidgets(widgetRegistry: any): Promise<void> {
   const highPriorityWidgets = Object.entries(chartsWidgetConfigs)
     .filter(([_, config]) => (config.preloadPriority || 0) >= 8)
     .map(([id]) => id);

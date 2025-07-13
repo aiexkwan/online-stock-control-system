@@ -19,18 +19,74 @@ import { NavigationProvider } from '@/components/ui/dynamic-action-bar/Navigatio
 import { SmartReminder } from '@/components/ui/dynamic-action-bar/SmartReminder';
 import { isDevelopment } from '@/lib/utils/env';
 
-// Create a client
+// Create a client - OPTIMIZED FOR MINIMAL API CALLS
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 1000 * 60 * 5, // 5 minutes
-      cacheTime: 1000 * 60 * 10, // 10 minutes
-      refetchOnWindowFocus: false,
-      retry: 2,
-      retryDelay: (attemptIndex: number) => Math.min(1000 * 2 ** attemptIndex, 30000),
+      staleTime: 1000 * 60 * 30, // 30 minutes - much longer to reduce API calls
+      gcTime: 1000 * 60 * 60, // 60 minutes - longer cache retention
+      refetchOnWindowFocus: false, // No refetch on focus
+      refetchOnMount: false, // No refetch on mount if data exists
+      refetchOnReconnect: false, // No refetch on reconnect
+      refetchInterval: false, // No automatic polling
+      retry: 1, // Reduced retries
+      retryDelay: 5000, // Fixed 5 second delay
     },
   },
 });
+
+// 導入新的錯誤邊界
+import ErrorBoundary from './ErrorBoundary';
+
+// Error boundary for dialog components - 保留用於向後兼容
+class DialogErrorBoundary extends React.Component<
+  { children: React.ReactNode },
+  { hasError: boolean; error?: Error }
+> {
+  constructor(props: { children: React.ReactNode }) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    console.error('Dialog Error Boundary caught an error:', error, errorInfo);
+    
+    // Special handling for originalFactory.call errors
+    if (error.message.includes('originalFactory.call') || 
+        error.message.includes('undefined is not an object') ||
+        error.message.includes('Cannot read properties of undefined')) {
+      console.warn('Dynamic import error detected in dialog components');
+      
+      // Auto-retry after a delay for originalFactory errors
+      setTimeout(() => {
+        this.setState({ hasError: false });
+      }, 3000);
+    }
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="text-xs text-gray-500 p-2">
+          Dialog loading error - recovering...
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
+}
+
+// Suspense fallback for dialogs
+const DialogSuspenseFallback = () => (
+  <div className="text-xs text-gray-500 p-2">
+    Loading dialogs...
+  </div>
+);
 
 interface ClientLayoutProps {
   children: React.ReactNode;
@@ -86,13 +142,23 @@ export default function ClientLayout({ children }: ClientLayoutProps) {
         <GlobalHeader />
 
         {/* Main layout - simplified without sidebar */}
-        <UniversalBackground className='text-white'>{children}</UniversalBackground>
+        <ErrorBoundary>
+          <UniversalBackground className='text-white'>{children}</UniversalBackground>
+        </ErrorBoundary>
 
-        {/* Global report dialogs */}
-        <GlobalReportDialogs />
+        {/* Global report dialogs with enhanced error boundary */}
+        <ErrorBoundary>
+          <React.Suspense fallback={<DialogSuspenseFallback />}>
+            <GlobalReportDialogs />
+          </React.Suspense>
+        </ErrorBoundary>
 
-        {/* Global analytics dialogs */}
-        <GlobalAnalyticsDialogs />
+        {/* Global analytics dialogs with enhanced error boundary */}
+        <ErrorBoundary>
+          <React.Suspense fallback={<DialogSuspenseFallback />}>
+            <GlobalAnalyticsDialogs />
+          </React.Suspense>
+        </ErrorBoundary>
 
         {/* Dynamic Navigation Bar - Show only when authenticated and not on login/access pages */}
         {isAuthenticated && !isLoginPage && !isAccessPage && (

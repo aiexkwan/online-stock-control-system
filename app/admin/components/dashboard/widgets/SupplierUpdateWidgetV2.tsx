@@ -22,7 +22,7 @@ import { UniversalWidgetCard as WidgetCard } from '../UniversalWidgetCard';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { createClient } from '@/app/utils/supabase/client';
+import { searchSupplier, createSupplier, updateSupplier } from '@/app/actions/supplierActions';
 import { errorHandler } from '@/app/components/qc-label-form/services/ErrorHandler';
 import { useGraphQLFallback, GraphQLFallbackPresets } from '@/app/admin/hooks/useGraphQLFallback';
 import { gql } from '@apollo/client';
@@ -84,7 +84,9 @@ export const SupplierUpdateWidgetV2 = React.memo(function SupplierUpdateWidgetV2
   widget,
   isEditMode,
 }: WidgetComponentProps) {
-  const { handleSuccess, handleError, handleWarning, handleSubmitError } = useWidgetErrorHandler(widget.title);
+  const { handleSuccess, handleError, handleWarning, handleSubmitError } = useWidgetErrorHandler(
+    'title' in widget ? widget.title : widget.config?.title || 'Supplier Update'
+  );
   // State management
   const [supplierData, setSupplierData] = useState<SupplierData | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -105,7 +107,6 @@ export const SupplierUpdateWidgetV2 = React.memo(function SupplierUpdateWidgetV2
     supplier_name: '',
   });
 
-  const supabase = createClient();
 
   // GraphQL Mutations
   const [createSupplierMutation] = useMutation(CREATE_SUPPLIER_MUTATION, {
@@ -164,44 +165,6 @@ export const SupplierUpdateWidgetV2 = React.memo(function SupplierUpdateWidgetV2
     },
   });
 
-  // Get current user ID
-  const getCurrentUserId = useCallback(async (): Promise<number> => {
-    try {
-      const startTime = performance.now();
-
-      // Get current user info
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      const currentUserEmail = user?.email || 'unknown';
-
-      // Use RPC function to get user ID
-      const { data, error } = await supabase.rpc('rpc_get_user_id_by_email', {
-        p_email: currentUserEmail,
-      });
-
-      const endTime = performance.now();
-      console.log(`[SupplierUpdateWidgetV2] User ID lookup: ${Math.round(endTime - startTime)}ms`);
-
-      if (error) {
-        errorHandler.handleApiError(
-          error,
-          { component: 'SupplierUpdateWidgetV2', action: 'get_user_id' },
-          'Failed to get user information'
-        );
-        return 999; // Default value
-      }
-
-      return data || 999;
-    } catch (error) {
-      errorHandler.handleApiError(
-        error as Error,
-        { component: 'SupplierUpdateWidgetV2', action: 'get_user_id' },
-        'Unexpected error getting user information'
-      );
-      return 999;
-    }
-  }, [supabase]);
 
   // Reset state
   const resetState = useCallback(() => {
@@ -225,25 +188,19 @@ export const SupplierUpdateWidgetV2 = React.memo(function SupplierUpdateWidgetV2
   >({
     graphqlQuery: GET_SUPPLIER_BY_CODE,
     serverAction: async (variables) => {
-      // Fallback to RPC function
+      // Use Server Action for supplier search
       const code = variables?.code || '';
       const startTime = performance.now();
       
-      const { data, error } = await supabase.rpc('rpc_search_supplier', {
-        p_supplier_code: code.trim(),
-      });
+      const result = await searchSupplier(code);
 
       const endTime = performance.now();
-      console.log(`[SupplierUpdateWidgetV2] RPC fallback search: ${Math.round(endTime - startTime)}ms`);
+      console.log(`[SupplierUpdateWidgetV2] Server Action search: ${Math.round(endTime - startTime)}ms`);
 
-      if (error) {
-        throw error;
-      }
-
-      if (data && data.exists && data.supplier) {
+      if (result.exists && result.supplier) {
         return {
           data_supplierCollection: {
-            edges: [{ node: data.supplier }],
+            edges: [{ node: result.supplier }],
           },
         };
       }
@@ -252,9 +209,9 @@ export const SupplierUpdateWidgetV2 = React.memo(function SupplierUpdateWidgetV2
     },
     variables: { code: searchedCode },
     skip: !searchedCode,
-    fallbackEnabled: true,
     widgetId: 'SupplierUpdateWidgetV2',
     ...GraphQLFallbackPresets.cached,
+    fallbackEnabled: true,
   });
 
   // Handle search
@@ -373,21 +330,21 @@ export const SupplierUpdateWidgetV2 = React.memo(function SupplierUpdateWidgetV2
               },
             });
           } catch (graphqlError) {
-            // Fallback to RPC if GraphQL fails
-            console.log('[SupplierUpdateWidgetV2] GraphQL failed, falling back to RPC');
-            const userId = await getCurrentUserId();
-            const { data, error } = await supabase.rpc('rpc_update_supplier', {
-              p_supplier_code: supplierData!.supplier_code,
-              p_supplier_name: formData.supplier_name,
-              p_user_id: userId,
-            });
-            if (error) throw error;
-            if (!data.success) throw new Error(data.error || 'Update failed');
-            setSupplierData(data.supplier);
-            setStatusMessage({ type: 'success', message: 'Updated successfully!' });
-            handleSuccess(`Supplier ${data.supplier.supplier_code} updated`, 'update_supplier', {
-              supplierCode: data.supplier.supplier_code,
-            });
+            // Fallback to Server Action if GraphQL fails
+            console.log('[SupplierUpdateWidgetV2] GraphQL failed, falling back to Server Action');
+            const result = await updateSupplier(supplierData!.supplier_code, formData.supplier_name);
+            
+            if (!result.success) {
+              throw new Error(result.error || 'Update failed');
+            }
+            
+            if (result.supplier) {
+              setSupplierData(result.supplier);
+              setStatusMessage({ type: 'success', message: 'Updated successfully!' });
+              handleSuccess(`Supplier ${result.supplier.supplier_code} updated`, 'update_supplier', {
+                supplierCode: result.supplier.supplier_code,
+              });
+            }
           }
         } else {
           // Try GraphQL mutation first
@@ -399,21 +356,21 @@ export const SupplierUpdateWidgetV2 = React.memo(function SupplierUpdateWidgetV2
               },
             });
           } catch (graphqlError) {
-            // Fallback to RPC if GraphQL fails
-            console.log('[SupplierUpdateWidgetV2] GraphQL failed, falling back to RPC');
-            const userId = await getCurrentUserId();
-            const { data, error } = await supabase.rpc('rpc_create_supplier', {
-              p_supplier_code: formData.supplier_code,
-              p_supplier_name: formData.supplier_name,
-              p_user_id: userId,
-            });
-            if (error) throw error;
-            if (!data.success) throw new Error(data.error || 'Creation failed');
-            setSupplierData(data.supplier);
-            setStatusMessage({ type: 'success', message: 'Created successfully!' });
-            handleSuccess(`Supplier ${data.supplier.supplier_code} created`, 'create_supplier', {
-              supplierCode: data.supplier.supplier_code,
-            });
+            // Fallback to Server Action if GraphQL fails
+            console.log('[SupplierUpdateWidgetV2] GraphQL failed, falling back to Server Action');
+            const result = await createSupplier(formData.supplier_code, formData.supplier_name);
+            
+            if (!result.success) {
+              throw new Error(result.error || 'Creation failed');
+            }
+            
+            if (result.supplier) {
+              setSupplierData(result.supplier);
+              setStatusMessage({ type: 'success', message: 'Created successfully!' });
+              handleSuccess(`Supplier ${result.supplier.supplier_code} created`, 'create_supplier', {
+                supplierCode: result.supplier.supplier_code,
+              });
+            }
           }
         }
 
@@ -448,7 +405,7 @@ export const SupplierUpdateWidgetV2 = React.memo(function SupplierUpdateWidgetV2
         setIsLoading(false);
       }
     },
-    [isEditing, supplierData, formData, supabase, getCurrentUserId, createSupplierMutation, updateSupplierMutation, handleWarning, handleSuccess]
+    [isEditing, supplierData, formData, createSupplierMutation, updateSupplierMutation, handleWarning, handleSuccess]
   );
 
   // Handle form input change

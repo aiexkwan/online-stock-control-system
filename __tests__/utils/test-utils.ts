@@ -16,44 +16,274 @@ export function renderWithProviders(
 // Wait for async operations
 export const waitFor = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
-// Mock Supabase client
+// Mock Supabase client with enhanced query capabilities
 export const createMockSupabaseClient = () => {
-  const mockClient = {
-    from: jest.fn().mockReturnThis(),
-    select: jest.fn().mockReturnThis(),
-    insert: jest.fn().mockReturnThis(),
-    update: jest.fn().mockReturnThis(),
-    delete: jest.fn().mockReturnThis(),
-    eq: jest.fn().mockReturnThis(),
-    neq: jest.fn().mockReturnThis(),
-    gt: jest.fn().mockReturnThis(),
-    gte: jest.fn().mockReturnThis(),
-    lt: jest.fn().mockReturnThis(),
-    lte: jest.fn().mockReturnThis(),
-    like: jest.fn().mockReturnThis(),
-    ilike: jest.fn().mockReturnThis(),
-    is: jest.fn().mockReturnThis(),
-    in: jest.fn().mockReturnThis(),
-    contains: jest.fn().mockReturnThis(),
-    containedBy: jest.fn().mockReturnThis(),
-    range: jest.fn().mockReturnThis(),
-    order: jest.fn().mockReturnThis(),
-    limit: jest.fn().mockReturnThis(),
-    single: jest.fn().mockReturnThis(),
-    maybeSingle: jest.fn().mockReturnThis(),
-    rpc: jest.fn().mockReturnThis(),
-    auth: {
-      getUser: jest.fn(),
-      signIn: jest.fn(),
-      signOut: jest.fn(),
-      getSession: jest.fn(),
-    },
-    realtime: {
-      channel: jest.fn().mockReturnValue({
-        on: jest.fn().mockReturnThis(),
-        subscribe: jest.fn().mockReturnThis(),
-        unsubscribe: jest.fn(),
+  // Store query state for complex query building
+  const queryState = {
+    table: '',
+    selectColumns: '*',
+    filters: [],
+    joins: [],
+    orderBy: [],
+    limitValue: null,
+    offsetValue: null,
+    modifiers: [],
+  };
+
+  // Helper to reset query state
+  const resetQueryState = () => {
+    queryState.table = '';
+    queryState.selectColumns = '*';
+    queryState.filters = [];
+    queryState.joins = [];
+    queryState.orderBy = [];
+    queryState.limitValue = null;
+    queryState.offsetValue = null;
+    queryState.modifiers = [];
+  };
+
+  // Create chainable query builder
+  const createQueryBuilder = () => {
+    const builder = {
+      // Selection methods
+      select: jest.fn((columns = '*') => {
+        queryState.selectColumns = columns;
+        return builder;
       }),
+      
+      // Data modification methods
+      insert: jest.fn((data) => {
+        queryState.data = data;
+        return builder;
+      }),
+      update: jest.fn((data) => {
+        queryState.data = data;
+        return builder;
+      }),
+      upsert: jest.fn((data) => {
+        queryState.data = data;
+        return builder;
+      }),
+      delete: jest.fn(() => builder),
+      
+      // Filter methods
+      eq: jest.fn((column, value) => {
+        queryState.filters.push({ type: 'eq', column, value });
+        return builder;
+      }),
+      neq: jest.fn((column, value) => {
+        queryState.filters.push({ type: 'neq', column, value });
+        return builder;
+      }),
+      gt: jest.fn((column, value) => {
+        queryState.filters.push({ type: 'gt', column, value });
+        return builder;
+      }),
+      gte: jest.fn((column, value) => {
+        queryState.filters.push({ type: 'gte', column, value });
+        return builder;
+      }),
+      lt: jest.fn((column, value) => {
+        queryState.filters.push({ type: 'lt', column, value });
+        return builder;
+      }),
+      lte: jest.fn((column, value) => {
+        queryState.filters.push({ type: 'lte', column, value });
+        return builder;
+      }),
+      like: jest.fn((column, pattern) => {
+        queryState.filters.push({ type: 'like', column, pattern });
+        return builder;
+      }),
+      ilike: jest.fn((column, pattern) => {
+        queryState.filters.push({ type: 'ilike', column, pattern });
+        return builder;
+      }),
+      is: jest.fn((column, value) => {
+        queryState.filters.push({ type: 'is', column, value });
+        return builder;
+      }),
+      in: jest.fn((column, values) => {
+        queryState.filters.push({ type: 'in', column, values });
+        return builder;
+      }),
+      contains: jest.fn((column, value) => {
+        queryState.filters.push({ type: 'contains', column, value });
+        return builder;
+      }),
+      containedBy: jest.fn((column, value) => {
+        queryState.filters.push({ type: 'containedBy', column, value });
+        return builder;
+      }),
+      
+      // Range filter
+      range: jest.fn((from, to) => {
+        queryState.limitValue = to - from + 1;
+        queryState.offsetValue = from;
+        return builder;
+      }),
+      
+      // Ordering
+      order: jest.fn((column, options = {}) => {
+        queryState.orderBy.push({ column, ...options });
+        return builder;
+      }),
+      
+      // Pagination
+      limit: jest.fn((count) => {
+        queryState.limitValue = count;
+        return builder;
+      }),
+      offset: jest.fn((count) => {
+        queryState.offsetValue = count;
+        return builder;
+      }),
+      
+      // Modifiers
+      single: jest.fn(() => {
+        queryState.modifiers.push('single');
+        return Promise.resolve({ data: null, error: null });
+      }),
+      maybeSingle: jest.fn(() => {
+        queryState.modifiers.push('maybeSingle');
+        return Promise.resolve({ data: null, error: null });
+      }),
+      
+      // Join operations
+      leftJoin: jest.fn((table, on) => {
+        queryState.joins.push({ type: 'left', table, on });
+        return builder;
+      }),
+      innerJoin: jest.fn((table, on) => {
+        queryState.joins.push({ type: 'inner', table, on });
+        return builder;
+      }),
+      
+      // Additional query methods
+      or: jest.fn((filters) => {
+        queryState.filters.push({ type: 'or', filters });
+        return builder;
+      }),
+      not: jest.fn((column, operator, value) => {
+        queryState.filters.push({ type: 'not', column, operator, value });
+        return builder;
+      }),
+      match: jest.fn((query) => {
+        queryState.filters.push({ type: 'match', query });
+        return builder;
+      }),
+      
+      // Text search
+      textSearch: jest.fn((column, query, options) => {
+        queryState.filters.push({ type: 'textSearch', column, query, options });
+        return builder;
+      }),
+      
+      // Return count
+      count: jest.fn((options = {}) => {
+        queryState.modifiers.push({ type: 'count', options });
+        return builder;
+      }),
+      
+      // CSV export
+      csv: jest.fn(() => {
+        queryState.modifiers.push('csv');
+        return builder;
+      }),
+      
+      // Get query state (for testing)
+      _getQueryState: () => ({ ...queryState }),
+      
+      // Promise-like behavior
+      then: (resolve) => {
+        return Promise.resolve({ data: [], error: null }).then(resolve);
+      },
+    };
+    
+    return builder;
+  };
+
+  const mockClient = {
+    from: jest.fn((table) => {
+      resetQueryState();
+      queryState.table = table;
+      return createQueryBuilder();
+    }),
+    
+    // RPC with enhanced return handling
+    rpc: jest.fn((functionName, params = {}) => {
+      return Promise.resolve({ data: null, error: null });
+    }),
+    
+    // Enhanced auth methods
+    auth: {
+      getUser: jest.fn().mockResolvedValue({
+        data: { 
+          user: { 
+            id: 'test-user-id',
+            email: 'test@example.com',
+            user_metadata: {}
+          } 
+        },
+        error: null
+      }),
+      signIn: jest.fn().mockResolvedValue({
+        data: { 
+          user: { id: 'test-user-id' },
+          session: { access_token: 'test-token' }
+        },
+        error: null
+      }),
+      signOut: jest.fn().mockResolvedValue({ error: null }),
+      getSession: jest.fn().mockResolvedValue({
+        data: { 
+          session: { 
+            user: { id: 'test-user-id' },
+            access_token: 'test-token'
+          } 
+        },
+        error: null
+      }),
+      onAuthStateChange: jest.fn((callback) => {
+        return {
+          data: { subscription: { unsubscribe: jest.fn() } },
+          error: null
+        };
+      }),
+    },
+    
+    // Enhanced realtime support
+    realtime: {
+      channel: jest.fn((channelName) => ({
+        on: jest.fn().mockReturnThis(),
+        subscribe: jest.fn((callback) => {
+          if (callback) callback('subscribed');
+          return Promise.resolve('subscribed');
+        }),
+        unsubscribe: jest.fn(),
+        track: jest.fn(),
+        send: jest.fn(),
+      })),
+      setAuth: jest.fn(),
+      removeChannel: jest.fn(),
+    },
+    
+    // Storage support
+    storage: {
+      from: jest.fn((bucket) => ({
+        upload: jest.fn().mockResolvedValue({ data: { path: 'test-path' }, error: null }),
+        download: jest.fn().mockResolvedValue({ data: new Blob(), error: null }),
+        remove: jest.fn().mockResolvedValue({ data: [], error: null }),
+        list: jest.fn().mockResolvedValue({ data: [], error: null }),
+        getPublicUrl: jest.fn((path) => ({ 
+          data: { publicUrl: `https://test.supabase.co/storage/v1/object/public/${bucket}/${path}` } 
+        })),
+      })),
+    },
+    
+    // Functions support
+    functions: {
+      invoke: jest.fn().mockResolvedValue({ data: null, error: null }),
     },
   };
   

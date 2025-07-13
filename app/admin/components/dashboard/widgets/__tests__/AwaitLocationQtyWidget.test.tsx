@@ -8,6 +8,15 @@ import { render, screen } from '@testing-library/react';
 import AwaitLocationQtyWidget from '../AwaitLocationQtyWidget';
 import { useWidgetData } from '@/app/admin/contexts/DashboardDataContext';
 
+// Mock supabase client
+jest.mock('@/app/utils/supabase/client', () => ({
+  createClient: jest.fn(() => ({
+    from: jest.fn(),
+    select: jest.fn(),
+    insert: jest.fn(),
+  })),
+}));
+
 // Mock the DashboardDataContext
 jest.mock('@/app/admin/contexts/DashboardDataContext');
 
@@ -16,14 +25,19 @@ jest.mock('framer-motion', () => ({
   motion: {
     div: ({ children, ...props }: any) => <div {...props}>{children}</div>,
   },
+  AnimatePresence: ({ children }: any) => <>{children}</>,
+}));
+
+// Mock lucide-react icons
+jest.mock('lucide-react', () => ({
+  Package: () => null,
+  TrendingUp: () => null,
+  TrendingDown: () => null,
+  Minus: () => null,
 }));
 
 describe('AwaitLocationQtyWidget', () => {
-  const mockWidget = {
-    id: 'await-location-qty',
-    type: 'await-location-qty',
-    config: {},
-  };
+  const mockWidgetId = 'await-location-qty';
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -37,10 +51,13 @@ describe('AwaitLocationQtyWidget', () => {
       refetch: jest.fn(),
     });
 
-    render(<AwaitLocationQtyWidget widget={mockWidget} isEditMode={false} />);
+    render(<AwaitLocationQtyWidget widgetId={mockWidgetId} />);
     
-    expect(screen.getByText('Await Location Qty')).toBeInTheDocument();
-    expect(screen.getByTestId('widget-skeleton')).toBeInTheDocument();
+    // During loading, MetricCard shows skeleton without text
+    const loadingSkeletons = screen.getAllByRole('generic').filter(el => 
+      el.className.includes('animate-pulse')
+    );
+    expect(loadingSkeletons.length).toBeGreaterThan(0);
   });
 
   it('should render error state', () => {
@@ -52,32 +69,34 @@ describe('AwaitLocationQtyWidget', () => {
       refetch: mockRefetch,
     });
 
-    render(<AwaitLocationQtyWidget widget={mockWidget} isEditMode={false} />);
+    render(<AwaitLocationQtyWidget widgetId={mockWidgetId} />);
     
-    expect(screen.getByText('Await Location Qty')).toBeInTheDocument();
-    expect(screen.getByText(/Failed to load data/)).toBeInTheDocument();
+    expect(screen.getByText('Error')).toBeInTheDocument();
+    expect(screen.getByText('Failed to load data')).toBeInTheDocument();
   });
 
   it('should render data correctly', () => {
     (useWidgetData as jest.Mock).mockReturnValue({
       data: {
-        totalAwaitingQty: 1234,
-        locations: [],
+        records: [
+          { location: 'AWAIT-A1', quantity: 500 },
+          { location: 'AWAIT-B2', quantity: 734 },
+          { location: 'INJECTION-C3', quantity: 100 }, // Should be ignored
+        ],
+        trend: { direction: 'up', value: 5.2 },
       },
       loading: false,
       error: null,
       refetch: jest.fn(),
     });
 
-    render(<AwaitLocationQtyWidget widget={mockWidget} isEditMode={false} />);
+    render(<AwaitLocationQtyWidget widgetId={mockWidgetId} />);
     
     expect(screen.getByText('Await Location Qty')).toBeInTheDocument();
     expect(screen.getByText('1,234')).toBeInTheDocument();
-    expect(screen.getByText('Pallets')).toBeInTheDocument();
-    expect(screen.getByText('Batch Query Optimized')).toBeInTheDocument();
   });
 
-  it('should render edit mode', () => {
+  it('should render empty state', () => {
     (useWidgetData as jest.Mock).mockReturnValue({
       data: null,
       loading: false,
@@ -85,9 +104,11 @@ describe('AwaitLocationQtyWidget', () => {
       refetch: jest.fn(),
     });
 
-    render(<AwaitLocationQtyWidget widget={mockWidget} isEditMode={true} />);
+    render(<AwaitLocationQtyWidget widgetId={mockWidgetId} />);
     
-    expect(screen.getByText('Await Location Qty Widget')).toBeInTheDocument();
+    // When there's no data, awaitQty computes to 0
+    expect(screen.getByText('Await Location Qty')).toBeInTheDocument();
+    expect(screen.getByText('0')).toBeInTheDocument();
   });
 
   it('should call useWidgetData with correct parameter', () => {
@@ -98,8 +119,8 @@ describe('AwaitLocationQtyWidget', () => {
       refetch: jest.fn(),
     });
 
-    render(<AwaitLocationQtyWidget widget={mockWidget} isEditMode={false} />);
+    render(<AwaitLocationQtyWidget widgetId={mockWidgetId} />);
     
-    expect(useWidgetData).toHaveBeenCalledWith('awaitLocationQty');
+    expect(useWidgetData).toHaveBeenCalledWith('await-location-qty');
   });
 });

@@ -30,7 +30,7 @@ const UserActivityHeatmap = React.memo(function UserActivityHeatmap({
   const { data, loading, error } = useGetUserActivityQuery({
     variables,
     skip: !isGraphQLAnalysisEnabled,
-    pollInterval: 60000, // Poll every 60 seconds
+    pollInterval: isGraphQLAnalysisEnabled ? 300000 : undefined, // 減少 polling 頻率至 5 分鐘，避免過度請求
     fetchPolicy: 'cache-and-network',
   });
 

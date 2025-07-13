@@ -1,6 +1,15 @@
 import { GrnErrorHandler } from '@/app/print-grnlabel/services/ErrorHandler';
 import { toast } from 'sonner';
 
+// Mock supabase client
+jest.mock('@/app/utils/supabase/client', () => ({
+  createClient: jest.fn(() => ({
+    from: jest.fn(),
+    select: jest.fn(),
+    insert: jest.fn(),
+  })),
+}));
+
 // Mock sonner toast
 jest.mock('sonner', () => ({
   toast: {
@@ -15,6 +24,8 @@ describe('GrnErrorHandler - GRN 錯誤處理服務', () => {
   beforeEach(() => {
     errorHandler = GrnErrorHandler.getInstance();
     jest.clearAllMocks();
+    // Clear any accumulated errors from previous tests
+    errorHandler.clearErrorReports();
     // Mock console.error
     consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
   });

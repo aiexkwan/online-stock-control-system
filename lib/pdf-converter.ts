@@ -51,7 +51,8 @@ export async function convertToPDF({ html, outputPath }: ConvertToPDFOptions): P
     });
 
     if (outputPath) {
-      const fs = require('fs');
+      // 使用靜態導入避免 webpack originalFactory.call 錯誤
+      const fs = await import('fs');
       await fs.promises.writeFile(outputPath, pdf);
     }
 

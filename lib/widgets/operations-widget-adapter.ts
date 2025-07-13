@@ -95,10 +95,7 @@ export const operationsWidgetConfigs: Record<string, Partial<WidgetDefinition>> 
 /**
  * 註冊所有 Operations widgets
  */
-export async function registerOperationsWidgets(): Promise<void> {
-  // Lazy import to avoid circular dependency
-  const { widgetRegistry } = await import('./enhanced-registry');
-  
+export async function registerOperationsWidgets(widgetRegistry: any): Promise<void> {
   const startTime = performance.now();
   let registeredCount = 0;
 
@@ -142,7 +139,7 @@ export async function registerOperationsWidgets(): Promise<void> {
 /**
  * 預加載高優先級 Operations widgets
  */
-export async function preloadHighPriorityOperationsWidgets(): Promise<void> {
+export async function preloadHighPriorityOperationsWidgets(widgetRegistry: any): Promise<void> {
   const highPriorityWidgets = Object.entries(operationsWidgetConfigs)
     .filter(([_, config]) => (config.preloadPriority || 0) >= 8)
     .map(([id]) => id);

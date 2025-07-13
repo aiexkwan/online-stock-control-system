@@ -26,7 +26,7 @@ import {
   SelectValue,
 } from '@/components/ui/select-radix';
 import { cn } from '@/lib/utils';
-import { createDashboardAPI } from '@/lib/api/admin/DashboardAPI';
+import { createDashboardAPIClient as createDashboardAPI } from '@/lib/api/admin/DashboardAPI.client';
 
 interface ReportGeneratorWithDialogWidgetV2Props {
   title: string;

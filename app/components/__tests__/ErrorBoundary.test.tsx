@@ -172,14 +172,16 @@ describe('ErrorBoundary', () => {
       </ErrorBoundary>
     );
 
-    const container = screen.getByText('Something went wrong').closest('div');
-    expect(container).toHaveClass('max-w-md', 'w-full', 'space-y-8');
+    // Find the container with the correct classes
+    const heading = screen.getByText('Something went wrong');
+    const container = heading.parentElement?.parentElement;
+    expect(container).toHaveClass('w-full', 'max-w-md', 'space-y-8');
 
     const errorPre = screen.getByText('Error: Test error');
-    expect(errorPre).toHaveClass('mt-4', 'p-4', 'bg-red-50', 'rounded-md', 'text-sm', 'text-red-600', 'overflow-auto');
+    expect(errorPre).toHaveClass('mt-4', 'overflow-auto', 'rounded-md', 'bg-red-50', 'p-4', 'text-sm', 'text-red-600');
 
     const reloadButton = screen.getByText('Reload page');
-    expect(reloadButton).toHaveClass('inline-flex', 'items-center', 'px-4', 'py-2', 'border', 'border-transparent');
+    expect(reloadButton).toHaveClass('inline-flex', 'items-center', 'rounded-md', 'border', 'border-transparent', 'bg-blue-600', 'px-4', 'py-2', 'text-sm', 'font-medium', 'text-white');
   });
 
   it('should reset error state when receiving new props', () => {
@@ -206,20 +208,21 @@ describe('ErrorBoundary', () => {
   it('should handle async errors', async () => {
     const AsyncError = () => {
       React.useEffect(() => {
+        // In React 18+, errors in useEffect can be caught by error boundaries
         throw new Error('Async error');
       }, []);
       return <div>Loading...</div>;
     };
 
-    // Note: Error boundaries don't catch errors in event handlers, 
-    // async code, or during SSR. This test verifies the limitation.
+    // In React 18, errors thrown in useEffect are caught by error boundaries
     render(
       <ErrorBoundary>
         <AsyncError />
       </ErrorBoundary>
     );
 
-    // Should render normally since async errors aren't caught
-    expect(screen.getByText('Loading...')).toBeInTheDocument();
+    // The error boundary should catch the error from useEffect
+    expect(screen.getByText('Something went wrong')).toBeInTheDocument();
+    expect(screen.getByText('Error: Async error')).toBeInTheDocument();
   });
 });

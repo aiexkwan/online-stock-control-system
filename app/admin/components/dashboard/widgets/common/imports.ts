@@ -16,8 +16,8 @@ export { default as WidgetStates } from './WidgetStates';
 // Error handling
 export { ErrorHandler } from '@/app/components/qc-label-form/services/ErrorHandler';
 
-// Dashboard API
-export { createDashboardAPI } from '@/lib/api/admin/DashboardAPI';
+// Dashboard API (client-safe version)
+export { createDashboardAPIClient as createDashboardAPI } from '@/lib/api/admin/DashboardAPI.client';
 
 // Chart components - REMOVED: Barrel export causes bundle bloat
 // Import recharts components directly in your widgets for better tree shaking:

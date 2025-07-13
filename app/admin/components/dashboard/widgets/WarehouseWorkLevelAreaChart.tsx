@@ -1,16 +1,3 @@
-/**
- * Warehouse Work Level Area Chart Widget - Apollo GraphQL Version
- * Area Chart 形式顯示 work_level 內容
- * 只顯示 operator department = "Warehouse"
- * 顯示 move 數據
- *
- * GraphQL Migration:
- * - 使用 Apollo Client 查詢 work_level + data_id JOIN
- * - GraphQL 層級過濾 department = "Warehouse"
- * - Client-side 日期分組聚合
- * - 保留 Server Actions fallback
- */
-
 'use client';
 
 import React, { useMemo, useEffect, useState } from 'react';
@@ -31,10 +18,9 @@ import {
 import { format, startOfDay } from 'date-fns';
 import { getYesterdayRange } from '@/app/utils/timezone';
 import { WidgetStyles } from '@/app/utils/widgetStyles';
-import { createDashboardAPI } from '@/lib/api/admin/DashboardAPI';
+import { createDashboardAPIClient as createDashboardAPI } from '@/lib/api/admin/DashboardAPI.client';
 import { useGetWarehouseWorkLevelQuery } from '@/lib/graphql/generated/apollo-hooks';
-
-// GraphQL 查詢已經移動到 lib/graphql/generated/apollo-hooks.ts
+import { WidgetSkeleton } from './common/WidgetStates';
 
 interface WorkLevelData {
   date: string;
@@ -253,9 +239,7 @@ export const WarehouseWorkLevelAreaChart = React.memo(function WarehouseWorkLeve
       </CardHeader>
       <CardContent className='flex-1'>
         {loading ? (
-          <div className='flex h-full items-center justify-center'>
-            <div className='h-32 w-full animate-pulse rounded bg-slate-700/50' />
-          </div>
+          <WidgetSkeleton type="chart-area" height={200} />
         ) : error ? (
           <div className='text-center text-sm text-red-400'>
             <p>Error loading data</p>
@@ -335,22 +319,3 @@ export const WarehouseWorkLevelAreaChart = React.memo(function WarehouseWorkLeve
 });
 
 export default WarehouseWorkLevelAreaChart;
-
-/**
- * GraphQL Migration completed on 2025-07-09
- * 
- * Features:
- * - Apollo Client with GraphQL relationship filtering
- * - Built-in JOIN with data_id table for department filtering
- * - Client-side daily aggregation of move data
- * - Peak day detection and statistics
- * - 3-minute polling for real-time updates
- * - Fallback to Server Actions when GraphQL disabled
- * - Feature flag control: NEXT_PUBLIC_ENABLE_GRAPHQL_AWAIT
- * 
- * Performance improvements:
- * - Query efficiency: GraphQL handles JOIN automatically
- * - Department filtering: Done at GraphQL layer, not client-side
- * - Data aggregation: Efficient Map-based daily grouping
- * - Caching: Apollo InMemoryCache with automatic updates
- */

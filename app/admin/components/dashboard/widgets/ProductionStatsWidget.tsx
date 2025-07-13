@@ -9,7 +9,7 @@
 import React, { useMemo, useEffect, useState } from 'react';
 import { CubeIcon } from '@heroicons/react/24/outline';
 import { format } from 'date-fns';
-import { createDashboardAPI } from '@/lib/api/admin/DashboardAPI';
+import { createDashboardAPIClient as createDashboardAPI } from '@/lib/api/admin/DashboardAPI.client';
 import { WidgetComponentProps } from '@/app/types/dashboard';
 import { MetricCard } from './common/data-display/MetricCard';
 

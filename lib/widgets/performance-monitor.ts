@@ -4,6 +4,7 @@
  */
 
 import { WidgetComponentProps } from './types';
+import { performanceConfig, performanceLogger } from '../performance/config';
 
 // 性能指標接口
 export interface PerformanceMetrics {
@@ -95,6 +96,8 @@ export class PerformanceMonitor {
   private aggregatedData = new Map<string, AggregatedPerformance>();
   private alertThresholds = new Map<string, number>();
   private observers = new Map<string, PerformanceObserver>();
+  private lastRecordedTime = new Map<string, number>();
+  private readonly THROTTLE_INTERVAL = performanceConfig.monitoring.throttleInterval;
 
   private constructor() {
     this.initializeObservers();
@@ -112,7 +115,9 @@ export class PerformanceMonitor {
    * 初始化性能觀察器
    */
   private initializeObservers(): void {
-    if (typeof window === 'undefined') return;
+    if (!performanceConfig.monitoring.enabled || typeof window === 'undefined') {
+      return;
+    }
 
     // Navigation Timing API
     if ('PerformanceObserver' in window) {
@@ -160,14 +165,10 @@ export class PerformanceMonitor {
    * 設置默認閾值
    */
   private setDefaultThresholds(): void {
-    // Widget 加載時間閾值 (毫秒)
-    this.alertThresholds.set('loadTime', 100); // 100ms
-    this.alertThresholds.set('renderTime', 50); // 50ms
-    this.alertThresholds.set('dataFetchTime', 200); // 200ms
-    // Web Vitals 閾值
-    this.alertThresholds.set('LCP', 2500); // 2.5s
-    this.alertThresholds.set('FID', 100); // 100ms
-    this.alertThresholds.set('CLS', 0.1); // 0.1
+    const { thresholds } = performanceConfig;
+    this.alertThresholds.set('loadTime', thresholds.loadTime.critical);
+    this.alertThresholds.set('renderTime', thresholds.renderTime.critical);
+    this.alertThresholds.set('dataFetchTime', thresholds.dataFetchTime.critical);
   }
 
   /**
@@ -181,25 +182,48 @@ export class PerformanceMonitor {
    * 記錄性能指標
    */
   recordMetrics(metrics: PerformanceMetrics): void {
-    // 添加到指標列表
-    this.metrics.push(metrics);
-
-    // 保留最近 10000 條記錄
-    if (this.metrics.length > 10000) {
-      this.metrics = this.metrics.slice(-10000);
+    if (!performanceConfig.monitoring.enabled) {
+      return;
     }
 
-    // 檢查性能問題
+    // Throttle to prevent excessive logging
+    const now = Date.now();
+    const lastRecorded = this.lastRecordedTime.get(metrics.widgetId) || 0;
+    
+    if (now - lastRecorded < this.THROTTLE_INTERVAL) {
+      return; // Skip if within throttle interval
+    }
+    
+    this.lastRecordedTime.set(metrics.widgetId, now);
+    
+    // Store metrics (with limit)
+    this.metrics.push(metrics);
+    if (this.metrics.length > performanceConfig.monitoring.maxMetrics) {
+      this.metrics = this.metrics.slice(-performanceConfig.monitoring.maxMetrics);
+    }
+    
+    // Check for performance issues
     this.checkPerformanceIssues(metrics);
-
-    // 更新聚合數據
+    
+    // Update aggregated data
     this.updateAggregatedData(metrics);
 
-    console.log(`[PerformanceMonitor] Recorded metrics for ${metrics.widgetId}:`, {
-      loadTime: `${metrics.loadTime.toFixed(2)}ms`,
-      renderTime: `${metrics.renderTime.toFixed(2)}ms`,
-      variant: metrics.variant,
-    });
+    // Use controlled logging
+    const { thresholds } = performanceConfig;
+    
+    if (metrics.loadTime > thresholds.loadTime.critical || metrics.renderTime > thresholds.renderTime.critical) {
+      performanceLogger.error(`[PerformanceMonitor] Critical performance issue for ${metrics.widgetId}:`, {
+        loadTime: `${metrics.loadTime.toFixed(2)}ms`,
+        renderTime: `${metrics.renderTime.toFixed(2)}ms`,
+        variant: metrics.variant,
+      });
+    } else if (metrics.loadTime > thresholds.loadTime.warning || metrics.renderTime > thresholds.renderTime.warning) {
+      performanceLogger.warn(`[PerformanceMonitor] Performance warning for ${metrics.widgetId}:`, {
+        loadTime: `${metrics.loadTime.toFixed(2)}ms`,
+        renderTime: `${metrics.renderTime.toFixed(2)}ms`,
+        variant: metrics.variant,
+      });
+    }
   }
 
   /**

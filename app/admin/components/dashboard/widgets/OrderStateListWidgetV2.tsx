@@ -18,7 +18,7 @@ import { ClipboardDocumentListIcon, TruckIcon } from '@heroicons/react/24/outlin
 import { WidgetComponentProps } from '@/app/types/dashboard';
 import { cn } from '@/lib/utils';
 import { Progress } from '@/components/ui/progress';
-import { createDashboardAPI } from '@/lib/api/admin/DashboardAPI';
+import { createDashboardAPIClient as createDashboardAPI } from '@/lib/api/admin/DashboardAPI.client';
 import { GetOrderStateListDocument } from '@/lib/graphql/generated/apollo-hooks';
 import { useGraphQLFallback, GraphQLFallbackPresets } from '@/app/admin/hooks/useGraphQLFallback';
 import { useInViewport, InViewportPresets } from '@/app/admin/hooks/useInViewport';

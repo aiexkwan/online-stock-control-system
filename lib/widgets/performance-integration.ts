@@ -6,7 +6,7 @@
 import React from 'react';
 import { WidgetComponentProps } from './types';
 import { performanceMonitor, PerformanceTimer } from './performance-monitor';
-import { dualLoadingAdapter, getDualLoadingConfig } from './dual-loading-adapter';
+// dual-loading-adapter 已移除
 
 /**
  * 性能監控 HOC (Higher Order Component)
@@ -27,8 +27,7 @@ export function withPerformanceMonitoring<P extends WidgetComponentProps>(
       if (!isClient) return;
 
       // 獲取當前配置
-      const config = getDualLoadingConfig();
-      const variant = config.enableV2 ? 'v2' : 'legacy';
+      const variant = process.env.NEXT_PUBLIC_ENABLE_WIDGET_REGISTRY_V2 === 'true' ? 'v2' : 'legacy';
 
       // 開始監控
       timerRef.current = performanceMonitor.startMonitoring(widgetId, variant);
@@ -89,8 +88,7 @@ export function usePerformanceMonitoring(widgetId: string) {
 
   React.useEffect(() => {
     // 獲取當前配置
-    const config = getDualLoadingConfig();
-    const variant = config.enableV2 ? 'v2' : 'legacy';
+    const variant = process.env.NEXT_PUBLIC_ENABLE_WIDGET_REGISTRY_V2 === 'true' ? 'v2' : 'legacy';
 
     // 創建計時器
     const performanceTimer = performanceMonitor.startMonitoring(widgetId, variant);
@@ -144,8 +142,7 @@ export async function loadWidgetWithMonitoring(
   widgetId: string,
   loader: () => Promise<React.ComponentType<any>>
 ): Promise<React.ComponentType<any>> {
-  const config = getDualLoadingConfig();
-  const variant = config.enableV2 ? 'v2' : 'legacy';
+  const variant = process.env.NEXT_PUBLIC_ENABLE_WIDGET_REGISTRY_V2 === 'true' ? 'v2' : 'legacy';
 
   // 開始監控
   const timer = performanceMonitor.startMonitoring(widgetId, variant);

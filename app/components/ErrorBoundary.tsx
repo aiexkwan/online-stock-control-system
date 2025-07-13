@@ -1,57 +1,154 @@
 'use client';
 
-import React, { Component, ErrorInfo, ReactNode } from 'react';
+import React from 'react';
+import { AlertTriangle, RefreshCw } from 'lucide-react';
 
-interface Props {
-  children?: ReactNode;
-}
-
-interface State {
+interface ErrorBoundaryState {
   hasError: boolean;
   error: Error | null;
+  errorInfo: React.ErrorInfo | null;
+  retryCount: number;
 }
 
-class ErrorBoundary extends Component<Props, State> {
-  public state: State = {
-    hasError: false,
-    error: null,
+interface ErrorBoundaryProps {
+  children: React.ReactNode;
+  fallback?: React.ComponentType<{ error: Error; retry: () => void }>;
+  onError?: (error: Error, errorInfo: React.ErrorInfo) => void;
+}
+
+class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
+  private retryTimeout: NodeJS.Timeout | null = null;
+
+  constructor(props: ErrorBoundaryProps) {
+    super(props);
+    this.state = {
+      hasError: false,
+      error: null,
+      errorInfo: null,
+      retryCount: 0,
+    };
+  }
+
+  static getDerivedStateFromError(error: Error): Partial<ErrorBoundaryState> {
+    return {
+      hasError: true,
+      error,
+    };
+  }
+
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    this.setState({
+      error,
+      errorInfo,
+    });
+
+    // 檢查是否是 originalFactory.call 錯誤
+    const isOriginalFactoryError = this.isOriginalFactoryError(error);
+    
+    if (isOriginalFactoryError && this.state.retryCount < 3) {
+      // 自動重試
+      this.retryTimeout = setTimeout(() => {
+        this.handleRetry();
+      }, 1000 * (this.state.retryCount + 1));
+    }
+
+    // 調用外部錯誤處理器
+    if (this.props.onError) {
+      this.props.onError(error, errorInfo);
+    }
+
+    // 記錄錯誤但不讓它污染控制台
+    if (isOriginalFactoryError) {
+      console.warn('[ErrorBoundary] Caught originalFactory.call error, attempting recovery...', {
+        error: error.message,
+        retryCount: this.state.retryCount,
+      });
+    } else {
+      console.error('[ErrorBoundary] Caught error:', error, errorInfo);
+    }
+  }
+
+  componentWillUnmount() {
+    if (this.retryTimeout) {
+      clearTimeout(this.retryTimeout);
+    }
+  }
+
+  private isOriginalFactoryError(error: Error): boolean {
+    const message = error.message || '';
+    const stack = error.stack || '';
+    return (
+      message.includes('originalFactory.call') ||
+      message.includes('undefined is not an object') ||
+      message.includes('Cannot read properties of undefined') ||
+      stack.includes('originalFactory.call') ||
+      stack.includes('webpack_require') ||
+      stack.includes('__webpack_require__')
+    );
+  }
+
+  private handleRetry = () => {
+    this.setState(prevState => ({
+      hasError: false,
+      error: null,
+      errorInfo: null,
+      retryCount: prevState.retryCount + 1,
+    }));
   };
 
-  public static getDerivedStateFromError(error: Error): State {
-    return { hasError: true, error };
-  }
+  render() {
+    if (this.state.hasError && this.state.error) {
+      const isOriginalFactoryError = this.isOriginalFactoryError(this.state.error);
+      
+      // 使用自定義 fallback 組件
+      if (this.props.fallback) {
+        const FallbackComponent = this.props.fallback;
+        return <FallbackComponent error={this.state.error} retry={this.handleRetry} />;
+      }
 
-  public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.error('Error boundary caught an error:', error, errorInfo);
-  }
-
-  public render() {
-    if (this.state.hasError) {
-      return (
-        <div className='flex min-h-screen items-center justify-center bg-gray-50 px-4 py-12 sm:px-6 lg:px-8'>
-          <div className='w-full max-w-md space-y-8'>
-            <div>
-              <h2 className='mt-6 text-center text-3xl font-extrabold text-gray-900'>
-                Something went wrong
-              </h2>
-              <p className='mt-2 text-center text-sm text-gray-600'>
-                We&apos;re working to fix this issue. Please try again later.
-              </p>
-              {this.state.error && (
-                <pre className='mt-4 overflow-auto rounded-md bg-red-50 p-4 text-sm text-red-600'>
-                  {this.state.error.toString()}
-                </pre>
-              )}
-              <div className='mt-6 text-center'>
-                <button
-                  onClick={() => window.location.reload()}
-                  className='inline-flex items-center rounded-md border border-transparent bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2'
-                >
-                  Reload page
-                </button>
-              </div>
+      // 對於 originalFactory.call 錯誤，顯示更友好的錯誤信息
+      if (isOriginalFactoryError) {
+        return (
+          <div className="flex flex-col items-center justify-center min-h-[200px] p-6 bg-slate-900/50 rounded-lg border border-slate-700">
+            <AlertTriangle className="w-12 h-12 text-yellow-500 mb-4" />
+            <h2 className="text-xl font-semibold text-white mb-2">Loading Error</h2>
+            <p className="text-slate-400 text-center mb-4 max-w-md">
+              There was an issue loading this component. This is usually temporary.
+            </p>
+            <div className="flex items-center gap-4">
+              <button
+                onClick={this.handleRetry}
+                className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+              >
+                <RefreshCw className="w-4 h-4" />
+                Retry ({this.state.retryCount}/3)
+              </button>
+              <button
+                onClick={() => window.location.reload()}
+                className="px-4 py-2 bg-slate-600 hover:bg-slate-700 text-white rounded-lg transition-colors"
+              >
+                Refresh Page
+              </button>
             </div>
           </div>
+        );
+      }
+
+      // 對於其他錯誤，顯示詳細信息
+      return (
+        <div className="flex flex-col items-center justify-center min-h-[200px] p-6 bg-red-900/20 rounded-lg border border-red-500/50">
+          <AlertTriangle className="w-12 h-12 text-red-500 mb-4" />
+          <h2 className="text-xl font-semibold text-white mb-2">Something went wrong</h2>
+          <p className="text-slate-400 text-center mb-4">
+            {this.state.error.message}
+          </p>
+          <button
+            onClick={this.handleRetry}
+            className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
+          >
+            <RefreshCw className="w-4 h-4" />
+            Try Again
+          </button>
         </div>
       );
     }

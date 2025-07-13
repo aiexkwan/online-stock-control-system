@@ -38,6 +38,9 @@ describe('useStockTransfer', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     jest.useFakeTimers();
+    // Mock global timer functions
+    jest.spyOn(global, 'setInterval');
+    jest.spyOn(global, 'clearInterval');
     
     // Setup mock Supabase client
     mockSupabase = {
@@ -45,7 +48,7 @@ describe('useStockTransfer', () => {
       select: jest.fn().mockReturnThis(),
       eq: jest.fn().mockReturnThis(),
       single: jest.fn(),
-      insert: jest.fn().mockReturnThis(),
+      insert: jest.fn(() => Promise.resolve({ error: null })),
       rpc: jest.fn()
     };
     
@@ -55,6 +58,7 @@ describe('useStockTransfer', () => {
 
   afterEach(() => {
     jest.useRealTimers();
+    jest.restoreAllMocks();
   });
 
   const mockPalletInfo: PalletInfo = {
@@ -106,18 +110,18 @@ describe('useStockTransfer', () => {
       it('should reject transfer when pallet has pending transfer', async () => {
         const { result } = renderHook(() => useStockTransfer());
         
-        // Add a pending transfer
-        act(() => {
-          result.current.optimisticTransfers = [{
-            id: 'test-123',
-            pltNum: 'PLT001',
-            fromLocation: 'Await',
-            toLocation: 'Pipeline',
-            status: 'pending',
-            timestamp: Date.now()
-          }];
+        // First create a pending transfer
+        mockSupabase.single.mockResolvedValue({
+          data: { id: 123 },
+          error: null
         });
         
+        // Start first transfer but don't await it
+        act(() => {
+          result.current.executeTransfer(mockPalletInfo, 'Pipeline', '123');
+        });
+        
+        // Try to do another transfer immediately
         const success = await act(async () => 
           await result.current.executeTransfer(mockPalletInfo, 'Bulk', '123')
         );
@@ -262,7 +266,8 @@ describe('useStockTransfer', () => {
         
         expect(success).toBe(false);
         expect(toast.error).toHaveBeenCalledWith(
-          expect.stringContaining('Operator ID 123 not found in system')
+          expect.stringContaining('Operator ID 123 not found in system'),
+          expect.any(Object)
         );
       });
 
@@ -271,9 +276,10 @@ describe('useStockTransfer', () => {
           data: { id: 123 },
           error: null
         });
-        mockSupabase.insert.mockResolvedValueOnce({
-          error: new Error('History insert failed')
-        });
+        // Use a new mock function for this test to avoid interference
+        const insertMock = jest.fn()
+          .mockResolvedValueOnce({ error: new Error('History insert failed') });
+        mockSupabase.insert = insertMock;
         
         const { result } = renderHook(() => useStockTransfer());
         
@@ -283,8 +289,12 @@ describe('useStockTransfer', () => {
         
         expect(success).toBe(false);
         expect(toast.error).toHaveBeenCalledWith(
-          expect.stringContaining('Failed to record history')
+          expect.stringContaining('Failed to record history'),
+          expect.any(Object)
         );
+        
+        // Reset to default behavior
+        mockSupabase.insert = jest.fn(() => Promise.resolve({ error: null }));
       });
 
       it('should handle invalid location mapping', async () => {
@@ -307,8 +317,21 @@ describe('useStockTransfer', () => {
         
         expect(success).toBe(false);
         expect(toast.error).toHaveBeenCalledWith(
-          expect.stringContaining('Invalid location mapping')
+          expect.stringContaining('Invalid location mapping'),
+          expect.any(Object)
         );
+        
+        // Reset LocationMapper to default behavior
+        LocationMapper.toDbColumn.mockImplementation((location: string) => {
+          const mapping: Record<string, string> = {
+            'Await': 'await',
+            'Injection': 'injection',
+            'Pipeline': 'pipeline',
+            'Prebook': 'prebook',
+            'Bulk': 'bulk'
+          };
+          return mapping[location] || null;
+        });
       });
     });
 
@@ -318,12 +341,20 @@ describe('useStockTransfer', () => {
           data: { id: 123 },
           error: null
         });
+        mockSupabase.insert.mockResolvedValue({
+          error: null
+        });
+        mockSupabase.rpc.mockResolvedValue({
+          error: null
+        });
         
         const { result } = renderHook(() => useStockTransfer());
         
-        const promise = act(async () => 
-          await result.current.executeTransfer(mockPalletInfo, 'Pipeline', '123')
-        );
+        // Start transfer without awaiting to check immediate state
+        let transferPromise: Promise<boolean> | null = null;
+        act(() => {
+          transferPromise = result.current.executeTransfer(mockPalletInfo, 'Pipeline', '123');
+        });
         
         // Check optimistic transfer is added immediately
         expect(result.current.optimisticTransfers).toHaveLength(1);
@@ -334,15 +365,22 @@ describe('useStockTransfer', () => {
           status: 'pending'
         });
         
-        await promise;
+        // Now await the promise
+        await act(async () => {
+          await transferPromise;
+        });
+        
+        // Reset mocks to default
+        mockSupabase.insert = jest.fn(() => Promise.resolve({ error: null }));
       });
 
       it('should update optimistic transfer to success', async () => {
+        // Mock all required calls
         mockSupabase.single.mockResolvedValue({
           data: { id: 123 },
           error: null
         });
-        mockSupabase.insert.mockResolvedValue({
+        mockSupabase.rpc.mockResolvedValue({
           error: null
         });
         
@@ -352,6 +390,7 @@ describe('useStockTransfer', () => {
           await result.current.executeTransfer(mockPalletInfo, 'Pipeline', '123')
         );
         
+        expect(result.current.optimisticTransfers).toHaveLength(1);
         expect(result.current.optimisticTransfers[0].status).toBe('success');
       });
 
@@ -371,23 +410,27 @@ describe('useStockTransfer', () => {
       });
 
       it('should cleanup old optimistic transfers', async () => {
-        const { result } = renderHook(() => useStockTransfer());
-        
-        // Add a successful transfer with old timestamp
-        act(() => {
-          result.current.optimisticTransfers = [{
-            id: 'old-transfer',
-            pltNum: 'PLT999',
-            fromLocation: 'Await',
-            toLocation: 'Bulk',
-            status: 'success',
-            timestamp: Date.now() - 6000 // 6 seconds ago
-          }];
+        mockSupabase.single.mockResolvedValue({
+          data: { id: 123 },
+          error: null
+        });
+        mockSupabase.insert.mockResolvedValue({
+          error: null
+        });
+        mockSupabase.rpc.mockResolvedValue({
+          error: null
         });
         
-        // Fast forward timers to trigger cleanup
+        const { result } = renderHook(() => useStockTransfer());
+        
+        // Execute a successful transfer
+        await act(async () => {
+          await result.current.executeTransfer(mockPalletInfo, 'Pipeline', '123');
+        });
+        
+        // Fast forward time past cleanup threshold (5 seconds)
         act(() => {
-          jest.advanceTimersByTime(1000);
+          jest.advanceTimersByTime(6000);
         });
         
         await waitFor(() => {
@@ -398,20 +441,21 @@ describe('useStockTransfer', () => {
   });
 
   describe('hasPendingTransfer', () => {
-    it('should return true when pallet has pending transfer', () => {
+    it('should return true when pallet has pending transfer', async () => {
       const { result } = renderHook(() => useStockTransfer());
       
-      act(() => {
-        result.current.optimisticTransfers = [{
-          id: 'transfer-1',
-          pltNum: 'PLT001',
-          fromLocation: 'Await',
-          toLocation: 'Pipeline',
-          status: 'pending',
-          timestamp: Date.now()
-        }];
+      // Setup for a pending transfer
+      mockSupabase.single.mockResolvedValue({
+        data: { id: 123 },
+        error: null
       });
       
+      // Start a transfer without awaiting to create pending state
+      act(() => {
+        result.current.executeTransfer(mockPalletInfo, 'Pipeline', '123');
+      });
+      
+      // Check immediately while transfer is pending
       expect(result.current.hasPendingTransfer('PLT001')).toBe(true);
     });
 
@@ -452,22 +496,43 @@ describe('useStockTransfer', () => {
 
   describe('Loading state', () => {
     it('should set isTransferring during transfer', async () => {
-      mockSupabase.single.mockImplementation(() => 
-        new Promise(resolve => setTimeout(() => resolve({
-          data: { id: 123 },
-          error: null
-        }), 100))
-      );
+      // Create a deferred promise to control when the mock resolves
+      let resolvePromise: any;
+      const delayedPromise = new Promise((resolve) => {
+        resolvePromise = resolve;
+      });
+      
+      mockSupabase.single.mockReturnValue(delayedPromise);
+      mockSupabase.insert.mockResolvedValue({
+        error: null
+      });
+      mockSupabase.rpc.mockResolvedValue({
+        error: null
+      });
       
       const { result } = renderHook(() => useStockTransfer());
       
-      const promise = act(async () => 
-        await result.current.executeTransfer(mockPalletInfo, 'Pipeline', '123')
-      );
+      // Start transfer
+      let transferPromise: Promise<boolean> | null = null;
+      act(() => {
+        transferPromise = result.current.executeTransfer(mockPalletInfo, 'Pipeline', '123');
+      });
       
+      // Should be transferring
       expect(result.current.isTransferring).toBe(true);
       
-      await promise;
+      // Resolve the promise
+      act(() => {
+        resolvePromise({
+          data: { id: 123 },
+          error: null
+        });
+      });
+      
+      // Wait for transfer to complete
+      await act(async () => {
+        await transferPromise;
+      });
       
       expect(result.current.isTransferring).toBe(false);
     });

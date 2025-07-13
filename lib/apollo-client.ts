@@ -3,7 +3,8 @@
  * 用於 GraphQL widgets 遷移
  */
 
-import { ApolloClient, InMemoryCache, createHttpLink } from '@apollo/client';
+import { ApolloClient, InMemoryCache, from } from '@apollo/client';
+import { createHttpLink } from '@apollo/client/link/http';
 import { setContext } from '@apollo/client/link/context';
 import { createClient } from '@/app/utils/supabase/client';
 
@@ -49,7 +50,7 @@ const authLink = setContext(async (_, { headers }) => {
 // Create Apollo Client instance with SSR safety
 function createApolloClient() {
   return new ApolloClient({
-    link: authLink.concat(httpLink),
+    link: from([authLink, httpLink]),
     cache: new InMemoryCache({
       typePolicies: {
         Query: {

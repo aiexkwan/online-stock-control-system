@@ -1,6 +1,10 @@
 # Widget 開發指南
 
-本指南涵蓋 NewPennine Widget 系統嘅開發最佳實踐，包括 SSR 支持、性能優化同通用組件使用。
+本指南涵蓋 NewPennine Widget 系統嘅開發最佳實踐，包括 SSR 支持、性能優化、智能緩存策略、性能監控同通用組件使用。
+
+**版本**: 3.0.0  
+**最後更新**: 2025-07-11  
+**適用對象**: 前端開發人員
 
 ## 目錄
 
@@ -8,10 +12,12 @@
 2. [創建新 Widget](#創建新-widget)
 3. [SSR 支持](#ssr-支持)
 4. [使用 useGraphQLFallback Hook](#使用-usegraphqlfallback-hook)
-5. [通用組件](#通用組件)
-6. [性能優化](#性能優化)
-7. [測試策略](#測試策略)
-8. [實戰範例](#實戰範例)
+5. [智能緩存策略](#智能緩存策略)
+6. [性能監控系統](#性能監控系統)
+7. [通用組件](#通用組件)
+8. [性能優化](#性能優化)
+9. [測試策略](#測試策略)
+10. [實戰範例](#實戰範例)
 
 ## Widget 系統概覽
 
@@ -282,6 +288,227 @@ const mutation = useGraphQLFallback({
   ...GraphQLFallbackPresets.mutation,
   serverAction: updateData,
 });
+```
+
+## 智能緩存策略
+
+### 使用 useWidgetSmartCache Hook
+
+智能緩存系統提供自動化嘅緩存管理，包括：
+- Date range aware caching - 根據日期範圍智能緩存
+- Stale-while-revalidate (SWR) - 返回舊數據同時後台更新
+- 預測性預加載 - 基於使用模式預測並預加載數據
+- 智能 TTL 管理 - 動態調整緩存過期時間
+
+### 基本使用
+
+```typescript
+import { useWidgetSmartCache } from '@/app/admin/hooks/useWidgetSmartCache';
+
+const { data, isLoading, error, refetch, cacheMetrics } = useWidgetSmartCache({
+  widgetId: 'my-widget',
+  dataSource: 'graphql',
+  dataMode: 'read-only',
+  priority: 'high',
+  fetchFn: async () => {
+    return await fetchMyWidgetData();
+  },
+  params: {
+    dateRange: {
+      from: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
+      to: new Date(),
+    },
+  },
+  customCacheConfig: {
+    baseTTL: 300, // 5 分鐘
+    enableSWR: true,
+    swrWindow: 60, // 1 分鐘 stale window
+    enablePreload: true,
+    preloadTiming: 30, // 提前 30 秒預加載
+  },
+});
+```
+
+### 緩存策略預設
+
+系統提供多種預設緩存策略：
+
+```typescript
+import { CACHE_STRATEGIES } from '@/lib/widgets/smart-cache-strategy';
+
+// 實時數據 (5-30 秒 TTL)
+CACHE_STRATEGIES.REALTIME
+
+// 動態數據 (30秒-2分鐘 TTL)
+CACHE_STRATEGIES.DYNAMIC
+
+// 標準數據 (2-10分鐘 TTL)
+CACHE_STRATEGIES.STANDARD
+
+// 穩定數據 (10分鐘-1小時 TTL)
+CACHE_STRATEGIES.STABLE
+
+// 靜態數據 (1-24小時 TTL)
+CACHE_STRATEGIES.STATIC
+```
+
+### 預測性預加載
+
+啟用預測性預加載功能：
+
+```typescript
+const { data } = useWidgetSmartCache({
+  // ... 其他配置
+  predictiveConfig: {
+    enabled: true,
+    predictor: () => {
+      // 基於用戶行為預測
+      const currentHour = new Date().getHours();
+      const isBusinessHours = currentHour >= 9 && currentHour <= 18;
+      
+      return {
+        probability: isBusinessHours ? 0.8 : 0.3,
+        timeUntilNeeded: 60, // 60 秒後可能需要
+      };
+    },
+  },
+});
+```
+
+### 緩存失效策略
+
+```typescript
+import { useWidgetCacheInvalidation } from '@/app/admin/hooks/useWidgetSmartCache';
+
+const { invalidateByDateRange, invalidateAll } = useWidgetCacheInvalidation();
+
+// 根據日期範圍失效緩存
+await invalidateByDateRange(
+  { from: new Date('2025-01-01'), to: new Date() },
+  ['widget-1', 'widget-2'] // 可選：指定 widget IDs
+);
+
+// 失效所有緩存
+await invalidateAll();
+```
+
+## 性能監控系統
+
+### 使用 useWidgetPerformanceTracking Hook
+
+自動追蹤 widget 性能指標：
+
+```typescript
+import { useWidgetPerformanceTracking } from '@/app/admin/hooks/useWidgetPerformanceTracking';
+
+const {
+  trackError,
+  trackDataFetch,
+  getMetrics,
+  trackConversion,
+} = useWidgetPerformanceTracking({
+  widgetId: 'my-widget',
+  enableAutoTracking: true,
+  abTest: {
+    testId: 'new-design-test',
+    variant: 'test', // 'control' | 'test'
+  },
+});
+```
+
+### 追蹤數據獲取性能
+
+```typescript
+const fetchData = async () => {
+  return trackDataFetch(async () => {
+    const response = await api.getData();
+    return response.data;
+  });
+};
+```
+
+### 錯誤追蹤
+
+```typescript
+try {
+  await riskyOperation();
+} catch (error) {
+  trackError(error as Error, 'runtime');
+  // 處理錯誤
+}
+```
+
+### 訪問性能報告
+
+```typescript
+import { usePerformanceReports } from '@/app/admin/hooks/useWidgetPerformanceTracking';
+
+const {
+  generateReport,
+  getABTestResults,
+  exportPerformanceData,
+  detectAnomalies,
+} = usePerformanceReports();
+
+// 生成日報
+const dailyReport = generateReport('daily');
+
+// 獲取 A/B 測試結果
+const testResults = getABTestResults('new-design-test');
+
+// 導出性能數據
+const csvData = exportPerformanceData('csv');
+
+// 檢測性能異常
+const anomalies = detectAnomalies('my-widget', 2); // sensitivity = 2
+```
+
+### 實時性能監控
+
+```typescript
+import { useRealtimePerformanceMonitor } from '@/app/admin/hooks/useWidgetPerformanceTracking';
+
+const {
+  metrics,
+  isMonitoring,
+  startMonitoring,
+  stopMonitoring,
+} = useRealtimePerformanceMonitor('my-widget');
+
+// 開始監控
+startMonitoring();
+
+// 訪問實時指標
+console.log(metrics?.widget?.loadTime);
+console.log(metrics?.widget?.errorRate);
+```
+
+### 性能指標閾值
+
+系統默認性能閾值：
+- 加載時間: < 100ms
+- 渲染時間: < 50ms
+- 數據獲取: < 200ms
+- 錯誤率: < 1%
+
+### A/B 測試配置
+
+```typescript
+// 設置 A/B 測試
+enhancedPerformanceMonitor.setupABTest({
+  testId: 'button-color-test',
+  widgetId: 'purchase-button',
+  variants: {
+    control: 'blue-button',
+    test: 'green-button',
+  },
+  metrics: ['conversionRate', 'clickRate', 'loadTime'],
+  startDate: new Date(),
+  splitRatio: 0.5, // 50/50 分配
+});
+
+// 追蹤轉換
+trackConversion('purchase_completed');
 ```
 
 ## 通用組件

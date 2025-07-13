@@ -3,6 +3,90 @@
  * 用於驗證從 xlsx 到 ExcelJS 遷移嘅正確性
  */
 
+// Mock ExcelJS before any imports
+jest.mock('exceljs', () => ({
+  default: {
+    Workbook: jest.fn(() => ({
+      creator: '',
+      lastModifiedBy: '',
+      created: new Date(),
+      modified: new Date(),
+      properties: {},
+      addWorksheet: jest.fn(() => ({
+        columns: [],
+        addRow: jest.fn(),
+        getRow: jest.fn(() => ({
+          font: {},
+          alignment: {},
+          fill: {},
+          height: 20,
+        })),
+        getColumn: jest.fn(() => ({
+          width: 10,
+        })),
+        eachRow: jest.fn(),
+        views: [{}],
+      })),
+      xlsx: {
+        writeBuffer: jest.fn().mockResolvedValue(Buffer.from('mock excel data')),
+      },
+    })),
+  },
+  Workbook: jest.fn(() => ({
+    creator: '',
+    lastModifiedBy: '',
+    created: new Date(),
+    modified: new Date(),
+    properties: {},
+    addWorksheet: jest.fn(() => ({
+      columns: [],
+      addRow: jest.fn(),
+      getRow: jest.fn(() => ({
+        font: {},
+        alignment: {},
+        fill: {},
+        height: 20,
+      })),
+      getColumn: jest.fn(() => ({
+        width: 10,
+      })),
+      eachRow: jest.fn(),
+      views: [{}],
+    })),
+    xlsx: {
+      writeBuffer: jest.fn().mockResolvedValue(Buffer.from('mock excel data')),
+    },
+  })),
+}));
+
+// Mock the migration helper
+jest.mock('@/lib/utils/exceljs-migration-helper', () => ({
+  jsonToWorksheet: jest.fn(),
+  setHeaderStyle: jest.fn(),
+  addBorders: jest.fn(),
+  autoFitColumns: jest.fn(),
+  NumberFormats: {
+    accounting: '_($* #,##0.00_);_($* (#,##0.00);_($* "-"??_);_(@_)',
+    percentage: '0.00%',
+    decimal: '#,##0.00',
+  },
+  setNumberFormat: jest.fn(),
+}));
+
+// Mock the dynamic import of ExcelGeneratorNew
+jest.mock('./ExcelGeneratorNew', () => ({
+  ExcelGeneratorNew: jest.fn().mockImplementation(() => ({
+    format: 'excel',
+    supportLegacyMode: true,
+    generate: jest.fn().mockImplementation(async () => {
+      // Return a mock Blob
+      return new Blob(['mock excel data'], {
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      });
+    }),
+  })),
+}));
+
 import { ExcelGenerator } from './ExcelGenerator';
 import { ProcessedReportData, ReportConfig } from '../core/ReportConfig';
 
@@ -92,6 +176,10 @@ export const testConfig: ReportConfig = {
 };
 
 describe('ExcelGenerator', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
   test('should generate Excel file successfully', async () => {
     const generator = new ExcelGenerator();
     
@@ -120,6 +208,21 @@ describe('ExcelGenerator', () => {
     expect(blob.size).toBeGreaterThan(0);
   });
 });
+
+// Mock window and document for test environment
+if (typeof window === 'undefined') {
+  (global as any).window = {};
+  (global as any).document = {
+    createElement: jest.fn(() => ({
+      click: jest.fn(),
+      href: '',
+      download: '',
+    })),
+  };
+  (global as any).URL = {
+    createObjectURL: jest.fn(() => 'blob:mock-url'),
+  };
+}
 
 // 測試函數
 export async function testExcelGeneration() {

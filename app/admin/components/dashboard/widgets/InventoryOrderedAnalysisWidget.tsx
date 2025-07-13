@@ -24,7 +24,7 @@ import {
   CheckCircle,
   AlertCircle,
 } from 'lucide-react';
-import { createDashboardAPI } from '@/lib/api/admin/DashboardAPI';
+import { createDashboardAPIClient as createDashboardAPI } from '@/lib/api/admin/DashboardAPI.client';
 import { motion } from 'framer-motion';
 import { Progress } from '@/components/ui/progress';
 import { useGetInventoryOrderedAnalysisWidgetQuery } from '@/lib/graphql/generated/apollo-hooks';

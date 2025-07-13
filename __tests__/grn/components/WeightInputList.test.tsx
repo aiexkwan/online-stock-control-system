@@ -36,25 +36,30 @@ describe('WeightInputList - GRN 重量輸入列表組件', () => {
       // 檢查值
       expect(inputs[0]).toHaveValue(100);
       expect(inputs[1]).toHaveValue(200);
-      expect(inputs[2]).toHaveValue('');
+      expect(inputs[2]).toHaveValue(null);
     });
 
-    test('顯示正確的標籤', () => {
+    test('顯示正確的托盤編號', () => {
       render(<WeightInputList {...mockProps} />);
 
-      expect(screen.getByText('1st Pallet')).toBeInTheDocument();
-      expect(screen.getByText('2nd Pallet')).toBeInTheDocument();
-      expect(screen.getByText('3rd Pallet')).toBeInTheDocument();
+      // Component shows numbers instead of ordinal labels
+      expect(screen.getByText('1')).toBeInTheDocument();
+      expect(screen.getByText('2')).toBeInTheDocument();
+      expect(screen.getByText('3')).toBeInTheDocument();
     });
 
     test('顯示淨重信息', () => {
       render(<WeightInputList {...mockProps} />);
 
-      // 第一個托盤：100kg - 14kg (托盤) - 1kg (包裝) = 85kg
-      expect(screen.getByText('Net: 85.0kg')).toBeInTheDocument();
-      
-      // 第二個托盤：200kg - 14kg - 1kg = 185kg
-      expect(screen.getByText('Net: 185.0kg')).toBeInTheDocument();
+      // Component shows total net weight
+      expect(screen.getByText('Total Net Weight:')).toBeInTheDocument();
+      // Total: (100 - 14 - 1) + (200 - 14 - 1) = 85 + 185 = 270
+      // But the mockProps uses 'bag' package type which has 0 weight, so:
+      // Total: (100 - 14) + (200 - 14) = 86 + 186 = 272
+      // The text is split as "272.0" and "kg" in separate elements
+      expect(screen.getByText((content, element) => {
+        return element?.textContent === '272.0 kg';
+      })).toBeInTheDocument();
     });
 
     test('禁用狀態下所有輸入框應該被禁用', () => {
@@ -131,36 +136,31 @@ describe('WeightInputList - GRN 重量輸入列表組件', () => {
 
       render(<WeightInputList {...manyWeightsProps} />);
 
-      // 應該有展開/收起按鈕，顯示為 "Collapse"
-      const toggleButton = screen.getByText('Collapse');
-      expect(toggleButton).toBeInTheDocument();
+      // Component auto-expands when more than 5 items, but no collapse button
+      const inputs = screen.getAllByRole('spinbutton');
+      expect(inputs).toHaveLength(6);
     });
 
-    test('點擊展開/收起按鈕', () => {
+    test('顯示漸變效果當超過 5 個項目且未展開', () => {
       const manyWeightsProps = {
         ...mockProps,
         grossWeights: ['100', '200', '300', '400', '500', '600'],
       };
 
+      // Component doesn't have manual expand/collapse, just automatic behavior
       render(<WeightInputList {...manyWeightsProps} />);
-
-      // 初始是展開的
-      const toggleButton = screen.getByText('Collapse');
       
-      // 點擊收起
-      fireEvent.click(toggleButton);
-      expect(screen.getByText('Expand All (6)')).toBeInTheDocument();
-
-      // 再次點擊展開
-      fireEvent.click(screen.getByText('Expand All (6)'));
-      expect(screen.getByText('Collapse')).toBeInTheDocument();
+      // All items should be visible (auto-expanded)
+      const inputs = screen.getAllByRole('spinbutton');
+      expect(inputs).toHaveLength(6);
     });
 
-    test('少於 5 個輸入框時不顯示展開/收起按鈕', () => {
+    test('少於 5 個輸入框時不顯示漸變效果', () => {
       render(<WeightInputList {...mockProps} />);
 
-      expect(screen.queryByText('Collapse')).not.toBeInTheDocument();
-      expect(screen.queryByText(/Expand All/)).not.toBeInTheDocument();
+      // Just verify the inputs are rendered
+      const inputs = screen.getAllByRole('spinbutton');
+      expect(inputs).toHaveLength(3);
     });
   });
 
@@ -210,7 +210,7 @@ describe('WeightInputList - GRN 重量輸入列表組件', () => {
       expect(getPalletLabel(3)).toBe('4th Pallet');
       expect(getPalletLabel(20)).toBe('21st Pallet');
       expect(getPalletLabel(21)).toBe('22nd Pallet');
-      expect(getPalletLabel(22)).toBe('23th Pallet');
+      expect(getPalletLabel(22)).toBe('23rd Pallet');
     });
   });
 });

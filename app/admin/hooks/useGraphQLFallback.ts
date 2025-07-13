@@ -106,47 +106,82 @@ export function useGraphQLFallback<TData = any, TVariables = any>({
       setPerformanceMetrics(metrics);
       
       // Record to performance monitor
-      performanceMonitor.recordMetric({
+      performanceMonitor.recordMetrics({
         widgetId,
-        metricType: 'dataFetch',
-        value: queryTime,
         timestamp: Date.now(),
-        metadata: {
-          dataSource,
-          fallbackUsed,
-          variables: JSON.stringify(variables),
-        },
+        loadTime: queryTime,
+        renderTime: 0,
+        dataFetchTime: queryTime,
+        route: window.location.pathname,
+        variant: 'v2',
+        sessionId: 'default-session',
       });
     }
-  }, [widgetId, variables]);
+  }, [widgetId]); // Removed variables dependency to prevent infinite loops
 
-  // GraphQL Query - only use when we have a valid query
+  // Check if Apollo Client is available - 優化檢查邏輯，避免重複檢查
+  const [isApolloAvailable, setIsApolloAvailable] = useState(false);
+  const apolloCheckRef = useRef(false);
+  
+  useEffect(() => {
+    if (typeof window !== 'undefined' && !apolloCheckRef.current) {
+      apolloCheckRef.current = true;
+      
+      let mounted = true;
+      try {
+        // Try to get Apollo client from the import
+        import('@/lib/apollo-client').then(({ apolloClient }) => {
+          if (mounted) {
+            setIsApolloAvailable(Boolean(apolloClient));
+          }
+        }).catch(() => {
+          if (mounted) {
+            setIsApolloAvailable(false);
+          }
+        });
+      } catch (error) {
+        if (mounted) {
+          setIsApolloAvailable(false);
+        }
+      }
+      
+      return () => {
+        mounted = false;
+      };
+    }
+  }, []);
+  
+  // GraphQL Query - only use when we have a valid query and Apollo Client is available
   const {
     data: graphqlData,
     loading: graphqlLoading,
     error: graphqlError,
     refetch: graphqlRefetch,
-  } = useQuery(graphqlQuery || gql`query EmptyQuery { __typename }`, {
-    variables,
-    skip: skip || !graphqlQuery || contextData !== null || mode !== 'graphql',
-    pollInterval,
-    fetchPolicy,
-    onCompleted: (data) => {
-      recordPerformance('graphql', false);
-      onCompleted?.(data);
-    },
-    onError: (error) => {
-      console.error('GraphQL error:', error);
-      handleFetchError(error, 'graphql-query');
-      
-      // Fallback to server action if enabled
-      if (fallbackEnabled && serverAction) {
-        setMode('server-action');
-      } else {
-        onError?.(error);
-      }
-    },
-  });
+  } = useQuery(
+    graphqlQuery || gql`query EmptyQuery { __typename }`, 
+    {
+      variables,
+      skip: skip || !graphqlQuery || !isApolloAvailable || contextData !== null || mode !== 'graphql',
+      pollInterval,
+      fetchPolicy,
+      errorPolicy: 'all', // Handle errors gracefully
+      onCompleted: (data) => {
+        recordPerformance('graphql', false);
+        onCompleted?.(data);
+      },
+      onError: (error) => {
+        console.warn('GraphQL error (will fallback):', error.message);
+        handleFetchError(error, 'graphql-query');
+        
+        // Fallback to server action if enabled
+        if (fallbackEnabled && serverAction) {
+          setMode(currentMode => currentMode !== 'server-action' ? 'server-action' : currentMode);
+        } else {
+          onError?.(error);
+        }
+      },
+    }
+  );
 
   // Server Action fallback (using SWR)
   const {
@@ -179,21 +214,26 @@ export function useGraphQLFallback<TData = any, TVariables = any>({
     }
   );
 
-  // Effect to manage mode transitions
+  // Effect to manage mode transitions - 修復無限循環問題
   useEffect(() => {
     if (!skip) {
       startTimeRef.current = Date.now();
       
       if (contextData !== null) {
-        setMode('context');
-        recordPerformance('context', false);
-      } else if (graphqlQuery && !graphqlError) {
-        setMode('graphql');
-      } else if (serverAction && (graphqlError || !graphqlQuery)) {
-        setMode('server-action');
+        setMode(currentMode => {
+          if (currentMode !== 'context') {
+            recordPerformance('context', false);
+            return 'context';
+          }
+          return currentMode;
+        });
+      } else if (graphqlQuery && isApolloAvailable && !graphqlError) {
+        setMode(currentMode => currentMode !== 'graphql' ? 'graphql' : currentMode);
+      } else if (serverAction && (graphqlError || !graphqlQuery || !isApolloAvailable)) {
+        setMode(currentMode => currentMode !== 'server-action' ? 'server-action' : currentMode);
       }
     }
-  }, [skip, contextData, graphqlQuery, graphqlError, serverAction, recordPerformance]);
+  }, [skip, contextData, graphqlQuery, isApolloAvailable, graphqlError, serverAction]); // 移除 recordPerformance 依賴
 
   // Unified refetch function
   const refetch = useCallback(async () => {
@@ -228,15 +268,15 @@ export function useGraphQLFallback<TData = any, TVariables = any>({
   };
 }
 
-// Preset configurations for common use cases
+// Preset configurations for common use cases - OPTIMIZED FOR MINIMAL API CALLS
 export const GraphQLFallbackPresets = {
-  // For critical widgets that need real-time data
+  // For critical widgets that need real-time data - DISABLED POLLING
   realtime: {
-    fetchPolicy: 'network-only' as WatchQueryFetchPolicy,
-    pollInterval: 5000,
+    fetchPolicy: 'cache-first' as WatchQueryFetchPolicy, // Changed from network-only
+    pollInterval: undefined, // DISABLED: was 5000
     fallbackEnabled: true,
-    cacheTime: 60 * 1000, // 1 minute
-    staleTime: 10 * 1000, // 10 seconds
+    cacheTime: 30 * 60 * 1000, // 30 minutes - increased
+    staleTime: 10 * 60 * 1000, // 10 minutes - increased
   },
   
   // For widgets that can use cached data
@@ -244,8 +284,8 @@ export const GraphQLFallbackPresets = {
     fetchPolicy: 'cache-first' as WatchQueryFetchPolicy,
     pollInterval: undefined,
     fallbackEnabled: true,
-    cacheTime: 30 * 60 * 1000, // 30 minutes
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    cacheTime: 60 * 60 * 1000, // 60 minutes - increased
+    staleTime: 30 * 60 * 1000, // 30 minutes - increased
   },
   
   // For write operations

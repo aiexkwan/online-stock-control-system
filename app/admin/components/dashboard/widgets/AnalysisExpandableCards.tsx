@@ -15,44 +15,89 @@ import { motion } from 'framer-motion';
 import { BarChart, Activity, TrendingUp, CheckCircle, AlertTriangle, Map } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-// Import chart components with SSR safety
+// Import chart components using dynamic imports to prevent webpack issues
+import { WidgetSkeleton } from './common/WidgetStates';
 import dynamic from 'next/dynamic';
 
-// Lazy load chart components to avoid SSR issues with GraphQL
-const AcoOrderProgressCards = dynamic(() => import('../charts/AcoOrderProgressCards'), {
-  ssr: false,
-  loading: () => <div className="animate-pulse bg-slate-700/50 h-32 rounded" />
-});
+// Error fallback component for failed dynamic imports
+const ChartErrorFallback = ({ chartName }: { chartName: string }) => (
+  <div className="flex flex-col items-center justify-center h-48 text-gray-400">
+    <AlertTriangle className="w-8 h-8 mb-2" />
+    <p className="text-sm">Failed to load {chartName}</p>
+    <p className="text-xs mt-1">Please refresh the page</p>
+  </div>
+);
 
-const TopProductsInventoryChart = dynamic(() => import('../charts/TopProductsInventoryChart'), {
-  ssr: false,
-  loading: () => <div className="animate-pulse bg-slate-700/50 h-32 rounded" />
-});
+// Dynamic imports with improved error handling
+const AcoOrderProgressCards = dynamic(
+  () => import('../charts/AcoOrderProgressCards').catch(() => ({ 
+    default: () => <ChartErrorFallback chartName="ACO Order Progress" /> 
+  })),
+  { 
+    loading: () => <WidgetSkeleton />,
+    ssr: false
+  }
+);
 
-const UserActivityHeatmap = dynamic(() => import('../charts/UserActivityHeatmap'), {
-  ssr: false,
-  loading: () => <div className="animate-pulse bg-slate-700/50 h-32 rounded" />
-});
+const TopProductsInventoryChart = dynamic(
+  () => import('../charts/TopProductsInventoryChart').catch(() => ({ 
+    default: () => <ChartErrorFallback chartName="Top Products Inventory" /> 
+  })),
+  { 
+    loading: () => <WidgetSkeleton />,
+    ssr: false
+  }
+);
 
-const InventoryTurnoverAnalysis = dynamic(() => import('../charts/InventoryTurnoverAnalysis'), {
-  ssr: false,
-  loading: () => <div className="animate-pulse bg-slate-700/50 h-32 rounded" />
-});
+const UserActivityHeatmap = dynamic(
+  () => import('../charts/UserActivityHeatmap').catch(() => ({ 
+    default: () => <ChartErrorFallback chartName="User Activity Heatmap" /> 
+  })),
+  { 
+    loading: () => <WidgetSkeleton />,
+    ssr: false
+  }
+);
 
-const StocktakeAccuracyTrend = dynamic(() => import('../charts/StocktakeAccuracyTrend'), {
-  ssr: false,
-  loading: () => <div className="animate-pulse bg-slate-700/50 h-32 rounded" />
-});
+const InventoryTurnoverAnalysis = dynamic(
+  () => import('../charts/InventoryTurnoverAnalysis').catch(() => ({ 
+    default: () => <ChartErrorFallback chartName="Inventory Turnover Analysis" /> 
+  })),
+  { 
+    loading: () => <WidgetSkeleton />,
+    ssr: false
+  }
+);
 
-const VoidRecordsAnalysis = dynamic(() => import('../charts/VoidRecordsAnalysis'), {
-  ssr: false,
-  loading: () => <div className="animate-pulse bg-slate-700/50 h-32 rounded" />
-});
+const StocktakeAccuracyTrend = dynamic(
+  () => import('../charts/StocktakeAccuracyTrend').catch(() => ({ 
+    default: () => <ChartErrorFallback chartName="Stocktake Accuracy Trend" /> 
+  })),
+  { 
+    loading: () => <WidgetSkeleton />,
+    ssr: false
+  }
+);
 
-const RealTimeInventoryMap = dynamic(() => import('../charts/RealTimeInventoryMap'), {
-  ssr: false,
-  loading: () => <div className="animate-pulse bg-slate-700/50 h-32 rounded" />
-});
+const VoidRecordsAnalysis = dynamic(
+  () => import('../charts/VoidRecordsAnalysis').catch(() => ({ 
+    default: () => <ChartErrorFallback chartName="Void Records Analysis" /> 
+  })),
+  { 
+    loading: () => <WidgetSkeleton />,
+    ssr: false
+  }
+);
+
+const RealTimeInventoryMap = dynamic(
+  () => import('../charts/RealTimeInventoryMap').catch(() => ({ 
+    default: () => <ChartErrorFallback chartName="Real Time Inventory Map" /> 
+  })),
+  { 
+    loading: () => <WidgetSkeleton />,
+    ssr: false
+  }
+);
 
 interface TimeFrame {
   label: string;

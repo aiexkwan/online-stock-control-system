@@ -96,10 +96,7 @@ export const statsWidgetConfigs: Record<string, Partial<WidgetDefinition>> = {
 /**
  * 註冊所有 Stats widgets
  */
-export async function registerStatsWidgets(): Promise<void> {
-  // Lazy import to avoid circular dependency
-  const { widgetRegistry } = await import('./enhanced-registry');
-  
+export async function registerStatsWidgets(widgetRegistry: any): Promise<void> {
   const startTime = performance.now();
   let registeredCount = 0;
 
@@ -143,10 +140,7 @@ export async function registerStatsWidgets(): Promise<void> {
 /**
  * 預加載高優先級 Stats widgets
  */
-export async function preloadHighPriorityStatsWidgets(): Promise<void> {
-  // Lazy import to avoid circular dependency
-  const { widgetRegistry } = await import('./enhanced-registry');
-  
+export async function preloadHighPriorityStatsWidgets(widgetRegistry: any): Promise<void> {
   const highPriorityWidgets = Object.entries(statsWidgetConfigs)
     .filter(([_, config]) => (config.preloadPriority || 0) >= 8)
     .map(([id]) => id);

@@ -63,13 +63,13 @@ export async function verifyCurrentUserPasswordAction(
     return { success: false, error: 'User ID (clockNumber) is missing or invalid.' };
   }
   if (!enteredPassword) {
-    (process.env.NODE_ENV as string) !== 'production' &&
+    process.env.NODE_ENV !== 'production' &&
       console.warn('[verifyCurrentUserPasswordAction] Entered password is empty for user:', userId);
     return { success: false, error: 'Password cannot be empty.' };
   }
 
   try {
-    (process.env.NODE_ENV as string) !== 'production' &&
+    process.env.NODE_ENV !== 'production' &&
       console.log(
         `[verifyCurrentUserPasswordAction] Verifying password for user ID (clockNumber): ${userId} using Supabase Auth`
       );
@@ -84,7 +84,7 @@ export async function verifyCurrentUserPasswordAction(
 
     if (signInError) {
       // Log the specific error for server-side debugging
-      (process.env.NODE_ENV as string) !== 'production' &&
+      process.env.NODE_ENV !== 'production' &&
         console.warn(
           `[verifyCurrentUserPasswordAction] Supabase signInWithPassword error for ${email}:`,
           signInError.message
@@ -110,7 +110,7 @@ export async function verifyCurrentUserPasswordAction(
     // The session established by this specific signInWithPassword call is scoped to this Supabase client instance
     // and should not interfere with the broader session management of the Server Action if `createServerSideClient`
     // handles cookies correctly (which it should with @supabase/ssr).
-    (process.env.NODE_ENV as string) !== 'production' &&
+    process.env.NODE_ENV !== 'production' &&
       console.log(
         `[verifyCurrentUserPasswordAction] Password verified successfully for user ID (clockNumber) ${userId} / email ${email} via Supabase Auth.`
       );
@@ -165,7 +165,7 @@ export async function checkFirstLoginStatus(
     if (error) {
       if (error.code === 'PGRST116') {
         // PostgREST error code for "Searched for a single row, but found no rows"
-        (process.env.NODE_ENV as string) !== 'production' &&
+        process.env.NODE_ENV !== 'production' &&
           console.warn(`[authActions] No user found in data_id for clock number: ${clockNumber}`);
         return { isFirstLogin: null, error: 'User record not found in system.' };
       }
@@ -212,7 +212,7 @@ export async function customLoginAction(
     process.env.SUPABASE_SERVICE_ROLE_KEY!
   );
 
-  (process.env.NODE_ENV as string) !== 'production' &&
+  process.env.NODE_ENV !== 'production' &&
     console.log(`[customLoginAction] Attempting login for ${clockNumberStr}`);
 
   // 驗證時鐘編號
@@ -232,7 +232,7 @@ export async function customLoginAction(
     const userExistsInAuth = await userExistsInSupabaseAuth(supabase, clockNumber.toString()); // <--- UPDATED: Pass client
 
     if (userExistsInAuth) {
-      (process.env.NODE_ENV as string) !== 'production' &&
+      process.env.NODE_ENV !== 'production' &&
         console.log(
           `[customLoginAction] User ${clockNumber} exists in Supabase Auth, using Supabase Auth login`
         );
@@ -241,7 +241,7 @@ export async function customLoginAction(
         clockNumber.toString(),
         passwordInput
       );
-      (process.env.NODE_ENV as string) !== 'production' &&
+      process.env.NODE_ENV !== 'production' &&
         console.log(
           '[customLoginAction] signInWithSupabaseAuth result:',
           JSON.stringify(authResult, null, 2)
@@ -257,7 +257,7 @@ export async function customLoginAction(
 
       if (authResult.success && authResult.user) {
         // 直接使用 authResult 返回的 isFirstLogin 值，這個值已經反映了 needs_password_change 狀態
-        (process.env.NODE_ENV as string) !== 'production' &&
+        process.env.NODE_ENV !== 'production' &&
           console.log(
             '[customLoginAction] Login successful with first login status (from Supabase Auth):',
             authResult.isFirstLogin
@@ -269,7 +269,7 @@ export async function customLoginAction(
         };
       }
     } else {
-      (process.env.NODE_ENV as string) !== 'production' &&
+      process.env.NODE_ENV !== 'production' &&
         console.log(
           `[customLoginAction] User ${clockNumber} not found in Supabase Auth, using legacy login`
         );
@@ -292,7 +292,7 @@ export async function customLoginAction(
       }
 
       if (!data) {
-        (process.env.NODE_ENV as string) !== 'production' &&
+        process.env.NODE_ENV !== 'production' &&
           console.warn(`[customLoginAction] No data returned for clock number: ${clockNumber}`);
         return { success: false, error: `User ${clockNumber} not found.` };
       }
@@ -301,11 +301,11 @@ export async function customLoginAction(
 
       // 處理首次登入情況
       if (finalUserData.first_login) {
-        (process.env.NODE_ENV as string) !== 'production' &&
+        process.env.NODE_ENV !== 'production' &&
           console.log(`[customLoginAction] First-time login detected for ${clockNumber}`);
         // 首次登入：密碼應該是時鐘編號本身
         if (passwordInput === clockNumberStr) {
-          (process.env.NODE_ENV as string) !== 'production' &&
+          process.env.NODE_ENV !== 'production' &&
             console.log(`[customLoginAction] First-time login successful for ${clockNumber}`);
 
           const migrationResult = await migrateUserToSupabaseAuth(
@@ -313,7 +313,7 @@ export async function customLoginAction(
             clockNumber.toString(),
             null
           );
-          (process.env.NODE_ENV as string) !== 'production' &&
+          process.env.NODE_ENV !== 'production' &&
             console.log(
               '[customLoginAction] migrateUserToSupabaseAuth result (first-time login):',
               JSON.stringify(migrationResult, null, 2)
@@ -325,18 +325,18 @@ export async function customLoginAction(
             isFirstLogin: true, // Still a first login attempt
             error: migrationResult.error, // Pass error if any
           };
-          (process.env.NODE_ENV as string) !== 'production' &&
+          process.env.NODE_ENV !== 'production' &&
             console.log(
               '[customLoginAction] Returning from first-time login block:',
               JSON.stringify(resultToReturn1, null, 2)
             ); // <--- ADDED LOG
           return resultToReturn1;
         } else {
-          (process.env.NODE_ENV as string) !== 'production' &&
+          process.env.NODE_ENV !== 'production' &&
             console.warn(
               `[customLoginAction] First-time login password mismatch for ${clockNumber}`
             );
-          (process.env.NODE_ENV as string) !== 'production' &&
+          process.env.NODE_ENV !== 'production' &&
             console.log(
               '[customLoginAction] Returning failure (first-time login password mismatch).'
             ); // <--- ADDED LOG
@@ -359,7 +359,7 @@ export async function customLoginAction(
         const isPasswordMatch = bcrypt.compareSync(passwordInput, finalUserData.password);
 
         if (isPasswordMatch) {
-          (process.env.NODE_ENV as string) !== 'production' &&
+          process.env.NODE_ENV !== 'production' &&
             console.log(`[customLoginAction] Password match successful for ${clockNumber}`);
 
           const migrationResult = await migrateUserToSupabaseAuth(
@@ -367,7 +367,7 @@ export async function customLoginAction(
             clockNumber.toString(),
             passwordInput
           );
-          (process.env.NODE_ENV as string) !== 'production' &&
+          process.env.NODE_ENV !== 'production' &&
             console.log(
               '[customLoginAction] migrateUserToSupabaseAuth result (legacy regular login):',
               JSON.stringify(migrationResult, null, 2)
@@ -379,7 +379,7 @@ export async function customLoginAction(
             isFirstLogin: false, // Not a first login
             error: migrationResult.error, // Pass error if any
           };
-          (process.env.NODE_ENV as string) !== 'production' &&
+          process.env.NODE_ENV !== 'production' &&
             console.log(
               '[customLoginAction] Returning from legacy regular login block:',
               JSON.stringify(resultToReturn2, null, 2)
@@ -387,9 +387,9 @@ export async function customLoginAction(
           return resultToReturn2;
         } else {
           // isPasswordMatch is false
-          (process.env.NODE_ENV as string) !== 'production' &&
+          process.env.NODE_ENV !== 'production' &&
             console.warn(`[customLoginAction] Password mismatch for ${clockNumber}.`);
-          (process.env.NODE_ENV as string) !== 'production' &&
+          process.env.NODE_ENV !== 'production' &&
             console.log('[customLoginAction] Returning failure (legacy password mismatch).'); // <--- ADDED LOG
           return { success: false, error: 'Invalid Clock Number or Password.' };
         }

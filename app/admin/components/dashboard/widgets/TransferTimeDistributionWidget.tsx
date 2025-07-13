@@ -20,7 +20,7 @@ import {
 } from 'recharts';
 import { format, startOfHour, addHours } from 'date-fns';
 import { getYesterdayRange } from '@/app/utils/timezone';
-import { createDashboardAPI } from '@/lib/api/admin/DashboardAPI';
+import { createDashboardAPIClient as createDashboardAPI } from '@/lib/api/admin/DashboardAPI.client';
 import { WidgetStyles } from '@/app/utils/widgetStyles';
 import { useGraphQLFallback, GraphQLFallbackPresets } from '@/app/admin/hooks/useGraphQLFallback';
 import { useInViewport } from '@/app/admin/hooks/useInViewport';
@@ -304,21 +304,3 @@ export const TransferTimeDistributionWidget = React.memo(function TransferTimeDi
 });
 
 export default TransferTimeDistributionWidget;
-
-/**
- * Refactored on 2025-07-31 (Week 4 Day 1)
- * 
- * Changes:
- * - Migrated to useGraphQLFallback hook for unified data fetching
- * - Implemented ChartContainer for consistent UI
- * - Added Progressive Loading with useInViewport
- * - Replaced custom loading states with LineChartSkeleton
- * - Reduced from 354 lines to ~220 lines (38% reduction)
- * 
- * Features:
- * - Progressive loading - only loads when visible
- * - GraphQL primary with Server Actions fallback
- * - Client-side time slot aggregation (12 slots)
- * - Peak hour detection and metadata display
- * - No-dot line chart as per requirements
- */

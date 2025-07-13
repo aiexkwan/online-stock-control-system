@@ -19,13 +19,13 @@ import { ChartSkeleton } from '../widgets/common/charts/ChartSkeleton';
 
 // Lazy load chart components for better performance
 // Week 2 Day 3: Progressive Loading for Charts
-const AcoOrderProgressChart = lazy(() => import('../charts/AcoOrderProgressChart'));
-const TopProductsInventoryChart = lazy(() => import('../charts/TopProductsInventoryChart'));
-const UserActivityHeatmap = lazy(() => import('../charts/UserActivityHeatmap'));
-const InventoryTurnoverAnalysis = lazy(() => import('../charts/InventoryTurnoverAnalysis'));
-const StocktakeAccuracyTrend = lazy(() => import('../charts/StocktakeAccuracyTrend'));
-const VoidRecordsAnalysis = lazy(() => import('../charts/VoidRecordsAnalysis'));
-const RealTimeInventoryMap = lazy(() => import('../charts/RealTimeInventoryMap'));
+const AcoOrderProgressChart = lazy(() => import('../charts/AcoOrderProgressChart').catch(() => ({ default: () => <ChartSkeleton /> })));
+const TopProductsInventoryChart = lazy(() => import('../charts/TopProductsInventoryChart').catch(() => ({ default: () => <ChartSkeleton /> })));
+const UserActivityHeatmap = lazy(() => import('../charts/UserActivityHeatmap').catch(() => ({ default: () => <ChartSkeleton /> })));
+const InventoryTurnoverAnalysis = lazy(() => import('../charts/InventoryTurnoverAnalysis').catch(() => ({ default: () => <ChartSkeleton /> })));
+const StocktakeAccuracyTrend = lazy(() => import('../charts/StocktakeAccuracyTrend').catch(() => ({ default: () => <ChartSkeleton /> })));
+const VoidRecordsAnalysis = lazy(() => import('../charts/VoidRecordsAnalysis').catch(() => ({ default: () => <ChartSkeleton /> })));
+const RealTimeInventoryMap = lazy(() => import('../charts/RealTimeInventoryMap').catch(() => ({ default: () => <ChartSkeleton /> })));
 
 interface PageContent {
   id: number;

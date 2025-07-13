@@ -495,7 +495,8 @@ describe('UnifiedPrintingService', () => {
           data: { test: 'original' },
           metadata: expect.objectContaining({
             original: true,
-            reprintOf: 'history-123'
+            reference: 'history-123',
+            source: 'reprint'
           })
         })
       );

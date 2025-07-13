@@ -1,6 +1,6 @@
 import React from 'react';
 import dynamic from 'next/dynamic';
-import { createLazyWidget, preloadWidget, preloadWidgets, isWidgetPreloaded, preloadedWidgets } from '../widget-loader';
+import { createDynamicWidget, preloadWidget, preloadWidgets, isWidgetPreloaded, preloadedWidgets } from '../widget-loader';
 import { getWidgetImport } from '../dynamic-imports';
 
 // Mock Next.js dynamic
@@ -24,7 +24,7 @@ describe('Widget Loader', () => {
     preloadedWidgets.clear();
   });
 
-  describe('createLazyWidget', () => {
+  describe('createDynamicWidget', () => {
     it('should create a lazy loaded widget component', () => {
       const mockImportFn = jest.fn().mockResolvedValue({
         TestWidget: () => React.createElement('div', null, 'Test Widget'),
@@ -38,7 +38,7 @@ describe('Widget Loader', () => {
         return Component;
       });
 
-      const LazyComponent = createLazyWidget('TestWidget');
+      const LazyComponent = createDynamicWidget('TestWidget');
       
       expect(mockGetWidgetImport).toHaveBeenCalledWith('TestWidget');
       expect(LazyComponent).toBeDefined();
@@ -64,7 +64,7 @@ describe('Widget Loader', () => {
         return Component;
       });
 
-      createLazyWidget('TestWidget');
+      createDynamicWidget('TestWidget');
       
       // Test the import handler
       const result = await importHandler!();
@@ -87,19 +87,20 @@ describe('Widget Loader', () => {
         return Component;
       });
 
-      createLazyWidget('TestWidget');
+      createDynamicWidget('TestWidget');
       
       // Test the import handler
       const result = await importHandler!();
       expect(result.default).toBe(mockComponent);
     });
 
-    it('should return undefined for unknown widget', () => {
+    it('should return error component for unknown widget', () => {
       mockGetWidgetImport.mockReturnValue(undefined);
       
-      const result = createLazyWidget('UnknownWidget');
+      const result = createDynamicWidget('UnknownWidget');
       
-      expect(result).toBeUndefined();
+      expect(result).toBeDefined();
+      expect(result?.displayName).toBe('ErrorWidget(UnknownWidget)');
       expect(mockDynamic).not.toHaveBeenCalled();
     });
 
@@ -115,7 +116,7 @@ describe('Widget Loader', () => {
         return Component;
       });
 
-      createLazyWidget('TestWidget');
+      createDynamicWidget('TestWidget');
       
       // Test loading component
       const loading = loadingComponent!();
@@ -290,11 +291,13 @@ describe('Widget Loader', () => {
         return Component;
       });
 
-      createLazyWidget('Component1');
+      createDynamicWidget('Component1');
       
       // Test that it correctly identifies the component
       const result = await importHandler!();
-      expect(result.default).toBe(mockComponents.Component1);
+      // When module has default export, it should return the module as-is
+      expect(result).toBe(mockComponents);
+      expect(result.default).toBe(mockComponents.default);
     });
 
     it('should fallback to first function export if widget ID not found', async () => {
@@ -314,7 +317,7 @@ describe('Widget Loader', () => {
         return Component;
       });
 
-      createLazyWidget('UnknownWidget');
+      createDynamicWidget('UnknownWidget');
       
       // Test fallback behavior
       const result = await importHandler!();

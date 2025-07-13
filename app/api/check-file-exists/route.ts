@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if ((process.env.NODE_ENV as string) !== 'production') {
+    if (process.env.NODE_ENV !== 'production') {
       console.log('[Check File Exists] Checking file:', { fileName, folder });
     }
 
@@ -66,7 +66,7 @@ export async function POST(request: NextRequest) {
       const { data } = supabaseAdmin.storage.from(folder).getPublicUrl(fileName);
 
       publicUrl = data.publicUrl;
-      if ((process.env.NODE_ENV as string) !== 'production') {
+      if (process.env.NODE_ENV !== 'production') {
         console.log('[Check File Exists] File exists, public URL:', publicUrl);
       }
     }

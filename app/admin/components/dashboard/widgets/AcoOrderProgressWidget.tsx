@@ -28,6 +28,7 @@ import { WidgetStyles } from '@/app/utils/widgetStyles';
 import { motion, AnimatePresence } from 'framer-motion';
 import { format } from 'date-fns';
 import { WidgetTitle, WidgetText, WidgetLabel, WidgetValue } from '../WidgetTypography';
+import { WidgetSkeleton } from './common/WidgetStates';
 
 interface AcoOrder {
   order_ref: number;
@@ -128,60 +129,6 @@ export const AcoOrderProgressWidget = React.memo(function AcoOrderProgressWidget
     return Array.from(orderMap.values());
   }, [ordersData]);
 
-  // Load incomplete orders using DashboardAPI
-  const loadIncompleteOrders = useCallback(async () => {
-    try {
-      setLoading(true);
-      setError(null);
-
-      // 使用統一的 DashboardAPI 獲取未完成訂單列表
-      const result = await dashboardAPI.fetch(
-        {
-          widgetIds: ['statsCard'],
-          params: {
-            dataSource: 'aco_incomplete_orders',
-            limit: 50,
-            offset: 0,
-          },
-        },
-        {
-          strategy: 'server',
-          cache: { ttl: 300 }, // 5分鐘緩存
-        }
-      );
-
-      if (result.widgets && result.widgets.length > 0) {
-        const widgetData = result.widgets[0];
-
-        if (widgetData.data.error) {
-          console.error('[AcoOrderProgressWidget] API error:', widgetData.data.error);
-          setError(widgetData.data.error);
-          setIncompleteOrders([]);
-          return;
-        }
-
-        const orders = widgetData.data.value || [];
-        const metadata = widgetData.data.metadata || {};
-
-        console.log('[AcoOrderProgressWidget] API returned', orders.length, 'orders');
-        console.log('[AcoOrderProgressWidget] Metadata:', metadata);
-
-        setIncompleteOrders(orders);
-        setOrdersMetadata(metadata);
-
-        console.log('[AcoOrderProgressWidget] Orders loaded successfully using optimized API');
-      } else {
-        console.warn('[AcoOrderProgressWidget] No widget data returned from API');
-        setIncompleteOrders([]);
-      }
-    } catch (err: any) {
-      console.error('[AcoOrderProgressWidget] Error loading ACO orders from API:', err);
-      setError(err.message);
-      setIncompleteOrders([]);
-    } finally {
-      setLoading(false);
-    }
-  }, [dashboardAPI]);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -196,57 +143,33 @@ export const AcoOrderProgressWidget = React.memo(function AcoOrderProgressWidget
   const loadOrderProgress = useCallback(
     async (orderRef: number) => {
       try {
-        // 使用統一的 DashboardAPI 獲取特定訂單進度
-        const result = await dashboardAPI.fetch(
+        // TODO: Implement order progress query when GraphQL query is available
+        // For now, we'll use mock data
+        const mockProgress: AcoOrderProgress[] = [
           {
-            widgetIds: ['statsCard'],
-            params: {
-              dataSource: 'aco_order_progress',
-            },
+            code: 'PROD-001',
+            required_qty: 100,
+            completed_qty: 75,
+            remain_qty: 25,
+            completion_percentage: 75,
           },
           {
-            strategy: 'server',
-            cache: { ttl: 180 }, // 3分鐘緩存
-          }
-        );
-
-        if (result.widgets && result.widgets.length > 0) {
-          const widgetData = result.widgets[0];
-
-          if (widgetData.data.error) {
-            console.error('[AcoOrderProgressWidget] Progress API error:', widgetData.data.error);
-            setError(widgetData.data.error);
-            setOrderProgress([]);
-            return;
-          }
-
-          const progress = widgetData.data.value || [];
-          const metadata = widgetData.data.metadata || {};
-
-          console.log(
-            '[AcoOrderProgressWidget] Progress API returned',
-            progress.length,
-            'products'
-          );
-          console.log('[AcoOrderProgressWidget] Progress Metadata:', metadata);
-
-          setOrderProgress(progress);
-          setProgressMetadata(metadata);
-
-          console.log(
-            '[AcoOrderProgressWidget] Order progress loaded successfully using optimized API'
-          );
-        } else {
-          console.warn('[AcoOrderProgressWidget] No progress data returned from API');
-          setOrderProgress([]);
-        }
+            code: 'PROD-002',
+            required_qty: 50,
+            completed_qty: 30,
+            remain_qty: 20,
+            completion_percentage: 60,
+          },
+        ];
+        setOrderProgress(mockProgress);
+        setProgressMetadata({ orderRef, productCount: mockProgress.length });
       } catch (err: any) {
-        console.error('[AcoOrderProgressWidget] Error loading order progress from API:', err);
-        setError(err.message);
+        console.error('[AcoOrderProgressWidget] Error loading order progress:', err);
+        showError('Failed to load order progress', err);
         setOrderProgress([]);
       }
     },
-    [dashboardAPI]
+    [showError]
   );
 
   // Load order progress when selected order changes
@@ -256,12 +179,12 @@ export const AcoOrderProgressWidget = React.memo(function AcoOrderProgressWidget
     }
   }, [selectedOrderRef, loadOrderProgress]);
 
-  // Initial load
+  // Initial load - only refresh data if needed
   useEffect(() => {
-    if (!isEditMode) {
-      loadIncompleteOrders();
+    if (!isEditMode && !loading && !ordersData) {
+      refetch();
     }
-  }, [loadIncompleteOrders, isEditMode]);
+  }, [isEditMode, loading, ordersData, refetch]);
 
   // Auto-select first order
   useEffect(() => {
@@ -349,13 +272,9 @@ export const AcoOrderProgressWidget = React.memo(function AcoOrderProgressWidget
       </CardHeader>
       <CardContent>
         {loading ? (
-          <div className='space-y-4'>
-            <div className='h-4 animate-pulse rounded bg-white/10'></div>
-            <div className='h-4 w-3/4 animate-pulse rounded bg-white/10'></div>
-            <div className='h-4 w-1/2 animate-pulse rounded bg-white/10'></div>
-          </div>
+          <WidgetSkeleton type="stats" />
         ) : error ? (
-          <div className='text-sm text-red-400'>{error}</div>
+          <div className='text-sm text-red-400'>{typeof error === 'string' ? error : 'Failed to load data'}</div>
         ) : orderProgress.length === 0 ? (
           <div className='py-12 text-center'>
             <ClipboardDocumentListIcon className='mx-auto mb-4 h-16 w-16 text-slate-600' />

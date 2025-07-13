@@ -4,7 +4,9 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { unifiedAuth } from '../main-login/utils/unified-auth';
+import { createClient } from '@/app/utils/supabase/client';
+import { unifiedAuth } from '@/app/main-login/utils/unified-auth';
+import { domainVerificationHelper } from '@/app/main-login/utils/domain-verification-helper';
 import { getUserRoleFromDatabase } from '../hooks/useAuth';
 import { LoadingScreen } from '@/components/ui/loading';
 // Starfield background is now handled globally
@@ -22,11 +24,12 @@ export default function AccessPage() {
   useEffect(() => {
     const checkAuthentication = async () => {
       try {
-        // 檢查用戶是否已通過 main-login 認證
+        // 使用統一認證系統進行檢查
         const user = await unifiedAuth.getCurrentUser();
 
         if (!user || !user.email) {
           // 沒有認證用戶，重定向到 main-login
+          console.log('[AccessPage] No authenticated user, redirecting to login');
           router.push('/main-login?error=access_denied');
           return;
         }
@@ -34,6 +37,7 @@ export default function AccessPage() {
         // 驗證 email 域名
         if (!user.email.endsWith('@pennineindustries.com')) {
           // 不是授權域名，重定向到 main-login
+          console.log('[AccessPage] Unauthorized domain, redirecting to login');
           router.push('/main-login?error=unauthorized_domain');
           return;
         }
@@ -43,17 +47,59 @@ export default function AccessPage() {
         if (userRole) {
           setRedirectPath(userRole.defaultPath);
         } else {
-          // 降級處理：預設為系統管理頁面
+          // 降級處理：預設為數據分析頁面
           console.warn('[AccessPage] Could not determine user role, using default path');
           setRedirectPath('/admin/analysis');
         }
 
         // 認證成功
+        console.log('[AccessPage] Authentication successful for:', user.email);
         setUserEmail(user.email);
-        setSecurityInfo(unifiedAuth.getSecurityInfo());
+        setSecurityInfo({ 
+          useLocalStorage: true, 
+          sessionTimeout: 24 * 60 * 60 * 1000 // 24 hours
+        });
         setIsAuthenticated(true);
       } catch (error) {
-        console.error('Authentication check failed:', error);
+        console.error('[AccessPage] Authentication check failed:', error);
+        
+        // 檢查是否是域名驗證錯誤
+        if (error instanceof Error && error.message.includes('Domain verification failed')) {
+          console.log('[AccessPage] Domain verification error detected, attempting recovery...');
+          
+          // 嘗試恢復域名驗證
+          try {
+            const recovery = await domainVerificationHelper.recover();
+            if (recovery.success) {
+              console.log('[AccessPage] Domain verification recovered, retrying auth check...');
+              // 重試認證檢查
+              const user = await unifiedAuth.getCurrentUser();
+              if (user && user.email) {
+                // 重複認證邏輯
+                if (user.email.endsWith('@pennineindustries.com')) {
+                  const userRole = await getUserRoleFromDatabase(user.email);
+                  if (userRole) {
+                    setRedirectPath(userRole.defaultPath);
+                  } else {
+                    setRedirectPath('/admin/analysis');
+                  }
+                  
+                  console.log('[AccessPage] Authentication successful after recovery for:', user.email);
+                  setUserEmail(user.email);
+                  setSecurityInfo({ 
+                    useLocalStorage: true, 
+                    sessionTimeout: 24 * 60 * 60 * 1000 
+                  });
+                  setIsAuthenticated(true);
+                  return;
+                }
+              }
+            }
+          } catch (recoveryError) {
+            console.error('[AccessPage] Domain verification recovery failed:', recoveryError);
+          }
+        }
+        
         router.push('/main-login?error=auth_check_failed');
       } finally {
         setIsLoading(false);

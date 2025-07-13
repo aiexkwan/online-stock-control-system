@@ -276,8 +276,8 @@ export const performancePlugins = [
 export const apolloServerConfig = {
   validationRules,
   plugins: performancePlugins,
-  introspection: (process.env.NODE_ENV as string) !== 'production',
-  playground: (process.env.NODE_ENV as string) !== 'production',
+  introspection: process.env.NODE_ENV !== 'production',
+  playground: process.env.NODE_ENV !== 'production',
 };
 
 const queryComplexity = {

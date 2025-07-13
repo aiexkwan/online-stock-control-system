@@ -87,10 +87,10 @@ export async function POST(request: NextRequest) {
     let emailResult = null;
     if (result.order_completed) {
       try {
-        if ((process.env.NODE_ENV as string) !== 'production') {
+        if (process.env.NODE_ENV !== 'production') {
           console.log(`[ACO] Order ${orderRefNum} completed, sending email notification...`);
         }
-        if ((process.env.NODE_ENV as string) !== 'production') {
+        if (process.env.NODE_ENV !== 'production') {
           console.log('[ACO] Environment check:', {
             nodeEnv: process.env.NODE_ENV,
             isLocalhost: request.url.includes('localhost'),
@@ -110,14 +110,14 @@ export async function POST(request: NextRequest) {
           }
         );
 
-        if ((process.env.NODE_ENV as string) !== 'production') {
+        if (process.env.NODE_ENV !== 'production') {
           console.log('[ACO] Edge Function response:', { emailData, emailError });
         }
 
         if (emailError) {
           console.error('Error sending ACO completion email:', emailError);
           // Log the completion even if email fails
-          if ((process.env.NODE_ENV as string) !== 'production') {
+          if (process.env.NODE_ENV !== 'production') {
             console.log(
               `🎉 ACO ORDER COMPLETED: Order ${orderRefNum} has been completed but email notification failed.`
             );
@@ -127,7 +127,7 @@ export async function POST(request: NextRequest) {
             error: emailError.message,
           };
         } else {
-          if ((process.env.NODE_ENV as string) !== 'production') {
+          if (process.env.NODE_ENV !== 'production') {
             console.log('ACO completion email sent successfully:', emailData);
           }
           emailResult = {
@@ -139,7 +139,7 @@ export async function POST(request: NextRequest) {
       } catch (emailError: any) {
         console.error('Error invoking email function:', emailError);
         // Log the completion even if email fails
-        if ((process.env.NODE_ENV as string) !== 'production') {
+        if (process.env.NODE_ENV !== 'production') {
           console.log(
             `🎉 ACO ORDER COMPLETED: Order ${orderRefNum} has been completed but email service failed.`
           );

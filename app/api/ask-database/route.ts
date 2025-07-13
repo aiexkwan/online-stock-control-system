@@ -16,6 +16,9 @@ import {
   generateUserMessage
 } from '@/lib/unified-error-handler';
 import { isDevelopment, isNotProduction } from '@/lib/utils/env';
+import * as fs from 'fs';
+import * as path from 'path';
+import * as crypto from 'crypto';
 
 // 不允許使用 Ask Database 功能的用戶（黑名單）
 const BLOCKED_USERS = ['warehouse@pennineindustries.com', 'production@pennineindustries.com'];
@@ -613,8 +616,6 @@ async function generateSQLWithOpenAI(
 ): Promise<{ sql: string; tokensUsed: number; clarification?: string }> {
   try {
     // 讀取 OpenAI prompt
-    const fs = require('fs');
-    const path = require('path');
     const promptPath = path.join(process.cwd(), 'docs', 'openAIprompt');
     const promptContent = fs.readFileSync(promptPath, 'utf8');
 
@@ -1173,7 +1174,6 @@ async function getUserInfo(): Promise<{ email: string | null; name: string | nul
 
 // 生成查詢雜湊值（改進版本）
 function generateQueryHash(query: string): string {
-  const crypto = require('crypto');
   // 標準化查詢
   const normalizedQuery = query
     .toLowerCase()
@@ -1191,7 +1191,6 @@ function generateQueryHash(query: string): string {
 
 // 生成模糊匹配 hash（用於語義相似查詢）
 function generateFuzzyHash(query: string): string {
-  const crypto = require('crypto');
   // 提取關鍵詞
   const keywords = extractKeywords(query);
   const sorted = keywords.sort().join(' ');

@@ -30,9 +30,9 @@ const corsHeaders = {
 };
 
 export async function OPTIONS() {
-  (process.env.NODE_ENV as string) !== 'production' &&
-    (process.env.NODE_ENV as string) !== 'production' &&
+  if (process.env.NODE_ENV !== 'production') {
     console.log('📋 [send-order-email] OPTIONS request received');
+  }
   return new Response('ok', { headers: corsHeaders });
 }
 
@@ -44,44 +44,24 @@ export async function POST(request: NextRequest) {
   };
 
   try {
-    (process.env.NODE_ENV as string) !== 'production' &&
-      (process.env.NODE_ENV as string) !== 'production' &&
+    if (process.env.NODE_ENV !== 'production') {
       console.log('=== 📧 Order Created Email API Started ===');
-    (process.env.NODE_ENV as string) !== 'production' &&
-      (process.env.NODE_ENV as string) !== 'production' &&
       console.log('🔍 [send-order-email] API Route Hit - Bypassing Auth');
-    (process.env.NODE_ENV as string) !== 'production' &&
-      (process.env.NODE_ENV as string) !== 'production' &&
       console.log('🌍 Environment:', process.env.NODE_ENV);
-    (process.env.NODE_ENV as string) !== 'production' &&
-      (process.env.NODE_ENV as string) !== 'production' &&
       console.log('🌐 Request URL:', request.url);
-    (process.env.NODE_ENV as string) !== 'production' &&
-      (process.env.NODE_ENV as string) !== 'production' &&
       console.log('📍 Request method:', request.method);
-    (process.env.NODE_ENV as string) !== 'production' &&
-      (process.env.NODE_ENV as string) !== 'production' &&
       console.log('🔗 User-Agent:', request.headers.get('user-agent'));
-    (process.env.NODE_ENV as string) !== 'production' &&
-      (process.env.NODE_ENV as string) !== 'production' &&
       console.log('🔗 Referer:', request.headers.get('referer'));
-    (process.env.NODE_ENV as string) !== 'production' &&
-      (process.env.NODE_ENV as string) !== 'production' &&
       console.log('🔗 Host:', request.headers.get('host'));
+    }
 
     // 驗證 API Key
-    (process.env.NODE_ENV as string) !== 'production' &&
-      (process.env.NODE_ENV as string) !== 'production' &&
+    if (process.env.NODE_ENV !== 'production') {
       console.log('🔍 Checking RESEND_API_KEY availability...');
-    (process.env.NODE_ENV as string) !== 'production' &&
-      (process.env.NODE_ENV as string) !== 'production' &&
       console.log('RESEND_API_KEY exists:', !!RESEND_API_KEY);
-    (process.env.NODE_ENV as string) !== 'production' &&
-      (process.env.NODE_ENV as string) !== 'production' &&
       console.log('RESEND_API_KEY length:', RESEND_API_KEY?.length || 0);
-    (process.env.NODE_ENV as string) !== 'production' &&
-      (process.env.NODE_ENV as string) !== 'production' &&
       console.log('RESEND_API_KEY prefix:', RESEND_API_KEY?.substring(0, 10) || 'N/A');
+    }
 
     if (!RESEND_API_KEY) {
       console.error('❌ RESEND_API_KEY is not set in environment variables');
@@ -101,9 +81,9 @@ export async function POST(request: NextRequest) {
     let requestBody: EmailRequest;
     try {
       requestBody = await request.json();
-      (process.env.NODE_ENV as string) !== 'production' &&
-        (process.env.NODE_ENV as string) !== 'production' &&
+      if (process.env.NODE_ENV !== 'production') {
         console.log('📥 Request body received:', requestBody);
+      }
     } catch (parseError) {
       console.error('❌ Failed to parse request body:', parseError);
       return NextResponse.json(
@@ -175,8 +155,7 @@ export async function POST(request: NextRequest) {
       ];
     }
 
-    (process.env.NODE_ENV as string) !== 'production' &&
-      (process.env.NODE_ENV as string) !== 'production' &&
+    if (process.env.NODE_ENV !== 'production') {
       console.log('📧 Email details:', {
         from: fromEmail,
         to: toEmails,
@@ -184,6 +163,7 @@ export async function POST(request: NextRequest) {
         orderCount: orderData.length,
         hasUProducts,
       });
+    }
 
     // 生成郵件內容
     const orderRefs = [...new Set(orderData.map(item => item.order_ref))];
@@ -276,16 +256,13 @@ This is an automated notification from the Pennine Stock Control System.
           type: 'application/pdf',
         },
       ];
-      (process.env.NODE_ENV as string) !== 'production' &&
-        (process.env.NODE_ENV as string) !== 'production' &&
+      if (process.env.NODE_ENV !== 'production') {
         console.log('📎 PDF attachment added:', pdfAttachment.filename);
+      }
     }
 
-    (process.env.NODE_ENV as string) !== 'production' &&
-      (process.env.NODE_ENV as string) !== 'production' &&
+    if (process.env.NODE_ENV !== 'production') {
       console.log('📤 Sending email to Resend API...');
-    (process.env.NODE_ENV as string) !== 'production' &&
-      (process.env.NODE_ENV as string) !== 'production' &&
       console.log('📤 Email data preview:', {
         from: emailData.from,
         to: emailData.to,
@@ -294,6 +271,7 @@ This is an automated notification from the Pennine Stock Control System.
         hasAttachments: !!emailData.attachments,
         attachmentCount: emailData.attachments?.length || 0,
       });
+    }
 
     // 發送郵件使用 Resend API
     const response = await fetch('https://api.resend.com/emails', {
@@ -305,28 +283,26 @@ This is an automated notification from the Pennine Stock Control System.
       body: JSON.stringify(emailData),
     });
 
-    (process.env.NODE_ENV as string) !== 'production' &&
-      (process.env.NODE_ENV as string) !== 'production' &&
+    if (process.env.NODE_ENV !== 'production') {
       console.log('📨 Resend API response status:', response.status);
-    (process.env.NODE_ENV as string) !== 'production' &&
-      (process.env.NODE_ENV as string) !== 'production' &&
       console.log(
         '📨 Resend API response headers:',
         Object.fromEntries(response.headers.entries())
       );
+    }
 
     let result;
     try {
       result = await response.json();
-      (process.env.NODE_ENV as string) !== 'production' &&
-        (process.env.NODE_ENV as string) !== 'production' &&
+      if (process.env.NODE_ENV !== 'production') {
         console.log('📨 Resend API response body:', result);
+      }
     } catch (jsonError) {
       console.error('❌ Failed to parse Resend API response as JSON:', jsonError);
       const textResult = await response.text();
-      (process.env.NODE_ENV as string) !== 'production' &&
-        (process.env.NODE_ENV as string) !== 'production' &&
+      if (process.env.NODE_ENV !== 'production') {
         console.log('📨 Resend API response as text:', textResult);
+      }
 
       return NextResponse.json(
         {
@@ -368,9 +344,9 @@ This is an automated notification from the Pennine Stock Control System.
       );
     }
 
-    (process.env.NODE_ENV as string) !== 'production' &&
-      (process.env.NODE_ENV as string) !== 'production' &&
+    if (process.env.NODE_ENV !== 'production') {
       console.log('✅ Email sent successfully:', result);
+    }
 
     return NextResponse.json(
       {

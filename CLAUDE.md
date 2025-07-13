@@ -80,9 +80,7 @@ npm run mcpIOS       # 啟動 Supabase MCP 服務器 (用於 Claude Code 數據�
 #### Widget 系統
 - **統一 Widget Registry**: `lib/widgets/enhanced-registry.ts` 管理所有儀表板組件
 - **懶加載**: 所有 widgets 支持動態導入同懶加載 (`lib/widgets/dynamic-imports.ts`)
-- **性能監控**: 內建性能監控同 A/B 測試框架 (`lib/widgets/performance-monitor.ts`)
-- **遷移適配器**: 支持舊 widgets 無縫遷移 (`lib/widgets/migration-adapter.ts`)
-- **雙重驗證**: 確保 widget 遷移正確性 (`lib/widgets/dual-run-verification.ts`)
+- **性能監控**: 內建性能監控框架 (`lib/widgets/performance-monitor.ts`)
 
 #### 通用佈局系統
 - **`components/layout/universal/`**: 可重用佈局組件系統
@@ -139,7 +137,6 @@ npm run mcpIOS       # 啟動 Supabase MCP 服務器 (用於 Claude Code 數據�
 2. 註冊到 `lib/widgets/enhanced-registry.ts`
 3. 添加到相應佈局文件 (`adminDashboardLayouts.ts`)
 4. 使用 `lib/widgets/dynamic-imports.ts` 配置懶加載
-5. 可選：配置 A/B 測試 (`lib/widgets/ab-testing-framework.ts`)
 
 ### Server Action 開發
 1. 在 `app/actions/` 相應文件添加 action
@@ -153,10 +150,9 @@ npm run mcpIOS       # 啟動 Supabase MCP 服務器 (用於 Claude Code 數據�
 
 ## 重要模式同最佳實踐
 
-### Widget 遷移模式
-- 使用 `lib/widgets/migration-adapter.ts` 進行無縫遷移
-- 啟用雙重驗證確保遷移正確性
+### Widget 開發模式
 - 所有新 widgets 必須支持懶加載
+- 使用性能監控確保優化效果
 
 ### 性能優化模式
 - 使用 `@tanstack/react-virtual` 處理大列表

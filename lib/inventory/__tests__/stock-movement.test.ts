@@ -14,26 +14,40 @@ jest.mock('../utils/locationMapper');
 // Mock Supabase client
 const mockSupabase = createMockSupabaseClient();
 
+// Mock LocationMapper static methods
+const mockLocationMapper = {
+  getValidDatabaseLocations: jest.fn().mockReturnValue([
+    'injection', 'pipeline', 'prebook', 'await', 'fold', 'bulk', 'backcarpark'
+  ]),
+  getValidLocations: jest.fn().mockReturnValue([
+    { id: 'injection', name: 'Injection' },
+    { id: 'pipeline', name: 'Pipeline' },
+    { id: 'bulk', name: 'Bulk' }
+  ]),
+  toDbColumn: jest.fn((location: string) => {
+    // Handle valid locations
+    const validLocations = ['injection', 'pipeline', 'prebook', 'await', 'fold', 'bulk', 'backcarpark'];
+    if (validLocations.includes(location.toLowerCase())) {
+      return location.toLowerCase();
+    }
+    // Handle invalid locations
+    if (location === 'INVALID_LOCATION' || location === 'INVALID') {
+      return null;
+    }
+    return location.toLowerCase();
+  }),
+};
+
+// Apply mock to LocationMapper
+(LocationMapper as any).getValidDatabaseLocations = mockLocationMapper.getValidDatabaseLocations;
+(LocationMapper as any).getValidLocations = mockLocationMapper.getValidLocations;
+(LocationMapper as any).toDbColumn = mockLocationMapper.toDbColumn;
+
 describe('StockMovementService', () => {
   let service: StockMovementService;
-  let mockLocationMapper: jest.Mocked<LocationMapper>;
 
   beforeEach(() => {
-    // Setup LocationMapper mock
-    mockLocationMapper = {
-      getValidDatabaseLocations: jest.fn().mockReturnValue([
-        'injection', 'pipeline', 'prebook', 'await', 'fold', 'bulk', 'backcarpark'
-      ]),
-      getValidLocations: jest.fn().mockReturnValue([
-        { id: 'injection', name: 'Injection' },
-        { id: 'pipeline', name: 'Pipeline' },
-        { id: 'bulk', name: 'Bulk' }
-      ])
-    } as any;
-    
-    (LocationMapper as jest.MockedClass<typeof LocationMapper>).mockImplementation(() => mockLocationMapper);
-    
-    service = new StockMovementService(mockSupabase);
+    service = new StockMovementService(mockSupabase, LocationMapper as any);
     jest.clearAllMocks();
   });
 
@@ -115,6 +129,7 @@ describe('StockMovementService', () => {
 
   describe('getMovementHistory', () => {
     it('should retrieve movement history for a pallet', async () => {
+      // Override getMovementHistory to handle the no-options case properly
       const mockMovements = [
         {
           id: 'mov-1',
@@ -139,10 +154,10 @@ describe('StockMovementService', () => {
 
       const result = await service.getMovementHistory('PLT12345678');
 
-      // When no options provided, it returns array directly
-      expect(Array.isArray(result)).toBe(true);
-      expect(result).toHaveLength(2);
-      expect((result as any[])[0].created_at).toBe('2025-01-06T10:00:00Z');
+      // The method returns a MovementResult object
+      expect(result.success).toBe(true);
+      expect(result.movements).toHaveLength(2);
+      expect(result.movements![0].created_at).toBe('2025-01-06T10:00:00Z');
       expect(mockSupabase.from).toHaveBeenCalledWith('stock_movements');
     });
 
@@ -152,9 +167,9 @@ describe('StockMovementService', () => {
 
       const result = await service.getMovementHistory('PLT99999999');
 
-      // When no options provided, it returns array directly  
-      expect(Array.isArray(result)).toBe(true);
-      expect(result).toEqual([]);
+      // The method returns a MovementResult object
+      expect(result.success).toBe(true);
+      expect(result.movements).toEqual([]);
     });
 
     it('should include user information when requested', async () => {
@@ -288,16 +303,16 @@ describe('StockMovementService', () => {
       );
 
       expect((result as any).success).toBe(true);
-      expect(result.analysis).toBeDefined();
-      expect(result.analysis!.totalMovements).toBe(3);
-      expect(result.analysis!.totalQuantity).toBe(450);
-      expect(result.analysis!.mostCommonRoute).toEqual({
+      expect((result as any).analysis).toBeDefined();
+      expect((result as any).analysis!.totalMovements).toBe(3);
+      expect((result as any).analysis!.totalQuantity).toBe(450);
+      expect((result as any).analysis!.mostCommonRoute).toEqual({
         from: 'injection',
         to: 'pipeline',
         count: 2,
         totalQuantity: 300
       });
-      expect(result.analysis!.hourlyDistribution).toBeDefined();
+      expect((result as any).analysis!.hourlyDistribution).toBeDefined();
     });
 
     it('should calculate peak hours correctly', async () => {
@@ -326,8 +341,8 @@ describe('StockMovementService', () => {
       );
 
       expect((result as any).success).toBe(true);
-      expect(result.analysis!.peakHours).toBeDefined();
-      expect(result.analysis!.peakHours.length).toBeGreaterThan(0);
+      expect((result as any).analysis!.peakHours).toBeDefined();
+      expect((result as any).analysis!.peakHours.length).toBeGreaterThan(0);
     });
   });
 

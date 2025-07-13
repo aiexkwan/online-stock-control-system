@@ -61,14 +61,16 @@ export class APIFactory {
   }
 }
 
-// Convenience methods with lazy loading
+// Import modules statically to avoid webpack originalFactory.call issues
+import { createStockLevelsAPI } from './inventory/StockLevelsAPI';
+import { createDashboardAPI } from './admin/DashboardAPI';
+
+// Convenience methods with static imports
 export const api = {
   stockLevels: () => {
-    const { createStockLevelsAPI } = require('./inventory/StockLevelsAPI');
     return APIFactory.getInstance().getAPI('stockLevels', createStockLevelsAPI);
   },
   dashboard: () => {
-    const { createDashboardAPI } = require('./admin/DashboardAPI');
     return APIFactory.getInstance().getAPI('dashboard', createDashboardAPI);
   },
 };

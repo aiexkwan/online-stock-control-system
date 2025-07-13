@@ -177,7 +177,7 @@ export async function createGrnDatabaseEntries(
     }
 
     // 🚀 新功能：使用統一的 GRN Label RPC 處理所有操作
-    (process.env.NODE_ENV as string) !== 'production' &&
+    process.env.NODE_ENV !== 'production' &&
       console.log('[grnActions] 使用統一 GRN Label RPC 處理...', {
         grnRef: payload.grnRecord.grn_ref,
         materialCode: payload.grnRecord.material_code,
@@ -217,7 +217,7 @@ export async function createGrnDatabaseEntries(
       rpcParams.p_pdf_urls = [payload.palletInfo.pdf_url];
     }
 
-    (process.env.NODE_ENV as string) !== 'production' && console.log('[grnActions] 統一 RPC 參數:', rpcParams);
+    process.env.NODE_ENV !== 'production' && console.log('[grnActions] 統一 RPC 參數:', rpcParams);
 
     // 調用統一 GRN RPC
     const { data: rpcResult, error: rpcError } = await supabaseAdmin.rpc(
@@ -236,7 +236,7 @@ export async function createGrnDatabaseEntries(
       return { error: errorMsg };
     }
 
-    (process.env.NODE_ENV as string) !== 'production' &&
+    process.env.NODE_ENV !== 'production' &&
       console.log('[grnActions] 統一 GRN RPC 處理成功:', rpcResult);
 
     // 提取棧板號碼和系列號
@@ -339,7 +339,7 @@ export async function createGrnDatabaseEntriesBatch(
     // 🚀 使用統一的 GRN Label RPC 批量處理所有棧板
     const count = Math.max(grossWeights.length, netWeights.length, quantities.length);
 
-    (process.env.NODE_ENV as string) !== 'production' &&
+    process.env.NODE_ENV !== 'production' &&
       console.log('[grnActions] 批量處理 GRN 標籤，數量:', count, {
         grnNumber,
         materialCode,
@@ -379,7 +379,7 @@ export async function createGrnDatabaseEntriesBatch(
       rpcParams.p_pdf_urls = pdfUrls;
     }
 
-    (process.env.NODE_ENV as string) !== 'production' &&
+    process.env.NODE_ENV !== 'production' &&
       console.log('[grnActions] 統一批量 RPC 參數:', rpcParams);
 
     // 調用統一 GRN RPC
@@ -399,7 +399,7 @@ export async function createGrnDatabaseEntriesBatch(
       return { success: false, error: errorMsg };
     }
 
-    (process.env.NODE_ENV as string) !== 'production' &&
+    process.env.NODE_ENV !== 'production' &&
       console.log('[grnActions] 統一批量 GRN RPC 處理成功:', rpcResult);
 
     // 從 RPC 結果提取數據
@@ -408,7 +408,7 @@ export async function createGrnDatabaseEntriesBatch(
     const palletNumbers = data.pallet_numbers || [];
     const series = data.series || [];
 
-    (process.env.NODE_ENV as string) !== 'production' &&
+    process.env.NODE_ENV !== 'production' &&
       console.log('[grnActions] 提取的棧板數據:', {
         palletNumbers,
         series,
@@ -514,7 +514,7 @@ async function createGrnDatabaseEntriesLegacy(
     if (historyError) {
       console.error('[grnActions] Error inserting history record:', historyError);
       // Don't fail the whole operation for history logging
-      (process.env.NODE_ENV as string) !== 'production' &&
+      process.env.NODE_ENV !== 'production' &&
         console.warn('[grnActions] History logging failed, but continuing with operation');
     }
 
@@ -522,7 +522,7 @@ async function createGrnDatabaseEntriesLegacy(
 
     // 🚀 新功能：調用 GRN workflow 優化函數
     try {
-      (process.env.NODE_ENV as string) !== 'production' &&
+      process.env.NODE_ENV !== 'production' &&
         console.log('[grnActions] 調用 GRN workflow 優化函數...', {
           grnRef: payload.grnRecord.grn_ref,
           labelMode,
@@ -577,7 +577,7 @@ async function createGrnDatabaseEntriesLegacy(
       }
 
       if (workflowData && !workflowData.success) {
-        (process.env.NODE_ENV as string) !== 'production' &&
+        process.env.NODE_ENV !== 'production' &&
           console.warn('[grnActions] GRN workflow 更新部分失敗:', workflowData);
         const failureDetails = [
           workflowData.grn_level_result?.includes('ERROR:') ? 'GRN Level' : null,
@@ -593,7 +593,7 @@ async function createGrnDatabaseEntriesLegacy(
         };
       }
 
-      (process.env.NODE_ENV as string) !== 'production' &&
+      process.env.NODE_ENV !== 'production' &&
         console.log('[grnActions] GRN workflow 更新成功:', workflowData);
       return { data: 'GRN database entries created successfully' };
     } catch (workflowError: any) {
@@ -630,7 +630,7 @@ export async function updatePalletPdfUrl(
       return { success: false, error: `Failed to update PDF URL: ${error.message}` };
     }
 
-    (process.env.NODE_ENV as string) !== 'production' &&
+    process.env.NODE_ENV !== 'production' &&
       console.log('[grnActions] PDF URL updated successfully for pallet:', pltNum);
     return { success: true };
   } catch (error: any) {
@@ -648,7 +648,7 @@ export async function uploadPdfToStorage(
   storagePath: string = 'grn-labels'
 ): Promise<{ publicUrl?: string; error?: string }> {
   try {
-    (process.env.NODE_ENV as string) !== 'production' &&
+    process.env.NODE_ENV !== 'production' &&
       console.log('[grnActions] 開始上傳 PDF 到 Storage...', {
         fileName,
         storagePath,
@@ -662,7 +662,7 @@ export async function uploadPdfToStorage(
     const uint8Array = new Uint8Array(pdfUint8Array);
     const pdfBlob = new Blob([uint8Array], { type: 'application/pdf' });
 
-    (process.env.NODE_ENV as string) !== 'production' &&
+    process.env.NODE_ENV !== 'production' &&
       console.log('[grnActions] PDF Blob 創建完成:', {
         blobSize: pdfBlob.size,
         blobType: pdfBlob.type,
@@ -695,7 +695,7 @@ export async function uploadPdfToStorage(
       return { error: 'Upload succeeded but no path was returned' };
     }
 
-    (process.env.NODE_ENV as string) !== 'production' &&
+    process.env.NODE_ENV !== 'production' &&
       console.log('[grnActions] 文件上傳成功，路徑:', uploadData.path);
 
     const { data: urlData } = supabaseAdmin.storage
@@ -707,7 +707,7 @@ export async function uploadPdfToStorage(
       return { error: 'Failed to get public URL' };
     }
 
-    (process.env.NODE_ENV as string) !== 'production' &&
+    process.env.NODE_ENV !== 'production' &&
       console.log('[grnActions] 公共 URL 生成成功:', urlData.publicUrl);
     return { publicUrl: urlData.publicUrl };
   } catch (error: any) {

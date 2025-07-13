@@ -1,4 +1,5 @@
 import { widgetRegistry, smartPreloader } from '../lib/widgets/enhanced-registry';
+import { WidgetDefinition } from '../lib/widgets/types';
 
 async function runTests() {
   console.log('🧪 Testing Phase 1.2 Fixes...\n');
@@ -12,9 +13,16 @@ async function runTests() {
     // Auto-register widgets first
     await widgetRegistry.autoRegisterWidgets();
     
-    const categorizedWidgets = widgetRegistry.getWidgetsByCategory();
-    const categories = Object.keys(categorizedWidgets);
-    const totalCount = Object.values(categorizedWidgets).reduce((sum, widgets) => sum + widgets.length, 0);
+    const categories = widgetRegistry.getCategories();
+    const categorizedWidgets: Record<string, WidgetDefinition[]> = {};
+    let totalCount = 0;
+    
+    // Get widgets for each category
+    categories.forEach(category => {
+      const widgets = widgetRegistry.getByCategory(category);
+      categorizedWidgets[category] = widgets;
+      totalCount += widgets.length;
+    });
     
     console.log(`   ✅ Categories found: ${categories.length}`);
     console.log(`   ✅ Total widgets: ${totalCount}`);

@@ -81,6 +81,29 @@ interface AdminDashboardContentProps {
   ssrMode?: boolean; // 是否為 SSR 模式
 }
 
+// 定義 widget 優先級（用於延遲加載，不改變順序）- 移到組件外部以避免重新創建
+const widgetPriority: Record<string, number> = {
+  // 核心統計 widgets - 最高優先級
+  StatsCardWidget: 1,
+  AwaitLocationQtyWidget: 1,
+  YesterdayTransferCountWidget: 1,
+  StillInAwaitWidget: 1,
+  StillInAwaitPercentageWidget: 1,
+
+  // 列表和表格 - 中優先級
+  OrderStateListWidgetV2: 2,
+  WarehouseTransferListWidget: 2,
+  OrdersListWidgetV2: 2,
+  OtherFilesListWidget: 2,
+
+  // 圖表 - 低優先級
+  StockDistributionChart: 3,
+  ProductionStatsWidget: 3,
+  InventoryAnalysisWidget: 3,
+  HistoryTreeV2: 3,
+  AnalysisExpandableCards: 3,
+};
+
 export const AdminDashboardContent: React.FC<AdminDashboardContentProps> = ({
   theme,
   timeFrame,
@@ -114,8 +137,26 @@ export const AdminDashboardContent: React.FC<AdminDashboardContentProps> = ({
     return null;
   }, [theme]);
 
-  // 獲取 layout 配置
-  const layout = adminDashboardLayouts[theme];
+  // 獲取 layout 配置 - 使用 useMemo 穩定引用
+  const layout = useMemo(() => adminDashboardLayouts[theme], [theme]);
+
+  // 穩定 widget 配置的引用，避免無限循環
+  const stableWidgets = useMemo(() => {
+    if (!layout) return [];
+    
+    return layout.widgets.map((widget, index) => {
+      // 為低優先級 widgets 添加延遲，但保持原有順序
+      const priority = widgetPriority[widget.component || ''] || 99;
+      const delay = priority > 2 ? (priority - 2) * 100 : 0;
+
+      return {
+        key: `${widget.gridArea}-${index}`,
+        config: widget,
+        delay,
+        index
+      };
+    });
+  }, [layout, widgetPriority]);
 
   // 如果正在初始化，顯示加載狀態
   if (!isInitialized) {
@@ -148,48 +189,16 @@ export const AdminDashboardContent: React.FC<AdminDashboardContentProps> = ({
 
   // 渲染 widgets - 保持原有順序，只添加延遲加載
   const renderWidgets = () => {
-    // 定義 widget 優先級（用於延遲加載，不改變順序）
-    const widgetPriority: Record<string, number> = {
-      // 核心統計 widgets - 最高優先級
-      StatsCardWidget: 1,
-      AwaitLocationQtyWidget: 1,
-      YesterdayTransferCountWidget: 1,
-      StillInAwaitWidget: 1,
-      StillInAwaitPercentageWidget: 1,
-
-      // 列表和表格 - 中優先級
-      OrderStateListWidgetV2: 2,
-      WarehouseTransferListWidget: 2,
-      OrdersListWidgetV2: 2,
-      OtherFilesListWidget: 2,
-
-      // 圖表 - 低優先級
-      StockDistributionChart: 3,
-      WarehouseWorkLevelAreaChart: 3,
-      TransferTimeDistributionWidget: 3,
-      InventoryOrderedAnalysisWidget: 3,
-
-      // 歷史記錄 - 最低優先級
-      HistoryTree: 4,
-      HistoryTreeV2: 4,
-    };
-
-    return layout.widgets.map((widget, index) => {
-      // 為低優先級 widgets 添加延遲，但保持原有順序
-      const priority = widgetPriority[widget.component || ''] || 99;
-      const delay = priority > 2 ? (priority - 2) * 100 : 0;
-
-      return (
-        <AdminWidgetRenderer
-          key={`${widget.gridArea}-${index}`}
-          config={widget}
-          theme={theme}
-          timeFrame={timeFrame}
-          index={index}
-          delay={delay}
-        />
-      );
-    });
+         return stableWidgets.map(({ key, delay, config, index }) => (
+       <AdminWidgetRenderer
+         key={key}
+         config={config}
+         theme={theme}
+         timeFrame={timeFrame}
+         index={index}
+         delay={delay}
+       />
+     ));
   };
 
   // 如果有對應的 ThemeLayout 組件，使用動態加載

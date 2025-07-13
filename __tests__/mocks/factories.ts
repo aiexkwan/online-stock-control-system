@@ -100,6 +100,53 @@ export const createSupabaseResponse = <T>(
   statusText: error ? 'Bad Request' : 'OK',
 });
 
+// GRN (Goods Receipt Note) factory
+export const createMockGRNOrder = (overrides?: Partial<any>) => {
+  const grossWeight = faker.number.int({ min: 100, max: 5000 });
+  const netWeight = faker.number.int({ min: 80, max: Math.min(4500, grossWeight) });
+  
+  return {
+    grn_ref: faker.number.int({ min: 10000, max: 99999 }),
+    plt_num: `PLT${faker.string.numeric(8)}`,
+    sup_code: `SUP${faker.string.numeric(4)}`,
+    material_code: faker.string.alphanumeric(10).toUpperCase(),
+    gross_weight: grossWeight,
+    net_weight: netWeight,
+    uuid: faker.string.uuid(),
+    pallet: `P${faker.string.numeric(3)}`,
+    package: `PKG${faker.string.numeric(5)}`,
+    pallet_count: faker.number.float({ min: 0.5, max: 10, fractionDigits: 1 }),
+    package_count: faker.number.float({ min: 1, max: 100, fractionDigits: 1 }),
+    creat_time: faker.date.recent().toISOString(),
+    ...overrides,
+  };
+};
+
+// Supplier factory
+export const createMockSupplier = (overrides?: Partial<any>) => ({
+  supplier_code: `SUP${faker.string.numeric(4)}`,
+  supplier_name: faker.company.name(),
+  ...overrides,
+});
+
+// Warehouse Location factory
+export const createMockWarehouseLocation = (overrides?: Partial<any>) => {
+  const maxCapacity = faker.number.int({ min: 100, max: 5000 });
+  const currentCapacity = faker.number.int({ min: 0, max: maxCapacity });
+  
+  return {
+    location_code: `${faker.helpers.arrayElement(['A', 'B', 'C', 'D'])}${faker.string.numeric(2)}-${faker.string.numeric(2)}`,
+    warehouse_zone: faker.helpers.arrayElement(['INBOUND', 'STORAGE', 'PICKING', 'OUTBOUND']),
+    location_type: faker.helpers.arrayElement(['FLOOR', 'RACK', 'SHELF', 'BIN']),
+    max_capacity: maxCapacity,
+    current_capacity: currentCapacity,
+    is_active: faker.datatype.boolean(),
+    created_at: faker.date.past().toISOString(),
+    updated_at: faker.date.recent().toISOString(),
+    ...overrides,
+  };
+};
+
 // Mock Supabase error
 export const createSupabaseError = (message: string, code?: string) => ({
   message,

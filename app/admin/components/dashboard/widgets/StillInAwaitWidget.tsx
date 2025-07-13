@@ -9,7 +9,7 @@
 import React, { useMemo } from 'react';
 import { ClockIcon } from '@heroicons/react/24/outline';
 import { WidgetComponentProps } from '@/app/types/dashboard';
-import { createDashboardAPI } from '@/lib/api/admin/DashboardAPI';
+import { createDashboardAPIClient as createDashboardAPI } from '@/lib/api/admin/DashboardAPI.client';
 import { getYesterdayRange } from '@/app/utils/timezone';
 import { format, startOfDay, endOfDay } from 'date-fns';
 import { useGraphQLFallback, GraphQLFallbackPresets } from '@/app/admin/hooks/useGraphQLFallback';

@@ -19,7 +19,7 @@ import {
 } from '@/components/ui/select-radix';
 import { DocumentArrowDownIcon } from '@heroicons/react/24/outline';
 import { useToast } from '@/components/ui/use-toast';
-import { createDashboardAPI } from '@/lib/api/admin/DashboardAPI';
+import { createDashboardAPIClient as createDashboardAPI } from '@/lib/api/admin/DashboardAPI.client';
 import { exportAcoReport } from '@/lib/exportReport';
 import { cn } from '@/lib/utils';
 import { WidgetComponentProps } from '@/app/types/dashboard';

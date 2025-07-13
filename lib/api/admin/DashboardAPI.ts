@@ -65,9 +65,9 @@ export class DashboardAPI extends DataAccessLayer<DashboardParams, DashboardResu
    * Uses React cache() for automatic request deduplication
    */
   async serverFetch(params: DashboardParams): Promise<DashboardResult> {
-    // Use client import for compatibility with client components
-    const { createClient } = await import('@/app/utils/supabase/client');
-    const supabase = createClient();
+    // Use server client for server-side operations to avoid middleware loops
+    const { createClient } = await import('@/app/utils/supabase/server');
+    const supabase = await createClient();
     
     const startTime = performance.now();
     const widgets: DashboardWidgetData[] = [];
@@ -240,9 +240,10 @@ export class DashboardAPI extends DataAccessLayer<DashboardParams, DashboardResu
           
         case 'await_location_count':
           // Get await location inventory details for quantity calculation
+          // Note: record_inventory doesn't have a 'location' column, it has specific location columns
           const { data: awaitInventory, error: awaitCountError } = await supabase
             .from('record_inventory')
-            .select('location, quantity:await')
+            .select('product_code, await')
             .gt('await', 0);
           
           if (awaitCountError) {
@@ -256,7 +257,8 @@ export class DashboardAPI extends DataAccessLayer<DashboardParams, DashboardResu
           // Transform data to match widget expectations
           const records = awaitInventory?.map(item => ({
             location: 'AWAIT',
-            quantity: item.quantity || 0
+            quantity: item.await || 0,
+            product_code: item.product_code
           })) || [];
           
           const totalQuantity = records.reduce((sum, record) => sum + record.quantity, 0);

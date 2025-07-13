@@ -235,6 +235,7 @@ function LabelBlock(props: PrintLabelPdfProps) {
       {qrCodeDataUrl && (
         <Image
           src={qrCodeDataUrl}
+          alt="QR Code"
           style={{ position: 'absolute', top: 14, right: 14, width: 140, height: 140 }}
         />
       )}

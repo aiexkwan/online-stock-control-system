@@ -1,5 +1,7 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { createClient } from '@/app/utils/supabase/client';
+import { unifiedAuth } from '@/app/main-login/utils/unified-auth';
+import { domainVerificationHelper } from '@/app/main-login/utils/domain-verification-helper';
 import type { User } from '@supabase/supabase-js';
 
 export interface AuthState {
@@ -89,8 +91,8 @@ export const getUserRoleByDepartmentAndPosition = (
       type: 'user',
       department,
       position,
-      allowedPaths: ['/admin/upload'],
-      defaultPath: '/admin/upload',
+      allowedPaths: ['/admin/analysis'],
+      defaultPath: '/admin/analysis',
       navigationRestricted: true,
     };
   }
@@ -105,7 +107,10 @@ export const getUserRoleByDepartmentAndPosition = (
   };
 };
 
-// 從資料庫獲取用戶角色
+// 添加重試計數器以防止無限循環
+const retryCounters = new Map<string, number>();
+const MAX_RETRIES = 2;
+
 export const getUserRoleFromDatabase = async (email: string): Promise<UserRole | null> => {
   try {
     const supabase = createClient();
@@ -141,8 +146,48 @@ export const getUserRoleFromDatabase = async (email: string): Promise<UserRole |
       return null;
     }
 
+    // 成功查詢後清除重試計數器
+    retryCounters.delete(email);
+    
     return getUserRoleByDepartmentAndPosition(data.department, data.position);
   } catch (error: any) {
+    // 檢查是否是域名驗證錯誤
+    if (error.message?.includes('Domain verification failed')) {
+      console.log(`[getUserRoleFromDatabase] Domain verification error for ${email}, attempting recovery...`);
+      
+      // 檢查重試次數
+      const currentRetries = retryCounters.get(email) || 0;
+      if (currentRetries >= MAX_RETRIES) {
+        console.warn(`[getUserRoleFromDatabase] Max retries (${MAX_RETRIES}) reached for ${email}, giving up`);
+        retryCounters.delete(email);
+        return null;
+      }
+      
+      try {
+        const recovery = await domainVerificationHelper.recover();
+        if (recovery.success) {
+          console.log(`[getUserRoleFromDatabase] Domain verification recovered for ${email}, retrying... (attempt ${currentRetries + 1})`);
+          
+          // 增加重試計數器
+          retryCounters.set(email, currentRetries + 1);
+          
+          // 添加短暫延遲以避免立即重試
+          await new Promise(resolve => setTimeout(resolve, 100));
+          
+          // 重試查詢
+          return getUserRoleFromDatabase(email);
+        } else {
+          console.log(`[getUserRoleFromDatabase] Domain verification recovery failed for ${email}: ${recovery.message}`);
+          retryCounters.delete(email);
+          return null;
+        }
+      } catch (recoveryError) {
+        console.error(`[getUserRoleFromDatabase] Domain verification recovery failed for ${email}:`, recoveryError);
+        retryCounters.delete(email);
+        return null;
+      }
+    }
+    
     if (error.message === 'Database query timeout') {
       console.warn(
         `[getUserRoleFromDatabase] Database query timeout for ${email}, falling back to legacy auth`
@@ -150,6 +195,9 @@ export const getUserRoleFromDatabase = async (email: string): Promise<UserRole |
     } else {
       console.error('[getUserRoleFromDatabase] Error:', error);
     }
+    
+    // 清除重試計數器
+    retryCounters.delete(email);
     return null;
   }
 };
@@ -191,50 +239,128 @@ export function useAuth(): AuthState {
   const [loading, setLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [userRole, setUserRole] = useState<UserRole | null>(null);
-  const supabase = createClient();
+  const [hasError, setHasError] = useState(false);
+  const [isCheckingAuth, setIsCheckingAuth] = useState(false);
+  const [lastAuthCheck, setLastAuthCheck] = useState<number>(0);
+  
+  const supabase = useMemo(() => {
+    try {
+      return createClient();
+    } catch (error) {
+      console.error('[useAuth] Failed to create Supabase client:', error);
+      setHasError(true);
+      return null;
+    }
+  }, []);
+
+  // 統一的用戶認證和角色設置函數 - 優化版
+  const setAuthenticatedUser = useCallback((user: User) => {
+    console.log('[useAuth] Setting authenticated user:', user.email);
+    
+    // 立即設置認證狀態 - 不等待任何異步操作
+    setIsAuthenticated(true);
+    setUser(user);
+    setLoading(false);
+    
+    // 完全異步的角色查詢（使用 setTimeout 確保不阻塞主流程）
+    setTimeout(() => {
+      const loadUserRole = async () => {
+        try {
+          console.log('[useAuth] Starting role query for:', user.email);
+          const role = (await Promise.race([
+            getUserRoleFromDatabase(user.email || ''),
+            new Promise((_, reject) =>
+              setTimeout(() => reject(new Error('Role fetch timeout')), 2000)
+            ), // 進一步減少到 2 秒
+          ])) as UserRole | null;
+
+          if (role) {
+            console.log('[useAuth] Role loaded from database:', role);
+            setUserRole(role);
+          } else {
+            throw new Error('No role found in database');
+          }
+        } catch (error) {
+          // 降級到舊版本邏輯
+          console.log('[useAuth] Using legacy role mapping for:', user.email);
+          const legacyRole = getUserRole(user.email || '');
+          setUserRole(legacyRole);
+        }
+      };
+
+      loadUserRole();
+    }, 0); // 在下一個事件循環中執行，確保主流程不被阻塞
+  }, []);
+
+  // 統一的登出處理函數
+  const clearAuthState = useCallback(() => {
+    console.log('[useAuth] Clearing auth state');
+    setIsAuthenticated(false);
+    setUser(null);
+    setUserRole(null);
+    setLoading(false);
+    setIsCheckingAuth(false);
+  }, []);
 
   useEffect(() => {
+    // Skip auth operations if supabase client failed to initialize
+    if (hasError || !supabase) {
+      setLoading(false);
+      return;
+    }
+
+    // 防止多次同時檢查認證
+    if (isCheckingAuth) {
+      return;
+    }
+
+    // 防止過於頻繁的認證檢查（最少間隔 1 秒）
+    const now = Date.now();
+    if (now - lastAuthCheck < 1000) {
+      return;
+    }
+
     const checkAuth = async () => {
+      setIsCheckingAuth(true);
+      setLastAuthCheck(now);
       try {
-        const {
-          data: { user },
-        } = await supabase.auth.getUser();
+        console.log('[useAuth] Initial auth check');
+        
+        // 使用統一認證系統進行檢查
+        const user = await unifiedAuth.getCurrentUser();
 
         if (user) {
-          setIsAuthenticated(true);
-          setUser(user);
-
-          // 嘗試從資料庫獲取用戶角色
-          try {
-            const role = (await Promise.race([
-              getUserRoleFromDatabase(user.email || ''),
-              new Promise((_, reject) =>
-                setTimeout(() => reject(new Error('Role fetch timeout')), 10000)
-              ), // 增加到 10 秒
-            ])) as UserRole | null;
-
-            if (role) {
-              setUserRole(role);
-            } else {
-              throw new Error('No role found in database');
-            }
-          } catch (error) {
-            // 降級到舊版本邏輯，但不顯示警告（這是正常的降級行為）
-            const legacyRole = getUserRole(user.email || '');
-            setUserRole(legacyRole);
-          }
+          setAuthenticatedUser(user);
         } else {
-          setIsAuthenticated(false);
-          setUser(null);
-          setUserRole(null);
+          clearAuthState();
         }
       } catch (error) {
         console.error('[useAuth] Error checking authentication:', error);
-        setIsAuthenticated(false);
-        setUser(null);
-        setUserRole(null);
+        
+        // 檢查是否是域名驗證錯誤
+        if (error instanceof Error && error.message.includes('Domain verification failed')) {
+          console.log('[useAuth] Domain verification error detected, attempting recovery...');
+          
+          // 嘗試恢復域名驗證（只嘗試一次）
+          try {
+            const recovery = await domainVerificationHelper.recover();
+            if (recovery.success) {
+              console.log('[useAuth] Domain verification recovered, retrying auth check...');
+              // 重試認證檢查
+              const user = await unifiedAuth.getCurrentUser();
+              if (user) {
+                setAuthenticatedUser(user);
+                return;
+              }
+            }
+          } catch (recoveryError) {
+            console.error('[useAuth] Domain verification recovery failed:', recoveryError);
+          }
+        }
+        
+        clearAuthState();
       } finally {
-        setLoading(false);
+        setIsCheckingAuth(false);
       }
     };
 
@@ -242,39 +368,18 @@ export function useAuth(): AuthState {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event, session) => {
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log('[useAuth] Auth state change:', event, !!session?.user);
+      
       if (event === 'SIGNED_IN' && session?.user) {
-        setIsAuthenticated(true);
-        setUser(session.user);
-
-        // 嘗試從資料庫獲取用戶角色
-        try {
-          const role = (await Promise.race([
-            getUserRoleFromDatabase(session.user.email || ''),
-            new Promise((_, reject) =>
-              setTimeout(() => reject(new Error('Role fetch timeout')), 10000)
-            ), // 增加到 10 秒
-          ])) as UserRole | null;
-
-          if (role) {
-            setUserRole(role);
-          } else {
-            throw new Error('No role found in database');
-          }
-        } catch (error) {
-          // 降級到舊版本邏輯，但不顯示警告（這是正常的降級行為）
-          const legacyRole = getUserRole(session.user.email || '');
-          setUserRole(legacyRole);
-        }
+        setAuthenticatedUser(session.user);
       } else if (event === 'SIGNED_OUT') {
-        setIsAuthenticated(false);
-        setUser(null);
-        setUserRole(null);
+        clearAuthState();
       }
     });
 
     return () => subscription.unsubscribe();
-  }, [supabase.auth]);
+  }, [hasError, supabase, isCheckingAuth, lastAuthCheck, setAuthenticatedUser, clearAuthState]);
 
   return {
     user,
@@ -318,8 +423,7 @@ export async function getCurrentUserClockNumberAsync(): Promise<string | null> {
     } = await supabase.auth.getUser();
 
     if (userError || !user?.email) {
-      (process.env.NODE_ENV as string) !== 'production' &&
-        (process.env.NODE_ENV as string) !== 'production' &&
+      process.env.NODE_ENV !== 'production' &&
         console.warn('[getCurrentUserClockNumberAsync] No authenticated user or email found');
       return null;
     }
@@ -333,8 +437,7 @@ export async function getCurrentUserClockNumberAsync(): Promise<string | null> {
 
     if (error) {
       if (error.code === 'PGRST116') {
-        (process.env.NODE_ENV as string) !== 'production' &&
-          (process.env.NODE_ENV as string) !== 'production' &&
+        process.env.NODE_ENV !== 'production' &&
           console.warn(`[getCurrentUserClockNumberAsync] No user found for email: ${user.email}`);
         return null;
       }
@@ -343,8 +446,7 @@ export async function getCurrentUserClockNumberAsync(): Promise<string | null> {
 
     if (data?.id) {
       const clockNumber = data.id.toString();
-      (process.env.NODE_ENV as string) !== 'production' &&
-        (process.env.NODE_ENV as string) !== 'production' &&
+      process.env.NODE_ENV !== 'production' &&
         console.log(
           `[getCurrentUserClockNumberAsync] Found clock number: ${clockNumber} for email: ${user.email}`
         );

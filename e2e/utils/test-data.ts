@@ -38,7 +38,7 @@ export const generateTestData = {
   user: () => {
     const id = Math.floor(Math.random() * 99999);
     return {
-      email: `test${id}@example.com`,
+      email: `test${id}@pennineindustries.com`,
       password: `Test@${id}`,
       name: `Test User ${id}`,
     };
@@ -66,12 +66,12 @@ export const testConfig = {
   // 測試用戶憑證
   credentials: {
     admin: {
-      email: process.env.E2E_ADMIN_EMAIL || 'admin@example.com',
-      password: process.env.E2E_ADMIN_PASSWORD || 'admin123',
+      email: process.env.E2E_ADMIN_EMAIL || process.env.PUPPETEER_LOGIN || 'admin@pennineindustries.com',
+      password: process.env.E2E_ADMIN_PASSWORD || process.env.PUPPETEER_PASSWORD || 'admin123',
     },
     user: {
-      email: process.env.E2E_USER_EMAIL || 'user@example.com',
-      password: process.env.E2E_USER_PASSWORD || 'user123',
+      email: process.env.E2E_USER_EMAIL || process.env.PUPPETEER_LOGIN || 'user@pennineindustries.com',
+      password: process.env.E2E_USER_PASSWORD || process.env.PUPPETEER_PASSWORD || 'user123',
     },
   },
 

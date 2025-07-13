@@ -6,12 +6,12 @@
 
 'use client';
 
-import React, { useMemo, useEffect, useState } from 'react';
+import React, { useMemo, useEffect, useState, useCallback } from 'react';
 import { 
   PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend 
 } from 'recharts';
 import { ChartPieIcon } from '@heroicons/react/24/outline';
-import { createDashboardAPI } from '@/lib/api/admin/DashboardAPI';
+import { createDashboardAPIClient as createDashboardAPI } from '@/lib/api/admin/DashboardAPI.client';
 import { WidgetComponentProps } from '@/app/types/dashboard';
 import { ChartContainer } from './common/charts/ChartContainer';
 import { useInViewport } from '@/app/admin/hooks/useInViewport';
@@ -76,7 +76,7 @@ export const ProductDistributionChartWidget: React.FC<ProductDistributionChartWi
     };
   }, [timeFrame]);
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     setLoading(true);
     setError(null);
 
@@ -130,12 +130,12 @@ export const ProductDistributionChartWidget: React.FC<ProductDistributionChartWi
     } finally {
       setLoading(false);
     }
-  };
+  }, [dashboardAPI, dateRange, limit]);
 
   useEffect(() => {
     if (isEditMode || !hasBeenInViewport) return;
     fetchData();
-  }, [dashboardAPI, dateRange, limit, isEditMode, hasBeenInViewport]);
+  }, [dashboardAPI, dateRange, limit, isEditMode, hasBeenInViewport, fetchData]);
 
   // 計算總數
   const total = useMemo(() => {

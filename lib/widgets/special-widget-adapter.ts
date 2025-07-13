@@ -51,10 +51,7 @@ export const specialWidgetConfigs: Record<string, Partial<WidgetDefinition>> = {
 /**
  * 註冊所有 Special widgets
  */
-export async function registerSpecialWidgets(): Promise<void> {
-  // Lazy import to avoid circular dependency
-  const { widgetRegistry } = await import('./enhanced-registry');
-  
+export async function registerSpecialWidgets(widgetRegistry: any): Promise<void> {
   const startTime = performance.now();
   let registeredCount = 0;
 
@@ -98,7 +95,7 @@ export async function registerSpecialWidgets(): Promise<void> {
 /**
  * 預加載高優先級 Special widgets
  */
-export async function preloadHighPrioritySpecialWidgets(): Promise<void> {
+export async function preloadHighPrioritySpecialWidgets(widgetRegistry: any): Promise<void> {
   const highPriorityWidgets = Object.entries(specialWidgetConfigs)
     .filter(([_, config]) => (config.preloadPriority || 0) >= 5)
     .map(([id]) => id);

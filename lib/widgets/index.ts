@@ -9,7 +9,6 @@ export * from './types';
 // 導出核心功能
 export { widgetRegistry } from './enhanced-registry';
 export { layoutCompatibilityManager } from './layout-compatibility';
-export { dualLoadingAdapter, configureDualLoading, getDualLoadingConfig, useDualLoadingPerformance } from './dual-loading-adapter';
 
 // 導出工具函數
 export {
@@ -52,14 +51,7 @@ export async function initializeWidgetRegistry(): Promise<void> {
       }
     }
     
-    // 3. 配置雙重加載（根據環境變量）
-    const { configureDualLoading } = await import('./dual-loading-adapter');
-    configureDualLoading({
-      enableV2: process.env.NEXT_PUBLIC_ENABLE_WIDGET_REGISTRY_V2 === 'true',
-      enableGraphQL: process.env.NEXT_PUBLIC_ENABLE_GRAPHQL === 'true',
-      fallbackToLegacy: true,
-      performanceMode: 'balanced'
-    });
+    // 3. 配置雙重加載已移除
     
     console.log('[WidgetRegistry] Initialization completed successfully');
   } catch (error) {

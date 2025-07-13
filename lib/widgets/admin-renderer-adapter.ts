@@ -3,14 +3,16 @@
  * 將現有的 AdminWidgetRenderer 集成到新的 Widget Registry 系統
  */
 
-import { widgetRegistry } from './enhanced-registry';
+import dynamic from 'next/dynamic';
 import { WidgetDefinition } from './types';
 
 /**
  * 註冊 AdminWidgetRenderer 為核心組件
  * AdminWidgetRenderer 是一個特殊的 widget，它根據配置動態渲染不同類型的 widgets
  */
-export function registerAdminWidgetRenderer() {
+export async function registerAdminWidgetRenderer() {
+  // Lazy import to avoid circular dependency
+  const { widgetRegistry } = await import('./enhanced-registry');
   const definition: WidgetDefinition = {
     id: 'AdminWidgetRenderer',
     name: 'Admin Widget Renderer',
@@ -29,8 +31,8 @@ export function registerAdminWidgetRenderer() {
   widgetRegistry.register(definition);
 
   // 創建一個延遲加載的包裝器
-  // 使用 next/dynamic 直接導入，避免雙重包裝
-  definition.component = require('next/dynamic').default(
+  // 使用靜態導入的 dynamic，避免動態 require 問題
+  definition.component = dynamic(
     () => import('@/app/admin/components/dashboard/AdminWidgetRenderer').then(mod => ({
       default: mod.AdminWidgetRenderer,
     })), {

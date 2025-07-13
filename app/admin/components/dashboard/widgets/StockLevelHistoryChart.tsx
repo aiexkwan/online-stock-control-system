@@ -14,7 +14,7 @@ import {
 import { WidgetComponentProps } from '@/app/types/dashboard';
 import { useAdminRefresh } from '@/app/admin/contexts/AdminRefreshContext';
 import { TrendingUp } from 'lucide-react';
-import { createDashboardAPI } from '@/lib/api/admin/DashboardAPI';
+import { createDashboardAPIClient as createDashboardAPI } from '@/lib/api/admin/DashboardAPI.client';
 import { format } from 'date-fns';
 import { useGraphQLFallback } from '@/app/admin/hooks/useGraphQLFallback';
 import { useInViewport } from '@/app/admin/hooks/useInViewport';

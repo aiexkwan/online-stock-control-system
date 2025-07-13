@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { unifiedAuth } from '../utils/unified-auth';
+import { createClient } from '@/app/utils/supabase/client';
 
 export default function SimpleLoginForm() {
   const router = useRouter();
@@ -29,7 +29,17 @@ export default function SimpleLoginForm() {
     setError('');
 
     try {
-      const result = await unifiedAuth.signIn(email, password);
+      const supabase = createClient();
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      console.log('[SimpleLoginForm] Sign in successful:', data.user?.email);
 
       // 等待一小段時間確保 session 建立
       await new Promise(resolve => setTimeout(resolve, 500));

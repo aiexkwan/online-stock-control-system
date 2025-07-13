@@ -5,7 +5,7 @@
 
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { createClient } from '@/lib/supabase';
@@ -134,6 +134,12 @@ export function NewAdminDashboard({
     end: endOfDay(new Date()),
   });
 
+  // Memoize dateRange to prevent infinite re-renders
+  const memoizedDateRange = useMemo(() => ({
+    startDate: timeFrame.start,
+    endDate: timeFrame.end
+  }), [timeFrame.start, timeFrame.end]);
+
   // 從路徑判斷當前主題
   const pathParts = pathname.split('/').filter(Boolean);
   const lastPart = pathParts[pathParts.length - 1];
@@ -216,11 +222,8 @@ export function NewAdminDashboard({
                 }
               >
                 <DashboardDataProvider 
-                  initialDateRange={{
-                    startDate: timeFrame.start,
-                    endDate: timeFrame.end
-                  }}
-                  autoRefreshInterval={300000}
+                  initialDateRange={memoizedDateRange}
+                  autoRefreshInterval={0}
                   prefetchedData={prefetchedData}
                   ssrMode={ssrMode}
                 >

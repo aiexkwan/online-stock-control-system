@@ -18,12 +18,13 @@ import { WidgetComponentProps } from '@/app/types/dashboard';
 import { format } from 'date-fns';
 import { fromDbTime } from '@/app/utils/timezone';
 import { useUploadRefresh } from '@/app/admin/contexts/UploadRefreshContext';
-import { createDashboardAPI } from '@/lib/api/admin/DashboardAPI';
+import { createDashboardAPIClient as createDashboardAPI } from '@/lib/api/admin/DashboardAPI.client';
 import { GetOtherFilesListDocument } from '@/lib/graphql/generated/apollo-hooks';
 import { useGraphQLFallback, GraphQLFallbackPresets } from '@/app/admin/hooks/useGraphQLFallback';
 import { useInViewport, InViewportPresets } from '@/app/admin/hooks/useInViewport';
 import { DataTable, DataTableColumn } from './common/data-display/DataTable';
 import { cn } from '@/lib/utils';
+import { WidgetSkeleton } from './common/WidgetStates';
 
 interface FileRecord {
   uuid: string;
@@ -202,14 +203,7 @@ export const OtherFilesListWidgetV2 = React.memo(function OtherFilesListWidgetV2
   if (!hasBeenInViewport) {
     return (
       <div ref={widgetRef}>
-        <DataTable
-          title="Other Files"
-          icon={DocumentIcon}
-          iconColor="from-purple-500 to-pink-500"
-          data={[]}
-          columns={columns}
-          loading={true}
-        />
+        <WidgetSkeleton type="list" rows={5} />
       </div>
     );
   }

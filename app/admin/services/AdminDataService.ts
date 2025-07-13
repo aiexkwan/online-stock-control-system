@@ -2,6 +2,11 @@
 
 import { createClient } from '@/app/utils/supabase/server';
 import { cache } from 'react';
+import { 
+  getAcoIncompleteOrdersAction, 
+  getAcoOrderProgressAction,
+  type AcoOrderProgress as ServerActionAcoOrderProgress 
+} from '@/app/actions/acoOrderProgressActions';
 
 export interface DashboardStats {
   dailyDonePallets: number;
@@ -40,16 +45,6 @@ export interface InventorySearchResult {
 }
 
 class AdminDataService {
-  private acoOrderAdapter: any = null;
-
-  // 初始化適配器（延遲加載，避免 server-side 問題）
-  private getAcoOrderAdapter() {
-    if (typeof window !== 'undefined' && !this.acoOrderAdapter) {
-      const { AcoOrderProgressAdapter } = require('@/lib/orders/adapters/AcoOrderProgressAdapter');
-      this.acoOrderAdapter = new AcoOrderProgressAdapter();
-    }
-    return this.acoOrderAdapter;
-  }
   // Cache dashboard stats for 5 minutes
   getDashboardStats = cache(async (): Promise<DashboardStats> => {
     const supabase = await createClient();
@@ -102,73 +97,75 @@ class AdminDataService {
 
   // Get incomplete ACO orders
   getIncompleteAcoOrders = cache(async () => {
-    // 嘗試使用適配器（如果在 client side）
-    const adapter = this.getAcoOrderAdapter();
-    if (adapter) {
-      try {
-        return await adapter.getIncompleteAcoOrders();
-      } catch (error) {
-        console.warn('Adapter failed, falling back to direct query:', error);
-      }
-    }
-
-    // Server side 或適配器失敗時使用直接查詢
-    const supabase = await createClient();
-
     try {
-      const { data, error } = await supabase
-        .from('record_aco')
-        .select('*')
-        .or('finished_qty.is.null,finished_qty.lt.required_qty')
-        .order('order_ref', { ascending: false });
-
-      if (error) throw error;
-
-      return data || [];
+      // 使用專用的 server action
+      return await getAcoIncompleteOrdersAction();
     } catch (error) {
-      console.error('Error loading ACO orders:', error);
-      throw error;
+      console.warn('Server action failed, falling back to direct query:', error);
+      
+      // Fallback to direct query
+      const supabase = await createClient();
+
+      try {
+        const { data, error } = await supabase
+          .from('record_aco')
+          .select('*')
+          .or('finished_qty.is.null,finished_qty.lt.required_qty')
+          .order('order_ref', { ascending: false });
+
+        if (error) throw error;
+
+        return data || [];
+      } catch (fallbackError) {
+        console.error('Error loading ACO orders:', fallbackError);
+        throw fallbackError;
+      }
     }
   });
 
   // Get ACO order progress
   getAcoOrderProgress = cache(async (orderRef: number): Promise<AcoOrderProgress[]> => {
-    // 嘗試使用適配器（如果在 client side）
-    const adapter = this.getAcoOrderAdapter();
-    if (adapter) {
-      try {
-        return await adapter.getAcoOrderProgress(orderRef);
-      } catch (error) {
-        console.warn('Adapter failed, falling back to direct query:', error);
-      }
-    }
-
-    // Server side 或適配器失敗時使用直接查詢
-    const supabase = await createClient();
-
     try {
-      const { data, error } = await supabase
-        .from('record_aco')
-        .select('*')
-        .eq('order_ref', orderRef);
-
-      if (error) throw error;
-
-      return (data || []).map(item => {
-        const completed = item.finished_qty || 0;
-        const remaining = Math.max(0, item.required_qty - completed);
-        return {
-          code: item.code,
-          required_qty: item.required_qty,
-          remain_qty: remaining,
-          completed_qty: completed,
-          completion_percentage:
-            item.required_qty > 0 ? Math.round((completed / item.required_qty) * 100) : 0,
-        };
-      });
+      // 使用專用的 server action
+      const result = await getAcoOrderProgressAction({ orderRef });
+      // 轉換 server action 結果到符合現有介面的格式
+      return result.map(item => ({
+        code: item.code,
+        required_qty: item.required_qty,
+        remain_qty: item.remain_qty,
+        completed_qty: item.completed_qty,
+        completion_percentage: item.completion_percentage,
+      }));
     } catch (error) {
-      console.error('Error loading order progress:', error);
-      throw error;
+      console.warn('Server action failed, falling back to direct query:', error);
+      
+      // Fallback to direct query
+      const supabase = await createClient();
+
+      try {
+        const { data, error } = await supabase
+          .from('record_aco')
+          .select('*')
+          .eq('order_ref', orderRef);
+
+        if (error) throw error;
+
+        return (data || []).map(item => {
+          const completed = item.finished_qty || 0;
+          const remaining = Math.max(0, item.required_qty - completed);
+          return {
+            code: item.code,
+            required_qty: item.required_qty,
+            remain_qty: remaining,
+            completed_qty: completed,
+            completion_percentage:
+              item.required_qty > 0 ? Math.round((completed / item.required_qty) * 100) : 0,
+          };
+        });
+      } catch (fallbackError) {
+        console.error('Error loading order progress:', fallbackError);
+        throw fallbackError;
+      }
     }
   });
 

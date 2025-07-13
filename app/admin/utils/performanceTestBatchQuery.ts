@@ -73,12 +73,15 @@ class BatchQueryPerformanceTester {
       };
 
       // 記錄到性能監控
-      performanceMonitor.recordMetric({
+      performanceMonitor.recordMetrics({
         widgetId: 'batch-query-test',
-        metricType: 'test',
-        value: result.duration,
         timestamp: Date.now(),
-        metadata: result,
+        loadTime: result.duration,
+        renderTime: 0,
+        dataFetchTime: result.duration,
+        route: '/admin/dashboard',
+        variant: 'v2',
+        sessionId: 'performance-test-session',
       });
 
       return result;
@@ -142,12 +145,15 @@ class BatchQueryPerformanceTester {
     };
 
     // 記錄到性能監控
-    performanceMonitor.recordMetric({
+    performanceMonitor.recordMetrics({
       widgetId: 'individual-queries-test',
-      metricType: 'test',
-      value: result.duration,
       timestamp: Date.now(),
-      metadata: result,
+      loadTime: result.duration,
+      renderTime: 0,
+      dataFetchTime: result.duration,
+      route: '/admin/dashboard',
+      variant: 'v2',
+      sessionId: 'performance-test-session',
     });
 
     return result;
@@ -194,12 +200,15 @@ class BatchQueryPerformanceTester {
     };
 
     // 記錄比較結果
-    performanceMonitor.recordMetric({
+    performanceMonitor.recordMetrics({
       widgetId: 'performance-comparison',
-      metricType: 'comparison',
-      value: timeSavedPercentage,
       timestamp: Date.now(),
-      metadata: comparison,
+      loadTime: timeSavedPercentage,
+      renderTime: 0,
+      dataFetchTime: 0,
+      route: '/admin/dashboard',
+      variant: 'v2',
+      sessionId: 'performance-test-session',
     });
 
     this.results.push(batchResult, individualResult);

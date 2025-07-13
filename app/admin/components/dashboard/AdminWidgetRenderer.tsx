@@ -5,7 +5,7 @@
 
 'use client';
 
-import React, { useState, useEffect, Suspense, useCallback, useRef } from 'react';
+import React, { useState, useEffect, Suspense, useCallback, useRef, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { AdminWidgetConfig } from './adminDashboardLayouts';
 import { TimeFrame } from '@/app/components/admin/UniversalTimeRangeSelector';
@@ -13,7 +13,6 @@ import { createClient } from '@/lib/supabase';
 import { useAdminRefresh } from '@/app/admin/contexts/AdminRefreshContext';
 import { LazyComponents } from './LazyWidgetRegistry';
 import { widgetRegistry } from '@/lib/widgets/enhanced-registry';
-import { useWidgetState } from '@/app/hooks/useMemory';
 import { 
   ArrowTrendingUpIcon,
   ArrowTrendingDownIcon,
@@ -405,6 +404,11 @@ const AdminWidgetRendererComponent: React.FC<AdminWidgetRendererProps> = ({
     }
   }, [delay]);
 
+  // 穩定 config 的關鍵屬性以避免無限循環
+  const stableConfigKey = useMemo(() => {
+    return `${config.dataSource}-${config.title}-${config.type}-${JSON.stringify(config.metrics)}`;
+  }, [config.dataSource, config.title, config.type, config.metrics]);
+
   // 根據數據源載入數據
   useEffect(() => {
     const loadData = async () => {
@@ -480,7 +484,7 @@ const AdminWidgetRendererComponent: React.FC<AdminWidgetRendererProps> = ({
 
     loadData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [config, timeFrame, refreshTrigger]);
+  }, [stableConfigKey, timeFrame, refreshTrigger]);
 
   // 載入 Pallet 數據 - 使用 useCallback 避免重複創建
   const loadPalletData = useCallback(async (supabase: any, timeFrame: TimeFrame) => {
@@ -1059,7 +1063,7 @@ const AdminWidgetRendererComponent: React.FC<AdminWidgetRendererProps> = ({
         </CardContent>
       </div>
     );
-  }, [config, data, loading, timeFrame]);
+  }, [config, data, loading, timeFrame, renderLazyComponent]);
 
   // 渲染圖表 - 使用 useCallback 優化
   const renderChart = useCallback(() => {
@@ -1351,7 +1355,7 @@ const AdminWidgetRendererComponent: React.FC<AdminWidgetRendererProps> = ({
         )}
       </div>
     );
-  }, [config, data, loading, timeFrame]);
+  }, [config, data, loading, timeFrame, renderLazyComponent]);
 
   // 渲染列表 - 使用 useCallback 優化
   const renderList = useCallback(() => {
@@ -3017,12 +3021,36 @@ function SupplierInfoRow({ label, value }: SupplierInfoRowProps) {
 
 // Export AdminWidgetRenderer with React.memo
 export const AdminWidgetRenderer = React.memo(AdminWidgetRendererComponent, (prevProps, nextProps) => {
-  // 自定義比較函數 - 只比較會影響渲染的 props
+  // 深度比較函數 - 避免無限循環
+  const deepEqual = (a: any, b: any): boolean => {
+    if (a === b) return true;
+    if (a == null || b == null) return false;
+    if (typeof a !== typeof b) return false;
+    
+    if (typeof a === 'object') {
+      const keysA = Object.keys(a);
+      const keysB = Object.keys(b);
+      
+      if (keysA.length !== keysB.length) return false;
+      
+      for (let key of keysA) {
+        if (!keysB.includes(key)) return false;
+        if (!deepEqual(a[key], b[key])) return false;
+      }
+      
+      return true;
+    }
+    
+    return false;
+  };
+
+  // 自定義比較函數 - 深度比較會影響渲染的 props
   return (
-    prevProps.config === nextProps.config &&
+    deepEqual(prevProps.config, nextProps.config) &&
     prevProps.theme === nextProps.theme &&
-    prevProps.timeFrame === nextProps.timeFrame &&
-    prevProps.index === nextProps.index
+    deepEqual(prevProps.timeFrame, nextProps.timeFrame) &&
+    prevProps.index === nextProps.index &&
+    prevProps.delay === nextProps.delay
   );
 });
 

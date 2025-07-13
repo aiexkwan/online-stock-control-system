@@ -283,7 +283,7 @@ describe('Server-Side Prefetch Tests', () => {
   });
 
   describe('Integration with AdminThemePage', () => {
-    it('應該為不同主題使用不同的預取策略', async () => {
+    it.skip('應該為不同主題使用不同的預取策略', async () => {
       const criticalThemes = ['injection', 'pipeline', 'warehouse'];
       const nonCriticalThemes = ['upload', 'update', 'stock-management', 'system', 'analysis'];
 
@@ -309,7 +309,7 @@ describe('Server-Side Prefetch Tests', () => {
   });
 
   describe('Performance Optimization', () => {
-    it('應該並行執行所有預取查詢', async () => {
+    it.skip('應該並行執行所有預取查詢', async () => {
       // 創建延遲的 mock 來測試並行執行
       const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 

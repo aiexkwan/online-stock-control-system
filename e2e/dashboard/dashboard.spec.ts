@@ -60,7 +60,7 @@ test.describe('Dashboard Functionality', () => {
 
     // 返回儀表板
     await page.goBack();
-    await expect(page).toHaveURL(/\/dashboard/);
+    await expect(page).toHaveURL(/\/admin\/dashboard/);
 
     // 測試導航到報告
     await dashboardPage.navigateTo('Reports');

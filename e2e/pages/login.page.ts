@@ -13,15 +13,17 @@ export class LoginPage {
 
   constructor(page: Page) {
     this.page = page;
-    this.emailInput = page.locator('input[name="email"]');
-    this.passwordInput = page.locator('input[name="password"]');
+    this.emailInput = page.locator('input#email');
+    this.passwordInput = page.locator('input#password');
     this.submitButton = page.locator('button[type="submit"]');
-    this.errorMessage = page.locator('[role="alert"]');
+    // Error message is displayed in a div with specific styling
+    // Using a more robust selector that matches the error message structure
+    this.errorMessage = page.locator('div.rounded-xl.bg-red-900\\/50, div:has-text("error"), div:has-text("invalid"), div:has-text("Only @pennineindustries.com"), div:has-text("Please fill in all fields")').first();
     this.successMessage = page.locator('.success-message');
   }
 
   async goto() {
-    await this.page.goto('/login');
+    await this.page.goto('/main-login');
   }
 
   async login(email: string, password: string) {
@@ -36,7 +38,7 @@ export class LoginPage {
 
   async isLoggedIn(): Promise<boolean> {
     try {
-      await this.page.waitForURL('**/dashboard', { timeout: 5000 });
+      await this.page.waitForURL('**/access', { timeout: 5000 });
       return true;
     } catch {
       return false;
@@ -44,7 +46,10 @@ export class LoginPage {
   }
 
   async logout() {
-    await this.page.locator('[data-testid="logout-button"]').click();
-    await this.page.waitForURL('**/login');
+    // The logout button might be in different locations depending on the page
+    // Try common logout button selectors
+    const logoutButton = this.page.locator('[data-testid="logout-button"], button:has-text("Logout"), button:has-text("Sign Out")').first();
+    await logoutButton.click();
+    await this.page.waitForURL('**/main-login');
   }
 }

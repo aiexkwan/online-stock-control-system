@@ -29,8 +29,24 @@ class SecureStorage {
 
       // 驗證域名（額外安全檢查）
       if (parsed.domain && parsed.domain !== window.location.hostname) {
-        this.removeItem(key);
-        return null;
+        // 在開發環境下，允許 localhost 相關的域名
+        if (process.env.NODE_ENV === 'development') {
+          const isDevelopmentDomain = 
+            window.location.hostname === 'localhost' ||
+            window.location.hostname === '127.0.0.1' ||
+            window.location.hostname.startsWith('192.168.') ||
+            parsed.domain === 'localhost' ||
+            parsed.domain === '127.0.0.1' ||
+            parsed.domain.startsWith('192.168.');
+          
+          if (!isDevelopmentDomain) {
+            this.removeItem(key);
+            return null;
+          }
+        } else {
+          this.removeItem(key);
+          return null;
+        }
       }
 
       return parsed.value;
@@ -205,8 +221,21 @@ class UnifiedAuth {
     if (typeof window !== 'undefined' && this.config.useLocalStorage) {
       const domainVerified = this.secureStorage.getItem('login_domain_verified');
       if (!domainVerified) {
-        await supabase.auth.signOut();
-        throw new Error('Domain verification failed');
+        // 在開發環境下，嘗試從現有的 session 中恢復驗證標記
+        if (process.env.NODE_ENV === 'development') {
+          const { data: { session } } = await supabase.auth.getSession();
+          if (session && session.user) {
+            // 恢復域名驗證標記
+            this.secureStorage.setItem('login_domain_verified', 'true');
+            console.log('[UnifiedAuth] Domain verification restored in development mode');
+          } else {
+            await supabase.auth.signOut();
+            throw new Error('Domain verification failed - please sign in again');
+          }
+        } else {
+          await supabase.auth.signOut();
+          throw new Error('Domain verification failed - please sign in again');
+        }
       }
     }
 
@@ -216,12 +245,6 @@ class UnifiedAuth {
     } = await supabase.auth.getUser();
     if (error && !error.message.includes('Auth session missing')) {
       throw error;
-    }
-
-    // 額外驗證用戶 email 域名
-    if (user && user.email && !user.email.endsWith('@pennineindustries.com')) {
-      await supabase.auth.signOut();
-      throw new Error('Unauthorized domain detected');
     }
 
     return user;

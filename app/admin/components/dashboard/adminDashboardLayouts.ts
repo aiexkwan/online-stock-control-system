@@ -557,28 +557,107 @@ export const adminDashboardLayouts: Record<string, AdminDashboardLayout> = {
   analysis: {
     theme: 'analysis',
     gridTemplate: `
-      "widget2 widget2 widget2 widget2 widget2 widget2 widget2 widget2 widget1 widget1"
-      "widget2 widget2 widget2 widget2 widget2 widget2 widget2 widget2 widget1 widget1"
-      "widget2 widget2 widget2 widget2 widget2 widget2 widget2 widget2 widget1 widget1"
-      "widget2 widget2 widget2 widget2 widget2 widget2 widget2 widget2 widget1 widget1"
-      "widget2 widget2 widget2 widget2 widget2 widget2 widget2 widget2 widget1 widget1"
-      "widget2 widget2 widget2 widget2 widget2 widget2 widget2 widget2 widget1 widget1"
-      "widget2 widget2 widget2 widget2 widget2 widget2 widget2 widget2 widget1 widget1"
-      "widget2 widget2 widget2 widget2 widget2 widget2 widget2 widget2 widget1 widget1"
+      "widget1 widget1 widget1 widget2 widget2 widget2 widget3 widget3 widget3"
+      "widget1 widget1 widget1 widget2 widget2 widget2 widget3 widget3 widget3"
     `,
     widgets: [
       {
+        type: 'stats',
+        title: 'Total Products',
+        gridArea: 'widget1',
+        dataSource: 'combined_stats', // 使用合併數據源
+        metrics: ['total_products'],
+      },
+      {
+        type: 'stats', 
+        title: 'Today Production',
+        gridArea: 'widget2',
+        dataSource: 'combined_stats', // 使用合併數據源
+        metrics: ['today_production'],
+      },
+      {
+        type: 'stats',
+        title: 'Total Quantity',
+        gridArea: 'widget3', 
+        dataSource: 'combined_stats', // 使用合併數據源
+        metrics: ['total_quantity'],
+      },
+    ],
+  },
+
+  // 完整版 analysis（用於生產環境）
+  'analysis-full': {
+    theme: 'analysis-full',
+    gridTemplate: `
+      "widget1 widget1 widget1 widget2 widget2 widget2 widget3 widget3 widget3 widget4"
+      "widget1 widget1 widget1 widget2 widget2 widget2 widget3 widget3 widget3 widget4"
+      "widget5 widget5 widget5 widget6 widget6 widget6 widget7 widget7 widget7 widget4"
+      "widget5 widget5 widget5 widget6 widget6 widget6 widget7 widget7 widget7 widget4"
+      "widget8 widget8 widget8 widget8 widget9 widget9 widget9 widget9 widget9 widget4"
+      "widget8 widget8 widget8 widget8 widget9 widget9 widget9 widget9 widget9 widget4"
+    `,
+    widgets: [
+      {
+        type: 'stats',
+        title: 'Total Products',
+        gridArea: 'widget1',
+        dataSource: 'record_palletinfo',
+        metrics: ['total_products'],
+      },
+      {
+        type: 'stats',
+        title: 'Today Production',
+        gridArea: 'widget2',
+        dataSource: 'record_palletinfo',
+        metrics: ['today_production'],
+      },
+      {
+        type: 'stats',
+        title: 'Total Quantity',
+        gridArea: 'widget3',
+        dataSource: 'record_palletinfo',
+        metrics: ['total_quantity'],
+      },
+      {
         type: 'history-tree',
         title: '',
-        gridArea: 'widget1',
+        gridArea: 'widget4',
         component: 'HistoryTree',
       },
       {
-        type: 'custom',
-        title: 'Data Analysis Center',
-        gridArea: 'widget2',
-        component: 'AnalysisExpandableCards',
-        description: 'Comprehensive data analysis dashboard',
+        type: 'stats',
+        title: 'Await Location',
+        gridArea: 'widget5',
+        dataSource: 'record_inventory',
+        metrics: ['await_total'],
+      },
+      {
+        type: 'stats',
+        title: 'Transfer Count',
+        gridArea: 'widget6',
+        dataSource: 'record_transfer',
+        metrics: ['transfer_count'],
+      },
+      {
+        type: 'stats',
+        title: 'Active Users',
+        gridArea: 'widget7',
+        dataSource: 'system_status',
+        metrics: ['active_users'],
+      },
+      {
+        type: 'stats',
+        title: 'System Status',
+        gridArea: 'widget8',
+        dataSource: 'system_status',
+        metrics: ['system_health'],
+      },
+      {
+        type: 'stats',
+        title: 'Performance Score',
+        gridArea: 'widget9',
+        dataSource: 'system_status',
+        metrics: ['performance_score'],
       },
     ],
   },

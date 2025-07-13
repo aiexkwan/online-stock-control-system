@@ -16,7 +16,7 @@ import { motion } from 'framer-motion';
 import { format, startOfDay, endOfDay } from 'date-fns';
 import { CardHeader, CardTitle } from '@/components/ui/card';
 import { TableCellsIcon } from '@heroicons/react/24/outline';
-import { createDashboardAPI } from '@/lib/api/admin/DashboardAPI';
+import { createDashboardAPIClient as createDashboardAPI } from '@/lib/api/admin/DashboardAPI.client';
 import { WidgetComponentProps } from '@/app/types/dashboard';
 import { useGetProductionDetailsQuery } from '@/lib/graphql/generated/apollo-hooks';
 import { DataTable } from './common/data-display/DataTable';

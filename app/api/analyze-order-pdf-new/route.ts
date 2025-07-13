@@ -6,6 +6,8 @@ import OpenAI from 'openai';
 import crypto from 'crypto';
 import { apiLogger, logApiRequest, logApiResponse, systemLogger } from '@/lib/logger';
 import { isDevelopment } from '@/lib/utils/env';
+import * as fs from 'fs';
+import * as path from 'path';
 
 // 簡單的內存緩存（生產環境建議使用 Redis）
 const fileCache = new Map<string, any>();
@@ -133,14 +135,14 @@ async function extractTextFromPDF(pdfBuffer: Buffer): Promise<string> {
 
     systemLogger.debug('[PDF Text Extract] Buffer size:', { bufferSize: pdfBuffer.length });
 
-    const pkg = require('pdf-parse');
-    const pdfParse = pkg.default || pkg;
+    const pdfParseModule = await import('pdf-parse');
+    const parse = pdfParseModule.default || pdfParseModule;
 
     const options = {
       max: 0, // 不限制頁數
     };
 
-    const pdfData = await pdfParse(pdfBuffer, options);
+    const pdfData = await parse(pdfBuffer, options);
 
     systemLogger.debug('[PDF Text Extract] PDF parsed', {
       pages: pdfData.numpages,
@@ -721,8 +723,6 @@ export async function POST(request: NextRequest) {
     // 讀取 OpenAI prompt 文件
     let prompt = '';
     try {
-      const fs = require('fs');
-      const path = require('path');
       const promptPath = path.join(process.cwd(), 'docs', 'openAI_pdf_prompt');
       prompt = fs.readFileSync(promptPath, 'utf8');
       apiLogger.debug('[PDF Analysis] Prompt loaded from file');

@@ -28,15 +28,12 @@ let logger: pino.Logger;
 if (isNotProduction() && typeof window === 'undefined') {
   // 只在 server-side 開發環境使用 pretty print
   try {
-    const pretty = require('pino-pretty');
-    const stream = pretty({
-      colorize: true,
-      levelFirst: true,
-      translateTime: 'SYS:yyyy-mm-dd HH:MM:ss.l',
-      ignore: 'pid,hostname',
-      sync: true, // 避免 worker thread 問題
-    });
-    logger = pino(baseOptions, stream);
+    // 使用靜態導入避免 webpack originalFactory.call 錯誤
+    // const pretty = require('pino-pretty');
+    // 由於 pino-pretty 是開發依賴，在生產環境可能不可用
+    // 暫時使用基本 logger 避免動態 require 問題
+    logger = pino(baseOptions);
+    console.log('[Logger] Using basic logger to avoid dynamic require issues');
   } catch (error) {
     // 如果 pino-pretty 有問題，使用基本 logger
     logger = pino(baseOptions);

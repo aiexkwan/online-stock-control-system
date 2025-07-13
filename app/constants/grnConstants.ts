@@ -70,6 +70,10 @@ export const getPalletLabel = (index: number): string => {
   if (n === 3) return '3rd Pallet';
   if (n === 21) return '21st Pallet';
   if (n === 22) return '22nd Pallet';
+  if (n === 23) return '23rd Pallet';
+  if (n === 31) return '31st Pallet';
+  if (n === 32) return '32nd Pallet';
+  if (n === 33) return '33rd Pallet';
   return `${n}th Pallet`;
 };
 

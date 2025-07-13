@@ -1,7 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createDashboardAPI } from '@/lib/api/admin/DashboardAPI';
 
+// Track API calls for debugging
+let requestCounter = 0;
+const requestLog: Array<{
+  id: number;
+  timestamp: string;
+  widgets: string[];
+  userAgent?: string;
+  referer?: string;
+  ip?: string;
+  duration?: number;
+}> = [];
+
 export async function GET(request: NextRequest) {
+  const startTime = Date.now();
+  const requestId = ++requestCounter;
+  
   try {
     const searchParams = request.nextUrl.searchParams;
     const widgets = searchParams.get('widgets')?.split(',') || [];
@@ -10,6 +25,18 @@ export async function GET(request: NextRequest) {
     const endDate = searchParams.get('endDate');
     const limit = parseInt(searchParams.get('limit') || '50');
     const offset = parseInt(searchParams.get('offset') || '0');
+
+    // Log request details for debugging
+    const logEntry = {
+      id: requestId,
+      timestamp: new Date().toISOString(),
+      widgets,
+      userAgent: request.headers.get('user-agent'),
+      referer: request.headers.get('referer'),
+      ip: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip'),
+    };
+
+    console.log(`🔥 API CALL #${requestId}:`, JSON.stringify(logEntry, null, 2));
 
     // Use existing DashboardAPI instead of duplicating logic
     const dashboardAPI = createDashboardAPI();
@@ -26,14 +53,29 @@ export async function GET(request: NextRequest) {
       },
     });
 
+    const duration = Date.now() - startTime;
+    logEntry.duration = duration;
+    requestLog.push(logEntry);
+
+    // Keep only last 100 requests
+    if (requestLog.length > 100) {
+      requestLog.splice(0, requestLog.length - 100);
+    }
+
+    console.log(`✅ API CALL #${requestId} completed in ${duration}ms`);
+    console.log(`📊 Total requests since restart: ${requestCounter}`);
+
     return NextResponse.json(result, {
       headers: {
-        'Cache-Control': 'public, max-age=60, stale-while-revalidate=300',
+        'Cache-Control': 'public, max-age=300, stale-while-revalidate=900', // Increased cache time
         'Content-Type': 'application/json',
+        'X-Request-Id': requestId.toString(),
+        'X-Total-Requests': requestCounter.toString(),
       },
     });
   } catch (error) {
-    console.error('Dashboard API error:', error);
+    const duration = Date.now() - startTime;
+    console.error(`❌ Dashboard API error for request #${requestId} (${duration}ms):`, error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

@@ -2,28 +2,72 @@
 import '@testing-library/jest-dom';
 import './__tests__/utils/custom-matchers';
 
+// Add TextDecoder and TextEncoder polyfills for Node.js environment
+import { TextDecoder, TextEncoder } from 'util';
+global.TextDecoder = TextDecoder;
+global.TextEncoder = TextEncoder;
+
+// Set environment variables for Supabase client
+process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://test.supabase.co';
+process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = 'test-anon-key';
+
 // Mock Next.js Request/Response for API routes
-global.Request = class Request {
-  constructor(input, init) {
-    this.url = typeof input === 'string' ? input : input.url;
-    this.method = init?.method || 'GET';
-    this.headers = new Map(Object.entries(init?.headers || {}));
-    this.body = init?.body;
-  }
-};
+if (typeof global.Request === 'undefined') {
+  global.Request = class Request {
+    constructor(input, init) {
+      this.url = typeof input === 'string' ? input : input.url;
+      this.method = init?.method || 'GET';
+      this.headers = new Headers(init?.headers || {});
+      this.body = init?.body;
+    }
+  };
+}
 
-global.Response = class Response {
-  constructor(body, init) {
-    this.body = body;
-    this.status = init?.status || 200;
-    this.statusText = init?.statusText || '';
-    this.headers = new Map(Object.entries(init?.headers || {}));
-  }
+if (typeof global.Response === 'undefined') {
+  global.Response = class Response {
+    constructor(body, init) {
+      this.body = body;
+      this.status = init?.status || 200;
+      this.statusText = init?.statusText || '';
+      this.headers = new Headers(init?.headers || {});
+      this.ok = this.status >= 200 && this.status < 300;
+    }
 
-  async json() {
-    return JSON.parse(this.body);
-  }
-};
+    async json() {
+      return typeof this.body === 'string' ? JSON.parse(this.body) : this.body;
+    }
+
+    async text() {
+      return typeof this.body === 'string' ? this.body : JSON.stringify(this.body);
+    }
+  };
+}
+
+// Mock Headers if not available
+if (typeof global.Headers === 'undefined') {
+  global.Headers = class Headers {
+    constructor(init = {}) {
+      this._headers = new Map();
+      if (init) {
+        Object.entries(init).forEach(([key, value]) => {
+          this._headers.set(key.toLowerCase(), value);
+        });
+      }
+    }
+
+    get(name) {
+      return this._headers.get(name.toLowerCase());
+    }
+
+    set(name, value) {
+      this._headers.set(name.toLowerCase(), value);
+    }
+
+    has(name) {
+      return this._headers.has(name.toLowerCase());
+    }
+  };
+}
 
 // Mock window.matchMedia - Enhanced for framer-motion
 const mockMediaQueryList = {
@@ -155,3 +199,106 @@ jest.mock('next/headers', () => ({
     has: jest.fn(() => false),
   })),
 }));
+
+// Mock NextResponse
+jest.mock('next/server', () => {
+  const actualNext = jest.requireActual('next/dist/server/web/spec-extension/response');
+  return {
+    NextRequest: class NextRequest extends Request {
+      constructor(input, init) {
+        super(input, init);
+        this.nextUrl = new URL(this.url);
+      }
+    },
+    NextResponse: {
+      json: (data, init) => {
+        return new Response(JSON.stringify(data), {
+          ...init,
+          headers: {
+            'content-type': 'application/json',
+            ...init?.headers,
+          },
+        });
+      },
+    },
+  };
+});
+
+// MSW (Mock Service Worker) Setup
+// Configure MSW for API mocking in tests
+let server;
+
+try {
+  // Try to import MSW
+  const { setupServer } = require('msw/node');
+  const { allHandlers } = require('./__tests__/mocks/handlers');
+  
+  // Setup MSW Server
+  server = setupServer(...allHandlers);
+  
+  // Start server before all tests
+  beforeAll(() => server.listen({ onUnhandledRequest: 'bypass' }));
+  
+  // Reset handlers after each test
+  afterEach(() => server.resetHandlers());
+  
+  // Clean up after all tests
+  afterAll(() => server.close());
+} catch (error) {
+  // Fallback if MSW is not available
+  console.warn('MSW not available, using placeholder server');
+  server = {
+    listen: () => {},
+    resetHandlers: () => {},
+    close: () => {},
+    use: () => {}
+  };
+}
+
+module.exports.server = server;
+
+// Enable API route handler testing
+process.env.NODE_ENV = 'test';
+
+// 數據庫連接池優化設置
+try {
+  const { setupTestDbCleanup } = require('./__tests__/utils/test-db-pool');
+  setupTestDbCleanup();
+} catch (error) {
+  console.warn('Test DB pool setup failed:', error.message);
+}
+
+// Mock console methods to reduce noise in tests
+global.console = {
+  ...console,
+  // Keep important logs
+  error: jest.fn(console.error),
+  warn: jest.fn(console.warn),
+  // Silence less important logs
+  log: jest.fn(),
+  info: jest.fn(),
+  debug: jest.fn(),
+};
+
+// Enhanced fetch mock for Next.js API routes
+global.fetch = jest.fn();
+
+// 性能監控設置
+const slowTestThreshold = 5000; // 5秒
+let testStartTime;
+
+beforeEach(() => {
+  testStartTime = performance.now();
+});
+
+afterEach(() => {
+  const testDuration = performance.now() - testStartTime;
+  if (testDuration > slowTestThreshold) {
+    console.warn(`Slow test detected: took ${testDuration}ms`);
+  }
+});
+
+// Reset all mocks after each test
+afterEach(() => {
+  jest.clearAllMocks();
+});

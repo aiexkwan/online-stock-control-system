@@ -103,22 +103,3 @@ const YesterdayTransferCountWidget = React.memo(function YesterdayTransferCountW
 });
 
 export default YesterdayTransferCountWidget;
-
-/**
- * Migration History:
- * 
- * 1. @deprecated Legacy implementation with dual GraphQL queries
- *    Migrated to hybrid architecture on 2025-07-07
- *    - Query count: 2 GraphQL queries → 1 optimized server query
- *    - Data processing: Client-side edges.length → Server-side COUNT aggregation
- *    - Bundle reduction: Removed GraphQL client dependencies
- *    - Caching: None → 3-minute TTL with automatic revalidation
- *    - Trend calculation: Client-side → Server-side with single query
- * 
- * 2. Migrated to batch query system on 2025-07-10
- *    - Changed from individual API calls to DashboardDataContext
- *    - Single batch query serves multiple widgets
- *    - Unified loading states and error handling
- *    - Automatic cache management through context provider
- *    - Reduced network requests: 1 per widget → 1 total for dashboard
- */

@@ -1,0 +1,750 @@
+/**
+ * TransactionLogService Test Suite
+ * Tests for transaction lifecycle, error handling, rollback, and query functionality
+ */
+
+import { TransactionLogService, transactionLogService, TransactionSource, TransactionOperation, TransactionStatus } from '../transactionLog.service';
+import { createClient } from '@/app/utils/supabase/client';
+import { createSupabaseResponse, createSupabaseError } from '@/__tests__/mocks/factories';
+import { useTestCleanup } from '@/__tests__/utils/cleanup';
+
+// Mock Supabase client
+jest.mock('@/app/utils/supabase/client');
+
+// Mock crypto.randomUUID
+Object.defineProperty(global, 'crypto', {
+  value: {
+    randomUUID: jest.fn(() => 'test-transaction-id-12345'),
+  },
+  configurable: true,
+});
+
+describe('TransactionLogService', () => {
+  const mockSupabase = {
+    from: jest.fn(),
+    rpc: jest.fn(),
+  };
+
+  const { cleanup, registerCleanup } = useTestCleanup();
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    (createClient as jest.Mock).mockReturnValue(mockSupabase);
+  });
+
+  afterEach(async () => {
+    await cleanup();
+  });
+
+  describe('Transaction Lifecycle', () => {
+    const mockTransactionEntry = {
+      transactionId: 'test-transaction-id-12345',
+      sourceModule: TransactionSource.GRN_LABEL,
+      sourcePage: 'grn-label-form',
+      sourceAction: 'print-label',
+      operationType: TransactionOperation.PRINT_LABEL,
+      userId: 'user-123',
+      userClockNumber: 'CLK001',
+      sessionId: 'session-123',
+      metadata: { batchId: 'batch-001' },
+    };
+
+    describe('startTransaction', () => {
+      test('should start a transaction successfully', async () => {
+        mockSupabase.rpc.mockResolvedValue(
+          createSupabaseResponse({ transaction_id: 'test-transaction-id-12345' })
+        );
+
+        const service = new TransactionLogService();
+        const transactionId = await service.startTransaction(mockTransactionEntry, { status: 'initial' });
+
+        expect(transactionId).toBe('test-transaction-id-12345');
+        expect(mockSupabase.rpc).toHaveBeenCalledWith('start_transaction', {
+          p_transaction_id: 'test-transaction-id-12345',
+          p_source_module: TransactionSource.GRN_LABEL,
+          p_source_page: 'grn-label-form',
+          p_source_action: 'print-label',
+          p_operation_type: TransactionOperation.PRINT_LABEL,
+          p_user_id: 'user-123',
+          p_user_clock_number: 'CLK001',
+          p_session_id: 'session-123',
+          p_pre_state: { status: 'initial' },
+          p_metadata: { batchId: 'batch-001' },
+        });
+      });
+
+      test('should handle errors when starting transaction', async () => {
+        const error = createSupabaseError('Database connection failed');
+        mockSupabase.rpc.mockResolvedValue(createSupabaseResponse(null, error));
+
+        const service = new TransactionLogService();
+        await expect(service.startTransaction(mockTransactionEntry)).rejects.toMatchObject({
+          message: 'Database connection failed',
+        });
+      });
+
+      test('should generate unique transaction IDs', () => {
+        const service = new TransactionLogService();
+        const id1 = service.generateTransactionId();
+        const id2 = service.generateTransactionId();
+        
+        expect(id1).toBe('test-transaction-id-12345');
+        expect(id2).toBe('test-transaction-id-12345');
+        expect(crypto.randomUUID).toHaveBeenCalledTimes(2);
+      });
+    });
+
+    describe('recordStep', () => {
+      test('should record transaction step successfully', async () => {
+        mockSupabase.rpc.mockResolvedValue(createSupabaseResponse({}));
+
+        const service = new TransactionLogService();
+        await service.recordStep('test-transaction-id-12345', {
+          name: 'validate-input',
+          sequence: 1,
+          data: { validated: true, itemCount: 5 },
+        });
+
+        expect(mockSupabase.rpc).toHaveBeenCalledWith('record_transaction_step', {
+          p_transaction_id: 'test-transaction-id-12345',
+          p_step_name: 'validate-input',
+          p_step_sequence: 1,
+          p_step_data: { validated: true, itemCount: 5 },
+        });
+      });
+
+      test('should handle errors when recording step', async () => {
+        const error = createSupabaseError('Failed to record step');
+        mockSupabase.rpc.mockResolvedValue(createSupabaseResponse(null, error));
+
+        const service = new TransactionLogService();
+        await expect(
+          service.recordStep('test-transaction-id-12345', {
+            name: 'failed-step',
+            sequence: 1,
+          })
+        ).rejects.toMatchObject({
+          message: 'Failed to record step',
+        });
+      });
+
+      test('should record multiple steps in sequence', async () => {
+        mockSupabase.rpc.mockResolvedValue(createSupabaseResponse({}));
+
+        const service = new TransactionLogService();
+        const steps = [
+          { name: 'step-1', sequence: 1, data: { action: 'init' } },
+          { name: 'step-2', sequence: 2, data: { action: 'process' } },
+          { name: 'step-3', sequence: 3, data: { action: 'finalize' } },
+        ];
+
+        for (const step of steps) {
+          await service.recordStep('test-transaction-id-12345', step);
+        }
+
+        expect(mockSupabase.rpc).toHaveBeenCalledTimes(3);
+      });
+    });
+
+    describe('completeTransaction', () => {
+      test('should complete transaction successfully', async () => {
+        mockSupabase.rpc.mockResolvedValue(createSupabaseResponse({}));
+
+        const service = new TransactionLogService();
+        await service.completeTransaction(
+          'test-transaction-id-12345',
+          { status: 'completed', itemsProcessed: 10 },
+          { palletIds: ['PLT001', 'PLT002'], orderIds: ['ORD001'] }
+        );
+
+        expect(mockSupabase.rpc).toHaveBeenCalledWith('complete_transaction', {
+          p_transaction_id: 'test-transaction-id-12345',
+          p_post_state: { status: 'completed', itemsProcessed: 10 },
+          p_affected_records: { palletIds: ['PLT001', 'PLT002'], orderIds: ['ORD001'] },
+        });
+      });
+
+      test('should handle errors when completing transaction', async () => {
+        const error = createSupabaseError('Failed to complete transaction');
+        mockSupabase.rpc.mockResolvedValue(createSupabaseResponse(null, error));
+
+        const service = new TransactionLogService();
+        await expect(
+          service.completeTransaction('test-transaction-id-12345')
+        ).rejects.toMatchObject({
+          message: 'Failed to complete transaction',
+        });
+      });
+
+      test('should complete transaction without optional parameters', async () => {
+        mockSupabase.rpc.mockResolvedValue(createSupabaseResponse({}));
+
+        const service = new TransactionLogService();
+        await service.completeTransaction('test-transaction-id-12345');
+
+        expect(mockSupabase.rpc).toHaveBeenCalledWith('complete_transaction', {
+          p_transaction_id: 'test-transaction-id-12345',
+          p_post_state: undefined,
+          p_affected_records: undefined,
+        });
+      });
+    });
+  });
+
+  describe('Error Handling and Rollback', () => {
+    describe('recordError', () => {
+      test('should record error successfully', async () => {
+        mockSupabase.rpc.mockResolvedValue(
+          createSupabaseResponse('error-id-12345')
+        );
+
+        const service = new TransactionLogService();
+        const error = new Error('Something went wrong');
+        error.stack = 'Error: Something went wrong\n    at test.js:10:5';
+
+        const errorId = await service.recordError(
+          'test-transaction-id-12345',
+          error,
+          'ERR_PROCESSING',
+          { context: 'label-generation' }
+        );
+
+        expect(errorId).toBe('error-id-12345');
+        expect(mockSupabase.rpc).toHaveBeenCalledWith('record_transaction_error', {
+          p_transaction_id: 'test-transaction-id-12345',
+          p_error_code: 'ERR_PROCESSING',
+          p_error_message: 'Something went wrong',
+          p_error_details: { context: 'label-generation' },
+          p_error_stack: error.stack,
+        });
+      });
+
+      test('should use error name as code if not provided', async () => {
+        mockSupabase.rpc.mockResolvedValue(
+          createSupabaseResponse('error-id-12345')
+        );
+
+        const service = new TransactionLogService();
+        const error = new Error('Custom error');
+        error.name = 'CustomError';
+
+        await service.recordError('test-transaction-id-12345', error);
+
+        expect(mockSupabase.rpc).toHaveBeenCalledWith('record_transaction_error', {
+          p_transaction_id: 'test-transaction-id-12345',
+          p_error_code: 'CustomError',
+          p_error_message: 'Custom error',
+          p_error_details: undefined,
+          p_error_stack: error.stack,
+        });
+      });
+
+      test('should return null on error recording failure', async () => {
+        const error = createSupabaseError('Failed to record error');
+        mockSupabase.rpc.mockResolvedValue(createSupabaseResponse(null, error));
+
+        const service = new TransactionLogService();
+        const testError = new Error('Test error');
+
+        const errorId = await service.recordError('test-transaction-id-12345', testError);
+
+        expect(errorId).toBeNull();
+      });
+
+      test('should handle exceptions when recording error', async () => {
+        mockSupabase.rpc.mockRejectedValue(new Error('Network error'));
+
+        const service = new TransactionLogService();
+        const testError = new Error('Test error');
+
+        const errorId = await service.recordError('test-transaction-id-12345', testError);
+
+        expect(errorId).toBeNull();
+      });
+    });
+
+    describe('executeRollback', () => {
+      test('should execute rollback successfully', async () => {
+        const mockRollbackResult = {
+          success: true,
+          rolledBackSteps: 3,
+          errorCount: 0,
+          details: [
+            { step: 'step-3', success: true },
+            { step: 'step-2', success: true },
+            { step: 'step-1', success: true },
+          ],
+        };
+
+        mockSupabase.rpc.mockResolvedValue(
+          createSupabaseResponse(mockRollbackResult)
+        );
+
+        const service = new TransactionLogService();
+        const result = await service.executeRollback(
+          'test-transaction-id-12345',
+          'user-456',
+          'User cancelled operation'
+        );
+
+        expect(result).toEqual(mockRollbackResult);
+        expect(mockSupabase.rpc).toHaveBeenCalledWith('rollback_transaction', {
+          p_transaction_id: 'test-transaction-id-12345',
+          p_rollback_by: 'user-456',
+          p_rollback_reason: 'User cancelled operation',
+        });
+      });
+
+      test('should handle partial rollback failure', async () => {
+        const mockRollbackResult = {
+          success: false,
+          rolledBackSteps: 2,
+          errorCount: 1,
+          details: [
+            { step: 'step-3', success: true },
+            { step: 'step-2', success: true },
+            { step: 'step-1', success: false, error: 'Rollback failed' },
+          ],
+        };
+
+        mockSupabase.rpc.mockResolvedValue(
+          createSupabaseResponse(mockRollbackResult)
+        );
+
+        const service = new TransactionLogService();
+        const result = await service.executeRollback(
+          'test-transaction-id-12345',
+          'system',
+          'Critical error detected'
+        );
+
+        expect(result.success).toBe(false);
+        expect(result.errorCount).toBe(1);
+        expect(result.rolledBackSteps).toBe(2);
+      });
+
+      test('should handle rollback execution errors', async () => {
+        const error = createSupabaseError('Rollback function failed');
+        mockSupabase.rpc.mockResolvedValue(createSupabaseResponse(null, error));
+
+        const service = new TransactionLogService();
+        await expect(
+          service.executeRollback('test-transaction-id-12345', 'user-123', 'Test rollback')
+        ).rejects.toMatchObject({
+          message: 'Rollback function failed',
+        });
+      });
+    });
+  });
+
+  describe('Concurrent Transaction Handling', () => {
+    test('should handle multiple concurrent transactions', async () => {
+      const transactions = [
+        {
+          transactionId: 'txn-1',
+          sourceModule: TransactionSource.INVENTORY_TRANSFER,
+          sourcePage: 'transfer-form',
+          sourceAction: 'transfer',
+          operationType: TransactionOperation.TRANSFER_STOCK,
+          userId: 'user-1',
+        },
+        {
+          transactionId: 'txn-2',
+          sourceModule: TransactionSource.QC_LABEL,
+          sourcePage: 'qc-form',
+          sourceAction: 'print',
+          operationType: TransactionOperation.PRINT_LABEL,
+          userId: 'user-2',
+        },
+        {
+          transactionId: 'txn-3',
+          sourceModule: TransactionSource.ACO_ORDER,
+          sourcePage: 'order-form',
+          sourceAction: 'create',
+          operationType: TransactionOperation.CREATE,
+          userId: 'user-3',
+        },
+      ];
+
+      mockSupabase.rpc.mockResolvedValue(createSupabaseResponse({}));
+
+      const service = new TransactionLogService();
+      
+      // Start all transactions concurrently
+      const promises = transactions.map(txn => service.startTransaction(txn));
+      const results = await Promise.all(promises);
+
+      expect(results).toHaveLength(3);
+      expect(mockSupabase.rpc).toHaveBeenCalledTimes(3);
+    });
+
+    test('should isolate errors between concurrent transactions', async () => {
+      mockSupabase.rpc
+        .mockResolvedValueOnce(createSupabaseResponse({})) // Success for first
+        .mockResolvedValueOnce(createSupabaseResponse(null, createSupabaseError('Failed'))) // Error for second
+        .mockResolvedValueOnce(createSupabaseResponse({})); // Success for third
+
+      const service = new TransactionLogService();
+      const transactions = [
+        service.startTransaction({
+          transactionId: 'txn-1',
+          sourceModule: TransactionSource.GRN_LABEL,
+          sourcePage: 'page1',
+          sourceAction: 'action1',
+          operationType: TransactionOperation.CREATE,
+          userId: 'user1',
+        }),
+        service.startTransaction({
+          transactionId: 'txn-2',
+          sourceModule: TransactionSource.QC_LABEL,
+          sourcePage: 'page2',
+          sourceAction: 'action2',
+          operationType: TransactionOperation.UPDATE,
+          userId: 'user2',
+        }),
+        service.startTransaction({
+          transactionId: 'txn-3',
+          sourceModule: TransactionSource.ACO_ORDER,
+          sourcePage: 'page3',
+          sourceAction: 'action3',
+          operationType: TransactionOperation.DELETE,
+          userId: 'user3',
+        }),
+      ];
+
+      const results = await Promise.allSettled(transactions);
+
+      expect(results[0].status).toBe('fulfilled');
+      expect(results[1].status).toBe('rejected');
+      expect(results[2].status).toBe('fulfilled');
+    });
+
+    test('should handle race conditions in step recording', async () => {
+      mockSupabase.rpc.mockResolvedValue(createSupabaseResponse({}));
+
+      const service = new TransactionLogService();
+      const transactionId = 'test-transaction-id-12345';
+
+      // Simulate concurrent step recording
+      const stepPromises = Array.from({ length: 10 }, (_, i) => 
+        service.recordStep(transactionId, {
+          name: `concurrent-step-${i}`,
+          sequence: i + 1,
+          data: { index: i },
+        })
+      );
+
+      await Promise.all(stepPromises);
+
+      expect(mockSupabase.rpc).toHaveBeenCalledTimes(10);
+      
+      // Verify all steps were recorded with correct sequence
+      for (let i = 0; i < 10; i++) {
+        expect(mockSupabase.rpc).toHaveBeenCalledWith('record_transaction_step', {
+          p_transaction_id: transactionId,
+          p_step_name: `concurrent-step-${i}`,
+          p_step_sequence: i + 1,
+          p_step_data: { index: i },
+        });
+      }
+    });
+  });
+
+  describe('Transaction Queries', () => {
+    describe('getTransactionStatus', () => {
+      test('should get transaction status successfully', async () => {
+        mockSupabase.from.mockReturnValue({
+          select: jest.fn().mockReturnThis(),
+          eq: jest.fn().mockReturnThis(),
+          is: jest.fn().mockReturnThis(),
+          single: jest.fn().mockResolvedValue(
+            createSupabaseResponse({ status: TransactionStatus.COMPLETED })
+          ),
+        });
+
+        const service = new TransactionLogService();
+        const status = await service.getTransactionStatus('test-transaction-id-12345');
+
+        expect(status).toBe(TransactionStatus.COMPLETED);
+        expect(mockSupabase.from).toHaveBeenCalledWith('transaction_log');
+      });
+
+      test('should return null when transaction not found', async () => {
+        mockSupabase.from.mockReturnValue({
+          select: jest.fn().mockReturnThis(),
+          eq: jest.fn().mockReturnThis(),
+          is: jest.fn().mockReturnThis(),
+          single: jest.fn().mockResolvedValue(
+            createSupabaseResponse(null, createSupabaseError('No rows found'))
+          ),
+        });
+
+        const service = new TransactionLogService();
+        const status = await service.getTransactionStatus('non-existent-id');
+
+        expect(status).toBeNull();
+      });
+
+      test('should handle database errors gracefully', async () => {
+        mockSupabase.from.mockReturnValue({
+          select: jest.fn().mockReturnThis(),
+          eq: jest.fn().mockReturnThis(),
+          is: jest.fn().mockReturnThis(),
+          single: jest.fn().mockRejectedValue(new Error('Database error')),
+        });
+
+        const service = new TransactionLogService();
+        const status = await service.getTransactionStatus('test-transaction-id-12345');
+
+        expect(status).toBeNull();
+      });
+
+      test('should check various transaction statuses', async () => {
+        const statuses = [
+          TransactionStatus.PENDING,
+          TransactionStatus.IN_PROGRESS,
+          TransactionStatus.COMPLETED,
+          TransactionStatus.FAILED,
+          TransactionStatus.ROLLED_BACK,
+          TransactionStatus.ROLLBACK_FAILED,
+        ];
+
+        for (const expectedStatus of statuses) {
+          mockSupabase.from.mockReturnValue({
+            select: jest.fn().mockReturnThis(),
+            eq: jest.fn().mockReturnThis(),
+            is: jest.fn().mockReturnThis(),
+            single: jest.fn().mockResolvedValue(
+              createSupabaseResponse({ status: expectedStatus })
+            ),
+          });
+
+          const service = new TransactionLogService();
+          const status = await service.getTransactionStatus(`txn-${expectedStatus}`);
+
+          expect(status).toBe(expectedStatus);
+        }
+      });
+    });
+
+    describe('getTransactionHistory', () => {
+      const mockHistoryData = [
+        {
+          transaction_id: 'txn-1',
+          source_module: TransactionSource.GRN_LABEL,
+          user_id: 'user-123',
+          status: TransactionStatus.COMPLETED,
+          created_at: '2025-01-01T10:00:00Z',
+        },
+        {
+          transaction_id: 'txn-2',
+          source_module: TransactionSource.INVENTORY_TRANSFER,
+          user_id: 'user-456',
+          status: TransactionStatus.FAILED,
+          created_at: '2025-01-01T11:00:00Z',
+        },
+      ];
+
+      // Helper function to create a properly mocked Supabase query chain
+      const createMockQueryChain = (responseData: any) => {
+        const queryPromise = Promise.resolve(createSupabaseResponse(responseData));
+        
+        const mockChain = {
+          select: jest.fn().mockReturnThis(),
+          eq: jest.fn().mockReturnThis(),
+          order: jest.fn().mockReturnThis(),
+          limit: jest.fn().mockReturnThis(),
+          // Make the chain itself a thenable to support await
+          then: (onFulfilled: any, onRejected: any) => queryPromise.then(onFulfilled, onRejected),
+          catch: (onRejected: any) => queryPromise.catch(onRejected),
+          finally: (onFinally: any) => queryPromise.finally(onFinally),
+        };
+        
+        return mockChain;
+      };
+
+      test('should get transaction history successfully', async () => {
+        const mockChain = createMockQueryChain(mockHistoryData);
+        mockSupabase.from.mockReturnValue(mockChain);
+
+        const service = new TransactionLogService();
+        const history = await service.getTransactionHistory();
+
+        expect(history).toEqual(mockHistoryData);
+        expect(mockSupabase.from).toHaveBeenCalledWith('v_transaction_report');
+      });
+
+      test('should filter by source module', async () => {
+        const filteredData = [mockHistoryData[0]];
+        const mockChain = createMockQueryChain(filteredData);
+        mockSupabase.from.mockReturnValue(mockChain);
+
+        const service = new TransactionLogService();
+        const history = await service.getTransactionHistory(TransactionSource.GRN_LABEL);
+
+        expect(history).toHaveLength(1);
+        expect(history[0].source_module).toBe(TransactionSource.GRN_LABEL);
+        expect(mockChain.eq).toHaveBeenCalledWith('source_module', TransactionSource.GRN_LABEL);
+      });
+
+      test('should filter by user ID', async () => {
+        const filteredData = [mockHistoryData[0]];
+        const mockChain = createMockQueryChain(filteredData);
+        mockSupabase.from.mockReturnValue(mockChain);
+
+        const service = new TransactionLogService();
+        const history = await service.getTransactionHistory(undefined, 'user-123');
+
+        expect(history).toHaveLength(1);
+        expect(history[0].user_id).toBe('user-123');
+        expect(mockChain.eq).toHaveBeenCalledWith('user_id', 'user-123');
+      });
+
+      test('should apply both filters when provided', async () => {
+        const filteredData = [mockHistoryData[0]];
+        const mockChain = createMockQueryChain(filteredData);
+        mockSupabase.from.mockReturnValue(mockChain);
+
+        const service = new TransactionLogService();
+        const history = await service.getTransactionHistory(TransactionSource.GRN_LABEL, 'user-123');
+
+        expect(mockChain.eq).toHaveBeenCalledTimes(2);
+        expect(mockChain.eq).toHaveBeenCalledWith('source_module', TransactionSource.GRN_LABEL);
+        expect(mockChain.eq).toHaveBeenCalledWith('user_id', 'user-123');
+        expect(history).toHaveLength(1);
+      });
+
+      test('should respect custom limit', async () => {
+        const mockChain = createMockQueryChain([]);
+        mockSupabase.from.mockReturnValue(mockChain);
+
+        const service = new TransactionLogService();
+        await service.getTransactionHistory(undefined, undefined, 100);
+
+        expect(mockChain.limit).toHaveBeenCalledWith(100);
+      });
+
+      test('should return empty array on error', async () => {
+        const errorResponse = createSupabaseResponse(null, createSupabaseError('Query failed'));
+        const queryPromise = Promise.resolve(errorResponse);
+        
+        const mockChain = {
+          select: jest.fn().mockReturnThis(),
+          order: jest.fn().mockReturnThis(),
+          limit: jest.fn().mockReturnThis(),
+          eq: jest.fn().mockReturnThis(),
+          then: (onFulfilled: any, onRejected: any) => queryPromise.then(onFulfilled, onRejected),
+          catch: (onRejected: any) => queryPromise.catch(onRejected),
+          finally: (onFinally: any) => queryPromise.finally(onFinally),
+        };
+        
+        mockSupabase.from.mockReturnValue(mockChain);
+
+        const service = new TransactionLogService();
+        const history = await service.getTransactionHistory();
+
+        expect(history).toEqual([]);
+      });
+
+      test('should handle exceptions gracefully', async () => {
+        const queryPromise = Promise.reject(new Error('Network error'));
+        
+        const mockChain = {
+          select: jest.fn().mockReturnThis(),
+          order: jest.fn().mockReturnThis(),
+          limit: jest.fn().mockReturnThis(),
+          eq: jest.fn().mockReturnThis(),
+          then: (onFulfilled: any, onRejected: any) => queryPromise.then(onFulfilled, onRejected),
+          catch: (onRejected: any) => queryPromise.catch(onRejected),
+          finally: (onFinally: any) => queryPromise.finally(onFinally),
+        };
+        
+        mockSupabase.from.mockReturnValue(mockChain);
+
+        const service = new TransactionLogService();
+        const history = await service.getTransactionHistory();
+
+        expect(history).toEqual([]);
+      });
+    });
+  });
+
+  describe('Singleton Instance', () => {
+    test('should export singleton instance', () => {
+      expect(transactionLogService).toBeInstanceOf(TransactionLogService);
+    });
+
+    test('should use custom Supabase client when provided', () => {
+      const customSupabase = {
+        from: jest.fn(),
+        rpc: jest.fn(),
+      };
+
+      const service = new TransactionLogService(customSupabase as any);
+      expect(service).toBeInstanceOf(TransactionLogService);
+    });
+  });
+
+  describe('Console Logging', () => {
+    let consoleSpy: jest.SpyInstance;
+
+    beforeEach(() => {
+      consoleSpy = jest.spyOn(console, 'log').mockImplementation();
+    });
+
+    afterEach(() => {
+      consoleSpy.mockRestore();
+    });
+
+    test('should log transaction lifecycle events', async () => {
+      mockSupabase.rpc.mockResolvedValue(createSupabaseResponse({}));
+
+      const service = new TransactionLogService();
+      
+      await service.startTransaction({
+        transactionId: 'test-id',
+        sourceModule: TransactionSource.GRN_LABEL,
+        sourcePage: 'test',
+        sourceAction: 'test',
+        operationType: TransactionOperation.CREATE,
+        userId: 'user-123',
+      });
+
+      expect(consoleSpy).toHaveBeenCalledWith(
+        '[TransactionLogService] Transaction started:',
+        'test-id'
+      );
+
+      await service.recordStep('test-id', { name: 'test-step', sequence: 1 });
+      expect(consoleSpy).toHaveBeenCalledWith(
+        '[TransactionLogService] Step recorded:',
+        'test-step'
+      );
+
+      await service.completeTransaction('test-id');
+      expect(consoleSpy).toHaveBeenCalledWith(
+        '[TransactionLogService] Transaction completed:',
+        'test-id'
+      );
+    });
+
+    test('should log rollback execution', async () => {
+      const mockRollbackResult = {
+        success: true,
+        rolledBackSteps: 1,
+        errorCount: 0,
+        details: [],
+      };
+
+      mockSupabase.rpc.mockResolvedValue(createSupabaseResponse(mockRollbackResult));
+
+      const service = new TransactionLogService();
+      await service.executeRollback('test-id', 'user', 'reason');
+
+      expect(consoleSpy).toHaveBeenCalledWith(
+        '[TransactionLogService] Rollback executed:',
+        mockRollbackResult
+      );
+    });
+  });
+});

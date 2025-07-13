@@ -38,10 +38,13 @@ import {
   GlowStyles,
 } from '../WidgetTypography';
 import { cn } from '@/lib/utils';
-import { createDashboardAPI } from '@/lib/api/admin/DashboardAPI';
+import { createDashboardAPIClient as createDashboardAPI } from '@/lib/api/admin/DashboardAPI.client';
 import { gql } from '@apollo/client';
 import { useGraphQLFallback, GraphQLFallbackPresets } from '@/app/admin/hooks/useGraphQLFallback';
+import { useApolloClient } from '@apollo/client';
+import { apolloClient } from '@/lib/apollo-client';
 import { useInViewport, InViewportPresets } from '@/app/admin/hooks/useInViewport';
+import { WidgetSkeleton } from './common/WidgetStates';
 
 interface MergedEvent {
   id: number;
@@ -222,9 +225,15 @@ export const HistoryTreeV2 = React.memo(function HistoryTreeV2({
   // Progressive Loading - 檢測 widget 是否在視窗內
   const { isInViewport, hasBeenInViewport } = useInViewport(widgetRef, InViewportPresets.chart);
   
-  // 使用環境變量控制是否使用 GraphQL
-  const shouldUseGraphQL = process.env.NEXT_PUBLIC_ENABLE_GRAPHQL_SHARED === 'true' || 
-                          (useGraphQL ?? (widget as any)?.useGraphQL ?? false);
+  // Apollo Client availability check
+  const currentApolloClient = useApolloClient();
+  const isApolloAvailable = Boolean(currentApolloClient || apolloClient);
+  
+  // 使用環境變量控制是否使用 GraphQL - 但只有在 Apollo Client 可用時
+  const shouldUseGraphQL = isApolloAvailable && (
+    process.env.NEXT_PUBLIC_ENABLE_GRAPHQL_SHARED === 'true' || 
+    (useGraphQL ?? (widget as any)?.useGraphQL ?? false)
+  );
 
   // Server Action function to fetch history data
   const fetchHistoryData = useCallback(async (variables?: { limit: number; offset: number }) => {
@@ -261,7 +270,7 @@ export const HistoryTreeV2 = React.memo(function HistoryTreeV2({
     mode,
     performanceMetrics,
   } = useGraphQLFallback<{ events?: MergedEvent[]; metadata?: any; record_historyCollection?: any }, { limit: number; offset: number }>({
-    graphqlQuery: shouldUseGraphQL ? GET_HISTORY_TREE : null, // Use null instead of undefined
+    graphqlQuery: shouldUseGraphQL ? GET_HISTORY_TREE : undefined, // 使用 undefined 而不是 null
     serverAction: fetchHistoryData,
     variables: { limit: 50, offset: 0 },
     skip: isEditMode || !hasBeenInViewport, // Progressive Loading
@@ -359,19 +368,7 @@ export const HistoryTreeV2 = React.memo(function HistoryTreeV2({
             <CardTitle>History Tree</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className='space-y-4'>
-              {[...Array(5)].map((_, i) => (
-                <div key={i} className='animate-pulse'>
-                  <div className='flex items-center gap-3'>
-                    <div className='h-8 w-8 rounded-full bg-white/10'></div>
-                    <div className='flex-1'>
-                      <div className='mb-2 h-4 w-3/4 rounded bg-white/10'></div>
-                      <div className='h-3 w-1/2 rounded bg-white/10'></div>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
+            <WidgetSkeleton type='timeline' rows={5} />
           </CardContent>
         </WidgetCard>
       </motion.div>
@@ -411,19 +408,7 @@ export const HistoryTreeV2 = React.memo(function HistoryTreeV2({
         </CardHeader>
         <CardContent>
           {loading ? (
-            <div className='space-y-4'>
-              {[...Array(3)].map((_, i) => (
-                <div key={i} className='animate-pulse'>
-                  <div className='flex items-center gap-3'>
-                    <div className='h-8 w-8 rounded-full bg-white/10'></div>
-                    <div className='flex-1'>
-                      <div className='mb-2 h-4 w-3/4 rounded bg-white/10'></div>
-                      <div className='h-3 w-1/2 rounded bg-white/10'></div>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
+            <WidgetSkeleton type='timeline' rows={3} />
           ) : error ? (
             <div className='space-y-2'>
               <WidgetText size='xs' glow='red' className='py-4 text-center'>
@@ -474,25 +459,5 @@ export const HistoryTreeV2 = React.memo(function HistoryTreeV2({
   );
 });
 
-export default HistoryTreeV2;
-
-/**
- * History Tree V2 - Enhanced Version
- * 
- * Features:
- * - ✅ useGraphQLFallback hook 統一數據獲取
- * - ✅ Progressive Loading with useInViewport
- * - ✅ Timeline 組件顯示歷史記錄（適合此用例）
- * - ✅ Client-side 事件合併（5分鐘窗口）
- * - ✅ Server-side 事件合併（RPC 更佳性能）
- * - ✅ 1分鐘輪詢實時更新
- * - ✅ 視覺指示當前數據源模式
- * - ✅ 功能標誌控制：NEXT_PUBLIC_ENABLE_GRAPHQL_SHARED
- * 
- * Updates (2025-01-10):
- * - 添加 Progressive Loading 優化首屏加載
- * - 保留 Timeline 組件（比 DataTable 更適合歷史記錄顯示）
- * - 增強 skeleton 加載狀態
- * 
- * Note: 此 widget 使用 Timeline 而非 DataTable，因為時間軸格式更適合顯示歷史記錄
- */
+// 只保留命名導出，避免循環引用問題
+// export default HistoryTreeV2;

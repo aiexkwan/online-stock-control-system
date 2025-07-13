@@ -11,9 +11,9 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Treemap, ResponsiveContainer, Tooltip } from 'recharts';
 import { WidgetComponentProps } from '@/app/types/dashboard';
 import { useAdminRefresh } from '@/app/admin/contexts/AdminRefreshContext';
-import { Loader2 } from 'lucide-react';
 import { useGraphQLFallback } from '@/app/admin/hooks/useGraphQLFallback';
 import { gql } from '@apollo/client';
+import { WidgetSkeleton, WidgetError } from './common/WidgetStates';
 
 // GraphQL query for stock distribution
 const GET_STOCK_DISTRIBUTION = gql`
@@ -252,6 +252,7 @@ export const StockDistributionChartV2: React.FC<StockDistributionChartProps> = (
     if (mode === 'server-action' && !loading) {
       refetch();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedType]); // 故意不包含 refetch 和 mode 以避免無限循環
 
   // 自定義 Tooltip
@@ -374,27 +375,17 @@ export const StockDistributionChartV2: React.FC<StockDistributionChartProps> = (
   };
 
   if (loading) {
-    return (
-      <div className='flex h-full items-center justify-center'>
-        <Loader2 className='h-8 w-8 animate-spin text-gray-400' />
-      </div>
-    );
+    return <WidgetSkeleton type="chart-bar" height={200} />;
   }
 
   if (error) {
     return (
-      <div className='flex h-full items-center justify-center'>
-        <div className='text-center'>
-          <p className='text-red-400'>Error loading stock data</p>
-          <p className='mt-1 text-xs text-gray-500'>{error.message}</p>
-          <button
-            onClick={() => refetch()}
-            className='mt-3 rounded-md bg-blue-600 px-3 py-1 text-xs text-white hover:bg-blue-700'
-          >
-            Retry
-          </button>
-        </div>
-      </div>
+      <WidgetError 
+        message={error.message || "Failed to load stock distribution data"}
+        severity="error"
+        display="inline"
+        onRetry={() => window.location.reload()}
+      />
     );
   }
 

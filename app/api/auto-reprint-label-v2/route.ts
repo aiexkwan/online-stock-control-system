@@ -61,12 +61,12 @@ export async function POST(request: NextRequest) {
   let palletNum: string | undefined;
 
   try {
-    if ((process.env.NODE_ENV as string) !== 'production') {
+    if (process.env.NODE_ENV !== 'production') {
       console.log('[Auto Reprint V2 API] Starting optimized auto reprint process...');
     }
     const data: AutoReprintRequest = await request.json();
 
-    if ((process.env.NODE_ENV as string) !== 'production') {
+    if (process.env.NODE_ENV !== 'production') {
       console.log('[Auto Reprint V2 API] Received request data:', data);
     }
 
@@ -84,16 +84,16 @@ export async function POST(request: NextRequest) {
     }
 
     // Get product information
-    if ((process.env.NODE_ENV as string) !== 'production') {
+    if (process.env.NODE_ENV !== 'production') {
       console.log(`[Auto Reprint V2 API] Getting product info for: ${data.productCode}`);
     }
     const productInfo = await getProductInfo(data.productCode);
-    if ((process.env.NODE_ENV as string) !== 'production') {
+    if (process.env.NODE_ENV !== 'production') {
       console.log('[Auto Reprint V2 API] Product info retrieved:', productInfo);
     }
 
     // Generate pallet number using V6 optimized method
-    if ((process.env.NODE_ENV as string) !== 'production') {
+    if (process.env.NODE_ENV !== 'production') {
       console.log('[Auto Reprint V2 API] Generating pallet number using V6 optimization...');
     }
 
@@ -116,18 +116,18 @@ export async function POST(request: NextRequest) {
     }
 
     // Log method used
-    if ((process.env.NODE_ENV as string) !== 'production') {
+    if (process.env.NODE_ENV !== 'production') {
       console.log('[Auto Reprint V2 API] Generation method:', generationResult.method);
     }
 
     palletNum = generationResult.palletNumbers[0];
     const seriesValue = generationResult.series[0]; // V6 includes series
-    if ((process.env.NODE_ENV as string) !== 'production') {
+    if (process.env.NODE_ENV !== 'production') {
       console.log(`[Auto Reprint V2 API] Generated pallet: ${palletNum}, series: ${seriesValue}`);
     }
 
     // Prepare database records
-    if ((process.env.NODE_ENV as string) !== 'production') {
+    if (process.env.NODE_ENV !== 'production') {
       console.log('[Auto Reprint V2 API] Preparing database records...');
     }
     const palletInfoRecord: QcPalletInfoPayload = {
@@ -155,7 +155,7 @@ export async function POST(request: NextRequest) {
 
     // Set inventory field based on original pallet location
     const mappedLocation = mapLocationToDbField(data.originalLocation);
-    if ((process.env.NODE_ENV as string) !== 'production') {
+    if (process.env.NODE_ENV !== 'production') {
       console.log(
         `[Auto Reprint V2 API] Location mapping: "${data.originalLocation}" -> "${mappedLocation}"`
       );
@@ -169,7 +169,7 @@ export async function POST(request: NextRequest) {
     };
 
     // Insert database records
-    if ((process.env.NODE_ENV as string) !== 'production') {
+    if (process.env.NODE_ENV !== 'production') {
       console.log('[Auto Reprint V2 API] Inserting database records...');
     }
     const dbResult = await createQcDatabaseEntriesWithTransaction(
@@ -180,13 +180,13 @@ export async function POST(request: NextRequest) {
       console.error('[Auto Reprint V2 API] Database operation failed:', dbResult.error);
       throw new Error(`Database operation failed: ${dbResult.error}`);
     }
-    if ((process.env.NODE_ENV as string) !== 'production') {
+    if (process.env.NODE_ENV !== 'production') {
       console.log('[Auto Reprint V2 API] Database records inserted successfully');
     }
 
     // Update original pallet's history record
     try {
-      if ((process.env.NODE_ENV as string) !== 'production') {
+      if (process.env.NODE_ENV !== 'production') {
         console.log('[Auto Reprint V2 API] Updating original pallet history record...');
       }
 
@@ -200,12 +200,12 @@ export async function POST(request: NextRequest) {
         .limit(1);
 
       if (findError) {
-        if ((process.env.NODE_ENV as string) !== 'production') {
+        if (process.env.NODE_ENV !== 'production') {
           console.warn('[Auto Reprint V2 API] Failed to find original history record:', findError);
         }
       } else if (historyRecords && historyRecords.length > 0) {
         const originalRecord = historyRecords[0];
-        if ((process.env.NODE_ENV as string) !== 'production') {
+        if (process.env.NODE_ENV !== 'production') {
           console.log('[Auto Reprint V2 API] Found original history record:', originalRecord);
         }
 
@@ -219,14 +219,14 @@ export async function POST(request: NextRequest) {
             .eq('uuid', originalRecord.uuid);
 
           if (updateError) {
-            if ((process.env.NODE_ENV as string) !== 'production') {
+            if (process.env.NODE_ENV !== 'production') {
               console.warn(
                 '[Auto Reprint V2 API] Failed to update original history record:',
                 updateError
               );
             }
           } else {
-            if ((process.env.NODE_ENV as string) !== 'production') {
+            if (process.env.NODE_ENV !== 'production') {
               console.log('[Auto Reprint V2 API] Successfully updated original history record:', {
                 original_remark: originalRecord.remark,
                 updated_remark: updatedRemark,
@@ -235,14 +235,14 @@ export async function POST(request: NextRequest) {
           }
         }
       } else {
-        if ((process.env.NODE_ENV as string) !== 'production') {
+        if (process.env.NODE_ENV !== 'production') {
           console.log(
             '[Auto Reprint V2 API] No "Partially Damaged" history record found for original pallet'
           );
         }
       }
     } catch (historyUpdateError: any) {
-      if ((process.env.NODE_ENV as string) !== 'production') {
+      if (process.env.NODE_ENV !== 'production') {
         console.warn(
           '[Auto Reprint V2 API] Error updating original history record:',
           historyUpdateError
@@ -253,7 +253,7 @@ export async function POST(request: NextRequest) {
 
     // Update stock_level table
     try {
-      if ((process.env.NODE_ENV as string) !== 'production') {
+      if (process.env.NODE_ENV !== 'production') {
         console.log('[Auto Reprint V2 API] Updating stock_level for product:', {
           product_code: productInfo.code,
           quantity: data.quantity,
@@ -271,22 +271,22 @@ export async function POST(request: NextRequest) {
       );
 
       if (stockError) {
-        if ((process.env.NODE_ENV as string) !== 'production') {
+        if (process.env.NODE_ENV !== 'production') {
           console.warn('[Auto Reprint V2 API] Stock level update failed:', stockError);
         }
       } else {
-        if ((process.env.NODE_ENV as string) !== 'production') {
+        if (process.env.NODE_ENV !== 'production') {
           console.log('[Auto Reprint V2 API] Stock level updated successfully:', stockResult);
         }
       }
     } catch (stockUpdateError: any) {
-      if ((process.env.NODE_ENV as string) !== 'production') {
+      if (process.env.NODE_ENV !== 'production') {
         console.warn('[Auto Reprint V2 API] Stock level update error:', stockUpdateError);
       }
     }
 
     // Return success data for client-side PDF generation
-    if ((process.env.NODE_ENV as string) !== 'production') {
+    if (process.env.NODE_ENV !== 'production') {
       console.log('[Auto Reprint V2 API] Preparing data for client-side PDF generation...');
     }
 
@@ -304,19 +304,19 @@ export async function POST(request: NextRequest) {
       productType: productInfo.type,
     };
 
-    if ((process.env.NODE_ENV as string) !== 'production') {
+    if (process.env.NODE_ENV !== 'production') {
       console.log('[Auto Reprint V2 API] QC input data prepared:', qcInputData);
     }
 
     // Confirm pallet usage in V6 system (since DB transaction was successful)
     const confirmResult = await confirmPalletUsage([palletNum], supabase);
     if (!confirmResult) {
-      if ((process.env.NODE_ENV as string) !== 'production') {
+      if (process.env.NODE_ENV !== 'production') {
         console.warn('[Auto Reprint V2 API] Failed to confirm pallet usage for v6 system');
       }
     }
 
-    if ((process.env.NODE_ENV as string) !== 'production') {
+    if (process.env.NODE_ENV !== 'production') {
       console.log(`[Auto Reprint V2 API] Returning QC input data for client-side PDF generation`);
     }
 
@@ -337,7 +337,7 @@ export async function POST(request: NextRequest) {
     if (palletNum) {
       const releaseResult = await releasePalletReservation([palletNum], supabase);
       if (!releaseResult) {
-        if ((process.env.NODE_ENV as string) !== 'production') {
+        if (process.env.NODE_ENV !== 'production') {
           console.warn('[Auto Reprint V2 API] Failed to release pallet reservation after error');
         }
       }

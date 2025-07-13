@@ -5,8 +5,9 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Loader2, Play, BarChart3, TrendingUp } from 'lucide-react';
+import { Play, BarChart3, TrendingUp } from 'lucide-react';
 import { runPerformanceTest } from '@/app/admin/utils/performanceTestBatchQuery';
+import { WidgetSkeleton } from './common/WidgetStates';
 import type { WidgetProps } from '@/app/admin/types/widget-types';
 
 interface TestResult {
@@ -73,7 +74,7 @@ const PerformanceTestWidget: React.FC<WidgetProps> = ({ className }) => {
         {isRunning && (
           <div className="space-y-4">
             <div className="flex items-center gap-2">
-              <Loader2 className="h-4 w-4 animate-spin" />
+              <WidgetSkeleton type="spinner" className="h-4 w-4" />
               <span className="text-sm">正在運行性能測試...</span>
             </div>
             <Progress value={progress} className="h-2" />

@@ -4,9 +4,16 @@
  */
 
 import { test, expect, Page, chromium, Browser } from '@playwright/test';
-import { performance } from 'perf_hooks';
 import * as fs from 'fs/promises';
 import * as path from 'path';
+
+// Browser-compatible performance utilities (修復 Performance API 問題)
+const getPerformanceNow = (): number => {
+  if (typeof performance !== 'undefined' && performance.now) {
+    return performance.now();
+  }
+  return Date.now();
+};
 
 // 性能測試配置
 const PERFORMANCE_CONFIG = {
@@ -61,6 +68,40 @@ class PerformanceTester {
     });
   }
 
+  // 修復認證問題 - 設置測試用戶登入
+  async setupAuthentication(page: Page): Promise<boolean> {
+    try {
+      console.log('[PerformanceTester] Setting up test authentication...');
+      
+      // 導航到登入頁面
+      await page.goto('http://localhost:3000/access');
+      
+      // 等待登入表單出現
+      await page.waitForSelector('input[type="email"]', { timeout: 5000 });
+      
+      // 使用環境變量中的認證資料 (如果可用)
+      const testEmail = process.env.SYS_LOGIN || 'test@newpennine.com';
+      const testPassword = process.env.SYS_PASSWORD || 'test123';
+      
+      // 填寫登入表單
+      await page.fill('input[type="email"]', testEmail);
+      await page.fill('input[type="password"]', testPassword);
+      
+      // 提交表單
+      await page.click('button[type="submit"]');
+      
+      // 等待登入成功，檢查是否重定向到 dashboard
+      await page.waitForURL('**/admin/**', { timeout: 10000 });
+      
+      console.log('[PerformanceTester] Authentication successful');
+      return true;
+    } catch (error) {
+      console.warn('[PerformanceTester] Authentication failed:', error);
+      // 認證失敗不阻塞測試，但會影響需要認證的功能
+      return false;
+    }
+  }
+
   async teardown() {
     if (this.browser) {
       await this.browser.close();
@@ -84,6 +125,9 @@ class PerformanceTester {
       });
 
       const page = await context.newPage();
+
+      // 設置認證 (修復認證問題)
+      await this.setupAuthentication(page);
 
       // 啟用 CDP 進行更詳細嘅性能監控
       const client = await page.context().newCDPSession(page);
@@ -124,8 +168,8 @@ class PerformanceTester {
         await setupFn(page);
       }
 
-      // 開始性能測量
-      const startTime = performance.now();
+      // 開始性能測量 (使用兼容的 performance API)
+      const startTime = getPerformanceNow();
       
       // 導航到頁面
       await page.goto(url, { waitUntil: 'networkidle' });
@@ -179,7 +223,7 @@ class PerformanceTester {
         return window.performance.getEntriesByName('widget-render-complete')[0]?.duration || 0;
       });
 
-      const endTime = performance.now();
+      const endTime = getPerformanceNow();
 
       // 收集完整指標（跳過預熱運行）
       if (i >= PERFORMANCE_CONFIG.warmupRuns) {
@@ -375,11 +419,23 @@ test.describe('Widget Performance Optimization', () => {
       'http://localhost:3000/admin/dashboard?mode=baseline',
       'baseline',
       async (page) => {
-        // 設置測試環境為 baseline 模式
+        // 設置測試環境為 baseline 模式 (修復 localStorage 跨域問題)
         await page.evaluate(() => {
-          localStorage.setItem('widget-mode', 'baseline');
-          // 標記 widget 渲染開始
-          performance.mark('widget-render-start');
+          try {
+            if (typeof Storage !== 'undefined' && window.localStorage) {
+              localStorage.setItem('widget-mode', 'baseline');
+            } else {
+              console.warn('localStorage not available, using fallback');
+              (window as any).widgetMode = 'baseline';
+            }
+            // 標記 widget 渲染開始
+            if (performance && performance.mark) {
+              performance.mark('widget-render-start');
+            }
+          } catch (error) {
+            console.warn('localStorage access failed, using fallback:', error);
+            (window as any).widgetMode = 'baseline';
+          }
         });
       }
     );
@@ -395,11 +451,23 @@ test.describe('Widget Performance Optimization', () => {
       'http://localhost:3000/admin/dashboard?mode=optimized',
       'optimized',
       async (page) => {
-        // 設置測試環境為優化模式
+        // 設置測試環境為優化模式 (修復 localStorage 跨域問題)
         await page.evaluate(() => {
-          localStorage.setItem('widget-mode', 'optimized');
-          // 標記 widget 渲染開始
-          performance.mark('widget-render-start');
+          try {
+            if (typeof Storage !== 'undefined' && window.localStorage) {
+              localStorage.setItem('widget-mode', 'optimized');
+            } else {
+              console.warn('localStorage not available, using fallback');
+              (window as any).widgetMode = 'optimized';
+            }
+            // 標記 widget 渲染開始
+            if (performance && performance.mark) {
+              performance.mark('widget-render-start');
+            }
+          } catch (error) {
+            console.warn('localStorage access failed, using fallback:', error);
+            (window as any).widgetMode = 'optimized';
+          }
         });
       }
     );
@@ -447,8 +515,14 @@ test.describe('Widget Performance Optimization', () => {
     // 導航到 dashboard
     await page.goto('http://localhost:3000/admin/dashboard');
     
-    // 初始內存快照
-    const initialHeap = await page.evaluate(() => (performance as any).memory?.usedJSHeapSize || 0);
+    // 初始內存快照 (修復 Performance API 記憶體檢測)
+    const initialHeap = await page.evaluate(() => {
+      if (typeof performance !== 'undefined' && (performance as any).memory) {
+        return (performance as any).memory.usedJSHeapSize || 0;
+      }
+      console.warn('Performance memory API not available');
+      return 0;
+    });
     
     // 模擬用戶操作 - 多次切換 widgets
     for (let i = 0; i < 10; i++) {
@@ -465,8 +539,14 @@ test.describe('Widget Performance Optimization', () => {
     
     await page.waitForTimeout(2000);
     
-    // 最終內存快照
-    const finalHeap = await page.evaluate(() => (performance as any).memory?.usedJSHeapSize || 0);
+    // 最終內存快照 (修復 Performance API 記憶體檢測)
+    const finalHeap = await page.evaluate(() => {
+      if (typeof performance !== 'undefined' && (performance as any).memory) {
+        return (performance as any).memory.usedJSHeapSize || 0;
+      }
+      console.warn('Performance memory API not available');
+      return 0;
+    });
     
     // 檢查內存洩漏
     const heapGrowth = ((finalHeap - initialHeap) / initialHeap) * 100;
@@ -489,7 +569,7 @@ test.describe('Widget Performance Optimization', () => {
     let usedBytes = 0;
     
     for (const entry of coverage) {
-      totalBytes += entry.text.length;
+      totalBytes += entry.text?.length || 0;
       for (const range of entry.ranges) {
         usedBytes += range.end - range.start;
       }
@@ -506,8 +586,8 @@ test.describe('Widget Performance Optimization', () => {
 // 輔助測試：GraphQL 查詢性能對比
 test.describe('GraphQL Query Performance', () => {
   test('Independent Queries vs Batch Query', async ({ request }) => {
-    // 測試獨立查詢
-    const independentStart = performance.now();
+    // 測試獨立查詢 (使用兼容的 performance API)
+    const independentStart = getPerformanceNow();
     
     const queries = [
       request.post('/api/graphql', {
@@ -525,10 +605,10 @@ test.describe('GraphQL Query Performance', () => {
     ];
     
     await Promise.all(queries);
-    const independentTime = performance.now() - independentStart;
+    const independentTime = getPerformanceNow() - independentStart;
     
-    // 測試批量查詢
-    const batchStart = performance.now();
+    // 測試批量查詢 (使用兼容的 performance API)
+    const batchStart = getPerformanceNow();
     
     await request.post('/api/graphql', {
       data: {
@@ -541,7 +621,7 @@ test.describe('GraphQL Query Performance', () => {
       }
     });
     
-    const batchTime = performance.now() - batchStart;
+    const batchTime = getPerformanceNow() - batchStart;
     
     const improvement = ((independentTime - batchTime) / independentTime) * 100;
     console.log(`Batch query improvement: ${improvement.toFixed(2)}%`);
@@ -556,9 +636,16 @@ test.describe('Server Actions Performance', () => {
   test('Data Fetching Performance', async ({ page }) => {
     await page.goto('http://localhost:3000/admin/dashboard');
     
-    // 測量 Server Action 執行時間
+    // 測量 Server Action 執行時間 (修復 Performance API)
     const actionTime = await page.evaluate(async () => {
-      const start = performance.now();
+      const getTime = () => {
+        if (typeof performance !== 'undefined' && performance.now) {
+          return performance.now();
+        }
+        return Date.now();
+      };
+      
+      const start = getTime();
       
       // 模擬調用 Server Action
       const response = await fetch('/api/server-action/getDashboardData', {
@@ -568,7 +655,7 @@ test.describe('Server Actions Performance', () => {
       });
       
       await response.json();
-      return performance.now() - start;
+      return getTime() - start;
     });
     
     console.log(`Server Action execution time: ${actionTime.toFixed(2)}ms`);

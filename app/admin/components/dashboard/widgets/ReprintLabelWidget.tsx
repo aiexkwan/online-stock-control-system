@@ -5,7 +5,7 @@ import { BaseWidget } from '@/app/admin/components/widgets/BaseWidget';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { PrinterIcon, Loader2 } from 'lucide-react';
-import { toast } from 'sonner';
+import { useWidgetToast } from '@/app/admin/hooks/useWidgetToast';
 import { fetchPalletForReprint } from '@/app/actions/palletActions';
 import {
   TransactionLogService,
@@ -22,12 +22,13 @@ interface ReprintLabelWidgetProps {
 export function ReprintLabelWidget({ title = 'Reprint Label', gridArea }: ReprintLabelWidgetProps) {
   const [palletNumber, setPalletNumber] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const { showSuccess, showError, showInfo } = useWidgetToast();
   const transactionLog = new TransactionLogService();
   const errorHandler = ErrorHandler.getInstance();
 
   const handleReprint = async () => {
     if (!palletNumber.trim()) {
-      toast.error('Please enter a pallet number');
+      showError('Please enter a pallet number');
       return;
     }
 
@@ -62,7 +63,7 @@ export function ReprintLabelWidget({ title = 'Reprint Label', gridArea }: Reprin
       if (!result.success) {
         const errorMsg = result.error || `Failed to fetch pallet ${palletNumber}`;
         await transactionLog.recordError(transactionId, new Error(errorMsg), 'FETCH_ERROR');
-        toast.error(errorMsg);
+        showError(errorMsg);
         return;
       }
 
@@ -71,7 +72,7 @@ export function ReprintLabelWidget({ title = 'Reprint Label', gridArea }: Reprin
       if (!palletData || !palletData.pdf_url) {
         const errorMsg = `No PDF label found for pallet ${palletNumber}`;
         await transactionLog.recordError(transactionId, new Error(errorMsg), 'PDF_NOT_FOUND');
-        toast.error(errorMsg);
+        showError(errorMsg);
         return;
       }
 
@@ -98,7 +99,7 @@ export function ReprintLabelWidget({ title = 'Reprint Label', gridArea }: Reprin
         palletPrinted: palletData.plt_num,
       });
 
-      toast.success(
+      showSuccess(
         `Label for ${palletData.plt_num} (${palletData.product_description || palletData.product_code}) sent to printer`
       );
 
@@ -140,7 +141,7 @@ export function ReprintLabelWidget({ title = 'Reprint Label', gridArea }: Reprin
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
-        toast.info('PDF downloaded. Please print it manually.');
+        showInfo('PDF downloaded. Please print it manually.');
       }
     } catch (error) {
       errorHandler.handleApiError(error instanceof Error ? error : new Error('Print error'), {
@@ -152,7 +153,7 @@ export function ReprintLabelWidget({ title = 'Reprint Label', gridArea }: Reprin
       });
       // Final fallback: Just open the PDF
       window.open(pdfUrl, '_blank');
-      toast.info('PDF opened in new tab. Please print it manually.');
+      showInfo('PDF opened in new tab. Please print it manually.');
     }
   };
 

@@ -7,9 +7,9 @@
 
 import React, { useState, useCallback, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { X, Search, QrCode, Loader2, CheckCircle, AlertCircle, Package2, List } from 'lucide-react';
-import { toast } from 'sonner';
+import { X, Search, QrCode, Loader2, CheckCircle, Package2, List, AlertCircle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { useWidgetToast } from '@/app/admin/hooks/useWidgetToast';
 import { useVoidPallet } from '@/app/void-pallet/hooks/useVoidPallet';
 import { useBatchVoid } from '@/app/void-pallet/hooks/useBatchVoid';
 import { VOID_REASONS } from '@/app/void-pallet/types';
@@ -20,6 +20,7 @@ import { WidgetComponentProps } from '@/app/types/dashboard';
 import { CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { UniversalWidgetCard as WidgetCard } from '../UniversalWidgetCard';
 import { getProductByCode } from '@/app/actions/productActions';
+import { WidgetError } from './common/WidgetStates';
 
 type VoidStep = 'search' | 'confirm' | 'result';
 
@@ -28,6 +29,7 @@ export const VoidPalletWidget = React.memo(function VoidPalletWidget({
   isEditMode,
 }: WidgetComponentProps) {
   const router = useRouter();
+  const { showSuccess, showError, showLoading, showWarning } = useWidgetToast();
   const {
     state,
     updateState,
@@ -108,7 +110,7 @@ export const VoidPalletWidget = React.memo(function VoidPalletWidget({
       // Add to batch list
       addToBatch(searchValue, state.searchType || 'pallet_num').then(success => {
         if (success) {
-          toast.success(`Added ${state.foundPallet?.plt_num} to batch list`);
+          showSuccess(`Added ${state.foundPallet?.plt_num} to batch list`);
           // Clear search
           setSearchValue('');
           updateState({ foundPallet: null });
@@ -125,12 +127,13 @@ export const VoidPalletWidget = React.memo(function VoidPalletWidget({
     addToBatch,
     updateState,
     focusSearchInput,
+    showSuccess,
   ]);
 
   // Handle search submission
   const handleSearch = async () => {
     if (!searchValue.trim()) {
-      toast.error('Please enter a Pallet number');
+      showError('Please enter a Pallet number');
       return;
     }
 
@@ -140,7 +143,7 @@ export const VoidPalletWidget = React.memo(function VoidPalletWidget({
       // We'll check if pallet was found after state update
     } catch (error) {
       console.error('Search error:', error);
-      toast.error('An unexpected error occurred during search');
+      showError('An unexpected error occurred during search');
     }
   };
 
@@ -155,7 +158,7 @@ export const VoidPalletWidget = React.memo(function VoidPalletWidget({
       // We'll check if pallet was found after state update
     } catch (error) {
       console.error('QR scan error:', error);
-      toast.error('An unexpected error occurred during QR scan');
+      showError('An unexpected error occurred during QR scan');
     }
   };
 
@@ -226,7 +229,7 @@ export const VoidPalletWidget = React.memo(function VoidPalletWidget({
   // Handle batch void submission
   const handleBatchVoid = async () => {
     if (!password || batchState.selectedCount === 0) {
-      toast.error('Please select items and enter password');
+      showError('Please select items and enter password');
       return;
     }
 
@@ -252,11 +255,11 @@ export const VoidPalletWidget = React.memo(function VoidPalletWidget({
         });
         setCurrentStep('result');
       } else {
-        toast.error('Batch void failed');
+        showError('Batch void failed');
       }
     } catch (error: any) {
       console.error('Batch void error:', error);
-      toast.error(`Batch void failed: ${error.message}`);
+      showError('Batch void failed', error);
     }
   };
 
@@ -343,18 +346,18 @@ export const VoidPalletWidget = React.memo(function VoidPalletWidget({
       </div>
 
       {state.error && (
-        <div className='flex items-start space-x-2 rounded-lg border border-red-700/50 bg-red-900/50 p-3'>
-          <AlertCircle className='mt-0.5 h-5 w-5 flex-shrink-0 text-red-400' />
-          <div className='flex-1'>
-            <p className='text-sm text-red-400'>{state.error.message}</p>
-            <button
-              onClick={handleClearError}
-              className='mt-1 text-xs text-red-300 underline hover:text-red-200'
-            >
-              Clear error
-            </button>
-          </div>
-        </div>
+        <WidgetError
+          message={state.error.message}
+          severity='error'
+          display='inline'
+          actions={[
+            {
+              label: 'Clear error',
+              onClick: handleClearError,
+              variant: 'ghost',
+            },
+          ]}
+        />
       )}
 
       {/* Batch mode list */}
@@ -547,18 +550,18 @@ export const VoidPalletWidget = React.memo(function VoidPalletWidget({
       </div>
 
       {state.error && (
-        <div className='flex items-start space-x-2 rounded-lg border border-red-700/50 bg-red-900/50 p-3'>
-          <AlertCircle className='mt-0.5 h-5 w-5 flex-shrink-0 text-red-400' />
-          <div className='flex-1'>
-            <p className='text-sm text-red-400'>{state.error.message}</p>
-            <button
-              onClick={handleClearError}
-              className='mt-1 text-xs text-red-300 underline hover:text-red-200'
-            >
-              Clear error
-            </button>
-          </div>
-        </div>
+        <WidgetError
+          message={state.error.message}
+          severity='error'
+          display='inline'
+          actions={[
+            {
+              label: 'Clear error',
+              onClick: handleClearError,
+              variant: 'ghost',
+            },
+          ]}
+        />
       )}
     </div>
   );
@@ -593,16 +596,17 @@ export const VoidPalletWidget = React.memo(function VoidPalletWidget({
 
           {/* Show failed items if any */}
           {batchVoidResult.failed > 0 && (
-            <div className='max-h-40 overflow-y-auto rounded-lg border border-red-700/50 bg-red-900/20 p-4'>
-              <h5 className='mb-2 text-sm font-medium text-red-400'>Failed Items</h5>
-              {batchVoidResult.details
-                .filter(item => !item.success)
-                .map((item, index) => (
-                  <div key={index} className='text-xs text-red-300'>
-                    {item.plt_num}: {item.error}
-                  </div>
-                ))}
-            </div>
+            <WidgetError
+              message='Failed Items'
+              severity='error'
+              display='inline'
+              error={new Error(
+                batchVoidResult.details
+                  .filter(item => !item.success)
+                  .map(item => `${item.plt_num}: ${item.error}`)
+                  .join('\n')
+              )}
+            />
           )}
 
           <button
@@ -631,7 +635,7 @@ export const VoidPalletWidget = React.memo(function VoidPalletWidget({
           {voidResult?.success ? (
             <CheckCircle className='h-8 w-8 text-green-400' />
           ) : (
-            <AlertCircle className='h-8 w-8 text-red-400' />
+            <X className='h-8 w-8 text-red-400' />
           )}
         </div>
 
@@ -655,7 +659,7 @@ export const VoidPalletWidget = React.memo(function VoidPalletWidget({
                   // Use auto-reprint functionality
                   if (state.foundPallet) {
                     try {
-                      toast.loading('Processing reprint...');
+                      const dismiss = showLoading('Processing reprint...');
 
                       // Get current user clock number
                       const { getCurrentUserClockNumberAsync } = await import(
@@ -698,7 +702,7 @@ export const VoidPalletWidget = React.memo(function VoidPalletWidget({
 
                       const result = await response.json();
                       if (result.success) {
-                        toast.dismiss();
+                        dismiss();
 
                         // Generate and print PDF
                         try {
@@ -726,12 +730,12 @@ export const VoidPalletWidget = React.memo(function VoidPalletWidget({
                           // Auto-print the PDF
                           await mergeAndPrintPdfs([pdfArrayBuffer], result.data.fileName);
 
-                          toast.success(
+                          showSuccess(
                             `New pallet ${result.data.newPalletNumber} created and sent to printer`
                           );
                         } catch (printError: any) {
                           console.error('Print error:', printError);
-                          toast.warning(
+                          showWarning(
                             `New pallet ${result.data.newPalletNumber} created but printing failed. Please print manually.`
                           );
                         }
@@ -745,8 +749,8 @@ export const VoidPalletWidget = React.memo(function VoidPalletWidget({
                         throw new Error(result.error || 'Reprint failed');
                       }
                     } catch (error: any) {
-                      toast.dismiss();
-                      toast.error(`Reprint failed: ${error.message}`);
+                      dismiss();
+                      showError(`Reprint failed: ${error.message}`);
                     }
                   }
                 }}

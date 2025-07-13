@@ -7,6 +7,15 @@ import React from 'react';
 // Mock all external dependencies before importing
 jest.mock('@apollo/client', () => ({
   useQuery: jest.fn(),
+  gql: jest.fn((strings: TemplateStringsArray) => ({
+    kind: 'Document',
+    definitions: [],
+    loc: {
+      source: {
+        body: strings[0],
+      },
+    },
+  })),
   ApolloError: class extends Error {
     graphQLErrors: any[];
     networkError: any;
@@ -16,7 +25,7 @@ jest.mock('@apollo/client', () => ({
       this.networkError = options.networkError;
     }
   },
-}));
+}))
 
 jest.mock('swr', () => {
   const React = require('react');
@@ -26,6 +35,8 @@ jest.mock('swr', () => {
       const [data, setData] = React.useState(undefined);
       const [error, setError] = React.useState(undefined);
       const [isLoading, setIsLoading] = React.useState(false);
+      
+      const keyString = JSON.stringify(key);
       
       React.useEffect(() => {
         if (key && fetcher) {
@@ -43,7 +54,7 @@ jest.mock('swr', () => {
               config?.onError?.(err);
             });
         }
-      }, [JSON.stringify(key)]);
+      }, [key, fetcher, config, keyString]);
 
       return {
         data,
@@ -63,7 +74,7 @@ jest.mock('../../hooks/useWidgetErrorHandler', () => ({
 
 jest.mock('@/lib/widgets/performance-monitor', () => ({
   performanceMonitor: {
-    recordMetric: jest.fn(),
+    recordMetrics: jest.fn(),
   },
 }));
 
@@ -75,7 +86,7 @@ jest.mock('../../contexts/DashboardDataContext', () => {
 });
 
 // Import after mocks
-import { useQuery } from '@apollo/client';
+import { useQuery, gql } from '@apollo/client';
 import { useGraphQLFallback, GraphQLFallbackPresets } from '../useGraphQLFallback';
 import { DashboardDataContext } from '../../contexts/DashboardDataContext';
 import { useWidgetErrorHandler } from '../../hooks/useWidgetErrorHandler';
@@ -115,7 +126,7 @@ describe('useGraphQLFallback', () => {
       handleFetchError: mockHandleFetchError,
     });
     
-    (performanceMonitor.recordMetric as jest.Mock) = mockRecordMetric;
+    (performanceMonitor.recordMetrics as jest.Mock) = mockRecordMetric;
     
     (useQuery as jest.Mock).mockReturnValue({
       data: undefined,
@@ -381,13 +392,13 @@ describe('useGraphQLFallback', () => {
 
       expect(mockRecordMetric).toHaveBeenCalledWith({
         widgetId: 'test-widget',
-        metricType: 'dataFetch',
-        value: expect.any(Number),
         timestamp: expect.any(Number),
-        metadata: expect.objectContaining({
-          dataSource: 'graphql',
-          fallbackUsed: false,
-        }),
+        loadTime: expect.any(Number),
+        renderTime: 0,
+        dataFetchTime: expect.any(Number),
+        route: expect.any(String),
+        variant: 'v2',
+        sessionId: expect.any(String),
       });
     });
   });

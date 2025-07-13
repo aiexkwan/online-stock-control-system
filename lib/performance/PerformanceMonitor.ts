@@ -5,6 +5,7 @@
  */
 
 import { EventEmitter } from 'events';
+import { performanceConfig, performanceLogger } from './config';
 
 export interface PerformanceMetric {
   name: string;
@@ -130,19 +131,25 @@ export class PerformanceMonitor extends EventEmitter {
    * 記錄性能指標
    */
   public recordMetric(metric: Omit<PerformanceMetric, 'timestamp'>) {
+    if (!this.isMonitoring || !performanceConfig.monitoring.enabled) return;
+
     const fullMetric: PerformanceMetric = {
       ...metric,
       timestamp: new Date(),
     };
 
-    // 添加到緩衝區
     this.metricsBuffer.push(fullMetric);
 
-    // 檢查閾值
+    // Limit buffer size
+    if (this.metricsBuffer.length > performanceConfig.monitoring.bufferSize) {
+      this.metricsBuffer = this.metricsBuffer.slice(-performanceConfig.monitoring.bufferSize);
+    }
+
+    // Check thresholds immediately for critical alerts
     this.checkThresholds(fullMetric);
 
-    // 如果緩衝區太大，立即刷新
-    if (this.metricsBuffer.length > 1000) {
+    // Flush buffer if it's getting too large
+    if (this.metricsBuffer.length > performanceConfig.monitoring.bufferSize * 0.8) {
       this.flushMetricsBuffer();
     }
   }
@@ -349,28 +356,30 @@ export class PerformanceMonitor extends EventEmitter {
     const threshold = this.thresholds.get(metric.name);
     if (!threshold) return;
 
-    if (metric.value >= threshold.critical) {
+    if (metric.value > threshold.critical) {
       const alert: PerformanceAlert = {
         level: 'critical',
         metric: metric.name,
         value: metric.value,
         threshold: threshold.critical,
         timestamp: metric.timestamp,
-        message: `${metric.name} exceeded critical threshold: ${metric.value}${metric.unit} > ${threshold.critical}${threshold.unit}`,
+        message: `Critical threshold exceeded: ${metric.name} = ${metric.value}${metric.unit} (threshold: ${threshold.critical}${threshold.unit})`,
       };
 
       this.emit('alert:critical', alert);
-    } else if (metric.value >= threshold.warning) {
+      performanceLogger.error(`[PerformanceMonitor] ${alert.message}`);
+    } else if (metric.value > threshold.warning) {
       const alert: PerformanceAlert = {
         level: 'warning',
         metric: metric.name,
         value: metric.value,
         threshold: threshold.warning,
         timestamp: metric.timestamp,
-        message: `${metric.name} exceeded warning threshold: ${metric.value}${metric.unit} > ${threshold.warning}${threshold.unit}`,
+        message: `Warning threshold exceeded: ${metric.name} = ${metric.value}${metric.unit} (threshold: ${threshold.warning}${threshold.unit})`,
       };
 
       this.emit('alert:warning', alert);
+      performanceLogger.warn(`[PerformanceMonitor] ${alert.message}`);
     }
   }
 

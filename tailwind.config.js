@@ -3,8 +3,29 @@ module.exports = {
   darkMode: ['class'],
   content: [
     './app/**/*.{js,ts,jsx,tsx,mdx}',
-    './pages/**/*.{js,ts,jsx,tsx,mdx}',
+    './pages/**/*.{js,ts,jsx,tsx,mdx}', 
     './components/**/*.{js,ts,jsx,tsx,mdx}',
+    './lib/**/*.{js,ts,jsx,tsx}',
+    './src/**/*.{js,ts,jsx,tsx}',
+    // 更激進的 CSS 清理配置
+    '!./node_modules/**/*',
+    '!./dist/**/*',
+    '!./.next/**/*',
+  ],
+  // 優化 CSS 使用率配置
+  safelist: [
+    // 保留關鍵的動態類名
+    'text-green-500',
+    'text-red-500', 
+    'text-yellow-500',
+    'bg-green-100',
+    'bg-red-100',
+    'bg-yellow-100',
+    // 保留圖表相關類名
+    /^text-(chart|primary|secondary|muted)/,
+    /^bg-(chart|primary|secondary|muted)/,
+    // 保留響應式類名
+    /^(sm|md|lg|xl|2xl):/,
   ],
   theme: {
     extend: {

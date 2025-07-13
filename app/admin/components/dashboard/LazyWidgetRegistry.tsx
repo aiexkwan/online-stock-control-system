@@ -25,9 +25,21 @@ export function createLazyWidget(
   importFn: () => Promise<{ default: React.ComponentType<WidgetComponentProps> } | any>,
   LoadingComponent: React.ComponentType = DefaultWidgetSkeleton
 ): React.ComponentType<WidgetComponentProps> {
-  // Simplified implementation to avoid import errors
+  // Enhanced implementation with better error handling
   return dynamic(
-    importFn,
+    () => importFn().catch((error) => {
+      console.error('Widget import failed:', error);
+      // Return a fallback component that displays the error
+      return {
+        default: (props: WidgetComponentProps) => (
+          <div className="flex flex-col items-center justify-center h-48 text-red-400 p-4">
+            <div className="text-lg mb-2">⚠️</div>
+            <p className="text-sm text-center">Widget failed to load</p>
+            <p className="text-xs text-gray-500 mt-1">Please refresh the page</p>
+          </div>
+        )
+      };
+    }),
     {
       loading: () => <LoadingComponent />,
       ssr: false
@@ -70,6 +82,9 @@ export const LazyComponents: Record<string, React.ComponentType<any>> = {
   'StatsCardWidget': createLazyWidget(
     () => import('./widgets/StatsCardWidget')
   ),
+  'StaffWorkloadWidget': createLazyWidget(
+    () => import('./widgets/StaffWorkloadWidget')
+  ),
   'AwaitLocationQtyWidget': createLazyWidget(
     () => import('./widgets/AwaitLocationQtyWidget')
   ),
@@ -78,6 +93,21 @@ export const LazyComponents: Record<string, React.ComponentType<any>> = {
   ),
   'WarehouseTransferListWidget': createLazyWidget(
     () => import('./widgets/WarehouseTransferListWidget')
+  ),
+  'StillInAwaitWidget': createLazyWidget(
+    () => import('./widgets/StillInAwaitWidget')
+  ),
+  'StillInAwaitPercentageWidget': createLazyWidget(
+    () => import('./widgets/StillInAwaitPercentageWidget')
+  ),
+  'TransferTimeDistributionWidget': createLazyWidget(
+    () => import('./widgets/TransferTimeDistributionWidget')
+  ),
+  'AvailableSoonWidget': createLazyWidget(
+    () => import('./widgets/AvailableSoonWidget')
+  ),
+  'StockTypeSelector': createLazyWidget(
+    () => import('./widgets/StockTypeSelector')
   ),
   
   // Production widgets (Server Actions versions)
@@ -121,7 +151,9 @@ export const LazyComponents: Record<string, React.ComponentType<any>> = {
   
   // History widget (named export)
   'HistoryTree': createLazyWidget(
-    () => import('./widgets/HistoryTreeV2')
+    () => import('./widgets/HistoryTreeV2').then(module => ({
+      default: module.HistoryTreeV2 || module.default
+    }))
   ),
   
   // Upload page widgets (named exports)

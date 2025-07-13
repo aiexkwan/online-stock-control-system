@@ -18,8 +18,9 @@ import { ChartBarIcon } from '@heroicons/react/24/outline';
 import { WidgetComponentProps } from '@/app/types/dashboard';
 import { motion } from 'framer-motion';
 import { format, startOfDay, endOfDay } from 'date-fns';
-import { createDashboardAPI } from '@/lib/api/admin/DashboardAPI';
+import { createDashboardAPIClient as createDashboardAPI } from '@/lib/api/admin/DashboardAPI.client';
 import { useGetTopProductsByQuantityQuery } from '@/lib/graphql/generated/apollo-hooks';
+import { WidgetSkeleton, WidgetError } from './common/WidgetStates';
 
 interface ProductData {
   product_code: string;
@@ -178,22 +179,13 @@ export const TopProductsByQuantityWidget = React.memo(function TopProductsByQuan
       </CardHeader>
       <CardContent className='flex-1 overflow-auto'>
         {loading ? (
-          <div className='space-y-2'>
-            {[...Array(5)].map((_, i) => (
-              <div key={i} className='flex items-center space-x-2'>
-                <div className='h-4 w-16 animate-pulse rounded bg-slate-700/50' />
-                <div className='h-6 flex-1 animate-pulse rounded bg-slate-700/50' />
-                <div className='h-4 w-12 animate-pulse rounded bg-slate-700/50' />
-              </div>
-            ))}
-          </div>
+          <WidgetSkeleton type="list" rows={10} />
         ) : error ? (
-          <div className='flex h-full items-center justify-center'>
-            <div className='text-center text-sm text-red-400'>
-              <p>Error loading data</p>
-              <p className='mt-1 text-xs'>{error}</p>
-            </div>
-          </div>
+          <WidgetError 
+            message={error || "Failed to load top products"}
+            severity="error"
+            display="compact"
+          />
         ) : topProducts.length === 0 ? (
           <div className='flex h-full items-center justify-center'>
             <p className='text-sm text-slate-400'>No production data</p>

@@ -9,12 +9,11 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CloudArrowUpIcon, DocumentIcon, PhotoIcon } from '@heroicons/react/24/outline';
-import { createClient } from '@/lib/supabase';
 import { WidgetComponentProps } from '@/app/types/dashboard';
-import { toast } from 'sonner';
 import { GoogleDriveUploadToast } from './GoogleDriveUploadToast';
 import { useUploadRefresh } from '@/app/admin/contexts/UploadRefreshContext';
 import { uploadFile } from '@/app/actions/fileActions';
+import { useWidgetToast } from '@/app/admin/hooks/useWidgetToast';
 
 interface UploadingFile {
   id: string;
@@ -37,41 +36,13 @@ export const UploadFilesWidget = React.memo(function UploadFilesWidget({
   widget,
   isEditMode,
 }: WidgetComponentProps) {
-  const [currentUserId, setCurrentUserId] = useState<number | null>(null);
   const [isDragOver, setIsDragOver] = useState(false);
   const [selectedFolder, setSelectedFolder] = useState<'stockPic' | 'productSpec'>('stockPic');
   const [uploadingFiles, setUploadingFiles] = useState<UploadingFile[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { triggerOtherFilesRefresh } = useUploadRefresh();
+  const { showSuccess, showError } = useWidgetToast();
 
-  // 獲取當前用戶 ID
-  useEffect(() => {
-    const getCurrentUser = async () => {
-      try {
-        const supabase = createClient();
-        const {
-          data: { user },
-          error: authError,
-        } = await supabase.auth.getUser();
-
-        if (authError || !user) return;
-
-        const { data: userDataByEmail } = await supabase
-          .from('data_id')
-          .select('id')
-          .eq('email', user.email)
-          .single();
-
-        if (userDataByEmail) {
-          setCurrentUserId(userDataByEmail.id);
-        }
-      } catch (error) {
-        console.error('[UploadFilesWidget] Error getting user:', error);
-      }
-    };
-
-    getCurrentUser();
-  }, []);
 
   // 驗證文件
   const validateFile = useCallback(
@@ -111,7 +82,6 @@ export const UploadFilesWidget = React.memo(function UploadFilesWidget({
         formData.append('file', uploadingFile.file);
         formData.append('folder', uploadingFile.folder);
         formData.append('fileName', uploadingFile.file.name);
-        formData.append('uploadBy', currentUserId?.toString() || '1');
 
         // 使用 Server Action 上傳
         updateProgress(40);
@@ -132,7 +102,7 @@ export const UploadFilesWidget = React.memo(function UploadFilesWidget({
         );
 
         // 顯示成功提示
-        toast.success(`Successfully uploaded ${uploadingFile.file.name}`);
+        showSuccess(`Successfully uploaded ${uploadingFile.file.name}`);
 
         // 觸發歷史記錄更新
         triggerOtherFilesRefresh();
@@ -151,12 +121,13 @@ export const UploadFilesWidget = React.memo(function UploadFilesWidget({
         );
         
         // 顯示錯誤提示
-        toast.error(
-          error instanceof Error ? error.message : `Failed to upload ${uploadingFile.file.name}`
+        showError(
+          `Failed to upload ${uploadingFile.file.name}`,
+          error instanceof Error ? error : undefined
         );
       }
     },
-    [currentUserId, triggerOtherFilesRefresh]
+    [triggerOtherFilesRefresh, showSuccess, showError]
   );
 
   // 處理文件選擇
@@ -171,7 +142,7 @@ export const UploadFilesWidget = React.memo(function UploadFilesWidget({
         const error = validateFile(file);
 
         if (error) {
-          toast.error(`${file.name}: ${error}`);
+          showError(`${file.name}: ${error}`);
           continue;
         }
 
@@ -196,7 +167,7 @@ export const UploadFilesWidget = React.memo(function UploadFilesWidget({
         });
       }
     },
-    [selectedFolder, isEditMode, uploadFileAction, validateFile]
+    [selectedFolder, isEditMode, uploadFileAction, validateFile, showError]
   );
 
   // 拖放處理

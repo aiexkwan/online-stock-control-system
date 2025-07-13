@@ -14,7 +14,7 @@ import { format } from 'date-fns';
 import { useGraphQLFallback, GraphQLFallbackPresets } from '@/app/admin/hooks/useGraphQLFallback';
 import { MetricCardProgress } from './common';
 import { gql } from '@apollo/client';
-import { createDashboardAPI } from '@/lib/api/admin/DashboardAPI';
+import { createDashboardAPIClient as createDashboardAPI } from '@/lib/api/admin/DashboardAPI.client';
 
 // GraphQL Query
 const GET_STILL_IN_AWAIT_OPTIMIZED = gql`

@@ -15,7 +15,6 @@ describe('widgetStyles', () => {
         // Operations
         'RECENT_ACTIVITY',
         'ACO_ORDER_PROGRESS',
-        'INVENTORY_SEARCH',
         'FINISHED_PRODUCT',
         'MATERIAL_RECEIVED',
         // Tools
@@ -32,7 +31,6 @@ describe('widgetStyles', () => {
         'product_mix_chart',
         'recent_activity',
         'aco_order_progress',
-        'inventory_search',
         'finished_product',
         'material_received',
         'ask_database',
@@ -157,7 +155,6 @@ describe('widgetStyles', () => {
         'PRODUCT_MIX_CHART',
         'RECENT_ACTIVITY',
         'ACO_ORDER_PROGRESS',
-        'INVENTORY_SEARCH',
         'ASK_DATABASE',
         'VOID_PALLET'
       ];

@@ -9,7 +9,6 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { AnimatePresence } from 'framer-motion';
 import { PhotoIcon, XMarkIcon } from '@heroicons/react/24/outline';
-import { createClient } from '@/lib/supabase';
 import { WidgetComponentProps } from '@/app/types/dashboard';
 import { toast } from 'sonner';
 import { GoogleDriveUploadToast } from './GoogleDriveUploadToast';
@@ -33,41 +32,12 @@ export const UploadPhotoWidget = React.memo(function UploadPhotoWidget({
   widget,
   isEditMode,
 }: WidgetComponentProps) {
-  const [currentUserId, setCurrentUserId] = useState<number | null>(null);
   const [isDragOver, setIsDragOver] = useState(false);
   const [uploadingFiles, setUploadingFiles] = useState<UploadingFile[]>([]);
   const [previews, setPreviews] = useState<{ id: string; url: string }[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { triggerOtherFilesRefresh } = useUploadRefresh();
 
-  // 獲取當前用戶 ID
-  useEffect(() => {
-    const getCurrentUser = async () => {
-      try {
-        const supabase = createClient();
-        const {
-          data: { user },
-          error: authError,
-        } = await supabase.auth.getUser();
-
-        if (authError || !user) return;
-
-        const { data: userDataByEmail } = await supabase
-          .from('data_id')
-          .select('id')
-          .eq('email', user.email)
-          .single();
-
-        if (userDataByEmail) {
-          setCurrentUserId(userDataByEmail.id);
-        }
-      } catch (error) {
-        console.error('[UploadPhotoWidget] Error getting user:', error);
-      }
-    };
-
-    getCurrentUser();
-  }, []);
 
   // 清理預覽 URL
   useEffect(() => {
@@ -114,7 +84,6 @@ export const UploadPhotoWidget = React.memo(function UploadPhotoWidget({
         formData.append('file', uploadingFile.file);
         formData.append('folder', 'photos');
         formData.append('fileName', uploadingFile.file.name);
-        formData.append('uploadBy', currentUserId?.toString() || '1');
 
         // 使用 Server Action 上傳
         updateProgress(40);
@@ -158,7 +127,7 @@ export const UploadPhotoWidget = React.memo(function UploadPhotoWidget({
         );
       }
     },
-    [currentUserId, triggerOtherFilesRefresh]
+    [triggerOtherFilesRefresh]
   );
 
   // 處理文件選擇

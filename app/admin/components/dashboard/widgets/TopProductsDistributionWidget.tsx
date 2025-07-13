@@ -16,11 +16,11 @@ import { CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { UniversalWidgetCard as WidgetCard } from '../UniversalWidgetCard';
 import { ChartPieIcon } from '@heroicons/react/24/outline';
 import { WidgetComponentProps } from '@/app/types/dashboard';
-import { motion } from 'framer-motion';
 import { format, startOfDay, endOfDay } from 'date-fns';
-import { createDashboardAPI } from '@/lib/api/admin/DashboardAPI';
+import { createDashboardAPIClient as createDashboardAPI } from '@/lib/api/admin/DashboardAPI.client';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
 import { useGetTopProductsByQuantityQuery } from '@/lib/graphql/generated/apollo-hooks';
+import { WidgetSkeleton } from './common/WidgetStates';
 
 interface ChartData {
   name: string;
@@ -220,9 +220,7 @@ export const TopProductsDistributionWidget = React.memo(function TopProductsDist
       </CardHeader>
       <CardContent className='flex-1'>
         {loading ? (
-          <div className='flex h-full items-center justify-center'>
-            <div className='h-48 w-48 animate-pulse rounded-full bg-slate-700/50' />
-          </div>
+          <WidgetSkeleton type="chart-pie" height={200} />
         ) : error ? (
           <div className='flex h-full items-center justify-center'>
             <div className='text-center text-sm text-red-400'>

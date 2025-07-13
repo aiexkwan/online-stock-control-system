@@ -24,7 +24,7 @@ import { useWidgetDateRange } from './common/filters/DateRangeFilter';
 import { useGraphQLFallback } from '@/app/admin/hooks/useGraphQLFallback';
 import { useInViewport } from '@/app/admin/hooks/useInViewport';
 import { GetWarehouseTransferListDocument } from '@/lib/graphql/generated/apollo-hooks';
-import { createDashboardAPI } from '@/lib/api/admin/DashboardAPI';
+import { createDashboardAPIClient as createDashboardAPI } from '@/lib/api/admin/DashboardAPI.client';
 
 interface TransferRecord {
   tran_date: string;

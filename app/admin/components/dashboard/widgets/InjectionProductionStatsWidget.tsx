@@ -14,10 +14,10 @@
 
 'use client';
 
-import React, { useMemo, useEffect, useState } from 'react';
+import React, { useMemo, useEffect, useState, useCallback } from 'react';
 import { CubeIcon } from '@heroicons/react/24/outline';
 import { format, startOfDay, endOfDay } from 'date-fns';
-import { createDashboardAPI } from '@/lib/api/admin/DashboardAPI';
+import { createDashboardAPIClient as createDashboardAPI } from '@/lib/api/admin/DashboardAPI.client';
 import { WidgetComponentProps } from '@/app/types/dashboard';
 import { useGetInjectionProductionStatsQuery } from '@/lib/graphql/generated/apollo-hooks';
 import { MetricCard } from './common/data-display/MetricCard';
@@ -77,7 +77,7 @@ export const InjectionProductionStatsWidget: React.FC<InjectionProductionStatsWi
   const [serverActionsLoading, setServerActionsLoading] = useState(!useGraphQL);
   const [serverActionsError, setServerActionsError] = useState<string | null>(null);
 
-  const fetchServerActionsData = async () => {
+  const fetchServerActionsData = useCallback(async () => {
     setServerActionsLoading(true);
     setServerActionsError(null);
 
@@ -103,12 +103,12 @@ export const InjectionProductionStatsWidget: React.FC<InjectionProductionStatsWi
     } finally {
       setServerActionsLoading(false);
     }
-  };
+  }, [startDate, endDate]);
 
   useEffect(() => {
     if (useGraphQL || isEditMode) return;
     fetchServerActionsData();
-  }, [startDate, endDate, widgetMetric, useGraphQL, isEditMode]);
+  }, [startDate, endDate, widgetMetric, useGraphQL, isEditMode, fetchServerActionsData]);
 
   // 合併 loading 和 error 狀態
   const data = useGraphQL ? graphqlData : serverActionsData;

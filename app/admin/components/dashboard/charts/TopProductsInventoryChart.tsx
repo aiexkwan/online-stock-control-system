@@ -28,7 +28,7 @@ export default function TopProductsInventoryChart({ timeFrame }: TopProductsInve
 
   const { data, loading, error } = useGetTopProductsInventoryQuery({
     skip: !isGraphQLAnalysisEnabled,
-    pollInterval: 60000, // Poll every minute
+    pollInterval: isGraphQLAnalysisEnabled ? 300000 : undefined, // 減少 polling 頻率至 5 分鐘
     fetchPolicy: 'cache-and-network',
   });
 

@@ -11,8 +11,8 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 const TEST_CONFIG = {
   baseURL: 'http://localhost:3000',
   login: {
-    email: 'akwan@pennineindustries.com',
-    password: 'X315Y316'
+    email: process.env.PUPPERTEER_LOGIN || 'akwan@pennineindustries.com',
+    password: process.env.PUPPERTEER_PASSWORD || 'X315Y316'
   },
   clockNumber: '5997',
   grnNumber: '7894589',

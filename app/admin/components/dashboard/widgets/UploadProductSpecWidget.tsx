@@ -7,7 +7,6 @@
 
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { DocumentTextIcon } from '@heroicons/react/24/outline';
-import { createClient } from '@/lib/supabase';
 import { WidgetComponentProps } from '@/app/types/dashboard';
 import { toast } from 'sonner';
 import { GoogleDriveUploadToast } from './GoogleDriveUploadToast';
@@ -30,40 +29,11 @@ export const UploadProductSpecWidget = React.memo(function UploadProductSpecWidg
   widget,
   isEditMode,
 }: WidgetComponentProps) {
-  const [currentUserId, setCurrentUserId] = useState<number | null>(null);
   const [isDragOver, setIsDragOver] = useState(false);
   const [uploadingFiles, setUploadingFiles] = useState<UploadingFile[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { triggerOtherFilesRefresh } = useUploadRefresh();
 
-  // 獲取當前用戶 ID
-  useEffect(() => {
-    const getCurrentUser = async () => {
-      try {
-        const supabase = createClient();
-        const {
-          data: { user },
-          error: authError,
-        } = await supabase.auth.getUser();
-
-        if (authError || !user) return;
-
-        const { data: userDataByEmail } = await supabase
-          .from('data_id')
-          .select('id')
-          .eq('email', user.email)
-          .single();
-
-        if (userDataByEmail) {
-          setCurrentUserId(userDataByEmail.id);
-        }
-      } catch (error) {
-        console.error('[UploadProductSpecWidget] Error getting user:', error);
-      }
-    };
-
-    getCurrentUser();
-  }, []);
 
   // 驗證文件
   const validateFile = (file: File): string | null => {
@@ -98,7 +68,6 @@ export const UploadProductSpecWidget = React.memo(function UploadProductSpecWidg
         formData.append('file', uploadingFile.file);
         formData.append('folder', 'productSpec');
         formData.append('fileName', uploadingFile.file.name);
-        formData.append('uploadBy', currentUserId?.toString() || '1');
 
         // 使用 Server Action 上傳
         updateProgress(40);
@@ -142,7 +111,7 @@ export const UploadProductSpecWidget = React.memo(function UploadProductSpecWidg
         );
       }
     },
-    [currentUserId, triggerOtherFilesRefresh]
+    [triggerOtherFilesRefresh]
   );
 
   // 處理文件選擇

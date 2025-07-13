@@ -33,8 +33,8 @@ function createSupabaseAdmin() {
 
 export async function POST(request: NextRequest) {
   try {
-    (process.env.NODE_ENV as string) !== 'production' &&
-      (process.env.NODE_ENV as string) !== 'production' &&
+    process.env.NODE_ENV !== 'production' &&
+      process.env.NODE_ENV !== 'production' &&
       console.log('[Upload File API] 接收文件上傳請求...');
 
     const formData = await request.formData();
@@ -86,8 +86,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'File size must be less than 10MB' }, { status: 400 });
     }
 
-    (process.env.NODE_ENV as string) !== 'production' &&
-      (process.env.NODE_ENV as string) !== 'production' &&
+    process.env.NODE_ENV !== 'production' &&
+      process.env.NODE_ENV !== 'production' &&
       console.log('[Upload File API] 文件信息:', {
         fileName,
         fileSize: file.size,
@@ -101,8 +101,8 @@ export async function POST(request: NextRequest) {
     // 構建文件路徑
     const filePath = `${folder}/${fileName}`;
 
-    (process.env.NODE_ENV as string) !== 'production' &&
-      (process.env.NODE_ENV as string) !== 'production' &&
+    process.env.NODE_ENV !== 'production' &&
+      process.env.NODE_ENV !== 'production' &&
       console.log('[Upload File API] 準備上傳到路徑:', filePath);
 
     // 將文件轉換為 ArrayBuffer
@@ -140,8 +140,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Upload succeeded but no path returned' }, { status: 500 });
     }
 
-    (process.env.NODE_ENV as string) !== 'production' &&
-      (process.env.NODE_ENV as string) !== 'production' &&
+    process.env.NODE_ENV !== 'production' &&
+      process.env.NODE_ENV !== 'production' &&
       console.log('[Upload File API] 文件上傳成功，路徑:', data.path);
 
     // 獲取公開 URL
@@ -152,8 +152,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to get public URL' }, { status: 500 });
     }
 
-    (process.env.NODE_ENV as string) !== 'production' &&
-      (process.env.NODE_ENV as string) !== 'production' &&
+    process.env.NODE_ENV !== 'production' &&
+      process.env.NODE_ENV !== 'production' &&
       console.log('[Upload File API] 公共 URL 生成成功:', urlData.publicUrl);
 
     // 寫入記錄至 doc_upload 表
@@ -181,8 +181,8 @@ export async function POST(request: NextRequest) {
           docType = 'other';
       }
 
-      (process.env.NODE_ENV as string) !== 'production' &&
-        (process.env.NODE_ENV as string) !== 'production' &&
+      process.env.NODE_ENV !== 'production' &&
+        process.env.NODE_ENV !== 'production' &&
         console.log('[Upload File API] 準備寫入 doc_upload 表:', {
           doc_name: fileName,
           upload_by: uploadBy,
@@ -207,8 +207,8 @@ export async function POST(request: NextRequest) {
         console.error('[Upload File API] 寫入 doc_upload 表失敗:', insertError);
         // 不影響上傳成功的返回，只記錄錯誤
       } else {
-        (process.env.NODE_ENV as string) !== 'production' &&
-          (process.env.NODE_ENV as string) !== 'production' &&
+        process.env.NODE_ENV !== 'production' &&
+          process.env.NODE_ENV !== 'production' &&
           console.log('[Upload File API] 成功寫入 doc_upload 表:', insertData);
       }
     } catch (dbError) {

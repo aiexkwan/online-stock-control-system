@@ -18,9 +18,10 @@ import {
 import { format, startOfDay, endOfDay } from 'date-fns';
 import { CardHeader, CardTitle } from '@/components/ui/card';
 import { ChartBarIcon } from '@heroicons/react/24/outline';
-import { createDashboardAPI } from '@/lib/api/admin/DashboardAPI';
+import { createDashboardAPIClient as createDashboardAPI } from '@/lib/api/admin/DashboardAPI.client';
 import { WidgetComponentProps } from '@/app/types/dashboard';
 import { useGetStaffWorkloadQuery } from '@/lib/graphql/generated/apollo-hooks';
+import { WidgetSkeleton } from './common/WidgetStates';
 
 interface StaffWorkloadWidgetProps extends WidgetComponentProps {
   title: string;
@@ -325,13 +326,7 @@ export const StaffWorkloadWidget: React.FC<StaffWorkloadWidgetProps> = ({
       
       <div className="flex-1 p-4">
         {loading ? (
-          <div className="space-y-2 h-full">
-            <div className="h-4 bg-slate-700/50 rounded animate-pulse" />
-            <div className="h-6 bg-slate-700/30 rounded animate-pulse" />
-            <div className="h-8 bg-slate-700/40 rounded animate-pulse" />
-            <div className="h-6 bg-slate-700/30 rounded animate-pulse" />
-            <div className="h-4 bg-slate-700/20 rounded animate-pulse" />
-          </div>
+          <WidgetSkeleton type="chart-bar" height={150} />
         ) : error ? (
           <div className="text-red-400 text-sm text-center h-full flex items-center justify-center">
             Error loading data: {error}
@@ -394,25 +389,3 @@ export const StaffWorkloadWidget: React.FC<StaffWorkloadWidgetProps> = ({
 };
 
 export default StaffWorkloadWidget;
-
-/**
- * GraphQL Migration completed on 2025-07-09
- * 
- * Features:
- * - Apollo Client query for record_history table
- * - Filters QC passed actions by date range
- * - Client-side staff workload aggregation by day
- * - Department filtering support
- * - 5-minute polling for real-time updates
- * - Fallback to Server Actions when GraphQL disabled
- * - Feature flag control: NEXT_PUBLIC_ENABLE_GRAPHQL_INJECTION
- * 
- * Performance improvements:
- * - Direct GraphQL queries reduce latency
- * - Efficient client-side data aggregation
- * - Supports multiple staff members dynamically
- * - Caching: Apollo InMemoryCache with automatic updates
- * 
- * Note: Staff name extracted from 'who' field first,
- * falls back to data_id.name if not available
- */

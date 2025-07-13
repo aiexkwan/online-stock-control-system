@@ -31,9 +31,10 @@ jobs:
       run: npm run lint
     
     - name: Run tests with coverage
-      run: npm run test:coverage
+      run: npm run test:ci
       env:
         CI: true
+        JEST_WORKERS: 2
     
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v4

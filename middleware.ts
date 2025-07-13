@@ -39,6 +39,25 @@ export async function middleware(request: NextRequest) {
     '/api/send-order-email', // 訂單郵件發送 API（用於內部調用）
   ];
 
+  // 測試模式：當 NEXT_PUBLIC_TEST_MODE=true 時，添加測試路由到公開路由列表
+  if (process.env.NEXT_PUBLIC_TEST_MODE === 'true') {
+    publicRoutes.push(
+      '/', // 首頁
+      '/admin/injection', // Admin dashboard
+      '/admin/pipeline',
+      '/admin/warehouse',
+      '/access', // Access page
+      '/api/graphql', // GraphQL endpoint
+      '/test-performance', // 專門的性能測試頁面
+    );
+    
+    middlewareLogger.info({
+      correlationId,
+      testMode: true,
+      additionalRoutes: 7,
+    }, 'Test mode enabled - additional routes added to public list');
+  }
+
   // 檢查是否為公開路由
   const isPublicRoute = publicRoutes.some(route => {
     const matches = request.nextUrl.pathname.startsWith(route);

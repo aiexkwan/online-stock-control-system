@@ -57,10 +57,7 @@ export const analysisWidgetConfigs: Record<string, Partial<WidgetDefinition>> = 
 /**
  * 註冊所有 Analysis widgets
  */
-export async function registerAnalysisWidgets(): Promise<void> {
-  // Lazy import to avoid circular dependency
-  const { widgetRegistry } = await import('./enhanced-registry');
-  
+export async function registerAnalysisWidgets(widgetRegistry: any): Promise<void> {
   const startTime = performance.now();
   let registeredCount = 0;
 
@@ -104,7 +101,7 @@ export async function registerAnalysisWidgets(): Promise<void> {
 /**
  * 預加載高優先級 Analysis widgets
  */
-export async function preloadHighPriorityAnalysisWidgets(): Promise<void> {
+export async function preloadHighPriorityAnalysisWidgets(widgetRegistry: any): Promise<void> {
   const highPriorityWidgets = Object.entries(analysisWidgetConfigs)
     .filter(([_, config]) => (config.preloadPriority || 0) >= 8)
     .map(([id]) => id);

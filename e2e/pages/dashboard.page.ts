@@ -23,7 +23,7 @@ export class DashboardPage {
   }
 
   async goto() {
-    await this.page.goto('/dashboard');
+    await this.page.goto('/admin/injection'); // 使用正確的路由
   }
 
   async waitForLoad() {
